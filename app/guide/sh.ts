@@ -74,8 +74,9 @@ dok ih njihov PIN drži otvorenima.
 - **Linija ispod pretrage** kaže je li postavljen relay i je li vaš red spreman. Dodirnite je da ga postavite.
 - **Razgovor sa sobom**, uvijek prvi među razgovorima, prikvačen, čuva vaše bilješke za sebe: pogledajte Razgovor sa
   sobom i podsjetnici ispod.
-- **Matrix**, ispod, kad se prijavite na Matrix, pokazuje najnoviju poruku njegovih razgovora i koliko ih nije
-  pročitano: pogledajte [Matrix](#matrix).
+- **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen
+  **Matrix**, a pozivnica stoji na vrhu. Dugme **Matrix** pokazuje samo njih, i tamo **Novi razgovor** počinje
+  Matrix razgovor: pogledajte [Matrix](#matrix).
 - **Novi razgovor**, na dnu, otvara postavke relaya i dodavanje kontakta. **Podsjeti me**, narandžasto zvono pored
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u

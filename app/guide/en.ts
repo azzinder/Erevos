@@ -69,8 +69,9 @@ same whether a space has any or not: their messages can be read only while their
 - **The line under the search** says whether a relay is set and your queue is ready. Tap it to set one up.
 - **Chat with myself**, always first in the chats, with a pin, holds your notes to yourself: see Chat with myself and
   reminders below.
-- **Matrix**, under it once you sign in to Matrix, shows its chats' latest message and how many are not read: see
-  [Matrix](#matrix).
+- **Matrix chats**, once you sign in to Matrix, are in the list with the others, newest first, each marked
+  **Matrix**, and an invite shows at the top. The **Matrix** chip shows only them, and there **New chat** starts a
+  Matrix chat: see [Matrix](#matrix).
 - **New chat**, at the bottom, opens the relay settings and adding a contact. **Remind me**, the orange bell beside it,
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the

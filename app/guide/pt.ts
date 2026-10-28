@@ -75,8 +75,9 @@ abertas.
 - **A linha abaixo da busca** diz se há um relay definido e se a sua fila está pronta. Toque nela para configurar um.
 - **Conversa comigo**, sempre a primeira nas conversas, com um alfinete, guarda as suas notas para você mesmo: veja
   Conversa comigo e lembretes abaixo.
-- **Matrix**, logo abaixo, depois que você entra no Matrix, mostra a última mensagem das conversas dele e quantas não
-  foram lidas: veja [Matrix](#matrix).
+- **As conversas do Matrix**, depois que você entra no Matrix, ficam na lista com as outras, as mais recentes
+  primeiro, cada uma marcada **Matrix**, e um convite aparece no topo. O chip **Matrix** mostra só elas, e ali
+  **Nova conversa** começa uma conversa no Matrix: veja [Matrix](#matrix).
 - **Nova conversa**, embaixo, abre as configurações do relay e a adição de um contato. **Lembrar-me**, o sino laranja
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos

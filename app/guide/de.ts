@@ -80,8 +80,9 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   eines einzurichten.
 - **Chat mit mir selbst**, immer als erster in den Chats, mit einer Nadel, enthält deine Notizen an dich selbst: siehe
   „Chat mit mir selbst und Erinnerungen“ weiter unten.
-- **Matrix**, darunter, sobald du dich bei Matrix anmeldest, zeigt die neueste Nachricht seiner Chats und wie viele
-  ungelesen sind: siehe [Matrix](#matrix).
+- **Matrix-Chats** stehen, sobald du dich bei Matrix anmeldest, mit den anderen in der Liste, die neuesten zuerst,
+  jeder mit **Matrix** markiert, und eine Einladung steht oben. Der Chip **Matrix** zeigt nur sie, und dort beginnt
+  **Neuer Chat** einen Matrix-Chat: siehe [Matrix](#matrix).
 - **Neuer Chat**, unten, öffnet die Relay-Einstellungen und das Hinzufügen eines Kontakts. **Erinnern**, die orange
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den

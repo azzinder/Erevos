@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChatRow, MatrixRow, MyselfRow } from '../components/chat-row';
+import { ChatRow, MyselfRow } from '../components/chat-row';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
 import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
@@ -24,7 +24,8 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, mergeRows, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -109,12 +110,12 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 // the phone once each time.
 const trashLooked = new Set<number>();
 
-// Which of the list shows: all of it, the SMS, or the Erevos chats (lib/inbox.ts, showsIn).
+// Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats or the
+// Matrix ones (lib/inbox.ts, showsIn), each with its chip once the list has two of them.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
-const SHOWS: InboxShow[] = ['all', 'sms', 'erevos'];
-const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' ? show : 'all');
-const isSms = (row: InboxRow) => showsIn(row, 'sms');
+const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' ? show : 'all');
+const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix' };
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
 const DOOR_HOLD = 1000;
@@ -390,12 +391,19 @@ export default function Home() {
     }, [again]),
   );
 
+  // The Matrix rooms join the list while the space is signed in to Matrix (lib/matrix-store.ts).
+  const [matrixTick, setMatrixTick] = useState(0);
+  useEffect(() => onMatrixChange(() => setMatrixTick((n) => n + 1)), []);
+  const matrix = matrixNow().state;
+  const everyRow = useMemo(() => (rows && matrix ? mergeRows(rows, matrixInboxRows(matrix)) : rows), [rows, matrix, matrixTick]);
   const shown = useMemo(() => {
-    const found = filterInbox(rows ?? [], query);
+    const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
-  }, [rows, query, show]);
-  // The choice shows once the list has SMS and Erevos chats both, or while one of them is chosen.
-  const mixed = show !== 'all' || ((rows ?? []).some(isSms) && (rows ?? []).some((row) => !row.sms));
+  }, [everyRow, query, show]);
+  // The choice shows once the list has two networks' chats, or while one of them is chosen.
+  const parts = inboxParts(everyRow ?? [], !!matrix);
+  const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
+  const mixed = tabs.length > 2;
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
 
@@ -479,9 +487,9 @@ export default function Home() {
         <Row wrap>
           {mixed ? (
             <>
-              <Chip label={t('All messages')} selected={show === 'all'} onPress={() => setShow('all')} />
-              <Chip label={t('SMS')} selected={show === 'sms'} onPress={() => setShow('sms')} />
-              <Chip label="Erevos" selected={show === 'erevos'} onPress={() => setShow('erevos')} />
+              {tabs.map((tab) => (
+                <Chip key={tab} label={SHOW_LABELS[tab]()} selected={show === tab} onPress={() => setShow(tab)} />
+              ))}
             </>
           ) : null}
           {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
@@ -494,19 +502,18 @@ export default function Home() {
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}
-      {/* A new Erevos, then Chat with myself and Matrix, stay first, whatever comes in, but for the SMS alone and a search. */}
-      {release && !query.trim() && show !== 'sms' ? <ReleaseRow release={release} /> : null}
-      {notes !== null && !query.trim() && show !== 'sms' ? <MyselfRow notes={notes} /> : null}
-      {!query.trim() && show !== 'sms' ? <MatrixRow /> : null}
+      {/* A new Erevos, then Chat with myself, stay first, whatever comes in, but for one network alone and a search. */}
+      {release && !query.trim() && (show === 'all' || show === 'erevos') ? <ReleaseRow release={release} /> : null}
+      {notes !== null && !query.trim() && (show === 'all' || show === 'erevos') ? <MyselfRow notes={notes} /> : null}
     </View>
   );
 
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos), on the rows too:
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
-      <SwipeTabs tabs={mixed ? SHOWS : []} current={show} onChange={setShow}>
+      <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
         <FlatList
           data={shown}
           // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
@@ -527,6 +534,10 @@ export default function Home() {
             rows === null || hits.length > 0 ? null : query ? (
               <Text tone="muted" style={styles.emptyText}>
                 {t('No chat has “{query}” in it.', { query: query.trim() })}
+              </Text>
+            ) : show === 'matrix' ? (
+              <Text tone="muted" style={styles.emptyText}>
+                {t('No Matrix chats yet.')}
               </Text>
             ) : (
               <View style={styles.empty}>
@@ -577,7 +588,8 @@ export default function Home() {
           ) : null}
         </Pressable>
         <Pressable
-          onPress={() => router.push('/chat?setup=1')}
+          // On Matrix's part, a Matrix chat (app/matrix.tsx).
+          onPress={() => router.push(show === 'matrix' ? '/matrix' : '/chat?setup=1')}
           onLongPress={() => setDoor(true)}
           delayLongPress={DOOR_HOLD}
           accessibilityRole="button"

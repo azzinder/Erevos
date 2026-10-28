@@ -5,8 +5,6 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { t } from '../lib/i18n';
 import { rowTime, shownName, type InboxRow } from '../lib/inbox';
 import { laterLabel } from '../lib/later';
-import type { MatrixRoom } from '../lib/matrix';
-import { matrixNow, matrixUnread, onMatrixChange } from '../lib/matrix-store';
 import { notesSummary, type Note } from '../lib/myself';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -35,7 +33,11 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
           router.push(
             row.sms
               ? `/sms?to=${encodeURIComponent(row.sms)}`
-              : row.identity.startsWith('group:')
+              : row.network === 'matrix'
+                ? row.invited
+                  ? '/matrix'
+                  : `/matrix-chat?room=${encodeURIComponent(row.identity.slice('matrix:'.length))}`
+                : row.identity.startsWith('group:')
                 ? `/group?id=${row.identity.slice(6)}`
                 : `/chat?contact=${row.identity}`,
           ))
@@ -47,10 +49,10 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
       {row.sms && row.photo && !photoFailed ? (
         // The picture the phone's contacts have for the number, read from them as it shows.
         <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
-      ) : row.sms ? (
+      ) : row.sms || row.network ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
-            SMS
+            {row.sms ? 'SMS' : '[m]'}
           </Text>
         </View>
       ) : (
@@ -81,6 +83,10 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
             ) : row.lastSms ? (
               <Text variant="caption" color={colors.warning}>
                 SMS
+              </Text>
+            ) : row.network === 'matrix' ? (
+              <Text variant="caption" color={colors.success}>
+                Matrix
               </Text>
             ) : null}
             {row.last && row.mine && !row.lastSms && !row.draft ? (
@@ -163,64 +169,6 @@ export function MyselfRow({ notes, onOpen }: { notes: Note[]; onOpen?: () => voi
             <View style={[styles.badge, { backgroundColor: colors.warning }]}>
               <Text variant="caption" color="#ffffff" style={styles.badgeText}>
                 {due.length > 99 ? '99+' : due.length}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
-// The open space's Matrix chats (app/matrix.tsx), under Chat with myself once it has signed in to
-// Matrix: the latest message, or invite, and how many are not read. Nothing without an account.
-export function MatrixRow() {
-  const styles = useStyles(makeStyles);
-  const { colors } = useTheme();
-  const [, redraw] = useState(0);
-  useEffect(() => onMatrixChange(() => redraw((n) => n + 1)), []);
-  const state = matrixNow().state;
-  if (!state) return null;
-  const unread = matrixUnread();
-  const lastAt = (room: MatrixRoom) => room.messages[room.messages.length - 1]?.ts ?? 0;
-  const latest = Object.values(state.rooms).sort((a, b) => lastAt(b) - lastAt(a))[0];
-  const last = latest?.messages[latest.messages.length - 1];
-  const preview = !latest
-    ? t('Signed in as {id}', { id: state.userId })
-    : latest.invitedBy
-      ? t('Invited by {name}', { name: latest.invitedBy })
-      : last
-        ? `${latest.name}: ${last.locked ? t('Locked message') : last.text.split('\n')[0]}`
-        : latest.name;
-  return (
-    <Pressable
-      onPress={() => router.push('/matrix')}
-      accessibilityRole="button"
-      accessibilityLabel={unread ? `${t('Matrix')}, ${unread}` : t('Matrix')}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
-    >
-      <View style={styles.smsFace}>
-        <Text variant="bodyStrong">[m]</Text>
-      </View>
-      <View style={styles.rowBody}>
-        <View style={styles.rowLine}>
-          <Text variant="bodyStrong" numberOfLines={1} style={styles.rowName}>
-            {t('Matrix')}
-          </Text>
-          {last ? (
-            <Text variant="caption" color={unread ? colors.primary : colors.textFaint}>
-              {rowTime(last.ts, Date.now())}
-            </Text>
-          ) : null}
-        </View>
-        <View style={styles.rowLine}>
-          <Text numberOfLines={1} variant="caption" tone={unread ? undefined : 'muted'} style={[styles.preview, unread ? styles.previewUnread : null]}>
-            {preview}
-          </Text>
-          {unread ? (
-            <View style={styles.badge}>
-              <Text variant="caption" color={colors.onPrimary} style={styles.badgeText}>
-                {unread > 99 ? '99+' : unread}
               </Text>
             </View>
           ) : null}

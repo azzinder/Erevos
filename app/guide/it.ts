@@ -76,8 +76,9 @@ mentre il loro PIN le tiene aperte.
 - **La riga sotto la ricerca** dice se è impostato un relay e se la tua coda è pronta. Toccala per impostarne uno.
 - **Chat con me stesso**, sempre prima tra le chat, con una puntina, contiene le tue note per te stesso: vedi Chat con
   me stesso e promemoria più sotto.
-- **Matrix**, sotto, una volta che hai fatto l’accesso a Matrix, mostra l’ultimo messaggio delle sue chat e quanti non
-  sono letti: vedi [Matrix](#matrix).
+- **Le chat Matrix**, una volta che hai fatto l’accesso a Matrix, sono nell’elenco con le altre, le più recenti
+  prima, ognuna segnata **Matrix**, e un invito compare in cima. Il chip **Matrix** mostra solo loro, e lì
+  **Nuova chat** avvia una chat Matrix: vedi [Matrix](#matrix).
 - **Nuova chat**, in basso, apre le impostazioni del relay e l’aggiunta di un contatto. **Ricordamelo**, la campanella
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori

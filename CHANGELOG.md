@@ -91,9 +91,10 @@ On main, not released yet:
   backups yet. Photos and files go too, up to 50 MB, encrypted on the phone before upload as Matrix does it
   (AES-256-CTR, checked by SHA-256 on the way back), so Element and others open them; a photo you get is fetched only
   when you tap **Show photo**. Voice messages, calls and checking devices by emoji are still to come.
-- **Matrix on the home screen**: once you sign in to Matrix, a **Matrix** row under Chat with myself shows its chats'
-  latest message, or invite, and how many are not read; tapped, it opens the Matrix chats. The space's Matrix account
-  syncs while the space is open.
+- **Every network's chats on the home screen**: once you sign in to Matrix, its chats are in the list with the Erevos
+  chats and the SMS, newest first, each marked **Matrix**, with an invite at the top; the **Matrix** chip shows them
+  alone, as **SMS** and **Erevos** do, and there **New chat** starts a Matrix chat. The space's Matrix account syncs
+  while the space is open.
 
 ### Under the hood
 

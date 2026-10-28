@@ -5,9 +5,12 @@
 // it, and nothing about them is: the home screen looks the same whether a space has them or not.
 // When Erevos is the phone's SMS app, the phone's SMS conversations are rows too: one with a
 // number linked to a contact goes into that contact's row, the others have rows of their own.
+// Once the space has signed in to Matrix (lib/matrix-store.ts), each of its Matrix rooms is a row
+// too (matrixInboxRows), so the list holds every network's chats, and each network has its part.
 
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
+import type { MatrixState } from './matrix';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
@@ -72,6 +75,10 @@ export type InboxRow = {
   locked?: boolean;
   /** Muted now (lock/chat-notify.ts): its messages make no sound and no notice. */
   muted?: boolean;
+  /** The network of a chat that is not Erevos's nor an SMS: a Matrix room, `matrix:` and its id in `identity`. */
+  network?: 'matrix';
+  /** A Matrix room we are only invited to. */
+  invited?: boolean;
 };
 
 const PREFIX = 'contact:';
@@ -142,18 +149,66 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
   return shownLine(message?.text ?? '');
 }
 
-/** Which of the list shows (app/index.tsx): all of it, the SMS, or the Erevos chats. */
-export type InboxShow = 'all' | 'sms' | 'erevos';
+/** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or the Matrix ones. */
+export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix';
 
 /**
  * Whether a row shows in that part of the list. The SMS are the SMS conversations, and the chats
  * whose last message was an SMS; the Erevos chats are every contact's and every group's, whatever
- * came last, so a contact whose number's SMS came after stays among them.
+ * came last, so a contact whose number's SMS came after stays among them; the Matrix chats are the
+ * Matrix rooms.
  */
-export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms'>, show: InboxShow): boolean {
+export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show: InboxShow): boolean {
   if (show === 'sms') return row.sms !== '' || row.lastSms;
-  if (show === 'erevos') return row.sms === '';
+  if (show === 'erevos') return row.sms === '' && !row.network;
+  if (show === 'matrix') return row.network === 'matrix';
   return true;
+}
+
+/** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's
+ *  whenever the space is signed in to it, even with no room yet. */
+export function inboxParts(rows: InboxRow[], matrix: boolean): InboxShow[] {
+  const parts: InboxShow[] = [];
+  if (rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
+  if (rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
+  if (matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
+  return parts;
+}
+
+/** A Matrix account's rooms as rows (lib/matrix-store.ts). One we are invited to moves to the
+ *  top, at `now`, until it is joined or declined. */
+export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[] {
+  return Object.values(state.rooms).map((room): InboxRow => {
+    const last = room.messages[room.messages.length - 1];
+    const text = room.invitedBy
+      ? t('Invited by {name}', { name: room.members[room.invitedBy]?.name || room.invitedBy })
+      : !last
+        ? ''
+        : last.locked
+          ? t('Locked message')
+          : last.file
+            ? last.file.kind === 'image'
+              ? t('Photo')
+              : t('File: {name}', { name: last.file.name })
+            : last.text;
+    const mine = !room.invitedBy && !!last && last.sender === state.userId;
+    return {
+      identity: `matrix:${room.id}`,
+      name: room.name,
+      last: text,
+      mine,
+      mark: mine && last?.state ? -1 : 0,
+      at: room.invitedBy ? now : (last?.ts ?? 0),
+      unread: room.invitedBy ? 1 : room.unread,
+      timer: 0,
+      imported: false,
+      avatar: null,
+      sms: '',
+      lastSms: false,
+      network: 'matrix',
+      ...(room.invitedBy ? { invited: true } : {}),
+    };
+  });
 }
 
 /** A row's name, or the start of the contact's key when it has none. */

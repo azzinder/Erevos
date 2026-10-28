@@ -16,6 +16,7 @@ import { after, before, test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
+import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 // A core built before Matrix has no `matrix` call: built again, it has.
@@ -370,4 +371,22 @@ test('Matrix files: encrypted as other apps read them, too large ones refused', 
   const alice = kept(await signIn(HS, '@alice:example.org', PASSWORD));
   await assert.rejects(sendFile(alice, '!none:example.org', { name: 'big', mime: 'application/zip', bytes: new Uint8Array(MATRIX_MOST + 1) }), MatrixFileTooLargeError);
   assert.equal(mimeOfName('Report.PDF'), 'application/pdf');
+});
+
+test('Matrix rooms are rows of the home list, with a part of their own', () => {
+  const state = {
+    userId: '@me:example.org',
+    rooms: {
+      '!a:example.org': { id: '!a:example.org', name: 'Anna', members: {}, encrypted: true, direct: true, unread: 2, messages: [{ id: '$1', sender: '@anna:example.org', ts: 5000, text: 'hi\nthere' }] },
+      '!b:example.org': { id: '!b:example.org', name: 'Club', members: { '@bo:example.org': { membership: 'join', name: 'Bo' } }, encrypted: true, direct: false, unread: 0, messages: [], invitedBy: '@bo:example.org' },
+    },
+  } as unknown as MatrixState;
+  const rows = matrixInboxRows(state, 9000);
+  const anna = rows.find((r) => r.identity === 'matrix:!a:example.org')!;
+  assert.deepEqual([anna.last, anna.unread, anna.at, anna.mine, anna.network], ['hi\nthere', 2, 5000, false, 'matrix']);
+  const club = rows.find((r) => r.invited)!;
+  assert.deepEqual([club.last, club.unread, club.at], ['Invited by Bo', 1, 9000]);
+  assert.deepEqual([showsIn(anna, 'matrix'), showsIn(anna, 'erevos'), showsIn(anna, 'sms'), showsIn(anna, 'all')], [true, false, false, true]);
+  assert.deepEqual(inboxParts([], true), ['matrix']);
+  assert.deepEqual(inboxParts(rows, false), ['matrix']);
 });
