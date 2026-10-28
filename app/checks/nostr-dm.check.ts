@@ -472,6 +472,28 @@ test('a group of three, with its name and reactions, and a photo through a file 
     assert.equal(row.name, 'Τρεις');
     assert.equal(row.last, 'Photo');
 
+    // A voice message says how long it lasts; the others' apps read it so.
+    const voice = randomBytes(3000);
+    await nostrDmSendFile(group, { bytes: voice, name: 'voice.m4a', mime: 'audio/mp4', durationMs: 3200 });
+    await read(bob, bobInbox);
+    const heard = bob.chats[group].messages.at(-1)!.file as NostrDmFile;
+    assert.deepEqual([heard.type, heard.duration], ['audio/mp4', 3200]);
+    assert.deepEqual(openFile(heard, blobs.get(heard.x)!), voice);
+    assert.equal(nostrInboxRows(nostrDmNow().state!).find((r) => r.identity === `nostr:${group}`)!.last, 'Voice message, 0:03');
+
+    // She answers his message; he answers hers from an app that marks no answer as such.
+    const his = chat.messages[1].id;
+    await nostrDmSend(group, 'σωστά', his);
+    assert.equal(nostrDmNow().state!.chats[group].messages.at(-1)!.replyTo, his);
+    await read(carol, carolInbox);
+    assert.deepEqual(
+      [carol.chats[group].messages.at(-1)!.text, carol.chats[group].messages.at(-1)!.replyTo],
+      ['σωστά', his],
+    );
+    const plainAnswer = await wrapMessage(bob, group, 14, [['e', first.id]], 'κι εγώ');
+    await takeWrap(carol, plainAnswer.wraps[carol.public]);
+    assert.equal(carol.chats[group].messages.at(-1)!.replyTo, first.id);
+
     // Bob renames it; an older name Alice gave late does not undo his.
     const renamed = await wrapMessage(bob, group, 14, [['subject', 'Οι τρεις μας']], 'νέο όνομα');
     const w2 = await NostrRelay.open(aliceInbox.url, null);

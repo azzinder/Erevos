@@ -1,28 +1,48 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Image, View } from 'react-native';
+import { useEffect, useRef, useState, type ElementRef } from 'react';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { KeyboardAwareScrollView } from '../components/keyboard';
+import { MatrixBubble, lineOf, type Answered } from '../components/matrix-message';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
+import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
+import { MessageMenu, type MenuAction } from '../components/message-menu';
+import { Quote } from '../components/message-parts';
 import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Input, Page, Row, Text } from '../components/ui';
-import { ask } from '../lib/alert';
-import { shownLine } from '../lib/call-lines';
+import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
-import { fileSize } from '../lib/attachments';
-import { toBase64 } from '../lib/crypto';
+import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
+import { voiceMime } from '../lib/group-media';
 import { t } from '../lib/i18n';
-import type { MatrixFile, MatrixMessage } from '../lib/matrix';
+import type { MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
-import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, matrixSetNotify, matrixVerifications, matrixVerify, onMatrixChange, runMatrix } from '../lib/matrix-store';
+import {
+  matrixChange,
+  matrixDelete,
+  matrixLeave,
+  matrixLoadEarlier,
+  matrixNow,
+  matrixRead,
+  matrixReact,
+  matrixReply,
+  matrixSend,
+  matrixSendFile,
+  matrixSetNotify,
+  matrixVerifications,
+  matrixVerify,
+  onMatrixChange,
+  runMatrix,
+} from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
-import { saveBytes } from '../lib/save-file';
 import { checkedChatNotify } from '../lock/chat-notify';
-import { radius, space } from '../theme/colors';
+import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // One Matrix chat (lib/matrix-store.ts): its messages, oldest first, and a field to write in.
@@ -32,14 +52,52 @@ import { useColors } from '../theme/context';
 // (lib/matrix-media.ts); a photo is fetched only when tapped, so the homeserver does not learn
 // which were looked at merely by scrolling. Its call buttons open Element Call (lib/matrix-calls.ts),
 // where Erevos has it.
+//
+// A message held down opens its menu (components/message-menu.tsx): react to it, answer it, copy
+// it, and for one of ours change it or delete it for everyone. An answer shows the message it is to
+// above its words, which scrolls to it when tapped; a message changed says so, and one taken back
+// is only marked as such. The reactions are under it, tapped to react the same or take ours back.
+// A room with older messages on the homeserver offers them at the top, and the thread stays where
+// it was when they come. The microphone beside the field records a voice message while it is held
+// (components/matrix-voice.tsx), which the others play with Play.
+
+const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+/** A recorded voice message as it is sent: the phone's AAC, or what the browser records in the web app and on a computer. */
+function voiceFile(audio: Uint8Array, ms: number): OutgoingFile {
+  const mime = voiceMime(audio);
+  const browser = mime === 'audio/ogg' || mime === 'audio/webm';
+  return { name: browser ? `voice.${mime.slice('audio/'.length)}` : 'voice.m4a', mime: browser ? mime : 'audio/mp4', bytes: audio, voice: { durationMs: ms } };
+}
+
+// Whether a message can be copied: it has words of its own.
+const copyable = (message: MatrixMessage) => CAN_COPY && !!message.text && !message.file && !message.locked && !message.call;
+// Whether it has a menu: not one taken back or a call's line, and one that still goes, or did not,
+// has no ID on the homeserver yet, so nothing can be done with it but copy its words.
+const menuable = (message: MatrixMessage) => !message.deleted && !message.call && (!message.state || copyable(message));
 
 export default function MatrixChatScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { room: roomId } = useLocalSearchParams<{ room?: string }>();
   const [now, setNow] = useState(matrixNow());
-  const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
+  // The message the next one answers or gives new words, and the one whose menu is open, by their IDs.
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [earlier, setEarlier] = useState(false);
+  // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
+  // older messages come in above (`keepAt`: how tall it was, with how many messages), and where the
+  // thread and each message in it begin, to scroll to one.
+  const scroll = useRef<ElementRef<typeof KeyboardAwareScrollView>>(null);
+  const scrolled = useRef({ y: 0, height: 0 });
+  const keepAt = useRef<{ height: number; count: number } | null>(null);
+  const threadAt = useRef(0);
+  const placed = useRef<Record<string, number>>({});
 
   useEffect(() => {
     runMatrix();
@@ -50,32 +108,14 @@ export default function MatrixChatScreen() {
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
   const count = room?.messages.length ?? 0;
+  const counted = useRef(count);
+  counted.current = count;
   const shown = useNetworkChatShown(roomId ? `matrix:${roomId}` : undefined);
   useEffect(() => {
     if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
   }, [shown, roomId, count, room?.unread]);
 
-  if (!state || !room || !roomId) {
-    return (
-      <Page>
-        <Text variant="title">Matrix</Text>
-        <Text tone="muted">{now.loaded ? t('This Matrix chat is not here any more.') : ''}</Text>
-      </Page>
-    );
-  }
-
-  function send() {
-    const text = draft.trim();
-    if (!text || !roomId) return;
-    setDraft('');
-    setNote('');
-    matrixSend(roomId, text).catch((error: unknown) => setNote(error instanceof Error ? error.message : String(error)));
-  }
-
-  const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
-  // A chat with one person can check their devices by emoji; the latest check in it shows.
-  const other = room.direct ? Object.keys(room.members).find((who) => who !== state.userId) : undefined;
-  const check = matrixVerifications().find((v) => v.roomId === roomId);
+  const fail = (error: unknown) => setNote(errorText(error));
 
   async function sendPicked(pick: () => Promise<OutgoingFile | null>) {
     if (!roomId || sending) return;
@@ -89,6 +129,55 @@ export default function MatrixChatScreen() {
     } finally {
       setSending(false);
     }
+  }
+
+  const voice = useVoiceCapture({ send: (audio, ms) => sendPicked(async () => voiceFile(audio, ms)), say: setNote });
+
+  if (!state || !room || !roomId) {
+    return (
+      <Page>
+        <Text variant="title">Matrix</Text>
+        <Text tone="muted">{now.loaded ? t('This Matrix chat is not here any more.') : ''}</Text>
+      </Page>
+    );
+  }
+
+  const me = state.userId;
+  const byId = new Map(room.messages.map((message) => [message.id, message]));
+  // One that is gone or taken back meanwhile is none: what is typed then goes as a new message.
+  const replying = replyId ? byId.get(replyId) : undefined;
+  const answered = replying && !replying.deleted ? replying : undefined;
+  const editing = editId ? byId.get(editId) : undefined;
+  const changed = editing && !editing.deleted && !editing.state ? editing : undefined;
+  const menuMessage = menuFor ? byId.get(menuFor) : undefined;
+  const nameOf = (message: MatrixMessage) => (message.sender === me ? t('You') : room.members[message.sender]?.name || message.sender);
+
+  // A chat with one person can check their devices by emoji; the latest check in it shows.
+  const other = room.direct ? Object.keys(room.members).find((who) => who !== me) : undefined;
+  const check = matrixVerifications().find((v) => v.roomId === roomId);
+
+  const stopEditing = () => setEditId(null);
+
+  // What is typed goes as a new message, as an answer to the one chosen, or as the new words of the
+  // one being changed. Says whether the words were taken, so the field empties; a change empties it
+  // once it went.
+  function send(text: string): boolean {
+    if (!roomId) return false;
+    setNote('');
+    if (changed) {
+      if (text === changed.text) {
+        stopEditing();
+        return false;
+      }
+      setSaving(true);
+      matrixChange(roomId, changed.id, text)
+        .then(stopEditing, fail)
+        .finally(() => setSaving(false));
+      return false;
+    }
+    setReplyId(null);
+    (answered ? matrixReply(roomId, text, answered.id) : matrixSend(roomId, text)).catch(fail);
+    return true;
   }
 
   async function call(video: boolean) {
@@ -112,8 +201,107 @@ export default function MatrixChatScreen() {
       return picked ? { ...picked, mime: mimeOfName(picked.name) } : null;
     });
 
+  // Fetches older messages. Once they are in, the screen is scrolled down by the room they take, so
+  // the message being read stays under the thumb and what came is up above it.
+  async function loadEarlier() {
+    if (!roomId || earlier) return;
+    setNote('');
+    setEarlier(true);
+    keepAt.current = { height: scrolled.current.height, count: counted.current };
+    try {
+      const added = await matrixLoadEarlier(roomId);
+      if (!added) {
+        keepAt.current = null;
+        if (!matrixNow().state?.rooms[roomId]?.start) setNote(t('No earlier messages came this time. Try again to look further back.'));
+      }
+    } catch (error) {
+      keepAt.current = null;
+      fail(error);
+    } finally {
+      setEarlier(false);
+    }
+  }
+
+  // Scrolls the thread to a message, a little below the top.
+  function goTo(id: string) {
+    const y = placed.current[id];
+    if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, threadAt.current + y - 96), animated: true });
+  }
+
+  const react = (id: string, emoji: string) => matrixReact(roomId, id, emoji).catch(fail);
+
+  async function copy(text: string) {
+    setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  }
+
+  // Takes a message of ours back, for everyone in the room, once asked.
+  async function remove(message: MatrixMessage) {
+    if (!roomId) return;
+    if (!(await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete')))) return;
+    try {
+      await matrixDelete(roomId, message.id);
+    } catch (error) {
+      setNote(t('Not deleted. {reason}', { reason: errorText(error) }));
+    }
+  }
+
+  // What can be done with a message, held down. Answering, changing and deleting need its ID on the
+  // homeserver; changing and deleting are for our own, and changing for their words only.
+  function actionsOf(message: MatrixMessage): MenuAction[] {
+    const actions: MenuAction[] = [];
+    const ours = message.sender === me && !message.state;
+    if (!message.state) {
+      actions.push({
+        title: t('Reply'),
+        onPress: () => {
+          setEditId(null);
+          setReplyId(message.id);
+        },
+      });
+    }
+    if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+    if (ours && !message.file && !message.locked) {
+      actions.push({
+        title: t('Edit'),
+        onPress: () => {
+          setReplyId(null);
+          setEditId(message.id);
+        },
+      });
+    }
+    if (ours) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
+    return actions;
+  }
+
+  // The message an answer is to, as the answer quotes it: null when it is older than what is here.
+  const answeredBy = (message: MatrixMessage): Answered | null | undefined => {
+    if (!message.replyTo) return undefined;
+    const to = byId.get(message.replyTo);
+    return to ? { name: nameOf(to), line: lineOf(to), onPress: () => goTo(to.id) } : null;
+  };
+
   return (
-    <Page>
+    <KeyboardAwareScrollView
+      ref={scroll}
+      style={{ flex: 1, backgroundColor: colors.ground }}
+      // As Page (components/ui.tsx) has it, but with a hold on the scrolling.
+      contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={space.xl}
+      scrollEventThrottle={100}
+      onScroll={(event) => {
+        scrolled.current.y = event.nativeEvent.contentOffset.y;
+      }}
+      onContentSizeChange={(_width, height) => {
+        const keep = keepAt.current;
+        // Older messages came in above: what was in view moved down by as much as they take.
+        if (keep && counted.current !== keep.count) {
+          keepAt.current = null;
+          scroll.current?.scrollTo({ y: Math.max(0, scrolled.current.y + height - keep.height), animated: false });
+        }
+        scrolled.current.height = height;
+      }}
+    >
       <Row>
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {room.name}
@@ -144,17 +332,46 @@ export default function MatrixChatScreen() {
         ) : null
       ) : null}
       {check ? <MatrixVerifyCard check={check} name={room.members[check.userId]?.name || check.userId} /> : null}
-      {room.messages.map((message) => (
-        <Bubble key={message.id} message={message} mine={message.sender === state.userId} sender={room.members[message.sender]?.name || message.sender} />
-      ))}
+      <View
+        style={{ gap: space.md }}
+        onLayout={(event) => {
+          threadAt.current = event.nativeEvent.layout.y;
+        }}
+      >
+        {room.before && !room.start ? (
+          <Row style={{ justifyContent: 'center' }}>
+            <Button title={earlier ? t('Fetching…') : t('Load earlier messages')} kind="secondary" compact disabled={earlier} onPress={() => void loadEarlier()} />
+          </Row>
+        ) : null}
+        {room.messages.map((message) => (
+          <MatrixBubble
+            key={message.id}
+            message={message}
+            me={me}
+            sender={room.members[message.sender]?.name || message.sender}
+            answered={answeredBy(message)}
+            onReact={(emoji) => void react(message.id, emoji)}
+            onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
+            onLayout={(event) => {
+              placed.current[message.id] = event.nativeEvent.layout.y;
+            }}
+          />
+        ))}
+      </View>
+      {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
+      {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
+      <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} onSend={send} />
       <Row>
-        <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
-        <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} />
-      </Row>
-      <Row>
-        <Button title={t('Photo')} kind="secondary" compact disabled={sending} onPress={() => void sendPhoto()} />
-        <Button title={t('File')} kind="secondary" compact disabled={sending} onPress={() => void sendAnyFile()} />
-        {sending ? <Text tone="muted">{t('Sending…')}</Text> : null}
+        {voice.recording ? (
+          <RecordingLine />
+        ) : (
+          <>
+            <Button title={t('Photo')} kind="secondary" compact disabled={sending || !!changed} onPress={() => void sendPhoto()} />
+            <Button title={t('File')} kind="secondary" compact disabled={sending || !!changed} onPress={() => void sendAnyFile()} />
+            {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
+          </>
+        )}
+        <MicButton voice={voice} disabled={sending || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
       {!room.invitedBy ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
@@ -170,109 +387,36 @@ export default function MatrixChatScreen() {
               onPress: () =>
                 void matrixLeave(roomId)
                   .then(() => router.back())
-                  .catch((error: unknown) => setNote(error instanceof Error ? error.message : String(error))),
+                  .catch(fail),
             },
           ])
         }
       />
-    </Page>
+      <MessageMenu
+        visible={!!menuMessage && menuable(menuMessage) && shown}
+        onClose={() => setMenuFor(null)}
+        line={menuMessage ? lineOf(menuMessage) : ''}
+        reaction={menuMessage ? Object.keys(menuMessage.reactions ?? {}).find((emoji) => menuMessage.reactions![emoji].includes(me)) : undefined}
+        onReact={menuMessage && !menuMessage.state ? (emoji) => void react(menuMessage.id, emoji) : undefined}
+        actions={menuMessage ? actionsOf(menuMessage) : []}
+      />
+    </KeyboardAwareScrollView>
   );
 }
 
-function Bubble({ message, mine, sender }: { message: MatrixMessage; mine: boolean; sender: string }) {
-  const colors = useColors();
-  const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : when;
+// The field and its button. What is typed is kept here, so typing draws only this and not the
+// whole thread above it. `initial` is the words of a message being changed.
+function Field({ initial, editing, saving, onSend }: { initial: string; editing: boolean; saving: boolean; onSend: (text: string) => boolean }) {
+  const [text, setText] = useState(initial);
+  const typed = text.trim();
+  const go = () => {
+    if (!typed || saving) return;
+    if (onSend(typed)) setText('');
+  };
   return (
-    <View
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '85%',
-        padding: space.sm + 2,
-        borderRadius: radius.md,
-        backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt,
-        gap: 2,
-      }}
-    >
-      {!mine ? (
-        <Text variant="caption" tone="muted" numberOfLines={1}>
-          {sender}
-        </Text>
-      ) : null}
-      {message.locked ? (
-        <Text tone="muted">{t('Locked: the key for this message has not come to this device.')}</Text>
-      ) : message.file ? (
-        <FilePart file={message.file} />
-      ) : message.call ? (
-        <Text>{shownLine(message.text)}</Text>
-      ) : (
-        <Text selectable>{message.text}</Text>
-      )}
-      <Text variant="caption" tone="faint">
-        {status}
-      </Text>
-    </View>
-  );
-}
-
-// A photo or file in a message: fetched only when asked for, a photo then shown, any file saved.
-function FilePart({ file }: { file: MatrixFile }) {
-  const [bytes, setBytes] = useState<Uint8Array | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState('');
-  const fetchable = !!(file.encrypted || file.url);
-
-  async function get(): Promise<Uint8Array | null> {
-    if (bytes) return bytes;
-    setBusy(true);
-    setNote('');
-    try {
-      const got = await matrixFile(file);
-      setBytes(got);
-      return got;
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function save() {
-    const got = await get();
-    if (!got) return;
-    try {
-      if (await saveBytes(file.name, file.mime, got)) setNote(t('Saved.'));
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
-    }
-  }
-
-  const photo = file.kind === 'image' && bytes;
-  const ratio = file.w && file.h ? file.w / file.h : 4 / 3;
-  return (
-    <View style={{ gap: space.xs }}>
-      {photo ? (
-        <Image
-          source={{ uri: `data:${file.mime.startsWith('image/') ? file.mime : 'image/jpeg'};base64,${toBase64(bytes)}` }}
-          style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }}
-          resizeMode="contain"
-          accessibilityLabel={file.name}
-        />
-      ) : (
-        <Text numberOfLines={2}>
-          {file.name}
-          {file.size ? ` · ${fileSize(file.size)}` : ''}
-        </Text>
-      )}
-      {fetchable ? (
-        <Row>
-          {file.kind === 'image' && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
-          <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
-        </Row>
-      ) : null}
-      {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}
-      {note ? <Text variant="caption" tone="muted">{note}</Text> : null}
-    </View>
+    <Row>
+      <Input style={{ flex: 1 }} value={text} onChangeText={setText} multiline placeholder={t('Message')} accessibilityLabel={editing ? t('Edit message') : t('Message')} />
+      <Button title={editing ? t('Save') : t('Send')} compact disabled={!typed || saving} onPress={go} />
+    </Row>
   );
 }

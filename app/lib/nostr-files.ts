@@ -36,6 +36,8 @@ export type NostrDmFile = {
   dim?: string;
   /** Its name, where the sender said it (a name tag, as some apps write). */
   name?: string;
+  /** How long a voice message or other sound lasts, in milliseconds (a duration tag, in seconds). */
+  duration?: number;
 };
 
 const HEX = /^[0-9a-f]+$/;
@@ -56,6 +58,7 @@ export function fileOfRumor(tags: string[][], content: string): NostrDmFile | nu
   const dim = tag('dim');
   const name = tag('name') ?? tag('alt');
   const type = tag('file-type') ?? 'application/octet-stream';
+  const duration = Number(tag('duration'));
   return {
     url,
     type: /^[\w.+-]+\/[\w.+-]+$/.test(type) ? type.toLowerCase() : 'application/octet-stream',
@@ -66,6 +69,7 @@ export function fileOfRumor(tags: string[][], content: string): NostrDmFile | nu
     ...(Number.isSafeInteger(size) && size > 0 ? { size } : {}),
     ...(dim && /^\d{1,5}x\d{1,5}$/.test(dim) ? { dim } : {}),
     ...(name ? { name: name.slice(0, 200) } : {}),
+    ...(Number.isFinite(duration) && duration > 0 && duration <= 24 * 3600 ? { duration: Math.round(duration * 1000) } : {}),
   };
 }
 
@@ -81,11 +85,12 @@ export function fileTags(file: NostrDmFile): string[][] {
     ...(file.size ? [['size', String(file.size)]] : []),
     ...(file.dim ? [['dim', file.dim]] : []),
     ...(file.name ? [['name', file.name]] : []),
+    ...(file.duration ? [['duration', String(file.duration / 1000)]] : []),
   ];
 }
 
 /** Encrypts a file for a message: the bytes to upload, and all of the file but where it went. */
-export async function sealFile(bytes: Uint8Array, type: string, name?: string, dim?: string): Promise<{ sealed: Uint8Array; file: Omit<NostrDmFile, 'url'> }> {
+export async function sealFile(bytes: Uint8Array, type: string, name?: string, dim?: string, duration?: number): Promise<{ sealed: Uint8Array; file: Omit<NostrDmFile, 'url'> }> {
   const key = randomBytes(32);
   const nonce = randomBytes(12);
   const sealed = await aesGcmSeal(key, nonce, bytes);
@@ -100,6 +105,7 @@ export async function sealFile(bytes: Uint8Array, type: string, name?: string, d
       size: bytes.length,
       ...(dim ? { dim } : {}),
       ...(name ? { name } : {}),
+      ...(duration && duration > 0 ? { duration: Math.round(duration) } : {}),
     },
   };
 }

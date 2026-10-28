@@ -5,7 +5,10 @@
 // keeps only ciphertext; each side reads the other and its own; the state survives being kept as
 // JSON between every step, as the app keeps it; a message the server gives again under another ID
 // does not show twice; a device that signs in later gets the room's key for what comes after, and
-// what came before stays locked to it.
+// what came before stays locked to it; reactions, answers, changes and messages taken back go both
+// ways, answers and changes encrypted, their relations and reactions readable to the server as
+// Matrix and Element have them; older messages come when asked, from where a cut sync left them,
+// to the room's first, with what was done to them later.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -19,12 +22,19 @@ import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
 import {
   defaultMatrixHttp,
+  deleteMessage,
   findHomeserver,
   isMatrixId,
+  loadEarlier,
   matrixThroughTor,
   joinRoom,
   roomList,
+  sendChange,
+  sendContent,
   sendEvent,
+  sendReaction,
+  sendReply,
+  takeBackReaction,
   sendStateEvent,
   sendText,
   sendToDeviceSealed,
@@ -148,6 +158,112 @@ test('two people chat encrypted, and a device that comes later reads only from t
   // Bob's first device reads it too, with the key it already had.
   await sync(bob, 0);
   assert.equal(bob.rooms[room.id].messages.at(-1)!.text, 'και στη νέα σου συσκευή');
+});
+
+test('reactions, answers, changes and messages taken back go both ways; older messages come when asked', { skip: !coreReady }, async () => {
+  let ann = kept(await signIn(HS, 'ann', PASSWORD));
+  let ben = kept(await signIn(HS, 'ben', PASSWORD));
+  const room = (await startChat(ann, ben.userId)).id;
+  ann = kept(ann);
+  await sync(ben, 0);
+  await joinRoom(ben, room);
+  await sync(ben, 0);
+  await sync(ann, 0);
+  ann = kept(ann);
+  ben = kept(ben);
+  const both = async () => {
+    await sync(ann, 0);
+    await sync(ben, 0);
+    ann = kept(ann);
+    ben = kept(ben);
+  };
+  const shown = (state: MatrixState) => state.rooms[room].messages;
+  const first = await sendText(ann, room, 'first');
+  await both();
+
+  // A reaction, encrypted, its relation readable to the server; once only, and taken back.
+  await sendReaction(ben, room, first.id, '👍');
+  await sendReaction(ben, room, first.id, '👍');
+  await both();
+  assert.deepEqual(shown(ann)[0].reactions, { '👍': [ben.userId] });
+  assert.deepEqual(shown(ben)[0].reactions, { '👍': [ben.userId] });
+  const reaction = server.log.filter((l) => l.room === room && l.event.content['m.relates_to']?.rel_type === 'm.annotation');
+  assert.deepEqual(
+    reaction.map((l) => [l.event.type, l.event.content['m.relates_to'].event_id]),
+    [['m.reaction', first.id]],
+  );
+  // A reaction goes plain, as Element sends it: its relation is all there is to it.
+  assert.deepEqual(reaction[0].event.content, { 'm.relates_to': { rel_type: 'm.annotation', event_id: first.id, key: '👍' } });
+  await takeBackReaction(ben, room, first.id, '👍');
+  await both();
+  assert.equal(shown(ann)[0].reactions, undefined);
+
+  // An answer, and one from an older app that quotes what it answers.
+  await sendReply(ben, room, 'an answer', first.id);
+  await sendContent(ben, room, { msgtype: 'm.text', body: `> <${ann.userId}> first\n\nquoted answer`, 'm.relates_to': { 'm.in_reply_to': { event_id: first.id } } });
+  await both();
+  assert.deepEqual(
+    shown(ann)
+      .slice(1)
+      .map((m) => [m.text, m.replyTo]),
+    [
+      ['an answer', first.id],
+      ['quoted answer', first.id],
+    ],
+  );
+
+  // Ann changes her message; Ben cannot change it for her.
+  await sendChange(ann, room, first.id, 'first, changed');
+  await sendEvent(ben, room, 'm.room.message', { msgtype: 'm.text', body: '* forged', 'm.new_content': { msgtype: 'm.text', body: 'forged' }, 'm.relates_to': { rel_type: 'm.replace', event_id: first.id } });
+  await both();
+  assert.deepEqual([shown(ben)[0].text, Boolean(shown(ben)[0].edited)], ['first, changed', true]);
+  assert.equal(shown(ann)[0].text, 'first, changed');
+  assert.equal(shown(ann).length, 3);
+  await assert.rejects(sendChange(ben, room, first.id, 'mine now'), /Only a message of yours/);
+
+  // Ann takes a message back: gone for both, and Ben may not take back hers.
+  const second = await sendText(ann, room, 'a mistake');
+  await both();
+  await assert.rejects(deleteMessage(ben, room, second.id));
+  await deleteMessage(ann, room, second.id);
+  await both();
+  assert.deepEqual([shown(ben).at(-1)!.text, shown(ben).at(-1)!.deleted], ['', true]);
+  assert.deepEqual([shown(ann).at(-1)!.text, shown(ann).at(-1)!.deleted], ['', true]);
+
+  // A sync cut to the latest leaves the older ones to fetch, from where it says, to the first;
+  // a reaction fetched on a page before its message's waits for it.
+  await sendReaction(ann, room, first.id, '❤');
+  for (let i = 1; i <= 6; i++) await sendText(ann, room, `more ${i}`);
+  server.timelineLimit = 3;
+  try {
+    ben.rooms[room].messages = [];
+    delete ben.rooms[room].before;
+    delete ben.rooms[room].reactionsBy;
+    const since = ben.since;
+    ben.since = undefined;
+    await sync(ben, 0);
+    ben = kept(ben);
+    assert.ok(ben.since !== since || since === undefined);
+    assert.deepEqual(
+      shown(ben).map((m) => m.text),
+      ['more 4', 'more 5', 'more 6'],
+    );
+    assert.ok(ben.rooms[room].before);
+    let added = 0;
+    while (!ben.rooms[room].start) added += await loadEarlier(ben, room, 4);
+    ben = kept(ben);
+    assert.equal(added, 7);
+    assert.deepEqual(
+      shown(ben).map((m) => (m.deleted ? '(taken back)' : m.text)),
+      ['first, changed', 'an answer', 'quoted answer', '(taken back)', 'more 1', 'more 2', 'more 3', 'more 4', 'more 5', 'more 6'],
+    );
+    assert.equal(shown(ben)[1].replyTo, first.id);
+    assert.deepEqual(shown(ben)[0].reactions, { '❤': [ann.userId] });
+    assert.equal(ben.rooms[room].waiting, undefined);
+    assert.equal(await loadEarlier(ben, room), 0);
+  } finally {
+    server.timelineLimit = Infinity;
+  }
 });
 
 test("a call's events reach the calls, opened: in the room, in its state, and to one device", { skip: !coreReady }, async () => {

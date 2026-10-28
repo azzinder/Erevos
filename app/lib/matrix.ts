@@ -61,6 +61,14 @@ export type MatrixMessage = {
   file?: MatrixFile;
   /** A call's line, kept here only: its text in English, shown by lib/call-lines.ts. */
   call?: true;
+  /** Reactions to it (m.annotation), by their key, an emoji: who chose each. */
+  reactions?: Record<string, string[]>;
+  /** The message it answers (m.in_reply_to). */
+  replyTo?: string;
+  /** When its writer changed it after it went (m.replace). */
+  edited?: number;
+  /** Taken back (redacted): what it said is gone. */
+  deleted?: true;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -76,6 +84,9 @@ export type MatrixFile = {
   /** An mxc:// address, for a file sent in the clear. */
   url?: string;
   encrypted?: EncryptedFile;
+  /** A voice message (MSC3245), and how long it is, ms. */
+  voice?: true;
+  duration?: number;
 };
 
 export type MatrixRoom = {
@@ -92,7 +103,22 @@ export type MatrixRoom = {
   invitedBy?: string;
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
   notify?: ChatNotify;
+  /** Reactions by their own event ID, so one taken back comes off its message. */
+  reactionsBy?: Record<string, { target: string; key: string; sender: string }>;
+  /** Where its older messages are to be fetched from (/messages), once the homeserver said. */
+  before?: string;
+  /** Its first message is here: there is nothing older. */
+  start?: true;
+  /** How many messages it keeps, more than KEEP_MESSAGES once older ones were fetched. */
+  keep?: number;
+  /** Reactions and changes fetched from before ahead of the message they are for. */
+  waiting?: { id: string; sender: string; ts: number; type: string; content: Json }[];
 };
+
+/** The most messages a room keeps, however many older ones were fetched. */
+export const MOST_KEPT = 2000;
+/** The most reactions and changes that wait for their message. */
+const MOST_WAITING = 400;
 
 type Device = { curve25519: string; ed25519: string };
 
@@ -565,7 +591,15 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     tap(id, event, false);
     if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
   }
-  for (const event of ((data.timeline as Json | undefined)?.events as Json[] | undefined) ?? []) {
+  const timeline = (data.timeline as Json | undefined) ?? {};
+  // Where older messages are: the first time the room is seen, or after a gap the homeserver left
+  // (limited), from which fetching older ones fills it. A first sight with no gap is the whole room.
+  const firstSight = room.before === undefined && !room.start && room.messages.length === 0;
+  if (typeof timeline.prev_batch === 'string' && (timeline.limited === true || firstSight)) {
+    room.before = timeline.prev_batch;
+    delete room.start;
+  } else if (firstSight && timeline.limited === false) room.start = true;
+  for (const event of (timeline.events as Json[] | undefined) ?? []) {
     if (typeof event.state_key === 'string') {
       takeState(room, event);
       tap(id, event, true);
@@ -576,14 +610,9 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
       if (await passVerification(state, inRoom(id, event, event.type, (event.content as Json) ?? {}))) seen = true;
       continue;
     }
-    const message = await messageOf(state, id, event);
-    if (!message) continue;
-    const mine = room.messages.findIndex((m) => m.id === message.id || (m.state && event.unsigned && (event.unsigned as Json).transaction_id === m.id));
-    if (mine >= 0) room.messages[mine] = message;
-    else room.messages.push(message);
-    seen = true;
+    if (await takeEvent(state, id, event, false)) seen = true;
   }
-  room.messages = room.messages.slice(-KEEP_MESSAGES);
+  keepLatest(room);
   const unread = (data.unread_notifications as Json | undefined)?.notification_count;
   if (typeof unread === 'number') room.unread = unread;
   if (!room.name) room.name = nameFromMembers(state, room);
@@ -617,26 +646,158 @@ const inRoom = (roomId: string, event: Json, type: string, content: Json): Verif
   ts: Number(event.origin_server_ts ?? Date.now()),
 });
 
-/** What a timeline event shows as, or null for one that shows nothing. A step of a check by emoji
- *  goes on to lib/matrix-verify.ts; its request shows too, as Element shows it. */
-async function messageOf(state: MatrixState, roomId: string, event: Json): Promise<MatrixMessage | null> {
+/**
+ * Takes one event of a room's timeline, as it came (`older` false) or fetched from before
+ * (`older` true, then nothing in it rings, checks or taps): a message shows, or one still locked;
+ * a reaction goes on its message, a change (m.replace) changes it, a redaction takes back a
+ * message or a reaction. A step of a check by emoji goes on to lib/matrix-verify.ts, and its
+ * request shows too, as Element shows it. Whether anything shown changed.
+ */
+async function takeEvent(state: MatrixState, roomId: string, event: Json, older: boolean): Promise<boolean> {
+  const room = roomOf(state, roomId);
   const base = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
   let type = String(event.type);
   let content = (event.content as Json) ?? {};
+  const unsigned = event.unsigned as Json | undefined;
+  // Taken back before it came here: it shows as such, its words gone.
+  if (unsigned?.redacted_because) {
+    if (type !== 'm.room.message' && type !== 'm.room.encrypted') return false;
+    return place(room, { ...base, text: '', deleted: true }, event, older);
+  }
+  if (type === 'm.room.redaction') return redact(room, String(event.redacts ?? content.redacts ?? ''));
+  // Relations stay readable to the homeserver, outside what is encrypted (m.relates_to).
+  const relation = content['m.relates_to'] as Json | undefined;
   if (type === 'm.room.encrypted') {
-    if (content.algorithm !== MEGOLM) return null;
+    if (content.algorithm !== MEGOLM) return false;
     const locked = { sessionId: String(content.session_id), ciphertext: String(content.ciphertext), senderKey: String(content.sender_key ?? '') };
     const opened = await openMegolm(state, roomId, base.id, locked);
-    if (!opened) return { ...base, text: '', locked };
+    if (!opened) {
+      // A reaction or a change that cannot be opened has nothing to show.
+      if (relation?.rel_type === 'm.annotation' || relation?.rel_type === 'm.replace') return false;
+      return place(room, { ...base, text: '', locked }, event, older);
+    }
     type = opened.type;
     content = opened.content;
+    if (relation && !content['m.relates_to']) content = { ...content, 'm.relates_to': relation };
   }
-  tap(roomId, { ...event, type, content }, true);
-  if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
-  // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
-  if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
-  if (type === 'm.room.message') return { ...base, ...shownOf(content) };
-  return null;
+  if (!older) {
+    tap(roomId, { ...event, type, content }, true);
+    if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
+    // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
+    if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
+  }
+  const changed = await takeContent(state, roomId, base, type, content, event, older);
+  // Fetched from before, a message comes with its latest change bundled (m.relations).
+  const bundled = ((unsigned?.['m.relations'] as Json | undefined)?.['m.replace'] as Json | undefined) ?? undefined;
+  if (older && changed && typeof bundled?.event_id === 'string' && typeof bundled.type === 'string') await takeEvent(state, roomId, bundled, true);
+  return changed;
+}
+
+/** What an event's opened content does: shows a message, reacts, or changes one. */
+async function takeContent(state: MatrixState, roomId: string, base: { id: string; sender: string; ts: number }, type: string, content: Json, event: Json, older: boolean): Promise<boolean> {
+  const room = roomOf(state, roomId);
+  const relation = content['m.relates_to'] as Json | undefined;
+  if (type === 'm.reaction') return react(room, base, relation) || (older && waitFor(room, base, type, content));
+  if (type !== 'm.room.message') return false;
+  if (relation?.rel_type === 'm.replace') return change(room, base, relation, content) || (older && waitFor(room, base, type, content));
+  return place(room, { ...base, ...shownOf(content) }, event, older);
+}
+
+/** Fetched from before, a reaction or a change comes ahead of its message: it waits for it. */
+function waitFor(room: MatrixRoom, base: { id: string; sender: string; ts: number }, type: string, content: Json): false {
+  const target = (content['m.relates_to'] as Json | undefined)?.event_id;
+  if (typeof target !== 'string' || room.messages.some((m) => m.id === target)) return false;
+  const waiting = (room.waiting ??= []);
+  if (!waiting.some((w) => w.id === base.id)) waiting.push({ ...base, type, content });
+  if (waiting.length > MOST_WAITING) waiting.splice(0, waiting.length - MOST_WAITING);
+  return false;
+}
+
+/** Puts a message in its room: in place of the one it is (ours, as it went), else at the end, or where its time says when it is older. */
+function place(room: MatrixRoom, message: MatrixMessage, event: Json, older: boolean): boolean {
+  const transaction = (event.unsigned as Json | undefined)?.transaction_id;
+  const at = room.messages.findIndex((m) => m.id === message.id || (m.state && transaction === m.id));
+  if (at >= 0) {
+    const before = room.messages[at];
+    // What came for it while it went, or before it was fetched again, stays.
+    room.messages[at] = { ...message, ...(before.reactions ? { reactions: before.reactions } : {}), ...(before.edited && !message.deleted ? { text: before.text, edited: before.edited } : {}) };
+    return true;
+  }
+  if (!older) {
+    room.messages.push(message);
+    return true;
+  }
+  const after = room.messages.findIndex((m) => m.ts > message.ts);
+  room.messages.splice(after < 0 ? room.messages.length : after, 0, message);
+  // What came for it from later pages, in the order it was done.
+  const its = room.waiting?.filter((w) => (w.content['m.relates_to'] as Json | undefined)?.event_id === message.id);
+  if (its?.length) {
+    room.waiting = room.waiting!.filter((w) => !its.includes(w));
+    if (!room.waiting.length) delete room.waiting;
+    for (const w of its.sort((a, b) => a.ts - b.ts)) {
+      const relation = w.content['m.relates_to'] as Json;
+      if (w.type === 'm.reaction') react(room, w, relation);
+      else change(room, w, relation, w.content);
+    }
+  }
+  return true;
+}
+
+/** A reaction on its message, once for each who chose it. */
+function react(room: MatrixRoom, base: { id: string; sender: string }, relation: Json | undefined): boolean {
+  if (relation?.rel_type !== 'm.annotation' || typeof relation.event_id !== 'string' || typeof relation.key !== 'string' || !relation.key) return false;
+  const target = room.messages.find((m) => m.id === relation.event_id);
+  if (!target || target.deleted) return false;
+  const key = relation.key.slice(0, 40);
+  const who = ((target.reactions ??= {})[key] ??= []);
+  if (!who.includes(base.sender)) who.push(base.sender);
+  (room.reactionsBy ??= {})[base.id] = { target: target.id, key, sender: base.sender };
+  return true;
+}
+
+/** A message changed by whoever wrote it: its words, or its file, as they are now. */
+function change(room: MatrixRoom, base: { sender: string; ts: number }, relation: Json, content: Json): boolean {
+  const target = room.messages.find((m) => m.id === relation.event_id);
+  const fresh = content['m.new_content'] as Json | undefined;
+  // Only its writer may change it; a change of a change is not one.
+  if (!target || !fresh || target.sender !== base.sender || target.deleted || target.call) return false;
+  // An older change than the one it shows, fetched after it, is past.
+  if (target.edited && target.edited > base.ts) return true;
+  const shown = shownOf(fresh);
+  target.text = shown.text;
+  if (shown.file) target.file = shown.file;
+  target.edited = base.ts;
+  return true;
+}
+
+/** Takes back the message or the reaction `id` names: the homeserver let it be, so it is. */
+function redact(room: MatrixRoom, id: string): boolean {
+  const reaction = room.reactionsBy?.[id];
+  if (reaction) {
+    delete room.reactionsBy![id];
+    const target = room.messages.find((m) => m.id === reaction.target);
+    const who = target?.reactions?.[reaction.key];
+    if (!target?.reactions || !who) return false;
+    target.reactions[reaction.key] = who.filter((w) => w !== reaction.sender);
+    if (!target.reactions[reaction.key].length) delete target.reactions[reaction.key];
+    if (!Object.keys(target.reactions).length) delete target.reactions;
+    return true;
+  }
+  const target = room.messages.find((m) => m.id === id);
+  if (!target || target.deleted) return false;
+  target.text = '';
+  target.deleted = true;
+  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited'] as const) delete target[gone];
+  return true;
+}
+
+/** Keeps the room's latest messages, and the reactions of those it keeps. */
+function keepLatest(room: MatrixRoom): void {
+  room.messages = room.messages.slice(-(room.keep ?? KEEP_MESSAGES));
+  if (room.reactionsBy) {
+    const kept = new Set(room.messages.map((m) => m.id));
+    for (const [id, reaction] of Object.entries(room.reactionsBy)) if (!kept.has(reaction.target)) delete room.reactionsBy[id];
+  }
 }
 
 function bodyOf(content: Json | undefined): string {
@@ -657,8 +818,25 @@ function isEncryptedFile(value: unknown): value is EncryptedFile {
   );
 }
 
-/** What a message's content shows: its words, and its file when it carries one. */
-function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'> {
+/** The message a content answers, when it answers one. */
+function replyOf(content: Json | undefined): string | undefined {
+  const to = ((content?.['m.relates_to'] as Json | undefined)?.['m.in_reply_to'] as Json | undefined)?.event_id;
+  return typeof to === 'string' && to.startsWith('$') ? to : undefined;
+}
+
+/** An answer's words without the quote of what it answers, which older apps put before them. */
+function withoutQuote(body: string): string {
+  const lines = body.split('\n');
+  let at = 0;
+  while (at < lines.length && lines[at].startsWith('>')) at++;
+  if (at === 0 || at >= lines.length || lines[at].trim() !== '') return body;
+  return lines.slice(at + 1).join('\n');
+}
+
+/** What a message's content shows: its words, its file when it carries one, and what it answers. */
+function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file' | 'replyTo'> {
+  const replyTo = replyOf(content);
+  if (replyTo) return { ...shownOf({ ...content, 'm.relates_to': undefined, body: withoutQuote(bodyOf(content)) }), replyTo };
   if (content?.msgtype === 'm.key.verification.request') return { text: t('Asked to check devices by emoji.') };
   const kind = KINDS[String(content?.msgtype)];
   if (!content || !kind) return { text: bodyOf(content) };
@@ -674,8 +852,11 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
   if (number(info.h) !== undefined) file.h = number(info.h);
   if (encrypted) file.encrypted = encrypted;
   else file.url = url;
+  if (kind === 'audio' && content['org.matrix.msc3245.voice'] !== undefined) file.voice = true;
+  const duration = number(info.duration) ?? number((content['org.matrix.msc1767.audio'] as Json | undefined)?.duration);
+  if (kind === 'audio' && duration !== undefined) file.duration = duration;
   // A caption, when the words are not only the file's name.
-  const text = content.filename && content.body !== content.filename ? bodyOf(content) : '';
+  const text = !file.voice && content.filename && content.body !== content.filename ? bodyOf(content) : '';
   return { text, file };
 }
 
@@ -748,13 +929,19 @@ export async function retryLocked(state: MatrixState, roomId: string, sessionId:
   const room = state.rooms[roomId];
   if (!room) return false;
   let any = false;
-  for (const message of room.messages) {
+  for (const message of [...room.messages]) {
     if (message.locked?.sessionId !== sessionId) continue;
     const opened = await openMegolm(state, roomId, message.id, message.locked);
     if (!opened) continue;
-    Object.assign(message, shownOf(opened.content));
-    delete message.locked;
     any = true;
+    if (opened.type === 'm.room.message' && (opened.content['m.relates_to'] as Json | undefined)?.rel_type !== 'm.replace') {
+      Object.assign(message, shownOf(opened.content));
+      delete message.locked;
+      continue;
+    }
+    // Not a message after all (a reaction, a change): it goes on what it is about, and its place goes.
+    room.messages = room.messages.filter((m) => m !== message);
+    await takeContent(state, roomId, message, opened.type, opened.content, {}, true);
   }
   return any;
 }
@@ -927,6 +1114,90 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
   return message;
 }
 
+/** Answers the message `replyTo` with `text`. */
+export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } } });
+}
+
+/** Reacts to a message with `key`, an emoji; once only. */
+export async function sendReaction(state: MatrixState, roomId: string, target: string, key: string): Promise<void> {
+  const room = roomOf(state, roomId);
+  if (room.messages.find((m) => m.id === target)?.reactions?.[key]?.includes(state.userId)) return;
+  const relation = { rel_type: 'm.annotation', event_id: target, key };
+  // Sent as it is, as Element does: its relation, key included, is readable to the homeserver
+  // anyway, so encrypting it would hide only its kind, and would wake the other's phone for it
+  // (Matrix's push rules let a plain reaction be, not an encrypted one).
+  const sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/send/m.reaction/${txn()}`, { 'm.relates_to': relation });
+  const id = String(sent.event_id);
+  react(room, { id, sender: state.userId }, relation);
+}
+
+/** Takes back our reaction `key` on a message. */
+export async function takeBackReaction(state: MatrixState, roomId: string, target: string, key: string): Promise<void> {
+  const room = roomOf(state, roomId);
+  const ours = Object.entries(room.reactionsBy ?? {}).find(([, r]) => r.target === target && r.key === key && r.sender === state.userId);
+  if (!ours) return;
+  await redactEvent(state, roomId, ours[0]);
+  redact(room, ours[0]);
+}
+
+/** Changes the words of a message of ours (m.replace), for everyone in the room. */
+export async function sendChange(state: MatrixState, roomId: string, target: string, text: string): Promise<void> {
+  const room = roomOf(state, roomId);
+  const message = room.messages.find((m) => m.id === target);
+  if (!message || message.sender !== state.userId || message.deleted || message.state) throw new Error(t('Only a message of yours that went can be changed.'));
+  await sendEvent(state, roomId, 'm.room.message', {
+    msgtype: 'm.text',
+    body: `* ${text}`,
+    'm.new_content': { msgtype: 'm.text', body: text },
+    'm.relates_to': { rel_type: 'm.replace', event_id: target },
+  });
+  message.text = text;
+  message.edited = Date.now();
+}
+
+/** Takes back a message, for everyone in the room (a redaction): ours, or anyone's where we may. */
+export async function deleteMessage(state: MatrixState, roomId: string, target: string): Promise<void> {
+  await redactEvent(state, roomId, target);
+  redact(roomOf(state, roomId), target);
+}
+
+async function redactEvent(state: MatrixState, roomId: string, eventId: string): Promise<void> {
+  await call(state, 'PUT', `/rooms/${enc(roomId)}/redact/${enc(eventId)}/${txn()}`, {});
+}
+
+/**
+ * Fetches up to `count` messages from before the oldest here (/messages), and opens them: those
+ * still locked may open from the key backup later. Without a place to start from, the newest page
+ * comes first and what is already here is passed over. Answers how many new messages came.
+ */
+export async function loadEarlier(state: MatrixState, roomId: string, count = 40): Promise<number> {
+  const room = state.rooms[roomId];
+  if (!room || room.start) return 0;
+  let added = 0;
+  for (let page = 0; page < 5 && !added; page++) {
+    const from = room.before ? `&from=${enc(room.before)}` : '';
+    const answer = await call(state, 'GET', `/rooms/${enc(roomId)}/messages?dir=b&limit=${count}${from}&filter=${enc(JSON.stringify({ lazy_load_members: true }))}`);
+    const chunk = (answer.chunk as Json[] | undefined) ?? [];
+    for (const event of [...chunk].reverse()) {
+      if (typeof event.state_key === 'string' || typeof event.event_id !== 'string') continue;
+      if (room.messages.some((m) => m.id === event.event_id)) continue;
+      const known = room.messages.length;
+      if ((await takeEvent(state, roomId, event, true)) && room.messages.length > known) added += room.messages.length - known;
+    }
+    if (typeof answer.end === 'string' && chunk.length) room.before = answer.end;
+    else {
+      room.start = true;
+      delete room.before;
+      // Nothing older is left for what still waits.
+      delete room.waiting;
+      break;
+    }
+  }
+  room.keep = Math.min(MOST_KEPT, Math.max(room.keep ?? KEEP_MESSAGES, room.messages.length));
+  return added;
+}
+
 /** Sends an event of any `type` to a room, encrypted when the room is, and answers its ID. */
 export async function sendEvent(state: MatrixState, roomId: string, type: string, content: Json, id = txn()): Promise<string> {
   const room = roomOf(state, roomId);
@@ -949,6 +1220,8 @@ export async function sendEvent(state: MatrixState, roomId: string, type: string
         ciphertext: sealed.ciphertext,
         session_id: outbound.sessionId,
         device_id: state.deviceId,
+        // A relation stays readable to the homeserver, as Matrix has it, so it can bundle them.
+        ...(content['m.relates_to'] ? { 'm.relates_to': content['m.relates_to'] } : {}),
       });
     } else {
       sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/send/${enc(type)}/${id}`, content);

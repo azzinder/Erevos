@@ -38,6 +38,13 @@ export const matrix: Record<string, string> = {
   "Files on Matrix can be 50 MB at most.": "I file su Matrix possono essere al massimo di 50 MB.",
   "This file was changed on the way, so it is not shown.": "Questo file è stato modificato lungo il percorso, quindi non viene mostrato.",
   "The file could not be fetched.": "Non è stato possibile scaricare il file.",
+  // Answers, reactions, changes and older messages in a chat (app/matrix-chat.tsx, components/matrix-message.tsx, lib/matrix.ts).
+  "Message deleted": "Messaggio eliminato",
+  "A message from before": "Un messaggio precedente",
+  "Load earlier messages": "Carica i messaggi precedenti",
+  "Delete this message for everyone in the chat? It cannot be brought back.": "Eliminare questo messaggio per tutti nella chat? Non potrà essere recuperato.",
+  "No earlier messages came this time. Try again to look further back.": "Questa volta non sono arrivati messaggi precedenti. Riprova per cercare più indietro.",
+  "Only a message of yours that went can be changed.": "Si può cambiare solo un tuo messaggio già inviato.",
   "Checked by emoji": "Verificato con le emoji",
   "Check this device with another of yours": "Verifica questo dispositivo con un altro tuo",
   "Another of your devices asks to check this one by emoji.": "Un altro tuo dispositivo chiede di verificare questo con le emoji.",

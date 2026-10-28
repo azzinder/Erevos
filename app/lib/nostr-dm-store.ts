@@ -539,14 +539,16 @@ async function sendTo(
   if (!took) throw new Error(t('None of their relays took the message. Try again later.'));
 }
 
-/** Sends `text` to `key`: to the relays they read on, and a copy to the space's own. */
-export async function nostrDmSend(key: string, text: string): Promise<void> {
+/** Sends `text` to `key`, answering the message `replyTo` when given: to the relays they read on,
+ *  and a copy to the space's own. */
+export async function nostrDmSend(key: string, text: string, replyTo?: string): Promise<void> {
   const it = need();
-  await sendTo(it, key, 14, [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending' }));
+  const answers = replyTo ? { replyTo } : {};
+  await sendTo(it, key, 14, replyTo ? [['e', replyTo, '', 'reply']] : [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending', ...answers }));
 }
 
-/** A photo or file as picked, to send. */
-export type NostrOutgoingFile = { bytes: Uint8Array; name: string; mime: string; dim?: string };
+/** A photo, file or voice message as picked, to send; a voice message says how long it lasts. */
+export type NostrOutgoingFile = { bytes: Uint8Array; name: string; mime: string; dim?: string; durationMs?: number };
 
 /** The file is larger than a file server takes. */
 export class NostrFileTooLargeError extends Error {
@@ -559,7 +561,7 @@ export class NostrFileTooLargeError extends Error {
 export async function nostrDmSendFile(key: string, picked: NostrOutgoingFile): Promise<void> {
   const it = need();
   if (picked.bytes.length > NOSTR_FILE_MOST) throw new NostrFileTooLargeError();
-  const { sealed, file } = await sealFile(picked.bytes, picked.mime, picked.name, picked.dim);
+  const { sealed, file } = await sealFile(picked.bytes, picked.mime, picked.name, picked.dim, picked.durationMs);
   const url = await uploadBlob(it.state.files?.length ? it.state.files : FILE_SERVERS, sealed, (kind, tags, content) => signedOnce(kind, tags, content));
   await sendFile(it, key, { ...file, url });
 }
@@ -590,7 +592,7 @@ export async function nostrDmRetry(key: string, id: string): Promise<void> {
     chat.messages = chat.messages.filter((m) => m !== failed);
   });
   if (typeof failed.file === 'object') await sendFile(it, key, failed.file);
-  else await nostrDmSend(key, failed.text);
+  else await nostrDmSend(key, failed.text, failed.replyTo);
 }
 
 /** Makes a group with these people (their keys), named or not: answers its key. Nothing goes until its first message. */

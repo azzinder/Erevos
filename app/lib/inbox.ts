@@ -190,13 +190,15 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
         ? ''
         : last.locked
           ? t('Locked message')
-          : last.file
-            ? last.file.kind === 'image'
-              ? t('Photo')
-              : t('File: {name}', { name: last.file.name })
-            : last.call
-              ? shownLine(last.text)
-              : last.text;
+          : last.file?.voice
+            ? t('Voice message, {time}', { time: voiceDuration(last.file.duration ?? 0) })
+            : last.file
+              ? last.file.kind === 'image'
+                ? t('Photo')
+                : t('File: {name}', { name: last.file.name })
+              : last.call
+                ? shownLine(last.text)
+                : last.text;
     const mine = !room.invitedBy && !!last && last.sender === state.userId;
     return {
       identity: `matrix:${room.id}`,
@@ -222,8 +224,9 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
  *  once their app has it, three once it is read. */
 const XMPP_MARKS = { sending: -1, failed: -1, sent: 0, received: 1, read: 2 } as const;
 
-/** An XMPP account's chats as rows (lib/xmpp-store.ts), and its people who asked to add us, which
- *  move to the top, at `now`, until they are accepted or declined. */
+/** An XMPP account's chats and groups as rows (lib/xmpp-store.ts), and its people who asked to
+ *  add us and its invitations to groups, which move to the top, at `now`, until they are answered.
+ *  A group's last message says who wrote it. */
 export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
   const asked = new Set(state.requests.map(bare));
   const rows = Object.values(state.chats)
@@ -231,20 +234,21 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
     .map((chat): InboxRow => {
       const last = chat.messages[chat.messages.length - 1];
       const mine = !!last?.mine;
+      const said = !last
+        ? ''
+        : last.locked
+          ? t('Locked message')
+          : last.call
+            ? shownLine(last.text)
+            : last.file
+              ? last.file.type.startsWith('image/')
+                ? t('Photo')
+                : t('File: {name}', { name: last.file.name })
+              : last.text;
       return {
         identity: `xmpp:${chat.jid}`,
         name: nameOf(state, chat.jid),
-        last: !last
-          ? ''
-          : last.locked
-            ? t('Locked message')
-            : last.call
-              ? shownLine(last.text)
-              : last.file
-                ? last.file.type.startsWith('image/')
-                  ? t('Photo')
-                  : t('File: {name}', { name: last.file.name })
-                : last.text,
+        last: chat.room && last && !mine && last.by ? `${last.by}: ${said}` : said,
         mine,
         // A call's line has no marks of its own: as a space chat's (lib/calls.ts callLineMessage).
         mark: !mine ? 0 : last.call ? 2 : XMPP_MARKS[last.state ?? 'sent'],
@@ -264,6 +268,24 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
       identity: `xmpp:${jid}`,
       name: nameOf(state, jid),
       last: t('Asks to add you'),
+      mine: false,
+      mark: 0,
+      at: now,
+      unread: 1,
+      timer: 0,
+      imported: false,
+      avatar: null,
+      sms: '',
+      lastSms: false,
+      network: 'xmpp',
+      invited: true,
+    });
+  }
+  for (const invite of state.invites ?? []) {
+    rows.push({
+      identity: `xmpp:${invite.room}`,
+      name: nameOf(state, invite.room),
+      last: t('{name} invites you to a group', { name: nameOf(state, invite.from) }),
       mine: false,
       mark: 0,
       at: now,
@@ -299,7 +321,9 @@ export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[
         : typeof last.file === 'object'
           ? last.file.type.startsWith('image/')
             ? t('Photo')
-            : t('File: {name}', { name: last.file.name ?? last.file.type })
+            : last.file.type.startsWith('audio/') && last.file.duration
+              ? t('Voice message, {time}', { time: voiceDuration(last.file.duration) })
+              : t('File: {name}', { name: last.file.name ?? last.file.type })
           : last.file
             ? t('A file')
             : last.text,

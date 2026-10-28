@@ -4,17 +4,23 @@ import { currentSpace } from '../lock/keys';
 import { canMatrix } from './core';
 import { t } from './i18n';
 import {
+  deleteMessage,
   findHomeserver,
   joinRoom,
   leaveRoom,
+  loadEarlier,
   markRead,
   MatrixError,
+  sendChange,
+  sendReaction,
+  sendReply,
   sendText,
   signIn,
   signOut,
   startChat,
   syncApply,
   syncFetch,
+  takeBackReaction,
   type MatrixFile,
   type MatrixRoom,
   type MatrixState,
@@ -346,6 +352,46 @@ export function matrixSend(roomId: string, text: string): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
     await sendText(it.state, roomId, text);
+  });
+}
+
+/** Answers a message of the room with `text`. */
+export function matrixReply(roomId: string, text: string, replyTo: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await sendReply(it.state, roomId, text, replyTo);
+  });
+}
+
+/** Reacts to a message with an emoji, or takes our reaction back when it is there. */
+export function matrixReact(roomId: string, target: string, key: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const ours = it.state.rooms[roomId]?.messages.find((m) => m.id === target)?.reactions?.[key]?.includes(it.state.userId);
+    if (ours) await takeBackReaction(it.state, roomId, target, key);
+    else await sendReaction(it.state, roomId, target, key);
+  });
+}
+
+/** Changes the words of a message of ours. */
+export function matrixChange(roomId: string, target: string, text: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => sendChange(it.state, roomId, target, text));
+}
+
+/** Takes a message back, for everyone in the room. */
+export function matrixDelete(roomId: string, target: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => deleteMessage(it.state, roomId, target));
+}
+
+/** Fetches older messages of a room; answers how many came. Locked ones are tried with the key backup. */
+export function matrixLoadEarlier(roomId: string): Promise<number> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const added = await loadEarlier(it.state, roomId);
+    if (added && it.state.backup) await restoreLocked(it.state).catch(() => 0);
+    return added;
   });
 }
 

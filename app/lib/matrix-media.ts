@@ -88,8 +88,8 @@ async function download(state: MatrixState, mxc: string): Promise<Uint8Array> {
   return answer.bytes;
 }
 
-/** A photo or file to send. */
-export type OutgoingFile = { name: string; mime: string; bytes: Uint8Array; w?: number; h?: number };
+/** A photo or file to send; a voice message says how long it is (MSC3245), and may draw it as a wave of 0 to 1024. */
+export type OutgoingFile = { name: string; mime: string; bytes: Uint8Array; w?: number; h?: number; voice?: { durationMs: number; waveform?: number[] } };
 
 const MIMES: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic',
@@ -113,6 +113,13 @@ export async function sendFile(state: MatrixState, roomId: string, outgoing: Out
   if (outgoing.w) info.w = outgoing.w;
   if (outgoing.h) info.h = outgoing.h;
   const content: Record<string, unknown> = { msgtype: `m.${kind}`, body: outgoing.name, filename: outgoing.name, info };
+  // A voice message, as Element records and shows them.
+  if (outgoing.voice && kind === 'audio') {
+    info.duration = Math.round(outgoing.voice.durationMs);
+    content.body = 'Voice message';
+    content['org.matrix.msc3245.voice'] = {};
+    content['org.matrix.msc1767.audio'] = { duration: info.duration, ...(outgoing.voice.waveform?.length ? { waveform: outgoing.voice.waveform } : {}) };
+  }
   if (state.rooms[roomId]?.encrypted) {
     const { data, file } = encryptFile(outgoing.bytes);
     content.file = { ...file, url: await upload(state, data, 'application/octet-stream', 'file') };

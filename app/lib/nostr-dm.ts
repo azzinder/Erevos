@@ -55,6 +55,8 @@ export type NostrDmMessage = {
   file?: NostrDmFile | true;
   /** Reactions (kind 7): the latest of each who reacted, by their key. */
   reactions?: Record<string, string>;
+  /** The message it answers, by id (its e tag, as NIP-17 has it). */
+  replyTo?: string;
 };
 
 export type NostrDmChat = {
@@ -495,7 +497,10 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
   }
   // Its time as it says, but never later than now: a time to come would keep it first for good.
   const at = Math.min(rumor.created_at * 1000, now);
-  const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}) };
+  // What it answers: the e tag marked so (NIP-10), else its only one.
+  const answers = rumor.tags.filter((tag) => tag[0] === 'e' && isHex64(tag[1]));
+  const replyTo = (answers.find((tag) => tag[3] === 'reply') ?? answers[0])?.[1];
+  const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}), ...(replyTo ? { replyTo } : {}) };
   const message: NostrDmMessage = rumor.kind === 15 ? { ...base, text: '', file: fileOfRumor(rumor.tags, rumor.content) ?? true } : { ...base, text: rumor.content.slice(0, 64_000) };
   const added = addMessage(state, key, message);
   // Reactions to it that came first.

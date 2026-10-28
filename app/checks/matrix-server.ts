@@ -2,7 +2,8 @@
 // as far as lib/matrix.ts uses one: users, devices and their keys, rooms as one log of events,
 // to-device messages waiting for each device, and what each was asked; and for calls, a room's
 // state, delayed events (MSC4140), OpenID tokens, and where a call's media goes (MSC4143); and
-// pushers, which it tells of events through their gateways (checks/doors.check.ts).
+// pushers, which it tells of events through their gateways (checks/doors.check.ts); redactions,
+// and a room's older events (/messages) behind a sync that gives only the latest.
 /// <reference types="node" />
 import type { MatrixRequest } from '../lib/matrix';
 
@@ -44,6 +45,8 @@ export class Homeserver {
   readonly openId = new Map<string, string>();
   /** Read receipts: up to which event of the log, by `${user} ${room}`. */
   readonly readUpTo = new Map<string, number>();
+  /** How many events of a room a sync gives at most; the rest are older, fetched with /messages. */
+  timelineLimit = Infinity;
   private seq = 0;
   private made = 0;
 
@@ -257,6 +260,29 @@ export class Homeserver {
       for (const l of this.log) if (l.room === id && l.event.type === 'm.room.member') latest.set(l.event.state_key, l.event);
       return { status: 200, json: { chunk: [...latest.values()].filter((e) => e.content.membership !== 'leave') } };
     }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/redact\/([^/]+)\/([^/]+)$/)) && request.method === 'PUT') {
+      const id = room(m[1]);
+      const target = this.log.find((l) => l.room === id && l.event.event_id === decodeURIComponent(m![2]));
+      if (this.membership(id, user) !== 'join' || !target) return { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+      // Only one's own, as a room's default power levels let members.
+      if (target.event.sender !== user) return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      const redaction = this.add(id, user, 'm.room.redaction', { redacts: target.event.event_id }, undefined, m[3]);
+      this.log.at(-1)!.event.redacts = target.event.event_id;
+      target.event.content = {};
+      target.event.unsigned = { ...(target.event.unsigned ?? {}), redacted_because: { event_id: redaction } };
+      return { status: 200, json: { event_id: redaction } };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/messages$/)) && request.method === 'GET') {
+      const id = room(m[1]);
+      if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      const from = url.searchParams.get('from');
+      const limit = Number(url.searchParams.get('limit') ?? 10);
+      const upTo = from ? Number(from.slice(1)) : Infinity;
+      const older = this.log.filter((l) => l.room === id && l.seq <= upTo);
+      const page = older.slice(-limit).reverse();
+      const more = older.length > page.length;
+      return { status: 200, json: { chunk: page.map((l) => l.event), start: from ?? `b${this.seq}`, ...(more ? { end: `b${page.at(-1)!.seq - 1}` } : {}) } };
+    }
     if ((m = path.match(/^\/rooms\/([^/]+)\/send\/([^/]+)\/([^/]+)$/))) {
       const id = room(m[1]);
       if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
@@ -353,11 +379,17 @@ export class Homeserver {
     const invite: Json = {};
     for (const id of this.rooms()) {
       const now = this.membership(id, user);
-      const events = this.log.filter((l) => l.room === id && l.seq > since).map((l) => l.event);
+      const all = this.log.filter((l) => l.room === id && l.seq > since);
+      // Only the latest, as homeservers cut a long timeline: the rest are fetched from where it says.
+      const given = all.slice(-this.timelineLimit);
+      const events = given.map((l) => l.event);
       if (now === 'join' && events.length) {
-        const joinedNow = events.some((e) => e.type === 'm.room.member' && e.state_key === user && e.content.membership === 'join');
-        const state = joinedNow ? this.log.filter((l) => l.room === id && l.seq <= since && l.event.state_key !== undefined).map((l) => l.event) : [];
-        join[id] = { state: { events: state }, timeline: { events }, unread_notifications: { notification_count: this.unread(user, id) } };
+        const joinedNow = all.some((l) => l.event.type === 'm.room.member' && l.event.state_key === user && l.event.content.membership === 'join');
+        const before = joinedNow ? this.log.filter((l) => l.room === id && l.seq <= since && l.event.state_key !== undefined) : [];
+        const cut = all.slice(0, all.length - given.length).filter((l) => l.event.state_key !== undefined);
+        const state = [...before, ...cut].map((l) => l.event);
+        const timeline = { events, limited: given.length < all.length, prev_batch: `b${given[0].seq - 1}` };
+        join[id] = { state: { events: state }, timeline, unread_notifications: { notification_count: this.unread(user, id) } };
       } else if (now === 'invite' && events.length) {
         invite[id] = { invite_state: { events: this.log.filter((l) => l.room === id && l.event.state_key !== undefined).map((l) => l.event) } };
       }
