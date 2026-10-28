@@ -31,6 +31,7 @@ export const xmpp: Record<string, string> = {
   "Their keys": "Sus claves",
   "Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.": "Compáralas con lo que muestra su app, por otra vía distinta de este chat, para estar seguro de que nadie se interpone.",
   "Not seen yet": "Aún no vista",
+  "OMEMO 2, as Kaidan shows it.": "OMEMO 2, como lo muestra Kaidan.",
   "This key changed since it was first seen.": "Esta clave cambió desde que se vio por primera vez.",
   "No longer in their device list.": "Ya no está en su lista de dispositivos.",
   "Remove this chat": "Quitar este chat",

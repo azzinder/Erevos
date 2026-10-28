@@ -324,10 +324,15 @@ function Keys({ devices }: { devices: Devices }) {
   return (
     <>
       {devices.map((device) => (
-        <View key={device.id} style={{ gap: 2 }}>
+        <View key={`${device.two ? 2 : 1}-${device.id}`} style={{ gap: 2 }}>
           <Text selectable variant="bodyStrong" style={{ fontFamily: 'monospace' }}>
             {device.identity ? fingerprint(device.identity) : t('Not seen yet')}
           </Text>
+          {device.two ? (
+            <Text variant="caption" tone="muted">
+              {t('OMEMO 2, as Kaidan shows it.')}
+            </Text>
+          ) : null}
           {device.changed ? (
             <Text variant="caption" tone="muted">
               {t('This key changed since it was first seen.')}

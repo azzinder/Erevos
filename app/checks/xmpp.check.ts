@@ -4,7 +4,8 @@
 // encrypted, the server keeping only ciphertext; a second device of one of them reads what both
 // write, and its own other device's messages, as carbons; what came while one was away comes from
 // the archive, once; receipts and read marks; someone without OMEMO gets nothing unless the chat
-// chooses to write without it; photos and files both ways, through the server's upload service,
+// chooses to write without it; OMEMO 2 to the apps that have it (as Kaidan), OMEMO 0.3 to those
+// that have only that (as Conversations), and an SCE envelope that names someone else is not read; photos and files both ways, through the server's upload service,
 // encrypted (aesgcm:// links) or as they are (out of band). The account survives being kept as JSON
 // between steps.
 // lib/xmpp.ts was also run against a real Prosody 0.12 (docs/xmpp.md).
@@ -19,9 +20,10 @@ import { setCurrentSpace } from '../lock/keys';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
 import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
-import { addXmppContact, isXmppId, markXmppRead, prepareXmppFile, sendXmppFile, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, type XmppState } from '../lib/xmpp';
+import { addXmppContact, isXmppId, markXmppRead, prepareXmppFile, sendXmppFile, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, xmppDevices, type XmppState } from '../lib/xmpp';
 import { downloadXmppFile, fileOfText, setXmppHttp, textOfFile, uploadXmppFile } from '../lib/xmpp-files';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
+import { envelope, openEnvelope } from '../lib/xmpp-omemo2';
 import { startSasl } from '../lib/xmpp-sasl';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
@@ -227,6 +229,65 @@ test('someone without OMEMO gets nothing, unless the chat chooses to write witho
   assert.deepEqual(old.state.chats[`ann@${DOMAIN}`].messages.map((m) => [m.text, m.encrypted]), [['hello in the clear', false]]);
   ann.connection.close();
   old.connection.close();
+});
+
+test('OMEMO 2 goes to the apps that have it, OMEMO 0.3 to those that have only that', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  // Kai's app has only OMEMO 2, as Kaidan; Cid's only OMEMO 0.3, as Conversations; Ann's (Erevos) both.
+  server.onlyOmemo2.add(`kai@${DOMAIN}`);
+  server.onlyOmemo1.add(`cid@${DOMAIN}`);
+  const ann = await person(server, 'ann');
+  const ann2 = await person(server, 'ann');
+  const kai = await person(server, 'kai');
+  const cid = await person(server, 'cid');
+  const people = [ann, ann2, kai, cid];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  await settle(people);
+  assert.ok(ann.state.omemo2?.live && kai.state.omemo2?.live);
+  assert.ok(!cid.state.omemo2?.live);
+  const last = () => server.seen[server.seen.length - 1];
+  const words = (who: typeof ann, jid: string) => who.state.chats[jid]?.messages.map((m) => [m.text, m.mine]);
+
+  await sendXmppText(ann.state, ann.connection, `kai@${DOMAIN}`, 'προς το Kaidan');
+  assert.ok(last().includes("xmlns='urn:xmpp:omemo:2'") && !last().includes('eu.siacs.conversations.axolotl'));
+  await settle(people);
+  await sendXmppText(kai.state, kai.connection, `ann@${DOMAIN}`, 'από το Kaidan');
+  await settle(people);
+  assert.deepEqual(words(kai, `ann@${DOMAIN}`), [['προς το Kaidan', false], ['από το Kaidan', true]]);
+  assert.deepEqual(words(ann, `kai@${DOMAIN}`), [['προς το Kaidan', true], ['από το Kaidan', false]]);
+  // Ann's other device reads both, in OMEMO 2 as well.
+  assert.deepEqual(words(ann2, `kai@${DOMAIN}`), [['προς το Kaidan', true], ['από το Kaidan', false]]);
+  // Kai's key as Kaidan shows it: the Ed25519 one of OMEMO 2.
+  const kais = xmppDevices(ann.state, `kai@${DOMAIN}`).filter((d) => d.listed);
+  assert.deepEqual(kais.map((d) => [d.two, d.identity]), [[true, kai.state.omemo2!.ik]]);
+
+  await sendXmppText(ann.state, ann.connection, `cid@${DOMAIN}`, 'προς το Conversations');
+  // Both in one message: OMEMO 0.3 for Cid's device, OMEMO 2 for Ann's other one.
+  assert.ok(last().includes("xmlns='eu.siacs.conversations.axolotl'") && !last().includes(`<keys jid='cid@${DOMAIN}'>`));
+  await settle(people);
+  await sendXmppText(cid.state, cid.connection, `ann@${DOMAIN}`, 'από το Conversations');
+  // Cid writes OMEMO 0.3 to Ann's devices, whose OMEMO 2 Cid's app does not have.
+  assert.ok(!last().includes('urn:xmpp:omemo:2'));
+  await settle(people);
+  assert.deepEqual(words(cid, `ann@${DOMAIN}`), [['προς το Conversations', false], ['από το Conversations', true]]);
+  assert.deepEqual(words(ann, `cid@${DOMAIN}`), [['προς το Conversations', true], ['από το Conversations', false]]);
+  assert.deepEqual(words(ann2, `cid@${DOMAIN}`), [['προς το Conversations', true], ['από το Conversations', false]]);
+  assert.ok(server.seen.every((s) => !s.includes('Kaidan') && !s.includes('Conversations')));
+});
+
+test("an OMEMO 2 envelope is read only when it says who wrote it and to whom as the message does", () => {
+  const sealed = envelope('γεια <σου> & καλώς', `kai@${DOMAIN}`, `ann@${DOMAIN}`);
+  assert.equal(openEnvelope(sealed, `kai@${DOMAIN}`, `ann@${DOMAIN}`), 'γεια <σου> & καλώς');
+  // Passed on by someone else, or into another chat: not read.
+  assert.equal(openEnvelope(sealed, `eve@${DOMAIN}`, `ann@${DOMAIN}`), null);
+  assert.equal(openEnvelope(sealed, `kai@${DOMAIN}`, `group@muc.${DOMAIN}`), null);
+  // As QXmpp writes one, with its padding and time.
+  const qxmpp =
+    "<envelope xmlns='urn:xmpp:sce:1'><time stamp='2026-10-28T20:00:00Z'/><to jid='ann@example.org'/><from jid='kai@example.org'/><rpad>AAAA</rpad><content><body xmlns='jabber:client'>Hi</body></content></envelope>";
+  assert.equal(openEnvelope(qxmpp, 'kai@example.org', 'ann@example.org'), 'Hi');
+  // A mark or a state with no words: nothing to show.
+  assert.equal(openEnvelope("<envelope xmlns='urn:xmpp:sce:1'><content><active xmlns='http://jabber.org/protocol/chatstates'/></content></envelope>", 'kai@example.org', 'ann@example.org'), '');
+  assert.equal(openEnvelope('not xml', 'kai@example.org', 'ann@example.org'), null);
 });
 
 test('a file is read from a message only as the apps that share files write it', () => {

@@ -130,11 +130,11 @@ export function itemsElement(node: string): XmlElement {
   return el('pubsub', { xmlns: PUBSUB }, el('items', { node, max_items: 1 }));
 }
 
-/** The first item's payload in a pubsub answer, or a pubsub#event. */
-export function itemOf(answer: XmlElement | undefined, name: string): XmlElement | undefined {
+/** The first item's payload in a pubsub answer, or a pubsub#event: `name` in `ns`. */
+export function itemOf(answer: XmlElement | undefined, name: string, ns: string = OMEMO): XmlElement | undefined {
   const items = find(answer, `pubsub|${PUBSUB}`, 'items') ?? find(answer, 'event|http://jabber.org/protocol/pubsub#event', 'items');
   const item = children(items, 'item')[0];
-  return child(item, name, OMEMO);
+  return child(item, name, ns);
 }
 
 export class NoOmemoError extends Error {

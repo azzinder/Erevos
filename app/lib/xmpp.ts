@@ -26,12 +26,31 @@ import {
   type OwnOmemo,
   type PreKey,
 } from './xmpp-omemo';
+import {
+  BUNDLE_ITEMS,
+  bundle2Element,
+  bundle2Of,
+  BUNDLES2_NODE,
+  DEVICES2_NODE,
+  devices2Of,
+  devices2With,
+  encrypted2Element,
+  envelope,
+  itemElement,
+  key2For,
+  newOwnOmemo2,
+  OMEMO2,
+  openEnvelope,
+  publish2Element,
+  type OwnOmemo2,
+} from './xmpp-omemo2';
 import { pickMechanism, startSasl } from './xmpp-sasl';
 import { child, children, el, find, render, textOf, type XmlElement } from './xmpp-xml';
 
 // An XMPP (Jabber) account in Erevos (docs/xmpp.md): signing in, the contacts (roster), and chats
 // with one person or a group (lib/xmpp-muc.ts), encrypted with OMEMO (lib/xmpp-omemo.ts) as
-// Conversations, Monal, Gajim and Dino do. The connection is lib/xmpp-net.ts's; lib/xmpp-store.ts keeps it running for the open
+// Conversations, Monal, Gajim and Dino do, or OMEMO 2 (lib/xmpp-omemo2.ts) to the devices that
+// have it, as Kaidan's. The connection is lib/xmpp-net.ts's; lib/xmpp-store.ts keeps it running for the open
 // space and keeps the account sealed in it (lock/xmpp-data.ts).
 //
 // What a chat holds is kept here, as on the other networks: the latest KEEP_MESSAGES of each.
@@ -127,6 +146,9 @@ export type XmppState = {
   server?: XmppServer;
   omemo: OwnOmemo;
   people: OmemoPeople;
+  /** This device's OMEMO 2, made as it first signs in with it, and the devices of OMEMO 2 we know. */
+  omemo2?: OwnOmemo2;
+  people2?: OmemoPeople;
   chats: Record<string, XmppChat>;
   roster: Record<string, XmppContact>;
   /** People who asked to add us. */
@@ -409,7 +431,7 @@ const CALL_FEATURES = [
   'urn:xmpp:jingle:apps:dtls:0',
 ];
 // `+notify` asks for changes of the device lists and of the account's own bookmarks (its groups).
-const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, `${NS.bookmarks}+notify`, 'http://jabber.org/protocol/muc', ...CALL_FEATURES].sort();
+const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, `${DEVICES2_NODE}+notify`, `${NS.bookmarks}+notify`, 'http://jabber.org/protocol/muc', ...CALL_FEATURES].sort();
 
 /** Entity capabilities (XEP-0115): what this app can do, as a hash its contacts' servers know. */
 export function capsVer(): string {
@@ -429,8 +451,17 @@ export async function startSession(state: XmppState, connection: XmppConnection)
   await enterRooms(state, connection);
 }
 
-/** Makes sure this device is in the account's OMEMO device list, and its bundle is on the server. */
+/** Makes sure this device is in the account's OMEMO device lists, and its bundles are on the server:
+ *  OMEMO 2's even when OMEMO 0.3's cannot be, and the other way round. */
 export async function publishOmemo(state: XmppState, connection: XmppConnection): Promise<void> {
+  try {
+    await publishOmemo1(state, connection);
+  } finally {
+    await publishOmemo2(state, connection).catch(() => undefined);
+  }
+}
+
+async function publishOmemo1(state: XmppState, connection: XmppConnection): Promise<void> {
   const own = state.omemo;
   let listed: number[] = [];
   try {
@@ -443,6 +474,38 @@ export async function publishOmemo(state: XmppState, connection: XmppConnection)
   if (!own.published) await publishWithFallback(connection, bundleNode(own.device), bundleElement(own));
   if (!listed.includes(own.device)) await publishWithFallback(connection, DEVICES_NODE, deviceListElement([...listed, own.device]));
   own.published = true;
+}
+
+/** The same for OMEMO 2, made for this device the first time. Its bundles share one node, an item
+ *  each, so the node is asked to keep many (some servers allow fewer). */
+async function publishOmemo2(state: XmppState, connection: XmppConnection): Promise<void> {
+  if (!state.omemo2) {
+    const made = await newOwnOmemo2(state.omemo.identity);
+    state.omemo2 ??= made;
+  }
+  const own = state.omemo2;
+  const device = state.omemo.device;
+  let list: XmlElement | undefined;
+  try {
+    list = itemOf(await connection.iq('get', state.jid, itemsElement(DEVICES2_NODE)), 'devices', OMEMO2);
+  } catch (error) {
+    if (!(error instanceof XmppError) || error.condition !== 'item-not-found') throw error;
+  }
+  takeDeviceList(state, state.jid, devices2Of(list), true);
+  if (!own.published) {
+    for (const [i, most] of BUNDLE_ITEMS.entries()) {
+      try {
+        await connection.iq('set', undefined, publish2Element(BUNDLES2_NODE, bundle2Element(own), String(device), most));
+        break;
+      } catch (error) {
+        if (i === BUNDLE_ITEMS.length - 1 || !(error instanceof XmppError) || !['precondition-not-met', 'not-acceptable', 'bad-request', 'policy-violation'].includes(error.condition)) throw error;
+      }
+    }
+  }
+  if (!devices2Of(list).includes(device)) await publishWithFallback(connection, DEVICES2_NODE, devices2With(list, device));
+  own.published = true;
+  // From now on OMEMO 2 is written to the devices that have it.
+  own.live = true;
 }
 
 /** Publishes as open to all; a server that does not take publish options gets it without them. */
@@ -546,6 +609,11 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
         // Our device fell out of our own list (another app wrote it): it goes back in.
         await publishOmemo(state, connection).catch(() => undefined);
       }
+    }
+    if (items?.attrs.node === DEVICES2_NODE && from) {
+      const ids = devices2Of(itemOf(stanza, 'devices', OMEMO2));
+      takeDeviceList(state, bare(from), ids, true);
+      if (bare(from) === state.jid && state.omemo2?.live && !ids.includes(state.omemo.device)) await publishOmemo(state, connection).catch(() => undefined);
     }
     return;
   }
@@ -653,23 +721,25 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     }
   }
 
-  const encrypted = child(message, 'encrypted', OMEMO);
+  const encrypted = encryptedOf(state, message);
   const body = textOf(child(message, 'body')).trim();
   // A file sent as it is names its link out of band too (XEP-0066); an encrypted one only in its text.
   const oob = encrypted ? undefined : textOf(child(child(message, 'x', NS_OOB), 'url')).trim() || undefined;
   if (!encrypted && !body) return;
   if ((originId || id) && !remember(state, `${from}|${originId || id}`)) return;
+  // Whom an OMEMO 2 envelope must say it is for.
+  const to2 = mine ? peer : state.jid;
 
   // An OMEMO message without a payload only moves the ratchet on (or carries a key for
   // something else): it is read, when it is for this device, and never shown.
-  if (encrypted && !child(encrypted, 'payload', OMEMO)) {
-    if (!mine) await openOmemo(state, connection, from, encrypted, taken, how.live);
+  if (encrypted && !child(encrypted, 'payload', encrypted.ns)) {
+    if (!mine) await openOmemo(state, connection, from, encrypted, taken, how.live, to2);
     return;
   }
   let text = body;
   let locked = false;
   if (encrypted) {
-    const opened = await openOmemo(state, connection, from, encrypted, taken, how.live);
+    const opened = await openOmemo(state, connection, from, encrypted, taken, how.live, to2);
     if (opened === 'empty') return;
     if (opened === null) {
       // Our own message from this device, archived: nothing in it is for this device.
@@ -718,7 +788,7 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
   if (how.archiveId) room.archived = how.archiveId;
   const slash = from.indexOf('/');
   const nick = slash >= 0 ? from.slice(slash + 1) : '';
-  const encrypted = child(message, 'encrypted', OMEMO);
+  const encrypted = encryptedOf(state, message);
   const body = textOf(child(message, 'body')).trim();
   const subject = child(message, 'subject');
   if (subject && !body && !encrypted) {
@@ -744,16 +814,16 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
   const real = room.occupants[nick] || bare(item?.attrs.jid ?? '');
   const writer = real.includes('@') ? real : '';
   const mine = writer ? writer === state.jid : nick === room.nick;
-  if (encrypted && !child(encrypted, 'payload', OMEMO)) {
+  if (encrypted && !child(encrypted, 'payload', encrypted.ns)) {
     const sender = mine ? state.jid : writer || (await senderOf(state, connection, room, encrypted));
-    if (sender && !mine) await openOmemo(state, connection, sender, encrypted, taken, how.live);
+    if (sender && !mine) await openOmemo(state, connection, sender, encrypted, taken, how.live, jid);
     return;
   }
   let text = body;
   let locked = false;
   if (encrypted) {
     const sender = mine ? state.jid : writer || (await senderOf(state, connection, room, encrypted));
-    const opened = sender ? await openOmemo(state, connection, sender, encrypted, taken, how.live) : null;
+    const opened = sender ? await openOmemo(state, connection, sender, encrypted, taken, how.live, jid) : null;
     if (opened === 'empty') return;
     if (opened === null) {
       locked = true;
@@ -780,20 +850,37 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
 
 /** Who among a private group's people has the device that wrote an OMEMO message, when the room did not say. */
 async function senderOf(state: XmppState, connection: XmppConnection, room: XmppRoom, encrypted: XmlElement): Promise<string> {
-  const sid = child(encrypted, 'header', OMEMO)?.attrs.sid ?? '';
+  const two = encrypted.ns === OMEMO2;
+  const sid = child(encrypted, 'header', encrypted.ns)?.attrs.sid ?? '';
   const people = groupPeople(state, room);
-  const found = () => people.find((jid) => state.people[jid]?.devices[sid]);
-  if (found()) return found()!;
+  const has = (jid: string) => Boolean(peopleIn(state, two)[jid]?.devices[sid]);
+  const found = people.find(has);
+  if (found) return found;
   for (const jid of people) {
     await devicesFor(state, connection, jid).catch(() => undefined);
-    if (state.people[jid]?.devices[sid]) return jid;
+    if (has(jid)) return jid;
   }
   return '';
 }
 
+/** The <encrypted> of a message: OMEMO 2's when it has a key for this device, else OMEMO 0.3's, else whichever it has. */
+function encryptedOf(state: XmppState, message: XmlElement): XmlElement | undefined {
+  const two = child(message, 'encrypted', OMEMO2);
+  const one = child(message, 'encrypted', OMEMO);
+  if (two && key2For(two, state.jid, state.omemo.device)) return two;
+  return one ?? two;
+}
+
+/** The devices we know of in one OMEMO version: 0.3's, or OMEMO 2's. */
+function peopleIn(state: XmppState, two: boolean): OmemoPeople {
+  return two ? (state.people2 ??= {}) : state.people;
+}
+
 /** Opens an OMEMO message to this device: its text, 'empty' for one that only moved the ratchet
- *  on, or null when nothing in it is for this device or it does not open. */
-async function openOmemo(state: XmppState, connection: XmppConnection, from: string, encrypted: XmlElement, taken: Taken, live: boolean): Promise<string | 'empty' | null> {
+ *  on, or null when nothing in it is for this device or it does not open. `to` is whom an OMEMO 2
+ *  message must say it was written to: us, the person ours went to, or the group. */
+async function openOmemo(state: XmppState, connection: XmppConnection, from: string, encrypted: XmlElement, taken: Taken, live: boolean, to: string): Promise<string | 'empty' | null> {
+  if (encrypted.ns === OMEMO2) return openOmemo2(state, connection, from, encrypted, taken, live, to);
   const header = child(encrypted, 'header', OMEMO);
   const sid = Number(header?.attrs.sid);
   const ours = keyFor(encrypted, state.omemo.device);
@@ -822,12 +909,58 @@ async function openOmemo(state: XmppState, connection: XmppConnection, from: str
       await replacePreKey(state, answer.used_pre_key);
       taken.republish = true;
       // An empty message back completes the session, so their next ones are short (XEP-0384).
-      if (live) await sendEmpty(state, connection, from, sid).catch(() => undefined);
+      if (live) await sendEmpty(state, connection, from, sid, false).catch(() => undefined);
     }
     return answer.text ?? 'empty';
   } catch {
     return null;
   }
+}
+
+/** The same for OMEMO 2, whose words come in an SCE envelope that must say who wrote it, to whom. */
+async function openOmemo2(state: XmppState, connection: XmppConnection, from: string, encrypted: XmlElement, taken: Taken, live: boolean, to: string): Promise<string | 'empty' | null> {
+  const sid = Number(child(encrypted, 'header', OMEMO2)?.attrs.sid);
+  const ours = key2For(encrypted, state.jid, state.omemo.device);
+  const own = state.omemo2;
+  if (!ours || !own || !Number.isInteger(sid)) return null;
+  const devices = (peopleIn(state, true)[from] ??= { fetchedAt: 0, devices: {} }).devices;
+  const device = (devices[String(sid)] ??= { listed: false });
+  const payload = textOf(child(encrypted, 'payload', OMEMO2)).trim();
+  try {
+    const answer = await omemoCall<{ session: unknown; text: string | null; identity: string; used_pre_key: number | null }>({
+      op: 'two_decrypt',
+      identity: state.omemo.identity,
+      signed_pre_keys: [own.signedPreKey],
+      pre_keys: own.preKeys,
+      session: device.session ?? null,
+      key: ours.key,
+      kex: ours.kex,
+      payload: payload || null,
+    });
+    if (device.identity && device.identity !== answer.identity) device.changed = true;
+    device.identity = answer.identity;
+    device.session = answer.session;
+    delete device.failedAt;
+    if (answer.used_pre_key !== null) {
+      await replacePreKey2(own, answer.used_pre_key);
+      taken.republish = true;
+      if (live) await sendEmpty(state, connection, from, sid, true).catch(() => undefined);
+    }
+    if (answer.text === null) return 'empty';
+    const words = openEnvelope(answer.text, from, to);
+    if (words === null) return null;
+    return words || 'empty';
+  } catch {
+    return null;
+  }
+}
+
+async function replacePreKey2(own: OwnOmemo2, used: number): Promise<void> {
+  own.preKeys = own.preKeys.filter((k) => k.id !== used);
+  const { pre_keys } = await omemoCall<{ pre_keys: PreKey[] }>({ op: 'two_pre_keys_new', start: own.nextPreKey, count: 1 });
+  own.preKeys.push(...pre_keys);
+  own.nextPreKey += 1;
+  own.published = false;
 }
 
 async function replacePreKey(state: XmppState, used: number): Promise<void> {
@@ -839,8 +972,8 @@ async function replacePreKey(state: XmppState, used: number): Promise<void> {
   own.published = false;
 }
 
-function takeDeviceList(state: XmppState, jid: string, ids: number[]): void {
-  const person = (state.people[jid] ??= { fetchedAt: 0, devices: {} });
+function takeDeviceList(state: XmppState, jid: string, ids: number[], two = false): void {
+  const person = (peopleIn(state, two)[jid] ??= { fetchedAt: 0, devices: {} });
   person.fetchedAt = Date.now();
   for (const device of Object.values(person.devices)) device.listed = false;
   for (const id of ids) (person.devices[String(id)] ??= { listed: true }).listed = true;
@@ -900,19 +1033,26 @@ async function answerIq(state: XmppState, connection: XmppConnection, iq: XmlEle
 
 // ---- what goes ----
 
-/** Their device list, fetched again when old. */
+/** Their device lists, OMEMO 0.3's and OMEMO 2's, fetched again when old. */
 async function devicesFor(state: XmppState, connection: XmppConnection, jid: string, fresh = false): Promise<void> {
-  const person = state.people[jid];
-  if (!fresh && person && Date.now() - person.fetchedAt < DEVICES_FRESH_MS) return;
-  try {
-    takeDeviceList(state, jid, devicesOf(itemOf(await connection.iq('get', jid, itemsElement(DEVICES_NODE)), 'list')));
-  } catch (error) {
-    if (error instanceof XmppError && ['item-not-found', 'service-unavailable', 'forbidden', 'not-authorized', 'subscription-required'].includes(error.condition)) {
-      takeDeviceList(state, jid, []);
-      return;
+  const fetchedAt = Math.min(state.people[jid]?.fetchedAt ?? 0, state.people2?.[jid]?.fetchedAt ?? 0);
+  if (!fresh && Date.now() - fetchedAt < DEVICES_FRESH_MS) return;
+  const fetch = async (two: boolean) => {
+    try {
+      const answer = await connection.iq('get', jid, itemsElement(two ? DEVICES2_NODE : DEVICES_NODE));
+      takeDeviceList(state, jid, two ? devices2Of(itemOf(answer, 'devices', OMEMO2)) : devicesOf(itemOf(answer, 'list')), two);
+    } catch (error) {
+      if (error instanceof XmppError && ['item-not-found', 'service-unavailable', 'forbidden', 'not-authorized', 'subscription-required'].includes(error.condition)) {
+        takeDeviceList(state, jid, [], two);
+        return;
+      }
+      throw error;
     }
-    throw error;
-  }
+  };
+  const two = fetch(true).catch((error: unknown) => error);
+  await fetch(false);
+  const failed = await two;
+  if (failed) throw failed;
 }
 
 /** Looks up the device lists of `jids` not looked up lately, so their keys show before anything is written. */
@@ -920,11 +1060,31 @@ export async function lookUpDevices(state: XmppState, connection: XmppConnection
   for (const jid of jids) await devicesFor(state, connection, jid).catch(() => undefined);
 }
 
-/** Sessions with every device of `jids` that has none yet, from their bundles. */
+/** Sessions with every device of `jids` that has none yet, from their bundles: in OMEMO 2 with those
+ *  that have it (once ours is on the server), in OMEMO 0.3 with the others. */
 async function sessionsFor(state: XmppState, connection: XmppConnection, jids: string[]): Promise<void> {
+  if (state.omemo2?.live) {
+    for (const jid of jids) {
+      for (const [id, device] of Object.entries(state.people2?.[jid]?.devices ?? {})) {
+        if (!device.listed || device.session || (jid === state.jid && Number(id) === state.omemo.device)) continue;
+        if (device.failedAt && Date.now() - device.failedAt < RETRY_DEVICE_MS) continue;
+        try {
+          const bundle = bundle2Of(itemOf(await connection.iq('get', jid, itemElement(BUNDLES2_NODE, id)), 'bundle', OMEMO2));
+          if (!bundle) throw new Error('no bundle');
+          const { session } = await omemoCall<{ session: { identity: string } }>({ op: 'two_session_start', identity: state.omemo.identity, bundle });
+          if (device.identity && device.identity !== session.identity) device.changed = true;
+          device.identity = session.identity;
+          device.session = session;
+        } catch {
+          device.failedAt = Date.now();
+        }
+      }
+    }
+  }
   for (const jid of jids) {
     for (const [id, device] of Object.entries(state.people[jid]?.devices ?? {})) {
       if (!device.listed || device.session || (jid === state.jid && Number(id) === state.omemo.device)) continue;
+      if (twoFor(state, jid, id)) continue;
       if (device.failedAt && Date.now() - device.failedAt < RETRY_DEVICE_MS) continue;
       try {
         const bundle = bundleOf(itemOf(await connection.iq('get', jid, itemsElement(bundleNode(Number(id)))), 'bundle'));
@@ -946,21 +1106,32 @@ function peopleOf(state: XmppState, jid: string): string[] {
   return room ? groupPeople(state, room) : [jid];
 }
 
+/** Whether a device is written to in OMEMO 2: it has it, ours is on the server, and there is a session. */
+function twoFor(state: XmppState, jid: string, id: string): boolean {
+  const device = state.people2?.[jid]?.devices[id];
+  return Boolean(state.omemo2?.live && device?.listed && device.session);
+}
+
+type Target = { jid: string; id: string; two: boolean };
+
 /**
- * The devices a message to `peers` is encrypted for: theirs and our others. Throws NoOmemoError
- * when none of them has any (`name` saying who).
+ * The devices a message to `peers` is encrypted for: theirs and our others, each in OMEMO 2 when
+ * it has it, else in OMEMO 0.3. Throws NoOmemoError when none of them has any (`name` saying who).
  */
-async function targetsFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, only?: number): Promise<{ jid: string; id: string }[]> {
+async function targetsFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, only?: { id: number; two: boolean }): Promise<Target[]> {
   for (const peer of peers) await devicesFor(state, connection, peer).catch(() => undefined);
   await devicesFor(state, connection, state.jid);
   await sessionsFor(state, connection, [...peers, state.jid]);
-  const targets: { jid: string; id: string }[] = [];
+  const targets: Target[] = [];
   for (const jid of [...peers, state.jid]) {
-    for (const [id, device] of Object.entries(state.people[jid]?.devices ?? {})) {
-      if (!device.session || !device.listed) continue;
+    const ids = new Set([...Object.keys(state.people[jid]?.devices ?? {}), ...Object.keys(state.people2?.[jid]?.devices ?? {})]);
+    for (const id of ids) {
       if (jid === state.jid && Number(id) === state.omemo.device) continue;
-      if (only !== undefined && (jid !== peers[0] || Number(id) !== only)) continue;
-      targets.push({ jid, id });
+      const two = twoFor(state, jid, id);
+      const device = two ? state.people2![jid].devices[id] : state.people[jid]?.devices[id];
+      if (!device?.session || !device.listed) continue;
+      if (only !== undefined && (jid !== peers[0] || Number(id) !== only.id || two !== only.two)) continue;
+      targets.push({ jid, id, two });
     }
   }
   if (!targets.some((d) => d.jid !== state.jid)) {
@@ -975,33 +1146,56 @@ async function targetsFor(state: XmppState, connection: XmppConnection, peers: s
   return targets;
 }
 
-/** An <encrypted> for `peers`' devices and our others, with `text`, or none for an empty one. */
-async function encryptFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, text: string | null, only?: number): Promise<XmlElement> {
-  const targets = await targetsFor(state, connection, peers, name, only);
-  const answer = await omemoCall<{ payload: string | null; iv: string; keys: { key: string; prekey: boolean; session: unknown }[] }>({
-    op: 'encrypt',
-    text: text ?? undefined,
-    sessions: targets.map((d) => state.people[d.jid].devices[d.id].session),
-  });
-  targets.forEach((d, i) => {
-    state.people[d.jid].devices[d.id].session = answer.keys[i].session;
-  });
-  return el(
-    'encrypted',
-    { xmlns: OMEMO },
-    el(
-      'header',
-      { sid: state.omemo.device },
-      ...targets.map((d, i) => el('key', { rid: d.id, prekey: answer.keys[i].prekey ? 'true' : undefined }, answer.keys[i].key)),
-      el('iv', {}, answer.iv),
-    ),
-    answer.payload ? el('payload', {}, answer.payload) : null,
-  );
+/**
+ * The <encrypted> for `peers`' devices and our others, in a message to `to` (the person or the
+ * group), with `text` or none for an empty one: OMEMO 2's for the devices that have it, OMEMO
+ * 0.3's for the others, one or both.
+ */
+async function encryptFor(state: XmppState, connection: XmppConnection, peers: string[], to: string, text: string | null, only?: { id: number; two: boolean }): Promise<XmlElement[]> {
+  const targets = await targetsFor(state, connection, peers, to, only);
+  const out: XmlElement[] = [];
+  const twos = targets.filter((d) => d.two);
+  if (twos.length) {
+    const answer = await omemoCall<{ payload: string | null; keys: { key: string; kex: boolean; session: unknown }[] }>({
+      op: 'two_encrypt',
+      text: text === null ? undefined : envelope(text, state.jid, to),
+      sessions: twos.map((d) => state.people2![d.jid].devices[d.id].session),
+    });
+    twos.forEach((d, i) => {
+      state.people2![d.jid].devices[d.id].session = answer.keys[i].session;
+    });
+    out.push(encrypted2Element(state.omemo.device, twos.map((d, i) => ({ jid: d.jid, id: d.id, key: answer.keys[i].key, kex: answer.keys[i].kex })), answer.payload));
+  }
+  const ones = targets.filter((d) => !d.two);
+  if (ones.length) {
+    const answer = await omemoCall<{ payload: string | null; iv: string; keys: { key: string; prekey: boolean; session: unknown }[] }>({
+      op: 'encrypt',
+      text: text ?? undefined,
+      sessions: ones.map((d) => state.people[d.jid].devices[d.id].session),
+    });
+    ones.forEach((d, i) => {
+      state.people[d.jid].devices[d.id].session = answer.keys[i].session;
+    });
+    out.push(
+      el(
+        'encrypted',
+        { xmlns: OMEMO },
+        el(
+          'header',
+          { sid: state.omemo.device },
+          ...ones.map((d, i) => el('key', { rid: d.id, prekey: answer.keys[i].prekey ? 'true' : undefined }, answer.keys[i].key)),
+          el('iv', {}, answer.iv),
+        ),
+        answer.payload ? el('payload', {}, answer.payload) : null,
+      ),
+    );
+  }
+  return out;
 }
 
-async function sendEmpty(state: XmppState, connection: XmppConnection, peer: string, device: number): Promise<void> {
-  const encrypted = await encryptFor(state, connection, [peer], peer, null, device);
-  await connection.send(el('message', { to: peer, type: 'chat', id: newId() }, encrypted, el('store', { xmlns: NS.hints })));
+async function sendEmpty(state: XmppState, connection: XmppConnection, peer: string, device: number, two: boolean): Promise<void> {
+  const encrypted = await encryptFor(state, connection, [peer], peer, null, { id: device, two });
+  await connection.send(el('message', { to: peer, type: 'chat', id: newId() }, ...encrypted, el('store', { xmlns: NS.hints })));
 }
 
 /** Sends `text` to `peer`, encrypted with OMEMO unless the chat chose otherwise. Throws
@@ -1054,8 +1248,8 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
     stanza = el(
       'message',
       { to: peer, type, id },
-      encrypted,
-      el('encryption', { xmlns: NS.eme, namespace: OMEMO, name: 'OMEMO' }),
+      ...encrypted,
+      el('encryption', { xmlns: NS.eme, namespace: encrypted.some((e) => e.ns === OMEMO) ? OMEMO : OMEMO2, name: 'OMEMO' }),
       el('store', { xmlns: NS.hints }),
       el('body', {}, HINT_BODY),
       ...extras,
@@ -1128,14 +1322,24 @@ export function forgetXmppChat(state: XmppState, jid: string): void {
   delete state.chats[jid];
 }
 
-/** Leaves the account: takes this device out of its OMEMO device list, and closes. */
+/** Leaves the account: takes this device out of its OMEMO device lists, and its OMEMO 2 bundle off, and closes. */
 export async function signOutXmpp(state: XmppState, connection: XmppConnection | null): Promise<void> {
   if (!connection?.isOpen) return;
+  const device = state.omemo.device;
   try {
     const listed = devicesOf(itemOf(await connection.iq('get', state.jid, itemsElement(DEVICES_NODE)), 'list'));
-    if (listed.includes(state.omemo.device)) await publishWithFallback(connection, DEVICES_NODE, deviceListElement(listed.filter((d) => d !== state.omemo.device)));
+    if (listed.includes(device)) await publishWithFallback(connection, DEVICES_NODE, deviceListElement(listed.filter((d) => d !== device)));
   } catch {
     // Signing out goes on.
+  }
+  if (state.omemo2) {
+    try {
+      const list = itemOf(await connection.iq('get', state.jid, itemsElement(DEVICES2_NODE)), 'devices', OMEMO2);
+      if (devices2Of(list).includes(device)) await publishWithFallback(connection, DEVICES2_NODE, devices2With(list, device, false));
+      await connection.iq('set', undefined, el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('retract', { node: BUNDLES2_NODE, notify: 'true' }, el('item', { id: String(device) }))));
+    } catch {
+      // As above.
+    }
   }
   connection.close();
 }
@@ -1145,9 +1349,13 @@ export function xmppChatList(state: XmppState): XmppChat[] {
   return Object.values(state.chats).sort((a, b) => b.lastAt - a.lastAt);
 }
 
-/** The fingerprints of a person's devices, as OMEMO apps show them, and whether each changed. */
-export function xmppDevices(state: XmppState, jid: string): { id: string; identity?: string; changed?: boolean; listed: boolean }[] {
-  return Object.entries(state.people[jid]?.devices ?? {}).map(([id, d]) => ({ id, identity: d.identity, changed: d.changed, listed: d.listed }));
+/** The fingerprints of a person's devices, as OMEMO apps show them, and whether each changed: an
+ *  OMEMO 2 one (`two`) for each device that has OMEMO 2, as Kaidan shows it. */
+export function xmppDevices(state: XmppState, jid: string): { id: string; identity?: string; changed?: boolean; listed: boolean; two?: true }[] {
+  return [
+    ...Object.entries(state.people[jid]?.devices ?? {}).map(([id, d]) => ({ id, identity: d.identity, changed: d.changed, listed: d.listed })),
+    ...Object.entries(state.people2?.[jid]?.devices ?? {}).map(([id, d]) => ({ id, identity: d.identity, changed: d.changed, listed: d.listed, two: true as const })),
+  ];
 }
 
 export function sendKeepAlive(connection: XmppConnection): Promise<XmlElement> {

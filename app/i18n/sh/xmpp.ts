@@ -31,6 +31,7 @@ export const xmpp: Record<string, string> = {
   "Their keys": "Njihovi ključevi",
   "Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.": "Uporedite ih s onim što pokazuje njihova aplikacija, na drugi način, a ne u ovom razgovoru, da budete sigurni da se niko ne umeće.",
   "Not seen yet": "Još nije viđen",
+  "OMEMO 2, as Kaidan shows it.": "OMEMO 2, kako ga Kaidan prikazuje.",
   "This key changed since it was first seen.": "Ovaj ključ se promijenio otkad je prvi put viđen.",
   "No longer in their device list.": "Više nije na njihovom popisu uređaja.",
   "Remove this chat": "Ukloni ovaj razgovor",

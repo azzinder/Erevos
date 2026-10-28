@@ -319,6 +319,16 @@ export default function XmppScreen() {
         <Text selectable variant="bodyStrong" style={{ fontFamily: 'monospace' }}>
           {fingerprint(state.omemo.identity.public)}
         </Text>
+        {state.omemo2 ? (
+          <>
+            <Text variant="caption" tone="muted">
+              {t('OMEMO 2, as Kaidan shows it.')}
+            </Text>
+            <Text selectable variant="bodyStrong" style={{ fontFamily: 'monospace' }}>
+              {fingerprint(state.omemo2.ik)}
+            </Text>
+          </>
+        ) : null}
       </Card>
 
       {note ? <Text tone="muted">{note}</Text> : null}

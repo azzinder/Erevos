@@ -50,6 +50,9 @@ export class Server {
   readonly seen: string[] = [];
   private next = 1;
   readonly noOmemo = new Set<string>();
+  /** Accounts whose apps have only one OMEMO: 0.3 (as Conversations), or only OMEMO 2 (as Kaidan). */
+  readonly onlyOmemo1 = new Set<string>();
+  readonly onlyOmemo2 = new Set<string>();
   /** The TURN server it tells of (XEP-0215), if any. */
   turn: { host: string; port: string; username: string; password: string } | null = null;
   /** The upload service it offers, with the largest file it takes; none when null. */
@@ -478,11 +481,14 @@ export class Link implements XmppLink {
         return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: NS_BOOKMARKS }, ...[...kept].map(([id, payload]) => el('item', { id }, payload)))));
       }
       if (publish) {
-        if (server.noOmemo.has(this.jid)) return error('forbidden');
         const node = publish.attrs.node;
+        const two = node.startsWith('urn:xmpp:omemo:2');
+        if (server.noOmemo.has(this.jid) || (two && server.onlyOmemo1.has(this.jid)) || (!two && server.onlyOmemo2.has(this.jid))) return error('forbidden');
+        const itemId = child(publish, 'item')?.attrs.id ?? 'current';
         const payload = children(child(publish, 'item'))[0];
-        server.pep.set(`${this.jid} ${node}`, payload);
-        if (node.endsWith('.devicelist')) {
+        // OMEMO 2's bundles share one node, an item each.
+        server.pep.set(itemId === 'current' ? `${this.jid} ${node}` : `${this.jid} ${node} ${itemId}`, payload);
+        if (node.endsWith('.devicelist') || node === 'urn:xmpp:omemo:2:devices') {
           const event = (to: string) =>
             el('message', { from: this.jid, to, xmlns: 'jabber:client' }, el('event', { xmlns: 'http://jabber.org/protocol/pubsub#event' }, el('items', { node }, el('item', { id: 'current' }, payload))));
           for (const link of server.resources(this.jid)) link.push(event(this.jid));
@@ -490,10 +496,15 @@ export class Link implements XmppLink {
         }
         return reply();
       }
+      if (retract) {
+        server.pep.delete(`${this.jid} ${retract.attrs.node} ${child(retract, 'item')?.attrs.id ?? ''}`);
+        return reply();
+      }
       const items = child(query, 'items');
-      const payload = items && server.pep.get(`${owner} ${items.attrs.node}`);
+      const itemId = child(items, 'item')?.attrs.id;
+      const payload = items && server.pep.get(itemId ? `${owner} ${items.attrs.node} ${itemId}` : `${owner} ${items.attrs.node}`);
       if (!payload) return error('item-not-found');
-      return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: 'current' }, payload))));
+      return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: itemId ?? 'current' }, payload))));
     }
     if (query.ns === 'urn:xmpp:mam:2') return this.page(server.archives.get(this.jid) ?? [], iq, query);
     if (query.ns === NS_ITEMS) {
