@@ -12,7 +12,7 @@ export const chat: Record<string, string> = {
   // Send held down (components/later-picker.tsx for the time).
   'Scheduled · {when}': 'Zakazano · {when}',
   'Sent without sound': 'Poslano bez zvuka',
-  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.': 'Telefon druge osobe prikazuje je bez zvuka i vibracije. Erevos kao web-aplikacija to ne može razlikovati i oglašava se kao i obično.',
+  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, nor can the notice of chats that are closed (hidden chats, another space), and these sound as usual.': 'Telefon druge osobe prikazuje je bez zvuka i vibracije. Erevos kao web-aplikacija to ne može razlikovati, kao ni obavijest razgovora koji su zatvoreni (skriveni razgovori, drugi prostor), i oni se oglašavaju kao i obično.',
   'Send later': 'Pošalji kasnije',
   'The relay keeps it and sends it at that time, even if this phone is off then.': 'Relay je čuva i šalje u to vrijeme, čak i ako je ovaj telefon tada isključen.',
   'The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.': 'Relay je čuva i šalje u to vrijeme, čak i ako je ovaj telefon tada isključen. U skrivenim razgovorima relay sada mora biti dostupan.',
@@ -218,8 +218,8 @@ export const chat: Record<string, string> = {
   'Chat details': 'Detalji razgovora',
   'Change PIN': 'Promijeni PIN',
   'Say when a message comes': 'Javi kad stigne poruka',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Dok su ovi skriveni razgovori zatvoreni, a Erevos u pozadini, obavijest kaže samo „New message“ ili koliko ih je stiglo, kao i za ostale razgovore; to što je poruka stigla ili je pročitana ne daje nijednu. Osoba koja je vidi, a ne nađe ništa novo u vašim razgovorima, mogla bi pretpostaviti da ih ima još.',
+  'While these hidden chats are closed, with Erevos in the background or showing, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Dok su ovi skriveni razgovori zatvoreni, a Erevos u pozadini ili na ekranu, obavijest kaže samo „New message“ ili koliko ih je stiglo, kao i za ostale razgovore; to što je poruka stigla ili je pročitana ne daje nijednu. Osoba koja je vidi, a ne nađe ništa novo u vašim razgovorima, mogla bi pretpostaviti da ih ima još.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Dok su zatvoreni, ovi skriveni razgovori ništa ne javljaju: njihove poruke čekaju na relayu dok ih ne otvorite.',
   'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':

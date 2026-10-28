@@ -132,15 +132,18 @@ voice messages, but not its photos and files, as with chats.
   (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day, hour and minute) and tap **Remind me**. It goes in
   Chat with myself, with a bell and its time. In the chat, **+** → **Remind me**, or holding the send arrow, gives the
   note you write a time too.
-- **At its time**, on Android, the phone shows a notice that says only **Reminder**, with Erevos closed and locked too;
-  tapped, it opens Chat with myself, after the password. Until you open the chat, the reminder shows on its row at the
-  top of the chats, with a count, and in the chat with a coloured edge. On a computer, in the web app, or with notices
-  turned off, that is where you see it.
+- **At its time**, on Android, the phone shows a notice, **Reminder** (or **3 reminders**) – "Open Chat with myself to
+  read it", never what it says, with Erevos closed and locked too; tapped, it opens Chat with myself, after the
+  password. Until you open the chat, the reminder shows on its row at the top of the chats, with a count, and in the
+  chat with a coloured edge; seen there, it goes from the notice too. On a computer, in the web app, or with notices
+  turned off, that is where you see it. If **Exact times** is not allowed (**Settings** → **General** →
+  **Permissions**), Android may show it a few minutes late.
 - **Holding a note** offers **Copy**, **Open** (a photo or a file), **Remind me**, or **Change the reminder** and **No
   reminder**, and **Delete**.
 - Each space has a Chat with myself of its own, and so does each place of hidden chats, at the top of their list (see
   [Hidden chats](#hidden)). A hidden place's reminders show there once its PIN opens it; the phone tells them at their
-  time only while **Receive while closed** is on for that place, in the same notice that says only **Reminder**.
+  time only while **Receive while closed** is on for that place, in the same notice. A new PIN for the place, which
+  starts it empty, or the place removed, takes its reminders off the phone.
 
 **Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
 space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it
@@ -563,7 +566,9 @@ at the relay, or at once when they are nearby. A message counts as read once its
   (below), or when Erevos next opens.
 - **Send without sound:** hold the send arrow down and choose **Without sound**: their phone shows the notice without
   a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
-  app, whose notice comes from the browser.
+  app, whose notice comes from the browser. So does the notice of a place of hidden chats that is closed, with **Say
+  when a message comes** on, and of a closed space with **Also while another space is open**: these only ask the relay
+  how many came, and it cannot tell one without sound from another, as only the encrypted message says so.
 - **Links:** a web address in a message is underlined. Tap it and Erevos shows it whole, to open in the browser
   only if it is where you want to go. Nothing is fetched before that.
 - **Share from another app** (Android): in another app's **Share**, such as the browser's for a page, pick
@@ -670,7 +675,10 @@ push address for all your contacts' queues (see [On an iPhone](#iphone)).
   **Refuse**, blocks a message request: a request knows only your contact link, so it moves your queue only while the
   link still names that one, as it does until your first move. Whoever you blocked is under **Blocked contacts** on
   **New chat**, with **Unblock**. Adding them again from their link asks you to unblock them first;
-  until then nothing adds them, neither their answer to an invite by SMS nor their contact link in a group.
+  until then nothing adds them, neither their answer to an invite by SMS nor their contact link in a group. Each
+  person who writes from your contact link can make the phone sound, as any message does: **Refuse** or **Block**
+  stops that one, **Notifications** → **Muted** in their chat silences them without refusing, and **New contact link**
+  stops whoever has the old link once its 14 days are over.
 - **Groups:** someone in one of your groups can still write to you there. Erevos says in how many you are together:
   leave them, or ask their admin to take them out.
 - **When the relay cannot be reached**, the queue changes as soon as it answers, and until then nothing they send
@@ -892,13 +900,16 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   space open on both, a call needs no relay at all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
   messages and group calls.
 - **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with Home or by
-  swiping it away from the recent apps, with a quiet notice that says only "Erevos". It waits at the relay and on the links to phones nearby, so messages come: a notice
-  says only "New message", or how many came, and on a locked phone only "Erevos". A call rings with the phone's
-  ringtone and a notice that says only "Incoming call", over the lock screen and the screen saver too, and the screen
-  wakes. Tap it to answer. With the password
+  swiping it away from the recent apps, with a quiet notice, "Erevos – Ready for calls and messages", that does not
+  show on the lock screen. It waits at the relay and on the links to phones nearby, so messages come: a notice
+  says only "New message", or how many came, and on a locked phone only "Erevos". A message request, from someone who
+  has only your contact link, makes the same notice and sound, and counts on the icon, as any message does. A call
+  rings with the phone's ringtone and a notice, "Incoming call" (or "Incoming video call") – "Open Erevos to answer",
+  with no name, over the lock screen and the screen saver too, and the screen wakes. Tap it to answer. With the password
   lock on, a call that rings shows before the password, and Erevos locks as soon as it ends. Locked, the space goes on
   behind the password screen, so messages and calls still come, and a call shows over the password screen. Only that space's chats
-  and groups come so; hidden chats only say that a message came, if you let them (see Hidden chats). Set it under **Settings** → **Notifications** → **In the background**:
+  and groups come so, and hidden chats with **Receive while closed** on; other hidden chats only say that a message
+  came, or ring with no name, if you let them (see Hidden chats). Set it under **Settings** → **Notifications** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
@@ -908,7 +919,8 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   counted (see Notifications for this chat), nor those in a hidden chat as you leave. Android's launcher shows it on
   Erevos's icon, as a number, or on some phones, such as Pixels, as a dot. **Settings** → **Notifications** → **Number
   on the icon** turns it off: the notice then tells only of what came since you last had Erevos open, and the
-  launcher's number goes with it.
+  launcher's number goes with it. A message deleted for everyone before you read it, or read on a linked computer, no
+  longer counts.
 
   **Why:** on Android only a notice can put a number on an app's icon, so the notice stays while messages wait; it
   says no more than how many, as it always did.
@@ -916,13 +928,17 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   its relay and come when you open it. Unless you choose, in that space, **Also while another space is open** under
   **Settings** → **Notifications** → **In the background** (the default is **This space only while open**): then, while
   another space is open and receives, it says only "New message", or how many came, with the same notice as that space,
-  never which space, and its hidden chats say nothing. For it the phone keeps the addresses of its queues at its relay
+  never which space, and its hidden chats say nothing. What other phones carried to its relay counts as a message,
+  deletes too, and a message sent to it without sound sounds as usual (see **Send without sound**). For it the phone keeps the addresses of its queues at its relay
   outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its
   contacts are, or its messages, and asks the relay only how many came, never for them: they stay there until the space
-  opens. A space that goes through Tor is asked about only through Tor, while the open space has Tor ready.
+  opens. A space that goes through Tor (**Messages**, the default, or **Everything**, under **What goes through Tor**) is asked
+  about only through Tor: while the open space has Tor off, or its Tor is starting or has just failed, the closed space
+  says nothing, and what came is told once Tor is ready there.
 
   **Why:** a space behind a second password must not show that it is there, so it is off unless you turn it on, and then
-  it says no more than the space that is open would. Since each contact writes to a queue of their own, the space must
+  it says no more than the space that is open would. Asked straight from the phone while another space is open, its
+  relay or someone watching the network could tie the two spaces together by the phone's internet address. Since each contact writes to a queue of their own, the space must
   ask about each of those too, or their messages would say nothing. The cost is that its relay may tell that the two
   spaces are on one phone, and someone who examines the phone with tools may find that a second space keeps addresses
   there, and how many contacts it has.
@@ -930,14 +946,19 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   after the phone restarts until you open Erevos and the space once, in another space (it only says a message came, if
   you let it, as above), or on a computer or in the web
   app while closed. A call there shows as a missed call once Erevos opens. When Android closes Erevos while it
-  receives, a quiet notice says so: open Erevos and the space to receive again. So does one, "Locked", when the space
+  receives and starts it again, as it usually does, a quiet notice says so: open Erevos and the space to receive
+  again. After **Force stop**, with battery use set to Restricted, or when the phone maker's own setting closes it,
+  Android starts nothing again, so no notice says so: the "Erevos" notice just goes, and nothing rings until you open
+  Erevos. **Permissions** (below) says ahead if one of these is set. So does one, "Locked", when the space
   that received closes (after a backup is restored, say) and Erevos leaves the screen with the password asked. A message request cannot call you until
   you accept it.
 - **Permissions (Android):** **Settings** → **General** → **Permissions** shows what Android lets Erevos do for calls
-  and messages in the background (notices, the call notice and that it pops up, the message notice, calls over the
-  lock screen, running on battery, running in the background with battery use not set to Restricted, not paused when
-  unused, mobile data in the background, the microphone) and for other things (the sound for new messages, notices on
-  the lock screen, calls through Do Not Disturb, camera, phones nearby, contacts, exact times), each with why and a
+  and messages in the background (notices, the call notice and that it pops up, the message notice, with its
+  "Messages without sound" and "Messages with a chat's own sound" notices, which also keep the number on the icon,
+  calls over the lock screen, running on battery, running in the background with battery use not set to Restricted,
+  not paused when unused, mobile data in the background, the microphone) and for other things (the sound for new
+  messages, notices on the lock screen, calls through Do Not Disturb, camera, phones nearby, contacts, exact times for
+  SMS sent later and reminders, the reminder notice once a reminder came), each with why and a
   button that opens Android's own question or setting. It also says when the phone is on silent or vibrate, when
   battery saver is on, and when Do Not Disturb is on while Erevos calls are not let through it. On Huawei, Honor,
   Xiaomi, OPPO, realme, OnePlus, vivo, Samsung and ASUS phones it also says where the maker's own setting is, which
@@ -954,8 +975,8 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
 
 **Why:** the keys that open a space's messages are in memory only while it is open, and sealed behind its password
 otherwise. So after the phone restarts, nothing can be read and nothing rings until you open Erevos and the space once;
-and hidden chats, whose key is in memory only while they are open, only say that a message came, or ring with no name,
-if you let them.
+and hidden chats, whose key is in memory only while they are open unless **Receive while closed** keeps it with the
+space, otherwise only say that a message came, or ring with no name, if you let them.
 
 > The relay settings, your queue, your contacts and their names, the keys of your conversations and the messages are
 > kept in this space, sealed. History has no limit: it is kept in sealed pages of the same size, mixed with the pages
@@ -1749,8 +1770,12 @@ what the places taken away hold.
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,
   while the place is closed a notice says only "New message", or how many came, as for the other chats, with Erevos in the background or showing, each message
   once, also when Erevos was closed and started again; what came while the place was open makes none once it closes. That a message of yours came to them or was read, typing and new keys make none, nor does a call that rang (see **Ring
-  calls when closed**); one that did not ring counts as a message. It needs **Receive and ring** and **Say a message
-  came** under **In the background**, and a relay that waits (from 18 October 2026 on); one from before 23 October
+  calls when closed**); one that did not ring counts as a message. A message or a delete that other Erevos phones
+  carried to the relay (see **Carried by other phones** in [Chat with a nearby phone](#nearby)) cannot say what it carries, since the phones that carry it
+  must not know: it counts as a message, so a delete shows "New message" too, and the first message of a chat may count
+  as two; and one sent without sound sounds as usual (see **Send without sound**). It needs **Receive and ring** and
+  **Say a message came** under **In the background**, which the switch says when they are not on, and a relay that
+  waits (from 18 October 2026 on); one from before 23 October
   2026 can only say that something waits, so then "New message" shows for that too, once until you open that place.
   For it, the space keeps a relay queue for each of its 4 places, those not in use made for nothing on the same
   relay, so opening the space shows neither whether hidden chats are set nor which, as long as they use the space's
@@ -1758,10 +1783,11 @@ what the places taken away hold.
   the relay sees, above), never for them. Whoever sees the notice and finds nothing new in your chats may guess there
   are more. Backups do not keep it: turn it on again after restoring.
 - **Ring calls when closed** (Android): below **Say when a message comes**, while **Receive while closed** is off.
-  Turned on, while the place is closed and Erevos is in the background a call from one of its contacts makes the phone ring and
-  show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,
+  Turned on, while the place is closed, with Erevos in the background or on any screen, a call from one of its
+  contacts makes the phone ring and show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,
   type the PIN and tap **Connect** to answer; a plain **Answer** cannot connect it, and **Decline** stops the ring. The
-  ring lasts about 45 seconds. It needs **Receive and ring** under **In the background** and a relay that waits, and
+  ring lasts about 45 seconds. It needs **Receive and ring** under **In the background**, which the switch says when
+  it is not on, and a relay that waits, and
   uses a relay queue of its own for each of the 4 places, those not ringing made for nothing on the same relay, the
   same as the message notice above, so opening the space gives nothing away. The caller only rings a queue there; the
   call itself waits on the chat's own queue until the PIN opens it. A contact you have deleted can still make it ring,
@@ -2012,6 +2038,10 @@ there unless you choose it with \`--plain-secrets\`: no password slot lies there
 - **A computer and a phone can share an account:** link the computer to the phone, and both have the same chats and
   contacts, see [Linked devices](#devices). Or a backup moves everything from one to the other, see
   [Backups](#backup), and from then on use only the one.
+- **No notices or sounds:** Erevos on a computer shows no notice from the system and makes no sound. While it runs, a
+  new message shows only in its window, and a call shows its screen there without ringing, so with the window
+  minimised or behind another, nothing tells you. Closed, it receives nothing: messages wait on the relay, and a call
+  shows as a missed call once it opens.
 - **Tested so far** on Linux. The Mac and Windows versions are built and opened on GitHub's computers, not yet by a
   person.
 
@@ -2315,7 +2345,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. | Backups straight to Nextcloud or WebDAV. |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
-| **Notices (Android)** | In the background: "Erevos", "Incoming call", and "New message" or how many came, never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
+| **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
 | **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. The relays see when a call starts ringing. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |

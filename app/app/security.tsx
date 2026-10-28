@@ -374,7 +374,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
           <Text variant="caption" tone="muted" style={hint}>
             {doorSaid ||
               (door
-                ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its contacts are, or its messages, and its relay may tell that the two spaces are on one phone. Through Tor, if this space goes through Tor, and only while the open one has Tor ready.')
+                ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its contacts are, or its messages, and its relay may tell that the two spaces are on one phone. If this space goes through Tor (Messages, the default, or Everything), it is asked about only through Tor: while the open space has Tor off, or its Tor is starting or has just failed, this one says nothing, and what came is told once Tor is ready there.')
                 : t('Closed, this space receives nothing: its messages wait at its relay and come when it opens.'))}
           </Text>
         </>
@@ -382,7 +382,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {on
-            ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups; hidden chats only say that a message came, if you let them. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, it goes on the same; stopped by Android, it takes nothing and cannot ring.')
+            ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups, and hidden chats with Receive while closed on; other hidden chats only say that a message came, or ring with no name, if you let them. The notices never say who or what: "Erevos" while it receives, "Incoming call" or "Incoming video call" when one rings, and "New message" or how many came; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, it goes on the same; stopped by Android, it takes nothing and cannot ring.')
             : t('Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.')}
         </Text>
         {/* The notice for messages and their sound while Erevos shows need it with the receiving off too. */}

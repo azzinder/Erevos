@@ -108,7 +108,7 @@ function why(id: CheckId, browser: Browser | null): string {
     case 'contacts':
       return t("For the names of the phone's contacts in Phone, SMS and Contacts.");
     case 'alarms':
-      return t('For SMS sent later to go at the minute they are set for.');
+      return t('For SMS sent later, and the reminders of Chat with myself, to come at the minute they are set for.');
     case 'reminders':
       return t('For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.');
     case 'home':

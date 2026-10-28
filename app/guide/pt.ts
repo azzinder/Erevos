@@ -143,16 +143,18 @@ Um backup leva as notas e as mensagens de voz dela, mas não as fotos e os arqui
   lembrado, escolha um horário (**Daqui a 1 hora**, **Hoje à noite 20:00**, **Amanhã 09:00**, ou qualquer dia, hora e
   minuto) e toque em **Lembrar-me**. Ele vai para a Conversa comigo, com um sino e o horário dele. Na conversa, **+** →
   **Lembrar-me**, ou segurar a seta de enviar, também dá um horário à nota que você escreve.
-- **No horário dele**, no Android, o celular mostra um aviso que diz só **Reminder**, também com o Erevos fechado e
-  bloqueado; tocado, abre a Conversa comigo, depois da senha. Até você abrir a conversa, o lembrete aparece na linha
-  dela no topo das conversas, com uma contagem, e na conversa com uma borda colorida. Num computador, no app web, ou
-  com os avisos desativados, é ali que você o vê.
+- **No horário dele**, no Android, o celular mostra um aviso, **Reminder** (ou **3 reminders**) – "Open Chat with
+  myself to read it", nunca o que ele diz, também com o Erevos fechado e bloqueado; tocado, abre a Conversa comigo,
+  depois da senha. Até você abrir a conversa, o lembrete aparece na linha dela no topo das conversas, com uma
+  contagem, e na conversa com uma borda colorida; visto ali, ele também sai do aviso. Num computador, no app web, ou
+  com os avisos desativados, é ali que você o vê. Se **Horários exatos** não estiver permitido (**Configurações** →
+  **Geral** → **Permissões**), o Android pode mostrá-lo alguns minutos atrasado.
 - **Segurar uma nota** oferece **Copiar**, **Abrir** (uma foto ou um arquivo), **Lembrar-me**, ou **Mudar o lembrete**
   e **Sem lembrete**, e **Apagar**.
 - Cada espaço tem a sua própria Conversa comigo, e também cada posição de conversas ocultas, no topo da lista delas
   (veja [Conversas ocultas](#hidden)). Os lembretes de uma posição oculta aparecem ali assim que o PIN dela a abre; o
-  celular os avisa no horário só enquanto **Receber quando fechadas** está ativado para aquela posição, no mesmo aviso
-  que diz só **Reminder**.
+  celular os avisa no horário só enquanto **Receber quando fechadas** está ativado para aquela posição, no mesmo
+  aviso. Um PIN novo para a posição, que a começa vazia, ou a posição removida, tira os lembretes dela do celular.
 
 **Por quê:** um aviso aparece na tela bloqueada para quem estiver com o celular, então o que um lembrete diz fica
 criptografado no espaço dele e o Android só fica sabendo o horário: o aviso não pode contar a ninguém o que você queria
@@ -605,7 +607,10 @@ conversa dela aparece na tela.
   plano** está em **Receber e tocar** (abaixo), ou quando o Erevos abrir de novo.
 - **Enviar sem som:** segure a seta de enviar e escolha **Sem som**: o celular da pessoa mostra o aviso sem som nem
   vibração. Um Erevos de antes disso não conhece isso e toca como sempre, e o Erevos como app web também, cujo aviso
-  vem do navegador.
+  vem do navegador. O mesmo vale para o aviso de uma posição de conversas ocultas que está fechada, com **Avisar
+  quando chega uma mensagem** ativado, e para o de um espaço fechado com **Também enquanto outro espaço está aberto**:
+  eles só perguntam ao relay quantas chegaram, e o relay não consegue distinguir uma sem som de outra, pois só a
+  mensagem criptografada diz isso.
 - **Links:** um endereço web numa mensagem fica sublinhado. Toque nele e o Erevos o mostra inteiro, para abrir no
   navegador só se for para onde você quer ir. Nada é buscado antes disso.
 - **Compartilhar de outro app** (Android): no **Compartilhar** de outro app, como o do navegador para uma página,
@@ -724,7 +729,10 @@ endereço de push para todas as filas dos seus contatos (veja [Num iPhone](#ipho
   contato, então ela muda a sua fila só enquanto o link ainda nomeia essa, como acontece até a sua primeira mudança.
   Quem você bloqueou fica em **Contatos bloqueados** na tela **Nova conversa**, com **Desbloquear**. Adicioná-lo de
   novo pelo link dele pede que você o desbloqueie antes; até lá nada o adiciona, nem a resposta dele a um convite por
-  SMS, nem o link de contato dele num grupo.
+  SMS, nem o link de contato dele num grupo. Cada pessoa que escreve pelo seu link de contato pode fazer o celular
+  tocar, como qualquer mensagem: **Recusar** ou **Bloquear** detém essa pessoa, **Notificações** → **Em silêncio** na
+  conversa dela a silencia sem recusá-la, e **Novo link de contato** detém quem tem o link antigo assim que terminam
+  os 14 dias dele.
 - **Grupos:** alguém num dos seus grupos ainda pode escrever para você ali. O Erevos diz em quantos vocês estão
   juntos: saia deles, ou peça ao admin para tirá-lo.
 - **Quando o relay não está acessível**, a fila muda assim que ele responde, e até lá nada do que ele envia aparece.
@@ -964,14 +972,17 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   Direct), com um espaço aberto nos dois, uma chamada não precisa de relay nenhum: ela é estabelecida pela conexão por
   perto e vai direto entre os celulares (ou computadores). O mesmo vale para mensagens de grupo e chamadas de grupo.
 - **Em segundo plano (Android):** enquanto um espaço está aberto, o Erevos continua rodando quando você sai dele, com
-  o botão de início ou deslizando-o para fora dos apps recentes, com um aviso discreto que diz só "Erevos". Ele espera
-  no relay e nas conexões com celulares por perto, para que as mensagens cheguem: um aviso diz só "New message", ou
-  quantas chegaram, e num celular bloqueado só "Erevos". Uma chamada toca com o toque do celular e um aviso que diz só
-  "Incoming call", também sobre a tela de bloqueio e o protetor de tela, e a tela acorda. Toque nele para atender. Com
-  o bloqueio com senha ativado, uma chamada que toca aparece antes da senha, e o Erevos bloqueia assim que ela
-  termina. Bloqueado, o espaço continua atrás da tela da senha, então mensagens e chamadas ainda chegam, e uma chamada
-  aparece sobre a tela da senha. Só as conversas e os grupos desse espaço chegam assim; as conversas ocultas só dizem
-  que chegou uma mensagem, se você permitir (veja Conversas ocultas). Defina isso em **Configurações** →
+  o botão de início ou deslizando-o para fora dos apps recentes, com um aviso discreto, "Erevos – Ready for calls and
+  messages", que não aparece na tela de bloqueio. Ele espera no relay e nas conexões com celulares por perto, para que
+  as mensagens cheguem: um aviso diz só "New message", ou quantas chegaram, e num celular bloqueado só "Erevos". Uma
+  solicitação de mensagem, de alguém que só tem o seu link de contato, gera o mesmo aviso e som, e conta no ícone,
+  como qualquer mensagem. Uma chamada toca com o toque do celular e um aviso, "Incoming call" (ou "Incoming video
+  call") – "Open Erevos to answer", sem nome, também sobre a tela de bloqueio e o protetor de tela, e a tela acorda.
+  Toque nele para atender. Com o bloqueio com senha ativado, uma chamada que toca aparece antes da senha, e o Erevos
+  bloqueia assim que ela termina. Bloqueado, o espaço continua atrás da tela da senha, então mensagens e chamadas
+  ainda chegam, e uma chamada aparece sobre a tela da senha. Só as conversas e os grupos desse espaço chegam assim, e
+  as conversas ocultas com **Receber quando fechadas** ativado; as outras conversas ocultas só dizem que chegou uma
+  mensagem, ou tocam sem nome, se você permitir (veja Conversas ocultas). Defina isso em **Configurações** →
   **Notificações** → **Em segundo plano**: **Receber e tocar** (o padrão) ou **Só com o Erevos na tela**, e **Avisar
   quando chega mensagem** (o padrão) ou **Sem aviso**, que vale também para quando o Erevos está na tela. Ali também,
   se o Android pedir, **Continuar rodando com economia de bateria** e **Mostrar chamadas sobre a tela de bloqueio**.
@@ -981,7 +992,8 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   mensagens de uma conversa em silêncio (veja Notificações desta conversa), nem as de uma oculta quando você sai. O
   launcher do Android a mostra no ícone do Erevos, como um número ou, em alguns telefones, como os Pixel, como um
   ponto. **Configurações** → **Notificações** → **Número no ícone** o desliga: aí a notificação só fala do que chegou
-  desde a última vez que você teve o Erevos aberto, e o número do launcher some com ela.
+  desde a última vez que você teve o Erevos aberto, e o número do launcher some com ela. Uma mensagem apagada para
+  todos antes de você lê-la, ou lida num computador conectado, deixa de contar.
 
   **Por quê:** no Android só uma notificação consegue pôr um número no ícone de um app, então a notificação fica
   enquanto há mensagens esperando; ela não diz mais do que quantas são, como sempre disse.
@@ -989,35 +1001,47 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   mensagens dele esperam no relay dele e chegam quando você o abre. A menos que você escolha, nesse espaço, **Também
   enquanto outro espaço está aberto** em **Configurações** → **Notificações** → **Em segundo plano** (o padrão é **Este
   espaço só enquanto aberto**): então, enquanto outro espaço está aberto e recebe, ele diz só "New message", ou quantas
-  chegaram, com o mesmo aviso desse espaço, nunca qual espaço, e as conversas ocultas dele não dizem nada. Para isso o
-  celular guarda os endereços das filas dele no relay fora da senha dele, entre elas a fila em que cada contato dele
-  escreve, até 64 contatos, nunca as chaves dele, quem são os contatos dele ou as mensagens dele, e pergunta ao relay só
-  quantas chegaram, nunca as próprias mensagens: elas ficam lá até o espaço abrir. Um espaço que passa pelo Tor só é
-  consultado pelo Tor, enquanto o espaço aberto tem o Tor pronto.
+  chegaram, com o mesmo aviso desse espaço, nunca qual espaço, e as conversas ocultas dele não dizem nada. O que
+  outros celulares levaram até o relay dele conta como mensagem, as exclusões também, e uma mensagem enviada a ele sem
+  som toca como sempre (veja **Enviar sem som**). Para isso o celular guarda os endereços das filas dele no relay fora
+  da senha dele, entre elas a fila em que cada contato dele escreve, até 64 contatos, nunca as chaves dele, quem são
+  os contatos dele ou as mensagens dele, e pergunta ao relay só quantas chegaram, nunca as próprias mensagens: elas
+  ficam lá até o espaço abrir. Um espaço que passa pelo Tor (**Mensagens**, o padrão, ou **Tudo**, em **O que passa
+  pelo Tor**) só é consultado pelo Tor: enquanto o espaço aberto está com o Tor desativado, ou o Tor dele está
+  iniciando ou acabou de falhar, o espaço fechado não diz nada, e o que chegou é avisado assim que o Tor estiver
+  pronto ali.
 
   **Por quê:** um espaço atrás de uma segunda senha não pode mostrar que está ali, então isso fica desativado a menos
-  que você o ative, e então ele não diz mais do que o espaço aberto diria. Como cada contato escreve numa fila própria,
-  o espaço precisa perguntar também por cada uma delas, senão as mensagens deles não diriam nada. O custo é que o relay
-  dele pode perceber que os dois espaços estão num mesmo celular, e alguém que examine o celular com ferramentas pode
-  descobrir que um segundo espaço guarda endereços ali, e quantos contatos ele tem.
+  que você o ative, e então ele não diz mais do que o espaço aberto diria. Consultado direto do celular enquanto outro
+  espaço está aberto, o relay dele ou alguém que observe a rede poderia ligar os dois espaços pelo endereço de
+  internet do celular. Como cada contato escreve numa fila própria, o espaço precisa perguntar também por cada uma
+  delas, senão as mensagens deles não diriam nada. O custo é que o relay dele pode perceber que os dois espaços estão
+  num mesmo celular, e alguém que examine o celular com ferramentas pode descobrir que um segundo espaço guarda
+  endereços ali, e quantos contatos ele tem.
 - **Onde ele não consegue tocar:** parado pelo Android (ou pela economia de bateria do celular, ou pela configuração
   própria do fabricante do celular), depois de o celular reiniciar até você abrir o Erevos e o espaço uma vez, em outro
   espaço (ele só diz que chegou uma mensagem, se você permitir, como acima), ou num computador ou no app web enquanto
   fechado. Uma chamada ali aparece como chamada perdida quando o Erevos abrir. Quando o Android fecha o Erevos enquanto
-  ele recebe, um aviso discreto diz isso: abra o Erevos e o espaço para receber de novo. Também aparece um, "Locked",
-  quando o espaço que recebia fecha (depois de restaurar um backup, por exemplo) e o Erevos sai da tela pedindo a
-  senha. Uma solicitação de mensagem não pode ligar para você até você aceitá-la.
+  ele recebe e o inicia de novo, como costuma fazer, um aviso discreto diz isso: abra o Erevos e o espaço para receber
+  de novo. Depois de **Forçar parada**, com o uso da bateria definido como Restrito, ou quando a configuração própria
+  do fabricante do celular o fecha, o Android não inicia nada de novo, então nenhum aviso diz isso: o aviso "Erevos"
+  simplesmente some, e nada toca até você abrir o Erevos. **Permissões** (abaixo) avisa antes se uma dessas coisas
+  estiver definida. Também aparece um, "Locked", quando o espaço que recebia fecha (depois de restaurar um backup, por
+  exemplo) e o Erevos sai da tela pedindo a senha. Uma solicitação de mensagem não pode ligar para você até você
+  aceitá-la.
 - **Permissões (Android):** **Configurações** → **Geral** → **Permissões** mostra o que o Android deixa o Erevos fazer
   para chamadas e mensagens em segundo plano (avisos, o aviso de chamada e que ele apareça na tela, o aviso de
-  mensagens, chamadas sobre a tela de bloqueio, rodar com economia de bateria, rodar em segundo plano sem o uso da
-  bateria definido como Restrito, não ser pausado quando não usado, dados móveis em segundo plano, o microfone) e para
-  outras coisas (o som de mensagens novas, avisos na tela de bloqueio, chamadas pelo Não perturbe, câmera, celulares
-  por perto, contatos, horários exatos), cada um com o motivo e um botão que abre a própria pergunta ou configuração
-  do Android. Também diz quando o celular está no silencioso ou no vibrar, quando a economia de bateria está ativada,
-  e quando o Não perturbe está ativado sem deixar passar as chamadas do Erevos. Em celulares Huawei, Honor, Xiaomi,
-  OPPO, realme, OnePlus, vivo, Samsung e ASUS, também diz onde fica a configuração própria do fabricante, que o Erevos
-  não consegue ler: toque em **Já fiz** quando estiver configurada. Depois de cada versão nova, e na primeira vez,
-  abre sozinho quando chamadas ou mensagens precisam de algo. No app web mostra o que o navegador permite, veja
+  mensagens, com os avisos "Messages without sound" e "Messages with a chat's own sound" dele, que também mantêm o
+  número no ícone, chamadas sobre a tela de bloqueio, rodar com economia de bateria, rodar em segundo plano sem o uso
+  da bateria definido como Restrito, não ser pausado quando não usado, dados móveis em segundo plano, o microfone) e
+  para outras coisas (o som de mensagens novas, avisos na tela de bloqueio, chamadas pelo Não perturbe, câmera,
+  celulares por perto, contatos, horários exatos para SMS enviados depois e lembretes, o aviso de lembretes depois que
+  chegou um lembrete), cada um com o motivo e um botão que abre a própria pergunta ou configuração do Android. Também
+  diz quando o celular está no silencioso ou no vibrar, quando a economia de bateria está ativada, e quando o Não
+  perturbe está ativado sem deixar passar as chamadas do Erevos. Em celulares Huawei, Honor, Xiaomi, OPPO, realme,
+  OnePlus, vivo, Samsung e ASUS, também diz onde fica a configuração própria do fabricante, que o Erevos não consegue
+  ler: toque em **Já fiz** quando estiver configurada. Depois de cada versão nova, e na primeira vez, abre sozinho
+  quando chamadas ou mensagens precisam de algo. No app web mostra o que o navegador permite, veja
   [Num iPhone](#iphone).
 - **Uma chamada de cada vez.** Uma chamada continua enquanto você passa entre as telas do espaço. Ela termina quando o
   espaço fecha, e uma chamada nas conversas ocultas quando elas fecham, o que elas não fazem durante uma chamada.
@@ -1030,8 +1054,9 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
 
 **Por quê:** as chaves que abrem as mensagens de um espaço só estão na memória enquanto ele está aberto, e seladas atrás
 da senha dele nos outros momentos. Então, depois de o celular reiniciar, nada pode ser lido e nada toca até você abrir
-o Erevos e o espaço uma vez; e as conversas ocultas, cuja chave só está na memória enquanto elas estão abertas, só
-dizem que chegou uma mensagem, ou tocam sem nome, se você permitir.
+o Erevos e o espaço uma vez; e as conversas ocultas, cuja chave só está na memória enquanto elas estão abertas, a
+menos que **Receber quando fechadas** a guarde com o espaço, nos outros casos só dizem que chegou uma mensagem, ou
+tocam sem nome, se você permitir.
 
 > As configurações do relay, a sua fila, os seus contatos e os nomes deles, as chaves das suas conversas e as
 > mensagens ficam guardados neste espaço, selados. O histórico não tem limite: ele é guardado em páginas seladas do
@@ -1891,26 +1916,31 @@ as posições retiradas guardam.
   as outras conversas, com o Erevos em segundo plano ou na tela, cada mensagem uma vez, também quando o Erevos foi
   fechado e aberto de novo; o que chegou enquanto a posição estava aberta não gera nenhum depois que ela fecha. Que
   uma mensagem sua chegou a eles ou foi lida, digitando e chaves novas não geram nenhum, nem uma chamada que tocou
-  (veja **Tocar as chamadas quando fechadas**); uma que não tocou conta como mensagem. Precisa de **Receber e tocar** e
-  **Avisar quando chega mensagem** em **Em segundo plano**, e de um relay que espera (de 18 de outubro de 2026 em
-  diante); um de antes de 23 de outubro de 2026 só consegue dizer que algo espera, então "New message" aparece também
-  para isso, uma vez até você abrir aquela posição. Para isso, o espaço guarda uma fila no relay para cada uma das 4
-  posições dele, as que não estão em uso criadas à toa no mesmo relay, para que abrir o espaço não mostre nem se há
-  conversas ocultas definidas nem quais, desde que elas usem o relay do espaço; ao relay só se pergunta quantas
-  mensagens chegaram, já que ele as conta pelo byte que cada uma leva (veja o que o relay vê, acima), nunca as
-  próprias mensagens. Quem vê o aviso e não encontra nada novo nas suas conversas pode supor que há mais. Os backups
-  não guardam isso: ative de novo depois de restaurar.
+  (veja **Tocar as chamadas quando fechadas**); uma que não tocou conta como mensagem. Uma mensagem ou uma exclusão
+  que outros celulares com Erevos levaram até o relay (veja **Levadas por outros celulares** em
+  [Conversar com um celular por perto](#nearby)) não consegue dizer o que leva, pois os celulares que a levam não
+  podem saber: ela conta como mensagem, então uma exclusão também mostra "New message", e a primeira mensagem de uma
+  conversa pode contar como duas; e uma enviada sem som toca como sempre (veja **Enviar sem som**). Precisa de
+  **Receber e tocar** e **Avisar quando chega mensagem** em **Em segundo plano**, o que o interruptor avisa quando não
+  estão ativados, e de um relay que espera (de 18 de outubro de 2026 em diante); um de antes de 23 de outubro de 2026
+  só consegue dizer que algo espera, então "New message" aparece também para isso, uma vez até você abrir aquela
+  posição. Para isso, o espaço guarda uma fila no relay para cada uma das 4 posições dele, as que não estão em uso
+  criadas à toa no mesmo relay, para que abrir o espaço não mostre nem se há conversas ocultas definidas nem quais,
+  desde que elas usem o relay do espaço; ao relay só se pergunta quantas mensagens chegaram, já que ele as conta pelo
+  byte que cada uma leva (veja o que o relay vê, acima), nunca as próprias mensagens. Quem vê o aviso e não encontra
+  nada novo nas suas conversas pode supor que há mais. Os backups não guardam isso: ative de novo depois de restaurar.
 - **Tocar as chamadas quando fechadas** (Android): abaixo de **Avisar quando chega uma mensagem**, enquanto **Receber
-  quando fechadas** está desativado. Ativado, enquanto a posição está fechada e o Erevos está em segundo plano, uma
-  chamada de um dos contatos dela faz o celular tocar e mostrar "Incoming call" sem nome, como faz uma chamada das
-  suas outras conversas. Na tela da chamada, toque no pequeno sinal, digite o PIN e toque em **Conectar** para
-  atender; um simples **Atender** não consegue conectá-la, e **Recusar** para o toque. O toque dura cerca de 45
-  segundos. Precisa de **Receber e tocar** em **Em segundo plano** e de um relay que espera, e usa uma fila no relay
-  própria para cada uma das 4 posições, as que não tocam criadas à toa no mesmo relay, como no aviso de mensagens
-  acima, para que abrir o espaço não revele nada. Quem liga só faz tocar uma fila ali; a própria chamada espera na
-  fila da própria conversa até o PIN abri-la. Um contato que você apagou ainda pode fazê-lo tocar, mas a chamada nunca
-  consegue se conectar. Uma chamada feita de um computador conectado só toca enquanto as conversas ocultas estão
-  abertas. Os backups não guardam isso: ative de novo depois de restaurar.
+  quando fechadas** está desativado. Ativado, enquanto a posição está fechada, com o Erevos em segundo plano ou em
+  qualquer tela, uma chamada de um dos contatos dela faz o celular tocar e mostrar "Incoming call" sem nome, como faz
+  uma chamada das suas outras conversas. Na tela da chamada, toque no pequeno sinal, digite o PIN e toque em
+  **Conectar** para atender; um simples **Atender** não consegue conectá-la, e **Recusar** para o toque. O toque dura
+  cerca de 45 segundos. Precisa de **Receber e tocar** em **Em segundo plano**, o que o interruptor avisa quando não
+  está ativado, e de um relay que espera, e usa uma fila no relay própria para cada uma das 4 posições, as que não
+  tocam criadas à toa no mesmo relay, como no aviso de mensagens acima, para que abrir o espaço não revele nada. Quem
+  liga só faz tocar uma fila ali; a própria chamada espera na fila da própria conversa até o PIN abri-la. Um contato
+  que você apagou ainda pode fazê-lo tocar, mas a chamada nunca consegue se conectar. Uma chamada feita de um
+  computador conectado só toca enquanto as conversas ocultas estão abertas. Os backups não guardam isso: ative de novo
+  depois de restaurar.
 - **Um PIN novo para uma posição** (em **Conversas ocultas** nas **Configurações**, ou **Novas conversas ocultas**) a
   começa vazia e substitui o que havia nela. Para manter as conversas e mudar só o PIN, abra-as e use **Alterar PIN**
   ali. Cada PIN tem de ser diferente dos outros e da senha que abre o Erevos.
@@ -2175,6 +2205,10 @@ nada ali a menos que você escolha isso com \`--plain-secrets\`: nenhum slot de 
 - **Um computador e um celular podem compartilhar uma conta:** conecte o computador ao celular, e os dois têm as
   mesmas conversas e contatos, veja [Dispositivos conectados](#devices). Ou um backup move tudo de um para o outro,
   veja [Backups](#backup), e a partir daí use só um deles.
+- **Sem avisos nem sons:** o Erevos num computador não mostra nenhum aviso do sistema e não faz nenhum som. Enquanto
+  ele roda, uma mensagem nova só aparece na janela dele, e uma chamada mostra a tela dela ali sem tocar, então com a
+  janela minimizada ou atrás de outra, nada avisa você. Fechado, ele não recebe nada: as mensagens esperam no relay, e
+  uma chamada aparece como chamada perdida quando ele abrir.
 - **Testado até agora** no Linux. As versões para Mac e Windows são compiladas e abertas nos computadores do GitHub,
   ainda não por uma pessoa.
 
@@ -2493,7 +2527,7 @@ O Erevos diz claramente o que protege e o que ainda não protege.
 | **Backups** | Um arquivo selado com uma senha própria, contendo cada espaço como está selado no celular. O nome dele diz que é um backup do Erevos, e o tamanho dele mostra mais ou menos quanto está guardado. Os backups automáticos guardam a senha deles no celular. | Backups direto para o Nextcloud ou WebDAV. |
 | **Marcas ✓✓ e ✓✓✓** | O celular do contato fica sabendo quando o seu recebeu e leu as mensagens dele, criptografado. O relay, ou quem escuta por perto, vê mais uma mensagem pequena. | Uma opção para não avisar quando você lê. |
 | **Impressão digital ou rosto (Android)** | Desativado a menos que seja ativado. Abre só o espaço da primeira senha: a chave dele selada no Android Keystore, utilizável só logo depois de uma verificação forte de impressão digital ou rosto, e descartada quando elas mudam. Alguém que detém você pode usar o seu dedo. | |
-| **Avisos (Android)** | Em segundo plano: "Erevos", "Incoming call", e "New message" ou quantas chegaram, nunca quem nem o quê. Num celular bloqueado, o aviso das mensagens diz só "Erevos". As conversas ocultas que podem dizer isso mostram o mesmo aviso, contado com o resto: quem o vê e não encontra nada novo pode adivinhar que há mais. Como app de telefone, o aviso de uma chamada telefônica nomeia quem liga, também sobre a tela de bloqueio, como faz o de todo app de telefone, mas nunca por um nome que só as conversas ocultas conhecem: uma chamada de um dos contatos delas mostra o número. | |
+| **Avisos (Android)** | Em segundo plano: "Erevos – Ready for calls and messages" (não na tela de bloqueio), "Incoming call" ou "Incoming video call" – "Open Erevos to answer", e "New message" ou quantas chegaram; quando o Android ou a senha o param, "Closed by Android" ou "Locked" – "Open it to receive calls and messages again"; um lembrete, "Reminder" ou quantos; uma versão nova, "Erevos X is out". Nunca quem nem o quê. Num celular bloqueado, o aviso das mensagens diz só "Erevos". As conversas ocultas que podem dizer isso mostram o mesmo aviso, contado com o resto: quem o vê e não encontra nada novo pode adivinhar que há mais. Como app de telefone, o aviso de uma chamada telefônica nomeia quem liga, também sobre a tela de bloqueio, como faz o de todo app de telefone, mas nunca por um nome que só as conversas ocultas conhecem: uma chamada de um dos contatos delas mostra o número. | |
 | **Widget e Telefone (Android)** | O widget, depois de adicionado, mostra quantas chamadas perdidas, SMS não lidos e mensagens novas há, nunca de quem nem o quê. O Telefone abre sem a senha só se você deixar: então qualquer um com o celular desbloqueado na mão vê as chamadas e os favoritos que o Android guarda, só com os nomes dos contatos do celular. | |
 | **Chamadas** | Criptografadas de ponta a ponta (DTLS-SRTP, com a chave enviada na conversa criptografada). Pelo relay de chamadas, nenhum celular vê o endereço IP do outro; o servidor que o roda vê os dois, quando e por quanto tempo, e quanto passa. Sem relay de chamadas, só na mesma rede Wi-Fi, cada celular vê o endereço do outro. Os relays veem quando uma chamada começa a tocar. | Tocar num computador e no app web enquanto fechados. Chamadas por Bluetooth (o walkie-talkie funciona ali). |
 | **Conversas em grupo** | Criptografadas de ponta a ponta com MLS (RFC 9420); membros tirados não leem nada depois. A cópia de cada membro é selada à parte, então os relays não conseguem saber quem está num grupo; cada relay ainda vê uma mensagem chegar a uma fila. Os membros veem as chaves e os endereços de relay uns dos outros. Fotos, arquivos e mensagens de voz passam pelo armazenamento de arquivos do relay de quem envia, como para um contato, e ficam ali 14 dias. Não auditado. | |

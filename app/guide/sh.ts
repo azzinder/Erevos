@@ -141,16 +141,19 @@ uzima njegove bilješke i glasovne poruke, ali ne i fotografije i datoteke, kao 
   podsjeti, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00** ili bilo koji dan, sat i minut) i
   dodirnite **Podsjeti me**. Ide u Razgovor sa sobom, sa zvonom i svojim vremenom. U razgovoru, **+** → **Podsjeti me**,
   ili zadržavanje prsta na strelici za slanje, i bilješci koju pišete daje vrijeme.
-- **U zadano vrijeme**, na Androidu, telefon prikazuje obavijest koja kaže samo **Reminder**, i kad je Erevos zatvoren
-  i zaključan; kad je dodirnete, otvara Razgovor sa sobom, nakon lozinke. Dok ne otvorite razgovor, podsjetnik se
-  prikazuje u njegovom redu na vrhu razgovora, s brojem, a u razgovoru s obojenim rubom. Na računaru, u web-aplikaciji
-  ili s isključenim obavijestima, tamo ga vidite.
+- **U zadano vrijeme**, na Androidu, telefon prikazuje obavijest, **Reminder** (ili **3 reminders**) – „Open Chat with
+  myself to read it“, nikad ono što podsjetnik kaže, i kad je Erevos zatvoren i zaključan; kad je dodirnete, otvara
+  Razgovor sa sobom, nakon lozinke. Dok ne otvorite razgovor, podsjetnik se prikazuje u njegovom redu na vrhu
+  razgovora, s brojem, a u razgovoru s obojenim rubom; kad ga tamo vidite, nestaje i iz obavijesti. Na računaru, u
+  web-aplikaciji ili s isključenim obavijestima, tamo ga vidite. Ako **Precizno vrijeme** nije dozvoljeno
+  (**Postavke** → **Općenito** → **Dozvole**), Android ga može prikazati nekoliko minuta kasnije.
 - **Zadržavanje prsta na bilješci** nudi **Kopiraj**, **Otvori** (fotografiju ili datoteku), **Podsjeti me**, ili
   **Promijeni podsjetnik** i **Bez podsjetnika**, te **Obriši**.
 - Svaki prostor ima vlastiti Razgovor sa sobom, kao i svako mjesto skrivenih razgovora, na vrhu njihovog popisa
   (pogledajte [Skriveni razgovori](#hidden)). Podsjetnici skrivenog mjesta prikazuju se tamo kad ga njegov PIN otvori;
   telefon ih javlja u njihovo vrijeme samo dok je za to mjesto uključeno **Primanje dok su zatvoreni**, u istoj
-  obavijesti koja kaže samo **Reminder**.
+  obavijesti. Novi PIN za mjesto, s kojim ono počinje prazno, ili uklonjeno mjesto, skida njegove podsjetnike s
+  telefona.
 
 **Zašto:** obavijest se na zaključanom ekranu prikazuje svakome ko drži telefon, zato ono što podsjetnik kaže ostaje
 šifrirano u njegovom prostoru, a Androidu se kaže samo njegovo vrijeme: obavijest nikome ne može reći šta ste htjeli
@@ -599,7 +602,9 @@ na ekranu.
   put otvori.
 - **Slanje bez zvuka:** zadržite prst na strelici za slanje i izaberite **Bez zvuka**: telefon te osobe prikazuje
   obavijest bez zvuka i vibracije. Erevos od prije ovoga to ne zna i oglašava se kao i obično, kao i Erevos kao
-  web-aplikacija, čija obavijest dolazi iz preglednika.
+  web-aplikacija, čija obavijest dolazi iz preglednika. Isto tako i obavijest zatvorenog mjesta skrivenih razgovora s
+  uključenim **Javi kad stigne poruka**, i zatvorenog prostora s **I dok je otvoren drugi prostor**: oni relay pitaju
+  samo koliko ih je stiglo, a on ne može razlikovati poruku bez zvuka od druge, jer to kaže samo šifrirana poruka.
 - **Linkovi:** web adresa u poruci je podvučena. Dodirnite je i Erevos je prikazuje cijelu, da je otvorite u
   pregledniku samo ako je to mjesto na koje želite ići. Prije toga se ništa ne preuzima.
 - **Dijeljenje iz druge aplikacije** (Android): u opciji **Dijeli** druge aplikacije, kao u pregledniku za stranicu,
@@ -714,7 +719,9 @@ redove svih vaših kontakata (pogledajte [Na iPhoneu](#iphone)).
   red samo dok link još navodi upravo taj red, što je tako do vašeg prvog premještanja. Oni koje ste blokirali nalaze
   se pod **Blokirani kontakti** u ekranu **Novi razgovor**, s dugmetom **Odblokiraj**. Ponovno dodavanje iz njihovog
   linka prvo traži da ih odblokirate; do tada ih ništa ne dodaje, ni njihov odgovor na pozivnicu putem SMS-a ni
-  njihov link za kontakt u grupi.
+  njihov link za kontakt u grupi. Svako ko piše preko vašeg linka za kontakt može natjerati telefon da se oglasi, kao
+  i svaka poruka: **Odbij** ili **Blokiraj** zaustavlja tu osobu, **Obavijesti** → **Utišano** u njenom razgovoru
+  utišava je bez odbijanja, a **Novi link za kontakt** zaustavlja svakoga ko ima stari link kad prođe njegovih 14 dana.
 - **Grupe:** neko iz jedne od vaših grupa i dalje vam tamo može pisati. Erevos kaže u koliko ste grupa zajedno:
   napustite ih ili zamolite njihovog admina da tu osobu ukloni.
 - **Kad relay nije dostupan**, red se mijenja čim relay odgovori, a do tada se ništa što ta osoba pošalje ne
@@ -944,14 +951,17 @@ Skriveni razgovori i računari to nemaju.
   Direct), s prostorom otvorenim na oba, pozivu uopće nije potreban relay: uspostavlja se preko veze u blizini i ide
   direktno između telefona (ili računara). Isto važi i za grupne poruke i grupne pozive.
 - **U pozadini (Android):** dok je prostor otvoren, Erevos nastavlja raditi kad ga napustite, dugmetom za početni
-  ekran ili prevlačenjem iz nedavnih aplikacija, s tihom obaviješću koja kaže samo „Erevos“. Čeka na relayu i na
-  vezama s telefonima u blizini, pa poruke stižu: obavijest kaže samo „New message“ ili koliko ih je stiglo, a na
-  zaključanom telefonu samo „Erevos“. Poziv zvoni melodijom telefona i obaviješću koja kaže samo „Incoming call“, i
-  preko zaključanog ekrana i čuvara ekrana, a ekran se budi. Dodirnite je da se javite. S uključenim zaključavanjem
-  lozinkom, poziv koji zvoni prikazuje se prije lozinke, a Erevos se zaključava čim se poziv završi. Kad je
-  zaključan, prostor nastavlja raditi iza ekrana za lozinku, pa poruke i pozivi i dalje stižu, a poziv se prikazuje
-  preko ekrana za lozinku. Tako stižu samo razgovori i grupe tog prostora; skriveni razgovori samo javljaju da je
-  stigla poruka, ako im to dozvolite (pogledajte Skriveni razgovori). To se podešava u **Postavke** → **Obavijesti** →
+  ekran ili prevlačenjem iz nedavnih aplikacija, s tihom obaviješću, „Erevos – Ready for calls and messages“, koja se
+  ne prikazuje na zaključanom ekranu. Čeka na relayu i na vezama s telefonima u blizini, pa poruke stižu: obavijest
+  kaže samo „New message“ ili koliko ih je stiglo, a na zaključanom telefonu samo „Erevos“. Zahtjev za razgovor, od
+  nekoga ko ima samo vaš link za kontakt, daje istu obavijest i zvuk, i broji se na ikoni, kao i svaka poruka. Poziv
+  zvoni melodijom telefona i obaviješću, „Incoming call“ (ili „Incoming video call“) – „Open Erevos to answer“, bez
+  imena, i preko zaključanog ekrana i čuvara ekrana, a ekran se budi. Dodirnite je da se javite. S uključenim
+  zaključavanjem lozinkom, poziv koji zvoni prikazuje se prije lozinke, a Erevos se zaključava čim se poziv završi.
+  Kad je zaključan, prostor nastavlja raditi iza ekrana za lozinku, pa poruke i pozivi i dalje stižu, a poziv se
+  prikazuje preko ekrana za lozinku. Tako stižu samo razgovori i grupe tog prostora, i skriveni razgovori s uključenim
+  **Primanje dok su zatvoreni**; ostali skriveni razgovori samo javljaju da je stigla poruka, ili zvone bez imena, ako
+  im to dozvolite (pogledajte Skriveni razgovori). To se podešava u **Postavke** → **Obavijesti** →
   **U pozadini**: **Primaj i zvoni** (zadano) ili **Samo dok je Erevos na ekranu**, te **Javi da je stigla poruka**
   (zadano) ili **Bez obavijesti**, što važi i dok je Erevos na ekranu. Tamo su i, ako ih Android traži, **Izuzmi iz
   uštede baterije** i **Prikazuj pozive preko zaključanog ekrana**.
@@ -961,7 +971,8 @@ Skriveni razgovori i računari to nemaju.
   razgovora (pogledajte Obavijesti za ovaj razgovor), ni skrivenog u trenutku kad izlazite. Pokretač (launcher)
   Androida je prikazuje na ikoni Erevosa, kao broj ili, na nekim telefonima, poput Pixela, kao tačku. **Postavke** →
   **Obavijesti** → **Broj na ikoni** to isključuje: obavijest tada javlja samo ono što je stiglo otkako ste zadnji put
-  imali Erevos otvoren, i broj pokretača nestaje s njom.
+  imali Erevos otvoren, i broj pokretača nestaje s njom. Poruka obrisana za sve prije nego što ste je pročitali, ili
+  pročitana na povezanom računaru, više se ne broji.
 
   **Zašto:** na Androidu samo obavijest može staviti broj na ikonu aplikacije, pa obavijest ostaje dok poruke čekaju;
   ne kaže ništa više od toga koliko ih je, kao i uvijek.
@@ -969,30 +980,40 @@ Skriveni razgovori i računari to nemaju.
   njegovom relayu i stižu kad ga otvorite. Osim ako u tom prostoru ne izaberete **I dok je otvoren drugi prostor** pod
   **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Ovaj prostor samo dok je otvoren**): tada, dok je otvoren
   i prima drugi prostor, kaže samo „New message“ ili koliko ih je stiglo, istom obaviješću kao i taj prostor, nikad koji
-  prostor, a njegovi skriveni razgovori ne kažu ništa. Za to telefon čuva adrese njegovih redova na njegovom relayu
-  izvan njegove lozinke, među njima i red u koji piše svaki njegov kontakt, do 64 kontakta, nikad njegove ključeve, ni
-  ko su mu kontakti, ni njegove poruke, i pita relay samo koliko ih je stiglo, nikad ne traži same poruke: one ostaju
-  tamo dok se prostor ne otvori. Za prostor koji ide preko Tora pita se samo preko Tora, dok otvoreni prostor ima
-  spreman Tor.
+  prostor, a njegovi skriveni razgovori ne kažu ništa. Ono što su drugi telefoni prenijeli do njegovog relaya računa se
+  kao poruka, i brisanja, a poruka poslana njemu bez zvuka oglašava se kao i obično (pogledajte **Slanje bez zvuka**).
+  Za to telefon čuva adrese njegovih redova na njegovom relayu izvan njegove lozinke, među njima i red u koji piše
+  svaki njegov kontakt, do 64 kontakta, nikad njegove ključeve, ni ko su mu kontakti, ni njegove poruke, i pita relay
+  samo koliko ih je stiglo, nikad ne traži same poruke: one ostaju tamo dok se prostor ne otvori. Za prostor koji ide
+  preko Tora (**Poruke**, zadano, ili **Sve**, pod **Što ide preko Tora**) pita se samo preko Tora: dok otvoreni prostor ima
+  isključen Tor, ili se njegov Tor pokreće ili je upravo zakazao, zatvoreni prostor ne kaže ništa, a ono što je
+  stiglo javlja se kad Tor tamo bude spreman.
 
   **Zašto:** prostor iza druge lozinke ne smije pokazati da postoji, pa je to isključeno dok to ne uključite, a tada ne
-  kaže ništa više od onoga što bi rekao otvoreni prostor. Pošto svaki kontakt piše u svoj red, prostor mora pitati i za
-  svaki od njih, inače njihove poruke ne bi ništa javile. Cijena je to što njegov relay može saznati da su ta dva
-  prostora na jednom telefonu, a neko ko alatima pregleda telefon može otkriti da drugi prostor tamo čuva adrese, i
-  koliko kontakata ima.
+  kaže ništa više od onoga što bi rekao otvoreni prostor. Kad bi se pitalo direktno s telefona dok je otvoren drugi
+  prostor, njegov relay ili neko ko prati mrežu mogao bi povezati ta dva prostora po IP adresi telefona. Pošto svaki
+  kontakt piše u svoj red, prostor mora pitati i za svaki od njih, inače njihove poruke ne bi ništa javile. Cijena je
+  to što njegov relay može saznati da su ta dva prostora na jednom telefonu, a neko ko alatima pregleda telefon može
+  otkriti da drugi prostor tamo čuva adrese, i koliko kontakata ima.
 - **Gdje ne može zvoniti:** kad ga zaustavi Android (ili ušteda baterije telefona, ili vlastita postavka proizvođača
   telefona), nakon ponovnog pokretanja telefona dok jednom ne otvorite Erevos i prostor, u drugom prostoru (samo
   javlja da je stigla poruka, ako to dozvolite, kao iznad), ili na računaru ili u web-aplikaciji dok je zatvorena.
-  Poziv se tamo prikazuje kao propušteni poziv kad se Erevos otvori. Kad Android zatvori Erevos dok prima, tiha
-  obavijest to kaže: otvorite Erevos i prostor da biste ponovo primali. Isto radi i jedna, „Locked“, kad se prostor
-  koji je primao zatvori (na primjer nakon vraćanja rezervne kopije) i Erevos napusti ekran tražeći lozinku. Zahtjev
-  za razgovor ne može vas pozvati dok ga ne prihvatite.
+  Poziv se tamo prikazuje kao propušteni poziv kad se Erevos otvori. Kad Android zatvori Erevos dok prima i ponovo ga
+  pokrene, kao što obično radi, tiha obavijest to kaže: otvorite Erevos i prostor da biste ponovo primali. Nakon
+  **Prisilno zaustavi**, s potrošnjom baterije postavljenom na Ograničeno, ili kad ga zatvori vlastita postavka
+  proizvođača telefona, Android ništa ponovo ne pokreće, pa to ne kaže nijedna obavijest: obavijest „Erevos“ samo
+  nestane, i ništa ne zvoni dok ne otvorite Erevos. **Dozvole** (ispod) unaprijed kaže ako je nešto od toga
+  postavljeno. Isto radi i jedna, „Locked“, kad se prostor koji je primao zatvori (na primjer nakon vraćanja
+  rezervne kopije) i Erevos napusti ekran tražeći lozinku. Zahtjev za razgovor ne može vas pozvati dok ga ne
+  prihvatite.
 - **Dozvole (Android):** **Postavke** → **Općenito** → **Dozvole** prikazuje šta Android dozvoljava Erevosu za pozive
-  i poruke u pozadini (obavijesti, obavijest o pozivu i to da iskače, obavijest o porukama, pozive preko zaključanog
-  ekrana, rad na bateriji, rad u pozadini s potrošnjom baterije koja nije postavljena na Ograničeno, bez pauziranja
-  kad se ne koristi, mobilne podatke u pozadini, mikrofon) i za druge stvari (zvuk za nove poruke, obavijesti na
-  zaključanom ekranu, pozive kroz Ne ometaj, kameru, telefone u blizini, kontakte, tačna vremena), svaku s
-  objašnjenjem zašto i dugmetom koje otvara Androidovo vlastito pitanje ili postavku. Kaže i kad je telefon bez zvuka
+  i poruke u pozadini (obavijesti, obavijest o pozivu i to da iskače, obavijest o porukama, s njenim obavijestima
+  „Messages without sound“ i „Messages with a chat's own sound“, koje također čuvaju broj na ikoni, pozive preko
+  zaključanog ekrana, rad na bateriji, rad u pozadini s potrošnjom baterije koja nije postavljena na Ograničeno, bez
+  pauziranja kad se ne koristi, mobilne podatke u pozadini, mikrofon) i za druge stvari (zvuk za nove poruke,
+  obavijesti na zaključanom ekranu, pozive kroz Ne ometaj, kameru, telefone u blizini, kontakte, tačna vremena za SMS
+  zakazane za kasnije i podsjetnike, obavijest o podsjetniku kad podsjetnik stigne), svaku s objašnjenjem zašto i
+  dugmetom koje otvara Androidovo vlastito pitanje ili postavku. Kaže i kad je telefon bez zvuka
   ili na vibraciji, kad je uključena ušteda baterije i kad je uključeno Ne ometaj, a Erevos pozivi nisu propušteni
   kroz njega. Na Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung i ASUS telefonima kaže i gdje je vlastita
   postavka proizvođača, koju Erevos ne može pročitati: dodirnite **Gotovo** kad je postavljena. Nakon svake nove
@@ -1009,8 +1030,9 @@ Skriveni razgovori i računari to nemaju.
 
 **Zašto:** ključevi koji otvaraju poruke prostora nalaze se u memoriji samo dok je on otvoren, a inače su zapečaćeni
 iza njegove lozinke. Zato se nakon ponovnog pokretanja telefona ništa ne može pročitati i ništa ne zvoni dok jednom ne
-otvorite Erevos i prostor; a skriveni razgovori, čiji je ključ u memoriji samo dok su otvoreni, samo javljaju da je
-stigla poruka, ili zvone bez imena, ako im to dozvolite.
+otvorite Erevos i prostor; a skriveni razgovori, čiji je ključ u memoriji samo dok su otvoreni, osim ako ga
+**Primanje dok su zatvoreni** ne čuva uz prostor, inače samo javljaju da je stigla poruka, ili zvone bez imena, ako im
+to dozvolite.
 
 > Postavke relaya, vaš red, vaši kontakti i njihova imena, ključevi vaših razgovora i poruke čuvaju se u ovom
 > prostoru, zapečaćeni. Historija nema ograničenja: čuva se u zapečaćenim stranicama iste veličine, pomiješanim sa
@@ -1851,21 +1873,26 @@ sadrže uklonjena mjesta.
   razgovore, s Erevosom u pozadini ili na ekranu, za svaku poruku jednom, i kad je Erevos bio zatvoren i ponovo
   pokrenut; ono što je stiglo dok je mjesto bilo otvoreno ne daje nijednu kad se zatvori. To što je vaša poruka
   stigla ili pročitana, kucanje i novi ključevi ne daju nijednu, kao ni poziv koji je zvonio (pogledajte **Zvonjava
-  poziva kad su zatvoreni**); poziv koji nije zvonio računa se kao poruka. Potrebni su **Primaj i zvoni** i **Javi da
-  je stigla poruka** pod **U pozadini**, i relay koji čeka (od 18. oktobra 2026); relay od prije 23. oktobra 2026
-  može samo reći da nešto čeka, pa se tada i za to prikazuje „New message“, jednom dok ne otvorite to mjesto. Za to
-  prostor drži red na relayu za svako od svoja 4 mjesta, a oni koji se ne koriste prave se uzalud na istom relayu, pa
-  otvaranje prostora ne pokazuje ni jesu li postavljeni skriveni razgovori ni koji, dok god koriste relay prostora;
-  relay se pita samo koliko je poruka stiglo, jer ih broji po bajtu koji svaka nosi (pogledajte šta relay vidi,
-  iznad), nikad se ne traže same poruke. Onaj ko vidi obavijest i ne nađe ništa novo u vašim razgovorima mogao bi
-  pretpostaviti da ih ima još. Rezervne kopije ovo ne zadržavaju: ponovo ga uključite nakon vraćanja kopije.
+  poziva kad su zatvoreni**); poziv koji nije zvonio računa se kao poruka. Poruka ili brisanje koje su drugi Erevos
+  telefoni prenijeli do relaya (pogledajte **Prenose ih drugi telefoni** u [Razgovor s telefonom u blizini](#nearby))
+  ne može reći šta nosi, jer telefoni koji ga prenose to ne smiju znati: računa se kao poruka, pa i brisanje
+  prikazuje „New message“, a prva poruka razgovora može se računati kao dvije; a poruka poslana bez zvuka oglašava se
+  kao i obično (pogledajte **Slanje bez zvuka**). Potrebni su **Primaj i zvoni** i **Javi da je stigla poruka** pod
+  **U pozadini**, što prekidač kaže kad nisu uključeni, i relay koji čeka (od 18. oktobra 2026); relay od prije
+  23. oktobra 2026 može samo reći da nešto čeka, pa se tada i za to prikazuje „New message“, jednom dok ne otvorite
+  to mjesto. Za to prostor drži red na relayu za svako od svoja 4 mjesta, a oni koji se ne koriste prave se uzalud na
+  istom relayu, pa otvaranje prostora ne pokazuje ni jesu li postavljeni skriveni razgovori ni koji, dok god koriste
+  relay prostora; relay se pita samo koliko je poruka stiglo, jer ih broji po bajtu koji svaka nosi (pogledajte šta
+  relay vidi, iznad), nikad se ne traže same poruke. Onaj ko vidi obavijest i ne nađe ništa novo u vašim razgovorima
+  mogao bi pretpostaviti da ih ima još. Rezervne kopije ovo ne zadržavaju: ponovo ga uključite nakon vraćanja kopije.
 - **Zvonjava poziva kad su zatvoreni** (Android): ispod **Javi kad stigne poruka**, dok je **Primanje dok su
-  zatvoreni** isključeno. Kad je uključeno, dok je mjesto zatvoreno, a Erevos u pozadini, poziv od jednog od njegovih
-  kontakata tjera telefon da zvoni i prikaže „Incoming call“ bez imena, kao što to radi poziv iz vaših ostalih
-  razgovora. Na ekranu koji zvoni dodirnite mali znak, upišite PIN i dodirnite **Poveži** da se javite; obično **Javi
-  se** ga ne može povezati, a **Odbij** zaustavlja zvonjenje. Zvonjenje traje oko 45 sekundi. Potrebni su **Primaj i
-  zvoni** pod **U pozadini** i relay koji čeka, a koristi vlastiti red na relayu za svako od 4 mjesta, pri čemu se oni
-  koji ne zvone prave uzalud na istom relayu, isto kao i obavijest o porukama iznad, pa otvaranje prostora ništa ne
+  zatvoreni** isključeno. Kad je uključeno, dok je mjesto zatvoreno, a Erevos u pozadini ili na bilo kojem ekranu,
+  poziv od jednog od njegovih kontakata tjera telefon da zvoni i prikaže „Incoming call“ bez imena, kao što to radi
+  poziv iz vaših ostalih razgovora. Na ekranu koji zvoni dodirnite mali znak, upišite PIN i dodirnite **Poveži** da se
+  javite; obično **Javi se** ga ne može povezati, a **Odbij** zaustavlja zvonjenje. Zvonjenje traje oko 45 sekundi.
+  Potrebni su **Primaj i zvoni** pod **U pozadini**, što prekidač kaže kad nije uključeno, i relay koji čeka, a
+  koristi vlastiti red na relayu za svako od 4 mjesta, pri čemu se oni koji ne zvone prave uzalud na istom relayu,
+  isto kao i obavijest o porukama iznad, pa otvaranje prostora ništa ne
   odaje. Pozivalac samo zvoni na red tamo; sam poziv čeka u vlastitom redu razgovora dok ga PIN ne otvori. Kontakt
   kojeg ste obrisali i dalje može natjerati telefon da zvoni, ali poziv se nikad ne može povezati. Poziv upućen s
   povezanog računara zvoni samo dok su skriveni razgovori otvoreni. Rezervne kopije ovo ne zadržavaju: ponovo ga
@@ -2126,6 +2153,10 @@ ne leži nezapečaćeno iznenada.
 - **Računar i telefon mogu dijeliti nalog:** povežite računar s telefonom, i oba imaju iste razgovore i kontakte,
   pogledajte [Povezani uređaji](#devices). Ili rezervna kopija premješta sve s jednog na drugi, pogledajte
   [Rezervne kopije](#backup), a od tada koristite samo jedan.
+- **Bez obavijesti i zvukova:** Erevos na računaru ne prikazuje nijednu obavijest sistema i ne pušta nikakav zvuk.
+  Dok radi, nova poruka se prikazuje samo u njegovom prozoru, a poziv tamo prikazuje svoj ekran bez zvonjenja, pa
+  kad je prozor minimiziran ili iza nekog drugog, ništa vam to ne javlja. Kad je zatvoren, ne prima ništa: poruke
+  čekaju na relayu, a poziv se prikazuje kao propušteni poziv kad se otvori.
 - **Dosad testirano** na Linuxu. Verzije za Mac i Windows grade se i otvaraju na GitHubovim računarima, još ne od
   strane neke osobe.
 
@@ -2440,7 +2471,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Rezervne kopije** | Jedna datoteka zapečaćena vlastitom lozinkom, koja sadrži svaki prostor onako kako je zapečaćen na telefonu. Njeno ime kaže da je to Erevos rezervna kopija, a njena veličina otprilike pokazuje koliko se čuva. Automatske rezervne kopije čuvaju svoju lozinku na telefonu. | Rezervne kopije direktno na Nextcloud ili WebDAV. |
 | **Oznake ✓✓ i ✓✓✓** | Telefon kontakta saznaje, šifrirano, kada je vaš dobio i pročitao njegove poruke. Relay, ili onaj ko prisluškuje u blizini, vidi još jednu malu poruku. | Prekidač da se ne javlja kada čitate. |
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
-| **Obavijesti (Android)** | U pozadini: „Erevos“, „Incoming call“ i „New message“ ili koliko ih je stiglo, nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |
+| **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |
 | **Widget i Telefon (Android)** | Widget, kad se doda, prikazuje koliko ima propuštenih poziva, nepročitanih SMS poruka i novih poruka, nikad od koga ni šta. Telefon se otvara bez lozinke samo ako to dozvolite: tada svako ko drži otključan telefon vidi pozive i favorite koje Android čuva, samo s imenima iz kontakata telefona. | |
 | **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko relaya za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez relaya za pozive, samo na istoj Wi-Fi mreži, svaki telefon vidi adresu drugog. Relayi vide kada poziv počinje zvoniti. | Zvonjenje na računaru i u web-aplikaciji dok su zatvoreni. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
 | **Grupni razgovori** | Šifrirani s kraja na kraj pomoću MLS-a (RFC 9420); uklonjeni članovi nakon toga ništa ne čitaju. Kopija svakog člana zapečaćena je zasebno, pa relayi ne mogu saznati ko je u grupi; svaki relay ipak vidi da poruka stiže u red. Članovi vide ključeve i adrese relaya jedni drugih. Fotografije, datoteke i glasovne poruke idu preko pohrane datoteka relaya pošiljaoca, kao i kontaktu, i ostaju tamo 14 dana. Nije nezavisno provjereno. | |

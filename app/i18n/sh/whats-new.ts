@@ -42,6 +42,38 @@ export const whatsNew: Record<string, string> = {
     '**Obavijesti web-aplikacije, pouzdanije**: nema više „Nova poruka“ preko Erevosa dok je otvoren, a push zadržan dok telefon nije bio na mreži više ne broji poruke koje ste već pročitali (oboje kad je vaš relay ažuriran), svaka obavijest se oglašava zvukom u Chromeu, Firefoxu i Edgeu, same se vraćaju kad preglednik promijeni svoju push adresu, a „Obavijesti dok je Erevos zatvoren“ kažu kad ih preglednik blokira ili kad vašem relayu još nije javljeno da su isključene. Vidi [Na iPhoneu](#iphone).',
   "**The relay's pushes to the web app, sturdier**: a push the push service could not take just then is sent again, a call goes before the messages waiting their turn, and whoever runs the relay can allow another push service. Your relay needs an update for it.":
     '**Push od relaya do web-aplikacije, otporniji**: push koji push servis u tom trenutku nije mogao primiti šalje se ponovo, poziv ide prije poruka koje čekaju na red, a onaj ko vodi relay može dozvoliti drugi push servis. Za to je vašem relayu potrebno ažuriranje.',
+  "**Permissions checks every notice Erevos uses**: on Android, the message notice without sound or with a chat's own sound, and the reminders', turned off, now show there, with a button to each. See [Chat through a relay](#relay).":
+    '**Dozvole provjeravaju svaku obavijest koju Erevos koristi**: na Androidu se tamo sada prikazuju, kad su isključene, i obavijest o porukama bez zvuka ili s vlastitim zvukom razgovora, i obavijest o podsjetnicima, s dugmetom za svaku. Pogledajte [Razgovor preko relaya](#relay).',
+  '**Hidden chats say what their switches need**: Say when a message comes and Ring calls when closed say so when Settings → Notifications → In the background lets them do nothing. See [Hidden chats](#hidden).':
+    '**Skriveni razgovori kažu šta je potrebno njihovim prekidačima**: „Javi kad stigne poruka“ i „Zvonjava poziva kad su zatvoreni“ to kažu kad im „Postavke → Obavijesti → U pozadini“ ne dozvoljava da išta rade. Pogledajte [Skriveni razgovori](#hidden).',
+  "**Truer words about notices**: Settings and the guide give the notices' own words and say what each one needs. See [Chat through a relay](#relay).":
+    '**Tačnije riječi o obavijestima**: Postavke i vodič navode vlastite riječi obavijesti i kažu šta je kojoj potrebno. Pogledajte [Razgovor preko relaya](#relay).',
+  "**Calls ring as they should**: with Do Not Disturb only when their notice may break through, with a phone's clock off too once the relay is updated, and to the end on Android 7 and 8; a second call is told busy, and a ring stops only for its own call. See [Chat through a relay](#relay).":
+    '**Pozivi zvone kako treba**: uz Ne ometaj samo kad njihova obavijest smije proći kroz njega, i kad sat telefona nije tačan, nakon što se relay ažurira, i do kraja na Androidu 7 i 8; drugi poziv dobija odgovor da je zauzeto, a zvonjenje prestaje samo zbog svog poziva. Pogledajte [Razgovor preko relaya](#relay).',
+  '**Hidden calls**: one turned down no longer leaves Erevos over the lock screen, one that comes while the password screen shows comes over it, and none rings twice. See [Hidden chats](#hidden).':
+    '**Skriveni pozivi**: odbijeni poziv više ne ostavlja Erevos preko zaključanog ekrana, onaj koji stigne dok je prikazan ekran za lozinku prikazuje se preko njega, i nijedan ne zvoni dvaput. Pogledajte [Skriveni razgovori](#hidden).',
+  '**Notices come again at once after a change of network**, and receiving starts again as Erevos shows when Android refused it. See [Chat through a relay](#relay).':
+    '**Obavijesti ponovo stižu odmah nakon promjene mreže**, a primanje se ponovo pokreće kad se Erevos prikaže, ako ga je Android odbio. Pogledajte [Razgovor preko relaya](#relay).',
+  "**Hidden chats' notices tell each message once**: what came since a place last looked is told as it closes, a call that rang is not told again as a message, and a place whose queue the relay lost keeps its switch on. See [Hidden chats](#hidden).":
+    '**Obavijesti skrivenih razgovora javljaju svaku poruku jednom**: ono što je stiglo otkako je mjesto zadnji put provjerilo javlja se kad se zatvori, poziv koji je zvonio ne javlja se ponovo kao poruka, a mjesto čiji je red relay izgubio zadržava uključen prekidač. Pogledajte [Skriveni razgovori](#hidden).',
+  '**Hidden chats close while Erevos is away**, after 30 seconds, so a call to them meanwhile rings with their PIN to answer. See [Hidden chats](#hidden).':
+    '**Skriveni razgovori se zatvaraju dok je Erevos van ekrana**, nakon 30 sekundi, pa poziv za njih u međuvremenu zvoni, a javljate se njihovim PIN-om. Pogledajte [Skriveni razgovori](#hidden).',
+  '**A voice message counts once**, on its last part, also when it goes again whole.':
+    '**Glasovna poruka se broji jednom**, na svom zadnjem dijelu, i kad ponovo ide cijela.',
+  '**The number on the icon counts only what is still there**: a message deleted for everyone, or read on a linked computer, no longer counts. See [Chat through a relay](#relay).':
+    '**Broj na ikoni broji samo ono što je još tamo**: poruka obrisana za sve, ili pročitana na povezanom računaru, više se ne broji. Pogledajte [Razgovor preko relaya](#relay).',
+  '**Messages sent for later** tell of themselves only while their space is open, without sound if sent so.':
+    '**Poruke zakazane za kasnije** javljaju o sebi samo dok je njihov prostor otvoren, bez zvuka ako su tako poslane.',
+  '**SMS**: one to the chat on screen only sounds there, they are marked read only while their screen shows, and Android names their notices SMS. See [SMS](#sms).':
+    '**SMS**: onaj za razgovor na ekranu oglašava se samo tamo, označavaju se kao pročitani samo dok je njihov ekran prikazan, a Android njihove obavijesti naziva SMS. Pogledajte [SMS](#sms).',
+  "**Reminders**: one seen in Chat with myself goes from the notice, a hidden place's go with a new PIN, and birthdays come at 9:00. See [Getting started](#start).":
+    '**Podsjetnici**: onaj viđen u Razgovoru sa sobom nestaje iz obavijesti, podsjetnici skrivenog mjesta nestaju s novim PIN-om, a rođendani stižu u 9:00. Pogledajte [Prvi koraci](#start).',
+  '**Nostr reads as soon as Tor is ready.** See [Through Nostr](#nostr).':
+    '**Nostr čita čim je Tor spreman.** Pogledajte [Preko Nostra](#nostr).',
+  "**Erevos's notices show its mark** in the status bar.":
+    '**Obavijesti Erevosa prikazuju njegov znak** u statusnoj traci.',
+  '**Notices are asked for with receiving off too**, when Say a message came is on.':
+    '**Dozvola za obavijesti traži se i s isključenim primanjem**, kad je uključeno „Javi da je stigla poruka“.',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

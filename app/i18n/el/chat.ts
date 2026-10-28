@@ -12,7 +12,8 @@ export const chat: Record<string, string> = {
   // Send held down (components/later-picker.tsx for the time).
   'Scheduled · {when}': 'Προγραμματισμένο · {when}',
   'Sent without sound': 'Στάλθηκε χωρίς ήχο',
-  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.': 'Το τηλέφωνό τους το δείχνει χωρίς ήχο ή δόνηση. Το Erevos ως web εφαρμογή δεν μπορεί να το ξέρει, και ηχεί κανονικά.',
+  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, nor can the notice of chats that are closed (hidden chats, another space), and these sound as usual.':
+    'Το τηλέφωνό τους το δείχνει χωρίς ήχο ή δόνηση. Το Erevos ως web εφαρμογή δεν μπορεί να το ξέρει, ούτε η ειδοποίηση συνομιλιών που είναι κλειστές (κρυφές συνομιλίες, άλλος χώρος), και αυτά ηχούν κανονικά.',
   'Send later': 'Αποστολή αργότερα',
   'The relay keeps it and sends it at that time, even if this phone is off then.': 'Το relay το κρατά και το στέλνει εκείνη την ώρα, ακόμα κι αν αυτό το τηλέφωνο είναι τότε σβηστό.',
   'The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.': 'Το relay το κρατά και το στέλνει εκείνη την ώρα, ακόμα κι αν αυτό το τηλέφωνο είναι τότε σβηστό. Στις κρυφές συνομιλίες το relay πρέπει να είναι διαθέσιμο τώρα.',
@@ -217,8 +218,8 @@ export const chat: Record<string, string> = {
   'Chat details': 'Λεπτομέρειες συνομιλίας',
   'Change PIN': 'Αλλαγή PIN',
   'Say when a message comes': 'Ειδοποίηση όταν έρχεται μήνυμα',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές και το Erevos είναι στο παρασκήνιο, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», ή πόσα ήρθαν, όπως για τις άλλες συνομιλίες· το ότι ένα μήνυμα έφτασε ή διαβάστηκε δεν βγάζει καμία. Όποιος τη δει και δεν βρει τίποτα νέο στις συνομιλίες σου μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
+  'While these hidden chats are closed, with Erevos in the background or showing, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές, με το Erevos στο παρασκήνιο ή μπροστά σου, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», ή πόσα ήρθαν, όπως για τις άλλες συνομιλίες· το ότι ένα μήνυμα έφτασε ή διαβάστηκε δεν βγάζει καμία. Όποιος τη δει και δεν βρει τίποτα νέο στις συνομιλίες σου μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Κλειστές, αυτές οι κρυφές συνομιλίες δεν λένε τίποτα: τα μηνύματά τους περιμένουν στο relay μέχρι να τις ανοίξεις.',
   'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':

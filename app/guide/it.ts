@@ -143,16 +143,18 @@ dispositivi collegati. Un backup prende le sue note e i suoi messaggi vocali, ma
   ricordarti, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00**, o qualsiasi giorno, ora e minuto) e
   tocca **Ricordamelo**. Va nella Chat con me stesso, con una campanella e la sua ora. Nella chat, **+** →
   **Ricordamelo**, o tenere premuta la freccia di invio, dà un’ora anche alla nota che scrivi.
-- **All’ora stabilita**, su Android, il telefono mostra una notifica che dice solo **Reminder**, anche con Erevos
-  chiuso e bloccato; se la tocchi, apre la Chat con me stesso, dopo la password. Finché non apri la chat, il promemoria
-  appare sulla sua riga in cima alle chat, con un conteggio, e nella chat con un bordo colorato. Su un computer, nella
-  web app, o con le notifiche disattivate, è lì che lo vedi.
+- **All’ora stabilita**, su Android, il telefono mostra una notifica, **Reminder** (o **3 reminders**) – «Open Chat
+  with myself to read it», mai quello che dice, anche con Erevos chiuso e bloccato; se la tocchi, apre la Chat con me
+  stesso, dopo la password. Finché non apri la chat, il promemoria appare sulla sua riga in cima alle chat, con un
+  conteggio, e nella chat con un bordo colorato; visto lì, se ne va anche dalla notifica. Su un computer, nella web
+  app, o con le notifiche disattivate, è lì che lo vedi. Se **Orari esatti** non è consentito (**Impostazioni** →
+  **Generali** → **Autorizzazioni**), Android può mostrarlo con qualche minuto di ritardo.
 - **Tenendo premuta una nota** hai **Copia**, **Apri** (una foto o un file), **Ricordamelo**, oppure **Cambia il
   promemoria** e **Nessun promemoria**, ed **Elimina**.
 - Ogni spazio ha una sua Chat con me stesso, e così anche ogni posto di chat nascoste, in cima al loro elenco (vedi
   [Chat nascoste](#hidden)). I promemoria di un posto nascosto appaiono lì quando il suo PIN lo apre; il telefono li
-  annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica che dice solo
-  **Reminder**.
+  annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica. Un nuovo PIN
+  per il posto, che lo fa ripartire vuoto, o la rimozione del posto tolgono i suoi promemoria dal telefono.
 
 **Perché:** una notifica appare sullo schermo bloccato a chiunque abbia in mano il telefono, quindi quello che dice un
 promemoria resta crittografato nel suo spazio e ad Android viene detta solo la sua ora: la notifica non può dire a
@@ -608,7 +610,10 @@ chat appare sullo schermo.
   **In background** è su **Ricevi e squilla** (più sotto), o alla prossima apertura di Erevos.
 - **Invia senza suono:** tieni premuta la freccia di invio e scegli **Senza suono**: il suo telefono mostra la
   notifica senza suono né vibrazione. Un Erevos di prima non lo sa e suona come al solito, e così Erevos come web app,
-  la cui notifica arriva dal browser.
+  la cui notifica arriva dal browser. Così anche la notifica di un posto di chat nascoste chiuso, con **Avvisa quando
+  arriva un messaggio** attivo, e di uno spazio chiuso con **Anche mentre è aperto un altro spazio**: questi chiedono
+  al relay solo quanti ne sono arrivati, e il relay non sa distinguere uno senza suono da un altro, perché solo il
+  messaggio crittografato lo dice.
 - **Link:** un indirizzo web in un messaggio è sottolineato. Toccalo ed Erevos lo mostra intero, da aprire nel browser
   solo se è dove vuoi andare. Prima di allora non viene scaricato nulla.
 - **Condividi da un’altra app** (Android): nel menu **Condividi** di un’altra app, come quello del browser per una
@@ -726,7 +731,9 @@ un indirizzo push per tutte le code dei tuoi contatti (vedi [Su iPhone](#iphone)
   sposta la tua coda solo finché il link nomina ancora quella, come fa fino al tuo primo spostamento. Chi hai bloccato
   è in **Contatti bloccati** in **Nuova chat**, con **Sblocca**. Aggiungerlo di nuovo dal suo link ti chiede prima di
   sbloccarlo; fino ad allora niente lo aggiunge, né la sua risposta a un invito via SMS né il suo link di contatto in
-  un gruppo.
+  un gruppo. Ogni persona che scrive dal tuo link di contatto può far suonare il telefono, come fa qualsiasi messaggio:
+  **Rifiuta** o **Blocca** ferma quella persona, **Notifiche** → **In silenzio** nella sua chat la zittisce senza
+  rifiutarla, e **Nuovo link di contatto** ferma chi ha il vecchio link una volta passati i suoi 14 giorni.
 - **Gruppi:** qualcuno in uno dei tuoi gruppi può ancora scriverti lì. Erevos dice in quanti gruppi siete insieme:
   lasciali, o chiedi al loro admin di rimuoverlo.
 - **Quando il relay non è raggiungibile**, la coda cambia appena risponde, e fino ad allora niente di quello che invia
@@ -976,15 +983,18 @@ computer non ce l’hanno.
   collegamento da vicino e va direttamente tra i telefoni (o i computer). Lo stesso vale per i messaggi di gruppo
   e le chiamate di gruppo.
 - **In background (Android):** mentre uno spazio è aperto, Erevos continua a funzionare quando lo lasci, con Home o
-  togliendolo dalle app recenti, con una notifica silenziosa che dice solo «Erevos». Resta in ascolto sul relay e sui
-  collegamenti con i telefoni vicini, così i messaggi arrivano: una notifica
-  dice solo «New message», o quanti ne sono arrivati, e a telefono bloccato solo «Erevos». Una chiamata squilla con la
-  suoneria del telefono e una notifica che dice solo «Incoming call», anche sulla schermata di blocco e sul salvaschermo,
-  e lo schermo si accende. Toccala per rispondere. Con il blocco
+  togliendolo dalle app recenti, con una notifica silenziosa, «Erevos – Ready for calls and messages», che non appare
+  sulla schermata di blocco. Resta in ascolto sul relay e sui collegamenti con i telefoni vicini, così i messaggi
+  arrivano: una notifica dice solo «New message», o quanti ne sono arrivati, e a telefono bloccato solo «Erevos». Una
+  richiesta di messaggio, da qualcuno che ha solo il tuo link di contatto, fa la stessa notifica e lo stesso suono, e
+  conta sull’icona, come qualsiasi messaggio. Una chiamata squilla con la suoneria del telefono e una notifica,
+  «Incoming call» (o «Incoming video call») – «Open Erevos to answer», senza nome, anche sulla schermata di blocco e
+  sul salvaschermo, e lo schermo si accende. Toccala per rispondere. Con il blocco
   con password attivo, una chiamata che squilla appare prima della password, ed Erevos si blocca appena finisce. Da
   bloccato, lo spazio continua dietro la schermata della password, quindi messaggi e chiamate arrivano comunque, e una
   chiamata appare sopra la schermata della password. Solo le chat
-  e i gruppi di quello spazio arrivano così; le chat nascoste dicono solo che è arrivato un messaggio, se lo permetti
+  e i gruppi di quello spazio arrivano così, e le chat nascoste con **Ricevere da chiuse** attivo; le altre chat
+  nascoste dicono solo che è arrivato un messaggio, o squillano senza nome, se lo permetti
   (vedi Chat nascoste). Impostalo in **Impostazioni** → **Notifiche** → **In background**:
   **Ricevi e squilla** (l’impostazione predefinita) o **Solo mentre Erevos è visibile**, e **Avvisa dei nuovi messaggi**
   (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì, se Android li
@@ -996,7 +1006,8 @@ computer non ce l’hanno.
   messaggi di una chat in silenzio (vedi Notifiche di questa chat), né quelli di una chat nascosta quando esci. Il
   launcher di Android la mostra sull’icona di Erevos, come numero o, su alcuni telefoni come i Pixel, come punto.
   **Impostazioni** → **Notifiche** → **Numero sull’icona** lo disattiva: allora la notifica parla solo di ciò che è
-  arrivato dall’ultima volta che avevi Erevos aperto, e il numero del launcher se ne va con lei.
+  arrivato dall’ultima volta che avevi Erevos aperto, e il numero del launcher se ne va con lei. Un messaggio eliminato
+  per tutti prima che tu lo legga, o letto su un computer collegato, non conta più.
 
   **Perché:** su Android solo una notifica può mettere un numero sull’icona di un’app, quindi la notifica resta finché
   ci sono messaggi in attesa; non dice più di quanti sono, come ha sempre fatto.
@@ -1004,14 +1015,20 @@ computer non ce l’hanno.
   aspettano sul suo relay e arrivano quando lo apri. A meno che tu non scelga, in quello spazio, **Anche mentre è aperto
   un altro spazio** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è **Questo
   spazio solo quando è aperto**): allora, mentre un altro spazio è aperto e riceve, dice solo «New message», o quanti ne
-  sono arrivati, con la stessa notifica di quello spazio, mai quale spazio, e le sue chat nascoste non dicono nulla. Per
+  sono arrivati, con la stessa notifica di quello spazio, mai quale spazio, e le sue chat nascoste non dicono nulla.
+  Quello che altri telefoni hanno portato al suo relay conta come messaggio, anche le eliminazioni, e un messaggio
+  inviatogli senza suono suona come al solito (vedi **Invia senza suono**). Per
   questo il telefono conserva gli indirizzi delle sue code sul suo relay fuori dalla sua password, tra cui quella in cui
   scrive ciascuno dei suoi contatti, fino a 64 contatti, mai le sue chiavi, chi sono i suoi contatti o i messaggi, e
   chiede al relay solo quanti ne sono arrivati, mai i messaggi stessi: restano lì finché lo spazio non si apre. A uno
-  spazio che passa da Tor si chiede solo tramite Tor, mentre lo spazio aperto ha Tor pronto.
+  spazio che passa da Tor (**Messaggi**, l’impostazione predefinita, o **Tutto**, in **Cosa passa da Tor**) si chiede solo
+  tramite Tor: mentre lo spazio aperto ha Tor disattivato, o il suo Tor si sta avviando o ha appena fallito, lo spazio
+  chiuso non dice nulla, e quello che è arrivato viene detto appena lì Tor è pronto.
 
   **Perché:** uno spazio dietro una seconda password non deve mostrare di esistere, quindi questo è disattivato finché
-  non lo attivi, e allora non dice più di quanto direbbe lo spazio aperto. Poiché ogni contatto scrive in una coda tutta
+  non lo attivi, e allora non dice più di quanto direbbe lo spazio aperto. Se gli si chiedesse direttamente dal
+  telefono mentre un altro spazio è aperto, il suo relay o qualcuno che osserva la rete potrebbe collegare i due spazi
+  tramite l’indirizzo internet del telefono. Poiché ogni contatto scrive in una coda tutta
   sua, lo spazio deve chiedere anche di ciascuna di esse, altrimenti i loro messaggi non direbbero nulla. Il prezzo è
   che il suo relay potrebbe capire che i due spazi sono su un unico telefono, e qualcuno che esamina il telefono con
   degli strumenti potrebbe scoprire che un secondo spazio conserva lì degli indirizzi, e quanti contatti ha.
@@ -1019,17 +1036,23 @@ computer non ce l’hanno.
   produttore del telefono), dopo il riavvio del telefono finché non apri Erevos e lo spazio una volta, in un altro
   spazio (dice solo che è arrivato un messaggio, se lo permetti, come sopra), o su un computer o nella web
   app mentre è chiusa. Lì una chiamata appare come chiamata persa quando Erevos si apre. Quando Android chiude Erevos
-  mentre riceve, una notifica silenziosa lo dice: apri Erevos e lo spazio per ricevere di nuovo. Lo stesso fa una,
+  mentre riceve e lo riavvia, come fa di solito, una notifica silenziosa lo dice: apri Erevos e lo spazio per ricevere
+  di nuovo. Dopo **Forza interruzione**, con l’utilizzo della batteria impostato su Con restrizioni, o quando lo chiude
+  l’impostazione del produttore del telefono, Android non riavvia nulla, quindi nessuna notifica lo dice: la notifica
+  «Erevos» semplicemente sparisce, e niente squilla finché non apri Erevos. **Autorizzazioni** (più sotto) lo dice in
+  anticipo se una di queste è impostata. Lo stesso fa una,
   «Locked», quando lo spazio che riceveva si chiude (dopo il ripristino di un backup, per esempio) ed Erevos lascia lo
   schermo chiedendo la password. Una richiesta di messaggio non può chiamarti finché
   non la accetti.
 - **Autorizzazioni (Android):** **Impostazioni** → **Generali** → **Autorizzazioni** mostra che cosa Android permette a
   Erevos di fare per chiamate e messaggi in background (notifiche, la notifica delle chiamate e il suo comparire in
-  primo piano, la notifica dei messaggi, le chiamate sulla schermata di blocco, il funzionamento col risparmio batteria,
-  il funzionamento in background con l’utilizzo della batteria non impostato su Con restrizioni, la non sospensione
-  quando non è usato, i dati mobili in background, il microfono) e per altre cose (il suono per i nuovi messaggi, le
-  notifiche sulla schermata di blocco, le chiamate attraverso Non disturbare, la fotocamera, i telefoni vicini, i
-  contatti, gli orari esatti), ognuna con il perché e un pulsante che apre la domanda o l’impostazione di Android
+  primo piano, la notifica dei messaggi, con le sue notifiche «Messages without sound» e «Messages with a chat's own
+  sound», che tengono anche il numero sull’icona, le chiamate sulla schermata di blocco, il funzionamento col risparmio
+  batteria, il funzionamento in background con l’utilizzo della batteria non impostato su Con restrizioni, la non
+  sospensione quando non è usato, i dati mobili in background, il microfono) e per altre cose (il suono per i nuovi
+  messaggi, le notifiche sulla schermata di blocco, le chiamate attraverso Non disturbare, la fotocamera, i telefoni
+  vicini, i contatti, gli orari esatti per gli SMS inviati più tardi e i promemoria, la notifica dei promemoria una
+  volta arrivato un promemoria), ognuna con il perché e un pulsante che apre la domanda o l’impostazione di Android
   stesso. Dice anche quando il telefono è in silenzioso o in vibrazione, quando è attivo il risparmio energetico, e
   quando Non disturbare è attivo e non lascia passare le chiamate di Erevos. Sui telefoni Huawei, Honor, Xiaomi, OPPO,
   realme, OnePlus, vivo, Samsung e ASUS dice anche dov’è l’impostazione del produttore, che Erevos non può leggere:
@@ -1047,8 +1070,9 @@ computer non ce l’hanno.
 
 **Perché:** le chiavi che aprono i messaggi di uno spazio sono in memoria solo mentre è aperto, e altrimenti sigillate
 dietro la sua password. Così dopo il riavvio del telefono non si può leggere nulla e niente squilla finché non apri
-Erevos e lo spazio una volta; e le chat nascoste, la cui chiave è in memoria solo mentre sono aperte, dicono solo che è
-arrivato un messaggio, o squillano senza nome, se lo permetti.
+Erevos e lo spazio una volta; e le chat nascoste, la cui chiave è in memoria solo mentre sono aperte a meno che
+**Ricevere da chiuse** non la tenga con lo spazio, altrimenti dicono solo che è arrivato un messaggio, o squillano senza
+nome, se lo permetti.
 
 > Le impostazioni del relay, la tua coda, i tuoi contatti e i loro nomi, le chiavi delle tue conversazioni e i
 > messaggi sono conservati in questo spazio, sigillati. La cronologia non ha limiti: è conservata in pagine sigillate
@@ -1928,8 +1952,13 @@ cancellerebbe quello che contengono i posti tolti.
   una volta, anche quando Erevos è stato chiuso e riavviato; quello che è arrivato mentre il posto era aperto non ne fa
   nessuna dopo che si chiude. Che un tuo messaggio gli sia arrivato o sia stato letto, la scrittura in corso e le nuove
   chiavi non ne fanno, né una chiamata che ha squillato (vedi **Fai squillare le chiamate quando sono
-  chiuse**); una che non ha squillato conta come messaggio. Richiede **Ricevi e squilla** e **Avvisa dei nuovi
-  messaggi** in **In background**, e un relay che aspetta (dal 18 ottobre 2026 in poi); uno di prima del 23 ottobre
+  chiuse**); una che non ha squillato conta come messaggio. Un messaggio o un’eliminazione che altri telefoni Erevos
+  hanno portato al relay (vedi **Trasportati da altri telefoni** in [Chat con un telefono vicino](#nearby)) non può dire
+  che cosa porta, perché i telefoni che lo portano non devono saperlo: conta come messaggio, quindi anche
+  un’eliminazione mostra «New message», e il primo messaggio di una chat può contare per due; e uno inviato senza suono
+  suona come al solito (vedi **Invia senza suono**). Richiede **Ricevi e squilla** e **Avvisa dei nuovi messaggi** in
+  **In background**, cosa che l’interruttore dice quando non sono attivi, e un relay che aspetta (dal 18 ottobre 2026
+  in poi); uno di prima del 23 ottobre
   2026 può solo dire che qualcosa aspetta, quindi allora appare «New message» anche per questo, una volta finché non
   apri quel posto. Per questo, lo spazio tiene una coda sul relay per ciascuno dei suoi 4 posti, quelle non in uso
   create per niente sullo stesso relay, così aprire lo spazio non mostra né se ci sono chat nascoste impostate né
@@ -1938,13 +1967,13 @@ cancellerebbe quello che contengono i posti tolti.
   niente di nuovo nelle tue chat può immaginare che ce ne siano altre. I backup non lo conservano: riattivalo dopo il
   ripristino.
 - **Fai squillare le chiamate quando sono chiuse** (Android): sotto **Avvisa quando arriva un messaggio**, mentre
-  **Ricevere da chiuse** è disattivato. Se lo attivi, mentre il posto è chiuso ed Erevos è in background una chiamata
-  da uno dei suoi contatti fa squillare il telefono e
+  **Ricevere da chiuse** è disattivato. Se lo attivi, mentre il posto è chiuso, con Erevos in background o su qualsiasi
+  schermata, una chiamata da uno dei suoi contatti fa squillare il telefono e
   mostrare «Incoming call» senza nome, come una chiamata dalle tue altre chat. Sulla schermata dello squillo, tocca il
   piccolo segno, scrivi il PIN e tocca **Connetti** per rispondere; un semplice **Rispondi** non può collegarla, e
-  **Rifiuta** ferma lo squillo. Lo squillo dura circa 45 secondi. Richiede **Ricevi e squilla** in **In background** e
-  un relay che aspetta, e usa una sua coda sul relay per ciascuno dei 4 posti, quelle che non squillano create per
-  niente sullo stesso relay, come per la notifica dei messaggi qui sopra, così aprire lo spazio non rivela nulla. Chi
+  **Rifiuta** ferma lo squillo. Lo squillo dura circa 45 secondi. Richiede **Ricevi e squilla** in **In background**,
+  cosa che l’interruttore dice quando non è attivo, e un relay che aspetta, e usa una sua coda sul relay per ciascuno
+  dei 4 posti, quelle che non squillano create per niente sullo stesso relay, come per la notifica dei messaggi qui sopra, così aprire lo spazio non rivela nulla. Chi
   chiama fa solo squillare una coda lì; la chiamata stessa aspetta sulla coda della chat finché il PIN non la apre. Un
   contatto che hai eliminato può ancora farlo squillare, ma la chiamata non può mai collegarsi. Una chiamata fatta da un
   computer collegato squilla solo mentre le chat nascoste sono aperte.
@@ -2213,6 +2242,10 @@ non sigillato a tua insaputa.
 - **Un computer e un telefono possono condividere un account:** collega il computer al telefono, ed entrambi hanno le
   stesse chat e gli stessi contatti, vedi [Dispositivi collegati](#devices). Oppure un backup sposta tutto dall’uno
   all’altro, vedi [Backup](#backup), e da quel momento usa solo uno dei due.
+- **Nessuna notifica né suono:** Erevos su un computer non mostra notifiche del sistema e non emette suoni. Mentre è in
+  funzione, un nuovo messaggio appare solo nella sua finestra, e una chiamata mostra lì la sua schermata senza
+  squillare, quindi con la finestra ridotta a icona o dietro un’altra, niente te lo dice. Da chiuso non riceve nulla:
+  i messaggi aspettano sul relay, e una chiamata appare come chiamata persa quando si apre.
 - **Provato finora** su Linux. Le versioni per Mac e Windows sono compilate e aperte sui computer di GitHub, non ancora
   da una persona.
 
@@ -2544,7 +2577,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Backup** | Un unico file sigillato con una sua password, che contiene ogni spazio così come è sigillato sul telefono. Il suo nome dice che è un backup di Erevos, e la sua dimensione mostra più o meno quanto viene conservato. I backup automatici conservano la loro password sul telefono. | Backup direttamente su Nextcloud o WebDAV. |
 | **Segni ✓✓ e ✓✓✓** | Il telefono del contatto sa quando il tuo ha ricevuto e letto i suoi messaggi, in modo crittografato. Il relay, o chi ascolta da vicino, vede un piccolo messaggio in più. | Un interruttore per non dire più quando leggi. |
 | **Impronta o volto (Android)** | Disattivato finché non lo attivi. Apre solo lo spazio della prima password: la sua chiave è sigillata nell’Android Keystore, utilizzabile solo subito dopo un controllo forte dell’impronta o del volto, e scartata quando questi cambiano. Qualcuno che ti trattiene può usare il tuo dito. | |
-| **Notifiche (Android)** | In background: «Erevos», «Incoming call», e «New message» o quanti ne sono arrivati, mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |
+| **Notifiche (Android)** | In background: «Erevos – Ready for calls and messages» (non sulla schermata di blocco), «Incoming call» o «Incoming video call» – «Open Erevos to answer», e «New message» o quanti ne sono arrivati; quando Android o la password lo fermano, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un promemoria, «Reminder» o quanti; una nuova versione, «Erevos X is out». Mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |
 | **Widget e Telefono (Android)** | Il widget, una volta aggiunto, mostra quante chiamate perse, SMS non letti e nuovi messaggi ci sono, mai chi o cosa. Il Telefono si apre senza password solo se lo permetti: allora chiunque abbia in mano il telefono sbloccato vede le chiamate e i preferiti che Android conserva, con i soli nomi dei contatti del telefono. | |
 | **Chiamate** | Crittografate end-to-end (DTLS-SRTP, con la chiave inviata nella chat crittografata). Tramite il relay per le chiamate, nessuno dei due telefoni vede l’indirizzo IP dell’altro; il server che lo fa funzionare li vede entrambi, quando e per quanto tempo, e quanto passa. Senza un relay per le chiamate, solo sulla stessa rete Wi-Fi, ogni telefono vede l’indirizzo dell’altro. I relay vedono quando una chiamata inizia a squillare. | Squillo su computer e nella web app da chiusi. Chiamate via Bluetooth (lì funziona il walkie-talkie). |
 | **Chat di gruppo** | Crittografate end-to-end con MLS (RFC 9420); i membri rimossi non leggono più nulla dopo. La copia di ogni membro è sigillata a parte, quindi i relay non possono capire chi fa parte di un gruppo; ogni relay vede comunque un messaggio arrivare a una coda. I membri vedono le chiavi e gli indirizzi dei relay gli uni degli altri. Foto, file e messaggi vocali passano dall’archivio di file del relay di chi invia, come verso un contatto, e restano lì 14 giorni. Non sottoposte ad audit. | |

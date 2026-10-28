@@ -59,6 +59,22 @@ On main, not released yet:
   notifications, and that a message request may show only once Erevos opens. The permissions screen now leads there,
   not to **Lock**. The banner, a dropped address and a late push of a round never shown before need the relay
   updated.
+- **Permissions checks every notice Erevos uses** (Android): **Settings** → **General** → **Permissions** looked only
+  at the "Calls" and "Messages" notices, so with "Messages without sound", "Messages with a chat's own sound" or
+  "Reminders" turned off in Android's settings, nothing showed for them, the number on the icon went too, and it
+  still said all was allowed. Now the message notice counts as off when any of its three is, with a button to the
+  one that is off, and the reminder notice has a row of its own once a reminder came. **Exact times** says it is for
+  reminders too.
+- **Hidden chats say what their switches need**: **Say when a message comes** and **Ring calls when closed** were
+  saved as on while **Settings** → **Notifications** → **In the background** let them do nothing, and nothing said
+  so. Each now says under it, while that is so, which setting it needs.
+- **Truer words about notices**: the hints in **Settings** → **Notifications** and in hidden chats, and the guide, now
+  give the notices' own words ("Erevos – Ready for calls and messages", "Incoming call" or "Incoming video call",
+  **Reminder**), and say that hidden chats with **Receive while closed** come as the space's chats do, that their
+  switches work with Erevos showing too, that a closed space that goes through Tor says nothing while the open one
+  has no Tor ready, that a message sent without sound sounds in the notices of closed chats, that a message request
+  sounds as any message does, that a computer shows no notices, and that after **Force stop** no notice says Erevos
+  stopped.
 
 ### Under the hood
 
@@ -118,6 +134,50 @@ On main, not released yet:
   runs the relay can allow another push service (`EREVOS_RELAY_PUSH_SERVICES`); and writing the push addresses to
   disk no longer holds up messages. A web app from before shows the updated relay's pushes with no number until it
   is updated, so the web app goes first.
+- **Calls ring as they should** (Android): with Do Not Disturb on, a call played its ringtone and woke the screen
+  though its notice was held back; it now rings only when its notice may break through. A phone whose clock was some
+  minutes off took a call as missed and never rang; Erevos now judges a call's age by the relay's clock, once the
+  relay is updated. The ringtone played once on Android 7 and 8; it now rings to the end. An **Incoming call**
+  notice stayed after Android stopped Erevos in the middle of a ring; it now goes. A second call that came while the
+  first was being set up could take its place; it is now told busy, and the same call coming twice rings once. A
+  screen that failed as a call came no longer keeps the call screen from showing, and a ring stops only when the
+  call it rang for is answered, turned down or gone.
+- **Hidden calls**: one turned down or unanswered left Erevos over the lock screen until the space closed; one that
+  came while the space's password screen showed was only a notice, and now shows its screen over the password, whose
+  small sign steps aside for it; its notice shows only while Erevos is not on screen; and a place that receives
+  while closed no longer rings again from its ring queue of before.
+- **Notices come again at once after a change of network**: moving from Wi-Fi to mobile data, or back, Erevos waited
+  up to a minute on the old connection before it looked again, for the space, its hidden places and the closed
+  spaces. And when Android refused to start receiving as Erevos left the screen, it received nothing until the space
+  closed; a quiet notice now says so, and it starts again as soon as Erevos shows.
+- **Hidden chats' notices tell each message once**: what came after a place last looked is told once it closes; a call
+  is told as a message only when it did not ring, and their messages are told at once, not after the ring's wait; a
+  place whose queue the relay lost keeps its switch on and waits on its queue again as it opens or moves; nothing is
+  told before it is known which places receive while closed; a count of hidden or closed-space messages changes the
+  notice once; and a place's groups tell only as its contacts' messages do.
+- **Hidden chats close while Erevos is away**: after 30 seconds in the background they closed only once Erevos came
+  back, so a call to them meanwhile rang as if they were open, with no PIN to answer it. A timer now closes them,
+  never during a call or while a photo or a file is picked.
+- **A voice message counts once**: the relay counted it on its first part and the phone on each, and one that went
+  again whole after only some of it went was told twice. Both now count it once, on its last part.
+- **The number on the icon counts only what is still there**: a message deleted for everyone before it was read, or
+  read on a linked computer, stayed counted in the messages notice and on Erevos's icon until Erevos was opened.
+- **Messages sent for later**: a notice of one that came before its time was told at its time though its space had
+  closed; such notices now go as the space closes and are set again as it opens, without sound when it was sent so.
+- **SMS**: one from the number whose chat shows put up a notice; it now only sounds there, as Erevos's messages do.
+  SMS were marked read when their screen was behind another app; now only while it shows, and the SMS notice goes
+  once none is unread. In Android's notification settings they were called Messages, like Erevos's messages; now
+  SMS.
+- **Reminders**: one seen in Chat with myself stayed on the notice; it now goes from it. A hidden place's reminders
+  stayed set on the phone after a new PIN started it empty, or it was removed; now they go with it. Birthday
+  reminders could come up to an hour late; now at 9:00.
+- **Nostr reads as soon as Tor is ready**: a reader that waited for Tor asked again only after its pause, up to
+  minutes later.
+- **Erevos's notices show its mark** in the status bar: the receiving, call, messages and update notices showed a
+  plain square.
+- **Notices are asked for with receiving off too**: with **Say a message came** on and **Only while Erevos shows**,
+  Android's question for notices never came, so messages made no notice; it now comes, and **Permissions** waits for
+  it before it reads what is allowed.
 
 ## 3.4.2 (2026-10-27)
 

@@ -42,6 +42,38 @@ export const whatsNew: Record<string, string> = {
     "**Οι ειδοποιήσεις του web app, πιο αξιόπιστες**: κανένα «Νέο μήνυμα» πάνω από το Erevos όσο είναι ανοιχτό, και ένα push που καθυστέρησε όσο το τηλέφωνο ήταν εκτός σύνδεσης δεν μετρά πια μηνύματα που έχεις ήδη διαβάσει (και τα δύο με το relay σου ενημερωμένο), κάθε ειδοποίηση ακούγεται στο Chrome, στο Firefox και στο Edge, επανέρχονται μόνες τους όταν ο browser αλλάζει τη διεύθυνση push του, και οι «Ειδοποιήσεις όταν είναι κλειστό» λένε πότε τις μπλοκάρει ο browser ή πότε το relay σου δεν έχει ενημερωθεί ακόμα ότι είναι κλειστές. Δες [Σε iPhone](#iphone).",
   "**The relay's pushes to the web app, sturdier**: a push the push service could not take just then is sent again, a call goes before the messages waiting their turn, and whoever runs the relay can allow another push service. Your relay needs an update for it.":
     "**Τα push του relay προς το web app, πιο ανθεκτικά**: ένα push που η υπηρεσία push δεν μπόρεσε να δεχτεί εκείνη τη στιγμή στέλνεται ξανά, μια κλήση περνά μπροστά από τα μηνύματα που περιμένουν τη σειρά τους, και όποιος τρέχει το relay μπορεί να επιτρέψει άλλη υπηρεσία push. Το relay σου χρειάζεται ενημέρωση γι’ αυτό.",
+  "**Permissions checks every notice Erevos uses**: on Android, the message notice without sound or with a chat's own sound, and the reminders', turned off, now show there, with a button to each. See [Chat through a relay](#relay).":
+    '**Οι Άδειες ελέγχουν κάθε ειδοποίηση που χρησιμοποιεί το Erevos**: στο Android, η ειδοποίηση μηνυμάτων χωρίς ήχο ή με τον δικό ήχο μιας συνομιλίας, και αυτή των υπενθυμίσεων, όταν είναι κλειστές, φαίνονται πλέον εκεί, με ένα κουμπί για την καθεμία. Δες [Συνομιλία μέσω relay](#relay).',
+  '**Hidden chats say what their switches need**: Say when a message comes and Ring calls when closed say so when Settings → Notifications → In the background lets them do nothing. See [Hidden chats](#hidden).':
+    '**Οι κρυφές συνομιλίες λένε τι χρειάζονται οι διακόπτες τους**: η «Ειδοποίηση όταν έρχεται μήνυμα» και το «Χτύπημα κλήσεων όταν είναι κλειστές» το λένε όταν οι Ρυθμίσεις → Ειδοποιήσεις → Στο παρασκήνιο δεν τους αφήνουν να κάνουν τίποτα. Δες [Κρυφές συνομιλίες](#hidden).',
+  "**Truer words about notices**: Settings and the guide give the notices' own words and say what each one needs. See [Chat through a relay](#relay).":
+    '**Πιο ακριβή λόγια για τις ειδοποιήσεις**: οι Ρυθμίσεις και ο οδηγός δίνουν τα ίδια τα λόγια των ειδοποιήσεων και λένε τι χρειάζεται η καθεμία. Δες [Συνομιλία μέσω relay](#relay).',
+  "**Calls ring as they should**: with Do Not Disturb only when their notice may break through, with a phone's clock off too once the relay is updated, and to the end on Android 7 and 8; a second call is told busy, and a ring stops only for its own call. See [Chat through a relay](#relay).":
+    '**Οι κλήσεις χτυπούν όπως πρέπει**: με το «Μην ενοχλείτε» μόνο όταν η ειδοποίησή τους επιτρέπεται να περάσει, και με λάθος ρολόι στο τηλέφωνο μόλις ενημερωθεί το relay, και ως το τέλος στο Android 7 και 8· μια δεύτερη κλήση βρίσκει κατειλημμένο, και ένα χτύπημα σταματά μόνο για τη δική του κλήση. Δες [Συνομιλία μέσω relay](#relay).',
+  '**Hidden calls**: one turned down no longer leaves Erevos over the lock screen, one that comes while the password screen shows comes over it, and none rings twice. See [Hidden chats](#hidden).':
+    '**Κρυφές κλήσεις**: μια κλήση που απορρίπτεις δεν αφήνει πια το Erevos πάνω από την οθόνη κλειδώματος, μια που έρχεται όσο φαίνεται η οθόνη κωδικού εμφανίζεται πάνω της, και καμία δεν χτυπά δύο φορές. Δες [Κρυφές συνομιλίες](#hidden).',
+  '**Notices come again at once after a change of network**, and receiving starts again as Erevos shows when Android refused it. See [Chat through a relay](#relay).':
+    '**Οι ειδοποιήσεις έρχονται ξανά αμέσως μετά από αλλαγή δικτύου**, και η λήψη ξεκινά ξανά μόλις φανεί το Erevos, όταν το Android την είχε αρνηθεί. Δες [Συνομιλία μέσω relay](#relay).',
+  "**Hidden chats' notices tell each message once**: what came since a place last looked is told as it closes, a call that rang is not told again as a message, and a place whose queue the relay lost keeps its switch on. See [Hidden chats](#hidden).":
+    '**Οι ειδοποιήσεις των κρυφών συνομιλιών λένε κάθε μήνυμα μία φορά**: ό,τι ήρθε από την τελευταία φορά που κοίταξε μια θέση λέγεται όταν κλείνει, μια κλήση που χτύπησε δεν λέγεται ξανά ως μήνυμα, και μια θέση που το relay έχασε την ουρά της κρατά τον διακόπτη της ανοιχτό. Δες [Κρυφές συνομιλίες](#hidden).',
+  '**Hidden chats close while Erevos is away**, after 30 seconds, so a call to them meanwhile rings with their PIN to answer. See [Hidden chats](#hidden).':
+    '**Οι κρυφές συνομιλίες κλείνουν όσο το Erevos δεν φαίνεται**, μετά από 30 δευτερόλεπτα, ώστε μια κλήση σε αυτές στο μεταξύ να χτυπά με το PIN τους για να απαντήσεις. Δες [Κρυφές συνομιλίες](#hidden).',
+  '**A voice message counts once**, on its last part, also when it goes again whole.':
+    '**Ένα φωνητικό μήνυμα μετρά μία φορά**, στο τελευταίο του κομμάτι, και όταν ξαναστέλνεται ολόκληρο.',
+  '**The number on the icon counts only what is still there**: a message deleted for everyone, or read on a linked computer, no longer counts. See [Chat through a relay](#relay).':
+    '**Ο αριθμός στο εικονίδιο μετρά μόνο ό,τι είναι ακόμα εκεί**: ένα μήνυμα που διαγράφηκε για όλους, ή που διαβάστηκε σε συνδεδεμένο υπολογιστή, δεν μετρά πια. Δες [Συνομιλία μέσω relay](#relay).',
+  '**Messages sent for later** tell of themselves only while their space is open, without sound if sent so.':
+    '**Τα μηνύματα που στέλνονται για αργότερα** ειδοποιούν μόνο όσο ο χώρος τους είναι ανοιχτός, χωρίς ήχο αν στάλθηκαν έτσι.',
+  '**SMS**: one to the chat on screen only sounds there, they are marked read only while their screen shows, and Android names their notices SMS. See [SMS](#sms).':
+    '**SMS**: ένα για τη συνομιλία που είναι στην οθόνη μόνο ηχεί εκεί, σημειώνονται ως διαβασμένα μόνο όσο φαίνεται η οθόνη τους, και το Android ονομάζει τις ειδοποιήσεις τους SMS. Δες [SMS](#sms).',
+  "**Reminders**: one seen in Chat with myself goes from the notice, a hidden place's go with a new PIN, and birthdays come at 9:00. See [Getting started](#start).":
+    '**Υπενθυμίσεις**: μια υπενθύμιση που είδες στη Συνομιλία με τον εαυτό μου φεύγει από την ειδοποίηση, όσες έχει μια κρυφή θέση φεύγουν με νέο PIN, και τα γενέθλια έρχονται στις 9:00. Δες [Πρώτα βήματα](#start).',
+  '**Nostr reads as soon as Tor is ready.** See [Through Nostr](#nostr).':
+    '**Το Nostr διαβάζει μόλις το Tor είναι έτοιμο.** Δες [Μέσω Nostr](#nostr).',
+  "**Erevos's notices show its mark** in the status bar.":
+    '**Οι ειδοποιήσεις του Erevos δείχνουν το σήμα του** στη γραμμή κατάστασης.',
+  '**Notices are asked for with receiving off too**, when Say a message came is on.':
+    '**Η άδεια για ειδοποιήσεις ζητείται και με τη λήψη κλειστή**, όταν η «Ειδοποίηση για μηνύματα» είναι ανοιχτή.',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',

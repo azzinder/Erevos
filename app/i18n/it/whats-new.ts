@@ -42,6 +42,38 @@ export const whatsNew: Record<string, string> = {
     "**Le notifiche della web app, più affidabili**: nessun «Nuovo messaggio» sopra Erevos mentre è aperto, e un push trattenuto mentre il telefono era offline non conta più i messaggi che hai già letto (entrambi con il tuo relay aggiornato), ogni avviso fa un suono in Chrome, Firefox ed Edge, tornano da sole quando il browser cambia il suo indirizzo push, e «Notifiche ad app chiusa» dice quando il browser le blocca o quando al tuo relay non è ancora stato detto che sono disattivate. Vedi [Su un iPhone](#iphone).",
   "**The relay's pushes to the web app, sturdier**: a push the push service could not take just then is sent again, a call goes before the messages waiting their turn, and whoever runs the relay can allow another push service. Your relay needs an update for it.":
     "**I push del relay alla web app, più solidi**: un push che il servizio push non ha potuto accettare in quel momento viene inviato di nuovo, una chiamata passa prima dei messaggi che aspettano il loro turno, e chi gestisce il relay può consentire un altro servizio push. Il tuo relay deve essere aggiornato per questo.",
+  "**Permissions checks every notice Erevos uses**: on Android, the message notice without sound or with a chat's own sound, and the reminders', turned off, now show there, with a button to each. See [Chat through a relay](#relay).":
+    '**Autorizzazioni controlla ogni notifica che Erevos usa**: su Android, la notifica dei messaggi senza suono o con il suono proprio di una chat, e quella dei promemoria, se disattivate, ora appaiono lì, con un pulsante per ciascuna. Vedi [Chat tramite un relay](#relay).',
+  '**Hidden chats say what their switches need**: Say when a message comes and Ring calls when closed say so when Settings → Notifications → In the background lets them do nothing. See [Hidden chats](#hidden).':
+    '**Le chat nascoste dicono di che cosa hanno bisogno i loro interruttori**: Avvisa quando arriva un messaggio e Fai squillare le chiamate quando sono chiuse lo dicono quando Impostazioni → Notifiche → In background non permette loro di fare nulla. Vedi [Chat nascoste](#hidden).',
+  "**Truer words about notices**: Settings and the guide give the notices' own words and say what each one needs. See [Chat through a relay](#relay).":
+    '**Parole più fedeli sulle notifiche**: le Impostazioni e la guida riportano le parole stesse delle notifiche e dicono di che cosa ha bisogno ciascuna. Vedi [Chat tramite un relay](#relay).',
+  "**Calls ring as they should**: with Do Not Disturb only when their notice may break through, with a phone's clock off too once the relay is updated, and to the end on Android 7 and 8; a second call is told busy, and a ring stops only for its own call. See [Chat through a relay](#relay).":
+    '**Le chiamate squillano come devono**: con Non disturbare solo quando la loro notifica può passare, anche con l’orologio di un telefono sballato una volta aggiornato il relay, e fino alla fine su Android 7 e 8; a una seconda chiamata viene detto occupato, e uno squillo si ferma solo per la sua chiamata. Vedi [Chat tramite un relay](#relay).',
+  '**Hidden calls**: one turned down no longer leaves Erevos over the lock screen, one that comes while the password screen shows comes over it, and none rings twice. See [Hidden chats](#hidden).':
+    '**Chiamate nascoste**: una rifiutata non lascia più Erevos sopra la schermata di blocco, una che arriva mentre è visibile la schermata della password appare sopra di essa, e nessuna squilla due volte. Vedi [Chat nascoste](#hidden).',
+  '**Notices come again at once after a change of network**, and receiving starts again as Erevos shows when Android refused it. See [Chat through a relay](#relay).':
+    '**Le notifiche tornano subito dopo un cambio di rete**, e la ricezione riparte appena Erevos è visibile quando Android l’aveva rifiutata. Vedi [Chat tramite un relay](#relay).',
+  "**Hidden chats' notices tell each message once**: what came since a place last looked is told as it closes, a call that rang is not told again as a message, and a place whose queue the relay lost keeps its switch on. See [Hidden chats](#hidden).":
+    '**Le notifiche delle chat nascoste annunciano ogni messaggio una volta**: quello che è arrivato dall’ultima volta che un posto ha guardato viene annunciato quando si chiude, una chiamata che ha squillato non viene annunciata di nuovo come messaggio, e un posto la cui coda è stata persa dal relay tiene attivo il suo interruttore. Vedi [Chat nascoste](#hidden).',
+  '**Hidden chats close while Erevos is away**, after 30 seconds, so a call to them meanwhile rings with their PIN to answer. See [Hidden chats](#hidden).':
+    '**Le chat nascoste si chiudono mentre Erevos è in background**, dopo 30 secondi, così una chiamata per loro nel frattempo squilla con il loro PIN per rispondere. Vedi [Chat nascoste](#hidden).',
+  '**A voice message counts once**, on its last part, also when it goes again whole.':
+    '**Un messaggio vocale conta una volta**, sulla sua ultima parte, anche quando viene inviato di nuovo per intero.',
+  '**The number on the icon counts only what is still there**: a message deleted for everyone, or read on a linked computer, no longer counts. See [Chat through a relay](#relay).':
+    '**Il numero sull’icona conta solo quello che c’è ancora**: un messaggio eliminato per tutti, o letto su un computer collegato, non conta più. Vedi [Chat tramite un relay](#relay).',
+  '**Messages sent for later** tell of themselves only while their space is open, without sound if sent so.':
+    '**I messaggi programmati** avvisano di sé solo mentre il loro spazio è aperto, senza suono se inviati così.',
+  '**SMS**: one to the chat on screen only sounds there, they are marked read only while their screen shows, and Android names their notices SMS. See [SMS](#sms).':
+    '**SMS**: uno per la chat sullo schermo suona solo lì, vengono segnati come letti solo mentre la loro schermata è visibile, e Android chiama le loro notifiche SMS. Vedi [SMS](#sms).',
+  "**Reminders**: one seen in Chat with myself goes from the notice, a hidden place's go with a new PIN, and birthdays come at 9:00. See [Getting started](#start).":
+    '**Promemoria**: uno visto nella Chat con me stesso se ne va dalla notifica, quelli di un posto nascosto se ne vanno con un nuovo PIN, e i compleanni arrivano alle 9:00. Vedi [Per iniziare](#start).',
+  '**Nostr reads as soon as Tor is ready.** See [Through Nostr](#nostr).':
+    '**Nostr legge appena Tor è pronto.** Vedi [Tramite Nostr](#nostr).',
+  "**Erevos's notices show its mark** in the status bar.":
+    '**Le notifiche di Erevos mostrano il suo simbolo** nella barra di stato.',
+  '**Notices are asked for with receiving off too**, when Say a message came is on.':
+    '**Le notifiche vengono chieste anche con la ricezione disattivata**, quando Avvisa dei nuovi messaggi è attivo.',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un messaggio inviato mentre una chat si apre la aspetta**, segnato Invio…, e parte appena la chat è aperta, senza dire che Erevos non può cifrare.',

@@ -12,7 +12,7 @@ export const chat: Record<string, string> = {
   // Send held down (components/later-picker.tsx for the time).
   'Scheduled · {when}': 'Agendada · {when}',
   'Sent without sound': 'Enviada sem som',
-  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.': 'O celular da outra pessoa mostra a mensagem sem som nem vibração. O Erevos como app web não diferencia isso e toca como sempre.',
+  'Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, nor can the notice of chats that are closed (hidden chats, another space), and these sound as usual.': 'O celular da outra pessoa mostra a mensagem sem som nem vibração. O Erevos como app web não diferencia isso, nem o aviso das conversas que estão fechadas (conversas ocultas, outro espaço), e esses tocam como sempre.',
   'Send later': 'Enviar mais tarde',
   'The relay keeps it and sends it at that time, even if this phone is off then.': 'O relay guarda a mensagem e a envia nesse horário, mesmo que este celular esteja desligado.',
   'The relay keeps it and sends it at that time, even if this phone is off then. In hidden chats the relay has to be reachable now.': 'O relay guarda a mensagem e a envia nesse horário, mesmo que este celular esteja desligado. Nas conversas ocultas, o relay precisa estar acessível agora.',
@@ -217,8 +217,8 @@ export const chat: Record<string, string> = {
   'Chat details': 'Detalhes da conversa',
   'Change PIN': 'Alterar PIN',
   'Say when a message comes': 'Avisar quando chega uma mensagem',
-  'While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
-    'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», ou quantas chegaram, como para as outras conversas; que uma mensagem chegou ou foi lida não dá nenhum. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
+  'While these hidden chats are closed, with Erevos in the background or showing, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.':
+    'Enquanto estas conversas ocultas estão fechadas, com o Erevos em segundo plano ou na tela, um aviso diz apenas «New message», ou quantas chegaram, como para as outras conversas; que uma mensagem chegou ou foi lida não dá nenhum. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Fechadas, estas conversas ocultas não dizem nada: as suas mensagens esperam no relay até você abri-las.',
   'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':

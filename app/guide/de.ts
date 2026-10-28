@@ -152,16 +152,20 @@ Chats.
   eine Stunde und Minute) und tippe auf **Erinnern**. Sie landet in „Chat mit mir selbst“, mit einer Glocke und ihrer
   Zeit. Im Chat gibt **+** → **Erinnern**, oder das Gedrückthalten des Sendepfeils, auch der Notiz, die du schreibst,
   eine Zeit.
-- **Zu ihrer Zeit** zeigt das Telefon auf Android eine Benachrichtigung, die nur **Reminder** sagt, auch wenn Erevos
-  geschlossen und gesperrt ist; angetippt öffnet sie „Chat mit mir selbst“, nach dem Passwort. Bis du den Chat
-  öffnest, erscheint die Erinnerung in seiner Zeile oben in den Chats, mit einer Zahl, und im Chat mit einem farbigen
-  Rand. Auf einem Computer, in der Web-App oder mit ausgeschalteten Benachrichtigungen siehst du sie dort.
+- **Zu ihrer Zeit** zeigt das Telefon auf Android eine Benachrichtigung, **Reminder** (oder **3 reminders**) –
+  „Open Chat with myself to read it“, nie den Text der Erinnerung, auch wenn Erevos geschlossen und gesperrt ist;
+  angetippt öffnet sie „Chat mit mir selbst“, nach dem Passwort. Bis du den Chat öffnest, erscheint die Erinnerung in
+  seiner Zeile oben in den Chats, mit einer Zahl, und im Chat mit einem farbigen Rand; dort gesehen, verschwindet sie
+  auch aus der Benachrichtigung. Auf einem Computer, in der Web-App oder mit ausgeschalteten Benachrichtigungen siehst
+  du sie dort. Sind **Genaue Uhrzeiten** nicht erlaubt (**Einstellungen** → **Allgemein** → **Berechtigungen**), zeigt
+  Android sie vielleicht ein paar Minuten zu spät.
 - **Eine Notiz gedrückt halten** bietet **Kopieren**, **Öffnen** (ein Foto oder eine Datei), **Erinnern** oder
   **Erinnerung ändern** und **Keine Erinnerung**, sowie **Löschen**.
 - Jeder Bereich hat seinen eigenen „Chat mit mir selbst“, und ebenso jeder Platz versteckter Chats, oben in ihrer
   Liste (siehe [Versteckte Chats](#hidden)). Die Erinnerungen eines versteckten Platzes erscheinen dort, sobald seine
   PIN ihn öffnet; das Telefon meldet sie zu ihrer Zeit nur, solange **Empfangen, wenn geschlossen** für diesen Platz
-  an ist, in derselben Benachrichtigung, die nur **Reminder** sagt.
+  an ist, in derselben Benachrichtigung. Eine neue PIN für den Platz, die ihn leer beginnt, oder das Entfernen des
+  Platzes nimmt seine Erinnerungen vom Telefon.
 
 **Warum:** Eine Benachrichtigung erscheint auf dem Sperrbildschirm für jeden, der das Telefon in der Hand hat, also
 bleibt der Text einer Erinnerung verschlüsselt in ihrem Bereich, und Android erfährt nur ihre Zeit: Die
@@ -656,7 +660,10 @@ Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm 
   **Im Hintergrund** auf **Empfangen und klingeln** steht (siehe unten), oder wenn Erevos das nächste Mal öffnet.
 - **Ohne Ton senden:** Halte den Sendepfeil gedrückt und wähle **Ohne Ton**: Das andere Telefon zeigt die
   Benachrichtigung ohne Ton oder Vibration. Ein Erevos von vor dieser Funktion kennt das nicht und meldet sich wie
-  gewohnt, und ebenso Erevos als Web-App, dessen Benachrichtigung vom Browser kommt.
+  gewohnt, und ebenso Erevos als Web-App, dessen Benachrichtigung vom Browser kommt. Ebenso die Benachrichtigung eines
+  geschlossenen Platzes versteckter Chats mit eingeschaltetem **Melden, wenn eine Nachricht kommt** und eines
+  geschlossenen Bereichs mit **Auch, wenn ein anderer Bereich offen ist**: Diese fragen das Relay nur, wie viele kamen,
+  und es kann eine ohne Ton nicht von einer anderen unterscheiden, da nur die verschlüsselte Nachricht das sagt.
 - **Links:** Eine Webadresse in einer Nachricht ist unterstrichen. Tippe darauf, und Erevos zeigt sie vollständig, um
   sie im Browser zu öffnen, nur wenn sie dorthin führt, wo du hinwillst. Vorher wird nichts abgerufen.
 - **Aus einer anderen App teilen** (Android): Wähle im **Teilen** einer anderen App, etwa dem des Browsers für eine
@@ -781,7 +788,11 @@ für alle Warteschlangen deiner Kontakte (siehe [Auf einem iPhone](#iphone)).
   also zieht sie deine Warteschlange nur um, solange der Link noch diese nennt, wie bis zu deinem ersten Umzug. Wen du
   blockiert hast, steht unter **Blockierte Kontakte** in **Neuer Chat**, mit **Blockierung aufheben**. Wenn du ihn
   über seinen Link wieder hinzufügst, wirst du gebeten, zuerst die Blockierung aufzuheben; bis dahin fügt ihn nichts
-  hinzu, weder seine Antwort auf eine Einladung per SMS noch sein Kontaktlink in einer Gruppe.
+  hinzu, weder seine Antwort auf eine Einladung per SMS noch sein Kontaktlink in einer Gruppe. Jeder, der dir über
+  deinen Kontaktlink schreibt, kann das Telefon einen Ton machen lassen, wie jede Nachricht: **Ablehnen** oder
+  **Blockieren** beendet das für diesen einen, **Benachrichtigungen** → **Stumm** in seinem Chat bringt ihn zum
+  Schweigen, ohne abzulehnen, und **Neuer Kontaktlink** beendet es für jeden mit dem alten Link, sobald dessen 14 Tage
+  vorbei sind.
 - **Gruppen:** Jemand in einer deiner Gruppen kann dir dort weiterhin schreiben. Erevos sagt, in wie vielen ihr
   zusammen seid: Verlass sie oder bitte ihren Admin, ihn hinauszunehmen.
 - **Wenn das Relay nicht erreichbar ist**, ändert sich die Warteschlange, sobald es antwortet, und bis dahin erscheint
@@ -1043,15 +1054,19 @@ Versteckte Chats und Computer haben das nicht.
   der Nähe aufgebaut und geht direkt zwischen den Telefonen (oder Computern). Dasselbe gilt für Gruppennachrichten und
   Gruppenanrufe.
 - **Im Hintergrund (Android):** Solange ein Bereich offen ist, läuft Erevos weiter, wenn du es verlässt, mit der
-  Home-Taste oder indem du es aus den letzten Apps wegwischst, mit einer stillen Benachrichtigung, die nur „Erevos“
-  sagt. Es wartet beim Relay und an den Verbindungen zu Telefonen in der Nähe, damit Nachrichten ankommen: Eine
-  Benachrichtigung sagt nur „New message“ oder wie viele kamen, und auf einem gesperrten Telefon nur „Erevos“. Ein
-  Anruf klingelt mit dem Klingelton des Telefons und einer Benachrichtigung, die nur „Incoming call“ sagt, auch über
-  dem Sperrbildschirm und dem Bildschirmschoner, und der Bildschirm wacht auf. Tippe darauf, um anzunehmen. Mit
+  Home-Taste oder indem du es aus den letzten Apps wegwischst, mit einer stillen Benachrichtigung, „Erevos – Ready for
+  calls and messages“, die nicht auf dem Sperrbildschirm erscheint. Es wartet beim Relay und an den Verbindungen zu
+  Telefonen in der Nähe, damit Nachrichten ankommen: Eine Benachrichtigung sagt nur „New message“ oder wie viele kamen,
+  und auf einem gesperrten Telefon nur „Erevos“. Eine Nachrichtenanfrage, von jemandem, der nur deinen Kontaktlink
+  hat, macht dieselbe Benachrichtigung und denselben Ton und zählt auf dem Symbol, wie jede Nachricht. Ein Anruf
+  klingelt mit dem Klingelton des Telefons und einer Benachrichtigung, „Incoming call“ (oder „Incoming video call“) –
+  „Open Erevos to answer“, ohne Namen, auch über dem Sperrbildschirm und dem Bildschirmschoner, und der Bildschirm
+  wacht auf. Tippe darauf, um anzunehmen. Mit
   eingeschalteter Passwortsperre erscheint ein klingelnder Anruf vor dem Passwort, und Erevos sperrt sich, sobald er
   endet. Gesperrt läuft der Bereich hinter dem Passwortbildschirm weiter, also kommen Nachrichten und Anrufe trotzdem,
-  und ein Anruf erscheint über dem Passwortbildschirm. Nur die Chats und Gruppen dieses Bereichs kommen so an;
-  versteckte Chats sagen nur, dass eine Nachricht kam, wenn du es erlaubst (siehe „Versteckte Chats“). Stell es unter
+  und ein Anruf erscheint über dem Passwortbildschirm. Nur die Chats und Gruppen dieses Bereichs kommen so an, und
+  versteckte Chats mit eingeschaltetem **Empfangen, wenn geschlossen**; andere versteckte Chats sagen nur, dass eine
+  Nachricht kam, oder klingeln ohne Namen, wenn du es erlaubst (siehe „Versteckte Chats“). Stell es unter
   **Einstellungen** → **Benachrichtigungen** → **Im Hintergrund** ein: **Empfangen und klingeln** (die Voreinstellung)
   oder **Nur, solange Erevos sichtbar ist**, und **Neue Nachrichten melden** (die Voreinstellung) oder
   **Keine Benachrichtigung**, was auch gilt, solange Erevos sichtbar ist. Dort auch, wenn Android danach fragt,
@@ -1063,7 +1078,8 @@ Versteckte Chats und Computer haben das nicht.
   eines versteckten Chats beim Verlassen auch nicht. Der Launcher von Android zeigt sie am Symbol von Erevos, als Zahl
   oder auf manchen Telefonen, etwa Pixels, als Punkt. **Einstellungen** → **Benachrichtigungen** → **Zahl auf dem
   Symbol** schaltet das aus: Dann meldet die Meldung nur, was gekommen ist, seit du Erevos zuletzt offen hattest, und
-  die Zahl des Launchers geht mit ihr.
+  die Zahl des Launchers geht mit ihr. Eine Nachricht, die für alle gelöscht wurde, bevor du sie gelesen hast, oder
+  die auf einem verknüpften Computer gelesen wurde, zählt nicht mehr.
 
   **Warum:** Auf Android kann nur eine Meldung eine Zahl auf das Symbol einer App setzen, also bleibt die Meldung,
   solange Nachrichten warten; sie sagt nicht mehr als wie viele, wie immer schon.
@@ -1072,14 +1088,20 @@ Versteckte Chats und Computer haben das nicht.
   Bereich **Auch, wenn ein anderer Bereich offen ist** unter **Einstellungen** → **Benachrichtigungen** → **Im
   Hintergrund** (die Voreinstellung ist **Dieser Bereich nur, wenn offen**): Dann sagt er, solange ein anderer Bereich
   offen ist und empfängt, nur „New message“ oder wie viele kamen, mit derselben Benachrichtigung wie jener Bereich, nie
-  welcher Bereich, und seine versteckten Chats sagen nichts. Dafür bewahrt das Telefon die Adressen seiner
+  welcher Bereich, und seine versteckten Chats sagen nichts. Was andere Telefone zu seinem Relay mitgenommen haben,
+  zählt als Nachricht, auch Löschungen, und eine Nachricht, die ohne Ton an ihn gesendet wurde, meldet sich wie
+  gewohnt (siehe **Ohne Ton senden**). Dafür bewahrt das Telefon die Adressen seiner
   Warteschlangen bei seinem Relay außerhalb seines Passworts auf, darunter die, in die jeder seiner Kontakte schreibt,
   für bis zu 64 Kontakte, nie seine Schlüssel, wer seine Kontakte sind, oder seine Nachrichten, und fragt das Relay nur,
-  wie viele kamen, nie nach ihnen selbst: Sie bleiben dort, bis sich der Bereich öffnet. Ein Bereich, der über Tor geht,
-  wird nur über Tor abgefragt, solange der offene Bereich Tor bereit hat.
+  wie viele kamen, nie nach ihnen selbst: Sie bleiben dort, bis sich der Bereich öffnet. Ein Bereich, der über Tor geht
+  (**Nachrichten**, die Voreinstellung, oder **Alles**, unter **Was über Tor geht**), wird nur über Tor abgefragt: Solange der
+  offene Bereich Tor aus hat oder sein Tor gerade startet oder eben gescheitert ist, sagt der geschlossene Bereich
+  nichts, und was kam, wird gemeldet, sobald Tor dort bereit ist.
 
   **Warum:** Ein Bereich hinter einem zweiten Passwort darf nicht zeigen, dass es ihn gibt, also ist das aus, solange du
-  es nicht einschaltest, und dann sagt er nicht mehr, als der offene Bereich sagen würde. Da jeder Kontakt in eine
+  es nicht einschaltest, und dann sagt er nicht mehr, als der offene Bereich sagen würde. Direkt vom Telefon aus
+  abgefragt, während ein anderer Bereich offen ist, könnten sein Relay oder jemand, der das Netz beobachtet, die beiden
+  Bereiche über die Internetadresse des Telefons miteinander verbinden. Da jeder Kontakt in eine
   eigene Warteschlange schreibt, muss der Bereich auch nach jeder davon fragen, sonst würden ihre Nachrichten nichts
   sagen. Der Preis ist, dass sein Relay erkennen kann, dass die beiden Bereiche auf einem Telefon sind, und jemand, der
   das Telefon mit Werkzeugen untersucht, finden kann, dass ein zweiter Bereich dort Adressen aufbewahrt, und wie viele
@@ -1089,18 +1111,24 @@ Versteckte Chats und Computer haben das nicht.
   einem anderen Bereich (er sagt nur, dass eine Nachricht kam, wenn du es erlaubst, wie oben), oder auf einem Computer
   oder in der Web-App,
   solange sie geschlossen sind. Ein Anruf erscheint dort als verpasster Anruf, sobald Erevos öffnet. Wenn Android
-  Erevos beim Empfangen schließt, sagt es eine stille Benachrichtigung: Öffne Erevos und den Bereich, um wieder zu
-  empfangen. Ebenso eine, „Locked“, wenn sich der Bereich, der empfangen hat, schließt (etwa nach dem Wiederherstellen
+  Erevos beim Empfangen schließt und wieder startet, wie es das meist tut, sagt es eine stille Benachrichtigung: Öffne
+  Erevos und den Bereich, um wieder zu empfangen. Nach **Beenden erzwingen**, mit einer Akkunutzung, die auf
+  Eingeschränkt steht, oder wenn die eigene Einstellung des Herstellers es schließt, startet Android nichts wieder,
+  also sagt es keine Benachrichtigung: Die Benachrichtigung „Erevos“ verschwindet einfach, und nichts klingelt, bis du
+  Erevos öffnest. **Berechtigungen** (unten) sagt vorher, ob eines davon eingestellt ist. Ebenso sagt es eine
+  Benachrichtigung, „Locked“, wenn sich der Bereich, der empfangen hat, schließt (etwa nach dem Wiederherstellen
   eines Backups) und Erevos den Bildschirm mit der Passwortabfrage verlässt. Eine Nachrichtenanfrage kann dich erst
   anrufen, wenn du sie annimmst.
 - **Berechtigungen (Android):** **Einstellungen** → **Allgemein** → **Berechtigungen** zeigt, was Android Erevos für
   Anrufe und Nachrichten im Hintergrund erlaubt (Benachrichtigungen, die Anruf-Benachrichtigung und dass sie aufpoppt,
-  die Nachrichten-Benachrichtigung, Anrufe über dem Sperrbildschirm, Laufen im Akku-Sparmodus, Laufen im Hintergrund
-  mit einer Akkunutzung, die nicht auf Eingeschränkt steht, kein Pausieren bei Nichtnutzung, mobile Daten im
-  Hintergrund, das Mikrofon) und für anderes (der Ton für neue Nachrichten, Benachrichtigungen auf dem
-  Sperrbildschirm, Anrufe trotz Nicht stören, Kamera, Telefone in der Nähe, Kontakte, genaue Zeiten), jeweils mit dem
-  Grund und einer Taste, die Androids eigene Frage oder Einstellung öffnet. Es sagt auch, wenn das Telefon auf lautlos
-  oder Vibration steht, wenn der Energiesparmodus an ist und wenn Nicht stören an ist, während Erevos-Anrufe nicht
+  die Nachrichten-Benachrichtigung, mit ihren Benachrichtigungen „Messages without sound“ und „Messages with a chat's
+  own sound“, die auch die Zahl auf dem Symbol halten, Anrufe über dem Sperrbildschirm, Laufen im Akku-Sparmodus,
+  Laufen im Hintergrund mit einer Akkunutzung, die nicht auf Eingeschränkt steht, kein Pausieren bei Nichtnutzung,
+  mobile Daten im Hintergrund, das Mikrofon) und für anderes (der Ton für neue Nachrichten, Benachrichtigungen auf dem
+  Sperrbildschirm, Anrufe trotz Nicht stören, Kamera, Telefone in der Nähe, Kontakte, genaue Zeiten für später
+  gesendete SMS und Erinnerungen, die Benachrichtigung, wenn eine Erinnerung kam), jeweils mit dem Grund und einer
+  Taste, die Androids eigene Frage oder Einstellung öffnet. Es sagt auch, wenn das Telefon auf lautlos oder Vibration
+  steht, wenn der Energiesparmodus an ist und wenn Nicht stören an ist, während Erevos-Anrufe nicht
   durchgelassen werden. Auf Telefonen von Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung und ASUS sagt es
   auch, wo die eigene Einstellung des Herstellers ist, die Erevos nicht lesen kann: Tippe auf **Erledigt**, sobald sie
   gesetzt ist. Nach jeder neuen Version, und beim ersten Mal, öffnet es sich von selbst, wenn Anrufe oder Nachrichten
@@ -1117,7 +1145,8 @@ Versteckte Chats und Computer haben das nicht.
 **Warum:** Die Schlüssel, die die Nachrichten eines Bereichs öffnen, sind nur im Arbeitsspeicher, solange er offen ist,
 und sonst hinter seinem Passwort versiegelt. Nach einem Neustart des Telefons lässt sich also nichts lesen und nichts
 klingelt, bis du Erevos und den Bereich einmal öffnest; und versteckte Chats, deren Schlüssel nur im Arbeitsspeicher
-ist, solange sie offen sind, sagen nur, dass eine Nachricht kam, oder klingeln ohne Namen, wenn du es erlaubst.
+ist, solange sie offen sind, außer **Empfangen, wenn geschlossen** behält ihn beim Bereich, sagen sonst nur, dass eine
+Nachricht kam, oder klingeln ohne Namen, wenn du es erlaubst.
 
 > Die Relay-Einstellungen, deine Warteschlange, deine Kontakte und ihre Namen, die Schlüssel deiner Unterhaltungen und
 > die Nachrichten werden in diesem Bereich aufbewahrt, versiegelt. Der Verlauf hat keine Grenze: Er wird in
@@ -2036,9 +2065,14 @@ löschen, was die weggenommenen Plätze enthalten.
   einmal, auch wenn Erevos geschlossen war und neu gestartet wurde; was kam, während der Platz offen war, macht keine,
   sobald er sich schließt. Dass eine Nachricht von dir bei ihnen ankam oder gelesen wurde, Tippen und neue Schlüssel
   machen keine, ebenso wenig ein Anruf, der geklingelt hat (siehe **Klingeln bei Anrufen, wenn geschlossen**); einer,
-  der nicht geklingelt hat, zählt als Nachricht. Es braucht **Empfangen und klingeln** und **Neue Nachrichten melden**
-  unter **Im Hintergrund** und ein Relay, das wartet (ab dem 18. Oktober 2026); eines von vor dem 23. Oktober 2026 kann
-  nur sagen, dass etwas wartet, also erscheint dann auch dafür „New message“, einmal, bis du diesen Platz öffnest.
+  der nicht geklingelt hat, zählt als Nachricht. Eine Nachricht oder eine Löschung, die andere Erevos-Telefone zum
+  Relay mitgenommen haben (siehe **Von anderen Telefonen mitgenommen** in
+  [Chat mit einem Telefon in der Nähe](#nearby)), kann nicht sagen, was sie trägt, da die Telefone, die sie tragen, es
+  nicht wissen dürfen: Sie zählt als Nachricht, also zeigt auch eine Löschung „New message“, und die erste Nachricht
+  eines Chats kann als zwei zählen; und eine ohne Ton gesendete meldet sich wie gewohnt (siehe **Ohne Ton senden**).
+  Es braucht **Empfangen und klingeln** und **Neue Nachrichten melden** unter **Im Hintergrund**, was der Schalter
+  sagt, wenn sie nicht an sind, und ein Relay, das wartet (ab dem 18. Oktober 2026); eines von vor dem 23. Oktober 2026
+  kann nur sagen, dass etwas wartet, also erscheint dann auch dafür „New message“, einmal, bis du diesen Platz öffnest.
   Dafür führt der Bereich eine Relay-Warteschlange für jeden seiner 4 Plätze, die nicht genutzten zum Schein auf
   demselben Relay angelegt, sodass das Öffnen des Bereichs weder zeigt, ob versteckte Chats angelegt sind, noch welche,
   solange sie das Relay des Bereichs nutzen; das Relay wird nur gefragt, wie viele Nachrichten kamen, da es sie an dem
@@ -2047,11 +2081,12 @@ löschen, was die weggenommenen Plätze enthalten.
   dem Wiederherstellen erneut ein.
 - **Klingeln bei Anrufen, wenn geschlossen** (Android): unter **Melden, wenn eine Nachricht kommt**, solange
   **Empfangen, wenn geschlossen** aus ist. Eingeschaltet lässt ein Anruf von einem seiner Kontakte, solange der Platz
-  geschlossen und Erevos im Hintergrund ist, das Telefon klingeln und
+  geschlossen ist, mit Erevos im Hintergrund oder auf irgendeinem Bildschirm, das Telefon klingeln und
   „Incoming call“ ohne Namen zeigen, wie ein Anruf aus deinen anderen Chats. Tippe auf dem Klingelbildschirm auf das
   kleine Zeichen, gib die PIN ein und tippe auf **Verbinden**, um anzunehmen; ein einfaches **Annehmen** kann ihn nicht
   verbinden, und **Ablehnen** beendet das Klingeln. Das Klingeln dauert etwa 45 Sekunden. Es braucht
-  **Empfangen und klingeln** unter **Im Hintergrund** und ein Relay, das wartet, und nutzt für jeden der 4 Plätze eine
+  **Empfangen und klingeln** unter **Im Hintergrund**, was der Schalter sagt, wenn es nicht an ist, und ein Relay, das
+  wartet, und nutzt für jeden der 4 Plätze eine
   eigene Relay-Warteschlange, die der nicht klingelnden zum Schein auf demselben Relay angelegt, wie bei der
   Nachrichten-Benachrichtigung oben, sodass das Öffnen des Bereichs nichts verrät. Der Anrufer lässt dort nur eine
   Warteschlange klingeln; der Anruf selbst wartet in der eigenen Warteschlange des Chats, bis die PIN ihn öffnet. Ein
@@ -2338,6 +2373,11 @@ dort überraschend unversiegelt.
 - **Ein Computer und ein Telefon können ein Konto teilen:** Verknüpfe den Computer mit dem Telefon, und beide haben
   dieselben Chats und Kontakte, siehe [Verknüpfte Geräte](#devices). Oder ein Backup bringt alles vom einen zum anderen,
   siehe [Backups](#backup), und nutze ab dann nur noch das eine.
+- **Keine Benachrichtigungen oder Töne:** Erevos auf einem Computer zeigt keine Benachrichtigung des Systems und macht
+  keinen Ton. Während es läuft, erscheint eine neue Nachricht nur in seinem Fenster, und ein Anruf zeigt dort seinen
+  Bildschirm, ohne zu klingeln, also macht dich nichts darauf aufmerksam, wenn das Fenster minimiert ist oder hinter
+  einem anderen liegt. Geschlossen empfängt es nichts: Nachrichten warten beim Relay, und ein Anruf erscheint als
+  verpasster Anruf, sobald es öffnet.
 - **Bisher getestet** unter Linux. Die Mac- und Windows-Versionen werden auf den Computern von GitHub gebaut und
   geöffnet, noch nicht von einer Person.
 
@@ -2678,7 +2718,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Backups** | Eine mit eigenem Passwort versiegelte Datei, die jeden Bereich so enthält, wie er auf dem Telefon versiegelt ist. Ihr Name sagt, dass sie ein Erevos-Backup ist, und ihre Größe zeigt ungefähr, wie viel aufbewahrt wird. Automatische Backups bewahren ihr Passwort auf dem Telefon auf. | Backups direkt zu Nextcloud oder WebDAV. |
 | **Zeichen ✓✓ und ✓✓✓** | Das Telefon des Kontakts erfährt, verschlüsselt, wann deines seine Nachrichten bekommen und gelesen hat. Das Relay, oder wer in der Nähe mithört, sieht eine weitere kleine Nachricht. | Ein Schalter, um nicht mehr mitzuteilen, wann du liest. |
 | **Fingerabdruck oder Gesicht (Android)** | Aus, solange nicht eingeschaltet. Öffnet nur den Bereich des ersten Passworts: sein Schlüssel im Android Keystore versiegelt, nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung nutzbar und verworfen, wenn diese sich ändern. Jemand, der dich festhält, kann deinen Finger benutzen. | |
-| **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos“, „Incoming call“ und „New message“ oder wie viele kamen, nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |
+| **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos – Ready for calls and messages“ (nicht auf dem Sperrbildschirm), „Incoming call“ oder „Incoming video call“ – „Open Erevos to answer“, und „New message“ oder wie viele kamen; wenn Android oder das Passwort es beendet, „Closed by Android“ oder „Locked“ – „Open it to receive calls and messages again“; eine Erinnerung, „Reminder“ oder wie viele; eine neue Version, „Erevos X is out“. Nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |
 | **Widget und Telefon (Android)** | Das Widget zeigt, sobald es hinzugefügt ist, wie viele verpasste Anrufe, ungelesene SMS und neue Nachrichten es gibt, nie wer oder was. Das Telefon öffnet sich nur ohne Passwort, wenn du es erlaubst: Dann sieht jeder, der das entsperrte Telefon in der Hand hat, die Anrufe und Favoriten, die Android führt, nur mit den Namen aus den Kontakten des Telefons. | |
 | **Anrufe** | Ende-zu-Ende-verschlüsselt (DTLS-SRTP, sein Schlüssel im verschlüsselten Chat gesendet). Über das Anruf-Relay sieht keines der Telefone die IP-Adresse des anderen; der Server, auf dem es läuft, sieht beide, wann und wie lange, und wie viel durchgeht. Ohne Anruf-Relay, nur im selben WLAN, sieht jedes Telefon die Adresse des anderen. Die Relays sehen, wann ein Anruf zu klingeln beginnt. | Klingeln auf einem Computer und in der Web-App, wenn geschlossen. Anrufe über Bluetooth (das Walkie-Talkie funktioniert dort). |
 | **Gruppenchats** | Ende-zu-Ende-verschlüsselt mit MLS (RFC 9420); herausgenommene Mitglieder lesen danach nichts mehr. Die Kopie jedes Mitglieds wird für sich versiegelt, sodass Relays nicht erkennen können, wer in einer Gruppe ist; jedes Relay sieht trotzdem eine Nachricht in einer Warteschlange ankommen. Mitglieder sehen die Schlüssel und Relay-Adressen der anderen. Fotos, Dateien und Sprachnachrichten gehen über den Dateispeicher des Relays des Absenders, wie an einen Kontakt, und bleiben dort 14 Tage. Nicht geprüft. | |

@@ -4951,7 +4951,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       key: 'quiet',
       title: t('Without sound'),
       icon: 'quiet',
-      hint: t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, and sounds as usual.'),
+      hint: t('Their phone shows it without a sound or vibration. Erevos as a web app cannot tell, nor can the notice of chats that are closed (hidden chats, another space), and these sound as usual.'),
       onPress: () => void send(undefined, true),
     },
     {
@@ -5721,7 +5721,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />
                     <Text variant="caption" tone="muted">
                       {watched
-                        ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
+                        ? t('While these hidden chats are closed, with Erevos in the background or showing, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
                         : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
                     </Text>
                     {watched && background && !(background.on && background.notices) ? (
@@ -5733,7 +5733,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
                     <Text variant="caption" tone="muted">
                       {ringing
-                        ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
+                        ? t('While these hidden chats are closed, with Erevos in the background or on any screen, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
                         : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
                     </Text>
                     {ringing && background && !background.on ? (

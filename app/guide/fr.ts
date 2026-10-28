@@ -152,17 +152,20 @@ messages vocaux, mais pas ses photos ni ses fichiers, comme pour les discussions
   rappeler, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**, **Demain 09:00**, ou n’importe quel jour, heure et
   minute) et appuie sur **Me rappeler**. Il va dans Discussion avec moi-même, avec une cloche et son heure. Dans la
   discussion, **+** → **Me rappeler**, ou maintenir la flèche d’envoi, donne aussi une heure à la note que tu écris.
-- **À son heure**, sur Android, le téléphone montre une notification qui dit seulement **Rappel**, même avec Erevos
-  fermé et verrouillé ; quand tu appuies dessus, elle ouvre Discussion avec moi-même, après le mot de passe. Tant que tu
-  n’as pas ouvert la discussion, le rappel s’affiche sur sa ligne en haut des discussions, avec un compteur, et dans la
-  discussion avec un bord coloré. Sur un ordinateur, dans l’app web, ou avec les notifications désactivées, c’est là que
-  tu le vois.
+- **À son heure**, sur Android, le téléphone montre une notification, **Reminder** (ou **3 reminders**) – « Open Chat
+  with myself to read it », jamais ce que dit le rappel, même avec Erevos fermé et verrouillé ; quand tu appuies
+  dessus, elle ouvre Discussion avec moi-même, après le mot de passe. Tant que tu n’as pas ouvert la discussion, le
+  rappel s’affiche sur sa ligne en haut des discussions, avec un compteur, et dans la discussion avec un bord coloré ;
+  vu là, il quitte aussi la notification. Sur un ordinateur, dans l’app web, ou avec les notifications désactivées,
+  c’est là que tu le vois. Si **Heures exactes** n’est pas autorisé (**Réglages** → **Général** → **Autorisations**),
+  Android peut l’afficher avec quelques minutes de retard.
 - **Un appui long sur une note** propose **Copier**, **Ouvrir** (une photo ou un fichier), **Me rappeler**, ou **Changer
   le rappel** et **Sans rappel**, et **Supprimer**.
 - Chaque espace a sa propre Discussion avec moi-même, et chaque emplacement de discussions masquées aussi, en haut de
   leur liste (voir [Discussions masquées](#hidden)). Les rappels d’un emplacement masqué s’y affichent une fois que son
   code PIN l’ouvre ; le téléphone les signale à leur heure seulement tant que **Recevoir une fois fermées** est activé
-  pour cet emplacement, dans la même notification qui dit seulement **Rappel**.
+  pour cet emplacement, dans la même notification. Un nouveau code PIN pour l’emplacement, qui le recommence vide, ou
+  l’emplacement retiré, enlève ses rappels du téléphone.
 
 **Pourquoi :** une notification s’affiche sur l’écran verrouillé pour quiconque tient le téléphone, donc ce que dit un
 rappel reste chiffré dans son espace et Android n’apprend que son heure : la notification ne peut dire à personne ce que
@@ -642,7 +645,10 @@ discussion s’affiche à l’écran.
   prochaine ouverture d’Erevos.
 - **Envoyer sans son :** maintiens la flèche d’envoi et choisis **Sans son** : son téléphone affiche la notification
   sans son ni vibration. Un Erevos d’avant cela ne le sait pas et sonne comme d’habitude, tout comme Erevos en app web,
-  dont la notification vient du navigateur.
+  dont la notification vient du navigateur. De même pour la notification d’un emplacement de discussions masquées fermé,
+  avec **Prévenir quand un message arrive** activé, et d’un espace fermé avec **Aussi quand un autre espace est
+  ouvert** : celles-ci demandent seulement au relais combien sont arrivés, et il ne peut pas distinguer un message sans
+  son d’un autre, car seul le message chiffré le dit.
 - **Liens :** une adresse web dans un message est soulignée. Appuie dessus et Erevos la montre en entier, pour l’ouvrir
   dans le navigateur seulement si c’est là que tu veux aller. Rien n’est chargé avant cela.
 - **Partager depuis une autre app** (Android) : dans **Partager** d’une autre app, comme celui du navigateur pour une
@@ -766,7 +772,10 @@ contacts (voir [Sur un iPhone](#iphone)).
   donc elle ne déplace ta file que tant que le lien nomme encore celle-ci, comme c’est le cas jusqu’à ton premier
   déplacement. Ceux que tu as bloqués sont sous **Contacts bloqués** dans **Nouvelle discussion**, avec **Débloquer**.
   Les ajouter de nouveau depuis leur lien te demande d’abord de les débloquer ; d’ici là, rien ne les ajoute, ni leur
-  réponse à une invitation par SMS ni leur lien de contact dans un groupe.
+  réponse à une invitation par SMS ni leur lien de contact dans un groupe. Chaque personne qui écrit depuis ton lien de
+  contact peut faire sonner le téléphone, comme tout message : **Refuser** ou **Bloquer** arrête celle-là,
+  **Notifications** → **En sourdine** dans sa discussion la fait taire sans la refuser, et **Nouveau lien de contact**
+  arrête quiconque a l’ancien lien une fois ses 14 jours passés.
 - **Groupes :** quelqu’un dans l’un de tes groupes peut encore t’y écrire. Erevos dit dans combien de groupes vous êtes
   ensemble : quitte-les, ou demande à leur admin de le retirer.
 - **Quand le relais est injoignable**, la file change dès qu’il répond, et d’ici là rien de ce qu’il envoie ne
@@ -1019,63 +1028,77 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   proximité et passe directement entre les téléphones (ou ordinateurs). Il en va de même pour les messages de groupe et
   les appels de groupe.
 - **En arrière-plan (Android) :** tant qu’un espace est ouvert, Erevos continue de tourner quand tu le quittes, avec
-  Accueil ou en le balayant hors des applis récentes, avec une notification discrète qui dit seulement « Erevos ». Il
-  attend au relais et sur les liaisons avec les téléphones à proximité, si bien que les messages arrivent : une
-  notification dit seulement « Nouveau message », ou combien sont arrivés, et sur un téléphone verrouillé seulement
-  « Erevos ». Un appel sonne avec la sonnerie du téléphone et une notification qui dit seulement « Appel entrant »,
-  par-dessus l’écran de verrouillage et l’économiseur d’écran aussi, et l’écran se réveille. Appuie dessus pour
-  répondre. Avec le verrou par mot de passe activé, un appel qui sonne s’affiche avant le mot de passe, et Erevos se
-  verrouille dès qu’il se termine. Verrouillé, l’espace continue derrière l’écran du mot de passe, si bien que messages
-  et appels arrivent encore, et un appel s’affiche par-dessus l’écran du mot de passe. Seuls les discussions et groupes
-  de cet espace arrivent ainsi ; les discussions masquées disent seulement qu’un message est arrivé, si tu le leur
-  permets (voir Discussions masquées). Règle-le dans **Réglages** → **Notifications** → **En arrière-plan** : **Recevoir
-  et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les nouveaux messages** (par défaut)
-  ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi, si Android les demande,
-  **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**.
-- **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des
-  messages non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit
-  combien, avec ceux qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes,
-  jusqu’à ce que tu les aies lus. Elle ne compte pas les messages d’une discussion en sourdine (voir Notifications de
-  cette discussion), ni ceux d’une discussion masquée au moment où tu quittes. Le launcher d’Android l’affiche sur
-  l’icône d’Erevos, comme un nombre ou, sur certains téléphones comme les Pixel, comme un point. **Réglages** →
-  **Notifications** → **Nombre sur l’icône** le désactive : la notification ne parle alors que de ce qui est arrivé
-  depuis la dernière fois qu’Erevos était ouvert, et le nombre du launcher part avec elle.
+  Accueil ou en le balayant hors des applis récentes, avec une notification discrète, « Erevos – Ready for calls and
+  messages », qui ne s’affiche pas sur l’écran de verrouillage. Il attend au relais et sur les liaisons avec les
+  téléphones à proximité, si bien que les messages arrivent : une notification dit seulement « New message », ou combien
+  sont arrivés, et sur un téléphone verrouillé seulement « Erevos ». Une demande de message, de quelqu’un qui n’a que
+  ton lien de contact, donne la même notification et le même son, et compte sur l’icône, comme tout message. Un appel
+  sonne avec la sonnerie du téléphone et une notification, « Incoming call » (ou « Incoming video call ») – « Open
+  Erevos to answer », sans nom, par-dessus l’écran de verrouillage et l’économiseur d’écran aussi, et l’écran se
+  réveille. Appuie dessus pour répondre. Avec le verrou par mot de passe activé, un appel qui sonne s’affiche avant le
+  mot de passe, et Erevos se verrouille dès qu’il se termine. Verrouillé, l’espace continue derrière l’écran du mot de
+  passe, si bien que messages et appels arrivent encore, et un appel s’affiche par-dessus l’écran du mot de passe. Seuls
+  les discussions et groupes de cet espace arrivent ainsi, et les discussions masquées avec **Recevoir une fois
+  fermées** activé ; les autres discussions masquées disent seulement qu’un message est arrivé, ou sonnent sans nom, si
+  tu le leur permets (voir Discussions masquées). Règle-le dans **Réglages** → **Notifications** → **En arrière-plan** :
+  **Recevoir et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les nouveaux messages**
+  (par défaut) ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi, si Android les
+  demande, **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**.
+- **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des messages
+  non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit combien, avec ceux
+  qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes, jusqu’à ce que tu les
+  aies lus. Elle ne compte pas les messages d’une discussion en sourdine (voir Notifications de cette discussion), ni
+  ceux d’une discussion masquée au moment où tu quittes. Le launcher d’Android l’affiche sur l’icône d’Erevos, comme un
+  nombre ou, sur certains téléphones comme les Pixel, comme un point. **Réglages** → **Notifications** → **Nombre sur
+  l’icône** le désactive : la notification ne parle alors que de ce qui est arrivé depuis la dernière fois qu’Erevos
+  était ouvert, et le nombre du launcher part avec elle. Un message supprimé pour tout le monde avant que tu l’aies lu,
+  ou lu sur un ordinateur associé, ne compte plus.
 
   **Pourquoi :** sur Android, seule une notification peut mettre un nombre sur l’icône d’une app, donc la notification
   reste tant que des messages attendent ; elle ne dit rien de plus que combien, comme toujours.
 - **Un espace fermé :** il ne reçoit rien, car sa clé n’est en mémoire que tant qu’il est ouvert : ses messages
   attendent sur son relais et arrivent quand tu l’ouvres. Sauf si tu choisis, dans cet espace, **Aussi quand un autre
   espace est ouvert** sous **Réglages** → **Notifications** → **En arrière-plan** (par défaut, c’est **Cet espace
-  seulement quand il est ouvert**) : alors, tant qu’un autre espace est ouvert et reçoit, il dit seulement « Nouveau
+  seulement quand il est ouvert**) : alors, tant qu’un autre espace est ouvert et reçoit, il dit seulement « New
   message », ou combien sont arrivés, avec la même notification que cet espace, jamais quel espace, et ses discussions
-  masquées ne disent rien. Pour cela, le téléphone garde les adresses de ses files d’attente sur son relais hors de son
-  mot de passe, dont celle où écrit chacun de ses contacts, jusqu’à 64 contacts, jamais ses clés, ni qui sont ses
-  contacts, ni ses messages, et ne demande au relais que combien sont arrivés, jamais les messages eux-mêmes : ils
-  restent là-bas jusqu’à ce que l’espace s’ouvre. Un espace qui passe par Tor n’est interrogé que par Tor, tant que
-  l’espace ouvert a Tor prêt.
+  masquées ne disent rien. Ce que d’autres téléphones ont transporté jusqu’à son relais compte comme un message, les
+  suppressions aussi, et un message qui lui est envoyé sans son sonne comme d’habitude (voir **Envoyer sans son**). Pour
+  cela, le téléphone garde les adresses de ses files d’attente sur son relais hors de son mot de passe, dont celle où
+  écrit chacun de ses contacts, jusqu’à 64 contacts, jamais ses clés, ni qui sont ses contacts, ni ses messages, et ne
+  demande au relais que combien sont arrivés, jamais les messages eux-mêmes : ils restent là-bas jusqu’à ce que l’espace
+  s’ouvre. Un espace qui passe par Tor (**Messages**, par défaut, ou **Tout**, sous **Ce qui passe par Tor**) n’est
+  interrogé que par Tor : tant que l’espace ouvert a Tor désactivé, ou que son Tor démarre ou vient d’échouer, l’espace
+  fermé ne dit rien, et ce qui est arrivé est signalé dès que Tor y est prêt.
 
   **Pourquoi :** un espace derrière un second mot de passe ne doit pas montrer qu’il est là, donc c’est désactivé tant
-  que tu ne l’actives pas, et alors il n’en dit pas plus que ne le dirait l’espace ouvert. Comme chaque contact écrit
-  dans sa propre file d’attente, l’espace doit aussi interroger le relais sur chacune d’elles, sinon leurs messages ne
-  diraient rien. Le prix à payer : son relais peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un
-  qui examine le téléphone avec des outils peut trouver qu’un second espace y garde des adresses, et combien de contacts
-  il a.
+  que tu ne l’actives pas, et alors il n’en dit pas plus que ne le dirait l’espace ouvert. Si on l’interrogeait
+  directement depuis le téléphone pendant qu’un autre espace est ouvert, son relais ou quelqu’un qui observe le réseau
+  pourrait relier les deux espaces par l’adresse internet du téléphone. Comme chaque contact écrit dans sa propre file
+  d’attente, l’espace doit aussi interroger le relais sur chacune d’elles, sinon leurs messages ne diraient rien. Le
+  prix à payer : son relais peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un qui examine le
+  téléphone avec des outils peut trouver qu’un second espace y garde des adresses, et combien de contacts il a.
 - **Là où ça ne peut pas sonner :** arrêté par Android (ou par l’économie de batterie du téléphone, ou par le réglage
   propre du fabricant), après un redémarrage du téléphone jusqu’à ce que tu ouvres Erevos et l’espace une fois, dans un
   autre espace (il dit seulement qu’un message est arrivé, si tu le permets, comme ci-dessus), ou sur un ordinateur ou
   dans l’app web quand ils sont fermés. Un appel là-bas s’affiche comme appel manqué dès qu’Erevos s’ouvre. Quand
-  Android ferme Erevos pendant qu’il reçoit, une notification discrète le dit : ouvre Erevos et l’espace pour recevoir
-  de nouveau. Une autre, « Verrouillé », fait de même quand l’espace qui recevait se ferme (après la restauration d’une
-  sauvegarde, par exemple) et qu’Erevos quitte l’écran en demandant le mot de passe. Une demande de message ne peut pas
-  t’appeler tant que tu ne l’as pas acceptée.
+  Android ferme Erevos pendant qu’il reçoit et le relance, comme il le fait d’habitude, une notification discrète le
+  dit : ouvre Erevos et l’espace pour recevoir de nouveau. Après **Forcer l’arrêt**, avec une utilisation de la batterie
+  réglée sur Restreinte, ou quand le réglage propre du fabricant le ferme, Android ne relance rien, donc aucune
+  notification ne le dit : la notification « Erevos » disparaît simplement, et rien ne sonne tant que tu n’as pas ouvert
+  Erevos. **Autorisations** (ci-dessous) prévient à l’avance si l’un de ces réglages est en place. Une autre
+  notification, « Locked », le dit aussi quand l’espace qui recevait se ferme (après la restauration d’une sauvegarde,
+  par exemple) et qu’Erevos quitte l’écran en demandant le mot de passe. Une demande de message ne peut pas t’appeler
+  tant que tu ne l’as pas acceptée.
 - **Autorisations (Android) :** **Réglages** → **Général** → **Autorisations** montre ce qu’Android permet à Erevos pour
   les appels et les messages en arrière-plan (les notifications, la notification d’appel et son affichage par-dessus
-  l’écran, la notification des messages, les appels sur l’écran de verrouillage, le fonctionnement sur batterie, le
-  fonctionnement en arrière-plan avec une utilisation de la batterie non réglée sur Restreinte, pas de mise en pause
-  quand l’app n’est pas utilisée, les données mobiles en arrière-plan, le micro) et pour d’autres choses (le son des
-  nouveaux messages, les notifications sur l’écran de verrouillage, les appels malgré Ne pas déranger, l’appareil photo,
-  les téléphones à proximité, les contacts, les heures exactes), chacun avec sa raison et un bouton qui ouvre la
-  question ou le réglage d’Android lui-même. Il dit aussi quand le téléphone est en silencieux ou en vibreur, quand
+  l’écran, la notification des messages, avec ses notifications « Messages without sound » et « Messages with a chat's
+  own sound », qui gardent aussi le nombre sur l’icône, les appels sur l’écran de verrouillage, le fonctionnement sur
+  batterie, le fonctionnement en arrière-plan avec une utilisation de la batterie non réglée sur Restreinte, pas de mise
+  en pause quand l’app n’est pas utilisée, les données mobiles en arrière-plan, le micro) et pour d’autres choses (le
+  son des nouveaux messages, les notifications sur l’écran de verrouillage, les appels malgré Ne pas déranger,
+  l’appareil photo, les téléphones à proximité, les contacts, les heures exactes pour les SMS envoyés plus tard et les
+  rappels, la notification des rappels une fois qu’un rappel est arrivé), chacun avec sa raison et un bouton qui ouvre
+  la question ou le réglage d’Android lui-même. Il dit aussi quand le téléphone est en silencieux ou en vibreur, quand
   l’économiseur de batterie est activé, et quand Ne pas déranger est activé sans laisser passer les appels d’Erevos. Sur
   les téléphones Huawei, Honor, Xiaomi, OPPO, realme, OnePlus, vivo, Samsung et ASUS, il dit aussi où se trouve le
   réglage propre du fabricant, qu’Erevos ne peut pas lire : appuie sur **C’est fait** une fois qu’il est réglé. Après
@@ -1093,7 +1116,8 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
 **Pourquoi :** les clés qui ouvrent les messages d’un espace ne sont en mémoire que tant qu’il est ouvert, et scellées
 derrière son mot de passe sinon. Donc après un redémarrage du téléphone, rien ne peut être lu et rien ne sonne tant que
 tu n’as pas ouvert Erevos et l’espace une fois ; et les discussions masquées, dont la clé n’est en mémoire que tant
-qu’elles sont ouvertes, disent seulement qu’un message est arrivé, ou sonnent sans nom, si tu le leur permets.
+qu’elles sont ouvertes, sauf si **Recevoir une fois fermées** la garde avec l’espace, disent sinon seulement qu’un
+message est arrivé, ou sonnent sans nom, si tu le leur permets.
 
 > Les réglages du relais, ta file d’attente, tes contacts et leurs noms, les clés de tes conversations et les messages
 > sont gardés dans cet espace, scellés. L’historique n’a pas de limite : il est gardé dans des pages scellées de même
@@ -1998,33 +2022,39 @@ supprimerait ce que contiennent les emplacements retirés.
   de cet emplacement, désactivé tant que tu ne l’actives pas (voir **Aperçus des liens** sous [Discuter par un
   relais](#relay)).
 - **Prévenir quand un message arrive** (Android) : en haut d’un emplacement tant que **Recevoir une fois fermées** est
-  désactivé. Activé, tant que l’emplacement est fermé, une notification dit seulement « Nouveau message », ou combien
-  sont arrivés, comme pour les autres discussions, avec Erevos en arrière-plan ou affiché, une fois pour chaque message,
-  même quand Erevos a été fermé puis redémarré ; ce qui est arrivé pendant que l’emplacement était ouvert n’en déclenche
+  désactivé. Activé, tant que l’emplacement est fermé, une notification dit seulement « New message », ou combien sont
+  arrivés, comme pour les autres discussions, avec Erevos en arrière-plan ou affiché, une fois pour chaque message, même
+  quand Erevos a été fermé puis redémarré ; ce qui est arrivé pendant que l’emplacement était ouvert n’en déclenche
   aucune une fois qu’il se ferme. Qu’un de tes messages leur soit arrivé ou ait été lu, la saisie et les nouvelles clés
   n’en déclenchent aucune, pas plus qu’un appel qui a sonné (voir **Faire sonner les appels quand elles sont
-  fermées**) ; un appel qui n’a pas sonné compte comme un message. Il faut **Recevoir et sonner** et **Signaler les
-  nouveaux messages** sous **En arrière-plan**, et un relais qui attend (à partir du 18 octobre 2026) ; un relais
-  d’avant le 23 octobre 2026 ne peut que dire que quelque chose attend, donc « Nouveau message » s’affiche aussi pour
-  cela, une fois jusqu’à ce que tu ouvres cet emplacement. Pour cela, l’espace garde une file d’attente sur le relais
-  pour chacun de ses 4 emplacements, celles qui ne servent pas étant créées pour rien sur le même relais, si bien
-  qu’ouvrir l’espace ne montre ni si des discussions masquées sont définies ni lesquelles, tant qu’elles utilisent le
-  relais de l’espace ; on ne demande au relais que combien de messages sont arrivés, car il les compte grâce à l’octet
-  que chacun porte (voir ce que voit le relais, plus haut), jamais les messages eux-mêmes. Celui qui voit la
-  notification et ne trouve rien de nouveau dans tes discussions peut deviner qu’il y en a d’autres. Les sauvegardes ne
-  le gardent pas : active-le de nouveau après une restauration.
+  fermées**) ; un appel qui n’a pas sonné compte comme un message. Un message ou une suppression que d’autres téléphones
+  Erevos ont transporté jusqu’au relais (voir **Transportés par d’autres téléphones** dans [Discuter avec un téléphone à
+  proximité](#nearby)) ne peut pas dire ce qu’il transporte, car les téléphones qui le transportent ne doivent pas le
+  savoir : il compte comme un message, si bien qu’une suppression affiche aussi « New message », et le premier message
+  d’une discussion peut compter pour deux ; et un message envoyé sans son sonne comme d’habitude (voir **Envoyer sans
+  son**). Il faut **Recevoir et sonner** et **Signaler les nouveaux messages** sous **En arrière-plan**, ce que
+  l’interrupteur dit quand ils ne sont pas activés, et un relais qui attend (à partir du 18 octobre 2026) ; un relais
+  d’avant le 23 octobre 2026 ne peut que dire que quelque chose attend, donc « New message » s’affiche aussi pour cela,
+  une fois jusqu’à ce que tu ouvres cet emplacement. Pour cela, l’espace garde une file d’attente sur le relais pour
+  chacun de ses 4 emplacements, celles qui ne servent pas étant créées pour rien sur le même relais, si bien qu’ouvrir
+  l’espace ne montre ni si des discussions masquées sont définies ni lesquelles, tant qu’elles utilisent le relais de
+  l’espace ; on ne demande au relais que combien de messages sont arrivés, car il les compte grâce à l’octet que chacun
+  porte (voir ce que voit le relais, plus haut), jamais les messages eux-mêmes. Celui qui voit la notification et ne
+  trouve rien de nouveau dans tes discussions peut deviner qu’il y en a d’autres. Les sauvegardes ne le gardent pas :
+  active-le de nouveau après une restauration.
 - **Faire sonner les appels quand elles sont fermées** (Android) : sous **Prévenir quand un message arrive**, tant que
-  **Recevoir une fois fermées** est désactivé. Activé, tant que l’emplacement est fermé et qu’Erevos est en
-  arrière-plan, un appel d’un de ses contacts fait sonner le téléphone et affiche « Appel entrant » sans nom, comme un
-  appel de tes autres discussions. Sur l’écran de sonnerie, appuie sur le petit signe, tape le code PIN et appuie sur
-  **Connecter** pour répondre ; un simple **Répondre** ne peut pas le connecter, et **Refuser** arrête la sonnerie. La
-  sonnerie dure environ 45 secondes. Il faut **Recevoir et sonner** sous **En arrière-plan** et un relais qui attend, et
-  cela utilise une file d’attente sur le relais pour chacun des 4 emplacements, celles qui ne sonnent pas étant créées
-  pour rien sur le même relais, comme pour la notification des messages ci-dessus, si bien qu’ouvrir l’espace ne trahit
-  rien. L’appelant ne fait que sonner une file là-bas ; l’appel lui-même attend sur la file propre de la discussion
-  jusqu’à ce que le code PIN l’ouvre. Un contact que tu as supprimé peut encore le faire sonner, mais l’appel ne peut
-  jamais se connecter. Un appel passé depuis un ordinateur associé ne sonne que tant que les discussions masquées sont
-  ouvertes. Les sauvegardes ne le gardent pas : active-le de nouveau après une restauration.
+  **Recevoir une fois fermées** est désactivé. Activé, tant que l’emplacement est fermé, avec Erevos en arrière-plan ou
+  sur n’importe quel écran, un appel d’un de ses contacts fait sonner le téléphone et affiche « Incoming call » sans
+  nom, comme un appel de tes autres discussions. Sur l’écran de sonnerie, appuie sur le petit signe, tape le code PIN et
+  appuie sur **Connecter** pour répondre ; un simple **Répondre** ne peut pas le connecter, et **Refuser** arrête la
+  sonnerie. La sonnerie dure environ 45 secondes. Il faut **Recevoir et sonner** sous **En arrière-plan**, ce que
+  l’interrupteur dit quand ce n’est pas activé, et un relais qui attend, et cela utilise une file d’attente sur le
+  relais pour chacun des 4 emplacements, celles qui ne sonnent pas étant créées pour rien sur le même relais, comme pour
+  la notification des messages ci-dessus, si bien qu’ouvrir l’espace ne trahit rien. L’appelant ne fait que sonner une
+  file là-bas ; l’appel lui-même attend sur la file propre de la discussion jusqu’à ce que le code PIN l’ouvre. Un
+  contact que tu as supprimé peut encore le faire sonner, mais l’appel ne peut jamais se connecter. Un appel passé
+  depuis un ordinateur associé ne sonne que tant que les discussions masquées sont ouvertes. Les sauvegardes ne le
+  gardent pas : active-le de nouveau après une restauration.
 - **Un nouveau code PIN pour un emplacement** (depuis **Discussions masquées** dans **Réglages**, ou **Nouvelles
   discussions masquées**) le recommence vide et remplace ce qui s’y trouvait. Pour garder les discussions et changer
   seulement le code PIN, ouvre-les et utilise **Changer le code PIN** là. Chaque code PIN doit être différent des autres
@@ -2307,6 +2337,10 @@ reste non scellé par surprise.
 - **Un ordinateur et un téléphone peuvent partager un compte :** associe l’ordinateur au téléphone, et les deux ont les
   mêmes discussions et les mêmes contacts, voir [Appareils associés](#devices). Ou bien une sauvegarde déplace tout de
   l’un à l’autre, voir [Sauvegardes](#backup), et à partir de là n’utilise que l’un des deux.
+- **Pas de notifications ni de sons :** Erevos sur un ordinateur n’affiche aucune notification du système et ne fait
+  aucun son. Pendant qu’il tourne, un nouveau message s’affiche seulement dans sa fenêtre, et un appel y affiche son
+  écran sans sonner, si bien qu’avec la fenêtre réduite ou derrière une autre, rien ne te prévient. Fermé, il ne reçoit
+  rien : les messages attendent sur le relais, et un appel s’affiche comme appel manqué dès qu’il s’ouvre.
 - **Testé jusqu’ici** sous Linux. Les versions Mac et Windows sont compilées et ouvertes sur les ordinateurs de GitHub,
   pas encore par une personne.
 
@@ -2649,7 +2683,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Sauvegardes** | Un fichier scellé avec son propre mot de passe, contenant chaque espace tel qu’il est scellé sur le téléphone. Son nom dit que c’est une sauvegarde Erevos, et sa taille montre à peu près combien est gardé. Les sauvegardes automatiques gardent leur mot de passe sur le téléphone. | Des sauvegardes directement vers Nextcloud ou WebDAV. |
 | **Marques ✓✓ et ✓✓✓** | Le téléphone du contact apprend quand le tien a reçu et lu ses messages, chiffré. Le relais, ou qui écoute à proximité, voit un petit message de plus. | Un interrupteur pour cesser de dire quand tu lis. |
 | **Empreinte digitale ou visage (Android)** | Désactivé sauf si tu l’actives. N’ouvre que l’espace du premier mot de passe : sa clé est scellée dans l’Android Keystore, utilisable seulement juste après une vérification forte de l’empreinte ou du visage, et abandonnée quand ils changent. Quelqu’un qui te retient peut utiliser ton doigt. | |
-| **Notifications (Android)** | En arrière-plan : « Erevos », « Appel entrant », et « Nouveau message » ou combien sont arrivés, jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |
+| **Notifications (Android)** | En arrière-plan : « Erevos – Ready for calls and messages » (pas sur l’écran de verrouillage), « Incoming call » ou « Incoming video call » – « Open Erevos to answer », et « New message » ou combien sont arrivés ; quand Android ou le mot de passe l’arrête, « Closed by Android » ou « Locked » – « Open it to receive calls and messages again » ; un rappel, « Reminder » ou combien ; une nouvelle version, « Erevos X is out ». Jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |
 | **Widget et Téléphone (Android)** | Le widget, une fois ajouté, montre combien il y a d’appels manqués, de SMS non lus et de nouveaux messages, jamais qui ni quoi. Le Téléphone s’ouvre sans le mot de passe seulement si tu le permets : alors quiconque tient le téléphone déverrouillé voit les appels et les favoris qu’Android garde, avec les noms des contacts du téléphone seulement. | |
 | **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le relais d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans relais d’appel, sur le même Wi-Fi seulement, chaque téléphone voit l’adresse de l’autre. Les relais voient quand un appel commence à sonner. | La sonnerie sur un ordinateur et dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
 | **Discussions de groupe** | Chiffrées de bout en bout avec MLS (RFC 9420) ; les membres retirés ne lisent plus rien ensuite. La copie de chaque membre est scellée à part, donc les relais ne peuvent pas savoir qui est dans un groupe ; chaque relais voit quand même un message atteindre une file d’attente. Les membres voient les clés et les adresses de relais les uns des autres. Les photos, fichiers et messages vocaux passent par le stockage de fichiers du relais de l’expéditeur, comme vers un contact, et y restent 14 jours. Pas audité. | |

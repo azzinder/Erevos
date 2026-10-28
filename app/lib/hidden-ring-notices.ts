@@ -8,7 +8,7 @@ import { onNetworkChange } from './network-change';
 import { receivesPocket } from './place-receiver';
 import { canWaitAt, fromHex, isQueueNotFound, receiveMessage, waitForMessage, type Relay } from './relay';
 
-// While Erevos is in the background (lib/background.ts), a hidden place that rings (lock/hidden-ring.ts)
+// While Erevos receives (lib/background.ts), in the background or showing, a hidden place that rings (lock/hidden-ring.ts)
 // makes the phone ring when one of its contacts calls, though the place is closed. For every pocket
 // of the open space, the relay is asked to wait until something is in its ring queue; the queues
 // made for nothing are waited on the same way, so the relay and the network see the same for every
@@ -16,8 +16,7 @@ import { canWaitAt, fromHex, isQueueNotFound, receiveMessage, waitForMessage, ty
 // nothing and is not opened: its arrival alone means a call rings. `ring` then plays the phone's
 // ringtone and the "Incoming call" notice (lib/background.ts); the call's offer waits on the place's
 // message queue until its PIN opens it (app/chat.tsx). Only one hidden call rings at a time, and
-// none while a call is already in progress. Unlike the message notice this does not pause while the
-// app shows: a hidden call rings on any screen. It is drained as it rings, so the next call rings
+// none while a call is already in progress. A hidden call rings on any screen. It is drained as it rings, so the next call rings
 // again, and the pocket is let be while it is open.
 
 // How long one wait at the relay lasts, seconds; the longest pause after a failure or at a relay

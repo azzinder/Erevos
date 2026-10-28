@@ -185,7 +185,7 @@ cryptography. Do not rely on it to protect anyone yet.
 - **iPhone**: the web app (`pwa/`), from Safari. The native iOS build has no chat ("Chat runs on
   Android and on a computer for now").
 - **Linux, Windows and macOS**: the desktop app (`desktop/`), the web build with the core in
-  WebAssembly, in Electron. No Bluetooth, SMS or Tor there; the same Wi-Fi works.
+  WebAssembly, in Electron. No Bluetooth, SMS, Tor, notices or ringing sound there; the same Wi-Fi works.
 - **Any browser**: the web app. Its releases are signed with an offline Ed25519 key, and its
   service worker runs only signed releases. See [pwa/README.md](pwa/README.md) for what that
   protects and what it does not.

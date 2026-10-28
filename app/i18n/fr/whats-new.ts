@@ -42,6 +42,38 @@ export const whatsNew: Record<string, string> = {
     '**Les notifications de l’app web, plus fiables** : plus de « Nouveau message » par-dessus Erevos quand il est ouvert, et un push retenu pendant que le téléphone était hors ligne ne compte plus les messages que tu as déjà lus (les deux avec ton relais à jour), chaque avis sonne dans Chrome, Firefox et Edge, elles reviennent d’elles-mêmes quand le navigateur change son adresse push, et « Notifications quand l’app est fermée » dit quand le navigateur les bloque ou que ton relais n’a pas encore été prévenu qu’elles sont désactivées. Voir [Sur un iPhone](#iphone).',
   "**The relay's pushes to the web app, sturdier**: a push the push service could not take just then is sent again, a call goes before the messages waiting their turn, and whoever runs the relay can allow another push service. Your relay needs an update for it.":
     '**Les push du relais vers l’app web, plus robustes** : un push que le service push n’a pas pu accepter à ce moment-là est renvoyé, un appel passe avant les messages qui attendent leur tour, et la personne qui gère le relais peut autoriser un autre service push. Ton relais doit être mis à jour pour cela.',
+  "**Permissions checks every notice Erevos uses**: on Android, the message notice without sound or with a chat's own sound, and the reminders', turned off, now show there, with a button to each. See [Chat through a relay](#relay).":
+    '**Autorisations vérifie chaque notification qu’Erevos utilise** : sur Android, la notification des messages sans son ou avec le son propre d’une discussion, et celle des rappels, quand elles sont désactivées, s’affichent maintenant là, avec un bouton pour chacune. Voir [Discuter par un relais](#relay).',
+  '**Hidden chats say what their switches need**: Say when a message comes and Ring calls when closed say so when Settings → Notifications → In the background lets them do nothing. See [Hidden chats](#hidden).':
+    '**Les discussions masquées disent ce dont leurs interrupteurs ont besoin** : Prévenir quand un message arrive et Faire sonner les appels quand elles sont fermées le disent quand Réglages → Notifications → En arrière-plan ne les laisse rien faire. Voir [Discussions masquées](#hidden).',
+  "**Truer words about notices**: Settings and the guide give the notices' own words and say what each one needs. See [Chat through a relay](#relay).":
+    '**Des mots plus justes sur les notifications** : les Réglages et le guide donnent les mots mêmes des notifications et disent ce dont chacune a besoin. Voir [Discuter par un relais](#relay).',
+  "**Calls ring as they should**: with Do Not Disturb only when their notice may break through, with a phone's clock off too once the relay is updated, and to the end on Android 7 and 8; a second call is told busy, and a ring stops only for its own call. See [Chat through a relay](#relay).":
+    '**Les appels sonnent comme il faut** : avec Ne pas déranger seulement quand leur notification a le droit de passer, avec l’horloge d’un téléphone décalée aussi une fois le relais mis à jour, et jusqu’au bout sur Android 7 et 8 ; un second appel reçoit la réponse occupé, et une sonnerie ne s’arrête que pour son propre appel. Voir [Discuter par un relais](#relay).',
+  '**Hidden calls**: one turned down no longer leaves Erevos over the lock screen, one that comes while the password screen shows comes over it, and none rings twice. See [Hidden chats](#hidden).':
+    '**Appels masqués** : un appel refusé ne laisse plus Erevos par-dessus l’écran de verrouillage, un appel qui arrive pendant que l’écran du mot de passe s’affiche passe par-dessus, et aucun ne sonne deux fois. Voir [Discussions masquées](#hidden).',
+  '**Notices come again at once after a change of network**, and receiving starts again as Erevos shows when Android refused it. See [Chat through a relay](#relay).':
+    '**Les notifications reviennent aussitôt après un changement de réseau**, et la réception reprend dès qu’Erevos s’affiche quand Android l’avait refusée. Voir [Discuter par un relais](#relay).',
+  "**Hidden chats' notices tell each message once**: what came since a place last looked is told as it closes, a call that rang is not told again as a message, and a place whose queue the relay lost keeps its switch on. See [Hidden chats](#hidden).":
+    '**Les notifications des discussions masquées signalent chaque message une fois** : ce qui est arrivé depuis le dernier regard d’un emplacement est signalé à sa fermeture, un appel qui a sonné n’est plus signalé de nouveau comme message, et un emplacement dont le relais a perdu la file garde son interrupteur activé. Voir [Discussions masquées](#hidden).',
+  '**Hidden chats close while Erevos is away**, after 30 seconds, so a call to them meanwhile rings with their PIN to answer. See [Hidden chats](#hidden).':
+    '**Les discussions masquées se ferment quand Erevos n’est plus affiché**, au bout de 30 secondes, si bien qu’un appel pour elles entre-temps sonne avec leur code PIN pour répondre. Voir [Discussions masquées](#hidden).',
+  '**A voice message counts once**, on its last part, also when it goes again whole.':
+    '**Un message vocal compte une fois**, sur sa dernière partie, même quand il est renvoyé en entier.',
+  '**The number on the icon counts only what is still there**: a message deleted for everyone, or read on a linked computer, no longer counts. See [Chat through a relay](#relay).':
+    '**Le nombre sur l’icône ne compte que ce qui est encore là** : un message supprimé pour tous, ou lu sur un ordinateur associé, ne compte plus. Voir [Discuter par un relais](#relay).',
+  '**Messages sent for later** tell of themselves only while their space is open, without sound if sent so.':
+    '**Les messages envoyés pour plus tard** ne se signalent que tant que leur espace est ouvert, sans son s’ils ont été envoyés ainsi.',
+  '**SMS**: one to the chat on screen only sounds there, they are marked read only while their screen shows, and Android names their notices SMS. See [SMS](#sms).':
+    '**SMS** : un SMS pour la discussion à l’écran ne sonne que là, ils ne sont marqués lus que tant que leur écran s’affiche, et Android nomme leurs notifications SMS. Voir [SMS](#sms).',
+  "**Reminders**: one seen in Chat with myself goes from the notice, a hidden place's go with a new PIN, and birthdays come at 9:00. See [Getting started](#start).":
+    '**Rappels** : un rappel vu dans Discussion avec moi-même quitte la notification, ceux d’un emplacement masqué partent avec un nouveau code PIN, et les anniversaires arrivent à 9:00. Voir [Premiers pas](#start).',
+  '**Nostr reads as soon as Tor is ready.** See [Through Nostr](#nostr).':
+    '**Nostr lit dès que Tor est prêt.** Voir [Par Nostr](#nostr).',
+  "**Erevos's notices show its mark** in the status bar.":
+    '**Les notifications d’Erevos montrent son logo** dans la barre d’état.',
+  '**Notices are asked for with receiving off too**, when Say a message came is on.':
+    '**Les notifications sont demandées même avec la réception désactivée**, quand Signaler les nouveaux messages est activé.',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un message envoyé pendant qu’une discussion s’ouvre l’attend**, marqué Envoi…, et part dès qu’elle est ouverte, sans dire qu’Erevos ne peut pas chiffrer.',
