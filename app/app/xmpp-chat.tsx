@@ -2,10 +2,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { currentCall } from '../lib/call';
+import { shownLine } from '../lib/call-lines';
+import { callPermissions } from '../lib/call-permissions';
+import { currentGroupCall } from '../lib/group-call';
 import { t } from '../lib/i18n';
+import { rtc } from '../lib/webrtc';
 import { isXmppId, nameOf, xmppDevices, type XmppMessage } from '../lib/xmpp';
+import { startXmppCall } from '../lib/xmpp-calls';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { onXmppChange, runXmpp, xmppForgetChat, xmppNow, xmppRead, xmppSend, xmppSetPlain } from '../lib/xmpp-store';
 import { radius, space } from '../theme/colors';
@@ -14,7 +21,8 @@ import { useColors } from '../theme/context';
 // One XMPP chat (lib/xmpp-store.ts): its messages, oldest first, and a field to write in. It is
 // marked as not anonymous, and as not encrypted when the person's apps have no OMEMO and the chat
 // was chosen to go without it. Opening it marks its messages read, and tells the other person's app
-// when it asked. The keys of their devices are listed below, to compare with them.
+// when it asked. The keys of their devices are listed below, to compare with them. The two tiles
+// at the top call them (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls.
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
@@ -71,14 +79,36 @@ export default function XmppChatScreen() {
     void send(text);
   }
 
+  async function call(video: boolean) {
+    if (!jid) return;
+    setNote('');
+    if (currentCall() || currentGroupCall()) {
+      setNote(t('There is a call already.'));
+      return;
+    }
+    if (!(await callPermissions(video))) {
+      setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
+      return;
+    }
+    await startXmppCall(jid, video, rtc).catch(fail);
+  }
+
   const name = nameOf(state, jid);
   const plain = !!chat?.plain;
   const devices = xmppDevices(state, jid);
   return (
     <Page>
-      <Text variant="title" numberOfLines={2}>
-        {name}
-      </Text>
+      <Row>
+        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
+          {name}
+        </Text>
+        <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+          <VideoSign />
+        </ShortcutTile>
+        <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
+          <PhoneSign />
+        </ShortcutTile>
+      </Row>
       <Text variant="caption" tone="muted">
         {jid}
       </Text>
@@ -178,6 +208,17 @@ function Bubble({ message }: { message: XmppMessage }) {
   const colors = useColors();
   const mine = message.mine;
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // A call's line: kept in English, shown in the app's language, with no marks.
+  if (message.call) {
+    return (
+      <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, gap: 2 }}>
+        <Text>{shownLine(message.text)}</Text>
+        <Text variant="caption" tone="faint">
+          {when}
+        </Text>
+      </View>
+    );
+  }
   const status =
     message.state === 'sending'
       ? t('Sending…')

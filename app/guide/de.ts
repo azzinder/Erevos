@@ -1593,6 +1593,15 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 - **Nachrichten von vorher:** Was kam, während Erevos geschlossen war, wird beim Verbinden aus dem Archiv des Servers
   geholt, wenn er eines führt. Eine Nachricht von vor der Anmeldung dieses Geräts oder nicht für es bestimmt erscheint
   gesperrt.
+- **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
+  Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
+  ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so
+  anrufen wie Conversations (Jingle, geklingelt mit XEP-0353). Der Anruf selbst ist verschlüsselt (DTLS-SRTP), aber der
+  Fingerabdruck seines Schlüssels geht so, wie er ist, über die XMPP-Server, nicht Ende-zu-Ende-verschlüsselt, sodass
+  sich diese Server dazwischenschalten könnten. Er geht über das Anruf-Relay dieses Bereichs, wenn es eines gibt, sonst
+  über den TURN-Server des XMPP-Servers, und nur darüber, sodass die andere Person deine Adresse nicht erfährt; ohne
+  beides geht er direkt, und sie erfährt sie. Ein Anruf geht nie über Tor: Das Anruf-Relay oder der TURN-Server sieht
+  die Adresse dieses Telefons.
 - **Nicht anonym:** Der XMPP-Server sieht dein Konto, deine Kontakte, wer mit wem spricht und wann, und ohne Tor auch,
   von wo. Der Server der anderen Person sieht dasselbe von seinen Chats mit dir.
 - **Über Tor:** Auf Android folgt XMPP der Wahl dieses Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**:
@@ -1600,7 +1609,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   mit **Alles** nur über Tor; mit **Nichts** direkt. Der XMPP-Bildschirm sagt, welchen Weg es gerade nimmt. Wo Erevos
   keine eigene Verbindung öffnen kann (die Web-App, ein Computer), nutzt es den WebSocket des Servers, direkt, und ein
   Server ohne ihn ist dort nicht erreichbar.
-- **Noch nicht:** Fotos und Dateien, Gruppenchats, Anrufe und OMEMO 2.
+- **Noch nicht:** Fotos und Dateien, Gruppenchats und Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.

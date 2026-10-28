@@ -1561,6 +1561,15 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 - **Messages d’avant :** ce qui est arrivé pendant qu’Erevos était fermé est récupéré dans l’archive du serveur à la
   connexion, si le serveur en tient une. Un message envoyé avant la connexion de cet appareil, ou qui ne lui était pas
   destiné, s’affiche verrouillé.
+- **Appels :** les deux tuiles en haut de la discussion appellent la personne, en voix ou en vidéo, sur le même écran
+  d’appel que les appels propres d’Erevos, et ses appels sonnent ici de la même façon, tant que cet espace est ouvert ;
+  un appel de quelqu’un qui n’est pas dans tes contacts s’affiche seulement comme manqué. Cela marche avec les apps qui
+  appellent comme Conversations (Jingle, avec la sonnerie de XEP-0353). L’appel lui-même est chiffré (DTLS-SRTP), mais
+  l’empreinte de sa clé passe par les serveurs XMPP telle quelle, sans chiffrement de bout en bout, donc ces serveurs
+  pourraient se mettre entre les deux. Il passe par le relais d’appel de cet espace s’il y en a un, sinon par le serveur
+  TURN du serveur XMPP, et seulement par lui, donc l’autre personne n’apprend pas ton adresse ; sans aucun des deux, il
+  passe directement, et elle l’apprend. Un appel ne passe jamais par Tor : le relais d’appel ou le serveur TURN voit
+  l’adresse de ce téléphone.
 - **Pas anonyme :** le serveur XMPP voit ton compte, tes contacts, qui parle avec qui et quand, et, sans Tor, d’où. Le
   serveur de l’autre personne voit la même chose de ses discussions avec toi.
 - **Par Tor :** sur Android, XMPP suit le choix de cet espace sous **Réglages** → **Relais et réseaux** → **Tor** : avec
@@ -1568,7 +1577,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   **Tout**, seulement par Tor ; avec **Rien**, en direct. L’écran XMPP dit par où il passe en ce moment. Là où Erevos ne
   peut pas ouvrir de connexion propre (l’appli web, un ordinateur), il utilise le WebSocket du serveur, en direct, et un
   serveur sans WebSocket n’est pas joignable.
-- **Pas encore :** photos et fichiers, discussions de groupe, appels et OMEMO 2.
+- **Pas encore :** photos et fichiers, discussions et appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.

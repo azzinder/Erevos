@@ -55,4 +55,5 @@ export const xmpp: Record<string, string> = {
   "Written without encryption: the XMPP server can read this chat.": "Escrita sem criptografia: o servidor XMPP pode ler esta conversa.",
   "XMPP": "XMPP",
   "Chats with people on XMPP: encrypted, not anonymous": "Conversas com pessoas no XMPP: criptografadas, não anônimas",
+  "Encrypted, but its key passes through the XMPP servers": "Criptografada, mas a chave dela passa pelos servidores XMPP",
 };

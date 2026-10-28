@@ -3,6 +3,7 @@ import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
 import { t } from './i18n';
 import {
+  addCallLine,
   addXmppContact,
   declineXmppRequest,
   forgetXmppChat,
@@ -290,6 +291,21 @@ export function xmppAddContact(jid: string, name?: string): Promise<void> {
 export function xmppDecline(jid: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => declineXmppRequest(it.state, online(it), jid));
+}
+
+/** The open space's account and its connection, while it is connected: for calls (lib/xmpp-calls.ts). */
+export function xmppLink(): { state: XmppState; connection: XmppConnection } | null {
+  const it = live;
+  return it?.state && it.connection?.isOpen ? { state: it.state, connection: it.connection } : null;
+}
+
+/** Keeps a call's line in a chat; one with the same `id` is said again in its place. */
+export function xmppCallLine(jid: string, mine: boolean, text: string, id: string, at = Date.now()): Promise<void> {
+  const it = live;
+  if (!it?.state) return Promise.resolve();
+  return changeAccount(it, async () => {
+    if (it.state) addCallLine(it.state, jid, mine, text, id, at);
+  });
 }
 
 export function xmppForgetChat(jid: string): Promise<void> {

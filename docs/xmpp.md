@@ -85,16 +85,71 @@ both ways, receipts and the archive.
   only when DNS does not find it), then the people who asked to add the account (Accept, Decline), a new chat
   with an address, the chats, the contacts the account has without a chat, this device's OMEMO fingerprint, and
   signing out. It says the chats are not anonymous, and on Android whether the connection goes through Tor.
-- `app/xmpp-chat.tsx`: the messages, with delivery and read marks, a locked message that could not be
-  opened here, and below the chat the fingerprints of the person's devices, with a note for a key that
+- `app/xmpp-chat.tsx`: two tiles at the top that call the person (video, voice; see Calls), the messages,
+  with delivery and read marks, each call's line, a locked message that could not be opened here, and below the chat the fingerprints of the person's devices, with a note for a key that
   changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
   (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
 - The home list (`xmppInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'xmpp'` with `xmpp:` and
   the address as its identity, in the XMPP chip beside the SMS, Erevos and Matrix ones; a person who asked to
   add the account is a row at the top until answered. The chip shows once the space has an account.
 
+## Calls
+
+One-to-one voice and video calls, as Conversations, Monal and Dino make them, on the same call
+screen as Erevos's own (`app/lib/xmpp-calls.ts`, a `CallPlace` of `app/lib/calls.ts`; the call is
+`app/lib/call.ts`'s):
+
+- **Ringing (XEP-0353):** a call of ours is a `<propose>` to the person's bare address, with an
+  `<description media>` per kind, so it rings on all their devices. The first `<proceed>` names the
+  device that has the call; it alone gets the `session-initiate`. A `<retract>` takes ours back,
+  `<reject>` turns theirs down (with a Jingle reason: `decline`, `busy`), and `<finish>` tells both
+  archives the call ended. Answering theirs sends `<proceed>` to their device and `<accept>` to our
+  own bare address, so our other devices stop ringing; theirs doing so stops the ring here
+  (`endedElsewhere`). The ring's id is the Jingle session's id.
+- **The session (XEP-0166, XEP-0167):** `session-initiate` carries the caller's description,
+  `session-accept` the answer, `session-terminate` the end, `session-info` with `<ringing>` the ring
+  for an app that started with Jingle at once, and `transport-info` addresses that come one at a
+  time (`Call.addCandidates`, held until the description is set). Anything else is said no to
+  (`feature-not-implemented` with `unsupported-info`), and a session nobody knows here gets
+  `item-not-found` with `unknown-session`.
+- **Descriptions (`app/lib/jingle-sdp.ts`):** WebRTC's SDP to Jingle and back: one content per media
+  section, named by its `mid`; payload types with their parameters (a nameless one, as RED's
+  `111/111`, kept) and RTCP feedback (XEP-0293); header extensions and `extmap-allow-mixed`
+  (XEP-0294); sources, their `msid` and groups (XEP-0339); the BUNDLE group (XEP-0338); ICE-UDP
+  (XEP-0176) with the DTLS fingerprint and `setup` (XEP-0320). Only UDP addresses given as numbers
+  pass: a `.local` name or a host name is dropped, as it would be looked up. An app that names no
+  stream gets one per call, so sound and picture play together.
+- **Rings without an offer:** a ring has no description, so the call rings with none and
+  `CallEvents.offer` asks for it as it is answered: `<proceed>`, then the `session-initiate` it
+  waits for. So an answer always goes through a call relay when there is one.
+- **The way it goes:** the space's own call relay first, else the XMPP server's TURN server
+  (XEP-0215 `extdisco:2`, with the credentials it gives), always with `iceTransportPolicy: 'relay'`,
+  so the other side never learns this phone's address; with neither, straight. Media never goes
+  through Tor.
+- **Who may ring:** people in the account's contacts with a subscription; anyone else's call is
+  only a missed line. A ring from the archive, or older than a minute, is a missed line too.
+- **What it does not protect:** the descriptions, the DTLS fingerprint with them, go through the
+  XMPP servers as they are, so those servers could put themselves in between; XMPP apps do the same.
+  The guide says so.
+- **Each call has one line** in its chat (`call: true` in `XmppMessage`, kept in English and shown
+  by `app/lib/call-lines.ts`), by the call's id, so a missed ring and its end do not make two.
+- **Caps:** the features say Jingle, RTP audio and video, ICE-UDP, DTLS and XEP-0353, which is what
+  Conversations looks for before it shows its call buttons.
+
+`app/checks/jingle-sdp.check.ts` turns a Chromium offer to Jingle and back, with the directions for
+each side, an app that names no stream, and transport-info. `app/checks/xmpp-calls.check.ts` plays
+the other side as Conversations does, stanza by stanza, through the checks' server
+(`app/checks/xmpp-server.ts`): a call of ours through the server's TURN to the device that answers,
+theirs answered and hung up, turned down, taken back, answered on another device of ours, rung while
+in another call, a stranger's, an older app's, and a session nobody knows. `docs/xmpp-checks/jingle-browser.ts`
+connects two of Chromium's own WebRTC peers whose descriptions and addresses go through Jingle XML on
+the way (sound, sound and picture, addresses one at a time). The same flows were also run by hand
+against Prosody 0.12 with `mod_turn_external`. Not yet tried with Conversations, Monal or Dino on a
+phone.
+
 ## Not yet
 
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
-- Group chats (MUC), calls (Jingle), and photos and files (HTTP upload, `aesgcm://` links; the crate already
-  encrypts and opens them).
+- Group chats (MUC) and group calls, adding video to a voice call (`content-add`), moving a call to
+  another device, and photos and files (HTTP upload, `aesgcm://` links; the crate already encrypts and
+  opens them).

@@ -56,6 +56,9 @@ export const NS = {
   eme: 'urn:xmpp:eme:0',
   ping: 'urn:xmpp:ping',
   discoInfo: 'http://jabber.org/protocol/disco#info',
+  jmi: 'urn:xmpp:jingle-message:0',
+  jingle: 'urn:xmpp:jingle:1',
+  extdisco: 'urn:xmpp:extdisco:2',
   caps: 'http://jabber.org/protocol/caps',
   pubsubEvent: 'http://jabber.org/protocol/pubsub#event',
 } as const;
@@ -82,6 +85,8 @@ export type XmppMessage = {
   state?: 'sending' | 'sent' | 'received' | 'read' | 'failed';
   /** It asked to be marked as read (XEP-0333), and to whom that goes. */
   markable?: string;
+  /** A call's line (lib/xmpp-calls.ts), kept here only: its text in English, shown by lib/call-lines.ts. */
+  call?: true;
 };
 
 export type XmppChat = {
@@ -371,7 +376,17 @@ export async function signInXmpp(jid: string, password: string, server?: XmppSer
 // ---- after signing in ----
 
 const CAPS_NODE = 'https://erevos-web.lphl.nekten.eu';
-const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`].sort();
+// Calls (lib/xmpp-calls.ts) as Conversations looks for them before it shows its call buttons.
+const CALL_FEATURES = [
+  NS.jmi,
+  NS.jingle,
+  'urn:xmpp:jingle:apps:rtp:1',
+  'urn:xmpp:jingle:apps:rtp:audio',
+  'urn:xmpp:jingle:apps:rtp:video',
+  'urn:xmpp:jingle:transports:ice-udp:1',
+  'urn:xmpp:jingle:apps:dtls:0',
+];
+const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, ...CALL_FEATURES].sort();
 
 /** Entity capabilities (XEP-0115): what this app can do, as a hash its contacts' servers know. */
 export function capsVer(): string {
@@ -440,6 +455,22 @@ export async function fetchArchive(state: XmppState, connection: XmppConnection)
 }
 
 // ---- what comes ----
+
+/** What calls need of what comes (lib/xmpp-calls.ts): the messages that ring and answer a call
+ *  (XEP-0353), and Jingle's questions (XEP-0166), which the hook answers. */
+export type CallHook = {
+  /** A call message: `mine` when it is from this account, as a carbon of another device's or the
+   *  accept it tells its devices; `live` unless it came from the archive. */
+  message(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void;
+  iq(state: XmppState, connection: XmppConnection, iq: XmlElement): Promise<void>;
+};
+
+let callHook: CallHook | null = null;
+
+/** Who hears of calls: lib/xmpp-calls.ts, or none (then a Jingle question is said no to). */
+export function setCallHook(hook: CallHook | null): void {
+  callHook = hook;
+}
 
 export type Taken = {
   /** Chats that changed. */
@@ -517,6 +548,13 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   const from = bare(message.attrs.from ?? state.jid);
   const to = bare(message.attrs.to ?? state.jid);
   const mine = from === state.jid;
+  // A call rung, answered or ended (XEP-0353): for the calls, once, and not a chat message.
+  const call = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === NS.jmi);
+  if (call) {
+    if (how.archiveId) state.archived = how.archiveId;
+    if (callHook && remember(state, `call|${message.attrs.from ?? ''}|${call.name}|${call.attrs.id ?? ''}`)) callHook.message(state, connection, message, { at: how.at, live: how.live, mine });
+    return;
+  }
   const peer = mine ? to : from;
   if (!peer.includes('@') || peer === state.jid) return;
   const id = message.attrs.id ?? '';
@@ -682,6 +720,7 @@ async function answerIq(state: XmppState, connection: XmppConnection, iq: XmlEle
     return reply();
   }
   if (type === 'get' && query?.name === 'ping' && query.ns === NS.ping) return reply();
+  if (type === 'set' && query?.name === 'jingle' && query.ns === NS.jingle && callHook) return callHook.iq(state, connection, iq);
   if (type === 'get' && query?.name === 'query' && query.ns === NS.discoInfo) {
     return reply(
       el('query', { xmlns: NS.discoInfo, node: query.attrs.node }, el('identity', { category: 'client', type: 'phone', name: 'Erevos' }), ...FEATURES.map((f) => el('feature', { var: f }))),
@@ -846,6 +885,23 @@ export async function addXmppContact(state: XmppState, connection: XmppConnectio
 export async function declineXmppRequest(state: XmppState, connection: XmppConnection, jid: string): Promise<void> {
   await connection.send(el('presence', { to: jid, type: 'unsubscribed' }));
   state.requests = state.requests.filter((r) => r !== jid);
+}
+
+/** A call's line in the chat with `jid`, kept here only; one with the same `id` is replaced. A
+ *  missed call counts as not read. */
+export function addCallLine(state: XmppState, jid: string, mine: boolean, text: string, id: string, at = Date.now()): void {
+  const chat = chatOf(state, jid);
+  const missed = !mine && text.includes('Missed ');
+  const before = chat.messages.find((m) => m.call && m.id === id);
+  if (before) {
+    // A missed call that was answered on another device after all is no longer one to look at.
+    if (!before.mine && before.text.includes('Missed ') && !missed && chat.unread > 0) chat.unread -= 1;
+    before.text = text;
+    before.mine = mine;
+    return;
+  }
+  addMessage(chat, { id, mine, text, at, encrypted: true, call: true });
+  if (missed) chat.unread += 1;
 }
 
 /** Removes a chat here; the contact stays in the account. */

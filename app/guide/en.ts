@@ -1373,6 +1373,14 @@ bridge sits in between.
   that send these marks.
 - **Messages from before:** what came while Erevos was closed is fetched from the server's archive when it connects, if
   the server keeps one. A message sent before this device signed in, or not meant for it, shows as locked.
+- **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
+  Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
+  contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The
+  call itself is encrypted (DTLS-SRTP), but the fingerprint of its key goes through the XMPP servers as it is, not
+  end-to-end encrypted, so those servers could put themselves in between. It goes through this space's call relay when
+  there is one, else through the XMPP server's TURN server, and only through it, so the other person does not learn your
+  address; with neither, it goes straight, and they do. A call never goes through Tor: the call relay or the TURN server
+  sees this phone's address.
 - **Not anonymous:** the XMPP server sees your account, your contacts, who talks with whom and when, and, without Tor,
   from where. The other person's server sees the same of its chats with you.
 - **Through Tor:** on Android, XMPP follows this space's choice under **Settings** → **Relay and networks** → **Tor**:
@@ -1380,7 +1388,7 @@ bridge sits in between.
   **Everything**, only through Tor; with **Nothing**, straight. The XMPP screen says which way it goes now. Where Erevos
   cannot open a connection of its own (the web app, a computer), it uses the server's WebSocket, straight, and a server
   without one cannot be reached.
-- **Not yet:** photos and files, group chats, calls and OMEMO 2.
+- **Not yet:** photos and files, group chats and group calls, adding video to a voice call, and OMEMO 2.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.

@@ -1,0 +1,425 @@
+// Calls with people on XMPP (lib/xmpp-calls.ts) through the checks' XMPP server, the other side
+// played here as Conversations plays it, stanza by stanza (XEP-0353, XEP-0166, XEP-0167): a call
+// of ours rings their devices, goes to the one that answers, through the server's TURN server
+// (XEP-0215) only, takes their addresses as they come, and ends when they hang up; theirs rings
+// here, is answered with proceed and accept, and its end is told with Jingle and XEP-0353 both;
+// turned down, taken back, answered on another device of ours, rung while in another call, from
+// someone not in the contacts, or from an older app that starts with Jingle at once; and a Jingle
+// question about a session nobody knows is said no to. Each call leaves one line in its chat.
+// Run with: npm run check
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { after, before, test } from 'node:test';
+
+import type { ConnectionConfig, Rtc } from '../lib/call';
+import { closeCall, shownCall } from '../lib/calls';
+import { setCore, type Core } from '../lib/core';
+import { ICE, JINGLE, jingleToSdp, RTP, sdpToJingle } from '../lib/jingle-sdp';
+import { addCallLine, addXmppContact, NS, takeStanza, XmppError, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
+import { startXmppCall, watchXmppCalls, xmppCallSessions, type XmppCallsSpace } from '../lib/xmpp-calls';
+import { child, children, el, type XmlElement } from '../lib/xmpp-xml';
+import { FakeConnection, FakeStream, FakeTrack } from './fake-rtc';
+import { DOMAIN, person, Server, settle } from './xmpp-server';
+
+const built = new URL('./.core/erevos_ffi.js', import.meta.url);
+const coreReady = existsSync(built) && typeof (createRequire(import.meta.url)(built.pathname) as Record<string, unknown>).xmpp === 'function';
+if (!coreReady) console.log('Skipping the XMPP call checks: build the core first with node checks/build-core.mjs');
+
+before(() => {
+  if (!coreReady) return;
+  const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
+  setCore(Object.fromEntries(Object.entries(wasm).map(([name, fn]) => [name, async (...args: never[]) => fn(...args)])) as unknown as Core);
+});
+after(() => setCore(null));
+
+const ANN = `ann@${DOMAIN}`;
+const BOB = `bob@${DOMAIN}`;
+const JMI = NS.jmi;
+const FINGERPRINT = new Array(32).fill('AB').join(':');
+
+// ---- WebRTC, with descriptions as a browser writes them ----
+
+/** A description with sound, and a picture when `video`, with one address. */
+function description(type: 'offer' | 'answer', video: boolean, ufrag: string): string {
+  const section = (kind: string, mid: string, pt: string, map: string) => [
+    `m=${kind} 9 UDP/TLS/RTP/SAVPF ${pt}`,
+    'c=IN IP4 0.0.0.0',
+    `a=candidate:1 1 udp 2122260223 192.0.2.${type === 'offer' ? 1 : 2} 5000${mid} typ host generation 0`,
+    `a=ice-ufrag:${ufrag}`,
+    'a=ice-pwd:0123456789abcdefghijklmn',
+    `a=fingerprint:sha-256 ${FINGERPRINT}`,
+    `a=setup:${type === 'offer' ? 'actpass' : 'active'}`,
+    `a=mid:${mid}`,
+    'a=sendrecv',
+    `a=msid:s-${ufrag} ${kind}-${ufrag}`,
+    'a=rtcp-mux',
+    `a=rtpmap:${pt} ${map}`,
+  ];
+  return [
+    'v=0',
+    'o=- 1 2 IN IP4 127.0.0.1',
+    's=-',
+    't=0 0',
+    `a=group:BUNDLE 0${video ? ' 1' : ''}`,
+    ...section('audio', '0', '111', 'opus/48000/2'),
+    ...(video ? section('video', '1', '96', 'VP8/90000') : []),
+    '',
+  ].join('\r\n');
+}
+
+class SdpConnection extends FakeConnection {
+  /** Their addresses that came one at a time. */
+  ice: { candidate: string; sdpMid: string }[] = [];
+  private video = () => this.added.some((track) => (track as FakeTrack).kind === 'video');
+  async createOffer() {
+    return { type: 'offer' as const, sdp: description('offer', this.video(), 'annu') };
+  }
+  async createAnswer() {
+    return { type: 'answer' as const, sdp: description('answer', this.video(), 'annu') };
+  }
+  async setLocalDescription(given: { sdp: string }) {
+    this.localDescription = { sdp: given.sdp };
+    setTimeout(() => {
+      this.iceGatheringState = 'complete';
+      this.emit('icegatheringstatechange');
+    }, 5);
+  }
+  async addIceCandidate(candidate: { candidate: string; sdpMid: string }) {
+    this.ice.push(candidate);
+  }
+}
+
+function sdpRtc() {
+  const connections: SdpConnection[] = [];
+  const rtc: Rtc = {
+    connect(config: ConnectionConfig) {
+      const connection = new SdpConnection(config);
+      connections.push(connection);
+      return connection;
+    },
+    async media({ video }) {
+      return new FakeStream([new FakeTrack('audio'), ...(video ? [new FakeTrack('video')] : [])]);
+    },
+  };
+  return { rtc, connections };
+}
+
+// ---- the people ----
+
+type Device = { state: XmppState; connection: XmppConnection };
+/** A device played here as another app: what came to it is kept as it came, and nothing is answered by itself. */
+type Played = Device & { got: XmlElement[] };
+
+/** Ann, on Erevos, and Bob, in each other's contacts; Bob's device is played. */
+async function pair(server: Server): Promise<{ ann: Device; bob: Played }> {
+  const ann = await person(server, 'ann');
+  const bob = await person(server, 'bob');
+  await addXmppContact(ann.state, ann.connection, BOB, 'Bob');
+  await settle([ann, bob]);
+  await addXmppContact(bob.state, bob.connection, ANN);
+  await settle([ann, bob]);
+  assert.equal(ann.state.roster[BOB].subscription, 'both');
+  return { ann, bob: { ...bob, got: [] } };
+}
+
+/** Ann's space, as lib/xmpp-calls.ts needs it: her account, where her chats keep call lines, and no call relay of our own. */
+function spaceOf(ann: Device): XmppCallsSpace {
+  return {
+    link: () => ({ state: ann.state, connection: ann.connection }),
+    line: async (jid, mine, text, id, at) => addCallLine(ann.state, jid, mine, text, id, at),
+    callRelay: async () => null,
+  };
+}
+
+/** A while of Ann's app taking what comes, as lib/xmpp-store.ts does, and the played devices keeping theirs. */
+async function run(ann: Device, played: Played[], rounds = 12): Promise<void> {
+  for (let i = 0; i < rounds; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 8));
+    const taken: Taken = { chats: [], republish: false };
+    for (const stanza of ann.connection.take()) await takeStanza(ann.state, ann.connection, stanza, taken);
+    for (const device of played) device.got.push(...device.connection.take());
+  }
+}
+
+const jmi = (to: string, name: string, id: string, ...inner: XmlElement[]) =>
+  el('message', { to, type: 'chat', id: `${name}-${id}` }, el(name, { xmlns: JMI, id }, ...inner));
+const reason = (name: string) => el('reason', { xmlns: JINGLE }, el(name));
+const jingle = (action: string, sid: string, ...inner: (XmlElement | null)[]) => el('jingle', { xmlns: JINGLE, action, sid }, ...inner);
+
+/** The call message `name` that came to a played device, the last one. */
+function cameJmi(device: Played, name: string): XmlElement {
+  const found = device.got.filter((s) => s.name === 'message' && child(s, name, JMI));
+  assert.ok(found.length, `no ${name} came`);
+  return found[found.length - 1];
+}
+
+/** The Jingle question `action` that came to a played device. */
+function cameIq(device: Played, action: string): XmlElement {
+  const found = device.got.find((s) => s.name === 'iq' && child(s, 'jingle', JINGLE)?.attrs.action === action);
+  assert.ok(found, `no ${action} came`);
+  return found;
+}
+
+const answer = (device: Played, iq: XmlElement) => device.connection.send(el('iq', { type: 'result', id: iq.attrs.id, to: iq.attrs.from }));
+
+const calls = (ann: Device, jid: string) => (ann.state.chats[jid]?.messages ?? []).filter((m) => m.call).map((m) => [m.id, m.mine, m.text]);
+
+test('a call of ours rings their devices, goes to the one that answers, through the server\'s TURN only', { skip: !coreReady }, async () => {
+  const server = new Server();
+  server.turn = { host: 'turn.example.org', port: '3478', username: 'user', password: 'secret' };
+  const { ann, bob } = await pair(server);
+  const { rtc, connections } = sdpRtc();
+  const stop = watchXmppCalls(rtc, spaceOf(ann));
+  try {
+    const call = await startXmppCall(BOB, true, rtc);
+    await run(ann, [bob]);
+    assert.deepEqual(connections[0].config, {
+      iceServers: [{ urls: ['turn:turn.example.org:3478?transport=udp', 'turns:turn.example.org:5349?transport=tcp'], username: 'user', credential: 'secret' }],
+      iceTransportPolicy: 'relay',
+    });
+    // To all of Bob's devices: his bare address.
+    const propose = cameJmi(bob, 'propose');
+    assert.equal(propose.attrs.from, ann.connection.fullJid);
+    assert.equal(child(propose, 'propose', JMI)!.attrs.id, call.id);
+    assert.deepEqual(children(child(propose, 'propose', JMI)!, 'description').map((d) => [d.ns, d.attrs.media]), [
+      [RTP, 'audio'],
+      [RTP, 'video'],
+    ]);
+    // The description is not in the ring: it goes only to the device that answers.
+    assert.ok(!server.seen.some((s) => s.includes('fingerprint')));
+
+    await bob.connection.send(jmi(ann.connection.fullJid, 'ringing', call.id));
+    await run(ann, [bob]);
+    assert.equal(call.state, 'ringing');
+
+    await bob.connection.send(jmi(ann.connection.fullJid, 'proceed', call.id));
+    await run(ann, [bob]);
+    const initiate = cameIq(bob, 'session-initiate');
+    const offered = child(initiate, 'jingle', JINGLE)!;
+    assert.deepEqual([initiate.attrs.from, offered.attrs.sid, offered.attrs.initiator], [ann.connection.fullJid, call.id, ann.connection.fullJid]);
+    const offer = jingleToSdp(offered, 'initiator', call.id);
+    assert.match(offer, /m=audio 9 UDP\/TLS\/RTP\/SAVPF 111/);
+    assert.match(offer, /m=video 9 UDP\/TLS\/RTP\/SAVPF 96/);
+    assert.match(offer, /a=setup:actpass/);
+    await answer(bob, initiate);
+
+    // Bob's app answers, and then tells one more address.
+    const accepted = bob.connection.iq('set', ann.connection.fullJid, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: call.id, responder: bob.connection.fullJid }, ...sdpToJingle(description('answer', true, 'bobu'), 'responder')));
+    await run(ann, [bob]);
+    await accepted;
+    assert.equal(call.state, 'connecting');
+    assert.match(connections[0].remote!.sdp, /a=ice-ufrag:bobu/);
+    assert.match(connections[0].remote!.sdp, /a=setup:active/);
+    const trickled = bob.connection.iq(
+      'set',
+      ann.connection.fullJid,
+      jingle(
+        'transport-info',
+        call.id,
+        el(
+          'content',
+          { creator: 'initiator', name: '1' },
+          el('transport', { xmlns: ICE, ufrag: 'bobu', pwd: '0123456789abcdefghijklmn' }, el('candidate', { component: '1', foundation: '5', generation: '0', id: 'x', ip: '198.51.100.9', network: '0', port: '3478', priority: '1', protocol: 'udp', type: 'relay', 'rel-addr': '0.0.0.0', 'rel-port': '0' })),
+        ),
+      ),
+    );
+    await run(ann, [bob]);
+    await trickled;
+    assert.deepEqual(connections[0].ice, [{ candidate: 'candidate:5 1 udp 1 198.51.100.9 3478 typ relay raddr 0.0.0.0 rport 0 generation 0 ufrag bobu network-id 0', sdpMid: '1' }]);
+    connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+    assert.equal(call.state, 'connected');
+
+    // Bob hangs up.
+    const terminated = bob.connection.iq('set', ann.connection.fullJid, jingle('session-terminate', call.id, reason('success')));
+    await run(ann, [bob]);
+    await terminated;
+    assert.deepEqual([call.state, call.ended?.reason], ['ended', 'hangup']);
+    assert.deepEqual(calls(ann, BOB), [[`call-${call.id}`, true, '📞 Video call, 0:00']]);
+    assert.equal(xmppCallSessions(), 0);
+    closeCall(call);
+  } finally {
+    stop();
+    ann.connection.close();
+    bob.connection.close();
+  }
+});
+
+test('their call rings here, is answered with proceed and accept, and its end is told both ways', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  const { rtc, connections } = sdpRtc();
+  const stop = watchXmppCalls(rtc, spaceOf(ann));
+  try {
+    await bob.connection.send(jmi(ANN, 'propose', 'b1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob]);
+    const call = shownCall()!.call;
+    assert.deepEqual([call.id, call.peer, call.state, call.video], ['b1', `xmpp:${BOB}`, 'incoming', false]);
+    assert.equal(cameJmi(bob, 'ringing').attrs.to, bob.connection.fullJid);
+
+    const answering = call.answer();
+    await run(ann, [bob]);
+    assert.equal(cameJmi(bob, 'proceed').attrs.to, bob.connection.fullJid);
+    // Ann's other devices are told to stop ringing.
+    assert.ok(server.seen.some((s) => s.includes(`to='${ANN}'`) && s.includes('<accept')));
+
+    const initiated = bob.connection.iq('set', ann.connection.fullJid, el('jingle', { xmlns: JINGLE, action: 'session-initiate', sid: 'b1', initiator: bob.connection.fullJid }, ...sdpToJingle(description('offer', false, 'bobu'), 'initiator')));
+    await run(ann, [bob]);
+    await initiated;
+    await run(ann, [bob]);
+    assert.match(connections[0].remote!.sdp, /a=ice-ufrag:bobu/);
+    const accept = cameIq(bob, 'session-accept');
+    const answered = child(accept, 'jingle', JINGLE)!;
+    assert.equal(answered.attrs.responder, ann.connection.fullJid);
+    const sdp = jingleToSdp(answered, 'responder', 'b1');
+    assert.match(sdp, /a=setup:active/);
+    assert.match(sdp, /a=ice-ufrag:annu/);
+    await answer(bob, accept);
+    await run(ann, [bob]);
+    await answering;
+    connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+    assert.equal(call.state, 'connected');
+
+    call.hangUp();
+    await run(ann, [bob]);
+    const terminate = cameIq(bob, 'session-terminate');
+    assert.ok(child(child(terminate, 'jingle', JINGLE), 'reason', JINGLE)?.children.some((c) => typeof c !== 'string' && c.name === 'success'));
+    await answer(bob, terminate);
+    await run(ann, [bob]);
+    assert.equal(cameJmi(bob, 'finish').attrs.to, BOB);
+    assert.deepEqual(calls(ann, BOB), [['call-b1', false, '📞 Voice call, 0:00']]);
+    assert.equal(xmppCallSessions(), 0);
+    closeCall(call);
+  } finally {
+    stop();
+    ann.connection.close();
+    bob.connection.close();
+  }
+});
+
+test('turned down, taken back, answered on another device, or rung during another call', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  const { rtc } = sdpRtc();
+  const stop = watchXmppCalls(rtc, spaceOf(ann));
+  const ann2 = { ...(await person(server, 'ann')), got: [] as XmlElement[] };
+  const reasonOf = (message: XmlElement, name: string) => children(child(child(message, name, JMI), 'reason', JINGLE)).map((c) => c.name);
+  try {
+    // Turned down here: Bob's phone stops ringing, with the reason.
+    await bob.connection.send(jmi(ANN, 'propose', 'd1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob, ann2]);
+    shownCall()!.call.decline();
+    await run(ann, [bob, ann2]);
+    const reject = cameJmi(bob, 'reject');
+    assert.equal(reject.attrs.to, bob.connection.fullJid);
+    assert.deepEqual(reasonOf(reject, 'reject'), ['decline']);
+    closeCall(shownCall()!.call);
+
+    // Taken back before it was answered: a missed call, not read.
+    await bob.connection.send(jmi(ANN, 'propose', 'r1', el('description', { xmlns: RTP, media: 'video' })));
+    await run(ann, [bob, ann2]);
+    assert.equal(shownCall()!.call.state, 'incoming');
+    await bob.connection.send(jmi(ANN, 'retract', 'r1', reason('cancel')));
+    await run(ann, [bob, ann2]);
+    assert.deepEqual([shownCall()!.call.state, shownCall()!.call.ended?.reason], ['ended', 'missed']);
+    closeCall(shownCall()!.call);
+
+    // Answered on Ann's other device: it stops ringing here, and Bob hears nothing from this one.
+    await bob.connection.send(jmi(ANN, 'propose', 'e1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob, ann2]);
+    const ringing = shownCall()!.call;
+    bob.got.length = 0;
+    await ann2.connection.send(jmi(bob.connection.fullJid, 'proceed', 'e1'));
+    await ann2.connection.send(jmi(ANN, 'accept', 'e1'));
+    await run(ann, [bob, ann2]);
+    assert.deepEqual([ringing.state, ringing.ended?.elsewhere], ['ended', true]);
+    assert.deepEqual(bob.got.filter((s) => s.attrs.from === ann.connection.fullJid).map((s) => s.children.find((c) => typeof c !== 'string')?.name), []);
+    closeCall(ringing);
+
+    // Rung while Ann calls Bob: busy, and her own call goes on until she hangs up.
+    const mine = await startXmppCall(BOB, false, rtc);
+    await run(ann, [bob, ann2]);
+    await bob.connection.send(jmi(ANN, 'propose', 'x1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob, ann2]);
+    assert.deepEqual(reasonOf(cameJmi(bob, 'reject'), 'reject'), ['busy']);
+    assert.equal(shownCall()!.call, mine);
+    mine.hangUp();
+    await run(ann, [bob, ann2]);
+    const retract = cameJmi(bob, 'retract');
+    assert.equal(retract.attrs.to, BOB);
+    assert.deepEqual(reasonOf(retract, 'retract'), ['cancel']);
+    closeCall(mine);
+
+    assert.deepEqual(calls(ann, BOB), [
+      ['call-d1', false, '📞 Voice call, turned down'],
+      ['call-r1', false, '📞 Missed video call'],
+      ['call-e1', false, '📞 Voice call, answered on another device'],
+      ['call-x1', false, '📞 Missed voice call, while in another call'],
+      [`call-${mine.id}`, true, '📞 Voice call, not answered'],
+    ]);
+    // The missed ones wait to be seen: the one taken back, and the one during the other call.
+    assert.equal(ann.state.chats[BOB].unread, 2);
+    assert.equal(xmppCallSessions(), 0);
+  } finally {
+    stop();
+    for (const device of [ann, bob, ann2]) device.connection.close();
+  }
+});
+
+test('someone not in the contacts, an older app, and a session nobody knows', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  const carol = { ...(await person(server, 'carol')), got: [] as XmlElement[] };
+  const { rtc, connections } = sdpRtc();
+  const stop = watchXmppCalls(rtc, spaceOf(ann));
+  try {
+    // Not in Ann's contacts: told as missed, never rung.
+    await carol.connection.send(jmi(ANN, 'propose', 'c1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob, carol]);
+    assert.equal(shownCall(), null);
+    assert.deepEqual(calls(ann, `carol@${DOMAIN}`), [['call-c1', false, '📞 Missed voice call']]);
+
+    // An older app starts with Jingle at once: it rings, and the answer goes back the same way.
+    const initiated = bob.connection.iq('set', ann.connection.fullJid, el('jingle', { xmlns: JINGLE, action: 'session-initiate', sid: 'o1', initiator: bob.connection.fullJid }, ...sdpToJingle(description('offer', true, 'bobu'), 'initiator')));
+    await run(ann, [bob, carol]);
+    await initiated;
+    const call = shownCall()!.call;
+    assert.deepEqual([call.id, call.state, call.video], ['o1', 'incoming', true]);
+    // It rings there with Jingle's own word, as no XEP-0353 ring came.
+    const info = cameIq(bob, 'session-info');
+    assert.ok(child(child(info, 'jingle', JINGLE), 'ringing'));
+    await answer(bob, info);
+    const answering = call.answer();
+    await run(ann, [bob, carol]);
+    assert.ok(!bob.got.some((s) => child(s, 'proceed', JMI)));
+    assert.match(connections[0].remote!.sdp, /m=video/);
+    await answer(bob, cameIq(bob, 'session-accept'));
+    await run(ann, [bob, carol]);
+    await answering;
+    // Bob hangs up before it connected: their end of a call that never connected.
+    const terminated = bob.connection.iq('set', ann.connection.fullJid, jingle('session-terminate', 'o1', reason('cancel')));
+    await run(ann, [bob, carol]);
+    await terminated;
+    assert.equal(call.state, 'ended');
+    closeCall(call);
+
+    // A Jingle question about a session nobody knows here.
+    const said = (condition: string) => (error: unknown) => error instanceof XmppError && error.condition === condition;
+    const unknown = assert.rejects(bob.connection.iq('set', ann.connection.fullJid, jingle('transport-info', 'nope')), said('item-not-found'));
+    await run(ann, [bob, carol]);
+    await unknown;
+    // And a description that cannot be a call.
+    const odd = assert.rejects(
+      bob.connection.iq('set', ann.connection.fullJid, jingle('session-initiate', 'f1', el('content', { creator: 'initiator', name: 'a' }, el('description', { xmlns: 'urn:xmpp:jingle:apps:file-transfer:5' })))),
+      said('feature-not-implemented'),
+    );
+    await run(ann, [bob, carol]);
+    await odd;
+    assert.equal(shownCall(), null);
+    assert.equal(xmppCallSessions(), 0);
+  } finally {
+    stop();
+    for (const device of [ann, bob, carol]) device.connection.close();
+  }
+});

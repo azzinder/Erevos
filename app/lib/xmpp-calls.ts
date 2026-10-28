@@ -1,0 +1,396 @@
+import { callNow, currentCall, OFFER_FRESH_MS, type Call, type Rtc } from './call';
+import type { CallEnd, CallSignal } from './call-signal';
+import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './calls';
+import { t } from './i18n';
+import { candidatesOf, JINGLE, jingleToSdp, sdpToJingle } from './jingle-sdp';
+import type { CallRelay } from './relay';
+import { spaceCalls } from './space-calls';
+import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
+import { xmppCallLine, xmppLink, xmppNow } from './xmpp-store';
+import { child, children, el, type XmlElement } from './xmpp-xml';
+
+// One-to-one calls with people on XMPP (docs/xmpp.md), as Conversations, Monal and Dino make them:
+// a call rings with Jingle Message Initiation (XEP-0353): the caller proposes it to all the
+// person's devices, the one that answers says proceed, and then Jingle (XEP-0166, XEP-0167) sets
+// it up between those two devices: the session-initiate carries the caller's description, the
+// session-accept the answer, each turned to and from WebRTC's by lib/jingle-sdp.ts, and more
+// addresses come one at a time (transport-info). The call itself is lib/call.ts's, the same as
+// Erevos's own, and shows on the same screen (lib/calls.ts, components/call-host.tsx).
+//
+// What is not the same: the descriptions, the key fingerprint of the call's encryption
+// (DTLS-SRTP) included, pass through the XMPP servers as they are, not end-to-end encrypted, so
+// those servers could put themselves in between. The call goes through our own call relay when
+// the space has one, else the XMPP server's (XEP-0215), and only through it, so the other side
+// learns no address of this phone; with neither, it goes straight and they learn it.
+
+export const XMPP_PREFIX = 'xmpp:';
+
+const JMI = NS.jmi;
+const RTP_INFO = 'urn:xmpp:jingle:apps:rtp:info:1';
+const ERRORS = 'urn:xmpp:jingle:errors:1';
+
+/** One call with someone on XMPP, from its first ring to its end. */
+type Session = {
+  /** The id of the ring (XEP-0353), which is the Jingle session's too. */
+  id: string;
+  /** Their bare address. */
+  jid: string;
+  /** The address of their device in the call: the one that answered ours, or that rings us. */
+  full: string;
+  outgoing: boolean;
+  video: boolean;
+  /** Ours, kept until one of their devices answers. */
+  offer: string;
+  /** Rung with XEP-0353, not with the session-initiate itself (as older apps do). */
+  rung: boolean;
+  /** The session-initiate went or came. */
+  started: boolean;
+  /** Their session-initiate, as it came. */
+  initiate: XmlElement | null;
+  /** The answer, waiting for their session-initiate. */
+  waiting: ((initiate: XmlElement) => void) | null;
+};
+
+/** What the calls need of the open space: its XMPP account (lib/xmpp-store.ts) and its own call
+ *  relay. The checks give their own. */
+export type XmppCallsSpace = {
+  /** The account and its connection, while it is connected. */
+  link(): { state: XmppState; connection: XmppConnection } | null;
+  /** Keeps a call's line in the chat with `jid`; one with the same `id` is said again in its place. */
+  line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void>;
+  /** The call relay beside the space's relay, or null. */
+  callRelay(): Promise<CallRelay | null>;
+};
+
+const theSpace: XmppCallsSpace = { link: xmppLink, line: xmppCallLine, callRelay: () => spaceCalls.callRelay() };
+
+const sessions = new Map<string, Session>();
+let rtcNow: Rtc | null = null;
+let space = theSpace;
+
+const calling = (id: string): Call | null => {
+  const call = currentCall();
+  return call?.id === id ? call : null;
+};
+
+function link(): { state: XmppState; connection: XmppConnection } {
+  const now = space.link();
+  if (!now) throw new Error(t('Not connected to the XMPP server yet. Try again in a moment.'));
+  return now;
+}
+
+const jmi = (to: string, name: string, id: string, ...inner: XmlElement[]) =>
+  el('message', { to, type: 'chat', id: `${name}-${id}` }, el(name, { xmlns: JMI, id }, ...inner), el('store', { xmlns: NS.hints }));
+
+const reasonElement = (reason: string) => el('reason', { xmlns: JINGLE }, el(reason));
+
+/** Jingle's reason for how a call of ours ended (XEP-0166). */
+function jingleReason(end: CallEnd, outgoing: boolean, connected: boolean): string {
+  if (end === 'decline') return 'decline';
+  if (end === 'busy') return 'busy';
+  if (end === 'failed') return 'connectivity-error';
+  if (end === 'missed') return outgoing ? 'cancel' : 'timeout';
+  return connected ? 'success' : 'cancel';
+}
+
+/** How a call of theirs ended, from Jingle's reason, or XEP-0353's. */
+function callEnd(reason: XmlElement | undefined, connected: boolean): CallEnd {
+  const name = children(reason).find((c) => c.name !== 'text')?.name ?? '';
+  if (name === 'decline') return 'decline';
+  if (name === 'busy') return 'busy';
+  if (name === 'success') return 'hangup';
+  if (name === 'cancel' || name === 'timeout' || name === 'expired' || name === '') return connected ? 'hangup' : 'missed';
+  return 'failed';
+}
+
+// ---- the place, as lib/calls.ts knows places ----
+
+export const xmppCalls: CallPlace = {
+  async send(jid, signal) {
+    const { connection } = link();
+    const s = sessions.get(signal.id);
+    switch (signal.kind) {
+      case 'offer': {
+        // Ours: it rings on every device of theirs that can take calls.
+        sessions.set(signal.id, { id: signal.id, jid, full: '', outgoing: true, video: signal.video, offer: signal.sdp, rung: true, started: false, initiate: null, waiting: null });
+        const media = [el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'audio' }), signal.video ? el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'video' }) : null];
+        await connection.send(jmi(jid, 'propose', signal.id, ...media.filter((m): m is XmlElement => m !== null)));
+        return;
+      }
+      case 'ringing':
+        if (!s) return;
+        if (s.rung) await connection.send(jmi(s.full, 'ringing', s.id));
+        else await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-info', sid: s.id }, el('ringing', { xmlns: RTP_INFO })));
+        return;
+      case 'answer':
+        if (!s) throw new Error(t('The call ended.'));
+        await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: s.id, responder: connection.fullJid }, ...sdpToJingle(signal.sdp, 'responder')));
+        return;
+      case 'end': {
+        if (!s) return;
+        sessions.delete(s.id);
+        // The call has ended here already, and is no longer the current one: the one shown.
+        const call = shownCall()?.call;
+        const reason = jingleReason(signal.reason, s.outgoing, call?.id === s.id && !!call.connectedAt);
+        if (s.started) {
+          await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-terminate', sid: s.id }, reasonElement(reason))).catch(() => undefined);
+          // Rung with XEP-0353: the end is told in both archives too, for their other devices.
+          if (s.rung) await connection.send(jmi(s.jid, 'finish', s.id, reasonElement(reason))).catch(() => undefined);
+        } else if (s.outgoing) {
+          await connection.send(jmi(s.jid, 'retract', s.id, reasonElement(reason)));
+        } else if (s.rung) {
+          // Ours turned it down, or it rang out here: their phone stops ringing, and our other devices too.
+          await connection.send(jmi(s.full, 'reject', s.id, reasonElement(reason)));
+        }
+        return;
+      }
+    }
+  },
+
+  async callRelay() {
+    // Our own call relay first: the XMPP server then sees nothing of the call's addresses.
+    const ours = await space.callRelay().catch(() => null);
+    if (ours) return ours;
+    const now = space.link();
+    return now ? serverTurn(now.state, now.connection).catch(() => null) : null;
+  },
+
+  line(peer, mine, text, id) {
+    // By the call's id, the same as its ring's: a call has one line, however it ended.
+    void space.line(peer.slice(XMPP_PREFIX.length), mine, `${CALL_LINE}${text}`, `call-${id}`).catch(() => undefined);
+  },
+
+  name(peer) {
+    const jid = peer.slice(XMPP_PREFIX.length);
+    const state = space.link()?.state ?? xmppNow().state;
+    return state ? nameOf(state, jid) : jid;
+  },
+
+  // Answering: their device is told to go on (proceed), our other devices to stop ringing
+  // (accept), and the call waits for their session-initiate.
+  async offer(jid) {
+    const call = currentCall();
+    const s = call ? sessions.get(call.id) : undefined;
+    if (!s || s.jid !== jid || s.outgoing) throw new Error(t('The call ended.'));
+    if (!s.initiate) {
+      const { state, connection } = link();
+      const came = new Promise<XmlElement>((resolve) => (s.waiting = resolve));
+      await connection.send(jmi(s.full, 'proceed', s.id));
+      await connection.send(jmi(state.jid, 'accept', s.id)).catch(() => undefined);
+      s.initiate = await came;
+    }
+    return jingleToSdp(s.initiate, 'initiator', s.id);
+  },
+};
+
+/** The XMPP server's TURN server for calls (XEP-0215), as a call relay; null when it has none. */
+async function serverTurn(state: XmppState, connection: XmppConnection): Promise<CallRelay | null> {
+  const answer = await connection.iq('get', state.jid.slice(state.jid.indexOf('@') + 1), el('services', { xmlns: NS.extdisco }), 10_000);
+  const turns = children(child(answer, 'services', NS.extdisco), 'service').filter(
+    (s) => (s.attrs.type === 'turn' || s.attrs.type === 'turns') && s.attrs.host && s.attrs.username && s.attrs.password,
+  );
+  const first = turns[0];
+  if (!first) return null;
+  const same = turns.filter((s) => s.attrs.username === first.attrs.username && s.attrs.password === first.attrs.password);
+  const urls = same.map((s) => {
+    const host = s.attrs.host.includes(':') ? `[${s.attrs.host}]` : s.attrs.host;
+    const port = s.attrs.port ? `:${s.attrs.port}` : '';
+    return `${s.attrs.type}:${host}${port}${s.attrs.transport ? `?transport=${s.attrs.transport}` : ''}`;
+  });
+  return { urls, username: first.attrs.username, credential: first.attrs.password };
+}
+
+// ---- what comes ----
+
+/** Whether a person may ring us: one in our contacts. Others' calls are only told as missed. */
+function mayRing(state: XmppState, jid: string): boolean {
+  const contact = state.roster[jid];
+  return !!contact && contact.subscription !== 'none' && contact.subscription !== 'remove';
+}
+
+const kindOf = (video: boolean) => (video ? 'video call' : 'voice call');
+
+// Rings with no offer: lib/call.ts asks for it as the call is answered (xmppCalls.offer), so the
+// answer goes through a call relay whether or not their description has an address of one.
+function ring(state: XmppState, s: Session, at: number): void {
+  sessions.set(s.id, s);
+  const rtc = rtcNow;
+  const missed = (why = '') => {
+    sessions.delete(s.id);
+    void space.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}${why}`, `call-${s.id}`, at).catch(() => undefined);
+  };
+  if (!rtc || !mayRing(state, s.jid)) return missed();
+  // By the relay's clock, as lib/calls.ts judges an offer fresh.
+  const stamp = callNow() - (Date.now() - at);
+  void callSignal(xmppCalls, `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp }, false, rtc)
+    .then(() => {
+      // Not rung here (missed, or busy with another call): lib/calls.ts said so, and kept its line.
+      if (!calling(s.id)) sessions.delete(s.id);
+    })
+    .catch(() => missed());
+}
+
+function onMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void {
+  const what = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === JMI);
+  const id = what?.attrs.id;
+  if (!what || !id) return;
+  const from = message.attrs.from ?? '';
+  const s = sessions.get(id);
+  // Our propose came back as an error: their server or device cannot take it.
+  if (message.attrs.type === 'error') {
+    if (s?.outgoing) calling(id)?.receive({ id, kind: 'end', reason: 'failed' });
+    return;
+  }
+  if (how.mine) {
+    // Another device of ours answered or turned down the call that rings here.
+    if (from === connection.fullJid) return;
+    if ((what.name === 'accept' || what.name === 'proceed' || what.name === 'reject') && s && !s.outgoing && !s.started) {
+      sessions.delete(id);
+      calling(id)?.endedElsewhere(what.name === 'reject');
+    }
+    // From the archive: a call that rang here, answered or turned down elsewhere.
+    if (!how.live && (what.name === 'proceed' || what.name === 'accept')) {
+      const peer = bare(message.attrs.to ?? '');
+      if (peer && peer !== state.jid) void space.line(peer, false, `${CALL_LINE}${s?.video ? 'Video' : 'Voice'} call, answered on another device`, `call-${id}`, how.at).catch(() => undefined);
+    }
+    return;
+  }
+  const jid = bare(from);
+  switch (what.name) {
+    case 'propose': {
+      const video = children(what, 'description').some((d) => d.attrs.media === 'video');
+      const fresh = how.live && Date.now() - how.at < OFFER_FRESH_MS;
+      const next: Session = { id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false, initiate: null, waiting: null };
+      if (!fresh) {
+        void space.line(jid, false, `${CALL_LINE}Missed ${kindOf(video)}`, `call-${id}`, how.at).catch(() => undefined);
+        return;
+      }
+      ring(state, next, how.at);
+      return;
+    }
+    case 'ringing':
+      if (s?.outgoing && s.jid === jid) calling(id)?.receive({ id, kind: 'ringing' });
+      return;
+    case 'proceed':
+      // The first of their devices to answer has the call; it gets our description.
+      if (!s?.outgoing || s.jid !== jid || s.full) return;
+      s.full = from;
+      s.started = true;
+      void connection
+        .iq('set', from, el('jingle', { xmlns: JINGLE, action: 'session-initiate', sid: id, initiator: connection.fullJid }, ...sdpToJingle(s.offer, 'initiator')))
+        .catch(() => calling(id)?.receive({ id, kind: 'end', reason: 'failed' }));
+      return;
+    case 'reject':
+      if (!s?.outgoing || s.jid !== jid) return;
+      sessions.delete(id);
+      calling(id)?.receive({ id, kind: 'end', reason: callEnd(child(what, 'reason', JINGLE), false) === 'busy' ? 'busy' : 'decline' });
+      return;
+    case 'retract':
+      if (!s || s.outgoing || s.jid !== jid) return;
+      sessions.delete(id);
+      calling(id)?.receive({ id, kind: 'end', reason: 'missed' });
+      return;
+    case 'finish':
+      if (s && s.jid === jid) {
+        sessions.delete(id);
+        const call = calling(id);
+        call?.receive({ id, kind: 'end', reason: callEnd(child(what, 'reason', JINGLE), !!call.connectedAt) });
+      }
+      return;
+  }
+}
+
+async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement): Promise<void> {
+  const jingle = child(iq, 'jingle', JINGLE)!;
+  const from = iq.attrs.from ?? '';
+  const sid = jingle.attrs.sid ?? '';
+  const action = jingle.attrs.action;
+  const reply = () => connection.send(el('iq', { type: 'result', id: iq.attrs.id, to: from }));
+  const refuse = (condition: string, extra?: XmlElement) =>
+    connection.send(el('iq', { type: 'error', id: iq.attrs.id, to: from }, el('error', { type: 'cancel' }, el(condition, { xmlns: NS.stanzas }), extra ?? null)));
+  const s = sessions.get(sid);
+  if (action === 'session-initiate') {
+    if (s) {
+      // Ours answered their ring: this is the description it waits for.
+      if (s.outgoing || s.full !== from || s.started) return refuse('bad-request');
+      await reply();
+      s.started = true;
+      s.initiate = jingle;
+      s.waiting?.(jingle);
+      s.waiting = null;
+      return;
+    }
+    // A call without a ring first, as older apps make: it rings with its description, once it can be read.
+    try {
+      jingleToSdp(jingle, 'initiator', sid);
+    } catch {
+      return refuse('feature-not-implemented');
+    }
+    await reply();
+    const video = children(jingle, 'content').some((c) => children(c, 'description').some((d) => d.attrs.media === 'video'));
+    ring(state, { id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle, waiting: null }, Date.now());
+    return;
+  }
+  if (!s || s.full !== from) return refuse('item-not-found', el('unknown-session', { xmlns: ERRORS }));
+  switch (action) {
+    case 'session-accept': {
+      if (!s.outgoing) return refuse('bad-request');
+      let sdp: string;
+      try {
+        sdp = jingleToSdp(jingle, 'responder', sid);
+      } catch {
+        await refuse('feature-not-implemented');
+        calling(sid)?.receive({ id: sid, kind: 'end', reason: 'failed' });
+        return;
+      }
+      await reply();
+      calling(sid)?.receive({ id: sid, kind: 'answer', sdp });
+      return;
+    }
+    case 'transport-info':
+      await reply();
+      calling(sid)?.addCandidates(candidatesOf(jingle));
+      return;
+    case 'session-info':
+      await reply();
+      if (s.outgoing && child(jingle, 'ringing', RTP_INFO)) calling(sid)?.receive({ id: sid, kind: 'ringing' });
+      return;
+    case 'session-terminate': {
+      await reply();
+      sessions.delete(sid);
+      const call = calling(sid);
+      call?.receive({ id: sid, kind: 'end', reason: callEnd(child(jingle, 'reason', JINGLE), !!call.connectedAt) });
+      return;
+    }
+    default:
+      // Adding video to a call, moving it, and the rest: not yet.
+      return refuse('feature-not-implemented', el('unsupported-info', { xmlns: ERRORS }));
+  }
+}
+
+/** Takes XMPP calls in, with `rtc`, while the space is open (components/call-host.tsx). Returns how to stop. */
+export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () => void {
+  rtcNow = rtc;
+  space = given;
+  setCallHook({ message: onMessage, iq: onIq });
+  return () => {
+    setCallHook(null);
+    rtcNow = null;
+    space = theSpace;
+    sessions.clear();
+  };
+}
+
+/** Calls someone on XMPP from their chat. Throws when not connected, or a call is going on. */
+export async function startXmppCall(jid: string, video: boolean, rtc: Rtc): Promise<Call> {
+  link();
+  const relay = await xmppCalls.callRelay();
+  return startCall(xmppCalls, `${XMPP_PREFIX}${jid}`, video, relay, rtc);
+}
+
+/** For the checks: what is going on. */
+export function xmppCallSessions(): number {
+  return sessions.size;
+}
+
+export type { CallSignal };

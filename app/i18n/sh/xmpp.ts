@@ -55,4 +55,5 @@ export const xmpp: Record<string, string> = {
   "Written without encryption: the XMPP server can read this chat.": "Napisano bez šifrovanja: XMPP server može čitati ovaj razgovor.",
   "XMPP": "XMPP",
   "Chats with people on XMPP: encrypted, not anonymous": "Razgovori s ljudima na XMPP-u: šifrovani, nisu anonimni",
+  "Encrypted, but its key passes through the XMPP servers": "Šifrovan, ali njegov ključ ide preko XMPP servera",
 };

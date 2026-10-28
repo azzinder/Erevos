@@ -74,6 +74,8 @@ export interface Connection {
   setRemoteDescription(description: Description): Promise<void>;
   addEventListener(type: 'icegatheringstatechange' | 'connectionstatechange', listener: () => void): void;
   addEventListener(type: 'track', listener: (event: { streams: readonly Stream[] }) => void): void;
+  /** One more address of theirs to try, as XMPP's calls send them one at a time (lib/xmpp-calls.ts). */
+  addIceCandidate?(candidate: { candidate: string; sdpMid: string }): Promise<void>;
   close(): void;
 }
 export type IceServer = { urls: string[]; username?: string; credential?: string };
@@ -102,6 +104,10 @@ export type CallEvents = {
   onChange(call: Call): void;
   /** Sends a call signal to the contact. Rejects when the relay did not take it. */
   send(signal: CallSignal): Promise<void>;
+  /** The offer of a call that rang before its offer came, asked for as it is answered: XMPP's
+   *  calls ring first, and the caller sends the offer once one of the person's devices answers
+   *  (lib/xmpp-calls.ts). */
+  offer?(): Promise<string>;
 };
 
 export type CallOptions = {
@@ -177,6 +183,9 @@ export class Call {
   private readonly options: CallOptions;
   // The offer, for a call that rings here.
   private offer: string;
+  // Their addresses that came before their description was set, and whether it is.
+  private candidates: { candidate: string; sdpMid: string }[] = [];
+  private described = false;
 
   private constructor(id: string, outgoing: boolean, offer: string, options: CallOptions) {
     this.id = id;
@@ -213,8 +222,12 @@ export class Call {
     this.set('connecting');
     this.wait(CONNECT_MS, 'failed', true);
     try {
+      if (!this.offer && this.options.events.offer) this.offer = await this.options.events.offer();
+      if ((this.state as CallState) === 'ended') return;
       const connection = await this.connect();
       await connection.setRemoteDescription({ type: 'offer', sdp: this.offer });
+      this.described = true;
+      this.addCandidates([]);
       await connection.setLocalDescription(await connection.createAnswer());
       const sdp = await describedSdp(connection);
       // Hung up while it connected.
@@ -254,10 +267,24 @@ export class Call {
     } else if (signal.kind === 'answer' && this.outgoing && (this.state === 'calling' || this.state === 'ringing')) {
       this.set('connecting');
       this.wait(CONNECT_MS, 'failed', true);
-      this.connection?.setRemoteDescription({ type: 'answer', sdp: signal.sdp }).catch(() => this.end('failed', true));
+      this.connection
+        ?.setRemoteDescription({ type: 'answer', sdp: signal.sdp })
+        .then(() => {
+          this.described = true;
+          this.addCandidates([]);
+        })
+        .catch(() => this.end('failed', true));
     } else if (signal.kind === 'end') {
       this.end(signal.reason, false);
     }
+  }
+
+  /** Their addresses that came apart from their description, tried once it is set. */
+  addCandidates(candidates: { candidate: string; sdpMid: string }[]): void {
+    this.candidates.push(...candidates);
+    const connection = this.connection;
+    if (!this.described || !connection?.addIceCandidate || this.state === 'ended') return;
+    for (const candidate of this.candidates.splice(0)) connection.addIceCandidate(candidate).catch(() => undefined);
   }
 
   setMuted(muted: boolean): void {

@@ -1506,6 +1506,14 @@ app: nessun ponte sta nel mezzo.
 - **Messaggi di prima:** ciò che è arrivato mentre Erevos era chiuso si scarica dall’archivio del server alla
   connessione, se il server ne tiene uno. Un messaggio inviato prima che questo dispositivo accedesse, o non destinato a
   lui, appare bloccato.
+- **Chiamate:** i due riquadri in alto nella chat chiamano la persona, a voce o in video, sulla stessa schermata di
+  chiamata delle chiamate di Erevos, e le sue chiamate squillano qui allo stesso modo, finché questo spazio è aperto;
+  una chiamata da qualcuno che non è nei tuoi contatti appare solo come persa. Funziona con le app che chiamano come
+  Conversations (Jingle, con lo squillo di XEP-0353). La chiamata in sé è cifrata (DTLS-SRTP), ma l’impronta della sua
+  chiave passa per i server XMPP così com’è, senza cifratura end-to-end, quindi quei server potrebbero mettersi in
+  mezzo. Passa per il relay per le chiamate di questo spazio quando c’è, altrimenti per il server TURN del server XMPP,
+  e solo da lì, così l’altra persona non conosce il tuo indirizzo; senza nessuno dei due, va diretta, e lo conosce. Una
+  chiamata non passa mai per Tor: il relay per le chiamate o il server TURN vede l’indirizzo di questo telefono.
 - **Non anonimo:** il server XMPP vede il tuo account, i tuoi contatti, chi parla con chi e quando, e, senza Tor, da
   dove. Il server dell’altra persona vede lo stesso delle sue chat con te.
 - **Tramite Tor:** su Android, XMPP segue la scelta di questo spazio in **Impostazioni** → **Relay e reti** → **Tor**:
@@ -1513,7 +1521,7 @@ app: nessun ponte sta nel mezzo.
   solo da Tor; con **Niente**, direttamente. La schermata XMPP dice da dove passa ora. Dove Erevos non può aprire una
   connessione propria (l’app web, un computer), usa il WebSocket del server, direttamente, e un server senza non è
   raggiungibile.
-- **Non ancora:** foto e file, chat di gruppo, chiamate e OMEMO 2.
+- **Non ancora:** foto e file, chat e chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.

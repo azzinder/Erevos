@@ -120,8 +120,19 @@ On main, not released yet:
   was closed (from the server's archive), people who ask to add you (**Accept**, **Decline**), and the chats in the home
   list under an **XMPP** chip of their own. These chats are not anonymous, and say so: the XMPP server sees who talks
   with whom, and when. On Android the connection follows the space's choice under **Tor**, with a circuit of its own
-  per server; the web app and the computer connect through the server's WebSocket, straight. Text only for now: no photos
-  or files, groups, calls or OMEMO 2 yet.
+  per server; the web app and the computer connect through the server's WebSocket, straight. Text and calls for now: no
+  photos or files, groups or OMEMO 2 yet.
+
+- **Voice and video calls with people on XMPP**: the two tiles at the top of an XMPP chat call the person, on the same
+  call screen as Erevos's own calls, and their calls ring here the same way while the space is open; someone not in
+  the account's contacts shows only as a missed call. Erevos calls as Conversations does: XEP-0353 rings all their
+  devices, the one that answers gets the call with Jingle (XEP-0166/0167, ICE-UDP, DTLS-SRTP, bundled, with addresses
+  that come one at a time), and an end is told with both. Older apps that start with Jingle at once ring too. Each call
+  leaves one line in its chat: its length, or why it did not happen. The call goes through the space's call relay, else
+  the XMPP server's TURN server (XEP-0215), and only through it, so the other side does not learn this phone's
+  address; with neither, it goes straight. The key fingerprint that proves the call passes through the XMPP servers as
+  it is, not end-to-end encrypted, and a call never goes through Tor. Checked against Chromium's WebRTC and a real
+  Prosody, not yet with Conversations on a phone.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

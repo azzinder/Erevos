@@ -1441,13 +1441,21 @@ aplikacije: nikakav most nije između.
 - **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
   je server čuva. Poruka poslana prije nego što se ovaj uređaj prijavio, ili nije bila za njega, prikazuje se
   zaključana.
+- **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
+  vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
+  kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem
+  XEP-0353). Sam poziv je šifrovan (DTLS-SRTP), ali otisak njegovog ključa ide preko XMPP servera takav kakav je, bez
+  šifrovanja s kraja na kraj, pa bi se ti serveri mogli postaviti između. Ide preko relaya za pozive ovog prostora kad
+  postoji, inače preko TURN servera XMPP servera, i samo preko njega, pa druga osoba ne saznaje vašu adresu; bez ijednog
+  od njih ide direktno, i saznaje je. Poziv nikad ne ide preko Tora: relay za pozive ili TURN server vidi adresu ovog
+  telefona.
 - **Nije anonimno:** XMPP server vidi vaš račun, vaše kontakte, ko s kim razgovara i kada, i, bez Tora, odakle. Server
   druge osobe vidi isto o svojim razgovorima s vama.
 - **Preko Tora:** na Androidu, XMPP slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**: s
   **Poruke** ide preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; sa **Sve** samo preko
   Tora; s **Ništa** direktno. XMPP ekran kaže kojim putem ide sada. Gdje Erevos ne može otvoriti vlastitu vezu (web
   aplikacija, računar), koristi WebSocket servera, direktno, a server bez njega tamo nije dostupan.
-- **Još ne:** fotografije i datoteke, grupni razgovori, pozivi i OMEMO 2.
+- **Još ne:** fotografije i datoteke, grupni razgovori i grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.

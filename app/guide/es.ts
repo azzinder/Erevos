@@ -1483,13 +1483,21 @@ como esas apps: ningún puente se pone en medio.
 - **Mensajes de antes:** lo que llegó mientras Erevos estaba cerrado se trae del archivo del servidor al conectar, si el
   servidor lo guarda. Un mensaje enviado antes de que este dispositivo iniciara sesión, o no pensado para él, sale
   bloqueado.
+- **Llamadas:** los dos recuadros de arriba del chat llaman a la persona, por voz o con video, en la misma pantalla de
+  llamada que las llamadas propias de Erevos, y sus llamadas suenan aquí igual, mientras este espacio está abierto; una
+  llamada de alguien que no está en tus contactos solo aparece como perdida. Funciona con apps que llaman como
+  Conversations (Jingle, con el timbre de XEP-0353). La llamada en sí está cifrada (DTLS-SRTP), pero la huella de su
+  clave pasa por los servidores de XMPP tal cual, sin cifrado de extremo a extremo, así que esos servidores podrían
+  ponerse en medio. Pasa por el relay de llamadas de este espacio cuando lo hay, si no por el servidor TURN del servidor
+  de XMPP, y solo por él, así que la otra persona no conoce tu dirección; sin ninguno de los dos, va directa, y la
+  conoce. Una llamada nunca pasa por Tor: el relay de llamadas o el servidor TURN ve la dirección de este teléfono.
 - **No anónimo:** el servidor de XMPP ve tu cuenta, tus contactos, quién habla con quién y cuándo, y, sin Tor, desde
   dónde. El servidor de la otra persona ve lo mismo de sus chats contigo.
 - **Por Tor:** en Android, XMPP sigue la elección de este espacio en **Ajustes** → **Relay y redes** → **Tor**: con
   **Mensajes**, va por Tor en cuanto Tor está listo, y directo mientras Tor arranca o cuando falla; con **Todo**, solo
   por Tor; con **Nada**, directo. La pantalla de XMPP dice por dónde va ahora. Donde Erevos no puede abrir una conexión
   propia (la app web, un ordenador), usa el WebSocket del servidor, directo, y un servidor sin él no se puede alcanzar.
-- **Aún no:** fotos y archivos, chats de grupo, llamadas y OMEMO 2.
+- **Aún no:** fotos y archivos, chats y llamadas de grupo, añadir video a una llamada de voz, y OMEMO 2.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de XMPP no puede. Por eso los chats
 de XMPP van aparte y marcados, para las personas a las que solo llegarías por XMPP.

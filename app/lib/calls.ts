@@ -21,11 +21,16 @@ export type CallPlace = {
   send(identity: string, signal: CallSignal): Promise<void>;
   /** The call relay beside our relay, or null if it has none. */
   callRelay(): Promise<CallRelay | null>;
-  /** Keeps the call's line in the chat. */
-  line(peer: string, mine: boolean, text: string): void;
+  /** Keeps the call's line in the chat; `id` is the call's. */
+  line(peer: string, mine: boolean, text: string, id: string): void;
   /** The contact's name as the chat shows it. */
   name(peer: string): string;
+  /** The offer of their call that rang before it came, once it is answered here (lib/xmpp-calls.ts). */
+  offer?(identity: string): Promise<string>;
 };
+
+/** A peer's identity: what comes after `contact:`, or after `xmpp:` for an XMPP address. */
+const identityOf = (peer: string) => peer.slice(peer.indexOf(':') + 1);
 
 let shown: { call: Call; place: CallPlace } | null = null;
 const listeners = new Set<() => void>();
@@ -95,8 +100,9 @@ export function endedLine(ended: Call, now = Date.now()): string {
 function events(place: CallPlace, identity: string) {
   return {
     send: (signal: CallSignal) => place.send(identity, signal),
+    offer: place.offer ? () => place.offer!(identity) : undefined,
     onChange: (call: Call) => {
-      if (call.state === 'ended' && shown?.call === call) place.line(call.peer, call.outgoing, endedLine(call));
+      if (call.state === 'ended' && shown?.call === call) place.line(call.peer, call.outgoing, endedLine(call), call.id);
       changed();
     },
   };
@@ -105,7 +111,7 @@ function events(place: CallPlace, identity: string) {
 /** Calls a contact. Throws if a call is already in progress. */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
   if (currentGroupCall() || elsewhere()) throw new Error(t('There is a call already.'));
-  const call = Call.start({ peer, video, relay, rtc, events: events(place, peer.slice(CONTACT_PREFIX.length)) });
+  const call = Call.start({ peer, video, relay, rtc, events: events(place, identityOf(peer)) });
   shown = { call, place };
   changed();
   return call;
@@ -129,20 +135,22 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   if (request) return t('{name} tried to call. Accept their message request to take calls from them.', { name: place.name(peer) });
   // Made while no space was open here: it has stopped ringing on their side. Or hung up already.
   if (offerMissed(signal.at) || endedAlready(peer, signal.id)) {
-    place.line(peer, false, `Missed ${kind}`);
+    place.line(peer, false, `Missed ${kind}`, signal.id);
     return null;
   }
-  const identity = peer.slice(CONTACT_PREFIX.length);
+  const identity = identityOf(peer);
   const busy = () => {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
-    place.line(peer, false, `Missed ${kind}, while in another call`);
+    place.line(peer, false, `Missed ${kind}, while in another call`, signal.id);
     return null;
   };
   if (ours || currentGroupCall() || elsewhere(signal.id)) return busy();
-  const relay = relayToAnswer(signal.sdp, await place.callRelay().catch(() => null));
+  // An offer still to come (XMPP's calls ring first) answers through our call relay, if there is one.
+  const callRelay = await place.callRelay().catch(() => null);
+  const relay = signal.sdp ? relayToAnswer(signal.sdp, callRelay) : callRelay;
   // They hung up while the call relay was asked.
   if (endedAlready(peer, signal.id)) {
-    place.line(peer, false, `Missed ${kind}`);
+    place.line(peer, false, `Missed ${kind}`, signal.id);
     return null;
   }
   // Another call came, or started, while the call relay was asked (offers of one look are read

@@ -12,9 +12,11 @@ import { onMessage, setReceiverPace } from '../lib/receiver';
 import { currentGroupCall, type GroupCall } from '../lib/group-call';
 import { closeGroupCall, endGroupCall, groupCallSignal, onGroupCallChange, shownGroupCall } from '../lib/group-calls';
 import { memberName } from '../lib/groups';
+import { sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
+import { watchXmppCalls, xmppCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
 import { t } from '../lib/i18n';
 import { CallScreen } from './call-screen';
 import { GroupCallScreen } from './group-call-screen';
@@ -72,6 +74,8 @@ export function watchCalls(): () => void {
     if (!received.call) return;
     void callSignal(spaceCalls, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc);
   });
+  // Calls of the space's XMPP account (lib/xmpp-calls.ts), on the same screen.
+  const stopXmpp = watchXmppCalls(rtc);
   return () => {
     stopChange();
     stopMessages();
@@ -80,6 +84,8 @@ export function watchCalls(): () => void {
     setReceiverPace(() => LOOK_EVERY);
     endCall();
     endGroupCall();
+    // After the call's end, which still goes to the other person.
+    stopXmpp();
     audio(() => callAudio?.stopRinging?.());
     audio(() => callAudio?.stop());
     audio(() => callAudio?.showOverLock?.(false));
@@ -119,8 +125,8 @@ export function CallHost() {
         setSpeaker(call.video);
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
         // A hidden call just opened by its PIN on the ring screen (lib/hidden-ring.ts): the owner
-        // already chose to answer it, so it is answered at once. Never a call of the space's.
-        if (call.state === 'incoming' && shown?.place !== spaceCalls && takeHiddenAnswer()) {
+        // already chose to answer it, so it is answered at once. Never a call of the space's, nor of XMPP.
+        if (call.state === 'incoming' && shown?.place !== spaceCalls && shown?.place !== xmppCalls && takeHiddenAnswer()) {
           callAudio?.stopRinging?.();
           void callPermissions(call.video).then((granted) => (granted ? (setSpeaker(call.video), callAudio?.start(call.video), call.answer()) : call.decline()));
         }
@@ -195,8 +201,9 @@ export function CallHost() {
     <Modal visible animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
       <CallScreen
         call={call}
-        identity={call.peer.slice(CONTACT_PREFIX.length)}
+        identity={call.peer.startsWith(XMPP_PREFIX) ? toHex(sha256Bytes(utf8Encode(call.peer))) : call.peer.slice(CONTACT_PREFIX.length)}
         name={place.name(call.peer)}
+        encryption={call.peer.startsWith(XMPP_PREFIX) ? t('Encrypted, but its key passes through the XMPP servers') : undefined}
         speaker={speaker}
         onSpeaker={changeSpeaker}
         onAnswer={answer}

@@ -51,11 +51,13 @@ export function callStatus(call: Call, now: number): string {
   }
 }
 
-export function CallScreen({ call, identity, name, speaker, onSpeaker, onAnswer, onClose }: {
+export function CallScreen({ call, identity, name, encryption, speaker, onSpeaker, onAnswer, onClose }: {
   call: Call;
   /** The contact's identity key, hex, for their face. */
   identity: string;
   name: string;
+  /** What the call's encryption is, when not Erevos's own end-to-end one (an XMPP call's). */
+  encryption?: string;
   speaker: boolean;
   onSpeaker: (on: boolean) => void;
   /** Answers the call that rings here, once the camera and microphone may be used. */
@@ -105,7 +107,7 @@ export function CallScreen({ call, identity, name, speaker, onSpeaker, onAnswer,
         </Text>
         {state === 'connected' || state === 'connecting' ? (
           <Text variant="caption" color="rgba(255,255,255,0.6)" style={styles.shadow}>
-            {t('End-to-end encrypted')}
+            {encryption ?? t('End-to-end encrypted')}
           </Text>
         ) : null}
       </View>
