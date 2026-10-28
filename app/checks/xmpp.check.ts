@@ -17,6 +17,7 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCurrentSpace } from '../lock/keys';
+import { markRestore } from '../lock/restored';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
 import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
@@ -26,7 +27,7 @@ import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { envelope, openEnvelope } from '../lib/xmpp-omemo2';
 import { startSasl } from '../lib/xmpp-sasl';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
-import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
+import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSend, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
 import { child, el, find, parseXml, render, textOf, XmlStream, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
 import { DOMAIN, PASSWORD, person, Server, settle, UPLOAD } from './xmpp-server';
 
@@ -207,6 +208,73 @@ test('signed in, the archive from before tells of nothing; a message that comes 
   } finally {
     stopCame();
     stopRead();
+    stopXmpp();
+    setXmppConnect(undefined);
+    setCurrentSpace(null);
+    ann.connection.close();
+  }
+});
+
+test('restored from a backup, the account goes on as a new device of itself, its chats and its key kept', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  // Contacts, so Ann's app is told of Ben's devices as they change.
+  const ben = await person(server, 'ben');
+  await addXmppContact(ann.state, ann.connection, `ben@${DOMAIN}`, 'Ben');
+  await settle([ann, ben]);
+  await addXmppContact(ben.state, ben.connection, `ann@${DOMAIN}`);
+  await settle([ann, ben]);
+  ben.connection.close();
+  setXmppConnect(server.connect);
+  setCurrentSpace(7, randomBytes(32));
+  const listed = (node: string) => [...(server.pep.get(`ben@${DOMAIN} ${node}`)?.children ?? [])].flatMap((d) => (typeof d === 'string' ? [] : [Number(d.attrs.id)]));
+  try {
+    runXmpp();
+    await until(() => xmppNow().loaded, 'the account to load');
+    await xmppSignIn(`ben@${DOMAIN}`, PASSWORD);
+    await until(() => xmppNow().online && !!xmppNow().state?.omemo2?.live, 'the account online, its keys out');
+    await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'πριν');
+    await until(() => xmppNow().state?.chats[`ann@${DOMAIN}`]?.messages.length === 1, 'the first message');
+    const before = xmppNow().state!;
+    const old = before.omemo.device;
+    const identity = before.omemo.identity.public;
+    const resource = before.resource;
+    assert.ok(listed('eu.siacs.conversations.axolotl.devicelist').includes(old));
+
+    // A backup of it restored here (lock/backup.ts): the same account loads again, marked so.
+    stopXmpp();
+    // Once kept as it is now (half a second after its last change).
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    await markRestore();
+    runXmpp();
+    await until(() => xmppNow().online && !!xmppNow().state?.omemo2?.live && xmppNow().state?.omemo.gone === undefined, 'the account online again, as a new device');
+    const after = xmppNow().state!;
+    assert.notEqual(after.omemo.device, old);
+    assert.equal(after.omemo.identity.public, identity);
+    assert.notEqual(after.resource, resource);
+    assert.deepEqual(after.chats[`ann@${DOMAIN}`].messages.map((m) => m.text), ['πριν']);
+    // Off the account's lists, the old device; on them, the new one.
+    for (const node of ['eu.siacs.conversations.axolotl.devicelist', 'urn:xmpp:omemo:2:devices']) {
+      assert.ok(!listed(node).includes(old) && listed(node).includes(after.omemo.device), node);
+    }
+
+    // And both ways it goes on, with new conversations.
+    await settle([ann]);
+    await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'μετά');
+    await until(() => xmppNow().state?.chats[`ann@${DOMAIN}`]?.messages.length === 2, 'a message after the restore');
+    assert.equal(xmppNow().state!.chats[`ann@${DOMAIN}`].messages[1].text, 'μετά');
+    await xmppSend(`ann@${DOMAIN}`, 'απάντηση');
+    await settle([ann]);
+    assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => m.text), ['πριν', 'μετά', 'απάντηση']);
+
+    // Loaded again with no new restore, it stays the device it became.
+    const device = xmppNow().state!.omemo.device;
+    stopXmpp();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    runXmpp();
+    await until(() => xmppNow().loaded && !!xmppNow().state, 'the account again');
+    assert.equal(xmppNow().state!.omemo.device, device);
+  } finally {
     stopXmpp();
     setXmppConnect(undefined);
     setCurrentSpace(null);

@@ -234,8 +234,16 @@ On main, not released yet:
   long it lasts, fetched when it is played. Holding a message opens its menu: the reactions, **Reply** and **Copy**. A
   reply goes as a kind 14 whose `e` tag is marked `reply` (`["e", id, "", "reply"]`), the tag marked `reply` winning
   over the first `e` tag when a message has several, so other Nostr apps show it as an answer; the answer shows the
-  message it answers over its words, and a tap goes to it. Checked with relays and a file server played in the checks;
-  not yet with a Nostr app on a phone.
+  message it answers over its words, and a tap goes to it. A photo, file or voice message sent while a message shows
+  over the field answers it too: its kind 15 carries the same `e` tag (`nostrDmSendFile(key, file, replyTo)`).
+  Checked with relays and a file server played in the checks; not yet with a Nostr app on a phone.
+- **Matrix voice messages show their waveform**: a voice message carries its waveform as Element sends and draws one
+  (MSC3246: `waveform` in `org.matrix.msc1767.audio`, at most 100 values of 0 to 1024): the recorder samples how loud
+  it is ten times a second (`isMeteringEnabled` in `app/lib/audio.ts` and `app/lib/audio.web.ts`), and each value is the
+  loudest of its stretch (`waveformOf` in `app/lib/voice.ts`). One that comes with a waveform shows it in 40 bars under
+  **Play**, coloured as it plays (`VoiceClip` in `app/components/matrix-voice.tsx`). Checked in
+  `app/checks/matrix.check.ts` (sent, read back the same, drawn in fewer bars, and a broken one drawn as none); not
+  yet on a phone. Video thumbnails stay out: a video, as a photo, is fetched only when tapped.
 - **OMEMO 2 in XMPP chats**: Erevos also speaks OMEMO 2 (XEP-0384 version 0.8, `urn:xmpp:omemo:2`), as Kaidan and
   the other apps built on QXmpp do, beside OMEMO 0.3: each device gets the version its app has, and a message to someone
   with both kinds carries both. One identity serves both, its OMEMO 2 form the Ed25519 key it signs with, with its own
@@ -257,6 +265,25 @@ On main, not released yet:
   account while it is on top (`lib/network-place.ts`); the user guide, What's new and `docs/` say it. The stores are
   checked with `app/checks/place-networks.check.ts`, against the servers played in the checks and with the real core;
   not yet on a phone.
+- **Matrix, XMPP and Nostr in backups**: a backup now holds the Matrix, XMPP and Nostr accounts of the space and of each
+  hidden place: their files `erevos-matrix`, `erevos-xmpp` and `erevos-nostr-dm` and the pages their values take
+  (`TEXT_FILES` in `app/lock/backup.ts`), each still encrypted with the key of its space or place; an older Erevos
+  leaves them out of what it restores. Restored, a **Nostr** key and its chats come back as they were. An **XMPP**
+  account comes back with its sign-in, contacts, chats and the keys it knows of others, and goes on as a new device of
+  the account (`renewDevice` in `app/lib/xmpp.ts`, run by `app/lib/xmpp-store.ts` as the account loads after a restore
+  it has not been through: `app/lock/restored.ts` marks each restore and the account keeps the mark it last went past):
+  the same identity key, so contacts' apps still know its key, but a new OMEMO device id, resource, signed pre-key and
+  one-time pre-keys (and OMEMO 2 bundle), every session with a person dropped so each conversation begins again, their
+  device lists asked for again, and the old device taken off the account's device lists, OMEMO 0.3 and OMEMO 2 alike,
+  once it connects; a message encrypted to the old device after the backup cannot be read by it. A **Matrix** account is
+  let go of on the phone (`app/lib/matrix-store.ts`): its state is dropped and never signed out with `/logout`, which
+  would end the device on the phone the backup came from, and the Matrix screen says to sign in again, as a new device,
+  where the Security Key opens the messages from before. Why: the sessions as the backup kept them would use again
+  message keys used since, which the others refuse (stale ratchets), and the phone the backup came from may still be
+  using the device. Checked in `app/checks/backup.check.ts` (the files and their pages come back, and the restoring
+  phone's own go), `app/checks/xmpp.check.ts` (a restored account becomes a new device, keeps its chats and its
+  identity, the old device leaves the lists, and messages go both ways) and `app/checks/matrix.check.ts` (it is let go
+  of, no `/logout` is sent, and it signs in again); not yet on a phone.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

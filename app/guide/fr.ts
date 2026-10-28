@@ -1537,8 +1537,8 @@ Element : aucun pont ne se met entre les deux.
 
 - **Se connecter :** ton identifiant Matrix, comme @nom:matrix.org, et son mot de passe. Erevos devient un nouvel
   appareil du compte, nommé Erevos. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et
-  pas encore dans les sauvegardes. Ses discussions masquées peuvent avoir un compte Matrix à elles, voir [Discussions
-  masquées](#hidden).
+  sont dans les sauvegardes : après une restauration, l’espace se reconnecte, comme un nouvel appareil. Ses discussions
+  masquées peuvent avoir un compte Matrix à elles, voir [Discussions masquées](#hidden).
 - **Discussions :** **Nouvelle discussion** lance une discussion chiffrée avec un identifiant Matrix. Les invitations
   s’affichent en premier, avec **Rejoindre** et **Refuser**.
 - **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
@@ -1570,7 +1570,9 @@ Element : aucun pont ne se met entre les deux.
   vers la gauche avant de relâcher pour abandonner l’enregistrement. Une minute au maximum, et un appui de moins d’une
   seconde n’envoie rien. Avec TalkBack, appuie une fois pour commencer et une autre pour envoyer. Dans une discussion
   chiffrée, il est chiffré comme une photo, et Element et les autres applis Matrix le lisent comme un message vocal. Un
-  message vocal qui arrive se lit avec **Lire**, et n’est récupéré que quand tu le lis.
+  message vocal qui arrive se lit avec **Lire**, et n’est récupéré que quand tu le lis. Sa forme d’onde part avec lui,
+  comme Element la dessine, et un message vocal qui arrive avec une forme d’onde la montre sous **Lire**, colorée
+  pendant la lecture.
 - **Vérifier par emoji :** dans une discussion avec une personne, **Vérifier par emoji** vous montre à tous les deux
   sept images ; si elles sont identiques, dans le même ordre, touchez **Ils correspondent** sur les deux téléphones.
   Personne ne peut alors être au milieu sans qu’on le voie, et la discussion indique **Vérifié par emoji**.
@@ -1624,11 +1626,11 @@ Dans **Réglages** → **Relais et réseaux** → **XMPP**, un espace peut se co
 des personnes qui utilisent Conversations, Monal, Gajim, Dino ou une autre app XMPP. Erevos parle lui-même au serveur
 XMPP, comme ces apps : aucun pont ne se met entre les deux.
 
-- **Se connecter :** ton adresse XMPP, comme name@example.org, et son mot de passe. Erevos trouve le serveur à partir de
-  l’adresse ; **Serveur** ne sert que s’il ne le trouve pas (un nom, nom:port ou une adresse wss://). Erevos devient un
-  nouvel appareil du compte. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et pas
-  encore dans les sauvegardes. Ses discussions masquées peuvent avoir un compte XMPP à elles, voir [Discussions
-  masquées](#hidden).
+- **Se connecter :** ton adresse XMPP, comme name@example.org, et son mot de passe. Erevos trouve le serveur à partir
+  de l’adresse ; **Serveur** ne sert que s’il ne le trouve pas (un nom, nom:port ou une adresse wss://). Erevos devient
+  un nouvel appareil du compte. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et sont
+  dans les sauvegardes : après une restauration, le compte continue comme un nouvel appareil. Ses discussions masquées
+  peuvent avoir un compte XMPP à elles, voir [Discussions masquées](#hidden).
 - **Discussions :** **Nouvelle discussion** ajoute l’adresse à tes contacts, demande à la personne de te laisser voir
   quand elle est en ligne, comme le font les autres apps XMPP, et ouvre la discussion. Qui demande à t’ajouter s’affiche
   en haut de la liste et sur l’écran XMPP, avec **Accepter** et **Refuser**. Les contacts que le compte a déjà sont sous
@@ -1705,9 +1707,10 @@ discussions propres à Erevos.
 
 - **La clé :** **Créer une clé Nostr** en crée une pour cet espace ; **Ou apporter une clé d’une autre appli Nostr**
   prend le nsec d’une clé que tu as déjà, et lit ce que ses relais gardent encore. La clé et ses discussions sont
-  gardées chiffrées dans cet espace, et pas encore dans les sauvegardes. Ses discussions masquées peuvent avoir une clé
-  Nostr à elles, voir [Discussions masquées](#hidden). **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou
-  l’emporter dans une autre appli : qui l’a lit ces discussions et écrit en ton nom.
+  gardées chiffrées dans cet espace, et sont dans les sauvegardes : après une restauration, elles reviennent telles
+  qu’elles étaient. Ses discussions masquées peuvent avoir une clé Nostr à elles, voir [Discussions masquées](#hidden).
+  **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou l’emporter dans une autre appli : qui l’a lit ces
+  discussions et écrit en ton nom.
 - **Ta clé Nostr :** donne son npub aux personnes qui doivent t’écrire, avec **Copier** ou **Afficher le code QR**.
   **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub.
 - **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
@@ -1733,8 +1736,9 @@ discussions propres à Erevos.
   applis Nostr les envoient (NIP-25).
 - **Réponses :** **Répondre**, dans le menu d’un message maintenu, lui répond. Le message s’affiche au-dessus du champ
   du message, avec une ✕ pour l’abandonner, puis au-dessus de ta réponse dans la discussion, où un appui mène à lui. Les
-  autres applis Nostr l’affichent aussi comme une réponse (NIP-17 la marque comme réponse). **Copier**, dans le même
-  menu, prend les mots d’un message.
+  autres applis Nostr l’affichent aussi comme une réponse (NIP-17 la marque comme réponse). Une photo, un fichier ou un
+  message vocal envoyé pendant qu’il s’affiche lui répond aussi. **Copier**, dans le même menu, prend les mots d’un
+  message.
 - **Messages vocaux :** maintiens le micro sous le champ du message pour enregistrer, et relâche pour envoyer ; glisse
   vers la gauche avant de relâcher pour abandonner l’enregistrement. Une minute au maximum, et un appui de moins d’une
   seconde n’envoie rien. Il part comme un fichier : chiffré sur ce téléphone et déposé sur un serveur de fichiers, avec
@@ -2400,9 +2404,9 @@ les lire. Pour une discussion qui ne doit même pas être vue, utilise les discu
 
 Une sauvegarde est un fichier unique qui contient tout ce qu’Erevos garde sur ce téléphone : chaque espace, avec ses
 contacts, les clés de ses conversations, ses messages, messages vocaux, discussions importées et discussions masquées,
-sa Discussion avec moi-même, et le verrou. À l’intérieur, chaque espace reste scellé avec son propre mot de passe, et le
-fichier est scellé de nouveau avec un mot de passe à lui. C’est sous **Réglages** → **Données et appareils** →
-**Sauvegardes**.
+ses comptes Matrix, XMPP et Nostr, sa Discussion avec moi-même, et le verrou. À l’intérieur, chaque espace reste scellé
+avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot de passe à lui. C’est sous **Réglages** →
+**Données et appareils** → **Sauvegardes**.
 
 1. **Créer une sauvegarde :** appuie sur **Créer une sauvegarde**, choisis un dossier (sur le téléphone, une carte
    mémoire, ou une app cloud qui y montre ses dossiers ; sur un ordinateur, n’importe quel dossier), tape deux fois un
@@ -2441,6 +2445,17 @@ fichier est scellé de nouveau avec un mot de passe à lui. C’est sous **Régl
   qu’une discussion restaurée écrive de nouveau, ses conversations sautent au-delà des clés qu’elles ont pu utiliser
   depuis la sauvegarde, si bien qu’aucune clé ne scelle jamais deux messages : une clé qui en scellerait deux
   permettrait à celui qui a gardé les deux paquets de les lire ensemble.
+- **Matrix, XMPP et Nostr :** les comptes de chaque espace et de ses discussions masquées sont dans la sauvegarde. Une
+  clé **Nostr** revient avec ses discussions, telles qu’elles étaient. Un compte **XMPP** revient avec sa connexion, ses
+  contacts, ses discussions et les clés qu’il connaît des autres, et continue comme un nouvel appareil du compte : il
+  garde sa clé d’identité, si bien que les applis de tes contacts connaissent toujours sa clé, mais il prend un nouvel
+  identifiant d’appareil, une nouvelle ressource et de nouvelles clés, chaque conversation recommence, et l’ancien
+  appareil est retiré des listes d’appareils du compte dès qu’il se connecte. Il ne peut pas lire les messages chiffrés
+  pour l’ancien appareil après la sauvegarde. Un compte **Matrix** est lâché sur ce téléphone, sans être déconnecté sur
+  le serveur, ce qui mettrait fin à l’appareil du téléphone d’où vient la sauvegarde ; l’espace se reconnecte, comme un
+  nouvel appareil, et sa clé de sécurité ouvre les messages d’avant. Remises telles qu’elles étaient, les conversations
+  d’un tel appareil réutiliseraient des clés de message que les autres refusent, et le téléphone d’où vient la
+  sauvegarde peut encore se servir de l’appareil.
 - **Un téléphone à la fois :** une sauvegarde restaurée sur un second téléphone lit les mêmes files d’attente sur le
   relais que le premier, et chacun prend des messages que l’autre ne reçoit alors jamais. Utilise-la pour passer à un
   nouveau téléphone, pas pour en garder deux.

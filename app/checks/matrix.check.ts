@@ -17,6 +17,8 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCurrentSpace } from '../lock/keys';
+import { loadMatrix } from '../lock/matrix-data';
+import { markRestore } from '../lock/restored';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
@@ -53,6 +55,7 @@ import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery
 import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
 import { matrixNow, matrixRead, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
+import { waveformBars, waveformOf } from '../lib/voice';
 import { Homeserver, HS, PASSWORD, type Json } from './matrix-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -343,6 +346,47 @@ test('a photo goes encrypted, comes back whole, and a changed one is refused', {
   await assert.rejects(fetchFile(bob, message.file!), ChangedFileError);
 });
 
+test('a voice message goes with how long it is and its waveform, read as Element sends them', { skip: !coreReady }, async () => {
+  let alice = kept(await signIn(HS, '@alice:example.org', PASSWORD));
+  let bob = kept(await signIn(HS, 'bob', PASSWORD));
+  const room = await startChat(alice, '@bob:example.org');
+  alice = kept(alice);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  await sync(bob, 0);
+  bob = kept(bob);
+  await sync(alice, 0);
+
+  // Quiet, then loud, then quiet again, sampled ten times a second for three seconds.
+  const levels = Array.from({ length: 30 }, (_, i) => (i >= 10 && i < 20 ? -6 : -70));
+  const waveform = waveformOf(levels);
+  assert.equal(waveform.length, 30);
+  assert.equal(waveform[0], 0);
+  assert.equal(waveform[15], 922);
+  await sendFile(alice, room.id, { name: 'voice.m4a', mime: 'audio/mp4', bytes: new Uint8Array(400).fill(7), voice: { durationMs: 3000, waveform } });
+  alice = kept(alice);
+  assert.deepEqual(alice.rooms[room.id].messages.at(-1)!.file?.waveform, waveform);
+
+  await sync(bob, 0);
+  bob = kept(bob);
+  const file = bob.rooms[room.id].messages.at(-1)!.file!;
+  assert.equal(file.voice, true);
+  assert.equal(file.duration, 3000);
+  assert.deepEqual(file.waveform, waveform);
+  // Drawn in fewer bars, each the loudest of its stretch.
+  const bars = waveformBars(file.waveform, 10)!;
+  assert.equal(bars.length, 10);
+  assert.deepEqual(bars.slice(0, 3), [0, 0, 0]);
+  assert.ok(bars[4] > 0.85 && bars[4] < 0.95);
+
+  // One from another app with no waveform, or a broken one, is drawn as none.
+  assert.equal(waveformBars(undefined, 10), null);
+  assert.equal(waveformBars([512], 10), null);
+  assert.deepEqual(waveformBars([2048, -5, 'x', 512], 4), [1, 0, 0, 0.5]);
+  assert.deepEqual(waveformOf([NaN, Number.NEGATIVE_INFINITY]), []);
+  assert.equal(waveformOf(Array.from({ length: 600 }, () => 0)).length, 100);
+});
+
 test('Matrix files: encrypted as other apps read them, too large ones refused', { skip: !coreReady }, async () => {
   const bytes = new Uint8Array(1000).map((_, i) => i % 251);
   const { data, file } = encryptFile(bytes);
@@ -551,6 +595,44 @@ test('signed in, the first sync tells of nothing from before; a message after it
   } finally {
     stopCame();
     stopRead();
+    stopMatrix();
+    setCurrentSpace(null);
+    setMatrixHttp(async (request) => server.answer(request));
+  }
+});
+
+test('restored from a backup, the account is let go of, never signed out, and signs in again', { skip: !coreReady }, async () => {
+  const spaceKey = randomBytes(32);
+  setMatrixHttp(async (request) => {
+    if (request.url.includes('/sync?timeout=30000')) await new Promise((resolve) => setTimeout(resolve, 20));
+    return server.answer(request);
+  });
+  setCurrentSpace(9, spaceKey);
+  try {
+    runMatrix();
+    await until(() => matrixNow().loaded, 'the account to load');
+    await matrixSignIn('fay', PASSWORD, HS);
+    stopMatrix();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    // Loaded again with no restore, it is as it was.
+    runMatrix();
+    await until(() => matrixNow().loaded, 'the account again');
+    assert.equal(matrixNow().state?.userId, '@fay:example.org');
+    stopMatrix();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+
+    // A backup of it restored here: its device is the backup's, so it goes, and the space signs in again.
+    const asked = server.asked.length;
+    await markRestore();
+    runMatrix();
+    await until(() => matrixNow().loaded, 'the account after the restore');
+    assert.equal(matrixNow().state, null);
+    assert.match(matrixNow().problem, /sign in to Matrix again/);
+    assert.equal(await loadMatrix(9, spaceKey), null);
+    assert.ok(!server.asked.slice(asked).some((line) => line.includes('/logout')), 'the other phone’s device is not signed out');
+    await matrixSignIn('fay', PASSWORD, HS);
+    assert.equal(matrixNow().state?.userId, '@fay:example.org');
+  } finally {
     stopMatrix();
     setCurrentSpace(null);
     setMatrixHttp(async (request) => server.answer(request));

@@ -34,6 +34,7 @@ export const matrix: Record<string, string> = {
   "Locked: the key for this message has not come to this device.": "Verrouillé : la clé de ce message n’est pas arrivée sur cet appareil.",
   "The Matrix server says the name or the password is wrong.": "Le serveur Matrix dit que le nom ou le mot de passe est faux.",
   "The Matrix server signed this device out. Sign in again.": "Le serveur Matrix a déconnecté cet appareil. Reconnecte-toi.",
+  "A backup was restored here: sign in to Matrix again, as a new device. Your Security Key opens the messages from before.": "Une sauvegarde a été restaurée ici : reconnecte-toi à Matrix, comme un nouvel appareil. Ta clé de sécurité ouvre les messages d’avant.",
   "There is no Matrix account in this space.": "Il n’y a pas de compte Matrix dans cet espace.",
   "Show photo": "Afficher la photo",
   "Fetching…": "Téléchargement…",

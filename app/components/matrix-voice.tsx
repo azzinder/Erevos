@@ -3,7 +3,7 @@ import { Vibration, View, type AccessibilityActionEvent, type GestureResponderEv
 
 import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { t } from '../lib/i18n';
-import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
+import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration, waveformBars, waveformOf } from '../lib/voice';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -36,11 +36,12 @@ function buzz() {
 }
 
 /**
- * Records one voice message at a time for MicButton: `send` is given the sound and how long it is
- * once the microphone is let go, `say` what the screen should tell (it was too short, the
+ * Records one voice message at a time for MicButton: `send` is given the sound, how long it is and
+ * its waveform (lib/voice.ts waveformOf, empty when the phone told nothing of how loud it was) once
+ * the microphone is let go, `say` what the screen should tell (it was too short, the
  * microphone is not allowed, the recording was let go).
  */
-export function useVoiceCapture({ send, say }: { send: (audio: Uint8Array, ms: number) => Promise<void>; say: (text: string) => void }): VoiceControl {
+export function useVoiceCapture({ send, say }: { send: (audio: Uint8Array, ms: number, waveform: number[]) => Promise<void>; say: (text: string) => void }): VoiceControl {
   const recorder = useVoiceRecorder();
   const [recording, setRecording] = useState(false);
   const holding = useRef(false);
@@ -111,7 +112,7 @@ export function useVoiceCapture({ send, say }: { send: (audio: Uint8Array, ms: n
         latest.current.say(t('Hold to record, and let go to send.'));
         return;
       }
-      await latest.current.send(recorded.audio, recorded.ms);
+      await latest.current.send(recorded.audio, recorded.ms, waveformOf(recorded.levels));
     } catch (error) {
       latest.current.say(t('Not sent. {reason}', { reason: errorText(error) }));
     }
@@ -244,12 +245,18 @@ function endingOf(mime: string): string {
   return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
 }
 
+/** How many bars a voice message's waveform is drawn with. */
+const DRAWN_BARS = 40;
+
 /**
  * A voice message that came: Play fetches its sound the first time and plays it, with how long it
  * is (`duration`, milliseconds), or how much is left while it plays; Stop ends it. Leaving the chat
- * stops it too.
+ * stops it too. A Matrix one may have its `waveform` (0 to 1024 a bar, MSC3246), drawn under it,
+ * the bars played so far in the theme's colour.
  */
-export function VoiceClip({ type, duration, fetch }: { type: string; duration?: number; fetch: () => Promise<Uint8Array> }) {
+export function VoiceClip({ type, duration, waveform, fetch }: { type: string; duration?: number; waveform?: number[]; fetch: () => Promise<Uint8Array> }) {
+  const colors = useColors();
+  const bars = waveformBars(waveform, DRAWN_BARS);
   const [busy, setBusy] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(0);
@@ -296,12 +303,29 @@ export function VoiceClip({ type, duration, fetch }: { type: string; duration?: 
 
   const left = duration ? Math.max(0, duration - played) : played;
   const line = playing ? t('Playing, {time}', { time: voiceDuration(left) }) : duration ? t('Voice message, {time}', { time: voiceDuration(duration) }) : t('Voice message');
+  // How much of it has played, 0 to 1, for the bars' colour.
+  const done = playing && duration ? Math.min(1, played / duration) : 0;
   return (
     <View style={{ gap: space.xs }}>
       <Row>
         <Button title={playing ? t('Stop') : t('Play')} compact disabled={busy} onPress={() => void play()} />
         <Text style={{ flexShrink: 1 }}>{line}</Text>
       </Row>
+      {bars ? (
+        <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ flexDirection: 'row', alignItems: 'center', height: 28, gap: 2, maxWidth: 240 }}>
+          {bars.map((height, i) => (
+            <View
+              key={i}
+              style={{
+                flex: 1,
+                height: Math.max(3, Math.round(height * 28)),
+                borderRadius: 1.5,
+                backgroundColor: (i + 0.5) / bars.length <= done ? colors.primary : colors.textFaint,
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
       {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}
       {note ? <Text variant="caption" tone="muted">{note}</Text> : null}
     </View>

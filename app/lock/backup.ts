@@ -9,7 +9,9 @@ import { FILE as CONTACTS } from './contacts-data';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
+import { FILE as MATRIX } from './matrix-data';
 import { FILE as MYSELF } from './myself-data';
+import { FILE as NOSTR_DM } from './nostr-dm-data';
 import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { prepareQueueEntries } from './queues-data';
 import { markRestore } from './restored';
@@ -18,6 +20,7 @@ import { ORDER_FILE as SMS_ORDER, smsDataChanged } from './sms-data';
 import { FILE as STICKERS } from './sticker-data';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
+import { FILE as XMPP } from './xmpp-data';
 
 // A backup: everything Erevos keeps on the phone, in one file sealed with a password of its own.
 // It holds the keystore entries and the files exactly as they are, each already sealed with its
@@ -78,8 +81,12 @@ const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), 
 
 // The sealed files that are text; voice messages' sounds, pictures and stickers' pictures are
 // bytes. A file not on the phone is left out, so the backup of a phone that keeps no contacts, or
-// made no stickers, in Erevos still opens in older versions.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF];
+// made no stickers, in Erevos still opens in older versions. The accounts on Matrix, XMPP and
+// Nostr, the spaces' and their hidden places', are among them, with the pages their values take:
+// restored, a Nostr key goes on as it was, an XMPP account as a new device of itself, and a Matrix
+// one is let go of, to sign in again (lib/xmpp-store.ts, lib/matrix-store.ts). An older Erevos
+// leaves them out of what it restores.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;

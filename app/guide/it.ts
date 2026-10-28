@@ -1482,8 +1482,9 @@ persone che usano Element o un’altra app Matrix. Erevos parla da sé con il se
 sta nel mezzo.
 
 - **Accesso:** il tuo ID Matrix, come @nome:matrix.org, e la sua password. Erevos diventa un nuovo dispositivo
-  dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e non ancora
-  nei backup. Le sue chat nascoste possono avere un account Matrix proprio, vedi [Chat nascoste](#hidden).
+  dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e sono nei
+  backup: dopo un ripristino, lo spazio accede di nuovo, come nuovo dispositivo. Le sue chat nascoste possono avere un
+  account Matrix proprio, vedi [Chat nascoste](#hidden).
 - **Chat:** **Nuova chat** avvia una chat cifrata con un ID Matrix. Gli inviti compaiono per primi, con **Partecipa** e
   **Rifiuta**.
 - **Cifratura:** i messaggi sono cifrati end-to-end con la cifratura di Matrix stesso (Olm e Megolm, tramite
@@ -1514,7 +1515,8 @@ sta nel mezzo.
   scorri a sinistra prima di lasciare per scartare la registrazione. Un minuto è il massimo, e una pressione di meno di
   un secondo non invia nulla. Con TalkBack, toccalo una volta per iniziare e di nuovo per inviare. In una chat cifrata è
   cifrato come una foto, e Element e le altre app Matrix lo riproducono come messaggio vocale. Uno che arriva si ascolta
-  con **Riproduci**, e viene scaricato solo quando lo riproduci.
+  con **Riproduci**, e viene scaricato solo quando lo riproduci. La sua forma d’onda va con lui, come la disegna
+  Element, e uno che arriva con la forma d’onda la mostra sotto **Riproduci**, colorata mentre suona.
 - **Verifica con le emoji:** in una chat con una persona, **Verifica con le emoji** mostra a entrambi sette immagini;
   se sono uguali, nello stesso ordine, toccate **Coincidono** su entrambi i telefoni. Così nessuno può stare in
   mezzo senza essere visto, e la chat dice **Verificato con le emoji**. **Verifica questo dispositivo con un altro
@@ -1568,8 +1570,9 @@ app: nessun ponte sta nel mezzo.
 
 - **Accesso:** il tuo indirizzo XMPP, come name@example.org, e la sua password. Erevos trova il server dall’indirizzo;
   **Server** serve solo se non lo trova (un nome, nome:porta o un indirizzo wss://). Erevos diventa un nuovo dispositivo
-  dell’account. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e non ancora nei backup. Le sue
-  chat nascoste possono avere un account XMPP proprio, vedi [Chat nascoste](#hidden).
+  dell’account. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e sono nei backup: dopo un
+  ripristino, l’account prosegue come nuovo dispositivo. Le sue chat nascoste possono avere un account XMPP proprio,
+  vedi [Chat nascoste](#hidden).
 - **Chat:** **Nuova chat** aggiunge l’indirizzo ai tuoi contatti, chiede alla persona di farti vedere quando è online,
   come fanno le altre app XMPP, e apre la chat. Chi chiede di aggiungerti compare in cima all’elenco e nella schermata
   XMPP, con **Accetta** e **Rifiuta**. I contatti che l’account ha già sono in **Contatti**.
@@ -1640,9 +1643,9 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
 
 - **La chiave:** **Crea una chiave Nostr** ne crea una per questo spazio; **Oppure porta una chiave da un’altra app
   Nostr** prende il nsec di una chiave che hai già, e legge ciò che i suoi relay tengono ancora. La chiave e le sue chat
-  sono tenute cifrate in questo spazio, e non ancora nei backup. Le sue chat nascoste possono avere una chiave Nostr
-  propria, vedi [Chat nascoste](#hidden). **Mostra la chiave segreta (nsec)** la mostra, per annotarla o portarla in
-  un’altra app: chi ce l’ha legge queste chat e scrive al posto tuo.
+  sono tenute cifrate in questo spazio, e sono nei backup: dopo un ripristino tornano com’erano. Le sue chat nascoste
+  possono avere una chiave Nostr propria, vedi [Chat nascoste](#hidden). **Mostra la chiave segreta (nsec)** la mostra,
+  per annotarla o portarla in un’altra app: chi ce l’ha legge queste chat e scrive al posto tuo.
 - **La tua chiave Nostr:** dai il suo npub alle persone che devono scriverti, con **Copia** o **Mostra il codice QR**.
   **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub.
 - **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
@@ -1666,8 +1669,8 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   (NIP-25).
 - **Risposte:** **Rispondi**, nel menu di un messaggio tenuto premuto, gli risponde. Il messaggio compare sopra il campo
   del messaggio, con una ✕ per lasciarlo, e poi sopra la tua risposta nella chat, dove un tocco porta a lui. Anche le
-  altre app Nostr la mostrano come risposta (NIP-17 la segna come risposta). **Copia**, nello stesso menu, prende le
-  parole di un messaggio.
+  altre app Nostr la mostrano come risposta (NIP-17 la segna come risposta). Anche una foto, un file o un messaggio
+  vocale inviato mentre compare gli risponde. **Copia**, nello stesso menu, prende le parole di un messaggio.
 - **Messaggi vocali:** tieni premuto il microfono sotto il campo del messaggio per registrare, e lascia per inviare;
   scorri a sinistra prima di lasciare per scartare la registrazione. Un minuto è il massimo, e una pressione di meno di
   un secondo non invia nulla. Va come un file: cifrato su questo telefono e messo su un server di file, con la sua
@@ -2301,10 +2304,9 @@ nemmeno essere vista, usa le chat nascoste.
 ## Backup {#backup}
 
 Un backup è un unico file con tutto quello che Erevos conserva su questo telefono: ogni spazio, con i suoi contatti, le
-chiavi delle sue conversazioni, i suoi messaggi, messaggi vocali, chat importate e chat nascoste, la sua Chat con me
-stesso, e il blocco. Al suo interno ogni spazio resta
-sigillato con la sua password, e il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni** →
-**Dati e dispositivi** → **Backup**.
+chiavi delle sue conversazioni, i suoi messaggi, messaggi vocali, chat importate e chat nascoste, i suoi account Matrix,
+XMPP e Nostr, la sua Chat con me stesso, e il blocco. Al suo interno ogni spazio resta sigillato con la sua password, e
+il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni** → **Dati e dispositivi** → **Backup**.
 
 1. **Crea un backup:** tocca **Crea un backup**, scegli una cartella (sul telefono, su una scheda di memoria, o in
    un’app cloud che vi mostra le sue cartelle; su un computer, qualsiasi cartella), scrivi due volte una password per
@@ -2340,6 +2342,16 @@ sigillato con la sua password, e il file è sigillato di nuovo con una sua passw
   messaggi. Allora chiedi di nuovo al contatto il suo link di contatto. Prima che una chat ripristinata scriva di nuovo,
   le sue conversazioni saltano oltre le chiavi che potrebbero aver usato dopo il backup, così nessuna chiave sigilla
   mai due messaggi: una usata due volte permetterebbe a chi ha conservato entrambi i pacchetti di leggerli insieme.
+- **Matrix, XMPP e Nostr:** gli account di ogni spazio e delle sue chat nascoste sono nel backup. Una chiave **Nostr**
+  torna con le sue chat, com’erano. Un account **XMPP** torna con il suo accesso, i contatti, le chat e le chiavi che
+  conosce degli altri, e prosegue come nuovo dispositivo dell’account: tiene la sua chiave d’identità, così le app dei
+  tuoi contatti ne riconoscono ancora la chiave, ma prende un nuovo ID dispositivo, una nuova risorsa e nuove chiavi,
+  ogni conversazione ricomincia, e il vecchio dispositivo esce dagli elenchi dei dispositivi dell’account appena si
+  connette. Non può leggere i messaggi cifrati per il vecchio dispositivo dopo il backup. Un account **Matrix** viene
+  lasciato andare su questo telefono, senza essere disconnesso sul server, cosa che farebbe finire il dispositivo sul
+  telefono da cui viene il backup; lo spazio accede di nuovo, come nuovo dispositivo, e la sua chiave di sicurezza apre
+  i messaggi di prima. Rimesse com’erano, le conversazioni di un dispositivo così riuserebbero chiavi di messaggio che
+  gli altri rifiutano, e il telefono da cui viene il backup potrebbe usare ancora il dispositivo.
 - **Un telefono alla volta:** un backup ripristinato su un secondo telefono legge le stesse code sul relay del primo, e
   ognuno prende messaggi che l’altro poi non riceve mai. Usalo per passare a un nuovo telefono, non per tenerne due.
 - **Discrezione:** ogni spazio mostra la stessa schermata Backup, e un backup contiene ogni spazio, quindi né l’una né

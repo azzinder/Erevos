@@ -54,8 +54,8 @@ is what is written, once OMEMO encrypts it.
 - `app/lib/xmpp-muc.ts`: groups, below.
 - `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open
   (again after a pause that grows, a ping after 4 minutes of silence), and keeps it encrypted in
-  the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`). A hidden place can have an account of its
-  own (Hidden chats, below).
+  the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`), which backups hold (Backups, below). A
+  hidden place can have an account of its own (Hidden chats, below).
 
 Our own code, not audited. It is checked against python-oldmemo (the OMEMO 0.3 of Gajim's and
 Slixmpp's library) both ways: a message python-oldmemo sent is one of the crate's tests, and
@@ -347,6 +347,31 @@ nothing outside its hidden chats shows.
   refused (`app/lib/xmpp-calls.ts` takes calls for the space's account only).
 - `app/checks/place-networks.check.ts` checks the stores against the server played in the checks,
   with the real core; not yet on a phone.
+
+## Backups
+
+The account is in the backups (`app/lock/backup.ts`): the file `erevos-xmpp`, the space's and each
+hidden place's, with the pages its value takes. Restored, it comes back with its sign-in, contacts,
+chats, the keys it knows of other people and its identity, and goes on as a new device of the
+account (`renewDevice` in `app/lib/xmpp.ts`, run by `app/lib/xmpp-store.ts` as the account loads
+after a restore it has not been through: `app/lock/restored.ts` marks each restore outside the
+backup, and the account keeps the mark it last went past). As the backup kept them, its sessions
+would use again message keys used since, which the others refuse, and the phone the backup came from
+may still be using its device id and its resource.
+
+- **Kept:** the identity key, so contacts' apps still know its key, and with it the contacts, the
+  chats and the keys it knows of other people's devices.
+- **New:** the device id, the resource, the signed pre-key and the one-time pre-keys, and the OMEMO 2
+  bundle. Every session with a person is dropped, so each conversation begins again, and their
+  device lists are asked for again with the bundles of their devices.
+- **Old device:** once the account connects, the old device id leaves its OMEMO 0.3 and OMEMO 2
+  device lists and its OMEMO 2 bundle is retracted (`OwnOmemo.gone`, in `app/lib/xmpp-omemo.ts`).
+  A message encrypted to the old device after the backup cannot be read by the restored one.
+
+`app/checks/xmpp.check.ts` checks it against the server played in the checks, with the real core: a
+restored account becomes a new device, keeps its chats and its identity, the old device leaves the
+lists, and messages go both ways. `app/checks/backup.check.ts` checks that the file and its pages
+come back and that those of the phone it is restored on go. Not yet on a phone.
 
 ## Not yet
 

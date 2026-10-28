@@ -84,9 +84,10 @@ export type MatrixFile = {
   /** An mxc:// address, for a file sent in the clear. */
   url?: string;
   encrypted?: EncryptedFile;
-  /** A voice message (MSC3245), and how long it is, ms. */
+  /** A voice message (MSC3245), how long it is, ms, and how it is drawn, 0 to 1024 a bar (MSC3246). */
   voice?: true;
   duration?: number;
+  waveform?: number[];
 };
 
 export type MatrixRoom = {
@@ -153,6 +154,8 @@ export type MatrixState = {
   backup?: MatrixBackup;
   /** Where the homeserver pushes while the space is closed, once asked to (lib/matrix-push.ts). */
   push?: MatrixPush;
+  /** The restore of a backup this account was made after (lib/matrix-store.ts): '' for none. */
+  restored?: string;
 };
 
 // The homeserver's answer to one request.
@@ -855,6 +858,8 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
   if (kind === 'audio' && content['org.matrix.msc3245.voice'] !== undefined) file.voice = true;
   const duration = number(info.duration) ?? number((content['org.matrix.msc1767.audio'] as Json | undefined)?.duration);
   if (kind === 'audio' && duration !== undefined) file.duration = duration;
+  const waveform = (content['org.matrix.msc1767.audio'] as Json | undefined)?.waveform;
+  if (file.voice && Array.isArray(waveform) && waveform.length > 1) file.waveform = waveform.slice(0, 1000).map((v) => Math.round(Math.min(1024, number(v) ?? 0)));
   // A caption, when the words are not only the file's name.
   const text = !file.voice && content.filename && content.body !== content.filename ? bodyOf(content) : '';
   return { text, file };

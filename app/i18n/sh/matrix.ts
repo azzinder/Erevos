@@ -34,6 +34,7 @@ export const matrix: Record<string, string> = {
   "Locked: the key for this message has not come to this device.": "Zaključano: ključ za ovu poruku nije stigao na ovaj uređaj.",
   "The Matrix server says the name or the password is wrong.": "Matrix server kaže da je ime ili lozinka pogrešna.",
   "The Matrix server signed this device out. Sign in again.": "Matrix server je odjavio ovaj uređaj. Prijavite se ponovo.",
+  "A backup was restored here: sign in to Matrix again, as a new device. Your Security Key opens the messages from before.": "Ovdje je vraćena rezervna kopija: prijavite se ponovo na Matrix, kao novi uređaj. Vaš sigurnosni ključ otvara ranije poruke.",
   "There is no Matrix account in this space.": "U ovom prostoru nema Matrix računa.",
   "Show photo": "Prikaži fotografiju",
   "Fetching…": "Preuzimanje…",

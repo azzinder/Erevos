@@ -1417,9 +1417,10 @@ U **Postavke** → **Relay i mreže** → **Matrix**, prostor se može prijaviti
 koriste Element ili drugu Matrix aplikaciju. Erevos sam razgovara s Matrix serverom, kao Element: nikakav most nije
 između.
 
-- **Prijava:** vaš Matrix ID, kao @ime:matrix.org, i njegova lozinka. Erevos postaje novi uređaj računa, nazvan Erevos.
-  Prijava i ključevi uređaja čuvaju se šifrovani u ovom prostoru, i još ne u rezervnim kopijama. Njegovi skriveni
-  razgovori mogu imati vlastiti Matrix račun, pogledajte [Skriveni razgovori](#hidden).
+- **Prijava:** vaš Matrix ID, kao @ime:matrix.org, i njegova lozinka. Erevos postaje novi uređaj računa, nazvan
+  Erevos. Prijava i ključevi uređaja čuvaju se šifrovani u ovom prostoru, i nalaze se u rezervnim kopijama: nakon
+  vraćanja prostor se ponovo prijavljuje, kao novi uređaj. Njegovi skriveni razgovori mogu imati vlastiti Matrix račun,
+  pogledajte [Skriveni razgovori](#hidden).
 - **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
   **Pridruži se** i **Odbij**.
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
@@ -1447,7 +1448,8 @@ između.
   ulijevo prije nego što pustite da odbacite snimak. Minut je najviše, a pritisak kraći od sekunde ne šalje ništa. S
   TalkBackom ga dodirnite jednom da počnete, a ponovo da pošaljete. U šifrovanom razgovoru šifruje se kao fotografija, a
   Element i druge Matrix aplikacije puštaju je kao glasovnu poruku. Onu koja stigne pušta **Pusti**, a preuzima se tek
-  kad je pustite.
+  kad je pustite. Njen talasni oblik ide s njom, kako ga Element crta, a ona koja stigne s talasnim oblikom prikazuje ga
+  ispod **Pusti**, obojen dok se pušta.
 - **Provjera emojijima:** u razgovoru s jednom osobom, **Provjera emojijima** vama oboma pokazuje sedam slika; ako su
   iste, istim redom, dodirnite **Podudaraju se** na oba telefona. Tada niko ne može neprimjetno biti u sredini, a
   razgovor piše **Provjereno emojijima**. **Provjerite ovaj uređaj drugim svojim**, na Matrix ekranu, radi isto s
@@ -1495,10 +1497,10 @@ U **Postavke** → **Relay i mreže** → **XMPP**, prostor se može prijaviti n
 koriste Conversations, Monal, Gajim, Dino ili drugu XMPP aplikaciju. Erevos sam razgovara s XMPP serverom, kao te
 aplikacije: nikakav most nije između.
 
-- **Prijava:** vaša XMPP adresa, kao name@example.org, i njena lozinka. Erevos nalazi server iz adrese; **Server** treba
-  samo kad ga ne nađe (ime, ime:port ili wss:// adresa). Erevos postaje novi uređaj računa. Prijava i ključevi uređaja
-  čuvaju se šifrovani u ovom prostoru, i još ne u rezervnim kopijama. Njegovi skriveni razgovori mogu imati vlastiti
-  XMPP račun, pogledajte [Skriveni razgovori](#hidden).
+- **Prijava:** vaša XMPP adresa, kao name@example.org, i njena lozinka. Erevos nalazi server iz adrese; **Server**
+  treba samo kad ga ne nađe (ime, ime:port ili wss:// adresa). Erevos postaje novi uređaj računa. Prijava i ključevi
+  uređaja čuvaju se šifrovani u ovom prostoru, i nalaze se u rezervnim kopijama: nakon vraćanja račun nastavlja kao novi
+  uređaj. Njegovi skriveni razgovori mogu imati vlastiti XMPP račun, pogledajte [Skriveni razgovori](#hidden).
 - **Razgovori:** **Novi razgovor** dodaje adresu u vaše kontakte, traži od osobe da vam dopusti da vidite kada je na
   mreži, kao što rade druge XMPP aplikacije, i otvara razgovor. Ko traži da vas doda, stoji na vrhu liste i na XMPP
   ekranu, s **Prihvati** i **Odbij**. Kontakti koje račun već ima su pod **Kontakti**.
@@ -1566,9 +1568,9 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 
 - **Ključ:** **Izradi Nostr ključ** izrađuje jedan za ovaj prostor; **Ili donesite ključ iz druge Nostr aplikacije**
   uzima nsec ključa koji već imate, i čita ono što njegovi relayi još čuvaju. Ključ i njegovi razgovori čuvaju se
-  šifrirani u ovom prostoru, i još ne u sigurnosnim kopijama. Njegovi skriveni razgovori mogu imati vlastiti Nostr
-  ključ, pogledajte [Skriveni razgovori](#hidden). **Prikaži tajni ključ (nsec)** ga prikazuje, da ga zapišete ili
-  prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i piše kao vi.
+  šifrirani u ovom prostoru, i nalaze se u rezervnim kopijama: nakon vraćanja ostaju onakvi kakvi su bili. Njegovi
+  skriveni razgovori mogu imati vlastiti Nostr ključ, pogledajte [Skriveni razgovori](#hidden). **Prikaži tajni ključ
+  (nsec)** ga prikazuje, da ga zapišete ili prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i piše kao vi.
 - **Vaš Nostr ključ:** dajte njegov npub ljudima koji vam trebaju pisati, s **Kopiraj** ili **Prikaži QR kod**. **Vaše
   ime**, ako ga date, javno je: druge Nostr aplikacije prikazuju ga umjesto vašeg npub-a.
 - **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
@@ -1591,7 +1593,8 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   **+**; ispod se vide reakcije, posljednja od svake osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
 - **Odgovori:** **Odgovori**, u meniju poruke koju zadržite, odgovara na nju. Poruka se prikazuje iznad polja za poruku,
   s ✕ da je ostavite, a zatim iznad vašeg odgovora u razgovoru, gdje dodir vodi do nje. I druge Nostr aplikacije je
-  prikazuju kao odgovor (NIP-17 je označava kao odgovor). **Kopiraj**, u istom meniju, uzima riječi poruke.
+  prikazuju kao odgovor (NIP-17 je označava kao odgovor). I fotografija, datoteka ili glasovna poruka koju pošaljete dok
+  se ona prikazuje odgovara na nju. **Kopiraj**, u istom meniju, uzima riječi poruke.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
   ulijevo prije nego što pustite da odbacite snimak. Minut je najviše, a pritisak kraći od sekunde ne šalje ništa. Ide
   kao datoteka: šifrovana na ovom telefonu i stavljena na poslužitelj datoteka, s trajanjem u poruci; hoće li je druga
@@ -2202,9 +2205,9 @@ skrivene razgovore.
 
 Rezervna kopija je jedna datoteka koja sadrži sve što Erevos čuva na ovom telefonu: svaki prostor, s njegovim
 kontaktima, ključevima njegovih razgovora, porukama, glasovnim porukama, uvezenim i skrivenim razgovorima, njegovim
-Razgovorom sa sobom, i zaključavanje. Unutar nje svaki prostor ostaje
-zapečaćen vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozinkom. Nalazi se pod **Postavke** →
-**Podaci i uređaji** → **Rezervne kopije**.
+Matrix, XMPP i Nostr računima, njegovim Razgovorom sa sobom, i zaključavanje. Unutar nje svaki prostor ostaje zapečaćen
+vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozinkom. Nalazi se pod **Postavke** → **Podaci i
+uređaji** → **Rezervne kopije**.
 
 1. **Napravi rezervnu kopiju:** dodirnite **Napravi rezervnu kopiju**, izaberite folder (na telefonu, memorijskoj
    kartici ili u aplikaciji za oblak koja tamo prikazuje svoje foldere; na računaru, bilo koji folder), upišite
@@ -2239,6 +2242,15 @@ zapečaćen vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozi
   poruke. Tada zamolite kontakt ponovo za njegov link za kontakt. Prije nego što vraćeni razgovor ponovo piše, njegovi
   razgovori preskaču ključeve koje su možda koristili od kopije, pa nijedan ključ nikad ne zapečaćuje dvije poruke:
   poruka zapečaćena dvaput omogućila bi onome ko je sačuvao oba paketa da ih pročita zajedno.
+- **Matrix, XMPP i Nostr:** računi svakog prostora i njegovih skrivenih razgovora nalaze se u rezervnoj kopiji. Nostr
+  ključ se vraća sa svojim razgovorima, kakvi su bili. XMPP račun se vraća sa svojom prijavom, kontaktima, razgovorima i
+  ključevima koje poznaje od drugih, i nastavlja kao novi uređaj računa: zadržava svoj identitetski ključ, pa aplikacije
+  vaših kontakata i dalje poznaju njegov ključ, ali dobija novi ID uređaja, novi resource i nove ključeve, svaki
+  razgovor počinje ispočetka, a stari uređaj se skida s lista uređaja računa čim se poveže. Ne može pročitati poruke
+  šifrovane za stari uređaj nakon kopije. Matrix račun se na ovom telefonu pušta, bez odjave na serveru, što bi ugasilo
+  uređaj na telefonu s kojeg je kopija došla; prostor se ponovo prijavljuje, kao novi uređaj, a njegov sigurnosni ključ
+  otvara ranije poruke. Vraćeni kakvi su bili, razgovori takvog uređaja ponovo bi koristili ključeve poruka koje drugi
+  odbijaju, a telefon s kojeg je kopija došla možda još koristi uređaj.
 - **Jedan po jedan telefon:** rezervna kopija vraćena na drugom telefonu čita iste redove na relayu kao i prvi, i
   svaki preuzima poruke koje drugi tada nikad ne dobije. Koristite je za prelazak na novi telefon, a ne za držanje
   dva.

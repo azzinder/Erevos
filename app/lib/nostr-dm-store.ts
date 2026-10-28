@@ -623,17 +623,19 @@ export class NostrFileTooLargeError extends Error {
   }
 }
 
-/** Sends a photo or file: encrypted here, put on the space's file server, and its key in the message (kind 15). */
-export async function nostrDmSendFile(key: string, picked: NostrOutgoingFile): Promise<void> {
+/** Sends a photo or file: encrypted here, put on the space's file server, and its key in the message
+ *  (kind 15), answering the message `replyTo` when given, as a text does. */
+export async function nostrDmSendFile(key: string, picked: NostrOutgoingFile, replyTo?: string): Promise<void> {
   const it = need();
   if (picked.bytes.length > NOSTR_FILE_MOST) throw new NostrFileTooLargeError();
   const { sealed, file } = await sealFile(picked.bytes, picked.mime, picked.name, picked.dim, picked.durationMs);
   const url = await uploadBlob(it.state.files?.length ? it.state.files : FILE_SERVERS, sealed, (kind, tags, content) => signedOnce(kind, tags, content));
-  await sendFile(it, key, { ...file, url });
+  await sendFile(it, key, { ...file, url }, replyTo);
 }
 
-async function sendFile(it: Live & { state: NostrDmState }, key: string, file: NostrDmFile): Promise<void> {
-  await sendTo(it, key, 15, fileTags(file), file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file }));
+async function sendFile(it: Live & { state: NostrDmState }, key: string, file: NostrDmFile, replyTo?: string): Promise<void> {
+  const answers = replyTo ? { replyTo } : {};
+  await sendTo(it, key, 15, [...(replyTo ? [['e', replyTo, '', 'reply']] : []), ...fileTags(file)], file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file, ...answers }));
 }
 
 /** Reacts to a message with `emoji`, as NIP-25 says, to everyone in the chat. */
@@ -657,7 +659,7 @@ export async function nostrDmRetry(key: string, id: string): Promise<void> {
   await changeAccount(it, async () => {
     chat.messages = chat.messages.filter((m) => m !== failed);
   });
-  if (typeof failed.file === 'object') await sendFile(it, key, failed.file);
+  if (typeof failed.file === 'object') await sendFile(it, key, failed.file, failed.replyTo);
   else await nostrDmSend(key, failed.text, failed.replyTo);
 }
 

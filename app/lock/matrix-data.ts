@@ -6,7 +6,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // sessions, and its rooms with their latest messages, as one value kept in FILE, sealed with the
 // space's key, one for each space (sealed-file.ts), so nothing tells whether a space has one; a
 // hidden place's own account likewise, sealed with its key in its own value (lib/place-networks.ts).
-// Not in backups yet: a restored phone signs in again.
+// In backups (lock/backup.ts); a restored one is let go of, and the space signs in again
+// (lib/matrix-store.ts).
 
 export const FILE = 'erevos-matrix';
 const BLOCK = 16 * 1024;

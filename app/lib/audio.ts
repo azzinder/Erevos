@@ -14,6 +14,8 @@ import { MAX_VOICE_MS } from './voice';
 
 const OPTIONS: RecordingOptions = {
   extension: '.m4a',
+  // How loud it is as it goes, for a voice message's waveform (lib/voice.ts waveformOf).
+  isMeteringEnabled: true,
   sampleRate: 48_000,
   numberOfChannels: 1,
   bitRate: 64_000,
@@ -69,6 +71,17 @@ export function clearLeftovers() {
 export function useVoiceRecorder(talk = false) {
   const recorder = useAudioRecorder(talk ? TALK : OPTIONS);
   const started = useRef(0);
+  // How loud it was, dBFS, ten times a second while it records.
+  const levels = useRef<number[]>([]);
+  const sampling = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sample = () => {
+    const level = recorder.getStatus().metering;
+    if (typeof level === 'number') levels.current.push(level);
+  };
+  const stopSampling = () => {
+    if (sampling.current) clearInterval(sampling.current);
+    sampling.current = null;
+  };
 
   /** Starts recording. False when the microphone is not allowed. */
   async function start(): Promise<boolean> {
@@ -78,19 +91,23 @@ export function useVoiceRecorder(talk = false) {
     await recorder.prepareToRecordAsync();
     recorder.record();
     started.current = Date.now();
+    levels.current = [];
+    stopSampling();
+    sampling.current = setInterval(sample, 100);
     return true;
   }
 
   /** Stops, and returns the sound and how long it is, or null if it was too short to keep. */
-  async function stop(): Promise<{ audio: Uint8Array; ms: number } | null> {
+  async function stop(): Promise<{ audio: Uint8Array; ms: number; levels: number[] } | null> {
     const ms = Math.min(Date.now() - started.current, MAX_VOICE_MS);
+    stopSampling();
     await recorder.stop();
     await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
     const uri = recorder.uri;
     if (!uri) return null;
     const file = new File(uri);
     try {
-      return ms < MIN_VOICE_MS ? null : { audio: await file.bytes(), ms };
+      return ms < MIN_VOICE_MS ? null : { audio: await file.bytes(), ms, levels: levels.current };
     } finally {
       deleteQuietly(file);
     }

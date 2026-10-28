@@ -94,8 +94,9 @@ A reply is a kind 14 message with an `e` tag for the message it answers, marked 
 `["e", <id>, "", "reply"]` (`nostrDmSend(key, text, replyTo)`). On a message that comes, the `e` tag
 marked `reply` wins; with none marked, the first `e` tag counts, as apps that mark no answer write it.
 The answer is kept as `replyTo` and shows the message it answers over its words, which a tap scrolls
-to; one not on the phone says so. A message that failed and is sent again keeps its `replyTo`. Only
-text replies are made here: a photo, file or voice message is sent as a new message.
+to; one not on the phone says so. A message that failed and is sent again keeps its `replyTo`. A
+photo, file or voice message sent while a message shows over the field answers it too: its kind 15
+message carries the same `e` tag (`nostrDmSendFile(key, file, replyTo)`).
 
 ## Reactions
 
@@ -136,8 +137,11 @@ as it comes.
   (purplepag.es, relay.damus.io, nos.lol, relay.primal.net) when they change and once a week, each
   newer than the last. Where someone reads is looked up on those, on the space's own and on the
   relays their nprofile or NIP-05 named, and kept six hours for sending. Kept encrypted in the space
-  (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), not in backups yet. A hidden place can have
-  a key of its own (Hidden chats, below).
+  (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), and in backups (`app/lock/backup.ts`, the
+  space's and each hidden place's, with the pages their values take): restored, the key and its
+  chats come back as they were, since NIP-17 keeps no ratchet that could use a key twice
+  (`app/checks/backup.check.ts`; not yet on a phone). A hidden place can have a key of its own
+  (Hidden chats, below).
 
 ## Checks
 
@@ -225,6 +229,5 @@ outside its hidden chats shows.
 
 ## Not yet
 
-Files encrypted otherwise than with AES-GCM, a photo, file or voice message sent as a reply (it goes
-as a new message), the key in backups, and a key kept by a signer app (NIP-55) or a remote signer
-(NIP-46) in place of the nsec.
+Files encrypted otherwise than with AES-GCM, a voice message's waveform, and a key kept by a signer
+app (NIP-55) or a remote signer (NIP-46) in place of the nsec.

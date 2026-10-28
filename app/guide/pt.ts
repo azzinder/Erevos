@@ -1451,9 +1451,10 @@ Em **Configurações** → **Relay e redes** → **Matrix**, um espaço pode ent
 que usam o Element ou outro app Matrix. O Erevos fala ele mesmo com o servidor Matrix, como o Element: nenhuma ponte
 fica no meio.
 
-- **Entrar:** seu ID Matrix, como @nome:matrix.org, e a senha dele. O Erevos vira um novo dispositivo da conta, chamado
-  Erevos. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e ainda não nos backups. As conversas
-  ocultas dele podem ter uma conta Matrix própria, veja [Conversas ocultas](#hidden).
+- **Entrar:** seu ID Matrix, como @nome:matrix.org, e a senha dele. O Erevos vira um novo dispositivo da conta,
+  chamado Erevos. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e estão nos backups: depois de
+  restaurar, o espaço entra de novo, como um novo dispositivo. As conversas ocultas dele podem ter uma conta Matrix
+  própria, veja [Conversas ocultas](#hidden).
 - **Conversas:** **Nova conversa** começa uma conversa criptografada com um ID Matrix. Os convites aparecem primeiro,
   com **Entrar** e **Recusar**.
 - **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
@@ -1483,7 +1484,8 @@ fica no meio.
   para a esquerda antes de soltar para descartar a gravação. Um minuto é o máximo, e um toque de menos de um segundo não
   envia nada. Com o TalkBack, toque nele uma vez para começar e de novo para enviar. Numa conversa criptografada ela é
   criptografada como uma foto, e o Element e outros apps Matrix a tocam como mensagem de voz. Uma que chega toca com
-  **Reproduzir**, e só é buscada quando você a reproduz.
+  **Reproduzir**, e só é buscada quando você a reproduz. A forma de onda vai com ela, como o Element a desenha, e uma
+  que chega com forma de onda a mostra abaixo de **Reproduzir**, colorida enquanto toca.
 - **Verificar por emoji:** numa conversa com uma pessoa, **Verificar por emoji** mostra aos dois sete imagens; se
   forem iguais, na mesma ordem, toquem em **São iguais** nos dois celulares. Assim ninguém pode ficar no meio sem ser
   notado, e a conversa diz **Verificado por emoji**. **Verificar este dispositivo com outro seu**, na tela do Matrix,
@@ -1536,8 +1538,9 @@ esses apps: nenhuma ponte fica no meio.
 
 - **Entrar:** seu endereço XMPP, como name@example.org, e a senha dele. O Erevos acha o servidor pelo endereço;
   **Servidor** só é preciso se ele não achar (um nome, nome:porta ou um endereço wss://). O Erevos vira um novo
-  dispositivo da conta. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e ainda não nos backups.
-  As conversas ocultas dele podem ter uma conta XMPP própria, veja [Conversas ocultas](#hidden).
+  dispositivo da conta. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e estão nos backups:
+  depois de restaurar, a conta segue como um novo dispositivo. As conversas ocultas dele podem ter uma conta XMPP
+  própria, veja [Conversas ocultas](#hidden).
 - **Conversas:** **Nova conversa** adiciona o endereço aos seus contatos, pede à pessoa que deixe você ver quando ela
   está online, como fazem os outros apps XMPP, e abre a conversa. Quem pede para adicionar você aparece no topo da lista
   e na tela do XMPP, com **Aceitar** e **Recusar**. Os contatos que a conta já tem estão em **Contatos**.
@@ -1609,9 +1612,9 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 
 - **A chave:** **Criar uma chave Nostr** cria uma para este espaço; **Ou trazer uma chave de outro app Nostr** pega o
   nsec de uma chave que você já tem, e lê o que os relays dela ainda guardam. A chave e as conversas dela ficam
-  guardadas criptografadas neste espaço, e ainda não nos backups. As conversas ocultas dele podem ter uma chave Nostr
-  própria, veja [Conversas ocultas](#hidden). **Mostrar a chave secreta (nsec)** a mostra, para anotar ou levar para
-  outro app: quem a tiver lê estas conversas e escreve como você.
+  guardadas criptografadas neste espaço, e estão nos backups: depois de restaurar, voltam como estavam. As conversas
+  ocultas dele podem ter uma chave Nostr própria, veja [Conversas ocultas](#hidden). **Mostrar a chave secreta (nsec)**
+  a mostra, para anotar ou levar para outro app: quem a tiver lê estas conversas e escreve como você.
 - **Sua chave Nostr:** dê o npub dela às pessoas que devem escrever para você, com **Copiar** ou **Mostrar o código
   QR**. **Seu nome**, se você der um, é público: outros apps Nostr o mostram no lugar do seu npub.
 - **Conversas:** **Nova conversa** recebe o npub da pessoa (ou nprofile), do perfil dela no app dela, ou um nome como
@@ -1634,8 +1637,8 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   de **+**; embaixo aparecem as reações, a última de cada pessoa, como outros apps Nostr as enviam (NIP-25).
 - **Respostas:** **Responder**, no menu de uma mensagem que você segura, a responde. A mensagem aparece acima do campo
   de mensagem, com um ✕ para soltá-la, e depois acima da sua resposta na conversa, onde um toque vai até ela. Outros
-  apps Nostr também a mostram como resposta (o NIP-17 a marca como resposta). **Copiar**, no mesmo menu, leva as
-  palavras de uma mensagem.
+  apps Nostr também a mostram como resposta (o NIP-17 a marca como resposta). Uma foto, um arquivo ou uma mensagem de
+  voz enviada enquanto ela aparece também a responde. **Copiar**, no mesmo menu, leva as palavras de uma mensagem.
 - **Mensagens de voz:** toque e segure o microfone abaixo do campo de mensagem para gravar, e solte para enviar; deslize
   para a esquerda antes de soltar para descartar a gravação. Um minuto é o máximo, e um toque de menos de um segundo não
   envia nada. Ela vai como um arquivo: criptografada neste celular e colocada num servidor de arquivos, com a duração
@@ -2260,10 +2263,10 @@ deve nem ser vista, use as conversas ocultas.
 
 ## Backups {#backup}
 
-Um backup é um arquivo que guarda tudo o que o Erevos mantém neste celular: todos os espaços, com os contatos, as
-chaves das conversas, as mensagens, as mensagens de voz, as conversas importadas e as conversas ocultas de cada um, a
-Conversa comigo dele, e o bloqueio. Dentro dele cada espaço continua selado com a própria senha, e o arquivo é selado
-de novo com uma senha própria. Fica em **Configurações** → **Dados e dispositivos** → **Backups**.
+Um backup é um arquivo que guarda tudo o que o Erevos mantém neste celular: todos os espaços, com os contatos, as chaves
+das conversas, as mensagens, as mensagens de voz, as conversas importadas, as conversas ocultas e as contas Matrix, XMPP
+e Nostr de cada um, a Conversa comigo dele, e o bloqueio. Dentro dele cada espaço continua selado com a própria senha, e
+o arquivo é selado de novo com uma senha própria. Fica em **Configurações** → **Dados e dispositivos** → **Backups**.
 
 1. **Fazer um backup:** toque em **Fazer um backup**, escolha uma pasta (no celular, num cartão de memória, ou num app
    de nuvem que mostre as pastas dele ali; num computador, qualquer pasta), digite duas vezes uma senha para o backup
@@ -2299,6 +2302,16 @@ de novo com uma senha própria. Fica em **Configurações** → **Dados e dispos
   abrir mensagens novas. Então peça de novo ao contato o link de contato dele. Antes de uma conversa restaurada
   escrever de novo, as conversas dela pulam adiante das chaves que podem ter usado desde o backup, para que nenhuma
   chave sele duas mensagens: uma selada duas vezes deixaria quem guardou os dois pacotes ler os dois juntos.
+- **Matrix, XMPP e Nostr:** as contas de cada espaço e de suas conversas ocultas estão no backup. Uma chave **Nostr**
+  volta com as conversas dela, como estavam. Uma conta **XMPP** volta com a sessão, os contatos, as conversas e as
+  chaves que ela conhece dos outros, e segue como um novo dispositivo da conta: mantém a chave de identidade, então os
+  apps dos seus contatos ainda conhecem a chave dela, mas pega um novo ID de dispositivo, um novo resource e novas
+  chaves, cada conversa recomeça, e o dispositivo antigo sai das listas de dispositivos da conta assim que ela se
+  conecta. Ela não consegue ler as mensagens criptografadas para o dispositivo antigo depois do backup. Uma conta
+  **Matrix** é solta neste celular, sem sair no servidor, o que encerraria o dispositivo no celular de onde veio o
+  backup; o espaço entra de novo, como um novo dispositivo, e a chave de segurança dele abre as mensagens de antes.
+  Postas de volta como estavam, as conversas de um dispositivo assim usariam de novo chaves de mensagem que os outros
+  recusam, e o celular de onde veio o backup pode ainda estar usando o dispositivo.
 - **Um celular de cada vez:** um backup restaurado num segundo celular lê as mesmas filas do relay que o primeiro, e
   cada um pega mensagens que o outro então nunca recebe. Use-o para mudar para um celular novo, não para manter dois.
 - **Discrição:** todos os espaços mostram a mesma tela de Backups, e um backup guarda todos os espaços, então nenhum

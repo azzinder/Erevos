@@ -63,7 +63,11 @@ What stays private is what is written.
     (its duration in milliseconds, also in `info.duration`), body `Voice message`, uploaded and
     encrypted as any file. It is recorded by the microphone beside the field, held (a minute at most,
     under a second is let go): AAC from a phone, what the browser records elsewhere. One that comes is
-    fetched and played when asked, with its duration shown. No waveform is sent or drawn.
+    fetched and played when asked, with its duration shown. Its waveform goes with it (MSC3246:
+    `waveform` in `org.matrix.msc1767.audio`, at most 100 values of 0 to 1024, each the loudest of
+    its stretch of the recording's level, sampled ten times a second; `waveformOf` in
+    `app/lib/voice.ts`), and one that comes with a waveform shows it in 40 bars under **Play**,
+    coloured as it plays (`VoiceClip` in `app/components/matrix-voice.tsx`).
 - `app/lib/matrix-verify.ts`: checking devices by emoji (SAS, m.sas.v1 with hkdf-hmac-sha256.v2),
   in a room with another person or to-device between two devices of one account, both ways with
   Element. The core does the X25519, HKDF and HMAC (`sas_new`, `sas_bytes`, `sas_mac`,
@@ -131,9 +135,9 @@ What stays private is what is written.
   origin; `hostWidget` is the same. Its back arrow, or Escape, puts the frame small in a corner, as
   picture in picture; a tap brings it back. Sailfish OS has none.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
-  that space (not in backups yet), synced while the space is open; it answers `matrixUnread()` and
-  `onMatrixChange()` for the home screen. A hidden place can have an account of its own (Hidden
-  chats, below).
+  that space (and in backups, where a restore lets it go, see Backups below), synced while the space
+  is open; it answers `matrixUnread()` and `onMatrixChange()` for the home screen. A hidden place
+  can have an account of its own (Hidden chats, below).
 - `app/app/matrix.tsx` (Settings → Relay and networks → Matrix: sign in, chats, invites, new chat,
   sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
@@ -235,9 +239,25 @@ nothing outside its hidden chats shows.
 - `app/checks/place-networks.check.ts` checks the stores against the homeserver played in the checks,
   with the real core; not yet on a phone.
 
+## Backups
+
+The account is in the backups (`app/lock/backup.ts`): the file `erevos-matrix`, the space's and each
+hidden place's, with the pages its value takes. A restored account is let go of, not put back as a
+device: its Olm and Megolm sessions as the backup kept them would use again keys used since, which
+the others refuse, and its device is the one on the phone the backup came from, which may still be
+using it. `app/lib/matrix-store.ts` finds, as the account loads, that the restore it last went past
+(the id `app/lock/restored.ts` keeps outside the backup, held in the account as `restored`) is not
+the phone's last, and drops it: the sign-in is gone, the Matrix screen says to sign in again, as a
+new device, and the Security Key opens the messages from before. It is never signed out on the
+server (no `/logout`), which would end the device of the phone the backup came from.
+`app/checks/matrix.check.ts` checks that it is let go of, that no `/logout` is sent and that it signs
+in again; `app/checks/backup.check.ts`, that the file and its pages come back and that those of the
+phone it is restored on go. Not yet on a phone.
+
 ## Not yet
 
-- Video thumbnails, and a voice message's waveform.
+- Video thumbnails: a video, as a photo, is fetched only when tapped, so a thumbnail would show
+  nothing sooner; sending one would need a frame taken from the video.
 - Checking by QR, and trust shown per device in a group.
 - A room's history beyond the 2000 messages it keeps.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.

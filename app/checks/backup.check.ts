@@ -20,6 +20,12 @@ import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { addOwnSticker, loadOwnStickers, openOwnSticker } from '../lock/sticker-data';
 import { prepareQueueEntries } from '../lock/queues-data';
 import { lastRestore } from '../lock/restored';
+import { loadMatrix, saveMatrix } from '../lock/matrix-data';
+import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
+import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
+import type { MatrixState } from '../lib/matrix';
+import { newNostrDm, type NostrDmState } from '../lib/nostr-dm';
+import type { XmppState } from '../lib/xmpp';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
@@ -91,6 +97,34 @@ t('puts everything back: the lock opens the same space, with its relay, messages
   assert.deepEqual(await loadPhoto(photo), new Uint8Array([5, 6, 7]));
   assert.deepEqual(await loadOwnStickers({ holder: 'space', space: 0, key }), [sticker]);
   assert.deepEqual(await openOwnSticker(sticker), new Uint8Array([8, 9]));
+});
+
+t('holds the accounts on Matrix, XMPP and Nostr, the space\'s and a hidden place\'s, with the pages they take', async () => {
+  const { key } = await phone();
+  const placeKey = randomBytes(32);
+  const nostr = await newNostrDm();
+  // Large enough to go to pages, as an account with its chats does.
+  nostr.chats.someone = { key: 'someone', messages: Array.from({ length: 300 }, (_, i) => ({ id: `m${i}`, mine: false, at: i, text: 'λόγια '.repeat(20), state: 'sent' })), unread: 0, lastAt: 299 } as unknown as NostrDmState['chats'][string];
+  await saveNostrDm(0, key, nostr);
+  const placeNostr = await newNostrDm();
+  await saveNostrDm(0, placeKey, placeNostr, 'hidden1');
+  const xmpp = { jid: 'ben@example.org', password: 'pw', resource: 'Erevos.aa', omemo: { device: 7, identity: {}, signedPreKey: {}, preKeys: [] }, people: {}, chats: {}, roster: {}, requests: [], seen: [], restored: '' } as unknown as XmppState;
+  await saveXmpp(0, key, xmpp);
+  const matrix = { homeserver: 'https://matrix.example.org', userId: '@dan:example.org', deviceId: 'D', accessToken: 'tok', account: {}, rooms: {}, devices: {}, outdated: [], olm: {}, inbound: {}, outbound: {}, seen: {}, restored: '' } as unknown as MatrixState;
+  await saveMatrix(0, placeKey, matrix, 'hidden2');
+  assert.ok([...blobs.keys()].some((name) => name.startsWith('erevos-page-')), 'the Nostr chats went to pages');
+  const file = await makeBackup(await backupKey('backup-pass'));
+
+  wipe();
+  // What the phone restored on has of its own goes: its accounts and their pages alike.
+  await saveXmpp(0, key, { ...xmpp, jid: 'other@example.org' });
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  assert.equal((await loadNostrDm(0, key))?.public, nostr.public);
+  assert.equal((await loadNostrDm(0, key))?.chats.someone.messages.length, 300);
+  assert.equal((await loadNostrDm(0, placeKey, 'hidden1'))?.public, placeNostr.public);
+  assert.equal((await loadXmpp(0, key))?.jid, 'ben@example.org');
+  assert.equal((await loadMatrix(0, placeKey, 'hidden2'))?.userId, '@dan:example.org');
+  assert.equal(await loadMatrix(0, key), null);
 });
 
 t('a backup from before the queues entries leaves none missing: each space and pocket has one again, all one size', async () => {

@@ -121,13 +121,17 @@ export default function NostrChatScreen() {
 
   const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
 
+  // A photo, file or voice message goes as an answer too, to the message chosen while it is still there.
   async function sendPicked(pick: () => Promise<NostrOutgoingFile | null>) {
     if (!key || sending) return;
     setNote('');
     setSending(true);
     try {
       const file = await pick();
-      if (file) await nostrDmSendFile(key, file);
+      if (!file) return;
+      const to = replyId && chat?.messages.some((m) => m.id === replyId) ? replyId : undefined;
+      setReplyId(null);
+      await nostrDmSendFile(key, file, to);
     } catch (error) {
       fail(error instanceof TooLargeError ? new NostrFileTooLargeError() : error);
     } finally {

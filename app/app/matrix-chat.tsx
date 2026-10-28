@@ -66,9 +66,9 @@ import { useColors } from '../theme/context';
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-/** A recorded voice message as it is sent: the phone's AAC, or what the browser records in the web app and on a computer. */
-function voiceFile(audio: Uint8Array, ms: number): OutgoingFile {
-  return { ...voiceNamed(audio), bytes: audio, voice: { durationMs: ms } };
+/** A recorded voice message as it is sent: the phone's AAC, or what the browser records in the web app and on a computer, with its waveform. */
+function voiceFile(audio: Uint8Array, ms: number, waveform: number[]): OutgoingFile {
+  return { ...voiceNamed(audio), bytes: audio, voice: { durationMs: ms, waveform } };
 }
 
 // Whether a message can be copied: it has words of its own.
@@ -134,7 +134,7 @@ export default function MatrixChatScreen() {
     }
   }
 
-  const voice = useVoiceCapture({ send: (audio, ms) => sendPicked(async () => voiceFile(audio, ms)), say: setNote });
+  const voice = useVoiceCapture({ send: (audio, ms, waveform) => sendPicked(async () => voiceFile(audio, ms, waveform)), say: setNote });
 
   if (!state || !room || !roomId) {
     return (

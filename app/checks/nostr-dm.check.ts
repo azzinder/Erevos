@@ -490,6 +490,12 @@ test('a group of three, with its name and reactions, and a photo through a file 
       [carol.chats[group].messages.at(-1)!.text, carol.chats[group].messages.at(-1)!.replyTo],
       ['σωστά', his],
     );
+    // A voice message answers one too, as a text does.
+    await nostrDmSendFile(group, { bytes: randomBytes(500), name: 'voice.m4a', mime: 'audio/mp4', durationMs: 1500 }, his);
+    assert.equal(nostrDmNow().state!.chats[group].messages.at(-1)!.replyTo, his);
+    await read(carol, carolInbox);
+    const answeredBy = carol.chats[group].messages.at(-1)!;
+    assert.deepEqual([(answeredBy.file as NostrDmFile).duration, answeredBy.replyTo], [1500, his]);
     const plainAnswer = await wrapMessage(bob, group, 14, [['e', first.id]], 'κι εγώ');
     await takeWrap(carol, plainAnswer.wraps[carol.public]);
     assert.equal(carol.chats[group].messages.at(-1)!.replyTo, first.id);

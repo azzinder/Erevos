@@ -22,11 +22,13 @@ import {
   NoOmemoError,
   OMEMO,
   omemoCall,
+  PRE_KEYS,
   publishElement,
   usePreKey,
   type OmemoPeople,
   type OwnOmemo,
   type PreKey,
+  type SignedPreKey,
 } from './xmpp-omemo';
 import {
   BUNDLE_ITEMS,
@@ -164,6 +166,8 @@ export type XmppState = {
   invites?: XmppInvite[];
   /** The server's group service, as last found. */
   muc?: XmppMuc;
+  /** The restore of a backup this account last went past (lib/xmpp-store.ts, renewDevice): '' for none. */
+  restored?: string;
 };
 
 export class XmppError extends Error {
@@ -461,6 +465,42 @@ export async function publishOmemo(state: XmppState, connection: XmppConnection)
   } finally {
     await publishOmemo2(state, connection).catch(() => undefined);
   }
+  // The device it was before a restore is off the lists now; its OMEMO 2 bundle goes too.
+  for (const old of state.omemo.gone ?? []) {
+    await connection.iq('set', undefined, el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('retract', { node: BUNDLES2_NODE, notify: 'true' }, el('item', { id: String(old) })))).catch(() => undefined);
+  }
+  delete state.omemo.gone;
+}
+
+/**
+ * After a backup was restored here, this device goes on as a new device of the account (docs/xmpp.md).
+ * Its conversations as the backup kept them would use again message keys used since, which the others
+ * refuse, and the phone it was made on may still be using its device id and its resource. So it keeps
+ * the account, the contacts, the chats and the keys it knows of others, and its identity, so their
+ * apps still know its key; it takes a new device id, resource, signed pre-keys and one-time pre-keys,
+ * begins every conversation again, and takes the old device off the account's lists once connected.
+ */
+export async function renewDevice(state: XmppState): Promise<void> {
+  const own = state.omemo;
+  const old = own.device;
+  let device = old;
+  while (device === old) device = (new DataView(randomBytes(4).buffer).getUint32(0) % (2 ** 31 - 1)) + 1;
+  const signedPreKey = await omemoCall<SignedPreKey>({ op: 'signed_pre_key_new', identity: own.identity, id: own.signedPreKey.id + 1 });
+  const { pre_keys } = await omemoCall<{ pre_keys: PreKey[] }>({ op: 'pre_keys_new', start: own.nextPreKey, count: PRE_KEYS });
+  state.omemo = { device, identity: own.identity, signedPreKey, preKeys: pre_keys, nextPreKey: own.nextPreKey + PRE_KEYS, published: false, gone: [...(own.gone ?? []), old] };
+  if (state.omemo2) state.omemo2 = await newOwnOmemo2(own.identity);
+  state.resource = `Erevos.${toHex(randomBytes(3))}`;
+  for (const people of [state.people, state.people2 ?? {}]) {
+    delete people[state.jid]?.devices[String(old)];
+    for (const person of Object.values(people)) {
+      for (const known of Object.values(person.devices)) {
+        delete known.session;
+        delete known.failedAt;
+      }
+      // Their lists are asked for again, with the bundles of their devices.
+      person.fetchedAt = 0;
+    }
+  }
 }
 
 async function publishOmemo1(state: XmppState, connection: XmppConnection): Promise<void> {
@@ -474,7 +514,10 @@ async function publishOmemo1(state: XmppState, connection: XmppConnection): Prom
   }
   takeDeviceList(state, state.jid, listed);
   if (!own.published) await publishWithFallback(connection, bundleNode(own.device), bundleElement(own));
-  if (!listed.includes(own.device)) await publishWithFallback(connection, DEVICES_NODE, deviceListElement([...listed, own.device]));
+  const gone = own.gone ?? [];
+  if (!listed.includes(own.device) || listed.some((d) => gone.includes(d))) {
+    await publishWithFallback(connection, DEVICES_NODE, deviceListElement([...listed.filter((d) => d !== own.device && !gone.includes(d)), own.device]));
+  }
   own.published = true;
 }
 
@@ -504,7 +547,12 @@ async function publishOmemo2(state: XmppState, connection: XmppConnection): Prom
       }
     }
   }
-  if (!devices2Of(list).includes(device)) await publishWithFallback(connection, DEVICES2_NODE, devices2With(list, device));
+  const gone = state.omemo.gone ?? [];
+  const listed = devices2Of(list);
+  if (!listed.includes(device) || listed.some((d) => gone.includes(d))) {
+    const kept = gone.reduce<XmlElement | undefined>((left, old) => devices2With(left, old, false), list);
+    await publishWithFallback(connection, DEVICES2_NODE, devices2With(kept, device));
+  }
   own.published = true;
   // From now on OMEMO 2 is written to the devices that have it.
   own.live = true;

@@ -1352,8 +1352,9 @@ who use Element or another Matrix app. Erevos talks to the Matrix server itself,
 between.
 
 - **Signing in:** your Matrix ID, such as @name:matrix.org, and its password. Erevos becomes a new device of the
-  account, named Erevos. The sign-in and the device's keys are kept sealed in this space, and not in backups yet. Its
-  hidden chats can have a Matrix account of their own, see [Hidden chats](#hidden).
+  account, named Erevos. The sign-in and the device's keys are kept sealed in this space, and are in backups: after a
+  restore, the space signs in again, as a new device. Its hidden chats can have a Matrix account of their own, see
+  [Hidden chats](#hidden).
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
@@ -1380,7 +1381,8 @@ between.
   before you let go to drop the recording. A minute is the most, and a press of under a second sends nothing. With
   TalkBack, tap it once to start and again to send. In an encrypted chat it is encrypted like a photo, and Element and
   other Matrix apps play it as a voice message. One that comes plays with **Play**, and is fetched only when you play
-  it.
+  it. Its waveform goes with it, as Element draws one, and one that comes with a waveform shows it under **Play**,
+  coloured as it plays.
 - **Check by emoji:** in a chat with one person, **Check by emoji** shows you both seven pictures; if they are the
   same, in the same order, tap **They match** on both phones. Nobody can then sit in between unseen, and the chat
   says **Checked by emoji**. **Check this device with another of yours**, on the Matrix screen, does the same with
@@ -1429,8 +1431,9 @@ bridge sits in between.
 
 - **Signing in:** your XMPP address, such as name@example.org, and its password. Erevos finds the server from the
   address; **Server** is only for one it cannot find (a name, name:port or a wss:// address). Erevos becomes a new
-  device of the account. The sign-in and the device's keys are kept encrypted in this space, and not in backups yet. Its
-  hidden chats can have an XMPP account of their own, see [Hidden chats](#hidden).
+  device of the account. The sign-in and the device's keys are kept encrypted in this space, and are in backups: after a
+  restore, the account goes on as a new device. Its hidden chats can have an XMPP account of their own, see [Hidden
+  chats](#hidden).
 - **Chats:** **New chat** adds the address to your contacts, asks the person to let you see when they are online, as
   other XMPP apps do, and opens the chat. Someone who asks to add you shows at the top of the home list and on the XMPP
   screen, with **Accept** and **Decline**. The contacts the account already has are under **Contacts**.
@@ -1498,9 +1501,9 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 
 - **The key:** **Make a Nostr key** makes one for this space; **Or bring a key from another Nostr app** takes the nsec
   of one you already have, and reads what its relays still keep. The key and its chats are kept encrypted in this space,
-  and not in backups yet. Its hidden chats can have a Nostr key of their own, see [Hidden chats](#hidden). **Show the
-  secret key (nsec)** shows it, to write down or to take to another app: whoever has it reads these chats and writes as
-  you.
+  and are in backups: after a restore, they come back as they were. Its hidden chats can have a Nostr key of their own,
+  see [Hidden chats](#hidden). **Show the secret key (nsec)** shows it, to write down or to take to another app: whoever
+  has it reads these chats and writes as you.
 - **Your Nostr key:** give its npub to the people who should write to you, with **Copy** or **Show QR code**. **Your
   name**, if you give one, is public: other Nostr apps show it in place of your npub.
 - **Chats:** **New chat** takes their npub (or nprofile), from their profile in their app, or a name such as
@@ -1522,7 +1525,8 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   under it show the reactions, the last one of each person, as other Nostr apps send them (NIP-25).
 - **Answers:** **Reply**, in the menu of a held message, answers it. The message shows over the message box, with a ✕ to
   let it go, and then above your answer in the chat, where a tap goes to it. Other Nostr apps show it as an answer too
-  (NIP-17 marks it as a reply). **Copy**, in the same menu, takes the words of a message.
+  (NIP-17 marks it as a reply). A photo, file or voice message sent while it shows answers it too. **Copy**, in the same
+  menu, takes the words of a message.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
   before you let go to drop the recording. A minute is the most, and a press of under a second sends nothing. It goes as
   a file does, encrypted on this phone and put on a file server, with how long it lasts in the message; whether another
@@ -2095,9 +2099,9 @@ while the space is open could still read them. For a chat that must not even be 
 ## Backups {#backup}
 
 A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its
-conversations, its messages, voice messages, imported chats and hidden chats, its Chat with myself, and the lock. Inside it each space stays
-sealed with its own password, and the file is sealed again with a password of its own. It is under **Settings** →
-**Data and devices** → **Backups**.
+conversations, its messages, voice messages, imported chats and hidden chats, its accounts on Matrix, XMPP and Nostr,
+its Chat with myself, and the lock. Inside it each space stays sealed with its own password, and the file is sealed
+again with a password of its own. It is under **Settings** → **Data and devices** → **Backups**.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
    its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
@@ -2130,6 +2134,15 @@ sealed with its own password, and the file is sealed again with a password of it
   messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations
   skip ahead past the keys they may have used since the backup, so no key ever seals two messages: one sealed twice
   would let whoever kept both packets read the two together.
+- **Matrix, XMPP and Nostr:** the accounts of each space and of its hidden chats are in the backup. A **Nostr** key
+  comes back with its chats, as they were. An **XMPP** account comes back with its sign-in, contacts, chats and the keys
+  it knows of other people, and goes on as a new device of the account: it keeps its identity key, so your contacts'
+  apps still know its key, but takes a new device id, resource and keys, every conversation begins again, and the old
+  device is taken off the account's device lists once it connects. It cannot read messages encrypted to the old device
+  after the backup. A **Matrix** account is let go of on this phone, never signed out on the server, which would end the
+  device on the phone the backup came from; the space signs in again, as a new device, and its Security Key opens the
+  messages from before. Put back as they were, the conversations of such a device would use again message keys that the
+  others refuse, and the phone the backup came from may still be using the device.
 - **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
   takes messages the other then never gets. Use it to move to a new phone, not to keep two.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how

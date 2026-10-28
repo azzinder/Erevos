@@ -22,6 +22,33 @@ export function voiceDuration(ms: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+/** How many bars a voice message's waveform has, as Element sends it (MSC3246). */
+export const WAVEFORM_BARS = 100;
+
+/**
+ * A recording's waveform from how loud it was as it went (dBFS, sampled while recording): at most
+ * WAVEFORM_BARS values from 0 to 1024, each the loudest of its stretch, as Matrix voice messages
+ * carry it (MSC3246). Quiet is -60 dB and below.
+ */
+export function waveformOf(levels: number[]): number[] {
+  const heard = levels.filter((level) => Number.isFinite(level));
+  if (!heard.length) return [];
+  const bars = Math.min(WAVEFORM_BARS, heard.length);
+  return Array.from({ length: bars }, (_, i) => {
+    const stretch = heard.slice(Math.floor((i * heard.length) / bars), Math.floor(((i + 1) * heard.length) / bars));
+    const loudest = Math.max(...stretch);
+    return Math.round(Math.min(1, Math.max(0, (loudest + 60) / 60)) * 1024);
+  });
+}
+
+/** A waveform that came, as heights from 0 to 1 in `bars` bars: null when it is none. */
+export function waveformBars(waveform: unknown, bars: number): number[] | null {
+  if (!Array.isArray(waveform) || waveform.length < 2) return null;
+  const values = waveform.slice(0, 1000).map((v) => (typeof v === 'number' && Number.isFinite(v) ? Math.min(1, Math.max(0, v / 1024)) : 0));
+  const n = Math.min(bars, values.length);
+  return Array.from({ length: n }, (_, i) => Math.max(...values.slice(Math.floor((i * values.length) / n), Math.floor(((i + 1) * values.length) / n))));
+}
+
 /** One part, as it travels. `talk`: said walkie-talkie style, to play as it comes. */
 export type VoicePart = { id: string; part: number; parts: number; ms: number; data: Uint8Array; talk?: boolean };
 

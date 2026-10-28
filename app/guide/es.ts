@@ -1460,9 +1460,10 @@ En **Ajustes** → **Relay y redes** → **Matrix**, un espacio puede iniciar se
 con personas que usan Element u otra app de Matrix. Erevos habla él mismo con el servidor de Matrix, como Element:
 ningún puente se pone en medio.
 
-- **Iniciar sesión:** tu ID de Matrix, como @nombre:matrix.org, y su contraseña. Erevos pasa a ser un dispositivo nuevo
-  de la cuenta, llamado Erevos. La sesión y las claves del dispositivo se guardan cifradas en este espacio, y aún no en
-  las copias de seguridad. Sus chats ocultos pueden tener una cuenta de Matrix propia, ver [Chats ocultos](#hidden).
+- **Iniciar sesión:** tu ID de Matrix, como @nombre:matrix.org, y su contraseña. Erevos pasa a ser un dispositivo
+  nuevo de la cuenta, llamado Erevos. La sesión y las claves del dispositivo se guardan cifradas en este espacio, y
+  están en las copias de seguridad: tras restaurar, el espacio inicia sesión de nuevo, como un dispositivo nuevo. Sus
+  chats ocultos pueden tener una cuenta de Matrix propia, ver [Chats ocultos](#hidden).
 - **Chats:** **Chat nuevo** empieza un chat cifrado con un ID de Matrix. Las invitaciones salen primero, con **Unirse**
   y **Rechazar**.
 - **Cifrado:** los mensajes van cifrados de extremo a extremo con el cifrado propio de Matrix (Olm y Megolm, a través
@@ -1492,7 +1493,8 @@ ningún puente se pone en medio.
   a la izquierda antes de soltar para descartar la grabación. Un minuto es el máximo, y una pulsación de menos de un
   segundo no envía nada. Con TalkBack, tócalo una vez para empezar y otra para enviar. En un chat cifrado se cifra como
   una foto, y Element y otras apps de Matrix lo reproducen como mensaje de voz. Uno que llega se reproduce con
-  **Reproducir**, y se trae solo cuando lo reproduces.
+  **Reproducir**, y se trae solo cuando lo reproduces. Su forma de onda va con él, como la dibuja Element, y uno que
+  llega con forma de onda la muestra bajo **Reproducir**, coloreada mientras suena.
 - **Comprobar con emojis:** en un chat con una persona, **Comprobar con emojis** os muestra a los dos siete imágenes;
   si son iguales y en el mismo orden, tocad **Coinciden** en los dos teléfonos. Así nadie puede estar en medio sin
   que se note, y el chat dice **Comprobado con emojis**. **Comprobar este dispositivo con otro tuyo**, en la pantalla
@@ -1547,8 +1549,8 @@ como esas apps: ningún puente se pone en medio.
 - **Iniciar sesión:** tu dirección XMPP, como name@example.org, y su contraseña. Erevos encuentra el servidor a partir
   de la dirección; **Servidor** solo hace falta si no lo encuentra (un nombre, nombre:puerto o una dirección wss://).
   Erevos pasa a ser un dispositivo nuevo de la cuenta. La sesión y las claves del dispositivo se guardan cifradas en
-  este espacio, y aún no en las copias de seguridad. Sus chats ocultos pueden tener una cuenta de XMPP propia, ver
-  [Chats ocultos](#hidden).
+  este espacio, y están en las copias de seguridad: tras restaurar, la cuenta sigue como un dispositivo nuevo. Sus chats
+  ocultos pueden tener una cuenta de XMPP propia, ver [Chats ocultos](#hidden).
 - **Chats:** **Chat nuevo** añade la dirección a tus contactos, pide a la persona que te deje ver cuándo está en línea,
   como hacen otras apps de XMPP, y abre el chat. Quien pide añadirte sale arriba en la lista y en la pantalla de XMPP,
   con **Aceptar** y **Rechazar**. Los contactos que la cuenta ya tiene están en **Contactos**.
@@ -1616,11 +1618,11 @@ En **Ajustes** → **Relay y redes** → **Chats de Nostr**, un espacio puede te
 de tú a tú o en grupos con personas que usan Damus, Amethyst, Primal, 0xchat u otra app de Nostr que envía mensajes
 privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los chats propios de Erevos.
 
-- **La clave:** **Crear una clave de Nostr** crea una para este espacio; **O traer una clave de otra app de Nostr** toma
-  el nsec de una que ya tienes, y lee lo que sus relays aún guardan. La clave y sus chats se guardan cifrados en este
-  espacio, y aún no en las copias de seguridad. Sus chats ocultos pueden tener una clave de Nostr propia, ver [Chats
-  ocultos](#hidden). **Mostrar la clave secreta (nsec)** la muestra, para anotarla o llevarla a otra app: quien la tenga
-  lee estos chats y escribe como tú.
+- **La clave:** **Crear una clave de Nostr** crea una para este espacio; **O traer una clave de otra app de Nostr**
+  toma el nsec de una que ya tienes, y lee lo que sus relays aún guardan. La clave y sus chats se guardan cifrados en
+  este espacio, y están en las copias de seguridad: tras restaurar, vuelven como estaban. Sus chats ocultos pueden tener
+  una clave de Nostr propia, ver [Chats ocultos](#hidden). **Mostrar la clave secreta (nsec)** la muestra, para anotarla
+  o llevarla a otra app: quien la tenga lee estos chats y escribe como tú.
 - **Tu clave de Nostr:** da su npub a las personas que deban escribirte, con **Copiar** o **Mostrar el código QR**.
   **Tu nombre**, si das uno, es público: otras apps de Nostr lo muestran en lugar de tu npub.
 - **Chats:** **Chat nuevo** toma su npub (o nprofile), de su perfil en su app, o un nombre como nombre@example.org
@@ -1642,8 +1644,9 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   hay tras **+**; debajo se ven las reacciones, la última de cada persona, como las envían otras apps de Nostr (NIP-25).
 - **Respuestas:** **Responder**, en el menú de un mensaje que mantienes pulsado, le responde. El mensaje aparece sobre
   el campo del mensaje, con una ✕ para soltarlo, y luego encima de tu respuesta en el chat, donde un toque va a él.
-  Otras apps de Nostr también la muestran como respuesta (NIP-17 la marca como respuesta). **Copiar**, en el mismo menú,
-  toma las palabras de un mensaje.
+  Otras apps de Nostr también la muestran como respuesta (NIP-17 la marca como respuesta). Una foto, un archivo o un
+  mensaje de voz que envías mientras aparece también le responde. **Copiar**, en el mismo menú, toma las palabras de un
+  mensaje.
 - **Mensajes de voz:** mantén pulsado el micrófono bajo el campo del mensaje para grabar, y suelta para enviar; desliza
   a la izquierda antes de soltar para descartar la grabación. Un minuto es el máximo, y una pulsación de menos de un
   segundo no envía nada. Va como un archivo: cifrado en este teléfono y puesto en un servidor de archivos, con lo que
@@ -2271,9 +2274,10 @@ debe verse, usa los chats ocultos.
 ## Copias de seguridad {#backup}
 
 Una copia de seguridad es un archivo que contiene todo lo que Erevos guarda en este teléfono: cada espacio, con sus
-contactos, las claves de sus conversaciones, sus mensajes, mensajes de voz, chats importados y chats ocultos, su Chat
-conmigo, y el bloqueo. Dentro de ella cada espacio sigue sellado con su propia contraseña, y el archivo se vuelve a
-sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositivos** → **Copias de seguridad**.
+contactos, las claves de sus conversaciones, sus mensajes, mensajes de voz, chats importados y chats ocultos, sus
+cuentas de Matrix, XMPP y Nostr, su Chat conmigo, y el bloqueo. Dentro de ella cada espacio sigue sellado con su propia
+contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositivos** →
+**Copias de seguridad**.
 
 1. **Hacer una copia de seguridad:** toca **Hacer una copia de seguridad**, elige una carpeta (en el teléfono, una
    tarjeta de memoria, o una app en la nube que muestre ahí sus carpetas; en un ordenador, cualquier carpeta), escribe
@@ -2311,6 +2315,17 @@ sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositiv
   restaurado vuelva a escribir, sus conversaciones saltan por delante de las claves que puedan haber usado desde la
   copia, para que ninguna clave selle nunca dos mensajes: uno sellado dos veces dejaría a quien guardara los dos
   paquetes leerlos juntos.
+- **Matrix, XMPP y Nostr:** las cuentas de cada espacio y de sus chats ocultos están en la copia. Una clave de
+  **Nostr** vuelve con sus chats, como estaban. Una cuenta de **XMPP** vuelve con su sesión, sus contactos, sus chats y
+  las claves que conoce de otras personas, y sigue como un dispositivo nuevo de la cuenta: conserva su clave de
+  identidad, así que las apps de tus contactos siguen conociendo su clave, pero toma un identificador de dispositivo, un
+  recurso y unas claves nuevos, cada conversación empieza de nuevo, y el dispositivo antiguo sale de las listas de
+  dispositivos de la cuenta cuando se conecta. No puede leer los mensajes cifrados para el dispositivo antiguo después
+  de la copia. Una cuenta de **Matrix** se suelta en este teléfono, sin cerrar su sesión en el servidor, lo que acabaría
+  con el dispositivo del teléfono de donde vino la copia; el espacio inicia sesión de nuevo, como un dispositivo nuevo,
+  y su clave de seguridad abre los mensajes de antes. Puestas como estaban, las conversaciones de un dispositivo así
+  volverían a usar claves de mensaje que los demás rechazan, y el teléfono de donde vino la copia puede seguir usando el
+  dispositivo.
 - **Un teléfono a la vez:** una copia restaurada en un segundo teléfono lee las mismas colas del relay que el primero,
   y cada uno recoge mensajes que entonces el otro nunca recibe. Úsala para pasar a un teléfono nuevo, no para tener dos.
 - **Discreción:** todos los espacios muestran la misma pantalla de Copias de seguridad, y una copia contiene todos los

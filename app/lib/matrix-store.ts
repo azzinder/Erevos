@@ -1,6 +1,7 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { currentSpace } from '../lock/keys';
+import { lastRestore } from '../lock/restored';
 import { hiddenHolder, type Holder } from '../lock/sealed-file';
 import { canMatrix } from './core';
 import { t } from './i18n';
@@ -309,7 +310,20 @@ export function closeMatrixPlace(): void {
 function start(holder: Holder, space: number, key: Uint8Array): Live {
   const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing(), pushChecked: false };
   loadMatrix(space, key, holder)
-    .then((state) => {
+    .then(async (loaded) => {
+      let state = loaded;
+      // Restored from a backup since it was signed in: its device's keys are as the backup kept them,
+      // which would use again what was used since, on a device the phone it came from may still be.
+      // The Matrix server takes no device back, so it is let go of here (never signed out, which
+      // would end the other phone's), and the space signs in again as a new one.
+      const restore = await lastRestore();
+      if (state && state.restored !== restore) {
+        if (state.restored !== undefined) {
+          state = null;
+          it.problem = t('A backup was restored here: sign in to Matrix again, as a new device. Your Security Key opens the messages from before.');
+        } else state.restored = restore;
+        await saveMatrix(space, key, state, holder);
+      }
       it.state = state;
       it.heard.hear(unreadAt(state), true);
       it.loaded = true;
@@ -361,6 +375,7 @@ export async function matrixSignIn(who: string, password: string, server = ''): 
   try {
     const homeserver = await findHomeserver(server.trim() || who);
     const state = await signIn(homeserver, who, password);
+    state.restored = await lastRestore();
     await changeAccount(it, async () => {
       it.state = state;
       it.problem = '';

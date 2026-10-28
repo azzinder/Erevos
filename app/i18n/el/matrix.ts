@@ -34,6 +34,7 @@ export const matrix: Record<string, string> = {
   "Locked: the key for this message has not come to this device.": "Κλειδωμένο: το κλειδί για αυτό το μήνυμα δεν έχει έρθει σε αυτή τη συσκευή.",
   "The Matrix server says the name or the password is wrong.": "Ο server του Matrix λέει ότι το όνομα ή ο κωδικός είναι λάθος.",
   "The Matrix server signed this device out. Sign in again.": "Ο server του Matrix αποσύνδεσε αυτή τη συσκευή. Συνδέσου ξανά.",
+  "A backup was restored here: sign in to Matrix again, as a new device. Your Security Key opens the messages from before.": "Έγινε επαναφορά ενός αντιγράφου ασφαλείας εδώ: συνδέσου ξανά στο Matrix, ως νέα συσκευή. Το Κλειδί Ασφαλείας σου ανοίγει τα μηνύματα από πριν.",
   "There is no Matrix account in this space.": "Δεν υπάρχει λογαριασμός Matrix σε αυτόν τον χώρο.",
   "Show photo": "Εμφάνιση φωτογραφίας",
   "Fetching…": "Λήψη…",

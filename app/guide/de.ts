@@ -1567,9 +1567,10 @@ Unter **Einstellungen** → **Relay und Netze** → **Matrix** kann sich ein Ber
 Menschen zu chatten, die Element oder eine andere Matrix-App nutzen. Erevos spricht selbst mit dem Matrix-Server, wie
 Element: Keine Brücke sitzt dazwischen.
 
-- **Anmelden:** deine Matrix-ID, etwa @name:matrix.org, und ihr Passwort. Erevos wird ein neues Gerät des Kontos, namens
-  Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und noch nicht in Sicherungen.
-  Seine versteckten Chats können ein eigenes Matrix-Konto haben, siehe [Versteckte Chats](#hidden).
+- **Anmelden:** deine Matrix-ID, etwa @name:matrix.org, und ihr Passwort. Erevos wird ein neues Gerät des Kontos,
+  namens Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und sind in den Backups:
+  Nach einer Wiederherstellung meldet sich der Bereich neu an, als neues Gerät. Seine versteckten Chats können ein
+  eigenes Matrix-Konto haben, siehe [Versteckte Chats](#hidden).
 - **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
   **Beitreten** und **Ablehnen**.
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
@@ -1602,6 +1603,8 @@ Element: Keine Brücke sitzt dazwischen.
   von unter einer Sekunde sendet nichts. Mit TalkBack tippst du einmal, um zu beginnen, und noch einmal, um zu senden.
   In einem verschlüsselten Chat wird sie wie ein Foto verschlüsselt, und Element und andere Matrix-Apps spielen sie als
   Sprachnachricht ab. Eine, die ankommt, spielst du mit **Abspielen** ab; sie wird erst geholt, wenn du sie abspielst.
+  Ihre Wellenform geht mit, wie Element sie zeichnet, und eine, die mit Wellenform ankommt, zeigt sie unter
+  **Abspielen**, eingefärbt, während sie läuft.
 - **Per Emoji prüfen:** In einem Chat mit einer Person zeigt **Per Emoji prüfen** euch beiden sieben Bilder; sind sie
   gleich und in derselben Reihenfolge, tippt auf beiden Telefonen **Stimmen überein**. Dann kann niemand unbemerkt
   dazwischensitzen, und der Chat zeigt **Per Emoji geprüft**. **Dieses Gerät mit einem anderen von dir prüfen**, auf
@@ -1654,10 +1657,11 @@ Unter **Einstellungen** → **Relay und Netze** → **XMPP** kann sich ein Berei
 Menschen zu chatten, die Conversations, Monal, Gajim, Dino oder eine andere XMPP-App nutzen. Erevos spricht selbst mit
 dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 
-- **Anmelden:** deine XMPP-Adresse, etwa name@example.org, und ihr Passwort. Erevos findet den Server über die Adresse;
-  **Server** brauchst du nur, wenn es ihn nicht findet (ein Name, Name:Port oder eine wss://-Adresse). Erevos wird ein
-  neues Gerät des Kontos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und noch nicht in
-  Sicherungen. Seine versteckten Chats können ein eigenes XMPP-Konto haben, siehe [Versteckte Chats](#hidden).
+- **Anmelden:** deine XMPP-Adresse, etwa name@example.org, und ihr Passwort. Erevos findet den Server über die
+  Adresse; **Server** brauchst du nur, wenn es ihn nicht findet (ein Name, Name:Port oder eine wss://-Adresse). Erevos
+  wird ein neues Gerät des Kontos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und sind
+  in den Backups: Nach einer Wiederherstellung geht das Konto als neues Gerät weiter. Seine versteckten Chats können ein
+  eigenes XMPP-Konto haben, siehe [Versteckte Chats](#hidden).
 - **Chats:** **Neuer Chat** nimmt die Adresse in deine Kontakte auf, bittet die Person, dich sehen zu lassen, wann sie
   online ist, wie andere XMPP-Apps es tun, und öffnet den Chat. Wer dich hinzufügen möchte, steht oben in der Liste und
   auf dem XMPP-Bildschirm, mit **Annehmen** und **Ablehnen**. Die Kontakte, die das Konto schon hat, stehen unter
@@ -1733,10 +1737,10 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 
 - **Der Schlüssel:** **Nostr-Schlüssel erstellen** erstellt einen für diesen Bereich; **Oder einen Schlüssel aus einer
   anderen Nostr-App mitbringen** nimmt das nsec eines Schlüssels, den du schon hast, und liest, was seine Relays noch
-  haben. Der Schlüssel und seine Chats werden verschlüsselt in diesem Bereich aufbewahrt, und noch nicht in Backups.
-  Seine versteckten Chats können einen eigenen Nostr-Schlüssel haben, siehe [Versteckte Chats](#hidden). **Geheimen
-  Schlüssel (nsec) zeigen** zeigt ihn, zum Aufschreiben oder für eine andere App: Wer ihn hat, liest diese Chats und
-  schreibt als du.
+  haben. Der Schlüssel und seine Chats werden verschlüsselt in diesem Bereich aufbewahrt, und sind in den Backups: Nach
+  einer Wiederherstellung sind sie wieder so, wie sie waren. Seine versteckten Chats können einen eigenen
+  Nostr-Schlüssel haben, siehe [Versteckte Chats](#hidden). **Geheimen Schlüssel (nsec) zeigen** zeigt ihn, zum
+  Aufschreiben oder für eine andere App: Wer ihn hat, liest diese Chats und schreibt als du.
 - **Dein Nostr-Schlüssel:** Gib sein npub den Menschen, die dir schreiben sollen, mit **Kopieren** oder **QR-Code
   zeigen**. **Dein Name** ist, wenn du einen angibst, öffentlich: Andere Nostr-Apps zeigen ihn statt deines npub.
 - **Chats:** **Neuer Chat** nimmt ihr npub (oder nprofile), aus ihrem Profil in ihrer App, oder einen Namen wie
@@ -1762,7 +1766,8 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   sie senden (NIP-25).
 - **Antworten:** Wähle im Menü einer gehaltenen Nachricht **Antworten**, um sie zu beantworten. Die Nachricht steht über
   dem Nachrichtenfeld, mit einem ✕, um sie loszulassen, und danach im Chat über deiner Antwort, wo ein Tippen zu ihr
-  springt. Auch andere Nostr-Apps zeigen sie als Antwort (NIP-17 kennzeichnet sie als Antwort). **Kopieren**, im selben
+  springt. Auch andere Nostr-Apps zeigen sie als Antwort (NIP-17 kennzeichnet sie als Antwort). Auch ein Foto, eine
+  Datei oder eine Sprachnachricht, die du sendest, solange sie dort steht, beantwortet sie. **Kopieren**, im selben
   Menü, übernimmt den Text einer Nachricht.
 - **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
   senden; wische vor dem Loslassen nach links, um die Aufnahme zu verwerfen. Eine Minute ist das Höchste, und ein Druck
@@ -2435,9 +2440,9 @@ trotzdem lesen. Für einen Chat, der nicht einmal gesehen werden darf, nutze ver
 
 Ein Backup ist eine Datei, die alles enthält, was Erevos auf diesem Telefon aufbewahrt: jeden Bereich, mit seinen
 Kontakten, den Schlüsseln seiner Unterhaltungen, seinen Nachrichten, Sprachnachrichten, importierten Chats und
-versteckten Chats, seinem „Chat mit mir selbst“, und die Sperre. Darin bleibt jeder Bereich
-mit seinem eigenen Passwort versiegelt, und die Datei wird noch einmal mit einem eigenen Passwort versiegelt. Backups
-findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
+versteckten Chats, seinen Konten bei Matrix, XMPP und Nostr, seinem „Chat mit mir selbst“, und die Sperre. Darin bleibt
+jeder Bereich mit seinem eigenen Passwort versiegelt, und die Datei wird noch einmal mit einem eigenen Passwort
+versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
 
 1. **Backup erstellen:** Tippe auf **Backup erstellen**, wähle einen Ordner (auf dem Telefon, einer Speicherkarte oder
    einer Cloud-App, die dort ihre Ordner zeigt; auf einem Computer jeden Ordner), gib zweimal ein Passwort für das
@@ -2475,6 +2480,17 @@ findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
   ein wiederhergestellter Chat wieder schreibt, springen seine Unterhaltungen über die Schlüssel hinaus, die sie seit
   dem Backup genutzt haben könnten, sodass nie ein Schlüssel zwei Nachrichten versiegelt: Einer, der zweimal
   versiegelt, würde jedem, der beide Pakete aufbewahrt hat, erlauben, die beiden zusammen zu lesen.
+- **Matrix, XMPP und Nostr:** Die Konten jedes Bereichs und seiner versteckten Chats sind im Backup. Ein
+  **Nostr**-Schlüssel kommt mit seinen Chats zurück, so wie er war. Ein **XMPP**-Konto kommt mit seiner Anmeldung,
+  seinen Kontakten, Chats und den Schlüsseln, die es von anderen kennt, und geht als neues Gerät des Kontos weiter: Es
+  behält seinen Identitätsschlüssel, sodass die Apps deiner Kontakte seinen Schlüssel weiter kennen, bekommt aber eine
+  neue Geräte-ID, eine neue Resource und neue Schlüssel, jede Unterhaltung beginnt von vorn, und das alte Gerät wird aus
+  den Gerätelisten des Kontos genommen, sobald es sich verbindet. Nachrichten, die nach dem Backup für das alte Gerät
+  verschlüsselt wurden, kann es nicht lesen. Ein **Matrix**-Konto wird auf diesem Telefon aufgegeben, aber nicht auf dem
+  Server abgemeldet, denn das würde das Gerät auf dem Telefon beenden, von dem das Backup kam; der Bereich meldet sich
+  neu an, als neues Gerät, und sein Sicherheitsschlüssel öffnet die Nachrichten von früher. So, wie sie waren, würden
+  die Unterhaltungen eines solchen Geräts Nachrichtenschlüssel wieder benutzen, die die anderen ablehnen, und das
+  Telefon, von dem das Backup kam, benutzt das Gerät vielleicht noch.
 - **Ein Telefon nach dem anderen:** Ein auf einem zweiten Telefon wiederhergestelltes Backup liest dieselben
   Relay-Warteschlangen wie das erste, und jedes holt Nachrichten, die das andere dann nie bekommt. Nutze es, um auf ein
   neues Telefon umzuziehen, nicht um zwei zu führen.

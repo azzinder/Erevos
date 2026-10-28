@@ -31,6 +31,8 @@ export type OwnOmemo = {
   nextPreKey: number;
   /** Whether the bundle on the server is the one kept here. */
   published: boolean;
+  /** The ids this device had before a backup was restored (renewDevice in lib/xmpp.ts): taken off the account's lists as it next publishes. */
+  gone?: number[];
 };
 
 /** A one-time pre-key a message used, and when. */

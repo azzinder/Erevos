@@ -1,6 +1,7 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { hiddenHolder, type Holder } from '../lock/sealed-file';
+import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
 import { fileCache } from './file-cache';
@@ -16,6 +17,7 @@ import {
   markXmppRead,
   prepareXmppFile,
   publishOmemo,
+  renewDevice,
   sendKeepAlive,
   sendXmppFile,
   sendXmppText,
@@ -270,7 +272,14 @@ export function closeXmppPlace(): void {
 function start(holder: Holder, space: number, key: Uint8Array): Live {
   const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard: hearing(), fresh: false };
   loadXmpp(space, key, holder)
-    .then((state) => {
+    .then(async (state) => {
+      // Restored from a backup since it was last here: it goes on as a new device of the account.
+      const restore = await lastRestore();
+      if (state && state.restored !== restore) {
+        if (state.restored !== undefined) await renewDevice(state);
+        state.restored = restore;
+        await saveXmpp(space, key, state, holder);
+      }
       it.state = state;
       it.heard.hear(unreadAt(state), true);
       it.loaded = true;
@@ -314,6 +323,7 @@ export async function xmppSignIn(jid: string, password: string, server = ''): Pr
   const given = serverOf(server);
   const { state, connection } = await signInXmpp(jid, password, given, connect);
   connection.close();
+  state.restored = await lastRestore();
   await changeAccount(it, async () => {
     it.state = state;
     it.problem = '';

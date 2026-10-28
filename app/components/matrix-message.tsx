@@ -211,5 +211,5 @@ function FilePart({ file }: { file: MatrixFile }) {
 
 // A voice message: played by components/matrix-voice.tsx, its sound fetched when played.
 function VoicePart({ file }: { file: MatrixFile }) {
-  return <VoiceClip type={file.mime} duration={file.duration} fetch={() => matrixFile(file)} />;
+  return <VoiceClip type={file.mime} duration={file.duration} waveform={file.waveform} fetch={() => matrixFile(file)} />;
 }

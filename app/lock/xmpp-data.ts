@@ -6,7 +6,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // sessions, its contacts and its chats with their latest messages, as one value kept in FILE,
 // sealed with the space's key, one for each space (sealed-file.ts), so nothing tells whether a
 // space has one; a hidden place's own account likewise, sealed with its key in its own value
-// (lib/place-networks.ts). Not in backups yet: a restored phone signs in again.
+// (lib/place-networks.ts). In backups (lock/backup.ts); a restored one goes on as a new device of
+// the account (renewDevice in lib/xmpp.ts).
 
 export const FILE = 'erevos-xmpp';
 const BLOCK = 16 * 1024;
