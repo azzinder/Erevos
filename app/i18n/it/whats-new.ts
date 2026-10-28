@@ -84,6 +84,8 @@ export const whatsNew: Record<string, string> = {
     "**Le chat di ogni rete nella schermata principale**: una volta che hai fatto l’accesso a Matrix, le sue chat sono nell’elenco con le chat Erevos e gli SMS, le più recenti prima, ognuna segnata Matrix, e il chip Matrix mostra solo loro, come SMS ed Erevos. Vedi [Matrix](#matrix).",
   '**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).':
     '**Versioni di prova prima di una versione**: Erevos legge una versione come 4.0.0-rc.1, una versione di prova che viene prima della 4.0.0, quando cerca aggiornamenti, avvisa di una nuova versione e mostra le novità. Vedi [Aggiornamenti](#updates).',
+  "**Check Matrix devices by emoji**: in a chat with one person on Matrix, Check by emoji shows you both seven pictures; if they match, nobody sits in between, and Element sees the check too. Check this device with another of yours makes your own Element trust Erevos. See [Matrix](#matrix).":
+    "**Verifica i dispositivi Matrix con le emoji**: in una chat con una persona su Matrix, Verifica con le emoji mostra a entrambi sette immagini; se corrispondono, nessuno sta in mezzo, e anche Element vede la verifica. Verifica questo dispositivo con un altro tuo fa sì che il tuo Element si fidi di Erevos. Vedi [Matrix](#matrix).",
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un messaggio inviato mentre una chat si apre la aspetta**, segnato Invio…, e parte appena la chat è aperta, senza dire che Erevos non può cifrare.',

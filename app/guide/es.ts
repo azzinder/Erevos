@@ -1438,7 +1438,12 @@ ningún puente se pone en medio.
 - **Fotos y archivos:** **Foto** y **Archivo** los envían, hasta 50 MB, cifrados en el teléfono antes de ir al servidor
   de Matrix, que así guarda solo lo que no puede leer. Una foto recibida se descarga solo al tocar **Mostrar foto**;
   **Guardar** deja cualquier archivo en el teléfono.
-- **Aún no:** mensajes de voz, llamadas y comprobar los dispositivos de alguien con emojis.
+- **Comprobar con emojis:** en un chat con una persona, **Comprobar con emojis** os muestra a los dos siete imágenes;
+  si son iguales y en el mismo orden, tocad **Coinciden** en los dos teléfonos. Así nadie puede estar en medio sin
+  que se note, y el chat dice **Comprobado con emojis**. **Comprobar este dispositivo con otro tuyo**, en la pantalla
+  de Matrix, hace lo mismo con tu propio Element, para que confíe en el dispositivo de Erevos. Element también puede
+  empezar cualquiera de las dos.
+- **Aún no:** mensajes de voz y llamadas.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los
 chats de Matrix van aparte y marcados, para las personas a las que solo llegarías por Matrix.

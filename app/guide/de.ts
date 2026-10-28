@@ -1546,7 +1546,12 @@ Element: Keine Brücke sitzt dazwischen.
 - **Fotos und Dateien:** **Foto** und **Datei** senden sie, bis 50 MB, auf dem Telefon verschlüsselt, bevor sie zum
   Matrix-Server gehen, der so nur behält, was er nicht lesen kann. Ein erhaltenes Foto wird erst geladen, wenn du
   **Foto anzeigen** tippst; **Speichern** legt jede Datei auf dem Telefon ab.
-- **Noch nicht:** Sprachnachrichten, Anrufe und das Prüfen der Geräte anderer per Emoji.
+- **Per Emoji prüfen:** In einem Chat mit einer Person zeigt **Per Emoji prüfen** euch beiden sieben Bilder; sind sie
+  gleich und in derselben Reihenfolge, tippt auf beiden Telefonen **Stimmen überein**. Dann kann niemand unbemerkt
+  dazwischensitzen, und der Chat zeigt **Per Emoji geprüft**. **Dieses Gerät mit einem anderen von dir prüfen**, auf
+  dem Matrix-Bildschirm, macht dasselbe mit deinem eigenen Element, damit es dem Gerät von Erevos vertraut. Element
+  kann beides auch beginnen.
+- **Noch nicht:** Sprachnachrichten und Anrufe.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
 Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.

@@ -2,12 +2,24 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { canMatrix } from '../lib/core';
 import { t } from '../lib/i18n';
 import { isMatrixId, roomList, type MatrixRoom } from '../lib/matrix';
-import { matrixJoin, matrixLeave, matrixNow, matrixSignIn, matrixSignOut, matrixStartChat, onMatrixChange, runMatrix } from '../lib/matrix-store';
+import {
+  matrixJoin,
+  matrixLeave,
+  matrixNow,
+  matrixSignIn,
+  matrixSignOut,
+  matrixStartChat,
+  matrixVerifications,
+  matrixVerify,
+  onMatrixChange,
+  runMatrix,
+} from '../lib/matrix-store';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -105,6 +117,8 @@ export default function MatrixScreen() {
   }
 
   const rooms = roomList(state);
+  // Checks between this device and another of ours go to-device, without a chat.
+  const check = matrixVerifications().find((v) => !v.roomId);
   return (
     <Page>
       <Text variant="title">Matrix</Text>
@@ -112,6 +126,10 @@ export default function MatrixScreen() {
       <Text variant="caption" tone="muted">
         {t('Not anonymous: the Matrix server sees who talks with whom, and when.')}
       </Text>
+      {check ? <MatrixVerifyCard check={check} name={state.userId} /> : null}
+      {!check || check.phase === 'done' || check.phase === 'cancelled' ? (
+        <Button title={t('Check this device with another of yours')} kind="secondary" disabled={busy} onPress={() => void run(() => matrixVerify(state.userId))} />
+      ) : null}
 
       <SectionTitle title={t('New chat')} />
       <Card>

@@ -34,6 +34,14 @@ What stays private is what is written.
   hash before it is opened. Uploads to `/_matrix/media/v3/upload`; downloads signed in
   (`/_matrix/client/v1/media/download`, Matrix 1.11), or the older way for older servers. Up to
   50 MB. A photo is fetched only when tapped, and kept in memory while Erevos runs (40 MB at most).
+- `app/lib/matrix-verify.ts`: checking devices by emoji (SAS, m.sas.v1 with hkdf-hmac-sha256.v2),
+  in a room with another person or to-device between two devices of one account, both ways with
+  Element. The core does the X25519, HKDF and HMAC (`sas_new`, `sas_bytes`, `sas_mac`,
+  `sas_verify`) itself rather than through vodozemac's `Sas`, whose secret cannot be passed out,
+  so the core keeps nothing between calls; a test checks it against vodozemac. What a check
+  proves is kept in `MatrixState.verified`; with the account's cross-signing keys on this device,
+  the other device or the other person's master key gets signed too. The 64 pictures and their
+  names are `app/lib/sas-emoji.ts` (Matrix's table, Greek added).
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
@@ -55,7 +63,7 @@ What stays private is what is written.
 ## Not yet
 
 - Voice messages, video thumbnails, reactions, replies, edits.
-- Checking someone's devices by emoji or QR (SAS, `vodozemac::sas`), and trust shown per device.
+- Checking by QR, and trust shown per device in a group.
 - Key backup and secret storage, so this device cannot read what came before it signed in, and an
   account that already has cross-signing keys does not sign this device.
 - Going through Tor, and notifications while Erevos is closed.

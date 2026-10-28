@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 
+import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { fileSize } from '../lib/attachments';
@@ -9,7 +10,8 @@ import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
-import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, onMatrixChange, runMatrix } from '../lib/matrix-store';
+import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, matrixVerifications, matrixVerify, onMatrixChange, runMatrix } from '../lib/matrix-store';
+import { isVerified } from '../lib/matrix-verify';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { saveBytes } from '../lib/save-file';
@@ -61,6 +63,9 @@ export default function MatrixChatScreen() {
   }
 
   const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
+  // A chat with one person can check their devices by emoji; the latest check in it shows.
+  const other = room.direct ? Object.keys(room.members).find((who) => who !== state.userId) : undefined;
+  const check = matrixVerifications().find((v) => v.roomId === roomId);
 
   async function sendPicked(pick: () => Promise<OutgoingFile | null>) {
     if (!roomId || sending) return;
@@ -91,6 +96,18 @@ export default function MatrixChatScreen() {
       <Text variant="caption" tone="muted">
         {room.encrypted ? t('Matrix · encrypted, not anonymous') : t('Not encrypted: the Matrix server can read this chat.')}
       </Text>
+      {other ? (
+        isVerified(state, other) ? (
+          <Text variant="caption" tone="muted">
+            ✓ {t('Checked by emoji')}
+          </Text>
+        ) : !check || check.phase === 'done' || check.phase === 'cancelled' ? (
+          <Row>
+            <Button title={t('Check by emoji')} kind="secondary" compact onPress={() => matrixVerify(other, roomId).catch(fail)} />
+          </Row>
+        ) : null
+      ) : null}
+      {check ? <MatrixVerifyCard check={check} name={room.members[check.userId]?.name || check.userId} /> : null}
       {room.messages.map((message) => (
         <Bubble key={message.id} message={message} mine={message.sender === state.userId} sender={room.members[message.sender]?.name || message.sender} />
       ))}

@@ -1330,7 +1330,11 @@ between.
 - **Photos and files:** **Photo** and **File** send them, up to 50 MB, encrypted on the phone before they go to the
   Matrix server, so it keeps only what it cannot read. A photo you get is fetched only when you tap **Show photo**;
   **Save** keeps any file on the phone.
-- **Not yet:** voice messages, calls, and checking someone's devices by emoji.
+- **Check by emoji:** in a chat with one person, **Check by emoji** shows you both seven pictures; if they are the
+  same, in the same order, tap **They match** on both phones. Nobody can then sit in between unseen, and the chat
+  says **Checked by emoji**. **Check this device with another of yours**, on the Matrix screen, does the same with
+  your own Element, so it trusts Erevos's device. Element can start either one too.
+- **Not yet:** voice messages and calls.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.

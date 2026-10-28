@@ -1398,7 +1398,11 @@ između.
 - **Fotografije i datoteke:** **Fotografija** i **Datoteka** ih šalju, do 50 MB, šifrovane na telefonu prije nego što
   odu na Matrix server, koji tako čuva samo ono što ne može pročitati. Primljena fotografija preuzima se tek kad
   dodirnete **Prikaži fotografiju**; **Sačuvaj** čuva bilo koju datoteku na telefonu.
-- **Još ne:** glasovne poruke, pozivi, i provjera nečijih uređaja emojijima.
+- **Provjera emojijima:** u razgovoru s jednom osobom, **Provjera emojijima** vama oboma pokazuje sedam slika; ako su
+  iste, istim redom, dodirnite **Podudaraju se** na oba telefona. Tada niko ne može neprimjetno biti u sredini, a
+  razgovor piše **Provjereno emojijima**. **Provjerite ovaj uređaj drugim svojim**, na Matrix ekranu, radi isto s
+  vašim Elementom, da vjeruje uređaju Erevosa. Element može pokrenuti i jedno i drugo.
+- **Još ne:** glasovne poruke i pozivi.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.

@@ -95,6 +95,11 @@ On main, not released yet:
   chats and the SMS, newest first, each marked **Matrix**, with an invite at the top; the **Matrix** chip shows them
   alone, as **SMS** and **Erevos** do, and there **New chat** starts a Matrix chat. The space's Matrix account syncs
   while the space is open.
+- **Check Matrix devices by emoji**: **Check by emoji**, in a chat with one person, and **Check this device with
+  another of yours**, on the Matrix screen, show both sides seven pictures (m.sas.v1, hkdf-hmac-sha256.v2), as Element
+  does, so either app can start it. Once both say they match, the device's key and the account's master key are taken
+  as theirs, and, when this device made the account's cross-signing keys, signed, so Element shows them as checked.
+  The check's one-use key never leaves memory.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

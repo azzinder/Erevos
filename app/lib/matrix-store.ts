@@ -19,6 +19,16 @@ import {
   type MatrixState,
 } from './matrix';
 import { fetchFile, sendFile, type OutgoingFile } from './matrix-media';
+import {
+  acceptVerification,
+  cancelVerification,
+  confirmVerification,
+  forgetVerifications,
+  onVerificationChange,
+  requestVerification,
+  verifications,
+  type Verification,
+} from './matrix-verify';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -51,6 +61,7 @@ export function onMatrixChange(listener: () => void): () => void {
 }
 
 const told = () => listeners.forEach((listener) => listener());
+onVerificationChange(told);
 
 /** The open space's account as it is now: null while it loads, or when there is none. */
 export function matrixNow(): { loaded: boolean; state: MatrixState | null; problem: string } {
@@ -171,6 +182,7 @@ export function runMatrix(): void {
 export function stopMatrix(): void {
   if (!live) return;
   live.stopped = true;
+  if (live.state) forgetVerifications(live.state);
   live = null;
   fetched.clear();
   told();
@@ -202,7 +214,10 @@ export async function matrixSignIn(who: string, password: string, server = ''): 
 /** Signs out, and forgets the account in this space. */
 export async function matrixSignOut(): Promise<void> {
   const it: Live = need();
-  if (it.state) await signOut(it.state).catch(() => undefined);
+  if (it.state) {
+    forgetVerifications(it.state);
+    await signOut(it.state).catch(() => undefined);
+  }
   await changeAccount(it, async () => {
     it.state = null;
   });
@@ -268,3 +283,31 @@ export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
   }
   return bytes;
 }
+
+/** The open space's checks by emoji (lib/matrix-verify.ts): asked, going on, or just ended. */
+export function matrixVerifications(): Verification[] {
+  return live?.state ? verifications(live.state) : [];
+}
+
+/** Asks `userId` to check by emoji, in the chat `roomId`; without one, another device of ours. */
+export function matrixVerify(userId: string, roomId?: string): Promise<Verification> {
+  const it = need();
+  return changeAccount(it, () => requestVerification(it.state, userId, roomId));
+}
+
+export function matrixVerifyAccept(id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => acceptVerification(it.state, id));
+}
+
+/** The pictures match, or they do not. What the check proves is kept with the account. */
+export function matrixVerifyMatch(id: string, match: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => confirmVerification(it.state, id, match));
+}
+
+export function matrixVerifyCancel(id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => cancelVerification(it.state, id));
+}
+

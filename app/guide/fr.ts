@@ -1513,7 +1513,12 @@ Element : aucun pont ne se met entre les deux.
 - **Photos et fichiers :** **Photo** et **Fichier** les envoient, jusqu’à 50 Mo, chiffrés sur le téléphone avant
   d’aller au serveur Matrix, qui ne garde ainsi que ce qu’il ne peut pas lire. Une photo reçue n’est téléchargée que si
   vous touchez **Afficher la photo** ; **Enregistrer** garde n’importe quel fichier sur le téléphone.
-- **Pas encore :** messages vocaux, appels, et la vérification des appareils de quelqu’un par emoji.
+- **Vérifier par emoji :** dans une discussion avec une personne, **Vérifier par emoji** vous montre à tous les deux
+  sept images ; si elles sont identiques, dans le même ordre, touchez **Ils correspondent** sur les deux téléphones.
+  Personne ne peut alors être au milieu sans qu’on le voie, et la discussion indique **Vérifié par emoji**.
+  **Vérifier cet appareil avec un autre des vôtres**, sur l’écran Matrix, fait de même avec votre propre Element, pour
+  qu’il fasse confiance à l’appareil d’Erevos. Element peut aussi lancer l’une ou l’autre.
+- **Pas encore :** messages vocaux et appels.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.

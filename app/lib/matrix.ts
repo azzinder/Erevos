@@ -16,9 +16,10 @@
 //  - Sends a text (sendText): in an encrypted room, it first gives the room's current Megolm key
 //    to every device of every member that does not have it yet, through Olm, then sends.
 //  - Starts a chat with someone (startChat), joins, leaves, marks as read, signs out.
+//  - Passes the steps of a check by emoji, to-device or in a room, to lib/matrix-verify.ts.
 //
-// Not yet: photos and files, calls, checking someone's devices by emoji or QR, key backup and
-// secret storage, so messages from before this device signed in stay locked. Not audited.
+// Photos and files are lib/matrix-media.ts's. Not yet: calls, key backup and secret storage, so
+// messages from before this device signed in stay locked. Not audited.
 
 import { matrixCore } from './core';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -38,7 +39,7 @@ export const ROTATE_MS = 7 * 24 * 3600_000;
 /** How many read message indexes are kept against replays. */
 export const KEEP_SEEN = 5000;
 
-type Json = Record<string, unknown>;
+export type Json = Record<string, unknown>;
 
 /** One message in a room, as Erevos shows it. */
 export type MatrixMessage = {
@@ -110,6 +111,8 @@ export type MatrixState = {
   outbound: Record<string, Outbound>;
   /** Which message index of which session has been read, by `${sessionId} ${index}`, against replays. */
   seen: Record<string, string>;
+  /** What a check by emoji proved (lib/matrix-verify.ts), by user: their devices' Ed25519 keys, and their master key. */
+  verified?: Record<string, { devices: Record<string, string>; master?: string }>;
 };
 
 // The homeserver's answer to one request.
@@ -160,17 +163,19 @@ export class MatrixError extends Error {
   }
 }
 
-async function core<T extends Json>(op: string, request: Json): Promise<T> {
+/** One call to the core's Matrix part (crates/erevos-matrix). */
+export async function core<T extends Json>(op: string, request: Json): Promise<T> {
   const answer = await matrixCore()(utf8Encode(JSON.stringify({ op, ...request })));
   return JSON.parse(utf8Decode(answer)) as T;
 }
 
-const enc = encodeURIComponent;
+export const enc = encodeURIComponent;
 
 /** A new transaction ID, so a request sent again is not taken twice. */
-const txn = () => `erevos${Date.now()}${toHex(randomBytes(6))}`;
+export const txn = () => `erevos${Date.now()}${toHex(randomBytes(6))}`;
 
-async function call(state: Pick<MatrixState, 'homeserver' | 'accessToken'> | { homeserver: string; accessToken?: string }, method: MatrixRequest['method'], path: string, body?: unknown): Promise<Json> {
+/** One request to the Client-Server API (v3), its JSON answered or the refusal thrown. */
+export async function call(state: Pick<MatrixState, 'homeserver' | 'accessToken'> | { homeserver: string; accessToken?: string }, method: MatrixRequest['method'], path: string, body?: unknown): Promise<Json> {
   return answered(await http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined }));
 }
 
@@ -317,11 +322,31 @@ export async function syncFetch(state: Pick<MatrixState, 'homeserver' | 'accessT
   return call(state, 'GET', `/sync${query}`);
 }
 
+/** A step of a check by emoji (m.key.verification.*), as it came: to-device, or in `roomId`. */
+export type VerificationEvent = { type: string; content: Json; sender: string; roomId?: string; eventId?: string; ts?: number };
+type VerificationHandler = (state: MatrixState, event: VerificationEvent) => Promise<boolean>;
+let verificationHandler: VerificationHandler | null = null;
+
+/** Where the steps of checks by emoji go (lib/matrix-verify.ts sets it). */
+export function setVerificationHandler(next: VerificationHandler | null): void {
+  verificationHandler = next;
+}
+
+const isVerification = (type: unknown, content: Json | undefined) =>
+  (typeof type === 'string' && type.startsWith('m.key.verification.')) || (type === 'm.room.message' && content?.msgtype === 'm.key.verification.request');
+
+async function passVerification(state: MatrixState, event: VerificationEvent): Promise<boolean> {
+  return verificationHandler ? verificationHandler(state, event).catch(() => false) : false;
+}
+
 /** Takes in what one sync brought. Answers whether anything a person would see changed. */
 export async function syncApply(state: MatrixState, news: MatrixNews): Promise<boolean> {
   let seen = false;
   for (const event of ((news.to_device as Json | undefined)?.events as Json[] | undefined) ?? []) {
-    if (await takeToDevice(state, event)) seen = true;
+    const changed = isVerification(event.type, event.content as Json)
+      ? await passVerification(state, { type: String(event.type), content: (event.content as Json) ?? {}, sender: String(event.sender) })
+      : await takeToDevice(state, event);
+    if (changed) seen = true;
   }
   const lists = news.device_lists as { changed?: string[]; left?: string[] } | undefined;
   for (const user of lists?.changed ?? []) if (!state.outdated.includes(user)) state.outdated.push(user);
@@ -399,6 +424,10 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
       takeState(room, event);
       continue;
     }
+    if (typeof event.type === 'string' && event.type.startsWith('m.key.verification.')) {
+      if (await passVerification(state, inRoom(id, event, event.type, (event.content as Json) ?? {}))) seen = true;
+      continue;
+    }
     const message = await messageOf(state, id, event);
     if (!message) continue;
     const mine = room.messages.findIndex((m) => m.id === message.id || (m.state && event.unsigned && (event.unsigned as Json).transaction_id === m.id));
@@ -431,16 +460,32 @@ function takeInvite(state: MatrixState, id: string, data: Json): void {
   if (!room.name) room.name = nameFromMembers(state, room);
 }
 
-/** What a timeline event shows as, or null for one that shows nothing. */
+const inRoom = (roomId: string, event: Json, type: string, content: Json): VerificationEvent => ({
+  type,
+  content,
+  sender: String(event.sender),
+  roomId,
+  eventId: String(event.event_id),
+  ts: Number(event.origin_server_ts ?? Date.now()),
+});
+
+/** What a timeline event shows as, or null for one that shows nothing. A step of a check by emoji
+ *  goes on to lib/matrix-verify.ts; its request shows too, as Element shows it. */
 async function messageOf(state: MatrixState, roomId: string, event: Json): Promise<MatrixMessage | null> {
   const base = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
-  if (event.type === 'm.room.message') return { ...base, ...shownOf(event.content as Json) };
-  if (event.type !== 'm.room.encrypted') return null;
-  const content = (event.content as Json) ?? {};
-  if (content.algorithm !== MEGOLM) return null;
-  const locked = { sessionId: String(content.session_id), ciphertext: String(content.ciphertext), senderKey: String(content.sender_key ?? '') };
-  const opened = await openMegolm(state, roomId, base.id, locked);
-  return opened ? { ...base, ...shownOf(opened) } : { ...base, text: '', locked };
+  let type = String(event.type);
+  let content = (event.content as Json) ?? {};
+  if (type === 'm.room.encrypted') {
+    if (content.algorithm !== MEGOLM) return null;
+    const locked = { sessionId: String(content.session_id), ciphertext: String(content.ciphertext), senderKey: String(content.sender_key ?? '') };
+    const opened = await openMegolm(state, roomId, base.id, locked);
+    if (!opened) return { ...base, text: '', locked };
+    type = opened.type;
+    content = opened.content;
+  }
+  if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
+  if (type === 'm.room.message') return { ...base, ...shownOf(content) };
+  return null;
 }
 
 function bodyOf(content: Json | undefined): string {
@@ -463,6 +508,7 @@ function isEncryptedFile(value: unknown): value is EncryptedFile {
 
 /** What a message's content shows: its words, and its file when it carries one. */
 function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'> {
+  if (content?.msgtype === 'm.key.verification.request') return { text: t('Asked to check devices by emoji.') };
   const kind = KINDS[String(content?.msgtype)];
   if (!content || !kind) return { text: bodyOf(content) };
   const info = (content.info as Json | undefined) ?? {};
@@ -483,7 +529,7 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
 }
 
 /** The content of a room message under the room's Megolm keys, or null without the key. */
-async function openMegolm(state: MatrixState, roomId: string, eventId: string, locked: NonNullable<MatrixMessage['locked']>): Promise<Json | null> {
+async function openMegolm(state: MatrixState, roomId: string, eventId: string, locked: NonNullable<MatrixMessage['locked']>): Promise<{ type: string; content: Json } | null> {
   const key = `${roomId} ${locked.sessionId}`;
   const inbound = state.inbound[key];
   if (!inbound) return null;
@@ -499,7 +545,7 @@ async function openMegolm(state: MatrixState, roomId: string, eventId: string, l
   state.seen[seenKey] = eventId;
   const payload = JSON.parse(opened.plaintext) as Json;
   if (payload.room_id !== roomId) return null;
-  return (payload.content as Json) ?? null;
+  return { type: String(payload.type), content: (payload.content as Json) ?? {} };
 }
 
 /** Takes in one to-device event: a room key sent us through Olm. Answers whether a locked message opened with it. */
@@ -526,6 +572,7 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   const claimed = (payload.keys as Json | undefined)?.ed25519;
   const known = Object.values(state.devices[String(event.sender)] ?? {}).find((d) => d.curve25519 === senderKey);
   if (known && known.ed25519 !== claimed) return false;
+  if (isVerification(payload.type, payload.content as Json)) return passVerification(state, { type: String(payload.type), content: (payload.content as Json) ?? {}, sender: String(event.sender) });
   if (payload.type !== 'm.room_key') return false;
   const key = (payload.content as Json) ?? {};
   if (key.algorithm !== MEGOLM || typeof key.room_id !== 'string' || typeof key.session_key !== 'string') return false;
@@ -539,16 +586,16 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
 async function retryLocked(state: MatrixState, roomId: string, sessionId: string): Promise<boolean> {
   const room = state.rooms[roomId];
   if (!room) return false;
-  let opened = false;
+  let any = false;
   for (const message of room.messages) {
     if (message.locked?.sessionId !== sessionId) continue;
-    const content = await openMegolm(state, roomId, message.id, message.locked);
-    if (!content) continue;
-    Object.assign(message, shownOf(content));
+    const opened = await openMegolm(state, roomId, message.id, message.locked);
+    if (!opened) continue;
+    Object.assign(message, shownOf(opened.content));
     delete message.locked;
-    opened = true;
+    any = true;
   }
-  return opened;
+  return any;
 }
 
 /** Everyone in a room who should be able to read what we send: those in it and those invited. */
@@ -673,14 +720,27 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
   const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), ...shownOf(content), state: 'sending' };
   room.messages.push(message);
   try {
-    let sent: Json;
+    message.id = await sendEvent(state, roomId, 'm.room.message', content, id);
+    delete message.state;
+  } catch (error) {
+    message.state = 'failed';
+    throw error;
+  }
+  return message;
+}
+
+/** Sends an event of any `type` to a room, encrypted when the room is, and answers its ID. */
+export async function sendEvent(state: MatrixState, roomId: string, type: string, content: Json, id = txn()): Promise<string> {
+  const room = roomOf(state, roomId);
+  let sent: Json;
+  {
     if (room.encrypted) {
       const members = await membersOf(state, roomId);
       const outbound = await outboundFor(state, roomId, members);
       await shareRoomKey(state, roomId, outbound, members);
       const sealed = await core<{ session: Json; ciphertext: string }>('megolm_encrypt', {
         session: outbound.session,
-        plaintext: JSON.stringify({ type: 'm.room.message', content, room_id: roomId }),
+        plaintext: JSON.stringify({ type, content, room_id: roomId }),
       });
       outbound.session = sealed.session;
       outbound.count += 1;
@@ -693,15 +753,10 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
         device_id: state.deviceId,
       });
     } else {
-      sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/send/m.room.message/${id}`, content);
+      sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/send/${enc(type)}/${id}`, content);
     }
-    message.id = String(sent.event_id);
-    delete message.state;
-  } catch (error) {
-    message.state = 'failed';
-    throw error;
   }
-  return message;
+  return String(sent.event_id);
 }
 
 /** Starts an encrypted chat with one person, by their Matrix ID. Answers the room. */

@@ -17,6 +17,7 @@ import { setCore, type Core } from '../lib/core';
 import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
+import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 // A core built before Matrix has no `matrix` call: built again, it has.
@@ -133,8 +134,8 @@ class Homeserver {
     if (path === '/keys/signatures/upload') {
       for (const [u, byDevice] of Object.entries(body as Json)) {
         for (const [d, signed] of Object.entries(byDevice as Json)) {
-          const keys = this.deviceKeys.get(u)?.get(d);
-          if (keys) keys.signatures[u] = { ...keys.signatures[u], ...(signed as Json).signatures[u] };
+          const keys = this.deviceKeys.get(u)?.get(d) ?? (Object.values(this.master.get(u)?.keys ?? {}).includes(d) ? this.master.get(u) : undefined);
+          if (keys) for (const [signer, made] of Object.entries((signed as Json).signatures)) keys.signatures[signer] = { ...keys.signatures[signer], ...(made as Json) };
         }
       }
       return { status: 200, json: { failures: {} } };
@@ -155,8 +156,10 @@ class Homeserver {
     if ((m = path.match(/^\/sendToDevice\/([^/]+)\/[^/]+$/))) {
       for (const [u, devices] of Object.entries(body.messages as Json)) {
         for (const [d, content] of Object.entries(devices as Json)) {
-          const key = `${u} ${d}`;
-          this.toDevice.set(key, [...(this.toDevice.get(key) ?? []), { type: decodeURIComponent(m[1]), sender: user, content }]);
+          for (const each of d === '*' ? [...(this.deviceKeys.get(u)?.keys() ?? [])] : [d]) {
+            const key = `${u} ${each}`;
+            this.toDevice.set(key, [...(this.toDevice.get(key) ?? []), { type: decodeURIComponent(m[1]), sender: user, content }]);
+          }
         }
       }
       return { status: 200, json: {} };
@@ -390,3 +393,85 @@ test('Matrix rooms are rows of the home list, with a part of their own', () => {
   assert.deepEqual(inboxParts([], true), ['matrix']);
   assert.deepEqual(inboxParts(rows, false), ['matrix']);
 });
+
+test('two people check each other by emoji in their chat, and see the same seven', { skip: !coreReady }, async () => {
+  const alice = await signIn(HS, '@dave:example.org', PASSWORD);
+  const bob = await signIn(HS, 'erin', PASSWORD);
+  const room = await startChat(alice, bob.userId);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  await sync(bob, 0);
+  await sync(alice, 0);
+
+  const asked = await requestVerification(alice, bob.userId, room.id);
+  await sync(bob, 0);
+  const theirs = verifications(bob).find((v) => v.id === asked.id)!;
+  assert.equal(theirs.phase, 'asked');
+  assert.equal(bob.rooms[room.id].messages.at(-1)!.text, 'Asked to check devices by emoji.');
+  await acceptVerification(bob, asked.id);
+  // ready → start → accept → key → key: each side syncs in turn.
+  for (let i = 0; i < 3; i++) {
+    await sync(alice, 0);
+    await sync(bob, 0);
+  }
+  assert.equal(asked.phase, 'compare');
+  assert.equal(theirs.phase, 'compare');
+  assert.equal(asked.emoji!.length, 7);
+  assert.deepEqual(asked.emoji, theirs.emoji);
+  // Nothing of it is readable on the server.
+  assert.ok(!JSON.stringify(server.log).includes('m.key.verification.key'));
+
+  await confirmVerification(alice, asked.id, true);
+  await sync(bob, 0);
+  await confirmVerification(bob, asked.id, true);
+  await sync(alice, 0);
+  assert.equal(theirs.phase, 'done');
+  assert.equal(asked.phase, 'done');
+  assert.ok(isVerified(alice, bob.userId, bob.deviceId));
+  assert.ok(isVerified(bob, alice.userId, alice.deviceId));
+  assert.ok(alice.verified![bob.userId].master);
+  // Alice's user-signing key signed Bob's master key (Dave and Erin, new here, made theirs).
+  assert.equal(Object.keys(server.master.get(bob.userId)!.signatures[alice.userId] ?? {}).length, 1);
+
+  // Pictures that do not match stop the check on both sides.
+  const again = await requestVerification(bob, alice.userId, room.id);
+  await sync(alice, 0);
+  await acceptVerification(alice, again.id);
+  for (let i = 0; i < 3; i++) {
+    await sync(bob, 0);
+    await sync(alice, 0);
+  }
+  assert.equal(again.phase, 'compare');
+  await confirmVerification(bob, again.id, false);
+  await sync(alice, 0);
+  assert.equal(again.phase, 'cancelled');
+  assert.equal(verifications(alice).find((v) => v.id === again.id)!.phase, 'cancelled');
+});
+
+test('a new device of ours is checked by emoji from one that holds our cross-signing keys', { skip: !coreReady }, async () => {
+  const carol = await signIn(HS, '@carol:example.org', PASSWORD);
+  const carol2 = await signIn(HS, 'carol', PASSWORD);
+  assert.ok(carol.crossSigning);
+  assert.equal(carol2.crossSigning, undefined);
+  const asked = await requestVerification(carol2, carol.userId);
+  await sync(carol, 0);
+  await sync(carol2, 0);
+  const theirs = verifications(carol).find((v) => v.id === asked.id)!;
+  assert.equal(theirs.deviceId, carol2.deviceId);
+  await acceptVerification(carol, asked.id);
+  for (let i = 0; i < 3; i++) {
+    await sync(carol2, 0);
+    await sync(carol, 0);
+  }
+  assert.deepEqual(asked.emoji, theirs.emoji);
+  await confirmVerification(carol, asked.id, true);
+  await sync(carol2, 0);
+  await confirmVerification(carol2, asked.id, true);
+  await sync(carol, 0);
+  assert.deepEqual([asked.phase, theirs.phase], ['done', 'done']);
+  assert.ok(isVerified(carol, carol.userId, carol2.deviceId));
+  // The first device's self-signing key now signs the new one, so other apps see it checked.
+  const signatures = server.deviceKeys.get(carol.userId)!.get(carol2.deviceId)!.signatures[carol.userId];
+  assert.equal(Object.keys(signatures).length, 2);
+});
+

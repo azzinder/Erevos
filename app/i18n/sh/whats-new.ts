@@ -84,6 +84,8 @@ export const whatsNew: Record<string, string> = {
     "**Razgovori svih mreža na početnom ekranu**: kad se prijavite na Matrix, njegovi razgovori su na listi s Erevos razgovorima i SMS porukama, najnoviji prvi, svaki označen Matrix, a dugme Matrix pokazuje samo njih, kao SMS i Erevos. Pogledajte [Matrix](#matrix).",
   '**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).':
     '**Probne verzije prije izdanja**: Erevos čita verziju poput 4.0.0-rc.1, probnu verziju koja dolazi prije 4.0.0, kad traži ažuriranja, javlja novu verziju i pokazuje šta je novo. Vidi [Ažuriranja](#updates).',
+  "**Check Matrix devices by emoji**: in a chat with one person on Matrix, Check by emoji shows you both seven pictures; if they match, nobody sits in between, and Element sees the check too. Check this device with another of yours makes your own Element trust Erevos. See [Matrix](#matrix).":
+    "**Provjera Matrix uređaja emojijima**: u razgovoru s jednom osobom na Matrixu, Provjera emojijima vama oboma pokazuje sedam slika; ako se poklapaju, niko nije u sredini, a i Element vidi provjeru. Provjerite ovaj uređaj drugim svojim čini da vaš Element vjeruje Erevosu. Pogledajte [Matrix](#matrix).",
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

@@ -47,9 +47,14 @@ pub fn call(request: &[u8]) -> Result<Vec<u8>> {
         "megolm_decrypt" => megolm_decrypt(&request)?,
         "megolm_export" => megolm_export(&request)?,
         "signing_key_new" => signing_key_new(),
+        "signing_key_public" => json!({ "public": Ed25519SecretKey::from_base64(text(&request, "secret")?).map_err(err)?.public_key().to_base64() }),
         "sign_json" => sign_json(&request)?,
         "verify_json" => verify_json(&request)?,
         "canonical_json" => json!({ "text": canonical_json(field(&request, "json")?) }),
+        "sas_new" => sas_new(),
+        "sas_bytes" => sas_bytes(&request)?,
+        "sas_mac" => json!({ "mac": B64.encode(sas_mac(&request)?.finalize().into_bytes()) }),
+        "sas_verify" => json!({ "ok": sas_mac(&request)?.verify_slice(&B64.decode(text(&request, "mac")?).map_err(err)?).is_ok() }),
         _ => return Err(format!("unknown Matrix call {op}")),
     };
     serde_json::to_vec(&answer).map_err(err)
@@ -355,6 +360,60 @@ fn verify_json(request: &Value) -> Result<Value> {
     Ok(json!({ "ok": ok }))
 }
 
+// Checking a device by emoji (SAS, spec: Short Authentication String verification, method
+// m.sas.v1 with hkdf-hmac-sha256.v2). Done here rather than with vodozemac's Sas, which keeps its
+// secret where it cannot be passed out, so that this crate keeps nothing between calls: the
+// one-use key goes to the app, held in memory for the minutes a check takes, and comes back with
+// each step. Computed exactly as vodozemac does (the test below checks it against vodozemac).
+
+use base64::engine::general_purpose::STANDARD_NO_PAD as B64;
+use base64::Engine as _;
+use hkdf::Hkdf;
+use hmac::{Hmac, Mac as _};
+use sha2::Sha256;
+
+/// A one-use key pair for one check: the secret for the app to hold, the public key to send.
+fn sas_new() -> Value {
+    let secret = x25519_dalek::StaticSecret::random_from_rng(rand_core::OsRng);
+    let public = x25519_dalek::PublicKey::from(&secret);
+    json!({ "secret": B64.encode(secret.to_bytes()), "public": B64.encode(public.as_bytes()) })
+}
+
+/// The secret both sides share, from ours (`secret`) and their public key (`their`).
+fn sas_shared(request: &Value) -> Result<Hkdf<Sha256>> {
+    let bytes: [u8; 32] = B64.decode(text(request, "secret")?).map_err(err)?.try_into().map_err(|_| "bad SAS secret")?;
+    let secret = x25519_dalek::StaticSecret::from(bytes);
+    let their = x25519_dalek::PublicKey::from(curve(request, "their")?.to_bytes());
+    let shared = secret.diffie_hellman(&their);
+    if !shared.was_contributory() {
+        return Err("their SAS key is not usable".into());
+    }
+    Ok(Hkdf::<Sha256>::new(None, shared.as_bytes()))
+}
+
+/// The 6 bytes both sides show, for `info`: as 7 emoji (6 bits each) and 3 numbers (13 bits each, plus 1000).
+fn sas_bytes(request: &Value) -> Result<Value> {
+    let mut b = [0u8; 6];
+    sas_shared(request)?.expand(text(request, "info")?.as_bytes(), &mut b).map_err(|_| "SAS bytes")?;
+    let bits = b.iter().fold(0u64, |all, &byte| (all << 8) | u64::from(byte));
+    let emoji: Vec<u64> = (0..7).map(|i| (bits >> (42 - 6 * i)) & 63).collect();
+    let decimals = [
+        ((u16::from(b[0]) << 5) | (u16::from(b[1]) >> 3)) + 1000,
+        (((u16::from(b[1]) & 0x7) << 10) | (u16::from(b[2]) << 2) | (u16::from(b[3]) >> 6)) + 1000,
+        (((u16::from(b[3]) & 0x3F) << 7) | (u16::from(b[4]) >> 1)) + 1000,
+    ];
+    Ok(json!({ "emoji": emoji, "decimals": decimals }))
+}
+
+/// The MAC of `input` under the key HKDF gives for `info` (hkdf-hmac-sha256.v2).
+fn sas_mac(request: &Value) -> Result<Hmac<Sha256>> {
+    let mut key = [0u8; 32];
+    sas_shared(request)?.expand(text(request, "info")?.as_bytes(), &mut key).map_err(|_| "SAS MAC key")?;
+    let mut mac = <Hmac<Sha256> as hmac::Mac>::new_from_slice(&key).map_err(err)?;
+    mac.update(text(request, "input")?.as_bytes());
+    Ok(mac)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -468,5 +527,32 @@ mod tests {
     fn unknown_calls_fail() {
         assert!(call(br#"{"op":"nothing"}"#).unwrap_err().contains("nothing"));
         assert!(call(b"not json").is_err());
+    }
+
+    #[test]
+    fn signing_key_public_matches() {
+        let made = run(json!({ "op": "signing_key_new" }));
+        assert_eq!(run(json!({ "op": "signing_key_public", "secret": made["secret"] }))["public"], made["public"]);
+    }
+
+    #[test]
+    fn sas_matches_vodozemac() {
+        let ours = run(json!({ "op": "sas_new" }));
+        let theirs = vodozemac::sas::Sas::new();
+        let their_public = theirs.public_key().to_base64();
+        let established = theirs.diffie_hellman_with_raw(ours["public"].as_str().unwrap()).unwrap();
+        let info = "MATRIX_KEY_VERIFICATION_SAS|@a:x|A|key1|@b:x|B|key2|txn";
+        let bytes = run(json!({ "op": "sas_bytes", "secret": ours["secret"], "their": their_public, "info": info }));
+        let expected = established.bytes(info);
+        let emoji: Vec<u64> = expected.emoji_indices().iter().map(|&i| u64::from(i)).collect();
+        assert_eq!(bytes["emoji"], json!(emoji));
+        let (a, b, c) = expected.decimals();
+        assert_eq!(bytes["decimals"], json!([a, b, c]));
+        let mac_info = "MATRIX_KEY_VERIFICATION_MACed25519:ABC";
+        let mac = run(json!({ "op": "sas_mac", "secret": ours["secret"], "their": their_public, "info": mac_info, "input": "abc" }));
+        assert_eq!(mac["mac"], json!(established.calculate_mac("abc", mac_info).to_base64()));
+        let ok = |m: &Value| run(json!({ "op": "sas_verify", "secret": ours["secret"], "their": their_public, "info": mac_info, "input": "abc", "mac": m }))["ok"].clone();
+        assert_eq!(ok(&mac["mac"]), json!(true));
+        assert_eq!(ok(&json!(established.calculate_mac("abd", mac_info).to_base64())), json!(false));
     }
 }

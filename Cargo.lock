@@ -1494,8 +1494,14 @@ dependencies = [
 name = "erevos-matrix"
 version = "0.0.1"
 dependencies = [
+ "base64 0.22.1",
+ "hkdf 0.12.4",
+ "hmac 0.12.1",
+ "rand_core 0.6.4",
  "serde_json",
+ "sha2 0.10.9",
  "vodozemac",
+ "x25519-dalek 2.0.1",
 ]
 
 [[package]]
