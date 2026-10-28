@@ -280,16 +280,18 @@ test('the host does what Element Call asks in the call room, and nothing else', 
     assert.match(String((answer.error as Json | undefined)?.message), why);
   }
 
-  // A room event goes encrypted, as the room is; Bob's side opens it.
+  // A room event goes encrypted, as the room is; Bob's side opens it. The key is long enough
+  // that the encrypted text never holds it by chance (a short one did, now and then).
+  const callKey = 'callKeyNeverOnTheServer';
   const before = server.log.length;
-  const sent = await app.send('send_event', { type: 'io.element.call.encryption_keys', content: { keys: [{ index: 0, key: 'k0' }], member: { id: 'x' } } });
+  const sent = await app.send('send_event', { type: 'io.element.call.encryption_keys', content: { keys: [{ index: 0, key: callKey }], member: { id: 'x' } } });
   assert.ok(sent.event_id);
   const onServer = server.log.slice(before).map((l) => l.event);
   assert.deepEqual(
     onServer.map((e) => e.type),
     ['m.room.encrypted'],
   );
-  assert.ok(!JSON.stringify(onServer).includes('k0'));
+  assert.ok(!JSON.stringify(onServer).includes(callKey));
   const seenByBob: Json[] = [];
   setRoomTap((r, event, timeline) => {
     if (r === roomId && timeline) seenByBob.push(event);
@@ -297,7 +299,7 @@ test('the host does what Element Call asks in the call room, and nothing else', 
   await sync(bob, 0);
   setRoomTap(null);
   const keys = seenByBob.find((e) => e.type === 'io.element.call.encryption_keys')!;
-  assert.equal(keys.content.keys[0].key, 'k0');
+  assert.equal(keys.content.keys[0].key, callKey);
   assert.equal(keys.event_id, sent.event_id);
   assert.equal(keys.room_id, roomId);
 
