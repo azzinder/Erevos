@@ -234,7 +234,17 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
       return {
         identity: `xmpp:${chat.jid}`,
         name: nameOf(state, chat.jid),
-        last: !last ? '' : last.locked ? t('Locked message') : last.call ? shownLine(last.text) : last.text,
+        last: !last
+          ? ''
+          : last.locked
+            ? t('Locked message')
+            : last.call
+              ? shownLine(last.text)
+              : last.file
+                ? last.file.type.startsWith('image/')
+                  ? t('Photo')
+                  : t('File: {name}', { name: last.file.name })
+                : last.text,
         mine,
         // A call's line has no marks of its own: as a space chat's (lib/calls.ts callLineMessage).
         mark: !mine ? 0 : last.call ? 2 : XMPP_MARKS[last.state ?? 'sent'],

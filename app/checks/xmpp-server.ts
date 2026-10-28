@@ -1,9 +1,12 @@
 // A small XMPP server for the checks (checks/xmpp.check.ts, checks/xmpp-calls.check.ts): signing
-// in with PLAIN, binding, rosters and presence subscriptions, PEP, archives (MAM), carbons, and
-// what goes between people as a server passes it on: messages, and questions (iq) to a device.
+// in with PLAIN, binding, rosters and presence subscriptions, PEP, archives (MAM), carbons, an
+// HTTP upload service (XEP-0363) and the files on it, and what goes between people as a server
+// passes it on: messages, and questions (iq) to a device.
 /// <reference types="node" />
 import { fromBase64, utf8Decode } from '../lib/crypto';
 import { signInXmpp, startSession, takeStanza, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
+import type { HttpAnswer } from '../lib/net-http';
+import { NS_UPLOAD } from '../lib/xmpp-files';
 import type { XmppLink } from '../lib/xmpp-net';
 import { child, children, el, parseXml, render, textOf, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
 
@@ -12,6 +15,10 @@ type Archived = { id: string; at: number; message: XmlElement };
 
 export const DOMAIN = 'example.org';
 export const PASSWORD = 'correct horse';
+/** Where its upload service is: an item of its domain, as Prosody and ejabberd have it. */
+export const UPLOAD = `upload.${DOMAIN}`;
+const NS_INFO = 'http://jabber.org/protocol/disco#info';
+const NS_ITEMS = 'http://jabber.org/protocol/disco#items';
 
 export class Server {
   readonly bound = new Map<string, Link>();
@@ -24,8 +31,27 @@ export class Server {
   readonly noOmemo = new Set<string>();
   /** The TURN server it tells of (XEP-0215), if any. */
   turn: { host: string; port: string; username: string; password: string } | null = null;
+  /** The upload service it offers, with the largest file it takes; none when null. */
+  upload: { most: number } | null = null;
+  /** What was put on it, by the address it is fetched from, as the service keeps it. */
+  readonly files = new Map<string, Uint8Array>();
+  /** The places it gave: where to put, what to fetch it from, its size and the header that lets it in. */
+  readonly slots = new Map<string, { get: string; size: number; token: string }>();
 
   connect = async (): Promise<XmppLink> => new Link(this);
+
+  /** The upload service's HTTPS, for setXmppHttp: a PUT to a place given, once, with its header and size; a GET of what was put. */
+  http = async (method: 'GET' | 'PUT', url: string, headers: Record<string, string>, body?: Uint8Array): Promise<HttpAnswer> => {
+    if (method === 'GET') {
+      const file = this.files.get(url);
+      return file ? { status: 200, bytes: file.slice() } : { status: 404, bytes: new Uint8Array(0) };
+    }
+    const slot = this.slots.get(url);
+    if (!slot || headers.Authorization !== `Bearer ${slot.token}` || body?.length !== slot.size) return { status: 403, bytes: new Uint8Array(0) };
+    this.slots.delete(url);
+    this.files.set(slot.get, body.slice());
+    return { status: 201, bytes: new Uint8Array(0) };
+  };
 
   id(): string {
     return `a${this.next++}`;
@@ -236,6 +262,38 @@ export class Link implements XmppLink {
       }
       const complete = !afterId || page.length < max || page[page.length - 1] === all[all.length - 1];
       return reply(el('fin', { xmlns: 'urn:xmpp:mam:2', complete: complete ? 'true' : undefined }, el('set', { xmlns: 'http://jabber.org/protocol/rsm' }, page.length ? el('last', {}, page[page.length - 1].id) : null)));
+    }
+    if (query.ns === NS_ITEMS) return reply(el('query', { xmlns: NS_ITEMS }, to === DOMAIN && server.upload ? el('item', { jid: UPLOAD }) : null));
+    if (query.ns === NS_INFO) {
+      const upload = server.upload;
+      if (to !== UPLOAD || !upload) return reply(el('query', { xmlns: NS_INFO }, el('feature', { var: NS_INFO })));
+      return reply(
+        el(
+          'query',
+          { xmlns: NS_INFO },
+          el('identity', { category: 'store', type: 'file' }),
+          el('feature', { var: NS_UPLOAD }),
+          el(
+            'x',
+            { xmlns: 'jabber:x:data', type: 'result' },
+            el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, NS_UPLOAD)),
+            el('field', { var: 'max-file-size' }, el('value', {}, String(upload.most))),
+          ),
+        ),
+      );
+    }
+    if (query.ns === NS_UPLOAD && query.name === 'request') {
+      const size = Number(query.attrs.size);
+      if (to !== UPLOAD || !server.upload) return error('service-unavailable');
+      if (!(size > 0 && size <= server.upload.most)) return error('not-acceptable');
+      const id = server.id();
+      const put = `https://${UPLOAD}/put/${id}`;
+      const get = `https://${UPLOAD}/${id}/${encodeURIComponent(query.attrs.filename ?? 'file')}`;
+      server.slots.set(put, { get, size, token: `t${id}` });
+      // A header the app must not pass on comes with the ones it must.
+      return reply(
+        el('slot', { xmlns: NS_UPLOAD }, el('put', { url: put }, el('header', { name: 'Authorization' }, `Bearer t${id}`), el('header', { name: 'Host' }, 'elsewhere.example')), el('get', { url: get })),
+      );
     }
     return error('service-unavailable');
   }

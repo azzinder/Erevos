@@ -1459,6 +1459,12 @@ aplikacije: nikakav most nije između.
 - **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
   je server čuva. Poruka poslana prije nego što se ovaj uređaj prijavio, ili nije bila za njega, prikazuje se
   zaključana.
+- **Fotografije i datoteke:** **Fotografija** i **Datoteka**, ispod polja za poruku, šalju jednu do 50 MB, ili manje
+  ako vaš XMPP server prima manje, preko slanja datoteka servera. U šifrovanom razgovoru prvo se šifruje na ovom
+  telefonu, ključem napravljenim samo za nju, a ključ ide u poruci, šifrovan OMEMO-om, pa server čuva samo ono što ne
+  može pročitati; Conversations, Monal, Gajim i Dino je otvaraju. U razgovoru pisanom bez šifrovanja datoteka ide
+  kakva jeste. Fotografija, zvuk ili datoteka koja stigne preuzima se tek kad dodirnete **Prikaži fotografiju**,
+  **Pusti** ili **Sačuvaj**. Na Androidu, datoteke idu preko Tora kao i razgovor.
 - **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
   vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
   kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem
@@ -1476,7 +1482,7 @@ aplikacije: nikakav most nije između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** fotografije i datoteke, grupni razgovori i grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
+- **Još ne:** grupni razgovori i grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
@@ -1532,7 +1538,7 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** glasovne poruke snimljene ovdje (ona koja stigne je datoteka za spremanje), odgovori na određenu poruku, i
+- **Još ne:** glasovne poruke snimljene ovdje (onu koja stigne pušta **Pusti**), odgovori na određenu poruku, i
   datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ

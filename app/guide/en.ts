@@ -1392,6 +1392,12 @@ bridge sits in between.
   that send these marks.
 - **Messages from before:** what came while Erevos was closed is fetched from the server's archive when it connects, if
   the server keeps one. A message sent before this device signed in, or not meant for it, shows as locked.
+- **Photos and files:** **Photo** and **File**, under a chat's message box, send one of up to 50 MB, or less if your
+  XMPP server takes less, through the server's file upload. In an encrypted chat it is encrypted on this phone first,
+  with a key made for it alone, and the key goes in the message, encrypted with OMEMO, so the server keeps only what it
+  cannot read; Conversations, Monal, Gajim and Dino open it. In a chat written without encryption the file goes as it
+  is. A photo, sound or file that comes is fetched only when you tap **Show photo**, **Play** or **Save**. On Android,
+  files go through Tor as the chat does.
 - **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
   Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
   contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The
@@ -1410,7 +1416,7 @@ bridge sits in between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** photos and files, group chats and group calls, adding video to a voice call, and OMEMO 2.
+- **Not yet:** group chats and group calls, adding video to a voice call, and OMEMO 2.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.
@@ -1464,7 +1470,7 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** voice messages recorded here (one that comes is a file to save), answers to one message, and files
+- **Not yet:** voice messages recorded here (one that comes plays with **Play**), answers to one message, and files
   another app encrypts some other way (they show as a file Erevos cannot open).
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,

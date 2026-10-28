@@ -120,8 +120,8 @@ On main, not released yet:
   was closed (from the server's archive), people who ask to add you (**Accept**, **Decline**), and the chats in the home
   list under an **XMPP** chip of their own. These chats are not anonymous, and say so: the XMPP server sees who talks
   with whom, and when. On Android the connection follows the space's choice under **Tor**, with a circuit of its own
-  per server; the web app and the computer connect through the server's WebSocket, straight. Text and calls for now: no
-  photos or files, groups or OMEMO 2 yet.
+  per server; the web app and the computer connect through the server's WebSocket, straight. Text, calls, photos and
+  files (below) for now: no groups or OMEMO 2 yet.
 
 - **Voice and video calls with people on XMPP**: the two tiles at the top of an XMPP chat call the person, on the same
   call screen as Erevos's own calls, and their calls ring here the same way while the space is open; someone not in
@@ -174,6 +174,14 @@ On main, not released yet:
   member can change; **New group** makes one from the space's chats, and a message from another app to several people
   opens one. Not yet: voice messages recorded here, replies to one message, files encrypted otherwise than with AES-GCM.
   Checked with a Blossom server played in the checks; not yet against the real ones.
+- **Photos and files in XMPP chats**: **Photo** and **File** send one of up to 50 MB, or less when the XMPP server
+  takes less, through the server's HTTP upload (XEP-0363), as Conversations, Monal, Gajim and Dino share them. In an
+  encrypted chat the file is encrypted on the phone with AES-256-GCM by a key and IV made for it alone and put on the
+  server under a random name, and the message, encrypted with OMEMO as any other, holds only its aesgcm:// link with
+  the key (XEP-0454), so the server keeps what it cannot read. In a chat written without encryption it goes as it is,
+  its link also out of band (XEP-0066). One that comes is fetched only when asked for, on Android through Tor as the
+  chat goes, and an encrypted one opens only if nothing in it changed. A sound that comes in an XMPP or Nostr chat now
+  plays with **Play**. Checked with an upload service played in the checks; not yet with a real server.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

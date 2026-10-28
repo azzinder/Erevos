@@ -2,6 +2,7 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
 import { canNostrChat } from './core';
+import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import {
@@ -627,24 +628,12 @@ export function nostrDmSetFileServers(servers: string[]): Promise<void> {
   });
 }
 
-// Files fetched while Erevos runs, by their address, so one looked at again is not fetched again:
-// the newest few, up to FETCHED_MOST bytes in all. Never written to the phone.
-const FETCHED_MOST = 40 * 1024 * 1024;
-const fetched = new Map<string, Uint8Array>();
+// Files fetched while Erevos runs, so one looked at again is not fetched again (lib/file-cache.ts).
+const fetched = fileCache(40 * 1024 * 1024);
 
 /** A message's photo or file, fetched from its server and opened, or kept from before. */
-export async function nostrDmFile(file: NostrDmFile): Promise<Uint8Array> {
-  const kept = fetched.get(file.url);
-  if (kept) return kept;
-  const bytes = openFile(file, await downloadBlob(file.url));
-  fetched.set(file.url, bytes);
-  let total = [...fetched.values()].reduce((sum, b) => sum + b.length, 0);
-  for (const [url, b] of fetched) {
-    if (total <= FETCHED_MOST || url === file.url) continue;
-    fetched.delete(url);
-    total -= b.length;
-  }
-  return bytes;
+export function nostrDmFile(file: NostrDmFile): Promise<Uint8Array> {
+  return fetched.get(file.url, async () => openFile(file, await downloadBlob(file.url)));
 }
 
 /** A chat's own notifications (lock/chat-notify.ts), or the app's again with null. */

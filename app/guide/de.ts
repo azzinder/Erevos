@@ -1614,6 +1614,13 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 - **Nachrichten von vorher:** Was kam, während Erevos geschlossen war, wird beim Verbinden aus dem Archiv des Servers
   geholt, wenn er eines führt. Eine Nachricht von vor der Anmeldung dieses Geräts oder nicht für es bestimmt erscheint
   gesperrt.
+- **Fotos und Dateien:** **Foto** und **Datei** unter dem Nachrichtenfeld senden eine Datei bis 50 MB, oder weniger,
+  wenn dein XMPP-Server weniger annimmt, über den Datei-Upload des Servers. In einem verschlüsselten Chat wird sie
+  zuerst auf diesem Telefon verschlüsselt, mit einem Schlüssel nur für sie, und der Schlüssel geht in der Nachricht
+  mit, mit OMEMO verschlüsselt, sodass der Server nur behält, was er nicht lesen kann; Conversations, Monal, Gajim und
+  Dino öffnen sie. In einem Chat ohne Verschlüsselung geht die Datei, wie sie ist. Ein Foto, ein Ton oder eine Datei,
+  die ankommt, wird erst geladen, wenn du **Foto anzeigen**, **Abspielen** oder **Speichern** tippst. Auf Android
+  gehen Dateien über Tor, wie der Chat.
 - **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
   Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
   ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so
@@ -1634,7 +1641,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** Fotos und Dateien, Gruppenchats und Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
+- **Noch nicht:** Gruppenchats und Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
@@ -1695,7 +1702,7 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** hier aufgenommene Sprachnachrichten (eine, die ankommt, ist eine Datei zum Speichern), Antworten auf
+- **Noch nicht:** hier aufgenommene Sprachnachrichten (eine, die ankommt, spielt **Abspielen** ab), Antworten auf
   eine bestimmte Nachricht und Dateien, die eine andere App anders verschlüsselt (sie erscheinen als Datei, die Erevos
   nicht öffnen kann).
 

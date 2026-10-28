@@ -47,6 +47,7 @@ is what is written, once OMEMO encrypts it.
   pings and disco#info. A message goes to every device of the person and to the account's own
   other devices; when the person has none with OMEMO, nothing is sent unless the chat chooses to
   write without encryption. Used one-time pre-keys are replaced and published again.
+- `app/lib/xmpp-files.ts`: photos and files, below.
 - `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open
   (again after a pause that grows, a ping after 4 minutes of silence), and keeps it encrypted in
   the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`).
@@ -75,7 +76,9 @@ cargo build -p erevos-xmpp --example omemo-call
 
 `app/checks/xmpp.check.ts` runs two accounts and a second device against a small server written
 for it: the stream in pieces, SCRAM's RFC examples, a wrong password, OMEMO both ways, carbons,
-receipts, read marks, the archive read once, and a person with no OMEMO. It was also run by hand
+receipts, read marks, the archive read once, a person with no OMEMO, and photos and files both ways,
+encrypted and as they are, through an upload service played there (only the slot's allowed headers
+sent, a changed file not opened, one too large not sent, a server without the service said so). It was also run by hand
 against Prosody 0.12 over its WebSocket: sign-in, roster both ways, OMEMO
 both ways, receipts and the archive.
 
@@ -86,7 +89,9 @@ both ways, receipts and the archive.
   with an address, the chats, the contacts the account has without a chat, this device's OMEMO fingerprint, and
   signing out. It says the chats are not anonymous, and on Android whether the connection goes through Tor.
 - `app/xmpp-chat.tsx`: two tiles at the top that call the person (video, voice; see Calls), the messages,
-  with delivery and read marks, each call's line, a locked message that could not be opened here, and below the chat the fingerprints of the person's devices, with a note for a key that
+  with delivery and read marks, each call's line, a locked message that could not be opened here, a photo or
+  file with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`, as Nostr chats have it),
+  **Photo** and **File** under the message box, and below the chat the fingerprints of the person's devices, with a note for a key that
   changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
   (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
 - The home list (`xmppInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'xmpp'` with `xmpp:` and
@@ -147,6 +152,28 @@ the way (sound, sound and picture, addresses one at a time). The same flows were
 against Prosody 0.12 with `mod_turn_external`. Not yet tried with Conversations, Monal or Dino on a
 phone.
 
+## Photos and files
+
+As Conversations, Monal, Gajim and Dino share them:
+
+1. The server's upload service (XEP-0363) is found by disco#info on the account's domain, then on each
+   item disco#items gives; it is kept a day, with the largest file it takes (`max-file-size`).
+2. In a chat encrypted with OMEMO the file is encrypted on the phone with AES-256-GCM, by a key and a
+   12-byte IV made for it alone (the crate's `file_encrypt`), and asked a slot for under a random name with
+   its ending, as `application/octet-stream`. In a chat written without encryption it goes as it is, under
+   its own name.
+3. It is put with an HTTPS PUT to the slot's address, with only the `Authorization`, `Cookie` and `Expires`
+   headers the slot gives (XEP-0363 §4), and the message says where to fetch it: encrypted, its
+   `aesgcm://` link with the IV and key as the fragment (XEP-0454), inside the OMEMO payload like any text;
+   as it is, its `https://` link as the body and in an out-of-band element (XEP-0066).
+4. A message whose whole text is an `aesgcm://` link (a 12- or 16-byte IV), or an `https://` link that its
+   out-of-band element names too (in an unencrypted message only), is a file, with its name and type from
+   the link. It is fetched only when asked for, and an encrypted one opens only when its GCM tag is right.
+
+Up to 50 MB (`XMPP_FILE_MOST`), less when the service says less. Uploads and fetches go through Tor as the
+chat does (`app/lib/net-http.ts`, as Nostr's files). A file fetched is kept in memory while the space is
+open (`app/lib/file-cache.ts`), not on the phone.
+
 ## Notices
 
 Each change of the account says how many messages each chat has not read, and one who asks to add
@@ -162,6 +189,6 @@ only while Erevos shows it.
 ## Not yet
 
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
-- Group chats (MUC) and group calls, adding video to a voice call (`content-add`), moving a call to
-  another device, and photos and files (HTTP upload, `aesgcm://` links; the crate already encrypts and
-  opens them).
+- Group chats (MUC) and group calls, adding video to a voice call (`content-add`), and moving a call to
+  another device.
+- Photos and files against a real upload service: so far only the one played in the checks.

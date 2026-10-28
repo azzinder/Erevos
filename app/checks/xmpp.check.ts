@@ -4,7 +4,9 @@
 // encrypted, the server keeping only ciphertext; a second device of one of them reads what both
 // write, and its own other device's messages, as carbons; what came while one was away comes from
 // the archive, once; receipts and read marks; someone without OMEMO gets nothing unless the chat
-// chooses to write without it. The account survives being kept as JSON between steps.
+// chooses to write without it; photos and files both ways, through the server's upload service,
+// encrypted (aesgcm:// links) or as they are (out of band). The account survives being kept as JSON
+// between steps.
 // lib/xmpp.ts was also run against a real Prosody 0.12 (docs/xmpp.md).
 // Run with: npm run check
 /// <reference types="node" />
@@ -14,16 +16,17 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCurrentSpace } from '../lock/keys';
-import { fromBase64, randomBytes, utf8Decode } from '../lib/crypto';
+import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
 import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
-import { addXmppContact, isXmppId, markXmppRead, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, type XmppState } from '../lib/xmpp';
+import { addXmppContact, isXmppId, markXmppRead, prepareXmppFile, sendXmppFile, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, type XmppState } from '../lib/xmpp';
+import { downloadXmppFile, fileOfText, setXmppHttp, textOfFile, uploadXmppFile } from '../lib/xmpp-files';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { startSasl } from '../lib/xmpp-sasl';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
 import { child, el, find, parseXml, render, textOf, XmlStream, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
-import { DOMAIN, PASSWORD, person, Server, settle } from './xmpp-server';
+import { DOMAIN, PASSWORD, person, Server, settle, UPLOAD } from './xmpp-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built) && typeof (createRequire(import.meta.url)(built.pathname) as Record<string, unknown>).xmpp === 'function';
@@ -224,6 +227,98 @@ test('someone without OMEMO gets nothing, unless the chat chooses to write witho
   assert.deepEqual(old.state.chats[`ann@${DOMAIN}`].messages.map((m) => [m.text, m.encrypted]), [['hello in the clear', false]]);
   ann.connection.close();
   old.connection.close();
+});
+
+test('a file is read from a message only as the apps that share files write it', () => {
+  const key = 'ab'.repeat(12) + 'cd'.repeat(32);
+  assert.deepEqual(fileOfText(`aesgcm://files.example.org/x/a%20b.jpg#${key.toUpperCase()}`), {
+    url: 'https://files.example.org/x/a%20b.jpg',
+    fragment: key,
+    name: 'a b.jpg',
+    type: 'image/jpeg',
+  });
+  // Some apps write a 16-byte IV.
+  assert.equal(fileOfText(`aesgcm://f.example.org/y.pdf#${'01'.repeat(16)}${'02'.repeat(32)}`)?.type, 'application/pdf');
+  assert.equal(fileOfText(`aesgcm://f.example.org/y.pdf#${'01'.repeat(10)}`), null);
+  assert.equal(fileOfText(`look: aesgcm://f.example.org/y.pdf#${key}`), null);
+  // A link alone is text, unless the message names it out of band too.
+  assert.equal(fileOfText('https://example.org/cat.png'), null);
+  assert.equal(fileOfText('https://example.org/cat.png', 'https://example.org/other.png'), null);
+  assert.deepEqual(fileOfText('https://example.org/cat.png', 'https://example.org/cat.png'), { url: 'https://example.org/cat.png', name: 'cat.png', type: 'image/png' });
+  assert.equal(fileOfText('http://example.org/cat.png', 'http://example.org/cat.png'), null);
+  const file = { url: 'https://f.example.org/z.ogg', fragment: key, name: 'z.ogg', type: 'audio/ogg' };
+  assert.deepEqual(fileOfText(textOfFile(file)), file);
+});
+
+test('photos and files go both ways, encrypted with the chat, or as they are when it is not', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  server.upload = { most: 1024 * 1024 };
+  const puts: string[][] = [];
+  setXmppHttp(async (method, url, headers, body) => {
+    if (method === 'PUT') puts.push(Object.keys(headers));
+    return server.http(method, url, headers, body);
+  });
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const people = [ann, ben];
+  t.after(() => {
+    setXmppHttp(null);
+    people.forEach((p) => p.connection.close());
+  });
+  await addXmppContact(ann.state, ann.connection, `ben@${DOMAIN}`, 'Ben');
+  await settle([ann, ben]);
+  await addXmppContact(ben.state, ben.connection, `ann@${DOMAIN}`);
+  await settle([ann, ben]);
+
+  // The upload service is an item of the domain; found once, it is kept.
+  const ready = await prepareXmppFile(ann.state, ann.connection, `ben@${DOMAIN}`);
+  assert.deepEqual([ready.encrypt, ready.service.jid, ready.service.most], [true, UPLOAD, 1024 * 1024]);
+  assert.equal(ann.state.upload?.jid, UPLOAD);
+
+  const photo = randomBytes(5000);
+  const file = await uploadXmppFile(ann.connection, ready.service, { bytes: photo, name: 'beach.jpg', type: 'image/jpeg' }, ready.encrypt);
+  assert.match(file.fragment ?? '', /^[0-9a-f]{88}$/);
+  // The server keeps what it cannot read, by a name that says nothing but the ending; only the
+  // headers the place allows went with it.
+  const kept = server.files.get(file.url);
+  assert.equal(kept?.length, photo.length + 16);
+  assert.ok(!file.url.includes('beach') && file.url.endsWith('.jpg'));
+  assert.deepEqual(puts, [['Content-Type', 'Authorization']]);
+  const sent = await sendXmppFile(ann.state, ann.connection, `ben@${DOMAIN}`, file);
+  assert.deepEqual([sent.text, sent.file?.name, sent.encrypted], ['', 'beach.jpg', true]);
+  await settle([ann, ben]);
+  const came = ben.state.chats[`ann@${DOMAIN}`].messages.at(-1);
+  assert.deepEqual([came?.text, came?.encrypted, came?.file?.type, came?.file?.fragment], ['', true, 'image/jpeg', file.fragment]);
+  assert.deepEqual(await downloadXmppFile(came!.file!), photo);
+  // Its key never went past the server unencrypted.
+  assert.ok(server.seen.every((s) => !s.includes(file.fragment!) && !s.includes('aesgcm')));
+  assert.equal(xmppInboxRows(ben.state).find((row) => row.identity === `xmpp:ann@${DOMAIN}`)?.last, 'Photo');
+  // Changed on the server, it is not opened.
+  kept![10] ^= 1;
+  await assert.rejects(downloadXmppFile(came!.file!), /could not be opened/);
+  // Larger than the server takes, it is not sent.
+  await assert.rejects(uploadXmppFile(ann.connection, ready.service, { bytes: new Uint8Array(1024 * 1024 + 1), name: 'big.bin', type: 'application/octet-stream' }, false), /Files up to 1 MB/);
+
+  // A chat written without encryption sends the file as it is, its link out of band too, as every app reads it.
+  ben.state.chats[`ann@${DOMAIN}`].plain = true;
+  const plainReady = await prepareXmppFile(ben.state, ben.connection, `ann@${DOMAIN}`);
+  assert.equal(plainReady.encrypt, false);
+  const notes = utf8Encode('the notes');
+  const plainFile = await uploadXmppFile(ben.connection, plainReady.service, { bytes: notes, name: 'my notes.txt', type: 'text/plain' }, false);
+  assert.equal(plainFile.fragment, undefined);
+  assert.deepEqual(server.files.get(plainFile.url), notes);
+  await sendXmppFile(ben.state, ben.connection, `ann@${DOMAIN}`, plainFile);
+  assert.ok(server.seen.some((s) => s.includes('jabber:x:oob') && s.includes(plainFile.url)));
+  await settle([ann, ben]);
+  const plainCame = ann.state.chats[`ben@${DOMAIN}`].messages.at(-1);
+  assert.deepEqual([plainCame?.text, plainCame?.encrypted, plainCame?.file?.name, plainCame?.file?.type], ['', false, 'my_notes.txt', 'text/plain']);
+  assert.deepEqual(await downloadXmppFile(plainCame!.file!), notes);
+  assert.equal(xmppInboxRows(ann.state).find((row) => row.identity === `xmpp:ben@${DOMAIN}`)?.last, 'File: my_notes.txt');
+
+  // A server with no upload service says so before anything is encrypted or sent.
+  server.upload = null;
+  delete ann.state.upload;
+  await assert.rejects(prepareXmppFile(ann.state, ann.connection, `ben@${DOMAIN}`), /takes no files/);
 });
 
 test('the chats and the people who asked to add us are rows of the home list, on XMPP\'s part', () => {

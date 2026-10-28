@@ -157,7 +157,7 @@ Not yet run with a Nostr app on a phone, nor against the real Blossom servers.
 - `app/nostr-chat.tsx`: the messages, one tick once one of their relays took ours (NIP-17 says
   nothing more), Try again for one none took, a name given here only (a group's, for everyone),
   removing the chat here; in a group who wrote each message; **Photo** and **File**, and a photo or
-  file that came with **Show photo** and **Save**; a message held shows six reactions to pick from,
+  file that came with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`); a message held shows six reactions to pick from,
   and under it the reactions it has.
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
@@ -177,6 +177,6 @@ Android; a muted one is left out. Its messages are marked read only while Erevos
 
 ## Not yet
 
-Voice messages recorded here (one that comes is a file to save), replies to one message (an `e`
+Voice messages recorded here (one that comes plays with **Play**), replies to one message (an `e`
 tag on a kind 14), files encrypted otherwise than with AES-GCM, the key in backups and in hidden
 chats, and a key kept by a signer app (NIP-55) or a remote signer (NIP-46) in place of the nsec.

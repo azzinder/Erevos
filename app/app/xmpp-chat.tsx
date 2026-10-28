@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { NetworkFile } from '../components/network-file';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -11,11 +12,27 @@ import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
 import { t } from '../lib/i18n';
+import { mimeOfName } from '../lib/matrix-media';
+import { pickFile } from '../lib/pick-file';
+import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
 import { isXmppId, nameOf, xmppDevices, type XmppMessage } from '../lib/xmpp';
 import { startXmppCall } from '../lib/xmpp-calls';
+import { XMPP_FILE_MOST } from '../lib/xmpp-files';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppForgetChat, xmppNow, xmppRead, xmppSend, xmppSetNotify, xmppSetPlain } from '../lib/xmpp-store';
+import {
+  onXmppChange,
+  runXmpp,
+  xmppFile,
+  xmppForgetChat,
+  xmppNow,
+  xmppRead,
+  xmppSend,
+  xmppSendFile,
+  xmppSetNotify,
+  xmppSetPlain,
+  type XmppOutgoingFile,
+} from '../lib/xmpp-store';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -24,8 +41,10 @@ import { useColors } from '../theme/context';
 // marked as not anonymous, and as not encrypted when the person's apps have no OMEMO and the chat
 // was chosen to go without it. Opening it, with Erevos on the screen, marks its messages read, and
 // tells the other person's app when it asked; while it shows, what comes in it only sounds, and it
-// can be muted or given sounds of its own (components/network-chat-notify.tsx). The keys of their devices are listed below, to compare with them. The two tiles
-// at the top call them (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls.
+// can be muted or given sounds of its own (components/network-chat-notify.tsx). Photo and File send
+// one through the server's HTTP upload, encrypted as the chat is (lib/xmpp-files.ts). The keys of
+// their devices are listed below, to compare with them. The two tiles at the top call them
+// (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls.
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
@@ -36,8 +55,9 @@ export default function XmppChatScreen() {
   const [now, setNow] = useState(xmppNow());
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
-  // The text that could not be sent with OMEMO, kept while the person decides about writing without it.
-  const [unsent, setUnsent] = useState<string | null>(null);
+  // What could not be sent with OMEMO, a text or a file, kept while the person decides about writing without it.
+  const [unsent, setUnsent] = useState<{ text: string } | { file: XmppOutgoingFile } | null>(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     runXmpp();
@@ -72,10 +92,43 @@ export default function XmppChatScreen() {
     } catch (error) {
       // Their apps have no OMEMO: the text waits for the person to say whether to write without it,
       // which the card below explains.
-      if (error instanceof NoOmemoError) setUnsent(text);
+      if (error instanceof NoOmemoError) setUnsent({ text });
       else fail(error);
     }
   }
+
+  async function sendFile(file: XmppOutgoingFile) {
+    if (!jid) return;
+    setNote('');
+    setSending(true);
+    try {
+      await xmppSendFile(jid, file);
+    } catch (error) {
+      if (error instanceof NoOmemoError) setUnsent({ file });
+      else fail(error);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function sendPicked(pick: () => Promise<XmppOutgoingFile | null>) {
+    try {
+      const file = await pick();
+      if (file) await sendFile(file);
+    } catch (error) {
+      fail(error);
+    }
+  }
+  const sendPhoto = () =>
+    sendPicked(async () => {
+      const photo = await pickPhoto('photos', 90);
+      return photo ? { bytes: photo.bytes, name: photo.name, mime: photo.mime } : null;
+    });
+  const sendAnyFile = () =>
+    sendPicked(async () => {
+      const picked = await pickFile(XMPP_FILE_MOST);
+      return picked ? { ...picked, mime: mimeOfName(picked.name) } : null;
+    });
 
   function submit() {
     const text = draft.trim();
@@ -134,11 +187,11 @@ export default function XmppChatScreen() {
               title={t('Write without encryption')}
               compact
               onPress={() => {
-                const text = unsent;
+                const held = unsent;
                 setUnsent(null);
                 setNote('');
                 xmppSetPlain(jid, true)
-                  .then(() => send(text))
+                  .then(() => ('text' in held ? send(held.text) : sendFile(held.file)))
                   .catch(fail);
               }}
             />
@@ -147,7 +200,7 @@ export default function XmppChatScreen() {
               kind="secondary"
               compact
               onPress={() => {
-                setDraft(unsent);
+                if ('text' in unsent) setDraft(unsent.text);
                 setUnsent(null);
                 setNote('');
               }}
@@ -159,6 +212,11 @@ export default function XmppChatScreen() {
       <Row>
         <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
         <Button title={t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
+      </Row>
+      <Row>
+        <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => void sendPhoto()} />
+        <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => void sendAnyFile()} />
+        {sending ? <Text tone="muted">{t('Sending…')}</Text> : null}
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
       <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} />
@@ -242,7 +300,13 @@ function Bubble({ message }: { message: XmppMessage }) {
         gap: 2,
       }}
     >
-      {message.locked ? <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text> : <Text selectable>{message.text}</Text>}
+      {message.locked ? (
+        <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
+      ) : message.file ? (
+        <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} />
+      ) : (
+        <Text selectable>{message.text}</Text>
+      )}
       <Text variant="caption" tone="faint">
         {status}
         {!message.encrypted && !message.locked ? ` · ${t('not encrypted')}` : ''}

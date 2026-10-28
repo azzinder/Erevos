@@ -4,6 +4,7 @@ import type { ChatNotify } from '../lock/chat-notify';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
+import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
 import {
   bundleElement,
   bundleNode,
@@ -88,6 +89,8 @@ export type XmppMessage = {
   markable?: string;
   /** A call's line (lib/xmpp-calls.ts), kept here only: its text in English, shown by lib/call-lines.ts. */
   call?: true;
+  /** A photo or file (lib/xmpp-files.ts): where it is, and its key when encrypted. Its text is then empty. */
+  file?: XmppFile;
 };
 
 export type XmppChat = {
@@ -125,6 +128,8 @@ export type XmppState = {
   /** The archive id of the newest message fetched or seen. */
   archived?: string;
   seen: string[];
+  /** The server's HTTP upload service, as last found (lib/xmpp-files.ts). */
+  upload?: XmppUpload;
 };
 
 export class XmppError extends Error {
@@ -604,6 +609,8 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
 
   const encrypted = child(message, 'encrypted', OMEMO);
   const body = textOf(child(message, 'body')).trim();
+  // A file sent as it is names its link out of band too (XEP-0066); an encrypted one only in its text.
+  const oob = encrypted ? undefined : textOf(child(child(message, 'x', NS_OOB), 'url')).trim() || undefined;
   if (!encrypted && !body) return;
   if ((originId || id) && !remember(state, `${from}|${originId || id}`)) return;
 
@@ -628,7 +635,18 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   const chat = chatOf(state, peer);
   if ((originId || id) && chat.messages.some((m) => m.id === (originId || id) && m.mine === mine)) return;
   const markable = !mine && child(message, 'markable', NS.markers) ? (message.attrs.from ?? from) : undefined;
-  addMessage(chat, { id: originId || id || newId(), mine, text, at: how.at, encrypted: Boolean(encrypted), locked: locked || undefined, state: mine ? 'sent' : undefined, markable });
+  const file = locked ? null : fileOfText(text, oob);
+  addMessage(chat, {
+    id: originId || id || newId(),
+    mine,
+    text: file ? '' : text,
+    at: how.at,
+    encrypted: Boolean(encrypted),
+    locked: locked || undefined,
+    state: mine ? 'sent' : undefined,
+    markable,
+    ...(file ? { file } : {}),
+  });
   if (!mine) chat.unread += 1;
   else chat.unread = 0;
   taken.chats.push(peer);
@@ -783,7 +801,8 @@ async function sessionsFor(state: XmppState, connection: XmppConnection, jids: s
 }
 
 /** An <encrypted> for `peer`'s devices and our others, with `text`, or none for an empty one. */
-async function encryptFor(state: XmppState, connection: XmppConnection, peer: string, text: string | null, only?: number): Promise<XmlElement> {
+/** The devices a message to `peer` is encrypted for: theirs and our others. Throws NoOmemoError when they have none. */
+async function targetsFor(state: XmppState, connection: XmppConnection, peer: string, only?: number): Promise<{ jid: string; id: string }[]> {
   await devicesFor(state, connection, peer);
   await devicesFor(state, connection, state.jid);
   await sessionsFor(state, connection, [peer, state.jid]);
@@ -800,10 +819,15 @@ async function encryptFor(state: XmppState, connection: XmppConnection, peer: st
     // A list fetched a while ago may be out of date: once more, freshly.
     if (only === undefined && Date.now() - (state.people[peer]?.fetchedAt ?? 0) > 60_000) {
       await devicesFor(state, connection, peer, true);
-      return encryptFor(state, connection, peer, text, only);
+      return targetsFor(state, connection, peer, only);
     }
     throw new NoOmemoError(peer);
   }
+  return targets;
+}
+
+async function encryptFor(state: XmppState, connection: XmppConnection, peer: string, text: string | null, only?: number): Promise<XmlElement> {
+  const targets = await targetsFor(state, connection, peer, only);
   const answer = await omemoCall<{ payload: string | null; iv: string; keys: { key: string; prekey: boolean; session: unknown }[] }>({
     op: 'encrypt',
     text: text ?? undefined,
@@ -833,9 +857,32 @@ async function sendEmpty(state: XmppState, connection: XmppConnection, peer: str
 /** Sends `text` to `peer`, encrypted with OMEMO unless the chat chose otherwise. Throws
  *  NoOmemoError when their apps have no OMEMO keys and the chat has not chosen to send plain. */
 export async function sendXmppText(state: XmppState, connection: XmppConnection, peer: string, text: string): Promise<XmppMessage> {
+  return sendBody(state, connection, peer, text);
+}
+
+/**
+ * Before a file goes to `peer`: whether it is encrypted (the chat is), and the server's upload
+ * service, found once. Throws NoOmemoError when the chat is encrypted and their apps have no OMEMO,
+ * so nothing is uploaded for nothing, and an error when the server takes no files.
+ */
+export async function prepareXmppFile(state: XmppState, connection: XmppConnection, peer: string): Promise<{ encrypt: boolean; service: XmppUpload }> {
+  const encrypt = !chatOf(state, peer).plain;
+  if (encrypt) await targetsFor(state, connection, peer);
+  const service = await findUpload(connection, domainOf(state.jid), state.upload);
+  if (!service) throw new XmppError(t('Your XMPP server takes no files.'));
+  state.upload = service;
+  return { encrypt, service };
+}
+
+/** Sends a file already uploaded (lib/xmpp-files.ts): its link, encrypted as the chat is, out of band too when it is not. */
+export async function sendXmppFile(state: XmppState, connection: XmppConnection, peer: string, file: XmppFile): Promise<XmppMessage> {
+  return sendBody(state, connection, peer, textOfFile(file), file);
+}
+
+async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile): Promise<XmppMessage> {
   const chat = chatOf(state, peer);
   const id = newId();
-  const message: XmppMessage = { id, mine: true, text, at: Date.now(), encrypted: !chat.plain, state: 'sending' };
+  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !chat.plain, state: 'sending', ...(file ? { file } : {}) };
   const extras = [
     el('request', { xmlns: NS.receipts }),
     el('markable', { xmlns: NS.markers }),
@@ -843,7 +890,7 @@ export async function sendXmppText(state: XmppState, connection: XmppConnection,
   ];
   let stanza: XmlElement;
   if (chat.plain) {
-    stanza = el('message', { to: peer, type: 'chat', id }, el('body', {}, text), ...extras);
+    stanza = el('message', { to: peer, type: 'chat', id }, el('body', {}, text), file && !file.fragment ? oobOf(file) : null, ...extras);
   } else {
     const encrypted = await encryptFor(state, connection, peer, text);
     stanza = el(

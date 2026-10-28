@@ -1582,6 +1582,13 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 - **Messages d’avant :** ce qui est arrivé pendant qu’Erevos était fermé est récupéré dans l’archive du serveur à la
   connexion, si le serveur en tient une. Un message envoyé avant la connexion de cet appareil, ou qui ne lui était pas
   destiné, s’affiche verrouillé.
+- **Photos et fichiers :** **Photo** et **Fichier**, sous la zone du message, envoient un fichier jusqu’à 50 Mo, ou
+  moins si ton serveur XMPP accepte moins, par l’envoi de fichiers du serveur. Dans une discussion chiffrée, il est
+  d’abord chiffré sur ce téléphone, avec une clé faite pour lui seul, et la clé part dans le message, chiffrée avec
+  OMEMO : le serveur ne garde ainsi que ce qu’il ne peut pas lire ; Conversations, Monal, Gajim et Dino l’ouvrent. Dans
+  une discussion écrite sans chiffrement, le fichier part tel quel. Une photo, un son ou un fichier qui arrive n’est
+  téléchargé que si tu touches **Afficher la photo**, **Lire** ou **Enregistrer**. Sur Android, les fichiers passent
+  par Tor comme la discussion.
 - **Appels :** les deux tuiles en haut de la discussion appellent la personne, en voix ou en vidéo, sur le même écran
   d’appel que les appels propres d’Erevos, et ses appels sonnent ici de la même façon, tant que cet espace est ouvert ;
   un appel de quelqu’un qui n’est pas dans tes contacts s’affiche seulement comme manqué. Cela marche avec les apps qui
@@ -1602,7 +1609,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** photos et fichiers, discussions et appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
+- **Pas encore :** discussions et appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.
@@ -1663,7 +1670,7 @@ discussions propres à Erevos.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** les messages vocaux enregistrés ici (un message vocal qui arrive est un fichier à enregistrer), les
+- **Pas encore :** les messages vocaux enregistrés ici (un message vocal qui arrive se lit avec **Lire**), les
   réponses à un message précis, et les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier
   qu’Erevos ne sait pas ouvrir).
 

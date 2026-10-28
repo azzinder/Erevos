@@ -56,4 +56,10 @@ export const xmpp: Record<string, string> = {
   "XMPP": "XMPP",
   "Chats with people on XMPP: encrypted, not anonymous": "Razgovori s ljudima na XMPP-u: šifrovani, nisu anonimni",
   "Encrypted, but its key passes through the XMPP servers": "Šifrovan, ali njegov ključ ide preko XMPP servera",
+  "Play": "Pusti",
+  "Files up to {size} MB go in XMPP chats.": "U XMPP razgovore idu datoteke do {size} MB.",
+  "The XMPP server gave no place for the file.": "XMPP server nije dao mjesto za datoteku.",
+  "The XMPP server did not take the file ({status}).": "XMPP server nije primio datoteku ({status}).",
+  "This file is larger than Erevos opens.": "Ova datoteka je veća nego što Erevos otvara.",
+  "Your XMPP server takes no files.": "Tvoj XMPP server ne prima datoteke.",
 };

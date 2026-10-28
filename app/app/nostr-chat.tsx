@@ -1,12 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { NetworkFile } from '../components/network-file';
 import { Button, Chip, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
-import { fileSize } from '../lib/attachments';
-import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
@@ -31,7 +30,6 @@ import {
 import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
-import { saveBytes } from '../lib/save-file';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -268,7 +266,7 @@ function Bubble({ state, message, group, onRetry, onLongPress }: { state: NostrD
         </Text>
       ) : null}
       {typeof message.file === 'object' ? (
-        <FilePart file={message.file} />
+        <NetworkFile name={message.file.name ?? (message.file.type.startsWith('image/') ? t('Photo') : t('File'))} type={message.file.type} size={message.file.size} dim={message.file.dim} fetch={() => nostrDmFile(message.file as NostrDmFile)} />
       ) : message.file ? (
         <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>
       ) : (
@@ -286,69 +284,5 @@ function Bubble({ state, message, group, onRetry, onLongPress }: { state: NostrD
       </Text>
       {message.state === 'failed' ? <Button title={t('Try again')} kind="secondary" compact onPress={onRetry} /> : null}
     </Pressable>
-  );
-}
-
-// A photo or file in a message: fetched only when asked for, a photo then shown, any file saved.
-function FilePart({ file }: { file: NostrDmFile }) {
-  const [bytes, setBytes] = useState<Uint8Array | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState('');
-  const image = file.type.startsWith('image/');
-  const name = file.name ?? (image ? t('Photo') : t('File'));
-
-  async function get(): Promise<Uint8Array | null> {
-    if (bytes) return bytes;
-    setBusy(true);
-    setNote('');
-    try {
-      const got = await nostrDmFile(file);
-      setBytes(got);
-      return got;
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function save() {
-    const got = await get();
-    if (!got) return;
-    try {
-      if (await saveBytes(name, file.type, got)) setNote(t('Saved.'));
-    } catch (error) {
-      setNote(error instanceof Error ? error.message : String(error));
-    }
-  }
-
-  const [w, h] = (file.dim ?? '').split('x').map(Number);
-  const ratio = w && h ? w / h : 4 / 3;
-  return (
-    <View style={{ gap: space.xs }}>
-      {image && bytes ? (
-        <Image source={{ uri: `data:${file.type};base64,${toBase64(bytes)}` }} style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }} resizeMode="contain" accessibilityLabel={name} />
-      ) : (
-        <Text numberOfLines={2}>
-          {name}
-          {file.size ? ` · ${fileSize(file.size)}` : ''}
-        </Text>
-      )}
-      <Row>
-        {image && !bytes ? <Button title={t('Show photo')} compact disabled={busy} onPress={() => void get()} /> : null}
-        <Button title={t('Save')} kind="secondary" compact disabled={busy} onPress={() => void save()} />
-      </Row>
-      {busy ? (
-        <Text variant="caption" tone="muted">
-          {t('Fetching…')}
-        </Text>
-      ) : null}
-      {note ? (
-        <Text variant="caption" tone="muted">
-          {note}
-        </Text>
-      ) : null}
-    </View>
   );
 }

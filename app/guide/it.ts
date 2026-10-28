@@ -1526,6 +1526,12 @@ app: nessun ponte sta nel mezzo.
 - **Messaggi di prima:** ciò che è arrivato mentre Erevos era chiuso si scarica dall’archivio del server alla
   connessione, se il server ne tiene uno. Un messaggio inviato prima che questo dispositivo accedesse, o non destinato a
   lui, appare bloccato.
+- **Foto e file:** **Foto** e **File**, sotto la casella del messaggio, inviano un file fino a 50 MB, o meno se il tuo
+  server XMPP ne accetta meno, tramite il caricamento di file del server. In una chat cifrata viene prima cifrato su
+  questo telefono, con una chiave fatta solo per lui, e la chiave va nel messaggio, cifrata con OMEMO, così il server
+  tiene solo ciò che non può leggere; Conversations, Monal, Gajim e Dino lo aprono. In una chat scritta senza
+  cifratura il file va così com’è. Una foto, un suono o un file che arriva si scarica solo toccando **Mostra foto**,
+  **Riproduci** o **Salva**. Su Android, i file passano per Tor come la chat.
 - **Chiamate:** i due riquadri in alto nella chat chiamano la persona, a voce o in video, sulla stessa schermata di
   chiamata delle chiamate di Erevos, e le sue chiamate squillano qui allo stesso modo, finché questo spazio è aperto;
   una chiamata da qualcuno che non è nei tuoi contatti appare solo come persa. Funziona con le app che chiamano come
@@ -1544,7 +1550,7 @@ app: nessun ponte sta nel mezzo.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** foto e file, chat e chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
+- **Non ancora:** chat e chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
@@ -1601,7 +1607,7 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** messaggi vocali registrati qui (uno che arriva è un file da salvare), risposte a un messaggio preciso,
+- **Non ancora:** messaggi vocali registrati qui (uno che arriva si ascolta con **Riproduci**), risposte a un messaggio preciso,
   e file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una

@@ -1,9 +1,8 @@
 import { gcm } from '@noble/ciphers/aes.js';
 
-import { canTorHttp, torHttp } from './core';
 import { fromHex, randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode, aesGcmSeal } from './crypto';
 import { t } from './i18n';
-import { throughTor, torFor } from './relay';
+import { netHttp, type Http, type HttpAnswer } from './net-http';
 
 // Photos and files in chats with other Nostr apps (docs/nostr-chats.md), as NIP-17 sends them
 // (kind 15): the file is encrypted on the phone with AES-256-GCM, by a key and nonce made for it
@@ -121,38 +120,15 @@ export function openFile(file: NostrDmFile, sealed: Uint8Array): Uint8Array {
 
 // ---- the servers ----
 
-export type NostrHttpAnswer = { status: number; bytes: Uint8Array; reason?: string };
-export type NostrHttp = (method: 'GET' | 'PUT', url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<NostrHttpAnswer>;
+export type NostrHttpAnswer = HttpAnswer;
+export type NostrHttp = Http;
 
-async function straight(method: 'GET' | 'PUT', url: string, headers: Record<string, string>, body?: Uint8Array): Promise<NostrHttpAnswer> {
-  const response = await fetch(url, { method, headers, body: body as unknown as BodyInit | undefined });
-  return { status: response.status, bytes: new Uint8Array(await response.arrayBuffer()), reason: response.headers.get('x-reason') ?? undefined };
-}
-
-async function viaTor(method: 'GET' | 'PUT', url: string, headers: Record<string, string>, body?: Uint8Array): Promise<NostrHttpAnswer> {
-  const answer = await torHttp(JSON.stringify({ method, url, headers }), body ?? new Uint8Array(0));
-  return { status: (answer[0] << 8) | answer[1], bytes: answer.slice(2) };
-}
-
-/** Through Tor as the space's Tor way says, as Nostr chats go (lib/nostr-dm-net.ts). */
-const defaultHttp: NostrHttp = async (method, url, headers, body) => {
-  if (!(canTorHttp() && torFor(false))) {
-    if (throughTor()) throw new Error(t('Tor is not ready.'));
-    return straight(method, url, headers, body);
-  }
-  try {
-    return await viaTor(method, url, headers, body);
-  } catch (error) {
-    if (throughTor()) throw error;
-    return straight(method, url, headers, body);
-  }
-};
-
-let http: NostrHttp = defaultHttp;
+// Through Tor as the space's Tor way says, as Nostr chats go (lib/nostr-dm-net.ts).
+let http: NostrHttp = netHttp;
 
 /** For the checks: how files reach servers; null for the usual way. */
 export function setNostrHttp(next: NostrHttp | null): void {
-  http = next ?? defaultHttp;
+  http = next ?? netHttp;
 }
 
 const base64url = (bytes: Uint8Array) => {

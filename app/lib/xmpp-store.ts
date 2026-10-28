@@ -2,6 +2,7 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
+import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import {
@@ -10,8 +11,10 @@ import {
   declineXmppRequest,
   forgetXmppChat,
   markXmppRead,
+  prepareXmppFile,
   publishOmemo,
   sendKeepAlive,
+  sendXmppFile,
   sendXmppText,
   signInXmpp,
   signOutXmpp,
@@ -22,6 +25,7 @@ import {
   type Taken,
   type XmppState,
 } from './xmpp';
+import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
 import type { connectXmpp, XmppServer } from './xmpp-net';
 
 // The open space's XMPP account as the screens use it (app/xmpp.tsx, app/xmpp-chat.tsx): loaded
@@ -242,6 +246,7 @@ export function runXmpp(): void {
 
 /** Disconnects and lets go of the account, as its space closes. */
 export function stopXmpp(): void {
+  fetched.clear();
   if (!live) return;
   live.stopped = true;
   live.connection?.close();
@@ -304,6 +309,35 @@ export function xmppSend(jid: string, text: string): Promise<void> {
   return changeAccount(it, async () => {
     await sendXmppText(it.state, online(it), jid, text);
   });
+}
+
+/** A photo or file as picked, to send. */
+export type XmppOutgoingFile = { bytes: Uint8Array; name: string; mime: string };
+
+/**
+ * Sends a photo or file: encrypted here when the chat is, put on the server's HTTP upload, and its
+ * link in a message. The upload runs between two changes of the account, so what comes meanwhile
+ * is not held back.
+ */
+export async function xmppSendFile(jid: string, picked: XmppOutgoingFile): Promise<void> {
+  const it = need();
+  let ready: Awaited<ReturnType<typeof prepareXmppFile>> | null = null;
+  await changeAccount(it, async () => {
+    ready = await prepareXmppFile(it.state, online(it), jid);
+  });
+  const { encrypt, service } = ready!;
+  const file = await uploadXmppFile(online(it), service, { bytes: picked.bytes, name: picked.name, type: picked.mime }, encrypt);
+  await changeAccount(it, async () => {
+    await sendXmppFile(it.state, online(it), jid, file);
+  });
+}
+
+// Files fetched while Erevos runs, so one looked at again is not fetched again (lib/file-cache.ts).
+const fetched = fileCache(40 * 1024 * 1024);
+
+/** A message's photo or file, fetched from the server and opened, or kept from before. */
+export function xmppFile(file: XmppFile): Promise<Uint8Array> {
+  return fetched.get(file.url, () => downloadXmppFile(file));
 }
 
 /** Writes to a person whose apps have no OMEMO without encryption from now on (or with it again). */
