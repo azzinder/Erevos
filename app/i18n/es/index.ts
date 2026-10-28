@@ -38,5 +38,6 @@ import { cloudBackup } from './cloud-backup';
 import { matrix } from './matrix';
 import { desktop } from './desktop';
 import { xmpp } from './xmpp';
+import { nostrChats } from './nostr-chats';
 
-export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp };
+export const ES: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats };

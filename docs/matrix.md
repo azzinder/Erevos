@@ -127,4 +127,3 @@ What stays private is what is written.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
   "Matrix 2.0" mode): Element Call is not given sticky events.
 - Element Call's background blur (its models are left out of the APK).
-- Chats with other Nostr apps (NIP-17), the next network after XMPP.

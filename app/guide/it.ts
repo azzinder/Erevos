@@ -82,6 +82,9 @@ mentre il loro PIN le tiene aperte.
 - **Le chat XMPP**, una volta che hai fatto l’accesso a XMPP, sono nell’elenco allo stesso modo, ognuna segnata
   **XMPP**, e chi chiede di aggiungerti compare in cima. Il chip **XMPP** mostra solo loro, e lì **Nuova chat** avvia
   una chat XMPP: vedi [XMPP](#xmpp).
+- **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata
+  **Nostr**. Il pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre la schermata delle chat Nostr: vedi
+  [Chat con altre app Nostr](#nostr-chats).
 - **Nuova chat**, in basso, apre le impostazioni del relay e l’aggiunta di un contatto. **Ricordamelo**, la campanella
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori
@@ -200,7 +203,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android) e **Widget** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second) e [Chat nascoste](#hidden). |
-| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix** e **XMPP**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix) e [XMPP](#xmpp). |
+| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** e **Chat Nostr**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats). |
 | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
 | **Dati e dispositivi** | **Backup**, **Dispositivi collegati** e **Chat importate**. Vedi [Backup](#backup), [Dispositivi collegati](#devices) e [Chat importate](#import). |
 | **Per i test** | **Test del relay** e **Test radio** (Android). Vedi [Le schermate di test](#tests). |
@@ -1533,6 +1536,47 @@ app: nessun ponte sta nel mezzo.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
+
+## Chat con altre app Nostr {#nostr-chats}
+
+In **Impostazioni** → **Relay e reti** → **Chat Nostr**, uno spazio può avere una chiave Nostr tutta sua, per chattare
+a tu per tu con persone che usano Damus, Amethyst, Primal, 0xchat o un’altra app Nostr che invia i messaggi privati
+come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di Erevos.
+
+- **La chiave:** **Crea una chiave Nostr** ne crea una per questo spazio; **Oppure porta una chiave da un’altra app
+  Nostr** prende il nsec di una chiave che hai già, e legge ciò che i suoi relay tengono ancora. La chiave e le sue chat
+  sono tenute cifrate solo in questo spazio, mai nelle sue chat nascoste, e non ancora nei backup. **Mostra la chiave
+  segreta (nsec)** la mostra, per annotarla o portarla in un’altra app: chi ce l’ha legge queste chat e scrive al posto
+  tuo.
+- **La tua chiave Nostr:** dai il suo npub alle persone che devono scriverti, con **Copia** o **Mostra il codice QR**.
+  **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub.
+- **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
+  nome@example.org (NIP-05). Le chat sono anche nella lista della home, ognuna segnata **Nostr**; il pulsante **Nostr**
+  mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi solo
+  tu.
+- **Cifratura:** ogni messaggio è cifrato per l’altra persona e firmato da te, poi avvolto di nuovo da una chiave creata
+  solo per quel messaggio, con l’ora spostata indietro fino a due giorni (NIP-17, con NIP-44 e NIP-59). I relay vedono a
+  chi è destinato, non chi l’ha scritto, quando né cosa dice. Una copia va ai tuoi relay, così le tue altre app Nostr
+  con questa chiave leggono anche loro. È codice proprio di Erevos, non verificato da terzi, controllato con l’esempio
+  dello stesso NIP-17 e con nostr-tools.
+- **Dove arrivano i tuoi messaggi:** i relay a cui le altre app mandano i tuoi messaggi: relay.damus.io, nos.lol e
+  relay.primal.net se non li cambi, al massimo tre. Erevos li fa sapere alle altre app (una lista kind 10050) quando
+  cambiano e una volta alla settimana. Invia ai relay che indica l’app dell’altra persona; un’app che non ne indica
+  nessuno non può ancora ricevere un messaggio, ed Erevos lo dice.
+- **Segni:** un ✓ appena uno dei suoi relay ha accettato il messaggio. NIP-17 non rimanda niente: né quando la sua app
+  lo ha, né quando lo legge. Leggere una chat qui non lo dice a nessuno.
+- **Non anonimo:** la tua chiave è la stessa per tutti quelli a cui scrivi, e chiunque abbia un npub può scrivergli. I
+  relay dove arrivano i tuoi messaggi vedono la tua chiave leggerli e, senza Tor, da dove. Solo la connessione che legge
+  i tuoi relay dice loro chi legge, quando un relay lo chiede (NIP-42); l’invio e la ricerca di persone, mai.
+- **Tramite Tor:** su Android, le chat Nostr seguono la scelta di questo spazio in **Impostazioni** → **Relay e reti** →
+  **Tor**: con **Messaggi** passano da Tor appena Tor è pronto, e direttamente mentre Tor parte o quando fallisce; con
+  **Tutto**, solo da Tor; con **Niente**, direttamente. La schermata dice da dove passano ora. Nell’app web e su un
+  computer passano direttamente.
+- **Non ancora:** foto e file (uno che arriva appare come un file che Erevos non apre ancora), chat di gruppo, reazioni,
+  e un avviso sul telefono quando arriva un messaggio.
+
+**Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
+chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie di Erevos nascondono chi parla con chi.
 
 ## SMS {#sms}
 

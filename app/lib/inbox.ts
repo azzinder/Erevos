@@ -280,7 +280,8 @@ export function nostrInboxRows(state: NostrDmState): InboxRow[] {
     const mine = !!last?.mine;
     return {
       identity: `nostr:${chat.key}`,
-      name: nostrNameOf(state, chat.key) || shortNpub(npubOf(chat.key)),
+      // Notes to oneself, written from another app with the same key.
+      name: chat.key === state.public ? t('Chat with myself') : nostrNameOf(state, chat.key) || shortNpub(npubOf(chat.key)),
       last: !last ? '' : last.file ? t('A file') : last.text,
       mine,
       mark: mine ? NOSTR_MARKS[last.state ?? 'sent'] : 0,

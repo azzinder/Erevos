@@ -80,6 +80,9 @@ dok ih njihov PIN drži otvorenima.
 - **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži
   da vas doda stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje XMPP razgovor:
   pogledajte [XMPP](#xmpp).
+- **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
+  **Nostr** prikazuje samo njih, a tamo **Novi razgovor** otvara ekran Nostr razgovora: pogledajte
+  [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
 - **Novi razgovor**, na dnu, otvara postavke relaya i dodavanje kontakta. **Podsjeti me**, narandžasto zvono pored
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
@@ -199,7 +202,7 @@ nikad ne prenosi.
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second) i [Skriveni razgovori](#hidden). |
-| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix** i **XMPP**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix) i [XMPP](#xmpp). |
+| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test relaya** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
@@ -1466,6 +1469,46 @@ aplikacije: nikakav most nije između.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
+
+## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
+
+Pod **Postavke** → **Relay i mreže** → **Nostr razgovori**, prostor može imati vlastiti Nostr ključ, za razgovor u
+četiri oka s ljudima koji koriste Damus, Amethyst, Primal, 0xchat ili drugu Nostr aplikaciju koja šalje privatne poruke
+kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlastite razgovore.
+
+- **Ključ:** **Izradi Nostr ključ** izrađuje jedan za ovaj prostor; **Ili donesite ključ iz druge Nostr aplikacije**
+  uzima nsec ključa koji već imate, i čita ono što njegovi relayi još čuvaju. Ključ i njegovi razgovori čuvaju se
+  šifrirani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima, i još ne u sigurnosnim kopijama. **Prikaži
+  tajni ključ (nsec)** ga prikazuje, da ga zapišete ili prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i
+  piše kao vi.
+- **Vaš Nostr ključ:** dajte njegov npub ljudima koji vam trebaju pisati, s **Kopiraj** ili **Prikaži QR kod**. **Vaše
+  ime**, ako ga date, javno je: druge Nostr aplikacije prikazuju ga umjesto vašeg npub-a.
+- **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
+  kao ime@example.org (NIP-05). Razgovori su i na popisu početnog ekrana, svaki označen s **Nostr**; dugme **Nostr**
+  prikazuje samo njih, a tamo **Novi razgovor** otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru ime koje vidite
+  samo vi.
+- **Šifrovanje:** svaka poruka šifrira se za drugu osobu i vi je potpisujete, a zatim je ponovo omata ključ izrađen samo
+  za tu poruku, s vremenom pomaknutim unatrag do dva dana (NIP-17, s NIP-44 i NIP-59). Relayi vide kome je namijenjena,
+  ne i tko ju je napisao, kada ni što piše. Kopija ide na vaše vlastite relaye, da vaše druge Nostr aplikacije s ovim
+  ključem čitaju zajedno. To je Erevosov vlastiti kod, bez revizije, provjeren primjerom iz samog NIP-17 i prema
+  nostr-tools.
+- **Gdje stižu vaše poruke:** relayi na koje druge aplikacije šalju vaše poruke: relay.damus.io, nos.lol i
+  relay.primal.net ako ih ne promijenite, najviše tri. Erevos ih javlja drugim aplikacijama (popis kind 10050) kad se
+  promijene i jednom tjedno. Šalje na relaye koje navodi aplikacija druge osobe; aplikacija koja ne navodi nijedan još ne
+  može primiti poruku, i Erevos to kaže.
+- **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
+  ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
+- **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu
+  vaše poruke vide da ih vaš ključ čita i, bez Tora, odakle. Samo veza koja čita vaše relaye kaže im tko čita, kad relay
+  to zatraži (NIP-42); slanje i traženje ljudi nikada.
+- **Preko Tora:** na Androidu, Nostr razgovori slijede izbor ovog prostora pod **Postavke** → **Relay i mreže** →
+  **Tor**: s **Poruke** idu preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; sa **Sve**
+  samo preko Tora; s **Ništa** direktno. Ekran kaže kojim putem idu sada. U web aplikaciji i na računaru idu direktno.
+- **Još ne:** fotografije i datoteke (ona koja stigne prikazuje se kao datoteka koju Erevos još ne otvara), grupni
+  razgovori, reakcije, i obavijest na telefonu kad stigne poruka.
+
+**Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
+isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim razgovara.
 
 ## SMS {#sms}
 

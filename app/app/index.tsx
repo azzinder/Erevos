@@ -24,9 +24,10 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, showsIn, shownName, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
+import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -392,27 +393,31 @@ export default function Home() {
     }, [again]),
   );
 
-  // The Matrix rooms and the XMPP chats join the list while the space is signed in to them
-  // (lib/matrix-store.ts, lib/xmpp-store.ts).
+  // The Matrix rooms, the XMPP chats and the chats with other Nostr apps join the list while the
+  // space has them (lib/matrix-store.ts, lib/xmpp-store.ts, lib/nostr-dm-store.ts).
   const [matrixTick, setMatrixTick] = useState(0);
   useEffect(() => onMatrixChange(() => setMatrixTick((n) => n + 1)), []);
   const [xmppTick, setXmppTick] = useState(0);
   useEffect(() => onXmppChange(() => setXmppTick((n) => n + 1)), []);
+  const [nostrTick, setNostrTick] = useState(0);
+  useEffect(() => onNostrDmChange(() => setNostrTick((n) => n + 1)), []);
   const matrix = matrixNow().state;
   const xmpp = xmppNow().state;
+  const nostr = nostrDmNow().state;
   const everyRow = useMemo(() => {
     if (!rows) return rows;
     let all = rows;
     if (matrix) all = mergeRows(all, matrixInboxRows(matrix));
     if (xmpp) all = mergeRows(all, xmppInboxRows(xmpp));
+    if (nostr) all = mergeRows(all, nostrInboxRows(nostr));
     return all;
-  }, [rows, matrix, matrixTick, xmpp, xmppTick]);
+  }, [rows, matrix, matrixTick, xmpp, xmppTick, nostr, nostrTick]);
   const shown = useMemo(() => {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
   // The choice shows once the list has two networks' chats, or while one of them is chosen.
-  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp);
+  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr);
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Names, once there are SMS conversations: they unlock the names of their numbers.
@@ -554,6 +559,10 @@ export default function Home() {
               <Text tone="muted" style={styles.emptyText}>
                 {t('No XMPP chats yet.')}
               </Text>
+            ) : show === 'nostr' ? (
+              <Text tone="muted" style={styles.emptyText}>
+                {t('No Nostr chats yet.')}
+              </Text>
             ) : (
               <View style={styles.empty}>
                 <Logo size={64} />
@@ -603,8 +612,9 @@ export default function Home() {
           ) : null}
         </Pressable>
         <Pressable
-          // On Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one (app/xmpp.tsx).
-          onPress={() => router.push(show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : '/chat?setup=1')}
+          // On Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one (app/xmpp.tsx);
+          // on Nostr's, one with another Nostr app (app/nostr-chats.tsx).
+          onPress={() => router.push(show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : '/chat?setup=1')}
           onLongPress={() => setDoor(true)}
           delayLongPress={DOOR_HOLD}
           accessibilityRole="button"

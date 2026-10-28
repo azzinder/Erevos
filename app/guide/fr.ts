@@ -87,6 +87,9 @@ que tant que leur code PIN les tient ouvertes.
 - **Les discussions XMPP**, une fois que tu t’es connecté à XMPP, sont dans la liste de la même façon, chacune marquée
   **XMPP**, et une personne qui demande à t’ajouter s’affiche en haut. La puce **XMPP** ne montre qu’elles, et là
   **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
+- **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
+  marquée **Nostr**. Le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre l’écran des
+  discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
 - **Nouvelle discussion**, en bas, ouvre les réglages du relais et l’ajout d’un contact. **Me rappeler**, la cloche
   orange à côté, t’écrit un rappel.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
@@ -212,7 +215,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android) : recevoir et sonner quand Erevos est fermé, et la notification des messages. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone). |
 | **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second) et [Discussions masquées](#hidden). |
-| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix** et **XMPP**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix) et [XMPP](#xmpp). |
+| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Appareils associés](#devices) et [Discussions importées](#import). |
 | **Pour les tests** | **Test du relais** et **Test radio** (Android). Voir [Les écrans de test](#tests). |
@@ -1589,6 +1592,49 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.
+
+## Discussions avec d’autres applis Nostr {#nostr-chats}
+
+Dans **Réglages** → **Relais et réseaux** → **Discussions Nostr**, un espace peut avoir sa propre clé Nostr, pour
+discuter en tête-à-tête avec des personnes qui utilisent Damus, Amethyst, Primal, 0xchat ou une autre appli Nostr qui
+envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](#nostr), qui porte les discussions propres
+à Erevos.
+
+- **La clé :** **Créer une clé Nostr** en crée une pour cet espace ; **Ou apporter une clé d’une autre appli Nostr**
+  prend le nsec d’une clé que tu as déjà, et lit ce que ses relais gardent encore. La clé et ses discussions sont
+  gardées chiffrées dans cet espace seulement, jamais dans ses discussions cachées, et pas encore dans les sauvegardes.
+  **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou l’emporter dans une autre appli : qui l’a lit ces
+  discussions et écrit en ton nom.
+- **Ta clé Nostr :** donne son npub aux personnes qui doivent t’écrire, avec **Copier** ou **Afficher le code QR**.
+  **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub.
+- **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
+  comme nom@example.org (NIP-05). Les discussions sont aussi dans la liste de l’accueil, chacune marquée **Nostr** ; le
+  bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran. **Lui donner un nom ici** donne à
+  une discussion un nom que toi seul vois.
+- **Chiffrement :** chaque message est chiffré pour l’autre personne et signé par toi, puis enveloppé de nouveau par une
+  clé créée pour ce seul message, son heure reculée jusqu’à deux jours (NIP-17, avec NIP-44 et NIP-59). Les relais
+  voient à qui il est destiné, pas qui l’a écrit, quand, ni ce qu’il dit. Une copie va à tes propres relais, pour que
+  tes autres applis Nostr avec cette clé lisent aussi. C’est le code propre d’Erevos, non audité, vérifié avec l’exemple
+  de NIP-17 lui-même et face à nostr-tools.
+- **Où arrivent tes messages :** les relais auxquels les autres applis envoient tes messages : relay.damus.io, nos.lol
+  et relay.primal.net si tu ne les changes pas, trois au plus. Erevos les fait connaître aux autres applis (une liste
+  kind 10050) quand ils changent et une fois par semaine. Il envoie aux relais que nomme l’appli de l’autre personne ;
+  une appli qui n’en nomme aucun ne peut pas encore recevoir de message, et Erevos le dit.
+- **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
+  quand la personne le lit. Lire une discussion ici ne le dit à personne.
+- **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais
+  où arrivent tes messages voient ta clé les lire et, sans Tor, d’où. Seule la connexion qui lit tes relais leur dit qui
+  lit, quand un relais le demande (NIP-42) ; l’envoi et la recherche de personnes, jamais.
+- **Par Tor :** sur Android, les discussions Nostr suivent le choix de cet espace sous **Réglages** → **Relais et
+  réseaux** → **Tor** : avec **Messages**, elles passent par Tor dès que Tor est prêt, et en direct tant que Tor démarre
+  ou quand il échoue ; avec **Tout**, seulement par Tor ; avec **Rien**, en direct. L’écran dit par où elles passent en
+  ce moment. Dans l’appli web et sur un ordinateur, elles passent en direct.
+- **Pas encore :** photos et fichiers (un fichier qui arrive s’affiche comme un fichier qu’Erevos ne sait pas encore
+  ouvrir), discussions de groupe, réactions, et une notification sur le téléphone quand un message arrive.
+
+**Pourquoi :** beaucoup de gens sont sur Nostr et y resteront. Ainsi tu leur écris depuis Erevos, à part et marqué, car
+une clé Nostr est la même pour tous ceux à qui tu écris, alors que les discussions propres à Erevos cachent qui parle
+avec qui.
 
 ## SMS {#sms}
 

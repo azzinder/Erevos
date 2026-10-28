@@ -151,7 +151,19 @@ On main, not released yet:
   ring here. While a Matrix call is on or ringing, another call, Erevos's own or one on XMPP, does not ring, and the
   other way round: it shows as missed. Checked against a homeserver played in the checks with the real core, and the
   real Element Call in Chromium up to the media server; not yet on a phone with Element X.
-
+- **Chats with people on other Nostr apps**: under **Settings** → **Relay and networks** → **Nostr chats**, a space
+  gets a Nostr key of its own (made there, or brought from another app as its nsec) and chats one to one with people
+  who use Damus, Amethyst, Primal, 0xchat or another app that speaks NIP-17. Each message is a kind 14 sealed by the
+  sender (kind 13, NIP-44) and wrapped by a one-time key (kind 1059, NIP-59), times set back up to two days, sent only
+  to the relays the reader names (their kind 10050), with a copy to the space's own for its other apps. The space's own
+  list (relay.damus.io, nos.lol, relay.primal.net unless changed, three at most) and the name it gives itself, if any,
+  go out when changed and once a week. Only the connection that reads the space's relays answers a relay that asks who
+  reads (NIP-42); sending and looking people up never say. Keys as people write them: npub, nprofile, nostr: links,
+  and name@domain (NIP-05). On Android through Tor as the space's Tor way says, elsewhere straight. A stranger cannot
+  fill the space with chats: past 300, one with nothing of ours makes room. Chats are in the home list under a
+  **Nostr** chip. The key and the chats are kept encrypted in the space only, not in hidden chats or backups yet.
+  Checked against NIP-17's and NIP-19's own examples and against nostr-tools both ways; not yet with a Nostr app on a
+  phone. Not yet: files, groups, reactions, and a notice when a message comes.
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short
   rings every 3 seconds, made by the browser, and vibrates where the phone can, until the call is answered or ends; a

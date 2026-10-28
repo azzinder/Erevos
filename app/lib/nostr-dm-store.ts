@@ -403,8 +403,12 @@ export async function nostrDmStart(written: string, name = ''): Promise<string> 
   const text = written.trim();
   let found: { public: string; relays: string[] } | null;
   if (/^[^@\s]+@[^@\s]+$/.test(text) && !text.startsWith('npub') && !text.startsWith('nprofile')) {
-    found = await lookUpNip05(text).catch(() => null);
-    if (!found) throw new Error(t('{name} names no Nostr key.', { name: text }));
+    found = await lookUpNip05(text).catch((error: unknown) => {
+      // Tor not ready says so; a name that cannot be reached is one with no key.
+      if (error instanceof Error && error.message === t('Tor is not ready.')) throw error;
+      return null;
+    });
+    if (!found) throw new Error(t('No Nostr key was found for {name}.', { name: text }));
   } else {
     const key = await readKey(text);
     if (key.type === 'nsec') throw new Error(t('This is a secret key (nsec): never give it to anyone. Write their npub.'));
@@ -439,7 +443,7 @@ export async function nostrDmSend(key: string, text: string): Promise<void> {
   const chat = chatOf(state, key);
   let relays = self ? state.inbox : chat.relays && (chat.relaysAt ?? 0) > seconds() - 6 * 3600 ? chat.relays : null;
   if (!relays) relays = (await lookUpPerson(it, key).catch(() => null)) ?? chat.relays ?? null;
-  if (!relays?.length) throw new Error(t('Their Nostr app does not say where it takes private messages (NIP-17), so it cannot get one yet.'));
+  if (!relays?.length) throw new Error(t('Their Nostr app does not say where it takes private messages (NIP-17), so they cannot get one yet.'));
   const { message, theirs, ours } = await wrapText(state, key, text);
   await changeAccount(it, async () => {
     addMessage(state, key, message);

@@ -150,11 +150,16 @@ function socketLink(url: string): Promise<NostrLink> {
   });
 }
 
+/** Whether the relays are reached through Tor now: on Android, while the space's Tor way says so. */
+export function nostrChatsThroughTor(): boolean {
+  return canNostr() && torFor(false);
+}
+
 /** A connection to the relay at `url`: through Tor when the space's way says so and Tor is ready,
  *  only through Tor with the way Everything, straight otherwise. */
 export async function openNostrLink(url: string): Promise<NostrLink> {
   if (opener) return opener(url);
-  if (canNostr() && torFor(false)) {
+  if (nostrChatsThroughTor()) {
     try {
       return await torLink(url);
     } catch (error) {

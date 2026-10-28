@@ -41,9 +41,11 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
                   ? row.invited
                     ? '/xmpp'
                     : `/xmpp-chat?jid=${encodeURIComponent(row.identity.slice('xmpp:'.length))}`
-                  : row.identity.startsWith('group:')
-                    ? `/group?id=${row.identity.slice(6)}`
-                    : `/chat?contact=${row.identity}`,
+                  : row.network === 'nostr'
+                    ? `/nostr-chat?key=${row.identity.slice('nostr:'.length)}`
+                    : row.identity.startsWith('group:')
+                      ? `/group?id=${row.identity.slice(6)}`
+                      : `/chat?contact=${row.identity}`,
           ))
       }
       accessibilityRole="button"
@@ -56,7 +58,7 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
       ) : row.sms || row.network ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
-            {row.sms ? 'SMS' : row.network === 'xmpp' ? 'xmpp' : '[m]'}
+            {row.sms ? 'SMS' : row.network === 'xmpp' ? 'xmpp' : row.network === 'nostr' ? 'nostr' : '[m]'}
           </Text>
         </View>
       ) : (
@@ -95,6 +97,10 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
             ) : row.network === 'xmpp' ? (
               <Text variant="caption" color={colors.success}>
                 XMPP
+              </Text>
+            ) : row.network === 'nostr' ? (
+              <Text variant="caption" color={colors.success}>
+                Nostr
               </Text>
             ) : null}
             {row.last && row.mine && !row.lastSms && !row.draft ? (
