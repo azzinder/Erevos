@@ -58,6 +58,8 @@ function title(id: CheckId): string {
       return t('Contacts');
     case 'alarms':
       return t('Exact times');
+    case 'reminders':
+      return t('The reminder notice');
     case 'home':
       return t('On the home screen');
     case 'push':
@@ -74,7 +76,7 @@ function why(id: CheckId, browser: Browser | null): string {
     case 'calls':
       return t('For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.');
     case 'messages':
-      return t('For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.');
+      return t('For the notice that a message came while Erevos is closed, which also keeps the number on Erevos\'s icon. With the "Messages", "Messages without sound" or "Messages with a chat\'s own sound" notices turned off, messages still come, but nothing says so, or only for some.');
     case 'fullScreen':
       return t('So a call fills the screen over the lock screen, as a phone call does.');
     case 'battery':
@@ -107,6 +109,8 @@ function why(id: CheckId, browser: Browser | null): string {
       return t("For the names of the phone's contacts in Phone, SMS and Contacts.");
     case 'alarms':
       return t('For SMS sent later to go at the minute they are set for.');
+    case 'reminders':
+      return t('For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.');
     case 'home':
       return browser === 'iphone'
         ? t('On an iPhone, only Erevos added to the home screen can show notifications while it is closed. And Safari clears what a site keeps in a tab after 7 days without a visit, but not what an app on the home screen keeps.')

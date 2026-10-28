@@ -35,11 +35,11 @@ import { holdLater, sendWaiting, type SendPlace } from '../lib/waiting';
 import { loadDevicesData, saveDevicesData } from '../lock/devices-data';
 import { loadFanoutData } from '../lock/fanout-data';
 import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData } from '../lock/group-data';
-import { History, WAITING } from '../lock/history';
+import { History, newTag, WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
 import { EMPTY_SPACE, loadSpaceData, saveSpaceData, type Queue } from '../lock/space-data';
 import { forgetSpaceMover } from '../lib/queue-move';
-import { holdReceiver, startReceiver } from '../lib/receiver';
+import { holdReceiver, isNews, startReceiver } from '../lib/receiver';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
 import { saveClip } from '../lock/voice-clips';
 import { blobs, files } from './files-memory';
@@ -313,8 +313,25 @@ test('a voice message in parts counts once, on its last part', { skip: !ready },
   await sendSealed(relay, voice, voice.packets, 'message', () => alice.chats.e2e.firstSent(bobId));
   assert.deepEqual(marks(bob.queue.senderHex), ['quiet', 'quiet', 'quiet', 'message']);
   assert.deepEqual(counted(bob.queue.senderHex), { messages: 1, unsure: false });
-  await take(bob);
+  // Told of on this phone as the relay counts it: on its last part.
+  assert.deepEqual((await take(bob)).map(isNews), [false, false, false, true]);
   assert.deepEqual(bob.chats.history.messages().filter((m) => m.voice).length, 1);
+
+  // Its last part lost on the way: nothing is told of, by the relay nor here, until it goes again whole; then once.
+  seen.length = 0;
+  const tag = newTag();
+  const cut = await alice.chats.e2e.sealVoice(bobId, audio, 4000, alice.queue.senderHex, { at: where, tag });
+  dropping = (sent) => sent.to === bob.queue.senderHex && sent.mark === 'message';
+  await assert.rejects(sendSealed(relay, cut, cut.packets, 'message', () => alice.chats.e2e.firstSent(bobId)));
+  dropping = null;
+  assert.deepEqual(marks(bob.queue.senderHex), ['quiet', 'quiet', 'quiet']);
+  assert.deepEqual(counted(bob.queue.senderHex), { messages: 0, unsure: false });
+  assert.ok(!(await take(bob)).some(isNews));
+  seen.length = 0;
+  const whole = await alice.chats.e2e.sealVoice(bobId, audio, 4000, alice.queue.senderHex, { at: where, tag });
+  await sendSealed(relay, whole, whole.packets, 'message', () => alice.chats.e2e.firstSent(bobId));
+  assert.deepEqual(counted(bob.queue.senderHex), { messages: 1, unsure: false });
+  assert.equal((await take(bob)).filter(isNews).length, 1);
 });
 
 test('a photo or a file offered counts once', { skip: !ready }, async () => {

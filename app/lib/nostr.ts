@@ -16,7 +16,7 @@
 // for what came for the keys of the chats that read (the space's while it is open, a hidden place's
 // while its chats are), from somewhat over an hour before they last read, as a wrap's time is set
 // back by as much as an hour, then what comes as it comes, and again at once when the keys change.
-// A connection that ends opens again, after a wait that grows. One subscription for all the keys:
+// A connection that ends opens again, after a wait that grows, or at once as Tor becomes ready. One subscription for all the keys:
 // a relay sees that they are read together, through Tor, never from where.
 
 import { isNostrRelay, MAX_NOSTR_RELAYS, type NostrKey } from '../lock/e2e-data';
@@ -24,7 +24,7 @@ import type { NostrSetting } from '../lock/space-data';
 import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
-import { torFor } from './relay';
+import { onTorReady, torFor } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
 export const NOSTR_BACKUP_MS = 5 * 60_000;
@@ -334,6 +334,11 @@ export function nostrKeysChanged(): void {
   for (const reading of readings.values()) reading.wake();
 }
 
+// Tor ready: a connection that waited for it, or failed meanwhile, opens again at once.
+onTorReady(() => {
+  for (const reading of readings.values()) reading.retry();
+});
+
 // A connection to each relay while something reads, none to others.
 function readAgain(): void {
   const wanted = relays && readers.size > 0 ? relays : [];
@@ -395,6 +400,8 @@ class Reading {
   // which readers, whether the relay sent all it had (`live`), and when they were last told so.
   private asking: { line: Line; sub: string; says: string; at: number; of: NostrReader[]; live: boolean; caught: number } | null = null;
   private turn: Promise<void> = Promise.resolve();
+  // How long to wait before opening a connection that ended again.
+  private wait = RETRY;
 
   private readonly url: string;
 
@@ -406,6 +413,12 @@ class Reading {
   stop(): void {
     this.stopped = true;
     this.line?.close();
+    this.wake();
+  }
+
+  /** As wake, after a wait that had grown too: the next wait is the first again. */
+  retry(): void {
+    this.wait = RETRY;
     this.wake();
   }
 
@@ -428,7 +441,6 @@ class Reading {
   }
 
   private async run(): Promise<void> {
-    let wait = RETRY;
     while (!this.stopped) {
       if (!torFor(false) || wanted().of.length === 0) {
         await this.sleep(IDLE_LOOK);
@@ -440,7 +452,7 @@ class Reading {
         if (this.stopped) break;
         said(this.url, { read: { at: Date.now(), reading: true } });
         ended = await this.read(this.line);
-        wait = RETRY;
+        this.wait = RETRY;
       } catch (error) {
         said(this.url, { read: { at: Date.now(), reading: false, why: whyOf(error) } });
         ended = true;
@@ -449,8 +461,9 @@ class Reading {
       this.line = null;
       if (this.stopped) break;
       if (ended) {
-        await this.sleep(wait);
-        wait = Math.min(wait * 2, RETRY_MOST);
+        const now = this.wait;
+        this.wait = Math.min(now * 2, RETRY_MOST);
+        await this.sleep(now);
       }
     }
     this.line?.close();

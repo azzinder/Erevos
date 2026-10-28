@@ -25,7 +25,7 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { canNostr, setCore, type Core } from '../lib/core';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
-import { NOSTR_AGAIN_MOST, NOSTR_AGAIN_MS, NOSTR_BACKUP_MS, nostrOf, nostrPacked, nostrReady, nostrRelays, nostrStates, packNostr, readNostr, setNostr, unpackNostr } from '../lib/nostr';
+import { NOSTR_AGAIN_MOST, NOSTR_AGAIN_MS, NOSTR_BACKUP_MS, nostrKeysChanged, nostrOf, nostrPacked, nostrReady, nostrRelays, nostrStates, packNostr, readNostr, setNostr, unpackNostr } from '../lib/nostr';
 import { nostrOnlyWay, nostrReaderOf, orNostr, sendNostrAgain, sendNostrBackups } from '../lib/nostr-chats';
 import { MOST_NOSTR } from '../lib/contact-code';
 import { offerOf } from '../lib/relay-offer';
@@ -508,6 +508,36 @@ t('while Tor is not ready, or no Nostr relay takes it, a text goes through the r
   assert.equal(await taken(), null, 'no bell');
   assert.equal(alice.e2e.nostrBackupsDue(Date.now() + NOSTR_BACKUP_MS)[0]?.quiet, false);
 }, true);
+
+t('a reader that waits for Tor asks as soon as Tor is ready, and one whose keys come later as soon as they come', async () => {
+  setNostr([ONE]);
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  await meet(alice, bob);
+  setTorReady(false);
+  const stopWaiting = readNostr(nostrReaderOf(() => alice.e2e, async () => undefined));
+  try {
+    await new Promise((r) => setTimeout(r, 200));
+    assert.equal(relays.asked.length, 0);
+    // Well before its next look, half a minute on.
+    setTorReady(true);
+    await until(() => relays.asked.length === 1, 3000);
+  } finally {
+    stopWaiting();
+  }
+  // No keys yet, as for a space whose chats are still opening; then they come.
+  let keys: E2E | null = null;
+  const stopLater = readNostr(nostrReaderOf(() => keys, async () => undefined));
+  try {
+    await new Promise((r) => setTimeout(r, 200));
+    const before = relays.asked.length;
+    keys = alice.e2e;
+    nostrKeysChanged();
+    await until(() => relays.asked.length > before, 3000);
+  } finally {
+    stopLater();
+  }
+});
 
 t('a reader asks from over an hour before it last read, keeps until when, and asks again at once when the keys change', async () => {
   setNostr([ONE]);

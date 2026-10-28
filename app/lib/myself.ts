@@ -9,6 +9,7 @@ import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, 
 // myself after the password. Everywhere, a reminder whose time has come shows in the chat and on its
 // row at the top of the chats until the chat is opened, so it is not missed where no notice came: on
 // a computer, in the web app, with notices turned off, or in another space than the one opened.
+// Seen in the chat, it no longer counts in the notice, which goes once it tells of none.
 // Each hidden place has its notes too, in its own Chat with myself (app/chat.tsx): the phone tells
 // their reminders only where the place receives while closed (lock/hidden-keep.ts), in the same
 // notice, and they show once its PIN opens it.
@@ -74,6 +75,7 @@ export async function seenReminders(notes: Note[], now = Date.now(), at = spaceN
   const due = notes.filter((note) => isDue(note, now)).map((note) => note.id);
   if (due.length === 0) return;
   await markTold(at.place, due);
+  device?.seenReminders?.(due);
   changed();
 }
 

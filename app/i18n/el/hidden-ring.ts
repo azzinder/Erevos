@@ -7,6 +7,8 @@ export const hiddenRing: Record<string, string> = {
     'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές και το Erevos είναι στο παρασκήνιο, μια κλήση από μια επαφή τους κάνει το τηλέφωνο να χτυπήσει και να δείξει «Εισερχόμενη κλήση» χωρίς όνομα. Στην οθόνη της κλήσης, πάτα το μικρό σημάδι και πληκτρολόγησε το PIN για να απαντήσεις. Όποιος κρατά το τηλέφωνο βλέπει μια κλήση που δεν υπάρχει σε καμία από τις συνομιλίες σου, και μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
   'Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.':
     'Κλειστές, αυτές οι κρυφές συνομιλίες δεν χτυπούν: μια κλήση από τις επαφές τους χτυπά μόνο όσο είναι ανοιχτές.',
+  'Nothing rings for now: it needs Receive and ring, under Settings → Notifications → In the background.':
+    'Προς το παρόν δεν χτυπά τίποτα: χρειάζεται «Λήψη και κουδούνισμα», στις Ρυθμίσεις → Ειδοποιήσεις → Στο παρασκήνιο.',
   // The ring screen's PIN field (components/hidden-ring-screen.tsx).
   PIN: 'PIN',
   Connect: 'Σύνδεση',

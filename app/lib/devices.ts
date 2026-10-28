@@ -90,6 +90,7 @@ import {
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { orNostr, type ForNostr } from './nostr-chats';
+import { readElsewhere } from './notice-count';
 import { announceReceived } from './receiver';
 import { GRACE, linkSpare } from './moves';
 import { onSpaceMoved, type MoveWhy } from './queue-move';
@@ -2215,7 +2216,11 @@ export class Links implements Link, TakenFiles {
     const kept = isKept(m);
     const gone: LinkedChange['gone'] = [];
     const read = tagsOf(m.read);
-    if (read.length > 0) await history.mark(peer, false, 2, now, read);
+    if (read.length > 0) {
+      await history.mark(peer, false, 2, now, read);
+      // Read there: the messages notice no longer counts them here (lib/background.ts).
+      readElsewhere([`chat:${c}`]);
+    }
     const erase = isObject(m.erase) ? m.erase : null;
     if (erase?.all === true) {
       await history.clear(peer);
@@ -2688,7 +2693,9 @@ export class Links implements Link, TakenFiles {
       case 'forget':
         return groups.forget(id);
       case 'read':
-        return groups.markRead(id);
+        await groups.markRead(id);
+        readElsewhere([`group:${id}`]);
+        return;
     }
   }
 
@@ -2879,7 +2886,10 @@ export class Links implements Link, TakenFiles {
     const now = Date.now();
     const gone: LinkedChange['gone'] = [];
     const read = tagsOf(m.read);
-    if (read.length > 0) await history.mark(peer, false, 2, now, read);
+    if (read.length > 0) {
+      await history.mark(peer, false, 2, now, read);
+      readElsewhere([`chat:${c}`]);
+    }
     const erase = isObject(m.erase) ? m.erase : null;
     if (erase?.all === true || (erase && isTag(erase.tag))) {
       await this.run(async () => {

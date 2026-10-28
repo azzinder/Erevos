@@ -271,7 +271,19 @@ internal object SmsStore {
     context.contentResolver.update(Telephony.Sms.CONTENT_URI, values, "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.READ}=0", arrayOf(thread.toString()))
     MmsStore.markRead(context, thread)
     Widget.refresh(context)
+    // The notice that something came is one for every conversation: it goes once none is left unread.
+    if (onScreen() && !unreadLeft(context)) clearNew(context)
   }
+
+  /** Whether any SMS or MMS in the inbox is not read; a query that fails counts as one, so nothing goes by mistake. */
+  private fun unreadLeft(context: Context): Boolean =
+    listOf(Telephony.Sms.Inbox.CONTENT_URI to Telephony.Sms.READ, Telephony.Mms.Inbox.CONTENT_URI to Telephony.Mms.READ).any { (uri, read) ->
+      try {
+        context.contentResolver.query(uri, arrayOf("_id"), "$read=0", null, null)?.use { it.count > 0 } ?: true
+      } catch (e: Exception) {
+        true
+      }
+    }
 
   /**
    * Sends a text. As the default app, the message is written to the provider first and its row

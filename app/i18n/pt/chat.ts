@@ -221,6 +221,8 @@ export const chat: Record<string, string> = {
     'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, um aviso diz apenas «New message», ou quantas chegaram, como para as outras conversas; que uma mensagem chegou ou foi lida não dá nenhum. Quem o vir e não encontrar nada de novo nas suas conversas pode suspeitar que há mais.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Fechadas, estas conversas ocultas não dizem nada: as suas mensagens esperam no relay até você abri-las.',
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Por enquanto nada avisa: é preciso "Receber e tocar" e "Avisar quando chega mensagem", em Configurações → Notificações → Em segundo plano.',
   "Create the relay queue of these hidden chats first, below.": "Crie primeiro a fila no relay destas conversas ocultas, abaixo.",
   'Relay address': 'Endereço do relay',
   'Token (optional)': 'Token (opcional)',

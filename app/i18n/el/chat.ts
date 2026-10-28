@@ -221,6 +221,8 @@ export const chat: Record<string, string> = {
     'Όσο αυτές οι κρυφές συνομιλίες είναι κλειστές και το Erevos είναι στο παρασκήνιο, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», ή πόσα ήρθαν, όπως για τις άλλες συνομιλίες· το ότι ένα μήνυμα έφτασε ή διαβάστηκε δεν βγάζει καμία. Όποιος τη δει και δεν βρει τίποτα νέο στις συνομιλίες σου μπορεί να υποψιαστεί ότι υπάρχουν κι άλλες.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Κλειστές, αυτές οι κρυφές συνομιλίες δεν λένε τίποτα: τα μηνύματά τους περιμένουν στο relay μέχρι να τις ανοίξεις.',
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Προς το παρόν δεν λέει τίποτα: χρειάζεται «Λήψη και κουδούνισμα» και «Ειδοποίηση για μηνύματα», στις Ρυθμίσεις → Ειδοποιήσεις → Στο παρασκήνιο.',
   "Create the relay queue of these hidden chats first, below.": "Δημιούργησε πρώτα την ουρά αυτών των κρυφών συνομιλιών στο relay, παρακάτω.",
   'Relay address': 'Διεύθυνση relay',
   'Token (optional)': 'Token (προαιρετικό)',

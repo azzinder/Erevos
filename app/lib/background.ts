@@ -10,20 +10,22 @@ import { chatNotify } from './chat-notices';
 import { followDoor, keepDoor, startClosedNotices } from './closed-notices';
 import { onContactQueuesChanged } from './contact-queues';
 import { currentGroupCall } from './group-call';
+import { placeGroupTells } from './hidden-contacts';
 import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, ringLeavesLock, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { iconNumberOn } from './icon-number';
 import { networkChanged } from './network-change';
 import { laterTheirs, showsAt } from './later';
+import { NoticeCount, onReadElsewhere } from './notice-count';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
-import { onPlaceMessage, onPlaceRing } from './place-receiver';
+import { onPlaceMessage, onPlaceRing, receivesPocket } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { spaceChats } from './space-chats';
-import { onSpaceGroupMessage } from './space-groups';
+import { onSpaceGroupGone, onSpaceGroupMessage } from './space-groups';
 import { spaceUnreadAt } from './unread';
 
 // Receiving while Erevos is in the background, on Android: while a space is open, Erevos keeps
@@ -99,12 +101,11 @@ export async function saveMessageNotices(on: boolean): Promise<void> {
 }
 
 // While the messages notice is on, how many messages came, by where they show (a chat, a group,
-// a hidden place: screenOf...), since Erevos last came back from the background.
+// a hidden place: screenOf...), since Erevos last came back from the background; and what the open
+// space had not read as Erevos left the screen, a muted chat's aside (lib/unread.ts), which the
+// notice counts on from, with the number on the icon (lib/notice-count.ts).
 let telling = false;
-const unseen = new Map<string, number>();
-// What the open space had not read as Erevos left the screen, a muted chat's aside (lib/unread.ts),
-// which the notice counts on from, with the number on the icon; 0 while none, or Erevos shows.
-let unread = 0;
+const count = new NoticeCount();
 // The chat, group or hidden place that shows on the screen now (showOnScreen).
 let onScreen: string | null = null;
 
@@ -117,7 +118,7 @@ export const screenOfHidden = (pocket: number) => `hidden:${pocket}`;
 /** Where a closed space's chats show: in it, once it is open. */
 export const screenOfSpace = (space: number) => `space:${space}`;
 
-const unseenCount = () => unread + [...unseen.values()].reduce((sum, count) => sum + count, 0);
+const unseenCount = () => count.total();
 
 /**
  * A message came in the open space, from a contact or in a group, shown at `where`: the notice
@@ -127,9 +128,9 @@ const unseenCount = () => unread + [...unseen.values()].reduce((sum, count) => s
  * does not say it, as for a hidden place: one muted there tells of nothing, and one with a sound of
  * its own sounds with it, or with none (lib/chat-notices.ts); in hidden chats only muting counts,
  * as a sound of their own would tell which chat it is. The chat screen tells of what it opens
- * itself.
+ * itself. `tag` is the message's, so that it no longer counts once it is deleted (messageGone).
  */
-export function messageCame(quiet = false, where = '', chat = where, times = 1): void {
+export function messageCame(quiet = false, where = '', chat = where, times = 1, tag?: string): void {
   if (!telling) return;
   const pocket = where.startsWith('hidden:') ? Number(where.slice('hidden:'.length)) : undefined;
   const notify = chatNotify(chat, pocket);
@@ -140,7 +141,7 @@ export function messageCame(quiet = false, where = '', chat = where, times = 1):
     if (!silent) chime(sound);
     return;
   }
-  unseen.set(where, (unseen.get(where) ?? 0) + times);
+  count.came(where, chat, times, tag);
   try {
     if (silent || !sound) callAudio?.tellMessages?.(unseenCount(), silent);
     else callAudio?.tellMessages?.(unseenCount(), false, sound);
@@ -164,14 +165,7 @@ function chime(sound?: string) {
  */
 export function showOnScreen(where: string): () => void {
   onScreen = where;
-  if (unseen.delete(where)) {
-    try {
-      if (unseen.size === 0) callAudio?.clearMessages?.();
-      else callAudio?.recountMessages?.(unseenCount());
-    } catch {
-      // As above.
-    }
-  }
+  if (count.seen(where)) recount();
   return () => {
     if (onScreen === where) onScreen = null;
   };
@@ -225,14 +219,14 @@ let untagged = 0;
 export function messageCameAt(at: number, quiet = false, where = '', chat = where, tag?: string, still?: () => boolean): void {
   const wait = at - Date.now();
   if (wait <= 0) {
-    messageCame(quiet, where, chat);
+    messageCame(quiet, where, chat, 1, tag);
     return;
   }
   const id = `${chat}|${tag ?? `#${++untagged}`}`;
   if (due.has(id)) return;
   const timer = setTimeout(() => {
     due.delete(id);
-    if (!still || still()) messageCame(quiet, where, chat);
+    if (!still || still()) messageCame(quiet, where, chat, 1, tag);
   }, Math.min(wait, 2 ** 31 - 1));
   due.set(id, timer);
 }
@@ -243,14 +237,53 @@ function dropDue() {
 }
 
 function clearMessages() {
-  if (unseen.size === 0 && unread === 0) return;
-  unseen.clear();
-  unread = 0;
+  if (!count.clear()) return;
   try {
     callAudio?.clearMessages?.();
   } catch {
     // As above.
   }
+}
+
+// The notice says the count as it is now, without sound, or goes once it is none; one swiped away
+// does not come back for it.
+function recount() {
+  try {
+    const now = unseenCount();
+    if (now === 0) callAudio?.clearMessages?.();
+    else callAudio?.recountMessages?.(now);
+  } catch {
+    // As above.
+  }
+}
+
+/**
+ * The message `tag` of the contact's `chat` (screenOfChat), or all its messages (null), was deleted
+ * for everyone, as it was kept: the notice no longer counts it, nor tells of it later at its time.
+ * `space` says it is in the open space's chats, not a hidden place's, whose count is also held to
+ * what the chat has not read now.
+ */
+export async function messageGone(chat: string, tag: string | null, space: boolean): Promise<void> {
+  for (const [id, timer] of due) {
+    if (tag === null ? !id.startsWith(`${chat}|`) : id !== `${chat}|${tag}`) continue;
+    clearTimeout(timer);
+    due.delete(id);
+  }
+  if (!telling) return;
+  let changed = count.gone(chat, tag);
+  if (space && count.counts([chat])) {
+    const notRead = await spaceUnreadAt();
+    if (notRead && telling) changed = count.readNow([chat], notRead) || changed;
+  }
+  if (changed) recount();
+}
+
+// The space's chats or groups `where` (screenOfChat, screenOfGroup) were read elsewhere, or lost a
+// message not read yet: each counts no more than it has not read now.
+async function heldToUnread(where: string[]) {
+  if (!telling || !count.counts(where)) return;
+  const notRead = await spaceUnreadAt();
+  if (notRead && telling && count.readNow(where, notRead)) recount();
 }
 
 /** What Android lets Erevos do for it, or null where it cannot ring in the background. */
@@ -374,9 +407,13 @@ export function startBackground(): () => void {
   const places = [
     onPlaceMessage((_space, pocket, received) => {
       if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket), screenOfChat(received.identity), received.tag);
+      if (received.erase) void messageGone(screenOfChat(received.identity), 'all' in received.erase ? null : received.erase.tag, false).catch(() => undefined);
     }),
     // Their groups' too (lib/place-groups.ts).
-    onPlaceGroupMessage((_space, pocket, group) => messageCame(false, screenOfHidden(pocket), screenOfGroup(group))),
+    // Only as their contacts' messages do: while Erevos shows, or the place says so with it away.
+    onPlaceGroupMessage((space, pocket, group) => {
+      if (placeGroupTells(space, pocket, appShown(), receivesPocket(space, pocket))) messageCame(false, screenOfHidden(pocket), screenOfGroup(group));
+    }),
     onPlaceRing(onRing),
   ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took
@@ -456,8 +493,12 @@ export function startBackground(): () => void {
   const told = [
     onMessage((received) => {
       if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfChat(received.identity), undefined, received.tag);
+      if (received.erase) void messageGone(screenOfChat(received.identity), 'all' in received.erase ? null : received.erase.tag, true).catch(() => undefined);
     }),
     onSpaceGroupMessage((group) => messageCame(false, screenOfGroup(group))),
+    // A member deleted for everyone a message not read yet; what was read on a linked device.
+    onSpaceGroupGone((group) => void heldToUnread([screenOfGroup(group)]).catch(() => undefined)),
+    onReadElsewhere((where) => void heldToUnread(where).catch(() => undefined)),
   ];
   // The space shows again (not the password screen in front of it): what came shows there, so the notice goes.
   const shown = onAppShown((on) => {
@@ -473,15 +514,10 @@ export function startBackground(): () => void {
     // What came in the space's chats and groups is in what they have not read, as far as their
     // history has it yet (a voice message whose parts are still coming has no row): the hidden
     // places' and the closed spaces' stay apart.
-    const counted = new Map([...unseen].filter(([where]) => where.startsWith('chat:') || where.startsWith('group:')));
+    const counted = count.spaceCounted();
     const notRead = await spaceUnreadAt();
     if (left !== leaving || stopped || !telling || notRead === null || AppState.currentState === 'active') return;
-    unread = [...notRead.values()].reduce((sum, n) => sum + n, 0);
-    counted.forEach((count, where) => {
-      const rest = (unseen.get(where) ?? 0) - Math.min(count, notRead.get(where) ?? 0);
-      if (rest > 0) unseen.set(where, rest);
-      else unseen.delete(where);
-    });
+    count.leave(counted, notRead);
     const now = unseenCount();
     try {
       // None: a notice left from before (Erevos closed by Android meanwhile) goes too.

@@ -37,6 +37,18 @@ import expo.modules.kotlin.modules.ModuleDefinition
 // Android's sound picker (pickSound), apart from erevos-contacts' 7301.
 private const val SOUND = 7311
 
+// The reminders' notice channel, made by modules/erevos-device (Reminders.kt).
+private const val REMINDERS_CHANNEL = "erevos-reminders"
+
+// The notice channels openSettings opens by name.
+private val CHANNELS = mapOf(
+  "calls" to Notices.CALLS_CHANNEL,
+  "messages" to Notices.MESSAGES_CHANNEL,
+  "quiet" to Notices.QUIET_CHANNEL,
+  "own" to Notices.OWN_CHANNEL,
+  "reminders" to REMINDERS_CHANNEL,
+)
+
 // The phone's side of a call that WebRTC leaves to the app: the sound set up for talking, through
 // the earpiece or the loudspeaker, the screen off while the phone is at the ear, and on while a
 // call shows. Everything goes back as it was when the call ends. Also what lets a call ring while
@@ -370,6 +382,12 @@ class ErevosCallModule : Module() {
       )
       Notices.channelState(context, Notices.CALLS_CHANNEL)?.let { state["callChannel"] = it }
       Notices.channelState(context, Notices.MESSAGES_CHANNEL)?.let { state["messageChannel"] = it }
+      // The message notice's other two channels, without sound and with a chat's own sound, which
+      // keep the number on the icon too; and the reminders' (modules/erevos-device Reminders.kt),
+      // once its first reminder made it.
+      Notices.channelState(context, Notices.QUIET_CHANNEL)?.let { state["quietChannel"] = it }
+      Notices.channelState(context, Notices.OWN_CHANNEL)?.let { state["ownChannel"] = it }
+      Notices.channelState(context, REMINDERS_CHANNEL)?.let { state["reminderChannel"] = it }
       lockScreenShown(context)?.let { state["lockScreen"] = it }
       if (sdk >= Build.VERSION_CODES.M) state["dnd"] = notices.currentInterruptionFilter > NotificationManager.INTERRUPTION_FILTER_ALL
       if (sdk >= Build.VERSION_CODES.P) {
@@ -406,7 +424,7 @@ class ErevosCallModule : Module() {
     }
 
     // Android's screen for one of the settings backgroundState reads: Erevos's notices, its call
-    // or message notice, its mobile data in the background, its exact alarms, "Remove permissions
+    // or message notice (or that notice without sound or with a chat's own), its reminder notice, its mobile data in the background, its exact alarms, "Remove permissions
     // if app isn't used" (on Android 11; later it is on Erevos's page), battery saver, the sound
     // settings; anything else, or a phone without that screen, opens Erevos's page in Android's
     // settings ("app"), where Restricted battery use is too. False if none opened.
@@ -417,10 +435,10 @@ class ErevosCallModule : Module() {
       val intent = when {
         which == "notices" && sdk >= Build.VERSION_CODES.O ->
           Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-        (which == "calls" || which == "messages") && sdk >= Build.VERSION_CODES.O ->
+        which in CHANNELS && sdk >= Build.VERSION_CODES.O ->
           Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
             .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-            .putExtra(Settings.EXTRA_CHANNEL_ID, if (which == "calls") Notices.CALLS_CHANNEL else Notices.MESSAGES_CHANNEL)
+            .putExtra(Settings.EXTRA_CHANNEL_ID, CHANNELS[which])
         which == "unused" && sdk == Build.VERSION_CODES.R ->
           Intent(Intent.ACTION_AUTO_REVOKE_PERMISSIONS, Uri.parse("package:${context.packageName}"))
         which == "saver" -> Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS)

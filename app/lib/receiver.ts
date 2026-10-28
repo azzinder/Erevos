@@ -8,7 +8,7 @@ import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
 import { sendCopies } from './fanout';
 import { nearby } from './nearby';
-import { nostrReady, readNostr } from './nostr';
+import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
 import { keepOffer, offerOf } from './relay-offer';
 import {
@@ -297,13 +297,14 @@ export function announceReceived(): void {
 }
 
 /**
- * Whether what came is news to tell of: words, a voice message (once), a photo or file; not marks,
- * edits, deletes, calls or a group's setting up, nor a message that came already (`twice`), as one
- * does on a linked device directly and again through the phone (docs/multi-device.md).
+ * Whether what came is news to tell of: words, a voice message on its last part, as the relay
+ * counts it (lib/space-chats.ts sendSealed), a photo or file; not marks, edits, deletes, calls or a
+ * group's setting up, nor a message that came already (`twice`), as one does on a linked device
+ * directly and again through the phone (docs/multi-device.md).
  */
 export function isNews(received: Extract<Received, { kind: 'message' }>): boolean {
   if (received.twice || received.erase || received.call || received.group) return false;
-  if (received.voice) return received.voice.part === 0;
+  if (received.voice) return received.voice.part === received.voice.parts - 1;
   return received.text.length > 0 || received.file !== null;
 }
 
@@ -337,7 +338,10 @@ export function startReceiver(every?: number): () => void {
     if (chats || !hasCore()) return;
     void spaceChats()
       .then((open) => {
-        if (!stopped) chats = open;
+        if (stopped) return;
+        chats = open;
+        // The space's keys are known now: its Nostr reading asks at once, not at its next look.
+        nostrKeysChanged();
       })
       .catch(() => undefined);
   };

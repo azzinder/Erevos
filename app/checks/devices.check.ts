@@ -78,6 +78,7 @@ import {
   type Synced,
 } from '../lib/link-wire';
 import { giveLinkedName } from '../lib/linked-name';
+import { onReadElsewhere } from '../lib/notice-count';
 import { isNews, keepReceived } from '../lib/receiver';
 import { createQueue, deleteQueue, fromHex, receiveMessage, RelaySends, RelaySession, RelayUnreachableError, sendMessage, toHex, type Relay } from '../lib/relay';
 import { isSealedPacket, openPacket, packetKeys } from '../lib/sealed-packet';
@@ -1191,9 +1192,14 @@ test('groups on a linked computer: the phone\'s, read and written there through 
   await round();
   assert.equal(onDell.messages(id)[onDell.messages(id).length - 1].text, 'hello both');
   assert.equal(onDell.list()[0].unread, 2);
+  const readThere: string[][] = [];
+  const stopRead = onReadElsewhere((where) => readThere.push(where));
   await onDell.markRead(id);
   await round();
   assert.equal(onPixel.groups.list()[0].unread, 0);
+  // The phone's messages notice is told, to count it no more (lib/background.ts).
+  assert.ok(readThere.some((where) => where.join() === `group:${id}`));
+  stopRead();
 
   // The computer writes: the phone sends it to the group from the account, and the computer keeps it once.
   await onDell.send(id, 'from the computer', nowhere);
@@ -1524,12 +1530,16 @@ test('the devices the list names reach each other: started by the lower id, seal
   await take(lenovo);
   const onLenovo = lenovo.chats.history.messages().find((m) => m.tag === off);
   assert.deepEqual([onLenovo?.text, onLenovo?.mine], ['with the phone off', true]);
+  const readOn: string[][] = [];
+  const stopReadOn = onReadElsewhere((where) => readOn.push(where));
   const reacted = await lenovo.chats.e2e.seal(carolId, '', lenovo.queue.senderHex, { at: where, react: { tag: hello, emoji: '👍' }, read: [hello] });
   await sendMessage(relay, fromHex(reacted.sender), reacted.packet);
   await lenovo.links.settled();
   await take(dell);
   const helloOnDell = dell.chats.history.messages().find((m) => m.tag === hello);
   assert.deepEqual([helloOnDell?.myReaction, helloOnDell?.mark], ['👍', 2]);
+  assert.ok(readOn.some((where) => where.join() === `chat:${carolId}`));
+  stopReadOn();
   // A name given on one is the other's; given on both at once, both keep the later.
   const nameOn = (p: Phone, id = carolId) => p.chats.e2e.contacts().find((c) => c.identity === id)?.name;
   await dell.chats.e2e.rename(carolId, 'Carol');

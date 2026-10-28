@@ -10,6 +10,7 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { armReminders, deleteNote, isDue, isWaiting, myNotes, onNotesChanged, remindAt, seenReminders, writeNote, type Note, type NotesAt } from '../lib/myself';
+import { appShown, onAppShown } from '../lib/receiver';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
@@ -135,15 +136,18 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
     loadPhotoQuality().then(setQuality, () => undefined);
   }, []);
 
-  // A reminder that comes while the chat shows is seen here; the next one's time is waited for.
+  // A reminder that comes while the chat shows, with Erevos on the screen, is seen here, its notice
+  // with it; the next one's time is waited for. Back on the screen, what came meanwhile is seen.
+  const [shown, setShown] = useState(appShown);
+  useEffect(() => onAppShown(setShown), []);
   useEffect(() => {
     if (!notes) return;
-    if (focused) void seenReminders(notes, now, where.current).catch(() => undefined);
+    if (focused && shown) void seenReminders(notes, now, where.current).catch(() => undefined);
     const next = notes.filter((note) => isWaiting(note, now)).map((note) => note.due!);
     if (next.length === 0) return;
     const timer = setTimeout(() => setNow(Date.now()), Math.min(Math.min(...next) - Date.now() + 500, 2 ** 31 - 1));
     return () => clearTimeout(timer);
-  }, [notes, now, focused]);
+  }, [notes, now, focused, shown]);
 
   useEffect(() => () => stopPlaying.current?.(), []);
 

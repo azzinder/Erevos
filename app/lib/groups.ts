@@ -265,6 +265,7 @@ export class Groups {
   private readonly listeners = new Set<() => void>();
   private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
   private readonly messageListeners = new Set<(group: string) => void>();
+  private readonly goneListeners = new Set<(group: string) => void>();
   private link: GroupLink | null = null;
 
   constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
@@ -294,6 +295,14 @@ export class Groups {
     this.messageListeners.add(listener);
     return () => {
       this.messageListeners.delete(listener);
+    };
+  }
+
+  /** Calls `listener` with the group each time a member deletes for everyone a message of theirs not read here yet. Returns how to stop. */
+  onGone(listener: (group: string) => void): () => void {
+    this.goneListeners.add(listener);
+    return () => {
+      this.goneListeners.delete(listener);
     };
   }
 
@@ -1301,6 +1310,8 @@ export class Groups {
         const messages = withMarked(now.messages, from, said, Date.now());
         if (!messages) return;
         await this.save(this.withGroup({ ...now, messages }));
+        const unread = (list: GroupMessage[]) => list.filter((m) => m.from && !m.note && m.at > now.readAt).length;
+        if (said.t === 'erase' && unread(messages) < unread(now.messages)) this.goneListeners.forEach((listener) => listener(id));
         this.changed();
         return;
       }

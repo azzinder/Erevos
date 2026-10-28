@@ -172,6 +172,7 @@ export const settings: Record<string, string> = {
   'Phones nearby': 'Telefoni u blizini',
   'Exact times': 'Precizno vrijeme',
   'The message notice': 'Obavijest o porukama',
+  'The reminder notice': 'Obavijest o podsjetniku',
   'Running in the background': 'Rad u pozadini',
   'Pausing when unused': 'Pauziranje kad se ne koristi',
   'Sound for new messages': 'Zvuk za nove poruke',
@@ -183,7 +184,9 @@ export const settings: Record<string, string> = {
   'Keeping the data': 'Čuvanje podataka',
   'For "Incoming call" to show while Erevos is closed, with its buttons, and for the notice that messages came. Without notices a call may not ring at all on some phones.': 'Da bi se „Incoming call“ prikazivalo dok je Erevos zatvoren, s opcijama za javljanje, i za obavijest da su stigle poruke. Bez obavijesti poziv na nekim telefonima možda neće ni zazvoniti.',
   'For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.': 'Da bi se poziv prikazao, s opcijama za javljanje: obavijesti „Calls“ moraju biti uključene i postavljene da iskaču na ekranu. Inače poziv zvoni, ali se ne prikazuje ništa odakle biste se javili.',
-  'For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.': 'Za obavijest da je stigla poruka dok je Erevos zatvoren. Ako su obavijesti „Messages“ isključene, poruke i dalje stižu, ali o tome nema obavijesti.',
+  'For the notice that a message came while Erevos is closed, which also keeps the number on Erevos\'s icon. With the "Messages", "Messages without sound" or "Messages with a chat\'s own sound" notices turned off, messages still come, but nothing says so, or only for some.': "Za obavijest da je stigla poruka dok je Erevos zatvoren, koja drži i broj na ikoni Erevosa. Ako su obavijesti „Messages“, „Messages without sound“ ili „Messages with a chat's own sound“ isključene, poruke i dalje stižu, ali o tome nema obavijesti, ili samo za neke.",
+  'For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.':
+    'Za obavijest koja u vrijeme podsjetnika kaže „Podsjetnik“, ili koliko ih je, dok je Erevos zatvoren. Ako su obavijesti „Reminders“ isključene, ništa se ne prikazuje.',
   'So a call fills the screen over the lock screen, as a phone call does.': 'Da bi poziv zauzeo cijeli ekran preko zaključanog ekrana, kao telefonski poziv.',
   "Android's battery saving stops apps a while after they go to the background. Left out of it, Erevos keeps waiting for calls and messages.": 'Androidova ušteda baterije zaustavlja aplikacije neko vrijeme nakon što odu u pozadinu. Ako je izuzet iz nje, Erevos i dalje čeka pozive i poruke.',
   "With Erevos's battery use set to Restricted, Android does not let it run in the background at all: nothing comes and nothing rings while it is closed.": 'Ako je potrošnja baterije za Erevos postavljena na „Ograničeno“, Android mu ne dozvoljava nikakav rad u pozadini: dok je zatvoren, ništa ne stiže i ništa ne zvoni.',

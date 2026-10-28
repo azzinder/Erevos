@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { Linking, PermissionsAndroid, Platform, type Permission } from 'react-native';
 
-import { callAudio, type SettingsScreen } from '../modules/erevos-call';
+import { callAudio, type NoticeChannel, type SettingsScreen } from '../modules/erevos-call';
 import { askBattery, askFullScreen, backgroundState, loadMessageNotices, loadRingInBackground, noticesAsked } from './background';
 import { checksFrom, known, offerFor, type Check, type CheckId } from './permission-checks';
 import { HAS_RADIO, nearbyPermissions } from './radio';
@@ -108,12 +108,21 @@ export async function fix(id: CheckId): Promise<void> {
       return;
     }
     case 'calls':
-    case 'messages':
     case 'data':
     case 'alarms':
     case 'unused':
     case 'saver':
       open(id);
+      return;
+    // The message notice's channel that is off: "Messages", else the one without sound, else the one with a chat's own sound.
+    case 'messages': {
+      const state = backgroundState();
+      const off = (channel: NoticeChannel | undefined) => channel !== undefined && channel.importance === 0;
+      open(off(state?.messageChannel) ? 'messages' : off(state?.quietChannel) ? 'quiet' : off(state?.ownChannel) ? 'own' : 'messages');
+      return;
+    }
+    case 'reminders':
+      open('reminders');
       return;
     case 'messageSound':
       open('messages');

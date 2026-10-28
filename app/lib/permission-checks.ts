@@ -24,6 +24,7 @@ export type CheckId =
   | 'nearby'
   | 'contacts'
   | 'alarms'
+  | 'reminders'
   // The web app's.
   | 'home'
   | 'push'
@@ -124,11 +125,15 @@ export async function checksFrom({ background, granted, sdk, nearby, makerDone, 
   const on = (channel: NoticeChannel | undefined) => (background?.notices && channel && channel.importance > 0 ? channel : undefined);
   const calls = on(background?.callChannel);
   const messages = messageNotices ? on(background?.messageChannel) : undefined;
+  // The same notice without sound, or with a chat's own sound: each also keeps the number on the icon.
+  const alike = messageNotices ? [on(background?.quietChannel), on(background?.ownChannel)] : [];
   if (background) {
     add('notices', background.notices);
     // The call notice must not be off, and must pop up: its sound is the app's own ringtone.
     if (background.notices) add('calls', background.calls === undefined ? undefined : background.calls && (background.callChannel?.importance ?? POPS_UP) >= POPS_UP);
-    if (background.notices && messageNotices && background.messageChannel) add('messages', background.messageChannel.importance > 0);
+    if (background.notices && messageNotices && background.messageChannel) {
+      add('messages', [background.messageChannel, background.quietChannel, background.ownChannel].every((channel) => !channel || channel.importance > 0));
+    }
     add('fullScreen', background.fullScreen);
     add('battery', background.battery);
     // Android lifts its own Restricted standby bucket the moment Erevos opens, so only the owner's
@@ -141,7 +146,7 @@ export async function checksFrom({ background, granted, sdk, nearby, makerDone, 
   add('microphone', await has(['android.permission.RECORD_AUDIO']));
   if (background) {
     if (messages) add('messageSound', messages.importance >= SOUNDS && messages.sound);
-    const shown = [calls, messages].filter((channel): channel is NoticeChannel => channel !== undefined);
+    const shown = [calls, messages, ...alike].filter((channel): channel is NoticeChannel => channel !== undefined);
     if (background.notices && (background.lockScreen !== undefined || shown.length)) {
       add('lockScreen', background.lockScreen !== false && shown.every((channel) => channel.lockScreen !== HIDDEN_ON_LOCK));
     }
@@ -154,6 +159,8 @@ export async function checksFrom({ background, granted, sdk, nearby, makerDone, 
   if (nearby) add('nearby', await has(nearby));
   add('contacts', await has(['android.permission.READ_CONTACTS']));
   if (background) add('alarms', background.alarms);
+  // A reminder's notice, once one made its channel.
+  if (background?.notices && background.reminderChannel) add('reminders', background.reminderChannel.importance > 0);
   return out;
 }
 

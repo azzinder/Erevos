@@ -221,6 +221,8 @@ export const chat: Record<string, string> = {
     'Solange diese versteckten Chats geschlossen sind und Erevos im Hintergrund läuft, sagt eine Mitteilung nur „New message“ oder wie viele kamen, wie bei den anderen Chats; dass eine Nachricht ankam oder gelesen wurde, macht keine. Wer sie sieht und in deinen Chats nichts Neues findet, kann ahnen, dass es mehr gibt.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Geschlossen sagen diese versteckten Chats nichts: Ihre Nachrichten warten auf dem Relay, bis du sie öffnest.',
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Vorerst meldet nichts: Dafür braucht es „Empfangen und klingeln“ und „Neue Nachrichten melden“ unter Einstellungen → Benachrichtigungen → Im Hintergrund.',
   "Create the relay queue of these hidden chats first, below.": "Lege zuerst die Relay-Warteschlange dieser versteckten Chats an, weiter unten.",
   'Relay address': 'Relay-Adresse',
   'Token (optional)': 'Token (optional)',

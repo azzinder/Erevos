@@ -222,6 +222,8 @@ export const chat: Record<string, string> = {
     'Dok su ovi skriveni razgovori zatvoreni, a Erevos u pozadini, obavijest kaže samo „New message“ ili koliko ih je stiglo, kao i za ostale razgovore; to što je poruka stigla ili je pročitana ne daje nijednu. Osoba koja je vidi, a ne nađe ništa novo u vašim razgovorima, mogla bi pretpostaviti da ih ima još.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Dok su zatvoreni, ovi skriveni razgovori ništa ne javljaju: njihove poruke čekaju na relayu dok ih ne otvorite.',
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Zasad ništa ne javlja: potrebni su „Primaj i zvoni“ i „Javi da je stigla poruka“, pod Postavke → Obavijesti → U pozadini.',
   "Create the relay queue of these hidden chats first, below.": "Prvo napravite red na relayu za ove skrivene razgovore, ispod.",
   'Relay address': 'Adresa relaya',
   'Token (optional)': 'Token (neobavezno)',

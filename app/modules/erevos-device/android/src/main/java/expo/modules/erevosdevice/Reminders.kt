@@ -20,10 +20,14 @@ import android.util.Log
  * the soonest one's time, set again when the phone starts, the app is updated or the time changes;
  * one whose time passed with the phone off is told once it is on. The alarm is exact where Erevos
  * may set exact ones (erevos-sms asks for that, for SMS sent for later), else Android's close one.
+ * The notice counts the reminders it tells of, by id, and goes once each has been seen in its
+ * chat (seen): one of another space or hidden place keeps it until that one is seen too.
  */
 internal object Reminders {
   private const val TAG = "ErevosDevice"
   private const val PREFS = "erevos-reminders"
+  // The ids the notice tells of now.
+  private const val TOLD = "erevos-reminders-told"
   private const val CHANNEL = "erevos-reminders"
   private const val NOTICE = 7301
   const val ACTION = "expo.modules.erevosdevice.REMINDERS"
@@ -80,20 +84,68 @@ internal object Reminders {
     alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, alarm)
   }
 
-  /** Tells the reminders whose time has come, forgets them, and sets the alarm for the next. */
+  private fun told(context: Context) = context.getSharedPreferences(TOLD, Context.MODE_PRIVATE)
+
+  private fun showing(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < 23) return true
+    val notifications = context.getSystemService(NotificationManager::class.java) ?: return false
+    return try {
+      notifications.activeNotifications.any { it.id == NOTICE }
+    } catch (_: Exception) {
+      true
+    }
+  }
+
+  // The ids the notice tells of, as kept; none once it is gone (tapped or swiped away).
+  private fun tellingOf(context: Context): Set<String> =
+    if (showing(context)) told(context).all.keys.filter { ID.matches(it) }.toSet() else emptySet()
+
+  private fun keepTelling(context: Context, ids: Set<String>) {
+    told(context).edit().clear().apply { ids.forEach { putBoolean(it, true) } }.apply()
+  }
+
+  /** Tells the reminders whose time has come, with those the notice already tells of, forgets them, and sets the alarm for the next. */
   fun tell(context: Context) {
-    val due: Int
+    val count: Int
     synchronized(this) {
       val now = System.currentTimeMillis()
       val ids = all(context).filterValues { it <= now }.keys
-      if (ids.isNotEmpty()) prefs(context).edit().apply { ids.forEach { remove(it) } }.apply()
-      due = ids.size
+      if (ids.isEmpty()) {
+        arm(context)
+        return
+      }
+      prefs(context).edit().apply { ids.forEach { remove(it) } }.apply()
+      val telling = (tellingOf(context) + ids).take(MAX_WAITING).toSet()
+      keepTelling(context, telling)
+      count = telling.size
       arm(context)
     }
-    if (due > 0) notify(context, due)
+    notify(context, count)
   }
 
-  private fun notify(context: Context, count: Int) {
+  /**
+   * The reminders `ids` were seen in their chat: forgotten if still waiting (an alarm late, as a
+   * close one may be, tells nothing then), and no longer told of. The notice goes once it tells of
+   * none; it counts the others still, quietly, while it shows.
+   */
+  fun seen(context: Context, ids: List<String>) {
+    val valid = ids.filter { ID.matches(it) }
+    if (valid.isEmpty()) return
+    val left: Int
+    synchronized(this) {
+      prefs(context).edit().apply { valid.forEach { remove(it) } }.apply()
+      arm(context)
+      val was = tellingOf(context)
+      if (was.isEmpty() || valid.none { it in was }) return
+      val now = was - valid.toSet()
+      keepTelling(context, now)
+      left = now.size
+    }
+    if (left == 0) context.getSystemService(NotificationManager::class.java)?.cancel(NOTICE)
+    else notify(context, left, quietly = true)
+  }
+
+  private fun notify(context: Context, count: Int, quietly: Boolean = false) {
     val notifications = context.getSystemService(NotificationManager::class.java) ?: return
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
@@ -119,6 +171,7 @@ internal object Reminders {
       .setVisibility(Notification.VISIBILITY_PUBLIC)
       .setContentIntent(tap)
       .setAutoCancel(true)
+      .setOnlyAlertOnce(quietly)
       .build()
     try {
       notifications.notify(NOTICE, notice)

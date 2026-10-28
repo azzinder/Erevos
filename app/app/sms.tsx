@@ -27,6 +27,7 @@ import { locale, plural, t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { oneTimeCode } from '../lib/one-time-code';
 import { spaceLinkSender } from '../lib/queue-move';
+import { appShown, onAppShown } from '../lib/receiver';
 import { relayKey } from '../lib/relay';
 import { deletingSms, linkedContact, smsFailed, smsLineId, smsMark } from '../lib/sms-chat';
 import { onSmsOrderChanged, shownMessages, smsFolder, spamReason, spamWhy, trashOf } from '../lib/sms-folders';
@@ -199,6 +200,9 @@ export default function Sms() {
   const keepsPlace = useRef(false);
   const { away, onScroll } = useThreadAway();
 
+  // Read only while this conversation shows with Erevos on the screen: an SMS that comes while it is
+  // away stays unread, and its notice with it, until it comes back to it (SmsStore.kt markRead).
+  const focusedNow = useRef(false);
   const load = useCallback(() => {
     smsMessages(to)
       .then((loaded) => {
@@ -206,7 +210,7 @@ export default function Sms() {
         return loaded;
       })
       .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under Settings → Phone and SMS → SMS.')));
-    markSmsRead(to).catch(() => undefined);
+    if (focusedNow.current && appShown()) markSmsRead(to).catch(() => undefined);
     // What waits to go later, and the space's order, as the phone has them now.
     const sms = link.current;
     if (sms) {
@@ -222,6 +226,21 @@ export default function Sms() {
 
   // On the screen, an SMS that comes in it only sounds (lib/background.ts).
   useFocusEffect(useCallback(() => (to ? showSmsOnScreen(numbers.length > 0 ? numbers : [to]) : undefined), [to]));
+
+  // Shown, and Erevos back on the screen: what came meanwhile is read.
+  useFocusEffect(
+    useCallback(() => {
+      focusedNow.current = true;
+      if (appShown()) markSmsRead(to).catch(() => undefined);
+      const stopShown = onAppShown((shown) => {
+        if (shown && focusedNow.current) load();
+      });
+      return () => {
+        focusedNow.current = false;
+        stopShown();
+      };
+    }, [to, load]),
+  );
 
   // A number that is no contact can be added as one, even with the names not shown; looked at
   // again on coming back, as from adding it.

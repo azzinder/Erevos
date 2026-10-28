@@ -5,6 +5,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 import { openHiddenPlace, onHiddenPlaceChange } from './hidden-contacts';
 import { hiddenRinging, onHiddenRingingChange } from './hidden-ring';
 import { onNetworkChange } from './network-change';
+import { receivesPocket } from './place-receiver';
 import { canWaitAt, fromHex, isQueueNotFound, receiveMessage, waitForMessage, type Relay } from './relay';
 
 // While Erevos is in the background (lib/background.ts), a hidden place that rings (lock/hidden-ring.ts)
@@ -107,9 +108,11 @@ export function startHiddenRinging(ring: (space: number, pocket: number, at?: nu
           // Rung from when it came, not after the drain, so the message notice knows the call rang.
           const cameAt = Date.now();
           // Drain the ring before it is answered, so the next call rings again; one that came while
-          // the place was open or a ring showed rang already, and is only drained.
+          // the place was open or a ring showed rang already, and is only drained. A place that
+          // receives while closed rings from its own queue (lib/place-receiver.ts), as the call's
+          // offer comes: its ring here, still sent by contacts told of the queue before, is drained.
           await drain(relay, kept.recipientHex);
-          if (mayRing(pocket)) ring(space, pocket, cameAt);
+          if (mayRing(pocket) && !receivesPocket(space, pocket)) ring(space, pocket, cameAt);
         }
       } catch (error) {
         // A queue the relay no longer has is not asked again until the slot names another: the

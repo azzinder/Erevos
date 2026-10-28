@@ -84,7 +84,7 @@ test('which checks each browser gets: the home screen everywhere but Firefox on 
 });
 
 test('notifications are needed only once this space turned them on, and the browser keeps their address', () => {
-  // Off in this space: a note, turned on under Lock.
+  // Off in this space: a note, turned on under Settings → Notifications.
   const off = webChecksFrom({ ...FINE, pushWanted: false, notifications: 'default', subscribed: false });
   assert.equal(stateOf(off, 'push'), 'note');
   assert.equal(needsLook(off), false);

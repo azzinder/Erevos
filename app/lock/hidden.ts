@@ -1,12 +1,13 @@
 import { hardenSlot, isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
-import { keepPlace, prepareKeepEntries } from './hidden-keep';
+import { armPlaceReminders } from '../lib/myself';
+import { keepPlace, keptPlaces, prepareKeepEntries } from './hidden-keep';
 import { prepareRingEntries } from './hidden-ring';
 import { prepareDoors } from './doors';
 import { prepareWatchEntries, unwatchPocket } from './hidden-watch';
 import { prepareQueueEntries } from './queues-data';
 import { currentSpace, newSpaceKey } from './keys';
 import { changeSlots, clearSlot, fillSlots, getSlot, setSlot, SLOTS, type SlotStore } from './slots';
-import { POCKETS } from './sealed-file';
+import { hiddenHolder, POCKETS } from './sealed-file';
 import { EMPTY_SPACE, prepareHiddenEntries, saveHiddenData } from './space-data';
 import { assertNotLockedOut, LockedOutError, prepareTries, recordRightPassword, recordWrongPassword, SEARCH_TRIES } from './tries';
 
@@ -121,15 +122,26 @@ export async function setHiddenPassword(space: number, pocket: number, password:
   const other = await tryPockets(space, password);
   if (other && other.pocket !== pocket) throw new SamePasswordError();
   const hiddenKey = key ?? newSpaceKey();
+  // What was there before reminds of nothing more: found while its key still opens it.
+  const open = key ? null : openSpace(space);
+  if (open) await forgetPocketReminders(space, open, pocket).catch(() => undefined);
   await setSlot(stores[pocket], space, await sealSlot(password, hiddenKey, ITER));
   if (!key) {
     await saveHiddenData(space, pocket, hiddenKey, EMPTY_SPACE);
     // What was there before tells of no more messages.
-    const open = openSpace(space);
     if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
     if (open) await keepPlace(space, open, pocket, hiddenKey).catch(() => undefined);
   }
   return hiddenKey;
+}
+
+/**
+ * Forgets the reminders the phone keeps for the hidden chats in `pocket`, as they stop opening:
+ * the phone keeps them only while the place receives closed, so its key is kept then (hidden-keep.ts).
+ */
+async function forgetPocketReminders(space: number, open: Uint8Array, pocket: number): Promise<void> {
+  const kept = (await keptPlaces(space, open)).find((place) => place.pocket === pocket);
+  if (kept) await armPlaceReminders({ holder: hiddenHolder(pocket), space, key: kept.key }, false);
 }
 
 /** The key of `space` when it is the one open, else null. */
@@ -145,8 +157,9 @@ function openSpace(space: number): Uint8Array | null {
 /** Makes the hidden chats in a space's `pocket` stop opening. They stay on the phone, and nothing opens them. */
 export async function removeHiddenPassword(space: number, pocket: number): Promise<void> {
   await hardenPockets();
-  await clearSlot(stores[pocket], space);
   const open = openSpace(space);
+  if (open) await forgetPocketReminders(space, open, pocket).catch(() => undefined);
+  await clearSlot(stores[pocket], space);
   if (open) await unwatchPocket(space, open, pocket, null).catch(() => undefined);
   if (open) await keepPlace(space, open, pocket, null).catch(() => undefined);
 }

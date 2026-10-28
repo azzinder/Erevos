@@ -83,6 +83,12 @@ class ErevosDeviceModule : Module() {
       Reminders.forget(app, id)
     }
 
+    // Reminders seen in their chat: the notice no longer tells of them, and goes once it tells of none.
+    Function("seenReminders") { ids: List<String> ->
+      val app = context?.applicationContext ?: return@Function Unit
+      Reminders.seen(app, ids)
+    }
+
     // A new Erevos, named `name`, is out (Updates.kt): a notice says so.
     Function("tellUpdate") { name: String ->
       val app = context?.applicationContext ?: return@Function Unit

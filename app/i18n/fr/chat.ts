@@ -221,6 +221,8 @@ export const chat: Record<string, string> = {
     "Tant que ces discussions masquées sont fermées et qu'Erevos est en arrière-plan, une notification dit seulement « New message », ou combien sont arrivés, comme pour les autres discussions ; qu'un message soit arrivé ou ait été lu n'en donne aucune. Qui la voit sans rien trouver de nouveau dans tes discussions peut deviner qu'il y en a d'autres.",
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     "Fermées, ces discussions masquées ne disent rien : leurs messages attendent sur le relais jusqu'à ce que tu les ouvres.",
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Pour l’instant rien ne le signale : il faut « Recevoir et sonner » et « Signaler les nouveaux messages », sous Réglages → Notifications → En arrière-plan.',
   "Create the relay queue of these hidden chats first, below.": "Crée d’abord la file sur le relais de ces discussions masquées, ci-dessous.",
   'Relay address': 'Adresse du relais',
   'Token (optional)': 'Jeton (facultatif)',

@@ -172,6 +172,7 @@ export const settings: Record<string, string> = {
   'Phones nearby': 'Telefone in der Nähe',
   'Exact times': 'Genaue Uhrzeiten',
   'The message notice': 'Die Nachrichtenbenachrichtigung',
+  'The reminder notice': 'Die Erinnerungsbenachrichtigung',
   'Running in the background': 'Laufen im Hintergrund',
   'Pausing when unused': 'Pausieren bei Nichtnutzung',
   'Sound for new messages': 'Ton für neue Nachrichten',
@@ -192,7 +193,9 @@ export const settings: Record<string, string> = {
   "For the names of the phone's contacts in Phone, SMS and Contacts.": 'Für die Namen der Kontakte des Telefons in Telefon, SMS und Kontakte.',
   'For SMS sent later to go at the minute they are set for.': 'Damit später gesendete SMS zu der Minute gehen, für die sie eingestellt sind.',
   'For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.': 'Damit ein Anruf mit seinen Tasten erscheint: Die Benachrichtigungen „Anrufe“ müssen an sein und auf dem Bildschirm aufpoppen dürfen. Sonst klingelt ein Anruf, aber nichts erscheint, um ihn anzunehmen.',
-  'For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.': 'Für den Hinweis, dass eine Nachricht kam, während Erevos geschlossen ist. Sind die Benachrichtigungen „Nachrichten“ aus, kommen Nachrichten trotzdem, aber nichts sagt es.',
+  'For the notice that a message came while Erevos is closed, which also keeps the number on Erevos\'s icon. With the "Messages", "Messages without sound" or "Messages with a chat\'s own sound" notices turned off, messages still come, but nothing says so, or only for some.': 'Für den Hinweis, dass eine Nachricht kam, während Erevos geschlossen ist, der auch die Zahl auf dem Symbol von Erevos hält. Sind die Benachrichtigungen „Nachrichten“, „Nachrichten ohne Ton“ oder „Nachrichten mit eigenem Ton eines Chats“ aus, kommen Nachrichten trotzdem, aber nichts sagt es, oder nur bei manchen.',
+  'For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.':
+    'Für den Hinweis, der zur Zeit einer Erinnerung „Erinnerung“ sagt, oder wie viele, während Erevos geschlossen ist. Sind die Benachrichtigungen „Erinnerungen“ aus, zeigt sich nichts.',
   "With Erevos's battery use set to Restricted, Android does not let it run in the background at all: nothing comes and nothing rings while it is closed.": 'Ist die Akkunutzung von Erevos auf „Eingeschränkt“ gestellt, lässt Android es gar nicht im Hintergrund laufen: Nichts kommt und nichts klingelt, während es geschlossen ist.',
   'Android pauses an app that is not opened for a few months, and takes back its permissions. Left out of it, Erevos keeps waiting for calls and messages however long it stays in the background.': 'Android pausiert eine App, die einige Monate nicht geöffnet wird, und nimmt ihr die Berechtigungen. Davon ausgenommen wartet Erevos weiter auf Anrufe und Nachrichten, egal wie lange es im Hintergrund bleibt.',
   'For the notice that a message came to make a sound. The "Messages" notices can be set to show silently, or have no sound chosen.': 'Damit der Hinweis, dass eine Nachricht kam, einen Ton macht. Die Benachrichtigungen „Nachrichten“ können lautlos eingestellt sein oder keinen Ton gewählt haben.',

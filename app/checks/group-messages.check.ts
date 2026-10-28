@@ -202,12 +202,24 @@ test('replies, stickers, polls, reactions, votes, pins, edits and deleting go to
   await net.settle();
   assert.ok(said(bob, id)[1].pinned);
   // Alice cannot delete Bob's for everyone; Bob can.
+  const goneHere: string[] = [];
+  const stopGone = alice.groups.onGone((group) => goneHere.push(group));
   assert.equal(await alice.groups.mark(id, { t: 'erase', tag: answer.tag }, alice.transport), null);
   const gone = await bob.groups.mark(id, { t: 'erase', tag: answer.tag }, bob.transport);
   assert.equal(gone?.tag, answer.tag);
   await net.settle();
   assert.deepEqual(said(alice, id).map((m) => m.tag), [asked.tag]);
   assert.deepEqual(said(bob, id).map((m) => m.tag), [asked.tag]);
+  // Not read on Alice's phone yet: the messages notice is told it went (lib/background.ts); one read is not.
+  assert.deepEqual(goneHere, [id]);
+  await bob.groups.send(id, 'Bye', bob.transport);
+  await net.settle();
+  await alice.groups.markRead(id);
+  await bob.groups.mark(id, { t: 'erase', tag: said(bob, id).at(-1)!.tag }, bob.transport);
+  await net.settle();
+  assert.deepEqual(said(alice, id).map((m) => m.tag), [asked.tag]);
+  assert.deepEqual(goneHere, [id]);
+  stopGone();
 
   // Alice edits her words for everyone; Bob cannot edit hers.
   const typed = await alice.groups.send(id, 'Tea at five', alice.transport).then(() => said(alice, id).at(-1)!);

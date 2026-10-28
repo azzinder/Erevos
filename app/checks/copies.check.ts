@@ -741,9 +741,9 @@ t('a voice message from a contact with no devices that went in part, and goes ag
     return news;
   };
   const once = await carol.e2e.sealVoice(bob.id, audio, 9000, carol.sender, { at: where, tag });
-  assert.deepEqual(await take(once.packets.slice(0, 6)), [true, ...Array(5).fill(false)]);
+  assert.deepEqual(await take(once.packets.slice(0, 6)), Array(6).fill(false));
   const again = await carol.e2e.sealVoice(bob.id, audio, 9000, carol.sender, { at: where, tag });
-  assert.deepEqual(await take(again.packets), Array(10).fill(false));
+  assert.deepEqual(await take(again.packets), [...Array(9).fill(false), true]);
   assert.equal(history.messages().filter((m) => m.tag === tag && m.voice).length, 1);
 });
 

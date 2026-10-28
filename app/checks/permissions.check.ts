@@ -123,10 +123,44 @@ test('the message notice turned off is something messages need; set silent, it i
     assert.equal(stateOf(quiet, 'messageSound'), 'missing');
     assert.equal(needsLook(quiet), false);
   }
-  // With "No notice" chosen under Lock, the messages notice is as the owner wants it.
+  // With "No notice" chosen under Settings → Notifications → In the background, the messages notice is as the owner wants it.
   const unwanted = await checksFrom(input({ background: { ...NEWER, messageChannel: { ...MESSAGES, importance: 0 } }, messageNotices: false }));
   assert.equal(unwanted.some((c) => c.id === 'messages' || c.id === 'messageSound'), false);
   assert.equal(needsLook(unwanted), false);
+});
+
+test('the same notice without sound, or with a chat\'s own sound, turned off is something messages need too; hidden on the lock screen, it is shown', async () => {
+  const QUIET: NoticeChannel = { importance: 2, sound: false, lockScreen: 0, bypassDnd: false };
+  const OWN: NoticeChannel = { importance: 3, sound: false, lockScreen: 0, bypassDnd: false };
+  const all = await checksFrom(input({ background: { ...NEWER, quietChannel: QUIET, ownChannel: OWN } }));
+  assert.equal(stateOf(all, 'messages'), 'ok');
+  assert.equal(needsLook(all), false);
+  for (const off of [{ quietChannel: { ...QUIET, importance: 0 } }, { ownChannel: { ...OWN, importance: 0 } }]) {
+    const checks = await checksFrom(input({ background: { ...NEWER, quietChannel: QUIET, ownChannel: OWN, ...off } }));
+    assert.equal(stateOf(checks, 'messages'), 'missing');
+    assert.equal(needsLook(checks), true);
+    // Not wanted: as the owner wants it.
+    const unwanted = await checksFrom(input({ background: { ...NEWER, quietChannel: QUIET, ownChannel: OWN, ...off }, messageNotices: false }));
+    assert.equal(unwanted.some((c) => c.id === 'messages'), false);
+    // All notices off: that is what shows.
+    const none = await checksFrom(input({ background: { ...NEWER, notices: false, quietChannel: QUIET, ownChannel: OWN, ...off } }));
+    assert.equal(none.some((c) => c.id === 'messages'), false);
+  }
+  const hidden = await checksFrom(input({ background: { ...NEWER, quietChannel: { ...QUIET, lockScreen: -1 }, ownChannel: OWN } }));
+  assert.equal(stateOf(hidden, 'lockScreen'), 'missing');
+  assert.equal(needsLook(hidden), false);
+});
+
+test("the reminders' notice turned off shows, once a reminder made it, and never opens the check by itself", async () => {
+  const REMINDERS: NoticeChannel = { importance: 4, sound: true, lockScreen: 0, bypassDnd: false };
+  assert.equal((await checksFrom(input({ background: NEWER }))).some((c) => c.id === 'reminders'), false);
+  assert.equal(stateOf(await checksFrom(input({ background: { ...NEWER, reminderChannel: REMINDERS } })), 'reminders'), 'ok');
+  const off = await checksFrom(input({ background: { ...NEWER, reminderChannel: { ...REMINDERS, importance: 0 } } }));
+  assert.equal(stateOf(off, 'reminders'), 'missing');
+  assert.equal(off.find((c) => c.id === 'reminders')?.needed, false);
+  assert.equal(needsLook(off), false);
+  const none = await checksFrom(input({ background: { ...NEWER, notices: false, reminderChannel: { ...REMINDERS, importance: 0 } } }));
+  assert.equal(none.some((c) => c.id === 'reminders'), false);
 });
 
 test('a call notice that does not pop up is something calls need, as one turned off', async () => {

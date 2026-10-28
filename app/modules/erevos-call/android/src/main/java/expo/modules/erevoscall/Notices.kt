@@ -28,12 +28,12 @@ object Notices {
   const val CALLS_CHANNEL = "erevos-calls"
   const val MESSAGES_CHANNEL = "erevos-messages"
   // The same notice, for messages sent without sound: a channel that never sounds.
-  private const val QUIET_CHANNEL = "erevos-messages-quiet"
+  const val QUIET_CHANNEL = "erevos-messages-quiet"
   // The same notice again, for a chat given a sound of its own (Chat details → Notifications):
   // the channel never sounds, and the chat's sound plays from Erevos itself (play), so one notice
   // can sound as each chat says. A channel's sound is fixed once it is made, so one per chat would
   // be needed otherwise, each named in Android's settings.
-  private const val OWN_CHANNEL = "erevos-messages-own"
+  const val OWN_CHANNEL = "erevos-messages-own"
   // That Erevos stopped receiving in the background, closed by Android or locked: shows, without sound.
   private const val STOPPED_CHANNEL = "erevos-stopped"
 

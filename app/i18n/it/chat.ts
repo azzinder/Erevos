@@ -221,6 +221,8 @@ export const chat: Record<string, string> = {
     'Finché queste chat nascoste sono chiuse ed Erevos è in background, una notifica dice solo «New message», o quanti ne sono arrivati, come per le altre chat; che un messaggio sia arrivato o sia stato letto non ne dà nessuna. Chi la vede e non trova nulla di nuovo nelle tue chat può intuire che ce ne sono altre.',
   'Closed, these hidden chats say nothing: their messages wait on the relay until you open them.':
     'Chiuse, queste chat nascoste non dicono nulla: i loro messaggi aspettano sul relay finché non le apri.',
+  'Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.':
+    'Per ora non avvisa nulla: servono «Ricevi e squilla» e «Avvisa dei nuovi messaggi», in Impostazioni → Notifiche → In background.',
   "Create the relay queue of these hidden chats first, below.": "Crea prima la coda sul relay di queste chat nascoste, qui sotto.",
   'Relay address': 'Indirizzo del relay',
   'Token (optional)': 'Token (facoltativo)',

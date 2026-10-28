@@ -7,8 +7,8 @@ import { currentSpace } from '../lock/keys';
 import { MIN_PIN, searchHidden } from '../lock/hidden';
 import { handOverHidden } from '../lib/hidden-handoff';
 import { answerHiddenCall, setHiddenRinging, useHiddenRinging, type HiddenRinging } from '../lib/hidden-ring';
-import { shownCall } from '../lib/calls';
-import { shownGroupCall } from '../lib/group-calls';
+import { onCallChange, shownCall } from '../lib/calls';
+import { onGroupCallChange, shownGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
 import { RING, Round } from './call-screen';
 import { LockIcon, PersonIcon } from './icons';
@@ -29,6 +29,17 @@ import { Button, Input, Text } from './ui';
 export function HiddenRingHost({ locked = false }: { locked?: boolean }) {
   const ringing = useHiddenRinging();
   const [aside, setAside] = useState<HiddenRinging | null>(null);
+  // Drawn again as a call screen comes and goes: a hidden ring shows once none is left.
+  const [, setCalls] = useState(0);
+  useEffect(() => {
+    const changed = () => setCalls((n) => n + 1);
+    const stopCall = onCallChange(changed);
+    const stopGroupCall = onGroupCallChange(changed);
+    return () => {
+      stopCall();
+      stopGroupCall();
+    };
+  }, []);
   if (!ringing || shownCall() || shownGroupCall() || aside === ringing) return null;
   return <HiddenRingScreen space={ringing.space} pocket={ringing.pocket} onSign={locked ? () => setAside(ringing) : undefined} />;
 }

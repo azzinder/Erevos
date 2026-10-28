@@ -15,6 +15,11 @@ export type BackgroundState = {
   /** The "Calls" and "Messages" notices as the owner left them (Android 8 and later). */
   callChannel?: NoticeChannel;
   messageChannel?: NoticeChannel;
+  /** The message notice's channels without sound and with a chat's own sound, which keep the number on the icon too. */
+  quietChannel?: NoticeChannel;
+  ownChannel?: NoticeChannel;
+  /** The "Reminders" notices, once the first reminder made their channel. */
+  reminderChannel?: NoticeChannel;
   /** Whether the phone shows notices on its lock screen at all; missing where Android does not let an app read it. */
   lockScreen?: boolean;
   /** Do Not Disturb is on now (Android 6 and later). */
@@ -36,7 +41,7 @@ export type NoticeChannel = { importance: number; sound: boolean; lockScreen: nu
 
 /** The settings screens openSettings opens; "app" is Erevos's own page in Android's settings, which
  *  a build from before a screen opens for it. */
-export type SettingsScreen = 'notices' | 'calls' | 'messages' | 'data' | 'alarms' | 'unused' | 'saver' | 'sound' | 'app';
+export type SettingsScreen = 'notices' | 'calls' | 'messages' | 'quiet' | 'own' | 'reminders' | 'data' | 'alarms' | 'unused' | 'saver' | 'sound' | 'app';
 
 // What came after the first calls is missing in a build made before it, so it is optional.
 type CallAudio = {

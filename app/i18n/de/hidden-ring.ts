@@ -7,6 +7,8 @@ export const hiddenRing: Record<string, string> = {
     'Solange diese versteckten Chats geschlossen sind und Erevos im Hintergrund läuft, lässt ein Anruf von einem ihrer Kontakte das Telefon klingeln und zeigt „Eingehender Anruf“ ohne Namen. Tippe auf dem Anrufbildschirm auf das kleine Zeichen und gib die PIN ein, um abzunehmen. Wer das Telefon hält, sieht einen Anruf, der in keinem deiner Chats steht, und kann ahnen, dass es mehr gibt.',
   'Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.':
     'Geschlossen klingeln diese versteckten Chats nicht: ein Anruf von ihren Kontakten klingelt nur, solange sie geöffnet sind.',
+  'Nothing rings for now: it needs Receive and ring, under Settings → Notifications → In the background.':
+    'Vorerst klingelt nichts: Dafür braucht es „Empfangen und klingeln“ unter Einstellungen → Benachrichtigungen → Im Hintergrund.',
   PIN: 'PIN',
   Connect: 'Verbinden',
 };

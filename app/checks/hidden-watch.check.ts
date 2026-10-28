@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { OpenHiddenPlace } from '../lib/hidden-contacts';
-import { setOpenHiddenPlace } from '../lib/hidden-contacts';
+import { placeGroupTells, setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { startHiddenNotices } from '../lib/hidden-notices';
 import { setHiddenRinging } from '../lib/hidden-ring';
 import { setAppShown } from '../lib/receiver';
@@ -247,5 +247,20 @@ test('a queue the relay lost leaves its switch on, and is waited on again as its
     stop();
     setAppShown(true);
     setCurrentSpace(null);
+  }
+});
+
+test('a group of the hidden chats tells, with Erevos away, only as their contacts do', () => {
+  setOpenHiddenPlace({ ...place(0, 1), tells: () => false });
+  try {
+    assert.equal(placeGroupTells(0, 1, false, false), false);
+    assert.equal(placeGroupTells(0, 1, true, false), true);
+    assert.equal(placeGroupTells(0, 1, false, true), true);
+    assert.equal(placeGroupTells(0, 2, false, false), false);
+    setOpenHiddenPlace({ ...place(0, 1), tells: () => true });
+    assert.equal(placeGroupTells(0, 1, false, false), true);
+    assert.equal(placeGroupTells(1, 1, false, false), false);
+  } finally {
+    setOpenHiddenPlace(null);
   }
 });

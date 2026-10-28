@@ -12,7 +12,7 @@ import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError,
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
 import { callPermissions } from '../lib/call-permissions';
-import { CALL_LINE, callLineMessage, callSignal, endCallsOf, startCall as beginCall, type CallPlace } from '../lib/calls';
+import { CALL_LINE, callLineMessage, callSignal, endCallsOf, onCallChange, startCall as beginCall, type CallPlace } from '../lib/calls';
 import { shownLine } from '../lib/call-lines';
 import { onSpaceCallLine, spaceCalls } from '../lib/space-calls';
 import { rtc } from '../lib/webrtc';
@@ -20,11 +20,12 @@ import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
-import { canRingInBackground, messageCameAt, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
+import { canRingInBackground, loadMessageNotices, loadRingInBackground, messageCameAt, messageGone, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
 import { pickSource, TooLargeError } from '../lib/pick-file';
+import { watchHiddenAway } from '../lib/hidden-away';
 import { isPicking } from '../lib/picking';
 import { loadPhotoQuality, savePhotoQuality } from '../lib/photo-quality';
 import { saveFile, saveText } from '../lib/save-file';
@@ -125,7 +126,7 @@ import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type 
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
-import { groupCallSignal } from '../lib/group-calls';
+import { groupCallSignal, onGroupCallChange } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
 import {
   borrowPlace,
@@ -414,21 +415,34 @@ export default function ChatScreen() {
   const [chatLook, setChatLook] = useState<ChatLook | null>(null);
 
   // Hidden chats close once Erevos was away more than RELOCK_MS, as a chat's own PIN locks again,
-  // but not in a call, nor while a photo or a file is picked for them (lib/picking.ts).
-  useEffect(() => {
-    let away = 0;
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'background') away = Date.now();
-      else if (state === 'active' && away) {
-        if (Date.now() - away > RELOCK_MS && !currentCall() && !isPicking()) {
+  // while it is away too, but not in a call (then once it ends), nor while a photo or a file is
+  // picked for them (lib/hidden-away.ts).
+  useEffect(
+    () =>
+      watchHiddenAway(
+        () => {
           closeHidden();
           setAsking(false);
-        }
-        away = 0;
-      }
-    });
-    return () => subscription.remove();
-  }, []);
+        },
+        {
+          onAppState: (listener) => {
+            const subscription = AppState.addEventListener('change', listener);
+            return () => subscription.remove();
+          },
+          onCallChange: (listener) => {
+            const stopCall = onCallChange(listener);
+            const stopGroupCall = onGroupCallChange(listener);
+            return () => {
+              stopCall();
+              stopGroupCall();
+            };
+          },
+          inCall: () => !!(currentCall() || currentGroupCall()),
+          picking: isPicking,
+        },
+      ),
+    [],
+  );
 
   if (Platform.OS === 'ios') {
     return (
@@ -583,6 +597,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [ringing, setRinging] = useState(false);
   const [ringQueue, setRingQueue] = useState<Queue | null>(null);
   const [ringNote, setRingNote] = useState('');
+  // What Settings → Notifications → In the background lets these hidden chats do while closed, as
+  // last read: their switches below save either way, and say so when it lets them do nothing yet.
+  const [background, setBackground] = useState<{ on: boolean; notices: boolean } | null>(null);
   // Set while a preview is being made, so the words do not go twice.
   const previewing = useRef(false);
   const editGoing = useRef(false);
@@ -1594,6 +1611,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         if (given) setContacts(e2e.contacts());
         return given;
       },
+      tells: () => watchedNow.current,
     });
     return () => {
       lending = false;
@@ -2191,11 +2209,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('{name} turned disappearing messages off in this chat.', { name }),
       );
     }
+    // Once gone, the notice no longer counts it (lib/background.ts).
+    const gone = (tag: string | null) => () => void messageGone(screenOfChat(received.identity), tag, !hiddenKey).catch(() => undefined);
     if (received.erase && 'all' in received.erase) {
-      forgetChat(peer);
+      void forgetChat(peer).then(gone(null));
       setNote(t('{name} deleted the messages of this chat on both phones.', { name }));
     } else if (received.erase) {
-      forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 });
+      void forgetMessage({ id: -1, peer, text: '', mine: false, tag: received.erase.tag, until: 0, lasts: 0, mark: 0, at: 0 }).then(gone(received.erase.tag));
       setNote(t('{name} deleted a message on both phones.', { name }));
     }
     if (received.added && received.request) {
@@ -2254,16 +2274,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // Deleted here, what hidden chats still owe the contact's phone of it never goes.
-  function forgetChat(peer: string) {
+  // Each says when the chat's history has it.
+  function forgetChat(peer: string): Promise<void> {
     setMessages((list) => list.filter((message) => message.peer !== peer));
-    history.current?.clear(peer).catch((error) => setNote(errorText(error)));
     owed.current.forget(peer.slice(CONTACT_PREFIX.length));
+    return history.current?.clear(peer).catch((error) => setNote(errorText(error))) ?? Promise.resolve();
   }
 
-  function forgetMessage(message: Message) {
+  function forgetMessage(message: Message): Promise<void> {
     setMessages((list) => list.filter((m) => m.id !== message.id && !(message.tag && m.peer === message.peer && m.tag === message.tag)));
-    if (message.tag) history.current?.remove(message.peer, message.tag).catch((error) => setNote(errorText(error)));
-    if (message.tag) owed.current.forget(message.peer.slice(CONTACT_PREFIX.length), message.tag);
+    if (!message.tag) return Promise.resolve();
+    owed.current.forget(message.peer.slice(CONTACT_PREFIX.length), message.tag);
+    return history.current?.remove(message.peer, message.tag).catch((error) => setNote(errorText(error))) ?? Promise.resolve();
   }
 
   // What is done on this phone only, which the contact is not told of, the account's linked devices
@@ -4680,6 +4702,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       active = false;
     };
   }, [e2e, focused]);
+  // Read again each time these hidden chats show, as Settings may have changed meanwhile.
+  useEffect(() => {
+    if (!hiddenKey || !canRingInBackground || !focused) return;
+    let active = true;
+    Promise.all([loadRingInBackground(), loadMessageNotices()])
+      .then(([on, notices]) => active && setBackground({ on, notices }))
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [hiddenKey, focused]);
   const onScreen = !shown || !focused || gated ? null : hiddenKey ? screenOfHidden(pocket) : selectedIdentity ? screenOfChat(selectedIdentity) : null;
   useEffect(() => (onScreen ? showOnScreen(onScreen) : undefined), [onScreen]);
   const importedFrom = [...new Set(imported.map((m) => SOURCE_LABELS[m.source]))].join(` ${t('and')} `);
@@ -5691,6 +5724,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         ? t('While these hidden chats are closed and Erevos is in the background, a notice says only "New message", or how many came, as for the other chats; that a message came or was read makes none. Whoever sees it and finds nothing new in your chats may guess there are more.')
                         : t('Closed, these hidden chats say nothing: their messages wait on the relay until you open them.')}
                     </Text>
+                    {watched && background && !(background.on && background.notices) ? (
+                      <Text variant="caption" tone="muted">
+                        {t('Nothing says it for now: it needs Receive and ring and Say a message came, under Settings → Notifications → In the background.')}
+                      </Text>
+                    ) : null}
                     {watchNote ? <Text variant="caption" tone="muted">{watchNote}</Text> : null}
                     <DetailRow title={t('Ring calls when closed')} checked={ringing} onPress={() => void changeRinging(!ringing)} />
                     <Text variant="caption" tone="muted">
@@ -5698,6 +5736,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         ? t('While these hidden chats are closed and Erevos is in the background, a call from one of their contacts makes the phone ring and show "Incoming call" with no name. On the ringing screen, tap the small sign and type the PIN to answer. Whoever holds the phone sees a call that is in none of your chats, and may guess there are more.')
                         : t('Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.')}
                     </Text>
+                    {ringing && background && !background.on ? (
+                      <Text variant="caption" tone="muted">{t('Nothing rings for now: it needs Receive and ring, under Settings → Notifications → In the background.')}</Text>
+                    ) : null}
                     {ringNote ? <Text variant="caption" tone="muted">{ringNote}</Text> : null}
                   </>
                 ) : null}

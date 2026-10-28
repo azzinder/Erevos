@@ -305,9 +305,21 @@ export function setThroughTor(way: TorWay): void {
   torRestUntil = 0;
 }
 
+const torReadyListeners = new Set<() => void>();
+
 /** Whether Tor is ready, as lib/tor.ts last found: until it is, the way 'messages' goes straight. */
 export function setTorReady(ready: boolean): void {
+  const was = torReady;
   torReady = ready;
+  if (ready && !was) torReadyListeners.forEach((listener) => listener());
+}
+
+/** Calls `listener` each time Tor becomes ready. Returns how to stop. */
+export function onTorReady(listener: () => void): () => void {
+  torReadyListeners.add(listener);
+  return () => {
+    torReadyListeners.delete(listener);
+  };
 }
 
 /** Whether every relay request goes through Tor, files too (the way 'all'). */

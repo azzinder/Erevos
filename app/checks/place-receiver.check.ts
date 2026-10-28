@@ -36,9 +36,11 @@ import { watchPocket } from '../lock/hidden-watch';
 import { setCurrentSpace } from '../lock/keys';
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
+import { writeNote } from '../lib/myself';
 import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
+import { reminders } from './device-memory';
 import { slow, store } from './secure-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -115,8 +117,22 @@ test('every space keeps four keys of one size, the real one only where a place r
     await setHiddenPassword(0, 1, 'hidden-pin-2', key);
     assert.ok(!(await keepsPlace(0, spaceKey, 1, key)));
     await keepPlace(0, spaceKey, 1, key);
+    // Its reminders, told by the phone while it receives closed, go with its PIN; the space's stay.
+    const later = Date.now() + 3_600_000;
+    const hiddenNote = await writeNote({ text: 'hidden', due: later }, { place: { holder: hiddenHolder(1), space: 0, key }, arm: true });
+    const spaceNote = await writeNote({ text: 'space', due: later });
+    assert.ok(reminders.has(hiddenNote.id) && reminders.has(spaceNote.id));
     await removeHiddenPassword(0, 1);
     assert.ok(!(await keepsPlace(0, spaceKey, 1, key)));
+    assert.ok(!reminders.has(hiddenNote.id));
+    assert.ok(reminders.has(spaceNote.id));
+    // So do those of hidden chats a new PIN puts others in place of.
+    const first = await setHiddenPassword(0, 3, 'hidden-pin-5', null);
+    const replaced = await writeNote({ text: 'replaced', due: later }, { place: { holder: hiddenHolder(3), space: 0, key: first }, arm: true });
+    assert.ok(reminders.has(replaced.id));
+    await setHiddenPassword(0, 3, 'hidden-pin-6', null);
+    assert.ok(!reminders.has(replaced.id));
+    assert.ok(reminders.has(spaceNote.id));
   } finally {
     setCurrentSpace(null);
   }

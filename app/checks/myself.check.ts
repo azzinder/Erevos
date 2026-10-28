@@ -7,11 +7,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { reminders } from './device-memory';
+import { reminders, seen } from './device-memory';
 import { blobs, files } from './files-memory';
 import { bytesSource, keepFile } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
-import { armPlaceReminders, deleteNote, myNotes, remindAt, writeNote } from '../lib/myself';
+import { armPlaceReminders, deleteNote, myNotes, remindAt, seenReminders, writeNote } from '../lib/myself';
 import { setCurrentSpace } from '../lock/keys';
 import { addNote, changeNote, FILE, isDue, isWaiting, loadNotes, markTold, newNoteId, notesSummary, removeNote, type NotesPlace } from '../lock/myself-data';
 import { saveClip } from '../lock/voice-clips';
@@ -65,6 +65,27 @@ test('a reminder is set, changed, taken away and seen; the home row counts those
   assert.equal(notes[0].text, 'call the bank');
   assert.equal(notesSummary(notes, now).next, now + 120_000);
   assert.equal(await changeNote(mine, newNoteId(), { due: now }), null);
+});
+
+test('reminders seen in the chat are told to the phone, which takes them out of its notice; only those that came', async () => {
+  files.clear();
+  seen.clear();
+  setCurrentSpace(0, randomBytes(32));
+  try {
+    const now = Date.now();
+    await writeNote({ text: 'came', due: now - 1000 });
+    const waiting = await writeNote({ text: 'later', due: now + 3_600_000 });
+    const came = (await myNotes()).find((n) => n.text === 'came')!;
+    await seenReminders(await myNotes(), now);
+    assert.deepEqual([...seen], [came.id]);
+    assert.ok(!seen.has(waiting.id));
+    // Seen once: nothing again.
+    seen.clear();
+    await seenReminders(await myNotes(), now);
+    assert.deepEqual([...seen], []);
+  } finally {
+    setCurrentSpace(null);
+  }
 });
 
 test('a note deleted takes its photo or file and its voice message with it', async () => {

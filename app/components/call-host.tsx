@@ -4,9 +4,10 @@ import { AppState, Modal } from 'react-native';
 import { callAudio } from '../modules/erevos-call';
 import { currentCall, type Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
+import { ringKeeper } from '../lib/call-ringing';
 import { chatNotify } from '../lib/chat-notices';
 import { callSignal, closeCall, CONTACT_PREFIX, endCall, onCallChange, shownCall } from '../lib/calls';
-import { takeHiddenAnswer } from '../lib/hidden-ring';
+import { hiddenRinging, setHiddenRinging, takeHiddenAnswer } from '../lib/hidden-ring';
 import { onMessage, setReceiverPace } from '../lib/receiver';
 import { currentGroupCall, type GroupCall } from '../lib/group-call';
 import { closeGroupCall, endGroupCall, groupCallSignal, onGroupCallChange, shownGroupCall } from '../lib/group-calls';
@@ -31,8 +32,6 @@ const LOOK_IN_CALL = 700;
 // (lock/chat-notify.ts), rings with it; hidden chats ring with the phone's, which tells no one's.
 // Returns how to stop, which ends the call, as the space closes.
 export function watchCalls(): () => void {
-  let known: Call | null = null;
-  let knownGroup: GroupCall | null = null;
   // A ringtone or notice that fails does not stop the call screen, nor the others that hear of the call.
   const audio = (play: () => void) => {
     try {
@@ -41,41 +40,33 @@ export function watchCalls(): () => void {
       // As said.
     }
   };
-  // The ringtone of `chat`, as it has one of its own, or the phone's.
+  // The ringtone of `chat`, as it has one of its own, or the phone's; with the notice too in the background.
   const ring = (video: boolean, chat: string) => {
     const tone = chat ? chatNotify(chat)?.ring : undefined;
     if (tone === undefined) audio(() => callAudio?.ring?.(video, AppState.currentState !== 'active'));
     else audio(() => callAudio?.ring?.(video, AppState.currentState !== 'active', tone));
   };
+  const keeper = ringKeeper(
+    {
+      ring,
+      start: (video) => audio(() => callAudio?.start(video)),
+      stopRinging: () => audio(() => callAudio?.stopRinging?.()),
+      stop: () => audio(() => callAudio?.stop()),
+      showOverLock: (on) => audio(() => callAudio?.showOverLock?.(on)),
+    },
+    { ringing: () => !!hiddenRinging(), end: () => setHiddenRinging(null) },
+  );
   setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
   const stopGroupChange = onGroupCallChange(() => {
-    const call = shownGroupCall()?.call ?? null;
-    if (call && call !== knownGroup) {
-      knownGroup = call;
-      if (call.state === 'in') audio(() => callAudio?.start(call.video));
-      else if (call.state === 'incoming') ring(call.video, shownGroupCall()?.place === spaceGroupCalls ? `group:${call.group}` : '');
-    }
-    if (call && call.state !== 'incoming' && !currentCall()) audio(() => callAudio?.stopRinging?.());
-    if (call?.state === 'ended' && !currentCall()) {
-      audio(() => callAudio?.stop());
-      audio(() => callAudio?.showOverLock?.(false));
-    }
+    const shown = shownGroupCall();
+    const call = shown?.call ?? null;
+    keeper.group(call, call && shown?.place === spaceGroupCalls ? `group:${call.group}` : '', !!currentCall());
   });
   const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
   const stopChange = onCallChange(() => {
-    const call = shownCall()?.call ?? null;
-    if (call && call !== known) {
-      known = call;
-      // Ours starts its sound at once; theirs once answered.
-      if (call.outgoing) audio(() => callAudio?.start(call.video));
-      // Theirs rings with the phone's ringtone, and in the background with the call notice too.
-      else if (call.state === 'incoming') ring(call.video, shownCall()?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : '');
-    }
-    if (call?.state !== 'incoming') audio(() => callAudio?.stopRinging?.());
-    if (call?.state === 'ended') {
-      audio(() => callAudio?.stop());
-      audio(() => callAudio?.showOverLock?.(false));
-    }
+    const shown = shownCall();
+    const call = shown?.call ?? null;
+    keeper.contact(call, call && shown?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : '');
   });
   const stopMessages = onMessage((received) => {
     if (!received.call) return;

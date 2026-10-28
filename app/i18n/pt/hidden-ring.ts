@@ -7,6 +7,8 @@ export const hiddenRing: Record<string, string> = {
     'Enquanto estas conversas ocultas estão fechadas e o Erevos está em segundo plano, uma chamada de um dos contatos delas faz o telefone tocar e mostra «Chamada recebida» sem nome. Na tela da chamada, toque no pequeno sinal e digite o PIN para atender. Quem estiver com o telefone vê uma chamada que não está em nenhuma das suas conversas, e pode suspeitar que há mais.',
   'Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.':
     'Fechadas, estas conversas ocultas não tocam: uma chamada dos contatos delas toca só enquanto estão abertas.',
+  'Nothing rings for now: it needs Receive and ring, under Settings → Notifications → In the background.':
+    'Por enquanto nada toca: é preciso "Receber e tocar", em Configurações → Notificações → Em segundo plano.',
   PIN: 'PIN',
   Connect: 'Conectar',
 };

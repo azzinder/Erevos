@@ -24,6 +24,8 @@ export type OpenHiddenPlace = {
    * they have closed).
    */
   takeName(identity: string, name: string): Promise<string>;
+  /** Whether, while they are open, a message says so with Erevos away: Receive while closed or Say when a message comes. */
+  tells?(): boolean;
 };
 
 let place: OpenHiddenPlace | null = null;
@@ -34,6 +36,15 @@ let screens = 0;
 export function setOpenHiddenPlace(open: OpenHiddenPlace | null): void {
   place = open;
   for (const listener of listeners) listener();
+}
+
+/**
+ * Whether a message in a group of the hidden chats in `pocket` says so, as their contacts' do: with
+ * Erevos on the screen (`shown`), with the place receiving while closed (`receives`), or while it is
+ * open and says so with Erevos away.
+ */
+export function placeGroupTells(space: number, pocket: number, shown: boolean, receives: boolean): boolean {
+  return shown || receives || (place?.space === space && place.pocket === pocket && !!place.tells?.());
 }
 
 export function openHiddenPlace(): OpenHiddenPlace | null {

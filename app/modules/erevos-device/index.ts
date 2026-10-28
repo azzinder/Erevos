@@ -18,6 +18,8 @@ type Device = {
   remind?(id: string, at: number): boolean;
   /** Forgets a reminder that has not come. Missing in a build before reminders. */
   forgetReminder?(id: string): void;
+  /** Reminders seen in their chat: the notice no longer tells of them, and goes once it tells of none. Missing in a build before it. */
+  seenReminders?(ids: string[]): void;
   /** A notice says that Erevos `name` is out, and opens Updates (lib/release-notice.ts). Missing in a build before it. */
   tellUpdate?(name: string): void;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;

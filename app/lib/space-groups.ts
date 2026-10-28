@@ -57,12 +57,21 @@ let shown: PublicGroups | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
 const messageListeners = new Set<(group: string) => void>();
+const goneListeners = new Set<(group: string) => void>();
 
 /** Calls `listener` with the group each time a member's message comes in one of the open space's groups. Returns how to stop. */
 export function onSpaceGroupMessage(listener: (group: string) => void): () => void {
   messageListeners.add(listener);
   return () => {
     messageListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` with the group each time a member of one of the open space's groups deletes for everyone a message not read yet. Returns how to stop. */
+export function onSpaceGroupGone(listener: (group: string) => void): () => void {
+  goneListeners.add(listener);
+  return () => {
+    goneListeners.delete(listener);
   };
 }
 
@@ -132,6 +141,7 @@ export function spaceGroups(): Promise<PublicGroups> {
       });
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
       made.onMessage((group) => messageListeners.forEach((listener) => listener(group)));
+      made.onGone((group) => goneListeners.forEach((listener) => listener(group)));
       if (opened?.of === current) shown = made;
       return made;
     })();

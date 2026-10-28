@@ -171,6 +171,7 @@ export const settings: Record<string, string> = {
   'Phones nearby': 'Κοντινά τηλέφωνα',
   'Exact times': 'Ακριβείς ώρες',
   'The message notice': 'Η ειδοποίηση μηνυμάτων',
+  'The reminder notice': 'Η ειδοποίηση υπενθυμίσεων',
   'Running in the background': 'Λειτουργία στο παρασκήνιο',
   'Pausing when unused': 'Παύση όταν δεν χρησιμοποιείται',
   'Sound for new messages': 'Ήχος για νέα μηνύματα',
@@ -191,7 +192,9 @@ export const settings: Record<string, string> = {
   "For the names of the phone's contacts in Phone, SMS and Contacts.": 'Για τα ονόματα των επαφών του τηλεφώνου στο Τηλέφωνο, στα SMS και στις Επαφές.',
   'For SMS sent later to go at the minute they are set for.': 'Για να φεύγουν τα SMS που στέλνονται αργότερα στο λεπτό που ορίστηκαν.',
   'For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.': 'Για να εμφανίζεται η κλήση, με τα κουμπιά της: οι ειδοποιήσεις «Κλήσεις» πρέπει να είναι ανοιχτές και να αναδύονται στην οθόνη. Αλλιώς η κλήση χτυπά, αλλά δεν εμφανίζεται τίποτε για να την απαντήσεις.',
-  'For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.': 'Για την ειδοποίηση ότι ήρθε μήνυμα όσο το Erevos είναι κλειστό. Με τις ειδοποιήσεις «Μηνύματα» κλειστές, τα μηνύματα έρχονται κανονικά, αλλά τίποτε δεν το λέει.',
+  'For the notice that a message came while Erevos is closed, which also keeps the number on Erevos\'s icon. With the "Messages", "Messages without sound" or "Messages with a chat\'s own sound" notices turned off, messages still come, but nothing says so, or only for some.': 'Για την ειδοποίηση ότι ήρθε μήνυμα όσο το Erevos είναι κλειστό, που κρατά και τον αριθμό στο εικονίδιο του Erevos. Με τις ειδοποιήσεις «Μηνύματα», «Μηνύματα χωρίς ήχο» ή «Μηνύματα με δικό τους ήχο» κλειστές, τα μηνύματα έρχονται κανονικά, αλλά τίποτε δεν το λέει, ή μόνο για κάποια.',
+  'For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.':
+    'Για την ειδοποίηση που λέει «Υπενθύμιση», ή πόσες, την ώρα μιας υπενθύμισης όσο το Erevos είναι κλειστό. Με τις ειδοποιήσεις «Υπενθυμίσεις» κλειστές, δεν εμφανίζεται τίποτε.',
   "With Erevos's battery use set to Restricted, Android does not let it run in the background at all: nothing comes and nothing rings while it is closed.": 'Με τη χρήση μπαταρίας του Erevos στο «Περιορισμένη», το Android δεν το αφήνει καθόλου να τρέχει στο παρασκήνιο: τίποτε δεν έρχεται και τίποτε δεν χτυπά όσο είναι κλειστό.',
   'Android pauses an app that is not opened for a few months, and takes back its permissions. Left out of it, Erevos keeps waiting for calls and messages however long it stays in the background.': 'Το Android θέτει σε παύση μια εφαρμογή που δεν ανοίγει για μερικούς μήνες, και της παίρνει πίσω τις άδειες. Αν το Erevos μείνει έξω από αυτό, συνεχίζει να περιμένει κλήσεις και μηνύματα όσο καιρό κι αν μείνει στο παρασκήνιο.',
   'For the notice that a message came to make a sound. The "Messages" notices can be set to show silently, or have no sound chosen.': 'Για να κάνει ήχο η ειδοποίηση ότι ήρθε μήνυμα. Οι ειδοποιήσεις «Μηνύματα» μπορεί να έχουν ρυθμιστεί να εμφανίζονται αθόρυβα, ή να μην έχουν επιλεγμένο ήχο.',

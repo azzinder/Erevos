@@ -7,6 +7,8 @@ export const hiddenRing: Record<string, string> = {
     'Finché queste chat nascoste sono chiuse ed Erevos è in background, una chiamata da uno dei loro contatti fa squillare il telefono e mostra «Chiamata in arrivo» senza nome. Nella schermata della chiamata, tocca il piccolo segno e digita il PIN per rispondere. Chi tiene il telefono vede una chiamata che non è in nessuna delle tue chat, e può intuire che ce ne sono altre.',
   'Closed, these hidden chats do not ring: a call from their contacts rings only while they are open.':
     'Chiuse, queste chat nascoste non squillano: una chiamata dai loro contatti squilla solo mentre sono aperte.',
+  'Nothing rings for now: it needs Receive and ring, under Settings → Notifications → In the background.':
+    'Per ora non squilla nulla: serve «Ricevi e squilla», in Impostazioni → Notifiche → In background.',
   PIN: 'PIN',
   Connect: 'Connetti',
 };

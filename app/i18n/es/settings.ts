@@ -172,6 +172,7 @@ export const settings: Record<string, string> = {
   'Phones nearby': 'Teléfonos cercanos',
   'Exact times': 'Horas exactas',
   'The message notice': 'La notificación de mensajes',
+  'The reminder notice': 'El aviso de recordatorio',
   'Running in the background': 'Funcionar en segundo plano',
   'Pausing when unused': 'Pausar si no se usa',
   'Sound for new messages': 'Sonido de mensajes nuevos',
@@ -192,7 +193,9 @@ export const settings: Record<string, string> = {
   "For the names of the phone's contacts in Phone, SMS and Contacts.": 'Para los nombres de los contactos del teléfono en Teléfono, SMS y Contactos.',
   'For SMS sent later to go at the minute they are set for.': 'Para que los SMS enviados más tarde salgan en el minuto fijado.',
   'For a call to show, with its buttons: the "Calls" notices must be on, and set to pop up on the screen. Otherwise a call rings, but nothing shows to answer it from.': 'Para que una llamada aparezca con sus botones: las notificaciones «Llamadas» deben estar activadas y emerger en la pantalla. Si no, una llamada suena, pero no aparece nada desde donde contestarla.',
-  'For the notice that a message came while Erevos is closed. With the "Messages" notices turned off, messages still come, but nothing says so.': 'Para el aviso de que llegó un mensaje mientras Erevos está cerrado. Con las notificaciones «Mensajes» desactivadas, los mensajes siguen llegando, pero nada lo dice.',
+  'For the notice that a message came while Erevos is closed, which also keeps the number on Erevos\'s icon. With the "Messages", "Messages without sound" or "Messages with a chat\'s own sound" notices turned off, messages still come, but nothing says so, or only for some.': 'Para el aviso de que llegó un mensaje mientras Erevos está cerrado, que también mantiene el número en el icono de Erevos. Con las notificaciones «Mensajes», «Mensajes sin sonido» o «Mensajes con el sonido propio de un chat» desactivadas, los mensajes siguen llegando, pero nada lo dice, o solo para algunos.',
+  'For the notice that says "Reminder", or how many, at a reminder\'s time while Erevos is closed. With the "Reminders" notices turned off, nothing shows.':
+    'Para el aviso que dice «Recordatorio», o cuántos, a la hora de un recordatorio mientras Erevos está cerrado. Con las notificaciones «Recordatorios» desactivadas, no se muestra nada.',
   "With Erevos's battery use set to Restricted, Android does not let it run in the background at all: nothing comes and nothing rings while it is closed.": 'Con el uso de batería de Erevos en «Restringido», Android no lo deja funcionar en segundo plano en absoluto: no llega nada y nada suena mientras está cerrado.',
   'Android pauses an app that is not opened for a few months, and takes back its permissions. Left out of it, Erevos keeps waiting for calls and messages however long it stays in the background.': 'Android pausa una app que no se abre durante unos meses y le retira los permisos. Si queda fuera de eso, Erevos sigue esperando llamadas y mensajes por mucho tiempo que pase en segundo plano.',
   'For the notice that a message came to make a sound. The "Messages" notices can be set to show silently, or have no sound chosen.': 'Para que el aviso de que llegó un mensaje suene. Las notificaciones «Mensajes» pueden estar en silencio o no tener ningún sonido elegido.',
