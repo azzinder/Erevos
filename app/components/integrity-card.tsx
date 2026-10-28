@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkForUpdate, integrityStatus, watchIntegrity, WEB_APP, type IntegrityStatus } from '../lib/integrity';
@@ -15,12 +16,17 @@ import { Button, Card, Row, SectionTitle, Text } from './ui';
 
 const when = (ms: number) => new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+// Whether the browser lets Erevos show notifications: it may have been refused since they were turned on.
+const allowed = () => !PUSH_AVAILABLE || Notification.permission === 'granted';
+
 /** The web app's signed release and its Web Push; with `part`, only the one, as a screen of its own. */
 export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
   const { colors } = useTheme();
   const [status, setStatus] = useState<IntegrityStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [push, setPush] = useState<boolean | null>(null);
+  const [pushLeft, setPushLeft] = useState(false);
+  const [pushAllowed, setPushAllowed] = useState(allowed);
   const [pushNote, setPushNote] = useState('');
 
   const reload = useCallback(() => {
@@ -33,7 +39,18 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
   }, [reload]);
 
   useEffect(() => {
-    loadCurrentSpaceData().then((data) => setPush(data.push), () => setPush(false));
+    loadCurrentSpaceData().then(
+      (data) => {
+        setPush(data.push);
+        setPushLeft(data.pushLeft);
+      },
+      () => setPush(false),
+    );
+    // Back from the browser's or the phone's settings: what it allows now.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setPushAllowed(allowed());
+    });
+    return () => subscription.remove();
   }, []);
 
   if (!WEB_APP) return null;
@@ -56,6 +73,9 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
       .then((problem) => {
         if (problem) setPushNote(problem);
         else setPush(!push);
+        setPushAllowed(allowed());
+        // Turned off with the relay out of reach, or told.
+        loadCurrentSpaceData().then((data) => setPushLeft(data.pushLeft), () => undefined);
       })
       .finally(() => setBusy(false));
   }
@@ -115,6 +135,16 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
           {part ? null : <SectionTitle title={t('Notifications while closed')} />}
           <Card>
             <Text variant="bodyStrong">{push ? t('On in this space') : t('Off in this space')}</Text>
+            {push && !pushAllowed ? (
+              <Text variant="caption" color={colors.danger} style={hint}>
+                {t('Notifications are not allowed for Erevos. Allow them in the settings of this browser or phone.')}
+              </Text>
+            ) : null}
+            {push === false && pushLeft ? (
+              <Text variant="caption" color={colors.warning} style={hint}>
+                {t('Your relay could not be told yet, so notifications may still come. Erevos tells it once it can be reached.')}
+              </Text>
+            ) : null}
             <Text variant="caption" tone="muted" style={hint}>
               {t(
                 'When messages come, or a call rings, while Erevos is closed, your relay sends a push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows how many messages came since you last opened it, such as "3 new messages", or "Call" when only a call rang, nothing more. The push carries no message and no sender, and its count is encrypted for this browser, but the push service sees when something comes for this device, and that it uses Erevos. With a relay or a sender\'s Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos shows "New message", or "New messages" once more came, until you open it. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
@@ -123,6 +153,9 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
             {/* The number on the icon (lib/icon-number.ts), which comes with them. */}
             <Text variant="caption" tone="muted" style={hint}>
               {t("Where the browser can show it, Erevos's icon then also shows how many messages this space has not read, unless turned off under Number on the icon.")}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t("Spaces on different relays share this browser's notifications: only the one opened last gets them. A message request from someone new, through your contact link, may show only once Erevos opens.")}
             </Text>
             {pushNote ? (
               <Text variant="caption" color={colors.danger} style={hint}>

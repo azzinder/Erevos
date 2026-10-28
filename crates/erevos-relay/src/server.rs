@@ -79,8 +79,10 @@
 //!   into the queue pushes there (see `push.rs`): with the keys, a count
 //!   encrypted for the browser, else an empty push. Reply: `OK`, and 1 after
 //!   it when the keys were taken; `NOT_FOUND` (no such queue, or the relay
-//!   does not push), or `FAILED` (not a known push service's address, or not
-//!   written).
+//!   does not push), `FAILED` (not a known push service's address, or not
+//!   written), or `EXPIRED` (its push service said the address is gone: the
+//!   web app makes a new one and gives that). Older relays answer `OK` to
+//!   such an address.
 //! - `LATER`: 8-byte Unix seconds, a 16-byte id, then a 4-byte length and a
 //!   whole `SEND`, `FORWARD` or `SEALED_SEND` request. The relay holds the
 //!   request and runs it at that time, as if it came then (see `later.rs`),
@@ -174,7 +176,12 @@
 //!
 //! In the same way a `RECEIVE` over WebSocket may end with `SHOWN`: the app
 //! takes the messages on the screen, so when it finds the queue empty, a push
-//! still waiting for its gap does not go (see `Push::drained`).
+//! still waiting for its gap does not go (see `Push::drained`). For a gap
+//! after it, what comes into any queue of the same push address waits to
+//! push, so the app takes it on the screen first (see `Push::shown`). A
+//! `RECEIVE` without it says the app took out of sight: from then on what
+//! comes pushes at once again. A `WAIT` or a `WAIT_ANY` says neither: the
+//! app on the screen waits on its contacts' queues too.
 //!
 //! Two-hop sending: a phone gives `FORWARD` to its own relay, which opens a
 //! WebSocket to `<address>/sealed` on the contact's relay and sends
@@ -551,6 +558,9 @@ pub const FAILED: u8 = 3;
 pub const UNREACHABLE: u8 = 4;
 /// A sign-in's code that is not the one its page showed (`CLAIM` only).
 pub const WRONG: u8 = 5;
+/// A push address its push service said is gone (`PUSH_SET` only): the web
+/// app must make a new one.
+pub const EXPIRED: u8 = 6;
 
 /// Largest sealed send: a full message and the sealing.
 pub const MAX_SEALED: usize = MAX_MESSAGE + OVERHEAD;
@@ -1038,10 +1048,11 @@ fn respond(
             let got = {
                 let mut store = shared.store();
                 let got = store.receive(&recipient);
-                // Under the lock that found it empty: what is sent after it
-                // counts from nothing.
-                if matches!(got, Ok(None)) {
-                    if let Some(push) = shared.push.get() {
+                if let Some(push) = shared.push.get() {
+                    push.shown(&recipient, shown);
+                    // Under the lock that found it empty: what is sent after it
+                    // counts from nothing.
+                    if matches!(got, Ok(None)) {
                         push.drained(&recipient, shown);
                     }
                 }
@@ -1275,6 +1286,7 @@ fn respond(
                             Ok(()) if counts => vec![OK, 1],
                             Ok(()) => vec![OK],
                             Err(SetError::Refused | SetError::Storage) => vec![FAILED],
+                            Err(SetError::Gone) => vec![EXPIRED],
                         }
                     }
                     Err(_) => vec![FAILED],
@@ -3013,6 +3025,87 @@ mod tests {
         let (_, next, count, _, _) = said(&secret, &keys, &body);
         assert_eq!(count, 1);
         assert_ne!(next, round);
+    }
+
+    #[test]
+    fn what_the_web_app_takes_on_the_screen_pushes_nothing_and_once_out_of_sight_at_once() {
+        use crate::push::tests::service;
+        let (service, pushes) = service(201);
+        let gap = Duration::from_millis(500);
+        let addr = start_ws_pushing(&service, None, gap);
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let set = push_set_request(&recipient, &format!("{service}o"), &[]);
+        assert_eq!(ws_call(&mut ws, set), vec![OK]);
+        let receive_shown = || {
+            let mut req = vec![RECEIVE];
+            req.extend_from_slice(&recipient);
+            req.push(SHOWN);
+            req
+        };
+        let message = || marked(send_request(&sender, b"hi"), MESSAGE);
+
+        // On the screen the app finds nothing, then the message that comes,
+        // before a push would tell it.
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        assert_eq!(ws_call(&mut ws, message()), vec![OK]);
+        assert!(pushes.recv_timeout(gap / 2).is_err());
+        assert_eq!(ws_call(&mut ws, receive_shown())[..2], [OK, 1]);
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        assert!(pushes
+            .recv_timeout(gap + Duration::from_millis(300))
+            .is_err());
+
+        // A wait says nothing: the app on the screen waits on its contacts'
+        // queues too.
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        let mut wait = vec![WAIT];
+        wait.extend_from_slice(&recipient);
+        wait.push(0);
+        assert_eq!(ws_call(&mut ws, wait), vec![OK, 0]);
+        assert_eq!(
+            ws_call(&mut ws, wait_any_request(&[recipient], 0)),
+            vec![OK, 0]
+        );
+        assert_eq!(ws_call(&mut ws, message()), vec![OK]);
+        assert!(pushes.recv_timeout(gap / 2).is_err());
+        assert_eq!(ws_call(&mut ws, receive_shown())[..2], [OK, 1]);
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        assert!(pushes
+            .recv_timeout(gap + Duration::from_millis(300))
+            .is_err());
+
+        // Taken out of sight: what comes pushes at once.
+        assert_eq!(ws_receive(&mut ws, &recipient), None);
+        assert_eq!(ws_call(&mut ws, message()), vec![OK]);
+        pushes.recv_timeout(gap / 2).expect("a push at once");
+        assert_eq!(ws_receive(&mut ws, &recipient).map(|m| m.len()), Some(2));
+
+        // So too a gap after it last took on the screen.
+        thread::sleep(gap);
+        assert_eq!(ws_call(&mut ws, receive_shown()), vec![OK, 0]);
+        thread::sleep(gap + Duration::from_millis(100));
+        assert_eq!(ws_call(&mut ws, message()), vec![OK]);
+        pushes.recv_timeout(gap / 2).expect("a push at once");
+    }
+
+    #[test]
+    fn an_address_its_push_service_said_is_gone_is_answered_expired() {
+        use crate::push::tests::service;
+        let (service, pushes) = service(410);
+        let addr = start_ws_pushing(&service, None, Duration::from_millis(100));
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        let gone = format!("{service}gone");
+        let set = |endpoint: &str| push_set_request(&recipient, endpoint, &[]);
+        assert_eq!(ws_call(&mut ws, set(&gone)), vec![OK]);
+        let message = marked(send_request(&sender, b"hi"), MESSAGE);
+        assert_eq!(ws_call(&mut ws, message), vec![OK]);
+        pushes.recv_timeout(Duration::from_secs(5)).unwrap();
+        thread::sleep(Duration::from_millis(200));
+
+        assert_eq!(ws_call(&mut ws, set(&gone)), vec![EXPIRED]);
+        assert_eq!(ws_call(&mut ws, set(&format!("{service}new"))), vec![OK]);
     }
 
     #[test]

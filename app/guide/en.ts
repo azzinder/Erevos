@@ -2145,7 +2145,11 @@ send changed code. Erevos does not take that code on trust:
   contact who wrote, 15 seconds apart, so from such a run it can guess how many wrote at once, never who. Erevos's
   icon on the home screen then shows a number too: the messages not read in the space you had open, which stays
   once Erevos is closed, and those that came since (what came with no number counts as one), never a hidden chat's.
-  **Settings** → **Notifications** → **Number on the icon** turns it off.
+  **Settings** → **Notifications** → **Number on the icon** turns it off. Notifications work through Apple's push
+  service, Google's (Chrome, and Edge on Android, Brave and Opera), Mozilla's (Firefox) and Microsoft's (Edge on
+  Windows): a browser that uses another cannot turn them on, unless whoever runs your relay allows its push service.
+  Spaces on different relays share the browser's notifications: only the one opened last gets them. A message
+  request from someone new, through your contact link, may show only once Erevos opens.
 - **Permissions:** in Erevos, **Settings** → **General** → **Permissions** shows what the browser lets Erevos do:
   whether it runs from the home screen, notifications while closed (needed once this space turned them on), the
   microphone for calls, the camera for video calls, and whether the browser keeps Erevos's data for good. Without

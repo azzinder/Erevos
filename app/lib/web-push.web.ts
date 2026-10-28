@@ -5,7 +5,7 @@ import { loadCurrentSpaceData, loadSpaceData, updateSpaceData, type Queue } from
 import { WEB_APP } from './integrity';
 import { leftAt, pushedQueues } from './push-queues';
 import { useForMoves } from './queue-move';
-import { fromHex, pushKey, relayHome, setPush, setPushes, toHex, type PushKeys, type Relay } from './relay';
+import { fromHex, isPushExpired, isQueueNotFound, pushKey, relayHome, setPush, setPushes, toHex, type PushKeys, type Relay } from './relay';
 import { spaceChats } from './space-chats';
 import { t } from './i18n';
 
@@ -21,7 +21,11 @@ import { t } from './i18n';
 // (lib/queue-move.ts) and its contacts' own queues (lib/push-queues.ts): never for hidden chats,
 // nor for the queue the contact link names (a request shows when the app opens), nor for one the
 // space moved away from. The relay is given the address for them all on one connection when
-// Erevos starts, and after that only for the queues it was not given it for yet.
+// Erevos starts, and after that only for the queues it was not given it for yet, or when the
+// browser changed the address (healPush). One the push service no longer takes, as the relay says,
+// is made again: the relay is asked as Erevos shows again, every ASK_EVERY at most. Turned off when
+// the relay cannot be told, it is told while the space stays open, every little while, or when it
+// next opens.
 
 const supported = typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator;
 
@@ -33,11 +37,11 @@ function same(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
   return bytes.every((byte, i) => byte === b[i]);
 }
 
-/** This browser's push address for `key`, made if there is none or it was made for another key. */
-async function subscription(key: Uint8Array): Promise<PushSubscription> {
+/** This browser's push address for `key`, made if there is none, it was made for another key, or it is `gone`. */
+async function subscription(key: Uint8Array, gone = false): Promise<PushSubscription> {
   const registration = await navigator.serviceWorker.ready;
   const kept = await registration.pushManager.getSubscription();
-  if (kept && same(kept.options.applicationServerKey, key)) return kept;
+  if (kept && !gone && same(kept.options.applicationServerKey, key)) return kept;
   if (kept) await kept.unsubscribe();
   return registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: new Uint8Array(key) });
 }
@@ -100,15 +104,26 @@ function taken(queues: string[]): void {
 // was not given it for yet. The first `needed` (the space's own queue, when notifications are being
 // turned on) must take it, before any other is asked; of the others, one the relay no longer has
 // (a contact's it lost, one made ahead that ran out unused) is left out, and the rest still take it.
-// Those it could not be given are asked again the next time (keepPush).
+// Those it could not be given are asked again the next time (keepPush). When the relay says the push
+// service no longer takes the address, the browser makes a new one, and they are given it, once.
 async function register(own: Relay, queues: string[], needed = 0): Promise<string | null> {
   const key = await pushKey(own);
   if (!key) return t('Your relay does not send notifications. It needs a newer version, set up with a push key.');
-  const sub = await subscription(key);
+  if (await give(own, queues, needed, await subscription(key))) await give(own, queues, needed, await subscription(key, true), true);
+  return null;
+}
+
+// Gives the relay the address `sub` as register says: true when the relay said it is gone.
+async function give(own: Relay, queues: string[], needed: number, sub: PushSubscription, again = false): Promise<boolean> {
   const keys = keysOf(sub);
   const done = givenAt(own, sub.endpoint, keys);
   for (const r of queues.slice(0, needed)) {
-    await setPush(own, fromHex(r), sub.endpoint, keys);
+    try {
+      await setPush(own, fromHex(r), sub.endpoint, keys);
+    } catch (error) {
+      if (!again && isPushExpired(error)) return true;
+      throw error;
+    }
     done.add(r);
   }
   const rest = queues.slice(needed).filter((r) => !done.has(r));
@@ -116,7 +131,7 @@ async function register(own: Relay, queues: string[], needed = 0): Promise<strin
   answers.forEach((error, i) => {
     if (!error) done.add(rest[i]);
   });
-  return null;
+  return answers.some(isPushExpired);
 }
 
 // Whether notifications are on for the open space, and allowed.
@@ -152,38 +167,90 @@ export async function turnOnPush(): Promise<string | null> {
   } catch (error) {
     return t('Notifications could not be turned on: {reason}', { reason: error instanceof Error ? error.message : String(error) });
   }
-  await updateSpaceData(space, key, { push: true });
+  await updateSpaceData(space, key, { push: true, pushLeft: false });
   // Queues made ahead meanwhile were not given it, as notifications were not on yet.
   if (opened() === at) await keepPush(own, queue);
   return null;
 }
 
+// The open space's queues the relay may push for: those that push, and its contacts' that may
+// still have the address. Null when they cannot be worked out, the chats among them: without its
+// contacts' queues the relay would keep pushing for them.
+function mayPush(own: Relay, queue: Queue): Promise<string[] | null> {
+  return Promise.all([pushed(own, queue), spaceChats()]).then(
+    ([pushing, { e2e }]) => [...new Set([...pushing, ...leftAt(e2e, own.url)])],
+    () => null,
+  );
+}
+
+// The relay forgets the push address of `queues`: true once it did for each, or has no such queue.
+async function unregister(own: Relay, queues: string[]): Promise<boolean> {
+  taken(queues);
+  const answers = await setPushes(own, queues.map(fromHex), '');
+  return answers.every((error) => !error || isQueueNotFound(error));
+}
+
 /** Turns notifications off for the open space: the relay forgets the push address of its queues,
- *  and of its contacts' queues that may still have it. */
+ *  and of its contacts' queues that may still have it. Until it did, the space keeps `pushLeft`,
+ *  and the relay is told again (tellLeft). */
 export async function turnOffPush(): Promise<void> {
   const { space, key } = currentSpace();
+  const at = opened();
   const data = await loadSpaceData(space, key);
-  await updateSpaceData(space, key, { push: false });
+  const relayed = Boolean(data.url.trim() && data.ownQueue);
+  // Kept until the relay is told, so a turn-off cut short (Erevos closed meanwhile) is told when
+  // the space next opens.
+  await updateSpaceData(space, key, { push: false, pushLeft: relayed });
   if (!data.url.trim() || !data.ownQueue) return;
   const own = spaceRelay(data.url, data.token);
   const queue = data.ownQueue;
-  // Worked out now, for this space, as for turning them on.
-  const queues = await Promise.all([pushed(own, queue), contacts()]).then(
-    ([pushing, e2e]) => [...new Set([...pushing, ...leftAt(e2e, own.url)])],
-    () => [queue.recipientHex],
-  );
-  await inLine(async () => {
-    taken(queues);
-    await setPushes(own, queues.map(fromHex), '');
-  }).catch(() => undefined);
+  // Worked out now, for this space, as for turning them on; the own queue alone if they cannot be.
+  const queues = await mayPush(own, queue);
+  const told = await inLine(() => unregister(own, queues ?? [queue.recipientHex])).catch(() => false);
+  const left = !told || !queues;
+  await updateSpaceData(space, key, { pushLeft: left });
+  if (left && at) tellLater(own, queue, at, LEFT_AGAIN);
+}
+
+// How long before a relay that could not be told notifications are off is told again, while its
+// space stays open: the first wait, twice as long after each, and the longest.
+const LEFT_AGAIN = 60_000;
+const LEFT_AGAIN_MOST = 15 * 60_000;
+let leftTimer: ReturnType<typeof setTimeout> | undefined;
+
+function tellLater(own: Relay, queue: Queue, at: object, wait: number): void {
+  clearTimeout(leftTimer);
+  leftTimer = setTimeout(() => {
+    if (opened() === at) void tellLeft(own, queue, Math.min(wait * 2, LEFT_AGAIN_MOST));
+  }, wait);
+}
+
+// Turned off while the relay could not be told: it is told now, unless they were turned on again,
+// and while the space stays open, again a while later until it is.
+async function tellLeft(own: Relay, queue: Queue, wait = LEFT_AGAIN): Promise<void> {
+  const at = opened();
+  if (!PUSH_AVAILABLE || !at) return;
+  // This space's, as asked: another may be open once the relay answers.
+  const { space, key } = currentSpace();
+  const left = () => loadSpaceData(space, key).then((data) => !data.push && data.pushLeft, () => false);
+  if (!(await left())) return;
+  const queues = await mayPush(own, queue);
+  const told = await inLine(async () => {
+    // Another space open, or turned on again: nothing to tell now.
+    if (opened() !== at || !(await left())) return true;
+    if (!queues || !(await unregister(own, queues))) return false;
+    await updateSpaceData(space, key, { pushLeft: false });
+    return true;
+  }).catch(() => false);
+  if (!told && opened() === at) tellLater(own, queue, at, wait);
 }
 
 /** Gives the relay the push address when the space opens or its queues change, if notifications
  *  are on, for each queue that pushes and was not given it yet: a browser may change the address,
- *  and a new queue has none. */
+ *  and a new queue has none. If they are off and the relay was not told yet, it is told. */
 export async function keepPush(own: Relay, queue: Queue): Promise<void> {
   const at = opened();
-  if (!(await pushOn())) return;
+  if (!(await pushOn())) return opened() === at ? tellLeft(own, queue) : undefined;
   await inLine(async () => {
     const queues = await pushed(own, queue);
     // Not if notifications were turned off, or another space opened, while it waited its turn.
@@ -199,6 +266,46 @@ export async function addPush(own: Relay, queues: string[]): Promise<void> {
   await inLine(async () => {
     if (opened() === at && (await pushOn())) await register(own, queues);
   }).catch(() => undefined);
+  // A new address made meanwhile goes to the space's other queues too.
+  await healPush();
+}
+
+// How often at most the relay is asked whether it still takes the address it was given in this
+// run, as Erevos shows again, by relay and address. In memory only, as `given`.
+const ASK_EVERY = 10 * 60_000;
+const asked = new Map<string, number>();
+
+/** Gives the relay the push address again (keepPush), if notifications are on, when the browser's
+ *  is not the one the space's own queue was given in this run (a browser may change it, or drop
+ *  it), or when the worker says it changed (`changed`, pwa/sw.js). Else, every ASK_EVERY at most,
+ *  it gives it for the own queue alone: a relay whose push service said the address is gone, which
+ *  only the relay hears of, then says so (lib/relay.ts isPushExpired), and the browser makes a new
+ *  one for every queue. */
+export async function healPush(changed = false): Promise<void> {
+  // The space it is for: another may open while it waits its turn.
+  const space = opened();
+  if (!space || !(await pushOn())) return;
+  const data = await loadCurrentSpaceData().catch(() => null);
+  if (!data?.url.trim() || !data.ownQueue) return;
+  const own = spaceRelay(data.url, data.token);
+  const queue = data.ownQueue;
+  // Looked at after a registration under way, which may give it.
+  const stale = await inLine(async () => {
+    if (changed) given.clear();
+    const sub = changed ? null : await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    if (!sub) return true;
+    const keys = keysOf(sub);
+    const done = givenAt(own, sub.endpoint, keys);
+    if (!done.has(queue.recipientHex)) return true;
+    const asking = `${relayHome(own.url)}\n${sub.endpoint}`;
+    if (Date.now() - (asked.get(asking) ?? 0) < ASK_EVERY) return false;
+    asked.set(asking, Date.now());
+    const gone = await setPush(own, fromHex(queue.recipientHex), sub.endpoint, keys).then(() => false, isPushExpired);
+    // Every queue is given the new address: the relay dropped this one from them all.
+    if (gone) done.clear();
+    return gone;
+  }).catch(() => false);
+  if (stale && opened() === space) await keepPush(own, queue);
 }
 
 /** The relay forgets the push address of a queue the space or a contact moved away from, so what comes there never wakes the closed web app. */

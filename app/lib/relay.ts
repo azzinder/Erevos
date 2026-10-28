@@ -122,6 +122,9 @@ const FAILED = 3;
 const UNREACHABLE = 4;
 // For a claim only: not the code the relay's page shows (crates/erevos-relay/src/server.rs).
 const WRONG = 5;
+// For a push address only: the push service said it is gone (crates/erevos-relay/src/push.rs). An
+// older relay never says it.
+const EXPIRED = 6;
 
 // Same limit as the relay's MAX_MESSAGE.
 const MAX_MESSAGE = 64 * 1024;
@@ -224,6 +227,11 @@ export function isQueueFull(error: unknown): boolean {
 /** Whether the relay said the queue does not exist: it was deleted, or the relay lost it. */
 export function isQueueNotFound(error: unknown): boolean {
   return error instanceof RelayError && error.status === NOT_FOUND;
+}
+
+/** Whether the relay said the push address given is gone, as its push service told it (setPush). */
+export function isPushExpired(error: unknown): boolean {
+  return error instanceof RelayError && error.status === EXPIRED;
 }
 
 /** Lowercase hex for an id or any other bytes. */
@@ -1078,12 +1086,23 @@ function onScreen(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'visible';
 }
 
+// When a queue last gave this app a message, or was found empty, in milliseconds since 1970.
+let lastTaken = 0;
+
+/** When a queue last gave this app a message, or was found empty: a push sent before then, held
+ *  back by its push service, is of messages the web app has (lib/push-notice.web.ts). 0 if never. */
+export function lastTakenAt(): number {
+  return lastTaken;
+}
+
 /**
  * Takes the oldest message from the queue, or returns null if it is empty. The relay then forgets
  * it. `shown`: taken on the screen (see Marks above).
  */
 export async function receiveMessage(relay: Relay, recipientId: Uint8Array, shown = onScreen()): Promise<Uint8Array | null> {
-  return receivedOf(await request(relay, receiveBytes(recipientId, shown)));
+  const taken = receivedOf(await request(relay, receiveBytes(recipientId, shown)));
+  lastTaken = Date.now();
+  return taken;
 }
 
 function receiveBytes(recipientId: Uint8Array, shown: boolean): Uint8Array {
@@ -1274,7 +1293,10 @@ export async function readsManyAt(relay: Relay, way: string): Promise<boolean> {
  */
 export async function receiveOnRead(relay: Relay, recipientId: Uint8Array, way: string, shown = onScreen()): Promise<Uint8Array | null> {
   const reply = await readRequest(relay, receiveBytes(recipientId, shown), way);
-  return reply === null || reply === 'ended' ? null : receivedOf(reply);
+  if (reply === null || reply === 'ended') return null;
+  const taken = receivedOf(reply);
+  lastTaken = Date.now();
+  return taken;
 }
 
 /** What a queue was, as one waitForAny or newsOfAny found it. */

@@ -2491,7 +2491,12 @@ Glauben:
   von Erevos auf dem Home-Bildschirm zeigt dann auch eine Zahl: die ungelesenen Nachrichten des Bereichs, den du offen
   hattest, deren Zahl nach dem Schließen von Erevos bleibt, und die seitdem gekommenen (was ohne Zahl kam, zählt als
   eine), nie die eines versteckten Chats. **Einstellungen** → **Benachrichtigungen** → **Zahl auf dem Symbol** schaltet
-  sie aus.
+  sie aus. Benachrichtigungen laufen über den Push-Dienst von Apple, den von Google (Chrome sowie Edge auf Android,
+  Brave und Opera), den von Mozilla (Firefox) und den von Microsoft (Edge auf Windows): Ein Browser, der einen anderen
+  nutzt, kann sie nicht einschalten, es sei denn, wer dein Relay betreibt, lässt den Push-Dienst dieses Browsers zu.
+  Bereiche auf verschiedenen Relays teilen sich die Benachrichtigungen des Browsers: Nur der zuletzt geöffnete bekommt
+  sie. Eine Nachrichtenanfrage von jemand Neuem über deinen Kontaktlink erscheint vielleicht erst, wenn Erevos geöffnet
+  wird.
 - **Berechtigungen:** In Erevos zeigt **Einstellungen** → **Allgemein** → **Berechtigungen**, was der Browser Erevos
   erlaubt: ob es vom Home-Bildschirm aus läuft, Benachrichtigungen, wenn geschlossen (nötig, sobald dieser Bereich sie
   eingeschaltet hat), das Mikrofon für Anrufe, die Kamera für Videoanrufe und ob der Browser die Daten von Erevos

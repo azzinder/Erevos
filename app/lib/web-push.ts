@@ -26,3 +26,7 @@ export function keepPush(_own: Relay, _queue: Queue): Promise<void> {
 export function dropPush(_own: Relay, _queue: Queue): Promise<void> {
   return Promise.resolve();
 }
+
+export function healPush(_changed?: boolean): Promise<void> {
+  return Promise.resolve();
+}

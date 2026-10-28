@@ -97,7 +97,7 @@ export type CheckInput = {
   nearby: readonly string[] | null;
   /** Whether the owner said the phone maker's setting is done. */
   makerDone: boolean;
-  /** Whether a notice says that messages came (Lock → In the background, lib/background.ts). */
+  /** Whether a notice says that messages came (Settings → Notifications → In the background, lib/background.ts). */
   messageNotices: boolean;
 };
 

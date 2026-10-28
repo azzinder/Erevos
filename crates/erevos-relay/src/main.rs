@@ -117,7 +117,11 @@
 //! there on first start and must be kept; the push addresses are kept beside
 //! it, in `<file>.addresses`, and the browsers' keys for them in
 //! `<file>.addresses.keys`. `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or
-//! `https:` address push services may write to about the relay.
+//! `https:` address push services may write to about the relay. Only
+//! addresses of Apple's, Google's, Mozilla's and Microsoft's push services
+//! are taken; set `EREVOS_RELAY_PUSH_SERVICES` to more, each an `https:`
+//! origin and the `/` after it (`https://push.example.org/`), separated by
+//! commas or spaces.
 //!
 //! Messages sent for later (see `later.rs`) are kept in the folder
 //! `EREVOS_RELAY_LATER`, or else in `<journal>.later` beside the journal,
@@ -658,9 +662,7 @@ fn main() -> ExitCode {
             "erevos-relay: no EREVOS_RELAY_LEND=on set, no places are lent to phones without a relay"
         ),
     }
-    *store.held() = held;
-    let held_store = Arc::clone(&store);
-    thread::spawn(move || server::run_held(held_store));
+    // Before the requests held for later run: a message they send pushes too.
     match env::var("EREVOS_RELAY_PUSH_KEY") {
         Ok(path) if !path.is_empty() => {
             let key = match push::load_key(Path::new(&path)) {
@@ -670,14 +672,38 @@ fn main() -> ExitCode {
                     return ExitCode::FAILURE;
                 }
             };
-            let subject = env::var("EREVOS_RELAY_PUSH_SUBJECT")
+            let subject = match env::var("EREVOS_RELAY_PUSH_SUBJECT")
                 .ok()
                 .filter(|s| s.starts_with("mailto:") || s.starts_with("https://"))
-                .unwrap_or_else(|| "mailto:erevos-relay@invalid".to_string());
-            let allowed = push::PUSH_SERVICES.iter().map(|s| s.to_string()).collect();
+            {
+                Some(subject) => subject,
+                None => {
+                    eprintln!("erevos-relay: no EREVOS_RELAY_PUSH_SUBJECT set, or not a mailto: or https: address, so push services are given mailto:erevos-relay@invalid");
+                    "mailto:erevos-relay@invalid".to_string()
+                }
+            };
+            let mut allowed: Vec<String> =
+                push::PUSH_SERVICES.iter().map(|s| s.to_string()).collect();
+            let more = env::var("EREVOS_RELAY_PUSH_SERVICES").unwrap_or_default();
+            for service in more
+                .split(|c: char| c == ',' || c.is_whitespace())
+                .filter(|s| !s.is_empty())
+            {
+                if push::is_service(service) {
+                    eprintln!("erevos-relay: push addresses at {service} are taken too");
+                    allowed.push(service.to_string());
+                } else {
+                    eprintln!("erevos-relay: EREVOS_RELAY_PUSH_SERVICES: {service:?} is not an https: origin ending in /, so it is left out");
+                }
+            }
             let addresses = format!("{path}.addresses");
-            match push::Push::new(key, subject, allowed, Some(addresses.into())) {
+            match push::Push::new(key, subject, allowed, Some(addresses.clone().into())) {
                 Ok(push) => {
+                    eprintln!(
+                        "erevos-relay: web apps may ask for notifications, {} push addresses for {} queues kept in {addresses}",
+                        push.addresses(),
+                        push.len()
+                    );
                     let _ = store.push.set(push);
                 }
                 Err(e) => {
@@ -690,6 +716,9 @@ fn main() -> ExitCode {
             "erevos-relay: no EREVOS_RELAY_PUSH_KEY set, web apps cannot ask for notifications"
         ),
     }
+    *store.held() = held;
+    let held_store = Arc::clone(&store);
+    thread::spawn(move || server::run_held(held_store));
     let sweep_store = Arc::clone(&store);
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(60 * 60));

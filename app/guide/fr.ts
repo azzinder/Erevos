@@ -2461,7 +2461,12 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
   deviner combien ont écrit en même temps, jamais qui. L’icône d’Erevos sur l’écran d’accueil affiche alors aussi un
   nombre : les messages non lus de l’espace que tu avais ouvert, dont le nombre reste une fois Erevos fermé, et ceux
   arrivés depuis (ce qui est arrivé sans nombre compte pour un), jamais ceux d’une discussion masquée. **Réglages** →
-  **Notifications** → **Nombre sur l’icône** le désactive.
+  **Notifications** → **Nombre sur l’icône** le désactive. Les notifications passent par le service push d’Apple, celui
+  de Google (Chrome, ainsi qu’Edge sur Android, Brave et Opera), celui de Mozilla (Firefox) et celui de Microsoft (Edge
+  sur Windows) : un navigateur qui en utilise un autre ne peut pas les activer, sauf si la personne qui gère ton relais
+  autorise son service push. Les espaces sur des relais différents partagent les notifications du navigateur : seul
+  celui ouvert en dernier les reçoit. Une demande de message de quelqu’un de nouveau, par ton lien de contact, peut ne
+  s’afficher qu’à l’ouverture d’Erevos.
 - **Autorisations :** dans Erevos, **Réglages** → **Général** → **Autorisations** montre ce que le navigateur permet à
   Erevos : s’il fonctionne depuis l’écran d’accueil, les notifications quand l’app est fermée (nécessaires une fois que
   cet espace les a activées), le micro pour les appels, l’appareil photo pour les appels vidéo, et si le navigateur

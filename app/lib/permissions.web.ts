@@ -141,7 +141,7 @@ export async function fix(id: CheckId): Promise<void> {
     case 'home':
       return install();
     case 'push': {
-      // As turning them on under Lock does: the browser's question, then the push address to the relay.
+      // As turning them on under Settings → Notifications does: the browser's question, then the push address to the relay.
       const problem = await turnOnPush();
       if (problem) ask(t('Notifications while closed'), problem, [{ text: t('OK') }]);
       return;

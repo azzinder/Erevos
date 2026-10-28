@@ -343,8 +343,8 @@ self.addEventListener('message', (event) => {
   if (ask === 'status') event.waitUntil(status().then(answer));
   else if (ask === 'check') event.waitUntil(check().then(status).then(answer));
   else if (ask === 'lang') event.waitUntil(noticeLanguage(event.data.lang).then(() => true, () => false).then(answer));
-  else if (ask === 'seen') event.waitUntil(noticeSeen().then(() => true, () => false).then(answer));
-  else if (ask === 'badge') event.waitUntil(noticeUnread(event.data.unread, event.data.off === true).then(() => true, () => false).then(answer));
+  else if (ask === 'seen') event.waitUntil(noticeSeen(event.data.at).then(() => true, () => false).then(answer));
+  else if (ask === 'badge') event.waitUntil(noticeUnread(event.data.unread, event.data.off === true, event.data.at).then(() => true, () => false).then(answer));
   else if (ask === 'check-loader') {
     event.waitUntil(
       knownLoader(String(event.data.hash)).then(async (known) => {
@@ -410,15 +410,25 @@ const NOTICE_WORDS = {
     'Poziv',
   ],
 };
-// What a counting push holds (push.rs): version 1, flags (none yet), the queue's stream (8 bytes),
-// then 4 bytes each: the round, and its totals of messages, of sends that did not say, and of
-// calls that rang.
+// What a counting push holds (push.rs): version 1, flags, the queue's stream (8 bytes), then 4
+// bytes each: the round, and its totals of messages, of sends that did not say, and of calls that
+// rang; with the flag SENT_AT, 4 more: when it was sent, in seconds since 1970 (from an older relay
+// none).
 const COUNT_LENGTH = 26;
+const SENT_AT = 1;
+// A push of a round this worker had none of, sent more than this many seconds before the app last
+// took from its relay (as it said with 'seen' or 'badge'), was held back by its push service (the
+// phone was offline): what it says the app has, so it counts nothing, and what comes after it in
+// its round counts. The relay's clock is put on the phone's by how late the last LAGS pushes came,
+// by the phone's clock, the least of them: a push never comes before it is sent, so that is how far
+// the phone's clock is ahead of the relay's, or a little more (when it is behind, nothing is put).
+const CLOCKS_DIFFER = 30;
+const LAGS = 32;
 const TOTALS = ['total', 'unmarked', 'rings'];
 // Streams kept to tell a round's next push from a new round: one for each queue that pushed since
 // Erevos was last open, a few for each space and one for each contact who wrote (a queue of their
 // own, lib/push-queues.ts). And for each, its last rounds, so a push come late after newer rounds
-// adds only what it had not said.
+// adds only what it had not said. As many rounds are kept told, with no stream (noticeSeen).
 const STREAMS = 128;
 const ROUNDS = 8;
 
@@ -432,6 +442,11 @@ function keptRound(at) {
   const round = { round: at.round };
   for (const total of TOTALS) round[total] = word32(at[total]) ? at[total] : 0;
   return round;
+}
+
+// The rounds told, the latest first: none from a worker from before.
+function keptTold(read) {
+  return Array.isArray(read) ? read.slice(0, STREAMS).map(keptRound).filter(Boolean) : [];
 }
 
 // Each stream's rounds, the newest first. A worker from before kept a round and the one before it.
@@ -459,11 +474,26 @@ function adding(kept, said) {
 }
 
 // What a push adds to its stream, and the stream's rounds as they are then. A push says its round's
-// totals so far, so one come late or twice, of a round kept, adds only what it had not said yet.
-function counting(kept = [], said) {
+// totals so far, so one come late or twice, of a round kept or told, adds only what it had not said
+// yet; one of a round neither, sent `before` (CLOCKS_DIFFER), adds nothing.
+function counting(kept = [], said, told = [], before = false) {
   const at = kept.findIndex((round) => round.round === said.round);
-  const { added, round } = adding(at < 0 ? null : kept[at], said);
+  const was = at < 0 ? (told.find((round) => round.round === said.round) ?? (before ? said : null)) : kept[at];
+  const { added, round } = adding(was, said);
   return { added, stream: at < 0 ? [round, ...kept].slice(0, ROUNDS) : kept.map((was, i) => (i === at ? round : was)) };
+}
+
+// The rounds of `streams` added to those told, without their streams: a round told twice keeps the
+// larger totals. The latest first, as many as STREAMS.
+function telling(told, streams) {
+  let next = told;
+  for (const rounds of Object.values(streams)) {
+    for (const round of [...rounds].reverse()) {
+      const was = next.find((at) => at.round === round.round);
+      next = [was ? adding(was, round).round : round, ...next.filter((at) => at !== was)];
+    }
+  }
+  return next.slice(0, STREAMS);
 }
 
 let notice = null;
@@ -491,9 +521,30 @@ async function readNotice() {
     iconOff: read?.iconOff === true,
     lang: knownLang(read?.lang) ? read.lang : 'en',
     streams: keptStreams(read?.streams),
+    told: keptTold(read?.told),
+    // When the app last took from its relay, as it said with 'seen', and with 'badge', in seconds
+    // since 1970: none from a worker or an app from before.
+    seenAt: word32(read?.seenAt) ? read.seenAt : 0,
+    countedAt: word32(read?.countedAt) ? read.countedAt : 0,
+    // How late the last pushes came, in seconds, the latest first (CLOCKS_DIFFER).
+    lags: Array.isArray(read?.lags) ? read.lags.filter(Number.isSafeInteger).slice(0, LAGS) : [],
   };
   return notice;
 }
+
+// Now, in seconds since 1970, as the relay says when a push was sent.
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+
+// When the app says it last took from its relay: the latest it said, as what it took stays taken.
+// None from an app from before, nor a time later than now, as from a clock that was set back since.
+const tookSince = (at, kept) => {
+  const now = nowSeconds();
+  return Math.max(kept <= now ? kept : 0, word32(at) && at <= now ? at : 0);
+};
+
+// Whether a push was sent before `since`, with the phone's clock `ahead` of the relay's
+// (CLOCKS_DIFFER): never one that does not say when.
+const sentBefore = (said, since, ahead) => said.sentAt !== undefined && since > 0 && said.sentAt + ahead + CLOCKS_DIFFER < since;
 
 async function writeNotice(next) {
   notice = next;
@@ -558,9 +609,13 @@ async function erevosOnScreen() {
 function countIn(data) {
   try {
     const bytes = data ? new Uint8Array(data.arrayBuffer()) : null;
-    if (!bytes || bytes.length !== COUNT_LENGTH || bytes[0] !== 1) return null;
+    if (!bytes || bytes[0] !== 1) return null;
+    const timed = (bytes[1] & SENT_AT) !== 0;
+    if (bytes.length !== COUNT_LENGTH + (timed ? 4 : 0)) return null;
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    return { stream: hex(bytes.subarray(2, 10)), round: view.getUint32(10), total: view.getUint32(14), unmarked: view.getUint32(18), rings: view.getUint32(22) };
+    const said = { stream: hex(bytes.subarray(2, 10)), round: view.getUint32(10), total: view.getUint32(14), unmarked: view.getUint32(18), rings: view.getUint32(22) };
+    if (timed) said.sentAt = view.getUint32(26);
+    return said;
   } catch {
     return null;
   }
@@ -585,15 +640,19 @@ function showNotice(said) {
       const next = { ...kept, streams: { ...kept.streams }, cameStreams: { ...kept.cameStreams } };
       const onScreen = await erevosOnScreen();
       let added = { total: 0, unmarked: 0, rings: 0 };
+      if (said?.sentAt !== undefined) next.lags = [nowSeconds() - said.sentAt, ...kept.lags].slice(0, LAGS);
+      // Put back only when the phone is ahead: lags kept of a relay that was ahead of it (another
+      // relay, or a clock set right since) would make what comes now look older, and count nothing.
+      const ahead = Math.max(0, Math.min(...next.lags));
       if (said) {
-        const counted = counting(kept.streams[said.stream], said);
+        const counted = counting(kept.streams[said.stream], said, kept.told, sentBefore(said, kept.seenAt, ahead));
         added = counted.added;
         // Not kept while Erevos is on the screen, which says 'seen' as it leaves it: its own queues
         // are emptied there, so a new round starts.
         if (!onScreen) keepStream(next.streams, said.stream, counted.stream);
         // The icon counts by streams of its own, kept until the app counts.
         if (!onScreen && !kept.iconOff) {
-          const forIcon = counting(kept.cameStreams[said.stream], said);
+          const forIcon = counting(kept.cameStreams[said.stream], said, kept.told, sentBefore(said, kept.countedAt, ahead));
           keepStream(next.cameStreams, said.stream, forIcon.stream);
           next.came = kept.came + forIcon.added.total + forIcon.added.unmarked;
         }
@@ -618,7 +677,8 @@ function showNotice(said) {
     }
     const shown = Math.max(Date.now(), shownLast + 1);
     shownLast = shown;
-    await self.registration.showNotification('Erevos', { body: words, tag: NOTICE, icon: '/icon-192.png', data: { shown } });
+    // Sounds each time: other browsers replace a notice of the same tag silently without it.
+    await self.registration.showNotification('Erevos', { body: words, tag: NOTICE, renotify: true, icon: '/icon-192.png', data: { shown } });
     await closeNotices(shown).catch(() => undefined);
     // After the notice, which must show whatever the icon does.
     if (icon) await showBadge(icon);
@@ -627,29 +687,32 @@ function showNotice(said) {
 
 // Erevos open, or left, starts the count again. The streams go too: kept, they would show anyone who
 // can read this browser's storage how many queues got messages, so how many contacts wrote, and
-// that it may hold more than one space. A round that goes on after, of a queue Erevos did
-// not empty, then counts again what came before, which is still not read. Not the number on the
-// icon: that waits for the app to count ('badge').
-function noticeSeen() {
+// that it may hold more than one space. Their rounds stay, told, with no stream: the relay draws
+// each at random, so they name no queue. A push of one that comes late, for messages Erevos took
+// meanwhile, then adds nothing, and a round that goes on, of a queue Erevos did not empty, adds
+// only what came since. So does a push of a round not seen here before, sent before the app last
+// took from its relay (`at`, seenAt): its push service held it back. Not the number on the icon:
+// that waits for the app to count ('badge').
+function noticeSeen(at) {
   return inTurn(async () => {
     await closeNotices().catch(() => undefined);
     const kept = await readNotice();
-    if (kept.pushes !== 0 || kept.messages !== 0 || kept.others !== 0 || !kept.exact || kept.rang || Object.keys(kept.streams).length > 0) {
-      await writeNotice({ ...kept, pushes: 0, messages: 0, others: 0, exact: true, rang: false, streams: {} });
-    }
+    await writeNotice({ ...kept, pushes: 0, messages: 0, others: 0, exact: true, rang: false, streams: {}, told: telling(kept.told, kept.streams), seenAt: tookSince(at, kept.seenAt) });
   });
 }
 
 // What the open space has not read, as the app counted it: the number on the icon, from which the
-// pushes count again. Their streams go then, as above: what the app had not taken yet of a round
-// that goes on is counted again with its next push. Or no number at all (`off`).
-function noticeUnread(unread, off) {
+// pushes count again. Their streams go then, as above, their rounds told: a round that goes on adds
+// only what came since, so what the app had not taken of it (another space's) is no longer counted,
+// nor a round not seen here before that a push sent before the app last took from its relay says
+// (`at`, countedAt). Or no number at all (`off`).
+function noticeUnread(unread, off, at) {
   return inTurn(async () => {
     let next = { unread: off ? 0 : whole(unread), came: 0 };
     try {
       const kept = await readNotice();
-      next = { ...kept, unread: next.unread, came: 0, cameStreams: {}, iconOff: off };
-      if (kept.unread !== next.unread || kept.came !== 0 || Object.keys(kept.cameStreams).length > 0 || kept.iconOff !== off) await writeNotice(next);
+      next = { ...kept, unread: next.unread, came: 0, cameStreams: {}, told: telling(kept.told, kept.cameStreams), iconOff: off, countedAt: tookSince(at, kept.countedAt) };
+      await writeNotice(next);
     } finally {
       await showBadge(next);
     }
@@ -667,6 +730,13 @@ function noticeLanguage(lang) {
 self.addEventListener('push', (event) => {
   // Read at once: the push's data is the event's.
   event.waitUntil(showNotice(countIn(event.data)));
+});
+
+// The browser changed its push address, or dropped it: the app, if open, gives the relay the new
+// one (lib/web-push.web.ts), else it does when it next opens. The worker cannot: the queues it is
+// for are the app's, sealed. Nothing is kept.
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(tell('push-changed'));
 });
 
 self.addEventListener('notificationclick', (event) => {

@@ -36,7 +36,7 @@ export type WebInput = {
   notifications: 'granted' | 'denied' | 'default' | null;
   /** Whether the browser keeps a push address for Erevos; null when it cannot be read. */
   subscribed: boolean | null;
-  /** This space turned notifications while closed on (Lock → Notifications while closed). */
+  /** This space turned notifications while closed on (Settings → Notifications → Notifications while closed). */
   pushWanted: boolean;
   microphone: Answer;
   camera: Answer;
@@ -52,7 +52,7 @@ function permission(id: CheckId, answer: Answer, needed: boolean): Check {
 
 function push({ pushable, notifications, subscribed, pushWanted }: WebInput): Check {
   if (!pushable) return { id: 'push', state: 'none', needed: pushWanted, asks: false };
-  // Off in this space: turned on under Lock, where it says what the push service sees.
+  // Off in this space: turned on under Settings → Notifications, where it says what the push service sees.
   if (!pushWanted) return { id: 'push', state: 'note', needed: false, asks: true };
   // Refused once, the browser does not ask again: only its settings change it.
   if (notifications === 'denied') return { id: 'push', state: 'missing', needed: true, asks: false };

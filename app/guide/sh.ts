@@ -2264,7 +2264,11 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
   pretpostaviti koliko ih je pisalo odjednom, ali nikad ko. Ikona Erevosa na početnom ekranu tada pokazuje i broj:
   nepročitane poruke u prostoru koji je bio otvoren, koje ostaju u broju i kad se Erevos zatvori, i one koje su
   stigle poslije (ono što je stiglo bez broja broji se kao jedna), nikad iz skrivenog razgovora. **Postavke** →
-  **Obavijesti** → **Broj na ikoni** to isključuje.
+  **Obavijesti** → **Broj na ikoni** to isključuje. Obavijesti rade preko push servisa Applea, Googlea (Chrome, kao i
+  Edge na Androidu, Brave i Opera), Mozille (Firefox) i Microsofta (Edge na Windowsu): preglednik koji koristi neki
+  drugi ne može ih uključiti, osim ako onaj ko vodi vaš relay dozvoli njegov push servis. Prostori na različitim
+  relayima dijele obavijesti preglednika: dobija ih samo onaj koji je posljednji otvoren. Zahtjev za razgovor od nekoga
+  novog, preko vašeg linka za kontakt, možda će se prikazati tek kad se Erevos otvori.
 - **Dozvole:** u Erevosu, **Postavke** → **Općenito** → **Dozvole** prikazuje šta preglednik dozvoljava Erevosu: radi
   li s početnog ekrana, obavijesti dok je zatvoren (potrebne kad ih je ovaj prostor uključio), mikrofon za pozive,
   kameru za videopozive i čuva li preglednik Erevosove podatke trajno. Bez toga Safari može obrisati podatke kad na

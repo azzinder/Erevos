@@ -490,6 +490,10 @@ and it answers `429` too.
 - `/var/lib/erevos-relay/relay.key.lent-counts` and
   `/var/lib/erevos-relay/relay.key.revoked`, only with lending turned on: see
   [Lending places](#lending-places).
+- `/var/lib/erevos-relay/push.key`, `push.key.addresses` and
+  `push.key.addresses.keys`: the relay's key for pushes to web apps, and the
+  browsers' push addresses, in the same private place: see
+  [Notifications for the web app](#notifications-for-the-web-app).
 - `/etc/caddy/erevos-relay.caddy`: the Caddy site, imported from
   `/etc/caddy/Caddyfile`. If that file was the one the package ships, the
   original is kept as `Caddyfile.orig`.
@@ -538,6 +542,8 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_QUEUE_DAYS` | 180 | Days a queue lasts once its phone stops using it. |
 | `EREVOS_RELAY_LEND` | `off` | `on` lends places to phones that have no relay. |
 | `EREVOS_RELAY_LEND_REVOKED` | `relay.key.revoked` beside the key | The file of revoked tickets. |
+| `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
+| `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
 
 ## Connections
 
@@ -596,6 +602,71 @@ The journal is now written so that an older relay does not take it: put back
 in place of this one, an older relay stops at start with a line saying the
 file is not a journal, rather than cutting it short. Going back means moving
 the journal aside, which loses the queues in it.
+
+## Notifications for the web app
+
+A web app closed on an iPhone learns of a message only from a push: it gives
+the relay a push address, made by the browser, and the relay sends a push
+there through the browser's push service when a message comes. The push
+service sees when a push goes to each browser, always of the same size, but
+not what came or from whom.
+
+- `EREVOS_RELAY_PUSH_KEY` names the relay's key for pushes,
+  `/var/lib/erevos-relay/push.key` with the service file here. The relay
+  makes it on first start. Keep the file: the browsers make their addresses
+  for that key, so with a new key the push services refuse the pushes
+  (403), and a closed web app is told of nothing until it is next opened,
+  when it makes a new address for the new key by itself. Without the
+  setting, web apps are told the relay sends no notifications.
+- `EREVOS_RELAY_PUSH_SUBJECT` is the `mailto:` or `https:` address the push
+  services may write to about the relay. The installer sets it to
+  `https://<domain>`.
+- The push addresses are kept beside the key, in `push.key.addresses`, and
+  the browsers' keys for them in `push.key.addresses.keys`. An address lets
+  whoever has it push to that browser, so the log names only its push
+  service, never the address.
+- Only addresses of Apple's push service (Safari, and the web app on an
+  iPhone), Google's FCM (Chrome and the browsers built on it), Mozilla's
+  (Firefox) and Microsoft's WNS (Edge on Windows) are taken. A browser that
+  uses another one, a Firefox set up with a push server of its own say,
+  cannot turn notifications on until you add its push service to
+  `EREVOS_RELAY_PUSH_SERVICES` in `/etc/erevos-relay.env`, each an `https:`
+  origin and the `/` after it, separated by commas or spaces:
+
+      EREVOS_RELAY_PUSH_SERVICES=https://push.example.org/
+
+  The relay then sends requests there for any web app that gives such an
+  address, so add only services you trust.
+
+At most one push goes to a browser every 15 seconds, for whichever of its
+queues; what comes meanwhile goes in the next one, a call that rings before
+the messages. While the web app takes its messages on the screen, a push
+waits 15 seconds and does not go if the app shows the message in that time.
+A push the push service cannot take now (429 or 5xx), or that does not get
+through, is tried again 15 seconds later, then 30, 60 and 120, five tries in
+all. When the push service says an address is gone (404 or 410), the relay
+drops it from every queue that had it, and tells a web app that gives it
+again to make a new one: for a week, kept in memory only, so not after the
+relay restarts. Each push says, encrypted for the browser, when it was sent,
+so a push its service held back while the phone was offline counts nothing
+the app took from the relay meanwhile. A web app from before this relay shows its pushes
+with no number until it is updated: publish the web app first.
+
+`journalctl -u erevos-relay` shows at start how many push addresses the
+relay holds, for how many queues, and each push service you added, and
+then, at most once an hour for each push service and status:
+
+- `<service> refused a push (403)`: the push is not tried again. A 403 most
+  often means a clock that is off, or an address made for another key.
+- `<service> could not take a push now (503), it is tried again`, and
+  `a push to <service> could not be sent: ...`, when the relay did not reach
+  it.
+- `a push to <service> did not get through in 5 tries, it waits for the
+  next message`.
+- `<service> says a push address is gone (410), its queues push no more`.
+
+`the pushes stopped` means no web app is told of a message until the relay
+starts again: run `sudo systemctl restart erevos-relay`.
 
 ## Lending places
 

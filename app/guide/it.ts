@@ -2363,7 +2363,11 @@ ordinato, potrebbe inviare codice modificato. Erevos non prende quel codice sull
   insieme, mai chi. L’icona di Erevos nella schermata Home mostra allora anche un numero: i messaggi non letti nello
   spazio che avevi aperto, che restano una volta chiuso Erevos, e quelli arrivati dopo (ciò che è arrivato senza numero
   conta per uno), mai quelli di una chat nascosta. **Impostazioni** → **Notifiche** → **Numero sull’icona** lo
-  disattiva.
+  disattiva. Le notifiche funzionano tramite il servizio push di Apple, quello di Google (Chrome, ed Edge su Android,
+  Brave e Opera), quello di Mozilla (Firefox) e quello di Microsoft (Edge su Windows): un browser che ne usa un altro
+  non può attivarle, a meno che chi gestisce il tuo relay non consenta il servizio push di quel browser. Gli spazi su
+  relay diversi condividono le notifiche del browser: solo quello aperto per ultimo le riceve. Una richiesta di
+  messaggio da qualcuno di nuovo, tramite il tuo link di contatto, potrebbe comparire solo quando Erevos si apre.
 - **Autorizzazioni:** in Erevos, **Impostazioni** → **Generali** → **Autorizzazioni** mostra che cosa il browser
   permette a Erevos di fare: se funziona dalla schermata Home, le notifiche ad app chiusa (necessarie una volta che
   questo spazio le ha attivate), il microfono per le chiamate, la fotocamera per le videochiamate, e se il browser

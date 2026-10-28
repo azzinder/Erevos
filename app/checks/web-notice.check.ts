@@ -2,7 +2,8 @@
 // open ("3 new messages"), as a relay that counts says in its pushes, or else "New message", or
 // "New messages" once more pushes came, or "Call" when only a call rang, in the app's language, on an
 // iPhone as on other browsers. And the number on Erevos's icon: what the open space had not read, as
-// the app counted it (lib/icon-number.ts), and what came since.
+// the app counted it (lib/icon-number.ts), and what came since. And that the open app hears when the
+// browser changes its push address.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -16,14 +17,16 @@ import { iconNumber, type IconParts } from '../lib/icon-number';
 
 const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8');
 
-type Notice = { title: string; body: string; tag: string; data?: unknown; closed: boolean; close(): void };
+type Notice = { title: string; body: string; tag: string; renotify?: boolean; data?: unknown; closed: boolean; close(): void };
 type Listener = (event: unknown) => void;
 
 // A browser for the worker: its cache survives a restart of the worker, as a real one does. An
-// iPhone keeps every notice of a tag; other browsers replace the one of the same tag. Its badges
-// may answer never ('hangs').
+// iPhone keeps every notice of a tag; other browsers replace the one of the same tag, silently
+// unless asked to sound again (renotify). Its badges may answer never ('hangs').
 function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), badges: 'yes' | 'refused' | 'none' | 'hangs' = 'yes') {
   let notices: Notice[] = [];
+  // The notices that sounded.
+  let sounded = 0;
   // The number on the icon, as the browser shows it: none until one is set.
   let badge = 0;
   const never = () => new Promise<void>(() => undefined);
@@ -43,7 +46,7 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
             badge = 0;
           },
         };
-  const windows: { visibilityState: string }[] = [];
+  const windows: { visibilityState: string; postMessage?: (message: unknown) => void }[] = [];
   let cacheFails = false;
   const caches = {
     open: async () => {
@@ -56,7 +59,9 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
   };
   const registration = {
     getNotifications: async ({ tag }: { tag: string }) => notices.filter((notice) => notice.tag === tag && !notice.closed),
-    showNotification: async (title: string, options: { body: string; tag: string; data?: unknown }) => {
+    showNotification: async (title: string, options: { body: string; tag: string; renotify?: boolean; data?: unknown }) => {
+      const replaces = kind === 'other' && notices.some((notice) => notice.tag === options.tag && !notice.closed);
+      if (!replaces || options.renotify === true) sounded++;
       if (kind === 'other') notices = notices.filter((notice) => notice.tag !== options.tag);
       notices.push({ title, ...options, closed: false, close() { this.closed = true; } });
     },
@@ -88,7 +93,10 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
     // A push, empty or with what a relay that counts puts in it, as the browser opened it.
     push: (bytes?: Uint8Array) => fire('push', bytes ? { arrayBuffer: () => bytes.slice().buffer } : null),
     tell: (question: Record<string, unknown>) => fire('message', question),
+    // The browser changed its push address, or dropped it.
+    addressChanged: () => fire('pushsubscriptionchange'),
     shown: () => notices.filter((notice) => !notice.closed).map((notice) => notice.body),
+    sounded: () => sounded,
     badge: () => badge,
     // The pushes counted since Erevos was last open, as the worker keeps them.
     count: () => (JSON.parse(store.get('/__erevos/notice') ?? '{"pushes":0}') as { pushes: number }).pushes,
@@ -96,6 +104,8 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
     // notice's, and the icon's.
     streams: () => Object.keys((JSON.parse(store.get('/__erevos/notice') ?? '{}') as { streams?: object }).streams ?? {}),
     iconStreams: () => Object.keys((JSON.parse(store.get('/__erevos/notice') ?? '{}') as { cameStreams?: object }).cameStreams ?? {}),
+    // The rounds told, as the worker keeps them once Erevos was open.
+    told: () => (JSON.parse(store.get('/__erevos/notice') ?? '{}') as { told?: object[] }).told ?? [],
   };
 }
 
@@ -113,6 +123,17 @@ function counted(stream: number, round: number, total: number, unmarked = 0, rin
   view.setUint32(22, rings);
   return bytes;
 }
+
+// As a relay that says when it sent each push does: flag 1, and the time, in seconds since 1970.
+function timed(sentAt: number, stream: number, round: number, total: number, unmarked = 0, rings = 0): Uint8Array {
+  const bytes = new Uint8Array(30);
+  bytes.set(counted(stream, round, total, unmarked, rings));
+  bytes[1] = 1;
+  new DataView(bytes.buffer).setUint32(26, sentAt);
+  return bytes;
+}
+
+const now = () => Math.floor(Date.now() / 1000);
 
 test('pushes while Erevos is closed show one notice, and opening Erevos starts again', async () => {
   const other = browser('other');
@@ -285,15 +306,153 @@ test('the rounds kept by the worker before it kept several go on', async () => {
 
 test('opening Erevos forgets which queues pushed, so its storage does not keep them from one open to the next', async () => {
   const other = browser('other');
-  await other.push(counted(1, 1, 1));
-  await other.push(counted(2, 1, 2));
+  await other.push(counted(1, 7, 1));
+  await other.push(counted(2, 9, 2));
   assert.equal(other.streams().length, 2);
   await other.tell({ erevos: 'seen' });
   assert.deepEqual(other.streams(), []);
-  // A queue Erevos did not empty, of a space not opened: its round goes on, and counts again what
-  // came before, still not read.
-  await other.push(counted(2, 1, 3));
+  // Their rounds stay, told, with no stream: numbers the relay drew at random.
+  assert.deepEqual(other.told(), [
+    { round: 9, total: 2, unmarked: 0, rings: 0 },
+    { round: 7, total: 1, unmarked: 0, rings: 0 },
+  ]);
+  // A queue Erevos did not empty, of a space not opened: its round goes on, and adds only what
+  // came since.
+  await other.push(counted(2, 9, 5));
   assert.deepEqual(other.shown(), ['3 new messages']);
+});
+
+test('a push of a round told before Erevos was open adds nothing after it, and one that goes on only what came since', async () => {
+  const other = browser('other');
+  await other.push(counted(1, 7, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
+  // Erevos opened and took them; then a push of that round comes late, as to a phone that was offline.
+  await other.tell({ erevos: 'seen' });
+  await other.push(counted(1, 7, 3));
+  await other.push(counted(2, 9, 2));
+  assert.deepEqual(other.shown(), ['2 new messages']);
+  // The same once the worker starts again.
+  await other.tell({ erevos: 'seen' });
+  const again = browser('other', other.store);
+  await again.push(counted(2, 9, 2));
+  await again.push(counted(1, 7, 3));
+  // A round that goes on, of a queue Erevos did not empty: its new messages alone.
+  await again.push(counted(1, 7, 5));
+  assert.deepEqual(again.shown(), ['2 new messages']);
+});
+
+test('a push its push service held back, of a round never pushed here, sent before the app last took from its relay, counts nothing', async () => {
+  const other = browser('other');
+  await other.push(timed(now(), 5, 3, 1));
+  // The phone was offline: Erevos opened, took its messages from the relay and read them, and only
+  // then does the push come.
+  await other.tell({ erevos: 'seen', at: now() });
+  await other.tell({ erevos: 'badge', unread: 0, at: now() });
+  await other.push(timed(now() - 600, 1, 7, 3));
+  assert.deepEqual(other.shown(), ['New message']);
+  assert.equal(other.badge(), 0);
+  // Its round goes on (a queue Erevos did not empty): what came after it alone, on the icon too.
+  await other.push(timed(now(), 1, 7, 5));
+  assert.deepEqual(other.shown(), ['2 new messages']);
+  assert.equal(other.badge(), 2);
+  // A new round sent since counts whole, and so does one a few seconds before, as clocks differ.
+  await other.push(timed(now() - 10, 2, 9, 2));
+  assert.deepEqual(other.shown(), ['4 new messages']);
+  assert.equal(other.badge(), 4);
+  // The same once the worker starts again.
+  await other.tell({ erevos: 'seen', at: now() });
+  const again = browser('other', other.store);
+  await again.push(timed(now() - 600, 3, 11, 4));
+  assert.deepEqual(again.shown(), ['New message']);
+});
+
+test("a relay whose clock is behind the phone's, or ahead of it, has a new round counted all the same", async () => {
+  for (const off of [-120, 120]) {
+    const other = browser('other');
+    // Pushes come as soon as they are sent, by a relay `off` seconds from the phone's clock.
+    await other.push(timed(now() + off, 1, 7, 2));
+    await other.tell({ erevos: 'seen', at: now() });
+    await other.push(timed(now() + off, 2, 9, 3));
+    assert.deepEqual(other.shown(), ['3 new messages']);
+    // One its push service held back is still told apart.
+    await other.tell({ erevos: 'seen', at: now() });
+    await other.push(timed(now() + off - 600, 3, 11, 4));
+    assert.deepEqual(other.shown(), ['New message']);
+  }
+});
+
+test('lags of a relay that ran ahead, or a time kept from a phone clock that ran fast, do not make a new round count nothing', async () => {
+  // Pushes of a relay two minutes ahead, then of one that is not (another space's, or the same set right).
+  const other = browser('other');
+  await other.push(timed(now() + 120, 1, 7, 2));
+  await other.tell({ erevos: 'seen', at: now() });
+  await other.tell({ erevos: 'badge', unread: 0, at: now() });
+  await other.push(timed(now(), 2, 9, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
+  assert.equal(other.badge(), 3);
+  // What the worker kept while the phone's clock ran an hour fast, now set right.
+  const store = new Map([['/__erevos/notice', JSON.stringify({ seenAt: now() + 3600, countedAt: now() + 3600 })]]);
+  const again = browser('other', store);
+  await again.tell({ erevos: 'seen', at: now() });
+  await again.tell({ erevos: 'badge', unread: 0, at: now() });
+  await again.push(timed(now(), 3, 11, 4));
+  assert.deepEqual(again.shown(), ['4 new messages']);
+  assert.equal(again.badge(), 4);
+});
+
+test('Erevos opened while offline, taking nothing from its relay, leaves a held-back push its count', async () => {
+  const other = browser('other');
+  await other.push(timed(now(), 5, 3, 1));
+  // The app last took from its relay an hour ago; the push was sent since, while the phone was offline.
+  await other.tell({ erevos: 'seen', at: now() - 3600 });
+  await other.tell({ erevos: 'badge', unread: 0, at: now() - 3600 });
+  await other.push(timed(now() - 600, 1, 7, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
+  assert.equal(other.badge(), 3);
+  // Nor does a time from before what the app said, or after now, change what it said.
+  await other.tell({ erevos: 'seen', at: now() - 7200 });
+  await other.push(timed(now() - 600, 2, 9, 2));
+  assert.deepEqual(other.shown(), ['2 new messages']);
+  await other.tell({ erevos: 'seen', at: now() + 86400 });
+  await other.push(timed(now() - 10, 3, 11, 4));
+  assert.deepEqual(other.shown(), ['4 new messages']);
+});
+
+test('a push that does not say when it was sent, from a relay before, counts as ever', async () => {
+  const other = browser('other');
+  await other.tell({ erevos: 'seen', at: now() });
+  await other.push(counted(1, 7, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
+  // A time with no flag is no count this worker reads: one thing came.
+  const odd = timed(now(), 2, 9, 2);
+  odd[1] = 0;
+  await other.push(odd);
+  assert.deepEqual(other.shown(), ['New messages']);
+});
+
+test('an app from before, which does not say when it last took from its relay, has a held-back push counted as ever', async () => {
+  const other = browser('other');
+  await other.push(timed(now(), 5, 3, 1));
+  await other.tell({ erevos: 'seen' });
+  await other.push(timed(now() - 600, 1, 7, 3));
+  assert.deepEqual(other.shown(), ['3 new messages']);
+});
+
+test('on the icon too, a push of a round the app counted adds nothing, and one that goes on only what came since', async () => {
+  const iphone = browser('iphone');
+  await iphone.tell({ erevos: 'badge', unread: 0 });
+  await iphone.push(counted(1, 7, 3));
+  assert.equal(iphone.badge(), 3);
+  // The app took them and counted: all read.
+  await iphone.tell({ erevos: 'badge', unread: 0 });
+  assert.equal(iphone.badge(), 0);
+  assert.deepEqual(iphone.iconStreams(), []);
+  // A push of that round, come late, once the worker starts again.
+  const again = browser('iphone', iphone.store);
+  await again.push(counted(1, 7, 3));
+  assert.equal(again.badge(), 0);
+  await again.push(counted(1, 7, 4));
+  assert.equal(again.badge(), 1);
 });
 
 test('a send that did not say what it carries, or an empty push, leaves the number out until Erevos is open', async () => {
@@ -406,6 +565,28 @@ test('without its cache the worker still shows a notice for every push', async (
   assert.equal(await other.tell({ erevos: 'seen' }), false);
 });
 
+test('each notice sounds, where another browser would replace the one before silently', async () => {
+  for (const kind of ['other', 'iphone'] as const) {
+    const one = browser(kind);
+    await one.push(counted(1, 7, 1));
+    await one.push(counted(1, 7, 2));
+    await one.push();
+    assert.equal(one.sounded(), 3, kind);
+  }
+});
+
+test('a push address the browser changed is told to every open window, and the worker keeps nothing', async () => {
+  const other = browser('other');
+  const said: unknown[] = [];
+  const window = (visibilityState: string) => ({ visibilityState, postMessage: (message: unknown) => void said.push((message as { erevos?: unknown }).erevos) });
+  other.windows.push(window('hidden'), window('visible'));
+  await other.addressChanged();
+  assert.deepEqual(said, ['push-changed', 'push-changed']);
+  assert.equal(other.store.size, 0);
+  // None open: nothing to tell, and nothing fails.
+  await browser('iphone').addressChanged();
+});
+
 test("the icon shows what the open space had not read, and what came since Erevos was on the screen", async () => {
   const iphone = browser('iphone');
   // Erevos leaves the screen with 2 not read.
@@ -447,18 +628,19 @@ test('Erevos opened only to its password keeps the number, and a round that goes
   await iphone.tell({ erevos: 'seen' });
   assert.deepEqual(iphone.shown(), []);
   assert.equal(iphone.badge(), 4);
+  // The notice tells of the new message alone.
   await iphone.push(counted(1, 1, 3));
-  assert.deepEqual(iphone.shown(), ['3 new messages']);
+  assert.deepEqual(iphone.shown(), ['New message']);
   assert.equal(iphone.badge(), 5);
   // Kept when the worker starts again.
   const again = browser('iphone', iphone.store);
   await again.push(counted(1, 1, 4));
   assert.equal(again.badge(), 6);
-  // The app counted before it took them: the round's next push counts all of it again.
+  // The app counted before it took them (another space's, say): the round adds only what came since.
   await again.tell({ erevos: 'badge', unread: 2 });
   assert.equal(again.badge(), 2);
   await again.push(counted(1, 1, 5));
-  assert.equal(again.badge(), 7);
+  assert.equal(again.badge(), 3);
 });
 
 test('the icon keeps which queues pushed only until the app counts', async () => {
@@ -677,10 +859,10 @@ test('turned off, the icon shows no number, and the pushes count none until the 
   assert.deepEqual(iphone.shown(), ['New messages']);
   // Kept when the worker starts again; on again with the app's count.
   const again = browser('iphone', iphone.store);
-  await again.push(counted(2, 1, 1));
+  await again.push(counted(2, 9, 1));
   assert.equal(again.badge(), 0);
   await again.tell({ erevos: 'badge', unread: 4 });
   assert.equal(again.badge(), 4);
-  await again.push(counted(2, 1, 2));
+  await again.push(counted(2, 9, 2));
   assert.equal(again.badge(), 6);
 });

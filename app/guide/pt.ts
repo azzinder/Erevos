@@ -2319,7 +2319,11 @@ isso, poderia enviar código alterado. O Erevos não aceita esse código de conf
   quantos escreveram ao mesmo tempo, nunca quem. Com elas, o ícone do Erevos na tela de início também mostra um número:
   as mensagens não lidas do espaço que você tinha aberto, que ficam depois que o Erevos é fechado, e as que chegaram
   depois (o que chegou sem número conta como uma), nunca as de uma conversa oculta. **Configurações** →
-  **Notificações** → **Número no ícone** o desliga.
+  **Notificações** → **Número no ícone** o desliga. As notificações funcionam pelo serviço de push da Apple, pelo do
+  Google (Chrome, e Edge no Android, Brave e Opera), pelo da Mozilla (Firefox) e pelo da Microsoft (Edge no Windows): um
+  navegador que use outro não pode ativá-las, a não ser que quem cuida do seu relay permita o serviço de push desse
+  navegador. Espaços com relays diferentes compartilham as notificações do navegador: só o último aberto as recebe. Uma
+  solicitação de mensagem de alguém novo, pelo seu link de contato, pode aparecer só quando o Erevos abrir.
 - **Permissões:** no Erevos, **Configurações** → **Geral** → **Permissões** mostra o que o navegador deixa o Erevos
   fazer: se ele roda pela tela de início, as notificações com o app fechado (necessárias assim que este espaço as
   ativou), o microfone para as chamadas, a câmera para as videochamadas, e se o navegador guarda os dados do Erevos de

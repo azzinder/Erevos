@@ -48,6 +48,17 @@ On main, not released yet:
   for another space with them on still count. **Settings** → **Notifications** → **Number on the icon** turns it
   off. Also on a Mac with Safari's Add to Dock, and in the web app installed from Chrome or Edge on Windows,
   macOS or ChromeOS.
+- **The web app's notifications, more dependable**: no **New message** banner shows over Erevos while it is open on
+  the screen, and in Chrome, Firefox and Edge every notice sounds, not only the first after Erevos was last open.
+  When the browser changes its push address, as Chrome may now and then, or the push service drops it, Erevos gives
+  your relay the new one by itself as it comes back on the screen: until now notifications stopped until it was
+  started again. A push that comes late, held back by its push service while the phone was offline, no longer counts
+  again the messages you read meanwhile. **Settings** → **Notifications** → **Notifications while closed** says when
+  the browser or the phone does not allow them, and when your relay could not be told yet that they are off, which
+  Erevos tells it as soon as it can reach it; also that spaces on different relays share the browser's
+  notifications, and that a message request may show only once Erevos opens. The permissions screen now leads there,
+  not to **Lock**. The banner, a dropped address and a late push of a round never shown before need the relay
+  updated.
 
 ### Under the hood
 
@@ -97,6 +108,16 @@ On main, not released yet:
   is still asked only through Tor, even when Tor goes to rest while it is asked, and its waits ask again at
   once when the phone's network changes. Someone who examines the phone with tools may find how many
   contacts a space that asked for this has: the guide says so.
+- **The relay's pushes to the web app, sturdier** (needs the relay updated): a push the push service could not take
+  just then (429 or 5xx), or that did not reach it, is sent again a little later, a few times, where it was lost
+  until the next message (one it refuses, a 403 say, is logged and not sent again); a call that rings goes before the
+  messages waiting their turn for the same browser; an address the service says is gone is dropped for all its
+  queues at once, and the web app told to make a new one; each push says, encrypted for the browser, when it was
+  sent, so a late one is known; the relay logs a push the service refused, how many push addresses it keeps and for
+  how many queues, and when pushes stop; a message held for later that goes as the relay starts pushes too; whoever
+  runs the relay can allow another push service (`EREVOS_RELAY_PUSH_SERVICES`); and writing the push addresses to
+  disk no longer holds up messages. A web app from before shows the updated relay's pushes with no number until it
+  is updated, so the web app goes first.
 
 ## 3.4.2 (2026-10-27)
 
