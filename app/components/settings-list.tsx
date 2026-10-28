@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { canRingInBackground } from '../lib/background';
+import { DESKTOP } from '../lib/desktop';
 import { LANG_LABELS, LANGS, lang, setLang, t } from '../lib/i18n';
 import { WEB_APP } from '../lib/integrity';
 import { HAS_CHECKS } from '../lib/permissions';
@@ -26,7 +27,7 @@ export function settingsPlace(): SettingsPlace {
     web,
     webApp: WEB_APP,
     push: PUSH_AVAILABLE,
-    background: canRingInBackground,
+    background: canRingInBackground || DESKTOP,
     checks: HAS_CHECKS || !web,
     launcher: launcherColors() !== null,
     widget: widgetOrder() !== null,

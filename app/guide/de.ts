@@ -2428,11 +2428,14 @@ dort überraschend unversiegelt.
 - **Ein Computer und ein Telefon können ein Konto teilen:** Verknüpfe den Computer mit dem Telefon, und beide haben
   dieselben Chats und Kontakte, siehe [Verknüpfte Geräte](#devices). Oder ein Backup bringt alles vom einen zum anderen,
   siehe [Backups](#backup), und nutze ab dann nur noch das eine.
-- **Keine Benachrichtigungen oder Töne:** Erevos auf einem Computer zeigt keine Benachrichtigung des Systems und macht
-  keinen Ton. Während es läuft, erscheint eine neue Nachricht nur in seinem Fenster, und ein Anruf zeigt dort seinen
-  Bildschirm, ohne zu klingeln, also macht dich nichts darauf aufmerksam, wenn das Fenster minimiert ist oder hinter
-  einem anderen liegt. Geschlossen empfängt es nichts: Nachrichten warten beim Relay, und ein Anruf erscheint als
-  verpasster Anruf, sobald es öffnet.
+- **Im Hintergrund:** Schließt du sein Fenster, läuft Erevos im Infobereich weiter (auf einem Mac im Dock), außer du
+  schaltest es ab: **Einstellungen** → **Benachrichtigungen** → **Im Hintergrund** → **Beim Schließen beenden**. Es
+  wartet weiter am Relay: Ein Anruf klingelt, mit einem eigenen Klingeln, und holt das Fenster zurück, und eine
+  Benachrichtigung sagt, wie viele Nachrichten ungelesen sind, nie von wem oder was, bis Erevos wieder zu sehen ist. Du
+  öffnest es über sein Symbol im Infobereich oder indem du Erevos erneut startest, und beendest es über das Menü dieses
+  Symbols (auf einem Mac über sein Menü). Wo der Desktop keinen Infobereich zeigt, etwa GNOME ohne eine Erweiterung
+  dafür, holt ein erneuter Start von Erevos das Fenster zurück. Beendet empfängt es nichts: Nachrichten warten am Relay,
+  und ein Anruf erscheint als verpasster Anruf, sobald es sich öffnet.
 - **Bisher getestet** unter Linux. Die Mac- und Windows-Versionen werden auf den Computern von GitHub gebaut und
   geöffnet, noch nicht von einer Person.
 

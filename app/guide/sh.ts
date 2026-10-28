@@ -2205,10 +2205,13 @@ ne leži nezapečaćeno iznenada.
 - **Računar i telefon mogu dijeliti nalog:** povežite računar s telefonom, i oba imaju iste razgovore i kontakte,
   pogledajte [Povezani uređaji](#devices). Ili rezervna kopija premješta sve s jednog na drugi, pogledajte
   [Rezervne kopije](#backup), a od tada koristite samo jedan.
-- **Bez obavijesti i zvukova:** Erevos na računaru ne prikazuje nijednu obavijest sistema i ne pušta nikakav zvuk.
-  Dok radi, nova poruka se prikazuje samo u njegovom prozoru, a poziv tamo prikazuje svoj ekran bez zvonjenja, pa
-  kad je prozor minimiziran ili iza nekog drugog, ništa vam to ne javlja. Kad je zatvoren, ne prima ništa: poruke
-  čekaju na relayu, a poziv se prikazuje kao propušteni poziv kad se otvori.
+- **U pozadini:** kad zatvorite njegov prozor, Erevos radi i dalje u sistemskoj traci (na Macu, u Docku), osim ako to
+  isključite: **Postavke** → **Obavijesti** → **U pozadini** → **Izađi pri zatvaranju**. I dalje čeka na relayu: poziv
+  zvoni, vlastitim zvonom, i vraća prozor, a obavijest kaže koliko poruka nije pročitano, nikad od koga ni šta, dok se
+  Erevos opet ne prikaže. Otvarate ga preko njegove ikone u sistemskoj traci, ili ponovnim pokretanjem Erevosa, a
+  izlazite iz njega preko menija te ikone (na Macu, preko njegovog menija). Gdje radna površina ne prikazuje sistemsku
+  traku, kao GNOME bez proširenja za to, ponovno pokretanje Erevosa vraća prozor. Kad iz njega izađete, ne prima ništa:
+  poruke čekaju na relayu, a poziv se prikazuje kao propušteni poziv kad se otvori.
 - **Dosad testirano** na Linuxu. Verzije za Mac i Windows grade se i otvaraju na GitHubovim računarima, još ne od
   strane neke osobe.
 

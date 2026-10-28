@@ -2087,10 +2087,13 @@ there unless you choose it with \`--plain-secrets\`: no password slot lies there
 - **A computer and a phone can share an account:** link the computer to the phone, and both have the same chats and
   contacts, see [Linked devices](#devices). Or a backup moves everything from one to the other, see
   [Backups](#backup), and from then on use only the one.
-- **No notices or sounds:** Erevos on a computer shows no notice from the system and makes no sound. While it runs, a
-  new message shows only in its window, and a call shows its screen there without ringing, so with the window
-  minimised or behind another, nothing tells you. Closed, it receives nothing: messages wait on the relay, and a call
-  shows as a missed call once it opens.
+- **In the background:** closing its window leaves Erevos running in the system tray (on a Mac, in the Dock), unless you
+  turn it off: **Settings** → **Notifications** → **In the background** → **Quit when closed**. It goes on waiting at
+  the relay: a call rings, with a ring of its own, and brings the window back, and a notification says how many messages
+  are not read, never who or what, until Erevos shows again. Open it from its icon in the tray, or by starting Erevos
+  again, and quit it from that icon's menu (on a Mac, from its menu). Where the desktop shows no tray, as GNOME without
+  an extension for it, starting Erevos again brings the window back. Quit, it receives nothing: messages wait on the
+  relay, and a call shows as a missed call once it opens.
 - **Tested so far** on Linux. The Mac and Windows versions are built and opened on GitHub's computers, not yet by a
   person.
 

@@ -1,4 +1,5 @@
 import { currentSpace } from '../lock/keys';
+import { desktopWords, followDesktop } from './desktop';
 import type { Lang } from './i18n';
 import { iconNumber, iconNumberOn, onIconNumberChange } from './icon-number';
 import { WEB_APP } from './integrity';
@@ -35,6 +36,8 @@ function tell(question: Record<string, unknown>): void {
 
 export function noticeLanguage(lang: Lang): void {
   tell({ erevos: 'lang', lang });
+  // The computer's app: its tray's words (lib/desktop.ts).
+  desktopWords();
 }
 
 // When the app last took from its relay, in seconds since 1970, as the relay says when it pushed.
@@ -42,6 +45,8 @@ const takenAt = () => Math.floor(lastTakenAt() / 1000);
 
 export function noticeSeen(): void {
   tell({ erevos: 'seen', at: takenAt() });
+  // The computer's app has a notice of its own, while its window is closed or behind another (lib/desktop.ts).
+  followDesktop();
   if (!WEB_APP) return;
   follow();
   icon.seen();

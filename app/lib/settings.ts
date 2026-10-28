@@ -13,7 +13,7 @@ export type SettingsPlace = {
   webApp: boolean;
   /** Web Push works here (lib/web-push.ts). */
   push: boolean;
-  /** Receiving and ringing in the background (lib/background.ts). */
+  /** Receiving and ringing in the background (lib/background.ts), or on a computer with the window closed (lib/desktop.ts). */
   background: boolean;
   /** Permissions to check (lib/permissions.ts): a phone, and the web app. */
   checks: boolean;
@@ -114,7 +114,7 @@ export const SETTINGS: SettingsGroup[] = [
         title: mark('Number on the icon'),
         detail: mark("How many messages are not read, on Erevos's icon"),
         href: '/security?part=icon',
-        when: (place) => place.push || place.background,
+        when: (place) => place.push || (place.background && !place.web),
       },
     ],
   },

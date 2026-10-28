@@ -2295,10 +2295,14 @@ non sigillato a tua insaputa.
 - **Un computer e un telefono possono condividere un account:** collega il computer al telefono, ed entrambi hanno le
   stesse chat e gli stessi contatti, vedi [Dispositivi collegati](#devices). Oppure un backup sposta tutto dall’uno
   all’altro, vedi [Backup](#backup), e da quel momento usa solo uno dei due.
-- **Nessuna notifica né suono:** Erevos su un computer non mostra notifiche del sistema e non emette suoni. Mentre è in
-  funzione, un nuovo messaggio appare solo nella sua finestra, e una chiamata mostra lì la sua schermata senza
-  squillare, quindi con la finestra ridotta a icona o dietro un’altra, niente te lo dice. Da chiuso non riceve nulla:
-  i messaggi aspettano sul relay, e una chiamata appare come chiamata persa quando si apre.
+- **In background:** chiudendo la sua finestra, Erevos continua a funzionare nell’area di notifica (su un Mac, nel
+  Dock), a meno che tu non lo disattivi: **Impostazioni** → **Notifiche** → **In background** → **Esci alla chiusura**.
+  Continua ad attendere sul relay: una chiamata squilla, con una suoneria sua, e riporta la finestra, e una notifica
+  dice quanti messaggi non sono letti, mai chi né cosa, finché Erevos non si vede di nuovo. Lo apri dalla sua icona
+  nell’area di notifica, o avviando di nuovo Erevos, e ne esci dal menu di quell’icona (su un Mac, dal suo menu). Dove
+  il desktop non mostra l’area di notifica, come GNOME senza un’estensione apposita, avviare di nuovo Erevos riporta la
+  finestra. Una volta uscito non riceve nulla: i messaggi aspettano sul relay, e una chiamata appare come chiamata persa
+  quando si apre.
 - **Provato finora** su Linux. Le versioni per Mac e Windows sono compilate e aperte sui computer di GitHub, non ancora
   da una persona.
 

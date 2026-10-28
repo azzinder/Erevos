@@ -18,14 +18,23 @@
  *                              happened since, waiting a while for something
  *   /__latest                  the latest release's version.json (app/lib/updates.ts), asked for
  *                              here: GitHub's downloads do not answer a page's own requests
+ *   /__window                  the window (app/lib/desktop.ts): GET says whether Erevos keeps
+ *                              running when it is closed, PUT ?keep=1 or 0 sets it, PUT ?show=1
+ *                              brings it back (a call, a tapped notice), POST gives the words of
+ *                              the tray's menu in the app's language
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos, on Windows %APPDATA%\Erevos). The page is also told, in its
  * address, which package it runs from (#erevos-system=…), so Check for updates names the file to take.
  *
+ * Closing the window leaves Erevos running, unless turned off (window.json): in the system tray, on
+ * a Mac in the Dock. The page goes on at full pace there, out of sight: it waits at the relay, a call
+ * rings and brings the window back, and a notice says how many messages came. The tray's menu opens
+ * the window again or quits; so does starting Erevos again, where the desktop shows no tray.
+ *
  * With --smoke the app opens, waits for its first screen, says so and quits: the check the GitHub
  * runners make of each build (.github/workflows/desktop.yml), where nobody can look.
  */
-const { app, BrowserWindow, dialog, net, protocol, safeStorage, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, Tray, dialog, nativeImage, net, protocol, safeStorage, session, shell } = require('electron');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -47,6 +56,9 @@ app.setPath('userData', path.join(app.getPath('appData'), 'Erevos'));
 // On Windows the task bar keeps the window with the installer's shortcut by this id, the build's
 // appId (package.json); without it a pinned Erevos and the running one show as two.
 if (WINDOWS) app.setAppUserModelId('app.erevos');
+// A call rings with no click in the page first (app/modules/erevos-call/page-ring.web.ts), also
+// with the window closed into the tray.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 /**
  * Which package this is, as app/lib/updates.ts packageFile names its file: the Windows installer or
@@ -92,6 +104,9 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let window = null;
+// Set as Erevos quits (the tray's menu, a Mac's Quit, the system shutting down): the window then
+// closes for good.
+let quitting = false;
 
 /** A file of the web build; any other path is a screen of the app (index.html). */
 function serveFile(pathname) {
@@ -341,6 +356,92 @@ async function latest() {
   }
 }
 
+// Whether Erevos keeps running with its window closed (on unless turned off), and whether it said
+// so the first time it did.
+const windowFile = () => dataPath('window.json');
+function windowChoice() {
+  const kept = readJson(windowFile(), {});
+  return { keep: kept?.keep !== false, told: kept?.told === true };
+}
+function saveWindowChoice(change) {
+  return inTurn(windowFile(), async () => writeWhole(windowFile(), JSON.stringify({ ...windowChoice(), ...change })));
+}
+
+// The tray's words, and the notice's, in the app's language once the page gives them.
+const words = {
+  open: 'Open Erevos',
+  quit: 'Quit Erevos',
+  kept: MAC ? 'Erevos keeps running with its window closed: messages come and calls ring. Quit it from its menu.' : 'Erevos keeps running with its window closed: messages come and calls ring. Quit it from its icon in the system tray.',
+};
+let tray = null;
+
+function showWindow() {
+  // Before it is ready, the window it opens with is on its way.
+  if (!app.isReady()) return;
+  if (!window) return createWindow();
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
+}
+
+/** The icon in the system tray while Erevos keeps running, with its menu; none on a Mac, where the Dock has it. */
+function followTray() {
+  const wanted = !MAC && !SMOKE && windowChoice().keep;
+  if (!wanted) {
+    tray?.destroy();
+    tray = null;
+    return;
+  }
+  if (!tray) {
+    tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 24, height: 24 }));
+    tray.setToolTip('Erevos');
+    tray.on('click', showWindow);
+  }
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: words.open, click: showWindow },
+      { type: 'separator' },
+      { label: words.quit, click: () => app.quit() },
+    ]),
+  );
+}
+
+/** The window closed while Erevos keeps running: the first time, a notice says where it went. */
+function kept() {
+  if (windowChoice().told) return;
+  void saveWindowChoice({ told: true });
+  if (Notification.isSupported()) new Notification({ title: 'Erevos', body: words.kept, silent: true }).show();
+}
+
+const WORD_MOST = 300;
+
+async function windowRequest(request, url) {
+  if (request.method === 'GET') return Response.json({ keep: windowChoice().keep });
+  if (request.method === 'PUT') {
+    if (url.searchParams.get('show') === '1') showWindow();
+    const keep = url.searchParams.get('keep');
+    if (keep === '1' || keep === '0') {
+      await saveWindowChoice({ keep: keep === '1' });
+      followTray();
+    }
+    return new Response(null, { status: 204 });
+  }
+  if (request.method === 'POST') {
+    let given = null;
+    try {
+      given = JSON.parse(await request.text());
+    } catch {
+      // Not words.
+    }
+    for (const key of Object.keys(words)) {
+      if (typeof given?.[key] === 'string' && given[key] && given[key].length <= WORD_MOST) words[key] = given[key];
+    }
+    followTray();
+    return new Response(null, { status: 204 });
+  }
+  return new Response('', { status: 405 });
+}
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.pathname.startsWith('/__')) {
@@ -354,6 +455,7 @@ function handle(request) {
     if (url.pathname === '/__save') return save(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
     if (url.pathname === '/__latest') return latest();
+    if (url.pathname === '/__window') return windowRequest(request, url);
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);
@@ -371,7 +473,8 @@ function createWindow() {
     // On Linux and Windows the window shows this in the task bar; a Mac takes the app's own icon.
     ...(MAC ? {} : { icon: path.join(__dirname, 'icon.png') }),
     show: !SMOKE,
-    webPreferences: { contextIsolation: true, sandbox: true },
+    // Out of sight it goes on at full pace: it waits at the relay, and a call rings at once.
+    webPreferences: { contextIsolation: true, sandbox: true, backgroundThrottling: false },
   });
   // Links to other sites open in the browser.
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -385,6 +488,17 @@ function createWindow() {
     }
   });
   window.loadURL(`${ORIGIN}/#erevos-token=${TOKEN}&erevos-system=${system()}`);
+  // Closed while Erevos keeps running, it only hides.
+  window.on('close', (event) => {
+    if (quitting || SMOKE || !windowChoice().keep) return;
+    event.preventDefault();
+    window.hide();
+    kept();
+  });
+  // Windows closes it as the system shuts down or the user signs out, with no Quit before.
+  window.on('session-end', () => {
+    quitting = true;
+  });
   window.on('closed', () => {
     window = null;
   });
@@ -417,22 +531,26 @@ function smoke(win) {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (window) {
-      if (window.isMinimized()) window.restore();
-      window.focus();
-    }
+  // Started again, it shows the window it has, closed into the tray or not.
+  app.on('second-instance', showWindow);
+  // A Mac's Dock icon brings the window back.
+  app.on('activate', showWindow);
+  app.on('before-quit', () => {
+    quitting = true;
   });
   app.whenReady().then(() => {
-    // The microphone, for voice messages, while Voice is held; nothing else (camera,
-    // notifications, location) is asked for, and anything else is refused without a prompt.
-    // Copying a contact link is allowed too.
+    // The microphone, for voice messages, while Voice is held, and the notice that messages came
+    // (app/lib/desktop.ts); nothing else (camera, location) is asked for, and anything else is
+    // refused without a prompt. Copying a contact link is allowed too.
     const allowed = (permission, details = {}) =>
-      permission === 'clipboard-sanitized-write' || (permission === 'media' && (details.mediaTypes ?? ['audio']).every((type) => type === 'audio'));
+      permission === 'clipboard-sanitized-write' ||
+      permission === 'notifications' ||
+      (permission === 'media' && (details.mediaTypes ?? ['audio']).every((type) => type === 'audio'));
     session.defaultSession.setPermissionRequestHandler((_contents, permission, callback, details) => callback(allowed(permission, details)));
     session.defaultSession.setPermissionCheckHandler((_contents, permission) => allowed(permission));
     protocol.handle('app', handle);
     createWindow();
+    followTray();
   });
   app.on('window-all-closed', () => {
     lan?.stop();

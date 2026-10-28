@@ -2258,10 +2258,14 @@ nada ali a menos que você escolha isso com \`--plain-secrets\`: nenhum slot de 
 - **Um computador e um celular podem compartilhar uma conta:** conecte o computador ao celular, e os dois têm as
   mesmas conversas e contatos, veja [Dispositivos conectados](#devices). Ou um backup move tudo de um para o outro,
   veja [Backups](#backup), e a partir daí use só um deles.
-- **Sem avisos nem sons:** o Erevos num computador não mostra nenhum aviso do sistema e não faz nenhum som. Enquanto
-  ele roda, uma mensagem nova só aparece na janela dele, e uma chamada mostra a tela dela ali sem tocar, então com a
-  janela minimizada ou atrás de outra, nada avisa você. Fechado, ele não recebe nada: as mensagens esperam no relay, e
-  uma chamada aparece como chamada perdida quando ele abrir.
+- **Em segundo plano:** fechar a janela dele deixa o Erevos rodando na bandeja do sistema (num Mac, no Dock), a menos
+  que você desligue: **Configurações** → **Notificações** → **Em segundo plano** → **Sair ao fechar**. Ele continua
+  esperando no relay: uma chamada toca, com um toque próprio, e traz a janela de volta, e uma notificação diz quantas
+  mensagens não foram lidas, nunca de quem nem o quê, até o Erevos aparecer de novo. Você o abre pelo ícone dele na
+  bandeja, ou iniciando o Erevos de novo, e sai pelo menu desse ícone (num Mac, pelo menu dele). Onde a área de trabalho
+  não mostra bandeja, como o GNOME sem uma extensão para isso, iniciar o Erevos de novo traz a janela de volta. Depois
+  de sair, ele não recebe nada: as mensagens esperam no relay, e uma chamada aparece como chamada perdida quando ele
+  abrir.
 - **Testado até agora** no Linux. As versões para Mac e Windows são compiladas e abertas nos computadores do GitHub,
   ainda não por uma pessoa.
 

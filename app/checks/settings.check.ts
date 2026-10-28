@@ -14,7 +14,8 @@ const APP = join(import.meta.dirname, '..', 'app');
 
 const PHONE: SettingsPlace = { web: false, webApp: false, push: false, background: true, checks: true, launcher: true, widget: true, sims: true };
 const WEB_APP: SettingsPlace = { web: true, webApp: true, push: true, background: false, checks: true, launcher: false, widget: false, sims: false };
-const DESKTOP: SettingsPlace = { web: true, webApp: false, push: false, background: false, checks: false, launcher: false, widget: false, sims: false };
+const DESKTOP: SettingsPlace = { web: true, webApp: false, push: false, background: true, checks: false, launcher: false, widget: false, sims: false };
+const SAILFISH: SettingsPlace = { ...DESKTOP, background: false };
 
 const leaves = (): SettingsLeaf[] => SETTINGS.flatMap((group) => group.items.flatMap((item) => (hasParts(item) ? item.parts : [item])));
 
@@ -57,8 +58,11 @@ test('a phone shows every group; elsewhere, what needs a phone does not show', (
   const ids = (place: SettingsPlace) => groupsHere(place).flatMap((group) => itemsHere(group, place).map((item) => item.id));
   const desktop = ids(DESKTOP);
   for (const gone of ['tor', 'nostr', 'lora', 'radio-test', 'permissions', 'browser-permissions', 'icons', 'widget', 'phone', 'sms', 'web-app', 'screenshots']) assert.ok(!desktop.includes(gone), gone);
-  // The desktop app has no notices of its own to set: the group goes.
-  assert.ok(!groupsHere(DESKTOP).some((group) => group.id === 'notices' || group.id === 'phone'));
+  // The desktop app sets only whether it keeps running with its window closed; Sailfish OS's app has
+  // no notices of its own to set: the group goes.
+  assert.ok(!groupsHere(DESKTOP).some((group) => group.id === 'phone'));
+  assert.ok(desktop.includes('background'));
+  assert.ok(!groupsHere(SAILFISH).some((group) => group.id === 'notices' || group.id === 'phone'));
   const web = ids(WEB_APP);
   for (const shown of ['push', 'web-app', 'browser-permissions', 'relay', 'backups', 'icon-number']) assert.ok(web.includes(shown), shown);
   assert.ok(!web.includes('permissions'));

@@ -122,6 +122,14 @@ On main, not released yet:
   sends Everything through Tor, none goes. Restore by downloading one and choosing it under **Restore a backup**;
   Erevos from before this version does not open such a file. Google Drive is left out on purpose.
 
+- **Erevos on a computer keeps running with its window closed**: closing its window quit it, so nothing came, and no
+  call rang, until it was opened again, and while it ran nothing told of a message outside its window. It now stays in
+  the system tray (on a Mac, in the Dock), unless turned off under **Settings** → **Notifications** → **In the
+  background**: it goes on waiting at the relay, a call rings, with no click first, and brings the window back, and a
+  notification says how many messages the open space has not read, never who or what, never a hidden or muted chat's,
+  while the window is closed, hidden or behind another. The tray's icon opens it again or quits it; where the desktop
+  shows no tray, starting Erevos again brings the window back.
+
 ### Under the hood
 
 - **A chat locked with its own PIN stays locked**: a contact's Erevos starts a new conversation with the chat about

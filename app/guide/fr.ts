@@ -2393,10 +2393,14 @@ reste non scellé par surprise.
 - **Un ordinateur et un téléphone peuvent partager un compte :** associe l’ordinateur au téléphone, et les deux ont les
   mêmes discussions et les mêmes contacts, voir [Appareils associés](#devices). Ou bien une sauvegarde déplace tout de
   l’un à l’autre, voir [Sauvegardes](#backup), et à partir de là n’utilise que l’un des deux.
-- **Pas de notifications ni de sons :** Erevos sur un ordinateur n’affiche aucune notification du système et ne fait
-  aucun son. Pendant qu’il tourne, un nouveau message s’affiche seulement dans sa fenêtre, et un appel y affiche son
-  écran sans sonner, si bien qu’avec la fenêtre réduite ou derrière une autre, rien ne te prévient. Fermé, il ne reçoit
-  rien : les messages attendent sur le relais, et un appel s’affiche comme appel manqué dès qu’il s’ouvre.
+- **En arrière-plan :** fermer sa fenêtre laisse Erevos tourner dans la zone de notification (sur un Mac, dans le Dock),
+  sauf si tu le désactives : **Réglages** → **Notifications** → **En arrière-plan** → **Quitter à la fermeture**. Il
+  continue d’attendre sur le relais : un appel sonne, avec une sonnerie à lui, et fait revenir la fenêtre, et une
+  notification dit combien de messages ne sont pas lus, jamais de qui ni quoi, jusqu’à ce qu’Erevos s’affiche de
+  nouveau. Tu l’ouvres depuis son icône dans la zone de notification, ou en relançant Erevos, et tu le quittes depuis le
+  menu de cette icône (sur un Mac, depuis son menu). Là où le bureau n’affiche pas de zone de notification, comme GNOME
+  sans extension pour cela, relancer Erevos fait revenir la fenêtre. Une fois quitté, il ne reçoit rien : les messages
+  attendent sur le relais, et un appel s’affiche comme appel manqué dès qu’il s’ouvre.
 - **Testé jusqu’ici** sous Linux. Les versions Mac et Windows sont compilées et ouvertes sur les ordinateurs de GitHub,
   pas encore par une personne.
 

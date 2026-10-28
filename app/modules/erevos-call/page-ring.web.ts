@@ -3,7 +3,11 @@
 // browser (Web Audio): two short rings every 3 seconds, with the phone's vibration where the
 // browser has it, until the call is answered or ends. A browser lets a page sound only once it was
 // touched, so the sound is readied at each touch or key: a call that comes after one rings. The
-// rest of a call's sound is the browser's: it puts it where the phone does.
+// computer's app lets it ring with no touch, and brings its window back for the call, closed into
+// the tray or not (lib/shell.ts showWindow). The rest of a call's sound is the browser's: it puts it
+// where the phone does.
+
+import { showWindow } from '../../lib/shell';
 
 const CYCLE_MS = 3000;
 // Each ring, and the pause between the two, in seconds.
@@ -87,6 +91,7 @@ export const pageRing = {
   /** Rings until stopped; `tone` '' is a chat whose ring is none. */
   ring(_video: boolean, _notice: boolean, tone?: string | null): void {
     stopRinging();
+    showWindow();
     if (tone === '') return;
     ready();
     ringOnce();

@@ -13,6 +13,7 @@ import { t } from './i18n';
 //   /__backup?…       writes a backup into such a folder, keeping the newest
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
 //   /__latest         the latest release's version.json (lib/updates.ts), which a page cannot read
+//   /__window         the computer's window (lib/desktop.ts): kept running when closed, brought back
 // The computer's shell also says in the address which of its packages it runs from
 // (#erevos-system=…), so Check for updates can name the file to take (lib/updates.ts packageFile).
 
@@ -51,6 +52,11 @@ export function setupShell(): void {
 /** Which package of the computer's shell this is ('windows', 'windows-portable', 'macos', 'linux', 'linux-appimage'), or '' when it does not say. */
 export function shellSystem(): string {
   return system;
+}
+
+/** Brings the computer's window back, closed into the tray or behind another: a call came, a notice was tapped. */
+export function showWindow(): void {
+  if (SHELL === 'electron') void shellFetch('/__window?show=1', { method: 'PUT' }).catch(() => undefined);
 }
 
 export class ShellError extends Error {}

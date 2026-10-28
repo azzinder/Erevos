@@ -2268,10 +2268,14 @@ sorpresa.
 - **Un ordenador y un teléfono pueden compartir una cuenta:** vincula el ordenador al teléfono, y los dos tienen los
   mismos chats y contactos, ver [Dispositivos vinculados](#devices). O una copia de seguridad lo pasa todo de uno a
   otro, ver [Copias de seguridad](#backup), y a partir de entonces usa solo uno.
-- **Sin avisos ni sonidos:** Erevos en un ordenador no muestra ningún aviso del sistema y no hace ningún sonido.
-  Mientras funciona, un mensaje nuevo solo aparece en su ventana, y una llamada muestra ahí su pantalla sin sonar, así
-  que con la ventana minimizada o detrás de otra, nada te avisa. Cerrado, no recibe nada: los mensajes esperan en el
-  relay, y una llamada aparece como llamada perdida en cuanto se abre.
+- **En segundo plano:** al cerrar su ventana, Erevos sigue funcionando en la bandeja del sistema (en un Mac, en el
+  Dock), salvo que lo desactives: **Ajustes** → **Notificaciones** → **En segundo plano** → **Salir al cerrar**. Sigue
+  esperando en el relay: una llamada suena, con un timbre propio, y trae de vuelta la ventana, y una notificación dice
+  cuántos mensajes no se han leído, nunca de quién ni qué, hasta que Erevos vuelve a verse. Lo abres desde su icono en
+  la bandeja, o iniciando Erevos de nuevo, y sales desde el menú de ese icono (en un Mac, desde su menú). Donde el
+  escritorio no muestra bandeja, como GNOME sin una extensión para ello, iniciar Erevos de nuevo trae de vuelta la
+  ventana. Cerrado del todo, no recibe nada: los mensajes esperan en el relay, y una llamada aparece como llamada
+  perdida en cuanto se abre.
 - **Probado hasta ahora** en Linux. Las versiones de Mac y Windows se compilan y se abren en los ordenadores de GitHub,
   todavía no por una persona.
 

@@ -2,11 +2,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AppState, View } from 'react-native';
 
+import { DesktopBackground } from '../components/desktop-background';
 import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { doorIsOpen, setDoorOpen } from '../lib/closed-notices';
+import { DESKTOP } from '../lib/desktop';
 import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
@@ -281,6 +283,7 @@ export default function Security() {
       ) : null}
 
       {canRingInBackground && shows('background') ? <BackgroundCalls titled={!part} /> : null}
+      {DESKTOP && shows('background') ? <DesktopBackground titled={!part} /> : null}
 
       {!part || part === 'web' || part === 'push' ? <IntegrityCard part={part === 'web' || part === 'push' ? part : undefined} /> : null}
 
