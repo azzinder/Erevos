@@ -1542,8 +1542,10 @@ Element: Keine Brücke sitzt dazwischen.
   Menschen auf anderen Servern sehen es auch diese.
 - **Nachrichten von vorher:** Eine Nachricht von bevor Erevos sich anmeldete, oder eine, deren Schlüssel noch nicht
   kam, erscheint gesperrt.
-- **Noch nicht:** Fotos, Dateien, Sprachnachrichten, Anrufe und das Prüfen der Geräte anderer per Emoji. Vorerst nur
-  Text.
+- **Fotos und Dateien:** **Foto** und **Datei** senden sie, bis 50 MB, auf dem Telefon verschlüsselt, bevor sie zum
+  Matrix-Server gehen, der so nur behält, was er nicht lesen kann. Ein erhaltenes Foto wird erst geladen, wenn du
+  **Foto anzeigen** tippst; **Speichern** legt jede Datei auf dem Telefon ab.
+- **Noch nicht:** Sprachnachrichten, Anrufe und das Prüfen der Geräte anderer per Emoji.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
 Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.

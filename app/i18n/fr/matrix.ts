@@ -33,4 +33,9 @@ export const matrix: Record<string, string> = {
   "The Matrix server says the name or the password is wrong.": "Le serveur Matrix dit que le nom ou le mot de passe est faux.",
   "The Matrix server signed this device out. Sign in again.": "Le serveur Matrix a déconnecté cet appareil. Reconnecte-toi.",
   "There is no Matrix account in this space.": "Il n’y a pas de compte Matrix dans cet espace.",
+  "Show photo": "Afficher la photo",
+  "Fetching…": "Téléchargement…",
+  "Files on Matrix can be 50 MB at most.": "Les fichiers sur Matrix ne peuvent pas dépasser 50 Mo.",
+  "This file was changed on the way, so it is not shown.": "Ce fichier a été modifié en chemin, il n’est donc pas affiché.",
+  "The file could not be fetched.": "Le fichier n’a pas pu être téléchargé.",
 };

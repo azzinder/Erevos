@@ -1509,8 +1509,10 @@ Element : aucun pont ne se met entre les deux.
   des personnes sur d’autres serveurs, ces serveurs le voient aussi.
 - **Messages d’avant :** un message envoyé avant qu’Erevos se connecte, ou dont la clé n’est pas encore arrivée,
   s’affiche verrouillé.
-- **Pas encore :** photos, fichiers, messages vocaux, appels, et la vérification des appareils de quelqu’un par emoji.
-  Du texte seulement, pour l’instant.
+- **Photos et fichiers :** **Photo** et **Fichier** les envoient, jusqu’à 50 Mo, chiffrés sur le téléphone avant
+  d’aller au serveur Matrix, qui ne garde ainsi que ce qu’il ne peut pas lire. Une photo reçue n’est téléchargée que si
+  vous touchez **Afficher la photo** ; **Enregistrer** garde n’importe quel fichier sur le téléphone.
+- **Pas encore :** messages vocaux, appels, et la vérification des appareils de quelqu’un par emoji.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.

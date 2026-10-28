@@ -50,6 +50,23 @@ export type MatrixMessage = {
   locked?: { sessionId: string; ciphertext: string; senderKey: string };
   /** Ours, while the homeserver has not taken it, or when it refused it. */
   state?: 'sending' | 'failed';
+  /** A photo, a video, a sound or a file: where it is, and its key when the room is encrypted (lib/matrix-media.ts). */
+  file?: MatrixFile;
+};
+
+/** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
+export type EncryptedFile = { url: string; key: { kty: 'oct'; key_ops: string[]; alg: 'A256CTR'; k: string; ext: true }; iv: string; hashes: { sha256: string }; v: 'v2' };
+
+export type MatrixFile = {
+  kind: 'image' | 'video' | 'audio' | 'file';
+  name: string;
+  mime: string;
+  size?: number;
+  w?: number;
+  h?: number;
+  /** An mxc:// address, for a file sent in the clear. */
+  url?: string;
+  encrypted?: EncryptedFile;
 };
 
 export type MatrixRoom = {
@@ -96,15 +113,27 @@ export type MatrixState = {
 };
 
 // The homeserver's answer to one request.
-export type MatrixAnswer = { status: number; json: Json };
-export type MatrixRequest = { method: 'GET' | 'POST' | 'PUT'; url: string; body?: unknown; token?: string };
+export type MatrixAnswer = { status: number; json: Json; bytes?: Uint8Array };
+export type MatrixRequest = {
+  method: 'GET' | 'POST' | 'PUT';
+  url: string;
+  body?: unknown;
+  token?: string;
+  /** Bytes to send as they are (an upload), of type `contentType`, instead of JSON. */
+  bytes?: Uint8Array;
+  contentType?: string;
+  /** Answer the bytes as they are (a download). */
+  raw?: boolean;
+};
 export type MatrixHttp = (request: MatrixRequest) => Promise<MatrixAnswer>;
 
 /** Plain HTTPS by default; the checks put a homeserver of their own here. */
-let http: MatrixHttp = async ({ method, url, body, token }) => {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+let http: MatrixHttp = async ({ method, url, body, token, bytes, contentType, raw }) => {
+  const headers: Record<string, string> = { 'Content-Type': bytes ? (contentType ?? 'application/octet-stream') : 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const sent = bytes ? (bytes as unknown as BodyInit) : body === undefined ? undefined : JSON.stringify(body);
+  const response = await fetch(url, { method, headers, body: sent });
+  if (raw && response.ok) return { status: response.status, json: {}, bytes: new Uint8Array(await response.arrayBuffer()) };
   const text = await response.text();
   let json: Json = {};
   try {
@@ -142,7 +171,17 @@ const enc = encodeURIComponent;
 const txn = () => `erevos${Date.now()}${toHex(randomBytes(6))}`;
 
 async function call(state: Pick<MatrixState, 'homeserver' | 'accessToken'> | { homeserver: string; accessToken?: string }, method: MatrixRequest['method'], path: string, body?: unknown): Promise<Json> {
-  const answer = await http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined });
+  return answered(await http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined }));
+}
+
+/** One request as it is (lib/matrix-media.ts), the homeserver's refusal thrown. */
+export async function request(state: Pick<MatrixState, 'homeserver' | 'accessToken'>, asked: Omit<MatrixRequest, 'token'>): Promise<MatrixAnswer> {
+  const answer = await http({ ...asked, token: state.accessToken });
+  answered(answer);
+  return answer;
+}
+
+function answered(answer: MatrixAnswer): Json {
   if (answer.status >= 200 && answer.status < 300) return answer.json;
   throw new MatrixError(answer.status, String(answer.json.errcode ?? 'M_UNKNOWN'), String(answer.json.error ?? t('The Matrix server refused the request.')));
 }
@@ -395,17 +434,52 @@ function takeInvite(state: MatrixState, id: string, data: Json): void {
 /** What a timeline event shows as, or null for one that shows nothing. */
 async function messageOf(state: MatrixState, roomId: string, event: Json): Promise<MatrixMessage | null> {
   const base = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
-  if (event.type === 'm.room.message') return { ...base, text: bodyOf(event.content as Json) };
+  if (event.type === 'm.room.message') return { ...base, ...shownOf(event.content as Json) };
   if (event.type !== 'm.room.encrypted') return null;
   const content = (event.content as Json) ?? {};
   if (content.algorithm !== MEGOLM) return null;
   const locked = { sessionId: String(content.session_id), ciphertext: String(content.ciphertext), senderKey: String(content.sender_key ?? '') };
   const opened = await openMegolm(state, roomId, base.id, locked);
-  return opened ? { ...base, text: bodyOf(opened) } : { ...base, text: '', locked };
+  return opened ? { ...base, ...shownOf(opened) } : { ...base, text: '', locked };
 }
 
 function bodyOf(content: Json | undefined): string {
   return typeof content?.body === 'string' ? content.body : '';
+}
+
+const KINDS: Record<string, MatrixFile['kind']> = { 'm.image': 'image', 'm.video': 'video', 'm.audio': 'audio', 'm.file': 'file' };
+
+function isEncryptedFile(value: unknown): value is EncryptedFile {
+  const v = value as Partial<EncryptedFile> | null;
+  return (
+    typeof v?.url === 'string' &&
+    v.url.startsWith('mxc://') &&
+    v.key?.alg === 'A256CTR' &&
+    typeof v.key.k === 'string' &&
+    typeof v.iv === 'string' &&
+    typeof v.hashes?.sha256 === 'string'
+  );
+}
+
+/** What a message's content shows: its words, and its file when it carries one. */
+function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'> {
+  const kind = KINDS[String(content?.msgtype)];
+  if (!content || !kind) return { text: bodyOf(content) };
+  const info = (content.info as Json | undefined) ?? {};
+  const encrypted = isEncryptedFile(content.file) ? content.file : undefined;
+  const url = typeof content.url === 'string' && content.url.startsWith('mxc://') ? content.url : undefined;
+  if (!encrypted && !url) return { text: bodyOf(content) };
+  const name = String(content.filename ?? content.body ?? 'file').slice(0, 200);
+  const number = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : undefined);
+  const file: MatrixFile = { kind, name, mime: typeof info.mimetype === 'string' ? info.mimetype : 'application/octet-stream' };
+  if (number(info.size) !== undefined) file.size = number(info.size);
+  if (number(info.w) !== undefined) file.w = number(info.w);
+  if (number(info.h) !== undefined) file.h = number(info.h);
+  if (encrypted) file.encrypted = encrypted;
+  else file.url = url;
+  // A caption, when the words are not only the file's name.
+  const text = content.filename && content.body !== content.filename ? bodyOf(content) : '';
+  return { text, file };
 }
 
 /** The content of a room message under the room's Megolm keys, or null without the key. */
@@ -470,7 +544,7 @@ async function retryLocked(state: MatrixState, roomId: string, sessionId: string
     if (message.locked?.sessionId !== sessionId) continue;
     const content = await openMegolm(state, roomId, message.id, message.locked);
     if (!content) continue;
-    message.text = bodyOf(content);
+    Object.assign(message, shownOf(content));
     delete message.locked;
     opened = true;
   }
@@ -588,12 +662,16 @@ async function shareRoomKey(state: MatrixState, roomId: string, outbound: Outbou
 }
 
 /** Sends `text` to a room, encrypted when the room is. Answers the message as it now shows. */
-export async function sendText(state: MatrixState, roomId: string, text: string): Promise<MatrixMessage> {
+export function sendText(state: MatrixState, roomId: string, text: string): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text });
+}
+
+/** Sends a message's content to a room, encrypted when the room is. */
+export async function sendContent(state: MatrixState, roomId: string, content: Json): Promise<MatrixMessage> {
   const room = roomOf(state, roomId);
   const id = txn();
-  const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), text, state: 'sending' };
+  const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), ...shownOf(content), state: 'sending' };
   room.messages.push(message);
-  const content = { msgtype: 'm.text', body: text };
   try {
     let sent: Json;
     if (room.encrypted) {

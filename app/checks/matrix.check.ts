@@ -15,6 +15,7 @@ import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
+import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 // A core built before Matrix has no `matrix` call: built again, it has.
@@ -71,8 +72,21 @@ class Homeserver {
     this.log.push({ seq: this.next(), room: found.room, event: { ...found.event, event_id: `$replay${++this.made}`, unsigned: undefined } });
   }
 
-  answer(request: MatrixRequest): { status: number; json: Json } {
+  /** Uploaded files, by their mxc:// address. */
+  media = new Map<string, Uint8Array>();
+
+  answer(request: MatrixRequest): { status: number; json: Json; bytes?: Uint8Array } {
     const url = new URL(request.url);
+    if (url.pathname === '/_matrix/media/v3/upload') {
+      const address = `mxc://example.org/m${++this.made}`;
+      this.media.set(address, request.bytes!.slice());
+      return { status: 200, json: { content_uri: address } };
+    }
+    const download = url.pathname.match(/^\/_matrix\/client\/v1\/media\/download\/([^/]+)\/([^/]+)$/);
+    if (download) {
+      const bytes = this.media.get(`mxc://${decodeURIComponent(download[1])}/${decodeURIComponent(download[2])}`);
+      return bytes ? { status: 200, json: {}, bytes } : { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+    }
     const path = url.pathname.replace('/_matrix/client/v3', '');
     this.asked.push(`${request.method} ${path}`);
     const body = (request.body ?? {}) as Json;
@@ -309,4 +323,51 @@ test('two people chat encrypted, and a device that comes later reads only from t
   // Bob's first device reads it too, with the key it already had.
   await sync(bob, 0);
   assert.equal(bob.rooms[room.id].messages.at(-1)!.text, 'και στη νέα σου συσκευή');
+});
+
+test('a photo goes encrypted, comes back whole, and a changed one is refused', { skip: !coreReady }, async () => {
+  let alice = kept(await signIn(HS, '@alice:example.org', PASSWORD));
+  let bob = kept(await signIn(HS, 'bob', PASSWORD));
+  const room = await startChat(alice, '@bob:example.org');
+  alice = kept(alice);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  await sync(bob, 0);
+  bob = kept(bob);
+  await sync(alice, 0);
+
+  const photo = new TextEncoder().encode('JPEG of the sea at Kalamata '.repeat(40));
+  await sendFile(alice, room.id, { name: 'sea.jpg', mime: 'image/jpeg', bytes: photo, w: 400, h: 300 });
+  alice = kept(alice);
+  // The homeserver keeps only ciphertext, and its name tells nothing.
+  const stored = [...server.media.values()].at(-1)!;
+  assert.equal(stored.length, photo.length);
+  assert.ok(!new TextDecoder().decode(stored).includes('Kalamata'));
+  assert.ok(!JSON.stringify(server.log).includes('sea.jpg'));
+
+  await sync(bob, 0);
+  bob = kept(bob);
+  const message = bob.rooms[room.id].messages.at(-1)!;
+  assert.equal(message.file?.kind, 'image');
+  assert.equal(message.file?.name, 'sea.jpg');
+  assert.deepEqual([message.file?.w, message.file?.h], [400, 300]);
+  assert.deepEqual(await fetchFile(bob, message.file!), photo);
+
+  // One byte changed on the server: the hash no longer matches.
+  stored[0] ^= 1;
+  await assert.rejects(fetchFile(bob, message.file!), ChangedFileError);
+});
+
+test('Matrix files: encrypted as other apps read them, too large ones refused', { skip: !coreReady }, async () => {
+  const bytes = new Uint8Array(1000).map((_, i) => i % 251);
+  const { data, file } = encryptFile(bytes);
+  assert.equal(file.v, 'v2');
+  assert.match(file.key.k, /^[A-Za-z0-9_-]{43}$/);
+  assert.match(file.iv, /^[A-Za-z0-9+/]{22}$/);
+  // The counter's lower half starts at zero.
+  assert.ok(Buffer.from(file.iv + '==', 'base64').subarray(8).every((b) => b === 0));
+  assert.deepEqual(decryptFile(data, file), bytes);
+  const alice = kept(await signIn(HS, '@alice:example.org', PASSWORD));
+  await assert.rejects(sendFile(alice, '!none:example.org', { name: 'big', mime: 'application/zip', bytes: new Uint8Array(MATRIX_MOST + 1) }), MatrixFileTooLargeError);
+  assert.equal(mimeOfName('Report.PDF'), 'application/pdf');
 });

@@ -14,9 +14,11 @@ import {
   startChat,
   syncApply,
   syncFetch,
+  type MatrixFile,
   type MatrixRoom,
   type MatrixState,
 } from './matrix';
+import { fetchFile, sendFile, type OutgoingFile } from './matrix-media';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -170,6 +172,7 @@ export function stopMatrix(): void {
   if (!live) return;
   live.stopped = true;
   live = null;
+  fetched.clear();
   told();
 }
 
@@ -234,4 +237,34 @@ export function matrixRead(roomId: string): Promise<void> {
   const it = need();
   if (!it.state.rooms[roomId]?.unread) return Promise.resolve();
   return changeAccount(it, () => markRead(it.state, roomId));
+}
+
+/** Sends a photo or file to a room. */
+export function matrixSendFile(roomId: string, file: OutgoingFile): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await sendFile(it.state, roomId, file);
+  });
+}
+
+// Files fetched while Erevos runs, by their address, so a photo scrolled past is not fetched again:
+// the newest few, up to FETCHED_MOST bytes in all. Never written to the phone.
+const FETCHED_MOST = 40 * 1024 * 1024;
+const fetched = new Map<string, Uint8Array>();
+
+/** A message's file, fetched from the homeserver and opened, or kept from before. */
+export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
+  const it = need();
+  const where = file.encrypted?.url ?? file.url ?? '';
+  const kept = fetched.get(where);
+  if (kept) return kept;
+  const bytes = await fetchFile(it.state, file);
+  fetched.set(where, bytes);
+  let total = [...fetched.values()].reduce((sum, b) => sum + b.length, 0);
+  for (const [key, b] of fetched) {
+    if (total <= FETCHED_MOST || key === where) continue;
+    fetched.delete(key);
+    total -= b.length;
+  }
+  return bytes;
 }

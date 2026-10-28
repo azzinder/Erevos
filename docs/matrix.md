@@ -28,13 +28,20 @@ What stays private is what is written.
   has none; syncing rooms, members, invites and messages; sending text, giving the room's Megolm
   key first to every member device that lacks it; starting a chat with one person (encrypted,
   listed in `m.direct`), joining, leaving, marking read, signing out.
+- `app/lib/matrix-media.ts`: photos and files. In an encrypted room each is encrypted on the phone
+  with a key of its own (AES-256-CTR, the counter's lower half at zero) and its SHA-256 taken, the
+  key and hash going inside the Megolm-encrypted message; what comes back is checked against the
+  hash before it is opened. Uploads to `/_matrix/media/v3/upload`; downloads signed in
+  (`/_matrix/client/v1/media/download`, Matrix 1.11), or the older way for older servers. Up to
+  50 MB. A photo is fetched only when tapped, and kept in memory while Erevos runs (40 MB at most).
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
 - `app/app/matrix.tsx` (Settings → Relay and networks → Matrix: sign in, chats, invites, new chat,
   sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
-  played in the check, with the real core.
+  played in the check, with the real core; a photo there and back, held by the server only as
+  ciphertext, and refused once a byte of it is changed.
 
 ## Checks it makes
 
@@ -47,10 +54,10 @@ What stays private is what is written.
 
 ## Not yet
 
-- A row on the home screen with the unread count.
-- Photos, files and voice messages (encrypted attachments), reactions, replies, edits.
+- Voice messages, video thumbnails, reactions, replies, edits.
 - Checking someone's devices by emoji or QR (SAS, `vodozemac::sas`), and trust shown per device.
 - Key backup and secret storage, so this device cannot read what came before it signed in, and an
   account that already has cross-signing keys does not sign this device.
 - Going through Tor, and notifications while Erevos is closed.
-- XMPP, the next network after Matrix.
+- Calls (Element Call, MatrixRTC), after XMPP's.
+- XMPP, the next network after Matrix, then chats with other Nostr apps (NIP-17).

@@ -88,7 +88,9 @@ On main, not released yet:
   own Olm and Megolm through vodozemac. Erevos talks to the Matrix server itself, with no bridge in between, and sets
   up cross-signing for an account that has none. These chats are not anonymous, and say so: the Matrix server sees
   who talks with whom, and when. The sign-in is kept sealed in that space only, not in its hidden chats nor in
-  backups yet. Photos, files, calls and checking devices by emoji are still to come.
+  backups yet. Photos and files go too, up to 50 MB, encrypted on the phone before upload as Matrix does it
+  (AES-256-CTR, checked by SHA-256 on the way back), so Element and others open them; a photo you get is fetched only
+  when you tap **Show photo**. Voice messages, calls and checking devices by emoji are still to come.
 - **Matrix on the home screen**: once you sign in to Matrix, a **Matrix** row under Chat with myself shows its chats'
   latest message, or invite, and how many are not read; tapped, it opens the Matrix chats. The space's Matrix account
   syncs while the space is open.

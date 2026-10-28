@@ -21,6 +21,11 @@ export async function saveFile(ref: FileRef): Promise<string | null> {
   return save(ref.name, ref.mime, bytes);
 }
 
+/** Saves bytes as a file named `name` (a Matrix chat's file, lib/matrix-media.ts). */
+export function saveBytes(name: string, mime: string, bytes: Uint8Array): Promise<string | null> {
+  return save(name, mime, bytes);
+}
+
 export function saveText(name: string, text: string): Promise<string | null> {
   return save(name, 'text/plain', utf8Encode(text));
 }

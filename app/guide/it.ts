@@ -1455,8 +1455,10 @@ sta nel mezzo.
   su altri server, lo vedono anche quei server.
 - **Messaggi di prima:** un messaggio inviato prima che Erevos accedesse, o uno la cui chiave non è ancora arrivata,
   appare bloccato.
-- **Non ancora:** foto, file, messaggi vocali, chiamate, e la verifica dei dispositivi di qualcuno con le emoji. Per
-  ora solo testo.
+- **Foto e file:** **Foto** e **File** li inviano, fino a 50 MB, cifrati sul telefono prima di andare al server
+  Matrix, che così tiene solo ciò che non può leggere. Una foto ricevuta si scarica solo toccando **Mostra foto**;
+  **Salva** tiene qualsiasi file sul telefono.
+- **Non ancora:** messaggi vocali, chiamate, e la verifica dei dispositivi di qualcuno con le emoji.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server Matrix non può. Così le chat Matrix restano a
 parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.

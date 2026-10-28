@@ -33,4 +33,9 @@ export const matrix: Record<string, string> = {
   "The Matrix server says the name or the password is wrong.": "Matrix server kaže da je ime ili lozinka pogrešna.",
   "The Matrix server signed this device out. Sign in again.": "Matrix server je odjavio ovaj uređaj. Prijavite se ponovo.",
   "There is no Matrix account in this space.": "U ovom prostoru nema Matrix računa.",
+  "Show photo": "Prikaži fotografiju",
+  "Fetching…": "Preuzimanje…",
+  "Files on Matrix can be 50 MB at most.": "Datoteke na Matrixu mogu imati najviše 50 MB.",
+  "This file was changed on the way, so it is not shown.": "Ova datoteka je izmijenjena usput, pa se ne prikazuje.",
+  "The file could not be fetched.": "Datoteku nije bilo moguće preuzeti.",
 };

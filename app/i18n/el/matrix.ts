@@ -33,4 +33,9 @@ export const matrix: Record<string, string> = {
   "The Matrix server says the name or the password is wrong.": "Ο server του Matrix λέει ότι το όνομα ή ο κωδικός είναι λάθος.",
   "The Matrix server signed this device out. Sign in again.": "Ο server του Matrix αποσύνδεσε αυτή τη συσκευή. Συνδέσου ξανά.",
   "There is no Matrix account in this space.": "Δεν υπάρχει λογαριασμός Matrix σε αυτόν τον χώρο.",
+  "Show photo": "Εμφάνιση φωτογραφίας",
+  "Fetching…": "Λήψη…",
+  "Files on Matrix can be 50 MB at most.": "Τα αρχεία στο Matrix μπορούν να είναι έως 50 MB.",
+  "This file was changed on the way, so it is not shown.": "Αυτό το αρχείο άλλαξε στη διαδρομή, οπότε δεν εμφανίζεται.",
+  "The file could not be fetched.": "Δεν ήταν δυνατή η λήψη του αρχείου.",
 };

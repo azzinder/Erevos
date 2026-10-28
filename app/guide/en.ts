@@ -1326,7 +1326,10 @@ between.
 - **Not anonymous:** the Matrix server sees your account, who talks with whom, when, and from where. In a chat with
   people on other servers, those servers see it too.
 - **Messages from before:** a message sent before Erevos signed in, or one whose key has not come yet, shows as locked.
-- **Not yet:** photos, files, voice messages, calls, and checking someone's devices by emoji. Text only, for now.
+- **Photos and files:** **Photo** and **File** send them, up to 50 MB, encrypted on the phone before they go to the
+  Matrix server, so it keeps only what it cannot read. A photo you get is fetched only when you tap **Show photo**;
+  **Save** keeps any file on the phone.
+- **Not yet:** voice messages, calls, and checking someone's devices by emoji.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.

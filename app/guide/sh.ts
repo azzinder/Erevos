@@ -1394,7 +1394,10 @@ između.
   drugim serverima, vide to i ti serveri.
 - **Poruke od prije:** poruka poslana prije nego što se Erevos prijavio, ili ona čiji ključ još nije stigao, prikazuje
   se zaključana.
-- **Još ne:** fotografije, datoteke, glasovne poruke, pozivi, i provjera nečijih uređaja emojijima. Zasad samo tekst.
+- **Fotografije i datoteke:** **Fotografija** i **Datoteka** ih šalju, do 50 MB, šifrovane na telefonu prije nego što
+  odu na Matrix server, koji tako čuva samo ono što ne može pročitati. Primljena fotografija preuzima se tek kad
+  dodirnete **Prikaži fotografiju**; **Sačuvaj** čuva bilo koju datoteku na telefonu.
+- **Još ne:** glasovne poruke, pozivi, i provjera nečijih uređaja emojijima.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.

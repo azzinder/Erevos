@@ -1434,8 +1434,10 @@ ningún puente se pone en medio.
   personas de otros servidores, esos servidores también lo ven.
 - **Mensajes de antes:** un mensaje enviado antes de que Erevos iniciara sesión, o uno cuya clave aún no llegó, sale
   bloqueado.
-- **Aún no:** fotos, archivos, mensajes de voz, llamadas y comprobar los dispositivos de alguien con emojis. Solo
-  texto, por ahora.
+- **Fotos y archivos:** **Foto** y **Archivo** los envían, hasta 50 MB, cifrados en el teléfono antes de ir al servidor
+  de Matrix, que así guarda solo lo que no puede leer. Una foto recibida se descarga solo al tocar **Mostrar foto**;
+  **Guardar** deja cualquier archivo en el teléfono.
+- **Aún no:** mensajes de voz, llamadas y comprobar los dispositivos de alguien con emojis.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los
 chats de Matrix van aparte y marcados, para las personas a las que solo llegarías por Matrix.
