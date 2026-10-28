@@ -97,6 +97,14 @@ export interface Core {
    *  url, headers}`; answers the status in 2 bytes, big-endian, then the body. Missing in a build
    *  made before it. */
   torHttp?(head: string, body: Uint8Array): Promise<Uint8Array>;
+  /** An XMPP server's connection (lib/xmpp-net.ts), straight or through Tor: `head` is JSON,
+   *  `{host, port, domain, tls: 'direct' | 'starttls', tor}`; answers its handle. What the server
+   *  sent waits until asked for (`netRead`, the wait in milliseconds, 8 bytes big-endian), empty
+   *  when nothing came meanwhile. Missing in a build made before it. */
+  netOpen?(head: string): Promise<Uint8Array>;
+  netWrite?(id: Uint8Array, bytes: Uint8Array): Promise<Uint8Array>;
+  netRead?(id: Uint8Array, wait: Uint8Array): Promise<Uint8Array>;
+  netClose?(id: Uint8Array): Promise<Uint8Array>;
   torTextSend?(id: Uint8Array, frame: string): Promise<Uint8Array>;
   torTextNext?(id: Uint8Array, wait: Uint8Array): Promise<string>;
   torTextClose?(id: Uint8Array): Promise<Uint8Array>;
@@ -251,6 +259,18 @@ export function matrixCore(): (request: Uint8Array) => Promise<Uint8Array> {
   const it = need();
   if (!it.matrix) throw new Error(t('This build of Erevos has no Matrix.'));
   return it.matrix.bind(it);
+}
+
+/** Whether this build has connections of its own to XMPP servers (lib/xmpp-net.ts). */
+export function canNet(): boolean {
+  return typeof core?.netOpen === 'function';
+}
+
+/** The core's XMPP connections, or an error saying this build has none. */
+export function net(): Required<Pick<Core, 'netOpen' | 'netWrite' | 'netRead' | 'netClose'>> {
+  const it = need();
+  if (!it.netOpen || !it.netWrite || !it.netRead || !it.netClose) throw new Error(t('This build of Erevos has no XMPP.'));
+  return { netOpen: it.netOpen.bind(it), netWrite: it.netWrite.bind(it), netRead: it.netRead.bind(it), netClose: it.netClose.bind(it) };
 }
 
 /** Whether this build can encrypt for XMPP accounts (lib/xmpp-omemo.ts). */

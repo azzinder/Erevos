@@ -379,6 +379,38 @@ pub mod tor {
         Ok(Vec::new())
     }
 
+    /// An XMPP server's connection, straight or through Tor: `head` is JSON, `{"host", "port",
+    /// "domain", "tls": "direct" or "starttls", "tor": true or false}`. Its handle.
+    pub fn net_open(head: &[u8]) -> Result<Vec<u8>> {
+        let head: serde_json::Value = serde_json::from_slice(head).map_err(|e| e.to_string())?;
+        let field = |name: &str| head.get(name).and_then(serde_json::Value::as_str).ok_or_else(|| format!("no {name}"));
+        let port = head.get("port").and_then(serde_json::Value::as_u64).and_then(|p| u16::try_from(p).ok()).ok_or("no port")?;
+        let tls = match field("tls")? {
+            "direct" => erevos_tor::Tls::Direct,
+            "starttls" => erevos_tor::Tls::StartTls,
+            other => return Err(format!("no TLS called {other}")),
+        };
+        let tor = head.get("tor").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        Ok(erevos_tor::stream_open(field("host")?, port, field("domain")?, tls, tor)?.to_be_bytes().to_vec())
+    }
+
+    pub fn net_write(id: &[u8], bytes: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::stream_write(handle(id)?, bytes)?;
+        Ok(Vec::new())
+    }
+
+    /// What the server sent, waiting up to `wait` milliseconds (8 bytes, big-endian) for
+    /// something: empty when nothing came.
+    pub fn net_read(id: &[u8], wait: &[u8]) -> Result<Vec<u8>> {
+        let wait = u64::from_be_bytes(wait.try_into().map_err(|_| "a wait is 8 bytes".to_string())?);
+        Ok(erevos_tor::stream_read(handle(id)?, std::time::Duration::from_millis(wait.min(120_000)))?.unwrap_or_default())
+    }
+
+    pub fn net_close(id: &[u8]) -> Result<Vec<u8>> {
+        erevos_tor::stream_close(handle(id)?);
+        Ok(Vec::new())
+    }
+
     /// Tor's progress as JSON: {"text": ..., "ready": ...}.
     pub fn status() -> String {
         let (text, ready) = erevos_tor::status();

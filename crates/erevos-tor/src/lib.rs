@@ -16,6 +16,10 @@
 //! and the relay sends events whenever they come, so what it says waits in
 //! a queue of its own until [`text_next`] takes it.
 //!
+//! XMPP servers are reached on a plain TCP connection of their own ([`stream_open`]), straight or
+//! through Tor, in TLS from the start or after XMPP's STARTTLS: bytes both ways, what the server
+//! sends waiting in a queue until [`stream_read`] takes it.
+//!
 //! Where Tor is blocked it can go through bridges instead ([`Bridges`]): plain
 //! ones, or ones a pluggable transport hides (obfs4, Snowflake, WebTunnel,
 //! meek), which the lyrebird program the app carries speaks. With bridges, Tor
@@ -63,6 +67,7 @@ static SESSIONS: OnceLock<Mutex<HashMap<u64, Arc<tokio::sync::Mutex<Socket>>>>> 
 static TEXTS: OnceLock<Mutex<HashMap<u64, Arc<Text>>>> = OnceLock::new();
 static NOSTR_WAYS: OnceLock<Mutex<HashMap<String, IsolationToken>>> = OnceLock::new();
 static NAMED_WAYS: OnceLock<Mutex<HashMap<String, IsolationToken>>> = OnceLock::new();
+static STREAMS: OnceLock<Mutex<HashMap<u64, Arc<Stream>>>> = OnceLock::new();
 static NEXT: AtomicU64 = AtomicU64::new(1);
 
 fn runtime() -> Result<&'static Runtime> {
@@ -670,8 +675,259 @@ fn http_answer(raw: &[u8]) -> Result<(u16, Vec<u8>)> {
     }
 }
 
+/// An XMPP server's connection (app/lib/xmpp-net.ts): what is written goes on `writer`, and what
+/// the server sends waits in `chunks`, put there by `reader` as it comes, until it closes.
+struct Stream {
+    writer: tokio::sync::Mutex<tokio::io::WriteHalf<Box<dyn Io>>>,
+    chunks: tokio::sync::Mutex<tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>>,
+    reader: tokio::task::JoinHandle<()>,
+    /// Through Tor: the circuits it went on, by the name they are kept under.
+    way: Option<(String, IsolationToken)>,
+}
+
+fn streams() -> std::sync::MutexGuard<'static, HashMap<u64, Arc<Stream>>> {
+    STREAMS.get_or_init(|| Mutex::new(HashMap::new())).lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// How an XMPP connection gets its TLS.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Tls {
+    /// In TLS from the first byte (XEP-0368, `_xmpps-client`), with ALPN `xmpp-client`.
+    Direct,
+    /// In the clear until XMPP's STARTTLS (RFC 6120), then in TLS.
+    StartTls,
+}
+
+/// The most the server may say before TLS begins.
+const MOST_BEFORE_TLS: usize = 64 * 1024;
+
+/// TLS over `io` for the XMPP domain `domain`, whose name the certificate must carry (RFC 7590).
+async fn tls_for<S: AsyncRead + AsyncWrite + Unpin + Send + 'static>(io: S, domain: &str, alpn: bool) -> Result<Box<dyn Io>> {
+    let mut roots = RootCertStore::empty();
+    roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    let mut config = ClientConfig::builder().with_root_certificates(roots).with_no_client_auth();
+    if alpn {
+        config.alpn_protocols = vec![b"xmpp-client".to_vec()];
+    }
+    let name = ServerName::try_from(domain.to_string()).map_err(|e| e.to_string())?;
+    let tls = TlsConnector::from(Arc::new(config)).connect(name, io).await.map_err(|e| format!("TLS with {domain} failed: {e}"))?;
+    Ok(Box::new(tls))
+}
+
+/// XMPP's STARTTLS on a connection still in the clear: opens the stream, asks for TLS when the
+/// server offers it, and waits for its yes. The app opens the stream again once in TLS.
+async fn starttls<S: AsyncRead + AsyncWrite + Unpin>(io: &mut S, domain: &str) -> Result<()> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    async fn until(io: &mut (impl AsyncRead + Unpin), seen: &mut Vec<u8>, done: impl Fn(&str) -> bool) -> Result<String> {
+        let mut piece = [0u8; 4096];
+        loop {
+            let text = String::from_utf8_lossy(seen).to_string();
+            if done(&text) {
+                return Ok(text);
+            }
+            if seen.len() > MOST_BEFORE_TLS {
+                return Err("the XMPP server says too much before TLS".into());
+            }
+            let n = io.read(&mut piece).await.map_err(|e| e.to_string())?;
+            if n == 0 {
+                return Err("the XMPP server closed the connection".into());
+            }
+            seen.extend_from_slice(&piece[..n]);
+        }
+    }
+    let open = format!("<?xml version='1.0'?><stream:stream to='{domain}' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'>");
+    io.write_all(open.as_bytes()).await.map_err(|e| e.to_string())?;
+    io.flush().await.map_err(|e| e.to_string())?;
+    let mut seen = Vec::new();
+    let features = until(io, &mut seen, |t| t.contains("</stream:features>") || t.contains("<stream:features/>") || t.contains("</stream:stream>")).await?;
+    if !features.contains("urn:ietf:params:xml:ns:xmpp-tls") {
+        return Err("the XMPP server offers no TLS".into());
+    }
+    io.write_all(b"<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>").await.map_err(|e| e.to_string())?;
+    io.flush().await.map_err(|e| e.to_string())?;
+    let mut seen = Vec::new();
+    let answer = until(io, &mut seen, |t| t.contains("<proceed") || t.contains("<failure") || t.contains("</stream:stream>")).await?;
+    if answer.contains("<proceed") {
+        Ok(())
+    } else {
+        Err("the XMPP server refused TLS".into())
+    }
+}
+
+/// Opens a connection to the XMPP server `host`:`port` for the XMPP domain `domain`, in TLS as
+/// `tls` says, through Tor when `tor` (on circuits of the domain's own, new ones after a failure).
+/// Returns its handle for [`stream_write`], [`stream_read`] and [`stream_close`].
+pub fn stream_open(host: &str, port: u16, domain: &str, tls: Tls, tor: bool) -> Result<u64> {
+    if domain.is_empty() || domain.contains(['\'', '"', '<', '>', '&', ' ']) {
+        return Err(format!("not an XMPP domain: {domain}"));
+    }
+    let runtime = runtime()?;
+    let way = tor.then(|| {
+        let name = format!("xmpp {domain}");
+        let token = nostr_way(&name);
+        (name, token)
+    });
+    let tor_client = if tor { Some(client()?) } else { None };
+    let (host, domain_owned, way_inner) = (host.to_string(), domain.to_string(), way.as_ref().map(|w| w.1));
+    let opened = runtime.block_on(async move {
+        tokio::time::timeout(WAIT, async move {
+            let mut plain: Box<dyn Io> = match tor_client {
+                Some(tor) => {
+                    let mut prefs = StreamPrefs::new();
+                    if let Some(way) = way_inner {
+                        prefs.set_isolation(way);
+                    }
+                    let stream = tor.connect_with_prefs((host.as_str(), port), &prefs).await.map_err(|e| format!("cannot reach {host} through Tor: {e}"))?;
+                    Box::new(stream)
+                }
+                None => {
+                    let stream = tokio::net::TcpStream::connect((host.as_str(), port)).await.map_err(|e| format!("cannot reach {host}: {e}"))?;
+                    let _ = stream.set_nodelay(true);
+                    Box::new(stream)
+                }
+            };
+            match tls {
+                Tls::Direct => tls_for(plain, &domain_owned, true).await,
+                Tls::StartTls => {
+                    starttls(&mut plain, &domain_owned).await?;
+                    tls_for(plain, &domain_owned, false).await
+                }
+            }
+        })
+        .await
+        .map_err(|_| "the XMPP server took too long to answer".to_string())?
+    });
+    let io = match opened {
+        Ok(io) => io,
+        Err(e) => {
+            if let Some((name, token)) = &way {
+                nostr_way_failed(name, *token);
+            }
+            return Err(e);
+        }
+    };
+    let (mut read, write) = tokio::io::split(io);
+    let (sender, chunks) = tokio::sync::mpsc::unbounded_channel();
+    let reader = runtime.spawn(async move {
+        use tokio::io::AsyncReadExt;
+        let mut piece = vec![0u8; 16 * 1024];
+        loop {
+            match read.read(&mut piece).await {
+                Ok(0) | Err(_) => break,
+                Ok(n) => {
+                    if sender.send(piece[..n].to_vec()).is_err() {
+                        break;
+                    }
+                }
+            }
+        }
+    });
+    let stream = Stream { writer: tokio::sync::Mutex::new(write), chunks: tokio::sync::Mutex::new(chunks), reader, way };
+    let id = NEXT.fetch_add(1, Ordering::Relaxed);
+    streams().insert(id, Arc::new(stream));
+    Ok(id)
+}
+
+fn stream_of(id: u64) -> Result<Arc<Stream>> {
+    streams().get(&id).cloned().ok_or_else(|| "the connection to the XMPP server is closed".to_string())
+}
+
+fn stream_failed(id: u64, stream: &Stream) {
+    if let Some((name, token)) = &stream.way {
+        nostr_way_failed(name, *token);
+    }
+    stream_close(id);
+}
+
+/// Sends bytes on an XMPP server's connection.
+pub fn stream_write(id: u64, bytes: &[u8]) -> Result<()> {
+    let stream = stream_of(id)?;
+    let bytes = bytes.to_vec();
+    let inner = stream.clone();
+    let sent = runtime()?.block_on(async move {
+        use tokio::io::AsyncWriteExt;
+        let mut writer = inner.writer.lock().await;
+        tokio::time::timeout(WAIT, async {
+            writer.write_all(&bytes).await?;
+            writer.flush().await
+        })
+        .await
+        .map_err(|_| "the XMPP server did not take it in time".to_string())?
+        .map_err(|e| e.to_string())
+    });
+    if sent.is_err() {
+        stream_failed(id, &stream);
+    }
+    sent
+}
+
+/// What the server sent since, waiting up to `wait` for something: None when nothing came in
+/// that time. Once the server has closed the connection and all it said is taken, an error.
+pub fn stream_read(id: u64, wait: Duration) -> Result<Option<Vec<u8>>> {
+    let stream = stream_of(id)?;
+    let inner = stream.clone();
+    let next = runtime()?.block_on(async move {
+        let mut chunks = inner.chunks.lock().await;
+        match tokio::time::timeout(wait, chunks.recv()).await {
+            Err(_) => Ok(None),
+            Ok(None) => Err("the XMPP server closed the connection".to_string()),
+            Ok(Some(mut bytes)) => {
+                // What else came meanwhile goes too, in one answer.
+                while let Ok(more) = chunks.try_recv() {
+                    bytes.extend_from_slice(&more);
+                }
+                Ok(Some(bytes))
+            }
+        }
+    });
+    if next.is_err() {
+        stream_failed(id, &stream);
+    }
+    next
+}
+
+/// Closes an XMPP server's connection. Closing one already closed does nothing.
+pub fn stream_close(id: u64) {
+    let stream = streams().remove(&id);
+    if let (Some(stream), Ok(runtime)) = (stream, runtime()) {
+        stream.reader.abort();
+        runtime.spawn(async move {
+            use tokio::io::AsyncWriteExt;
+            let _ = stream.writer.lock().await.shutdown().await;
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn xmpp_starttls_waits_for_the_servers_yes() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+        runtime.block_on(async {
+            for (offers, answers, ok) in [(true, "<proceed xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>", true), (true, "<failure xmlns='urn:ietf:params:xml:ns:xmpp-tls'/>", false), (false, "", false)] {
+                let (mut ours, mut server) = tokio::io::duplex(4096);
+                let serve = tokio::spawn(async move {
+                    let mut piece = [0u8; 1024];
+                    let n = server.read(&mut piece).await.unwrap();
+                    assert!(String::from_utf8_lossy(&piece[..n]).contains("to='example.org'"));
+                    let tls = if offers { "<starttls xmlns='urn:ietf:params:xml:ns:xmpp-tls'><required/></starttls>" } else { "" };
+                    // The features come in two pieces, as a network may cut them.
+                    server.write_all(b"<?xml version='1.0'?><stream:stream from='example.org' id='1' version='1.0' xmlns='jabber:client' xmlns:stream='http://etherx.jabber.org/streams'><stream:features>").await.unwrap();
+                    server.write_all(format!("{tls}</stream:features>").as_bytes()).await.unwrap();
+                    if offers {
+                        let n = server.read(&mut piece).await.unwrap();
+                        assert!(String::from_utf8_lossy(&piece[..n]).contains("<starttls"));
+                        server.write_all(answers.as_bytes()).await.unwrap();
+                    }
+                    server
+                });
+                assert_eq!(super::starttls(&mut ours, "example.org").await.is_ok(), ok);
+                drop(serve.await.unwrap());
+            }
+        });
+    }
+
     use super::*;
 
     #[test]

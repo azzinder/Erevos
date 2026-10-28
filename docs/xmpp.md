@@ -26,6 +26,30 @@ is what is written, once OMEMO encrypts it.
   `signed_pre_key_new`, `pre_keys_new`, `session_start`, `encrypt`, `decrypt`, `sign`, `verify`,
   `file_encrypt`, `file_decrypt`).
 - `crates/erevos-ffi` passes it on as one call, `xmpp`, through JNI and WebAssembly.
+- `crates/erevos-tor` opens the connection to the server on Android (`net_open`, `net_write`,
+  `net_read`, `net_close` in the FFI): TLS straight away (XEP-0368, port 5223, ALPN
+  `xmpp-client`) or STARTTLS on port 5222, straight or through Tor with a circuit of its own per
+  server. The TLS is rustls with Mozilla's roots (webpki-roots), checked for the XMPP domain.
+- `app/lib/xmpp-net.ts` finds the server: the SRV records `_xmpps-client._tcp` and
+  `_xmpp-client._tcp` asked over DNS-over-HTTPS (through Tor when the space goes through Tor), and
+  the domain itself on 5222 when there are none. In the web app, where no socket can be opened,
+  it uses the server's WebSocket (RFC 7395), found in its `/.well-known/host-meta` (XEP-0156). A
+  server written on the sign-in screen (host, host:port, or a `wss://` address) is used as given.
+  With the Tor way Messages, a server Tor cannot reach is tried straight; with Everything, never.
+- `app/lib/xmpp-xml.ts` reads the stream in pieces cut anywhere; `app/lib/xmpp-sasl.ts` signs in
+  with SCRAM-SHA-256 or SCRAM-SHA-1 (RFC 5802, RFC 7677), which also proves the server knows the
+  password, or with PLAIN only inside TLS.
+- `app/lib/xmpp.ts` is the account: resource binding, the roster and presence subscriptions,
+  Message Carbons (XEP-0280) so other apps of the same account read along, the Message Archive
+  (XEP-0313, since the last message read, so nothing comes twice), delivery receipts (XEP-0184),
+  read marks (XEP-0333), OMEMO device lists and bundles in PEP (published open to anyone, as
+  OMEMO needs), entity capabilities (XEP-0115) with `+notify` for device lists, and answers to
+  pings and disco#info. A message goes to every device of the person and to the account's own
+  other devices; when the person has none with OMEMO, nothing is sent unless the chat chooses to
+  write without encryption. Used one-time pre-keys are replaced and published again.
+- `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open
+  (again after a pause that grows, a ping after 4 minutes of silence), and keeps it encrypted in
+  the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`).
 
 Our own code, not audited. It is checked against python-oldmemo (the OMEMO 0.3 of Gajim's and
 Slixmpp's library) both ways: a message python-oldmemo sent is one of the crate's tests, and
@@ -46,10 +70,18 @@ cargo build -p erevos-xmpp --example omemo-call
 - A message number read once does not open again; one more than 2000 ahead is refused.
 - A first message read again (from the archive) is read by the session it began, and does not
   use up another pre-key.
+- A carbon copy counts only when it comes from the account itself; anyone else's is dropped.
+- SCRAM asks for between 4096 and 1,000,000 rounds, and the server's own proof must be right.
+
+`app/checks/xmpp.check.ts` runs two accounts and a second device against a small server written
+for it: the stream in pieces, SCRAM's RFC examples, a wrong password, OMEMO both ways, carbons,
+receipts, read marks, the archive read once, and a person with no OMEMO. It was also run by hand
+against Prosody 0.12 over its WebSocket: sign-in, roster both ways, OMEMO
+both ways, receipts and the archive.
 
 ## Not yet
 
-- The connection to the server, the screens, and the account in the home screen's list.
+- The screens, and the account in the home screen's list.
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
 - Group chats (MUC), calls (Jingle), and files (HTTP upload, `aesgcm://` links; the crate already
   encrypts and opens them).

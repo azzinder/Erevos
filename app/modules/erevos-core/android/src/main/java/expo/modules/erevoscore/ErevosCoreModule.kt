@@ -126,6 +126,11 @@ class ErevosCoreModule : Module() {
     AsyncFunction("torTextSend") Coroutine { id: ByteArray, frame: String -> torIo { ErevosCoreNative.torTextSend(id, frame.toByteArray()) } }
     AsyncFunction("torTextNext") Coroutine { id: ByteArray, wait: ByteArray -> torIo { String(ErevosCoreNative.torTextNext(id, wait)) } }
     AsyncFunction("torTextClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.torTextClose(id) } }
+    // XMPP servers' connections, straight or through Tor (lib/xmpp-net.ts).
+    AsyncFunction("netOpen") Coroutine { head: String -> torIo { ErevosCoreNative.netOpen(head.toByteArray()) } }
+    AsyncFunction("netWrite") Coroutine { id: ByteArray, bytes: ByteArray -> torIo { ErevosCoreNative.netWrite(id, bytes) } }
+    AsyncFunction("netRead") Coroutine { id: ByteArray, wait: ByteArray -> torIo { ErevosCoreNative.netRead(id, wait) } }
+    AsyncFunction("netClose") Coroutine { id: ByteArray -> torIo { ErevosCoreNative.netClose(id) } }
 
     // Nostr for message text (crates/erevos-nostr).
     AsyncFunction("nostrSecret") { ErevosCoreNative.nostrSecret() }
@@ -223,6 +228,10 @@ internal object ErevosCoreNative {
   @JvmStatic external fun torTextSend(id: ByteArray, frame: ByteArray): ByteArray
   @JvmStatic external fun torTextNext(id: ByteArray, wait: ByteArray): ByteArray
   @JvmStatic external fun torTextClose(id: ByteArray): ByteArray
+  @JvmStatic external fun netOpen(head: ByteArray): ByteArray
+  @JvmStatic external fun netWrite(id: ByteArray, bytes: ByteArray): ByteArray
+  @JvmStatic external fun netRead(id: ByteArray, wait: ByteArray): ByteArray
+  @JvmStatic external fun netClose(id: ByteArray): ByteArray
   @JvmStatic external fun nostrSecret(): ByteArray
   @JvmStatic external fun nostrPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun nostrWrap(to: ByteArray, bytes: ByteArray, now: ByteArray): ByteArray
