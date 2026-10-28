@@ -139,6 +139,7 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', when: phone },
       { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', when: phone },
       { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix' },
+      { id: 'xmpp', title: mark('XMPP'), detail: mark('Chats with people on XMPP: encrypted, not anonymous'), href: '/xmpp' },
       { id: 'lora', title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', when: phone },
     ],
   },

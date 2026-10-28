@@ -78,6 +78,9 @@ abertas.
 - **As conversas do Matrix**, depois que você entra no Matrix, ficam na lista com as outras, as mais recentes
   primeiro, cada uma marcada **Matrix**, e um convite aparece no topo. O chip **Matrix** mostra só elas, e ali
   **Nova conversa** começa uma conversa no Matrix: veja [Matrix](#matrix).
+- **As conversas do XMPP**, depois que você entra no XMPP, ficam na lista do mesmo jeito, cada uma marcada **XMPP**, e
+  quem pede para adicionar você aparece no topo. O chip **XMPP** mostra só elas, e ali **Nova conversa** começa uma
+  conversa no XMPP: veja [XMPP](#xmpp).
 - **Nova conversa**, embaixo, abre as configurações do relay e a adição de um contato. **Lembrar-me**, o sino laranja
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
@@ -196,7 +199,7 @@ em grupos, como fazem as configurações do próprio celular. Nos outros idiomas
 | **Aparência** | **Estilo e cores** (acabamento, vidro, estilo, tema, cores e texto em áreas coloridas, com a prévia), **Papel de parede**, **Mensagens** (o formato dos balões), **Ícones do launcher** (Android) e **Widget** (Android). Veja [Aparência](#appearance). |
 | **Notificações** | **Em segundo plano** (Android): receber e tocar enquanto o Erevos está fechado, e o aviso de mensagens. **Notificações com o app fechado** (o app web): Web Push. **Número no ícone**: quantas mensagens não foram lidas, no ícone do Erevos. Veja [Num iPhone](#iphone). |
 | **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second) e [Conversas ocultas](#hidden). |
-| **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android) e **Matrix**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora) e [Matrix](#matrix). |
+| **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android), **Matrix** e **XMPP**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora), [Matrix](#matrix) e [XMPP](#xmpp). |
 | **Telefone e SMS** (Android) | **Telefone**, as configurações do app de telefone, as mesmas de **Telefone** → **Configurações**. **SMS**, em partes: **O Erevos como app de SMS**, **Descobrir o Erevos num número**, **Nomes dos seus contatos**, **Arquivadas, Spam e Lixeira**, **Filtro de spam**, **Números bloqueados**, **Desfazer envio de SMS**, **Dois chips** (só com dois chips) e **Novo SMS**. Veja [Telefone](#phone) e [SMS](#sms). |
 | **Dados e dispositivos** | **Backups**, **Dispositivos conectados** e **Conversas importadas**. Veja [Backups](#backup), [Dispositivos conectados](#devices) e [Conversas importadas](#import). |
 | **Para testes** | **Teste do relay** e **Teste de rádio** (Android). Veja [As telas de teste](#tests). |
@@ -1447,6 +1450,44 @@ fica no meio.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
 conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.
+
+## XMPP {#xmpp}
+
+Em **Configurações** → **Relay e redes** → **XMPP**, um espaço pode entrar numa conta XMPP, para conversar com pessoas
+que usam o Conversations, o Monal, o Gajim, o Dino ou outro app XMPP. O Erevos fala ele mesmo com o servidor XMPP, como
+esses apps: nenhuma ponte fica no meio.
+
+- **Entrar:** seu endereço XMPP, como name@example.org, e a senha dele. O Erevos acha o servidor pelo endereço;
+  **Servidor** só é preciso se ele não achar (um nome, nome:porta ou um endereço wss://). O Erevos vira um novo
+  dispositivo da conta. A sessão e as chaves do dispositivo ficam criptografadas só neste espaço, nunca nas conversas
+  ocultas dele, e ainda não nos backups.
+- **Conversas:** **Nova conversa** adiciona o endereço aos seus contatos, pede à pessoa que deixe você ver quando ela
+  está online, como fazem os outros apps XMPP, e abre a conversa. Quem pede para adicionar você aparece no topo da lista
+  e na tela do XMPP, com **Aceitar** e **Recusar**. Os contatos que a conta já tem estão em **Contatos**.
+- **Criptografia:** as mensagens são criptografadas com OMEMO (versão 0.3, a que o Conversations, o Monal, o Gajim e o
+  Dino falam), para cada um dos dispositivos da pessoa e para os outros dispositivos da sua conta, que leem junto. É
+  código próprio do Erevos, sem auditoria, conferido com outra biblioteca OMEMO. Se os apps deles não têm OMEMO, o
+  Erevos avisa e só escreve quando você escolhe **Escrever sem criptografia** para aquela conversa; **Criptografar de
+  novo** volta atrás.
+- **As chaves deles:** no fim da conversa estão as impressões digitais dos dispositivos. Compare-as com o que o app
+  deles mostra, por outro meio que não a conversa. Uma chave que mudou desde que foi vista pela primeira vez avisa. A
+  chave deste dispositivo está na tela do XMPP.
+- **Marcas:** uma marca ao enviar, duas quando o app deles recebeu, três quando leram, como nas conversas do próprio
+  Erevos, para apps que enviam essas marcas.
+- **Mensagens de antes:** o que chegou enquanto o Erevos estava fechado é buscado no arquivo do servidor ao conectar,
+  se o servidor guarda um. Uma mensagem enviada antes de este dispositivo entrar, ou que não era para ele, aparece
+  bloqueada.
+- **Não anônimo:** o servidor XMPP vê sua conta, seus contatos, quem fala com quem e quando, e, sem Tor, de onde. O
+  servidor da outra pessoa vê o mesmo das conversas dele com você.
+- **Pelo Tor:** no Android, o XMPP segue a escolha deste espaço em **Configurações** → **Relay e redes** → **Tor**: com
+  **Mensagens**, passa pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou quando falha; com
+  **Tudo**, só pelo Tor; com **Nada**, direto. A tela do XMPP diz por onde vai agora. Onde o Erevos não pode abrir uma
+  conexão própria (o app web, um computador), usa o WebSocket do servidor, direto, e um servidor sem ele não pode ser
+  alcançado.
+- **Ainda não:** fotos e arquivos, conversas em grupo, chamadas e OMEMO 2.
+
+**Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
+conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.
 
 ## SMS {#sms}
 

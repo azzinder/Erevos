@@ -77,6 +77,9 @@ dok ih njihov PIN drži otvorenima.
 - **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen
   **Matrix**, a pozivnica stoji na vrhu. Dugme **Matrix** pokazuje samo njih, i tamo **Novi razgovor** počinje
   Matrix razgovor: pogledajte [Matrix](#matrix).
+- **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži
+  da vas doda stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje XMPP razgovor:
+  pogledajte [XMPP](#xmpp).
 - **Novi razgovor**, na dnu, otvara postavke relaya i dodavanje kontakta. **Podsjeti me**, narandžasto zvono pored
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
@@ -196,7 +199,7 @@ nikad ne prenosi.
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second) i [Skriveni razgovori](#hidden). |
-| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android) i **Matrix**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora) i [Matrix](#matrix). |
+| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix** i **XMPP**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix) i [XMPP](#xmpp). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test relaya** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
@@ -1413,6 +1416,41 @@ između.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.
+
+## XMPP {#xmpp}
+
+U **Postavke** → **Relay i mreže** → **XMPP**, prostor se može prijaviti na XMPP račun, za razgovor s ljudima koji
+koriste Conversations, Monal, Gajim, Dino ili drugu XMPP aplikaciju. Erevos sam razgovara s XMPP serverom, kao te
+aplikacije: nikakav most nije između.
+
+- **Prijava:** vaša XMPP adresa, kao name@example.org, i njena lozinka. Erevos nalazi server iz adrese; **Server** treba
+  samo kad ga ne nađe (ime, ime:port ili wss:// adresa). Erevos postaje novi uređaj računa. Prijava i ključevi uređaja
+  čuvaju se šifrovani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima, i još ne u rezervnim kopijama.
+- **Razgovori:** **Novi razgovor** dodaje adresu u vaše kontakte, traži od osobe da vam dopusti da vidite kada je na
+  mreži, kao što rade druge XMPP aplikacije, i otvara razgovor. Ko traži da vas doda, stoji na vrhu liste i na XMPP
+  ekranu, s **Prihvati** i **Odbij**. Kontakti koje račun već ima su pod **Kontakti**.
+- **Šifrovanje:** poruke su šifrovane OMEMO-om (verzija 0.3, koju govore Conversations, Monal, Gajim i Dino), za svaki
+  njihov uređaj i za druge uređaje vašeg računa, koji čitaju zajedno. To je Erevosov vlastiti kod, nerevidiran,
+  provjeren prema drugoj OMEMO biblioteci. Ako njihove aplikacije nemaju OMEMO, Erevos to kaže i piše samo kad za taj
+  razgovor izaberete **Piši bez šifrovanja**; **Ponovo šifriraj** vraća nazad.
+- **Njihovi ključevi:** na dnu razgovora su otisci njihovih uređaja. Uporedite ih s onim što pokazuje njihova
+  aplikacija, na drugi način, a ne u razgovoru. Ključ koji se promijenio otkad je prvi put viđen to kaže. Ključ ovog
+  uređaja je na XMPP ekranu.
+- **Oznake:** jedna kvačica pri slanju, dvije kad ga njihova aplikacija ima, tri kad pročitaju, kao u Erevosovim
+  vlastitim razgovorima, za aplikacije koje šalju te oznake.
+- **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
+  je server čuva. Poruka poslana prije nego što se ovaj uređaj prijavio, ili nije bila za njega, prikazuje se
+  zaključana.
+- **Nije anonimno:** XMPP server vidi vaš račun, vaše kontakte, ko s kim razgovara i kada, i, bez Tora, odakle. Server
+  druge osobe vidi isto o svojim razgovorima s vama.
+- **Preko Tora:** na Androidu, XMPP slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**: s
+  **Poruke** ide preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; sa **Sve** samo preko
+  Tora; s **Ništa** direktno. XMPP ekran kaže kojim putem ide sada. Gdje Erevos ne može otvoriti vlastitu vezu (web
+  aplikacija, računar), koristi WebSocket servera, direktno, a server bez njega tamo nije dostupan.
+- **Još ne:** fotografije i datoteke, grupni razgovori, pozivi i OMEMO 2.
+
+**Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
+odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 
 ## SMS {#sms}
 

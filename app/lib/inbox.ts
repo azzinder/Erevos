@@ -11,6 +11,7 @@
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
 import type { MatrixState } from './matrix';
+import { bare, nameOf, type XmppState } from './xmpp';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
@@ -75,9 +76,9 @@ export type InboxRow = {
   locked?: boolean;
   /** Muted now (lock/chat-notify.ts): its messages make no sound and no notice. */
   muted?: boolean;
-  /** The network of a chat that is not Erevos's nor an SMS: a Matrix room, `matrix:` and its id in `identity`. */
-  network?: 'matrix';
-  /** A Matrix room we are only invited to. */
+  /** The network of a chat that is not Erevos's nor an SMS: a Matrix room (`matrix:` and its id in `identity`) or an XMPP person (`xmpp:` and their address). */
+  network?: 'matrix' | 'xmpp';
+  /** A Matrix room we are only invited to, or an XMPP person who asked to add us. */
   invited?: boolean;
 };
 
@@ -149,29 +150,30 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
   return shownLine(message?.text ?? '');
 }
 
-/** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or the Matrix ones. */
-export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix';
+/** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or one other network's. */
+export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix' | 'xmpp';
 
 /**
  * Whether a row shows in that part of the list. The SMS are the SMS conversations, and the chats
  * whose last message was an SMS; the Erevos chats are every contact's and every group's, whatever
  * came last, so a contact whose number's SMS came after stays among them; the Matrix chats are the
- * Matrix rooms.
+ * Matrix rooms, and the XMPP chats the XMPP people.
  */
 export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show: InboxShow): boolean {
   if (show === 'sms') return row.sms !== '' || row.lastSms;
   if (show === 'erevos') return row.sms === '' && !row.network;
-  if (show === 'matrix') return row.network === 'matrix';
+  if (show === 'matrix' || show === 'xmpp') return row.network === show;
   return true;
 }
 
 /** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's
- *  whenever the space is signed in to it, even with no room yet. */
-export function inboxParts(rows: InboxRow[], matrix: boolean): InboxShow[] {
+ *  and XMPP's whenever the space is signed in to them, even with no chat yet. */
+export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false): InboxShow[] {
   const parts: InboxShow[] = [];
   if (rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
   if (rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
   if (matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
+  if (xmpp || rows.some((row) => row.network === 'xmpp')) parts.push('xmpp');
   return parts;
 }
 
@@ -209,6 +211,56 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       ...(room.invitedBy ? { invited: true } : {}),
     };
   });
+}
+
+/** The marks of an XMPP message we sent: waiting while it goes (or failed), then one tick, two
+ *  once their app has it, three once it is read. */
+const XMPP_MARKS = { sending: -1, failed: -1, sent: 0, received: 1, read: 2 } as const;
+
+/** An XMPP account's chats as rows (lib/xmpp-store.ts), and its people who asked to add us, which
+ *  move to the top, at `now`, until they are accepted or declined. */
+export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
+  const asked = new Set(state.requests.map(bare));
+  const rows = Object.values(state.chats)
+    .filter((chat) => !asked.has(chat.jid))
+    .map((chat): InboxRow => {
+      const last = chat.messages[chat.messages.length - 1];
+      const mine = !!last?.mine;
+      return {
+        identity: `xmpp:${chat.jid}`,
+        name: nameOf(state, chat.jid),
+        last: !last ? '' : last.locked ? t('Locked message') : last.text,
+        mine,
+        mark: mine ? XMPP_MARKS[last.state ?? 'sent'] : 0,
+        at: last?.at ?? chat.lastAt,
+        unread: chat.unread,
+        timer: 0,
+        imported: false,
+        avatar: null,
+        sms: '',
+        lastSms: false,
+        network: 'xmpp',
+      };
+    });
+  for (const jid of asked) {
+    rows.push({
+      identity: `xmpp:${jid}`,
+      name: nameOf(state, jid),
+      last: t('Asks to add you'),
+      mine: false,
+      mark: 0,
+      at: now,
+      unread: 1,
+      timer: 0,
+      imported: false,
+      avatar: null,
+      sms: '',
+      lastSms: false,
+      network: 'xmpp',
+      invited: true,
+    });
+  }
+  return rows;
 }
 
 /** A row's name, or the start of the contact's key when it has none. */

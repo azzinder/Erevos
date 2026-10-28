@@ -46,6 +46,7 @@ import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
 import { runMatrix, stopMatrix } from '../lib/matrix-store';
+import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
@@ -573,6 +574,7 @@ function Receiver({ space }: { space: number }) {
         followAppShown(),
         watchCalls(),
         startMatrix(),
+        startXmpp(),
         startShellWatch(),
       ]),
     [space],
@@ -584,6 +586,12 @@ function Receiver({ space }: { space: number }) {
 function startMatrix(): () => void {
   runMatrix();
   return stopMatrix;
+}
+
+// The open space's XMPP account stays connected while the space stays open (lib/xmpp-store.ts).
+function startXmpp(): () => void {
+  runXmpp();
+  return stopXmpp;
 }
 
 // The space shows while Erevos does and the password screen is not in front of it.

@@ -24,8 +24,9 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, showsIn, shownName, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, showsIn, shownName, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
+import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -110,12 +111,12 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 // the phone once each time.
 const trashLooked = new Set<number>();
 
-// Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats or the
-// Matrix ones (lib/inbox.ts, showsIn), each with its chip once the list has two of them.
+// Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats, the
+// Matrix ones or the XMPP ones (lib/inbox.ts, showsIn), each with its chip once the list has two of them.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
-const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' ? show : 'all');
-const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix' };
+const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' ? show : 'all');
+const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP' };
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
 const DOOR_HOLD = 1000;
@@ -391,17 +392,27 @@ export default function Home() {
     }, [again]),
   );
 
-  // The Matrix rooms join the list while the space is signed in to Matrix (lib/matrix-store.ts).
+  // The Matrix rooms and the XMPP chats join the list while the space is signed in to them
+  // (lib/matrix-store.ts, lib/xmpp-store.ts).
   const [matrixTick, setMatrixTick] = useState(0);
   useEffect(() => onMatrixChange(() => setMatrixTick((n) => n + 1)), []);
+  const [xmppTick, setXmppTick] = useState(0);
+  useEffect(() => onXmppChange(() => setXmppTick((n) => n + 1)), []);
   const matrix = matrixNow().state;
-  const everyRow = useMemo(() => (rows && matrix ? mergeRows(rows, matrixInboxRows(matrix)) : rows), [rows, matrix, matrixTick]);
+  const xmpp = xmppNow().state;
+  const everyRow = useMemo(() => {
+    if (!rows) return rows;
+    let all = rows;
+    if (matrix) all = mergeRows(all, matrixInboxRows(matrix));
+    if (xmpp) all = mergeRows(all, xmppInboxRows(xmpp));
+    return all;
+  }, [rows, matrix, matrixTick, xmpp, xmppTick]);
   const shown = useMemo(() => {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
   // The choice shows once the list has two networks' chats, or while one of them is chosen.
-  const parts = inboxParts(everyRow ?? [], !!matrix);
+  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp);
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Names, once there are SMS conversations: they unlock the names of their numbers.
@@ -511,7 +522,7 @@ export default function Home() {
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix), on the rows too:
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
         <FlatList
@@ -538,6 +549,10 @@ export default function Home() {
             ) : show === 'matrix' ? (
               <Text tone="muted" style={styles.emptyText}>
                 {t('No Matrix chats yet.')}
+              </Text>
+            ) : show === 'xmpp' ? (
+              <Text tone="muted" style={styles.emptyText}>
+                {t('No XMPP chats yet.')}
               </Text>
             ) : (
               <View style={styles.empty}>
@@ -588,8 +603,8 @@ export default function Home() {
           ) : null}
         </Pressable>
         <Pressable
-          // On Matrix's part, a Matrix chat (app/matrix.tsx).
-          onPress={() => router.push(show === 'matrix' ? '/matrix' : '/chat?setup=1')}
+          // On Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one (app/xmpp.tsx).
+          onPress={() => router.push(show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : '/chat?setup=1')}
           onLongPress={() => setDoor(true)}
           delayLongPress={DOOR_HOLD}
           accessibilityRole="button"

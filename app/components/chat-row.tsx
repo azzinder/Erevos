@@ -37,9 +37,13 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
                 ? row.invited
                   ? '/matrix'
                   : `/matrix-chat?room=${encodeURIComponent(row.identity.slice('matrix:'.length))}`
-                : row.identity.startsWith('group:')
-                ? `/group?id=${row.identity.slice(6)}`
-                : `/chat?contact=${row.identity}`,
+                : row.network === 'xmpp'
+                  ? row.invited
+                    ? '/xmpp'
+                    : `/xmpp-chat?jid=${encodeURIComponent(row.identity.slice('xmpp:'.length))}`
+                  : row.identity.startsWith('group:')
+                    ? `/group?id=${row.identity.slice(6)}`
+                    : `/chat?contact=${row.identity}`,
           ))
       }
       accessibilityRole="button"
@@ -52,7 +56,7 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
       ) : row.sms || row.network ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
-            {row.sms ? 'SMS' : '[m]'}
+            {row.sms ? 'SMS' : row.network === 'xmpp' ? 'xmpp' : '[m]'}
           </Text>
         </View>
       ) : (
@@ -87,6 +91,10 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
             ) : row.network === 'matrix' ? (
               <Text variant="caption" color={colors.success}>
                 Matrix
+              </Text>
+            ) : row.network === 'xmpp' ? (
+              <Text variant="caption" color={colors.success}>
+                XMPP
               </Text>
             ) : null}
             {row.last && row.mine && !row.lastSms && !row.draft ? (

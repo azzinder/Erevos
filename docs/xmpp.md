@@ -79,9 +79,22 @@ receipts, read marks, the archive read once, and a person with no OMEMO. It was 
 against Prosody 0.12 over its WebSocket: sign-in, roster both ways, OMEMO
 both ways, receipts and the archive.
 
+## Screens
+
+- `app/xmpp.tsx`, under Settings → Relay and networks → XMPP: signing in (address, password, and a server
+  only when DNS does not find it), then the people who asked to add the account (Accept, Decline), a new chat
+  with an address, the chats, the contacts the account has without a chat, this device's OMEMO fingerprint, and
+  signing out. It says the chats are not anonymous, and on Android whether the connection goes through Tor.
+- `app/xmpp-chat.tsx`: the messages, with delivery and read marks, a locked message that could not be
+  opened here, and below the chat the fingerprints of the person's devices, with a note for a key that
+  changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
+  (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
+- The home list (`xmppInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'xmpp'` with `xmpp:` and
+  the address as its identity, in the XMPP chip beside the SMS, Erevos and Matrix ones; a person who asked to
+  add the account is a row at the top until answered. The chip shows once the space has an account.
+
 ## Not yet
 
-- The screens, and the account in the home screen's list.
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
-- Group chats (MUC), calls (Jingle), and files (HTTP upload, `aesgcm://` links; the crate already
+- Group chats (MUC), calls (Jingle), and photos and files (HTTP upload, `aesgcm://` links; the crate already
   encrypts and opens them).

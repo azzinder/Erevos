@@ -209,6 +209,11 @@ export async function websocketOf(domain: string): Promise<string | null> {
   }
 }
 
+/** Whether XMPP goes through Tor now, as the space's Tor way and Tor's state say. In the web app, which has no socket of its own, it never does. */
+export function xmppThroughTor(): boolean {
+  return canNet() && canTorHttp() && torFor(false);
+}
+
 /** Connects to `domain`'s XMPP service: the server given, or the ones its DNS names, one after the
  *  other. Answers the link, not yet opened. */
 export async function connectXmpp(domain: string, given?: XmppServer): Promise<XmppLink> {

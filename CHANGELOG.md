@@ -110,6 +110,18 @@ On main, not released yet:
   **Settings** → **Relay and networks** → **Tor**: with **Messages** through Tor once it is ready, and straight while
   it starts or when it fails; with **Everything** only through Tor; with **Nothing** straight. Each homeserver gets a
   Tor circuit of its own, apart from the relays'. The Matrix screen says which way it goes now.
+- **XMPP accounts in Erevos**: under **Settings** → **Relay and networks** → **XMPP**, a space signs in to an XMPP
+  account, as a new device, and chats with people who use Conversations, Monal, Gajim, Dino or another XMPP app. Erevos
+  talks to the XMPP server itself, with no bridge in between; the sign-in is SCRAM, which also proves the server knows
+  the password. Messages are encrypted with OMEMO 0.3, to each of the person's devices and to the account's other
+  devices, which read along; Erevos's own code, checked against python-oldmemo both ways, not audited. A person whose
+  apps have no OMEMO gets nothing unless you choose **Write without encryption** for that chat. The keys of their
+  devices are listed under the chat, and a key that changed says so. Delivery and read marks, what came while Erevos
+  was closed (from the server's archive), people who ask to add you (**Accept**, **Decline**), and the chats in the home
+  list under an **XMPP** chip of their own. These chats are not anonymous, and say so: the XMPP server sees who talks
+  with whom, and when. On Android the connection follows the space's choice under **Tor**, with a circuit of its own
+  per server; the web app and the computer connect through the server's WebSocket, straight. Text only for now: no photos
+  or files, groups, calls or OMEMO 2 yet.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

@@ -15,6 +15,7 @@ import { after, before, test } from 'node:test';
 
 import { fromBase64, utf8Decode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
+import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
 import {
   addXmppContact,
   isXmppId,
@@ -411,4 +412,36 @@ test('someone without OMEMO gets nothing, unless the chat chooses to write witho
   assert.deepEqual(old.state.chats[`ann@${DOMAIN}`].messages.map((m) => [m.text, m.encrypted]), [['hello in the clear', false]]);
   ann.connection.close();
   old.connection.close();
+});
+
+test('the chats and the people who asked to add us are rows of the home list, on XMPP\'s part', () => {
+  const state = {
+    jid: `me@${DOMAIN}`,
+    requests: [`new@${DOMAIN}`],
+    roster: { [`ann@${DOMAIN}`]: { jid: `ann@${DOMAIN}`, name: 'Ann', subscription: 'both' } },
+    chats: {
+      [`ann@${DOMAIN}`]: {
+        jid: `ann@${DOMAIN}`,
+        unread: 2,
+        lastAt: 200,
+        messages: [
+          { id: 'a', mine: false, text: 'hi', at: 100, encrypted: true },
+          { id: 'b', mine: true, text: 'there', at: 200, encrypted: true, state: 'read' },
+        ],
+      },
+      [`bob@${DOMAIN}`]: { jid: `bob@${DOMAIN}`, unread: 1, lastAt: 50, messages: [{ id: 'c', mine: false, text: 'x', at: 50, encrypted: true, locked: true }] },
+      [`new@${DOMAIN}`]: { jid: `new@${DOMAIN}`, unread: 0, lastAt: 0, messages: [] },
+    },
+  } as unknown as XmppState;
+  const rows = xmppInboxRows(state, 1000);
+  const by = Object.fromEntries(rows.map((row) => [row.identity, row]));
+  assert.equal(rows.length, 3);
+  assert.deepEqual([by[`xmpp:ann@${DOMAIN}`].name, by[`xmpp:ann@${DOMAIN}`].last, by[`xmpp:ann@${DOMAIN}`].mine, by[`xmpp:ann@${DOMAIN}`].mark, by[`xmpp:ann@${DOMAIN}`].unread], ['Ann', 'there', true, 2, 2]);
+  assert.deepEqual([by[`xmpp:bob@${DOMAIN}`].name, by[`xmpp:bob@${DOMAIN}`].last], ['bob', 'Locked message']);
+  // The person who asked to add us is one row, at the top until answered, and is not a chat.
+  assert.deepEqual([by[`xmpp:new@${DOMAIN}`].invited, by[`xmpp:new@${DOMAIN}`].at, by[`xmpp:new@${DOMAIN}`].unread], [true, 1000, 1]);
+  for (const row of rows) assert.deepEqual([showsIn(row, 'xmpp'), showsIn(row, 'erevos'), showsIn(row, 'matrix'), showsIn(row, 'sms'), showsIn(row, 'all')], [true, false, false, false, true]);
+  assert.deepEqual(inboxParts([], false, true), ['xmpp']);
+  assert.deepEqual(inboxParts(rows, false), ['xmpp']);
+  assert.deepEqual(inboxParts([], true, true), ['matrix', 'xmpp']);
 });
