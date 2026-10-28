@@ -81,6 +81,14 @@ On main, not released yet:
   about twice the screen's size, so a very big photo, such as one of 50 megapixels, opens as a small one does instead
   of being drawn whole. Erevos also turns with the phone while the phone's **Auto-rotate** is on; it was held upright.
 
+- **Matrix accounts in Erevos**: under **Settings** → **Relay and networks** → **Matrix**, a space signs in to a
+  Matrix account as a new device named Erevos, and chats with people who use Element or another Matrix app: invites
+  with **Join** and **Decline**, **New chat** with a Matrix ID, and text both ways, end-to-end encrypted with Matrix's
+  own Olm and Megolm through vodozemac. Erevos talks to the Matrix server itself, with no bridge in between, and sets
+  up cross-signing for an account that has none. These chats are not anonymous, and say so: the Matrix server sees
+  who talks with whom, and when. The sign-in is kept sealed in that space only, not in its hidden chats nor in
+  backups yet. Photos, files, calls and checking devices by emoji are still to come.
+
 ### Under the hood
 
 - **A chat locked with its own PIN stays locked**: a contact's Erevos starts a new conversation with the chat about

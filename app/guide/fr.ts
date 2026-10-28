@@ -206,7 +206,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android) : recevoir et sonner quand Erevos est fermé, et la notification des messages. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone). |
 | **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second) et [Discussions masquées](#hidden). |
-| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android) et **Radio LoRa** (Android). Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr) et [Par une radio LoRa](#lora). |
+| **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android) et **Matrix**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora) et [Matrix](#matrix). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Appareils associés](#devices) et [Discussions importées](#import). |
 | **Pour les tests** | **Test du relais** et **Test radio** (Android). Voir [Les écrans de test](#tests). |
@@ -1488,6 +1488,29 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
 
 **Pourquoi :** Nostr n’est que la porte d’entrée. Personne n’a besoin d’une invitation pour commencer, et dès que l’un
 de vous a un relais, celui-ci porte ce qui est trop gros pour Nostr.
+
+## Matrix {#matrix}
+
+Dans **Réglages** → **Relais et réseaux** → **Matrix**, un espace peut se connecter à un compte Matrix, pour discuter
+avec des personnes qui utilisent Element ou une autre app Matrix. Erevos parle lui-même au serveur Matrix, comme
+Element : aucun pont ne se met entre les deux.
+
+- **Se connecter :** ton identifiant Matrix, comme @nom:matrix.org, et son mot de passe. Erevos devient un nouvel
+  appareil du compte, nommé Erevos. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace
+  seulement, jamais dans ses discussions cachées, et pas encore dans les sauvegardes.
+- **Discussions :** **Nouvelle discussion** lance une discussion chiffrée avec un identifiant Matrix. Les invitations
+  s’affichent en premier, avec **Rejoindre** et **Refuser**.
+- **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
+  vodozemac). Une discussion non chiffrée le dit.
+- **Pas anonyme :** le serveur Matrix voit ton compte, qui parle avec qui, quand, et d’où. Dans une discussion avec
+  des personnes sur d’autres serveurs, ces serveurs le voient aussi.
+- **Messages d’avant :** un message envoyé avant qu’Erevos se connecte, ou dont la clé n’est pas encore arrivée,
+  s’affiche verrouillé.
+- **Pas encore :** photos, fichiers, messages vocaux, appels, et la vérification des appareils de quelqu’un par emoji.
+  Du texte seulement, pour l’instant.
+
+**Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
+discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.
 
 ## SMS {#sms}
 

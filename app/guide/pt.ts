@@ -193,7 +193,7 @@ em grupos, como fazem as configurações do próprio celular. Nos outros idiomas
 | **Aparência** | **Estilo e cores** (acabamento, vidro, estilo, tema, cores e texto em áreas coloridas, com a prévia), **Papel de parede**, **Mensagens** (o formato dos balões), **Ícones do launcher** (Android) e **Widget** (Android). Veja [Aparência](#appearance). |
 | **Notificações** | **Em segundo plano** (Android): receber e tocar enquanto o Erevos está fechado, e o aviso de mensagens. **Notificações com o app fechado** (o app web): Web Push. **Número no ícone**: quantas mensagens não foram lidas, no ícone do Erevos. Veja [Num iPhone](#iphone). |
 | **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second) e [Conversas ocultas](#hidden). |
-| **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android) e **Rádio LoRa** (Android). Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr) e [Por um rádio LoRa](#lora). |
+| **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android) e **Matrix**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora) e [Matrix](#matrix). |
 | **Telefone e SMS** (Android) | **Telefone**, as configurações do app de telefone, as mesmas de **Telefone** → **Configurações**. **SMS**, em partes: **O Erevos como app de SMS**, **Descobrir o Erevos num número**, **Nomes dos seus contatos**, **Arquivadas, Spam e Lixeira**, **Filtro de spam**, **Números bloqueados**, **Desfazer envio de SMS**, **Dois chips** (só com dois chips) e **Novo SMS**. Veja [Telefone](#phone) e [SMS](#sms). |
 | **Dados e dispositivos** | **Backups**, **Dispositivos conectados** e **Conversas importadas**. Veja [Backups](#backup), [Dispositivos conectados](#devices) e [Conversas importadas](#import). |
 | **Para testes** | **Teste do relay** e **Teste de rádio** (Android). Veja [As telas de teste](#tests). |
@@ -1407,6 +1407,29 @@ ele lê no Nostr, e isso basta para conversar.
 
 **Por quê:** o Nostr é só a porta de entrada. Ninguém precisa de convite para começar, e assim que um de vocês tem um
 relay, ele leva o que é grande demais para o Nostr.
+
+## Matrix {#matrix}
+
+Em **Configurações** → **Relay e redes** → **Matrix**, um espaço pode entrar numa conta Matrix, para conversar com pessoas
+que usam o Element ou outro app Matrix. O Erevos fala ele mesmo com o servidor Matrix, como o Element: nenhuma ponte
+fica no meio.
+
+- **Entrar:** seu ID Matrix, como @nome:matrix.org, e a senha dele. O Erevos vira um novo dispositivo da conta,
+  chamado Erevos. A sessão e as chaves do dispositivo ficam criptografadas só neste espaço, nunca nas conversas
+  ocultas dele, e ainda não nos backups.
+- **Conversas:** **Nova conversa** começa uma conversa criptografada com um ID Matrix. Os convites aparecem primeiro,
+  com **Entrar** e **Recusar**.
+- **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
+  Megolm, pelo vodozemac). Uma conversa sem criptografia avisa.
+- **Não anônimo:** o servidor Matrix vê sua conta, quem fala com quem, quando, e de onde. Numa conversa com pessoas de
+  outros servidores, esses servidores também veem.
+- **Mensagens de antes:** uma mensagem enviada antes de o Erevos entrar, ou cuja chave ainda não chegou, aparece
+  bloqueada.
+- **Ainda não:** fotos, arquivos, mensagens de voz, chamadas, e verificar os dispositivos de alguém por emoji. Só
+  texto, por enquanto.
+
+**Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
+conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.
 
 ## SMS {#sms}
 

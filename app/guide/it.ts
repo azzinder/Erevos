@@ -194,7 +194,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android) e **Widget** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second) e [Chat nascoste](#hidden). |
-| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android) e **Radio LoRa** (Android). Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr) e [Con una radio LoRa](#lora). |
+| **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android) e **Matrix**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora) e [Matrix](#matrix). |
 | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
 | **Dati e dispositivi** | **Backup**, **Dispositivi collegati** e **Chat importate**. Vedi [Backup](#backup), [Dispositivi collegati](#devices) e [Chat importate](#import). |
 | **Per i test** | **Test del relay** e **Test radio** (Android). Vedi [Le schermate di test](#tests). |
@@ -1434,6 +1434,29 @@ codice QR dicono dove legge su Nostr, e basta questo per parlare.
 
 **Perché:** Nostr è solo la porta d’ingresso. Nessuno ha bisogno di un invito per iniziare, e appena uno di voi ha un
 relay, questo trasporta quello che è troppo grande per Nostr.
+
+## Matrix {#matrix}
+
+In **Impostazioni** → **Relay e reti** → **Matrix**, uno spazio può accedere a un account Matrix, per chattare con
+persone che usano Element o un’altra app Matrix. Erevos parla da sé con il server Matrix, come Element: nessun ponte
+sta nel mezzo.
+
+- **Accesso:** il tuo ID Matrix, come @nome:matrix.org, e la sua password. Erevos diventa un nuovo dispositivo
+  dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati solo in questo spazio, mai nelle
+  sue chat nascoste, e non ancora nei backup.
+- **Chat:** **Nuova chat** avvia una chat cifrata con un ID Matrix. Gli inviti compaiono per primi, con **Partecipa** e
+  **Rifiuta**.
+- **Cifratura:** i messaggi sono cifrati end-to-end con la cifratura di Matrix stesso (Olm e Megolm, tramite
+  vodozemac). Una chat non cifrata lo dice.
+- **Non anonimo:** il server Matrix vede il tuo account, chi parla con chi, quando, e da dove. In una chat con persone
+  su altri server, lo vedono anche quei server.
+- **Messaggi di prima:** un messaggio inviato prima che Erevos accedesse, o uno la cui chiave non è ancora arrivata,
+  appare bloccato.
+- **Non ancora:** foto, file, messaggi vocali, chiamate, e la verifica dei dispositivi di qualcuno con le emoji. Per
+  ora solo testo.
+
+**Perché:** le chat di Erevos nascondono chi parla con chi; un server Matrix non può. Così le chat Matrix restano a
+parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.
 
 ## SMS {#sms}
 

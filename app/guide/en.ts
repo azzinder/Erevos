@@ -182,7 +182,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second) and [Hidden chats](#hidden). |
-| **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android) and **LoRa radio** (Android). See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr) and [Over a LoRa radio](#lora). |
+| **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android) and **Matrix**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora) and [Matrix](#matrix). |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Linked devices](#devices) and [Imported chats](#import). |
 | **For testing** | **Relay test** and **Radio test** (Android). See [The test screens](#tests). |
@@ -1307,6 +1307,26 @@ on Nostr, and that is enough to talk.
 
 **Why:** Nostr is only the way in. No one needs an invite to begin, and once one of you has a relay, it carries what
 is too big for Nostr.
+
+## Matrix {#matrix}
+
+Under **Settings** → **Relay and networks** → **Matrix**, a space can sign in to a Matrix account, to chat with people
+who use Element or another Matrix app. Erevos talks to the Matrix server itself, as Element does: no bridge sits in
+between.
+
+- **Signing in:** your Matrix ID, such as @name:matrix.org, and its password. Erevos becomes a new device of the
+  account, named Erevos. The sign-in and the device's keys are kept sealed in this space only, never in its hidden
+  chats, and not in backups yet.
+- **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
+- **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
+  A chat that is not encrypted says so.
+- **Not anonymous:** the Matrix server sees your account, who talks with whom, when, and from where. In a chat with
+  people on other servers, those servers see it too.
+- **Messages from before:** a message sent before Erevos signed in, or one whose key has not come yet, shows as locked.
+- **Not yet:** photos, files, voice messages, calls, and checking someone's devices by emoji. Text only, for now.
+
+**Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
+marked, for the people you would otherwise reach only on Matrix.
 
 ## SMS {#sms}
 

@@ -193,7 +193,7 @@ nikad ne prenosi.
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second) i [Skriveni razgovori](#hidden). |
-| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android) i **LoRa radio** (Android). Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr) i [Preko LoRa radija](#lora). |
+| **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android) i **Matrix**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora) i [Matrix](#matrix). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test relaya** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
@@ -1374,6 +1374,28 @@ Nostru, i to je dovoljno za razgovor.
 
 **Zašto:** Nostr je samo način ulaska. Nikome ne treba pozivnica da počne, a kad jedno od vas ima relay, on prenosi
 ono što je preveliko za Nostr.
+
+## Matrix {#matrix}
+
+U **Postavke** → **Relay i mreže** → **Matrix**, prostor se može prijaviti na Matrix račun, za razgovor s ljudima koji
+koriste Element ili drugu Matrix aplikaciju. Erevos sam razgovara s Matrix serverom, kao Element: nikakav most nije
+između.
+
+- **Prijava:** vaš Matrix ID, kao @ime:matrix.org, i njegova lozinka. Erevos postaje novi uređaj računa, nazvan
+  Erevos. Prijava i ključevi uređaja čuvaju se šifrovani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima,
+  i još ne u rezervnim kopijama.
+- **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
+  **Pridruži se** i **Odbij**.
+- **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
+  vodozemac). Razgovor koji nije šifrovan to kaže.
+- **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara, kada, i odakle. U razgovoru s ljudima na
+  drugim serverima, vide to i ti serveri.
+- **Poruke od prije:** poruka poslana prije nego što se Erevos prijavio, ili ona čiji ključ još nije stigao, prikazuje
+  se zaključana.
+- **Još ne:** fotografije, datoteke, glasovne poruke, pozivi, i provjera nečijih uređaja emojijima. Zasad samo tekst.
+
+**Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
+razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.
 
 ## SMS {#sms}
 

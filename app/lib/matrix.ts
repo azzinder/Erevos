@@ -35,6 +35,9 @@ export const KEEP_MESSAGES = 300;
 export const ROTATE_MESSAGES = 100;
 export const ROTATE_MS = 7 * 24 * 3600_000;
 
+/** How many read message indexes are kept against replays. */
+export const KEEP_SEEN = 5000;
+
 type Json = Record<string, unknown>;
 
 /** One message in a room, as Erevos shows it. */
@@ -263,13 +266,20 @@ export async function signOut(state: MatrixState): Promise<void> {
 
 const FILTER = JSON.stringify({ room: { timeline: { limit: 50 }, state: { lazy_load_members: true } } });
 
+/** What one sync brought, before it is taken in (syncApply). */
+export type MatrixNews = Json;
+
 /**
- * One sync: waits on the homeserver up to `waitMs` for news, then takes in what came. Changes
- * `state`; answers whether anything a person would see changed.
+ * Asks the homeserver for what came since the last sync, waiting up to `waitMs` for news. Changes
+ * nothing: syncApply takes it in, so a send can go on while a sync waits.
  */
-export async function sync(state: MatrixState, waitMs = 30_000): Promise<boolean> {
+export async function syncFetch(state: Pick<MatrixState, 'homeserver' | 'accessToken' | 'since'>, waitMs = 30_000): Promise<MatrixNews> {
   const query = `?timeout=${waitMs}&filter=${enc(FILTER)}${state.since ? `&since=${enc(state.since)}` : ''}`;
-  const news = await call(state, 'GET', `/sync${query}`);
+  return call(state, 'GET', `/sync${query}`);
+}
+
+/** Takes in what one sync brought. Answers whether anything a person would see changed. */
+export async function syncApply(state: MatrixState, news: MatrixNews): Promise<boolean> {
   let seen = false;
   for (const event of ((news.to_device as Json | undefined)?.events as Json[] | undefined) ?? []) {
     if (await takeToDevice(state, event)) seen = true;
@@ -295,8 +305,16 @@ export async function sync(state: MatrixState, waitMs = 30_000): Promise<boolean
   const left = Number(counts?.signed_curve25519 ?? 0);
   const fallbackGone = Array.isArray(news.device_unused_fallback_key_types) && !(news.device_unused_fallback_key_types as string[]).includes('signed_curve25519');
   if (left < 25 || fallbackGone) await publishOneTimeKeys(state, 50 - left, fallbackGone);
+  // Only the latest indexes are needed against replays: older ones go, so the state stays small.
+  const seenKeys = Object.keys(state.seen);
+  if (seenKeys.length > KEEP_SEEN) for (const key of seenKeys.slice(0, seenKeys.length - KEEP_SEEN)) delete state.seen[key];
   state.since = String(news.next_batch);
   return seen;
+}
+
+/** One sync, fetched and taken in. */
+export async function sync(state: MatrixState, waitMs = 30_000): Promise<boolean> {
+  return syncApply(state, await syncFetch(state, waitMs));
 }
 
 function directRooms(news: Json): Set<string> | null {

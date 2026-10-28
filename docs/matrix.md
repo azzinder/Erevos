@@ -28,6 +28,11 @@ What stays private is what is written.
   has none; syncing rooms, members, invites and messages; sending text, giving the room's Megolm
   key first to every member device that lacks it; starting a chat with one person (encrypted,
   listed in `m.direct`), joining, leaving, marking read, signing out.
+- `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
+  that space only (not its hidden chats, not in backups yet), synced while the space is open; it
+  answers `matrixUnread()` and `onMatrixChange()` for the home screen.
+- `app/app/matrix.tsx` (Settings → Relay and networks → Matrix: sign in, chats, invites, new chat,
+  sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
   played in the check, with the real core.
 
@@ -42,7 +47,7 @@ What stays private is what is written.
 
 ## Not yet
 
-- Screens (account, list, chat), which the app thread adds next to the others.
+- A row on the home screen with the unread count.
 - Photos, files and voice messages (encrypted attachments), reactions, replies, edits.
 - Checking someone's devices by emoji or QR (SAS, `vodozemac::sas`), and trust shown per device.
 - Key backup and secret storage, so this device cannot read what came before it signed in, and an

@@ -138,6 +138,7 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
       { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', when: phone },
       { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', when: phone },
+      { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix' },
       { id: 'lora', title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', when: phone },
     ],
   },

@@ -207,7 +207,7 @@ nicht lesen kannst.
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone). |
 | **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second) und [Versteckte Chats](#hidden). |
-| **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android) und **LoRa-Funk** (Android). Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr) und [Über LoRa-Funk](#lora). |
+| **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android), **LoRa-Funk** (Android) und **Matrix**. Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr), [Über LoRa-Funk](#lora) und [Matrix](#matrix). |
 | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
 | **Daten und Geräte** | **Backups**, **Verknüpfte Geräte** und **Importierte Chats**. Siehe [Backups](#backup), [Verknüpfte Geräte](#devices) und [Importierte Chats](#import). |
 | **Zum Testen** | **Relay-Test** und **Funktest** (Android). Siehe [Die Testbildschirme](#tests). |
@@ -1521,6 +1521,29 @@ wo es auf Nostr liest, und das genügt, um zu reden.
 
 **Warum:** Nostr ist nur der Weg hinein. Niemand braucht eine Einladung, um anzufangen, und sobald einer von euch ein
 Relay hat, trägt es, was für Nostr zu groß ist.
+
+## Matrix {#matrix}
+
+Unter **Einstellungen** → **Relay und Netze** → **Matrix** kann sich ein Bereich bei einem Matrix-Konto anmelden, um mit
+Menschen zu chatten, die Element oder eine andere Matrix-App nutzen. Erevos spricht selbst mit dem Matrix-Server, wie
+Element: Keine Brücke sitzt dazwischen.
+
+- **Anmelden:** deine Matrix-ID, etwa @name:matrix.org, und ihr Passwort. Erevos wird ein neues Gerät des Kontos,
+  namens Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt nur in diesem Bereich, nie in seinen
+  versteckten Chats, und noch nicht in Sicherungen.
+- **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
+  **Beitreten** und **Ablehnen**.
+- **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
+  Megolm, über vodozemac). Ein nicht verschlüsselter Chat sagt es.
+- **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht, wann und von wo. In einem Chat mit
+  Menschen auf anderen Servern sehen es auch diese.
+- **Nachrichten von vorher:** Eine Nachricht von bevor Erevos sich anmeldete, oder eine, deren Schlüssel noch nicht
+  kam, erscheint gesperrt.
+- **Noch nicht:** Fotos, Dateien, Sprachnachrichten, Anrufe und das Prüfen der Geräte anderer per Emoji. Vorerst nur
+  Text.
+
+**Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
+Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.
 
 ## SMS {#sms}
 
