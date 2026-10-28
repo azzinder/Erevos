@@ -91,6 +91,7 @@ const ROBOT = { l: 39, r: 61, y: 40, m: 54, k: 0.85 };
 const DINO = { l: 38, r: 62, y: 38, m: 54 };
 const TUX = { l: 43.1, r: 54.2, y: 25.4, m: 33.5, k: 0.6 };
 const AIKI = { l: 42, r: 58, y: 28, m: 38, k: 0.75 };
+const TAKIS = { l: 42.5, r: 57.5, y: 40.5, m: 56.5, k: 0.7 };
 function moodMoves(kind: string, { l, r, y, m, k = 1 }: Spot, body: Move[] = [rock(6)]): Move[] {
   const c = (l + r) / 2;
   const of: Record<string, Move[]> = {
@@ -654,6 +655,31 @@ export const MOTIONS: Record<string, Motion> = {
   'aiki-sensei': { ms: 2400, moves: [{ part: 'upper', about: [50, 64], at: [0, 0.3, 0.6, 1], turn: [0, 0, 0, 0], y: [0, 2, 0, 0] }, rock(3, 'all', [50, 96])] },
   'aiki-ok': { ms: 1800, moves: [pop('badge', [78, 76]), bob(3)] },
   'aiki-heart': { ms: 2200, moves: [beat('heart', [50, 64], 1.25), bob(3)] },
+  // Takis.
+  'takis-hello': { ms: 2200, moves: [{ part: 'arm2', about: [67, 75], at: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1], turn: [0, -20, 10, -20, 10, -8, 0] }, rock(3, 'all', [50, 98])] },
+  'takis-smirk': { ms: 2200, moves: [{ part: 'all', about: [50, 98], at: [0, 0.3, 0.7, 1], turn: [0, -5, -5, 0] }, bob(2)] },
+  'takis-love': { ms: 2200, moves: moodMoves('love', TAKIS, [bob(3)]) },
+  'takis-laugh': { ms: 1800, moves: moodMoves('laugh', TAKIS) },
+  'takis-happy': { ms: 2000, moves: [rock(5, 'all', [50, 98]), flap('arm1', [33, 75], 12), flap('arm2', [67, 75], -12)] },
+  'takis-sad': { ms: 2600, moves: moodMoves('sad', TAKIS, [{ part: 'all', at: [0, 0.3, 0.7, 1], y: [0, 2, 2, 0] }]) },
+  'takis-angry': { ms: 1600, moves: moodMoves('angry', TAKIS) },
+  'takis-sleep': { ms: 3000, moves: moodMoves('sleep', TAKIS, [{ part: 'all', about: [50, 98], at: EVEN, sy: [1, 0.97, 1, 0.97, 1] }]) },
+  'takis-wow': { ms: 1600, moves: moodMoves('wow', TAKIS) },
+  'takis-wink': { ms: 1800, moves: moodMoves('wink', TAKIS, [rock(5, 'all', [50, 98])]) },
+  'takis-cool': { ms: 2000, moves: moodMoves('cool', TAKIS, [{ part: 'all', about: [50, 98], at: [0, 0.25, 0.75, 1], turn: [0, -6, -6, 0] }]) },
+  'takis-shy': { ms: 2200, moves: moodMoves('shy', TAKIS, [rock(4, 'all', [50, 98])]) },
+  'takis-cry': { ms: 2400, moves: moodMoves('cry', TAKIS, [{ part: 'all', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 1], y: [0, 2, 0, 2, 0, 2, 0] }]) },
+  'takis-kiss': { ms: 2400, moves: moodMoves('kiss', TAKIS, [rock(4, 'all', [50, 98])]) },
+  'takis-tongue': { ms: 2000, moves: moodMoves('tongue', TAKIS, [rock(4, 'all', [50, 98])]) },
+  'takis-dizzy': { ms: 2400, moves: moodMoves('dizzy', TAKIS, [twinkle('stars'), rock(6, 'all', [50, 98])]) },
+  'takis-think': { ms: 2600, moves: moodMoves('think', TAKIS, [{ part: 'all', about: [50, 98], at: [0, 0.3, 0.7, 1], turn: [0, 5, 5, 0] }]) },
+  'takis-party': { ms: 2200, moves: [{ part: 'all', at: [0, 0.15, 0.3, 0.45, 0.6, 1], y: [0, -6, 0, -4, 0, 0] }, rock(10, 'hat', [58, 10]), twinkle('tears')] },
+  'takis-heart': { ms: 2200, moves: [beat('heart', [50, 87], 1.25), bob(3)] },
+  'takis-coffee': { ms: 2600, moves: [rise('steam', 8), rock(3, 'all', [50, 98])] },
+  'takis-ok': { ms: 1800, moves: [pop('badge', [80, 84]), bob(3)] },
+  'takis-nervous': { ms: 2200, moves: [fall('sweat', 10, 0.1), { part: 'all', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 1], x: [0, -1.5, 1.5, -1.5, 1.5, 0, 0] }] },
+  'takis-busy': { ms: 2000, moves: [{ part: 'arm1', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 1], y: [0, -2, 0, -2, 0, -2, 0, 0] }, { part: 'arm2', at: [0, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 1], y: [0, -2, 0, -2, 0, -2, 0, 0] }] },
+  'takis-cold': { ms: 2400, moves: [{ part: 'all', at: [0, 0.08, 0.16, 0.24, 0.32, 0.4, 1], x: [0, -2, 2, -2, 2, 0, 0] }, fall('snow', 10, 0.1)] },
 };
 
 /** A sticker's motion, to play now: none for one that stays still, or while motion is to be reduced (or not known yet). */

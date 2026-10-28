@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- **A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods
+  that move, as Tux and the aikidoka do.
 - **Erevos's icon keeps the number of messages not read** (Android): the notice for messages went as soon as Erevos
   opened, and the launcher's number or dot on Erevos's icon with it, though messages were still not read. Now, leaving
   Erevos with messages not read in the open space's chats and groups, a notice without sound says how many, and counts

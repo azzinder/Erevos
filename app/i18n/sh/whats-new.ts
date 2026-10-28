@@ -292,4 +292,6 @@ export const whatsNew: Record<string, string> = {
     'Prvo potpisano izdanje za Android: šifrirani razgovori, pozivi, grupe, skriveni razgovori, rezervne kopije, uvozi i telefoni u blizini bez interneta.',
   "**Two new sticker sets of 24 moods**: **Tux**, the Linux penguin as he is drawn, and **Aikido**, an aikidoka in keikogi and a wide hakama, who also bows, sits in seiza and rolls.":
     "**Dva nova kompleta naljepnica s 24 raspoloženja**: **Tux**, Linuxov pingvin kakav je nacrtan, i **Aikido**, aikidoka u keikogiju i širokoj hakami, koji se i klanja, sjedi u seizi i kotrlja se.",
+  "**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move.":
+    "**Novi komplet naljepnica, Takis**: karikatura u tamnom odijelu i ljubičastoj kravati s točkicama, u 24 raspoloženja koja se miču.",
 };

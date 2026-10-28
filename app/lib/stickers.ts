@@ -29,6 +29,7 @@ export type StickerSet =
   | 'celebrations'
   | 'sports'
   | 'aikido'
+  | 'takis'
   | 'music'
   | 'transport'
   | 'plants'
@@ -56,6 +57,7 @@ export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'celebrations', label: mark('Celebrations'), moves: true },
   { set: 'sports', label: mark('Sports'), moves: true },
   { set: 'aikido', label: mark('Aikido'), moves: true },
+  { set: 'takis', label: mark('Takis'), moves: true },
   { set: 'music', label: mark('Music'), moves: true },
   { set: 'transport', label: mark('On the move'), moves: true },
   { set: 'plants', label: mark('Flowers and plants'), moves: true },
@@ -667,6 +669,32 @@ export const STICKERS: Sticker[] = [
     { name: 'aiki-sensei', label: mark('Wise sensei'), emoji: '🧓' },
     { name: 'aiki-ok', label: mark('Aikidoka saying OK'), emoji: '👍' },
     { name: 'aiki-heart', label: mark('Aikidoka with a heart'), emoji: '💙' },
+  ]),
+  ...inSet('takis', [
+    { name: 'takis-hello', label: mark('Takis saying hello'), emoji: '👋' },
+    { name: 'takis-smirk', label: mark('Smirking Takis'), emoji: '😏' },
+    { name: 'takis-love', label: mark('Takis in love'), emoji: '😍' },
+    { name: 'takis-laugh', label: mark('Laughing Takis'), emoji: '😂' },
+    { name: 'takis-happy', label: mark('Happy Takis'), emoji: '😊' },
+    { name: 'takis-sad', label: mark('Sad Takis'), emoji: '😢' },
+    { name: 'takis-angry', label: mark('Angry Takis'), emoji: '😠' },
+    { name: 'takis-sleep', label: mark('Sleeping Takis'), emoji: '😴' },
+    { name: 'takis-wow', label: mark('Surprised Takis'), emoji: '😮' },
+    { name: 'takis-wink', label: mark('Winking Takis'), emoji: '😉' },
+    { name: 'takis-cool', label: mark('Cool Takis'), emoji: '😎' },
+    { name: 'takis-shy', label: mark('Shy Takis'), emoji: '☺️' },
+    { name: 'takis-cry', label: mark('Crying Takis'), emoji: '😭' },
+    { name: 'takis-kiss', label: mark('Takis blowing a kiss'), emoji: '😘' },
+    { name: 'takis-tongue', label: mark('Takis sticking his tongue out'), emoji: '😛' },
+    { name: 'takis-dizzy', label: mark('Dizzy Takis'), emoji: '😵' },
+    { name: 'takis-think', label: mark('Thinking Takis'), emoji: '🤔' },
+    { name: 'takis-party', label: mark('Party Takis'), emoji: '🥳' },
+    { name: 'takis-heart', label: mark('Takis with a heart'), emoji: '💙' },
+    { name: 'takis-coffee', label: mark('Takis with coffee'), emoji: '☕' },
+    { name: 'takis-ok', label: mark('Takis saying OK'), emoji: '👍' },
+    { name: 'takis-nervous', label: mark('Nervous Takis'), emoji: '😅' },
+    { name: 'takis-busy', label: mark('Busy Takis'), emoji: '💻' },
+    { name: 'takis-cold', label: mark('Freezing Takis'), emoji: '🥶' },
   ]),
 ];
 

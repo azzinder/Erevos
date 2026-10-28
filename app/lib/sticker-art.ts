@@ -9,6 +9,7 @@
 
 import { TUX_BEAK as TUX_BEAK_SHAPE, TUX_BEAK_LINE, TUX_BELLY, TUX_BODY, TUX_BOX, TUX_EYES, TUX_FOOT2, TUX_FRONT, TUX_WING1, TUX_WING2, TUX_WING2_LOW, TUX_WING2_TIP } from './sticker-tux';
 import { AIKI_GI, AIKI_HAKAMA, AIKI_HAKAMA_SEATED, AIKI_SHOULDERS, aikiArm, aikiHead } from './sticker-aikido';
+import { TAKIS_BROWS, TAKIS_HEAD, TAKIS_NOSE, TAKIS_OWN_FACE, TAKIS_SHOULDERS, TAKIS_SUIT, takisArm } from './sticker-takis';
 
 /** Corners rounded the same, or each: top left, top right, bottom right, bottom left. */
 export type Corners = number | [number, number, number, number];
@@ -356,6 +357,25 @@ function aikidoka(face: Shape[], { arm1 = 10, arm2 = -10, hair = '#3B2A1A', seat
       ...cheeksAt(36, 64, 35, 7),
       ...face,
     ]),
+    ...front,
+  ];
+}
+
+// Takis (lib/sticker-takis.ts): a caricature in a dark suit. Each arm is a part turned at its shoulder by
+// `arm1` and `arm2`, in degrees, as the aikidoka's; `own` keeps his own eyes and sly smile, else a mood's
+// face goes on his, with his eyebrows unless `brows` is off (a mood with its own).
+const TAKIS = { l: 42.5, r: 57.5, y: 40.5, m: 56.5, k: 0.7 };
+const TAKIS_ARMS = [takisArm(0), takisArm(1)];
+function takis(face: Shape[], { own = false, brows = true, arm1 = 6, arm2 = -6, front = [] as Shape[] } = {}): Shape[] {
+  return [
+    aikiLayer(TAKIS_SUIT),
+    part('arm1', [tilt(arm1, TAKIS_SHOULDERS[0], [aikiLayer(TAKIS_ARMS[0])])]),
+    part('arm2', [tilt(arm2, TAKIS_SHOULDERS[1], [aikiLayer(TAKIS_ARMS[1])])]),
+    aikiLayer(TAKIS_HEAD),
+    ...(brows ? [aikiLayer(TAKIS_BROWS)] : []),
+    aikiLayer(TAKIS_NOSE),
+    ...(own ? [aikiLayer(TAKIS_OWN_FACE)] : []),
+    ...face,
     ...front,
   ];
 }
@@ -2509,6 +2529,32 @@ export const ART: Record<string, Shape[]> = {
   'aiki-sensei': aikidoka([...mood('happy', AIKI), tri(50, 50, 18, 22, '#E3E6EA', 180), bar(42, 41, 58, 41, 3, '#E3E6EA')], { hair: '#C9CED6' }),
   'aiki-ok': aikidoka(mood('smile', AIKI), { front: tick(78, 76) }),
   'aiki-heart': aikidoka(mood('happy', AIKI), { arm1: -40, arm2: 40, front: heldHeart(50, 60, 22) }),
+
+  // Takis.
+  'takis-hello': takis([], { own: true, arm2: -140 }),
+  'takis-smirk': takis([], { own: true }),
+  'takis-love': takis(mood('love', TAKIS)),
+  'takis-laugh': takis(mood('laugh', TAKIS)),
+  'takis-happy': takis(mood('happy', TAKIS)),
+  'takis-sad': takis(mood('sad', TAKIS)),
+  'takis-angry': takis(mood('angry', TAKIS), { brows: false }),
+  'takis-sleep': takis([...mood('sleep', TAKIS), ...zees(72, 4)]),
+  'takis-wow': takis(mood('wow', TAKIS), { arm1: 140, arm2: -140 }),
+  'takis-wink': takis(mood('wink', TAKIS)),
+  'takis-cool': takis(mood('cool', TAKIS)),
+  'takis-shy': takis(mood('shy', TAKIS), { arm1: -35, arm2: 35 }),
+  'takis-cry': takis(mood('cry', TAKIS)),
+  'takis-kiss': takis(mood('kiss', TAKIS)),
+  'takis-tongue': takis(mood('tongue', TAKIS)),
+  'takis-dizzy': takis([...mood('dizzy', TAKIS), ...dizzyStars(50, 12)], { brows: false }),
+  'takis-think': takis([...mood('think', TAKIS), ...thought(78, 14)], { arm2: 40 }),
+  'takis-party': [...takis(mood('laugh', TAKIS)), ...partyHat(58, 10, 0.75)],
+  'takis-heart': takis(mood('happy', TAKIS), { arm1: -40, arm2: 40, front: heldHeart(50, 84, 20) }),
+  'takis-coffee': takis(mood('happy', TAKIS), { arm2: 25, front: coffeeCup(64, 86) }),
+  'takis-ok': takis([], { own: true, front: tick(80, 84) }),
+  'takis-nervous': takis([...mood('smile', TAKIS), part('sweat', [box(66, 14, 7, 7, TEAR, [0, 3.5, 3.5, 3.5], { turn: 45 })])]),
+  'takis-busy': takis(mood('think', TAKIS), { arm1: -30, arm2: 30, front: [box(27, 80, 46, 16, '#9AA3AD', 3), box(21, 95, 58, 4, '#6B7480', 2), dot(50, 88, 7, '#F4F1EA')] }),
+  'takis-cold': takis([...mood('wow', TAKIS), box(38, 63, 24, 7, RED, 3.5), box(53, 66, 7, 18, RED, 3), part('snow', [dot(12, 14, 5, '#DCEBFA'), dot(88, 22, 4, '#DCEBFA'), dot(14, 50, 4, '#DCEBFA'), dot(86, 56, 5, '#DCEBFA')])]),
 };
 
 /** The names of a sticker's parts, which its motion moves. */

@@ -291,4 +291,6 @@ export const whatsNew: Record<string, string> = {
     'A primeira versão assinada para Android: conversas criptografadas, chamadas, grupos, conversas ocultas, backups, importações e celulares por perto sem internet.',
   "**Two new sticker sets of 24 moods**: **Tux**, the Linux penguin as he is drawn, and **Aikido**, an aikidoka in keikogi and a wide hakama, who also bows, sits in seiza and rolls.":
     "**Dois novos conjuntos de figurinhas com 24 humores**: **Tux**, o pinguim do Linux tal como é desenhado, e **Aikido**, um aikidoka de keikogi e hakama largo, que também se curva, senta-se em seiza e rola.",
+  "**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move.":
+    "**Um novo conjunto de figurinhas, Takis**: uma caricatura de terno escuro e gravata roxa de bolinhas, em 24 humores que se mexem.",
 };

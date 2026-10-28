@@ -69,7 +69,7 @@ t('every built-in sticker has a name of its own, never reused, its words, an emo
   ]);
   assert.deepEqual(SETS.map(({ set }) => set), [
     'moons', 'ghosts', 'dogs', 'animals', 'dinosaurs', 'monsters', 'robots', 'tux', 'love', 'sea', 'weather',
-    'space', 'greece', 'celebrations', 'sports', 'aikido', 'music', 'transport', 'plants', 'words', 'treats', 'fruit',
+    'space', 'greece', 'celebrations', 'sports', 'aikido', 'takis', 'music', 'transport', 'plants', 'words', 'treats', 'fruit',
   ]);
   for (const set of [...SETS.map(({ set }) => set), ...GONE_SETS]) assert.equal(stickersIn(set).length, 24, set);
   // A set gone from the picker is in it no more, but what was sent of it still shows.

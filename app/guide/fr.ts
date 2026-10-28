@@ -956,7 +956,7 @@ le réglage éphémère de la discussion.
 Sous **+**, il y a plus à envoyer que des photos et des fichiers (le smiley au bout du champ de message ouvre aussi les
 stickers) :
 
-- **Sticker :** l’un des 528 stickers intégrés à Erevos, en 22 séries de 24 (parmi elles **Lunes**, **Chiens**,
+- **Sticker :** l’un des 552 stickers intégrés à Erevos, en 23 séries de 24 (parmi elles **Lunes**, **Chiens**,
   **Grèce**, **Mots** et **Gourmandises**), dessinés par chaque téléphone lui-même : seul son nom voyage, si bien que
   rien n’est jamais téléchargé. Un Erevos d’avant cela affiche son emoji à la place. Tous sauf les mots et les
   gourmandises bougent un peu pendant quelques secondes quand ils arrivent et quand on appuie dessus, puis se reposent ;
