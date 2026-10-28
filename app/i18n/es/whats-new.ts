@@ -74,6 +74,8 @@ export const whatsNew: Record<string, string> = {
     '**Los avisos de Erevos muestran su marca** en la barra de estado.',
   '**Notices are asked for with receiving off too**, when Say a message came is on.':
     '**Los avisos se piden también con la recepción desactivada**, cuando Avisar de mensajes nuevos está activado.',
+  "**Photos open on the whole screen**: tap one to see it edge to edge, zoom in with two fingers or a double tap, and tap again to hide or show what is around it; big photos open as small ones do. Erevos also turns with the phone while the phone's Auto-rotate is on. See [Chat through a relay](#relay).":
+    '**Las fotos se abren en toda la pantalla**: toca una para verla de borde a borde, amplíala con dos dedos o con un doble toque, y vuelve a tocar para ocultar o mostrar lo que hay alrededor; las fotos grandes se abren como las pequeñas. Erevos también gira con el teléfono mientras Girar automáticamente está activado en él. Ver [Chatear a través de un relay](#relay).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un mensaje enviado mientras se abre un chat lo espera**, marcado Enviando…, y se va en cuanto el chat está abierto, sin decir que Erevos no puede cifrar.',

@@ -74,6 +74,8 @@ export const whatsNew: Record<string, string> = {
     '**Obavijesti Erevosa prikazuju njegov znak** u statusnoj traci.',
   '**Notices are asked for with receiving off too**, when Say a message came is on.':
     '**Dozvola za obavijesti traži se i s isključenim primanjem**, kad je uključeno „Javi da je stigla poruka“.',
+  "**Photos open on the whole screen**: tap one to see it edge to edge, zoom in with two fingers or a double tap, and tap again to hide or show what is around it; big photos open as small ones do. Erevos also turns with the phone while the phone's Auto-rotate is on. See [Chat through a relay](#relay).":
+    '**Fotografije se otvaraju preko cijelog ekrana**: dodirnite jednu da je vidite od ivice do ivice, uvećajte je s dva prsta ili dvostrukim dodirom, i dodirnite ponovo da sakrijete ili prikažete ono što je oko nje; velike fotografije se otvaraju kao male. Erevos se i okreće s telefonom dok je na telefonu uključeno Automatsko okretanje. Vidi [Razgovor preko relaya](#relay).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

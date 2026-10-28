@@ -75,6 +75,11 @@ On main, not released yet:
   has no Tor ready, that a message sent without sound sounds in the notices of closed chats, that a message request
   sounds as any message does, that a computer shows no notices, and that after **Force stop** no notice says Erevos
   stopped.
+- **Photos open on the whole screen**: a photo tapped in a chat, a group, Chat with myself, an imported chat or
+  **Media, links and files** now shows edge to edge on black, turned as the phone is. Two fingers or a double tap zoom
+  in, one finger moves it while zoomed, and a tap hides or shows its size and **Save** and **Close**. It is decoded at
+  about twice the screen's size, so a very big photo, such as one of 50 megapixels, opens as a small one does instead
+  of being drawn whole. Erevos also turns with the phone while the phone's **Auto-rotate** is on; it was held upright.
 
 ### Under the hood
 

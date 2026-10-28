@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Image, Modal, Platform, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { Animated, Image, Modal, PanResponder, Platform, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize, readFile } from '../lib/attachments';
 import { t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
+import { doubleTapped, fitted, kept, moved, pinched, WHOLE, type Look, type Point, type Size } from '../lib/photo-zoom';
 import { CAN_CHOOSE_FOLDER } from '../lib/save-file';
 import type { FileRef } from '../lock/attachment-files';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -112,40 +113,179 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
   return photos;
 }
 
-/** A photo (`uri` once it is read) or file shown on its own, with how big it is, to save; none while `file` is null. */
+/**
+ * A photo (`uri` once it is read) or file shown on its own, with how big it is, to save; none while
+ * `file` is null. A photo fills the screen, turned as the phone is: two fingers or a double tap zoom
+ * in, one finger moves it while zoomed, and a tap hides or shows what is around it.
+ */
 export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
+  const [bars, setBars] = useState(true);
+  const id = file?.id;
+  useEffect(() => setBars(true), [id]);
+  const tools = (
+    <Row wrap style={styles.viewerTools}>
+      <Button title={t('Save')} compact onPress={() => onSave(false)} />
+      {CAN_CHOOSE_FOLDER ? <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => onSave(true)} /> : null}
+      <Button title={t('Close')} kind="secondary" compact onPress={onClose} />
+    </Row>
+  );
   return (
-    <Modal visible={file !== null} animationType="fade" onRequestClose={onClose}>
-      <View style={[styles.viewer, { paddingTop: Math.max(space.lg, insets.top), paddingBottom: Math.max(space.lg, insets.bottom) }]}>
-        {file?.kind === 'photo' ? (
-          <>
-            {uri ? (
-              <Image source={{ uri }} style={styles.viewerPhoto} resizeMode="contain" accessibilityLabel={t('Photo')} />
-            ) : (
-              <Text tone="muted" style={styles.viewerPhoto}>
-                {t('Opening the photo…')}
-              </Text>
-            )}
-            <Text tone="muted">
-              {file.w && file.h ? `${file.w} × ${file.h} · ` : ''}
-              {fileSize(file.size)}
+    <Modal
+      visible={file !== null}
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+      supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}
+    >
+      {file?.kind === 'photo' ? (
+        <View style={styles.photoViewer}>
+          {uri ? (
+            <ZoomPhoto key={file.id} uri={uri} w={file.w} h={file.h} onTap={() => setBars((shown) => !shown)} />
+          ) : (
+            <Text color="#FFFFFF" style={styles.opening}>
+              {t('Opening the photo…')}
             </Text>
-          </>
-        ) : file ? (
+          )}
+          {bars ? (
+            <View
+              style={[
+                styles.photoBar,
+                { paddingBottom: Math.max(space.lg, insets.bottom), paddingLeft: Math.max(space.lg, insets.left), paddingRight: Math.max(space.lg, insets.right) },
+              ]}
+            >
+              <Text tone="muted" style={styles.centered}>
+                {file.w && file.h ? `${file.w} × ${file.h} · ` : ''}
+                {fileSize(file.size)}
+              </Text>
+              {tools}
+            </View>
+          ) : null}
+        </View>
+      ) : file ? (
+        <View style={[styles.viewer, { paddingTop: Math.max(space.lg, insets.top), paddingBottom: Math.max(space.lg, insets.bottom) }]}>
           <View style={styles.viewerFile}>
             <Text variant="heading">{file.name}</Text>
             <Text tone="muted">{fileSize(file.size)}</Text>
           </View>
-        ) : null}
-        <Row wrap style={styles.viewerTools}>
-          <Button title={t('Save')} compact onPress={() => onSave(false)} />
-          {CAN_CHOOSE_FOLDER ? <Button title={t('Save in another folder')} kind="secondary" compact onPress={() => onSave(true)} /> : null}
-          <Button title={t('Close')} kind="secondary" compact onPress={onClose} />
-        </Row>
-      </View>
+          {tools}
+        </View>
+      ) : null}
     </Modal>
+  );
+}
+
+/** Two taps this close together, in ms, are a double tap. */
+const DOUBLE_TAP = 260;
+/** A touch that moves less than this, in points, is a tap. */
+const TAP_SLOP = 10;
+
+// Decoded at twice the size it shows (Android's resizeMultiplier, which React Native's types leave out).
+const ZOOM_ROOM = { resizeMultiplier: 2 } as object;
+
+type Touch = { pageX: number; pageY: number };
+
+// A photo filling where it is, zoomed and moved by touch (lib/photo-zoom.ts). It is decoded no
+// bigger than about twice the screen (resizeMethod "resize"), so a 50-megapixel photo opens as a
+// small one does, still sharp when zoomed in.
+function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: number; onTap: () => void }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const x = useRef(new Animated.Value(0)).current;
+  const y = useRef(new Animated.Value(0)).current;
+  const look = useRef<Look>(WHOLE);
+  const room = useRef<Size>({ width: 0, height: 0 });
+  // Where the touches began, as the look was then: begun again when a finger comes or goes.
+  const start = useRef<{ look: Look; touches: Touch[]; moved: boolean } | null>(null);
+  const lastTap = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const tapRef = useRef(onTap);
+  tapRef.current = onTap;
+  useEffect(() => () => clearTimeout(tapTimer.current ?? undefined), []);
+
+  const show = (next: Look, animated = false) => {
+    const now = kept(next, room.current, fitted(room.current, w, h));
+    look.current = now;
+    if (!animated) {
+      scale.setValue(now.scale);
+      x.setValue(now.x);
+      y.setValue(now.y);
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(scale, { toValue: now.scale, duration: 180, useNativeDriver: true }),
+      Animated.timing(x, { toValue: now.x, duration: 180, useNativeDriver: true }),
+      Animated.timing(y, { toValue: now.y, duration: 180, useNativeDriver: true }),
+    ]).start();
+  };
+  // A touch, or the middle of two, from the middle of where the photo is (it fills the screen).
+  const middleOf = (touches: Touch[]): Point => ({
+    x: touches.reduce((all, touch) => all + touch.pageX, 0) / touches.length - room.current.width / 2,
+    y: touches.reduce((all, touch) => all + touch.pageY, 0) / touches.length - room.current.height / 2,
+  });
+  const apart = (touches: Touch[]) => (touches.length < 2 ? 0 : Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY));
+  const copy = (touches: readonly Touch[]) => touches.slice(0, 2).map(({ pageX, pageY }) => ({ pageX, pageY }));
+
+  const responder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => look.current.scale <= 1,
+      onPanResponderGrant: (event) => {
+        start.current = { look: look.current, touches: copy(event.nativeEvent.touches), moved: false };
+      },
+      onPanResponderMove: (event) => {
+        const began = start.current;
+        const touches = copy(event.nativeEvent.touches);
+        if (!began || touches.length === 0) return;
+        if (touches.length !== began.touches.length) {
+          start.current = { look: look.current, touches, moved: true };
+          return;
+        }
+        const from = middleOf(began.touches);
+        const to = middleOf(touches);
+        if (!began.moved && touches.length === 1 && Math.hypot(to.x - from.x, to.y - from.y) < TAP_SLOP) return;
+        began.moved = true;
+        show(touches.length === 2 && apart(began.touches) > 0 ? pinched(began.look, from, to, apart(began.touches), apart(touches)) : moved(began.look, from, to));
+      },
+      onPanResponderRelease: (event) => {
+        const began = start.current;
+        start.current = null;
+        if (look.current.scale < 1.05 && look.current.scale !== 1) show(WHOLE, true);
+        if (!began || began.moved) return;
+        const now = Date.now();
+        if (now - lastTap.current >= DOUBLE_TAP) {
+          lastTap.current = now;
+          tapTimer.current = setTimeout(() => tapRef.current(), DOUBLE_TAP);
+          return;
+        }
+        lastTap.current = 0;
+        clearTimeout(tapTimer.current ?? undefined);
+        show(doubleTapped(look.current, middleOf([event.nativeEvent])), true);
+      },
+    }),
+  ).current;
+
+  return (
+    <View
+      style={StyleSheet.absoluteFill}
+      onLayout={(event) => {
+        // Turned: whole again.
+        room.current = { width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height };
+        show(WHOLE);
+      }}
+      {...responder.panHandlers}
+    >
+      <Animated.Image
+        source={{ uri }}
+        resizeMode="contain"
+        resizeMethod="resize"
+        {...ZOOM_ROOM}
+        style={[StyleSheet.absoluteFill, { transform: [{ translateX: x }, { translateY: y }, { scale }] }]}
+        accessibilityLabel={t('Photo')}
+      />
+    </View>
   );
 }
 
@@ -157,11 +297,25 @@ const makeStyles = (colors: Colors) =>
       paddingHorizontal: space.lg,
       backgroundColor: colors.ground,
     },
-    viewerPhoto: {
+    photoViewer: {
       flex: 1,
-      width: '100%',
+      backgroundColor: '#000000',
+      justifyContent: 'center',
+    },
+    opening: {
       textAlign: 'center',
-      textAlignVertical: 'center',
+    },
+    photoBar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      gap: space.sm,
+      paddingTop: space.md,
+      backgroundColor: withAlpha(colors.ground, 0.85),
+    },
+    centered: {
+      textAlign: 'center',
     },
     viewerFile: {
       flex: 1,

@@ -917,9 +917,11 @@ souvient :
 - **90%** et **75% :** une nouvelle photo, plus petite, plus rapide à envoyer, qui ne dit rien d’autre que son image.
 
 Leurs photos et fichiers jusqu’à 16 Mo arrivent tout seuls ; appuie sur un plus gros pour le récupérer. Appuie sur une
-photo pour la voir en entier, avec sa taille, ou sur un fichier pour l’enregistrer. **Enregistrer** en met une copie
-dans un dossier que tu choisis la première fois, et **Enregistrer dans un autre dossier** le change. Les photos et
-fichiers ont les mêmes marques que le reste, et suivent le réglage éphémère de la discussion.
+photo pour la voir sur tout l’écran, avec sa taille : deux doigts ou un double appui zooment, un doigt la déplace tant
+qu’elle est zoomée, et un appui cache ou montre ce qu’il y a autour. Appuie sur un fichier pour l’enregistrer. Erevos
+tourne avec le téléphone tant que sa **Rotation automatique** est activée. **Enregistrer** en met une copie dans un
+dossier que tu choisis la première fois, et **Enregistrer dans un autre dossier** le change. Les photos et fichiers
+ont les mêmes marques que le reste, et suivent le réglage éphémère de la discussion.
 
 - **Comment ils voyagent :** chaque fichier est chiffré sur le téléphone avec sa propre clé, en morceaux tous de même
   taille, et déposé sur ton relais. Seuls l’emplacement des morceaux et la clé vont au contact, chiffrés de bout en

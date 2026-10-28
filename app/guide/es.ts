@@ -861,10 +861,12 @@ MB. Debajo, **Calidad de la foto** fija cómo van las fotos, y Erevos lo recuerd
   dice aparte de su imagen: dónde se hizo, el teléfono, la hora, las miniaturas. Su nombre es solo "photo".
 - **90%** y **75%:** una foto nueva, más pequeña, más rápida de enviar, que no dice nada más que su imagen.
 
-Sus fotos y archivos de hasta 16 MB llegan solos; toca uno más grande para recogerlo. Toca una foto para verla entera,
-con su tamaño, o un archivo para guardarlo. **Guardar** pone una copia en una carpeta que eliges la primera vez, y
-**Guardar en otra carpeta** la cambia. Las fotos y los archivos tienen las mismas marcas que el resto, y siguen el ajuste
-de mensajes temporales del chat.
+Sus fotos y archivos de hasta 16 MB llegan solos; toca uno más grande para recogerlo. Toca una foto para verla en toda
+la pantalla, con su tamaño: dos dedos o un doble toque la amplían, un dedo la mueve mientras está ampliada, y un toque
+oculta o muestra lo que hay alrededor. Toca un archivo para guardarlo. Erevos gira con el teléfono mientras **Girar
+automáticamente** está activado en él. **Guardar** pone una copia en una carpeta que eliges la primera vez, y
+**Guardar en otra carpeta** la cambia. Las fotos y los archivos tienen las mismas marcas que el resto, y siguen el
+ajuste de mensajes temporales del chat.
 
 - **Cómo viajan:** cada archivo se cifra en el teléfono con una clave propia, en trozos todos del mismo tamaño, y se
   pone en tu relay. Solo dónde están los trozos y la clave van al contacto, cifrados de extremo a extremo. Su teléfono

@@ -802,9 +802,11 @@ Erevos remembers it:
   picture is taken out: where it was taken, the phone, the time, thumbnails. Its name is just "photo".
 - **90%** and **75%:** a new, smaller photo, quicker to send, that says nothing but its picture.
 
-Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it whole, with its size, or a
-file to save it. **Save** puts a copy in a folder you choose the first time, and **Save in another folder** changes
-it. Photos and files have the same marks as the rest, and follow the chat's disappearing setting.
+Their photos and files up to 16 MB come by themselves; tap a bigger one to take it. Tap a photo to see it on the whole
+screen, with its size: two fingers or a double tap zoom in, one finger moves it while zoomed, and a tap hides or shows
+what is around it. Tap a file to save it. Erevos turns with the phone while the phone's **Auto-rotate** is on.
+**Save** puts a copy in a folder you choose the first time, and **Save in another folder** changes it. Photos and
+files have the same marks as the rest, and follow the chat's disappearing setting.
 
 - **How they travel:** each file is encrypted on the phone with a key of its own, in pieces all of one size, and put
   on your relay. Only where the pieces are and the key go to the contact, end-to-end encrypted. Their phone takes the

@@ -866,7 +866,9 @@ até 100 MB. Abaixo deles, **Qualidade da foto** define como as fotos vão, e o 
 - **90%** e **75%:** uma foto nova, menor, mais rápida de enviar, que não diz nada além da imagem.
 
 As fotos e os arquivos da pessoa de até 16 MB chegam sozinhos; toque num maior para baixá-lo. Toque numa foto para
-vê-la inteira, com o tamanho dela, ou num arquivo para salvá-lo. **Salvar** põe uma cópia numa pasta que você escolhe
+vê-la na tela inteira, com o tamanho dela: dois dedos ou um toque duplo a ampliam, um dedo a move enquanto está
+ampliada, e um toque esconde ou mostra o que há em volta. Toque num arquivo para salvá-lo. O Erevos gira com o
+telefone enquanto **Girar automaticamente** estiver ativado nele. **Salvar** põe uma cópia numa pasta que você escolhe
 na primeira vez, e **Salvar em outra pasta** a muda. Fotos e arquivos têm as mesmas marcas que o resto, e seguem a
 configuração de mensagens temporárias da conversa.
 
