@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ChatRow, MyselfRow } from '../components/chat-row';
+import { ChatRow, MatrixRow, MyselfRow } from '../components/chat-row';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
 import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
@@ -494,9 +494,10 @@ export default function Home() {
           {folders.trash ? <Chip label={t('Trash · {n}', { n: folders.trash })} onPress={() => router.push('/sms-folder?folder=trash')} /> : null}
         </Row>
       ) : null}
-      {/* A new Erevos, then Chat with myself, stay first, whatever comes in, but for the SMS alone and a search. */}
+      {/* A new Erevos, then Chat with myself and Matrix, stay first, whatever comes in, but for the SMS alone and a search. */}
       {release && !query.trim() && show !== 'sms' ? <ReleaseRow release={release} /> : null}
       {notes !== null && !query.trim() && show !== 'sms' ? <MyselfRow notes={notes} /> : null}
+      {!query.trim() && show !== 'sms' ? <MatrixRow /> : null}
     </View>
   );
 

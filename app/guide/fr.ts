@@ -81,6 +81,8 @@ que tant que leur code PIN les tient ouvertes.
   configurer un.
 - **Discussion avec moi-même**, toujours la première des discussions, avec une épingle, contient tes notes pour
   toi-même : voir Discussion avec moi-même et rappels ci-dessous.
+- **Matrix**, en dessous, une fois que tu t’es connecté à Matrix, montre le dernier message de ses discussions et
+  combien ne sont pas lus : voir [Matrix](#matrix).
 - **Nouvelle discussion**, en bas, ouvre les réglages du relais et l’ajout d’un contact. **Me rappeler**, la cloche
   orange à côté, t’écrit un rappel.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,

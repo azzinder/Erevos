@@ -78,6 +78,8 @@ export const whatsNew: Record<string, string> = {
     '**Fotografije se otvaraju preko cijelog ekrana**: dodirnite jednu da je vidite od ivice do ivice, uvećajte je s dva prsta ili dvostrukim dodirom, i dodirnite ponovo da sakrijete ili prikažete ono što je oko nje; velike fotografije se otvaraju kao male. Erevos se i okreće s telefonom dok je na telefonu uključeno Automatsko okretanje. Vidi [Razgovor preko relaya](#relay).',
   "**Matrix accounts in Erevos**: sign a space in to Matrix and chat with people who use Element or another Matrix app, end-to-end encrypted, under Settings → Relay and networks → Matrix. These chats are not anonymous, and say so: the Matrix server sees who talks with whom. Text only, for now. See [Matrix](#matrix).":
     "**Matrix računi u Erevosu**: prijavite prostor na Matrix i razgovarajte s ljudima koji koriste Element ili drugu Matrix aplikaciju, šifrovano s kraja na kraj, u Postavke → Relay i mreže → Matrix. Ovi razgovori nisu anonimni, i to kažu: Matrix server vidi ko s kim razgovara. Zasad samo tekst. Pogledajte [Matrix](#matrix).",
+  "**Matrix on the home screen**: once you sign in to Matrix, a Matrix row under Chat with myself shows its chats' latest message and how many are not read. See [Matrix](#matrix).":
+    '**Matrix na početnom ekranu**: kad se prijavite na Matrix, red Matrix ispod Razgovora sa sobom pokazuje najnoviju poruku njegovih razgovora i koliko ih nije pročitano. Vidi [Matrix](#matrix).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

@@ -75,6 +75,8 @@ tiene abiertos.
 - **La línea bajo la búsqueda** dice si hay un relay configurado y si tu cola está lista. Tócala para configurar uno.
 - **Chat conmigo**, siempre el primero de los chats, con una chincheta, guarda tus notas para ti: ver Chat conmigo y
   recordatorios más abajo.
+- **Matrix**, debajo, una vez que inicias sesión en Matrix, muestra el último mensaje de sus chats y cuántos no se han
+  leído: ver [Matrix](#matrix).
 - **Chat nuevo**, abajo, abre los ajustes del relay y la opción de añadir un contacto. **Recordarme**, la campana naranja
   de al lado, te escribe un recordatorio.
 - **El auricular verde y la persona violeta** de arriba, en Android, abren **Teléfono** y **Contactos** directamente, en

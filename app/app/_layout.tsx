@@ -44,6 +44,7 @@ import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
+import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
@@ -569,10 +570,17 @@ function Receiver({ space }: { space: number }) {
         startBackground(),
         followAppShown(),
         watchCalls(),
+        startMatrix(),
       ]),
     [space],
   );
   return null;
+}
+
+// The open space's Matrix account syncs while the space stays open (lib/matrix-store.ts).
+function startMatrix(): () => void {
+  runMatrix();
+  return stopMatrix;
 }
 
 // The space shows while Erevos does and the password screen is not in front of it.
