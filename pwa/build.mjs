@@ -111,7 +111,7 @@ write(
       start_url: '/',
       scope: '/',
       display: 'standalone',
-      orientation: 'portrait',
+      orientation: 'any',
       background_color: '#0D0B09',
       theme_color: '#0D0B09',
       icons: [
