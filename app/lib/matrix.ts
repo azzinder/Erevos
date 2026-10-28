@@ -21,10 +21,11 @@
 // Photos and files are lib/matrix-media.ts's. Not yet: calls, key backup and secret storage, so
 // messages from before this device signed in stay locked. Not audited.
 
-import { matrixCore } from './core';
+import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
+import { throughTor, torFor } from './relay';
 
 /** The olm and megolm algorithms, as Matrix names them. */
 export const OLM = 'm.olm.v1.curve25519-aes-sha2';
@@ -133,22 +134,66 @@ export type MatrixRequest = {
 };
 export type MatrixHttp = (request: MatrixRequest) => Promise<MatrixAnswer>;
 
-/** Plain HTTPS by default; the checks put a homeserver of their own here. */
-let http: MatrixHttp = async ({ method, url, body, token, bytes, contentType, raw }) => {
+const headersOf = ({ token, bytes, contentType }: MatrixRequest) => {
   const headers: Record<string, string> = { 'Content-Type': bytes ? (contentType ?? 'application/octet-stream') : 'application/json' };
   if (token) headers.Authorization = `Bearer ${token}`;
-  const sent = bytes ? (bytes as unknown as BodyInit) : body === undefined ? undefined : JSON.stringify(body);
-  const response = await fetch(url, { method, headers, body: sent });
-  if (raw && response.ok) return { status: response.status, json: {}, bytes: new Uint8Array(await response.arrayBuffer()) };
-  const text = await response.text();
-  let json: Json = {};
-  try {
-    json = text ? (JSON.parse(text) as Json) : {};
-  } catch {
-    json = {};
-  }
-  return { status: response.status, json };
+  return headers;
 };
+
+const jsonOf = (text: string): Json => {
+  try {
+    return text ? (JSON.parse(text) as Json) : {};
+  } catch {
+    return {};
+  }
+};
+
+// Straight to the homeserver, over HTTPS.
+async function straight(asked: MatrixRequest): Promise<MatrixAnswer> {
+  const { method, url, body, bytes, raw } = asked;
+  const sent = bytes ? (bytes as unknown as BodyInit) : body === undefined ? undefined : JSON.stringify(body);
+  const response = await fetch(url, { method, headers: headersOf(asked), body: sent });
+  if (raw && response.ok) return { status: response.status, json: {}, bytes: new Uint8Array(await response.arrayBuffer()) };
+  return { status: response.status, json: jsonOf(await response.text()) };
+}
+
+// Through the core's Tor (crates/erevos-tor http), on circuits kept for this homeserver.
+async function viaTor(asked: MatrixRequest): Promise<MatrixAnswer> {
+  const { method, url, body, bytes, raw } = asked;
+  const sent = bytes ?? (body === undefined ? new Uint8Array(0) : utf8Encode(JSON.stringify(body)));
+  const answer = await torHttp(JSON.stringify({ method, url, headers: headersOf(asked) }), sent);
+  const status = (answer[0] << 8) | answer[1];
+  const rest = answer.slice(2);
+  if (raw && status >= 200 && status < 300) return { status, json: {}, bytes: rest };
+  return { status, json: jsonOf(utf8Decode(rest)) };
+}
+
+/**
+ * The way the space goes through Tor (lib/tor.ts) is Matrix's too: with 'all', every request
+ * goes through Tor, and none without it; with 'messages', each goes through Tor while it is
+ * ready, photos and files too, and straight when it is not, as Erevos's own messages do; with
+ * 'off', straight. The checks put a homeserver of their own here.
+ */
+export const defaultMatrixHttp: MatrixHttp = async (asked) => {
+  const tor = canTorHttp() && torFor(false);
+  if (!tor) {
+    if (throughTor()) throw new Error(t('Tor is not ready.'));
+    return straight(asked);
+  }
+  try {
+    return await viaTor(asked);
+  } catch (error) {
+    if (throughTor()) throw error;
+    return straight(asked);
+  }
+};
+
+let http: MatrixHttp = defaultMatrixHttp;
+
+/** Whether Matrix goes through Tor now, as the space's Tor way and Tor's state say. */
+export function matrixThroughTor(): boolean {
+  return canTorHttp() && torFor(false);
+}
 
 export function setMatrixHttp(next: MatrixHttp): void {
   http = next;

@@ -14,7 +14,8 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
+import { setThroughTor } from '../lib/relay';
+import { defaultMatrixHttp, findHomeserver, isMatrixId, matrixThroughTor, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
@@ -273,10 +274,13 @@ const server = new Homeserver();
 // Each step keeps the state as the app does: as JSON, then read back.
 const kept = (state: MatrixState): MatrixState => JSON.parse(JSON.stringify(state)) as MatrixState;
 
+let wasmCore: Core | null = null;
+
 before(() => {
   if (!coreReady) return;
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
-  setCore(Object.fromEntries(Object.entries(wasm).map(([name, fn]) => [name, async (...args: never[]) => fn(...args)])) as unknown as Core);
+  wasmCore = Object.fromEntries(Object.entries(wasm).map(([name, fn]) => [name, async (...args: never[]) => fn(...args)])) as unknown as Core;
+  setCore(wasmCore);
   setMatrixHttp(async (request) => server.answer(request));
 });
 
@@ -552,5 +556,36 @@ test('a Security Key set up on one device opens the cross-signing keys and earli
   // The new device signed itself with the account's self-signing key, so Element trusts it.
   assert.equal(Object.keys(server.deviceKeys.get(frank.userId)!.get(frank2.deviceId)!.signatures[frank.userId]).length, 2);
   await assert.rejects(setUpRecovery(frank2), /already has a Security Key/);
+});
+
+test("Matrix goes through Tor as the space's Tor way says", async () => {
+  const sent: { head: Json; body: string }[] = [];
+  const fake = {
+    torRequest: async () => new Uint8Array(0),
+    torHttp: async (head: string, body: Uint8Array) => {
+      sent.push({ head: JSON.parse(head) as Json, body: new TextDecoder().decode(body) });
+      return new Uint8Array([0x01, 0x91, ...new TextEncoder().encode('{"errcode":"M_FORBIDDEN"}')]);
+    },
+  } as unknown as Core;
+  setCore(fake);
+  setThroughTor('all');
+  try {
+    const answer = await defaultMatrixHttp({ method: 'POST', url: `${HS}/_matrix/client/v3/login`, body: { a: 1 }, token: 'tok' });
+    assert.deepEqual(answer, { status: 401, json: { errcode: 'M_FORBIDDEN' } });
+    assert.equal(sent.length, 1);
+    assert.deepEqual(sent[0].head, { method: 'POST', url: `${HS}/_matrix/client/v3/login`, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer tok' } });
+    assert.equal(sent[0].body, '{"a":1}');
+    assert.ok(matrixThroughTor());
+    // With the way 'messages' and Tor not ready yet, it goes straight, as Erevos's own messages do.
+    setThroughTor('messages');
+    assert.equal(matrixThroughTor(), false);
+    // With no Tor in the build, the way 'all' sends nothing.
+    setCore({} as Core);
+    setThroughTor('all');
+    await assert.rejects(defaultMatrixHttp({ method: 'GET', url: `${HS}/x` }), /Tor is not ready/);
+  } finally {
+    setThroughTor('off');
+    setCore(wasmCore);
+  }
 });
 

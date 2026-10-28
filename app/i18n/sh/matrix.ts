@@ -67,4 +67,6 @@ export const matrix: Record<string, string> = {
   "That Security Key or phrase is not right.": "Taj sigurnosni ključ ili fraza nije ispravan.",
   "This Matrix account has no Security Key yet.": "Ovaj Matrix račun još nema sigurnosni ključ.",
   "This Matrix account already has a Security Key: enter it instead.": "Ovaj Matrix račun već ima sigurnosni ključ: upišite njega.",
+  "Through Tor: the Matrix server does not see your address.": "Preko Tora: Matrix server ne vidi vašu adresu.",
+  "Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.": "Trenutno ne preko Tora: Matrix server vidi vašu adresu. Tor je u Postavke → Relay i mreže → Tor.",
 };

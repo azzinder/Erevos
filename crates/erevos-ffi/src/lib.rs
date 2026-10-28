@@ -341,6 +341,22 @@ pub mod tor {
         erevos_tor::request(text(url)?, text(token)?, message)
     }
 
+    /// One HTTP request through Tor (a Matrix homeserver's): `head` is JSON, `{"method", "url",
+    /// "headers": {name: value}}`. Answers the status in 2 bytes, big-endian, then the body.
+    pub fn http(head: &[u8], body: &[u8]) -> Result<Vec<u8>> {
+        let head: serde_json::Value = serde_json::from_slice(head).map_err(|e| e.to_string())?;
+        let field = |name: &str| head.get(name).and_then(serde_json::Value::as_str).ok_or_else(|| format!("no {name}"));
+        let headers: Vec<(String, String)> = head
+            .get("headers")
+            .and_then(serde_json::Value::as_object)
+            .map(|all| all.iter().filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string()))).collect())
+            .unwrap_or_default();
+        let (status, mut answer) = erevos_tor::http(field("method")?, field("url")?, &headers, body)?;
+        let mut out = status.to_be_bytes().to_vec();
+        out.append(&mut answer);
+        Ok(out)
+    }
+
     /// A Nostr relay's connection through Tor, for text frames: its handle.
     pub fn text_open(url: &[u8]) -> Result<Vec<u8>> {
         Ok(erevos_tor::text_open(text(url)?)?.to_be_bytes().to_vec())

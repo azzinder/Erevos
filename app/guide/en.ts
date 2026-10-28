@@ -1324,8 +1324,12 @@ between.
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
-- **Not anonymous:** the Matrix server sees your account, who talks with whom, when, and from where. In a chat with
-  people on other servers, those servers see it too.
+- **Not anonymous:** the Matrix server sees your account, who talks with whom and when, and, without Tor, from where.
+  In a chat with people on other servers, those servers see it too.
+- **Through Tor:** on Android, Matrix follows this space's choice under **Settings** → **Relay and networks** →
+  **Tor**. With **Messages**, all of it, photos too, goes through Tor once Tor is ready, and straight while Tor starts
+  or when it fails; with **Everything**, only through Tor; with **Nothing**, straight. The Matrix screen says which
+  way it goes now.
 - **Messages from before:** a message sent before Erevos signed in, or one whose key has not come yet, shows as locked.
 - **Photos and files:** **Photo** and **File** send them, up to 50 MB, encrypted on the phone before they go to the
   Matrix server, so it keeps only what it cannot read. A photo you get is fetched only when you tap **Show photo**;

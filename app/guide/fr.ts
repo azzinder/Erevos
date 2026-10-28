@@ -1506,8 +1506,12 @@ Element : aucun pont ne se met entre les deux.
   s’affichent en premier, avec **Rejoindre** et **Refuser**.
 - **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
   vodozemac). Une discussion non chiffrée le dit.
-- **Pas anonyme :** le serveur Matrix voit ton compte, qui parle avec qui, quand, et d’où. Dans une discussion avec
-  des personnes sur d’autres serveurs, ces serveurs le voient aussi.
+- **Pas anonyme :** le serveur Matrix voit ton compte, qui parle avec qui et quand, et, sans Tor, d’où. Dans une
+  discussion avec des personnes sur d’autres serveurs, ces serveurs le voient aussi.
+- **Par Tor :** sur Android, Matrix suit le choix de cet espace sous **Réglages** → **Relais et réseaux** → **Tor**.
+  Avec **Messages**, tout, les photos aussi, passe par Tor dès que Tor est prêt, et en direct tant que Tor démarre ou
+  quand il échoue ; avec **Tout**, seulement par Tor ; avec **Rien**, en direct. L’écran Matrix dit par où il passe en
+  ce moment.
 - **Messages d’avant :** un message envoyé avant qu’Erevos se connecte, ou dont la clé n’est pas encore arrivée,
   s’affiche verrouillé.
 - **Photos et fichiers :** **Photo** et **Fichier** les envoient, jusqu’à 50 Mo, chiffrés sur le téléphone avant

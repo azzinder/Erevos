@@ -106,6 +106,10 @@ On main, not released yet:
   (m.megolm_backup.v1.curve25519-aes-sha2) gives the keys of the messages shown locked, and takes the room keys this
   device makes or gets. An account with none gets both here, with a new Security Key to write down; Erevos keeps it
   nowhere.
+- **Matrix through Tor**: on Android, everything Matrix sends and fetches follows the space's choice under
+  **Settings** → **Relay and networks** → **Tor**: with **Messages** through Tor once it is ready, and straight while
+  it starts or when it fails; with **Everything** only through Tor; with **Nothing** straight. Each homeserver gets a
+  Tor circuit of its own, apart from the relays'. The Matrix screen says which way it goes now.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

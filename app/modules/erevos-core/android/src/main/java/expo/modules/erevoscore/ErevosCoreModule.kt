@@ -113,6 +113,7 @@ class ErevosCoreModule : Module() {
     AsyncFunction("torRequest") Coroutine { url: String, token: String, message: ByteArray ->
       torIo { ErevosCoreNative.torRequest(url.toByteArray(), token.toByteArray(), message) }
     }
+    AsyncFunction("torHttp") Coroutine { head: String, body: ByteArray -> torIo { ErevosCoreNative.torHttp(head.toByteArray(), body) } }
     AsyncFunction("torOpen") Coroutine { url: String, token: String -> torIo { ErevosCoreNative.torOpen(url.toByteArray(), token.toByteArray()) } }
     AsyncFunction("torOpenChannel") Coroutine { url: String -> torIo { ErevosCoreNative.torOpenChannel(url.toByteArray()) } }
     AsyncFunction("torOpenOn") Coroutine { url: String, token: String, way: String, channel: Boolean ->
@@ -210,6 +211,7 @@ internal object ErevosCoreNative {
   @JvmStatic external fun torStatus(): String
   @JvmStatic external fun torStop()
   @JvmStatic external fun torRequest(url: ByteArray, token: ByteArray, message: ByteArray): ByteArray
+  @JvmStatic external fun torHttp(head: ByteArray, body: ByteArray): ByteArray
   @JvmStatic external fun torOpen(url: ByteArray, token: ByteArray): ByteArray
   @JvmStatic external fun torOpenChannel(url: ByteArray): ByteArray
   @JvmStatic external fun torOpenOn(url: ByteArray, token: ByteArray, way: ByteArray, channel: ByteArray): ByteArray

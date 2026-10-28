@@ -1452,8 +1452,12 @@ sta nel mezzo.
   **Rifiuta**.
 - **Cifratura:** i messaggi sono cifrati end-to-end con la cifratura di Matrix stesso (Olm e Megolm, tramite
   vodozemac). Una chat non cifrata lo dice.
-- **Non anonimo:** il server Matrix vede il tuo account, chi parla con chi, quando, e da dove. In una chat con persone
-  su altri server, lo vedono anche quei server.
+- **Non anonimo:** il server Matrix vede il tuo account, chi parla con chi e quando, e, senza Tor, da dove. In una
+  chat con persone su altri server, lo vedono anche quei server.
+- **Tramite Tor:** su Android, Matrix segue la scelta di questo spazio in **Impostazioni** → **Relay e reti** →
+  **Tor**. Con **Messaggi**, tutto, anche le foto, passa da Tor appena Tor è pronto, e direttamente mentre Tor parte o
+  quando fallisce; con **Tutto**, solo da Tor; con **Niente**, direttamente. La schermata di Matrix dice da dove passa
+  ora.
 - **Messaggi di prima:** un messaggio inviato prima che Erevos accedesse, o uno la cui chiave non è ancora arrivata,
   appare bloccato.
 - **Foto e file:** **Foto** e **File** li inviano, fino a 50 MB, cifrati sul telefono prima di andare al server

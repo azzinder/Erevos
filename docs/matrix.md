@@ -50,6 +50,12 @@ What stays private is what is written.
   backup's public key. Keys are fetched one session at a time, for the messages shown locked, so
   the sealed state holds only what this device uses. `setUpRecovery` makes both for an account
   with none.
+- Tor: every request to the homeserver goes through `defaultMatrixHttp` in `app/lib/matrix.ts`,
+  which follows the space's Tor way (`torFor` in `app/lib/relay.ts`): through Tor once Tor is
+  ready with the way Messages, straight while it starts or when it fails; only through Tor with
+  Everything. `crates/erevos-tor` answers one HTTP/1.1 request over Tor (`http`, TLS for
+  `https://`, 64 MB at most, its own circuit per host), passed on as `torHttp` through JNI. The
+  computer and the web app have no Tor, so there Matrix goes straight.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
@@ -73,6 +79,6 @@ What stays private is what is written.
 - Voice messages, video thumbnails, reactions, replies, edits.
 - Checking by QR, and trust shown per device in a group.
 - Reading a room's history further back than the last sync, so older locked messages show.
-- Going through Tor, and notifications while Erevos is closed.
+- Notifications while Erevos is closed.
 - Calls (Element Call, MatrixRTC), after XMPP's.
 - XMPP, the next network after Matrix, then chats with other Nostr apps (NIP-17).

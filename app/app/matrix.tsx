@@ -5,9 +5,9 @@ import { Pressable, View } from 'react-native';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
-import { canMatrix } from '../lib/core';
+import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
-import { isMatrixId, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
+import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
 import {
   matrixJoin,
   matrixLeave,
@@ -23,6 +23,7 @@ import {
   onMatrixChange,
   runMatrix,
 } from '../lib/matrix-store';
+import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -44,7 +45,12 @@ export default function MatrixScreen() {
   useEffect(() => {
     runMatrix();
     setNow(matrixNow());
-    return onMatrixChange(() => setNow(matrixNow()));
+    const stop = onMatrixChange(() => setNow(matrixNow()));
+    const stopTor = onTorReady(() => setNow(matrixNow()));
+    return () => {
+      stop();
+      stopTor();
+    };
   }, []);
 
   if (!canMatrix()) {
@@ -73,6 +79,15 @@ export default function MatrixScreen() {
       {t('Chat with people on Matrix, who use Element or another Matrix app. Messages are end-to-end encrypted, but these chats are not anonymous: the Matrix server sees who talks with whom, and when.')}
     </Text>
   );
+
+  // Matrix follows the space's Tor way (lib/matrix.ts): the server sees this phone's address only without it.
+  const tor = canTor() ? (
+    <Text variant="caption" tone="muted">
+      {matrixThroughTor()
+        ? t('Through Tor: the Matrix server does not see your address.')
+        : t('Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.')}
+    </Text>
+  ) : null;
 
   const { loaded, state, problem } = now;
   if (!loaded) {
@@ -114,6 +129,7 @@ export default function MatrixScreen() {
             {t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.')}
           </Text>
         </Card>
+        {tor}
         {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
       </Page>
     );
@@ -129,6 +145,7 @@ export default function MatrixScreen() {
       <Text variant="caption" tone="muted">
         {t('Not anonymous: the Matrix server sees who talks with whom, and when.')}
       </Text>
+      {tor}
       {check ? <MatrixVerifyCard check={check} name={state.userId} /> : null}
       {!check || check.phase === 'done' || check.phase === 'cancelled' ? (
         <Button title={t('Check this device with another of yours')} kind="secondary" disabled={busy} onPress={() => void run(() => matrixVerify(state.userId))} />

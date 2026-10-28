@@ -1539,8 +1539,12 @@ Element: Keine Brücke sitzt dazwischen.
   **Beitreten** und **Ablehnen**.
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
   Megolm, über vodozemac). Ein nicht verschlüsselter Chat sagt es.
-- **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht, wann und von wo. In einem Chat mit
-  Menschen auf anderen Servern sehen es auch diese.
+- **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht und wann, und ohne Tor auch, von wo. In
+  einem Chat mit Menschen auf anderen Servern sehen es auch diese.
+- **Über Tor:** Auf Android folgt Matrix der Wahl dieses Bereichs unter **Einstellungen** → **Relay und Netze** →
+  **Tor**. Mit **Nachrichten** geht alles, auch Fotos, über Tor, sobald Tor bereit ist, und direkt, solange Tor
+  startet oder wenn es scheitert; mit **Alles** nur über Tor; mit **Nichts** direkt. Der Matrix-Bildschirm sagt,
+  welchen Weg es gerade nimmt.
 - **Nachrichten von vorher:** Eine Nachricht von bevor Erevos sich anmeldete, oder eine, deren Schlüssel noch nicht
   kam, erscheint gesperrt.
 - **Fotos und Dateien:** **Foto** und **Datei** senden sie, bis 50 MB, auf dem Telefon verschlüsselt, bevor sie zum

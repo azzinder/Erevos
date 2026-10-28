@@ -1391,8 +1391,11 @@ između.
   **Pridruži se** i **Odbij**.
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
   vodozemac). Razgovor koji nije šifrovan to kaže.
-- **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara, kada, i odakle. U razgovoru s ljudima na
-  drugim serverima, vide to i ti serveri.
+- **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara i kada, i, bez Tora, odakle. U razgovoru s
+  ljudima na drugim serverima, vide to i ti serveri.
+- **Preko Tora:** na Androidu, Matrix slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**. S
+  **Poruke** sve, i fotografije, ide preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije;
+  sa **Sve** samo preko Tora; s **Ništa** direktno. Matrix ekran kaže kojim putem ide sada.
 - **Poruke od prije:** poruka poslana prije nego što se Erevos prijavio, ili ona čiji ključ još nije stigao, prikazuje
   se zaključana.
 - **Fotografije i datoteke:** **Fotografija** i **Datoteka** ih šalju, do 50 MB, šifrovane na telefonu prije nego što

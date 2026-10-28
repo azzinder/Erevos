@@ -311,27 +311,7 @@ const CHANNEL_PROTOCOLS: &str = "erevos, erevos-channel";
 
 async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: String, way: Option<IsolationToken>, channel: bool) -> Result<Socket> {
     let address = parse(&url)?;
-    let mut prefs = StreamPrefs::new();
-    if let Some(way) = way {
-        prefs.set_isolation(way);
-    }
-    let stream = tor
-        .connect_with_prefs((address.host.as_str(), address.port), &prefs)
-        .await
-        .map_err(|e| format!("cannot reach {} through Tor: {e}", address.host))?;
-    let io: Box<dyn Io> = if address.tls {
-        let mut roots = RootCertStore::empty();
-        roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
-        let config = ClientConfig::builder().with_root_certificates(roots).with_no_client_auth();
-        let name = ServerName::try_from(address.host.clone()).map_err(|e| e.to_string())?;
-        let tls = TlsConnector::from(Arc::new(config))
-            .connect(name, stream)
-            .await
-            .map_err(|e| format!("TLS with {} failed: {e}", address.host))?;
-        Box::new(tls)
-    } else {
-        Box::new(stream)
-    };
+    let io = stream_to(tor, &address, way).await?;
     let mut request = url.as_str().into_client_request().map_err(|e| e.to_string())?;
     if !token.is_empty() {
         let value = HeaderValue::from_str(&format!("Bearer {token}")).map_err(|e| e.to_string())?;
@@ -348,6 +328,31 @@ async fn connect(tor: Arc<TorClient<PreferredRuntime>>, url: String, token: Stri
         }
     })?;
     Ok(socket)
+}
+
+/// A stream to `address` through Tor, in TLS when it asks for it, on the circuits of `way` if given.
+async fn stream_to(tor: Arc<TorClient<PreferredRuntime>>, address: &Address, way: Option<IsolationToken>) -> Result<Box<dyn Io>> {
+    let mut prefs = StreamPrefs::new();
+    if let Some(way) = way {
+        prefs.set_isolation(way);
+    }
+    let stream = tor
+        .connect_with_prefs((address.host.as_str(), address.port), &prefs)
+        .await
+        .map_err(|e| format!("cannot reach {} through Tor: {e}", address.host))?;
+    Ok(if address.tls {
+        let mut roots = RootCertStore::empty();
+        roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+        let config = ClientConfig::builder().with_root_certificates(roots).with_no_client_auth();
+        let name = ServerName::try_from(address.host.clone()).map_err(|e| e.to_string())?;
+        let tls = TlsConnector::from(Arc::new(config))
+            .connect(name, stream)
+            .await
+            .map_err(|e| format!("TLS with {} failed: {e}", address.host))?;
+        Box::new(tls)
+    } else {
+        Box::new(stream)
+    })
 }
 
 async fn call_on(socket: &mut Socket, bytes: Vec<u8>) -> Result<Vec<u8>> {
@@ -539,9 +544,146 @@ pub fn request(url: &str, token: &str, bytes: &[u8]) -> Result<Vec<u8>> {
     reply
 }
 
+/// The most an answer over HTTP through Tor may be: a Matrix file of 50 MB, with room to spare.
+const MOST_HTTP: usize = 64 * 1024 * 1024;
+
+/// How long one request over HTTP through Tor may take in all, a file of 50 MB on a slow circuit;
+/// it is given up sooner when nothing moves for WAIT.
+const HTTP_WAIT: Duration = Duration::from_secs(600);
+
+/// One HTTP/1.1 request through Tor, as a Matrix homeserver is asked (app/lib/matrix.ts): each
+/// homeserver's on circuits of its own, new ones after a failure, as a Nostr relay's. `headers`
+/// go as they are, but for Host, Connection and Content-Length, set here. Answers the status and
+/// the body.
+pub fn http(method: &str, url: &str, headers: &[(String, String)], body: &[u8]) -> Result<(u16, Vec<u8>)> {
+    let (tls, rest) = match (url.strip_prefix("https://"), url.strip_prefix("http://")) {
+        (Some(rest), _) => (true, rest),
+        (None, Some(rest)) => (false, rest),
+        _ => return Err(format!("not a web address: {url}")),
+    };
+    let address = parse(&format!("{}://{rest}", if tls { "wss" } else { "ws" }))?;
+    let path = match rest.find(['/', '?', '#']) {
+        Some(i) if rest[i..].starts_with('/') => rest[i..].split('#').next().unwrap_or("/").to_string(),
+        Some(i) if rest[i..].starts_with('?') => format!("/{}", rest[i..].split('#').next().unwrap_or_default()),
+        _ => "/".to_string(),
+    };
+    if !method.bytes().all(|b| b.is_ascii_uppercase()) || path.bytes().any(|b| b <= b' ') {
+        return Err("not a request that can be sent".to_string());
+    }
+    let mut head = format!("{method} {path} HTTP/1.1\r\n");
+    let host = if address.host.contains(':') { format!("[{}]", address.host) } else { address.host.clone() };
+    let default_port = if tls { 443 } else { 80 };
+    if address.port == default_port {
+        head.push_str(&format!("Host: {host}\r\n"));
+    } else {
+        head.push_str(&format!("Host: {host}:{}\r\n", address.port));
+    }
+    head.push_str(&format!("Connection: close\r\nContent-Length: {}\r\n", body.len()));
+    for (name, value) in headers {
+        let lower = name.to_ascii_lowercase();
+        if matches!(lower.as_str(), "host" | "connection" | "content-length" | "transfer-encoding") {
+            continue;
+        }
+        if name.is_empty() || name.bytes().any(|b| !b.is_ascii_graphic() || b == b':') || value.bytes().any(|b| b == b'\r' || b == b'\n') {
+            return Err(format!("not a header that can be sent: {name}"));
+        }
+        head.push_str(&format!("{name}: {value}\r\n"));
+    }
+    head.push_str("\r\n");
+    let tor = client()?;
+    let key = format!("matrix {}", address.host);
+    let way = nostr_way(&key);
+    let body = body.to_vec();
+    runtime()?
+        .block_on(async move {
+            tokio::time::timeout(HTTP_WAIT, async move {
+                use tokio::io::{AsyncReadExt, AsyncWriteExt};
+                let stalled = |_| "the server stopped answering through Tor".to_string();
+                let mut io = tokio::time::timeout(WAIT, stream_to(tor, &address, Some(way))).await.map_err(stalled)??;
+                tokio::time::timeout(WAIT, io.write_all(head.as_bytes())).await.map_err(stalled)?.map_err(|e| e.to_string())?;
+                for piece in body.chunks(64 * 1024) {
+                    tokio::time::timeout(WAIT, io.write_all(piece)).await.map_err(stalled)?.map_err(|e| e.to_string())?;
+                }
+                tokio::time::timeout(WAIT, io.flush()).await.map_err(stalled)?.map_err(|e| e.to_string())?;
+                let mut raw = Vec::new();
+                let mut piece = vec![0u8; 64 * 1024];
+                loop {
+                    match tokio::time::timeout(WAIT, io.read(&mut piece)).await.map_err(stalled)? {
+                        Ok(0) => break,
+                        Ok(n) => {
+                            raw.extend_from_slice(&piece[..n]);
+                            if raw.len() > MOST_HTTP {
+                                return Err("the answer is too large".to_string());
+                            }
+                        }
+                        // A server that closes without TLS's goodbye: what came is the answer.
+                        Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof && !raw.is_empty() => break,
+                        Err(e) => return Err(e.to_string()),
+                    }
+                }
+                http_answer(&raw)
+            })
+            .await
+            .map_err(|_| "Tor took too long to reach the server".to_string())?
+        })
+        .inspect_err(|_| nostr_way_failed(&key, way))
+}
+
+/// An HTTP/1.1 answer read whole: its status and its body, put together if it came in chunks.
+fn http_answer(raw: &[u8]) -> Result<(u16, Vec<u8>)> {
+    let end = raw.windows(4).position(|w| w == b"\r\n\r\n").ok_or("no answer from the server")?;
+    let head = std::str::from_utf8(&raw[..end]).map_err(|_| "a broken answer from the server")?;
+    let mut lines = head.split("\r\n");
+    let status = lines
+        .next()
+        .and_then(|line| line.split(' ').nth(1))
+        .and_then(|code| code.parse::<u16>().ok())
+        .ok_or("a broken answer from the server")?;
+    let mut chunked = false;
+    let mut length = None;
+    for line in lines {
+        let Some((name, value)) = line.split_once(':') else { continue };
+        let (name, value) = (name.trim().to_ascii_lowercase(), value.trim());
+        if name == "transfer-encoding" && value.to_ascii_lowercase().contains("chunked") {
+            chunked = true;
+        } else if name == "content-length" {
+            length = value.parse::<usize>().ok();
+        }
+    }
+    let rest = &raw[end + 4..];
+    if !chunked {
+        return Ok((status, rest[..length.unwrap_or(rest.len()).min(rest.len())].to_vec()));
+    }
+    let mut body = Vec::new();
+    let mut at = 0;
+    loop {
+        let line_end = rest[at..].windows(2).position(|w| w == b"\r\n").ok_or("a broken answer from the server")? + at;
+        let size_text = std::str::from_utf8(&rest[at..line_end]).map_err(|_| "a broken answer from the server")?;
+        let size = usize::from_str_radix(size_text.split(';').next().unwrap_or_default().trim(), 16).map_err(|_| "a broken answer from the server")?;
+        at = line_end + 2;
+        if size == 0 {
+            return Ok((status, body));
+        }
+        let piece = rest.get(at..at + size).ok_or("the answer was cut short")?;
+        body.extend_from_slice(piece);
+        at += size + 2;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_http_answers() {
+        let plain = b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}extra";
+        assert_eq!(http_answer(plain).unwrap(), (200, b"{}".to_vec()));
+        let chunked = b"HTTP/1.1 404 Not Found\r\nTransfer-Encoding: chunked\r\n\r\n4\r\nWiki\r\n5;x=1\r\npedia\r\n0\r\n\r\n";
+        assert_eq!(http_answer(chunked).unwrap(), (404, b"Wikipedia".to_vec()));
+        assert_eq!(http_answer(b"HTTP/1.1 204 No Content\r\n\r\n").unwrap(), (204, vec![]));
+        assert!(http_answer(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n9\r\nWiki").is_err());
+        assert!(http_answer(b"garbage").is_err());
+    }
 
     #[test]
     fn reads_relay_addresses() {

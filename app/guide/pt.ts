@@ -1424,8 +1424,11 @@ fica no meio.
   com **Entrar** e **Recusar**.
 - **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
   Megolm, pelo vodozemac). Uma conversa sem criptografia avisa.
-- **Não anônimo:** o servidor Matrix vê sua conta, quem fala com quem, quando, e de onde. Numa conversa com pessoas de
-  outros servidores, esses servidores também veem.
+- **Não anônimo:** o servidor Matrix vê sua conta, quem fala com quem e quando, e, sem Tor, de onde. Numa conversa com
+  pessoas de outros servidores, esses servidores também veem.
+- **Pelo Tor:** no Android, o Matrix segue a escolha deste espaço em **Configurações** → **Relay e redes** → **Tor**.
+  Com **Mensagens**, tudo, as fotos também, passa pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia
+  ou quando falha; com **Tudo**, só pelo Tor; com **Nada**, direto. A tela do Matrix diz por onde vai agora.
 - **Mensagens de antes:** uma mensagem enviada antes de o Erevos entrar, ou cuja chave ainda não chegou, aparece
   bloqueada.
 - **Fotos e arquivos:** **Foto** e **Arquivo** os enviam, até 50 MB, criptografados no celular antes de irem ao

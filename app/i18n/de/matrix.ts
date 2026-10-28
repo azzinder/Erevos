@@ -67,4 +67,6 @@ export const matrix: Record<string, string> = {
   "That Security Key or phrase is not right.": "Dieser Sicherheitsschlüssel oder diese Phrase ist nicht richtig.",
   "This Matrix account has no Security Key yet.": "Dieses Matrix-Konto hat noch keinen Sicherheitsschlüssel.",
   "This Matrix account already has a Security Key: enter it instead.": "Dieses Matrix-Konto hat schon einen Sicherheitsschlüssel: Gib ihn stattdessen ein.",
+  "Through Tor: the Matrix server does not see your address.": "Über Tor: Der Matrix-Server sieht deine Adresse nicht.",
+  "Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.": "Gerade nicht über Tor: Der Matrix-Server sieht deine Adresse. Tor findest du unter Einstellungen → Relay und Netze → Tor.",
 };

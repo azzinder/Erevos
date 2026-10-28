@@ -93,6 +93,10 @@ export interface Core {
    *  (`torTextNext`, the wait in milliseconds, 8 bytes big-endian), '' when none came meanwhile.
    *  Missing in a build made before Nostr (lib/nostr.ts). */
   torTextOpen?(url: string): Promise<Uint8Array>;
+  /** One HTTP request through Tor (a Matrix homeserver's, lib/matrix.ts): `head` is JSON, `{method,
+   *  url, headers}`; answers the status in 2 bytes, big-endian, then the body. Missing in a build
+   *  made before it. */
+  torHttp?(head: string, body: Uint8Array): Promise<Uint8Array>;
   torTextSend?(id: Uint8Array, frame: string): Promise<Uint8Array>;
   torTextNext?(id: Uint8Array, wait: Uint8Array): Promise<string>;
   torTextClose?(id: Uint8Array): Promise<Uint8Array>;
@@ -276,6 +280,18 @@ export function torOpenChannel(url: string): Promise<Uint8Array> {
   const it = need();
   if (!it.torOpenChannel) throw new Error(t('This build of Erevos has no Tor.'));
   return it.torOpenChannel(url);
+}
+
+/** Whether this build's Tor sends HTTP requests (torHttp). */
+export function canTorHttp(): boolean {
+  return canTor() && typeof core?.torHttp === 'function';
+}
+
+/** One HTTP request through Tor, or an error saying this build has none. */
+export function torHttp(head: string, body: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.torHttp) throw new Error(t('This build of Erevos has no Tor.'));
+  return it.torHttp(head, body);
 }
 
 /** Whether this build's Tor opens connections on circuits of a name (torOpenOn). */
