@@ -56,6 +56,29 @@ On main, not released yet:
   with Tor's own English words under it, though the Tor screen says a message never waits for Tor. It now goes
   straight at once, as those after it do for a minute; with **Everything** it still waits for Tor. A Tor
   timeout now says that the relay did not answer in time, in the app's language.
+- **Background notices no longer stop after a network change**: a wait at the relay (for a message, for
+  news of a queue, or on many queues at once on its `/read` path) whose connection died on the way, as when
+  the phone went from Wi-Fi to mobile data or the relay restarted, was taken for the answer of a relay from
+  before, which does not know the request, and the relay was not asked to wait again for the whole run.
+  Contacts' messages were then read only every tenth look, up to ten minutes late in the background, and the
+  notices of hidden chats and closed spaces and the hidden rings said nothing until Erevos was restarted. A
+  relay that answered such a request this run is now never taken for one from before, one taken for it is
+  asked again after ten minutes, and the wait on the contacts' queues tries again too.
+- **A call hung up at once no longer rings**: when the hang-up came in the same look as the call, it was read
+  while the call still waited for the call relay, so it was dropped: the phone rang 45 seconds for a call
+  nobody was on, said **Missed call**, and answering said **The call could not connect**. The same for a group
+  call that everyone left at once. The hang-up is now kept until the call is read, and the call is missed
+  quietly.
+- **A hidden call rings once**: a hidden place with **Receive while closed** and a ring queue from before rang
+  twice for one call, as the ring on the queue stayed after the place's receiver rang and rang again once the
+  first ring ended; and a call taken while hidden chats were open rang the phone again as they closed. A ring
+  that came while the place was open or a ring showed is now dropped, not rung.
+- **A member's contact link no longer says New message**: the answer to a contact link asked from a group
+  only adds the contact and writes a grey line, which raised a sounding **New message** notice with nothing
+  unread behind it.
+- **The birthday notice and the phone's incoming-call notice no longer replace each other**: both had the
+  same notice number, so a phone call removed the day's birthday notice for good, and a birthday at 9:00 took
+  **Answer** and **Decline** off a ringing call's notice.
 
 ## 3.4.2 (2026-10-27)
 

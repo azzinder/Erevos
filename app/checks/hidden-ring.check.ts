@@ -2,8 +2,10 @@
 // lib/hidden-ring-notices.ts): every space keeps one ring queue per pocket, those not ringing made
 // for nothing on the same relay, sealed and padded so a space that rings looks like one that does
 // not; in the background the relay is asked only whether a ring waits on each of the four queues,
-// decoys and all, and a pocket rings on any arrival, drained so the next call rings too, let be
-// while its place is open and while another hidden call already rings. The ringtone and the
+// decoys and all, and a pocket rings on any arrival, drained so the next call rings too. One that
+// comes while its place is open, or while a hidden call already rings, is the same call's (it rang
+// in the place, or through its receiver) or too late once that ring ends, so it is only drained, not
+// rung, as the place closes or the ring ends. The ringtone and the
 // "Incoming call" notice, and the guard against ringing while a call is already in progress, are
 // played by lib/background.ts; the PIN that answers on the ring screen and a stale offer that
 // cannot connect are checked by lock.check.ts (searchHidden/SEARCH_TRIES) and call.check.ts
@@ -125,7 +127,7 @@ test('a ring answered with the PIN that a call takes is no ring for nothing; one
   assert.equal(hiddenAnswerAt(0, 1), null);
 });
 
-test('in the background a pocket rings when a call comes, drained so the next rings too, let be while a hidden call rings or its place is open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {
+test('in the background a pocket rings when a call comes, drained so the next rings too, only drained after a hidden call rang or its place was open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {
   store.clear();
   const url = await startRelay();
   const key = newSpaceKey();
@@ -145,21 +147,29 @@ test('in the background a pocket rings when a call comes, drained so the next ri
     // What rang is drained, so the queue is empty and the next call rings again.
     assert.equal(await receiveMessage({ url }, ids.recipientId), null);
 
-    // A call is in progress (hiddenRinging is set): a ring that comes meanwhile does not ring again.
+    // A hidden call rings (hiddenRinging is set): a ring that comes meanwhile is that call's, come
+    // through the place receiver too, or one too late by the time this ring ends: it does not ring.
     setHiddenRinging({ space: 0, pocket: 1, at: Date.now() });
     await ping();
     await new Promise((r) => setTimeout(r, 300));
     assert.equal(rang.length, 1);
-    // It ends: the waiting ring is drained and rings.
+    // It ends: the ring that waited is drained, not rung, so the next call rings again.
     setHiddenRinging(null);
+    await new Promise((r) => setTimeout(r, 1_000));
+    assert.equal(rang.length, 1);
+    await ping();
     await until(() => rang.length === 2);
 
-    // While the place is open its pocket does not ring; closed again, it does.
+    // While the place is open its pocket does not ring: the call rings in the place itself. Closed
+    // again, the ring that call left is drained, not rung, and the next call rings.
     setOpenHiddenPlace(place(0, 1));
     await ping();
     await new Promise((r) => setTimeout(r, 300));
     assert.equal(rang.length, 2);
     setOpenHiddenPlace(null);
+    await new Promise((r) => setTimeout(r, 1_000));
+    assert.equal(rang.length, 2);
+    await ping();
     await until(() => rang.length === 3);
 
     // All four queues are waited on: a ring to a made-for-nothing one rings its pocket too.

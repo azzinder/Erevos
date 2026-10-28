@@ -29,7 +29,8 @@ internal object Birthdays {
   private const val ON = "on"
   private const val TOLD = "told"
   private const val CHANNEL = "erevos-birthdays"
-  private const val NOTICE = 7201
+  // Notice ids by module: 71xx erevos-call, 72xx erevos-phone, 73xx erevos-device, 74xx erevos-contacts.
+  private const val NOTICE = 7401
   private const val HOUR = 9
   const val ACTION = "expo.modules.erevoscontacts.BIRTHDAYS"
   private val FULL = Regex("^(\\d{4})-?(\\d{2})-?(\\d{2})")
@@ -137,7 +138,7 @@ internal object Birthdays {
     }
     val open = Intent(Intent.ACTION_VIEW, Uri.parse("erevos://contacts")).setPackage(context.packageName)
     val launch = if (open.resolveActivity(context.packageManager) != null) open else context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
-    val tap = PendingIntent.getActivity(context, 7201, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    val tap = PendingIntent.getActivity(context, NOTICE, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     fun builder() = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     val public = builder()
       .setSmallIcon(android.R.drawable.ic_menu_my_calendar)

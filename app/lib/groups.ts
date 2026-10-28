@@ -817,8 +817,9 @@ export class Groups {
         () => true,
         () => false,
       );
+      // A note, not a member's message: the group's screen follows it (note calls changed), and no
+      // notice says a message came, as the sender marked the answer quiet.
       await this.note(id, added ? 'got link' : 'link failed', from);
-      this.messageListeners.forEach((listener) => listener(id));
       return;
     }
     // An answer to nothing asked from here; or an ask from a contact here already, whom showing

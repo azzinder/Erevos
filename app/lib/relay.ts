@@ -1098,20 +1098,29 @@ function receivedOf(reply: Uint8Array): Uint8Array | null {
   return reply.slice(6, 6 + length);
 }
 
-// Relays that cannot wait for a message (from before WAIT), by address, for this run.
-const cannotWait = new Set<string>();
+// A relay from before a request closes the connection, as for any request it does not know; but so
+// does a connection that died on the way, as when the phone's network changed or the relay
+// restarted. So a relay taken as one from before is asked again after this long, and one that
+// answered the request this run is never taken as one: its connection died.
+const CANNOT_FOR_MS = 10 * 60_000;
+
+const addressOf = (relay: Relay) => relay.url.trim().toLowerCase();
+
+// Relays that cannot wait for a message (from before WAIT), by address, until when they are asked again; and those that waited this run.
+const cannotWait = new Map<string, number>();
+const waited = new Set<string>();
 
 /** Whether the relay may be asked to wait for a message (`waitForMessage`), as far as this run knows. */
 export function canWaitAt(relay: Relay): boolean {
-  return !cannotWait.has(relay.url.trim().toLowerCase());
+  return (cannotWait.get(addressOf(relay)) ?? 0) <= Date.now();
 }
 
 /**
  * Waits until a message is in the queue, `seconds` at most (60), without taking it: true once
  * one is, false when none came in that time, the wait was ended (`signal`), or the relay cannot
  * wait. A relay from before it closes the connection, as for any request it does not know: then
- * one that answers a plain request is not asked to wait again this run. Throws when the relay
- * cannot be reached.
+ * one that answers a plain request is not asked to wait again for a while, unless it waited this
+ * run, as then its connection died on the way. Throws when the relay cannot be reached.
  */
 export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seconds: number, signal?: AbortSignal): Promise<boolean> {
   const bytes = new Uint8Array(1 + 24 + 1);
@@ -1124,6 +1133,8 @@ export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seco
   } catch (error) {
     if (error instanceof Ended) return false;
     if (!(error instanceof RelayUnreachableError) || signal?.aborted) throw error;
+    // One that waited this run: the connection died on the way.
+    if (waited.has(addressOf(relay))) throw error;
     // It answers a request any relay knows: it is there, and cannot wait.
     try {
       await request(relay, Uint8Array.of(KEY), signal);
@@ -1131,10 +1142,11 @@ export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seco
       if (again instanceof Ended) return false;
       throw error;
     }
-    cannotWait.add(relay.url.trim().toLowerCase());
+    cannotWait.set(addressOf(relay), Date.now() + CANNOT_FOR_MS);
     return false;
   }
   check(reply, 'wait');
+  waited.add(addressOf(relay));
   return reply[1] === 1;
 }
 
@@ -1148,12 +1160,13 @@ export type News = { round: number; messages: number; unmarked: number; rings: n
 
 export const NO_NEWS: News = { round: 0, messages: 0, unmarked: 0, rings: 0 };
 
-// Relays that cannot say what came (from before NEWS), by address, for this run.
-const cannotTell = new Set<string>();
+// Relays that cannot say what came (from before NEWS), by address, until when they are asked again; and those that said this run.
+const cannotTell = new Map<string, number>();
+const told = new Set<string>();
 
 /** Whether the relay may be asked what came into a queue (`waitForNews`), as far as this run knows. */
 export function canTellNewsAt(relay: Relay): boolean {
-  return !cannotTell.has(relay.url.trim().toLowerCase());
+  return (cannotTell.get(addressOf(relay)) ?? 0) <= Date.now();
 }
 
 /**
@@ -1161,8 +1174,8 @@ export function canTellNewsAt(relay: Relay): boolean {
  * taking anything, and returns what came: `heard` again when nothing changed in that time or the
  * wait was ended (`signal`). Null when the relay cannot say: a relay from before it closes the
  * connection, as for any request it does not know, and then one that answers a plain request is
- * not asked again this run (waitForMessage may still wait there). Throws when the relay cannot be
- * reached.
+ * not asked again for a while, unless it said this run, as then its connection died on the way
+ * (waitForMessage may still wait there). Throws when the relay cannot be reached.
  */
 export async function waitForNews(relay: Relay, recipientId: Uint8Array, seconds: number, heard: News, signal?: AbortSignal): Promise<News | null> {
   const bytes = new Uint8Array(1 + 24 + 1 + 16);
@@ -1177,16 +1190,19 @@ export async function waitForNews(relay: Relay, recipientId: Uint8Array, seconds
   } catch (error) {
     if (error instanceof Ended) return heard;
     if (!(error instanceof RelayUnreachableError) || signal?.aborted) throw error;
+    // One that said this run: the connection died on the way.
+    if (told.has(addressOf(relay))) throw error;
     try {
       await request(relay, Uint8Array.of(KEY), signal);
     } catch (again) {
       if (again instanceof Ended) return heard;
       throw error;
     }
-    cannotTell.add(relay.url.trim().toLowerCase());
+    cannotTell.set(addressOf(relay), Date.now() + CANNOT_FOR_MS);
     return null;
   }
   check(reply, 'news');
+  told.add(addressOf(relay));
   if (reply.length < 17) throw new RelayError(`news: unexpected reply of ${reply.length} bytes`, reply[0]);
   const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
   return { round: read.getUint32(1), messages: read.getUint32(5), unmarked: read.getUint32(9), rings: read.getUint32(13) };
@@ -1197,12 +1213,12 @@ export const MAX_ANY = 64;
 // In a reply to WAIT_ANY or NEWS_ANY: no such queue.
 const GONE = 2;
 
-// Relays that cannot read many queues at once on /read (from before WAIT_ANY), by address, for this run.
-const cannotReadMany = new Set<string>();
+// Relays that cannot read many queues at once on /read (from before WAIT_ANY), by address, until when they are asked again.
+const cannotReadMany = new Map<string, number>();
 
 /** Whether the relay may be asked to wait on many queues at once on /read (waitForAny, newsOfAny), as far as this run knows. */
 export function canReadManyAt(relay: Relay): boolean {
-  return !cannotReadMany.has(relayHome(relay.url));
+  return (cannotReadMany.get(relayHome(relay.url)) ?? 0) <= Date.now();
 }
 
 // Relays that answered on /read this run, by address.
@@ -1216,7 +1232,7 @@ const readsMany = new Set<string>();
 export async function readsManyAt(relay: Relay, way: string): Promise<boolean> {
   const home = relayHome(relay.url);
   if (readsMany.has(home)) return true;
-  if (cannotReadMany.has(home)) return false;
+  if (!canReadManyAt(relay)) return false;
   return !!(await waitForAny(relay, [randomBytes(24)], 0, way).catch(() => null));
 }
 
@@ -1245,8 +1261,9 @@ function readerOf(relay: Relay): Relay {
 /**
  * One request to the relay's `/read` path, through Tor on the circuits named `way`. Null when the
  * relay has no such path, as one from before it (it refuses the connection there, or closes it at
- * the request): then one that answers a plain request is not asked again this run. Throws when the
- * relay cannot be reached.
+ * the request): then one that answers a plain request is not asked again for a while, unless it
+ * answered there this run, as then its connection died on the way. Throws when the relay cannot be
+ * reached.
  */
 async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?: AbortSignal): Promise<Uint8Array | null | 'ended'> {
   try {
@@ -1254,13 +1271,15 @@ async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?
   } catch (error) {
     if (error instanceof Ended) return 'ended';
     if (!(error instanceof RelayUnreachableError) || error instanceof RelayKeyError || signal?.aborted) throw error;
+    // One that answered there this run: the connection died on the way.
+    if (readsMany.has(relayHome(relay.url))) throw error;
     try {
       await request(relay, Uint8Array.of(KEY), signal);
     } catch (again) {
       if (again instanceof Ended) return 'ended';
       throw error;
     }
-    cannotReadMany.add(relayHome(relay.url));
+    cannotReadMany.set(relayHome(relay.url), Date.now() + CANNOT_FOR_MS);
     return null;
   }
 }

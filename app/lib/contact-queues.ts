@@ -29,6 +29,8 @@ const WATCH_FOR = 60;
 const WATCH_RETRY = 5000;
 const WATCH_RETRY_MOST = 120_000;
 const TAKEN_WITHIN = 15_000;
+// How long before a relay that could not wait on many queues is asked to again.
+const CANNOT_RETRY = 5 * 60_000;
 
 /** One queue a contact writes to: theirs now, or the one it took the place of while that is read (`was`). */
 export type ContactQueue = { identity: string; r: string; g: number; was?: true };
@@ -164,8 +166,13 @@ export class ContactWatch {
           await pause(Math.min(WATCH_RETRY_MOST, WATCH_RETRY * 2 ** (failures - 1)), signal, loop);
           continue;
         }
-        // A relay that cannot: the looks read the queues as they can.
-        if (!found || signal.aborted) return;
+        if (signal.aborted) return;
+        // A relay that cannot, or seemed not to as the wait died on the way (lib/relay.ts canReadManyAt):
+        // the looks read the queues as they can, and it is asked to wait again after a while.
+        if (!found) {
+          await pause(CANNOT_RETRY, signal, loop);
+          continue;
+        }
         const came = b.queues.filter((_, i) => found[i] !== 'none');
         if (came.length === 0) continue;
         for (const q of came) this.found.add(q.r);

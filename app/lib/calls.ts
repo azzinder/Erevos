@@ -29,6 +29,19 @@ export type CallPlace = {
 
 let shown: { call: Call; place: CallPlace } | null = null;
 const listeners = new Set<() => void>();
+// A contact's hang-up of a call that has no Call here yet, by peer and call id, with when it came: the
+// offer and the `end` came in one look, and the offer still waits for the call relay (callSignal) when
+// the `end` is read, which would be dropped, and the phone would ring 45 seconds for a call nobody is on.
+const endedBefore = new Map<string, number>();
+const ENDED_KEPT_MS = 2 * OFFER_FRESH_MS;
+const callKey = (peer: string, id: string) => `${peer} ${id}`;
+
+// Whether the contact hung up the call `id` before its offer was read here; forgotten once asked.
+function endedAlready(peer: string, id: string): boolean {
+  const now = Date.now();
+  for (const [key, at] of endedBefore) if (now - at > ENDED_KEPT_MS) endedBefore.delete(key);
+  return endedBefore.delete(callKey(peer, id));
+}
 // Whether another device of the account has a call, but the one `id` names (lib/devices.ts): to a contact who calls, the account is in one.
 let elsewhere: (id?: string) => boolean = () => false;
 
@@ -101,13 +114,15 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   const ours = currentCall();
   if (signal.kind !== 'offer') {
     if (ours?.peer === peer && ours.id === signal.id) ours.receive(signal);
+    // Their hang-up read before its offer rang here: the offer is not rung.
+    else if (signal.kind === 'end') endedBefore.set(callKey(peer, signal.id), Date.now());
     return null;
   }
   if (ours?.id === signal.id) return null;
   const kind = signal.video ? 'video call' : 'voice call';
   if (request) return t('{name} tried to call. Accept their message request to take calls from them.', { name: place.name(peer) });
-  // Made while no space was open here: it has stopped ringing on their side.
-  if (Date.now() - signal.at > OFFER_FRESH_MS) {
+  // Made while no space was open here: it has stopped ringing on their side. Or hung up already.
+  if (Date.now() - signal.at > OFFER_FRESH_MS || endedAlready(peer, signal.id)) {
     place.line(peer, false, `Missed ${kind}`);
     return null;
   }
@@ -118,6 +133,11 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   }
   const relay = relayToAnswer(signal.sdp, await place.callRelay().catch(() => null));
+  // They hung up while the call relay was asked.
+  if (endedAlready(peer, signal.id)) {
+    place.line(peer, false, `Missed ${kind}`);
+    return null;
+  }
   const ringing = Call.incoming(signal, { peer, relay, rtc, events: events(place, identity) });
   if (!ringing) return null;
   shown = { call: ringing, place };

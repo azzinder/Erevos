@@ -165,6 +165,11 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
   }
   const relay = await place.callRelay().catch(() => null);
   const me = await place.me();
+  // Everyone left it while the call relay was asked (their `leave` came in the same look): nothing to ring for.
+  if (goingOn.get(group)?.id !== signal.id) {
+    place.line(group, `${CALL_LINE}Missed ${kind}`);
+    return;
+  }
   const ringing = GroupCall.incoming(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) });
   if (ringing) show(ringing, place);
 }

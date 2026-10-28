@@ -71,8 +71,14 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
     let failures = 0;
     // A queue the relay said it no longer has, as one a place moved away from (lib/queue-move.ts).
     let gone = '';
+    // Whether the place was open, or a ring showed, since the queue was last waited on.
+    let rangElsewhere = false;
     while (!stopped) {
       if (!mayRing(pocket)) {
+        // The place is open, or a ring shows: a call now rings in the place itself, or rang through
+        // its receiver (lib/place-receiver.ts), so the ring it sends here is drained, not rung, once
+        // the place closes or the ring ends; else that would ring for a call that is over.
+        rangElsewhere = true;
         await pause(MOST_PAUSE);
         continue;
       }
@@ -86,15 +92,21 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
         await pause(NO_WAITING);
         continue;
       }
+      if (rangElsewhere) {
+        rangElsewhere = false;
+        await drain(relay, kept.recipientHex);
+        if (stopped) break;
+      }
       const wait = new AbortController();
       waits.add(wait);
       try {
         const came = await waitForMessage(relay, fromHex(kept.recipientHex), WAIT_FOR, wait.signal);
         failures = 0;
-        if (came && !stopped && mayRing(pocket)) {
-          // Drain the ring before it is answered, so the next call rings again.
+        if (came && !stopped) {
+          // Drain the ring before it is answered, so the next call rings again; one that came while
+          // the place was open or a ring showed rang already, and is only drained.
           await drain(relay, kept.recipientHex);
-          ring(space, pocket);
+          if (mayRing(pocket)) ring(space, pocket);
         }
       } catch (error) {
         // A queue the relay no longer has is not asked again until the slot names another: the
