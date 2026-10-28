@@ -34,6 +34,36 @@ What stays private is what is written.
   hash before it is opened. Uploads to `/_matrix/media/v3/upload`; downloads signed in
   (`/_matrix/client/v1/media/download`, Matrix 1.11), or the older way for older servers. Up to
   50 MB. A photo is fetched only when tapped, and kept in memory while Erevos runs (40 MB at most).
+- Reactions, replies, edits, deletes, older messages and voice messages (`app/lib/matrix.ts`,
+  `app/lib/matrix-media.ts`, `app/app/matrix-chat.tsx`, `app/components/matrix-message.tsx`,
+  `app/components/matrix-voice.tsx`), as Element writes them:
+  - A reaction is a plain `m.reaction` with an `m.annotation` relation (the message's event ID and the
+    key, an emoji), not encrypted even in an encrypted room, as Element sends it: the relation is
+    readable to the homeserver anyway, so encrypting the event would hide only its kind, and Matrix's
+    push rules let a plain reaction be where an encrypted one wakes the other's phone as a message.
+    Each person can choose a key once on a message; taking ours back is a redaction of the reaction,
+    which comes off its message. The key is kept to 40 characters.
+  - A reply carries `m.relates_to` → `m.in_reply_to`. An older app's fallback, the quoted lines it
+    copies into the body, is cut from the words.
+  - An edit is an `m.room.message` with an `m.replace` relation and `m.new_content`. It counts only
+    when its sender is the sender of the message it changes, so nobody can change another's words, and
+    a change of a change is not one. The message then shows as edited, with the time of its latest
+    change. Erevos offers it for a message of ours that has gone, with words of its own.
+  - A delete is an `m.room.redaction` (`/redact`). The message stays in the thread as a line saying it
+    was deleted, its words, file, reactions and answer dropped. A redaction that comes takes a message
+    or a reaction back the same way.
+  - Older messages come from `/rooms/{id}/messages?dir=b`, 40 at a time with lazy-loaded members,
+    from the token the room keeps in `before`, up to five pages while nothing new comes; `start` is
+    set when the room's first message is there. They are opened as the sync's are, so those still
+    locked can open from the key backup later. A room then keeps up to `MOST_KEPT` (2000) messages.
+  - A relation that comes before its message, as in an older page, waits in `waiting` (400 at most,
+    the oldest dropped) and is put on its message when it comes; none waits once the first message is
+    there.
+  - A voice message is an `m.audio` with `org.matrix.msc3245.voice` and `org.matrix.msc1767.audio`
+    (its duration in milliseconds, also in `info.duration`), body `Voice message`, uploaded and
+    encrypted as any file. It is recorded by the microphone beside the field, held (a minute at most,
+    under a second is let go): AAC from a phone, what the browser records elsewhere. One that comes is
+    fetched and played when asked, with its duration shown. No waveform is sent or drawn.
 - `app/lib/matrix-verify.ts`: checking devices by emoji (SAS, m.sas.v1 with hkdf-hmac-sha256.v2),
   in a room with another person or to-device between two devices of one account, both ways with
   Element. The core does the X25519, HKDF and HMAC (`sas_new`, `sas_bytes`, `sas_mac`,
@@ -107,7 +137,10 @@ What stays private is what is written.
   sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
   played in the check (`app/checks/matrix-server.ts`), with the real core; a photo there and back,
-  held by the server only as ciphertext, and refused once a byte of it is changed.
+  held by the server only as ciphertext, and refused once a byte of it is changed; reactions (plain),
+  replies, edits (not by anyone but the sender) and messages taken back both ways; older messages
+  fetched to the room's first, with a reaction on a page before its message; a voice message with its
+  duration.
 - `app/checks/matrix-calls.check.ts`: the capabilities given and refused; the host doing what
   Element Call asks (state now and delayed both ways, encrypted room and to-device events that the
   other side opens, OpenID, transports) and nothing else; rings answered, declined, missed, left by
@@ -180,9 +213,9 @@ no space open, or Erevos stopped by Android, nothing is told, as for the space's
 
 ## Not yet
 
-- Voice messages, video thumbnails, reactions, replies, edits.
+- Video thumbnails, and a voice message's waveform.
 - Checking by QR, and trust shown per device in a group.
-- Reading a room's history further back than the last sync, so older locked messages show.
+- A room's history beyond the 2000 messages it keeps.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
 - Calls in a hidden chat's place, and on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.

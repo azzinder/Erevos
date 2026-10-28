@@ -66,7 +66,6 @@ export const nostrChats: Record<string, string> = {
   "Name this group": "Dajte ime grupi",
   "Everyone in the group sees it, with your next message.": "Svi u grupi to vide, s vašom sljedećom porukom.",
   "Its messages are removed from this phone. The others keep theirs, and a new message in the group starts it again.": "Njegove poruke uklanjaju se s ovog telefona. Ostali zadržavaju svoje, a nova poruka u grupi ga ponovno pokreće.",
-  "Hold to react": "Držite za reakciju",
   "Choose two or more of the people you chat with. Each message goes to each of them, encrypted for each.": "Odaberite dvoje ili više ljudi s kojima razgovarate. Svaka poruka ide svakome od njih, šifrirana za svakoga.",
   "Group name (optional)": "Ime grupe (nije obavezno)",
   "Nostr groups have no admins: nobody can be added or taken out later. A group with other people is a new group.": "Nostr grupe nemaju administratore: nikoga se kasnije ne može dodati ni ukloniti. Grupa s drugim ljudima je nova grupa.",

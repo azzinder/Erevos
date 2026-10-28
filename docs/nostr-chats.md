@@ -2,7 +2,7 @@
 
 A space can have a Nostr key of its own and chat, one to one or in groups, with people who use
 Damus, Amethyst, Primal, 0xchat or any other Nostr app that sends private messages as NIP-17 asks:
-text, photos and files, and reactions. Erevos talks to
+text, photos and files, voice messages, replies and reactions. Erevos talks to
 the Nostr relays itself, as those apps do. This is not Erevos's own Nostr way (`app/lib/nostr.ts`,
 the guide's "Through Nostr"), which carries Erevos's own chats between Erevos apps; the two share
 only the core's Nostr code (`crates/erevos-nostr`).
@@ -73,6 +73,29 @@ As NIP-17 has them (kind 15), with the file on a Blossom server (BUD-01, BUD-02)
 
 Up to 20 MB (`NOSTR_FILE_MOST`), what the servers above take without payment. A file fetched is kept
 in memory while the space is open, not on the phone.
+
+## Voice messages
+
+A voice message is a file as above (kind 15) that is audio and says how long it lasts: a `duration`
+tag, in seconds (`["duration", "3.2"]`; read as milliseconds, kept to a day at most). The microphone
+beside the field (`components/matrix-voice.tsx`, shared with Matrix) records it while held, a minute at
+most, under a second let go; the sound is AAC (`audio/mp4`, `voice.m4a`) from a phone, or what the
+browser records (`audio/ogg`, `audio/webm`) in the web app and on a computer. It is sealed and
+uploaded as any file, with the duration in the message (`nostrDmSendFile` takes `durationMs`). One that
+comes with `audio/*` and a duration plays as a voice message, with **Play** and its length (0:03),
+fetched and opened when asked (`VoiceClip` in `components/matrix-voice.tsx`); an audio file without a
+length shows as a file with **Play** and **Save** (`components/network-file.tsx`). Whether another
+app plays Erevos's as a voice message or as a sound file is for that app: NIP-17 has no voice kind of
+its own. The home list and the chat's quotes say `Voice message, 0:03`.
+
+## Replies
+
+A reply is a kind 14 message with an `e` tag for the message it answers, marked `reply`:
+`["e", <id>, "", "reply"]` (`nostrDmSend(key, text, replyTo)`). On a message that comes, the `e` tag
+marked `reply` wins; with none marked, the first `e` tag counts, as apps that mark no answer write it.
+The answer is kept as `replyTo` and shows the message it answers over its words, which a tap scrolls
+to; one not on the phone says so. A message that failed and is sent again keeps its `replyTo`. Only
+text replies are made here: a photo, file or voice message is sent as a new message.
 
 ## Reactions
 
@@ -157,8 +180,11 @@ Not yet run with a Nostr app on a phone, nor against the real Blossom servers.
 - `app/nostr-chat.tsx`: the messages, one tick once one of their relays took ours (NIP-17 says
   nothing more), Try again for one none took, a name given here only (a group's, for everyone),
   removing the chat here; in a group who wrote each message; **Photo** and **File**, and a photo or
-  file that came with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`); a message held shows six reactions to pick from,
-  and under it the reactions it has.
+  file that came with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`);
+  the microphone for voice messages and a voice message that came with **Play** and its length; a
+  message held opens its menu (`components/message-menu.tsx`): six reactions to pick from, more behind
+  **+**, **Reply** and **Copy**; the reply shows over the field with a ✕ and over the answer in the
+  thread, where a tap scrolls to the message; under a message, the reactions it has.
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a
@@ -177,6 +203,6 @@ Android; a muted one is left out. Its messages are marked read only while Erevos
 
 ## Not yet
 
-Voice messages recorded here (one that comes plays with **Play**), replies to one message (an `e`
-tag on a kind 14), files encrypted otherwise than with AES-GCM, the key in backups and in hidden
-chats, and a key kept by a signer app (NIP-55) or a remote signer (NIP-46) in place of the nsec.
+Files encrypted otherwise than with AES-GCM, a photo, file or voice message sent as a reply (it goes
+as a new message), the key in backups and in hidden chats, and a key kept by a signer app (NIP-55) or
+a remote signer (NIP-46) in place of the nsec.

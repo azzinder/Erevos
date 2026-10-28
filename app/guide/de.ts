@@ -1585,6 +1585,23 @@ Element: Keine Brücke sitzt dazwischen.
 - **Fotos und Dateien:** **Foto** und **Datei** senden sie, bis 50 MB, auf dem Telefon verschlüsselt, bevor sie zum
   Matrix-Server gehen, der so nur behält, was er nicht lesen kann. Ein erhaltenes Foto wird erst geladen, wenn du
   **Foto anzeigen** tippst; **Speichern** legt jede Datei auf dem Telefon ab.
+- **Reaktionen, Antworten, Änderungen und Löschen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: Wähle oben
+  eine Reaktion, **Antworten**, um ihr zu antworten, **Kopieren** für ihren Text, und bei einer Nachricht von dir
+  **Bearbeiten** oder **Löschen**. Eine Antwort zeigt über ihrem Text die Nachricht, auf die sie antwortet, und ein
+  Tippen darauf springt zu dieser Nachricht. Reaktionen stehen unter einer Nachricht; tippe auf eine, um genauso zu
+  reagieren, oder auf deine, um sie zurückzunehmen. Sie sind nicht verschlüsselt, wie Element sie sendet, auch in einem
+  verschlüsselten Chat: Der Matrix-Server sieht, welche Nachricht welche Reaktion bekam und von wem. Nur du kannst deine
+  eigenen Nachrichten ändern, und eine geänderte trägt **Bearbeitet**. **Löschen** nimmt eine Nachricht von dir für alle
+  im Chat zurück, wenn du es bestätigst; es lässt sich nicht rückgängig machen, und der Chat behält eine Zeile, die
+  sagt, dass sie gelöscht wurde.
+- **Frühere Nachrichten:** Ein Chat mit mehr Verlauf auf dem Matrix-Server zeigt oben **Frühere Nachrichten laden**;
+  jedes Tippen holt weitere, und der Chat bleibt dort, wo du gelesen hast. Eine Nachricht, deren Schlüssel noch nicht
+  kam, erscheint gesperrt.
+- **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
+  senden; wische vor dem Loslassen nach links, um die Aufnahme zu verwerfen. Eine Minute ist das Höchste, und ein Druck
+  von unter einer Sekunde sendet nichts. Mit TalkBack tippst du einmal, um zu beginnen, und noch einmal, um zu senden.
+  In einem verschlüsselten Chat wird sie wie ein Foto verschlüsselt, und Element und andere Matrix-Apps spielen sie als
+  Sprachnachricht ab. Eine, die ankommt, spielst du mit **Abspielen** ab; sie wird erst geholt, wenn du sie abspielst.
 - **Per Emoji prüfen:** In einem Chat mit einer Person zeigt **Per Emoji prüfen** euch beiden sieben Bilder; sind sie
   gleich und in derselben Reihenfolge, tippt auf beiden Telefonen **Stimmen überein**. Dann kann niemand unbemerkt
   dazwischensitzen, und der Chat zeigt **Per Emoji geprüft**. **Dieses Gerät mit einem anderen von dir prüfen**, auf
@@ -1627,7 +1644,6 @@ Element: Keine Brücke sitzt dazwischen.
   kam. Dafür meldet der Matrix-Server dem Relay dieses Bereichs jede Nachricht, ohne ein Wort von ihr, so erfährt der
   Matrix-Server die Adresse des Relays, und das Relay, wann Nachrichten kommen. Aus, bis du es einschaltest; es
   braucht ein dafür aktualisiertes Relay, das der Matrix-Server erreicht.
-- **Noch nicht:** Sprachnachrichten.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
 Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.
@@ -1646,13 +1662,15 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   online ist, wie andere XMPP-Apps es tun, und öffnet den Chat. Wer dich hinzufügen möchte, steht oben in der Liste und
   auf dem XMPP-Bildschirm, mit **Annehmen** und **Ablehnen**. Die Kontakte, die das Konto schon hat, stehen unter
   **Kontakte**.
-- **Verschlüsselung:** Nachrichten werden mit OMEMO verschlüsselt (Version 0.3, die Conversations, Monal, Gajim und Dino
-  sprechen), für jedes ihrer Geräte und für die anderen Geräte deines Kontos, die mitlesen. Es ist Erevos' eigener
-  Code, nicht geprüft, gegen eine andere OMEMO-Bibliothek getestet. Haben ihre Apps kein OMEMO, sagt Erevos es und
-  schreibt nur, wenn du für diesen Chat **Ohne Verschlüsselung schreiben** wählst; **Wieder verschlüsseln** geht zurück.
+- **Verschlüsselung:** Nachrichten werden mit OMEMO verschlüsselt, für jedes ihrer Geräte und für die anderen Geräte
+  deines Kontos, die mitlesen: mit OMEMO 2 für ein Gerät, dessen App es hat, wie Kaidan, und mit Version 0.3, die
+  Conversations, Monal, Gajim und Dino sprechen, für die anderen. Es ist Erevos' eigener Code, nicht geprüft, gegen
+  andere OMEMO-Bibliotheken getestet. Haben ihre Apps kein OMEMO, sagt Erevos es und schreibt nur, wenn du für diesen
+  Chat **Ohne Verschlüsselung schreiben** wählst; **Wieder verschlüsseln** geht zurück.
 - **Ihre Schlüssel:** unten im Chat stehen die Fingerabdrücke ihrer Geräte. Vergleiche sie auf einem anderen Weg als dem
   Chat mit dem, was ihre App zeigt. Ein Schlüssel, der sich seit dem ersten Sehen geändert hat, sagt es. Der Schlüssel
-  dieses Geräts steht auf dem XMPP-Bildschirm.
+  dieses Geräts steht auf dem XMPP-Bildschirm, zweimal: so, wie Apps mit OMEMO 0.3 ihn zeigen, und so, wie Kaidan ihn
+  zeigt. Ein Gerät hat in beiden einen Schlüssel, auf zwei Arten geschrieben.
 - **Markierungen:** ein Haken beim Senden, zwei, wenn ihre App sie hat, drei, wenn sie gelesen wurde, wie in Erevos'
   eigenen Chats, bei Apps, die diese Markierungen senden.
 - **Nachrichten von vorher:** Was kam, während Erevos geschlossen war, wird beim Verbinden aus dem Archiv des Servers
@@ -1687,6 +1705,10 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   über den TURN-Server des XMPP-Servers, und nur darüber, sodass die andere Person deine Adresse nicht erfährt; ohne
   beides geht er direkt, und sie erfährt sie. Ein Anruf geht nie über Tor: Das Anruf-Relay oder der TURN-Server sieht
   die Adresse dieses Telefons.
+  In einem Sprachanruf kann jeder von euch Video einschalten: **Video dazu** auf dem Anrufbildschirm schaltet deine
+  Kamera ein und fragt zuerst die andere Person, die **Nicht jetzt** oder **Video einschalten** wählt. Das Video beginnt
+  nur, wenn sie Ja sagt, und ein Nein lässt den Anruf, wie er war. Es funktioniert mit Apps, die Video zu einem Anruf
+  hinzufügen wie Conversations.
 - **Nicht anonym:** Der XMPP-Server sieht dein Konto, deine Kontakte, wer mit wem spricht und wann, und ohne Tor auch,
   von wo. Der Server der anderen Person sieht dasselbe von seinen Chats mit dir.
 - **Über Tor:** Auf Android folgt XMPP der Wahl dieses Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**:
@@ -1698,7 +1720,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
+- **Noch nicht:** Gruppenanrufe.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.
@@ -1734,8 +1756,19 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   sie gehen, zum ersten, der eine annimmt: blossom.primal.net, blossom.band und nostr.download, wenn du sie nicht
   änderst. Ein Foto oder eine Datei, die ankommt, wird erst geholt, wenn du **Foto anzeigen** oder **Speichern** tippst,
   und öffnet sich nur, wenn sie die gesendete ist.
-- **Reaktionen:** Halte eine Nachricht, um mit 👍, ❤️, 😂, 😮, 😢 oder 🙏 zu reagieren; darunter stehen die Reaktionen, die
-  letzte jeder Person, wie andere Nostr-Apps sie senden (NIP-25).
+- **Reaktionen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen und mit 👍, ❤️, 😂, 😮, 😢 oder 🙏 zu reagieren, oder
+  mit einer der weiteren hinter **+**; darunter stehen die Reaktionen, die letzte jeder Person, wie andere Nostr-Apps
+  sie senden (NIP-25).
+- **Antworten:** Wähle im Menü einer gehaltenen Nachricht **Antworten**, um sie zu beantworten. Die Nachricht steht über
+  dem Nachrichtenfeld, mit einem ✕, um sie loszulassen, und danach im Chat über deiner Antwort, wo ein Tippen zu ihr
+  springt. Auch andere Nostr-Apps zeigen sie als Antwort (NIP-17 kennzeichnet sie als Antwort). **Kopieren**, im selben
+  Menü, übernimmt den Text einer Nachricht.
+- **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
+  senden; wische vor dem Loslassen nach links, um die Aufnahme zu verwerfen. Eine Minute ist das Höchste, und ein Druck
+  von unter einer Sekunde sendet nichts. Sie geht wie eine Datei: auf diesem Telefon verschlüsselt und auf einen
+  Dateiserver gelegt, mit ihrer Dauer in der Nachricht; ob eine andere App sie als Sprachnachricht oder als Tondatei
+  abspielt, entscheidet diese App. Eine, die mit ihrer Dauer ankommt, spielst du mit **Abspielen** ab; sie wird erst
+  geholt, wenn du sie abspielst.
 - **Verschlüsselung:** Jede Nachricht wird für sie verschlüsselt und von dir signiert, dann von einem Schlüssel, der nur
   für diese Nachricht erstellt wird, noch einmal verpackt, ihre Zeit um bis zu zwei Tage zurückgesetzt (NIP-17, mit
   NIP-44 und NIP-59). Die Relays sehen, für wen sie ist, nicht wer sie schrieb, wann oder was darin steht. Eine Kopie
@@ -1759,9 +1792,8 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** hier aufgenommene Sprachnachrichten (eine, die ankommt, spielt **Abspielen** ab), Antworten auf
-  eine bestimmte Nachricht und Dateien, die eine andere App anders verschlüsselt (sie erscheinen als Datei, die Erevos
-  nicht öffnen kann).
+- **Noch nicht:** Dateien, die eine andere App anders verschlüsselt (sie erscheinen als Datei, die Erevos nicht öffnen
+  kann).
 
 **Warum:** Viele Menschen sind auf Nostr und werden dort bleiben. So schreibst du ihnen aus Erevos, getrennt und
 markiert, denn ein Nostr-Schlüssel ist für alle gleich, denen du schreibst, während Erevos' eigene Chats verbergen, wer

@@ -66,7 +66,6 @@ export const nostrChats: Record<string, string> = {
   "Name this group": "Dê um nome ao grupo",
   "Everyone in the group sees it, with your next message.": "Todos no grupo o veem, com sua próxima mensagem.",
   "Its messages are removed from this phone. The others keep theirs, and a new message in the group starts it again.": "As mensagens dela são removidas deste telefone. Os outros mantêm as suas, e uma nova mensagem no grupo a inicia de novo.",
-  "Hold to react": "Segure para reagir",
   "Choose two or more of the people you chat with. Each message goes to each of them, encrypted for each.": "Escolha duas ou mais das pessoas com quem você conversa. Cada mensagem vai para cada uma, criptografada para cada uma.",
   "Group name (optional)": "Nome do grupo (opcional)",
   "Nostr groups have no admins: nobody can be added or taken out later. A group with other people is a new group.": "Grupos Nostr não têm administradores: ninguém pode ser adicionado ou removido depois. Um grupo com outras pessoas é um grupo novo.",

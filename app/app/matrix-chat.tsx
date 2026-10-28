@@ -16,7 +16,7 @@ import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
-import { voiceMime } from '../lib/group-media';
+import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
 import type { MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
@@ -65,9 +65,7 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 
 /** A recorded voice message as it is sent: the phone's AAC, or what the browser records in the web app and on a computer. */
 function voiceFile(audio: Uint8Array, ms: number): OutgoingFile {
-  const mime = voiceMime(audio);
-  const browser = mime === 'audio/ogg' || mime === 'audio/webm';
-  return { name: browser ? `voice.${mime.slice('audio/'.length)}` : 'voice.m4a', mime: browser ? mime : 'audio/mp4', bytes: audio, voice: { durationMs: ms } };
+  return { ...voiceNamed(audio), bytes: audio, voice: { durationMs: ms } };
 }
 
 // Whether a message can be copied: it has words of its own.

@@ -66,7 +66,6 @@ export const nostrChats: Record<string, string> = {
   "Name this group": "Δώσε όνομα στην ομάδα",
   "Everyone in the group sees it, with your next message.": "Το βλέπουν όλοι στην ομάδα, με το επόμενο μήνυμά σου.",
   "Its messages are removed from this phone. The others keep theirs, and a new message in the group starts it again.": "Τα μηνύματά της αφαιρούνται από αυτό το τηλέφωνο. Οι άλλοι κρατούν τα δικά τους, και ένα νέο μήνυμα στην ομάδα την ξεκινά πάλι.",
-  "Hold to react": "Κράτα πατημένο για αντίδραση",
   "Choose two or more of the people you chat with. Each message goes to each of them, encrypted for each.": "Διάλεξε δύο ή περισσότερους από όσους συνομιλείς. Κάθε μήνυμα πηγαίνει στον καθένα, κρυπτογραφημένο για τον καθένα.",
   "Group name (optional)": "Όνομα ομάδας (προαιρετικό)",
   "Nostr groups have no admins: nobody can be added or taken out later. A group with other people is a new group.": "Οι ομάδες Nostr δεν έχουν διαχειριστές: κανείς δεν προστίθεται ούτε αφαιρείται αργότερα. Ομάδα με άλλους ανθρώπους είναι νέα ομάδα.",

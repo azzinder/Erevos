@@ -1499,6 +1499,22 @@ sta nel mezzo.
 - **Foto e file:** **Foto** e **File** li inviano, fino a 50 MB, cifrati sul telefono prima di andare al server
   Matrix, che così tiene solo ciò che non può leggere. Una foto ricevuta si scarica solo toccando **Mostra foto**;
   **Salva** tiene qualsiasi file sul telefono.
+- **Reazioni, risposte, modifiche ed eliminazione:** tieni premuto un messaggio per aprire il suo menu: scegli una
+  reazione in alto, **Rispondi** per rispondergli, **Copia** per le sue parole, e su un tuo messaggio **Modifica** o
+  **Elimina**. Una risposta mostra il messaggio a cui risponde sopra le sue parole, e un tocco su quello porta al
+  messaggio. Le reazioni si vedono sotto un messaggio; toccane una per reagire allo stesso modo, o tocca la tua per
+  ritirarla. Non sono cifrate, come le invia Element, nemmeno in una chat cifrata: il server Matrix vede quale messaggio
+  ha ricevuto quale reazione, e da chi. Solo tu puoi cambiare i tuoi messaggi, e uno cambiato dice **Modificato**.
+  **Elimina** ritira un tuo messaggio per tutti nella chat, dopo che confermi; non si può annullare, e la chat tiene una
+  riga che dice che è stato eliminato.
+- **Messaggi precedenti:** una chat con più cronologia sul server Matrix mostra in alto **Carica i messaggi
+  precedenti**; ogni tocco ne porta altri, e la chat resta dove stavi leggendo. Un messaggio la cui chiave non è ancora
+  arrivata appare bloccato.
+- **Messaggi vocali:** tieni premuto il microfono sotto il campo del messaggio per registrare, e lascia per inviare;
+  scorri a sinistra prima di lasciare per scartare la registrazione. Un minuto è il massimo, e una pressione di meno di
+  un secondo non invia nulla. Con TalkBack, toccalo una volta per iniziare e di nuovo per inviare. In una chat cifrata è
+  cifrato come una foto, e Element e le altre app Matrix lo riproducono come messaggio vocale. Uno che arriva si ascolta
+  con **Riproduci**, e viene scaricato solo quando lo riproduci.
 - **Verifica con le emoji:** in una chat con una persona, **Verifica con le emoji** mostra a entrambi sette immagini;
   se sono uguali, nello stesso ordine, toccate **Coincidono** su entrambi i telefoni. Così nessuno può stare in
   mezzo senza essere visto, e la chat dice **Verificato con le emoji**. **Verifica questo dispositivo con un altro
@@ -1540,7 +1556,6 @@ sta nel mezzo.
   di questo spazio di ogni messaggio, senza nessuna sua parola, così il server Matrix conosce l’indirizzo del relay, e
   il relay quando arrivano messaggi. Spento finché non lo accendi; serve un relay aggiornato per questo, che il server
   Matrix possa raggiungere.
-- **Non ancora:** messaggi vocali.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server Matrix non può. Così le chat Matrix restano a
 parte e segnate, per le persone che altrimenti raggiungeresti solo su Matrix.
@@ -1558,14 +1573,15 @@ app: nessun ponte sta nel mezzo.
 - **Chat:** **Nuova chat** aggiunge l’indirizzo ai tuoi contatti, chiede alla persona di farti vedere quando è online,
   come fanno le altre app XMPP, e apre la chat. Chi chiede di aggiungerti compare in cima all’elenco e nella schermata
   XMPP, con **Accetta** e **Rifiuta**. I contatti che l’account ha già sono in **Contatti**.
-- **Cifratura:** i messaggi sono cifrati con OMEMO (versione 0.3, quella che parlano Conversations, Monal, Gajim e
-  Dino), per ciascuno dei loro dispositivi e per gli altri dispositivi del tuo account, che leggono insieme. È codice
-  proprio di Erevos, non verificato da terzi, controllato con un’altra libreria OMEMO. Se le loro app non hanno OMEMO,
-  Erevos lo dice e scrive solo quando scegli **Scrivi senza cifratura** per quella chat; **Cifra di nuovo** torna
-  indietro.
+- **Cifratura:** i messaggi sono cifrati con OMEMO, per ciascuno dei loro dispositivi e per gli altri dispositivi del
+  tuo account, che leggono insieme: con OMEMO 2 per un dispositivo la cui app lo ha, come Kaidan, e con la versione 0.3,
+  quella che parlano Conversations, Monal, Gajim e Dino, per gli altri. È codice proprio di Erevos, non verificato da
+  terzi, controllato con altre librerie OMEMO. Se le loro app non hanno OMEMO, Erevos lo dice e scrive solo quando
+  scegli **Scrivi senza cifratura** per quella chat; **Cifra di nuovo** torna indietro.
 - **Le loro chiavi:** in fondo alla chat ci sono le impronte dei loro dispositivi. Confrontale con ciò che mostra la
   loro app, in un altro modo rispetto alla chat. Una chiave cambiata da quando è stata vista la prima volta lo dice. La
-  chiave di questo dispositivo è nella schermata XMPP.
+  chiave di questo dispositivo è nella schermata XMPP, due volte: come la mostrano le app con OMEMO 0.3 e come la mostra
+  Kaidan. Un dispositivo ha una sola chiave in entrambe, scritta in due modi.
 - **Segni:** un segno all’invio, due quando la loro app lo ha, tre quando lo leggono, come nelle chat di Erevos, per le
   app che inviano questi segni.
 - **Messaggi di prima:** ciò che è arrivato mentre Erevos era chiuso si scarica dall’archivio del server alla
@@ -1597,6 +1613,10 @@ app: nessun ponte sta nel mezzo.
   mezzo. Passa per il relay per le chiamate di questo spazio quando c’è, altrimenti per il server TURN del server XMPP,
   e solo da lì, così l’altra persona non conosce il tuo indirizzo; senza nessuno dei due, va diretta, e lo conosce. Una
   chiamata non passa mai per Tor: il relay per le chiamate o il server TURN vede l’indirizzo di questo telefono.
+  In una chiamata vocale, ognuno di voi può attivare il video: **Aggiungi video**, sulla schermata della chiamata,
+  accende la tua fotocamera e chiede prima all’altra persona, che sceglie **Non ora** o **Attiva il video**. Il video
+  parte solo se dice di sì, e un no lascia la chiamata com’era. Funziona con le app che aggiungono il video a una
+  chiamata come Conversations.
 - **Non anonimo:** il server XMPP vede il tuo account, i tuoi contatti, chi parla con chi e quando, e, senza Tor, da
   dove. Il server dell’altra persona vede lo stesso delle sue chat con te.
 - **Tramite Tor:** su Android, XMPP segue la scelta di questo spazio in **Impostazioni** → **Relay e reti** → **Tor**:
@@ -1607,7 +1627,7 @@ app: nessun ponte sta nel mezzo.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
+- **Non ancora:** chiamate di gruppo.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
@@ -1641,8 +1661,18 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   tramite Tor come queste chat. **Server di file** dice dove vanno, al primo che ne accetta uno: blossom.primal.net,
   blossom.band e nostr.download, se non li cambi. Una foto o un file che arriva viene scaricato solo quando tocchi
   **Mostra foto** o **Salva**, e si apre solo se è quello che è stato inviato.
-- **Reazioni:** tieni premuto un messaggio per reagire con 👍, ❤️, 😂, 😮, 😢 o 🙏; sotto compaiono le reazioni, l’ultima di
-  ogni persona, come le mandano le altre app Nostr (NIP-25).
+- **Reazioni:** tieni premuto un messaggio per aprire il suo menu e reagire con 👍, ❤️, 😂, 😮, 😢 o 🙏, o con una delle
+  altre dietro **+**; sotto compaiono le reazioni, l’ultima di ogni persona, come le mandano le altre app Nostr
+  (NIP-25).
+- **Risposte:** **Rispondi**, nel menu di un messaggio tenuto premuto, gli risponde. Il messaggio compare sopra il campo
+  del messaggio, con una ✕ per lasciarlo, e poi sopra la tua risposta nella chat, dove un tocco porta a lui. Anche le
+  altre app Nostr la mostrano come risposta (NIP-17 la segna come risposta). **Copia**, nello stesso menu, prende le
+  parole di un messaggio.
+- **Messaggi vocali:** tieni premuto il microfono sotto il campo del messaggio per registrare, e lascia per inviare;
+  scorri a sinistra prima di lasciare per scartare la registrazione. Un minuto è il massimo, e una pressione di meno di
+  un secondo non invia nulla. Va come un file: cifrato su questo telefono e messo su un server di file, con la sua
+  durata nel messaggio; se un’altra app lo riproduce come messaggio vocale o come file audio lo decide quell’app. Uno
+  che arriva con la sua durata si ascolta con **Riproduci**, e viene scaricato solo quando lo riproduci.
 - **Cifratura:** ogni messaggio è cifrato per l’altra persona e firmato da te, poi avvolto di nuovo da una chiave creata
   solo per quel messaggio, con l’ora spostata indietro fino a due giorni (NIP-17, con NIP-44 e NIP-59). I relay vedono a
   chi è destinato, non chi l’ha scritto, quando né cosa dice. Una copia va ai tuoi relay, così le tue altre app Nostr
@@ -1664,8 +1694,7 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** messaggi vocali registrati qui (uno che arriva si ascolta con **Riproduci**), risposte a un messaggio preciso,
-  e file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
+- **Non ancora:** file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
 chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie di Erevos nascondono chi parla con chi.

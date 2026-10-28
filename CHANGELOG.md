@@ -92,7 +92,7 @@ On main, not released yet:
   who talks with whom, and when. The sign-in is kept sealed in that space only, not in its hidden chats nor in
   backups yet. Photos and files go too, up to 50 MB, encrypted on the phone before upload as Matrix does it
   (AES-256-CTR, checked by SHA-256 on the way back), so Element and others open them; a photo you get is fetched only
-  when you tap **Show photo**. Voice messages, calls and checking devices by emoji are still to come.
+  when you tap **Show photo**.
 - **Every network's chats on the home screen**: once you sign in to Matrix, its chats are in the list with the Erevos
   chats and the SMS, newest first, each marked **Matrix**, with an invite at the top; the **Matrix** chip shows them
   alone, as **SMS** and **Erevos** do, and there **New chat** starts a Matrix chat. The space's Matrix account syncs
@@ -123,7 +123,7 @@ On main, not released yet:
   list under an **XMPP** chip of their own. These chats are not anonymous, and say so: the XMPP server sees who talks
   with whom, and when. On Android the connection follows the space's choice under **Tor**, with a circuit of its own
   per server; the web app and the computer connect through the server's WebSocket, straight. Text, calls, photos,
-  files and groups (below) for now: no OMEMO 2 yet.
+  files and groups (below), and OMEMO 2 (below) for the apps that have it.
 
 - **Voice and video calls with people on XMPP**: the two tiles at the top of an XMPP chat call the person, on the same
   call screen as Erevos's own calls, and their calls ring here the same way while the space is open; someone not in
@@ -185,7 +185,7 @@ On main, not released yet:
   16 bytes. Reactions (kind 7, NIP-25): hold a message for six, and each person's last one shows under it, also one that
   came before its message. Groups as NIP-17 makes them: the people a message names, up to 20 others, with a name any
   member can change; **New group** makes one from the space's chats, and a message from another app to several people
-  opens one. Not yet: voice messages recorded here, replies to one message, files encrypted otherwise than with AES-GCM.
+  opens one. Not yet: files encrypted otherwise than with AES-GCM.
   Checked with a Blossom server played in the checks; not yet against the real ones.
 - **Photos and files in XMPP chats**: **Photo** and **File** send one of up to 50 MB, or less when the XMPP server
   takes less, through the server's HTTP upload (XEP-0363), as Conversations, Monal, Gajim and Dino share them. In an
@@ -207,6 +207,43 @@ On main, not released yet:
   **Decline**; anyone else's are not shown. The groups are kept in the account's bookmarks (XEP-0402), so its other XMPP
   apps join and leave the same ones, and what a group's archive holds comes when it is joined. No group calls yet.
   Checked with a group service played in the checks; not yet with a real server or with Conversations on a phone.
+- **Reactions, replies, edits, deleting, older messages and voice messages in Matrix chats**: a message held down opens
+  its menu: a reaction at the top, **Reply**, **Copy**, and for one of yours **Edit** and **Delete**. A reaction goes as
+  a plain `m.reaction`, as Element sends it, because its relation is readable to the homeserver anyway and an encrypted
+  one would wake the other's phone as a message does; tapping one under a message reacts the same or takes ours back (a
+  redaction). An answer shows the message it answers over its words, and a tap goes to it; one from an older app, which
+  also copies the message into its words, is read without the copy. Only the original sender's `m.replace` changes a
+  message, so nobody else can edit it for them, and a changed message says **Edited**. **Delete** sends an
+  `m.room.redaction` for everyone in the room after a confirmation, and what the message said is gone from the chat. A
+  room with more history offers **Load earlier messages** (`/messages?dir=b`, page by page, the chat staying where it
+  was read); a message still locked there may open from the key backup later, and a reaction or change that comes before
+  its message waits for it, up to 400. The microphone under the message box records a voice message while it is held, a
+  minute at most, and sends it as Element does: an `m.audio` with `org.matrix.msc3245.voice` and its duration, encrypted
+  like any file in an encrypted room (AAC from a phone, Opus from the web app and the computer); one that comes plays
+  with **Play**, fetched when it is played. Checked with the homeserver played in the checks, two people through each
+  other; not yet with Element on a phone.
+- **Video added to a voice call with someone on XMPP**: **Add video**, on the call screen, turns the camera on and sends
+  the other side the video as Jingle's `content-add`, as Conversations does. The other person is asked first (the
+  name wants to turn on video, with **Not now** and **Turn on video**) and can say no, which leaves the call as it was
+  (`content-reject`); a yes (`content-accept`) turns their camera on too. Either side can add it, once the call is
+  connected, and not while another request is open. Checked with the other side played in the checks; not yet with
+  Conversations on a phone.
+- **Voice messages and replies in Nostr chats**: the microphone under the message box records a voice message while it is
+  held, a minute at most. It goes as a NIP-17 file (kind 15, an audio file encrypted on the phone and put on the
+  space's file server) with a `duration` tag in seconds; one that comes with a length plays with **Play** and shows how
+  long it lasts, fetched when it is played. Holding a message opens its menu: the reactions, **Reply** and **Copy**. A
+  reply goes as a kind 14 whose `e` tag is marked `reply` (`["e", id, "", "reply"]`), the tag marked `reply` winning
+  over the first `e` tag when a message has several, so other Nostr apps show it as an answer; the answer shows the
+  message it answers over its words, and a tap goes to it. Checked with relays and a file server played in the checks;
+  not yet with a Nostr app on a phone.
+- **OMEMO 2 in XMPP chats**: Erevos also speaks OMEMO 2 (XEP-0384 version 0.8, `urn:xmpp:omemo:2`), as Kaidan and
+  the other apps built on QXmpp do, beside OMEMO 0.3: each device gets the version its app has, and a message to someone
+  with both kinds carries both. One identity serves both, its OMEMO 2 form the Ed25519 key it signs with, with its own
+  signed pre-key and 100 pre-keys published in `urn:xmpp:omemo:2:bundles`; the payload is an SCE envelope (XEP-0420),
+  padded, and one that says it is from someone else or for another chat is not opened. The XMPP screen shows this
+  device's key both ways, the second as Kaidan shows it. The core is checked against python-twomemo both ways
+  (`docs/xmpp-checks/twomemo-cross.py`), the rest with apps of each kind played in the checks; not yet with Kaidan on a
+  phone.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

@@ -67,3 +67,10 @@ export function voiceMime(audio: Uint8Array): string {
   if (audio[0] === 0x1a && audio[1] === 0x45 && audio[2] === 0xdf && audio[3] === 0xa3) return 'audio/webm';
   return 'application/octet-stream';
 }
+
+/** The name and type a recorded voice message is sent under: the phone's AAC, or what the browser records in the web app and on a computer. */
+export function voiceNamed(audio: Uint8Array): { name: string; mime: string } {
+  const mime = voiceMime(audio);
+  const browser = mime === 'audio/ogg' || mime === 'audio/webm';
+  return browser ? { name: `voice.${mime.slice('audio/'.length)}`, mime } : { name: 'voice.m4a', mime: 'audio/mp4' };
+}

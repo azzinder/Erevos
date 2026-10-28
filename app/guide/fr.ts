@@ -1553,6 +1553,23 @@ Element : aucun pont ne se met entre les deux.
 - **Photos et fichiers :** **Photo** et **Fichier** les envoient, jusqu’à 50 Mo, chiffrés sur le téléphone avant
   d’aller au serveur Matrix, qui ne garde ainsi que ce qu’il ne peut pas lire. Une photo reçue n’est téléchargée que si
   vous touchez **Afficher la photo** ; **Enregistrer** garde n’importe quel fichier sur le téléphone.
+- **Réactions, réponses, modifications et suppression :** appuie longuement sur un message pour ouvrir son menu :
+  choisis une réaction en haut, **Répondre** pour lui répondre, **Copier** pour ses mots, et sur un message de toi
+  **Modifier** ou **Supprimer**. Une réponse montre le message auquel elle répond au-dessus de ses mots, et un appui
+  dessus mène au message. Les réactions s’affichent sous un message ; appuie sur l’une pour réagir pareil, ou sur la
+  tienne pour la retirer. Elles ne sont pas chiffrées, comme Element les envoie, même dans une discussion chiffrée : le
+  serveur Matrix voit quel message a reçu quelle réaction, et de qui. Tu es le seul à pouvoir modifier tes propres
+  messages, et un message modifié affiche **Modifié**. **Supprimer** retire un message de toi pour tout le monde dans la
+  discussion, une fois que tu confirmes ; on ne peut pas l’annuler, et la discussion garde une ligne disant qu’il a été
+  supprimé.
+- **Messages précédents :** une discussion qui a plus d’historique sur le serveur Matrix affiche **Charger les messages
+  précédents** en haut ; chaque appui en rapporte d’autres, et la discussion reste là où tu lisais. Un message dont la
+  clé n’est pas encore arrivée s’affiche verrouillé.
+- **Messages vocaux :** maintiens le micro sous le champ du message pour enregistrer, et relâche pour envoyer ; glisse
+  vers la gauche avant de relâcher pour abandonner l’enregistrement. Une minute au maximum, et un appui de moins d’une
+  seconde n’envoie rien. Avec TalkBack, appuie une fois pour commencer et une autre pour envoyer. Dans une discussion
+  chiffrée, il est chiffré comme une photo, et Element et les autres applis Matrix le lisent comme un message vocal. Un
+  message vocal qui arrive se lit avec **Lire**, et n’est récupéré que quand tu le lis.
 - **Vérifier par emoji :** dans une discussion avec une personne, **Vérifier par emoji** vous montre à tous les deux
   sept images ; si elles sont identiques, dans le même ordre, touchez **Ils correspondent** sur les deux téléphones.
   Personne ne peut alors être au milieu sans qu’on le voie, et la discussion indique **Vérifié par emoji**.
@@ -1596,7 +1613,6 @@ Element : aucun pont ne se met entre les deux.
   serveur Matrix signale chaque message au relais de cet espace, sans aucun de ses mots : le serveur Matrix apprend
   l’adresse du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut un
   relais mis à jour pour cela, que le serveur Matrix puisse joindre.
-- **Pas encore :** messages vocaux.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.
@@ -1615,14 +1631,15 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   quand elle est en ligne, comme le font les autres apps XMPP, et ouvre la discussion. Qui demande à t’ajouter s’affiche
   en haut de la liste et sur l’écran XMPP, avec **Accepter** et **Refuser**. Les contacts que le compte a déjà sont sous
   **Contacts**.
-- **Chiffrement :** les messages sont chiffrés avec OMEMO (version 0.3, que parlent Conversations, Monal, Gajim et
-  Dino), pour chacun de ses appareils et pour les autres appareils de ton compte, qui lisent en même temps. C’est le
-  code propre d’Erevos, non audité, vérifié contre une autre bibliothèque OMEMO. Si ses apps n’ont pas OMEMO, Erevos le
-  dit et n’écrit que si tu choisis **Écrire sans chiffrement** pour cette discussion ; **Chiffrer de nouveau** revient en
-  arrière.
+- **Chiffrement :** les messages sont chiffrés avec OMEMO, pour chacun de ses appareils et pour les autres appareils de
+  ton compte, qui lisent en même temps : avec OMEMO 2 pour un appareil dont l’app l’a, comme Kaidan, et avec la version
+  0.3, que parlent Conversations, Monal, Gajim et Dino, pour les autres. C’est le code propre d’Erevos, non audité,
+  vérifié contre d’autres bibliothèques OMEMO. Si ses apps n’ont pas OMEMO, Erevos le dit et n’écrit que si tu choisis
+  **Écrire sans chiffrement** pour cette discussion ; **Chiffrer de nouveau** revient en arrière.
 - **Ses clés :** en bas de la discussion sont les empreintes de ses appareils. Compare-les avec ce que montre son app,
   par un autre moyen que la discussion. Une clé qui a changé depuis qu’elle a été vue pour la première fois le dit. La
-  clé de cet appareil est sur l’écran XMPP.
+  clé de cet appareil est sur l’écran XMPP, deux fois : comme les apps avec OMEMO 0.3 la montrent, et comme Kaidan la
+  montre. Un appareil a une seule clé dans les deux, écrite de deux façons.
 - **Marques :** un trait à l’envoi, deux quand son app l’a, trois quand il est lu, comme dans les discussions propres
   d’Erevos, pour les apps qui envoient ces marques.
 - **Messages d’avant :** ce qui est arrivé pendant qu’Erevos était fermé est récupéré dans l’archive du serveur à la
@@ -1657,6 +1674,10 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   TURN du serveur XMPP, et seulement par lui, donc l’autre personne n’apprend pas ton adresse ; sans aucun des deux, il
   passe directement, et elle l’apprend. Un appel ne passe jamais par Tor : le relais d’appel ou le serveur TURN voit
   l’adresse de ce téléphone.
+  Dans un appel vocal, chacun de vous peut activer la vidéo : **Ajouter la vidéo**, sur l’écran de l’appel, allume ta
+  caméra et demande d’abord à l’autre personne, qui choisit **Pas maintenant** ou **Activer la vidéo**. La vidéo ne
+  démarre que si elle dit oui, et un non laisse l’appel comme il était. Cela marche avec les applis qui ajoutent la
+  vidéo à un appel comme Conversations.
 - **Pas anonyme :** le serveur XMPP voit ton compte, tes contacts, qui parle avec qui et quand, et, sans Tor, d’où. Le
   serveur de l’autre personne voit la même chose de ses discussions avec toi.
 - **Par Tor :** sur Android, XMPP suit le choix de cet espace sous **Réglages** → **Relais et réseaux** → **Tor** : avec
@@ -1668,7 +1689,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
+- **Pas encore :** appels de groupe.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.
@@ -1705,8 +1726,18 @@ discussions propres à Erevos.
   premier qui en accepte un : blossom.primal.net, blossom.band et nostr.download, sauf si tu les changes. Une photo ou
   un fichier qui arrive n’est récupéré que quand tu touches **Afficher la photo** ou **Enregistrer**, et ne s’ouvre que
   s’il est celui qui a été envoyé.
-- **Réactions :** appuie longuement sur un message pour réagir avec 👍, ❤️, 😂, 😮, 😢 ou 🙏 ; dessous s’affichent les
-  réactions, la dernière de chaque personne, comme les autres applis Nostr les envoient (NIP-25).
+- **Réactions :** appuie longuement sur un message pour ouvrir son menu et réagir avec 👍, ❤️, 😂, 😮, 😢 ou 🙏, ou avec
+  l’une de celles derrière **+** ; dessous s’affichent les réactions, la dernière de chaque personne, comme les autres
+  applis Nostr les envoient (NIP-25).
+- **Réponses :** **Répondre**, dans le menu d’un message maintenu, lui répond. Le message s’affiche au-dessus du champ
+  du message, avec une ✕ pour l’abandonner, puis au-dessus de ta réponse dans la discussion, où un appui mène à lui. Les
+  autres applis Nostr l’affichent aussi comme une réponse (NIP-17 la marque comme réponse). **Copier**, dans le même
+  menu, prend les mots d’un message.
+- **Messages vocaux :** maintiens le micro sous le champ du message pour enregistrer, et relâche pour envoyer ; glisse
+  vers la gauche avant de relâcher pour abandonner l’enregistrement. Une minute au maximum, et un appui de moins d’une
+  seconde n’envoie rien. Il part comme un fichier : chiffré sur ce téléphone et déposé sur un serveur de fichiers, avec
+  sa durée dans le message ; qu’une autre appli le lise comme un message vocal ou comme un fichier son, c’est à elle
+  d’en décider. Un message qui arrive avec sa durée se lit avec **Lire**, et n’est récupéré que quand tu le lis.
 - **Chiffrement :** chaque message est chiffré pour l’autre personne et signé par toi, puis enveloppé de nouveau par une
   clé créée pour ce seul message, son heure reculée jusqu’à deux jours (NIP-17, avec NIP-44 et NIP-59). Les relais
   voient à qui il est destiné, pas qui l’a écrit, quand, ni ce qu’il dit. Une copie va à tes propres relais, pour que
@@ -1729,9 +1760,8 @@ discussions propres à Erevos.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** les messages vocaux enregistrés ici (un message vocal qui arrive se lit avec **Lire**), les
-  réponses à un message précis, et les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier
-  qu’Erevos ne sait pas ouvrir).
+- **Pas encore :** les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier qu’Erevos ne sait
+  pas ouvrir).
 
 **Pourquoi :** beaucoup de gens sont sur Nostr et y resteront. Ainsi tu leur écris depuis Erevos, à part et marqué, car
 une clé Nostr est la même pour tous ceux à qui tu écris, alors que les discussions propres à Erevos cachent qui parle

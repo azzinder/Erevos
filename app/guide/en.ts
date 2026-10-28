@@ -1367,6 +1367,20 @@ between.
 - **Photos and files:** **Photo** and **File** send them, up to 50 MB, encrypted on the phone before they go to the
   Matrix server, so it keeps only what it cannot read. A photo you get is fetched only when you tap **Show photo**;
   **Save** keeps any file on the phone.
+- **Reactions, answers, changes and deleting:** hold a message to open its menu: pick a reaction at the top, **Reply**
+  to answer it, **Copy** its words, and for a message of yours **Edit** or **Delete** it. An answer shows the message it
+  is to above its words, and a tap on that goes to the message. Reactions show under a message; tap one to react the
+  same, or tap yours to take it back. They are not encrypted, as Element sends them, even in an encrypted chat: the
+  Matrix server sees which message got which reaction, and from whom. Only you can change your own messages, and a
+  changed one says **Edited**. **Delete** takes a message of yours back for everyone in the chat, once you confirm; it
+  cannot be undone, and the chat keeps a line saying it was deleted.
+- **Earlier messages:** a chat with more history on the Matrix server shows **Load earlier messages** at its top; each
+  tap fetches more, and the chat stays where you were reading. A message whose key has not come yet shows as locked.
+- **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
+  before you let go to drop the recording. A minute is the most, and a press of under a second sends nothing. With
+  TalkBack, tap it once to start and again to send. In an encrypted chat it is encrypted like a photo, and Element and
+  other Matrix apps play it as a voice message. One that comes plays with **Play**, and is fetched only when you play
+  it.
 - **Check by emoji:** in a chat with one person, **Check by emoji** shows you both seven pictures; if they are the
   same, in the same order, tap **They match** on both phones. Nobody can then sit in between unseen, and the chat
   says **Checked by emoji**. **Check this device with another of yours**, on the Matrix screen, does the same with
@@ -1403,7 +1417,6 @@ between.
   key opens what came. For it the Matrix server tells this space's relay of each message, with no words in it, so the
   Matrix server learns the relay's address, and the relay when messages come. Off unless you turn it on; it needs a
   relay updated for it, which the Matrix server can reach.
-- **Not yet:** voice messages.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.
@@ -1421,13 +1434,15 @@ bridge sits in between.
 - **Chats:** **New chat** adds the address to your contacts, asks the person to let you see when they are online, as
   other XMPP apps do, and opens the chat. Someone who asks to add you shows at the top of the home list and on the XMPP
   screen, with **Accept** and **Decline**. The contacts the account already has are under **Contacts**.
-- **Encryption:** messages are encrypted with OMEMO (version 0.3, which Conversations, Monal, Gajim and Dino speak), for
-  each of their devices and for your account's other devices, which read along. It is Erevos's own code, not audited,
-  checked against another OMEMO library. If their apps have no OMEMO, Erevos says so and writes only when you choose
+- **Encryption:** messages are encrypted with OMEMO, for each of their devices and for your account's other devices,
+  which read along: with OMEMO 2 for a device whose app has it, as Kaidan does, and with version 0.3, which
+  Conversations, Monal, Gajim and Dino speak, for the others. It is Erevos's own code, not audited, checked against
+  other OMEMO libraries. If their apps have no OMEMO, Erevos says so and writes only when you choose
   **Write without encryption** for that chat; **Encrypt again** goes back.
 - **Their keys:** at the bottom of a chat are the fingerprints of their devices. Compare them with what their app shows,
   by another way than the chat. A key that changed since it was first seen says so. This device's own key is on the XMPP
-  screen.
+  screen, twice: as apps with OMEMO 0.3 show it, and as Kaidan shows it. One device has one key in both, written two
+  ways.
 - **Marks:** one tick when sent, two when their app has it, three when they read it, as in Erevos's own chats, for apps
   that send these marks.
 - **Messages from before:** what came while Erevos was closed is fetched from the server's archive when it connects, if
@@ -1457,6 +1472,9 @@ bridge sits in between.
   there is one, else through the XMPP server's TURN server, and only through it, so the other person does not learn your
   address; with neither, it goes straight, and they do. A call never goes through Tor: the call relay or the TURN server
   sees this phone's address.
+  In a voice call, either of you can turn on video: **Add video**, on the call screen, turns your camera on and asks the
+  other person first, who chooses **Not now** or **Turn on video**. Video starts only if they say yes, and a no leaves
+  the call as it was. It works with apps that add video to a call as Conversations does.
 - **Not anonymous:** the XMPP server sees your account, your contacts, who talks with whom and when, and, without Tor,
   from where. The other person's server sees the same of its chats with you.
 - **Through Tor:** on Android, XMPP follows this space's choice under **Settings** → **Relay and networks** → **Tor**:
@@ -1467,7 +1485,7 @@ bridge sits in between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** group calls, adding video to a voice call, and OMEMO 2.
+- **Not yet:** group calls.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.
@@ -1499,8 +1517,16 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   servers** says where they go, the first that takes one: blossom.primal.net, blossom.band and nostr.download unless you
   change them. A photo or file that comes is fetched only when you tap **Show photo** or **Save**, and opens only if it
   is the one that was sent.
-- **Reactions:** hold a message to react with 👍, ❤️, 😂, 😮, 😢 or 🙏; under it show the reactions, the last one of each
-  person, as other Nostr apps send them (NIP-25).
+- **Reactions:** hold a message to open its menu and react with 👍, ❤️, 😂, 😮, 😢 or 🙏, or with one of more behind **+**;
+  under it show the reactions, the last one of each person, as other Nostr apps send them (NIP-25).
+- **Answers:** **Reply**, in the menu of a held message, answers it. The message shows over the message box, with a ✕ to
+  let it go, and then above your answer in the chat, where a tap goes to it. Other Nostr apps show it as an answer too
+  (NIP-17 marks it as a reply). **Copy**, in the same menu, takes the words of a message.
+- **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
+  before you let go to drop the recording. A minute is the most, and a press of under a second sends nothing. It goes as
+  a file does, encrypted on this phone and put on a file server, with how long it lasts in the message; whether another
+  app plays it as a voice message or as a sound file is up to that app. One that comes with its length plays with
+  **Play**, and is fetched only when you play it.
 - **Encryption:** each message is encrypted for them and signed by you, then wrapped again by a key made for that
   message alone, its time set back by up to two days (NIP-17, with NIP-44 and NIP-59). The relays see whom it is for,
   not who wrote it, when, or what it says. A copy goes to your own relays, so your other Nostr apps with this key read
@@ -1521,8 +1547,7 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** voice messages recorded here (one that comes plays with **Play**), answers to one message, and files
-  another app encrypts some other way (they show as a file Erevos cannot open).
+- **Not yet:** files another app encrypts some other way (they show as a file Erevos cannot open).
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
 because a Nostr key is the same to everyone you write to, while Erevos's own chats hide who talks with whom.

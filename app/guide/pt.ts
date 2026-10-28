@@ -1468,6 +1468,22 @@ fica no meio.
 - **Fotos e arquivos:** **Foto** e **Arquivo** os enviam, até 50 MB, criptografados no celular antes de irem ao
   servidor Matrix, que assim guarda só o que não consegue ler. Uma foto recebida só é baixada ao tocar em
   **Mostrar foto**; **Salvar** guarda qualquer arquivo no celular.
+- **Reações, respostas, alterações e apagar:** segure uma mensagem para abrir o menu dela: escolha uma reação no alto,
+  **Responder** para respondê-la, **Copiar** para as palavras dela, e numa mensagem sua **Editar** ou **Apagar**. Uma
+  resposta mostra a mensagem a que responde acima das palavras dela, e um toque nisso vai até a mensagem. As reações
+  aparecem abaixo de uma mensagem; toque numa para reagir igual, ou toque na sua para retirá-la. Elas não são
+  criptografadas, como o Element as envia, nem numa conversa criptografada: o servidor do Matrix vê qual mensagem
+  recebeu qual reação, e de quem. Só você pode alterar as suas próprias mensagens, e uma alterada diz **Editada**.
+  **Apagar** retira uma mensagem sua para todos na conversa, depois que você confirma; não dá para desfazer, e a
+  conversa mantém uma linha dizendo que ela foi apagada.
+- **Mensagens anteriores:** uma conversa com mais histórico no servidor do Matrix mostra **Carregar mensagens
+  anteriores** no alto; cada toque traz mais, e a conversa fica onde você estava lendo. Uma mensagem cuja chave ainda
+  não chegou aparece bloqueada.
+- **Mensagens de voz:** toque e segure o microfone abaixo do campo de mensagem para gravar, e solte para enviar; deslize
+  para a esquerda antes de soltar para descartar a gravação. Um minuto é o máximo, e um toque de menos de um segundo não
+  envia nada. Com o TalkBack, toque nele uma vez para começar e de novo para enviar. Numa conversa criptografada ela é
+  criptografada como uma foto, e o Element e outros apps Matrix a tocam como mensagem de voz. Uma que chega toca com
+  **Reproduzir**, e só é buscada quando você a reproduz.
 - **Verificar por emoji:** numa conversa com uma pessoa, **Verificar por emoji** mostra aos dois sete imagens; se
   forem iguais, na mesma ordem, toquem em **São iguais** nos dois celulares. Assim ninguém pode ficar no meio sem ser
   notado, e a conversa diz **Verificado por emoji**. **Verificar este dispositivo com outro seu**, na tela do Matrix,
@@ -1508,7 +1524,6 @@ fica no meio.
   avisa o relay deste espaço de cada mensagem, sem nenhuma palavra dela, então o servidor Matrix fica sabendo o
   endereço do relay, e o relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para
   isso, que o servidor Matrix alcance.
-- **Ainda não:** mensagens de voz.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
 conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.
@@ -1526,14 +1541,15 @@ esses apps: nenhuma ponte fica no meio.
 - **Conversas:** **Nova conversa** adiciona o endereço aos seus contatos, pede à pessoa que deixe você ver quando ela
   está online, como fazem os outros apps XMPP, e abre a conversa. Quem pede para adicionar você aparece no topo da lista
   e na tela do XMPP, com **Aceitar** e **Recusar**. Os contatos que a conta já tem estão em **Contatos**.
-- **Criptografia:** as mensagens são criptografadas com OMEMO (versão 0.3, a que o Conversations, o Monal, o Gajim e o
-  Dino falam), para cada um dos dispositivos da pessoa e para os outros dispositivos da sua conta, que leem junto. É
-  código próprio do Erevos, sem auditoria, conferido com outra biblioteca OMEMO. Se os apps deles não têm OMEMO, o
-  Erevos avisa e só escreve quando você escolhe **Escrever sem criptografia** para aquela conversa; **Criptografar de
-  novo** volta atrás.
+- **Criptografia:** as mensagens são criptografadas com OMEMO, para cada um dos dispositivos da pessoa e para os outros
+  dispositivos da sua conta, que leem junto: com OMEMO 2 para um dispositivo cujo app o tem, como o Kaidan, e com a
+  versão 0.3, a que o Conversations, o Monal, o Gajim e o Dino falam, para os outros. É código próprio do Erevos, sem
+  auditoria, conferido com outras bibliotecas OMEMO. Se os apps deles não têm OMEMO, o Erevos avisa e só escreve quando
+  você escolhe **Escrever sem criptografia** para aquela conversa; **Criptografar de novo** volta atrás.
 - **As chaves deles:** no fim da conversa estão as impressões digitais dos dispositivos. Compare-as com o que o app
   deles mostra, por outro meio que não a conversa. Uma chave que mudou desde que foi vista pela primeira vez avisa. A
-  chave deste dispositivo está na tela do XMPP.
+  chave deste dispositivo está na tela do XMPP, duas vezes: como os apps com OMEMO 0.3 a mostram e como o Kaidan a
+  mostra. Um dispositivo tem uma só chave nos dois, escrita de duas maneiras.
 - **Marcas:** uma marca ao enviar, duas quando o app deles recebeu, três quando leram, como nas conversas do próprio
   Erevos, para apps que enviam essas marcas.
 - **Mensagens de antes:** o que chegou enquanto o Erevos estava fechado é buscado no arquivo do servidor ao conectar,
@@ -1566,6 +1582,10 @@ esses apps: nenhuma ponte fica no meio.
   servidor XMPP, e só por ele, então a outra pessoa não fica sabendo seu endereço; sem nenhum dos dois, vai direto, e
   ela fica sabendo. Uma chamada nunca passa pelo Tor: o relay de chamadas ou o servidor TURN vê o endereço deste
   celular.
+  Numa chamada de voz, qualquer um dos dois pode ligar o vídeo: **Adicionar vídeo**, na tela da chamada, liga a sua
+  câmera e pergunta primeiro à outra pessoa, que escolhe **Agora não** ou **Ativar vídeo**. O vídeo só começa se ela
+  disser que sim, e um não deixa a chamada como estava. Funciona com apps que adicionam vídeo a uma chamada como o
+  Conversations.
 - **Não anônimo:** o servidor XMPP vê sua conta, seus contatos, quem fala com quem e quando, e, sem Tor, de onde. O
   servidor da outra pessoa vê o mesmo das conversas dele com você.
 - **Pelo Tor:** no Android, o XMPP segue a escolha deste espaço em **Configurações** → **Relay e redes** → **Tor**: com
@@ -1576,7 +1596,7 @@ esses apps: nenhuma ponte fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
-- **Ainda não:** chamadas em grupo, colocar vídeo numa chamada de voz, e OMEMO 2.
+- **Ainda não:** chamadas em grupo.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
 conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.
@@ -1610,8 +1630,17 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   arquivos vão pelo Tor como estas conversas. **Servidores de arquivos** diz para onde vão, para o primeiro que aceitar
   um: blossom.primal.net, blossom.band e nostr.download, se você não os mudar. Uma foto ou um arquivo que chega só é
   buscado quando você toca em **Mostrar foto** ou **Salvar**, e só abre se for o que foi enviado.
-- **Reações:** segure uma mensagem para reagir com 👍, ❤️, 😂, 😮, 😢 ou 🙏; embaixo aparecem as reações, a última de cada
-  pessoa, como outros apps Nostr as enviam (NIP-25).
+- **Reações:** segure uma mensagem para abrir o menu dela e reagir com 👍, ❤️, 😂, 😮, 😢 ou 🙏, ou com uma das outras atrás
+  de **+**; embaixo aparecem as reações, a última de cada pessoa, como outros apps Nostr as enviam (NIP-25).
+- **Respostas:** **Responder**, no menu de uma mensagem que você segura, a responde. A mensagem aparece acima do campo
+  de mensagem, com um ✕ para soltá-la, e depois acima da sua resposta na conversa, onde um toque vai até ela. Outros
+  apps Nostr também a mostram como resposta (o NIP-17 a marca como resposta). **Copiar**, no mesmo menu, leva as
+  palavras de uma mensagem.
+- **Mensagens de voz:** toque e segure o microfone abaixo do campo de mensagem para gravar, e solte para enviar; deslize
+  para a esquerda antes de soltar para descartar a gravação. Um minuto é o máximo, e um toque de menos de um segundo não
+  envia nada. Ela vai como um arquivo: criptografada neste celular e colocada num servidor de arquivos, com a duração
+  dela na mensagem; se outro app a toca como mensagem de voz ou como arquivo de som, isso é com esse app. Uma que chega
+  com a duração toca com **Reproduzir**, e só é buscada quando você a reproduz.
 - **Criptografia:** cada mensagem é criptografada para a outra pessoa e assinada por você, e depois embrulhada de novo
   por uma chave criada só para aquela mensagem, com a hora atrasada em até dois dias (NIP-17, com NIP-44 e NIP-59). Os
   relays veem para quem ela é, não quem a escreveu, quando nem o que diz. Uma cópia vai para os seus relays, para que
@@ -1633,8 +1662,7 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
-- **Ainda não:** mensagens de voz gravadas aqui (uma que chega toca com **Reproduzir**), respostas a uma mensagem
-  específica, e arquivos que outro app criptografa de outro jeito (aparecem como um arquivo que o Erevos não abre).
+- **Ainda não:** arquivos que outro app criptografa de outro jeito (aparecem como um arquivo que o Erevos não abre).
 
 **Por quê:** muita gente está no Nostr e vai continuar lá. Assim você escreve para elas pelo Erevos, à parte e marcado,
 porque uma chave Nostr é a mesma para todos com quem você fala, enquanto as conversas do próprio Erevos escondem quem

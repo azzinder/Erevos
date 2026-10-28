@@ -1,7 +1,7 @@
 # XMPP accounts in Erevos
 
 Erevos can hold an XMPP (Jabber) account, so people can write to friends who use Conversations,
-Monal, Gajim, Dino, Cheogram or any other XMPP app. Erevos talks to the person's XMPP server
+Monal, Gajim, Dino, Cheogram, Kaidan or any other XMPP app. Erevos talks to the person's XMPP server
 itself, as those apps do: messages are encrypted on the phone with OMEMO and opened on the other
 person's devices. No bridge sits in between.
 
@@ -24,7 +24,8 @@ is what is written, once OMEMO encrypts it.
   AES-128-GCM; its key and tag go to each device through its ratchet. Like the rest of the core
   it keeps nothing between calls: one JSON request in, one JSON answer out (`op`: `identity_new`,
   `signed_pre_key_new`, `pre_keys_new`, `session_start`, `encrypt`, `decrypt`, `sign`, `verify`,
-  `file_encrypt`, `file_decrypt`).
+  `file_encrypt`, `file_decrypt`). Beside it, `omemo2.rs` is OMEMO 2 (below), its ops named
+  `two_*`.
 - `crates/erevos-ffi` passes it on as one call, `xmpp`, through JNI and WebAssembly.
 - `crates/erevos-tor` opens the connection to the server on Android (`net_open`, `net_write`,
   `net_read`, `net_close` in the FFI): TLS straight away (XEP-0368, port 5223, ALPN
@@ -90,6 +91,54 @@ by the bookmarks and reading along, what came while a device was away read from 
 without OMEMO, a channel written as it is whose history counts as read and that tells only of what names the account,
 groups joined and left in another app of the account, invitations only from contacts (and one said no to), and photos in
 a private group opened by every member. Not run against a real server yet.
+
+## OMEMO 2
+
+OMEMO 2 is version 0.8 of XEP-0384, namespace `urn:xmpp:omemo:2`, which Kaidan and the other apps
+built on QXmpp speak. Erevos speaks it beside 0.3, to each device that has it, and 0.3 to the
+others, so one message can carry both.
+
+- **One identity.** OMEMO 2 says an identity as an Ed25519 key; this device's is the Edwards form
+  of its Curve25519 identity with the sign bit 0, the key XEdDSA signs with, so both versions show
+  one device with one key. Its fingerprint looks different in each, so the XMPP screen shows both,
+  the second marked as Kaidan shows it. OMEMO 2 has its own signed pre-key and 100 one-time
+  pre-keys, replaced as they are used.
+- **The core** (`crates/erevos-xmpp/src/omemo2.rs`, ops `two_identity`, `two_signed_pre_key_new`,
+  `two_pre_keys_new`, `two_session_start`, `two_encrypt`, `two_decrypt`): the ratchet of 0.3 with
+  OMEMO 2's derivations (`OMEMO X3DH`, `OMEMO Root Chain`, `OMEMO Message Key Material`), its
+  protobuf messages (`OMEMOKeyExchange`, `OMEMOAuthenticatedMessage`, `OMEMOMessage`, a 16-byte
+  MAC over both identities and the message) and its payload: AES-256-CBC with a 16-byte HMAC, both
+  from one 32-byte key through HKDF (`OMEMO Payload`), that key and the HMAC going to each device.
+- **On the server** (`app/lib/xmpp-omemo2.ts`): the device list in the PEP node
+  `urn:xmpp:omemo:2:devices` (item `current`, other devices' labels kept as they are), and each
+  device's bundle as one item of `urn:xmpp:omemo:2:bundles`, its id the device's, the node asked to
+  keep `max` items, else 1000, 100 or 10, as QXmpp asks. Both are published open to anyone.
+- **The payload** is an SCE envelope (XEP-0420): the `<body>`, random padding of 0 to 149 bytes, the
+  time, and who it is from and to. One that comes counts only when its `from` is the sender's
+  address and its `to` is this account (or, for a copy of our own from another device, the other
+  person; in a group, the group), so an envelope cannot be passed on as another chat's.
+- **Which version** (`app/lib/xmpp.ts`): a device gets OMEMO 2 when it is in the person's OMEMO 2
+  list and this device's own OMEMO 2 bundle has been on the server once; else 0.3. A message to
+  someone with both kinds of device carries both `<encrypted>` elements, and its `<encryption>`
+  (XEP-0380) names 0.3 when 0.3 is in it. A message that comes is read in OMEMO 2 when it has a key
+  for this device there, else in 0.3. Signing out takes this device out of both lists, and its
+  OMEMO 2 bundle off the server.
+
+Checked against python-twomemo (the OMEMO 2 of Gajim's and Slixmpp's library) both ways, with
+`docs/xmpp-checks/twomemo-cross.py`: a session begun by each side, messages both ways, an empty
+one that only moves the ratchet on, a bundle with a wrong signature refused, and one identity seen
+the same by both:
+
+```
+python3 -m venv /tmp/omemo && /tmp/omemo/bin/pip install twomemo==2.1.0 xmlschema
+cargo build -p erevos-xmpp --example omemo-call
+/tmp/omemo/bin/python -I docs/xmpp-checks/twomemo-cross.py target/debug/examples/omemo-call
+```
+
+`app/checks/xmpp.check.ts` has an account with one device that speaks only OMEMO 2, one with only
+0.3, and one with a device of each: each reads the other, and the server sees one version or both
+as the devices ask. The XML and the envelope follow QXmpp's code; not yet tried with Kaidan on a
+phone.
 
 ## Screens
 
@@ -203,7 +252,8 @@ screen as Erevos's own (`app/lib/xmpp-calls.ts`, a `CallPlace` of `app/lib/calls
   for an app that started with Jingle at once, and `transport-info` addresses that come one at a
   time (`Call.addCandidates`, held until the description is set). Anything else is said no to
   (`feature-not-implemented` with `unsupported-info`), and a session nobody knows here gets
-  `item-not-found` with `unknown-session`.
+  `item-not-found` with `unknown-session`. Either side can add video to a voice call with Jingle's
+  `content-add`; the other is asked first and answers `content-accept` or `content-reject`.
 - **Descriptions (`app/lib/jingle-sdp.ts`):** WebRTC's SDP to Jingle and back: one content per media
   section, named by its `mid`; payload types with their parameters (a nameless one, as RED's
   `111/111`, kept) and RTCP feedback (XEP-0293); header extensions and `extmap-allow-mixed`
@@ -275,7 +325,7 @@ only while Erevos shows it.
 
 ## Not yet
 
-- OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
-- Group calls, adding video to a voice call (`content-add`), and moving a call to
-  another device.
+- Group calls, and moving a call to another device.
+- OMEMO 2 with Kaidan on a phone: so far only against python-twomemo and the server played in the
+  checks.
 - Photos and files against a real upload service: so far only the one played in the checks.

@@ -1434,6 +1434,20 @@ između.
 - **Fotografije i datoteke:** **Fotografija** i **Datoteka** ih šalju, do 50 MB, šifrovane na telefonu prije nego što
   odu na Matrix server, koji tako čuva samo ono što ne može pročitati. Primljena fotografija preuzima se tek kad
   dodirnete **Prikaži fotografiju**; **Sačuvaj** čuva bilo koju datoteku na telefonu.
+- **Reakcije, odgovori, izmjene i brisanje:** zadržite prst na poruci da otvorite njen meni: izaberite reakciju na vrhu,
+  **Odgovori** da joj odgovorite, **Kopiraj** za njene riječi, a na svojoj poruci **Uredi** ili **Obriši**. Odgovor
+  iznad svojih riječi prikazuje poruku na koju odgovara, a dodir na to vodi do poruke. Reakcije se vide ispod poruke;
+  dodirnite jednu da reagirate isto, ili svoju da je povučete. Nisu šifrovane, kako ih šalje Element, ni u šifrovanom
+  razgovoru: Matrix server vidi koja je poruka dobila koju reakciju i od koga. Samo vi možete mijenjati svoje poruke, a
+  izmijenjena piše **Uređeno**. **Obriši** povlači vašu poruku za sve u razgovoru, kad potvrdite; ne može se poništiti,
+  a razgovor zadržava red koji kaže da je obrisana.
+- **Ranije poruke:** razgovor s više historije na Matrix serveru gore prikazuje **Učitaj ranije poruke**; svaki dodir
+  donosi još, a razgovor ostaje tamo gdje ste čitali. Poruka čiji ključ još nije stigao prikazuje se zaključana.
+- **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
+  ulijevo prije nego što pustite da odbacite snimak. Minut je najviše, a pritisak kraći od sekunde ne šalje ništa. S
+  TalkBackom ga dodirnite jednom da počnete, a ponovo da pošaljete. U šifrovanom razgovoru šifruje se kao fotografija, a
+  Element i druge Matrix aplikacije puštaju je kao glasovnu poruku. Onu koja stigne pušta **Pusti**, a preuzima se tek
+  kad je pustite.
 - **Provjera emojijima:** u razgovoru s jednom osobom, **Provjera emojijima** vama oboma pokazuje sedam slika; ako su
   iste, istim redom, dodirnite **Podudaraju se** na oba telefona. Tada niko ne može neprimjetno biti u sredini, a
   razgovor piše **Provjereno emojijima**. **Provjerite ovaj uređaj drugim svojim**, na Matrix ekranu, radi isto s
@@ -1471,7 +1485,6 @@ između.
   ključ prostora otvara ono što je stiglo. Za to Matrix server javlja relayu ovog prostora svaku poruku, bez ijedne
   njene riječi, pa Matrix server saznaje adresu relaya, a relay kad stižu poruke. Isključeno dok ga ne uključite;
   treba relay ažuriran za to, do kojeg Matrix server može doći.
-- **Još ne:** glasovne poruke.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.
@@ -1488,13 +1501,15 @@ aplikacije: nikakav most nije između.
 - **Razgovori:** **Novi razgovor** dodaje adresu u vaše kontakte, traži od osobe da vam dopusti da vidite kada je na
   mreži, kao što rade druge XMPP aplikacije, i otvara razgovor. Ko traži da vas doda, stoji na vrhu liste i na XMPP
   ekranu, s **Prihvati** i **Odbij**. Kontakti koje račun već ima su pod **Kontakti**.
-- **Šifrovanje:** poruke su šifrovane OMEMO-om (verzija 0.3, koju govore Conversations, Monal, Gajim i Dino), za svaki
-  njihov uređaj i za druge uređaje vašeg računa, koji čitaju zajedno. To je Erevosov vlastiti kod, nerevidiran,
-  provjeren prema drugoj OMEMO biblioteci. Ako njihove aplikacije nemaju OMEMO, Erevos to kaže i piše samo kad za taj
-  razgovor izaberete **Piši bez šifrovanja**; **Ponovo šifriraj** vraća nazad.
+- **Šifrovanje:** poruke su šifrovane OMEMO-om, za svaki njihov uređaj i za druge uređaje vašeg računa, koji čitaju
+  zajedno: s OMEMO 2 za uređaj čija aplikacija to ima, kao Kaidan, a s verzijom 0.3, koju govore Conversations, Monal,
+  Gajim i Dino, za ostale. To je Erevosov vlastiti kod, nerevidiran, provjeren prema drugim OMEMO bibliotekama. Ako
+  njihove aplikacije nemaju OMEMO, Erevos to kaže i piše samo kad za taj razgovor izaberete **Piši bez šifrovanja**;
+  **Ponovo šifriraj** vraća nazad.
 - **Njihovi ključevi:** na dnu razgovora su otisci njihovih uređaja. Uporedite ih s onim što pokazuje njihova
   aplikacija, na drugi način, a ne u razgovoru. Ključ koji se promijenio otkad je prvi put viđen to kaže. Ključ ovog
-  uređaja je na XMPP ekranu.
+  uređaja je na XMPP ekranu, dvaput: onako kako ga pokazuju aplikacije s OMEMO 0.3 i onako kako ga pokazuje Kaidan.
+  Jedan uređaj ima jedan ključ u oba, napisan na dva načina.
 - **Oznake:** jedna kvačica pri slanju, dvije kad ga njihova aplikacija ima, tri kad pročitaju, kao u Erevosovim
   vlastitim razgovorima, za aplikacije koje šalju te oznake.
 - **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
@@ -1525,6 +1540,9 @@ aplikacije: nikakav most nije između.
   postoji, inače preko TURN servera XMPP servera, i samo preko njega, pa druga osoba ne saznaje vašu adresu; bez ijednog
   od njih ide direktno, i saznaje je. Poziv nikad ne ide preko Tora: relay za pozive ili TURN server vidi adresu ovog
   telefona.
+  U glasovnom pozivu svako od vas može uključiti video: **Dodaj video**, na ekranu poziva, uključuje vašu kameru i prvo
+  pita drugu osobu, koja bira **Ne sada** ili **Uključi video**. Video počinje samo ako ona kaže da, a ne ostavlja poziv
+  kakav je bio. Radi s aplikacijama koje dodaju video pozivu kao Conversations.
 - **Nije anonimno:** XMPP server vidi vaš račun, vaše kontakte, ko s kim razgovara i kada, i, bez Tora, odakle. Server
   druge osobe vidi isto o svojim razgovorima s vama.
 - **Preko Tora:** na Androidu, XMPP slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**: s
@@ -1534,7 +1552,7 @@ aplikacije: nikakav most nije između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
+- **Još ne:** grupni pozivi.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
@@ -1568,8 +1586,16 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   kao i ovi razgovori. **Poslužitelji datoteka** kažu kamo idu, na prvi koji je primi: blossom.primal.net, blossom.band
   i nostr.download, ako ih ne promijenite. Fotografija ili datoteka koja stigne dohvaća se tek kad dodirnete **Prikaži
   fotografiju** ili **Sačuvaj**, i otvara se samo ako je ona koja je poslana.
-- **Reakcije:** držite poruku da biste reagirali s 👍, ❤️, 😂, 😮, 😢 ili 🙏; ispod se vide reakcije, posljednja od svake
-  osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
+- **Reakcije:** zadržite poruku da otvorite njen meni i reagirate s 👍, ❤️, 😂, 😮, 😢 ili 🙏, ili jednom od ostalih iza
+  **+**; ispod se vide reakcije, posljednja od svake osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
+- **Odgovori:** **Odgovori**, u meniju poruke koju zadržite, odgovara na nju. Poruka se prikazuje iznad polja za poruku,
+  s ✕ da je ostavite, a zatim iznad vašeg odgovora u razgovoru, gdje dodir vodi do nje. I druge Nostr aplikacije je
+  prikazuju kao odgovor (NIP-17 je označava kao odgovor). **Kopiraj**, u istom meniju, uzima riječi poruke.
+- **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
+  ulijevo prije nego što pustite da odbacite snimak. Minut je najviše, a pritisak kraći od sekunde ne šalje ništa. Ide
+  kao datoteka: šifrovana na ovom telefonu i stavljena na poslužitelj datoteka, s trajanjem u poruci; hoće li je druga
+  aplikacija puštati kao glasovnu poruku ili kao zvučnu datoteku, odlučuje ta aplikacija. Onu koja stigne s trajanjem
+  pušta **Pusti**, a preuzima se tek kad je pustite.
 - **Šifrovanje:** svaka poruka šifrira se za drugu osobu i vi je potpisujete, a zatim je ponovo omata ključ izrađen samo
   za tu poruku, s vremenom pomaknutim unatrag do dva dana (NIP-17, s NIP-44 i NIP-59). Relayi vide kome je namijenjena,
   ne i tko ju je napisao, kada ni što piše. Kopija ide na vaše vlastite relaye, da vaše druge Nostr aplikacije s ovim
@@ -1590,8 +1616,7 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** glasovne poruke snimljene ovdje (onu koja stigne pušta **Pusti**), odgovori na određenu poruku, i
-  datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
+- **Još ne:** datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
 isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim razgovara.

@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Image, Pressable, View, type LayoutChangeEvent } from 'react-native';
 
 import { fileSize } from '../lib/attachments';
-import { playVoice } from '../lib/audio';
 import { shownLine } from '../lib/call-lines';
 import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { matrixFile } from '../lib/matrix-store';
 import { saveBytes } from '../lib/save-file';
-import { voiceDuration } from '../lib/voice';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { VoiceClip } from './matrix-voice';
 import { Quote } from './message-parts';
 import { Button, Row, Text } from './ui';
 
@@ -94,8 +93,8 @@ export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, o
   );
 }
 
-// What an answer shows when the message it answers is older than the ones fetched so far.
-function Missing() {
+/** What an answer shows when the message it answers is not on this phone (in a Matrix chat, older than the ones fetched so far). */
+export function Missing() {
   const colors = useColors();
   return (
     <View style={{ borderLeftWidth: 3, borderLeftColor: colors.primary, borderRadius: radius.sm, paddingVertical: 4, paddingHorizontal: space.sm, backgroundColor: withAlpha(colors.text, 0.07) }}>
@@ -210,71 +209,7 @@ function FilePart({ file }: { file: MatrixFile }) {
   );
 }
 
-/** The ending a sound's type is written with, for the phone's player (as components/network-file.tsx has it). */
-function endingOf(mime: string): string {
-  const sub = mime.split('/')[1]?.split(';')[0] ?? '';
-  if (sub === 'mp4' || sub === 'x-m4a' || sub === 'm4a') return 'm4a';
-  if (sub === 'mpeg') return 'mp3';
-  return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
-}
-
-// A voice message: Play fetches its sound the first time and plays it, with how long it is, or how
-// much is left while it plays; Stop ends it. Leaving the chat stops it too.
+// A voice message: played by components/matrix-voice.tsx, its sound fetched when played.
 function VoicePart({ file }: { file: MatrixFile }) {
-  const [busy, setBusy] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [played, setPlayed] = useState(0);
-  const [note, setNote] = useState('');
-  const stop = useRef<(() => void) | null>(null);
-  const here = useRef(true);
-  useEffect(
-    () => () => {
-      here.current = false;
-      stop.current?.();
-    },
-    [],
-  );
-
-  async function play() {
-    if (stop.current) {
-      stop.current();
-      return;
-    }
-    setBusy(true);
-    setNote('');
-    try {
-      const audio = await matrixFile(file);
-      // Left the chat while it was fetched: nothing plays on.
-      if (!here.current) return;
-      setPlayed(0);
-      setPlaying(true);
-      stop.current = playVoice(
-        audio,
-        () => {
-          stop.current = null;
-          setPlaying(false);
-        },
-        setPlayed,
-        endingOf(file.mime),
-      );
-    } catch (error) {
-      setPlaying(false);
-      if (here.current) setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
-    } finally {
-      if (here.current) setBusy(false);
-    }
-  }
-
-  const left = file.duration ? Math.max(0, file.duration - played) : played;
-  const line = playing ? t('Playing, {time}', { time: voiceDuration(left) }) : file.duration ? t('Voice message, {time}', { time: voiceDuration(file.duration) }) : t('Voice message');
-  return (
-    <View style={{ gap: space.xs }}>
-      <Row>
-        <Button title={playing ? t('Stop') : t('Play')} compact disabled={busy} onPress={() => void play()} />
-        <Text style={{ flexShrink: 1 }}>{line}</Text>
-      </Row>
-      {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}
-      {note ? <Text variant="caption" tone="muted">{note}</Text> : null}
-    </View>
-  );
+  return <VoiceClip type={file.mime} duration={file.duration} fetch={() => matrixFile(file)} />;
 }

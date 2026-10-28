@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Vibration, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
 
-import { useVoiceRecorder } from '../lib/audio';
+import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { t } from '../lib/i18n';
-import { MAX_VOICE_MS, MIN_VOICE_MS } from '../lib/voice';
-import { radius } from '../theme/colors';
+import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration } from '../lib/voice';
+import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import type { VoiceControl } from './composer';
 import { MicIcon } from './icons';
-import { buttonColors, Text } from './ui';
+import { Button, buttonColors, Row, Text } from './ui';
 
-// Voice messages in a Matrix chat (app/matrix-chat.tsx), recorded as in the message bar of the other
-// chats (components/composer.tsx): the microphone records while it is held, and letting go sends
-// it; sliding left lets the recording go. A minute is the most.
+// Voice messages in a Matrix chat and a Nostr chat (app/matrix-chat.tsx, app/nostr-chat.tsx),
+// recorded as in the message bar of the other chats (components/composer.tsx): the microphone
+// records while it is held, and letting go sends it; sliding left lets the recording go. A minute is
+// the most. One that came is played with Play (VoiceClip).
 
 /** How far left the finger slides, holding the microphone, to let go of the recording, px. */
 const CANCEL_SLIDE = 96;
@@ -231,6 +232,78 @@ export function RecordingLine() {
       <Text variant="caption" tone="muted" numberOfLines={1} style={{ flex: 1 }}>
         {`‹  ${t('Slide left to cancel')}`}
       </Text>
+    </View>
+  );
+}
+
+/** The ending a sound's type is written with, for the phone's player (as components/network-file.tsx has it). */
+function endingOf(mime: string): string {
+  const sub = mime.split('/')[1]?.split(';')[0] ?? '';
+  if (sub === 'mp4' || sub === 'x-m4a' || sub === 'm4a') return 'm4a';
+  if (sub === 'mpeg') return 'mp3';
+  return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
+}
+
+/**
+ * A voice message that came: Play fetches its sound the first time and plays it, with how long it
+ * is (`duration`, milliseconds), or how much is left while it plays; Stop ends it. Leaving the chat
+ * stops it too.
+ */
+export function VoiceClip({ type, duration, fetch }: { type: string; duration?: number; fetch: () => Promise<Uint8Array> }) {
+  const [busy, setBusy] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [played, setPlayed] = useState(0);
+  const [note, setNote] = useState('');
+  const stop = useRef<(() => void) | null>(null);
+  const here = useRef(true);
+  useEffect(
+    () => () => {
+      here.current = false;
+      stop.current?.();
+    },
+    [],
+  );
+
+  async function play() {
+    if (stop.current) {
+      stop.current();
+      return;
+    }
+    setBusy(true);
+    setNote('');
+    try {
+      const audio = await fetch();
+      // Left the chat while it was fetched: nothing plays on.
+      if (!here.current) return;
+      setPlayed(0);
+      setPlaying(true);
+      stop.current = playVoice(
+        audio,
+        () => {
+          stop.current = null;
+          setPlaying(false);
+        },
+        setPlayed,
+        endingOf(type),
+      );
+    } catch (error) {
+      setPlaying(false);
+      if (here.current) setNote(error instanceof Error ? error.message : t('The file could not be fetched.'));
+    } finally {
+      if (here.current) setBusy(false);
+    }
+  }
+
+  const left = duration ? Math.max(0, duration - played) : played;
+  const line = playing ? t('Playing, {time}', { time: voiceDuration(left) }) : duration ? t('Voice message, {time}', { time: voiceDuration(duration) }) : t('Voice message');
+  return (
+    <View style={{ gap: space.xs }}>
+      <Row>
+        <Button title={playing ? t('Stop') : t('Play')} compact disabled={busy} onPress={() => void play()} />
+        <Text style={{ flexShrink: 1 }}>{line}</Text>
+      </Row>
+      {busy ? <Text variant="caption" tone="muted">{t('Fetching…')}</Text> : null}
+      {note ? <Text variant="caption" tone="muted">{note}</Text> : null}
     </View>
   );
 }
