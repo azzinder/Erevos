@@ -13,6 +13,7 @@ import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
+import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
@@ -48,7 +49,9 @@ import { useColors } from '../theme/context';
 // can be muted or given sounds of its own (components/network-chat-notify.tsx). Photo and File send
 // one through the server's HTTP upload, encrypted as the chat is (lib/xmpp-files.ts). The keys of
 // their devices are listed below, to compare with them. The two tiles at the top call them
-// (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls.
+// (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls. Opened from a hidden place's
+// hidden chats (`hidden=1`) it is the place's own account's chat (lib/network-place.ts): no call
+// tiles and no notifications, as a place's chats tell nothing outside the hidden chats.
 //
 // A group (lib/xmpp-muc.ts) is the same screen with its own words: its name and address, whether
 // it is encrypted (a private group is, to every member; a channel is not), whether we are in it
@@ -60,9 +63,10 @@ const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
 export default function XmppChatScreen() {
   const router = useRouter();
-  const { jid: given } = useLocalSearchParams<{ jid?: string }>();
+  const { jid: given, hidden } = useLocalSearchParams<{ jid?: string; hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
   const jid = given?.toLowerCase();
-  const [now, setNow] = useState(xmppNow());
+  const [now, setNow] = useState(xmppNow(where));
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   // What could not be sent with OMEMO, a text or a file, kept while the person decides about writing without it.
@@ -71,14 +75,15 @@ export default function XmppChatScreen() {
 
   useEffect(() => {
     runXmpp();
-    setNow(xmppNow());
-    return onXmppChange(() => setNow(xmppNow()));
-  }, []);
+    setNow(xmppNow(where));
+    return onXmppChange(() => setNow(xmppNow(where)));
+  }, [where]);
 
   const state = now.state;
   const chat = jid && state ? state.chats[jid] : undefined;
   const count = chat?.messages.length ?? 0;
-  const shown = useNetworkChatShown(jid ? `xmpp:${jid}` : undefined);
+  // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
+  const shown = useNetworkChatShown(jid && where === 'space' ? `xmpp:${jid}` : undefined);
   useEffect(() => {
     if (shown && jid && chat?.unread) xmppRead(jid).catch(() => undefined);
   }, [shown, jid, count, chat?.unread]);
@@ -185,7 +190,7 @@ export default function XmppChatScreen() {
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {name}
         </Text>
-        {room ? null : (
+        {room || where === 'place' ? null : (
           <>
             <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
               <VideoSign />
@@ -263,7 +268,7 @@ export default function XmppChatScreen() {
           {t('A channel tells only of messages that name you.')}
         </Text>
       ) : null}
-      <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} />
+      {where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} /> : null}
 
       {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
       {!room && devices.length ? (

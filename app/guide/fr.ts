@@ -1536,8 +1536,9 @@ avec des personnes qui utilisent Element ou une autre app Matrix. Erevos parle l
 Element : aucun pont ne se met entre les deux.
 
 - **Se connecter :** ton identifiant Matrix, comme @nom:matrix.org, et son mot de passe. Erevos devient un nouvel
-  appareil du compte, nommé Erevos. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace
-  seulement, jamais dans ses discussions cachées, et pas encore dans les sauvegardes.
+  appareil du compte, nommé Erevos. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et
+  pas encore dans les sauvegardes. Ses discussions masquées peuvent avoir un compte Matrix à elles, voir [Discussions
+  masquées](#hidden).
 - **Discussions :** **Nouvelle discussion** lance une discussion chiffrée avec un identifiant Matrix. Les invitations
   s’affichent en premier, avec **Rejoindre** et **Refuser**.
 - **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
@@ -1625,8 +1626,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 
 - **Se connecter :** ton adresse XMPP, comme name@example.org, et son mot de passe. Erevos trouve le serveur à partir de
   l’adresse ; **Serveur** ne sert que s’il ne le trouve pas (un nom, nom:port ou une adresse wss://). Erevos devient un
-  nouvel appareil du compte. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace seulement,
-  jamais dans ses discussions cachées, et pas encore dans les sauvegardes.
+  nouvel appareil du compte. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et pas
+  encore dans les sauvegardes. Ses discussions masquées peuvent avoir un compte XMPP à elles, voir [Discussions
+  masquées](#hidden).
 - **Discussions :** **Nouvelle discussion** ajoute l’adresse à tes contacts, demande à la personne de te laisser voir
   quand elle est en ligne, comme le font les autres apps XMPP, et ouvre la discussion. Qui demande à t’ajouter s’affiche
   en haut de la liste et sur l’écran XMPP, avec **Accepter** et **Refuser**. Les contacts que le compte a déjà sont sous
@@ -1703,9 +1705,9 @@ discussions propres à Erevos.
 
 - **La clé :** **Créer une clé Nostr** en crée une pour cet espace ; **Ou apporter une clé d’une autre appli Nostr**
   prend le nsec d’une clé que tu as déjà, et lit ce que ses relais gardent encore. La clé et ses discussions sont
-  gardées chiffrées dans cet espace seulement, jamais dans ses discussions cachées, et pas encore dans les sauvegardes.
-  **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou l’emporter dans une autre appli : qui l’a lit ces
-  discussions et écrit en ton nom.
+  gardées chiffrées dans cet espace, et pas encore dans les sauvegardes. Ses discussions masquées peuvent avoir une clé
+  Nostr à elles, voir [Discussions masquées](#hidden). **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou
+  l’emporter dans une autre appli : qui l’a lit ces discussions et écrit en ton nom.
 - **Ta clé Nostr :** donne son npub aux personnes qui doivent t’écrire, avec **Copier** ou **Afficher le code QR**.
   **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub.
 - **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
@@ -2298,6 +2300,15 @@ supprimerait ce que contiennent les emplacements retirés.
   fermées** activé, et **Prévenir quand un message arrive** ne le compte pas. Ses appels ne sonnent que tant que les
   discussions masquées sont ouvertes : un appel lancé pendant qu’elles sont fermées s’affiche comme manqué. Un groupe
   là-bas n’a pas de code PIN à lui, et aucun n’est public.
+- **Matrix, XMPP et Nostr :** sous leur liste, **Matrix**, **XMPP** et **Nostr** ouvrent les écrans de ces réseaux
+  (voir [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats)) pour des comptes à
+  elles, à part de ceux de l’espace : un compte Matrix et un compte XMPP où se connecter, et une clé Nostr. Les
+  connexions et la clé sont gardées chiffrées avec la clé des discussions masquées, et rien d’elles ne se voit en
+  dehors des discussions masquées : leurs discussions ne sont que dans la liste des discussions masquées, et
+  n’ajoutent rien au numéro sur l’icône d’Erevos ni à la liste de l’accueil. Les comptes ne se connectent que tant que
+  les discussions masquées sont ouvertes, donc fermées, rien n’arrive et aucune notification ne s’affiche, même avec
+  **Recevoir une fois fermées** activé. Il n’y a pas d’appels, et un compte Matrix n’a pas **Signaler les nouveaux
+  messages**.
 - **Aperçus des liens** a son propre interrupteur dans les détails d’une discussion masquée, pour toutes les discussions
   de cet emplacement, désactivé tant que tu ne l’actives pas (voir **Aperçus des liens** sous [Discuter par un
   relais](#relay)).

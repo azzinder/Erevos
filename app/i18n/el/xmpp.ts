@@ -45,6 +45,7 @@ export const xmpp: Record<string, string> = {
   "XMPP address": "Διεύθυνση XMPP",
   "Only when the server is not the one in your address, or cannot be found. A name, name:port or a wss:// address.": "Μόνο όταν ο server δεν είναι αυτός της διεύθυνσής σου ή δεν βρίσκεται. Ένα όνομα, όνομα:θύρα ή διεύθυνση wss://.",
   "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.": "Το Erevos συνδέεται ως νέα συσκευή του λογαριασμού και κρατά τη σύνδεση κρυπτογραφημένη μόνο σε αυτόν τον χώρο.",
+  "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in these hidden chats only.": "Το Erevos συνδέεται ως νέα συσκευή του λογαριασμού και κρατά τη σύνδεση κρυπτογραφημένη μόνο σε αυτές τις κρυφές συνομιλίες.",
   "Connected.": "Συνδεδεμένο.",
   "Not anonymous: the XMPP server sees who talks with whom, and when.": "Όχι ανώνυμα: ο server XMPP βλέπει ποιος μιλά με ποιον, και πότε.",
   "Asks to add you": "Ζητά να σε προσθέσει",

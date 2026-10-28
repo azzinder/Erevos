@@ -1417,9 +1417,9 @@ U **Postavke** → **Relay i mreže** → **Matrix**, prostor se može prijaviti
 koriste Element ili drugu Matrix aplikaciju. Erevos sam razgovara s Matrix serverom, kao Element: nikakav most nije
 između.
 
-- **Prijava:** vaš Matrix ID, kao @ime:matrix.org, i njegova lozinka. Erevos postaje novi uređaj računa, nazvan
-  Erevos. Prijava i ključevi uređaja čuvaju se šifrovani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima,
-  i još ne u rezervnim kopijama.
+- **Prijava:** vaš Matrix ID, kao @ime:matrix.org, i njegova lozinka. Erevos postaje novi uređaj računa, nazvan Erevos.
+  Prijava i ključevi uređaja čuvaju se šifrovani u ovom prostoru, i još ne u rezervnim kopijama. Njegovi skriveni
+  razgovori mogu imati vlastiti Matrix račun, pogledajte [Skriveni razgovori](#hidden).
 - **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
   **Pridruži se** i **Odbij**.
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
@@ -1497,7 +1497,8 @@ aplikacije: nikakav most nije između.
 
 - **Prijava:** vaša XMPP adresa, kao name@example.org, i njena lozinka. Erevos nalazi server iz adrese; **Server** treba
   samo kad ga ne nađe (ime, ime:port ili wss:// adresa). Erevos postaje novi uređaj računa. Prijava i ključevi uređaja
-  čuvaju se šifrovani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima, i još ne u rezervnim kopijama.
+  čuvaju se šifrovani u ovom prostoru, i još ne u rezervnim kopijama. Njegovi skriveni razgovori mogu imati vlastiti
+  XMPP račun, pogledajte [Skriveni razgovori](#hidden).
 - **Razgovori:** **Novi razgovor** dodaje adresu u vaše kontakte, traži od osobe da vam dopusti da vidite kada je na
   mreži, kao što rade druge XMPP aplikacije, i otvara razgovor. Ko traži da vas doda, stoji na vrhu liste i na XMPP
   ekranu, s **Prihvati** i **Odbij**. Kontakti koje račun već ima su pod **Kontakti**.
@@ -1565,9 +1566,9 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 
 - **Ključ:** **Izradi Nostr ključ** izrađuje jedan za ovaj prostor; **Ili donesite ključ iz druge Nostr aplikacije**
   uzima nsec ključa koji već imate, i čita ono što njegovi relayi još čuvaju. Ključ i njegovi razgovori čuvaju se
-  šifrirani samo u ovom prostoru, nikad u njegovim skrivenim razgovorima, i još ne u sigurnosnim kopijama. **Prikaži
-  tajni ključ (nsec)** ga prikazuje, da ga zapišete ili prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i
-  piše kao vi.
+  šifrirani u ovom prostoru, i još ne u sigurnosnim kopijama. Njegovi skriveni razgovori mogu imati vlastiti Nostr
+  ključ, pogledajte [Skriveni razgovori](#hidden). **Prikaži tajni ključ (nsec)** ga prikazuje, da ga zapišete ili
+  prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i piše kao vi.
 - **Vaš Nostr ključ:** dajte njegov npub ljudima koji vam trebaju pisati, s **Kopiraj** ili **Prikaži QR kod**. **Vaše
   ime**, ako ga date, javno je: druge Nostr aplikacije prikazuju ga umjesto vašeg npub-a.
 - **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
@@ -2114,6 +2115,14 @@ sadrže uklonjena mjesta.
   zatvoreno, čita se samo s uključenim **Primanje dok su zatvoreni**, a **Javi kad stigne poruka** ga ne broji. Njeni
   pozivi zvone samo dok su skriveni razgovori otvoreni: poziv započet dok su zatvoreni prikazuje se kao propušten.
   Grupa tamo nema vlastiti PIN, i nijedna nije javna.
+- **Matrix, XMPP i Nostr:** ispod njihovog popisa, **Matrix**, **XMPP** i **Nostr** otvaraju ekrane tih mreža
+  (pogledajte [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats)) za vlastite
+  račune skrivenih razgovora, odvojene od računa prostora: Matrix račun i XMPP račun za prijavu, te Nostr ključ.
+  Prijave i ključ čuvaju se šifrovani ključem skrivenih razgovora, i ništa od toga ne vidi se izvan skrivenih
+  razgovora: njihovi razgovori su samo u popisu skrivenih razgovora i ne dodaju ništa broju na ikoni Erevosa ni popisu
+  na početnom ekranu. Računi se povezuju samo dok su skriveni razgovori otvoreni, pa dok su zatvoreni ništa ne stiže i
+  nijedna obavijest se ne prikazuje, čak ni uz uključeno **Primanje dok su zatvoreni**. Nemaju pozive, a Matrix račun
+  nema **Javi da je stigla poruka**.
 - **Pregledi linkova** imaju vlastiti prekidač u detaljima skrivenog razgovora, za sve razgovore tog mjesta,
   isključen dok ga ne uključite (pogledajte **Pregledi linkova** pod [Razgovor preko relaya](#relay)).
 - **Javi kad stigne poruka** (Android): na vrhu mjesta dok je **Primanje dok su zatvoreni** isključeno. Kad je

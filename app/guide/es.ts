@@ -1460,9 +1460,9 @@ En **Ajustes** → **Relay y redes** → **Matrix**, un espacio puede iniciar se
 con personas que usan Element u otra app de Matrix. Erevos habla él mismo con el servidor de Matrix, como Element:
 ningún puente se pone en medio.
 
-- **Iniciar sesión:** tu ID de Matrix, como @nombre:matrix.org, y su contraseña. Erevos pasa a ser un dispositivo
-  nuevo de la cuenta, llamado Erevos. La sesión y las claves del dispositivo se guardan cifradas solo en este espacio,
-  nunca en sus chats ocultos, y aún no en las copias de seguridad.
+- **Iniciar sesión:** tu ID de Matrix, como @nombre:matrix.org, y su contraseña. Erevos pasa a ser un dispositivo nuevo
+  de la cuenta, llamado Erevos. La sesión y las claves del dispositivo se guardan cifradas en este espacio, y aún no en
+  las copias de seguridad. Sus chats ocultos pueden tener una cuenta de Matrix propia, ver [Chats ocultos](#hidden).
 - **Chats:** **Chat nuevo** empieza un chat cifrado con un ID de Matrix. Las invitaciones salen primero, con **Unirse**
   y **Rechazar**.
 - **Cifrado:** los mensajes van cifrados de extremo a extremo con el cifrado propio de Matrix (Olm y Megolm, a través
@@ -1546,8 +1546,9 @@ como esas apps: ningún puente se pone en medio.
 
 - **Iniciar sesión:** tu dirección XMPP, como name@example.org, y su contraseña. Erevos encuentra el servidor a partir
   de la dirección; **Servidor** solo hace falta si no lo encuentra (un nombre, nombre:puerto o una dirección wss://).
-  Erevos pasa a ser un dispositivo nuevo de la cuenta. La sesión y las claves del dispositivo se guardan cifradas solo
-  en este espacio, nunca en sus chats ocultos, y aún no en las copias de seguridad.
+  Erevos pasa a ser un dispositivo nuevo de la cuenta. La sesión y las claves del dispositivo se guardan cifradas en
+  este espacio, y aún no en las copias de seguridad. Sus chats ocultos pueden tener una cuenta de XMPP propia, ver
+  [Chats ocultos](#hidden).
 - **Chats:** **Chat nuevo** añade la dirección a tus contactos, pide a la persona que te deje ver cuándo está en línea,
   como hacen otras apps de XMPP, y abre el chat. Quien pide añadirte sale arriba en la lista y en la pantalla de XMPP,
   con **Aceptar** y **Rechazar**. Los contactos que la cuenta ya tiene están en **Contactos**.
@@ -1616,9 +1617,10 @@ de tú a tú o en grupos con personas que usan Damus, Amethyst, Primal, 0xchat u
 privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los chats propios de Erevos.
 
 - **La clave:** **Crear una clave de Nostr** crea una para este espacio; **O traer una clave de otra app de Nostr** toma
-  el nsec de una que ya tienes, y lee lo que sus relays aún guardan. La clave y sus chats se guardan cifrados solo en
-  este espacio, nunca en sus chats ocultos, y aún no en las copias de seguridad. **Mostrar la clave secreta (nsec)** la
-  muestra, para anotarla o llevarla a otra app: quien la tenga lee estos chats y escribe como tú.
+  el nsec de una que ya tienes, y lee lo que sus relays aún guardan. La clave y sus chats se guardan cifrados en este
+  espacio, y aún no en las copias de seguridad. Sus chats ocultos pueden tener una clave de Nostr propia, ver [Chats
+  ocultos](#hidden). **Mostrar la clave secreta (nsec)** la muestra, para anotarla o llevarla a otra app: quien la tenga
+  lee estos chats y escribe como tú.
 - **Tu clave de Nostr:** da su npub a las personas que deban escribirte, con **Copiar** o **Mostrar el código QR**.
   **Tu nombre**, si das uno, es público: otras apps de Nostr lo muestran en lugar de tu npub.
 - **Chats:** **Chat nuevo** toma su npub (o nprofile), de su perfil en su app, o un nombre como nombre@example.org
@@ -2178,6 +2180,14 @@ lo que contienen los lugares que se quitaran.
   **Recibir estando cerrados** activado, y **Avisar cuando llega un mensaje** no lo cuenta. Sus llamadas solo suenan
   mientras los chats ocultos están abiertos: una iniciada mientras están cerrados aparece como perdida. Un grupo ahí no
   tiene PIN propio, y ninguno es público.
+- **Matrix, XMPP y Nostr:** bajo su lista, **Matrix**, **XMPP** y **Nostr** abren las pantallas de esas redes (ver
+  [Matrix](#matrix), [XMPP](#xmpp) y [Chats con otras apps de Nostr](#nostr-chats)) para cuentas propias de los chats
+  ocultos, aparte de las del espacio: una cuenta de Matrix y otra de XMPP en las que iniciar sesión, y una clave de
+  Nostr. Las sesiones y la clave se guardan cifradas con la clave de los chats ocultos, y nada de ellas se ve fuera de
+  los chats ocultos: sus chats están solo en la lista de los chats ocultos, y no suman al número del icono de Erevos
+  ni a la lista de inicio. Las cuentas se conectan solo mientras los chats ocultos están abiertos, así que mientras
+  están cerrados no llega nada y no sale ningún aviso, ni siquiera con **Recibir estando cerrados** activado. No
+  tienen llamadas, y una cuenta de Matrix no tiene **Avisar de mensajes nuevos**.
 - **Las vistas previas de enlaces** tienen un interruptor propio en los detalles de un chat oculto, para todos los chats
   de ese lugar, desactivado salvo que lo actives (ver **Vistas previas de enlaces** en
   [Chatear a través de un relay](#relay)).

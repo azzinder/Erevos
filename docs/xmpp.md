@@ -54,7 +54,8 @@ is what is written, once OMEMO encrypts it.
 - `app/lib/xmpp-muc.ts`: groups, below.
 - `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open
   (again after a pause that grows, a ping after 4 minutes of silence), and keeps it encrypted in
-  the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`).
+  the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`). A hidden place can have an account of its
+  own (Hidden chats, below).
 
 Our own code, not audited. It is checked against python-oldmemo (the OMEMO 0.3 of Gajim's and
 Slixmpp's library) both ways: a message python-oldmemo sent is one of the crate's tests, and
@@ -324,6 +325,28 @@ just after signing in (`fresh`) tells of nothing. A chat has notifications of it
 `app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
 Android; a muted one is left out, and a call rings with the chat's ringtone. A chat is marked read
 only while Erevos shows it.
+
+## Hidden chats
+
+Each place of hidden chats can sign in to an XMPP account of its own, apart from the space's, that
+nothing outside its hidden chats shows.
+
+- `app/lib/place-networks.ts` opens the place's account (`openXmppPlace`) as its hidden chats open
+  and closes it (`closeXmppPlace`) as they close, so it connects only while they are open and a
+  closed place receives nothing. Its sign-in and keys are kept encrypted with the place's key, in the
+  place's own value of `erevos-xmpp`: the holders `hidden` and `hidden1` to `hidden3` of
+  `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
+- `app/lib/network-place.ts`: `app/xmpp.tsx` and `app/xmpp-chat.tsx` read a `hidden=1` route param
+  (`useNetworkWhere`), show the place's account (`xmppNow('place')`), say under the title that it is
+  the hidden chats' own, and while they are on top what is done goes to that account; the chat they
+  open takes the param on (`whereParams`). The hidden chats' list (`app/app/chat.tsx`) has **XMPP**
+  under it, and lists the place's chats (`xmppInboxRows`), which open with `hidden=1`
+  (`components/chat-row.tsx`).
+- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list,
+  and no notification settings. It has no calls: the tiles are not on its chats, and a call to it is
+  refused (`app/lib/xmpp-calls.ts` takes calls for the space's account only).
+- `app/checks/place-networks.check.ts` checks the stores against the server played in the checks,
+  with the real core; not yet on a phone.
 
 ## Not yet
 

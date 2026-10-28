@@ -17,6 +17,7 @@ import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
 import { messageLine } from '../lib/message-line';
+import { useNetworkWhere } from '../lib/network-place';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
 import {
   nostrDmFile,
@@ -55,7 +56,8 @@ import { useColors } from '../theme/context';
 // microphone beside the field records a voice message while it is held (components/matrix-voice.tsx),
 // which the others play with Play: a sound with its length (a duration tag) is one. While the chat
 // shows, what comes in it only sounds, and it can be muted or given a sound of its own
-// (components/network-chat-notify.tsx).
+// (components/network-chat-notify.tsx). Opened from a hidden place's hidden chats (`hidden=1`) it is
+// the chat of that place's own key (lib/network-place.ts), which has no notification settings.
 
 /** A voice message among the files: a sound that says how long it lasts. */
 const isVoice = (file: NostrDmFile): file is NostrDmFile & { duration: number } => file.type.startsWith('audio/') && !!file.duration;
@@ -81,9 +83,10 @@ export default function NostrChatScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { key: given } = useLocalSearchParams<{ key?: string }>();
+  const { key: given, hidden } = useLocalSearchParams<{ key?: string; hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
   const key = given && /^[0-9a-f]{64}$/.test(given) ? given : undefined;
-  const [now, setNow] = useState(nostrDmNow());
+  const [now, setNow] = useState(nostrDmNow(where));
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const [naming, setNaming] = useState<string | null>(null);
@@ -98,14 +101,15 @@ export default function NostrChatScreen() {
 
   useEffect(() => {
     runNostrDm();
-    setNow(nostrDmNow());
-    return onNostrDmChange(() => setNow(nostrDmNow()));
-  }, []);
+    setNow(nostrDmNow(where));
+    return onNostrDmChange(() => setNow(nostrDmNow(where)));
+  }, [where]);
 
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
   const count = chat?.messages.length ?? 0;
-  const shown = useNetworkChatShown(key ? `nostr:${key}` : undefined);
+  // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
+  const shown = useNetworkChatShown(key && where === 'space' ? `nostr:${key}` : undefined);
   useEffect(() => {
     if (shown && key && chat?.unread) nostrDmRead(key).catch(() => undefined);
   }, [shown, key, count, chat?.unread]);
@@ -266,7 +270,7 @@ export default function NostrChatScreen() {
         <MicButton voice={voice} disabled={sending} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
-      <NetworkChatNotify notify={checkedChatNotify(chat.notify)} onChange={(next) => nostrDmSetNotify(key, next)} />
+      {where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(chat.notify)} onChange={(next) => nostrDmSetNotify(key, next)} /> : null}
 
       {self ? null : naming === null ? (
         <Button title={group ? t('Name this group') : t('Name them here')} kind="secondary" compact onPress={() => setNaming((group ? chat.subject : chat.name) ?? '')} />
@@ -294,7 +298,9 @@ export default function NostrChatScreen() {
           <Text variant="caption" tone="faint">
             {group
               ? t('Everyone in the group sees it, with your next message.')
-              : t('Only in this space: they are not told. Empty, it shows the name they gave themselves.')}
+              : where === 'place'
+                ? t('Only in these hidden chats: they are not told. Empty, it shows the name they gave themselves.')
+                : t('Only in this space: they are not told. Empty, it shows the name they gave themselves.')}
           </Text>
         </View>
       )}

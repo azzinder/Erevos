@@ -39,6 +39,7 @@ import {
   runMatrix,
 } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
+import { useNetworkWhere } from '../lib/network-place';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { checkedChatNotify } from '../lock/chat-notify';
@@ -51,7 +52,9 @@ import { useColors } from '../theme/context';
 // sounds, and it can be muted or given a sound of its own (components/network-chat-notify.tsx). Photos and files go encrypted when the room is
 // (lib/matrix-media.ts); a photo is fetched only when tapped, so the homeserver does not learn
 // which were looked at merely by scrolling. Its call buttons open Element Call (lib/matrix-calls.ts),
-// where Erevos has it.
+// where Erevos has it. Opened from a hidden place's hidden chats (`hidden=1`) it is the chat of
+// that place's own account (lib/network-place.ts): no call buttons and no notification settings,
+// as a place's chats tell nothing outside the hidden chats.
 //
 // A message held down opens its menu (components/message-menu.tsx): react to it, answer it, copy
 // it, and for one of ours change it or delete it for everyone. An answer shows the message it is to
@@ -78,8 +81,9 @@ export default function MatrixChatScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { room: roomId } = useLocalSearchParams<{ room?: string }>();
-  const [now, setNow] = useState(matrixNow());
+  const { room: roomId, hidden } = useLocalSearchParams<{ room?: string; hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
+  const [now, setNow] = useState(matrixNow(where));
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   // The message the next one answers or gives new words, and the one whose menu is open, by their IDs.
@@ -99,16 +103,17 @@ export default function MatrixChatScreen() {
 
   useEffect(() => {
     runMatrix();
-    setNow(matrixNow());
-    return onMatrixChange(() => setNow(matrixNow()));
-  }, []);
+    setNow(matrixNow(where));
+    return onMatrixChange(() => setNow(matrixNow(where)));
+  }, [where]);
 
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
   const count = room?.messages.length ?? 0;
   const counted = useRef(count);
   counted.current = count;
-  const shown = useNetworkChatShown(roomId ? `matrix:${roomId}` : undefined);
+  // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
+  const shown = useNetworkChatShown(roomId && where === 'space' ? `matrix:${roomId}` : undefined);
   useEffect(() => {
     if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
   }, [shown, roomId, count, room?.unread]);
@@ -152,7 +157,7 @@ export default function MatrixChatScreen() {
 
   // A chat with one person can check their devices by emoji; the latest check in it shows.
   const other = room.direct ? Object.keys(room.members).find((who) => who !== me) : undefined;
-  const check = matrixVerifications().find((v) => v.roomId === roomId);
+  const check = matrixVerifications(where).find((v) => v.roomId === roomId);
 
   const stopEditing = () => setEditId(null);
 
@@ -210,7 +215,7 @@ export default function MatrixChatScreen() {
       const added = await matrixLoadEarlier(roomId);
       if (!added) {
         keepAt.current = null;
-        if (!matrixNow().state?.rooms[roomId]?.start) setNote(t('No earlier messages came this time. Try again to look further back.'));
+        if (!matrixNow(where).state?.rooms[roomId]?.start) setNote(t('No earlier messages came this time. Try again to look further back.'));
       }
     } catch (error) {
       keepAt.current = null;
@@ -304,7 +309,7 @@ export default function MatrixChatScreen() {
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {room.name}
         </Text>
-        {canElementCall() && !room.invitedBy ? (
+        {canElementCall() && where === 'space' && !room.invitedBy ? (
           <>
             <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
               <VideoSign />
@@ -372,7 +377,7 @@ export default function MatrixChatScreen() {
         <MicButton voice={voice} disabled={sending || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
-      {!room.invitedBy ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
+      {!room.invitedBy && where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
       <Button
         title={t('Leave')}
         kind="secondary"

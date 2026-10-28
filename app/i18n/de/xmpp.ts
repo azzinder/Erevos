@@ -45,6 +45,7 @@ export const xmpp: Record<string, string> = {
   "XMPP address": "XMPP-Adresse",
   "Only when the server is not the one in your address, or cannot be found. A name, name:port or a wss:// address.": "Nur wenn der Server nicht der in deiner Adresse ist oder nicht gefunden wird. Ein Name, Name:Port oder eine wss://-Adresse.",
   "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.": "Erevos meldet sich als neues Gerät des Kontos an und hält die Anmeldung nur in diesem Bereich verschlüsselt.",
+  "Erevos signs in as a new device of the account, and keeps the sign-in encrypted in these hidden chats only.": "Erevos meldet sich als neues Gerät des Kontos an und hält die Anmeldung nur in diesen versteckten Chats verschlüsselt.",
   "Connected.": "Verbunden.",
   "Not anonymous: the XMPP server sees who talks with whom, and when.": "Nicht anonym: Der XMPP-Server sieht, wer mit wem spricht und wann.",
   "Asks to add you": "Möchte dich hinzufügen",

@@ -136,7 +136,8 @@ as it comes.
   (purplepag.es, relay.damus.io, nos.lol, relay.primal.net) when they change and once a week, each
   newer than the last. Where someone reads is looked up on those, on the space's own and on the
   relays their nprofile or NIP-05 named, and kept six hours for sending. Kept encrypted in the space
-  (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), not in hidden chats, not in backups yet.
+  (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), not in backups yet. A hidden place can have
+  a key of its own (Hidden chats, below).
 
 ## Checks
 
@@ -201,8 +202,29 @@ What a key brought from another app takes from its relays before they first say 
 `app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
 Android; a muted one is left out. Its messages are marked read only while Erevos shows the chat.
 
+## Hidden chats
+
+Each place of hidden chats can have a Nostr key of its own, apart from the space's, that nothing
+outside its hidden chats shows.
+
+- `app/lib/place-networks.ts` opens the place's key (`openNostrDmPlace`) as its hidden chats open and
+  closes it (`closeNostrDmPlace`) as they close, so it reads its relays only while they are open and a
+  closed place receives nothing. The key and its chats are kept encrypted with the place's key, in the
+  place's own value of `erevos-nostr-dm`: the holders `hidden` and `hidden1` to `hidden3` of
+  `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
+  Its connections are its own, so no relay sees both keys on one.
+- `app/lib/network-place.ts`: `app/nostr-chats.tsx` and `app/nostr-chat.tsx` read a `hidden=1` route
+  param (`useNetworkWhere`), show the place's key (`nostrDmNow('place')`), say under the title that it
+  is the hidden chats' own, and while they are on top what is done goes to it; the chat they open takes
+  the param on (`whereParams`). The hidden chats' list (`app/app/chat.tsx`) has **Nostr** under it, and
+  lists the place's chats (`nostrInboxRows`), which open with `hidden=1` (`components/chat-row.tsx`).
+- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list,
+  and no notification settings.
+- `app/checks/place-networks.check.ts` checks the stores against the relay played in the checks, with
+  the real core; not yet on a phone.
+
 ## Not yet
 
 Files encrypted otherwise than with AES-GCM, a photo, file or voice message sent as a reply (it goes
-as a new message), the key in backups and in hidden chats, and a key kept by a signer app (NIP-55) or
-a remote signer (NIP-46) in place of the nsec.
+as a new message), the key in backups, and a key kept by a signer app (NIP-55) or a remote signer
+(NIP-46) in place of the nsec.

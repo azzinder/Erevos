@@ -17,12 +17,30 @@ import { font, Text } from './ui';
 const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 /** A chat's row in a list of chats, as home has it (app/index.tsx) and hidden chats too
- *  (app/chat.tsx): tapped, it opens its chat, or does `onOpen` where one is given. */
-export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: InboxRow; now: number; online?: boolean; onLong?: () => void; onOpen?: () => void }) {
+ *  (app/chat.tsx): tapped, it opens its chat, or does `onOpen` where one is given. In hidden chats
+ *  (`hidden`), the chat of a network opens for the hidden place's own account (lib/network-place.ts). */
+export function ChatRow({
+  row,
+  now,
+  online = false,
+  hidden = false,
+  onLong,
+  onOpen,
+}: {
+  row: InboxRow;
+  now: number;
+  online?: boolean;
+  hidden?: boolean;
+  onLong?: () => void;
+  onOpen?: () => void;
+}) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const [photoFailed, setPhotoFailed] = useState(false);
   const name = shownName(row);
+  // What makes a network's screen the hidden place's own: after its other parameters, or alone.
+  const place = hidden ? '&hidden=1' : '';
+  const placeOnly = hidden ? '?hidden=1' : '';
   const preview = row.locked ? t('Locked with a PIN') : row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
@@ -35,14 +53,14 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
               ? `/sms?to=${encodeURIComponent(row.sms)}`
               : row.network === 'matrix'
                 ? row.invited
-                  ? '/matrix'
-                  : `/matrix-chat?room=${encodeURIComponent(row.identity.slice('matrix:'.length))}`
+                  ? `/matrix${placeOnly}`
+                  : `/matrix-chat?room=${encodeURIComponent(row.identity.slice('matrix:'.length))}${place}`
                 : row.network === 'xmpp'
                   ? row.invited
-                    ? '/xmpp'
-                    : `/xmpp-chat?jid=${encodeURIComponent(row.identity.slice('xmpp:'.length))}`
+                    ? `/xmpp${placeOnly}`
+                    : `/xmpp-chat?jid=${encodeURIComponent(row.identity.slice('xmpp:'.length))}${place}`
                   : row.network === 'nostr'
-                    ? `/nostr-chat?key=${row.identity.slice('nostr:'.length)}`
+                    ? `/nostr-chat?key=${row.identity.slice('nostr:'.length)}${place}`
                     : row.identity.startsWith('group:')
                       ? `/group?id=${row.identity.slice(6)}`
                       : `/chat?contact=${row.identity}`,

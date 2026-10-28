@@ -80,7 +80,7 @@ import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/r
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
 import { connectReach } from '../lib/connect-reach';
 import { oldToken, ownToken } from '../lib/relay-signin';
-import { canGroup, canRelaySeal, canSealOpen, hasCore } from '../lib/core';
+import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canXmpp, hasCore } from '../lib/core';
 import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
@@ -94,7 +94,10 @@ import { GroupChat } from '../components/group-chat';
 import { GroupsWhereProvider, type GroupsWhere } from '../components/groups-at';
 import { NewGroupForm } from '../components/new-group';
 import { armPlaceReminders, myNotes, onNotesChanged, type Note, type NotesAt } from '../lib/myself';
-import { buildInbox, groupRows, mergeRows, type InboxGroup } from '../lib/inbox';
+import { buildInbox, groupRows, matrixInboxRows, mergeRows, nostrInboxRows, xmppInboxRows, type InboxGroup } from '../lib/inbox';
+import { matrixNow, onMatrixChange } from '../lib/matrix-store';
+import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
+import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
@@ -4731,12 +4734,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     [contacts, archive],
   );
   const chips = contacts.map((contact) => `${CONTACT_PREFIX}${contact.identity}`);
-  // Hidden chats listed as home lists the space's (app/index.tsx), their groups among them: the newest
-  // first, with what was said last and how many are not read. None is locked with a PIN of its own in them.
+  // The place's own Matrix, XMPP and Nostr chats (lib/place-networks.ts) join the list as the space's
+  // join home's (app/index.tsx), while these hidden chats are open: their accounts load with them.
+  const [placeNetTick, setPlaceNetTick] = useState(0);
+  useEffect(() => {
+    if (!hiddenKey) return;
+    const tick = () => setPlaceNetTick((n) => n + 1);
+    const stops = [onMatrixChange(tick), onXmppChange(tick), onNostrDmChange(tick)];
+    return () => stops.forEach((stop) => stop());
+  }, [hiddenKey]);
+  const placeMatrix = hiddenKey ? matrixNow('place').state : null;
+  const placeXmpp = hiddenKey ? xmppNow('place').state : null;
+  const placeNostr = hiddenKey ? nostrDmNow('place').state : null;
+  // Hidden chats listed as home lists the space's (app/index.tsx), their groups and their networks'
+  // chats among them: the newest first, with what was said last and how many are not read. None is
+  // locked with a PIN of its own in them.
   const placeRows = useMemo(() => {
     if (!hiddenKey) return [];
     const name = (identity: string) => memberName(identity, shownContacts);
-    return mergeRows(
+    let all = mergeRows(
       buildInbox(
         shownContacts.map((c) => ({ ...c, locked: false })),
         messages,
@@ -4750,7 +4766,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         (text) => noteText(text, name),
       ),
     );
-  }, [hiddenKey, shownContacts, messages, archive, archiveTick, now, placeGroupList]);
+    if (placeMatrix) all = mergeRows(all, matrixInboxRows(placeMatrix));
+    if (placeXmpp) all = mergeRows(all, xmppInboxRows(placeXmpp));
+    if (placeNostr) all = mergeRows(all, nostrInboxRows(placeNostr));
+    return all;
+  }, [hiddenKey, shownContacts, messages, archive, archiveTick, now, placeGroupList, placeMatrix, placeXmpp, placeNostr, placeNetTick]);
   const selectedContact = selected?.startsWith(CONTACT_PREFIX) ? selected : null;
   const talkie = selectedContact ? talkies.has(selectedContact) : false;
   listening.current = shown && appActive && !gated ? selectedContact : null;
@@ -5677,13 +5697,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     row={row}
                     now={now}
                     online={!!e2e && contacts.some((c) => c.identity === row.identity && !c.hide) && e2e.onlineUntil(row.identity, now) > 0}
-                    onOpen={() => (row.identity.startsWith('group:') ? setShownGroup(row.identity.slice('group:'.length)) : setSelected(`${CONTACT_PREFIX}${row.identity}`))}
+                    hidden
+                    // A network's chat opens its own screen, for the place's account (components/chat-row.tsx).
+                    onOpen={
+                      row.network
+                        ? undefined
+                        : () => (row.identity.startsWith('group:') ? setShownGroup(row.identity.slice('group:'.length)) : setSelected(`${CONTACT_PREFIX}${row.identity}`))
+                    }
                   />
                 ))}
                 {placeRows.length === 0 ? <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text> : null}
-                {placeWhere && canGroup() ? (
-                  <Row>
-                    <Button title={t('New group')} kind="secondary" compact onPress={() => setMakingGroup(true)} />
+                {(placeWhere && canGroup()) || canMatrix() || canXmpp() || canNostrChat() ? (
+                  // The place's own accounts on the networks (lib/place-networks.ts), apart from the space's.
+                  <Row wrap>
+                    {placeWhere && canGroup() ? <Button title={t('New group')} kind="secondary" compact onPress={() => setMakingGroup(true)} /> : null}
+                    {canMatrix() ? <Button title="Matrix" kind="secondary" compact onPress={() => router.push({ pathname: '/matrix', params: { hidden: '1' } })} /> : null}
+                    {canXmpp() ? <Button title="XMPP" kind="secondary" compact onPress={() => router.push({ pathname: '/xmpp', params: { hidden: '1' } })} /> : null}
+                    {canNostrChat() ? <Button title="Nostr" kind="secondary" compact onPress={() => router.push({ pathname: '/nostr-chats', params: { hidden: '1' } })} /> : null}
                   </Row>
                 ) : null}
               </View>

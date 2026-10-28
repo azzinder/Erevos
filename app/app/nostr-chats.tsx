@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canNostrChat, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
+import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-place';
 import { INBOX_MOST, nameOf, npubOf, nsecOf, shortNpub, type NostrDmChat, type NostrDmState } from '../lib/nostr-dm';
 import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
 import {
@@ -34,11 +35,15 @@ import { useColors } from '../theme/context';
 // group of people it chats with, the chats, the name others see, the relays where messages come
 // (NIP-17's inbox), the file servers photos and files go to, the secret key to take elsewhere, and
 // forgetting it all. Each chat opens in app/nostr-chat.tsx. Every view says
-// these chats are not anonymous.
+// these chats are not anonymous. Opened from a hidden place's hidden chats (`hidden=1`) it is that
+// place's own key and chats (lib/network-place.ts), and says so.
 
 export default function NostrChatsScreen() {
   const router = useRouter();
-  const [now, setNow] = useState(nostrDmNow());
+  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
+  const place = where === 'place';
+  const [now, setNow] = useState(nostrDmNow(where));
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [nsec, setNsec] = useState('');
@@ -47,14 +52,14 @@ export default function NostrChatsScreen() {
 
   useEffect(() => {
     runNostrDm();
-    setNow(nostrDmNow());
-    const stop = onNostrDmChange(() => setNow(nostrDmNow()));
-    const stopTor = onTorReady(() => setNow(nostrDmNow()));
+    setNow(nostrDmNow(where));
+    const stop = onNostrDmChange(() => setNow(nostrDmNow(where)));
+    const stopTor = onTorReady(() => setNow(nostrDmNow(where)));
     return () => {
       stop();
       stopTor();
     };
-  }, []);
+  }, [where]);
 
   if (!canNostrChat()) {
     return (
@@ -77,6 +82,13 @@ export default function NostrChatsScreen() {
     }
   }
 
+  // A hidden place's own account says so under the title: it is not the space's.
+  const own = place ? (
+    <Text variant="caption" tone="muted">
+      {t('This account is these hidden chats\' own: nothing of it shows outside them.')}
+    </Text>
+  ) : null;
+
   const about = (
     <Text tone="muted">
       {t('Chat with people on other Nostr apps, such as Damus, Amethyst, Primal or 0xchat, one to one or in groups. Messages are encrypted as NIP-17 asks: relays see whom a message is for, but not who wrote it nor what it says. These chats are not anonymous: your Nostr key is the same to everyone you write to.')}
@@ -97,6 +109,7 @@ export default function NostrChatsScreen() {
     return (
       <Page>
         <Text variant="title">{t('Nostr chats')}</Text>
+        {own}
         {about}
       </Page>
     );
@@ -106,9 +119,14 @@ export default function NostrChatsScreen() {
     return (
       <Page>
         <Text variant="title">{t('Nostr chats')}</Text>
+        {own}
         {about}
         <Card>
-          <Text tone="muted">{t('Erevos makes this space a Nostr key of its own. People write to it with its npub, which you give them.')}</Text>
+          <Text tone="muted">
+            {place
+              ? t('Erevos makes these hidden chats a Nostr key of their own. People write to it with its npub, which you give them.')
+              : t('Erevos makes this space a Nostr key of its own. People write to it with its npub, which you give them.')}
+          </Text>
           <Button title={t('Make a Nostr key')} loading={busy} disabled={busy} onPress={() => void run(nostrDmMake)} />
         </Card>
         <SectionTitle title={t('Or bring a key from another Nostr app')} />
@@ -128,7 +146,9 @@ export default function NostrChatsScreen() {
             }
           />
           <Text variant="caption" tone="faint">
-            {t('It is kept encrypted in this space only. Erevos then reads the messages its relays still keep. The other app keeps working with it too.')}
+            {place
+              ? t('It is kept encrypted in these hidden chats only. Erevos then reads the messages its relays still keep. The other app keeps working with it too.')
+              : t('It is kept encrypted in this space only. Erevos then reads the messages its relays still keep. The other app keeps working with it too.')}
           </Text>
         </Card>
         {tor}
@@ -139,10 +159,11 @@ export default function NostrChatsScreen() {
 
   const npub = npubOf(state.public);
   const chats = Object.values(state.chats).sort((a, b) => b.lastAt - a.lastAt);
-  const open = (key: string) => router.push({ pathname: '/nostr-chat', params: { key } });
+  const open = (key: string) => router.push({ pathname: '/nostr-chat', params: { key, ...whereParams(where) } });
   return (
     <Page>
       <Text variant="title">{t('Nostr chats')}</Text>
+      {own}
       <Text variant="caption" tone="muted">
         {reading > 0
           ? t('Reading {n} of the {all} relays where your messages arrive.', { n: reading, all: state.inbox.length })
@@ -209,9 +230,9 @@ export default function NostrChatsScreen() {
       ))}
 
       <NameCard state={state} busy={busy} run={run} />
-      <InboxCard state={state} busy={busy} run={run} />
-      <FilesCard state={state} busy={busy} run={run} />
-      <SecretCard state={state} />
+      <InboxCard state={state} busy={busy} run={run} where={where} />
+      <FilesCard state={state} busy={busy} run={run} where={where} />
+      <SecretCard state={state} where={where} />
 
       {note ? <Text tone="muted">{note}</Text> : null}
 
@@ -223,8 +244,12 @@ export default function NostrChatsScreen() {
           ask(
             t('Forget this Nostr key?'),
             state.madeHere
-              ? t('Erevos forgets the key and its chats in this space. It was made here: unless its nsec is written down, nobody can use it again, and people who write to it reach no one.')
-              : t('Erevos forgets the key and its chats in this space. The Nostr app it came from keeps it.'),
+              ? place
+                ? t('Erevos forgets the key and its chats. It was made here: unless its nsec is written down, nobody can use it again, and people who write to it reach no one.')
+                : t('Erevos forgets the key and its chats in this space. It was made here: unless its nsec is written down, nobody can use it again, and people who write to it reach no one.')
+              : place
+                ? t('Erevos forgets the key and its chats. The Nostr app it came from keeps it.')
+                : t('Erevos forgets the key and its chats in this space. The Nostr app it came from keeps it.'),
             [
               { text: t('Cancel'), style: 'cancel' },
               { text: t('Forget'), style: 'destructive', onPress: () => void run(nostrDmForget) },
@@ -259,7 +284,7 @@ function NameCard({ state, busy, run }: { state: NostrDmState; busy: boolean; ru
 }
 
 // Where messages come (NIP-17's kind 10050): one to three relays, told to other apps once changed.
-function InboxCard({ state, busy, run }: { state: NostrDmState; busy: boolean; run: Run }) {
+function InboxCard({ state, busy, run, where }: { state: NostrDmState; busy: boolean; run: Run; where: NetworkWhere }) {
   const [adding, setAdding] = useState('');
   const set = (relays: string[]) => run(() => nostrDmSetInbox(relays));
   return (
@@ -286,7 +311,7 @@ function InboxCard({ state, busy, run }: { state: NostrDmState; busy: boolean; r
               disabled={busy || !adding.trim()}
               onPress={() =>
                 void set([...state.inbox, adding]).then(() => {
-                  if (nostrDmNow().state?.inbox.includes(adding.trim().replace(/\/+$/, ''))) setAdding('');
+                  if (nostrDmNow(where).state?.inbox.includes(adding.trim().replace(/\/+$/, ''))) setAdding('');
                 })
               }
             />
@@ -339,7 +364,7 @@ function GroupCard({ state, busy, run, open }: { state: NostrDmState; busy: bool
 }
 
 // Where photos and files go, encrypted (lib/nostr-files.ts): Blossom servers, the first that takes one.
-function FilesCard({ state, busy, run }: { state: NostrDmState; busy: boolean; run: Run }) {
+function FilesCard({ state, busy, run, where }: { state: NostrDmState; busy: boolean; run: Run; where: NetworkWhere }) {
   const [adding, setAdding] = useState('');
   const own = state.files?.length ? state.files : null;
   const list = own ?? FILE_SERVERS;
@@ -370,7 +395,7 @@ function FilesCard({ state, busy, run }: { state: NostrDmState; busy: boolean; r
               disabled={busy || !adding.trim()}
               onPress={() =>
                 void set([...list, adding]).then(() => {
-                  if (nostrDmNow().state?.files?.includes(adding.trim().replace(/\/+$/, ''))) setAdding('');
+                  if (nostrDmNow(where).state?.files?.includes(adding.trim().replace(/\/+$/, ''))) setAdding('');
                 })
               }
             />
@@ -383,7 +408,7 @@ function FilesCard({ state, busy, run }: { state: NostrDmState; busy: boolean; r
 }
 
 // The secret key, shown only when asked: whoever has it is this key on Nostr.
-function SecretCard({ state }: { state: NostrDmState }) {
+function SecretCard({ state, where }: { state: NostrDmState; where: NetworkWhere }) {
   const [nsec, setNsec] = useState('');
   useEffect(() => setNsec(''), [state.public]);
   return (
@@ -391,7 +416,11 @@ function SecretCard({ state }: { state: NostrDmState }) {
       <SectionTitle title={t('Secret key')} />
       <Card>
         {state.madeHere ? (
-          <Text tone="muted">{t('This key was made here, so it is only in this space. Write its nsec down somewhere safe to keep it if this phone is lost, or to use it in another Nostr app.')}</Text>
+          <Text tone="muted">
+            {where === 'place'
+              ? t('This key was made here, so it is only in these hidden chats. Write its nsec down somewhere safe to keep it if this phone is lost, or to use it in another Nostr app.')
+              : t('This key was made here, so it is only in this space. Write its nsec down somewhere safe to keep it if this phone is lost, or to use it in another Nostr app.')}
+          </Text>
         ) : (
           <Text tone="muted">{t('This key came from another Nostr app, which has it too.')}</Text>
         )}

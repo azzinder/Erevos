@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -7,6 +7,7 @@ import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
 import { canTor, canXmpp } from '../lib/core';
 import { t } from '../lib/i18n';
+import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
 import { xmppThroughTor } from '../lib/xmpp-net';
@@ -20,11 +21,14 @@ import { useColors } from '../theme/context';
 // a new chat with an address, a new private group of its contacts, joining a group by its address
 // (a channel is not encrypted, and says so), its chats and groups and its contacts, the key of this
 // device, and signing out. Each chat and group opens in app/xmpp-chat.tsx. Every view says these
-// chats are not anonymous.
+// chats are not anonymous. Opened from a hidden place's hidden chats (`hidden=1`) it is that
+// place's own account (lib/network-place.ts), and says so.
 
 export default function XmppScreen() {
   const router = useRouter();
-  const [now, setNow] = useState(xmppNow());
+  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
+  const [now, setNow] = useState(xmppNow(where));
   const [who, setWho] = useState('');
   const [password, setPassword] = useState('');
   const [server, setServer] = useState('');
@@ -38,14 +42,14 @@ export default function XmppScreen() {
 
   useEffect(() => {
     runXmpp();
-    setNow(xmppNow());
-    const stop = onXmppChange(() => setNow(xmppNow()));
-    const stopTor = onTorReady(() => setNow(xmppNow()));
+    setNow(xmppNow(where));
+    const stop = onXmppChange(() => setNow(xmppNow(where)));
+    const stopTor = onTorReady(() => setNow(xmppNow(where)));
     return () => {
       stop();
       stopTor();
     };
-  }, []);
+  }, [where]);
 
   if (!canXmpp()) {
     return (
@@ -68,6 +72,13 @@ export default function XmppScreen() {
     }
   }
 
+  // A hidden place's own account says so under the title: it is not the space's.
+  const own = where === 'place' ? (
+    <Text variant="caption" tone="muted">
+      {t('This account is these hidden chats\' own: nothing of it shows outside them.')}
+    </Text>
+  ) : null;
+
   const about = (
     <Text tone="muted">
       {t('Chat with people on XMPP, who use Conversations, Monal, Gajim, Dino or another XMPP app. Messages are encrypted with OMEMO, but these chats are not anonymous: the XMPP server sees who talks with whom, and when.')}
@@ -88,6 +99,7 @@ export default function XmppScreen() {
     return (
       <Page>
         <Text variant="title">XMPP</Text>
+        {own}
         {about}
       </Page>
     );
@@ -97,6 +109,7 @@ export default function XmppScreen() {
     return (
       <Page>
         <Text variant="title">XMPP</Text>
+        {own}
         {about}
         <Card>
           <Field label={t('XMPP address')}>
@@ -120,7 +133,9 @@ export default function XmppScreen() {
             }
           />
           <Text variant="caption" tone="faint">
-            {t('Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.')}
+            {where === 'place'
+              ? t('Erevos signs in as a new device of the account, and keeps the sign-in encrypted in these hidden chats only.')
+              : t('Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.')}
           </Text>
         </Card>
         {tor}
@@ -135,11 +150,12 @@ export default function XmppScreen() {
     .filter((c) => c.subscription !== 'remove')
     .sort((a, b) => nameOf(state, a.jid).localeCompare(nameOf(state, b.jid)));
   const contacts = roster.filter((c) => !withChat.has(c.jid));
-  const open = (jid: string) => router.push({ pathname: '/xmpp-chat', params: { jid } });
+  const open = (jid: string) => router.push({ pathname: '/xmpp-chat', params: { jid, ...whereParams(where) } });
   const toggle = (jid: string) => setPicked((now) => (now.includes(jid) ? now.filter((j) => j !== jid) : [...now, jid]));
   return (
     <Page>
       <Text variant="title">XMPP</Text>
+      {own}
       <Text tone="muted">{t('Signed in as {id}', { id: state.jid })}</Text>
       <Text variant="caption" tone="muted">
         {online ? t('Connected.') : problem ? problem : t('Connecting…')}

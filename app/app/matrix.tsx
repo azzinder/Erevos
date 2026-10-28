@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
@@ -26,6 +26,7 @@ import {
   onMatrixChange,
   runMatrix,
 } from '../lib/matrix-store';
+import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -34,10 +35,14 @@ import { useColors } from '../theme/context';
 // networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, on
 // Android whether it tells of messages while the space is closed (lib/matrix-push.ts), and signing
 // out. Each chat opens in app/matrix-chat.tsx. Every view says these chats are not anonymous.
+// Opened from a hidden place's hidden chats (`hidden=1`) it is that place's own account
+// (lib/network-place.ts), and says so; it has no notice while closed.
 
 export default function MatrixScreen() {
   const router = useRouter();
-  const [now, setNow] = useState(matrixNow());
+  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  const where = useNetworkWhere(hidden === '1');
+  const [now, setNow] = useState(matrixNow(where));
   const [who, setWho] = useState('');
   const [password, setPassword] = useState('');
   const [server, setServer] = useState('');
@@ -47,14 +52,14 @@ export default function MatrixScreen() {
 
   useEffect(() => {
     runMatrix();
-    setNow(matrixNow());
-    const stop = onMatrixChange(() => setNow(matrixNow()));
-    const stopTor = onTorReady(() => setNow(matrixNow()));
+    setNow(matrixNow(where));
+    const stop = onMatrixChange(() => setNow(matrixNow(where)));
+    const stopTor = onTorReady(() => setNow(matrixNow(where)));
     return () => {
       stop();
       stopTor();
     };
-  }, []);
+  }, [where]);
 
   if (!canMatrix()) {
     return (
@@ -77,6 +82,13 @@ export default function MatrixScreen() {
     }
   }
 
+  // A hidden place's own account says so under the title: it is not the space's.
+  const own = where === 'place' ? (
+    <Text variant="caption" tone="muted">
+      {t('This account is these hidden chats\' own: nothing of it shows outside them.')}
+    </Text>
+  ) : null;
+
   const about = (
     <Text tone="muted">
       {t('Chat with people on Matrix, who use Element or another Matrix app. Messages are end-to-end encrypted, but these chats are not anonymous: the Matrix server sees who talks with whom, and when.')}
@@ -97,6 +109,7 @@ export default function MatrixScreen() {
     return (
       <Page>
         <Text variant="title">Matrix</Text>
+        {own}
         {about}
       </Page>
     );
@@ -106,6 +119,7 @@ export default function MatrixScreen() {
     return (
       <Page>
         <Text variant="title">Matrix</Text>
+        {own}
         {about}
         <Card>
           <Field label={t('Matrix ID')}>
@@ -129,7 +143,9 @@ export default function MatrixScreen() {
             }
           />
           <Text variant="caption" tone="faint">
-            {t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.')}
+            {where === 'place'
+              ? t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in these hidden chats only.')
+              : t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.')}
           </Text>
         </Card>
         {tor}
@@ -140,10 +156,11 @@ export default function MatrixScreen() {
 
   const rooms = roomList(state);
   // Checks between this device and another of ours go to-device, without a chat.
-  const check = matrixVerifications().find((v) => !v.roomId);
+  const check = matrixVerifications(where).find((v) => !v.roomId);
   return (
     <Page>
       <Text variant="title">Matrix</Text>
+      {own}
       <Text tone="muted">{t('Signed in as {id}', { id: state.userId })}</Text>
       <Text variant="caption" tone="muted">
         {t('Not anonymous: the Matrix server sees who talks with whom, and when.')}
@@ -174,7 +191,7 @@ export default function MatrixScreen() {
               void run(async () => {
                 const room = await matrixStartChat(newId);
                 setNewId('');
-                router.push({ pathname: '/matrix-chat', params: { room: room.id } });
+                router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } });
               })
             }
           />
@@ -184,7 +201,7 @@ export default function MatrixScreen() {
       <SectionTitle title={t('Security Key')} />
       <RecoveryCard state={state} />
 
-      {Platform.OS === 'android' ? <ClosedPush busy={busy} run={run} /> : null}
+      {Platform.OS === 'android' && where === 'space' ? <ClosedPush busy={busy} run={run} /> : null}
 
       <SectionTitle title={t('Chats')} />
       {rooms.length === 0 ? <Text tone="muted">{t('No Matrix chats yet.')}</Text> : null}
@@ -192,7 +209,7 @@ export default function MatrixScreen() {
         <RoomRow
           key={room.id}
           room={room}
-          onOpen={() => router.push({ pathname: '/matrix-chat', params: { room: room.id } })}
+          onOpen={() => router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } })}
           onJoin={() => void run(() => matrixJoin(room.id))}
           onDecline={() => void run(() => matrixLeave(room.id))}
         />

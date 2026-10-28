@@ -131,8 +131,9 @@ What stays private is what is written.
   origin; `hostWidget` is the same. Its back arrow, or Escape, puts the frame small in a corner, as
   picture in picture; a tap brings it back. Sailfish OS has none.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
-  that space only (not its hidden chats, not in backups yet), synced while the space is open; it
-  answers `matrixUnread()` and `onMatrixChange()` for the home screen.
+  that space (not in backups yet), synced while the space is open; it answers `matrixUnread()` and
+  `onMatrixChange()` for the home screen. A hidden place can have an account of its own (Hidden
+  chats, below).
 - `app/app/matrix.tsx` (Settings → Relay and networks → Matrix: sign in, chats, invites, new chat,
   sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
@@ -211,13 +212,36 @@ is the account's push gateway (`app/lib/matrix-push.ts`, `crates/erevos-relay/sr
 The homeserver learns the relay's address, and the relay when messages come for that queue. With
 no space open, or Erevos stopped by Android, nothing is told, as for the space's own chats.
 
+## Hidden chats
+
+Each place of hidden chats can sign in to a Matrix account of its own, apart from the space's, that
+nothing outside its hidden chats shows.
+
+- `app/lib/place-networks.ts` opens the place's account (`openMatrixPlace`) as its hidden chats open
+  and closes it (`closeMatrixPlace`) as they close, so it syncs only while they are open and a
+  closed place receives nothing. Its sign-in and keys are kept sealed with the place's key, in the
+  place's own value of `erevos-matrix`: the holders `hidden` and `hidden1` to `hidden3` of
+  `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
+- `app/lib/network-place.ts`: `app/matrix.tsx` and `app/matrix-chat.tsx` read a `hidden=1` route
+  param (`useNetworkWhere`), show the place's account (`matrixNow('place')`, `matrixVerifications('place')`),
+  say under the title that it is the hidden chats' own, and while they are on top what is done goes to
+  that account; the screens they open take the param on (`whereParams`). The hidden chats' list
+  (`app/app/chat.tsx`) has **Matrix** under it, and lists the place's rooms (`matrixInboxRows`), which
+  open with `hidden=1` (`components/chat-row.tsx`).
+- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list, no
+  notification settings, and no closed-space notice (`matrixSetPush` refuses a place, and its section
+  is not on the screen). It has no calls: the buttons are not there, and Element Call is the space's
+  account's.
+- `app/checks/place-networks.check.ts` checks the stores against the homeserver played in the checks,
+  with the real core; not yet on a phone.
+
 ## Not yet
 
 - Video thumbnails, and a voice message's waveform.
 - Checking by QR, and trust shown per device in a group.
 - A room's history beyond the 2000 messages it keeps.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
-- Calls in a hidden chat's place, and on Sailfish OS.
+- Calls in a hidden chat's place (its account has none), and on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
   "Matrix 2.0" mode): Element Call is not given sticky events.

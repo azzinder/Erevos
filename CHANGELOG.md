@@ -244,6 +244,19 @@ On main, not released yet:
   device's key both ways, the second as Kaidan shows it. The core is checked against python-twomemo both ways
   (`docs/xmpp-checks/twomemo-cross.py`), the rest with apps of each kind played in the checks; not yet with Kaidan on a
   phone.
+- **Hidden chats can have their own Matrix, XMPP and Nostr accounts**: under the list of a place of hidden chats,
+  **Matrix**, **XMPP** and **Nostr** open the same screens as the space's (`app/matrix.tsx`, `app/xmpp.tsx`,
+  `app/nostr-chats.tsx` and their chats) for an account of that place alone: a Matrix and an XMPP sign-in and a Nostr
+  key, each kept encrypted with the place's key in the place's own value of the network's file (the holders `hidden` and
+  `hidden1` to `hidden3` of `lock/sealed-file.ts`), apart from the space's, which never sees them. They connect only
+  while the hidden chats are open and are let go of as they close (`lib/place-networks.ts`), so nothing comes and no
+  notice shows while they are closed. Their chats are rows of the hidden chats' list and nowhere else: no notice, no
+  number on Erevos's icon, nothing on the home list, and no notification settings. They have no calls (their chats have
+  no call buttons, and an XMPP call to a place's account is refused; Matrix calls are the space's account's) and, for
+  Matrix, no notice while closed. A screen opened from the hidden chats says so under its title and shows the place's
+  account while it is on top (`lib/network-place.ts`); the user guide, What's new and `docs/` say it. The stores are
+  checked with `app/checks/place-networks.check.ts`, against the servers played in the checks and with the real core;
+  not yet on a phone.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

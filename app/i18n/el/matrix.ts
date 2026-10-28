@@ -15,6 +15,8 @@ export const matrix: Record<string, string> = {
   "Signing in…": "Σύνδεση…",
   "Sign in": "Σύνδεση",
   "Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.": "Το Erevos συνδέεται ως νέα συσκευή με όνομα Erevos, και κρατά τη σύνδεση κρυπτογραφημένη μόνο σε αυτόν τον χώρο.",
+  "Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in these hidden chats only.": "Το Erevos συνδέεται ως νέα συσκευή με όνομα Erevos, και κρατά τη σύνδεση κρυπτογραφημένη μόνο σε αυτές τις κρυφές συνομιλίες.",
+  "This account is these hidden chats' own: nothing of it shows outside them.": "Αυτός ο λογαριασμός ανήκει μόνο σε αυτές τις κρυφές συνομιλίες: τίποτα από αυτόν δεν φαίνεται έξω από αυτές.",
   "Signed in as {id}": "Συνδεδεμένος ως {id}",
   "Not anonymous: the Matrix server sees who talks with whom, and when.": "Όχι ανώνυμα: ο server του Matrix βλέπει ποιος μιλά με ποιον, και πότε.",
   "Chats": "Συνομιλίες",

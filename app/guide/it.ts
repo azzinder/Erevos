@@ -1482,8 +1482,8 @@ persone che usano Element o un’altra app Matrix. Erevos parla da sé con il se
 sta nel mezzo.
 
 - **Accesso:** il tuo ID Matrix, come @nome:matrix.org, e la sua password. Erevos diventa un nuovo dispositivo
-  dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati solo in questo spazio, mai nelle
-  sue chat nascoste, e non ancora nei backup.
+  dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e non ancora
+  nei backup. Le sue chat nascoste possono avere un account Matrix proprio, vedi [Chat nascoste](#hidden).
 - **Chat:** **Nuova chat** avvia una chat cifrata con un ID Matrix. Gli inviti compaiono per primi, con **Partecipa** e
   **Rifiuta**.
 - **Cifratura:** i messaggi sono cifrati end-to-end con la cifratura di Matrix stesso (Olm e Megolm, tramite
@@ -1567,9 +1567,9 @@ che usano Conversations, Monal, Gajim, Dino o un’altra app XMPP. Erevos parla 
 app: nessun ponte sta nel mezzo.
 
 - **Accesso:** il tuo indirizzo XMPP, come name@example.org, e la sua password. Erevos trova il server dall’indirizzo;
-  **Server** serve solo se non lo trova (un nome, nome:porta o un indirizzo wss://). Erevos diventa un nuovo
-  dispositivo dell’account. L’accesso e le chiavi del dispositivo restano cifrati solo in questo spazio, mai nelle sue
-  chat nascoste, e non ancora nei backup.
+  **Server** serve solo se non lo trova (un nome, nome:porta o un indirizzo wss://). Erevos diventa un nuovo dispositivo
+  dell’account. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e non ancora nei backup. Le sue
+  chat nascoste possono avere un account XMPP proprio, vedi [Chat nascoste](#hidden).
 - **Chat:** **Nuova chat** aggiunge l’indirizzo ai tuoi contatti, chiede alla persona di farti vedere quando è online,
   come fanno le altre app XMPP, e apre la chat. Chi chiede di aggiungerti compare in cima all’elenco e nella schermata
   XMPP, con **Accetta** e **Rifiuta**. I contatti che l’account ha già sono in **Contatti**.
@@ -1640,9 +1640,9 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
 
 - **La chiave:** **Crea una chiave Nostr** ne crea una per questo spazio; **Oppure porta una chiave da un’altra app
   Nostr** prende il nsec di una chiave che hai già, e legge ciò che i suoi relay tengono ancora. La chiave e le sue chat
-  sono tenute cifrate solo in questo spazio, mai nelle sue chat nascoste, e non ancora nei backup. **Mostra la chiave
-  segreta (nsec)** la mostra, per annotarla o portarla in un’altra app: chi ce l’ha legge queste chat e scrive al posto
-  tuo.
+  sono tenute cifrate in questo spazio, e non ancora nei backup. Le sue chat nascoste possono avere una chiave Nostr
+  propria, vedi [Chat nascoste](#hidden). **Mostra la chiave segreta (nsec)** la mostra, per annotarla o portarla in
+  un’altra app: chi ce l’ha legge queste chat e scrive al posto tuo.
 - **La tua chiave Nostr:** dai il suo npub alle persone che devono scriverti, con **Copia** o **Mostra il codice QR**.
   **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub.
 - **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
@@ -2210,6 +2210,14 @@ cancellerebbe quello che contengono i posti tolti.
   letto solo con **Ricevere da chiuse** attivo, e **Avvisa quando arriva un messaggio** non lo conta. Le sue chiamate
   squillano solo mentre le chat nascoste sono aperte: una avviata mentre sono chiuse appare come persa. Un gruppo lì
   non ha un PIN suo, e nessuno è pubblico.
+- **Matrix, XMPP e Nostr:** sotto il loro elenco, **Matrix**, **XMPP** e **Nostr** aprono le schermate di quelle reti
+  (vedi [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats)) per account propri delle chat
+  nascoste, a parte quelli dello spazio: un account Matrix e uno XMPP a cui accedere, e una chiave Nostr. Gli accessi
+  e la chiave sono tenuti cifrati con la chiave delle chat nascoste, e niente di essi si vede fuori dalle chat
+  nascoste: le loro chat stanno solo nell’elenco delle chat nascoste, e non aggiungono nulla al numero sull’icona di
+  Erevos né all’elenco della schermata principale. Gli account si collegano solo mentre le chat nascoste sono aperte,
+  quindi da chiuse non arriva niente e non compare nessun avviso, anche con **Ricevere da chiuse** attivo. Non hanno
+  chiamate, e un account Matrix non ha **Avvisa dei nuovi messaggi**.
 - **Le anteprime dei link** hanno un loro interruttore nei dettagli di una chat nascosta, per tutte le chat di quel
   posto, disattivato finché non lo attivi (vedi **Anteprime dei link** in [Chat tramite un relay](#relay)).
 - **Avvisa quando arriva un messaggio** (Android): in cima a un posto mentre **Ricevere da chiuse** è disattivato. Se

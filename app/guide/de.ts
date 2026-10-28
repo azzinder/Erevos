@@ -1567,9 +1567,9 @@ Unter **Einstellungen** → **Relay und Netze** → **Matrix** kann sich ein Ber
 Menschen zu chatten, die Element oder eine andere Matrix-App nutzen. Erevos spricht selbst mit dem Matrix-Server, wie
 Element: Keine Brücke sitzt dazwischen.
 
-- **Anmelden:** deine Matrix-ID, etwa @name:matrix.org, und ihr Passwort. Erevos wird ein neues Gerät des Kontos,
-  namens Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt nur in diesem Bereich, nie in seinen
-  versteckten Chats, und noch nicht in Sicherungen.
+- **Anmelden:** deine Matrix-ID, etwa @name:matrix.org, und ihr Passwort. Erevos wird ein neues Gerät des Kontos, namens
+  Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und noch nicht in Sicherungen.
+  Seine versteckten Chats können ein eigenes Matrix-Konto haben, siehe [Versteckte Chats](#hidden).
 - **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
   **Beitreten** und **Ablehnen**.
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
@@ -1656,8 +1656,8 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 
 - **Anmelden:** deine XMPP-Adresse, etwa name@example.org, und ihr Passwort. Erevos findet den Server über die Adresse;
   **Server** brauchst du nur, wenn es ihn nicht findet (ein Name, Name:Port oder eine wss://-Adresse). Erevos wird ein
-  neues Gerät des Kontos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt nur in diesem Bereich, nie in seinen
-  versteckten Chats, und noch nicht in Sicherungen.
+  neues Gerät des Kontos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und noch nicht in
+  Sicherungen. Seine versteckten Chats können ein eigenes XMPP-Konto haben, siehe [Versteckte Chats](#hidden).
 - **Chats:** **Neuer Chat** nimmt die Adresse in deine Kontakte auf, bittet die Person, dich sehen zu lassen, wann sie
   online ist, wie andere XMPP-Apps es tun, und öffnet den Chat. Wer dich hinzufügen möchte, steht oben in der Liste und
   auf dem XMPP-Bildschirm, mit **Annehmen** und **Ablehnen**. Die Kontakte, die das Konto schon hat, stehen unter
@@ -1733,9 +1733,10 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 
 - **Der Schlüssel:** **Nostr-Schlüssel erstellen** erstellt einen für diesen Bereich; **Oder einen Schlüssel aus einer
   anderen Nostr-App mitbringen** nimmt das nsec eines Schlüssels, den du schon hast, und liest, was seine Relays noch
-  haben. Der Schlüssel und seine Chats werden verschlüsselt nur in diesem Bereich aufbewahrt, nie in seinen versteckten
-  Chats, und noch nicht in Backups. **Geheimen Schlüssel (nsec) zeigen** zeigt ihn, zum Aufschreiben oder für eine
-  andere App: Wer ihn hat, liest diese Chats und schreibt als du.
+  haben. Der Schlüssel und seine Chats werden verschlüsselt in diesem Bereich aufbewahrt, und noch nicht in Backups.
+  Seine versteckten Chats können einen eigenen Nostr-Schlüssel haben, siehe [Versteckte Chats](#hidden). **Geheimen
+  Schlüssel (nsec) zeigen** zeigt ihn, zum Aufschreiben oder für eine andere App: Wer ihn hat, liest diese Chats und
+  schreibt als du.
 - **Dein Nostr-Schlüssel:** Gib sein npub den Menschen, die dir schreiben sollen, mit **Kopieren** oder **QR-Code
   zeigen**. **Dein Name** ist, wenn du einen angibst, öffentlich: Andere Nostr-Apps zeigen ihn statt deines npub.
 - **Chats:** **Neuer Chat** nimmt ihr npub (oder nprofile), aus ihrem Profil in ihrer App, oder einen Namen wie
@@ -2336,6 +2337,15 @@ löschen, was die weggenommenen Plätze enthalten.
   und **Melden, wenn eine Nachricht kommt** zählt sie nicht. Ihre Anrufe klingeln nur, solange die versteckten Chats
   offen sind: Einer, der gestartet wird, während sie geschlossen sind, erscheint als verpasst. Eine Gruppe dort hat
   keine eigene PIN, und keine ist öffentlich.
+- **Matrix, XMPP und Nostr:** unter ihrer Liste öffnen **Matrix**, **XMPP** und **Nostr** die Bildschirme dieser Netze
+  (siehe [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats)) für Konten, die den
+  versteckten Chats allein gehören, getrennt von denen des Bereichs: ein Matrix-Konto und ein XMPP-Konto zum Anmelden
+  und ein Nostr-Schlüssel. Die Anmeldungen und der Schlüssel werden mit dem Schlüssel der versteckten Chats
+  verschlüsselt aufbewahrt, und nichts davon zeigt sich außerhalb der versteckten Chats: Ihre Chats stehen nur in der
+  Liste der versteckten Chats und zählen weder in der Zahl auf dem Symbol von Erevos noch in der Startliste mit. Die
+  Konten verbinden sich nur, solange die versteckten Chats offen sind; sind sie geschlossen, kommt nichts an und keine
+  Benachrichtigung erscheint, auch mit **Empfangen, wenn geschlossen**. Es gibt keine Anrufe, und ein Matrix-Konto hat
+  kein **Neue Nachrichten melden**.
 - **Linkvorschauen** haben einen eigenen Schalter in den Details eines versteckten Chats, für alle Chats dieses
   Platzes, aus, solange du ihn nicht einschaltest (siehe **Linkvorschauen** unter [Chat über ein Relay](#relay)).
 - **Melden, wenn eine Nachricht kommt** (Android): oben auf einem Platz, solange **Empfangen, wenn geschlossen** aus

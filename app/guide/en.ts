@@ -1352,8 +1352,8 @@ who use Element or another Matrix app. Erevos talks to the Matrix server itself,
 between.
 
 - **Signing in:** your Matrix ID, such as @name:matrix.org, and its password. Erevos becomes a new device of the
-  account, named Erevos. The sign-in and the device's keys are kept sealed in this space only, never in its hidden
-  chats, and not in backups yet.
+  account, named Erevos. The sign-in and the device's keys are kept sealed in this space, and not in backups yet. Its
+  hidden chats can have a Matrix account of their own, see [Hidden chats](#hidden).
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
@@ -1429,8 +1429,8 @@ bridge sits in between.
 
 - **Signing in:** your XMPP address, such as name@example.org, and its password. Erevos finds the server from the
   address; **Server** is only for one it cannot find (a name, name:port or a wss:// address). Erevos becomes a new
-  device of the account. The sign-in and the device's keys are kept encrypted in this space only, never in its hidden
-  chats, and not in backups yet.
+  device of the account. The sign-in and the device's keys are kept encrypted in this space, and not in backups yet. Its
+  hidden chats can have an XMPP account of their own, see [Hidden chats](#hidden).
 - **Chats:** **New chat** adds the address to your contacts, asks the person to let you see when they are online, as
   other XMPP apps do, and opens the chat. Someone who asks to add you shows at the top of the home list and on the XMPP
   screen, with **Accept** and **Decline**. The contacts the account already has are under **Contacts**.
@@ -1497,9 +1497,10 @@ one or in groups with people who use Damus, Amethyst, Primal, 0xchat or another 
 NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
 
 - **The key:** **Make a Nostr key** makes one for this space; **Or bring a key from another Nostr app** takes the nsec
-  of one you already have, and reads what its relays still keep. The key and its chats are kept encrypted in this
-  space only, never in its hidden chats, and not in backups yet. **Show the secret key (nsec)** shows it, to write down
-  or to take to another app: whoever has it reads these chats and writes as you.
+  of one you already have, and reads what its relays still keep. The key and its chats are kept encrypted in this space,
+  and not in backups yet. Its hidden chats can have a Nostr key of their own, see [Hidden chats](#hidden). **Show the
+  secret key (nsec)** shows it, to write down or to take to another app: whoever has it reads these chats and writes as
+  you.
 - **Your Nostr key:** give its npub to the people who should write to you, with **Copy** or **Show QR code**. **Your
   name**, if you give one, is public: other Nostr apps show it in place of your npub.
 - **Chats:** **New chat** takes their npub (or nprofile), from their profile in their app, or a name such as
@@ -2011,6 +2012,14 @@ what the places taken away hold.
   **Receive while closed** on, and **Say when a message comes** does not count it. Its calls ring only while the
   hidden chats are open: one started while they are closed shows as missed. A group there has no PIN of its own, and
   none is public.
+- **Matrix, XMPP and Nostr:** under their list, **Matrix**, **XMPP** and **Nostr** open the screens of those networks
+  (see [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)) for accounts of the hidden
+  chats' own, apart from the space's: a Matrix account and an XMPP account to sign in to, and a Nostr key. The
+  sign-ins and the key are kept encrypted with the hidden chats' key, and nothing of them shows outside the hidden
+  chats: their chats are in the hidden chats' list only, and add nothing to the number on Erevos's icon or to the home
+  list. The accounts connect only while the hidden chats are open, so while they are closed nothing comes and no
+  notice shows, even with **Receive while closed** on. They have no calls, and a Matrix account has no **Say a message
+  came**.
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,

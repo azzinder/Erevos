@@ -15,6 +15,8 @@ export const matrix: Record<string, string> = {
   "Signing in…": "Entrando…",
   "Sign in": "Entrar",
   "Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.": "O Erevos entra como um novo dispositivo chamado Erevos, e guarda a sessão criptografada só neste espaço.",
+  "Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in these hidden chats only.": "O Erevos entra como um novo dispositivo chamado Erevos, e guarda a sessão criptografada só nestas conversas ocultas.",
+  "This account is these hidden chats' own: nothing of it shows outside them.": "Esta conta é própria destas conversas ocultas: nada dela aparece fora delas.",
   "Signed in as {id}": "Conectado como {id}",
   "Not anonymous: the Matrix server sees who talks with whom, and when.": "Não anônimo: o servidor Matrix vê quem fala com quem, e quando.",
   "Chats": "Conversas",

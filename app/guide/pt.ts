@@ -1451,9 +1451,9 @@ Em **Configurações** → **Relay e redes** → **Matrix**, um espaço pode ent
 que usam o Element ou outro app Matrix. O Erevos fala ele mesmo com o servidor Matrix, como o Element: nenhuma ponte
 fica no meio.
 
-- **Entrar:** seu ID Matrix, como @nome:matrix.org, e a senha dele. O Erevos vira um novo dispositivo da conta,
-  chamado Erevos. A sessão e as chaves do dispositivo ficam criptografadas só neste espaço, nunca nas conversas
-  ocultas dele, e ainda não nos backups.
+- **Entrar:** seu ID Matrix, como @nome:matrix.org, e a senha dele. O Erevos vira um novo dispositivo da conta, chamado
+  Erevos. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e ainda não nos backups. As conversas
+  ocultas dele podem ter uma conta Matrix própria, veja [Conversas ocultas](#hidden).
 - **Conversas:** **Nova conversa** começa uma conversa criptografada com um ID Matrix. Os convites aparecem primeiro,
   com **Entrar** e **Recusar**.
 - **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
@@ -1536,8 +1536,8 @@ esses apps: nenhuma ponte fica no meio.
 
 - **Entrar:** seu endereço XMPP, como name@example.org, e a senha dele. O Erevos acha o servidor pelo endereço;
   **Servidor** só é preciso se ele não achar (um nome, nome:porta ou um endereço wss://). O Erevos vira um novo
-  dispositivo da conta. A sessão e as chaves do dispositivo ficam criptografadas só neste espaço, nunca nas conversas
-  ocultas dele, e ainda não nos backups.
+  dispositivo da conta. A sessão e as chaves do dispositivo ficam criptografadas neste espaço, e ainda não nos backups.
+  As conversas ocultas dele podem ter uma conta XMPP própria, veja [Conversas ocultas](#hidden).
 - **Conversas:** **Nova conversa** adiciona o endereço aos seus contatos, pede à pessoa que deixe você ver quando ela
   está online, como fazem os outros apps XMPP, e abre a conversa. Quem pede para adicionar você aparece no topo da lista
   e na tela do XMPP, com **Aceitar** e **Recusar**. Os contatos que a conta já tem estão em **Contatos**.
@@ -1609,9 +1609,9 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 
 - **A chave:** **Criar uma chave Nostr** cria uma para este espaço; **Ou trazer uma chave de outro app Nostr** pega o
   nsec de uma chave que você já tem, e lê o que os relays dela ainda guardam. A chave e as conversas dela ficam
-  guardadas criptografadas só neste espaço, nunca nas conversas ocultas dele, e ainda não nos backups. **Mostrar a
-  chave secreta (nsec)** a mostra, para anotar ou levar para outro app: quem a tiver lê estas conversas e escreve como
-  você.
+  guardadas criptografadas neste espaço, e ainda não nos backups. As conversas ocultas dele podem ter uma chave Nostr
+  própria, veja [Conversas ocultas](#hidden). **Mostrar a chave secreta (nsec)** a mostra, para anotar ou levar para
+  outro app: quem a tiver lê estas conversas e escreve como você.
 - **Sua chave Nostr:** dê o npub dela às pessoas que devem escrever para você, com **Copiar** ou **Mostrar o código
   QR**. **Seu nome**, se você der um, é público: outros apps Nostr o mostram no lugar do seu npub.
 - **Conversas:** **Nova conversa** recebe o npub da pessoa (ou nprofile), do perfil dela no app dela, ou um nome como
@@ -2170,6 +2170,14 @@ as posições retiradas guardam.
   posição está fechada ele só é lido com **Receber quando fechadas** ativado, e **Avisar quando chega uma mensagem**
   não o conta. As chamadas dele só tocam enquanto as conversas ocultas estão abertas: uma iniciada enquanto estão
   fechadas aparece como perdida. Um grupo ali não tem PIN próprio, e nenhum é público.
+- **Matrix, XMPP e Nostr:** abaixo da lista delas, **Matrix**, **XMPP** e **Nostr** abrem as telas dessas redes (veja
+  [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats)) para contas próprias das
+  conversas ocultas, separadas das do espaço: uma conta Matrix e uma XMPP para entrar, e uma chave Nostr. As sessões e
+  a chave ficam guardadas criptografadas com a chave das conversas ocultas, e nada delas aparece fora das conversas
+  ocultas: as conversas delas ficam só na lista das conversas ocultas, e não somam ao número no ícone do Erevos nem à
+  lista da tela inicial. As contas se conectam só enquanto as conversas ocultas estão abertas, então, fechadas, nada
+  chega e nenhum aviso aparece, nem com **Receber quando fechadas** ativado. Não têm chamadas, e uma conta Matrix não
+  tem **Avisar quando chega mensagem**.
 - **As prévias de links** têm um interruptor próprio nos detalhes de uma conversa oculta, para todas as conversas
   daquela posição, desativado a menos que você o ative (veja **Prévias de links** em
   [Conversar por um relay](#relay)).
