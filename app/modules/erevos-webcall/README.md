@@ -31,4 +31,6 @@ calls (`modules/erevos-call`); Element Call shows the choice
 The manifest also turns off Safe Browsing and WebView's metrics for the whole
 app, so no web page in Erevos tells Google where it goes.
 
-Plain Android, no other library.
+Plain Android, no other library. On the computer and in the web app the same
+Element Call shows in a frame from an origin of its own
+(`lib/element-call-window.web.ts`, `pwa/element-call.mjs`).

@@ -153,6 +153,17 @@ On main, not released yet:
   ring here. While a Matrix call is on or ringing, another call, Erevos's own or one on XMPP, does not ring, and the
   other way round: it shows as missed. Checked against a homeserver played in the checks with the real core, and the
   real Element Call in Chromium up to the media server; not yet on a phone with Element X.
+- **Voice and video calls with people on Matrix, in the web app and on the computer** (Windows, macOS, Linux): the two
+  tiles at the top of a Matrix chat call with Element Call there too, as on Android, and its window opens over the app.
+  Its back arrow, or the Escape key, makes it small in a corner over Erevos, so Erevos can be used during the call, and
+  a tap on the small window brings it back to full size; until Element Call first speaks, a **Close** button under it
+  ends the call, should it never start. What it says to the Matrix server goes through Erevos, as on Android, and it
+  reaches no tracker. In the web app Element Call comes from a second address of its own
+  (erevos-call.lphl.nekten.eu), and on the computer from a separate part of the app (app://element-call), so it can
+  read nothing of Erevos, its keys and chats included; the web app checks its files against the same signed release as
+  its own before it runs it, which makes the first call a moment longer. The browser or the computer asks once for the
+  camera and the microphone, on the computer only the call window may use the camera, and where the sound goes is the
+  browser's or the computer's to choose. Sailfish OS has no Matrix calls.
 - **Chats with people on other Nostr apps**: under **Settings** → **Relay and networks** → **Nostr chats**, a space
   gets a Nostr key of its own (made there, or brought from another app as its nsec) and chats one to one or in groups
   with people who use Damus, Amethyst, Primal, 0xchat or another app that speaks NIP-17. Each message is a kind 14 sealed by the
@@ -233,6 +244,12 @@ On main, not released yet:
   phone's ringtone, as the profile sets it, for 45 seconds at most; a tap on either opens Erevos. It asks the relay in
   a channel to the relay's key once the relay proved it, as the app does. Locking the space stops it; after a restart
   it waits again once Erevos opens the space. Not yet tried on a phone.
+- **Erevos names the open-source work it is built on**: **Settings** → **General** → **About Erevos**, and the guide's
+  first part, have a new part, **Made with others' open source**: Erevos is free software (AGPL-3.0-or-later), built on
+  open-source work by others, and the main parts are named with their makers and licences: Element Call, Arti, lyrebird,
+  Snowflake and WebTunnel, vodozemac, OpenMLS, the RustCrypto and dalek-cryptography libraries, React Native, Expo and
+  react-native-webrtc, Electron, and the Inter fonts. Every package with its licence is in `CREDITS.md`, which comes
+  with Erevos's source code.
 
 ### Under the hood
 
@@ -350,6 +367,11 @@ On main, not released yet:
   (QueueMove.readCame), as those can take tens of seconds through Tor; and the watch's waits end and ask again at
   once after a change of network (ContactWatch.renew), as a wait on the network gone could hang for minutes, with
   nothing heard meanwhile.
+- **The web app and the computer reach Matrix, XMPP and Nostr servers over HTTPS**: the page policy of both
+  (connect-src) allowed only WebSocket connections and the page's own address, so the browser refused every HTTPS request
+  they made to another server, while Android, which has no page policy, was not held back. It now allows HTTPS too, so
+  Matrix sign-in, XMPP server discovery and file sharing (HTTP upload), and Nostr files (Blossom) and name lookups
+  (NIP-05) work in the web app and on the computer.
 
 ## 3.4.2 (2026-10-27)
 

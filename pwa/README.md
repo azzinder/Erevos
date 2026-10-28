@@ -37,9 +37,11 @@ app from a store is installed once and changes only when updated.
   `EREVOS_WEB_URL` is set. `deploy/web/deploy.sh` keeps each signed list in `pwa/releases/`, so
   every release is on record.
 - **The page is shut to anything else**: a Content-Security-Policy that allows scripts only from
-  the app's own origin (and WebAssembly), no frames, no forms, no referrer; the same policy is in
-  the signed `index.html` and added by the worker, so a server that drops the header loosens
-  nothing. The app has its own subdomain, apart from the relay.
+  the app's own origin (and WebAssembly), one frame (Element Call's, from its own address, below),
+  no forms, no referrer; it connects only over HTTPS and WebSocket, to the relays and the Matrix,
+  XMPP and Nostr servers the owner adds. The same policy is in the signed `index.html` and added by
+  the worker, so a server that drops the header loosens nothing. The app has its own subdomain,
+  apart from the relay.
 - **Data on the device** is in the browser's IndexedDB (`app/lib/web-store.ts`): the sealed files
   as on the phone, and the keystore's values sealed with a non-extractable AES key (Safari keeps
   it wrapped with a key in the Keychain). An app on the home screen is not cleared after 7 days as
@@ -121,6 +123,54 @@ The first time, the page comes straight from the server, unchecked, as the web a
 start does. A server that is broken into could send a page that passes the invite on: an invite is
 as safe as the text message that carries it, for the 2 days it lasts.
 
+## Matrix calls
+
+A Matrix call opens Element Call (Element's call app, AGPL-3.0, from the npm package
+`@element-hq/element-call-embedded` that `app/package.json` pins) over the app, as on Android
+(`docs/matrix.md`). It is code Erevos does not write, so it never runs where Erevos's keys are:
+
+- **An address of its own.** Element Call comes from a second address on the same server,
+  `erevos-call.<…>` (`build.mjs --call-origin`), so the browser keeps it apart from the app: it
+  cannot read the app's storage, its keys or its chats, nor its worker's files. The app's page may
+  show only that one frame (`frame-src`), and Element Call's pages may be shown only in the app
+  (`frame-ancestors`). `app/lib/element-call-window.web.ts` opens it and speaks the Widget API with
+  it by `postMessage`, only to and from that address.
+- **The same signed release.** `pwa/element-call.mjs` copies Element Call's files into the release
+  (as Android leaves out the source maps, the background blur and Matrix's own encryption in
+  WebAssembly), takes out the page's two inline scripts into `erevos-call.js`, and empties
+  `config.json`, so it reports to no one. Both addresses serve the same `release.json`,
+  `release.sig` and `sw.js`. `build.mjs` writes both addresses into the worker, which keeps and
+  serves on each only its own files: on Element Call's only `/element-call/`, on the app's all else.
+  Each address installs and checks its own copy of the worker against the same signed list.
+- **Checked before it runs.** The frame first opens `element-call/start.html`, which installs the
+  worker on Element Call's address and opens Element Call only once the worker serves it; a
+  browser with no service worker there gets no call, and the app says why. The first call takes a
+  moment longer: the worker fetches about 7 MB once. `erevos-call.js` checks a new `sw.js` the
+  browser fetches there, as `boot.js` does for the app's, and the app warns when no signed release
+  lists it.
+- **Nothing else reached.** On Element Call's address the worker refuses its requests to trackers
+  (PostHog, Sentry, Google's) and to any `/_matrix/` address: it reaches the homeserver only
+  through Erevos, by the Widget API, which allows it only what a call needs. It reaches the media
+  server the homeserver names (LiveKit) itself, over HTTPS and WebSocket.
+- **The server.** The second address needs its own DNS name and certificate, served with the
+  headers of `deploy/web/install.sh` (which makes both Caddy sites); the app's address answers 404
+  for `/element-call/`, and `deploy.sh` checks that it does. `release.mjs verify` checks the files
+  of both addresses. A release is made for its two addresses: `publish.sh` and `deploy.sh` refuse
+  one made for others, and `release.sh` makes one for yours (`--origin`, `--call-origin`).
+
+What remains:
+
+- **Trust on first start, again.** The first time, Element Call's address sends `start.html` and
+  `sw.js` unchecked, as the app's does. A server that is already bad could send a worker there
+  that checks nothing. It would see the call (its sound, picture and keys), not the app's keys or
+  chats, and the weekly check of the server checks that address too.
+- **Workers from before.** A worker from a release before this one does not know the second
+  address. Until the browser replaces it, it keeps Element Call's files of a new release too, and
+  would give them on the app's address to a page opened there by hand; the app itself opens them
+  only from the second address, and the new worker refuses them on the app's.
+- **The browser decides the media.** Which camera, microphone and speaker a call uses is the
+  browser's to list, so Element Call shows the device's own (no choice through Erevos).
+
 ## Making a release
 
 Once, on your own computer, make the key and commit its public half:
@@ -152,13 +202,16 @@ computer, so no one else can sign. To build it yourself instead, from a clean ch
     deploy/web/release.sh ~/.erevos/web-release.key /tmp/erevos-web
     deploy/web/deploy.sh root@<server> <app.example.org> /tmp/erevos-web
 
-The address needs its own DNS name (an A record to the server), apart from the relay's.
+The address needs its own DNS name (an A record to the server), apart from the relay's, and Element
+Call's second address another one. Without Element Call (`build.mjs --no-element-call`) the web
+app makes no Matrix calls and needs no second address.
 
 ## Files
 
 - `sw.js`: the service worker; `build.mjs` writes the public key into it.
 - `boot.js`, `boot.css`: the page's first script, and its screens before the app starts.
 - `i/`: the page an invite sent by text message opens, `/i#<invite>`.
+- `element-call.mjs`: makes Element Call ready for its frame, for the web app and the computer.
 - `build.mjs`: makes the web app from the web build, with the icons from `brand/`.
 - `release.mjs`: `keygen`, `sign`, `verify`.
 - `release-key.pub`: the release key's public half (made by `keygen`).

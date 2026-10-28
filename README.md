@@ -252,6 +252,7 @@ The desktop app, from `app/`:
     npm ci
     node scripts/build-web-core.mjs
     EXPO_PUBLIC_SHELL=electron npx expo export --clear --platform web --output-dir ../desktop/web
+    node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call
     cd ../desktop && npm ci && npx electron .
 
 The Android app is built by `.github/workflows/android.yml` (pull requests and by hand) and by the
@@ -294,6 +295,10 @@ gets it later from **Actions → release-macos → Run workflow** with its versi
 release's commit, with its build number, and added to its files, SHA256SUMS and notes on both
 repositories. The Windows files are not signed: that needs a code signing
 certificate, so Windows' SmartScreen warns before the first start.
+
+## Built with others' open source
+
+Erevos stands on the work of many other projects: Element Call for Matrix calls, Arti and The Tor Project's bridges for Tor, vodozemac and OpenMLS for encryption, the RustCrypto and dalek crates, rustls, React Native, Expo and Electron, among others. [CREDITS.md](CREDITS.md) names every package it uses, with its maker and licence. A change that adds or updates a dependency runs `node scripts/credits.mjs` and commits the result with it; `npm run check` in `app/` fails otherwise.
 
 ## Licence
 

@@ -90,6 +90,16 @@ What stays private is what is written.
   `components/matrix-ring.tsx`; the chat's tiles open Element Call with `start_call_dm` (or
   `start_call` in a room), an answer with `join_existing_dm`. Element Call uses MatrixRTC in its
   default compatibility mode (state events `org.matrix.msc3401.call.member`).
+- Calls on the computer and in the web app (`app/lib/element-call-window.web.ts`,
+  `pwa/element-call.mjs`): the same Element Call, made ready by `pwa/element-call.mjs` (the same
+  files left out, its two inline scripts moved to `erevos-call.js` so its page runs no inline
+  script, `config.json` empty), in a frame over the app from an origin of its own, so it reads
+  nothing of Erevos's: on the computer `app://element-call` (`desktop/main.js`, which alone gives
+  that frame the camera and refuses its trackers and `/_matrix/` requests), in the web app a second
+  address on the same server, served from the signed release by the same service worker
+  (`pwa/README.md`, Matrix calls). The Widget API goes by `postMessage`, only to and from that
+  origin; `hostWidget` is the same. Its back arrow, or Escape, puts the frame small in a corner, as
+  picture in picture; a tap brings it back. Sailfish OS has none.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
@@ -111,6 +121,13 @@ What stays private is what is written.
   as far as on Android; from the page's own origin in a sandbox it cannot start, as it reads
   `localStorage`. So in a browser Element Call needs an origin of its own: one beside the app's, or a
   second one the computer's shell serves.
+- `docs/matrix-checks/element-call-web.ts`: the web app as it goes out, signed and served on two
+  addresses, in Chromium, with the real `element-call-window.web.ts` and Erevos's host against
+  `app/checks/matrix-server.ts`: Element Call starts from its own address through its worker, gets
+  its capabilities, the room's state, the OpenID token and the transports, and asks the media
+  server for its token; no policy refuses it, and only `/_matrix/` and trackers are refused.
+- `app/checks/web-call.check.ts`: the worker's two roles (what each address keeps and serves, the
+  policies, what Element Call's address refuses), and `pwa/element-call.mjs`'s copy.
 
 ## Checks it makes
 
@@ -167,8 +184,7 @@ no space open, or Erevos stopped by Android, nothing is told, as for the space's
 - Checking by QR, and trust shown per device in a group.
 - Reading a room's history further back than the last sync, so older locked messages show.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
-- Calls on the computer and in the web app (Element Call in a frame from an origin of its own, see
-  `element-call-frame.ts` above), and in a hidden chat's place.
+- Calls in a hidden chat's place, and on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
   "Matrix 2.0" mode): Element Call is not given sticky events.

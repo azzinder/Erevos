@@ -40,6 +40,28 @@ qualquer palavra que esteja nele. O guia está em todos os idiomas do app, e apa
   não envia nada e nunca sabe quem deu. O PayPal sabe quem dá; o Monero não mostra nem quem deu nem quanto; o Bitcoin
   não mostra nomes, mas o que o endereço recebeu é público.
 
+### Feito com o código aberto de outros
+
+O próprio Erevos é software livre, com a licença AGPL-3.0-or-later, e é construído sobre o trabalho de código aberto de
+outras pessoas. Estas são as partes principais, cada uma com os seus autores e a sua licença:
+
+- **Element Call** (Element; AGPL-3.0): as chamadas Matrix.
+- **Arti, lyrebird, Snowflake e WebTunnel** (The Tor Project; Arti MIT ou Apache-2.0, lyrebird BSD-2-Clause, Snowflake
+  BSD-3-Clause, WebTunnel MIT): o Tor dentro do app, e as pontes do Tor no Android.
+- **vodozemac** (Matrix.org Foundation; Apache-2.0): a criptografia do Matrix.
+- **OpenMLS** (OpenMLS Authors; MIT): os grupos criptografados.
+- **Bibliotecas RustCrypto e dalek-cryptography** (os desenvolvedores delas; MIT ou Apache-2.0 no RustCrypto,
+  BSD-3-Clause no dalek-cryptography): a criptografia em si.
+- **React Native, Expo e react-native-webrtc** (Meta, 650 Industries e a comunidade React Native WebRTC; MIT): o app e as
+  chamadas dele.
+- **Electron** (Electron contributors; MIT): o app para computador.
+- **Fontes Inter** (Rasmus Andersson e os Inter Project Authors; SIL Open Font License 1.1): as fontes do app.
+
+A lista completa, cada pacote com a sua licença, está no arquivo \`CREDITS.md\` que vem com o código-fonte do Erevos.
+
+**Por quê:** porque quem os fez deu o seu trabalho livremente e pediu para ser nomeado, e porque você deve poder ver do
+que o Erevos é feito.
+
 Esta parte também abre em **Configurações** → **Geral** → **Sobre o Erevos**.
 
 ## Primeiros passos {#start}
@@ -1455,14 +1477,26 @@ fica no meio.
   Element criou: as mensagens anteriores abrem a partir do backup de chaves da conta, as chaves novas vão para ele, e
   seus outros dispositivos confiam neste. Uma conta sem ela pode **Criar uma chave de segurança** aqui; anote-a,
   porque o Erevos não a guarda.
-- **Chamadas:** no Android, os dois blocos no topo da conversa ligam por voz ou com vídeo, com o Element Call, o app de
-  chamadas do Element e do Element X, que o Erevos leva dentro dele e mostra numa janela própria (Voltar a deixa
-  pequena). As chamadas para você tocam aqui como as do próprio Erevos, enquanto este espaço está aberto: **Atender**
-  abre o Element Call na chamada, **Recusar** avisa quem liga. Som e imagem são criptografados de ponta a ponta, com
-  chaves que só quem está na chamada tem, e passam pelo servidor de mídia (LiveKit) que o seu servidor Matrix indica,
-  que vê o endereço deste telefone; um servidor Matrix sem um não consegue ligar. O que o Element Call diz ao servidor
-  Matrix passa pelo Erevos, e pelo Tor como o resto do Matrix, mas a chamada em si nunca passa pelo Tor. As chamadas
-  Matrix mais antigas entre duas pessoas, como o FluffyChat faz, não tocam aqui.
+- **Chamadas:** os dois blocos no topo da conversa ligam por voz ou com vídeo, com o Element Call, o app de chamadas
+  do Element e do Element X, que o Erevos leva dentro dele e mostra por cima do app, numa janela própria: no Android,
+  no app web e num computador (Windows, macOS e Linux). A seta de voltar dele, ou a tecla Esc, deixa a janela pequena,
+  num canto por cima do Erevos, para você continuar usando o Erevos durante a chamada; um toque na janela pequena a traz
+  de volta ao tamanho cheio. Até a chamada começar, um botão **Fechar** embaixo dela a encerra, caso ela nunca comece.
+  As chamadas para você tocam aqui como as do próprio Erevos, enquanto este espaço está aberto: **Atender** abre o
+  Element Call na chamada, **Recusar** avisa quem liga. Som e imagem são criptografados de ponta a ponta, com chaves
+  que só quem está na chamada tem, e passam pelo servidor de mídia (LiveKit) que o seu servidor Matrix indica, que vê o
+  endereço deste dispositivo; um servidor Matrix sem um não consegue ligar. O que o Element Call diz ao servidor Matrix
+  passa pelo Erevos, e pelo Tor como o resto do Matrix, mas a chamada em si nunca passa pelo Tor. O Element Call não
+  chega a nenhum rastreador. As chamadas Matrix mais antigas entre duas pessoas, como o FluffyChat faz, não tocam aqui.
+  O Sailfish OS não tem chamadas Matrix.
+- **No app web e num computador:** o navegador ou o computador pede uma só vez a câmera e o microfone; num computador,
+  só a janela da chamada pode usar a câmera. Para onde vai o som e qual microfone é usado, quem decide é o computador ou
+  o navegador. No app web, o Element Call vem de um segundo endereço só dele, erevos-call.lphl.nekten.eu, e num
+  computador de uma parte separada do app, de modo que não consegue ler nada do Erevos: nem as chaves dele, nem as
+  conversas. O app web confere os arquivos do Element Call com a mesma versão assinada do próprio app antes de
+  executá-lo; por isso a primeira chamada no app web demora um pouco mais, enquanto ele busca e confere o Element Call.
+  **Por quê:** o código do Element Call não é escrito pelo Erevos, então ele roda separado do Erevos, onde nunca chega
+  perto das chaves e das conversas dele.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
@@ -1474,7 +1508,7 @@ fica no meio.
   avisa o relay deste espaço de cada mensagem, sem nenhuma palavra dela, então o servidor Matrix fica sabendo o
   endereço do relay, e o relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para
   isso, que o servidor Matrix alcance.
-- **Ainda não:** mensagens de voz, e chamadas no computador e no app web.
+- **Ainda não:** mensagens de voz.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
 conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.

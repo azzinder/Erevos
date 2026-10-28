@@ -1,8 +1,10 @@
 #!/bin/sh
 # Builds a release of the Erevos web app from this checkout and signs it with the release key:
 #
-#   deploy/web/release.sh <private key file> <out folder>
+#   deploy/web/release.sh <private key file> <out folder> [--origin https://app.example.org --call-origin https://call.example.org]
 #
+# The origins (pwa/build.mjs) are the web app's address and Element Call's, the second address on
+# the same server that Matrix calls come from; without them, those of the project's own server.
 # Needs Node, Rust with the wasm32-unknown-unknown target and wasm-bindgen-cli 0.2.129 (as
 # app/scripts/build-web-core.mjs says). Then put it on the server with deploy/web/deploy.sh.
 set -eu
@@ -10,9 +12,10 @@ set -eu
 key=${1:-}
 out=${2:-}
 if [ -z "$key" ] || [ -z "$out" ]; then
-	echo "usage: deploy/web/release.sh <private key file> <out folder>" >&2
+	echo "usage: deploy/web/release.sh <private key file> <out folder> [--origin <https://app.example.org> --call-origin <https://call.example.org>]" >&2
 	exit 2
 fi
+shift 2
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 if [ -n "$(git -C "$root" status --porcelain -- app crates pwa Cargo.lock)" ]; then
 	echo "The checkout has changes not committed: a release is made from a commit, so it can be built again." >&2
@@ -28,6 +31,6 @@ node scripts/build-web-core.mjs
 EXPO_NO_TELEMETRY=1 npx expo export --clear --platform web --output-dir "$web"
 
 echo "== Making and signing the web app"
-node "$root/pwa/build.mjs" "$web" "$out"
+node "$root/pwa/build.mjs" "$web" "$out" "$@"
 node "$root/pwa/release.mjs" sign "$out" "$key"
 node "$root/pwa/release.mjs" verify "$out"

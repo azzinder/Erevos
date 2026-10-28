@@ -41,6 +41,30 @@ elegiste, ver [Idioma](#start).
   en sí no envía nada y nunca sabe quién dio. PayPal sabe quién da; Monero no muestra ni quién dio ni cuánto; Bitcoin no
   muestra nombres, pero lo que recibió la dirección es público.
 
+### Hecho con el código abierto de otros
+
+Erevos en sí es software libre, con la licencia AGPL-3.0-or-later, y está construido sobre el trabajo de código abierto
+de otros. Estas son las partes principales, cada una con sus autores y su licencia:
+
+- **Element Call** (Element; AGPL-3.0): las llamadas de Matrix.
+- **Arti, lyrebird, Snowflake y WebTunnel** (The Tor Project; Arti MIT o Apache-2.0, lyrebird BSD-2-Clause, Snowflake
+  BSD-3-Clause, WebTunnel MIT): Tor dentro de la app, y los puentes de Tor en Android.
+- **vodozemac** (Matrix.org Foundation; Apache-2.0): el cifrado de Matrix.
+- **OpenMLS** (OpenMLS Authors; MIT): los grupos cifrados.
+- **Las bibliotecas de RustCrypto y dalek-cryptography** (sus desarrolladores; MIT o Apache-2.0 en RustCrypto,
+  BSD-3-Clause en dalek-cryptography): el cifrado en sí.
+- **React Native, Expo y react-native-webrtc** (Meta, 650 Industries y la comunidad de React Native WebRTC; MIT): la app
+  y sus llamadas.
+- **Electron** (Electron contributors; MIT): la app para ordenador.
+- **Las fuentes Inter** (Rasmus Andersson y los Inter Project Authors; SIL Open Font License 1.1): las tipografías de la
+  app.
+
+La lista completa, cada paquete con su licencia, está en el archivo \`CREDITS.md\` que viene con el código fuente de
+Erevos.
+
+**Por qué:** porque sus autores dieron su trabajo libremente y pidieron que se les nombrara, y porque debes poder ver de
+qué está hecho Erevos.
+
 Esta parte también se abre desde **Ajustes** → **General** → **Acerca de Erevos**.
 
 ## Primeros pasos {#start}
@@ -1462,14 +1486,27 @@ ningún puente se pone en medio.
   que creó Element: los mensajes anteriores se abren desde la copia de claves de la cuenta, las claves nuevas entran
   en ella, y tus otros dispositivos confían en este. Una cuenta sin ella puede **Crear una clave de seguridad** aquí;
   apúntala, porque Erevos no la guarda.
-- **Llamadas:** en Android, los dos recuadros de arriba del chat llaman por voz o con video, con Element Call, la app de
-  llamadas de Element y Element X, que Erevos lleva dentro y muestra en una ventana propia (Atrás la hace pequeña). Las
+- **Llamadas:** los dos recuadros de arriba del chat llaman por voz o con video, con Element Call, la app de llamadas
+  de Element y Element X, que Erevos lleva dentro y muestra sobre la app, en una ventana propia: en Android, en la app
+  web y en un ordenador (Windows, macOS y Linux). Su flecha de atrás, o la tecla Esc, reduce la ventana a una esquina
+  sobre Erevos, para que puedas seguir usando Erevos durante la llamada; un toque en la ventana pequeña la devuelve a su
+  tamaño completo. Hasta que la llamada ha empezado, un botón **Cerrar** debajo la termina, por si nunca empieza. Las
   llamadas para ti suenan aquí como las propias de Erevos, mientras este espacio está abierto: **Responder** abre
   Element Call en la llamada, **Rechazar** se lo dice a quien llama. El sonido y la imagen van cifrados de extremo a
   extremo, con claves que solo tienen los que están en la llamada, y pasan por el servidor de medios (LiveKit) que
-  indica tu servidor de Matrix, que ve la dirección de este teléfono; un servidor de Matrix sin uno no puede llamar. Lo
-  que Element Call le dice al servidor de Matrix pasa por Erevos, y por Tor como el resto de Matrix, pero la llamada en
-  sí nunca pasa por Tor. Las llamadas de Matrix más antiguas entre dos, como las hace FluffyChat, no suenan aquí.
+  indica tu servidor de Matrix, que ve la dirección de este dispositivo; un servidor de Matrix sin uno no puede llamar.
+  Lo que Element Call le dice al servidor de Matrix pasa por Erevos, y por Tor como el resto de Matrix, pero la llamada
+  en sí nunca pasa por Tor. Element Call no llega a ningún rastreador. Las llamadas de Matrix más antiguas entre dos,
+  como las hace FluffyChat, no suenan aquí. Sailfish OS no tiene llamadas de Matrix.
+- **En la app web y en un ordenador:** el navegador o el ordenador pide una sola vez la cámara y el micrófono; en un
+  ordenador, solo la ventana de la llamada puede usar la cámara. A dónde va el sonido y qué micrófono se usa lo decide
+  el ordenador o el navegador. En la app web, Element Call viene de una segunda dirección propia,
+  erevos-call.lphl.nekten.eu, y en un ordenador de una parte aparte de la app, así que no puede leer nada de Erevos: ni
+  sus claves ni sus chats. La app web comprueba los archivos de Element Call con la misma versión firmada que la propia
+  app antes de ejecutarlo, por lo que la primera llamada en la app web tarda un poco más, mientras obtiene y comprueba
+  Element Call.
+  **Por qué:** el código de Element Call no lo escribe Erevos, así que se ejecuta aparte de Erevos, donde nunca puede
+  acercarse a sus claves y chats.
 - **Notificaciones:** un mensaje que llega muestra un aviso y cuenta en el número del icono de Erevos, como en los chats
   propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
   **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
@@ -1481,7 +1518,7 @@ ningún puente se pone en medio.
   avisa al relay de este espacio de cada mensaje, sin ninguna palabra de él, así que el servidor de Matrix conoce la
   dirección del relay, y el relay cuándo llegan mensajes. Apagado hasta que lo enciendas; necesita un relay
   actualizado para ello, al que llegue el servidor de Matrix.
-- **Aún no:** mensajes de voz, y llamadas en el ordenador y en la app web.
+- **Aún no:** mensajes de voz.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los
 chats de Matrix van aparte y marcados, para las personas a las que solo llegarías por Matrix.

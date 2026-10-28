@@ -32,6 +32,14 @@ root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 echo "== Checking the release"
 node "$root/pwa/release.mjs" verify "$release"
 
+# A web app is made for one address and Element Call's second one (pwa/build.mjs): another
+# address needs one made for it.
+made_for=$(node -e "const r = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log(r.origins ? r.origins.app : '')" "$release/release.json")
+if [ -n "$made_for" ] && [ "$made_for" != "https://$domain" ]; then
+	echo "This web app is made for $made_for, not https://$domain: make one for your addresses with deploy/web/release.sh and its --origin and --call-origin." >&2
+	exit 1
+fi
+
 echo "== Copying it to $target"
 tar -C "$release" -c . | ssh "$target" 'rm -rf erevos-web-release && mkdir erevos-web-release && tar -x -C erevos-web-release'
 cat "$root/deploy/web/install.sh" | ssh "$target" 'cat > erevos-web-install.sh'
@@ -49,6 +57,17 @@ if [ -n "$invite" ]; then
 		echo "OK: https://$domain/i gives the invite page."
 	else
 		echo "WARNING: https://$domain/i does not give the invite page (i/index.html), so invites sent by text message open the app instead. The web server must serve /i/ as a folder, as Apache and Caddy do with install.sh's settings, not send it to index.html." >&2
+	fi
+fi
+
+# Element Call's files are served only at its own address (pwa/README.md): the app's must not give
+# them, so that no page of Element Call's ever runs where Erevos's keys are.
+call=$(node -e "const r = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log(r.origins ? r.origins.call : '')" "$release/release.json")
+if [ -n "$call" ]; then
+	if curl -fsS -o /dev/null "https://$domain/element-call/index.html" 2>/dev/null; then
+		echo "WARNING: https://$domain/element-call/ gives Element Call's files. The web server must answer 404 there, as install.sh's settings do, and serve them only at $call." >&2
+	else
+		echo "OK: Element Call's files only at $call."
 	fi
 fi
 

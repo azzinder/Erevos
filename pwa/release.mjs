@@ -12,7 +12,9 @@
 //       updates installs an APK only when it is signed so (app/lib/update-signature.ts).
 //   node pwa/release.mjs verify <web app folder, or https://address> [public key file]
 //       Checks a release, in a folder or as a server serves it: the signature, every file's hash,
-//       and that the service worker carries the key. Anyone can run it.
+//       and that the service worker carries the key. From a server, Element Call's files
+//       (/element-call/) are read from the release's second origin (`origins.call`), which must
+//       give the same release.json, release.sig and service worker. Anyone can run it.
 //
 // The passphrase can also come from EREVOS_RELEASE_PASSPHRASE (for tests; on your own computer,
 // typing it is better).
@@ -119,8 +121,16 @@ async function verifyRelease(from, keyFile = PUBLIC) {
   if (!verify(null, body, publicFromRaw(raw), signature)) fail(`NOT SIGNED with the key ${fingerprint(raw)}.`);
   const release = JSON.parse(body);
   const wrong = [];
+  // Element Call's origin, where its frame comes from: its worker checks the same release there.
+  const call = /^https?:\/\//.test(from) && release.origins ? release.origins.call : from;
+  if (call !== from) {
+    for (const name of ['release.json', 'release.sig', 'sw.js']) {
+      const there = await read(call, name).catch(() => null);
+      if (!there || !there.equals(await read(from, name))) wrong.push(`${call}/${name} (not the same as ${from}'s)`);
+    }
+  }
   for (const [name, hash] of Object.entries(release.files)) {
-    const bytes = await read(from, name.slice(1));
+    const bytes = await read(name.startsWith('/element-call/') ? call : from, name.slice(1));
     if (createHash('sha256').update(bytes).digest('hex') !== hash) wrong.push(name);
     if (name === '/sw.js' && !bytes.toString().includes(`'${raw.toString('base64')}'`)) wrong.push('/sw.js (another key)');
   }

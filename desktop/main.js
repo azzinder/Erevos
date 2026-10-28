@@ -26,6 +26,12 @@
  * ~/Library/Application Support/Erevos, on Windows %APPDATA%\Erevos). The page is also told, in its
  * address, which package it runs from (#erevos-system=…), so Check for updates names the file to take.
  *
+ * Matrix calls show Element Call (web/element-call/, made by pwa/element-call.mjs) in a frame from
+ * an origin of its own, app://element-call, so it can read nothing of the app's (app/lib/
+ * element-call-window.web.ts): that origin serves only Element Call's files, and app://erevos never
+ * serves them. It alone gets the camera, and reaches no tracker and not the homeserver itself, as
+ * on Android (app/modules/erevos-webcall).
+ *
  * Closing the window leaves Erevos running, unless turned off (window.json): in the system tray, on
  * a Mac in the Dock. The page goes on at full pace there, out of sight: it waits at the relay, a call
  * rings and brings the window back, and a notice says how many messages came. The tray's menu opens
@@ -41,7 +47,9 @@ const path = require('node:path');
 const { Lan } = require('./lan');
 
 const ORIGIN = 'app://erevos';
+const CALL_ORIGIN = 'app://element-call';
 const WEB = path.join(__dirname, 'web');
+const CALL_WEB = path.join(WEB, 'element-call');
 const MAC = process.platform === 'darwin';
 const WINDOWS = process.platform === 'win32';
 const SMOKE = process.argv.includes('--smoke');
@@ -76,7 +84,7 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json',
   '.wasm': 'application/wasm',
-  '.css': 'text/css',
+  '.css': 'text/css; charset=utf-8',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
@@ -85,16 +93,24 @@ const TYPES = {
   '.otf': 'font/otf',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
 };
 
 /**
  * The page loads nothing from outside its origin. It talks to the relays the owner types in, over
- * WebSocket (ws: and wss:, any host), and to nothing else: 'wasm-unsafe-eval' starts the Erevos
+ * WebSocket (ws: and wss:, any host), and to the Matrix, XMPP and Nostr servers the owner adds, over
+ * HTTPS and WebSocket, and to nothing else: 'wasm-unsafe-eval' starts the Erevos
  * core (WebAssembly), 'unsafe-inline' is for the styles the interface sets from script, blob: for
- * voice messages, which play from memory.
+ * voice messages, which play from memory. Its one frame is Element Call's.
  */
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: ws: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; frame-src app://element-call";
+/** Element Call's pages: as pwa/element-call.mjs says (CALL_CSP), shown only in the app's frame. */
+const CALL_CSP =
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors app://erevos";
+// As on Android: what Element Call's frame may not reach.
+const REFUSED_TO_CALL = ['posthog.com', 'sentry.io', 'google.com', 'googleapis.com', 'gstatic.com', 'recaptcha.net', 'jsdelivr.net'];
 
 /** Only the app's own page knows this; the shell paths (/__…) are refused without it. */
 const TOKEN = crypto.randomBytes(16).toString('hex');
@@ -108,20 +124,36 @@ let window = null;
 // closes for good.
 let quitting = false;
 
-/** A file of the web build; any other path is a screen of the app (index.html). */
-function serveFile(pathname) {
+/** The file of `root` at `pathname`, or null. */
+function fileIn(root, pathname) {
   let decoded = '/';
   try {
     decoded = decodeURIComponent(pathname);
   } catch {
     // Not a path of the build.
   }
-  const target = path.normalize(path.join(WEB, decoded));
-  const file = target.startsWith(WEB + path.sep) && fs.existsSync(target) && fs.statSync(target).isFile() ? target : path.join(WEB, 'index.html');
+  const target = path.normalize(path.join(root, decoded));
+  return target.startsWith(root + path.sep) && fs.existsSync(target) && fs.statSync(target).isFile() ? target : null;
+}
+
+function sendFile(file, csp) {
   const type = TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
   const headers = { 'Content-Type': type, 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' };
-  if (type.startsWith('text/html')) headers['Content-Security-Policy'] = CSP;
+  if (type.startsWith('text/html')) headers['Content-Security-Policy'] = csp;
   return new Response(fs.readFileSync(file), { headers });
+}
+
+/** A file of the web build; any other path is a screen of the app (index.html). Never Element Call's. */
+function serveFile(pathname) {
+  const file = fileIn(WEB, pathname);
+  if (file && file.startsWith(CALL_WEB + path.sep)) return new Response('', { status: 404 });
+  return sendFile(file ?? path.join(WEB, 'index.html'), CSP);
+}
+
+/** A file of Element Call, on its own origin. */
+function serveCall(pathname) {
+  const file = fileIn(CALL_WEB, pathname);
+  return file ? sendFile(file, CALL_CSP) : new Response('', { status: 404 });
 }
 
 const dataPath = (...parts) => path.join(app.getPath('userData'), ...parts);
@@ -444,6 +476,8 @@ async function windowRequest(request, url) {
 
 function handle(request) {
   const url = new URL(request.url);
+  if (url.host === 'element-call') return serveCall(url.pathname);
+  if (url.host !== 'erevos') return new Response('', { status: 404 });
   if (url.pathname.startsWith('/__')) {
     if (request.headers.get('x-erevos-token') !== TOKEN) return new Response('', { status: 403 });
     if (url.pathname === '/__secret') return secret(request, url.searchParams.get('key'));
@@ -486,6 +520,10 @@ function createWindow() {
       event.preventDefault();
       if (/^https?:/.test(url)) shell.openExternal(url);
     }
+  });
+  // A frame shows only Element Call.
+  window.webContents.on('will-frame-navigate', (event) => {
+    if (!event.isMainFrame && !event.url.startsWith(`${CALL_ORIGIN}/`)) event.preventDefault();
   });
   window.loadURL(`${ORIGIN}/#erevos-token=${TOKEN}&erevos-system=${system()}`);
   // Closed while Erevos keeps running, it only hides.
@@ -540,14 +578,31 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.whenReady().then(() => {
     // The microphone, for voice messages, while Voice is held, and the notice that messages came
-    // (app/lib/desktop.ts); nothing else (camera, location) is asked for, and anything else is
-    // refused without a prompt. Copying a contact link is allowed too.
+    // (app/lib/desktop.ts); the camera only for Element Call's frame, for a Matrix video call;
+    // nothing else (location) is asked for, and anything else is refused without a prompt.
+    // Copying a contact link is allowed too.
+    const fromCall = (...urls) => urls.some((url) => typeof url === 'string' && (url === CALL_ORIGIN || url.startsWith(`${CALL_ORIGIN}/`)));
     const allowed = (permission, details = {}) =>
       permission === 'clipboard-sanitized-write' ||
       permission === 'notifications' ||
-      (permission === 'media' && (details.mediaTypes ?? ['audio']).every((type) => type === 'audio'));
+      (permission === 'media' &&
+        (details.mediaTypes ?? ['audio']).every((type) => type === 'audio' || (type === 'video' && fromCall(details.securityOrigin, details.requestingUrl))));
     session.defaultSession.setPermissionRequestHandler((_contents, permission, callback, details) => callback(allowed(permission, details)));
     session.defaultSession.setPermissionCheckHandler((_contents, permission) => allowed(permission));
+    // As on Android: Element Call's frame reaches no tracker, and not the homeserver itself, which
+    // it reaches only through Erevos (the Widget API).
+    session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (details, callback) => {
+      let refused = false;
+      try {
+        if (details.frame && fromCall(details.frame.origin, details.frame.url)) {
+          const url = new URL(details.url);
+          refused = url.pathname.startsWith('/_matrix/') || REFUSED_TO_CALL.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`));
+        }
+      } catch {
+        // The frame is gone: nothing of it to refuse.
+      }
+      callback({ cancel: refused });
+    });
     protocol.handle('app', handle);
     createWindow();
     followTray();

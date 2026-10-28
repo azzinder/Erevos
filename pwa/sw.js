@@ -10,6 +10,10 @@
 //   nothing of the app comes from the network once installed, so the server cannot change it. An
 //   address with a page of its own in the release (the invite page, /i/) gets that page, every
 //   other address the app;
+// - on Element Call's own origin (CALL_ORIGIN, where the app's frame for Matrix calls comes from:
+//   app/lib/element-call-window.web.ts), the same, but only Element Call's files (/element-call/),
+//   and the app's origin never serves those: so Element Call, signed with the rest, runs apart from
+//   the app and can read none of its storage;
 // - looks for a newer release now and then, takes it only if it is signed with the same key and
 //   has a higher version (an older signed release, with old faults, is refused), and switches to
 //   it the next time the app opens;
@@ -21,6 +25,10 @@
 // differently. README.md says what that leaves.
 
 const KEY = '__EREVOS_PUBLIC_KEY__';
+// The app's origin and Element Call's (pwa/build.mjs --origin, --call-origin): none in a web app
+// built without Element Call (--no-element-call).
+const APP_ORIGIN = '__EREVOS_APP_ORIGIN__';
+const CALL_ORIGIN = '__EREVOS_CALL_ORIGIN__';
 const LOADER = '/sw.js';
 const RELEASE = '/release.json';
 const SIGNATURE = '/release.sig';
@@ -47,11 +55,27 @@ const TYPES = {
   woff: 'font/woff',
   woff2: 'font/woff2',
   txt: 'text/plain; charset=utf-8',
+  mp3: 'audio/mpeg',
+  ogg: 'audio/ogg',
 };
 
-// Same as the Content-Security-Policy in index.html, for every page served.
+// Same as the Content-Security-Policy in index.html, for every page served; with Element Call's
+// origin as the one frame the app may show.
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: ws: wss:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+// Element Call's pages, on its origin: as pwa/element-call.mjs says (CALL_CSP), shown only in the
+// app's frame.
+const CALL_CSP =
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'";
+const ELEMENT_CALL = '/element-call/';
+const CALLS = /^https?:\/\//.test(CALL_ORIGIN);
+const ON_CALL_ORIGIN = CALLS && self.location.origin === CALL_ORIGIN;
+const POLICY = ON_CALL_ORIGIN ? `${CALL_CSP}; frame-ancestors ${APP_ORIGIN}` : CALLS ? `${CSP}; frame-src ${CALL_ORIGIN}` : CSP;
+// As on Android (app/modules/erevos-webcall): Element Call's frame reaches no tracker, and not the
+// homeserver itself, which it reaches only through Erevos (the Widget API). With its empty config
+// it should ask none of them anyway.
+const REFUSED_HOSTS = ['posthog.com', 'sentry.io', 'google.com', 'googleapis.com', 'gstatic.com', 'recaptcha.net', 'jsdelivr.net'];
+const refusedToCall = (url) => REFUSED_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`)) || url.pathname.startsWith('/_matrix/');
 
 const cacheName = (version) => `erevos-r${version}`;
 
@@ -133,9 +157,12 @@ function typeOf(path) {
   return TYPES[path.split('.').pop()] ?? 'application/octet-stream';
 }
 
+/** Whether `path` is served on this origin: Element Call's files only on its own. */
+const servedHere = (path) => path.startsWith(ELEMENT_CALL) === ON_CALL_ORIGIN;
+
 function respond(path, bytes) {
   const headers = { 'Content-Type': typeOf(path), 'X-Content-Type-Options': 'nosniff', 'Cache-Control': 'no-store' };
-  if (path.endsWith('.html')) headers['Content-Security-Policy'] = CSP;
+  if (path.endsWith('.html')) headers['Content-Security-Policy'] = POLICY;
   return new Response(bytes, { headers });
 }
 
@@ -148,12 +175,12 @@ async function fetchFile(path, hash) {
   return bytes;
 }
 
-/** Puts every file of the release in its cache, taking unchanged ones from the release in use. */
+/** Puts every file of the release served here in its cache, taking unchanged ones from the release in use. */
 async function store(release, from) {
   const cache = await caches.open(cacheName(release.version));
   const old = from ? await caches.open(cacheName(from.version)) : null;
   for (const [path, hash] of Object.entries(release.files)) {
-    if (path === LOADER) continue;
+    if (path === LOADER || !servedHere(path)) continue;
     if (await cache.match(path)) continue;
     const kept = old && from.files[path] === hash ? await old.match(path) : undefined;
     const bytes = kept ? await kept.arrayBuffer() : await fetchFile(path, hash);
@@ -268,7 +295,7 @@ async function serve(path) {
   const { current } = await readState();
   if (!current) return new Response('Erevos is not installed yet.', { status: 503 });
   const hash = current.files[path];
-  if (!hash || path === LOADER) return new Response('Not part of this Erevos release.', { status: 404 });
+  if (!hash || path === LOADER || !servedHere(path)) return new Response('Not part of this Erevos release.', { status: 404 });
   const cache = await caches.open(cacheName(current.version));
   const hit = await cache.match(path);
   if (hit) return hit;
@@ -281,10 +308,12 @@ async function serve(path) {
   }
 }
 
-/** The page an address opens: one of its own the release lists (the invite page, /i/), else the app. */
+/** The page an address opens: one of its own the release lists (the invite page, /i/), else the
+ *  app. On Element Call's origin only its pages, else none. */
 function pageOf(pathname, release) {
   const pages = [pathname, `${pathname.replace(/\/?$/, '/')}index.html`];
-  return pages.find((page) => page.endsWith('.html') && release?.files[page]) ?? '/index.html';
+  const own = pages.find((page) => page.endsWith('.html') && release?.files[page] && servedHere(page));
+  return own ?? (ON_CALL_ORIGIN ? pathname : '/index.html');
 }
 
 async function open(event) {
@@ -302,7 +331,10 @@ async function open(event) {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   // Relays and everything else elsewhere: as the page asked.
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    if (ON_CALL_ORIGIN && refusedToCall(url)) event.respondWith(new Response('', { status: 403 }));
+    return;
+  }
   // The release and this worker are only read, for checks, never run from here.
   if (url.pathname === RELEASE || url.pathname === SIGNATURE || url.pathname === LOADER) return;
   if (event.request.method !== 'GET') {

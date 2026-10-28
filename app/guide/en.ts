@@ -38,6 +38,28 @@ is in every language of the app, and shows in the one you chose, see [Language](
   and never knows who gave. PayPal knows who gives; Monero shows neither who gave nor how much; Bitcoin shows no names,
   but what the address received is public.
 
+### Made with others' open source
+
+Erevos itself is free software, under the AGPL-3.0-or-later licence, and it is built on open-source work by others.
+These are the main parts, each with its maker and its licence:
+
+- **Element Call** (Element; AGPL-3.0): Matrix calls.
+- **Arti, lyrebird, Snowflake and WebTunnel** (The Tor Project; Arti MIT or Apache-2.0, lyrebird BSD-2-Clause,
+  Snowflake BSD-3-Clause, WebTunnel MIT): Tor inside the app, and Tor bridges on Android.
+- **vodozemac** (Matrix.org Foundation; Apache-2.0): Matrix's encryption.
+- **OpenMLS** (OpenMLS Authors; MIT): encrypted groups.
+- **RustCrypto and dalek-cryptography libraries** (their developers; MIT or Apache-2.0 for RustCrypto, BSD-3-Clause for
+  dalek-cryptography): the encryption itself.
+- **React Native, Expo and react-native-webrtc** (Meta, 650 Industries and the React Native WebRTC Community; MIT): the
+  app and its calls.
+- **Electron** (Electron contributors; MIT): the computer app.
+- **Inter fonts** (Rasmus Andersson and the Inter Project Authors; SIL Open Font License 1.1): the app's typefaces.
+
+The full list, every package with its licence, is in the file \`CREDITS.md\` that comes with Erevos's source code.
+
+**Why:** because their makers gave their work freely and asked to be named, and because you should be able to see what
+Erevos is made of.
+
 This part opens from **Settings** → **General** → **About Erevos** too.
 
 ## Getting started {#start}
@@ -1352,14 +1374,25 @@ between.
 - **Security Key:** under **Security Key** on the Matrix screen, enter the Security Key (or Security Phrase) Element
   made: earlier messages open from the account's key backup, new keys go into it, and your other devices trust this
   one. An account with none can **Set up a Security Key** here; write it down, as Erevos does not keep it.
-- **Calls:** on Android, the two tiles at the top of a chat call by voice or with video, with Element Call, the call app
-  of Element and Element X, which Erevos carries inside it and shows in a window of its own (Back makes it small). Calls
-  to you ring here as Erevos's own do, while this space is open: **Answer** opens Element Call into the call,
-  **Decline** tells the caller. Sound and picture are end-to-end encrypted, with keys only those in the call have, and
-  go through the media server (LiveKit) your Matrix server names, which sees this phone's address; a Matrix server
-  without one cannot call. What Element Call says to the Matrix server goes through Erevos, and through Tor as the rest
-  of Matrix does, but the call itself never goes through Tor. Older one-to-one Matrix calls, as FluffyChat makes them,
-  do not ring here.
+- **Calls:** the two tiles at the top of a chat call by voice or with video, with Element Call, the call app of Element
+  and Element X, which Erevos carries inside it and shows over the app, in a window of its own: on Android, in the web
+  app and on a computer (Windows, macOS and Linux). Its back arrow, or the Escape key, makes it small, in a corner over
+  Erevos, so you can keep using Erevos during the call; a tap on the small window brings it back to full size. Until
+  the call has started, a **Close** button under it ends it, in case it never starts. Calls to you ring here as
+  Erevos's own do, while this space is open: **Answer** opens Element Call into the call, **Decline** tells the caller.
+  Sound and picture are end-to-end encrypted, with keys only those in the call have, and go through the media server
+  (LiveKit) your Matrix server names, which sees this device's address; a Matrix server without one cannot call. What
+  Element Call says to the Matrix server goes through Erevos, and through Tor as the rest of Matrix does, but the call
+  itself never goes through Tor. Element Call reaches no tracker. Older one-to-one Matrix calls, as FluffyChat makes
+  them, do not ring here. Sailfish OS has no Matrix calls.
+- **In the web app and on a computer:** the browser or the computer asks once for the camera and the microphone; on a
+  computer, only the call window can use the camera. Where the sound goes, and which microphone, are the computer's or
+  the browser's own to choose. In the web app, Element Call comes from a second address of its own,
+  erevos-call.lphl.nekten.eu, and on a computer from a separate part of the app, so it can read nothing of Erevos: not
+  its keys, not its chats. The web app checks Element Call's files against the same signed release as the app itself
+  before it runs it, so the first call in the web app takes a moment longer, while it gets and checks Element Call.
+  **Why:** Element Call's code is not written by Erevos, so it runs apart from Erevos, where it can never get near its
+  keys and chats.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
@@ -1370,7 +1403,7 @@ between.
   key opens what came. For it the Matrix server tells this space's relay of each message, with no words in it, so the
   Matrix server learns the relay's address, and the relay when messages come. Off unless you turn it on; it needs a
   relay updated for it, which the Matrix server can reach.
-- **Not yet:** voice messages, and calls on the computer and in the web app.
+- **Not yet:** voice messages.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.

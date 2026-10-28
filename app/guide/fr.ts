@@ -43,6 +43,30 @@ que tu as choisie, voir [Langue](#start).
   lui-même n’envoie rien et ne sait jamais qui a donné. PayPal sait qui donne ; Monero ne montre ni qui a donné ni
   combien ; Bitcoin ne montre aucun nom, mais ce que l’adresse a reçu est public.
 
+### Fait avec l’open source des autres
+
+Erevos lui-même est un logiciel libre, sous la licence AGPL-3.0-or-later, et il est construit sur le travail open source
+d’autres personnes. Voici les principales parties, chacune avec ses auteurs et sa licence :
+
+- **Element Call** (Element ; AGPL-3.0) : les appels Matrix.
+- **Arti, lyrebird, Snowflake et WebTunnel** (The Tor Project ; Arti MIT ou Apache-2.0, lyrebird BSD-2-Clause, Snowflake
+  BSD-3-Clause, WebTunnel MIT) : Tor dans l’app, et les ponts Tor sur Android.
+- **vodozemac** (Matrix.org Foundation ; Apache-2.0) : le chiffrement de Matrix.
+- **OpenMLS** (OpenMLS Authors ; MIT) : les groupes chiffrés.
+- **Les bibliothèques de RustCrypto et de dalek-cryptography** (leurs développeurs ; MIT ou Apache-2.0 pour RustCrypto,
+  BSD-3-Clause pour dalek-cryptography) : le chiffrement lui-même.
+- **React Native, Expo et react-native-webrtc** (Meta, 650 Industries et la communauté React Native WebRTC ; MIT) :
+  l’app et ses appels.
+- **Electron** (Electron contributors ; MIT) : l’app pour ordinateur.
+- **Les polices Inter** (Rasmus Andersson et les Inter Project Authors ; SIL Open Font License 1.1) : les polices de
+  l’app.
+
+La liste complète, chaque paquet avec sa licence, est dans le fichier \`CREDITS.md\` qui vient avec le code source
+d’Erevos.
+
+**Pourquoi :** parce que leurs auteurs ont donné leur travail librement et ont demandé à être nommés, et parce que tu
+dois pouvoir voir de quoi Erevos est fait.
+
 Cette partie s’ouvre aussi depuis **Réglages** → **Général** → **À propos d’Erevos**.
 
 ## Premiers pas {#start}
@@ -1538,14 +1562,28 @@ Element : aucun pont ne se met entre les deux.
   par Element : les messages précédents s’ouvrent depuis la sauvegarde des clés du compte, les nouvelles clés y vont,
   et vos autres appareils font confiance à celui-ci. Un compte sans clé peut **Créer une clé de sécurité** ici ;
   notez-la, car Erevos ne la garde pas.
-- **Appels :** sur Android, les deux tuiles en haut de la discussion appellent en voix ou en vidéo, avec Element Call,
-  l’app d’appel d’Element et d’Element X, qu’Erevos porte en lui et montre dans une fenêtre à elle (Retour la rend
-  petite). Les appels pour toi sonnent ici comme ceux d’Erevos, tant que cet espace est ouvert : **Répondre** ouvre
-  Element Call dans l’appel, **Refuser** le dit à la personne qui appelle. Le son et l’image sont chiffrés de bout en
-  bout, avec des clés que seules les personnes dans l’appel ont, et passent par le serveur média (LiveKit) que ton
-  serveur Matrix indique, qui voit l’adresse de ce téléphone ; un serveur Matrix sans serveur média ne peut pas appeler.
-  Ce qu’Element Call dit au serveur Matrix passe par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même
-  ne passe jamais par Tor. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici.
+- **Appels :** les deux tuiles en haut de la discussion appellent en voix ou en vidéo, avec Element Call, l’app d’appel
+  d’Element et d’Element X, qu’Erevos porte en lui et montre par-dessus l’app, dans une fenêtre à elle : sur Android,
+  dans l’app web et sur un ordinateur (Windows, macOS et Linux). La flèche de retour qui s’y trouve, ou la touche Échap,
+  rend la fenêtre petite, dans un coin par-dessus Erevos, pour que tu puisses continuer à utiliser Erevos pendant
+  l’appel ; un appui sur la petite fenêtre la ramène à sa pleine taille. Tant que l’appel n’a pas commencé, un bouton
+  **Fermer** en dessous y met fin, au cas où il ne commencerait jamais. Les appels pour toi sonnent ici comme ceux
+  d’Erevos, tant que cet espace est ouvert : **Répondre** ouvre Element Call dans l’appel, **Refuser** le dit à la
+  personne qui appelle. Le son et l’image sont chiffrés de bout en bout, avec des clés que seules les personnes dans
+  l’appel ont, et passent par le serveur média (LiveKit) que ton serveur Matrix indique, qui voit l’adresse de cet
+  appareil ; un serveur Matrix sans serveur média ne peut pas appeler. Ce qu’Element Call dit au serveur Matrix passe
+  par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même ne passe jamais par Tor. Element Call
+  n’atteint aucun traceur. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici. Sailfish OS
+  n’a pas d’appels Matrix.
+- **Dans l’app web et sur un ordinateur :** le navigateur ou l’ordinateur demande une seule fois la caméra et le
+  microphone ; sur un ordinateur, seule la fenêtre de l’appel peut utiliser la caméra. Où va le son, et quel microphone
+  sert, c’est l’ordinateur ou le navigateur qui le décide. Dans l’app web, Element Call vient d’une seconde adresse à
+  lui, erevos-call.lphl.nekten.eu, et sur un ordinateur d’une partie à part de l’app, si bien qu’il ne peut rien lire
+  d’Erevos : ni ses clés, ni ses discussions. L’app web vérifie les fichiers d’Element Call avec la même version signée
+  que l’app elle-même avant de le lancer ; le premier appel dans l’app web prend donc un moment de plus, le temps de
+  récupérer et de vérifier Element Call.
+  **Pourquoi :** le code d’Element Call n’est pas écrit par Erevos, alors il tourne à part d’Erevos, où il ne peut
+  jamais approcher ses clés ni ses discussions.
 - **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
@@ -1558,7 +1596,7 @@ Element : aucun pont ne se met entre les deux.
   serveur Matrix signale chaque message au relais de cet espace, sans aucun de ses mots : le serveur Matrix apprend
   l’adresse du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut un
   relais mis à jour pour cela, que le serveur Matrix puisse joindre.
-- **Pas encore :** messages vocaux, et appels sur l’ordinateur et dans l’app web.
+- **Pas encore :** messages vocaux.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.

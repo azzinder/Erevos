@@ -61,6 +61,14 @@ if [ "$label" != "$version" ]; then
 	exit 1
 fi
 
+# A web app is made for one address and Element Call's second one (pwa/build.mjs): another
+# address needs one made for it.
+made_for=$(node -e "const r = JSON.parse(require('fs').readFileSync(process.argv[1])); console.log(r.origins ? r.origins.app : '')" "$work/web/release.json")
+if [ -n "$made_for" ] && [ "$made_for" != "https://$domain" ]; then
+	echo "This web app is made for $made_for, not https://$domain: make one for your addresses with deploy/web/release.sh and its --origin and --call-origin." >&2
+	exit 1
+fi
+
 # The Android app of the same release, when it has one: its SHA-256 as SHA256SUMS has it, which
 # version.json must say too, and the build version.json names.
 android=

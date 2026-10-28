@@ -40,6 +40,28 @@ izabrali, pogledajte [Jezik](#start).
   ništa ne šalje i nikad ne zna ko je dao. PayPal zna ko daje; Monero ne pokazuje ni ko je dao ni koliko; Bitcoin ne
   pokazuje imena, ali je javno ono što je adresa primila.
 
+### Napravljeno uz otvoreni kod drugih
+
+Sam Erevos je slobodan softver, pod licencom AGPL-3.0-or-later, a izgrađen je na radu drugih s otvorenim kodom. Ovo su
+glavni dijelovi, svaki sa svojim autorima i licencom:
+
+- **Element Call** (Element; AGPL-3.0): Matrix pozivi.
+- **Arti, lyrebird, Snowflake i WebTunnel** (The Tor Project; Arti MIT ili Apache-2.0, lyrebird BSD-2-Clause, Snowflake
+  BSD-3-Clause, WebTunnel MIT): Tor u aplikaciji i Tor mostovi na Androidu.
+- **vodozemac** (Matrix.org Foundation; Apache-2.0): šifrovanje Matrixa.
+- **OpenMLS** (OpenMLS Authors; MIT): šifrovane grupe.
+- **Biblioteke RustCrypto i dalek-cryptography** (njihovi programeri; MIT ili Apache-2.0 za RustCrypto, BSD-3-Clause za
+  dalek-cryptography): samo šifrovanje.
+- **React Native, Expo i react-native-webrtc** (Meta, 650 Industries i zajednica React Native WebRTC; MIT): aplikacija i
+  njeni pozivi.
+- **Electron** (Electron contributors; MIT): aplikacija za računar.
+- **Inter fontovi** (Rasmus Andersson i Inter Project Authors; SIL Open Font License 1.1): fontovi aplikacije.
+
+Cijeli popis, svaki paket s njegovom licencom, nalazi se u datoteci \`CREDITS.md\` koja dolazi s izvornim kodom Erevosa.
+
+**Zašto:** zato što su njihovi autori svoj rad dali slobodno i tražili da budu imenovani, i zato što trebate moći
+vidjeti od čega je Erevos napravljen.
+
 Ovaj dio se otvara i iz **Postavke** → **Općenito** → **O Erevosu**.
 
 ## Prvi koraci {#start}
@@ -1420,13 +1442,25 @@ između.
   napravio Element: ranije poruke se otvaraju iz rezervne kopije ključeva računa, novi ključevi idu u nju, a vaši
   drugi uređaji vjeruju ovom. Račun bez njega ovdje može **Napravite sigurnosni ključ**; zapišite ga, jer ga Erevos
   ne čuva.
-- **Pozivi:** na Androidu, dvije pločice na vrhu razgovora zovu glasom ili videom, preko Element Calla, aplikacije za
-  pozive Elementa i Elementa X, koju Erevos nosi u sebi i prikazuje u svom prozoru (Nazad ga smanji). Pozivi vama ovdje
-  zvone kao Erevosovi vlastiti, dok je ovaj prostor otvoren: **Javi se** otvara Element Call u pozivu, **Odbij** to
-  javlja onome ko zove. Zvuk i slika su šifrovani s kraja na kraj, ključevima koje imaju samo oni u pozivu, i idu preko
-  medijskog servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog telefona; Matrix server bez njega ne
-  može zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam
-  poziv nikad ne ide preko Tora. Stariji Matrix pozivi udvoje, kakve pravi FluffyChat, ovdje ne zvone.
+- **Pozivi:** dvije pločice na vrhu razgovora zovu glasom ili videom, preko Element Calla, aplikacije za pozive
+  Elementa i Elementa X, koju Erevos nosi u sebi i prikazuje preko aplikacije, u svom prozoru: na Androidu, u
+  web-aplikaciji i na računaru (Windows, macOS i Linux). Strelica nazad u njemu, ili tipka Esc, smanjuje prozor u ugao
+  preko Erevosa, pa možete dalje koristiti Erevos tokom poziva; dodir na mali prozor vraća ga na punu veličinu. Dok
+  poziv nije počeo, dugme **Zatvori** ispod njega ga prekida, za slučaj da nikad ne počne. Pozivi vama ovdje zvone kao
+  Erevosovi vlastiti, dok je ovaj prostor otvoren: **Javi se** otvara Element Call u pozivu, **Odbij** to javlja onome
+  ko zove. Zvuk i slika su šifrovani s kraja na kraj, ključevima koje imaju samo oni u pozivu, i idu preko medijskog
+  servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog uređaja; Matrix server bez njega ne može
+  zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam poziv
+  nikad ne ide preko Tora. Element Call ne dopire ni do jednog trackera. Stariji Matrix pozivi udvoje, kakve pravi
+  FluffyChat, ovdje ne zvone. Sailfish OS nema Matrix pozive.
+- **U web-aplikaciji i na računaru:** preglednik ili računar jednom pita za kameru i mikrofon; na računaru samo prozor
+  poziva može koristiti kameru. Kuda ide zvuk i koji se mikrofon koristi, odlučuje računar ili preglednik. U
+  web-aplikaciji Element Call dolazi s druge, vlastite adrese, erevos-call.lphl.nekten.eu, a na računaru iz odvojenog
+  dijela aplikacije, pa ne može pročitati ništa od Erevosa: ni njegove ključeve, ni njegove razgovore.
+  Web-aplikacija provjerava datoteke Element Calla prema istom potpisanom izdanju kao i sama aplikacija prije nego ga
+  pokrene, pa prvi poziv u web-aplikaciji traje malo duže, dok preuzima i provjerava Element Call.
+  **Zašto:** kod Element Calla ne piše Erevos, pa radi odvojeno od Erevosa, gdje nikad ne može doći blizu njegovih
+  ključeva i razgovora.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
@@ -1437,7 +1471,7 @@ između.
   ključ prostora otvara ono što je stiglo. Za to Matrix server javlja relayu ovog prostora svaku poruku, bez ijedne
   njene riječi, pa Matrix server saznaje adresu relaya, a relay kad stižu poruke. Isključeno dok ga ne uključite;
   treba relay ažuriran za to, do kojeg Matrix server može doći.
-- **Još ne:** glasovne poruke, i pozivi na računaru i u web-aplikaciji.
+- **Još ne:** glasovne poruke.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.

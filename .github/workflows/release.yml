@@ -248,6 +248,8 @@ jobs:
           node scripts/build-web-core.mjs
           npx expo export --clear --platform web --output-dir ../desktop/web
           test -f ../desktop/web/core/erevos_ffi_bg.wasm
+          # Element Call, for Matrix calls, served apart at app://element-call (desktop/main.js).
+          node ../pwa/element-call.mjs node_modules/@element-hq/element-call-embedded/dist ../desktop/web/element-call
 
       # Handed over before the Linux packages, so a failure there does not hold the Mac and Windows back.
       - name: Hand the desktop web build to the macOS and Windows jobs
