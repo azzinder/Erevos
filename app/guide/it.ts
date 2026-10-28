@@ -104,8 +104,8 @@ mentre il loro PIN le tiene aperte.
   prima, ognuna segnata **Matrix**, e un invito compare in cima. Il chip **Matrix** mostra solo loro, e lì
   **Nuova chat** avvia una chat Matrix: vedi [Matrix](#matrix).
 - **Le chat XMPP**, una volta che hai fatto l’accesso a XMPP, sono nell’elenco allo stesso modo, ognuna segnata
-  **XMPP**, e chi chiede di aggiungerti compare in cima. Il chip **XMPP** mostra solo loro, e lì **Nuova chat** avvia
-  una chat XMPP: vedi [XMPP](#xmpp).
+  **XMPP**, e chi chiede di aggiungerti, o un gruppo che ti invita, compare in cima. Il chip **XMPP** mostra solo loro,
+  e lì **Nuova chat** avvia una chat XMPP: vedi [XMPP](#xmpp).
 - **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata
   **Nostr**. Il pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre la schermata delle chat Nostr: vedi
   [Chat con altre app Nostr](#nostr-chats).
@@ -1577,6 +1577,18 @@ app: nessun ponte sta nel mezzo.
   tiene solo ciò che non può leggere; Conversations, Monal, Gajim e Dino lo aprono. In una chat scritta senza
   cifratura il file va così com’è. Una foto, un suono o un file che arriva si scarica solo toccando **Mostra foto**,
   **Riproduci** o **Salva**. Su Android, i file passano per Tor come la chat.
+- **Gruppi:** un **gruppo privato** è solo per i suoi membri, e ognuno vede chi sono gli altri. Ogni messaggio al suo
+  interno è cifrato con OMEMO per i dispositivi di ogni membro, come fanno i gruppi privati di Conversations, così i
+  server XMPP non possono leggerlo; ciò che è stato scritto prima che entrassi appare bloccato. Un **canale** è ogni
+  altro gruppo: non è cifrato, quindi tutti quelli che ci sono, e i server, possono leggerlo, e la sua schermata lo dice.
+  Nella schermata XMPP, **Nuovo gruppo** crea un gruppo privato sul tuo server XMPP da un nome e dai contatti che scegli,
+  e **Entra in un gruppo** entra in uno con il suo indirizzo, come nome@conference.example.org, con la sua password se la
+  chiede. Sotto un gruppo privato, **Membri** elenca le sue persone con le loro chiavi, da confrontare come in una chat,
+  e segnala chi non ha chiavi OMEMO e non può leggere ciò che è cifrato; il suo amministratore può usare **Aggiungi
+  persone**. Un contatto che ti invita in un gruppo compare sotto **Inviti a gruppi**, con **Partecipa** e **Rifiuta**;
+  l’invito di chiunque altro non viene mostrato. I tuoi gruppi seguono le altre app XMPP del tuo account tramite i suoi
+  segnalibri: un gruppo in cui entri là lo trovi anche qui, e **Lascia il gruppo** lo lascia anche là. Un canale
+  avvisa solo dei messaggi che ti nominano. Le chiamate di gruppo non ci sono ancora.
 - **Chiamate:** i due riquadri in alto nella chat chiamano la persona, a voce o in video, sulla stessa schermata di
   chiamata delle chiamate di Erevos, e le sue chiamate squillano qui allo stesso modo, finché questo spazio è aperto;
   una chiamata da qualcuno che non è nei tuoi contatti appare solo come persa. Funziona con le app che chiamano come
@@ -1595,7 +1607,7 @@ app: nessun ponte sta nel mezzo.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** chat e chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
+- **Non ancora:** chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.

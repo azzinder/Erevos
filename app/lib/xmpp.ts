@@ -5,6 +5,7 @@ import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
+import { enterRooms, groupPeople, mentions, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
 import {
   bundleElement,
   bundleNode,
@@ -29,8 +30,8 @@ import { pickMechanism, startSasl } from './xmpp-sasl';
 import { child, children, el, find, render, textOf, type XmlElement } from './xmpp-xml';
 
 // An XMPP (Jabber) account in Erevos (docs/xmpp.md): signing in, the contacts (roster), and chats
-// with one person, encrypted with OMEMO (lib/xmpp-omemo.ts) as Conversations, Monal, Gajim and
-// Dino do. The connection is lib/xmpp-net.ts's; lib/xmpp-store.ts keeps it running for the open
+// with one person or a group (lib/xmpp-muc.ts), encrypted with OMEMO (lib/xmpp-omemo.ts) as
+// Conversations, Monal, Gajim and Dino do. The connection is lib/xmpp-net.ts's; lib/xmpp-store.ts keeps it running for the open
 // space and keeps the account sealed in it (lock/xmpp-data.ts).
 //
 // What a chat holds is kept here, as on the other networks: the latest KEEP_MESSAGES of each.
@@ -63,6 +64,7 @@ export const NS = {
   extdisco: 'urn:xmpp:extdisco:2',
   caps: 'http://jabber.org/protocol/caps',
   pubsubEvent: 'http://jabber.org/protocol/pubsub#event',
+  bookmarks: 'urn:xmpp:bookmarks:1',
 } as const;
 
 /** How many messages each chat keeps. */
@@ -91,6 +93,8 @@ export type XmppMessage = {
   call?: true;
   /** A photo or file (lib/xmpp-files.ts): where it is, and its key when encrypted. Its text is then empty. */
   file?: XmppFile;
+  /** In a group: the name of whoever wrote it there. */
+  by?: string;
 };
 
 export type XmppChat = {
@@ -102,6 +106,8 @@ export type XmppChat = {
   plain?: boolean;
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
   notify?: ChatNotify;
+  /** A group (lib/xmpp-muc.ts), its address the chat's. */
+  room?: XmppRoom;
 };
 
 export type XmppContact = {
@@ -130,6 +136,10 @@ export type XmppState = {
   seen: string[];
   /** The server's HTTP upload service, as last found (lib/xmpp-files.ts). */
   upload?: XmppUpload;
+  /** Invitations to groups, from contacts (lib/xmpp-muc.ts). */
+  invites?: XmppInvite[];
+  /** The server's group service, as last found. */
+  muc?: XmppMuc;
 };
 
 export class XmppError extends Error {
@@ -160,11 +170,15 @@ export function isXmppId(text: string): boolean {
   return /^[^\s@/"&'<>:]+@[a-z0-9-]+(\.[a-z0-9-]+)*$/i.test(text.trim());
 }
 
-const newId = () => `erevos-${toHex(randomBytes(9))}`;
+/** An id for a stanza or a message. */
+export function newXmppId(): string {
+  return `erevos-${toHex(randomBytes(9))}`;
+}
+const newId = newXmppId;
 
-/** A chat's name: the one in the contacts, or the part before the @. */
+/** A chat's name: the one in the contacts, or a group's own, or the part before the @. */
 export function nameOf(state: XmppState, jid: string): string {
-  return state.roster[jid]?.name?.trim() || jid.slice(0, jid.indexOf('@')) || jid;
+  return state.roster[jid]?.name?.trim() || state.chats[jid]?.room?.name?.trim() || jid.slice(0, jid.indexOf('@')) || jid;
 }
 
 // ---- the connection ----
@@ -394,7 +408,8 @@ const CALL_FEATURES = [
   'urn:xmpp:jingle:transports:ice-udp:1',
   'urn:xmpp:jingle:apps:dtls:0',
 ];
-const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, ...CALL_FEATURES].sort();
+// `+notify` asks for changes of the device lists and of the account's own bookmarks (its groups).
+const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, `${NS.bookmarks}+notify`, 'http://jabber.org/protocol/muc', ...CALL_FEATURES].sort();
 
 /** Entity capabilities (XEP-0115): what this app can do, as a hash its contacts' servers know. */
 export function capsVer(): string {
@@ -403,7 +418,7 @@ export function capsVer(): string {
 }
 
 /** What comes after signing in: the contacts, carbons, this device's OMEMO keys on the server,
- *  presence, and what the archive holds that this device has not seen. */
+ *  presence, what the archive holds that this device has not seen, and the groups. */
 export async function startSession(state: XmppState, connection: XmppConnection): Promise<void> {
   const roster = await connection.iq('get', undefined, el('query', { xmlns: NS.roster }));
   takeRoster(state, child(roster, 'query', NS.roster), true);
@@ -411,6 +426,7 @@ export async function startSession(state: XmppState, connection: XmppConnection)
   await publishOmemo(state, connection).catch(() => undefined);
   await connection.send(el('presence', {}, el('c', { xmlns: NS.caps, hash: 'sha-1', node: CAPS_NODE, ver: capsVer() })));
   await fetchArchive(state, connection);
+  await enterRooms(state, connection);
 }
 
 /** Makes sure this device is in the account's OMEMO device list, and its bundle is on the server. */
@@ -492,15 +508,20 @@ export type Taken = {
 export async function takeStanza(state: XmppState, connection: XmppConnection, stanza: XmlElement, taken: Taken): Promise<void> {
   const from = stanza.attrs.from ?? '';
   if (stanza.name === 'iq') return answerIq(state, connection, stanza, taken);
-  if (stanza.name === 'presence') return takePresence(state, connection, stanza);
+  if (stanza.name === 'presence') {
+    if (await takeRoomPresence(state, connection, stanza, taken)) return;
+    return takePresence(state, connection, stanza);
+  }
   if (stanza.name !== 'message') return;
   const ownServer = !from || bare(from) === state.jid || from === domainOf(state.jid);
-  // An archived message, fetched by fetchArchive.
+  // An archived message, fetched by fetchArchive, or from a group's own archive.
   const result = child(stanza, 'result', NS.mam);
-  if (result && ownServer) {
+  if (result && (ownServer || (!from.includes('/') && roomOf(state, from)))) {
     const forwarded = child(result, 'forwarded', NS.forward);
     const inner = child(forwarded, 'message', NS.client) ?? child(forwarded, 'message');
-    if (inner) await takeMessage(state, connection, inner, { at: stampOf(forwarded), archiveId: result.attrs.id, live: false }, taken);
+    const how = { at: stampOf(forwarded), archiveId: result.attrs.id, live: false };
+    if (inner && !ownServer) await takeGroupMessage(state, connection, inner, how, taken);
+    else if (inner) await takeMessage(state, connection, inner, how, taken);
     return;
   }
   // A carbon: a message of ours sent from another device, or one to another of our devices.
@@ -514,6 +535,11 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
   const event = child(stanza, 'event', NS.pubsubEvent);
   if (event) {
     const items = child(event, 'items');
+    // The account's groups changed in another of its apps.
+    if (items?.attrs.node === NS.bookmarks && bare(from || state.jid) === state.jid) {
+      await takeBookmarks(state, connection, items, taken);
+      return;
+    }
     if (items?.attrs.node === DEVICES_NODE && from) {
       takeDeviceList(state, bare(from), devicesOf(itemOf(stanza, 'list')));
       if (bare(from) === state.jid && !devicesOf(itemOf(stanza, 'list')).includes(state.omemo.device)) {
@@ -521,6 +547,10 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
         await publishOmemo(state, connection).catch(() => undefined);
       }
     }
+    return;
+  }
+  if (stanza.attrs.type === 'groupchat') {
+    await takeGroupMessage(state, connection, stanza, { at: stampOf(stanza), live: true }, taken);
     return;
   }
   await takeMessage(state, connection, stanza, { at: stampOf(stanza), live: true }, taken);
@@ -553,6 +583,22 @@ function addMessage(chat: XmppChat, message: XmppMessage): void {
 async function takeMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; archiveId?: string; live: boolean }, taken: Taken): Promise<void> {
   const type = message.attrs.type ?? 'normal';
   if (type === 'groupchat' || type === 'headline') return;
+  // An invitation to a group: kept to answer, not a chat message.
+  if (takeInvite(state, message)) {
+    if (how.archiveId) state.archived = how.archiveId;
+    taken.chats.push('');
+    return;
+  }
+  // An error from a group, about a message of ours there.
+  if (type === 'error' && roomOf(state, message.attrs.from ?? '')) {
+    const chat = state.chats[bare(message.attrs.from ?? '')];
+    const failed = chat.messages.find((m) => m.mine && m.id === message.attrs.id);
+    if (failed) {
+      failed.state = 'failed';
+      taken.chats.push(chat.jid);
+    }
+    return;
+  }
   const from = bare(message.attrs.from ?? state.jid);
   const to = bare(message.attrs.to ?? state.jid);
   const mine = from === state.jid;
@@ -654,6 +700,95 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   if (how.live && !mine && id && child(message, 'request', NS.receipts) && ['both', 'from'].includes(state.roster[peer]?.subscription ?? '')) {
     await connection.send(el('message', { to: message.attrs.from, id: newId() }, el('received', { xmlns: NS.receipts, id }))).catch(() => undefined);
   }
+}
+
+/**
+ * Takes a message of a group the account is in, as it comes or from the group's archive: who
+ * wrote it, by their name there; opened with OMEMO by the device that wrote it, whoever that is
+ * among the members, in a private group. Our own come back as the room passes them on: one sent
+ * from here is already in the chat; one from another of our devices is ours. In a private group
+ * every message from someone else counts as not read; in a channel, only those that name us.
+ */
+async function takeGroupMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; archiveId?: string; live: boolean }, taken: Taken): Promise<void> {
+  const from = message.attrs.from ?? '';
+  const jid = bare(from);
+  const chat = state.chats[jid];
+  const room = chat?.room;
+  if (!room || message.attrs.type !== 'groupchat') return;
+  if (how.archiveId) room.archived = how.archiveId;
+  const slash = from.indexOf('/');
+  const nick = slash >= 0 ? from.slice(slash + 1) : '';
+  const encrypted = child(message, 'encrypted', OMEMO);
+  const body = textOf(child(message, 'body')).trim();
+  const subject = child(message, 'subject');
+  if (subject && !body && !encrypted) {
+    room.subject = textOf(subject).trim().slice(0, 300) || undefined;
+    taken.chats.push(jid);
+    return;
+  }
+  // The room's own words (as "this room is now archived") have no one who wrote them.
+  if (!nick || (!encrypted && !body)) return;
+  const stanzaId = children(message, 'stanza-id', NS.sid).find((s) => bare(s.attrs.by ?? '') === jid)?.attrs.id || how.archiveId;
+  const ownId = child(message, 'origin-id', NS.sid)?.attrs.id || message.attrs.id || '';
+  // One sent from here, back from the room.
+  const sentHere = ownId ? chat.messages.find((m) => m.mine && m.id === ownId) : undefined;
+  const keys = [stanzaId ? `${jid}|${stanzaId}` : '', ownId ? `${from}|${ownId}` : ''].filter(Boolean);
+  const seen = keys.some((key) => state.seen.includes(key));
+  for (const key of keys) remember(state, key);
+  if (sentHere) {
+    if (sentHere.state === 'sending') sentHere.state = 'sent';
+    return;
+  }
+  if (seen) return;
+  const item = child(child(message, 'x', 'http://jabber.org/protocol/muc#user'), 'item');
+  const real = room.occupants[nick] || bare(item?.attrs.jid ?? '');
+  const writer = real.includes('@') ? real : '';
+  const mine = writer ? writer === state.jid : nick === room.nick;
+  if (encrypted && !child(encrypted, 'payload', OMEMO)) {
+    const sender = mine ? state.jid : writer || (await senderOf(state, connection, room, encrypted));
+    if (sender && !mine) await openOmemo(state, connection, sender, encrypted, taken, how.live);
+    return;
+  }
+  let text = body;
+  let locked = false;
+  if (encrypted) {
+    const sender = mine ? state.jid : writer || (await senderOf(state, connection, room, encrypted));
+    const opened = sender ? await openOmemo(state, connection, sender, encrypted, taken, how.live) : null;
+    if (opened === 'empty') return;
+    if (opened === null) {
+      locked = true;
+      text = '';
+    } else text = opened;
+  }
+  const oob = encrypted ? undefined : textOf(child(child(message, 'x', NS_OOB), 'url')).trim() || undefined;
+  const file = locked ? null : fileOfText(text, oob);
+  addMessage(chat, {
+    id: ownId || stanzaId || newId(),
+    mine,
+    text: file ? '' : text,
+    at: how.at,
+    encrypted: Boolean(encrypted),
+    locked: locked || undefined,
+    state: mine ? 'sent' : undefined,
+    by: nick.slice(0, 100),
+    ...(file ? { file } : {}),
+  });
+  if (mine) chat.unread = 0;
+  else if (how.at > (room.readTo ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
+  taken.chats.push(jid);
+}
+
+/** Who among a private group's people has the device that wrote an OMEMO message, when the room did not say. */
+async function senderOf(state: XmppState, connection: XmppConnection, room: XmppRoom, encrypted: XmlElement): Promise<string> {
+  const sid = child(encrypted, 'header', OMEMO)?.attrs.sid ?? '';
+  const people = groupPeople(state, room);
+  const found = () => people.find((jid) => state.people[jid]?.devices[sid]);
+  if (found()) return found()!;
+  for (const jid of people) {
+    await devicesFor(state, connection, jid).catch(() => undefined);
+    if (state.people[jid]?.devices[sid]) return jid;
+  }
+  return '';
 }
 
 /** Opens an OMEMO message to this device: its text, 'empty' for one that only moved the ratchet
@@ -780,6 +915,11 @@ async function devicesFor(state: XmppState, connection: XmppConnection, jid: str
   }
 }
 
+/** Looks up the device lists of `jids` not looked up lately, so their keys show before anything is written. */
+export async function lookUpDevices(state: XmppState, connection: XmppConnection, jids: string[]): Promise<void> {
+  for (const jid of jids) await devicesFor(state, connection, jid).catch(() => undefined);
+}
+
 /** Sessions with every device of `jids` that has none yet, from their bundles. */
 async function sessionsFor(state: XmppState, connection: XmppConnection, jids: string[]): Promise<void> {
   for (const jid of jids) {
@@ -800,34 +940,44 @@ async function sessionsFor(state: XmppState, connection: XmppConnection, jids: s
   }
 }
 
-/** An <encrypted> for `peer`'s devices and our others, with `text`, or none for an empty one. */
-/** The devices a message to `peer` is encrypted for: theirs and our others. Throws NoOmemoError when they have none. */
-async function targetsFor(state: XmppState, connection: XmppConnection, peer: string, only?: number): Promise<{ jid: string; id: string }[]> {
-  await devicesFor(state, connection, peer);
+/** Whom a message in the chat `jid` is encrypted for: the person, or a private group's people. */
+function peopleOf(state: XmppState, jid: string): string[] {
+  const room = state.chats[jid]?.room;
+  return room ? groupPeople(state, room) : [jid];
+}
+
+/**
+ * The devices a message to `peers` is encrypted for: theirs and our others. Throws NoOmemoError
+ * when none of them has any (`name` saying who).
+ */
+async function targetsFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, only?: number): Promise<{ jid: string; id: string }[]> {
+  for (const peer of peers) await devicesFor(state, connection, peer).catch(() => undefined);
   await devicesFor(state, connection, state.jid);
-  await sessionsFor(state, connection, [peer, state.jid]);
+  await sessionsFor(state, connection, [...peers, state.jid]);
   const targets: { jid: string; id: string }[] = [];
-  for (const jid of [peer, state.jid]) {
+  for (const jid of [...peers, state.jid]) {
     for (const [id, device] of Object.entries(state.people[jid]?.devices ?? {})) {
       if (!device.session || !device.listed) continue;
       if (jid === state.jid && Number(id) === state.omemo.device) continue;
-      if (only !== undefined && (jid !== peer || Number(id) !== only)) continue;
+      if (only !== undefined && (jid !== peers[0] || Number(id) !== only)) continue;
       targets.push({ jid, id });
     }
   }
-  if (!targets.some((d) => d.jid === peer)) {
-    // A list fetched a while ago may be out of date: once more, freshly.
-    if (only === undefined && Date.now() - (state.people[peer]?.fetchedAt ?? 0) > 60_000) {
-      await devicesFor(state, connection, peer, true);
-      return targetsFor(state, connection, peer, only);
+  if (!targets.some((d) => d.jid !== state.jid)) {
+    // Lists fetched a while ago may be out of date: once more, freshly.
+    const stale = peers.filter((peer) => Date.now() - (state.people[peer]?.fetchedAt ?? 0) > 60_000);
+    if (only === undefined && stale.length) {
+      for (const peer of stale) await devicesFor(state, connection, peer, true).catch(() => undefined);
+      return targetsFor(state, connection, peers, name, only);
     }
-    throw new NoOmemoError(peer);
+    throw new NoOmemoError(name);
   }
   return targets;
 }
 
-async function encryptFor(state: XmppState, connection: XmppConnection, peer: string, text: string | null, only?: number): Promise<XmlElement> {
-  const targets = await targetsFor(state, connection, peer, only);
+/** An <encrypted> for `peers`' devices and our others, with `text`, or none for an empty one. */
+async function encryptFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, text: string | null, only?: number): Promise<XmlElement> {
+  const targets = await targetsFor(state, connection, peers, name, only);
   const answer = await omemoCall<{ payload: string | null; iv: string; keys: { key: string; prekey: boolean; session: unknown }[] }>({
     op: 'encrypt',
     text: text ?? undefined,
@@ -850,7 +1000,7 @@ async function encryptFor(state: XmppState, connection: XmppConnection, peer: st
 }
 
 async function sendEmpty(state: XmppState, connection: XmppConnection, peer: string, device: number): Promise<void> {
-  const encrypted = await encryptFor(state, connection, peer, null, device);
+  const encrypted = await encryptFor(state, connection, [peer], peer, null, device);
   await connection.send(el('message', { to: peer, type: 'chat', id: newId() }, encrypted, el('store', { xmlns: NS.hints })));
 }
 
@@ -866,8 +1016,10 @@ export async function sendXmppText(state: XmppState, connection: XmppConnection,
  * so nothing is uploaded for nothing, and an error when the server takes no files.
  */
 export async function prepareXmppFile(state: XmppState, connection: XmppConnection, peer: string): Promise<{ encrypt: boolean; service: XmppUpload }> {
-  const encrypt = !chatOf(state, peer).plain;
-  if (encrypt) await targetsFor(state, connection, peer);
+  const chat = chatOf(state, peer);
+  const encrypt = !plainIn(chat);
+  if (chat.room && !chat.room.joined) throw new XmppError(chat.room.problem || t('Not in this group yet: joining it.'));
+  if (encrypt) await targetsFor(state, connection, peopleOf(state, peer), peer);
   const service = await findUpload(connection, domainOf(state.jid), state.upload);
   if (!service) throw new XmppError(t('Your XMPP server takes no files.'));
   state.upload = service;
@@ -879,23 +1031,29 @@ export async function sendXmppFile(state: XmppState, connection: XmppConnection,
   return sendBody(state, connection, peer, textOfFile(file), file);
 }
 
+/** Whether a chat is written without encryption: chosen so, or a group that is not private. */
+export function plainIn(chat: XmppChat): boolean {
+  return Boolean(chat.plain) || (chat.room !== undefined && !chat.room.private);
+}
+
 async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile): Promise<XmppMessage> {
   const chat = chatOf(state, peer);
+  const room = chat.room;
+  if (room && !room.joined) throw new XmppError(room.problem || t('Not in this group yet: joining it.'));
+  const plain = plainIn(chat);
   const id = newId();
-  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !chat.plain, state: 'sending', ...(file ? { file } : {}) };
-  const extras = [
-    el('request', { xmlns: NS.receipts }),
-    el('markable', { xmlns: NS.markers }),
-    el('origin-id', { xmlns: NS.sid, id }),
-  ];
+  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !plain, state: 'sending', ...(file ? { file } : {}), ...(room ? { by: room.nick } : {}) };
+  // A group has no receipts nor read marks: the room passes the message back once it has it.
+  const type = room ? 'groupchat' : 'chat';
+  const extras = [room ? null : el('request', { xmlns: NS.receipts }), room ? null : el('markable', { xmlns: NS.markers }), el('origin-id', { xmlns: NS.sid, id })];
   let stanza: XmlElement;
-  if (chat.plain) {
-    stanza = el('message', { to: peer, type: 'chat', id }, el('body', {}, text), file && !file.fragment ? oobOf(file) : null, ...extras);
+  if (plain) {
+    stanza = el('message', { to: peer, type, id }, el('body', {}, text), file && !file.fragment ? oobOf(file) : null, ...extras);
   } else {
-    const encrypted = await encryptFor(state, connection, peer, text);
+    const encrypted = await encryptFor(state, connection, peopleOf(state, peer), peer, text);
     stanza = el(
       'message',
-      { to: peer, type: 'chat', id },
+      { to: peer, type, id },
       encrypted,
       el('encryption', { xmlns: NS.eme, namespace: OMEMO, name: 'OMEMO' }),
       el('store', { xmlns: NS.hints }),
@@ -908,7 +1066,7 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
   remember(state, `${state.jid}|${id}`);
   try {
     await connection.send(stanza);
-    message.state = 'sent';
+    if (!room) message.state = 'sent';
   } catch (error) {
     message.state = 'failed';
     throw error;

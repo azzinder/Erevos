@@ -122,8 +122,8 @@ On main, not released yet:
   was closed (from the server's archive), people who ask to add you (**Accept**, **Decline**), and the chats in the home
   list under an **XMPP** chip of their own. These chats are not anonymous, and say so: the XMPP server sees who talks
   with whom, and when. On Android the connection follows the space's choice under **Tor**, with a circuit of its own
-  per server; the web app and the computer connect through the server's WebSocket, straight. Text, calls, photos and
-  files (below) for now: no groups or OMEMO 2 yet.
+  per server; the web app and the computer connect through the server's WebSocket, straight. Text, calls, photos,
+  files and groups (below) for now: no OMEMO 2 yet.
 
 - **Voice and video calls with people on XMPP**: the two tiles at the top of an XMPP chat call the person, on the same
   call screen as Erevos's own calls, and their calls ring here the same way while the space is open; someone not in
@@ -195,6 +195,18 @@ On main, not released yet:
   its link also out of band (XEP-0066). One that comes is fetched only when asked for, on Android through Tor as the
   chat goes, and an encrypted one opens only if nothing in it changed. A sound that comes in an XMPP or Nostr chat now
   plays with **Play**. Checked with an upload service played in the checks; not yet with a real server.
+- **Groups on XMPP**: under **Settings** → **Relay and networks** → **XMPP**, **New group** makes a private group on the
+  XMPP server from a name and the account's contacts, who are invited, and **Join a group** joins one by its address,
+  with its password if it asks for one. A private group is for its members only and shows everyone's address to
+  everyone, as Conversations' private groups do, and every message in it is encrypted with OMEMO to each member's
+  devices (and to the account's other devices), so the group's server keeps only what it cannot read; a member with no
+  OMEMO app is marked and cannot read it, and when nobody in the group has one the chat offers **Write without
+  encryption**. Any other group is a channel: not encrypted, and it says so, and it tells only of messages that name
+  you. Under a private group are its **Members** with their keys to compare, and its admin can **Add people**.
+  Invitations from the account's contacts show on the XMPP screen and at the top of the home list, with **Join** and
+  **Decline**; anyone else's are not shown. The groups are kept in the account's bookmarks (XEP-0402), so its other XMPP
+  apps join and leave the same ones, and what a group's archive holds comes when it is joined. No group calls yet.
+  Checked with a group service played in the checks; not yet with a real server or with Conversations on a phone.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

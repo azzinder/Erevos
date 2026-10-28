@@ -99,9 +99,9 @@ dok ih njihov PIN drži otvorenima.
 - **Matrix razgovori**, kad se prijavite na Matrix, nalaze se na listi s ostalima, najnoviji prvi, svaki označen
   **Matrix**, a pozivnica stoji na vrhu. Dugme **Matrix** pokazuje samo njih, i tamo **Novi razgovor** počinje
   Matrix razgovor: pogledajte [Matrix](#matrix).
-- **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži
-  da vas doda stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje XMPP razgovor:
-  pogledajte [XMPP](#xmpp).
+- **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži da
+  vas doda ili grupa koja vas poziva stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje
+  XMPP razgovor: pogledajte [XMPP](#xmpp).
 - **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
   **Nostr** prikazuje samo njih, a tamo **Novi razgovor** otvara ekran Nostr razgovora: pogledajte
   [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
@@ -1506,6 +1506,17 @@ aplikacije: nikakav most nije između.
   može pročitati; Conversations, Monal, Gajim i Dino je otvaraju. U razgovoru pisanom bez šifrovanja datoteka ide
   kakva jeste. Fotografija, zvuk ili datoteka koja stigne preuzima se tek kad dodirnete **Prikaži fotografiju**,
   **Pusti** ili **Sačuvaj**. Na Androidu, datoteke idu preko Tora kao i razgovor.
+- **Grupe:** **privatna grupa** je samo za svoje članove, i svaki vidi ko su ostali. Svaka poruka u njoj šifrovana je
+  OMEMO-om za uređaje svakog člana, kao u privatnim grupama Conversationsa, pa je XMPP serveri ne mogu čitati; ono što je
+  napisano prije vašeg ulaska prikazuje se zaključano. **Kanal** je svaka druga grupa: nije šifrovan, pa ga svi u njemu,
+  i serveri, mogu čitati, a njegov ekran to kaže. Na XMPP ekranu **Nova grupa** pravi privatnu grupu na vašem XMPP
+  serveru od imena i kontakata koje izaberete, a **Pridruži se grupi** ulazi u jednu preko njene adrese, kao
+  ime@conference.example.org, s njenom lozinkom ako je traži. Ispod privatne grupe **Članovi** nabraja njene ljude s
+  njihovim ključevima, za poređenje kao u razgovoru, i bilježi svakoga ko nema OMEMO ključeve i ne može čitati
+  šifrovano; njen administrator može **Dodaj ljude**. Kontakt koji vas pozove u grupu prikazuje se pod **Pozivi u
+  grupe**, s **Pridruži se** i **Odbij**; poziv bilo koga drugog se ne prikazuje. Vaše grupe prate ostale XMPP
+  aplikacije vašeg računa preko njegovih zabilješki: grupa kojoj se tamo pridružite pridružena je i ovdje, a **Napusti
+  grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju. Grupnih poziva još nema.
 - **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
   vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
   kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem
@@ -1523,7 +1534,7 @@ aplikacije: nikakav most nije između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** grupni razgovori i grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
+- **Još ne:** grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.

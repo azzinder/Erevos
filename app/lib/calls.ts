@@ -27,6 +27,9 @@ export type CallPlace = {
   name(peer: string): string;
   /** The offer of their call that rang before it came, once it is answered here (lib/xmpp-calls.ts). */
   offer?(identity: string): Promise<string>;
+  /** Video added to a voice call, both ways (lib/xmpp-calls.ts): as Call's events have them. */
+  addMedia?(identity: string, id: string, sdp: string): Promise<string>;
+  answerMedia?(identity: string, id: string, sdp: string | null): Promise<void>;
 };
 
 /** A peer's identity: what comes after `contact:`, or after `xmpp:` for an XMPP address. */
@@ -101,6 +104,8 @@ function events(place: CallPlace, identity: string) {
   return {
     send: (signal: CallSignal) => place.send(identity, signal),
     offer: place.offer ? () => place.offer!(identity) : undefined,
+    addMedia: place.addMedia ? (id: string, sdp: string) => place.addMedia!(identity, id, sdp) : undefined,
+    answerMedia: place.answerMedia ? (id: string, sdp: string | null) => place.answerMedia!(identity, id, sdp) : undefined,
     onChange: (call: Call) => {
       if (call.state === 'ended' && shown?.call === call) place.line(call.peer, call.outgoing, endedLine(call), call.id);
       changed();

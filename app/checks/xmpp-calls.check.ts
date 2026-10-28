@@ -6,6 +6,8 @@
 // turned down, taken back, answered on another device of ours, rung while in another call, from
 // someone not in the contacts, or from an older app that starts with Jingle at once; and a Jingle
 // question about a session nobody knows is said no to. Each call leaves one line in its chat.
+// Video is added to a voice call both ways, as Conversations adds it (content-add): said no to,
+// the call goes on as it was; said yes to, each side's description is the call's as it is now.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -72,6 +74,8 @@ function description(type: 'offer' | 'answer', video: boolean, ufrag: string): s
 class SdpConnection extends FakeConnection {
   /** Their addresses that came one at a time. */
   ice: { candidate: string; sdpMid: string }[] = [];
+  /** Offers of ours taken back. */
+  rolledBack = 0;
   private video = () => this.added.some((track) => (track as FakeTrack).kind === 'video');
   async createOffer() {
     return { type: 'offer' as const, sdp: description('offer', this.video(), 'annu') };
@@ -79,7 +83,11 @@ class SdpConnection extends FakeConnection {
   async createAnswer() {
     return { type: 'answer' as const, sdp: description('answer', this.video(), 'annu') };
   }
-  async setLocalDescription(given: { sdp: string }) {
+  async setLocalDescription(given: { type?: string; sdp: string }) {
+    if (given.type === 'rollback') {
+      this.rolledBack++;
+      return;
+    }
     this.localDescription = { sdp: given.sdp };
     setTimeout(() => {
       this.iceGatheringState = 'complete';
@@ -421,5 +429,129 @@ test('someone not in the contacts, an older app, and a session nobody knows', { 
   } finally {
     stop();
     for (const device of [ann, bob, carol]) device.connection.close();
+  }
+});
+
+test('video is added to a voice call both ways, said no to and yes to', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  const { rtc, connections } = sdpRtc();
+  const stop = watchXmppCalls(rtc, spaceOf(ann));
+  const contentOf = (iq: XmlElement) => children(child(iq, 'jingle', JINGLE), 'content');
+  const lastIq = (action: string) => {
+    const found = bob.got.filter((s) => s.name === 'iq' && child(s, 'jingle', JINGLE)?.attrs.action === action);
+    assert.ok(found.length, `no ${action} came`);
+    return found[found.length - 1];
+  };
+  try {
+    // Bob calls, with sound only; Ann answers.
+    await bob.connection.send(jmi(ANN, 'propose', 'v1', el('description', { xmlns: RTP, media: 'audio' })));
+    await run(ann, [bob]);
+    let call = shownCall()!.call;
+    const answering = call.answer();
+    await run(ann, [bob]);
+    const initiated = bob.connection.iq('set', ann.connection.fullJid, el('jingle', { xmlns: JINGLE, action: 'session-initiate', sid: 'v1', initiator: bob.connection.fullJid }, ...sdpToJingle(description('offer', false, 'bobu'), 'initiator')));
+    await run(ann, [bob]);
+    await initiated;
+    await run(ann, [bob]);
+    await answer(bob, cameIq(bob, 'session-accept'));
+    await run(ann, [bob]);
+    await answering;
+    assert.equal(call.canAddVideo, false);
+    connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+    assert.deepEqual([call.state, call.video, call.canAddVideo], ['connected', false, true]);
+
+    // Ann turns her camera on: Bob's app is asked to take its content, and says no.
+    let adding = call.addVideo();
+    await run(ann, [bob]);
+    assert.equal(call.addingVideo, true);
+    let add = lastIq('content-add');
+    assert.deepEqual(contentOf(add).map((c) => [c.attrs.creator, c.attrs.name, c.attrs.senders, child(c, 'description', RTP)?.attrs.media]), [['responder', '1', 'both', 'video']]);
+    await answer(bob, add);
+    const rejected = bob.connection.iq('set', ann.connection.fullJid, jingle('content-reject', 'v1', el('content', { creator: 'responder', name: '1' }), reason('decline')));
+    await run(ann, [bob]);
+    await rejected;
+    await adding;
+    // Her offer is taken back and her camera off: the call goes on with sound, and video can be asked again.
+    assert.equal(connections[0].rolledBack, 1);
+    assert.deepEqual(connections[0].added.map((t) => (t as FakeTrack).kind), ['audio']);
+    assert.deepEqual(call.local!.getVideoTracks(), []);
+    assert.deepEqual([call.state, call.video, call.addingVideo, call.canAddVideo], ['connected', false, false, true]);
+
+    // Again, and he says yes: her side has his description of the call as it is now.
+    adding = call.addVideo();
+    await run(ann, [bob]);
+    add = lastIq('content-add');
+    await answer(bob, add);
+    const accept = description('answer', true, 'bobu');
+    const acceptedIq = bob.connection.iq('set', ann.connection.fullJid, jingle('content-accept', 'v1', ...sdpToJingle(accept, 'initiator').filter((c) => c.name === 'content' && c.attrs.name === '1').map((c) => ((c.attrs.creator = 'responder'), c))));
+    await run(ann, [bob]);
+    await acceptedIq;
+    await adding;
+    const whole = connections[0].remote!;
+    assert.equal(whole.type, 'answer');
+    assert.match(whole.sdp, /a=group:BUNDLE 0 1/);
+    assert.match(whole.sdp, /m=audio 9 [^]*m=video 9 UDP\/TLS\/RTP\/SAVPF 96/);
+    // His first offer said actpass; as the call is now, he is the one that waits (Ann answered active).
+    assert.deepEqual(whole.sdp.match(/a=setup:\w+/g), ['a=setup:passive', 'a=setup:passive']);
+    assert.deepEqual([call.video, call.cameraOff, call.local!.getVideoTracks().length], [true, false, 1]);
+    assert.equal(call.canAddVideo, false);
+    call.hangUp();
+    await run(ann, [bob]);
+    closeCall(call);
+    bob.got.length = 0;
+
+    // Ann calls Bob, with sound only; he answers.
+    call = await startXmppCall(BOB, false, rtc);
+    await run(ann, [bob]);
+    await bob.connection.send(jmi(ann.connection.fullJid, 'proceed', call.id));
+    await run(ann, [bob]);
+    await answer(bob, cameIq(bob, 'session-initiate'));
+    const accepted = bob.connection.iq('set', ann.connection.fullJid, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: call.id, responder: bob.connection.fullJid }, ...sdpToJingle(description('answer', false, 'bobu'), 'responder')));
+    await run(ann, [bob]);
+    await accepted;
+    connections[1].connect(new FakeStream([new FakeTrack('audio')]));
+    assert.equal(call.state, 'connected');
+
+    // Bob turns his camera on: Ann's screen asks, and she says no.
+    const bobVideo = () =>
+      sdpToJingle(description('offer', true, 'bobu'), 'responder')
+        .filter((c) => c.name === 'content' && c.attrs.name === '1')
+        .map((c) => ((c.attrs.creator = 'responder'), c));
+    let asked = bob.connection.iq('set', ann.connection.fullJid, jingle('content-add', call.id, ...bobVideo()));
+    await run(ann, [bob]);
+    await asked;
+    assert.deepEqual([call.askingVideo, call.canAddVideo], [true, false]);
+    call.declineVideo();
+    await run(ann, [bob]);
+    const no = lastIq('content-reject');
+    assert.deepEqual(contentOf(no).map((c) => [c.attrs.creator, c.attrs.name]), [['responder', '1']]);
+    await answer(bob, no);
+    assert.deepEqual([call.askingVideo, call.video, connections[1].added.length], [false, false, 1]);
+
+    // He asks again, and she says yes: her camera goes on, and he gets her answer for it.
+    asked = bob.connection.iq('set', ann.connection.fullJid, jingle('content-add', call.id, ...bobVideo()));
+    await run(ann, [bob]);
+    await asked;
+    const yes = call.acceptVideo();
+    await run(ann, [bob]);
+    const ok = lastIq('content-accept');
+    assert.deepEqual(contentOf(ok).map((c) => [c.attrs.creator, c.attrs.name, child(c, 'description', RTP)?.attrs.media]), [['responder', '1', 'video']]);
+    await answer(bob, ok);
+    await run(ann, [bob]);
+    await yes;
+    const theirs = connections[1].remote!;
+    assert.equal(theirs.type, 'offer');
+    assert.match(theirs.sdp, /a=group:BUNDLE 0 1/);
+    // As the call is now, he took the active part with his first answer.
+    assert.deepEqual(theirs.sdp.match(/a=setup:\w+/g), ['a=setup:active', 'a=setup:active']);
+    assert.deepEqual([call.video, call.askingVideo, connections[1].added.map((t) => (t as FakeTrack).kind)], [true, false, ['audio', 'video']]);
+    call.hangUp();
+    await run(ann, [bob]);
+    closeCall(call);
+  } finally {
+    stop();
+    ann.connection.close();
+    bob.connection.close();
   }
 });

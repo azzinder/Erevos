@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
 import { canTor, canXmpp } from '../lib/core';
@@ -11,14 +11,16 @@ import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
 import { xmppThroughTor } from '../lib/xmpp-net';
 import { fingerprint } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppAddContact, xmppDecline, xmppNow, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
+import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // The space's XMPP account (lib/xmpp-store.ts, docs/xmpp.md), under Settings → Relay and networks
-// → XMPP: signing in, then the people who asked to add the account, a new chat with an address,
-// its chats and contacts, the key of this device, and signing out. Each chat opens in
-// app/xmpp-chat.tsx. Every view says these chats are not anonymous.
+// → XMPP: signing in, then the people who asked to add the account and the groups that invited it,
+// a new chat with an address, a new private group of its contacts, joining a group by its address
+// (a channel is not encrypted, and says so), its chats and groups and its contacts, the key of this
+// device, and signing out. Each chat and group opens in app/xmpp-chat.tsx. Every view says these
+// chats are not anonymous.
 
 export default function XmppScreen() {
   const router = useRouter();
@@ -29,6 +31,10 @@ export default function XmppScreen() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [newId, setNewId] = useState('');
+  const [groupName, setGroupName] = useState('');
+  const [picked, setPicked] = useState<string[]>([]);
+  const [groupId, setGroupId] = useState('');
+  const [groupPassword, setGroupPassword] = useState('');
 
   useEffect(() => {
     runXmpp();
@@ -125,10 +131,12 @@ export default function XmppScreen() {
 
   const chats = xmppChatList(state).filter((chat) => !state.requests.includes(chat.jid));
   const withChat = new Set(chats.map((chat) => chat.jid));
-  const contacts = Object.values(state.roster)
-    .filter((c) => c.subscription !== 'remove' && !withChat.has(c.jid))
+  const roster = Object.values(state.roster)
+    .filter((c) => c.subscription !== 'remove')
     .sort((a, b) => nameOf(state, a.jid).localeCompare(nameOf(state, b.jid)));
+  const contacts = roster.filter((c) => !withChat.has(c.jid));
   const open = (jid: string) => router.push({ pathname: '/xmpp-chat', params: { jid } });
+  const toggle = (jid: string) => setPicked((now) => (now.includes(jid) ? now.filter((j) => j !== jid) : [...now, jid]));
   return (
     <Page>
       <Text variant="title">XMPP</Text>
@@ -151,6 +159,31 @@ export default function XmppScreen() {
           <Row wrap>
             <Button title={t('Accept')} compact disabled={busy} onPress={() => void run(() => xmppAddContact(jid))} />
             <Button title={t('Decline')} kind="secondary" compact disabled={busy} onPress={() => void run(() => xmppDecline(jid))} />
+          </Row>
+        </Card>
+      ))}
+
+      {state.invites?.length ? <SectionTitle title={t('Invitations to groups')} /> : null}
+      {(state.invites ?? []).map((invite) => (
+        <Card key={invite.room}>
+          <Text variant="bodyStrong">{nameOf(state, invite.room)}</Text>
+          <Text variant="caption" tone="muted">
+            {invite.room}
+          </Text>
+          <Text tone="muted">{t('{name} invites you to a group', { name: nameOf(state, invite.from) })}</Text>
+          {invite.reason ? <Text>{invite.reason}</Text> : null}
+          <Row wrap>
+            <Button
+              title={t('Join')}
+              compact
+              disabled={busy}
+              onPress={() =>
+                void run(async () => {
+                  open(await xmppJoinGroup(invite.room));
+                })
+              }
+            />
+            <Button title={t('Decline')} kind="secondary" compact disabled={busy} onPress={() => void run(() => xmppDeclineInvite(invite.room))} />
           </Row>
         </Card>
       ))}
@@ -184,6 +217,79 @@ export default function XmppScreen() {
         </Row>
         <Text variant="caption" tone="faint">
           {t('They are added to your contacts and asked if you may see when they are online.')}
+        </Text>
+      </Card>
+
+      <SectionTitle title={t('New group')} />
+      <Card>
+        <Input value={groupName} onChangeText={setGroupName} maxLength={100} placeholder={t('Group name')} accessibilityLabel={t('Group name')} />
+        {roster.length ? (
+          <Field label={t('Contacts')}>
+            <Row wrap>
+              {roster.map((contact) => (
+                <Chip key={contact.jid} label={nameOf(state, contact.jid)} selected={picked.includes(contact.jid)} onPress={() => toggle(contact.jid)} />
+              ))}
+            </Row>
+          </Field>
+        ) : (
+          <Text tone="muted">{t('No contacts yet.')}</Text>
+        )}
+        <Button
+          title={t('Make the group')}
+          compact
+          disabled={busy || !groupName.trim()}
+          onPress={() =>
+            void run(async () => {
+              const jid = await xmppCreateGroup(groupName, picked);
+              setGroupName('');
+              setPicked([]);
+              open(jid);
+            })
+          }
+        />
+        <Text variant="caption" tone="faint">
+          {t("Makes a private group on your XMPP server, encrypted with OMEMO for every member, as Conversations' private groups are.")}
+        </Text>
+      </Card>
+
+      <SectionTitle title={t('Join a group')} />
+      <Card>
+        <Row>
+          <Input
+            style={{ flex: 1 }}
+            value={groupId}
+            onChangeText={setGroupId}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="name@conference.example.org"
+            accessibilityLabel={t('Group address')}
+          />
+          <Button
+            title={t('Join')}
+            compact
+            disabled={busy || !isXmppId(groupId)}
+            onPress={() =>
+              void run(async () => {
+                const jid = await xmppJoinGroup(groupId, groupPassword.trim() || undefined);
+                setGroupId('');
+                setGroupPassword('');
+                open(jid);
+              })
+            }
+          />
+        </Row>
+        <Input
+          value={groupPassword}
+          onChangeText={setGroupPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder={t('Password, if the group asks for one')}
+          accessibilityLabel={t('Password, if the group asks for one')}
+        />
+        <Text variant="caption" tone="faint">
+          {t('A group that is not private, a channel, is not encrypted: everyone in it, and the servers, can read it.')}
         </Text>
       </Card>
 
@@ -235,6 +341,17 @@ export default function XmppScreen() {
 function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; onOpen: () => void }) {
   const colors = useColors();
   const last = chat.messages.at(-1);
+  const said = !last
+    ? ''
+    : last.locked
+      ? t('Locked message')
+      : last.call
+        ? shownLine(last.text)
+        : last.file
+          ? last.file.type.startsWith('image/')
+            ? t('Photo')
+            : t('File: {name}', { name: last.file.name })
+          : last.text;
   return (
     <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={nameOf(state, chat.jid)}>
       <Card>
@@ -245,7 +362,7 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
             </Text>
             {last ? (
               <Text tone="muted" numberOfLines={1}>
-                {last.locked ? t('Locked message') : last.call ? shownLine(last.text) : last.text}
+                {chat.room && !last.mine && last.by ? `${last.by}: ${said}` : said}
               </Text>
             ) : null}
           </View>
@@ -257,6 +374,11 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
             </View>
           ) : null}
         </Row>
+        {chat.room ? (
+          <Text variant="caption" tone="faint" style={{ marginTop: space.xs }}>
+            {chat.room.private ? t('Private group') : t('Channel, not encrypted')}
+          </Text>
+        ) : null}
         {chat.plain ? (
           <Text variant="caption" tone="faint" style={{ marginTop: space.xs }}>
             {t('Written without encryption: the XMPP server can read this chat.')}

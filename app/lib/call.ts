@@ -68,13 +68,18 @@ export interface Stream {
   getTracks(): Track[];
   getAudioTracks(): Track[];
   getVideoTracks(): Track[];
+  /** A camera's track joins the stream of a call's sound, as video is added to a voice call. */
+  addTrack?(track: Track): void;
+  removeTrack?(track: Track): void;
 }
-type Description = { type: 'offer' | 'answer'; sdp: string };
+// A rollback takes back an offer of ours that the other side would not have.
+type Description = { type: 'offer' | 'answer' | 'rollback'; sdp: string };
 export interface Connection {
   readonly iceGatheringState: string;
   readonly connectionState: string;
   readonly localDescription: { sdp: string } | null;
   addTrack(track: Track, stream: Stream): unknown;
+  removeTrack?(sender: unknown): void;
   createOffer(): Promise<Description>;
   createAnswer(): Promise<Description>;
   setLocalDescription(description: Description): Promise<void>;
@@ -115,6 +120,12 @@ export type CallEvents = {
    *  calls ring first, and the caller sends the offer once one of the person's devices answers
    *  (lib/xmpp-calls.ts). */
   offer?(): Promise<string>;
+  /** Asks them to take the video our new description `sdp` adds to the call, and answers their
+   *  whole description for it; rejects when they would not. XMPP's content-add (lib/xmpp-calls.ts);
+   *  a call without it cannot have video added. */
+  addMedia?(id: string, sdp: string): Promise<string>;
+  /** Our answer to their asking to add video: our whole description, or null for no. */
+  answerMedia?(id: string, sdp: string | null): Promise<void>;
 };
 
 export type CallOptions = {
@@ -189,8 +200,11 @@ export function relayToAnswer(offer: string, relay: CallRelay | null): CallRelay
 export class Call {
   readonly id: string;
   readonly peer: string;
-  readonly video: boolean;
+  /** Video goes both ways: from the start, or once added to a voice call. */
+  video: boolean;
   readonly outgoing: boolean;
+  /** Video is being added to the call from here, until they say yes or no. */
+  addingVideo = false;
   state: CallState;
   ended: Ended | null = null;
   local: Stream | null = null;
@@ -207,6 +221,10 @@ export class Call {
   // Their addresses that came before their description was set, and whether it is.
   private candidates: { candidate: string; sdpMid: string }[] = [];
   private described = false;
+  // Their description that adds video, while they wait for our yes or no.
+  private videoOffer: string | null = null;
+  // An offer of ours could not be taken back: the call goes on, but nothing more is added to it.
+  private settled = false;
 
   private constructor(id: string, outgoing: boolean, offer: string, options: CallOptions) {
     this.id = id;
@@ -326,6 +344,130 @@ export class Call {
     this.local?.getVideoTracks().forEach((track) => track._switchCamera?.());
   }
 
+  /** Whether video can be added to this voice call from here: once it is connected, where its way of calling can. */
+  get canAddVideo(): boolean {
+    return !!this.options.events.addMedia && !this.video && this.state === 'connected' && !this.addingVideo && this.videoOffer === null && !this.settled;
+  }
+
+  /** Whether they ask to add video to this voice call, waiting for acceptVideo or declineVideo. */
+  get askingVideo(): boolean {
+    return this.videoOffer !== null;
+  }
+
+  /** Turns the camera on in a voice call, and asks them to take its video and send theirs. */
+  async addVideo(): Promise<void> {
+    const connection = this.connection;
+    const add = this.options.events.addMedia;
+    if (!connection || !add || !this.canAddVideo) return;
+    this.addingVideo = true;
+    this.changed();
+    let camera: { track: Track; sender: unknown } | null = null;
+    let offered = false;
+    try {
+      camera = await this.camera(connection);
+      await connection.setLocalDescription(await connection.createOffer());
+      offered = true;
+      const sdp = await describedSdp(connection);
+      const answer = await add(this.id, sdp);
+      if ((this.state as CallState) === 'ended') return;
+      await connection.setRemoteDescription({ type: 'answer', sdp: answer });
+      this.video = true;
+      this.cameraOff = false;
+    } catch {
+      // They would not, or it did not go: the call goes on as it was.
+      if ((this.state as CallState) !== 'ended') await this.takeBack(connection, camera, offered);
+    } finally {
+      this.addingVideo = false;
+      this.changed();
+    }
+  }
+
+  /** What they said, asking to add video to this voice call: their whole description, which waits for our yes or no. */
+  videoAsked(sdp: string): void {
+    const answer = this.options.events.answerMedia;
+    if (!answer) return;
+    if (this.state !== 'connected' || this.video || this.addingVideo || this.settled) {
+      answer(this.id, null).catch(() => undefined);
+      return;
+    }
+    this.videoOffer = sdp;
+    this.changed();
+  }
+
+  /** Yes to their video: our camera goes on too. */
+  async acceptVideo(): Promise<void> {
+    const connection = this.connection;
+    const offer = this.videoOffer;
+    const answer = this.options.events.answerMedia;
+    if (!connection || offer === null || !answer) return;
+    this.videoOffer = null;
+    this.changed();
+    let camera: { track: Track; sender: unknown } | null = null;
+    try {
+      camera = await this.camera(connection);
+      await connection.setRemoteDescription({ type: 'offer', sdp: offer });
+      await connection.setLocalDescription(await connection.createAnswer());
+      const sdp = await describedSdp(connection);
+      if ((this.state as CallState) === 'ended') return;
+      await answer(this.id, sdp);
+      this.video = true;
+      this.cameraOff = false;
+    } catch {
+      if (camera) this.dropCamera(connection, camera);
+      answer(this.id, null).catch(() => undefined);
+      // Their offer was taken, but no answer went: nothing more can be added.
+      this.settled = true;
+    } finally {
+      this.changed();
+    }
+  }
+
+  /** No to their video: the call goes on as a voice call. */
+  declineVideo(): void {
+    if (this.videoOffer === null) return;
+    this.videoOffer = null;
+    this.options.events.answerMedia?.(this.id, null).catch(() => undefined);
+    this.changed();
+  }
+
+  // The camera's track, in the stream of the call's sound and on its way to them.
+  private async camera(connection: Connection): Promise<{ track: Track; sender: unknown }> {
+    const camera = await this.options.rtc.media({ audio: false, video: true });
+    camera.getAudioTracks().forEach((track) => track.stop());
+    const [track] = camera.getVideoTracks();
+    if (!track) throw new Error('No camera.');
+    if ((this.state as CallState) === 'ended') {
+      track.stop();
+      throw new Error(t('The call ended.'));
+    }
+    const local = this.local ?? camera;
+    if (local !== camera) local.addTrack?.(track);
+    const sender = connection.addTrack(track, local);
+    return { track, sender };
+  }
+
+  private dropCamera(connection: Connection, camera: { track: Track; sender: unknown }): void {
+    try {
+      connection.removeTrack?.(camera.sender);
+    } catch {
+      // Gone with the connection.
+    }
+    this.local?.removeTrack?.(camera.track);
+    camera.track.stop();
+  }
+
+  // Back to the voice call as it was: our offer taken back, the camera off.
+  private async takeBack(connection: Connection, camera: { track: Track; sender: unknown } | null, offered: boolean): Promise<void> {
+    if (offered) {
+      try {
+        await connection.setLocalDescription({ type: 'rollback', sdp: '' });
+      } catch {
+        this.settled = true;
+      }
+    }
+    if (camera) this.dropCamera(connection, camera);
+  }
+
   private async dial(): Promise<void> {
     this.wait(RING_MS, 'missed', true);
     try {
@@ -354,7 +496,8 @@ export class Call {
     this.connection = connection;
     local.getTracks().forEach((track) => connection.addTrack(track, local));
     connection.addEventListener('track', ({ streams }) => {
-      if (streams[0] && this.remote !== streams[0]) {
+      // Their video, added to a voice call, comes in the stream of its sound: shown anew all the same.
+      if (streams[0]) {
         this.remote = streams[0];
         this.changed();
       }
@@ -381,6 +524,7 @@ export class Call {
   private end(reason: CallEnd, byUs: boolean, elsewhere = false): void {
     if (this.state === 'ended') return;
     this.stopWaiting();
+    this.videoOffer = null;
     this.ended = { reason, byUs, ...(elsewhere ? { elsewhere } : {}) };
     this.state = 'ended';
     this.local?.getTracks().forEach((track) => track.stop());

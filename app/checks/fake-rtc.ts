@@ -33,6 +33,13 @@ export class FakeStream implements Stream {
   getVideoTracks() {
     return this.tracks.filter((t) => t.kind === 'video');
   }
+  addTrack(track: FakeTrack) {
+    this.tracks.push(track);
+  }
+  removeTrack(track: FakeTrack) {
+    const at = this.tracks.indexOf(track);
+    if (at >= 0) this.tracks.splice(at, 1);
+  }
 }
 
 export class FakeConnection implements Connection {
@@ -49,6 +56,11 @@ export class FakeConnection implements Connection {
   }
   addTrack(track: Track) {
     this.added.push(track);
+    // Its sender, as WebRTC answers one.
+    return track;
+  }
+  removeTrack(sender: unknown) {
+    this.added = this.added.filter((track) => track !== sender);
   }
   async createOffer() {
     return { type: 'offer' as const, sdp: 'v=0\r\noffer' };

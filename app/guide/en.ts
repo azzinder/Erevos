@@ -94,9 +94,9 @@ same whether a space has any or not: their messages can be read only while their
 - **Matrix chats**, once you sign in to Matrix, are in the list with the others, newest first, each marked
   **Matrix**, and an invite shows at the top. The **Matrix** chip shows only them, and there **New chat** starts a
   Matrix chat: see [Matrix](#matrix).
-- **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks
-  to add you shows at the top. The **XMPP** chip shows only them, and there **New chat** starts an XMPP chat: see
-  [XMPP](#xmpp).
+- **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks to
+  add you, or a group that invites you, shows at the top. The **XMPP** chip shows only them, and there **New chat**
+  starts an XMPP chat: see [XMPP](#xmpp).
 - **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
   chip shows only them, and there **New chat** opens the Nostr chats screen: see
   [Chats with other Nostr apps](#nostr-chats).
@@ -1438,6 +1438,17 @@ bridge sits in between.
   cannot read; Conversations, Monal, Gajim and Dino open it. In a chat written without encryption the file goes as it
   is. A photo, sound or file that comes is fetched only when you tap **Show photo**, **Play** or **Save**. On Android,
   files go through Tor as the chat does.
+- **Groups:** a **private group** is for its members only, and each of them sees who the others are. Every message in it
+  is encrypted with OMEMO for each member's devices, as Conversations' private groups do it, so the XMPP servers cannot
+  read it; what was written before you joined shows as locked. A **channel** is any other group: it is not encrypted,
+  so everyone in it, and the servers, can read it, and its screen says so. On the XMPP screen, **New group** makes a
+  private group on your XMPP server from a name and the contacts you choose, and **Join a group** joins one by its
+  address, such as name@conference.example.org, with its password if it asks for one. Under a private group,
+  **Members** lists its people with their keys, to compare as in a chat, and notes anyone with no OMEMO keys, who cannot
+  read what is encrypted; its admin can **Add people**. A contact who invites you to a group shows under **Invitations
+  to groups**, with **Join** and **Decline**; an invitation from anyone else is not shown. Your groups follow your
+  account's other XMPP apps through its bookmarks: a group joined there is joined here, and **Leave the group** leaves it
+  there too. A channel tells only of messages that name you. Group calls are not there yet.
 - **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
   Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
   contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The
@@ -1456,7 +1467,7 @@ bridge sits in between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** group chats and group calls, adding video to a voice call, and OMEMO 2.
+- **Not yet:** group calls, adding video to a voice call, and OMEMO 2.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.

@@ -1,7 +1,9 @@
-// A small XMPP server for the checks (checks/xmpp.check.ts, checks/xmpp-calls.check.ts): signing
-// in with PLAIN, binding, rosters and presence subscriptions, PEP, archives (MAM), carbons, an
-// HTTP upload service (XEP-0363) and the files on it, and what goes between people as a server
-// passes it on: messages, and questions (iq) to a device.
+// A small XMPP server for the checks (checks/xmpp.check.ts, checks/xmpp-calls.check.ts,
+// checks/xmpp-muc.check.ts): signing in with PLAIN, binding, rosters and presence subscriptions,
+// PEP with bookmarks (XEP-0402), archives (MAM), carbons, an HTTP upload service (XEP-0363) and the
+// files on it, a group service (MUC, XEP-0045) with rooms made, set up, joined and archived as
+// Prosody does, and what goes between people as a server passes it on: messages, and questions
+// (iq) to a device.
 /// <reference types="node" />
 import { fromBase64, utf8Decode } from '../lib/crypto';
 import { signInXmpp, startSession, takeStanza, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
@@ -12,11 +14,30 @@ import { child, children, el, parseXml, render, textOf, type StreamEvent, type X
 
 export type Item = { jid: string; subscription: 'none' | 'to' | 'from' | 'both'; name?: string; ask?: boolean };
 type Archived = { id: string; at: number; message: XmlElement };
+type Affiliation = 'owner' | 'admin' | 'member' | 'outcast';
+/** A room of the group service: who it lets in, who is in it (by full address, with their name), and what was said. */
+export type Room = {
+  jid: string;
+  locked: boolean;
+  membersOnly: boolean;
+  nonAnonymous: boolean;
+  mam: boolean;
+  name: string;
+  affiliations: Map<string, Affiliation>;
+  occupants: Map<string, string>;
+  archive: Archived[];
+};
 
 export const DOMAIN = 'example.org';
 export const PASSWORD = 'correct horse';
 /** Where its upload service is: an item of its domain, as Prosody and ejabberd have it. */
 export const UPLOAD = `upload.${DOMAIN}`;
+/** Where its group service is, as an item of its domain too. */
+export const MUC = `conference.${DOMAIN}`;
+const NS_MUC = 'http://jabber.org/protocol/muc';
+const NS_MUC_USER = `${NS_MUC}#user`;
+const NS_BOOKMARKS = 'urn:xmpp:bookmarks:1';
+const STANZAS = 'urn:ietf:params:xml:ns:xmpp-stanzas';
 const NS_INFO = 'http://jabber.org/protocol/disco#info';
 const NS_ITEMS = 'http://jabber.org/protocol/disco#items';
 
@@ -37,6 +58,11 @@ export class Server {
   readonly files = new Map<string, Uint8Array>();
   /** The places it gave: where to put, what to fetch it from, its size and the header that lets it in. */
   readonly slots = new Map<string, { get: string; size: number; token: string }>();
+  /** Whether it has a group service, and its rooms. */
+  muc = true;
+  readonly rooms = new Map<string, Room>();
+  /** Each account's bookmarks (XEP-0402), by item id. */
+  readonly bookmarks = new Map<string, Map<string, XmlElement>>();
 
   connect = async (): Promise<XmppLink> => new Link(this);
 
@@ -77,6 +103,176 @@ export class Server {
     const list = this.archives.get(jid) ?? [];
     list.push({ id: this.id(), at: Date.now(), message });
     this.archives.set(jid, list);
+  }
+
+  /** The people of a room by the name they have there: their full addresses. */
+  occupantsByNick(room: Room): Map<string, string[]> {
+    const byNick = new Map<string, string[]>();
+    for (const [full, nick] of room.occupants) byNick.set(nick, [...(byNick.get(nick) ?? []), full]);
+    return byNick;
+  }
+
+  /** How `nick` in `room` shows to `to`: affiliation, role, their address when the room is not anonymous, and status codes. */
+  occupantPresence(room: Room, nick: string, full: string, to: string, codes: string[], type?: string): XmlElement {
+    const affiliation = room.affiliations.get(bareOf(full)) ?? 'none';
+    const role = type === 'unavailable' ? 'none' : affiliation === 'owner' || affiliation === 'admin' ? 'moderator' : 'participant';
+    return el(
+      'presence',
+      { from: `${room.jid}/${nick}`, to, type, xmlns: 'jabber:client' },
+      el('x', { xmlns: NS_MUC_USER }, el('item', { affiliation, role, jid: room.nonAnonymous ? full : undefined }), ...codes.map((code) => el('status', { code }))),
+    );
+  }
+
+  roomError(link: Link, stanza: XmlElement, condition: string): void {
+    link.push(el(stanza.name, { from: stanza.attrs.to, to: link.full, type: 'error', id: stanza.attrs.id, xmlns: 'jabber:client' }, el('x', { xmlns: NS_MUC }), el('error', { type: 'cancel' }, el(condition, { xmlns: STANZAS }))));
+  }
+
+  /** A presence to a room: joining (and so making it, when there is none), or leaving. */
+  roomPresence(link: Link, stanza: XmlElement): void {
+    const [roomJid, nick] = (stanza.attrs.to ?? '').split('/');
+    if (!this.muc || !nick) return this.roomError(link, stanza, 'service-unavailable');
+    const real = bareOf(link.full);
+    let room = this.rooms.get(roomJid);
+    if (stanza.attrs.type === 'unavailable') {
+      if (!room || !room.occupants.has(link.full)) return;
+      const was = room.occupants.get(link.full)!;
+      room.occupants.delete(link.full);
+      link.push(this.occupantPresence(room, was, link.full, link.full, ['110'], 'unavailable'));
+      for (const other of room.occupants.keys()) this.deliver(other, this.occupantPresence(room, was, link.full, other, [], 'unavailable'));
+      return;
+    }
+    if (!room) {
+      room = { jid: roomJid, locked: true, membersOnly: false, nonAnonymous: false, mam: false, name: '', affiliations: new Map([[real, 'owner']]), occupants: new Map([[link.full, nick]]), archive: [] };
+      this.rooms.set(roomJid, room);
+      return link.push(this.occupantPresence(room, nick, link.full, link.full, ['110', '201']));
+    }
+    const affiliation = room.affiliations.get(real);
+    if (room.locked && affiliation !== 'owner') return this.roomError(link, stanza, 'item-not-found');
+    if (affiliation === 'outcast') return this.roomError(link, stanza, 'forbidden');
+    if (room.membersOnly && !affiliation) return this.roomError(link, stanza, 'registration-required');
+    const holders = this.occupantsByNick(room).get(nick) ?? [];
+    if (holders.some((full) => bareOf(full) !== real)) return this.roomError(link, stanza, 'conflict');
+    for (const [otherNick, fulls] of this.occupantsByNick(room)) if (otherNick !== nick) link.push(this.occupantPresence(room, otherNick, fulls[0], link.full, []));
+    room.occupants.set(link.full, nick);
+    link.push(this.occupantPresence(room, nick, link.full, link.full, room.nonAnonymous ? ['110', '100'] : ['110']));
+    for (const other of room.occupants.keys()) if (other !== link.full) this.deliver(other, this.occupantPresence(room, nick, link.full, other, []));
+    // What came before, as the presence asks: the last few, or since a time.
+    const history = child(child(stanza, 'x', NS_MUC), 'history');
+    const max = history?.attrs.maxstanzas !== undefined ? Number(history.attrs.maxstanzas) : 20;
+    const since = history?.attrs.since ? Date.parse(history.attrs.since) : 0;
+    const before = room.archive.filter((a) => a.at >= since).slice(max > 0 ? -max : room.archive.length);
+    for (const a of before) {
+      link.push({ ...a.message, attrs: { ...a.message.attrs, to: link.full }, children: [...a.message.children, el('delay', { xmlns: 'urn:xmpp:delay', from: room.jid, stamp: new Date(a.at).toISOString() })] });
+    }
+  }
+
+  /** A message to a room: said to everyone in it (back to whoever said it too), or an invitation passed on. */
+  roomMessage(link: Link, stanza: XmlElement): void {
+    const roomJid = bareOf(stanza.attrs.to ?? '');
+    const room = this.rooms.get(roomJid);
+    if (!room) return this.roomError(link, stanza, 'item-not-found');
+    const user = child(stanza, 'x', NS_MUC_USER);
+    const invite = child(user, 'invite');
+    if (invite) {
+      const affiliation = room.affiliations.get(bareOf(link.full));
+      if (room.membersOnly && affiliation !== 'owner' && affiliation !== 'admin') return this.roomError(link, stanza, 'forbidden');
+      return this.deliver(
+        bareOf(invite.attrs.to ?? ''),
+        el('message', { from: room.jid, to: invite.attrs.to, xmlns: 'jabber:client' }, el('x', { xmlns: NS_MUC_USER }, el('invite', { from: bareOf(link.full) }, ...children(invite, 'reason')))),
+      );
+    }
+    const decline = child(user, 'decline');
+    if (decline) {
+      return this.deliver(bareOf(decline.attrs.to ?? ''), el('message', { from: room.jid, to: decline.attrs.to, xmlns: 'jabber:client' }, el('x', { xmlns: NS_MUC_USER }, el('decline', { from: bareOf(link.full) }))));
+    }
+    const nick = room.occupants.get(link.full);
+    if (stanza.attrs.type !== 'groupchat' || !nick) return this.roomError(link, stanza, 'not-acceptable');
+    const id = this.id();
+    const said = parseXml(render({ ...stanza, attrs: { ...stanza.attrs, from: `${room.jid}/${nick}` }, children: [...stanza.children, el('stanza-id', { xmlns: 'urn:xmpp:sid:0', by: room.jid, id })] }));
+    room.archive.push({ id, at: Date.now(), message: said });
+    for (const full of room.occupants.keys()) this.deliver(full, { ...said, attrs: { ...said.attrs, to: full } });
+  }
+
+  /** A question to the group service or one of its rooms. */
+  roomIq(link: Link, iq: XmlElement): void {
+    const to = iq.attrs.to ?? '';
+    const query = iq.children.find((c): c is XmlElement => typeof c !== 'string');
+    const reply = (...payload: XmlElement[]) => link.push(el('iq', { type: 'result', id: iq.attrs.id, from: to, xmlns: 'jabber:client' }, ...payload));
+    const error = (condition: string) =>
+      link.push(el('iq', { type: 'error', id: iq.attrs.id, from: to, xmlns: 'jabber:client' }, el('error', { type: 'cancel' }, el(condition, { xmlns: STANZAS }))));
+    if (!this.muc) return error('service-unavailable');
+    if (to === MUC) {
+      if (query?.ns === NS_INFO) return reply(el('query', { xmlns: NS_INFO }, el('identity', { category: 'conference', type: 'text', name: 'Groups' }), el('feature', { var: NS_MUC })));
+      return reply(el('query', { xmlns: NS_ITEMS }));
+    }
+    const room = this.rooms.get(to);
+    const real = bareOf(link.full);
+    const affiliation = room?.affiliations.get(real);
+    if (!room || (room.locked && affiliation !== 'owner')) return error('item-not-found');
+    if (query?.ns === NS_INFO) {
+      return reply(
+        el(
+          'query',
+          { xmlns: NS_INFO },
+          el('identity', { category: 'conference', type: 'text', name: room.name || undefined }),
+          ...[NS_MUC, room.membersOnly ? 'muc_membersonly' : 'muc_open', room.nonAnonymous ? 'muc_nonanonymous' : 'muc_semianonymous', 'muc_persistent', room.mam ? 'urn:xmpp:mam:2' : ''].filter(Boolean).map((f) => el('feature', { var: f })),
+        ),
+      );
+    }
+    if (query?.ns === `${NS_MUC}#owner`) {
+      if (affiliation !== 'owner') return error('forbidden');
+      if (iq.attrs.type === 'get') {
+        const field = (name: string, value: string) => el('field', { var: name }, el('value', {}, value));
+        return reply(
+          el(
+            'query',
+            { xmlns: `${NS_MUC}#owner` },
+            el(
+              'x',
+              { xmlns: 'jabber:x:data', type: 'form' },
+              el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roomconfig`)),
+              field('muc#roomconfig_roomname', room.name),
+              field('muc#roomconfig_persistentroom', '0'),
+              field('muc#roomconfig_membersonly', '0'),
+              field('muc#roomconfig_whois', 'moderators'),
+              field('muc#roomconfig_publicroom', '1'),
+              field('muc#roomconfig_changesubject', '1'),
+              field('muc#roomconfig_enablearchiving', '0'),
+            ),
+          ),
+        );
+      }
+      const values = new Map(children(child(query, 'x', 'jabber:x:data'), 'field').map((f) => [f.attrs.var, textOf(child(f, 'value'))]));
+      if (values.has('muc#roomconfig_roomname')) room.name = values.get('muc#roomconfig_roomname') ?? '';
+      if (values.has('muc#roomconfig_membersonly')) room.membersOnly = ['1', 'true'].includes(values.get('muc#roomconfig_membersonly')!);
+      if (values.has('muc#roomconfig_whois')) room.nonAnonymous = values.get('muc#roomconfig_whois') === 'anyone';
+      if (values.has('muc#roomconfig_enablearchiving')) room.mam = ['1', 'true'].includes(values.get('muc#roomconfig_enablearchiving')!);
+      room.locked = false;
+      return reply();
+    }
+    if (query?.ns === `${NS_MUC}#admin`) {
+      const asked = children(query, 'item');
+      if (iq.attrs.type === 'get') {
+        const wanted = asked[0]?.attrs.affiliation;
+        const may = affiliation === 'owner' || affiliation === 'admin' || (room.membersOnly && affiliation === 'member');
+        if (!may) return error('forbidden');
+        return reply(el('query', { xmlns: `${NS_MUC}#admin` }, ...[...room.affiliations].filter(([, a]) => a === wanted).map(([jid, a]) => el('item', { jid, affiliation: a }))));
+      }
+      if (affiliation !== 'owner' && affiliation !== 'admin') return error('forbidden');
+      for (const item of asked) {
+        const jid = bareOf(item.attrs.jid ?? '');
+        const next = item.attrs.affiliation;
+        if (next === 'none') room.affiliations.delete(jid);
+        else room.affiliations.set(jid, next as Affiliation);
+      }
+      return reply();
+    }
+    if (query?.ns === 'urn:xmpp:mam:2') {
+      if (!room.mam) return error('service-unavailable');
+      if (room.membersOnly && !affiliation) return error('forbidden');
+      return link.page(room.archive, iq, query, room.jid);
+    }
+    return error('service-unavailable');
   }
 
   rosterPush(jid: string, item: Item): void {
@@ -143,6 +339,7 @@ export class Link implements XmppLink {
     if (stanza.name === 'presence') {
       const to = stanza.attrs.to;
       if (!to) return;
+      if (bareOf(to).endsWith(`@${MUC}`)) return server.roomPresence(this, stanza);
       const type = stanza.attrs.type;
       if (type === 'subscribe') {
         const item = server.roster(this.jid).get(to) ?? { jid: to, subscription: 'none' };
@@ -167,6 +364,7 @@ export class Link implements XmppLink {
     if (stanza.name === 'message') {
       server.seen.push(text);
       const to = bareOf(stanza.attrs.to ?? '');
+      if (to.endsWith(`@${MUC}`)) return server.roomMessage(this, stanza);
       const sent = parseXml(render({ ...stanza, attrs: { ...stanza.attrs, from: this.full } }));
       server.archive(this.jid, sent);
       if (to !== this.jid) server.archive(to, sent);
@@ -177,6 +375,38 @@ export class Link implements XmppLink {
         link.push(el('message', { from: this.jid, to: link.full, xmlns: 'jabber:client' }, el('sent', { xmlns: 'urn:xmpp:carbons:2' }, el('forwarded', { xmlns: 'urn:xmpp:forward:0' }, sent))));
       }
     }
+  }
+
+  /** A page of `all`, an archive, as `query` asks (MAM): its messages, from `from` when it is a room's, then the answer. */
+  page(all: Archived[], iq: XmlElement, query: XmlElement, from?: string): void {
+    const set = child(query, 'set');
+    const max = Number(textOf(child(set, 'max')) || 50);
+    const afterId = textOf(child(set, 'after'));
+    let page: Archived[];
+    if (afterId) {
+      const at = all.findIndex((a) => a.id === afterId);
+      if (at < 0) {
+        return this.push(el('iq', { type: 'error', id: iq.attrs.id, from, xmlns: 'jabber:client' }, el('error', { type: 'cancel' }, el('item-not-found', { xmlns: STANZAS }))));
+      }
+      page = all.slice(at + 1, at + 1 + max);
+    } else page = all.slice(-max);
+    for (const a of page) {
+      this.push(
+        el(
+          'message',
+          { from, to: this.full, xmlns: 'jabber:client' },
+          el('result', { xmlns: 'urn:xmpp:mam:2', queryid: query.attrs.queryid, id: a.id }, el('forwarded', { xmlns: 'urn:xmpp:forward:0' }, el('delay', { xmlns: 'urn:xmpp:delay', stamp: new Date(a.at).toISOString() }), a.message)),
+        ),
+      );
+    }
+    const complete = !afterId || page.length < max || page[page.length - 1] === all[all.length - 1];
+    this.push(
+      el(
+        'iq',
+        { type: 'result', id: iq.attrs.id, from, xmlns: 'jabber:client' },
+        el('fin', { xmlns: 'urn:xmpp:mam:2', complete: complete ? 'true' : undefined }, el('set', { xmlns: 'http://jabber.org/protocol/rsm' }, page.length ? el('last', {}, page[page.length - 1].id) : null)),
+      ),
+    );
   }
 
   private iq(iq: XmlElement): void {
@@ -193,6 +423,7 @@ export class Link implements XmppLink {
         el('iq', { type: 'error', id: iq.attrs.id, from: to, xmlns: 'jabber:client' }, el('error', { type: 'cancel' }, el('service-unavailable', { xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas' }))),
       );
     }
+    if (to === MUC || to.endsWith(`@${MUC}`)) return server.roomIq(this, iq);
     const reply = (...payload: XmlElement[]) => this.push(el('iq', { type: 'result', id: iq.attrs.id, xmlns: 'jabber:client' }, ...payload));
     const error = (condition: string) =>
       this.push(el('iq', { type: 'error', id: iq.attrs.id, xmlns: 'jabber:client' }, el('error', { type: 'cancel' }, el(condition, { xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas' }))));
@@ -222,6 +453,30 @@ export class Link implements XmppLink {
     if (query.name === 'pubsub') {
       const owner = bareOf(iq.attrs.to ?? this.jid);
       const publish = child(query, 'publish');
+      const retract = child(query, 'retract');
+      // The account's bookmarks: an item each, told to its devices as they change.
+      if ((publish ?? retract ?? child(query, 'items'))?.attrs.node === NS_BOOKMARKS) {
+        const kept = server.bookmarks.get(this.jid) ?? new Map<string, XmlElement>();
+        server.bookmarks.set(this.jid, kept);
+        const tell = (change: XmlElement) => {
+          for (const link of server.resources(this.jid)) {
+            link.push(el('message', { from: this.jid, to: link.full, xmlns: 'jabber:client' }, el('event', { xmlns: 'http://jabber.org/protocol/pubsub#event' }, el('items', { node: NS_BOOKMARKS }, change))));
+          }
+        };
+        if (publish) {
+          const item = child(publish, 'item')!;
+          kept.set(item.attrs.id, children(item)[0]);
+          tell(el('item', { id: item.attrs.id }, children(item)[0]));
+          return reply();
+        }
+        if (retract) {
+          const id = child(retract, 'item')?.attrs.id ?? '';
+          if (kept.delete(id)) tell(el('retract', { id }));
+          return reply();
+        }
+        if (!kept.size) return error('item-not-found');
+        return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: NS_BOOKMARKS }, ...[...kept].map(([id, payload]) => el('item', { id }, payload)))));
+      }
       if (publish) {
         if (server.noOmemo.has(this.jid)) return error('forbidden');
         const node = publish.attrs.node;
@@ -240,30 +495,10 @@ export class Link implements XmppLink {
       if (!payload) return error('item-not-found');
       return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: 'current' }, payload))));
     }
-    if (query.ns === 'urn:xmpp:mam:2') {
-      const all = server.archives.get(this.jid) ?? [];
-      const set = child(query, 'set');
-      const max = Number(textOf(child(set, 'max')) || 50);
-      const afterId = textOf(child(set, 'after'));
-      let page: Archived[];
-      if (afterId) {
-        const at = all.findIndex((a) => a.id === afterId);
-        if (at < 0) return error('item-not-found');
-        page = all.slice(at + 1, at + 1 + max);
-      } else page = all.slice(-max);
-      for (const a of page) {
-        this.push(
-          el(
-            'message',
-            { to: this.full, xmlns: 'jabber:client' },
-            el('result', { xmlns: 'urn:xmpp:mam:2', queryid: query.attrs.queryid, id: a.id }, el('forwarded', { xmlns: 'urn:xmpp:forward:0' }, el('delay', { xmlns: 'urn:xmpp:delay', stamp: new Date(a.at).toISOString() }), a.message)),
-          ),
-        );
-      }
-      const complete = !afterId || page.length < max || page[page.length - 1] === all[all.length - 1];
-      return reply(el('fin', { xmlns: 'urn:xmpp:mam:2', complete: complete ? 'true' : undefined }, el('set', { xmlns: 'http://jabber.org/protocol/rsm' }, page.length ? el('last', {}, page[page.length - 1].id) : null)));
+    if (query.ns === 'urn:xmpp:mam:2') return this.page(server.archives.get(this.jid) ?? [], iq, query);
+    if (query.ns === NS_ITEMS) {
+      return reply(el('query', { xmlns: NS_ITEMS }, to === DOMAIN && server.upload ? el('item', { jid: UPLOAD }) : null, to === DOMAIN && server.muc ? el('item', { jid: MUC }) : null));
     }
-    if (query.ns === NS_ITEMS) return reply(el('query', { xmlns: NS_ITEMS }, to === DOMAIN && server.upload ? el('item', { jid: UPLOAD }) : null));
     if (query.ns === NS_INFO) {
       const upload = server.upload;
       if (to !== UPLOAD || !upload) return reply(el('query', { xmlns: NS_INFO }, el('feature', { var: NS_INFO })));

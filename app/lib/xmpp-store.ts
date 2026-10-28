@@ -10,6 +10,7 @@ import {
   addXmppContact,
   declineXmppRequest,
   forgetXmppChat,
+  lookUpDevices,
   markXmppRead,
   prepareXmppFile,
   publishOmemo,
@@ -26,6 +27,7 @@ import {
   type XmppState,
 } from './xmpp';
 import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
+import { addXmppGroupPeople, createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup } from './xmpp-muc';
 import type { connectXmpp, XmppServer } from './xmpp-net';
 
 // The open space's XMPP account as the screens use it (app/xmpp.tsx, app/xmpp-chat.tsx): loaded
@@ -76,18 +78,19 @@ export function xmppNow(): { loaded: boolean; state: XmppState | null; problem: 
   return { loaded: live?.loaded ?? false, state: live?.state ?? null, problem: live?.problem ?? '', online: Boolean(live?.connection?.isOpen) };
 }
 
-/** How many messages are not read in the open space's XMPP chats, contact requests counted as one each. */
+/** How many messages are not read in the open space's XMPP chats and groups, contact requests and invitations counted as one each. */
 export function xmppUnread(): number {
   const state = live?.state;
   if (!state) return 0;
-  return Object.values(state.chats).reduce((sum, chat) => sum + chat.unread, 0) + state.requests.length;
+  return Object.values(state.chats).reduce((sum, chat) => sum + chat.unread, 0) + state.requests.length + (state.invites?.length ?? 0);
 }
 
-// Each chat's messages not read, by its home row (lib/inbox.ts): one who asks to add the account counts as one.
+// Each chat's messages not read, by its home row (lib/inbox.ts): one who asks to add the account,
+// or an invitation to a group, counts as one.
 function unreadAt(state: XmppState | null): Map<string, number> {
   const at = new Map<string, number>();
   for (const chat of Object.values(state?.chats ?? {})) if (chat.unread > 0) at.set(`xmpp:${chat.jid}`, chat.unread);
-  for (const jid of state?.requests ?? []) at.set(`xmpp:${jid}`, (at.get(`xmpp:${jid}`) ?? 0) + 1);
+  for (const jid of [...(state?.requests ?? []), ...(state?.invites ?? []).map((i) => i.room)]) at.set(`xmpp:${jid}`, (at.get(`xmpp:${jid}`) ?? 0) + 1);
   return at;
 }
 
@@ -392,5 +395,46 @@ export function xmppCallLine(jid: string, mine: boolean, text: string, id: strin
 
 export function xmppForgetChat(jid: string): Promise<void> {
   const it = need();
-  return changeAccount(it, async () => forgetXmppChat(it.state, jid));
+  return changeAccount(it, async () => {
+    if (it.state.chats[jid]?.room) await leaveXmppGroup(it.state, it.connection, jid);
+    else forgetXmppChat(it.state, jid);
+  });
+}
+
+/** Makes a private group named `name` with `people` (lib/xmpp-muc.ts), and answers its address. */
+export function xmppCreateGroup(name: string, people: string[]): Promise<string> {
+  const it = need();
+  return changeAccount(it, () => createXmppGroup(it.state, online(it), name, people));
+}
+
+/** Joins a group by its address, or as an invitation asked; answers its address. */
+export function xmppJoinGroup(address: string, password?: string): Promise<string> {
+  const it = need();
+  return changeAccount(it, () => joinXmppGroup(it.state, online(it), address, password));
+}
+
+export function xmppDeclineInvite(room: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => declineXmppInvite(it.state, it.connection, room));
+}
+
+/** Adds people to a group: members of a private one, and invited. */
+export function xmppAddToGroup(room: string, people: string[]): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => addXmppGroupPeople(it.state, online(it), room, people));
+}
+
+/** Looks up the keys of a chat's person, or of a private group's members, so they show before anything is written. */
+export function xmppLookUpKeys(jid: string): Promise<void> {
+  const it = need();
+  const room = it.state.chats[jid]?.room;
+  const people = room ? (room.private ? groupPeople(it.state, room) : []) : [jid];
+  if (!people.length || !it.connection?.isOpen) return Promise.resolve();
+  return changeAccount(it, () => lookUpDevices(it.state, online(it), people));
+}
+
+/** Leaves a group, on the account's other apps too, and forgets it here. */
+export function xmppLeaveGroup(room: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => leaveXmppGroup(it.state, it.connection, room));
 }

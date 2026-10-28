@@ -109,8 +109,8 @@ que tant que leur code PIN les tient ouvertes.
   récentes d’abord, chacune marquée **Matrix**, et une invitation s’affiche en haut. La puce **Matrix** ne montre
   qu’elles, et là **Nouvelle discussion** commence une discussion Matrix : voir [Matrix](#matrix).
 - **Les discussions XMPP**, une fois que tu t’es connecté à XMPP, sont dans la liste de la même façon, chacune marquée
-  **XMPP**, et une personne qui demande à t’ajouter s’affiche en haut. La puce **XMPP** ne montre qu’elles, et là
-  **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
+  **XMPP**, et une personne qui demande à t’ajouter, ou un groupe qui t’invite, s’affiche en haut. La puce **XMPP** ne
+  montre qu’elles, et là **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
 - **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
   marquée **Nostr**. Le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre l’écran des
   discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
@@ -1635,6 +1635,19 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   une discussion écrite sans chiffrement, le fichier part tel quel. Une photo, un son ou un fichier qui arrive n’est
   téléchargé que si tu touches **Afficher la photo**, **Lire** ou **Enregistrer**. Sur Android, les fichiers passent
   par Tor comme la discussion.
+- **Groupes :** un **groupe privé** est réservé à ses membres, et chacun voit qui sont les autres. Chaque message y est
+  chiffré avec OMEMO pour les appareils de chaque membre, comme dans les groupes privés de Conversations, si bien que les
+  serveurs XMPP ne peuvent pas le lire ; ce qui a été écrit avant ton arrivée s’affiche verrouillé. Un **canal** est tout
+  autre groupe : il n’est pas chiffré, donc tous ceux qui y sont, et les serveurs, peuvent le lire, et son écran le dit.
+  Sur l’écran XMPP, **Nouveau groupe** crée un groupe privé sur ton serveur XMPP à partir d’un nom et des contacts que tu
+  choisis, et **Rejoindre un groupe** en rejoint un par son adresse, comme nom@conference.example.org, avec son mot de
+  passe s’il en demande un. Sous un groupe privé, **Membres** liste ses personnes avec leurs clés, à comparer comme dans
+  une discussion, et signale celles qui n’ont aucune clé OMEMO et ne peuvent pas lire ce qui est chiffré ; son
+  administrateur peut **Ajouter des personnes**. Un contact qui t’invite dans un groupe s’affiche sous **Invitations à
+  des groupes**, avec **Rejoindre** et **Refuser** ; l’invitation de toute autre personne n’est pas montrée. Tes groupes
+  suivent les autres apps XMPP de ton compte par ses marque-pages : un groupe rejoint là-bas l’est ici aussi, et
+  **Quitter le groupe** le quitte là-bas aussi. Un canal ne signale que les messages qui te nomment. Les appels de
+  groupe ne sont pas encore là.
 - **Appels :** les deux tuiles en haut de la discussion appellent la personne, en voix ou en vidéo, sur le même écran
   d’appel que les appels propres d’Erevos, et ses appels sonnent ici de la même façon, tant que cet espace est ouvert ;
   un appel de quelqu’un qui n’est pas dans tes contacts s’affiche seulement comme manqué. Cela marche avec les apps qui
@@ -1655,7 +1668,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** discussions et appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
+- **Pas encore :** appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.

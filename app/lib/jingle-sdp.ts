@@ -12,7 +12,7 @@ export const DTLS = 'urn:xmpp:jingle:apps:dtls:0';
 const RTCP_FB = 'urn:xmpp:jingle:apps:rtp:rtcp-fb:0';
 const HDREXT = 'urn:xmpp:jingle:apps:rtp:rtp-hdrext:0';
 const SSMA = 'urn:xmpp:jingle:apps:rtp:ssma:0';
-const GROUPING = 'urn:xmpp:jingle:apps:grouping:0';
+export const GROUPING = 'urn:xmpp:jingle:apps:grouping:0';
 
 /** Who wrote a description: the side that called (initiator) or the one that answered (responder). */
 export type Role = 'initiator' | 'responder';
@@ -254,8 +254,10 @@ const DIRECTION: Record<string, Record<Role, string>> = {
 };
 
 /** A Jingle <jingle> (or its contents) written by `role` as the SDP WebRTC takes: the offer of a
- *  session-initiate, or the answer of a session-accept. Throws when a content cannot be read. */
-export function jingleToSdp(jingle: XmlElement, role: Role, sid = '0'): string {
+ *  session-initiate, or the answer of a session-accept. Throws when a content cannot be read.
+ *  `setup`: the DTLS role their side took once the call was set up, for a description of the call
+ *  as it is now, with video added (their first offer said actpass, which an answer cannot). */
+export function jingleToSdp(jingle: XmlElement, role: Role, sid = '0', setup?: string): string {
   const contents = children(jingle, 'content').filter((c) => child(c, 'description', RTP) && child(c, 'transport', ICE));
   if (!contents.length) throw new Error('No audio or video in the call.');
   const group = children(jingle, 'group', GROUPING).find((g) => g.attrs.semantics === 'BUNDLE');
@@ -280,7 +282,7 @@ export function jingleToSdp(jingle: XmlElement, role: Role, sid = '0'): string {
     const fingerprint = child(transport, 'fingerprint', DTLS);
     if (fingerprint) {
       out.push(`a=fingerprint:${fingerprint.attrs.hash ?? 'sha-256'} ${textOf(fingerprint).trim()}`);
-      out.push(`a=setup:${fingerprint.attrs.setup ?? (role === 'initiator' ? 'actpass' : 'active')}`);
+      out.push(`a=setup:${setup ?? fingerprint.attrs.setup ?? (role === 'initiator' ? 'actpass' : 'active')}`);
     }
     out.push(`a=mid:${name}`);
     for (const ext of children(description, 'rtp-hdrext', HDREXT)) {
@@ -314,6 +316,16 @@ export function jingleToSdp(jingle: XmlElement, role: Role, sid = '0'): string {
     }
   }
   return `${out.join('\r\n')}\r\n`;
+}
+
+/** The DTLS role a description takes (a=setup), or undefined. */
+export function setupOf(sdp: string): string | undefined {
+  return /^a=setup:(\w+)/m.exec(sdp)?.[1];
+}
+
+/** The other side of a DTLS role: theirs, once ours is set. */
+export function otherSetup(setup: string | undefined): string | undefined {
+  return setup === 'active' ? 'passive' : setup === 'passive' ? 'active' : undefined;
 }
 
 /** The candidates of a transport-info, each as WebRTC adds it: its line, and the content (mid) it is for. */

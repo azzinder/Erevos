@@ -107,8 +107,8 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   jeder mit **Matrix** markiert, und eine Einladung steht oben. Der Chip **Matrix** zeigt nur sie, und dort beginnt
   **Neuer Chat** einen Matrix-Chat: siehe [Matrix](#matrix).
 - **XMPP-Chats** stehen, sobald du dich bei XMPP anmeldest, auf dieselbe Weise in der Liste, jeder mit **XMPP**
-  markiert, und wer dich hinzufügen möchte, steht oben. Der Chip **XMPP** zeigt nur sie, und dort beginnt **Neuer
-  Chat** einen XMPP-Chat: siehe [XMPP](#xmpp).
+  markiert, und wer dich hinzufügen möchte oder dich in eine Gruppe einlädt, steht oben. Der Chip **XMPP** zeigt nur
+  sie, und dort beginnt **Neuer Chat** einen XMPP-Chat: siehe [XMPP](#xmpp).
 - **Nostr-Chats** stehen, sobald der Bereich einen Nostr-Schlüssel hat, genauso in der Liste, jeder mit **Nostr**
   markiert. Der Chip **Nostr** zeigt nur sie, und dort öffnet **Neuer Chat** den Bildschirm der Nostr-Chats: siehe
   [Chats mit anderen Nostr-Apps](#nostr-chats).
@@ -1665,6 +1665,19 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Dino öffnen sie. In einem Chat ohne Verschlüsselung geht die Datei, wie sie ist. Ein Foto, ein Ton oder eine Datei,
   die ankommt, wird erst geladen, wenn du **Foto anzeigen**, **Abspielen** oder **Speichern** tippst. Auf Android
   gehen Dateien über Tor, wie der Chat.
+- **Gruppen:** Eine **private Gruppe** ist nur für ihre Mitglieder, und jedes sieht, wer die anderen sind. Jede Nachricht
+  darin wird mit OMEMO für die Geräte jedes Mitglieds verschlüsselt, wie bei den privaten Gruppen von Conversations,
+  sodass die XMPP-Server sie nicht lesen können; was vor deinem Beitritt geschrieben wurde, erscheint gesperrt. Ein
+  **Kanal** ist jede andere Gruppe: Er ist nicht verschlüsselt, alle darin und die Server können ihn lesen, und sein
+  Bildschirm sagt das. Auf dem XMPP-Bildschirm erstellt **Neue Gruppe** eine private Gruppe auf deinem XMPP-Server aus
+  einem Namen und den Kontakten, die du wählst, und **Einer Gruppe beitreten** tritt einer über ihre Adresse bei, etwa
+  name@conference.example.org, mit ihrem Passwort, falls sie eines verlangt. Unter einer privaten Gruppe listet
+  **Mitglieder** ihre Leute mit ihren Schlüsseln auf, die du wie in einem Chat vergleichen kannst, und vermerkt jeden
+  ohne OMEMO-Schlüssel, der Verschlüsseltes nicht lesen kann; ihr Admin kann **Personen hinzufügen**. Ein Kontakt, der
+  dich in eine Gruppe einlädt, steht unter **Einladungen in Gruppen**, mit **Beitreten** und **Ablehnen**; die Einladung
+  von jemand anderem wird nicht gezeigt. Deine Gruppen folgen den anderen XMPP-Apps deines Kontos über seine
+  Lesezeichen: Eine Gruppe, der du dort beitrittst, erscheint auch hier, und **Gruppe verlassen** verlässt sie dort
+  ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen. Gruppenanrufe gibt es noch nicht.
 - **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
   Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
   ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so
@@ -1685,7 +1698,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** Gruppenchats und Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
+- **Noch nicht:** Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.

@@ -2,7 +2,7 @@ import { callNow, currentCall, OFFER_FRESH_MS, type Call, type Rtc } from './cal
 import type { CallEnd, CallSignal } from './call-signal';
 import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './calls';
 import { t } from './i18n';
-import { candidatesOf, JINGLE, jingleToSdp, sdpToJingle } from './jingle-sdp';
+import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpToJingle, setupOf, type Role } from './jingle-sdp';
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
 import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
@@ -16,6 +16,11 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // session-accept the answer, each turned to and from WebRTC's by lib/jingle-sdp.ts, and more
 // addresses come one at a time (transport-info). The call itself is lib/call.ts's, the same as
 // Erevos's own, and shows on the same screen (lib/calls.ts, components/call-host.tsx).
+//
+// Video is added to a voice call as Conversations adds it (content-add, XEP-0166): the side that
+// adds it sends the new content, the other side's screen asks, and a yes (content-accept) turns its
+// camera on too; a no (content-reject) leaves the call as it was. Each side's description of the
+// call as it is now is put together from the contents said so far (Session.theirs).
 //
 // What is not the same: the descriptions, the key fingerprint of the call's encryption
 // (DTLS-SRTP) included, pass through the XMPP servers as they are, not end-to-end encrypted, so
@@ -49,7 +54,22 @@ type Session = {
   initiate: XmlElement | null;
   /** The answer, waiting for their session-initiate. */
   waiting: ((initiate: XmlElement) => void) | null;
+  /** Their contents as the call has them now, in order: what their session-initiate or
+   *  session-accept said, and what was added since; and whether they are bundled (XEP-0338). */
+  theirs: XmlElement[];
+  bundled: boolean;
+  /** Their DTLS role, once the call is set up. */
+  setup?: string;
+  /** Ours, adding video: the names of the contents it adds, and their answer once it comes (null for no). */
+  adding: { names: string[]; done: (accepted: XmlElement[] | null) => void } | null;
+  /** Theirs, adding video: the contents they add, waiting for our yes or no. */
+  asked: XmlElement[] | null;
 };
+
+const noneYet = { initiate: null, waiting: null, theirs: [], bundled: false, adding: null, asked: null } as const;
+
+/** How long video added from here waits for their yes, milliseconds: their screen asks them. */
+const ADD_MS = 60_000;
 
 /** What the calls need of the open space: its XMPP account (lib/xmpp-store.ts) and its own call
  *  relay. The checks give their own. */
@@ -112,7 +132,7 @@ export const xmppCalls: CallPlace = {
     switch (signal.kind) {
       case 'offer': {
         // Ours: it rings on every device of theirs that can take calls.
-        sessions.set(signal.id, { id: signal.id, jid, full: '', outgoing: true, video: signal.video, offer: signal.sdp, rung: true, started: false, initiate: null, waiting: null });
+        sessions.set(signal.id, { ...noneYet, theirs: [], id: signal.id, jid, full: '', outgoing: true, video: signal.video, offer: signal.sdp, rung: true, started: false });
         const media = [el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'audio' }), signal.video ? el('description', { xmlns: 'urn:xmpp:jingle:apps:rtp:1', media: 'video' }) : null];
         await connection.send(jmi(jid, 'propose', signal.id, ...media.filter((m): m is XmlElement => m !== null)));
         return;
@@ -125,6 +145,8 @@ export const xmppCalls: CallPlace = {
       case 'answer':
         if (!s) throw new Error(t('The call ended.'));
         await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'session-accept', sid: s.id, responder: connection.fullJid }, ...sdpToJingle(signal.sdp, 'responder')));
+        // The call as their offer and our answer set it up, for video added later.
+        if (s.initiate) settle(s, s.initiate, otherSetup(setupOf(signal.sdp)));
         return;
       case 'end': {
         if (!s) return;
@@ -166,6 +188,53 @@ export const xmppCalls: CallPlace = {
     return state ? nameOf(state, jid) : jid;
   },
 
+  // Video added from here: the contents our new description adds go to them (content-add), and
+  // once they take them (content-accept), the call's whole description as theirs is now.
+  async addMedia(jid, id, sdp) {
+    const s = sessions.get(id);
+    const { connection } = link();
+    if (!s || s.jid !== jid || !s.theirs.length || s.adding || s.asked) throw new Error(t('The call ended.'));
+    const ours: Role = s.outgoing ? 'initiator' : 'responder';
+    const known = new Set(s.theirs.map((c) => c.attrs.name));
+    const all = sdpToJingle(sdp, ours);
+    const added = all.filter((c) => c.name === 'content' && !known.has(c.attrs.name));
+    if (!added.length) throw new Error('Nothing to add.');
+    for (const content of added) content.attrs.creator = ours;
+    const came = new Promise<XmlElement[] | null>((resolve) => (s.adding = { names: added.map((c) => c.attrs.name ?? ''), done: resolve }));
+    const timer = setTimeout(() => s.adding?.done(null), ADD_MS);
+    try {
+      await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-add', sid: s.id }, ...added, all.find((c) => c.name === 'group') ?? null));
+      const accepted = await came;
+      if (!accepted) throw new Error('They did not take the video.');
+      const contents = [...s.theirs, ...accepted];
+      const answer = described(s, contents, s.outgoing ? 'responder' : 'initiator');
+      s.theirs = contents;
+      return answer;
+    } finally {
+      clearTimeout(timer);
+      s.adding = null;
+    }
+  },
+
+  // Our yes to their video, with our camera's (content-accept), or our no (content-reject).
+  async answerMedia(jid, id, sdp) {
+    const s = sessions.get(id);
+    const asked = s?.asked;
+    if (!s || s.jid !== jid || !asked) return;
+    s.asked = null;
+    const { connection } = link();
+    if (sdp === null) {
+      await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-reject', sid: s.id }, ...asked.map((c) => el('content', { creator: c.attrs.creator, name: c.attrs.name })), reasonElement('decline')));
+      return;
+    }
+    const names = new Map(asked.map((c) => [c.attrs.name, c.attrs.creator]));
+    const all = sdpToJingle(sdp, s.outgoing ? 'initiator' : 'responder');
+    const answered = all.filter((c) => c.name === 'content' && names.has(c.attrs.name));
+    for (const content of answered) content.attrs.creator = names.get(content.attrs.name) ?? content.attrs.creator;
+    await connection.iq('set', s.full, el('jingle', { xmlns: JINGLE, action: 'content-accept', sid: s.id }, ...answered, all.find((c) => c.name === 'group') ?? null));
+    s.theirs = [...s.theirs, ...asked];
+  },
+
   // Answering: their device is told to go on (proceed), our other devices to stop ringing
   // (accept), and the call waits for their session-initiate.
   async offer(jid) {
@@ -182,6 +251,24 @@ export const xmppCalls: CallPlace = {
     return jingleToSdp(s.initiate, 'initiator', s.id);
   },
 };
+
+/** Keeps the call's contents as their description set it up, and their DTLS role. */
+function settle(s: Session, theirs: XmlElement, setup: string | undefined): void {
+  s.theirs = children(theirs, 'content').filter((c) => child(c, 'description', RTP));
+  s.bundled = children(theirs, 'group', GROUPING).some((g) => g.attrs.semantics === 'BUNDLE');
+  s.setup = setup;
+}
+
+/** Their side of the call as it is now, from `contents` they wrote as `role`: bundled, a content
+ *  that came without its transport has the first one's. */
+function described(s: Session, contents: XmlElement[], role: Role): string {
+  const first = child(contents[0], 'transport', ICE);
+  const whole = contents.map((c) =>
+    child(c, 'transport', ICE) || !first || !s.bundled ? c : el('content', c.attrs, ...c.children.filter((x): x is XmlElement => typeof x !== 'string'), el('transport', first.attrs, ...children(first, 'fingerprint'))),
+  );
+  const group = s.bundled ? el('group', { xmlns: GROUPING, semantics: 'BUNDLE' }, ...whole.map((c) => el('content', { name: c.attrs.name }))) : null;
+  return jingleToSdp(el('jingle', { xmlns: JINGLE }, ...whole, group), role, s.id, s.setup);
+}
 
 /** The XMPP server's TURN server for calls (XEP-0215), as a call relay; null when it has none. */
 async function serverTurn(state: XmppState, connection: XmppConnection): Promise<CallRelay | null> {
@@ -260,7 +347,7 @@ function onMessage(state: XmppState, connection: XmppConnection, message: XmlEle
     case 'propose': {
       const video = children(what, 'description').some((d) => d.attrs.media === 'video');
       const fresh = how.live && Date.now() - how.at < OFFER_FRESH_MS;
-      const next: Session = { id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false, initiate: null, waiting: null };
+      const next: Session = { ...noneYet, theirs: [], id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false };
       if (!fresh) {
         void space.line(jid, false, `${CALL_LINE}Missed ${kindOf(video)}`, `call-${id}`, how.at).catch(() => undefined);
         return;
@@ -328,7 +415,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
     }
     await reply();
     const video = children(jingle, 'content').some((c) => children(c, 'description').some((d) => d.attrs.media === 'video'));
-    ring(state, { id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle, waiting: null }, Date.now());
+    ring(state, { ...noneYet, theirs: [], id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle }, Date.now());
     return;
   }
   if (!s || s.full !== from) return refuse('item-not-found', el('unknown-session', { xmlns: ERRORS }));
@@ -344,9 +431,40 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
         return;
       }
       await reply();
+      settle(s, jingle, setupOf(sdp));
       calling(sid)?.receive({ id: sid, kind: 'answer', sdp });
       return;
     }
+    case 'content-add': {
+      // Their video, added to the voice call: our screen asks, once it is set up and nothing else is being added.
+      if (s.adding) return refuse('conflict', el('tie-break', { xmlns: ERRORS }));
+      await reply();
+      const call = calling(sid);
+      const known = new Set(s.theirs.map((c) => c.attrs.name));
+      const added = children(jingle, 'content');
+      const video = added.length > 0 && added.every((c) => !known.has(c.attrs.name) && child(c, 'description', RTP)?.attrs.media === 'video');
+      let sdp = '';
+      try {
+        if (call && video && s.theirs.length && !s.asked) sdp = described(s, [...s.theirs, ...added], s.outgoing ? 'responder' : 'initiator');
+      } catch {
+        sdp = '';
+      }
+      s.asked = added;
+      if (sdp && call) call.videoAsked(sdp);
+      else await xmppCalls.answerMedia!(s.jid, sid, null).catch(() => undefined);
+      return;
+    }
+    case 'content-accept':
+      await reply();
+      if (s.adding) {
+        const accepted = children(jingle, 'content').filter((c) => s.adding!.names.includes(c.attrs.name ?? ''));
+        s.adding.done(accepted.length === s.adding.names.length ? accepted : null);
+      }
+      return;
+    case 'content-reject':
+      await reply();
+      s.adding?.done(null);
+      return;
     case 'transport-info':
       await reply();
       calling(sid)?.addCandidates(candidatesOf(jingle));
@@ -363,7 +481,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
       return;
     }
     default:
-      // Adding video to a call, moving it, and the rest: not yet.
+      // Moving a call, taking video off it, and the rest: not yet.
       return refuse('feature-not-implemented', el('unsupported-info', { xmlns: ERRORS }));
   }
 }

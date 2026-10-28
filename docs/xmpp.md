@@ -48,6 +48,7 @@ is what is written, once OMEMO encrypts it.
   other devices; when the person has none with OMEMO, nothing is sent unless the chat chooses to
   write without encryption. Used one-time pre-keys are replaced and published again.
 - `app/lib/xmpp-files.ts`: photos and files, below.
+- `app/lib/xmpp-muc.ts`: groups, below.
 - `app/lib/xmpp-store.ts` keeps the open space's account connected while the space is open
   (again after a pause that grows, a ping after 4 minutes of silence), and keeps it encrypted in
   the space (`app/lock/xmpp-data.ts`, file `erevos-xmpp`).
@@ -82,21 +83,107 @@ sent, a changed file not opened, one too large not sent, a server without the se
 against Prosody 0.12 over its WebSocket: sign-in, roster both ways, OMEMO
 both ways, receipts and the archive.
 
+`app/checks/xmpp-muc.check.ts` plays groups on the same server, which also has a group service and bookmarks: a private
+group made and set up members only and not anonymous, its people invited and joining, all writing with OMEMO to every
+member's devices and reading each other with the server keeping only ciphertext, a second device of the account joining
+by the bookmarks and reading along, what came while a device was away read from the group's archive once, a member
+without OMEMO, a channel written as it is whose history counts as read and that tells only of what names the account,
+groups joined and left in another app of the account, invitations only from contacts (and one said no to), and photos in
+a private group opened by every member. Not run against a real server yet.
+
 ## Screens
 
 - `app/xmpp.tsx`, under Settings → Relay and networks → XMPP: signing in (address, password, and a server
-  only when DNS does not find it), then the people who asked to add the account (Accept, Decline), a new chat
-  with an address, the chats, the contacts the account has without a chat, this device's OMEMO fingerprint, and
-  signing out. It says the chats are not anonymous, and on Android whether the connection goes through Tor.
+  only when DNS does not find it), then the people who asked to add the account (Accept, Decline) and the groups that
+  invited it (Join, Decline), a new chat with an address, **New group** (a name and the contacts to invite, ticked as
+  chips; it says the group is private and encrypted with OMEMO for every member), **Join a group** (an address such as
+  `name@conference.example.org`, and a password if it asks; it says a group that is not private, a channel, is not
+  encrypted), the chats and groups (a group is marked as a private group or a channel, and its last message says who
+  wrote it), the contacts the account has without a chat, this device's OMEMO fingerprint, and signing out. It says the
+  chats are not anonymous, and on Android whether the connection goes through Tor.
 - `app/xmpp-chat.tsx`: two tiles at the top that call the person (video, voice; see Calls), the messages,
   with delivery and read marks, each call's line, a locked message that could not be opened here, a photo or
   file with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`, as Nostr chats have it),
   **Photo** and **File** under the message box, and below the chat the fingerprints of the person's devices, with a note for a key that
   changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
   (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
-- The home list (`xmppInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'xmpp'` with `xmpp:` and
-  the address as its identity, in the XMPP chip beside the SMS, Erevos and Matrix ones; a person who asked to
-  add the account is a row at the top until answered. The chip shows once the space has an account.
+  A group (`room` in `XmppChat`) is the same screen with its own words and no call tiles: its name and address, a line
+  saying a private group is encrypted with OMEMO for every member and not anonymous, or that a channel is not
+  encrypted and that everyone in it, and the servers, can read it, a status line while it is being joined or when the
+  room did not let the account in (`room.problem`), its subject, and for each message the name of whoever wrote it, with
+  only its time (no delivery or read marks: the room passes a message back once it has it) and Sending… or Not sent. When
+  nobody in a private group has an OMEMO app Erevos can find, the same choice is offered (**Write without
+  encryption**). Below a private group are its **Members**, each with the fingerprints of their devices as a chat
+  has them, and a note on one with no OMEMO keys found (they are looked up as the group opens), who
+  cannot read what is encrypted; for an admin of the room, **Add people** picks from the account's contacts who are not
+  members yet. A channel says it tells only of messages that name the account. **Leave the group** replaces **Remove
+  this chat**, and says the account's other XMPP apps leave it too.
+- The home list (`xmppInboxRows` in `app/lib/inbox.ts`): each chat and group is a row, `network: 'xmpp'` with `xmpp:` and
+  the address as its identity, in the XMPP chip beside the SMS, Erevos and Matrix ones, a group's last message with
+  its writer's name before it; a person who asked to add the account, and a group that invited it, is a row at the
+  top until answered (`invited: true`, opening the XMPP screen). The chip shows once the space has an account.
+
+## Groups
+
+Group chats as Conversations, Monal, Gajim and Dino have them (`app/lib/xmpp-muc.ts`): rooms of a multi-user chat
+service (MUC, XEP-0045), which each device of the account joins by itself.
+
+- **Private groups and channels.** A room is a private group when it says in disco#info that it is members only
+  (`muc_membersonly`) and non-anonymous (`muc_nonanonymous`); every other room is a channel. A private group is what
+  Conversations calls a private group: only its members can join, and everyone in it sees everyone's real address, which
+  is what lets OMEMO write to each member. A channel is written as it is, with no encryption, and says so wherever it
+  shows.
+- **Encryption in a private group.** A message is a `groupchat` message with OMEMO 0.3, encrypted to every device of
+  every member and to the account's own other devices, like a message to one person but to many (one AES-128-GCM key,
+  wrapped for each device through its ratchet). The members are the room's affiliation lists (owner, admin and member,
+  asked with XEP-0045 §9.5) and the real addresses of those in the room (`jid` in the presence, `Room.occupants`); their
+  device lists are fetched as the group's screen opens and as a message is written, and their sessions started then,
+  as for one person. A message that
+  comes is opened for the device that wrote it: the sender is the real address in the presence, or, when the room does
+  not say, whichever member has a device with the id in the message's header. One who has no OMEMO device is left out
+  and marked; when nobody has one, nothing is sent unless the chat chooses to write without encryption, as for a
+  person. Someone who joins later cannot read what came before: it shows as locked. A message the room passes back
+  (every room does) marks the one sent from here as sent; a group has no delivery receipts or read marks.
+- **Making a group.** The server's group service is found by disco#items on the account's domain (an item whose
+  identity is `conference`/`text`) and kept a day. The room is `<16 random hex characters>@<service>`, made by joining
+  it and then submitted its owner form (XEP-0045 §10.1.3), with only the fields the room offers: the name, persistent,
+  members only, non-anonymous, not listed, no password, not moderated, subject changeable only by admins, archived
+  (`muc#roomconfig_enablearchiving` or `mam`), and, for ejabberd, `muc#roomconfig_getmemberlist` so members may see who the
+  members are. The people chosen get the member affiliation and a mediated invitation. The account owns the room.
+- **Joining a group.** By an address typed, or as an invitation asked: disco#info on the room says whether it is
+  private, has an archive (MAM) and what it is called; then the presence to `room/nick`, with the password if there is
+  one. The nickname is the account's name before the `@`, with a `_` more when the room says it is taken. Why
+  a room did not let the account in comes as the presence error (members only, forbidden, a password asked, no such
+  room), or as the status codes of an unavailable presence (banned, taken out, the server stopped), and shows on the
+  group's screen. A room is joined again on each connection.
+- **Bookmarks (XEP-0402).** The groups the account is in are items of its `urn:xmpp:bookmarks:1` node, with
+  `autojoin`, the nickname and the password, published open to the account only (`access_model` whitelist; a server that
+  refuses the options gets the item without them). On each start the node is read and its groups joined, and
+  `urn:xmpp:bookmarks:1+notify` in the capabilities has the server tell of changes: a group joined in another app is
+  joined here, one left there (autojoin off, or the item retracted) is left here, and **Leave the group** retracts the
+  item, so the account's other apps leave it too. Leaving does not take the account off a private group's member list; an
+  admin of the room does that.
+- **Invitations.** Through the room (XEP-0045 §7.8.2, `<invite>` in a message from the room) or straight from the person
+  (XEP-0249, `jabber:x:conference`). Only an invitation from one of the account's contacts is kept, since anyone can
+  invite anyone, with its reason (up to 300 characters) and the password it carries; it is shown with the room's
+  address and who invited. **Join** joins with that password; **Decline** answers through the room (`<decline>`) and
+  drops it.
+- **What came before.** A room with an archive (MAM, XEP-0313, on the room's own address) is read after the last message
+  seen, 50 at a time, its newest page the first time; the presence then asks for no history. A room without one gives, in
+  the join presence, what came since the last message (`history since`), or its last 20 the first time. What was there
+  before the account joined counts as read.
+- **What counts as not read.** In a private group, every message from someone else; in a channel, only those that name
+  the account's nickname as a word of their own (`mentions`), so a busy channel does not fill the number on Erevos's icon
+  or make a notice for each message. Messages from the account's own devices never count. Notices, the icon's number and
+  a chat's own sounds work as for any chat.
+- **What the servers see.** The room's server sees the room, who is in it with their addresses (a private group's
+  members are public to each other by design), who writes and when, and the account's server sees its bookmarks, so
+  which groups it is in. In a private group they keep only ciphertext, in the room's archive too; in a channel they keep
+  and can read the text. None of Erevos's own protections apply.
+- **Files.** Photos and files go to a group as to a chat, through the account's server's upload service: encrypted on the
+  phone in a private group, and sent as they are in a channel.
+- **Not yet.** Changing a group's name or subject, removing or banning someone, roles, private messages inside a room,
+  and a room's other settings: an admin does them in another app.
 
 ## Calls
 
@@ -189,6 +276,6 @@ only while Erevos shows it.
 ## Not yet
 
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.
-- Group chats (MUC) and group calls, adding video to a voice call (`content-add`), and moving a call to
+- Group calls, adding video to a voice call (`content-add`), and moving a call to
   another device.
 - Photos and files against a real upload service: so far only the one played in the checks.
