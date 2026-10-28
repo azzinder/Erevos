@@ -14,6 +14,13 @@ On main, not released yet:
 
 ### For you
 
+- **Erevos's icon keeps the number of messages not read** (Android): the notice for messages went as soon as Erevos
+  opened, and the launcher's number or dot on Erevos's icon with it, though messages were still not read. Now, leaving
+  Erevos with messages not read in the open space's chats and groups, a notice without sound says how many, and counts
+  on with those it tells of after, until you read them; a muted chat's are left out, and a hidden chat's as you leave.
+  The launcher shows it on the icon, as a number, or on some phones, such as Pixels, as a dot. **Settings** →
+  **Notifications** → **Number on the icon**, the web app's switch, turns it off: the notice then tells only of what
+  came since Erevos was last open, as before.
 - **Notifications for each chat**: on Android, a chat's details, and a group's, have **Notifications**. **Muted** for
   8 hours, 1 week or **Always**, its messages make no sound and show no notice, and Erevos's icon does not count them;
   the list still shows them, with a struck-through bell, and its calls still ring. **Message sound** and **Ringtone**

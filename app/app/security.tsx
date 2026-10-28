@@ -284,7 +284,7 @@ export default function Security() {
 
       {!part || part === 'web' || part === 'push' ? <IntegrityCard part={part === 'web' || part === 'push' ? part : undefined} /> : null}
 
-      {PUSH_AVAILABLE && shows('icon') ? <IconNumberChoice titled={!part} /> : null}
+      {(PUSH_AVAILABLE || canRingInBackground) && shows('icon') ? <IconNumberChoice titled={!part} /> : null}
 
       {note ? (
         <Text variant="label" color={colors.success}>
@@ -411,8 +411,9 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   );
 }
 
-// The number on Erevos's icon (lib/icon-number.ts), on this device: the web app's for now, with
-// notifications while closed.
+// The number on Erevos's icon (lib/icon-number.ts), on this device: the web app's, with
+// notifications while closed, or on Android the one the launcher draws from the messages notice
+// (lib/background.ts).
 function IconNumberChoice({ titled }: { titled: boolean }) {
   const [on, setOn] = useState<boolean | null>(null);
 
@@ -435,9 +436,13 @@ function IconNumberChoice({ titled }: { titled: boolean }) {
       </Row>
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          {on
-            ? t("Where the browser can show it (an iPhone's or iPad's home screen, a Mac's Dock, Chrome or Edge installed on a computer), Erevos's icon shows how many messages the space you had open has not read, and those that came since, never a hidden chat's. Only for a space with notifications while closed on. The number stays while Erevos is closed: one that does not match the space you open may hint at another. For every space on this device.")
-            : t("Erevos's icon shows no number.")}
+          {canRingInBackground
+            ? on
+              ? t("When you leave Erevos with messages not read in the open space's chats and groups, a notice without sound says how many, and counts on with those it tells of after, until you read them. Muted chats and hidden ones are not counted as you leave. The phone's launcher shows it on Erevos's icon: as a number, or on some phones, such as Pixels, as a dot. Only with Say a message came, under In the background. For every space on this phone.")
+              : t("Erevos's icon keeps no number of its own: the launcher shows one only while the notice tells of messages that came since you last had Erevos open.")
+            : on
+              ? t("Where the browser can show it (an iPhone's or iPad's home screen, a Mac's Dock, Chrome or Edge installed on a computer), Erevos's icon shows how many messages the space you had open has not read, and those that came since, never a hidden chat's. Only for a space with notifications while closed on. The number stays while Erevos is closed: one that does not match the space you open may hint at another. For every space on this device.")
+              : t("Erevos's icon shows no number.")}
         </Text>
       </Card>
     </>

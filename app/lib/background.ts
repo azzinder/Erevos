@@ -10,13 +10,16 @@ import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
+import { iconNumberOn } from './icon-number';
 import { showsAt } from './later';
 import { onPlaceGroupMessage } from './place-groups';
+import { isPicking } from './picking';
 import { onPlaceMessage, onPlaceRing } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
 import { onSpaceGroupMessage } from './space-groups';
+import { spaceUnreadAt } from './unread';
 
 // Receiving while Erevos is in the background, on Android: while a space is open, Erevos keeps
 // running with a quiet notice that says no more than its name, so it keeps waiting at the relay
@@ -28,6 +31,9 @@ import { onSpaceGroupMessage } from './space-groups';
 // and so do the other spaces that asked for it, while closed (lib/closed-notices.ts).
 // While Erevos shows, a message shows the same notice, with sound, except in the chat or group on
 // the screen, where it only sounds; what came in one goes from the count once it is open.
+// Leaving the screen with messages not read in the open space, a notice without sound says how
+// many, and counts on from them, so the launcher keeps their number on Erevos's icon until they
+// are read (Settings → Notifications → Number on the icon, lib/icon-number.ts).
 // On by default; switches on the Lock screen turn it off on this phone, or only the messages
 // notice. Swiped away from the recent apps, it goes on without its screens (lib/space-running.ts);
 // stopped by Android, Erevos looks at nothing and cannot ring, and a quiet notice says so
@@ -91,6 +97,9 @@ export async function saveMessageNotices(on: boolean): Promise<void> {
 // a hidden place: screenOf...), since Erevos last came back from the background.
 let telling = false;
 const unseen = new Map<string, number>();
+// What the open space had not read as Erevos left the screen, a muted chat's aside (lib/unread.ts),
+// which the notice counts on from, with the number on the icon; 0 while none, or Erevos shows.
+let unread = 0;
 // The chat, group or hidden place that shows on the screen now (showOnScreen).
 let onScreen: string | null = null;
 
@@ -103,7 +112,7 @@ export const screenOfHidden = (pocket: number) => `hidden:${pocket}`;
 /** Where a closed space's chats show: in it, once it is open. */
 export const screenOfSpace = (space: number) => `space:${space}`;
 
-const unseenCount = () => [...unseen.values()].reduce((sum, count) => sum + count, 0);
+const unseenCount = () => unread + [...unseen.values()].reduce((sum, count) => sum + count, 0);
 
 /**
  * A message came in the open space, from a contact or in a group, shown at `where`: the notice
@@ -171,8 +180,9 @@ export function messageCameAt(at: number, quiet = false, where = '', chat = wher
 }
 
 function clearMessages() {
-  if (unseen.size === 0) return;
+  if (unseen.size === 0 && unread === 0) return;
   unseen.clear();
+  unread = 0;
   try {
     callAudio?.clearMessages?.();
   } catch {
@@ -341,6 +351,46 @@ export function startBackground(): () => void {
   const shown = onAppShown((on) => {
     if (on) clearMessages();
   });
+  // Erevos leaves the screen: what the open space has not read stays, as a notice without sound
+  // that says how many, for the number on the icon, until it is read; with the number turned off,
+  // the notice tells only of what comes after.
+  let leaving = 0;
+  const leave = async () => {
+    const left = ++leaving;
+    if (!telling || !(await iconNumberOn())) return;
+    // What came in the space's chats and groups is in what they have not read, as far as their
+    // history has it yet (a voice message whose parts are still coming has no row): the hidden
+    // places' and the closed spaces' stay apart.
+    const counted = new Map([...unseen].filter(([where]) => where.startsWith('chat:') || where.startsWith('group:')));
+    const notRead = await spaceUnreadAt();
+    if (left !== leaving || stopped || !telling || notRead === null || AppState.currentState === 'active') return;
+    unread = [...notRead.values()].reduce((sum, n) => sum + n, 0);
+    counted.forEach((count, where) => {
+      const rest = (unseen.get(where) ?? 0) - Math.min(count, notRead.get(where) ?? 0);
+      if (rest > 0) unseen.set(where, rest);
+      else unseen.delete(where);
+    });
+    const now = unseenCount();
+    try {
+      // None: a notice left from before (Erevos closed by Android meanwhile) goes too.
+      if (now > 0) callAudio?.tellMessages?.(now, true);
+      else callAudio?.clearMessages?.();
+    } catch {
+      // A build from before the notice.
+    }
+  };
+  // Opening a photo, a file or the camera takes Erevos off the screen too, but the owner is not leaving.
+  const app = AppState.addEventListener('change', (state) => {
+    if (state === 'background' && !isPicking()) void leave().catch(() => undefined);
+    else leaving++;
+  });
+  // The space opens on the screen: a messages notice still there is from before, kept as Android
+  // closed Erevos, and says nothing of it now.
+  try {
+    callAudio?.clearMessages?.();
+  } catch {
+    // A build from before the notice.
+  }
   return () => {
     stopped = true;
     telling = false;
@@ -350,6 +400,7 @@ export function startBackground(): () => void {
     told.forEach((stopTelling) => stopTelling());
     places.forEach((stopPlace) => stopPlace());
     shown();
+    app.remove();
     ringChange();
     ringHidden(false);
     clearMessages();

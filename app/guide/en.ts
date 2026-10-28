@@ -177,7 +177,7 @@ phone's own settings do. In the other languages it is named in that language and
 | --- | --- |
 | **General** | **Language**, **Updates** and **Permissions** (Android and the web app). See Language below, and [Updates](#updates). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
-| **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. See [On an iPhone](#iphone). |
+| **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second) and [Hidden chats](#hidden). |
 | **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android) and **LoRa radio** (Android). See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr) and [Over a LoRa radio](#lora). |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
@@ -902,6 +902,16 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
   screen**.
+- **The number on the icon:** with **Say a message came** on, when you leave Erevos with messages not read in the open
+  space's chats and groups, the notice stays, without sound, and says how many, with those it tells of after; it goes
+  while Erevos shows, and comes back as you leave it, until you have read them. Messages in a muted chat are not
+  counted (see Notifications for this chat), nor those in a hidden chat as you leave. Android's launcher shows it on
+  Erevos's icon, as a number, or on some phones, such as Pixels, as a dot. **Settings** → **Notifications** → **Number
+  on the icon** turns it off: the notice then tells only of what came since you last had Erevos open, and the
+  launcher's number goes with it.
+
+  **Why:** on Android only a notice can put a number on an app's icon, so the notice stays while messages wait; it
+  says no more than how many, as it always did.
 - **A space that is closed:** it receives nothing, as its key is only in memory while it is open: its messages wait at
   its relay and come when you open it. Unless you choose, in that space, **Also while another space is open** under
   **Settings** → **Notifications** → **In the background** (the default is **This space only while open**): then,

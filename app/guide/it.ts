@@ -190,7 +190,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | --- | --- |
 | **Generali** | **Lingua**, **Aggiornamenti** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, e [Aggiornamenti](#updates). |
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android) e **Widget** (Android). Vedi [Aspetto](#appearance). |
-| **Notifiche** | **In background** (Android): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi. **Notifiche ad app chiusa** (la web app): Web Push. Vedi [Su iPhone](#iphone). |
+| **Notifiche** | **In background** (Android): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second) e [Chat nascoste](#hidden). |
 | **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android) e **Radio LoRa** (Android). Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr) e [Con una radio LoRa](#lora). |
 | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
@@ -990,6 +990,16 @@ computer non ce l’hanno.
   (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì, se Android li
   chiede, **Continua anche col risparmio batteria** e **Mostra le chiamate sulla schermata di
   blocco**.
+- **Il numero sull’icona:** con **Avvisa dei nuovi messaggi** attivo, quando esci da Erevos con messaggi non letti
+  nelle chat e nei gruppi dello spazio aperto, la notifica resta, senza suono, e dice quanti sono, con quelli che
+  segnala dopo; se ne va mentre Erevos è visibile, e torna quando lo lasci, finché non li hai letti. Non conta i
+  messaggi di una chat in silenzio (vedi Notifiche di questa chat), né quelli di una chat nascosta quando esci. Il
+  launcher di Android la mostra sull’icona di Erevos, come numero o, su alcuni telefoni come i Pixel, come punto.
+  **Impostazioni** → **Notifiche** → **Numero sull’icona** lo disattiva: allora la notifica parla solo di ciò che è
+  arrivato dall’ultima volta che avevi Erevos aperto, e il numero del launcher se ne va con lei.
+
+  **Perché:** su Android solo una notifica può mettere un numero sull’icona di un’app, quindi la notifica resta finché
+  ci sono messaggi in attesa; non dice più di quanti sono, come ha sempre fatto.
 - **Uno spazio chiuso:** non riceve nulla, perché la sua chiave è in memoria solo mentre è aperto: i suoi messaggi
   aspettano sul suo relay e arrivano quando lo apri. A meno che tu non scelga, in quello spazio, **Anche mentre è
   aperto un altro spazio** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è

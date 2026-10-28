@@ -60,8 +60,11 @@ test('a phone shows every group; elsewhere, what needs a phone does not show', (
   // The desktop app has no notices of its own to set: the group goes.
   assert.ok(!groupsHere(DESKTOP).some((group) => group.id === 'notices' || group.id === 'phone'));
   const web = ids(WEB_APP);
-  for (const shown of ['push', 'web-app', 'browser-permissions', 'relay', 'backups']) assert.ok(web.includes(shown), shown);
+  for (const shown of ['push', 'web-app', 'browser-permissions', 'relay', 'backups', 'icon-number']) assert.ok(web.includes(shown), shown);
   assert.ok(!web.includes('permissions'));
+  // The number on the icon: the web app's with Web Push, the phone's with its messages notice.
+  assert.ok(ids(PHONE).includes('icon-number'));
+  assert.ok(!desktop.includes('icon-number'));
 });
 
 test('a setting with parts goes when none of them shows', () => {

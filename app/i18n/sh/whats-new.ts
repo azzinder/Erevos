@@ -34,6 +34,8 @@ export const whatsNew: Record<string, string> = {
     "**Obavijesti za svaki razgovor**: na Androidu utišajte razgovor ili grupu na 8 sati, sedmicu ili zauvijek, i dajte njegovim porukama i pozivima vlastiti zvuk, ili nikakav. Pogledajte [Razgovor preko relaya](#relay).",
   "**A chat locked with its own PIN stays locked**: when its contact's Erevos started a new conversation, as it does about once a month, the chat lost its PIN, and a public group joined again lost its own. See [Hidden chats](#hidden).":
     "**Razgovor zaključan vlastitim PIN-om ostaje zaključan**: kad bi Erevos kontakta započeo novi razgovor, što radi otprilike jednom mjesečno, razgovor bi izgubio svoj PIN, a javna grupa u koju si se ponovo pridružio izgubila bi svoj. Vidi [Skriveni razgovori](#hidden).",
+  "**Erevos's icon keeps the number of messages not read, on Android**: leaving Erevos with messages not read, a notice without sound keeps how many until you read them, and the launcher shows it on the icon, as a number or a dot. Settings → Notifications → Number on the icon turns it off. See [Chat through a relay](#relay).":
+    "**Ikona Erevosa čuva broj nepročitanih poruka, na Androidu**: kad napustite Erevos s nepročitanim porukama, obavijest bez zvuka čuva koliko ih je dok ih ne pročitate, a pokretač je prikazuje na ikoni, kao broj ili tačku. Postavke → Obavijesti → Broj na ikoni to isključuje. Pogledajte [Razgovor preko relaya](#relay).",
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

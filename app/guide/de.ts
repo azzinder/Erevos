@@ -201,7 +201,7 @@ nicht lesen kannst.
 | --- | --- |
 | **Allgemein** | **Sprache**, **Updates** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, und [Updates](#updates). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
-| **Benachrichtigungen** | **Im Hintergrund** (Android): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. Siehe [Auf einem iPhone](#iphone). |
+| **Benachrichtigungen** | **Im Hintergrund** (Android): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone). |
 | **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second) und [Versteckte Chats](#hidden). |
 | **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android) und **LoRa-Funk** (Android). Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr) und [Über LoRa-Funk](#lora). |
 | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
@@ -1056,6 +1056,17 @@ Versteckte Chats und Computer haben das nicht.
   oder **Nur, solange Erevos sichtbar ist**, und **Neue Nachrichten melden** (die Voreinstellung) oder
   **Keine Benachrichtigung**, was auch gilt, solange Erevos sichtbar ist. Dort auch, wenn Android danach fragt,
   **Trotz Akku-Sparen weiterlaufen** und **Anrufe über dem Sperrbildschirm zeigen**.
+- **Die Zahl auf dem Symbol:** Mit **Neue Nachrichten melden** bleibt die Meldung, wenn du Erevos mit ungelesenen
+  Nachrichten in den Chats und Gruppen des offenen Bereichs verlässt, ohne Ton stehen und sagt, wie viele es sind, mit
+  denen, die sie danach meldet; sie geht, solange Erevos sichtbar ist, und kommt wieder, wenn du es verlässt, bis du
+  sie gelesen hast. Nachrichten eines stummen Chats zählen nicht (siehe „Benachrichtigungen für diesen Chat“), die
+  eines versteckten Chats beim Verlassen auch nicht. Der Launcher von Android zeigt sie am Symbol von Erevos, als Zahl
+  oder auf manchen Telefonen, etwa Pixels, als Punkt. **Einstellungen** → **Benachrichtigungen** → **Zahl auf dem
+  Symbol** schaltet das aus: Dann meldet die Meldung nur, was gekommen ist, seit du Erevos zuletzt offen hattest, und
+  die Zahl des Launchers geht mit ihr.
+
+  **Warum:** Auf Android kann nur eine Meldung eine Zahl auf das Symbol einer App setzen, also bleibt die Meldung,
+  solange Nachrichten warten; sie sagt nicht mehr als wie viele, wie immer schon.
 - **Ein Bereich, der geschlossen ist:** Er empfängt nichts, da sein Schlüssel nur im Arbeitsspeicher ist, solange er
   offen ist: Seine Nachrichten warten bei seinem Relay und kommen, wenn du ihn öffnest. Außer du wählst in diesem
   Bereich **Auch, wenn ein anderer Bereich offen ist** unter **Einstellungen** → **Benachrichtigungen** →

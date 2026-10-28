@@ -188,7 +188,7 @@ nikad ne prenosi.
 | --- | --- |
 | **Općenito** | **Jezik**, **Ažuriranja** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, i [Ažuriranja](#updates). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
-| **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. Pogledajte [Na iPhoneu](#iphone). |
+| **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second) i [Skriveni razgovori](#hidden). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android) i **LoRa radio** (Android). Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr) i [Preko LoRa radija](#lora). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
@@ -955,6 +955,16 @@ Skriveni razgovori i računari to nemaju.
   **U pozadini**: **Primaj i zvoni** (zadano) ili **Samo dok je Erevos na ekranu**, te **Javi da je stigla poruka**
   (zadano) ili **Bez obavijesti**, što važi i dok je Erevos na ekranu. Tamo su i, ako ih Android traži, **Izuzmi iz
   uštede baterije** i **Prikazuj pozive preko zaključanog ekrana**.
+- **Broj na ikoni:** uz uključeno **Javi da je stigla poruka**, kad napustite Erevos s nepročitanim porukama u
+  razgovorima i grupama otvorenog prostora, obavijest ostaje, bez zvuka, i kaže koliko ih je, s onima koje javi
+  poslije; nestaje dok je Erevos na ekranu, i vraća se kad ga napustite, dok ih ne pročitate. Ne broji poruke utišanog
+  razgovora (pogledajte Obavijesti za ovaj razgovor), ni skrivenog u trenutku kad izlazite. Pokretač (launcher)
+  Androida je prikazuje na ikoni Erevosa, kao broj ili, na nekim telefonima, poput Pixela, kao tačku. **Postavke** →
+  **Obavijesti** → **Broj na ikoni** to isključuje: obavijest tada javlja samo ono što je stiglo otkako ste zadnji put
+  imali Erevos otvoren, i broj pokretača nestaje s njom.
+
+  **Zašto:** na Androidu samo obavijest može staviti broj na ikonu aplikacije, pa obavijest ostaje dok poruke čekaju;
+  ne kaže ništa više od toga koliko ih je, kao i uvijek.
 - **Zatvoren prostor:** ne prima ništa, jer je njegov ključ u memoriji samo dok je otvoren: njegove poruke čekaju na
   njegovom relayu i stižu kad ga otvorite. Osim ako u tom prostoru ne izaberete **I dok je otvoren drugi prostor** pod
   **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Ovaj prostor samo dok je otvoren**): tada, dok je

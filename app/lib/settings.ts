@@ -108,13 +108,13 @@ export const SETTINGS: SettingsGroup[] = [
         href: '/security?part=push',
         when: (place) => place.push,
       },
-      // The web app's for now (lib/icon-number.ts).
+      // The web app's, with Web Push, and the phone's, with its messages notice (lib/icon-number.ts).
       {
         id: 'icon-number',
         title: mark('Number on the icon'),
         detail: mark("How many messages are not read, on Erevos's icon"),
         href: '/security?part=icon',
-        when: (place) => place.push,
+        when: (place) => place.push || place.background,
       },
     ],
   },

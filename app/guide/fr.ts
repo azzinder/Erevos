@@ -201,7 +201,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | --- | --- |
 | **Général** | **Langue**, **Mises à jour** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, et [Mises à jour](#updates). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
-| **Notifications** | **En arrière-plan** (Android) : recevoir et sonner quand Erevos est fermé, et la notification des messages. **Notifications quand l’app est fermée** (l’app web) : Web Push. Voir [Sur un iPhone](#iphone). |
+| **Notifications** | **En arrière-plan** (Android) : recevoir et sonner quand Erevos est fermé, et la notification des messages. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone). |
 | **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second) et [Discussions masquées](#hidden). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android) et **Radio LoRa** (Android). Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr) et [Par une radio LoRa](#lora). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
@@ -1032,6 +1032,17 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les nouveaux messages** (par défaut)
   ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi, si Android les demande,
   **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**.
+- **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des
+  messages non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit
+  combien, avec ceux qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes,
+  jusqu’à ce que tu les aies lus. Elle ne compte pas les messages d’une discussion en sourdine (voir Notifications de
+  cette discussion), ni ceux d’une discussion masquée au moment où tu quittes. Le launcher d’Android l’affiche sur
+  l’icône d’Erevos, comme un nombre ou, sur certains téléphones comme les Pixel, comme un point. **Réglages** →
+  **Notifications** → **Nombre sur l’icône** le désactive : la notification ne parle alors que de ce qui est arrivé
+  depuis la dernière fois qu’Erevos était ouvert, et le nombre du launcher part avec elle.
+
+  **Pourquoi :** sur Android, seule une notification peut mettre un nombre sur l’icône d’une app, donc la notification
+  reste tant que des messages attendent ; elle ne dit rien de plus que combien, comme toujours.
 - **Un espace fermé :** il ne reçoit rien, car sa clé n’est en mémoire que tant qu’il est ouvert : ses messages
   attendent sur son relais et arrivent quand tu l’ouvres. Sauf si tu choisis, dans cet espace, **Aussi quand un autre
   espace est ouvert** sous **Réglages** → **Notifications** → **En arrière-plan** (par défaut, c’est **Cet espace

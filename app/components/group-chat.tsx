@@ -32,6 +32,7 @@ import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
 import { takeShared } from '../lib/share-in';
 import { plural, t } from '../lib/i18n';
+import { appShown, onAppShown } from '../lib/receiver';
 import { keepPrivate } from '../lib/screen-privacy';
 import { rtc } from '../lib/webrtc';
 import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
@@ -159,6 +160,9 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   // On the screen, what comes in the group only sounds (lib/background.ts); in hidden chats, as they say.
   const focused = useIsFocused();
   useEffect(() => (id && focused && !gated && !hidden ? showOnScreen(screenOfGroup(id)) : undefined), [id, focused, gated, hidden]);
+  // What comes while it is not on the screen stays not read, for the number on Erevos's icon (lib/background.ts).
+  const focusedNow = useRef(focused);
+  focusedNow.current = focused;
 
   // A call going on in the group shows, until its members' phones go quiet.
   useEffect(() => {
@@ -183,8 +187,15 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
     const listed = groups.list().find((g) => g.id === id) ?? null;
     setInfo(listed);
     setMessages(groups.messages(id));
-    if (hidden || !listed?.locked || opened.current) await groups.markRead(id);
+    if (focusedNow.current && appShown() && (hidden || !listed?.locked || opened.current)) await groups.markRead(id);
   }, [id, groupsAt, hidden]);
+
+  // On the screen again, what came meanwhile is read then.
+  useEffect(() => {
+    if (!focused) return;
+    void load().catch(() => undefined);
+    return onAppShown((shown) => void (shown && load().catch(() => undefined)));
+  }, [focused, load]);
 
   // Opens it, locked with its PIN, once that is typed, and reads it then.
   async function openWithPin(pin: string): Promise<boolean> {
