@@ -1,10 +1,12 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
+import { hiddenHolder, type Holder } from '../lock/sealed-file';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
 import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
+import { actingWhere, type NetworkWhere } from './network-place';
 import {
   addCallLine,
   addXmppContact,
@@ -36,9 +38,13 @@ import type { connectXmpp, XmppServer } from './xmpp-net';
 // lib/matrix-store.ts does; what the server sends is read all the while, apart from that.
 //
 // It runs once something asks for it (runXmpp), and goes on until the space closes or another
-// opens: then it disconnects and lets go of the account.
+// opens: then it disconnects and lets go of the account. A hidden place's own account runs beside
+// it while its hidden chats are open (openXmppPlace, lib/place-networks.ts): their screens show it
+// and act on it (lib/network-place.ts); it tells nothing outside them.
 
 type Live = {
+  /** The space's account, or a hidden place's. */
+  holder: Holder;
   space: number;
   key: Uint8Array;
   state: XmppState | null;
@@ -57,6 +63,8 @@ type Live = {
 };
 
 let live: Live | null = null;
+// The open hidden place's own account, while its hidden chats are open.
+let place: Live | null = null;
 let connect: typeof connectXmpp | undefined;
 const listeners = new Set<() => void>();
 
@@ -73,9 +81,15 @@ export function setXmppConnect(next: typeof connectXmpp | undefined): void {
   connect = next;
 }
 
-/** The open space's account as it is now: null while it loads, or when there is none. */
-export function xmppNow(): { loaded: boolean; state: XmppState | null; problem: string; online: boolean } {
-  return { loaded: live?.loaded ?? false, state: live?.state ?? null, problem: live?.problem ?? '', online: Boolean(live?.connection?.isOpen) };
+/** The open space's account as it is now, or the open hidden place's: null while it loads, or when there is none. */
+export function xmppNow(where: NetworkWhere = 'space'): { loaded: boolean; state: XmppState | null; problem: string; online: boolean } {
+  const it = where === 'place' ? place : live;
+  return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', online: Boolean(it?.connection?.isOpen) };
+}
+
+/** The account the screen on top acts on. */
+function acting(): Live | null {
+  return actingWhere() === 'place' ? place : live;
 }
 
 /** How many messages are not read in the open space's XMPP chats and groups, contact requests and invitations counted as one each. */
@@ -117,7 +131,7 @@ function keepSoon(it: Live): void {
   it.saving = setTimeout(() => {
     it.saving = null;
     // Kept even after the space closed: the keys of what came last must not be lost.
-    saveXmpp(it.space, it.key, it.state).catch((error: unknown) => {
+    saveXmpp(it.space, it.key, it.state, it.holder).catch((error: unknown) => {
       it.problem = reason(error);
       told();
     });
@@ -136,7 +150,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quiet = false): Pr
       try {
         return await change();
       } finally {
-        if (!it.stopped) it.heard.hear(unreadAt(it.state), hush);
+        // A hidden place's messages tell nothing outside its hidden chats.
+        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), hush);
       }
     });
   it.queue = run;
@@ -230,9 +245,31 @@ export function runXmpp(): void {
     return;
   }
   stopXmpp();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard: hearing(), fresh: false };
-  live = it;
-  loadXmpp(space.space, space.key)
+  live = start('space', space.space, space.key);
+}
+
+/** Loads a hidden place's own account, as its hidden chats open, and connects it while they stay open. */
+export function openXmppPlace(space: number, pocket: number, key: Uint8Array): void {
+  if (!canXmpp()) return;
+  const holder = hiddenHolder(pocket);
+  if (place && place.space === space && place.holder === holder && !place.stopped) return;
+  closeXmppPlace();
+  place = start(holder, space, key);
+}
+
+/** Disconnects a hidden place's account and lets go of it, as its hidden chats close. */
+export function closeXmppPlace(): void {
+  if (!place) return;
+  place.stopped = true;
+  place.connection?.close();
+  place = null;
+  fetched.clear();
+  told();
+}
+
+function start(holder: Holder, space: number, key: Uint8Array): Live {
+  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard: hearing(), fresh: false };
+  loadXmpp(space, key, holder)
     .then((state) => {
       it.state = state;
       it.heard.hear(unreadAt(state), true);
@@ -245,11 +282,13 @@ export function runXmpp(): void {
       it.problem = reason(error);
       told();
     });
+  return it;
 }
 
-/** Disconnects and lets go of the account, as its space closes. */
+/** Disconnects and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopXmpp(): void {
   fetched.clear();
+  closeXmppPlace();
   if (!live) return;
   live.stopped = true;
   live.connection?.close();
@@ -258,8 +297,9 @@ export function stopXmpp(): void {
 }
 
 function need(): Live & { state: XmppState } {
-  if (!live?.state) throw new Error(t('There is no XMPP account in this space.'));
-  return live as Live & { state: XmppState };
+  const it = acting();
+  if (!it?.state) throw new Error(t('There is no XMPP account in this space.'));
+  return it as Live & { state: XmppState };
 }
 
 function online(it: Live): XmppConnection {
@@ -269,7 +309,7 @@ function online(it: Live): XmppConnection {
 
 /** Signs the open space in to XMPP: `jid` as name@example.org, `server` a host[:port] when its DNS does not say. */
 export async function xmppSignIn(jid: string, password: string, server = ''): Promise<void> {
-  const it = live;
+  const it = acting();
   if (!it || it.stopped) throw new Error(t('There is no XMPP account in this space.'));
   const given = serverOf(server);
   const { state, connection } = await signInXmpp(jid, password, given, connect);
@@ -279,7 +319,7 @@ export async function xmppSignIn(jid: string, password: string, server = ''): Pr
     it.problem = '';
     it.fresh = true;
   });
-  await saveXmpp(it.space, it.key, state);
+  await saveXmpp(it.space, it.key, state, it.holder);
   void loop(it);
 }
 
@@ -304,7 +344,7 @@ export async function xmppSignOut(): Promise<void> {
     it.connection = null;
     it.state = null;
   });
-  await saveXmpp(it.space, it.key, null);
+  await saveXmpp(it.space, it.key, null, it.holder);
 }
 
 export function xmppSend(jid: string, text: string): Promise<void> {

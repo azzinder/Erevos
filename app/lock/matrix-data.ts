@@ -1,11 +1,12 @@
 import type { MatrixState } from '../lib/matrix';
 
-import { sealedFile } from './sealed-file';
+import { sealedFile, type Holder } from './sealed-file';
 
 // A space's Matrix account (lib/matrix.ts, docs/matrix.md): its sign-in, its device's keys and
 // sessions, and its rooms with their latest messages, as one value kept in FILE, sealed with the
-// space's key, one for each space (sealed-file.ts), so nothing tells whether a space has one. Only
-// the space's own, never its hidden places'. Not in backups yet: a restored phone signs in again.
+// space's key, one for each space (sealed-file.ts), so nothing tells whether a space has one; a
+// hidden place's own account likewise, sealed with its key in its own value (lib/place-networks.ts).
+// Not in backups yet: a restored phone signs in again.
 
 export const FILE = 'erevos-matrix';
 const BLOCK = 16 * 1024;
@@ -51,12 +52,12 @@ function checked(value: unknown): MatrixData {
 
 const store = sealedFile({ name: FILE, empty: { account: null } as MatrixData, checked, block: BLOCK });
 
-/** The space's Matrix account, or null when it has none. */
-export async function loadMatrix(space: number, key: Uint8Array): Promise<MatrixState | null> {
-  return (await store.load('space', space, key)).account;
+/** The space's Matrix account, or a hidden place's own (`holder`), or null when it has none. */
+export async function loadMatrix(space: number, key: Uint8Array, holder: Holder = 'space'): Promise<MatrixState | null> {
+  return (await store.load(holder, space, key)).account;
 }
 
-/** Keeps the space's Matrix account, or forgets it with null. */
-export async function saveMatrix(space: number, key: Uint8Array, account: MatrixState | null): Promise<void> {
-  await store.save('space', space, key, { account });
+/** Keeps the space's Matrix account, or a hidden place's, or forgets it with null. */
+export async function saveMatrix(space: number, key: Uint8Array, account: MatrixState | null, holder: Holder = 'space'): Promise<void> {
+  await store.save(holder, space, key, { account });
 }

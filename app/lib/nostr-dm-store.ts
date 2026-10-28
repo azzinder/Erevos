@@ -1,10 +1,12 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
+import { hiddenHolder, type Holder } from '../lock/sealed-file';
 import { canNostrChat } from './core';
 import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
+import { actingWhere, type NetworkWhere } from './network-place';
 import {
   addMessage,
   authEvent,
@@ -42,8 +44,14 @@ import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFi
 // of where someone reads and what they call themselves. A message to a group goes to each of its
 // members' relays, a wrap for each; photos and files go to a Blossom server first
 // (lib/nostr-files.ts).
+//
+// A hidden place's own key runs beside the space's while its hidden chats are open (openNostrDmPlace,
+// lib/place-networks.ts): their screens show it and act on it (lib/network-place.ts); it tells
+// nothing outside them, and its connections are its own, so no relay sees both keys on one.
 
 type Live = {
+  /** The space's account, or a hidden place's. */
+  holder: Holder;
   space: number;
   key: Uint8Array;
   state: NostrDmState | null;
@@ -63,9 +71,13 @@ type Live = {
   listedAt: number;
   /** What its chats had not read after the last change, to tell of what came (lib/network-notices.ts). */
   heard: ReturnType<typeof hearing>;
+  /** Its connections that only send or look up, by relay. */
+  out: Map<string, { relay: Promise<NostrRelay>; idle: ReturnType<typeof setTimeout> | null }>;
 };
 
 let live: Live | null = null;
+// The open hidden place's own key, while its hidden chats are open.
+let place: Live | null = null;
 const listeners = new Set<() => void>();
 
 /** Told each time the account or its chats change. */
@@ -79,10 +91,16 @@ const told = () => listeners.forEach((listener) => listener());
 const reason = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const seconds = (now = Date.now()) => Math.floor(now / 1000);
 
-/** The open space's account as it is now, how many of its inbox relays it reads, and whether through Tor. */
-export function nostrDmNow(): { loaded: boolean; state: NostrDmState | null; problem: string; reading: number; tor: boolean } {
-  const readers = [...(live?.reading.values() ?? [])].filter((relay) => relay.open);
-  return { loaded: live?.loaded ?? false, state: live?.state ?? null, problem: live?.problem ?? '', reading: readers.length, tor: readers.length > 0 && readers.every((relay) => relay.tor) };
+/** The open space's account as it is now, or the open hidden place's, how many of its inbox relays it reads, and whether through Tor. */
+export function nostrDmNow(where: NetworkWhere = 'space'): { loaded: boolean; state: NostrDmState | null; problem: string; reading: number; tor: boolean } {
+  const it = where === 'place' ? place : live;
+  const readers = [...(it?.reading.values() ?? [])].filter((relay) => relay.open);
+  return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', reading: readers.length, tor: readers.length > 0 && readers.every((relay) => relay.tor) };
+}
+
+/** The account the screen on top acts on. */
+function acting(): Live | null {
+  return actingWhere() === 'place' ? place : live;
 }
 
 /** How many messages are not read in the open space's Nostr chats. */
@@ -116,7 +134,7 @@ function keepSoon(it: Live): void {
   if (it.saving) return;
   it.saving = setTimeout(() => {
     it.saving = null;
-    saveNostrDm(it.space, it.key, it.state).catch((error: unknown) => {
+    saveNostrDm(it.space, it.key, it.state, it.holder).catch((error: unknown) => {
       it.problem = reason(error);
       told();
     });
@@ -136,7 +154,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
       try {
         return await change();
       } finally {
-        if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
+        // A hidden place's messages tell nothing outside its hidden chats.
+        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), quiet);
       }
     });
   it.queue = run;
@@ -148,9 +167,9 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
 
 // Connections that only send or look up, by relay, kept a minute after their last use.
 const IDLE_CLOSE = 60_000;
-const out = new Map<string, { relay: Promise<NostrRelay>; idle: ReturnType<typeof setTimeout> | null }>();
 
-function outTo(url: string): Promise<NostrRelay> {
+function outTo(it: Live, url: string): Promise<NostrRelay> {
+  const out = it.out;
   let held = out.get(url);
   if (held) {
     if (held.idle) clearTimeout(held.idle);
@@ -173,7 +192,8 @@ function outTo(url: string): Promise<NostrRelay> {
   return held.relay;
 }
 
-function closeOut(): void {
+function closeOut(it: Live): void {
+  const out = it.out;
   for (const [url, held] of out) {
     if (held.idle) clearTimeout(held.idle);
     out.delete(url);
@@ -182,11 +202,11 @@ function closeOut(): void {
 }
 
 /** Sends `event` to each relay; answers how many took it. */
-async function publish(urls: string[], event: NostrEvent): Promise<number> {
+async function publish(it: Live, urls: string[], event: NostrEvent): Promise<number> {
   const took = await Promise.all(
     [...new Set(urls)].map(async (url) => {
       try {
-        return (await (await outTo(url)).publish(event)).ok;
+        return (await (await outTo(it, url)).publish(event)).ok;
       } catch {
         return false;
       }
@@ -196,11 +216,11 @@ async function publish(urls: string[], event: NostrEvent): Promise<number> {
 }
 
 /** What these relays have for `filters`, together. */
-async function lookUp(urls: string[], filters: Record<string, unknown>[], ms = 8000): Promise<NostrEvent[]> {
+async function lookUp(it: Live, urls: string[], filters: Record<string, unknown>[], ms = 8000): Promise<NostrEvent[]> {
   const found = await Promise.all(
     [...new Set(urls)].map(async (url) => {
       try {
-        return await (await outTo(url)).query(filters, ms);
+        return await (await outTo(it, url)).query(filters, ms);
       } catch {
         return [];
       }
@@ -228,7 +248,7 @@ async function tell(it: Live): Promise<void> {
       const events = [await inboxEvent(state, at)];
       if (state.name !== undefined) events.push(await profileEvent(state, at));
       let took = 0;
-      for (const event of events) took += await publish(where, event);
+      for (const event of events) took += await publish(it, where, event);
       if (took > 0 && it.state === state && !it.tellAgain) {
         await changeAccount(it, async () => {
           state.told = seconds();
@@ -326,9 +346,47 @@ export function runNostrDm(): void {
   }
   if (live && live.space === space.space && !live.stopped) return;
   stopNostrDm();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, queue: Promise.resolve(), saving: null, reading: new Map(), inboxAt: 0, telling: false, tellAgain: false, listedAt: 0, heard: hearing() };
-  live = it;
-  loadNostrDm(space.space, space.key)
+  live = start('space', space.space, space.key);
+}
+
+/** Loads a hidden place's own key, as its hidden chats open, and reads its inbox while they stay open. */
+export function openNostrDmPlace(space: number, pocket: number, key: Uint8Array): void {
+  if (!canNostrChat()) return;
+  const holder = hiddenHolder(pocket);
+  if (place && place.space === space && place.holder === holder && !place.stopped) return;
+  closeNostrDmPlace();
+  place = start(holder, space, key);
+}
+
+/** Stops reading a hidden place's key and lets go of it, as its hidden chats close. */
+export function closeNostrDmPlace(): void {
+  if (!place) return;
+  end(place);
+  place = null;
+  fetched.clear();
+  told();
+}
+
+function start(holder: Holder, space: number, key: Uint8Array): Live {
+  const it: Live = {
+    holder,
+    space,
+    key,
+    state: null,
+    loaded: false,
+    problem: '',
+    stopped: false,
+    queue: Promise.resolve(),
+    saving: null,
+    reading: new Map(),
+    inboxAt: 0,
+    telling: false,
+    tellAgain: false,
+    listedAt: 0,
+    heard: hearing(),
+    out: new Map(),
+  };
+  loadNostrDm(space, key, holder)
     .then((state) => {
       // What was still going when the space closed did not go.
       for (const chat of Object.values(state?.chats ?? {})) for (const m of chat.messages) if (m.state === 'sending') m.state = 'failed';
@@ -343,29 +401,37 @@ export function runNostrDm(): void {
       it.problem = reason(error);
       told();
     });
+  return it;
 }
 
-/** Stops reading and lets go of the account, as its space closes. */
+function end(it: Live): void {
+  it.stopped = true;
+  it.inboxAt += 1;
+  for (const relay of it.reading.values()) relay.close();
+  it.reading.clear();
+  closeOut(it);
+}
+
+/** Stops reading and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopNostrDm(): void {
+  closeNostrDmPlace();
   if (!live) return;
-  live.stopped = true;
-  live.inboxAt += 1;
-  for (const relay of live.reading.values()) relay.close();
-  live.reading.clear();
+  end(live);
   live = null;
-  closeOut();
   fetched.clear();
   told();
 }
 
 function need(): Live & { state: NostrDmState } {
-  if (!live?.state) throw new Error(t('There are no Nostr chats in this space.'));
-  return live as Live & { state: NostrDmState };
+  const it = acting();
+  if (!it?.state) throw new Error(t('There are no Nostr chats in this space.'));
+  return it as Live & { state: NostrDmState };
 }
 
 function opened(): Live {
-  if (!live || live.stopped) throw new Error(t('There are no Nostr chats in this space.'));
-  return live;
+  const it = acting();
+  if (!it || it.stopped) throw new Error(t('There are no Nostr chats in this space.'));
+  return it;
 }
 
 async function begin(it: Live, state: NostrDmState): Promise<void> {
@@ -373,7 +439,7 @@ async function begin(it: Live, state: NostrDmState): Promise<void> {
     it.state = state;
     it.problem = '';
   });
-  await saveNostrDm(it.space, it.key, state);
+  await saveNostrDm(it.space, it.key, state, it.holder);
   startReading(it);
 }
 
@@ -400,7 +466,7 @@ export async function nostrDmForget(): Promise<void> {
     for (const relay of it.reading.values()) relay.close();
     it.reading.clear();
   });
-  await saveNostrDm(it.space, it.key, null);
+  await saveNostrDm(it.space, it.key, null, it.holder);
 }
 
 /** Reads on these relays from now on, and tells others so. */
@@ -425,7 +491,7 @@ async function lookUpPerson(it: Live & { state: NostrDmState }, key: string): Pr
   const state = it.state;
   const chat = state.chats[key];
   const where = [...state.inbox, ...LOOKUP_RELAYS, ...(chat?.hints ?? [])];
-  const events = await lookUp(where, [{ kinds: [10050, 0], authors: [key] }]);
+  const events = await lookUp(it, where, [{ kinds: [10050, 0], authors: [key] }]);
   const relays = await inboxOf(key, events);
   const name = await nameIn(key, events);
   await changeAccount(it, async () => {
@@ -482,7 +548,7 @@ export async function nostrDmStart(written: string, name = ''): Promise<string> 
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */
 export function nostrDmFreshen(key: string): void {
-  const it = live;
+  const it = acting();
   if (!it?.state) return;
   const at = it.state.people[key]?.at ?? 0;
   if (at > seconds() - 7 * 24 * 3600) return;
@@ -525,8 +591,8 @@ async function sendTo(
   });
   // Our own copy, for the space's other apps with this key (in notes to oneself, the message
   // itself); then each reader's, which say whether it went.
-  const tookOurs = publish(state.inbox, ours);
-  const took = readers.length ? (await Promise.all(reachable.map(([reader, relays]) => publish(relays, made.wraps[reader])))).filter((n) => n > 0).length : await tookOurs;
+  const tookOurs = publish(it, state.inbox, ours);
+  const took = readers.length ? (await Promise.all(reachable.map(([reader, relays]) => publish(it, relays, made.wraps[reader])))).filter((n) => n > 0).length : await tookOurs;
   const chat = state.chats[key];
   const told = made.subject !== undefined && took > 0 && (chat?.subject ?? '') === made.subject;
   if (message || told) {

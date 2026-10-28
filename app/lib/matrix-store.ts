@@ -1,6 +1,7 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { currentSpace } from '../lock/keys';
+import { hiddenHolder, type Holder } from '../lock/sealed-file';
 import { canMatrix } from './core';
 import { t } from './i18n';
 import {
@@ -40,6 +41,7 @@ import {
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { keepMatrixPush, startMatrixPush, stopMatrixPush } from './matrix-push';
 import { addNetwork, hearing } from './network-notices';
+import { actingWhere, type NetworkWhere } from './network-place';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -47,9 +49,13 @@ import { addNetwork, hearing } from './network-notices';
 // a sync waits on the homeserver outside of that, so a message goes out while it waits.
 //
 // It runs once something asks for it (runMatrix), and goes on until the space closes or another
-// opens: then it stops and lets go of the account.
+// opens: then it stops and lets go of the account. A hidden place's own account runs beside it
+// while its hidden chats are open (openMatrixPlace, lib/place-networks.ts): their screens show it
+// and act on it (lib/network-place.ts); it tells nothing outside them, and has no calls nor push.
 
 type Live = {
+  /** The space's account, or a hidden place's. */
+  holder: Holder;
   space: number;
   key: Uint8Array;
   state: MatrixState | null;
@@ -69,6 +75,8 @@ type Live = {
 };
 
 let live: Live | null = null;
+// The open hidden place's own account, while its hidden chats are open.
+let place: Live | null = null;
 const listeners = new Set<() => void>();
 
 /** Told each time the account, its rooms or their messages change. */
@@ -80,9 +88,15 @@ export function onMatrixChange(listener: () => void): () => void {
 const told = () => listeners.forEach((listener) => listener());
 onVerificationChange(told);
 
-/** The open space's account as it is now: null while it loads, or when there is none. */
-export function matrixNow(): { loaded: boolean; state: MatrixState | null; problem: string } {
-  return { loaded: live?.loaded ?? false, state: live?.state ?? null, problem: live?.problem ?? '' };
+/** The open space's account as it is now, or the open hidden place's: null while it loads, or when there is none. */
+export function matrixNow(where: NetworkWhere = 'space'): { loaded: boolean; state: MatrixState | null; problem: string } {
+  const it = where === 'place' ? place : live;
+  return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '' };
+}
+
+/** The account the screen on top acts on. */
+function acting(): Live | null {
+  return actingWhere() === 'place' ? place : live;
 }
 
 /** How many messages are not read in the open space's Matrix rooms, invites counted as one each. */
@@ -125,7 +139,7 @@ function keepSoon(it: Live): void {
   it.saving = setTimeout(() => {
     it.saving = null;
     // Kept even after the space closed: the keys of what came last must not be lost.
-    saveMatrix(it.space, it.key, it.state).catch((error: unknown) => {
+    saveMatrix(it.space, it.key, it.state, it.holder).catch((error: unknown) => {
       it.problem = reason(error);
       told();
     });
@@ -145,7 +159,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
       try {
         return await change();
       } finally {
-        if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
+        // A hidden place's messages tell nothing outside its hidden chats.
+        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), quiet);
       }
     });
   it.queue = run;
@@ -178,7 +193,7 @@ async function loop(it: Live): Promise<void> {
           it.problem = '';
           told();
         }
-        if (!it.pushChecked) {
+        if (!it.pushChecked && it.holder === 'space') {
           it.pushChecked = true;
           void keepPush(it);
         }
@@ -234,6 +249,7 @@ export function matrixPushOn(): boolean {
  */
 export async function matrixSetPush(on: boolean): Promise<void> {
   const it = need();
+  if (it.holder !== 'space') throw new Error('A hidden place says nothing while closed.');
   const was = it.state.push;
   if (on === !!was) return;
   const relay = await spaceRelayOf(it.space, it.key);
@@ -268,9 +284,31 @@ export function runMatrix(): void {
     return;
   }
   stopMatrix();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing(), pushChecked: false };
-  live = it;
-  loadMatrix(space.space, space.key)
+  live = start('space', space.space, space.key);
+}
+
+/** Loads a hidden place's own account, as its hidden chats open, and syncs it while they stay open. */
+export function openMatrixPlace(space: number, pocket: number, key: Uint8Array): void {
+  if (!canMatrix()) return;
+  const holder = hiddenHolder(pocket);
+  if (place && place.space === space && place.holder === holder && !place.stopped) return;
+  closeMatrixPlace();
+  place = start(holder, space, key);
+}
+
+/** Stops a hidden place's account and lets go of it, as its hidden chats close. */
+export function closeMatrixPlace(): void {
+  if (!place) return;
+  place.stopped = true;
+  if (place.state) forgetVerifications(place.state);
+  place = null;
+  fetched.clear();
+  told();
+}
+
+function start(holder: Holder, space: number, key: Uint8Array): Live {
+  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing(), pushChecked: false };
+  loadMatrix(space, key, holder)
     .then((state) => {
       it.state = state;
       it.heard.hear(unreadAt(state), true);
@@ -283,10 +321,12 @@ export function runMatrix(): void {
       it.problem = reason(error);
       told();
     });
+  return it;
 }
 
-/** Stops syncing and lets go of the account, as its space closes. */
+/** Stops syncing and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopMatrix(): void {
+  closeMatrixPlace();
   if (!live) return;
   live.stopped = true;
   if (live.state) forgetVerifications(live.state);
@@ -300,23 +340,23 @@ export function stopMatrix(): void {
 export const matrixCallAccount = {
   now: (): MatrixState | null => live?.state ?? null,
   change<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
-    const it = need();
+    const it = need(live);
     return changeAccount(it, () => use(it.state));
   },
   /** For what changes nothing of the account: at once, and nothing kept. */
   async read<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
-    return use(need().state);
+    return use(need(live).state);
   },
 };
 
-function need(): Live & { state: MatrixState } {
-  if (!live?.state) throw new Error(t('There is no Matrix account in this space.'));
-  return live as Live & { state: MatrixState };
+function need(it = acting()): Live & { state: MatrixState } {
+  if (!it?.state) throw new Error(t('There is no Matrix account in this space.'));
+  return it as Live & { state: MatrixState };
 }
 
 /** Signs the open space in to Matrix: `who` is a Matrix ID, `server` a homeserver when it is not the ID's own. */
 export async function matrixSignIn(who: string, password: string, server = ''): Promise<void> {
-  const it = live;
+  const it = acting();
   if (!it || it.stopped) throw new Error(t('There is no Matrix account in this space.'));
   try {
     const homeserver = await findHomeserver(server.trim() || who);
@@ -325,7 +365,7 @@ export async function matrixSignIn(who: string, password: string, server = ''): 
       it.state = state;
       it.problem = '';
     });
-    await saveMatrix(it.space, it.key, state);
+    await saveMatrix(it.space, it.key, state, it.holder);
     void loop(it);
   } catch (error) {
     throw new Error(reason(error));
@@ -344,8 +384,8 @@ export async function matrixSignOut(): Promise<void> {
   await changeAccount(it, async () => {
     it.state = null;
   });
-  await saveMatrix(it.space, it.key, null);
-  await followDoor(it.space, it.key).catch(() => undefined);
+  await saveMatrix(it.space, it.key, null, it.holder);
+  if (it.holder === 'space') await followDoor(it.space, it.key).catch(() => undefined);
 }
 
 export function matrixSend(roomId: string, text: string): Promise<void> {
@@ -459,9 +499,10 @@ export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
   return bytes;
 }
 
-/** The open space's checks by emoji (lib/matrix-verify.ts): asked, going on, or just ended. */
-export function matrixVerifications(): Verification[] {
-  return live?.state ? verifications(live.state) : [];
+/** The open space's checks by emoji (lib/matrix-verify.ts), or the open hidden place's: asked, going on, or just ended. */
+export function matrixVerifications(where: NetworkWhere = 'space'): Verification[] {
+  const it = where === 'place' ? place : live;
+  return it?.state ? verifications(it.state) : [];
 }
 
 /** Asks `userId` to check by emoji, in the chat `roomId`; without one, another device of ours. */

@@ -318,6 +318,8 @@ function ring(state: XmppState, s: Session, at: number): void {
 }
 
 function onMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void {
+  // Calls are the space's own account's: a hidden place's takes none.
+  if (space.link()?.state !== state) return;
   const what = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === JMI);
   const id = what?.attrs.id;
   if (!what || !id) return;
@@ -395,6 +397,7 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
   const reply = () => connection.send(el('iq', { type: 'result', id: iq.attrs.id, to: from }));
   const refuse = (condition: string, extra?: XmlElement) =>
     connection.send(el('iq', { type: 'error', id: iq.attrs.id, to: from }, el('error', { type: 'cancel' }, el(condition, { xmlns: NS.stanzas }), extra ?? null)));
+  if (space.link()?.state !== state) return refuse('service-unavailable');
   const s = sessions.get(sid);
   if (action === 'session-initiate') {
     if (s) {
