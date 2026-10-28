@@ -1610,9 +1610,9 @@ discussions XMPP restent donc à part et marquées, pour les personnes que tu ne
 ## Discussions avec d’autres applis Nostr {#nostr-chats}
 
 Dans **Réglages** → **Relais et réseaux** → **Discussions Nostr**, un espace peut avoir sa propre clé Nostr, pour
-discuter en tête-à-tête avec des personnes qui utilisent Damus, Amethyst, Primal, 0xchat ou une autre appli Nostr qui
-envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](#nostr), qui porte les discussions propres
-à Erevos.
+discuter en tête-à-tête ou en groupe avec des personnes qui utilisent Damus, Amethyst, Primal, 0xchat ou une autre appli
+Nostr qui envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](#nostr), qui porte les
+discussions propres à Erevos.
 
 - **La clé :** **Créer une clé Nostr** en crée une pour cet espace ; **Ou apporter une clé d’une autre appli Nostr**
   prend le nsec d’une clé que tu as déjà, et lit ce que ses relais gardent encore. La clé et ses discussions sont
@@ -1625,6 +1625,22 @@ envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](
   comme nom@example.org (NIP-05). Les discussions sont aussi dans la liste de l’accueil, chacune marquée **Nostr** ; le
   bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran. **Lui donner un nom ici** donne à
   une discussion un nom que toi seul vois.
+- **Groupes :** **Nouveau groupe** en crée un avec deux personnes ou plus parmi celles avec qui tu discutes, vingt au
+  plus, avec un nom si tu veux. Les groupes Nostr n’ont pas d’administrateurs : un groupe, ce sont les personnes que
+  nomment ses messages, chaque message va à chacune, chiffré pour chacune, et personne ne peut y être ajouté ou retiré
+  ensuite ; un groupe avec d’autres personnes est un nouveau groupe. **Nommer ce groupe** le renomme pour tous, avec ton
+  prochain message. Un message qu’une autre appli t’envoie, à toi et à d’autres, s’affiche aussi comme un groupe, chaque
+  message avec qui l’a écrit.
+- **Photos et fichiers :** **Photo** et **Fichier**, sous le champ du message d’une discussion, en envoient un de 20 Mo
+  au plus. Il est chiffré sur ce téléphone avec une clé faite pour lui seul (AES-GCM, comme le demande NIP-17) et déposé
+  sur un serveur de fichiers Blossom, qui ne garde que ce qu’il ne peut pas lire ; sa clé va dans le message, chiffrée
+  comme les messages, et l’envoi est signé par une clé faite pour lui seul, si bien que le serveur n’apprend pas à qui
+  il est. Sur Android, les fichiers passent par Tor comme ces discussions. **Serveurs de fichiers** dit où ils vont, au
+  premier qui en accepte un : blossom.primal.net, blossom.band et nostr.download, sauf si tu les changes. Une photo ou
+  un fichier qui arrive n’est récupéré que quand tu touches **Afficher la photo** ou **Enregistrer**, et ne s’ouvre que
+  s’il est celui qui a été envoyé.
+- **Réactions :** appuie longuement sur un message pour réagir avec 👍, ❤️, 😂, 😮, 😢 ou 🙏 ; dessous s’affichent les
+  réactions, la dernière de chaque personne, comme les autres applis Nostr les envoient (NIP-25).
 - **Chiffrement :** chaque message est chiffré pour l’autre personne et signé par toi, puis enveloppé de nouveau par une
   clé créée pour ce seul message, son heure reculée jusqu’à deux jours (NIP-17, avec NIP-44 et NIP-59). Les relais
   voient à qui il est destiné, pas qui l’a écrit, quand, ni ce qu’il dit. Une copie va à tes propres relais, pour que
@@ -1647,8 +1663,9 @@ envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** photos et fichiers (un fichier qui arrive s’affiche comme un fichier qu’Erevos ne sait pas encore
-  ouvrir), discussions de groupe et réactions.
+- **Pas encore :** les messages vocaux enregistrés ici (un message vocal qui arrive est un fichier à enregistrer), les
+  réponses à un message précis, et les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier
+  qu’Erevos ne sait pas ouvrir).
 
 **Pourquoi :** beaucoup de gens sont sur Nostr et y resteront. Ainsi tu leur écris depuis Erevos, à part et marqué, car
 une clé Nostr est la même pour tous ceux à qui tu écris, alors que les discussions propres à Erevos cachent qui parle

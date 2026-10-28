@@ -275,7 +275,7 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
 const NOSTR_MARKS = { sending: -1, failed: -1, sent: 0 } as const;
 
 /** The Nostr chats of a space (lib/nostr-dm-store.ts) as rows: named as given here, or as they call
- *  themselves, or by the start and end of their npub. */
+ *  themselves, or by the start and end of their npub; a group as named, or by its members. */
 export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[] {
   return Object.values(state.chats).map((chat): InboxRow => {
     const last = chat.messages[chat.messages.length - 1];
@@ -284,7 +284,15 @@ export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[
       identity: `nostr:${chat.key}`,
       // Notes to oneself, written from another app with the same key.
       name: chat.key === state.public ? t('Chat with myself') : nostrNameOf(state, chat.key) || shortNpub(npubOf(chat.key)),
-      last: !last ? '' : last.file ? t('A file') : last.text,
+      last: !last
+        ? ''
+        : typeof last.file === 'object'
+          ? last.file.type.startsWith('image/')
+            ? t('Photo')
+            : t('File: {name}', { name: last.file.name ?? last.file.type })
+          : last.file
+            ? t('A file')
+            : last.text,
       mine,
       mark: mine ? NOSTR_MARKS[last.state ?? 'sent'] : 0,
       at: last?.at ?? chat.lastAt,

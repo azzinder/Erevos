@@ -15,15 +15,21 @@ import {
   LOOKUP_RELAYS,
   markRead,
   nameIn,
+  newGroup,
   newNostrDm,
   profileEvent,
+  reactionOf,
+  readersOf,
   readKey,
   setInbox,
+  signedOnce,
   takeWrap,
-  wrapText,
+  wrapMessage,
+  type NostrDmMessage,
   type NostrDmState,
 } from './nostr-dm';
 import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
+import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFile, uploadBlob, type NostrDmFile } from './nostr-files';
 
 // The open space's Nostr chats as the screens use them (app/nostr-chats.tsx, app/nostr-chat.tsx):
 // loaded from their sealed value (lock/nostr-dm-data.ts), reading the space's inbox relays while
@@ -32,7 +38,9 @@ import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
 //
 // Each inbox relay has a connection of its own that reads, and answers one that asks who reads
 // (NIP-42). Messages go out on other connections, which never say whose they are; so do look-ups
-// of where someone reads and what they call themselves.
+// of where someone reads and what they call themselves. A message to a group goes to each of its
+// members' relays, a wrap for each; photos and files go to a Blossom server first
+// (lib/nostr-files.ts).
 
 type Live = {
   space: number;
@@ -345,6 +353,7 @@ export function stopNostrDm(): void {
   live.reading.clear();
   live = null;
   closeOut();
+  fetched.clear();
   told();
 }
 
@@ -419,13 +428,26 @@ async function lookUpPerson(it: Live & { state: NostrDmState }, key: string): Pr
   const relays = await inboxOf(key, events);
   const name = await nameIn(key, events);
   await changeAccount(it, async () => {
-    state.people[key] = { ...(name ? { name } : {}), at: seconds() };
-    if (relays && state.chats[key]) {
-      state.chats[key].relays = relays;
-      state.chats[key].relaysAt = seconds();
-    }
+    const before = state.people[key];
+    state.people[key] = {
+      ...(name ? { name } : {}),
+      at: seconds(),
+      ...(relays ? { relays, relaysAt: seconds() } : before?.relays ? { relays: before.relays, relaysAt: before.relaysAt } : {}),
+    };
   });
   return relays;
+}
+
+/** Where `key` reads: as looked up in the last six hours, or looked up now, or as last known. */
+async function relaysOf(it: Live & { state: NostrDmState }, key: string): Promise<string[] | null> {
+  const state = it.state;
+  if (key === state.public) return state.inbox;
+  const person = state.people[key];
+  // Before groups, a chat kept where its person reads.
+  const known = person?.relays ?? state.chats[key]?.relays;
+  const knownAt = person?.relaysAt ?? state.chats[key]?.relaysAt ?? 0;
+  if (known && knownAt > seconds() - 6 * 3600) return known;
+  return (await lookUpPerson(it, key).catch(() => null)) ?? known ?? null;
 }
 
 /** Starts a chat with someone written as an npub, an nprofile or a name@domain (NIP-05); answers their key. */
@@ -466,27 +488,95 @@ export function nostrDmFreshen(key: string): void {
   void lookUpPerson(it as Live & { state: NostrDmState }, key).catch(() => undefined);
 }
 
+/**
+ * Sends a message of `kind` to the chat `key`: to the relays each of its readers reads on, a wrap
+ * for each, and a copy to the space's own. `shown` makes the message as the chat shows it, from its
+ * id and time; `changed` changes the chat as it goes (a reaction). It went once one relay of one
+ * reader took it.
+ */
+async function sendTo(
+  it: Live & { state: NostrDmState },
+  key: string,
+  kind: number,
+  tags: string[][],
+  content: string,
+  shown?: (id: string, at: number) => NostrDmMessage,
+  changed?: () => void,
+): Promise<void> {
+  const state = it.state;
+  const readers = readersOf(state, key);
+  const where = await Promise.all(readers.map(async (reader) => [reader, await relaysOf(it, reader)] as const));
+  const reachable = where.filter(([, relays]) => relays?.length) as (readonly [string, string[]])[];
+  if (readers.length && !reachable.length) {
+    throw new Error(
+      readers.length === 1
+        ? t('Their Nostr app does not say where it takes private messages (NIP-17), so they cannot get one yet.')
+        : t('None of their Nostr apps says where it takes private messages (NIP-17), so they cannot get one yet.'),
+    );
+  }
+  const made = await wrapMessage(state, key, kind, tags, content);
+  const ours = made.wraps[state.public];
+  const message = shown?.(made.id, made.at);
+  await changeAccount(it, async () => {
+    if (message) addMessage(state, key, message);
+    changed?.();
+    state.seen.push(ours.id);
+  });
+  // Our own copy, for the space's other apps with this key (in notes to oneself, the message
+  // itself); then each reader's, which say whether it went.
+  const tookOurs = publish(state.inbox, ours);
+  const took = readers.length ? (await Promise.all(reachable.map(([reader, relays]) => publish(relays, made.wraps[reader])))).filter((n) => n > 0).length : await tookOurs;
+  const chat = state.chats[key];
+  const told = made.subject !== undefined && took > 0 && (chat?.subject ?? '') === made.subject;
+  if (message || told) {
+    await changeAccount(it, async () => {
+      if (message) message.state = took > 0 ? 'sent' : 'failed';
+      // The name went: the next messages need not carry it.
+      if (told) delete chat.subjectOwed;
+    });
+  }
+  if (!took) throw new Error(t('None of their relays took the message. Try again later.'));
+}
+
 /** Sends `text` to `key`: to the relays they read on, and a copy to the space's own. */
 export async function nostrDmSend(key: string, text: string): Promise<void> {
   const it = need();
+  await sendTo(it, key, 14, [], text, (id, at) => ({ id, mine: true, text, at, state: 'sending' }));
+}
+
+/** A photo or file as picked, to send. */
+export type NostrOutgoingFile = { bytes: Uint8Array; name: string; mime: string; dim?: string };
+
+/** The file is larger than a file server takes. */
+export class NostrFileTooLargeError extends Error {
+  constructor() {
+    super(t('Files up to {size} MB go in Nostr chats.', { size: String(NOSTR_FILE_MOST / (1024 * 1024)) }));
+  }
+}
+
+/** Sends a photo or file: encrypted here, put on the space's file server, and its key in the message (kind 15). */
+export async function nostrDmSendFile(key: string, picked: NostrOutgoingFile): Promise<void> {
+  const it = need();
+  if (picked.bytes.length > NOSTR_FILE_MOST) throw new NostrFileTooLargeError();
+  const { sealed, file } = await sealFile(picked.bytes, picked.mime, picked.name, picked.dim);
+  const url = await uploadBlob(it.state.files?.length ? it.state.files : FILE_SERVERS, sealed, (kind, tags, content) => signedOnce(kind, tags, content));
+  await sendFile(it, key, { ...file, url });
+}
+
+async function sendFile(it: Live & { state: NostrDmState }, key: string, file: NostrDmFile): Promise<void> {
+  await sendTo(it, key, 15, fileTags(file), file.url, (id, at) => ({ id, mine: true, text: '', at, state: 'sending', file }));
+}
+
+/** Reacts to a message with `emoji`, as NIP-25 says, to everyone in the chat. */
+export async function nostrDmReact(key: string, id: string, emoji: string): Promise<void> {
+  const it = need();
   const state = it.state;
-  const self = key === state.public;
-  const chat = chatOf(state, key);
-  let relays = self ? state.inbox : chat.relays && (chat.relaysAt ?? 0) > seconds() - 6 * 3600 ? chat.relays : null;
-  if (!relays) relays = (await lookUpPerson(it, key).catch(() => null)) ?? chat.relays ?? null;
-  if (!relays?.length) throw new Error(t('Their Nostr app does not say where it takes private messages (NIP-17), so they cannot get one yet.'));
-  const { message, theirs, ours } = await wrapText(state, key, text);
-  await changeAccount(it, async () => {
-    addMessage(state, key, message);
-    state.seen.push(ours.id);
+  const target = state.chats[key]?.messages.find((m) => m.id === id);
+  if (!target) return;
+  const reaction = reactionOf(emoji);
+  await sendTo(it, key, 7, [['e', id], ['k', target.file ? '15' : '14']], reaction, undefined, () => {
+    target.reactions = { ...target.reactions, [state.public]: reaction };
   });
-  // Our own copy, for the space's other apps with this key; then theirs, which says whether it went.
-  if (!self) void publish(state.inbox, ours);
-  const took = await publish(relays, theirs);
-  await changeAccount(it, async () => {
-    message.state = took > 0 ? 'sent' : 'failed';
-  });
-  if (!took) throw new Error(t('None of their relays took the message. Try again later.'));
 }
 
 /** Sends a message that failed once more, as a new one. */
@@ -498,7 +588,63 @@ export async function nostrDmRetry(key: string, id: string): Promise<void> {
   await changeAccount(it, async () => {
     chat.messages = chat.messages.filter((m) => m !== failed);
   });
-  await nostrDmSend(key, failed.text);
+  if (typeof failed.file === 'object') await sendFile(it, key, failed.file);
+  else await nostrDmSend(key, failed.text);
+}
+
+/** Makes a group with these people (their keys), named or not: answers its key. Nothing goes until its first message. */
+export async function nostrDmNewGroup(members: string[], subject = ''): Promise<string> {
+  const it = need();
+  let key = '';
+  await changeAccount(it, async () => {
+    key = newGroup(it.state, members, subject);
+  });
+  for (const member of members) nostrDmFreshen(member);
+  return key;
+}
+
+/** Names a group for all its members: the name goes with the next message. */
+export function nostrDmSetSubject(key: string, subject: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const chat = it.state.chats[key];
+    if (!chat?.members) return;
+    chat.subject = subject.trim().slice(0, 100) || undefined;
+    chat.subjectAt = seconds();
+    chat.subjectOwed = true;
+  });
+}
+
+/** The Blossom servers photos and files go to; none for Erevos's own list. */
+export function nostrDmSetFileServers(servers: string[]): Promise<void> {
+  const it = need();
+  const list = [...new Set(servers.map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean))];
+  const bad = list.find((s) => !/^https:\/\/[^/\s]+$/.test(s));
+  if (bad) return Promise.reject(new Error(t('{server} is not a file server address (https://…).', { server: bad })));
+  return changeAccount(it, async () => {
+    if (list.length) it.state.files = list.slice(0, 5);
+    else delete it.state.files;
+  });
+}
+
+// Files fetched while Erevos runs, by their address, so one looked at again is not fetched again:
+// the newest few, up to FETCHED_MOST bytes in all. Never written to the phone.
+const FETCHED_MOST = 40 * 1024 * 1024;
+const fetched = new Map<string, Uint8Array>();
+
+/** A message's photo or file, fetched from its server and opened, or kept from before. */
+export async function nostrDmFile(file: NostrDmFile): Promise<Uint8Array> {
+  const kept = fetched.get(file.url);
+  if (kept) return kept;
+  const bytes = openFile(file, await downloadBlob(file.url));
+  fetched.set(file.url, bytes);
+  let total = [...fetched.values()].reduce((sum, b) => sum + b.length, 0);
+  for (const [url, b] of fetched) {
+    if (total <= FETCHED_MOST || url === file.url) continue;
+    fetched.delete(url);
+    total -= b.length;
+  }
+  return bytes;
 }
 
 /** A chat's own notifications (lock/chat-notify.ts), or the app's again with null. */

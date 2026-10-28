@@ -246,6 +246,12 @@ const nobleGcm: Gcm = {
 
 let aesGcm: Gcm = nobleGcm;
 
+/** AES-256-GCM with a 12-byte nonce, the native one where the app has it: what was sealed, then the
+ *  16-byte tag. For files that other apps open (lib/nostr-files.ts). */
+export function aesGcmSeal(key: Uint8Array, nonce: Uint8Array, data: Uint8Array): Uint8Array {
+  return aesGcm.seal(key, nonce, data);
+}
+
 // AES-GCM in JavaScript takes seconds for each megabyte of a file on a phone, so the app plugs in
 // a native one at startup. It is kept only if it seals exactly as the JavaScript one does, opens
 // what that sealed, and refuses what was changed. Says whether it was kept. Past 64 KB, where a

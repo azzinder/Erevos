@@ -1418,8 +1418,8 @@ the people you would otherwise reach only on XMPP.
 ## Chats with other Nostr apps {#nostr-chats}
 
 Under **Settings** → **Relay and networks** → **Nostr chats**, a space can have a Nostr key of its own, to chat one to
-one with people who use Damus, Amethyst, Primal, 0xchat or another Nostr app that sends private messages as NIP-17
-asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
+one or in groups with people who use Damus, Amethyst, Primal, 0xchat or another Nostr app that sends private messages as
+NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
 
 - **The key:** **Make a Nostr key** makes one for this space; **Or bring a key from another Nostr app** takes the nsec
   of one you already have, and reads what its relays still keep. The key and its chats are kept encrypted in this
@@ -1430,6 +1430,20 @@ asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
 - **Chats:** **New chat** takes their npub (or nprofile), from their profile in their app, or a name such as
   name@example.org (NIP-05). The chats are in the home list too, each marked **Nostr**; the **Nostr** chip shows only
   them, and there **New chat** opens this screen. **Name them here** gives a chat a name that only you see.
+- **Groups:** **New group** makes one from two or more of the people you chat with, twenty at most, with a name if you
+  like. Nostr groups have no admins: a group is the people its messages name, each message goes to each of them,
+  encrypted for each, and nobody can be added or taken out later; a group with other people is a new group. **Name this
+  group** renames it for everyone, with your next message. A message another app sends to you and others shows as a
+  group too, each message with who wrote it.
+- **Photos and files:** **Photo** and **File**, under a chat's message box, send one of up to 20 MB. It is encrypted on
+  this phone with a key made for it alone (AES-GCM, as NIP-17 asks) and put on a Blossom file server, which keeps only
+  what it cannot read; its key goes in the message, encrypted as messages are, and the upload is signed by a key made
+  for it alone, so the server does not learn whose it is. On Android, files go through Tor as these chats do. **File
+  servers** says where they go, the first that takes one: blossom.primal.net, blossom.band and nostr.download unless you
+  change them. A photo or file that comes is fetched only when you tap **Show photo** or **Save**, and opens only if it
+  is the one that was sent.
+- **Reactions:** hold a message to react with 👍, ❤️, 😂, 😮, 😢 or 🙏; under it show the reactions, the last one of each
+  person, as other Nostr apps send them (NIP-25).
 - **Encryption:** each message is encrypted for them and signed by you, then wrapped again by a key made for that
   message alone, its time set back by up to two days (NIP-17, with NIP-44 and NIP-59). The relays see whom it is for,
   not who wrote it, when, or what it says. A copy goes to your own relays, so your other Nostr apps with this key read
@@ -1450,7 +1464,8 @@ asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** photos and files (one that comes shows as a file Erevos cannot open yet), group chats, and reactions.
+- **Not yet:** voice messages recorded here (one that comes is a file to save), answers to one message, and files
+  another app encrypts some other way (they show as a file Erevos cannot open).
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
 because a Nostr key is the same to everyone you write to, while Erevos's own chats hide who talks with whom.

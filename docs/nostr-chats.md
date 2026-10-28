@@ -1,7 +1,8 @@
 # Chats with other Nostr apps
 
-A space can have a Nostr key of its own and chat one to one with people who use Damus, Amethyst,
-Primal, 0xchat or any other Nostr app that sends private messages as NIP-17 asks. Erevos talks to
+A space can have a Nostr key of its own and chat, one to one or in groups, with people who use
+Damus, Amethyst, Primal, 0xchat or any other Nostr app that sends private messages as NIP-17 asks:
+text, photos and files, and reactions. Erevos talks to
 the Nostr relays itself, as those apps do. This is not Erevos's own Nostr way (`app/lib/nostr.ts`,
 the guide's "Through Nostr"), which carries Erevos's own chats between Erevos apps; the two share
 only the core's Nostr code (`crates/erevos-nostr`).
@@ -31,9 +32,54 @@ As NIP-17 has it, with NIP-44 encryption and NIP-59 wraps:
 
 A wrap that comes is opened the other way, and counts only when the wrap's signature, the seal's
 signature and the rumor's id are right, and the seal's key is the rumor's author: anyone else
-could otherwise write in someone's name. A rumor that names more than one other person (a group) is
-let be, so are kinds other than 14 and 15; a kind 15 (a file) shows as a file that cannot be opened
-yet. A time in the future is shown as now.
+could otherwise write in someone's name. Kinds other than 14 (text), 15 (a file) and 7 (a reaction)
+are let be. A time in the future is shown as now.
+
+## Groups
+
+NIP-17 has no group to make or join: a group is the set of people a message names, its author and
+its `p` tags. Each message is wrapped once for each of them and once for the space, as above. So:
+
+- A chat's key is one person's key, or, for two or more others, `groupKey`: the SHA-256 of all the
+  members' keys (the space's too), sorted, in hex. Every member's app finds the same group from any
+  member's message. More than 20 others (`GROUP_MOST`) is let be.
+- Nobody runs it: nobody can be added or taken out. A message to other people is another group.
+- Its name is the `subject` tag; the newest one by its rumor's time wins, from any member. Erevos
+  sends it with the next message after it was given or changed here (**Name this group**), not with
+  each one, as NIP-17 asks: an old name sent late would undo a newer one. A newer name that comes
+  first is not sent at all.
+- Each message from someone else carries who wrote it (`from`), shown above it.
+
+**New group** on the Nostr chats screen makes one from two or more of the space's one-to-one chats.
+
+## Photos and files
+
+As NIP-17 has them (kind 15), with the file on a Blossom server (BUD-01, BUD-02):
+
+1. The file is encrypted on the phone with AES-256-GCM, by a key and a 12-byte nonce made for it
+   alone (`sealFile`, `app/lib/nostr-files.ts`).
+2. What is encrypted goes to the first Blossom server that takes it: `PUT /upload`, with an
+   `Authorization: Nostr` event (kind 24242, `t` upload, `x` its hash, an `expiration` ten minutes on,
+   `server` the host) signed by a key made for this upload alone, so the server cannot tell whose it
+   is. The servers are the space's own list, or blossom.primal.net, blossom.band and nostr.download.
+   An answer whose `sha256` is not the hash sent is refused. On Android through Tor
+   (`torHttp`), as the space's Tor way says, as the chats go.
+3. The message is a kind 15 rumor whose content is the file's URL, with `file-type`,
+   `encryption-algorithm` `aes-gcm`, `decryption-key`, `decryption-nonce`, `x` (the hash of what is
+   encrypted), `ox` (the file's own), `size`, `dim` for a photo and `name`. It goes as a kind 14 does.
+4. A file that comes is fetched only when asked for (**Show photo**, **Save**), checked against `x`,
+   opened with any nonce length (some apps send 16 bytes), and checked against `ox` when it is said.
+   One with another encryption, or no `x`, shows as a file Erevos cannot open.
+
+Up to 20 MB (`NOSTR_FILE_MOST`), what the servers above take without payment. A file fetched is kept
+in memory while the space is open, not on the phone.
+
+## Reactions
+
+A reaction is a kind 7 rumor (NIP-25) wrapped as a message is, to the same people, its last `e` tag
+the message reacted to and `k` its kind; `+` shows as 👍 and `-` as 👎. Each person's last one shows.
+One that comes before its message (wraps come in any order) is kept, up to 200, and put on the message
+as it comes.
 
 ## How it is built
 
@@ -56,6 +102,8 @@ yet. A time in the future is shown as now.
   wraps remembered as taken, 300 chats at most: past that, the chat that moved least long ago with
   nothing of ours and no name given makes room, and when none has, a stranger's message waits on
   the relay until there is room.
+- `app/lib/nostr-files.ts`: photos and files: encrypting, opening, the kind 15 tags, Blossom uploads
+  and fetches.
 - `app/lib/nostr-dm-store.ts`: the open space's account while the space is open (started in
   `app/_layout.tsx`, as XMPP is). Each inbox relay has a reading connection of its own, which reads
   wraps for the key from two days before it last read all (the times are set back), again after a
@@ -74,12 +122,16 @@ yet. A time in the future is shown as now.
   round trip, a seal signed by someone other than the rumor's author refused, signed events.
 - `app/checks/nostr-dm.check.ts`, with relays played in `app/checks/nostr-relay.ts` (one that keeps
   wraps for their reader only and asks who reads, as NIP-17 recommends): keys as people write them,
-  the NIP-17 example through the app's own code, a group let be, a note to oneself, a time to come,
+  the NIP-17 example through the app's own code, a message to three people making a group, one to
+  too many let be, a note to oneself, a time to come,
   the chats a stranger can make, and two keys writing both ways through each other's inbox relays,
   the space's guarded one asking who reads and told only by the connection that reads; the wraps
   signed by one-time keys, times set back, nothing on the look-up relay; the space's other app
   reading both sides; someone with no kind 10050 told so; closing and opening the space; a relay
-  that goes away read again; a NIP-05 name; the home list's rows.
+  that goes away read again; a NIP-05 name; the home list's rows; a group of three made, named and
+  written in by all, its reactions (one before its message), and a photo through a Blossom server
+  played in the check (encrypted there, the upload signed by a one-time key, opened by the others);
+  a file another app sent with a 16-byte nonce.
 - `docs/nostr-checks/nip17-cross.ts` against nostr-tools, the library many Nostr apps are built on:
   a message Erevos wraps opens there, as the reader's and as the sender's copy; one it wraps opens
   in Erevos; npub, nsec and nprofile read the same both ways; a wrap changed on the way is refused;
@@ -91,7 +143,7 @@ cd app && node checks/build-core.mjs
 node --import ./checks/register.mjs ../docs/nostr-checks/nip17-cross.ts /tmp/nt/node_modules/nostr-tools
 ```
 
-Not yet run with a Nostr app on a phone.
+Not yet run with a Nostr app on a phone, nor against the real Blossom servers.
 
 ## Screens
 
@@ -100,8 +152,13 @@ Not yet run with a Nostr app on a phone.
   or name@domain, the chats, the name others see, the relays where messages arrive (one to three),
   the nsec shown only when asked, and forgetting the key. It says the chats are not anonymous, how
   many of the relays it reads, and on Android whether through Tor.
+  **New group** chooses two or more of its chats and a name; **File servers** lists where photos and
+  files go, to change.
 - `app/nostr-chat.tsx`: the messages, one tick once one of their relays took ours (NIP-17 says
-  nothing more), Try again for one none took, a name given here only, and removing the chat here.
+  nothing more), Try again for one none took, a name given here only (a group's, for everyone),
+  removing the chat here; in a group who wrote each message; **Photo** and **File**, and a photo or
+  file that came with **Show photo** and **Save**; a message held shows six reactions to pick from,
+  and under it the reactions it has.
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a
@@ -120,6 +177,6 @@ Android; a muted one is left out. Its messages are marked read only while Erevos
 
 ## Not yet
 
-Files (kind 15 with its encrypted file), group chats, reactions (kind 7 in a wrap), the key in
-backups and in hidden chats, and a key kept by a
-signer app (NIP-55) or a remote signer (NIP-46) in place of the nsec.
+Voice messages recorded here (one that comes is a file to save), replies to one message (an `e`
+tag on a kind 14), files encrypted otherwise than with AES-GCM, the key in backups and in hidden
+chats, and a key kept by a signer app (NIP-55) or a remote signer (NIP-46) in place of the nsec.

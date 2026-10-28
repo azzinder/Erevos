@@ -152,8 +152,8 @@ On main, not released yet:
   other way round: it shows as missed. Checked against a homeserver played in the checks with the real core, and the
   real Element Call in Chromium up to the media server; not yet on a phone with Element X.
 - **Chats with people on other Nostr apps**: under **Settings** → **Relay and networks** → **Nostr chats**, a space
-  gets a Nostr key of its own (made there, or brought from another app as its nsec) and chats one to one with people
-  who use Damus, Amethyst, Primal, 0xchat or another app that speaks NIP-17. Each message is a kind 14 sealed by the
+  gets a Nostr key of its own (made there, or brought from another app as its nsec) and chats one to one or in groups
+  with people who use Damus, Amethyst, Primal, 0xchat or another app that speaks NIP-17. Each message is a kind 14 sealed by the
   sender (kind 13, NIP-44) and wrapped by a one-time key (kind 1059, NIP-59), times set back up to two days, sent only
   to the relays the reader names (their kind 10050), with a copy to the space's own for its other apps. The space's own
   list (relay.damus.io, nos.lol, relay.primal.net unless changed, three at most) and the name it gives itself, if any,
@@ -163,7 +163,17 @@ On main, not released yet:
   fill the space with chats: past 300, one with nothing of ours makes room. Chats are in the home list under a
   **Nostr** chip. The key and the chats are kept encrypted in the space only, not in hidden chats or backups yet.
   Checked against NIP-17's and NIP-19's own examples and against nostr-tools both ways; not yet with a Nostr app on a
-  phone. Not yet: files, groups and reactions.
+  phone.
+- **Photos, files, reactions and groups in Nostr chats**: **Photo** and **File** send one of up to 20 MB as NIP-17
+  does (kind 15): encrypted on the phone with AES-256-GCM by a key and nonce made for it alone, put on the first Blossom
+  server that takes it (blossom.primal.net, blossom.band, nostr.download unless the space lists its own), the upload
+  signed by a one-time key so the server cannot tell whose it is, and on Android through Tor as the chats go. One that
+  comes is fetched only when asked for, checked against its hash, then opened, with any nonce length, as some apps send
+  16 bytes. Reactions (kind 7, NIP-25): hold a message for six, and each person's last one shows under it, also one that
+  came before its message. Groups as NIP-17 makes them: the people a message names, up to 20 others, with a name any
+  member can change; **New group** makes one from the space's chats, and a message from another app to several people
+  opens one. Not yet: voice messages recorded here, replies to one message, files encrypted otherwise than with AES-GCM.
+  Checked with a Blossom server played in the checks; not yet against the real ones.
 - **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
   same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
   (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another

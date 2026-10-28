@@ -95,10 +95,13 @@ test('a wrong password is said so', { skip: !coreReady }, async () => {
   await assert.rejects(signInXmpp(`ann@${DOMAIN}`, 'wrong', undefined, server.connect), (error: unknown) => error instanceof XmppError && error.condition === 'not-authorized');
 });
 
-test('two people write encrypted both ways, and a second device reads along', { skip: !coreReady }, async () => {
+test('two people write encrypted both ways, and a second device reads along', { skip: !coreReady }, async (t) => {
   const server = new Server();
   const ann = await person(server, 'ann');
   const ben = await person(server, 'ben');
+  // Closed however it ends: a connection left open keeps the checks from ending.
+  const people = [ann, ben];
+  t.after(() => people.forEach((p) => p.connection.close()));
   await addXmppContact(ann.state, ann.connection, `ben@${DOMAIN}`, 'Ben');
   await settle([ann, ben]);
   assert.deepEqual(ben.state.requests, [`ann@${DOMAIN}`]);
@@ -110,6 +113,7 @@ test('two people write encrypted both ways, and a second device reads along', { 
 
   // Ann's second device signs in later.
   const ann2 = await person(server, 'ann');
+  people.push(ann2);
   await settle([ann, ben, ann2]);
 
   const sent = await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'Γεια σου Ben');
@@ -154,7 +158,6 @@ test('two people write encrypted both ways, and a second device reads along', { 
   await startSession(ben.state, ben.connection);
   await settle([ben]);
   assert.equal(ben.state.chats[`ann@${DOMAIN}`].messages.length, 4);
-  for (const p of [ann, ben, ann2]) p.connection.close();
 });
 
 async function until(done: () => boolean, what: string, ms = 5000): Promise<void> {

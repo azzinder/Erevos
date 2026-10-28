@@ -3,23 +3,37 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { QrCode } from '../components/QrCode';
-import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canNostrChat, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { INBOX_MOST, nameOf, npubOf, nsecOf, shortNpub, type NostrDmChat, type NostrDmState } from '../lib/nostr-dm';
 import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
-import { nostrDmBring, nostrDmForget, nostrDmMake, nostrDmNow, nostrDmSetInbox, nostrDmSetName, nostrDmStart, onNostrDmChange, runNostrDm } from '../lib/nostr-dm-store';
+import {
+  nostrDmBring,
+  nostrDmForget,
+  nostrDmMake,
+  nostrDmNewGroup,
+  nostrDmNow,
+  nostrDmSetFileServers,
+  nostrDmSetInbox,
+  nostrDmSetName,
+  nostrDmStart,
+  onNostrDmChange,
+  runNostrDm,
+} from '../lib/nostr-dm-store';
+import { FILE_SERVERS } from '../lib/nostr-files';
 import { onTorReady } from '../lib/relay';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // The space's chats with other Nostr apps (lib/nostr-dm-store.ts, docs/nostr-chats.md), under
 // Settings → Relay and networks → Nostr chats: a key made here or brought from another app, then
-// the key to give others (as text and as a QR code), a new chat with an npub or a name@domain, the
-// chats, the name others see, the relays where messages come (NIP-17's inbox), the secret key to
-// take elsewhere, and forgetting it all. Each chat opens in app/nostr-chat.tsx. Every view says
+// the key to give others (as text and as a QR code), a new chat with an npub or a name@domain, a new
+// group of people it chats with, the chats, the name others see, the relays where messages come
+// (NIP-17's inbox), the file servers photos and files go to, the secret key to take elsewhere, and
+// forgetting it all. Each chat opens in app/nostr-chat.tsx. Every view says
 // these chats are not anonymous.
 
 export default function NostrChatsScreen() {
@@ -65,7 +79,7 @@ export default function NostrChatsScreen() {
 
   const about = (
     <Text tone="muted">
-      {t('Chat one to one with people on other Nostr apps, such as Damus, Amethyst, Primal or 0xchat. Messages are encrypted as NIP-17 asks: relays see whom a message is for, but not who wrote it nor what it says. These chats are not anonymous: your Nostr key is the same to everyone you write to.')}
+      {t('Chat with people on other Nostr apps, such as Damus, Amethyst, Primal or 0xchat, one to one or in groups. Messages are encrypted as NIP-17 asks: relays see whom a message is for, but not who wrote it nor what it says. These chats are not anonymous: your Nostr key is the same to everyone you write to.')}
     </Text>
   );
 
@@ -186,6 +200,8 @@ export default function NostrChatsScreen() {
         </Text>
       </Card>
 
+      <GroupCard state={state} busy={busy} run={run} open={open} />
+
       <SectionTitle title={t('Chats')} />
       {chats.length === 0 ? <Text tone="muted">{t('No Nostr chats yet.')}</Text> : null}
       {chats.map((chat) => (
@@ -194,6 +210,7 @@ export default function NostrChatsScreen() {
 
       <NameCard state={state} busy={busy} run={run} />
       <InboxCard state={state} busy={busy} run={run} />
+      <FilesCard state={state} busy={busy} run={run} />
       <SecretCard state={state} />
 
       {note ? <Text tone="muted">{note}</Text> : null}
@@ -280,6 +297,91 @@ function InboxCard({ state, busy, run }: { state: NostrDmState; busy: boolean; r
   );
 }
 
+// A group of people the space chats with (NIP-17: everyone a message names): two at least.
+function GroupCard({ state, busy, run, open }: { state: NostrDmState; busy: boolean; run: Run; open: (key: string) => void }) {
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [subject, setSubject] = useState('');
+  const people = Object.values(state.chats)
+    .filter((chat) => !chat.members && chat.key !== state.public)
+    .map((chat) => chat.key);
+  if (people.length < 2) return null;
+  const toggle = (key: string) => setChosen((now) => (now.includes(key) ? now.filter((k) => k !== key) : [...now, key]));
+  return (
+    <>
+      <SectionTitle title={t('New group')} />
+      <Card>
+        <Text tone="muted">{t('Choose two or more of the people you chat with. Each message goes to each of them, encrypted for each.')}</Text>
+        <Row wrap>
+          {people.map((key) => (
+            <Chip key={key} label={nameOf(state, key) || shortNpub(npubOf(key))} selected={chosen.includes(key)} onPress={() => toggle(key)} />
+          ))}
+        </Row>
+        <Input value={subject} onChangeText={setSubject} maxLength={100} placeholder={t('Group name (optional)')} accessibilityLabel={t('Group name (optional)')} />
+        <Button
+          title={t('Make the group')}
+          compact
+          disabled={busy || chosen.length < 2}
+          onPress={() =>
+            void run(async () => {
+              const key = await nostrDmNewGroup(chosen, subject);
+              setChosen([]);
+              setSubject('');
+              open(key);
+            })
+          }
+        />
+        <Text variant="caption" tone="faint">
+          {t('Nostr groups have no admins: nobody can be added or taken out later. A group with other people is a new group.')}
+        </Text>
+      </Card>
+    </>
+  );
+}
+
+// Where photos and files go, encrypted (lib/nostr-files.ts): Blossom servers, the first that takes one.
+function FilesCard({ state, busy, run }: { state: NostrDmState; busy: boolean; run: Run }) {
+  const [adding, setAdding] = useState('');
+  const own = state.files?.length ? state.files : null;
+  const list = own ?? FILE_SERVERS;
+  const set = (servers: string[]) => run(() => nostrDmSetFileServers(servers));
+  return (
+    <>
+      <SectionTitle title={t('File servers')} />
+      <Card>
+        <Text tone="muted">
+          {t('Photos and files go to the first of these Blossom servers that takes them, encrypted on this phone: the server keeps only what it cannot read, and does not learn whose they are.')}
+        </Text>
+        {list.map((server) => (
+          <Row key={server}>
+            <Text style={{ flex: 1, fontFamily: 'monospace' }} numberOfLines={1}>
+              {server}
+            </Text>
+            {list.length > 1 ? (
+              <Button title={t('Remove')} kind="secondary" compact disabled={busy} onPress={() => void set(list.filter((s) => s !== server))} />
+            ) : null}
+          </Row>
+        ))}
+        {list.length < 5 ? (
+          <Row>
+            <Input style={{ flex: 1 }} value={adding} onChangeText={setAdding} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://blossom.example.org" accessibilityLabel={t('A file server to add')} />
+            <Button
+              title={t('Add')}
+              compact
+              disabled={busy || !adding.trim()}
+              onPress={() =>
+                void set([...list, adding]).then(() => {
+                  if (nostrDmNow().state?.files?.includes(adding.trim().replace(/\/+$/, ''))) setAdding('');
+                })
+              }
+            />
+          </Row>
+        ) : null}
+        {own ? <Button title={t("Erevos's own list again")} kind="secondary" compact disabled={busy} onPress={() => void set([])} /> : null}
+      </Card>
+    </>
+  );
+}
+
 // The secret key, shown only when asked: whoever has it is this key on Nostr.
 function SecretCard({ state }: { state: NostrDmState }) {
   const [nsec, setNsec] = useState('');
@@ -335,7 +437,7 @@ function ChatCard({ state, chat, onOpen }: { state: NostrDmState; chat: NostrDmC
             </Text>
             {last ? (
               <Text tone="muted" numberOfLines={1}>
-                {last.file ? t('A file') : last.text}
+                {typeof last.file === 'object' ? (last.file.type.startsWith('image/') ? t('Photo') : t('File: {name}', { name: last.file.name ?? last.file.type })) : last.file ? t('A file') : last.text}
               </Text>
             ) : null}
           </View>

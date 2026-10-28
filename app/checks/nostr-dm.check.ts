@@ -5,7 +5,9 @@
 // each other's inbox relays, the space's guarded one asking who reads (NIP-42) and told only by
 // the connection that reads; relays keep only wraps signed by keys made for them, with times set
 // back; someone who names no inbox gets nothing; the space's own other app reads both sides; a chat
-// survives the space closing and opening again, without anything twice.
+// survives the space closing and opening again, without anything twice; a group of three, each
+// getting a wrap of their own, with its name and reactions; a photo encrypted on the phone, put on
+// a Blossom server played here under a key made for the upload, and opened by the others.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -15,14 +17,39 @@ import { after, before, test } from 'node:test';
 
 import { setCurrentSpace } from '../lock/keys';
 import { setCore, type Core } from '../lib/core';
-import { randomBytes } from '../lib/crypto';
-import { addMessage, BACKDATE, CHATS_MOST, chatCore, inboxEvent, LOOKUP_RELAYS, newNostrDm, npubOf, profileEvent, readKey, shortNpub, takeWrap, wrapText, type NostrDmState } from '../lib/nostr-dm';
+import { fromBase64, randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
+import {
+  addMessage,
+  BACKDATE,
+  CHATS_MOST,
+  chatCore,
+  GROUP_MOST,
+  groupKey,
+  inboxEvent,
+  LOOKUP_RELAYS,
+  newNostrDm,
+  npubOf,
+  profileEvent,
+  readKey,
+  shortNpub,
+  takeWrap,
+  wrapMessage,
+  wrapText,
+  type NostrDmState,
+} from '../lib/nostr-dm';
+import { openFile, setNostrHttp, type NostrDmFile } from '../lib/nostr-files';
 import { inboxParts, nostrInboxRows, showsIn } from '../lib/inbox';
 import { lookUpNip05, NostrRelay, setNostrOpen } from '../lib/nostr-dm-net';
 import { networkNotify, networkUnreadAt, onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import {
+  nostrDmFile,
   nostrDmForgetChat,
   nostrDmMake,
+  nostrDmNewGroup,
+  nostrDmReact,
+  nostrDmSendFile,
+  nostrDmSetFileServers,
+  nostrDmSetSubject,
   nostrDmNow,
   nostrDmRead,
   nostrDmSend,
@@ -48,6 +75,7 @@ const relay = (url: string, options?: { guarded?: boolean; refuses?: boolean }) 
 };
 const aliceInbox = relay('wss://inbox.alice.example', { guarded: true });
 const bobInbox = relay('wss://inbox.bob.example');
+const carolInbox = relay('wss://inbox.carol.example');
 // The relays names and lists are looked up on: one keeps them, the others are away.
 const index = relay(LOOKUP_RELAYS[0]);
 for (const url of LOOKUP_RELAYS.slice(1)) relay(url, { refuses: true });
@@ -116,17 +144,34 @@ test("NIP-17's own example opens, for its reader and as its sender's copy", { sk
   assert.equal(Object.keys(sender.chats).length, 1);
 });
 
-test('a message to three people is let be, a note to oneself is kept', { skip: !coreReady }, async () => {
+test('a message to three people makes a group, one to too many is let be, a note to oneself is kept', { skip: !coreReady }, async () => {
   const me = await newNostrDm();
   const a = await newNostrDm();
   const b = await newNostrDm();
   const group = await chatCore<{ wraps: { to: string; event: string }[] }>('wrap', {
     secret: a.secret,
-    rumor: { kind: 14, created_at: 1, tags: [['p', me.public], ['p', b.public]], content: 'all of us' },
+    rumor: { kind: 14, created_at: 1, tags: [['p', me.public], ['p', b.public], ['subject', ' Εμείς ']], content: 'all of us' },
     to: [me.public],
     now: 1_800_000_000,
   });
-  assert.equal(await takeWrap(me, JSON.parse(group.wraps[0].event)), null);
+  const key = groupKey([me.public, a.public, b.public]);
+  assert.equal(await takeWrap(me, JSON.parse(group.wraps[0].event)), key);
+  assert.deepEqual(me.chats[key].members, [a.public, b.public].sort());
+  assert.equal(me.chats[key].subject, 'Εμείς');
+  assert.deepEqual(
+    me.chats[key].messages.map((m) => [m.from, m.text]),
+    [[a.public, 'all of us']],
+  );
+  // More than GROUP_MOST others: not a chat.
+  const many = await Promise.all(Array.from({ length: GROUP_MOST }, async () => (await newNostrDm()).public));
+  const crowd = await chatCore<{ wraps: { to: string; event: string }[] }>('wrap', {
+    secret: a.secret,
+    rumor: { kind: 14, created_at: 2, tags: [me.public, ...many].map((p) => ['p', p]), content: 'everyone' },
+    to: [me.public],
+    now: 1_800_000_000,
+  });
+  assert.equal(await takeWrap(me, JSON.parse(crowd.wraps[0].event)), null);
+  assert.equal(Object.keys(me.chats).length, 1);
   // A time to come is shown as now.
   const later = await chatCore<{ wraps: { to: string; event: string }[] }>('wrap', {
     secret: a.secret,
@@ -303,6 +348,163 @@ test('a space and someone on another app write both ways through their inbox rel
   aliceInbox.drop();
   await until(() => aliceInbox.connections > before && nostrDmNow().reading === 1, 'the inbox to be read again', 10_000);
   stopNostrDm();
+});
+
+test('a group of three, with its name and reactions, and a photo through a file server', { skip: !coreReady }, async () => {
+  // Bob and Carol, on other apps, said where they read.
+  const bob: NostrDmState = await newNostrDm();
+  bob.inbox = [bobInbox.url];
+  const carol: NostrDmState = await newNostrDm();
+  carol.inbox = [carolInbox.url];
+  for (const person of [bob, carol]) {
+    const r = await NostrRelay.open(index.url, null);
+    assert.equal((await r.publish(await inboxEvent(person))).ok, true);
+    r.close();
+  }
+  // A Blossom server: what it was given, and with which permission.
+  const blobs = new Map<string, Uint8Array>();
+  const permits: { pubkey: string; kind: number; tags: string[][] }[] = [];
+  setNostrHttp(async (method, url, headers, body) => {
+    if (method === 'PUT' && url === 'https://files.example/upload' && body) {
+      const token = headers.Authorization.replace(/^Nostr /, '').replace(/-/g, '+').replace(/_/g, '/');
+      permits.push(JSON.parse(utf8Decode(fromBase64(token + '='.repeat((4 - (token.length % 4)) % 4)))));
+      const hash = toHex(sha256Bytes(body));
+      if (headers['X-SHA-256'] !== hash) return { status: 409, bytes: new Uint8Array(0) };
+      blobs.set(hash, body);
+      return { status: 201, bytes: utf8Encode(JSON.stringify({ url: `https://files.example/${hash}.bin`, sha256: hash, size: body.length })) };
+    }
+    const blob = method === 'GET' ? blobs.get(url.split('/').pop()!.replace(/\.bin$/, '')) : undefined;
+    return blob ? { status: 200, bytes: blob } : { status: 404, bytes: new Uint8Array(0) };
+  });
+  const read = async (person: NostrDmState, inbox: FakeRelay) => {
+    const r = await NostrRelay.open(inbox.url, null);
+    for (const wrap of await r.query([{ kinds: [1059], '#p': [person.public] }])) await takeWrap(person, wrap);
+    r.close();
+  };
+
+  setCurrentSpace(2, randomBytes(32));
+  try {
+    runNostrDm();
+    await until(() => nostrDmNow().loaded, 'the account to load');
+    await nostrDmMake();
+    await nostrDmSetInbox([aliceInbox.url]);
+    await nostrDmSetFileServers(['https://files.example/']);
+    const alice = nostrDmNow().state!;
+    await nostrDmStart(npubOf(bob.public), 'Bob');
+    await nostrDmStart(npubOf(carol.public), 'Carol');
+    await assert.rejects(nostrDmNewGroup([bob.public]), /two other people/);
+    const group = await nostrDmNewGroup([carol.public, bob.public], 'Τρεις');
+    assert.equal(group, groupKey([alice.public, bob.public, carol.public]));
+    await nostrDmSend(group, 'γεια σε όλους');
+
+    // Each has a wrap of their own, and the group as Alice made it.
+    await read(bob, bobInbox);
+    await read(carol, carolInbox);
+    for (const [person, others] of [
+      [bob, [alice.public, carol.public]],
+      [carol, [alice.public, bob.public]],
+    ] as const) {
+      const chat = person.chats[group];
+      assert.deepEqual(chat.members, [...others].sort());
+      assert.equal(chat.subject, 'Τρεις');
+      assert.deepEqual(
+        chat.messages.map((m) => [m.from, m.text]),
+        [[alice.public, 'γεια σε όλους']],
+      );
+    }
+    const first = nostrDmNow().state!.chats[group].messages[0];
+    // The name went with that message, and goes no more.
+    assert.equal(nostrDmNow().state!.chats[group].subjectOwed, undefined);
+
+    // Bob answers the group, and likes her message.
+    const answer = await wrapMessage(bob, group, 14, [], 'γεια σου, Alice');
+    const liked = await wrapMessage(bob, group, 7, [['e', first.id], ['k', '14']], '❤️');
+    assert.deepEqual(Object.keys(answer.wraps).sort(), [alice.public, bob.public, carol.public].sort());
+    const w = await NostrRelay.open(aliceInbox.url, null);
+    assert.equal((await w.publish(answer.wraps[alice.public])).ok, true);
+    assert.equal((await w.publish(liked.wraps[alice.public])).ok, true);
+    w.close();
+    await until(() => nostrDmNow().state!.chats[group].messages.length === 2 && !!nostrDmNow().state!.chats[group].messages[0].reactions, 'his answer and his reaction');
+    const chat = nostrDmNow().state!.chats[group];
+    assert.deepEqual(
+      chat.messages.map((m) => [m.mine, m.from, m.text]),
+      [
+        [true, undefined, 'γεια σε όλους'],
+        [false, bob.public, 'γεια σου, Alice'],
+      ],
+    );
+    assert.deepEqual(chat.messages[0].reactions, { [bob.public]: '❤️' });
+    assert.equal(chat.unread, 1);
+    // She likes his: Carol sees it too.
+    await nostrDmReact(group, chat.messages[1].id, '👍');
+    await read(carol, carolInbox);
+    assert.deepEqual(carol.chats[group].messages.find((m) => m.id === chat.messages[1].id)?.reactions, undefined);
+    await takeWrap(carol, answer.wraps[carol.public]);
+    await read(carol, carolInbox);
+    assert.deepEqual(carol.chats[group].messages.find((m) => m.text === 'γεια σου, Alice')?.reactions, { [alice.public]: '👍' });
+
+    // A photo: encrypted here, on the file server under a key made for it, opened by the others.
+    const photo = randomBytes(5000);
+    await nostrDmSendFile(group, { bytes: photo, name: 'φωτο.jpg', mime: 'image/jpeg', dim: '40x30' });
+    assert.equal(permits.length, 1);
+    assert.equal(permits[0].kind, 24242);
+    assert.notEqual(permits[0].pubkey, alice.public);
+    const [kept] = [...blobs.values()];
+    assert.ok(!toHex(kept).includes(toHex(photo.subarray(0, 32))));
+    assert.deepEqual(permits[0].tags.find((tag) => tag[0] === 'x'), ['x', toHex(sha256Bytes(kept))]);
+    assert.deepEqual(permits[0].tags.find((tag) => tag[0] === 't'), ['t', 'upload']);
+    await read(bob, bobInbox);
+    const got = bob.chats[group].messages.find((m) => typeof m.file === 'object')!.file as NostrDmFile;
+    assert.equal(got.type, 'image/jpeg');
+    assert.equal(got.dim, '40x30');
+    assert.equal(got.name, 'φωτο.jpg');
+    assert.deepEqual(openFile(got, blobs.get(got.x)!), photo);
+    const mine = nostrDmNow().state!.chats[group].messages.at(-1)!;
+    assert.equal(mine.state, 'sent');
+    assert.deepEqual(await nostrDmFile(mine.file as NostrDmFile), photo);
+    // Changed on the server: refused.
+    const changed = blobs.get(got.x)!.slice();
+    changed[10] ^= 1;
+    assert.throws(() => openFile(got, changed), /not the one/);
+
+    // The home list names the group as its members did, and says a photo came last.
+    const row = nostrInboxRows(nostrDmNow().state!).find((r) => r.identity === `nostr:${group}`)!;
+    assert.equal(row.name, 'Τρεις');
+    assert.equal(row.last, 'Photo');
+
+    // Bob renames it; an older name Alice gave late does not undo his.
+    const renamed = await wrapMessage(bob, group, 14, [['subject', 'Οι τρεις μας']], 'νέο όνομα');
+    const w2 = await NostrRelay.open(aliceInbox.url, null);
+    assert.equal((await w2.publish(renamed.wraps[alice.public])).ok, true);
+    w2.close();
+    await until(() => nostrDmNow().state!.chats[group].subject === 'Οι τρεις μας', 'his name for the group');
+    await takeWrap(carol, renamed.wraps[carol.public]);
+    await nostrDmSend(group, 'ωραίο');
+    await read(carol, carolInbox);
+    assert.equal(carol.chats[group].messages.at(-1)?.text, 'ωραίο');
+    assert.equal(carol.chats[group].subject, 'Οι τρεις μας');
+    // She names it herself: it goes with her next message, once.
+    await nostrDmSetSubject(group, 'Εμείς');
+    assert.equal(nostrDmNow().state!.chats[group].subjectOwed, true);
+    await nostrDmSend(group, 'κι άλλο όνομα');
+    assert.equal(nostrDmNow().state!.chats[group].subjectOwed, undefined);
+    await read(carol, carolInbox);
+    assert.equal(carol.chats[group].subject, 'Εμείς');
+  } finally {
+    setNostrHttp(null);
+    stopNostrDm();
+    setCurrentSpace(null);
+  }
+});
+
+test('a file another app sent with a 16-byte nonce opens', async () => {
+  const { gcm } = await import('@noble/ciphers/aes.js');
+  const bytes = randomBytes(300);
+  const key = randomBytes(32);
+  const nonce = randomBytes(16);
+  const sealed = gcm(key, nonce).encrypt(bytes);
+  const file: NostrDmFile = { url: 'https://x.example/a', type: 'application/pdf', key: toHex(key), nonce: toHex(nonce), x: toHex(sha256Bytes(sealed)) };
+  assert.deepEqual(openFile(file, sealed), bytes);
 });
 
 test('a NIP-05 name gives its key and relays', { skip: !coreReady }, async () => {

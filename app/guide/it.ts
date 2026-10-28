@@ -1551,9 +1551,9 @@ segnate, per le persone che altrimenti raggiungeresti solo su XMPP.
 
 ## Chat con altre app Nostr {#nostr-chats}
 
-In **Impostazioni** → **Relay e reti** → **Chat Nostr**, uno spazio può avere una chiave Nostr tutta sua, per chattare
-a tu per tu con persone che usano Damus, Amethyst, Primal, 0xchat o un’altra app Nostr che invia i messaggi privati
-come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di Erevos.
+In **Impostazioni** → **Relay e reti** → **Chat Nostr**, uno spazio può avere una chiave Nostr tutta sua, per chattare a
+tu per tu o in gruppo con persone che usano Damus, Amethyst, Primal, 0xchat o un’altra app Nostr che invia i messaggi
+privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di Erevos.
 
 - **La chiave:** **Crea una chiave Nostr** ne crea una per questo spazio; **Oppure porta una chiave da un’altra app
   Nostr** prende il nsec di una chiave che hai già, e legge ciò che i suoi relay tengono ancora. La chiave e le sue chat
@@ -1566,6 +1566,20 @@ come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di
   nome@example.org (NIP-05). Le chat sono anche nella lista della home, ognuna segnata **Nostr**; il pulsante **Nostr**
   mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi solo
   tu.
+- **Gruppi:** **Nuovo gruppo** ne crea uno con due o più delle persone con cui chatti, al massimo venti, con un nome se
+  vuoi. I gruppi Nostr non hanno amministratori: un gruppo sono le persone che i suoi messaggi nominano, ogni messaggio
+  va a ciascuna, cifrato per ciascuna, e nessuno può essere aggiunto o tolto in seguito; un gruppo con altre persone è
+  un gruppo nuovo. **Dai un nome al gruppo** lo rinomina per tutti, con il tuo prossimo messaggio. Un messaggio che
+  un’altra app manda a te e ad altri appare anch’esso come gruppo, ogni messaggio con chi l’ha scritto.
+- **Foto e file:** **Foto** e **File**, sotto il campo del messaggio di una chat, ne inviano uno fino a 20 MB. È cifrato
+  su questo telefono con una chiave fatta solo per lui (AES-GCM, come chiede NIP-17) e messo su un server di file
+  Blossom, che tiene solo ciò che non può leggere; la sua chiave va nel messaggio, cifrata come i messaggi, e il
+  caricamento è firmato da una chiave fatta solo per esso, così il server non sa di chi è. Su Android i file passano
+  tramite Tor come queste chat. **Server di file** dice dove vanno, al primo che ne accetta uno: blossom.primal.net,
+  blossom.band e nostr.download, se non li cambi. Una foto o un file che arriva viene scaricato solo quando tocchi
+  **Mostra foto** o **Salva**, e si apre solo se è quello che è stato inviato.
+- **Reazioni:** tieni premuto un messaggio per reagire con 👍, ❤️, 😂, 😮, 😢 o 🙏; sotto compaiono le reazioni, l’ultima di
+  ogni persona, come le mandano le altre app Nostr (NIP-25).
 - **Cifratura:** ogni messaggio è cifrato per l’altra persona e firmato da te, poi avvolto di nuovo da una chiave creata
   solo per quel messaggio, con l’ora spostata indietro fino a due giorni (NIP-17, con NIP-44 e NIP-59). I relay vedono a
   chi è destinato, non chi l’ha scritto, quando né cosa dice. Una copia va ai tuoi relay, così le tue altre app Nostr
@@ -1587,8 +1601,8 @@ come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
-- **Non ancora:** foto e file (uno che arriva appare come un file che Erevos non apre ancora), chat di gruppo e
-  reazioni.
+- **Non ancora:** messaggi vocali registrati qui (uno che arriva è un file da salvare), risposte a un messaggio preciso,
+  e file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
 chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie di Erevos nascondono chi parla con chi.

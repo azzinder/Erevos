@@ -1484,8 +1484,8 @@ odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.
 ## Razgovori s drugim Nostr aplikacijama {#nostr-chats}
 
 Pod **Postavke** → **Relay i mreže** → **Nostr razgovori**, prostor može imati vlastiti Nostr ključ, za razgovor u
-četiri oka s ljudima koji koriste Damus, Amethyst, Primal, 0xchat ili drugu Nostr aplikaciju koja šalje privatne poruke
-kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlastite razgovore.
+četiri oka ili u grupama s ljudima koji koriste Damus, Amethyst, Primal, 0xchat ili drugu Nostr aplikaciju koja šalje
+privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlastite razgovore.
 
 - **Ključ:** **Izradi Nostr ključ** izrađuje jedan za ovaj prostor; **Ili donesite ključ iz druge Nostr aplikacije**
   uzima nsec ključa koji već imate, i čita ono što njegovi relayi još čuvaju. Ključ i njegovi razgovori čuvaju se
@@ -1498,6 +1498,20 @@ kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlast
   kao ime@example.org (NIP-05). Razgovori su i na popisu početnog ekrana, svaki označen s **Nostr**; dugme **Nostr**
   prikazuje samo njih, a tamo **Novi razgovor** otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru ime koje vidite
   samo vi.
+- **Grupe:** **Nova grupa** pravi jednu od dvoje ili više ljudi s kojima razgovarate, najviše dvadeset, s imenom ako
+  želite. Nostr grupe nemaju administratore: grupa su ljudi koje njezine poruke navode, svaka poruka ide svakome od
+  njih, šifrirana za svakoga, i nikoga se kasnije ne može dodati ni ukloniti; grupa s drugim ljudima je nova grupa.
+  **Dajte ime grupi** preimenuje je za sve, s vašom sljedećom porukom. Poruka koju druga aplikacija pošalje vama i
+  drugima također se prikazuje kao grupa, svaka poruka s onim tko ju je napisao.
+- **Fotografije i datoteke:** **Fotografija** i **Datoteka**, ispod polja za poruku u razgovoru, šalju jednu do 20 MB.
+  Šifrira se na ovom telefonu ključem napravljenim samo za nju (AES-GCM, kako traži NIP-17) i stavlja na Blossom
+  poslužitelj datoteka, koji čuva samo ono što ne može pročitati; njezin ključ ide u poruci, šifriran kao i poruke, a
+  slanje potpisuje ključ napravljen samo za to, pa poslužitelj ne saznaje čija je. Na Androidu datoteke idu preko Tora
+  kao i ovi razgovori. **Poslužitelji datoteka** kažu kamo idu, na prvi koji je primi: blossom.primal.net, blossom.band
+  i nostr.download, ako ih ne promijenite. Fotografija ili datoteka koja stigne dohvaća se tek kad dodirnete **Prikaži
+  fotografiju** ili **Sačuvaj**, i otvara se samo ako je ona koja je poslana.
+- **Reakcije:** držite poruku da biste reagirali s 👍, ❤️, 😂, 😮, 😢 ili 🙏; ispod se vide reakcije, posljednja od svake
+  osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
 - **Šifrovanje:** svaka poruka šifrira se za drugu osobu i vi je potpisujete, a zatim je ponovo omata ključ izrađen samo
   za tu poruku, s vremenom pomaknutim unatrag do dva dana (NIP-17, s NIP-44 i NIP-59). Relayi vide kome je namijenjena,
   ne i tko ju je napisao, kada ni što piše. Kopija ide na vaše vlastite relaye, da vaše druge Nostr aplikacije s ovim
@@ -1518,8 +1532,8 @@ kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlast
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** fotografije i datoteke (ona koja stigne prikazuje se kao datoteka koju Erevos još ne otvara), grupni
-  razgovori i reakcije.
+- **Još ne:** glasovne poruke snimljene ovdje (ona koja stigne je datoteka za spremanje), odgovori na određenu poruku, i
+  datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
 isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim razgovara.

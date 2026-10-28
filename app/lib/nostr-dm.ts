@@ -1,7 +1,8 @@
 import { nostrChatCore } from './core';
-import { utf8Decode, utf8Encode } from './crypto';
+import { sha256Bytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
+import { fileOfRumor, type NostrDmFile } from './nostr-files';
 import { isNostrRelay } from '../lock/e2e-data';
 import type { ChatNotify } from '../lock/chat-notify';
 
@@ -11,7 +12,9 @@ import type { ChatNotify } from '../lock/chat-notify';
 // come to the relays it names for them (its "inbox", kind 10050), and go to those the other person
 // names. The core makes and opens them (crates/erevos-nostr chat): each one sealed for its reader,
 // wrapped by a key made for it alone, its time set up to two days back, so a relay sees only
-// which key it is for.
+// which key it is for. Texts (kind 14), photos and files (kind 15, lib/nostr-files.ts) and
+// reactions (kind 7); a group is the set of people a message names (NIP-17 has no admins), and
+// each of them gets a wrap of their own.
 //
 // This is the account and its chats, as one value kept sealed in the space (lock/nostr-dm-data.ts);
 // lib/nostr-dm-store.ts connects it to relays.
@@ -22,6 +25,8 @@ import type { ChatNotify } from '../lock/chat-notify';
 /** The most messages kept in each chat, and the most wraps remembered as taken. */
 export const KEEP_MESSAGES = 500;
 const SEEN_MOST = 5000;
+// Reactions kept for messages not here yet, at most.
+const EARLY_MOST = 200;
 /** How many chats a space keeps at most (roomForChat). */
 export const CHATS_MOST = 300;
 
@@ -43,13 +48,26 @@ export type NostrDmMessage = {
   /** When it was written, as it says, in milliseconds. */
   at: number;
   state?: 'sending' | 'sent' | 'failed';
-  /** A file sent as NIP-17 sends them (kind 15): shown as such, not fetched yet. */
-  file?: true;
+  /** In a group: who wrote it, when not the space. */
+  from?: string;
+  /** A photo or file (kind 15, lib/nostr-files.ts): where it is and how to open it; true for one
+   *  Erevos cannot open (its encryption is not AES-GCM, or it came before Erevos opened files). */
+  file?: NostrDmFile | true;
+  /** Reactions (kind 7): the latest of each who reacted, by their key. */
+  reactions?: Record<string, string>;
 };
 
 export type NostrDmChat = {
-  /** The other person's key, in hex. */
+  /** The other person's key, in hex; a group's, the hash of all its members' (groupKey). */
   key: string;
+  /** In a group: the others in it, by key. A chat with one person has none. */
+  members?: string[];
+  /** A group's name as its members last set it (NIP-17's subject), and when (seconds). */
+  subject?: string;
+  subjectAt?: number;
+  /** The name was given or changed here and goes with the next message, as NIP-17 asks: not with every one, so
+   *  that an old name sent late does not undo a newer one. */
+  subjectOwed?: boolean;
   messages: NostrDmMessage[];
   unread: number;
   lastAt: number;
@@ -75,12 +93,17 @@ export type NostrDmState = {
   /** A name it shows to others (its kind 0), and when that went out. */
   name?: string;
   chats: Record<string, NostrDmChat>;
-  /** Names other people gave themselves (their kind 0), and when looked up (seconds). */
-  people: Record<string, { name?: string; at: number }>;
+  /** Names other people gave themselves (their kind 0), and when looked up (seconds); where they
+   *  read their messages (their kind 10050), and when that was looked up. */
+  people: Record<string, { name?: string; at: number; relays?: string[]; relaysAt?: number }>;
+  /** The Blossom servers its photos and files go to, the first that takes one; FILE_SERVERS when none. */
+  files?: string[];
   /** Up to when it read all its relays had (seconds): it asks again from two days before. */
   caught: number;
   /** Wraps taken already, by id. */
   seen: string[];
+  /** Reactions that came before the message they are for (wraps come in any order): put on it as it comes. */
+  early?: { key: string; target: string; from: string; emoji: string }[];
   /** Made here (not brought from another app): its nsec is only here unless written down. */
   madeHere?: boolean;
 };
@@ -201,9 +224,58 @@ export function chatOf(state: NostrDmState, key: string): NostrDmChat {
   return (state.chats[key] ??= { key, messages: [], unread: 0, lastAt: 0 });
 }
 
-/** The name a chat shows: given here, or the one they gave themselves, or none. */
+/** The most other people in a group: more is let be, so nobody can make the space write to crowds. */
+export const GROUP_MOST = 20;
+
+/** A group's key: the hash of all its members' keys, the space's too, however they are ordered. */
+export function groupKey(keys: string[]): string {
+  return toHex(sha256Bytes(utf8Encode([...new Set(keys)].sort().join(','))));
+}
+
+/** Who a chat's messages go to besides the space: the person, a group's others, or none (notes to oneself). */
+export function readersOf(state: NostrDmState, key: string): string[] {
+  const chat = state.chats[key];
+  if (chat?.members) return chat.members;
+  return key === state.public ? [] : [key];
+}
+
+/** A person's name: given here, or the one they gave themselves, or the start of their npub. */
+export function personName(state: NostrDmState, key: string): string {
+  if (key === state.public) return t('You');
+  return (!state.chats[key]?.members && state.chats[key]?.name) || state.people[key]?.name || shortNpub(npubOf(key));
+}
+
+/** The name a chat shows: given here, or the one they gave themselves, or none. A group's: given
+ *  here, or as its members named it, or its members' names. */
 export function nameOf(state: NostrDmState, key: string): string {
-  return state.chats[key]?.name || state.people[key]?.name || '';
+  const chat = state.chats[key];
+  if (chat?.members) return chat.name || chat.subject || chat.members.map((member) => personName(state, member)).join(', ');
+  return chat?.name || state.people[key]?.name || '';
+}
+
+/** A new group with `members` (their keys), named `subject` or not: its key. Nothing goes until its first message. */
+export function newGroup(state: NostrDmState, members: string[], subject = '', now = Date.now()): string {
+  const others = [...new Set(members)].filter((key) => key !== state.public && isHex64(key)).sort();
+  if (others.length < 2) throw new Error(t('A group needs at least two other people.'));
+  if (others.length > GROUP_MOST) throw new Error(t('A group can have {n} other people at most.', { n: String(GROUP_MOST) }));
+  const key = groupKey([...others, state.public]);
+  const chat = chatOf(state, key);
+  chat.members = others;
+  if (subject.trim()) {
+    chat.subject = subject.trim().slice(0, 100);
+    chat.subjectAt = seconds(now);
+    chat.subjectOwed = true;
+  }
+  chat.lastAt ||= now;
+  return key;
+}
+
+/** How a reaction reads: NIP-25's + as 👍, - as 👎, anything else as written, short. */
+export function reactionOf(content: string): string {
+  const said = content.trim();
+  if (said === '' || said === '+') return '👍';
+  if (said === '-') return '👎';
+  return [...said].slice(0, 8).join('');
 }
 
 /** Signs an event with the space's key (its inbox list, its name, an answer to a relay that asks who reads). */
@@ -276,20 +348,53 @@ export async function nameIn(key: string, events: NostrEvent[]): Promise<string 
   return undefined;
 }
 
-/** A message to `key`: the wraps for them and for the space's own copy, and the message as it shows. */
-export async function wrapText(state: NostrDmState, key: string, text: string, now = Date.now()): Promise<{ message: NostrDmMessage; theirs: NostrEvent; ours: NostrEvent }> {
+/**
+ * A message of `kind` to the chat `key`: its id and time, and a wrap for each of its readers and
+ * for the space's own copy, by key. It names them all (p tags), and a group's name.
+ */
+export async function wrapMessage(
+  state: NostrDmState,
+  key: string,
+  kind: number,
+  tags: string[][],
+  content: string,
+  now = Date.now(),
+): Promise<{ id: string; at: number; wraps: Record<string, NostrEvent>; subject?: string }> {
+  const readers = readersOf(state, key);
+  const chat = state.chats[key];
+  const named = (readers.length ? readers : [state.public]).map((reader) => ['p', reader]);
+  // A group's name given here goes with its next message (not with a reaction).
+  const owed = !!chat?.members && !!chat.subjectOwed && (kind === 14 || kind === 15);
+  const subject = owed ? [['subject', chat.subject ?? '']] : [];
   const made = await chatCore<{ rumor: { id: string; created_at: number }; wraps: { to: string; event: string }[] }>('wrap', {
     secret: state.secret,
-    rumor: { kind: 14, created_at: seconds(now), tags: [['p', key]], content: text },
-    to: key === state.public ? [key] : [key, state.public],
+    rumor: { kind, created_at: seconds(now), tags: [...named, ...subject, ...tags], content },
+    to: [...new Set([...readers, state.public])],
     now: seconds(now),
   });
-  const wrap = (to: string) => JSON.parse(made.wraps.find((w) => w.to === to)!.event) as NostrEvent;
   return {
-    message: { id: made.rumor.id, mine: true, text, at: made.rumor.created_at * 1000, state: 'sending' },
-    theirs: wrap(key),
-    ours: wrap(state.public),
+    id: made.rumor.id,
+    at: made.rumor.created_at * 1000,
+    wraps: Object.fromEntries(made.wraps.map((w) => [w.to, JSON.parse(w.event) as NostrEvent])),
+    ...(owed ? { subject: chat.subject ?? '' } : {}),
   };
+}
+
+/** A text to `key`: the wraps for them and for the space's own copy, and the message as it shows. */
+export async function wrapText(state: NostrDmState, key: string, text: string, now = Date.now()): Promise<{ message: NostrDmMessage; theirs: NostrEvent; ours: NostrEvent; wraps: Record<string, NostrEvent> }> {
+  const made = await wrapMessage(state, key, 14, [], text, now);
+  return {
+    message: { id: made.id, mine: true, text, at: made.at, state: 'sending' },
+    theirs: made.wraps[readersOf(state, key)[0] ?? state.public],
+    ours: made.wraps[state.public],
+    wraps: made.wraps,
+  };
+}
+
+/** Signs an event with a key made for it alone, never kept: a file server's permission to upload. */
+export async function signedOnce(kind: number, tags: string[][], content: string, now = Date.now()): Promise<NostrEvent> {
+  const once = await chatCore<{ secret: string }>('keys_new');
+  return (await chatCore<{ event: NostrEvent }>('sign', { secret: once.secret, created_at: seconds(now), kind, tags, content })).event;
 }
 
 /** Adds a message to its chat, once; answers whether it was new. */
@@ -325,9 +430,10 @@ function remember(state: NostrDmState, id: string): void {
 }
 
 /**
- * Takes a wrap that came for the space's key: the message it carried goes to its chat. Messages
- * among more than two people, and other kinds, are let be. Answers the chat's key when a message
- * was new there.
+ * Takes a wrap that came for the space's key: the message it carried goes to its chat, a group's
+ * when it names more than one other person; a reaction, to the message it is for, when that is
+ * here. Other kinds, and groups larger than GROUP_MOST, are let be. Answers the chat's key when
+ * a message was new there, or a reaction changed.
  */
 export async function takeWrap(state: NostrDmState, event: unknown, now = Date.now()): Promise<string | null> {
   if (!isEvent(event) || event.kind !== 1059 || state.seen.includes(event.id)) return null;
@@ -340,28 +446,66 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
     return null;
   }
   const { rumor } = opened;
-  if (rumor.kind !== 14 && rumor.kind !== 15) {
+  if (rumor.kind !== 14 && rumor.kind !== 15 && rumor.kind !== 7) {
     remember(state, event.id);
     return null;
   }
   const mine = rumor.pubkey === state.public;
   // The chat is the sender and everyone it names: one other person (theirs, or ours to them from
-  // another app with this key), or nobody else (notes to oneself). More is a group: not yet.
+  // another app with this key), nobody else (notes to oneself), or more: a group.
   const people = new Set([rumor.pubkey, ...rumor.tags.filter((tag) => tag[0] === 'p' && isHex64(tag[1])).map((tag) => tag[1])]);
   people.delete(state.public);
-  if (people.size > 1) {
+  if (people.size > GROUP_MOST) {
     remember(state, event.id);
     return null;
   }
-  const key = people.size ? [...people][0] : state.public;
+  const group = people.size > 1;
+  const key = group ? groupKey([...people, state.public]) : people.size ? [...people][0] : state.public;
+  if (rumor.kind === 7) {
+    remember(state, event.id);
+    // NIP-25: the last e tag is the message reacted to; one that is not here is let be.
+    const target = [...rumor.tags].reverse().find((tag) => tag[0] === 'e' && isHex64(tag[1]))?.[1];
+    if (!target) return null;
+    const emoji = reactionOf(rumor.content);
+    const message = state.chats[key]?.messages.find((m) => m.id === target);
+    if (!message) {
+      // Its message may come after it: kept for it a while.
+      const early = (Array.isArray(state.early) ? state.early : []).filter((r) => !(r.target === target && r.from === rumor.pubkey));
+      early.push({ key, target, from: rumor.pubkey, emoji });
+      state.early = early.slice(-EARLY_MOST);
+      return null;
+    }
+    message.reactions = { ...message.reactions, [rumor.pubkey]: emoji };
+    return key;
+  }
   // With no room, it is not remembered: it comes again from the relay once there is.
   if (!state.chats[key] && !roomForChat(state)) return null;
   remember(state, event.id);
+  const chat = chatOf(state, key);
+  if (group) {
+    chat.members ??= [...people].sort();
+    // The newest name its members gave it.
+    const subject = rumor.tags.find((tag) => tag[0] === 'subject')?.[1];
+    if (subject !== undefined && rumor.created_at >= (chat.subjectAt ?? 0)) {
+      chat.subject = subject.trim().slice(0, 100) || undefined;
+      chat.subjectAt = rumor.created_at;
+      // A newer name than one given here: that one no longer goes.
+      delete chat.subjectOwed;
+    }
+  }
   // Its time as it says, but never later than now: a time to come would keep it first for good.
   const at = Math.min(rumor.created_at * 1000, now);
-  const message: NostrDmMessage =
-    rumor.kind === 15 ? { id: rumor.id, mine, text: '', at, file: true } : { id: rumor.id, mine, text: rumor.content.slice(0, 64_000), at };
-  return addMessage(state, key, message) ? key : null;
+  const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}) };
+  const message: NostrDmMessage = rumor.kind === 15 ? { ...base, text: '', file: fileOfRumor(rumor.tags, rumor.content) ?? true } : { ...base, text: rumor.content.slice(0, 64_000) };
+  const added = addMessage(state, key, message);
+  // Reactions to it that came first.
+  const early = Array.isArray(state.early) ? state.early.filter((r) => r.key === key && r.target === message.id) : [];
+  if (!early.length) return added ? key : null;
+  const kept = chat.messages.find((m) => m.id === message.id);
+  if (kept) kept.reactions = { ...kept.reactions, ...Object.fromEntries(early.map((r) => [r.from, r.emoji])) };
+  state.early = state.early!.filter((r) => !early.includes(r));
+  if (!state.early.length) delete state.early;
+  return key;
 }
 
 /** Marks a chat's messages read here (NIP-17 tells no one). */
