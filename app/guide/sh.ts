@@ -2314,6 +2314,10 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
 - **Nema Bluetootha ni veze u blizini**, ni SMS-a: Safari ih ne dozvoljava.
 - **Samo dok je otvorena:** iOS zaustavlja web-aplikacije u pozadini, pa poruke stižu kad otvorite Erevos; do tada
   čekaju na relayu.
+- **Pozivi** zvone dok je Erevos otvoren, vlastitim zvonom: dva kratka svake 3 sekunde. Safari ga pušta da zvoni tek kad
+  ste dotakli Erevos otkad se otvorio, i ne kad je iPhone na nečujnom. Dok je Erevos zatvoren, poziv ne zvoni: prikazuje
+  se samo obavijest „Poziv“, ako su obavijesti uključene. Apple web-aplikaciji ne dopušta ništa više; da zvoni kao
+  telefon, trebala bi aplikacija iz App Storea.
 - **Obavijesti** dok je Erevos zatvoren isključene su dok ih ne uključite: u Erevosu, **Postavke** → **Obavijesti** →
   **Obavijesti dok je Erevos zatvoren** → **Uključi** (iOS 16.4 ili noviji, s početnog ekrana). Kad stignu poruke,
   ili zazvoni poziv, vaš relay šalje push preko Applea, a Erevos prikazuje koliko je poruka stiglo otkako ste ga

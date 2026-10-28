@@ -96,6 +96,12 @@ On main, not released yet:
   alone, as **SMS** and **Erevos** do, and there **New chat** starts a Matrix chat. The space's Matrix account syncs
   while the space is open.
 
+- **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
+  only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short
+  rings every 3 seconds, made by the browser, and vibrates where the phone can, until the call is answered or ends; a
+  chat whose ring is set to none stays silent. A browser lets a page sound only once it was touched, so a call that
+  comes before any touch since Erevos opened shows without sound, and an iPhone on silent makes none.
+
 ### Under the hood
 
 - **A chat locked with its own PIN stays locked**: a contact's Erevos starts a new conversation with the chat about

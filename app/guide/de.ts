@@ -2549,6 +2549,10 @@ Glauben:
 - **Kein Bluetooth und keine Verbindung in der Nähe** und keine SMS: Safari erlaubt sie nicht.
 - **Nur solange es offen ist:** iOS hält Web-Apps im Hintergrund an, also kommen Nachrichten, wenn du Erevos öffnest;
   bis dahin warten sie auf dem Relay.
+- **Anrufe** klingeln, solange Erevos offen ist, mit einem eigenen Klingeln: zwei kurze alle 3 Sekunden. Safari lässt es
+  erst klingen, wenn du Erevos seit dem Öffnen berührt hast, und nicht, wenn das iPhone stumm geschaltet ist. Ist Erevos
+  geschlossen, klingelt ein Anruf nicht: Es erscheint nur die Benachrichtigung „Anruf“, wenn Benachrichtigungen an sind.
+  Mehr erlaubt Apple einer Web-App nicht; um wie ein Telefon zu klingeln, bräuchte es eine App aus dem App Store.
 - **Benachrichtigungen**, während Erevos geschlossen ist, sind aus, solange du sie nicht einschaltest: in Erevos
   **Einstellungen** → **Benachrichtigungen** → **Benachrichtigungen, wenn geschlossen** → **Einschalten** (iOS 16.4
   oder neuer, vom Home-Bildschirm aus). Wenn Nachrichten kommen oder ein Anruf klingelt, schickt dein Relay einen Push

@@ -2194,6 +2194,10 @@ send changed code. Erevos does not take that code on trust:
 - **No Bluetooth or nearby link** and no SMS: Safari does not allow them.
 - **Only while it is open:** iOS stops web apps in the background, so messages arrive when you open Erevos; they wait
   on the relay until then.
+- **Calls** ring while Erevos is open, with a ring of its own: two short rings every 3 seconds. Safari lets it sound
+  only once you have touched Erevos since it opened, and not with the iPhone on silent. With Erevos closed a call does
+  not ring: only the notification "Call" shows, once notifications are on. Apple allows a web app nothing more; ringing
+  as a phone does would take an app from the App Store.
 - **Notifications** while Erevos is closed are off unless you turn them on: in Erevos, **Settings** →
   **Notifications** → **Notifications while closed** → **Turn on** (iOS 16.4 or later, from the home screen). When
   messages come, or a call rings, your relay sends a push through Apple, and Erevos shows how many messages came since

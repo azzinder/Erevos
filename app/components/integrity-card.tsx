@@ -150,6 +150,10 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
                 'When messages come, or a call rings, while Erevos is closed, your relay sends a push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows how many messages came since you last opened it, such as "3 new messages", or "Call" when only a call rang, nothing more. The push carries no message and no sender, and its count is encrypted for this browser, but the push service sees when something comes for this device, and that it uses Erevos. With a relay or a sender\'s Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos shows "New message", or "New messages" once more came, until you open it. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
               )}
             </Text>
+            {/* A call while closed: Web Push can only show it, it cannot ring. */}
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('A call that comes while Erevos is closed does not ring: only the notification "Call" shows. On an iPhone nothing more can be done: Apple lets a web app neither run while it is closed nor ring as a phone does; that would take an app from the App Store. On Android, the Erevos app rings even when closed.')}
+            </Text>
             {/* The number on the icon (lib/icon-number.ts), which comes with them. */}
             <Text variant="caption" tone="muted" style={hint}>
               {t("Where the browser can show it, Erevos's icon then also shows how many messages this space has not read, unless turned off under Number on the icon.")}

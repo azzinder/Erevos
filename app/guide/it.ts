@@ -2414,6 +2414,10 @@ ordinato, potrebbe inviare codice modificato. Erevos non prende quel codice sull
 - **Niente Bluetooth né collegamento da vicino** e niente SMS: Safari non li permette.
 - **Solo mentre è aperto:** iOS ferma le web app in background, quindi i messaggi arrivano quando apri Erevos; fino ad
   allora aspettano sul relay.
+- **Le chiamate** squillano mentre Erevos è aperto, con una suoneria sua: due squilli brevi ogni 3 secondi. Safari la
+  lascia suonare solo dopo che hai toccato Erevos da quando si è aperto, e non con l’iPhone in silenzioso. Con Erevos
+  chiuso una chiamata non squilla: compare solo la notifica «Chiamata», se le notifiche sono attive. Apple non permette
+  niente di più a una web app; per squillare come un telefono servirebbe un’app dell’App Store.
 - **Le notifiche** mentre Erevos è chiuso sono disattivate finché non le attivi: in Erevos, **Impostazioni** →
   **Notifiche** → **Notifiche ad app chiusa** → **Attiva** (iOS 16.4 o successivi, dalla schermata Home). Quando
   arrivano messaggi, o squilla una chiamata, il tuo relay invia un push tramite Apple, ed Erevos mostra quanti messaggi

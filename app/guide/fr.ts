@@ -2513,6 +2513,10 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
 - **Pas de Bluetooth ni de liaison à proximité**, et pas de SMS : Safari ne les permet pas.
 - **Seulement quand il est ouvert :** iOS arrête les apps web en arrière-plan, donc les messages arrivent quand tu
   ouvres Erevos ; ils attendent sur le relais jusque-là.
+- **Les appels** sonnent tant qu’Erevos est ouvert, avec une sonnerie à lui : deux courtes toutes les 3 secondes. Safari
+  ne la laisse sonner qu’une fois que tu as touché Erevos depuis son ouverture, et pas avec l’iPhone en mode silencieux.
+  Erevos fermé, un appel ne sonne pas : seule la notification « Appel » s’affiche, si les notifications sont activées.
+  Apple ne permet rien de plus à une app web ; pour sonner comme un téléphone, il faudrait une app de l’App Store.
 - Les **notifications** quand Erevos est fermé sont désactivées tant que tu ne les actives pas : dans Erevos,
   **Réglages** → **Notifications** → **Notifications quand l’app est fermée** → **Activer** (iOS 16.4 ou plus récent,
   depuis l’écran d’accueil). Quand des messages arrivent, ou qu’un appel sonne, ton relais envoie un push par Apple, et

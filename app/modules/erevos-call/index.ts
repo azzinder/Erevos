@@ -1,5 +1,7 @@
 import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
+import { pageRing } from './page-ring';
+
 /** What Android lets Erevos do for ringing in the background. What came later is missing in a build made before it. */
 export type BackgroundState = {
   notices: boolean;
@@ -94,7 +96,8 @@ type CallAudio = {
   addListener?(name: 'onNetwork', listener: () => void): EventSubscription;
 };
 
-// The phone's side of a call on Android (sound route, screen, ringing in the background). Null in
-// a build made before this module was added, and on other platforms: calls still work, with the
-// sound where the phone puts it, and ring only while Erevos shows.
-export const callAudio = requireOptionalNativeModule<CallAudio>('ErevosCall');
+// The phone's side of a call on Android (sound route, screen, ringing in the background). In a page
+// (the web app, the computer's and Sailfish OS's app), only the ring, the page's own
+// (page-ring.web.ts). Null in a build made before this module was added: calls still work, with
+// the sound where the phone puts it, and ring only while Erevos shows.
+export const callAudio = requireOptionalNativeModule<CallAudio>('ErevosCall') ?? pageRing;

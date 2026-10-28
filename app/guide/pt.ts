@@ -2371,6 +2371,10 @@ isso, poderia enviar código alterado. O Erevos não aceita esse código de conf
 - **Sem Bluetooth nem conexão por perto**, e sem SMS: o Safari não os permite.
 - **Só enquanto está aberto:** o iOS para os apps web em segundo plano, então as mensagens chegam quando você abre o
   Erevos; até lá elas esperam no relay.
+- **As chamadas** tocam enquanto o Erevos está aberto, com um toque próprio: dois toques curtos a cada 3 segundos. O
+  Safari só deixa tocar depois que você tocou no Erevos desde que ele abriu, e não com o iPhone no silencioso. Com o
+  Erevos fechado, uma chamada não toca: só aparece a notificação “Chamada”, se as notificações estiverem ativadas. A
+  Apple não permite nada além disso a um app web; para tocar como um telefone seria preciso um app da App Store.
 - **As notificações** com o Erevos fechado ficam desativadas a menos que você as ative: no Erevos, **Configurações** →
   **Notificações** → **Notificações com o app fechado** → **Ativar** (iOS 16.4 ou posterior, pela tela de início).
   Quando chegam mensagens, ou toca uma chamada, o seu relay envia um push pela Apple, e o Erevos mostra quantas
