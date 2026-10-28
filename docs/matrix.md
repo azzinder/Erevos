@@ -106,6 +106,11 @@ What stays private is what is written.
   Android window serves it, with Erevos's real host: it loads without the files left out, gets its
   capabilities and the room's state, asks for the OpenID token and the transports, and asks the
   media server for its token. No LiveKit runs there, so its member state and ring are not reached.
+- `docs/matrix-checks/element-call-frame.ts`: the same in a frame of a page, as the web app and the
+  computer would show it, the Widget API spoken by `postMessage`. From an origin of its own it goes
+  as far as on Android; from the page's own origin in a sandbox it cannot start, as it reads
+  `localStorage`. So in a browser Element Call needs an origin of its own: one beside the app's, or a
+  second one the computer's shell serves.
 
 ## Checks it makes
 
@@ -125,7 +130,8 @@ what went up came, and shows the same notice as a message in Erevos's own chats
 Erevos's icon counts them (`app/lib/unread.ts`), the computer's notice too. The first sync of an
 account just signed in to tells of nothing. A room has notifications of its own (`notify`, as
 `app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
-Android; a muted one is left out. A room is marked read only while Erevos shows it.
+Android; a muted one is left out. A room is marked read only while Erevos shows it. A call rings
+with the room's own ringtone when it has one (`components/call-host.tsx`).
 
 ## Not yet
 
@@ -134,7 +140,8 @@ Android; a muted one is left out. A room is marked read only while Erevos shows 
 - Reading a room's history further back than the last sync, so older locked messages show.
 - Notices while the space is locked or Android stopped Erevos: that needs a push gateway, which
   would learn when messages come.
-- Calls on the computer and in the web app (Element Call in a frame), and in a hidden chat's place.
+- Calls on the computer and in the web app (Element Call in a frame from an origin of its own, see
+  `element-call-frame.ts` above), and in a hidden chat's place.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
   "Matrix 2.0" mode): Element Call is not given sticky events.

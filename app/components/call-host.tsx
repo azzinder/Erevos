@@ -35,8 +35,9 @@ const LOOK_IN_CALL = 700;
 // often during one. On Android a contact's call rings with the phone's ringtone, and while Erevos
 // is in the background (lib/background.ts) also with a notice that says only "Incoming call",
 // over the lock screen; tapping it brings Erevos up to answer. A group's call (lib/group-calls.ts)
-// rings the same way. A chat or group of the space, or its XMPP chat, given a ringtone of its own,
-// or none (lock/chat-notify.ts), rings with it; hidden chats ring with the phone's, which tells no one's.
+// rings the same way, and so does a call on XMPP or Matrix. A chat or group of the space, or its XMPP
+// chat or Matrix room, given a ringtone of its own, or none (lock/chat-notify.ts), rings with it;
+// hidden chats ring with the phone's, which tells no one's.
 // Returns how to stop, which ends the call, as the space closes.
 export function watchCalls(): () => void {
   // A ringtone or notice that fails does not stop the call screen, nor the others that hear of the call.
@@ -93,7 +94,8 @@ export function watchCalls(): () => void {
     const call = shownMatrixCall();
     if (call?.state === 'incoming' && rangMatrix !== call) {
       rangMatrix = call;
-      ring(call.video, '');
+      // With its room's ringtone, as the room has one of its own (Notifications in the Matrix chat).
+      ring(call.video, `matrix:${call.roomId}`);
     }
     if (rangMatrix && (call !== rangMatrix || call.state !== 'incoming')) {
       rangMatrix = null;

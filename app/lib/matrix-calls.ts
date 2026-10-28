@@ -41,6 +41,9 @@ export type MatrixCallsSpace = {
   /** Element Call's page, and the address its host says it is at (the Widget API's parentUrl). */
   page: string;
   parentUrl: string;
+  /** Where its sound goes is chosen by its host (the phone's earpiece or loudspeaker), not by
+   *  Element Call itself, as in a browser, which lists the computer's own. True when left out. */
+  hostAudio?: boolean;
 };
 
 export type MatrixCallState = 'incoming' | 'open' | 'ended';
@@ -113,7 +116,7 @@ export function onMatrixCallChange(listener: () => void): () => void {
 }
 
 /** The address Element Call opens at, for `intent` (Element Call's: start_call_dm, join_existing…). */
-export function elementCallUrl(o: { page: string; parentUrl: string; widgetId: string; roomId: string; userId: string; deviceId: string; baseUrl: string; intent: string }): string {
+export function elementCallUrl(o: { page: string; parentUrl: string; widgetId: string; roomId: string; userId: string; deviceId: string; baseUrl: string; intent: string; hostAudio?: boolean }): string {
   const params = new URLSearchParams({
     widgetId: o.widgetId,
     parentUrl: o.parentUrl,
@@ -132,10 +135,10 @@ export function elementCallUrl(o: { page: string; parentUrl: string; widgetId: s
     perParticipantE2EE: 'true',
     // Never a public server of Element's to reach the other side through.
     allowIceFallback: 'false',
-    // Earpiece or loudspeaker: Erevos switches them (lib/call-host.tsx).
-    controlledAudioDevices: 'true',
     hideScreensharing: 'true',
   });
+  // Earpiece or loudspeaker: Erevos switches them (lib/call-host.tsx).
+  if (o.hostAudio !== false) params.set('controlledAudioDevices', 'true');
   // In the fragment: the page never sends it anywhere.
   return `${o.page}#?${params.toString()}`;
 }
@@ -314,7 +317,7 @@ function open(call: MatrixCall, intent: string): void {
   });
   call.state = 'open';
   opened.open(
-    elementCallUrl({ page: space.page, parentUrl: space.parentUrl, widgetId, roomId: call.roomId, userId: state.userId, deviceId: state.deviceId, baseUrl: state.homeserver, intent }),
+    elementCallUrl({ page: space.page, parentUrl: space.parentUrl, widgetId, roomId: call.roomId, userId: state.userId, deviceId: state.deviceId, baseUrl: state.homeserver, intent, hostAudio: space.hostAudio }),
     call.video,
   );
   changed();

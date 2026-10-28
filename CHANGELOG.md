@@ -180,8 +180,8 @@ On main, not released yet:
   device of the account it no longer counts. What an account takes in as it is signed in to (Matrix's first sync, the
   XMPP archive's newest page, what the relays keep for a Nostr key brought along) tells of nothing. On Android,
   **Notifications** at the bottom of such a chat mutes it for 8 hours, a week or always, or gives it a sound of its
-  own; a muted chat is not counted, and its row shows the struck-through bell. An XMPP call rings with its chat's
-  ringtone. A chat is read only while Erevos shows it, so what comes with the chat left open behind other apps still
+  own; a muted chat is not counted, and its row shows the struck-through bell. An XMPP or Matrix call rings with
+  its chat's ringtone. A chat is read only while Erevos shows it, so what comes with the chat left open behind other apps still
   tells of itself. While the space is locked, or Android stopped Erevos, nothing comes: these servers send no push.
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

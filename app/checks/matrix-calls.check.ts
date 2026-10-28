@@ -183,6 +183,13 @@ test('Element Call opens with its settings in the fragment, and nothing of Eleme
   assert.equal(params.get('allowIceFallback'), 'false');
   assert.equal(params.get('confineToRoom'), 'true');
   for (const key of params.keys()) assert.ok(!/posthog|sentry|rageshake|analytics/i.test(key), key);
+  // On a phone Erevos chooses earpiece or loudspeaker; in a browser Element Call lists the computer's own.
+  assert.equal(params.get('controlledAudioDevices'), 'true');
+  const framed = new URLSearchParams(
+    elementCallUrl({ page: 'https://call.example.org/element-call/index.html', parentUrl: 'https://erevos.example.org/', widgetId: 'w1', roomId: '!r:example.org', userId: '@alice:example.org', deviceId: 'DEV1', baseUrl: HS, intent: 'start_call', hostAudio: false }).split('#?')[1],
+  );
+  assert.equal(framed.get('controlledAudioDevices'), null);
+  assert.equal(framed.get('parentUrl'), 'https://erevos.example.org/');
 });
 
 test('a ring rings for us only, for as long as it says and two minutes at most', () => {
