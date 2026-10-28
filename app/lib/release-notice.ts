@@ -3,6 +3,7 @@ import { canVerify, verifySignature } from './core';
 import { hostOf } from './relay-host';
 import { secureGet, secureSet } from './secure';
 import { RELEASE_KEY } from './update-signature';
+import { VERSION_NAME } from './version-name';
 import { START_RELAY } from './welcome';
 
 // A new Erevos told as a message from Erevos itself: at the top of the chats, and in a notice, so
@@ -22,7 +23,6 @@ export const NOTICE_SERVER = 'https://erevos-web.lphl.nekten.eu/';
 export const NOTICE_EVERY = 24 * 3600_000;
 
 const KEY = 'erevos.release-notice';
-const VERSION_NAME = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const STATEMENT = /^erevos android update v1\nbuild ([1-9]\d*)\nsha256 [0-9a-f]{64}\n$/;
 
 /** What is kept: whether the notice is on, when the server was last asked (ms), and the newest release it told of, and whether that was opened. */

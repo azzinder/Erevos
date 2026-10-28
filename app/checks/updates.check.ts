@@ -39,6 +39,15 @@ test('since 2.0.0 a release is read by its name, and Erevos 0.1.16 and before st
   assert.equal(parseRelease(json({ name: '2.0.0', build: 0 })), null);
 });
 
+test('a test release such as 4.0.0-rc.1 is read by its name too', () => {
+  const rc = parseRelease(json({ name: '4.0.0-rc.1', version: '0.1.45', build: 45 }));
+  assert.equal(rc?.version, '4.0.0-rc.1');
+  assert.equal(isNewer(rc!, 39), true);
+  for (const name of ['4.0.0-RC1', '4.0.0rc1', '4.0.0-rc', '4.0.0-rc.0']) {
+    assert.equal(parseRelease(json({ name, version: '2.0.0', build: 45 })), null, name);
+  }
+});
+
 test("the running app's build number: apart from the version since 2.0.0, in it before", () => {
   assert.equal(buildNumber(17, '2.0.0'), 17);
   assert.equal(buildNumber(undefined, '0.1.16'), 16);

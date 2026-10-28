@@ -10,13 +10,14 @@ import { test } from 'node:test';
 
 import { GUIDE_SOURCES } from '../guide/index';
 import { parseGuide, parseInline } from '../lib/guide';
-import { laterThan, NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
+import { laterThan, VERSION_NAME } from '../lib/version-name';
+import { NEXT, VERSIONS, whatsNewFor, type Changes } from '../lib/whats-new';
 
 import { ROOT } from './words';
 
-// "## 3.3.2 (2026-10-25)": the releases, newest first; "## Unreleased" is NEXT.
+// "## 3.3.2 (2026-10-25)" or "## 4.0.0-rc.1 (…)": the releases, newest first; "## Unreleased" is NEXT.
 const changelog = () => readFileSync(join(ROOT, '..', 'CHANGELOG.md'), 'utf8');
-const releases = () => [...changelog().matchAll(/^## (\d+\.\d+\.\d+)\b/gm)].map((m) => m[1]);
+const releases = () => [...changelog().matchAll(/^## (?!Unreleased$)(\S+)/gm)].map((m) => m[1]);
 const lines = (changes: Changes) => [...changes.forYou, ...changes.underTheHood];
 
 test('a version for each release of CHANGELOG.md, in its order, by its number alone', () => {
@@ -26,6 +27,14 @@ test('a version for each release of CHANGELOG.md, in its order, by its number al
     releases(),
   );
   for (const v of VERSIONS) assert.ok(lines(v).length > 0, v.version);
+});
+
+test('each release is named as the release workflow names it, each newer than the one below it', () => {
+  const names = releases();
+  for (const [i, name] of names.entries()) {
+    assert.match(name, VERSION_NAME);
+    if (i > 0) assert.ok(laterThan(names[i - 1], name), `${names[i - 1]} above ${name}`);
+  }
 });
 
 test("the CHANGELOG splits each release as What's new does: for you first, then under the hood", () => {
@@ -50,6 +59,8 @@ test('what is not out yet shows under the version that runs, once it comes after
   const last = VERSIONS[0].version;
   assert.equal(laterThan('3.10.0', '3.9.1'), true);
   assert.equal(laterThan('3.3.2', '3.3.2'), false);
+  assert.equal(laterThan('4.0.0-rc.1', '3.4.2'), true);
+  assert.equal(laterThan('4.0.0-rc.1', '4.0.0'), false);
   assert.equal(laterThan('0.0.1', last), false);
   const shown = whatsNewFor('99.0.0');
   const pending = lines(NEXT).length > 0;

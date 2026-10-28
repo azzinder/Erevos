@@ -2271,6 +2271,9 @@ asking GitHub, as **Told when a new version is out** below says. To update:
    apps from Erevos. On a computer and Sailfish OS, **Open download page** opens the releases page: take the file
    Erevos names, the one of the package you have, and update as in the table below.
 
+A version such as **4.0.0-rc.1** is a test version before 4.0.0 (a release candidate): it installs and updates like
+any other, and 4.0.0 comes after it.
+
 ### What's new {#whats-new}
 
 **Settings** → **General** → **What's new** (also **What's new** in **Updates**) says in short what each version

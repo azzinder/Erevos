@@ -112,6 +112,9 @@ test('a new version is told only when the release computer signed both its build
     assert.equal(await toldBy(unnamed.statement, unnamed.body, unnamed.sig, computer.pub), null);
     const odd = computer.publish(29, 'v3.2.1');
     assert.equal(await toldBy(odd.statement, odd.body, odd.sig, computer.pub), null);
+    // A test release is told by its name.
+    const rc = computer.publish(45, '4.0.0-rc.1');
+    assert.deepEqual(await toldBy(rc.statement, rc.body, rc.sig, computer.pub), { build: 45, name: '4.0.0-rc.1' });
   } finally {
     setCore(null);
     computer.done();

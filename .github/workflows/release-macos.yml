@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: The release that has no macOS yet, e.g. 3.0.0.
+        description: The release that has no macOS yet, e.g. 3.0.0 or 4.0.0-rc.1.
         required: true
 
 permissions: {}
@@ -46,8 +46,8 @@ jobs:
           WANTED: ${{ inputs.version }}
         run: |
           version=${WANTED#v}
-          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::Not a version: $version. It looks like 3.0.0."; exit 1
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $version. It looks like 3.0.0, or 4.0.0-rc.1."; exit 1
           fi
           assets=$(gh release view "v$version" --json assets --jq '.assets[].name') || {
             echo "::error::There is no release v$version"; exit 1; }

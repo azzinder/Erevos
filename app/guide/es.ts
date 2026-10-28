@@ -2466,6 +2466,9 @@ versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una ver
    Erevos instale apps. En un ordenador y en Sailfish OS, **Abrir la página de descargas** abre la página de versiones:
    toma el archivo que nombra Erevos, el del paquete que tienes, y actualiza como en la tabla de abajo.
 
+Una versión como **4.0.0-rc.1** es una versión de prueba anterior a la 4.0.0 (una versión candidata): se instala y se
+actualiza como cualquier otra, y la 4.0.0 llega después.
+
 ### Novedades {#whats-new}
 
 **Ajustes** → **General** → **Novedades** (también **Novedades** en **Actualizaciones**) dice en breve qué cambió cada

@@ -13,7 +13,11 @@ name: release
 #
 # The version: the one named when started by hand (Run workflow, version), else the one after the
 # latest release, 2.0.1 after 2.0.0. Releases until 0.1.16 were 0.1.<run number>; the one after them
-# is 2.0.0. Every build still has its own number, the run's, which Android and Check for updates go by.
+# is 2.0.0. A test release before a version is named as in 4.0.0-rc.1 (a release candidate; also
+# -alpha.<n> and -beta.<n>): it comes after 3.x and before 4.0.0, the one after it is 4.0.0-rc.2, and
+# it goes out as the latest release like any other, so Check for updates finds it
+# (app/lib/version-name.ts reads the same names). Every build still has its own number, the run's,
+# which Android and Check for updates go by.
 #
 # The jobs hand their files to the publish job through a draft release, build-<run number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
@@ -26,7 +30,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: The release's version, e.g. 2.1.0. Empty for the one after the latest (2.0.0 → 2.0.1).
+        description: The release's version, e.g. 2.1.0, or 4.0.0-rc.1 for a test release before 4.0.0. Empty for the one after the latest (2.0.0 → 2.0.1, 4.0.0-rc.1 → 4.0.0-rc.2).
         required: false
         default: ''
 
@@ -66,16 +70,18 @@ jobs:
           latest=${latest#v}
           if [ -n "$WANTED" ]; then
             version=${WANTED#v}
-          elif [[ "$latest" =~ ^[1-9][0-9]*\.[0-9]+\.[0-9]+$ ]]; then
+          elif [[ "$latest" =~ ^[1-9][0-9]*\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
+            # The last number goes up: of the test part when there is one (4.0.0-rc.1 → 4.0.0-rc.2).
             version="${latest%.*}.$((10#${latest##*.} + 1))"
           else
             version=2.0.0
           fi
-          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "::error::Not a version: $version. It looks like 2.1.0."; exit 1
+          if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
+            echo "::error::Not a version: $version. It looks like 2.1.0, or 4.0.0-rc.1 for a test release before 4.0.0."; exit 1
           fi
-          newest=$(printf '%s\n%s\n' "$latest" "$version" | sort -V | tail -n1)
-          if [ "$version" = "$latest" ] || [ "$newest" != "$version" ]; then
+          # Sorted with "-" as "~", which sort -V puts before the end: 4.0.0~rc.1 before 4.0.0.
+          newest=$(printf '%s\n%s\n' "${latest//-/\~}" "${version//-/\~}" | sort -V | tail -n1)
+          if [ "$version" = "$latest" ] || [ "$newest" != "${version//-/\~}" ]; then
             echo "::error::$version is not newer than the latest release, $latest."; exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -428,7 +434,8 @@ jobs:
       - name: Build the RPM for aarch64
         working-directory: sailfish
         run: |
-          sed -i "s/^Version:.*/Version:    $EREVOS_VERSION/" rpm/erevos.spec
+          # An RPM version has no "-": a test release's is 4.0.0~rc.1, which RPM puts before 4.0.0.
+          sed -i "s/^Version:.*/Version:    ${EREVOS_VERSION//-/\~}/" rpm/erevos.spec
           # The SDK image builds as its own user.
           chmod -R a+rwX .
           docker run --rm -v "$PWD:/home/mersdk/src" -w /home/mersdk/src \

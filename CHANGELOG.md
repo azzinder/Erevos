@@ -198,6 +198,12 @@ On main, not released yet:
 - **Notices are asked for with receiving off too**: with **Say a message came** on and **Only while Erevos shows**,
   Android's question for notices never came, so messages made no notice; it now comes, and **Permissions** waits for
   it before it reads what is allowed.
+- **Test releases before a version**: a release can be named as in 4.0.0-rc.1 (also -alpha.<n> and -beta.<n>). The
+  release workflow accepts it and puts it after 3.x and before 4.0.0 (with no version given, the one after it is
+  4.0.0-rc.2); the Sailfish RPM's version is 4.0.0~rc.1, since RPM allows no "-"; Updates, the notice of a new
+  version and What's new read it and put it in the same order (lib/version-name.ts, checks/release-version.check.ts
+  runs the workflow's own script). Erevos 3.4.2 and before still offer it, under 0.1.<build>, but tell no notice of
+  it.
 
 ## 3.4.2 (2026-10-27)
 

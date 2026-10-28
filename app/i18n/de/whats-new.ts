@@ -80,6 +80,8 @@ export const whatsNew: Record<string, string> = {
     "**Matrix-Konten in Erevos**: Melde einen Bereich bei Matrix an und chatte Ende-zu-Ende-verschlüsselt mit Menschen, die Element oder eine andere Matrix-App nutzen, unter Einstellungen → Relay und Netze → Matrix. Diese Chats sind nicht anonym und sagen es: Der Matrix-Server sieht, wer mit wem spricht. Text, Fotos und Dateien. Siehe [Matrix](#matrix).",
   "**Every network's chats on the home screen**: once you sign in to Matrix, its chats are in the list with the Erevos chats and the SMS, newest first, each marked Matrix, and the Matrix chip shows them alone, as SMS and Erevos do. See [Matrix](#matrix).":
     "**Die Chats aller Netze auf dem Startbildschirm**: Sobald du dich bei Matrix anmeldest, stehen seine Chats mit den Erevos-Chats und den SMS in der Liste, die neuesten zuerst, jeder mit Matrix markiert, und der Chip Matrix zeigt nur sie, wie SMS und Erevos. Siehe [Matrix](#matrix).",
+  '**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).':
+    '**Testversionen vor einer Version**: Erevos liest eine Version wie 4.0.0-rc.1, eine Testversion, die vor 4.0.0 kommt, wenn es nach Updates sucht, eine neue Version meldet und zeigt, was neu ist. Siehe [Updates](#updates).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Eine Nachricht, die du sendest, während sich ein Chat öffnet, wartet auf ihn**, markiert mit Wird gesendet…, und geht, sobald er offen ist, ohne zu sagen, dass Erevos nicht verschlüsseln kann.',

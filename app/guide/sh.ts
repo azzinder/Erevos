@@ -2393,6 +2393,9 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
    aplikacija iz Erevosa. Na računaru i Sailfish OS-u **Otvori stranicu za preuzimanje** otvara stranicu izdanja:
    uzmite datoteku koju Erevos navodi, onu za paket koji imate, i ažurirajte kao u tabeli ispod.
 
+Verzija poput **4.0.0-rc.1** je probna verzija prije 4.0.0 (kandidat za izdanje): instalira se i ažurira kao svaka
+druga, a 4.0.0 dolazi poslije nje.
+
 ### Šta je novo {#whats-new}
 
 **Postavke** → **Općenito** → **Šta je novo** (i **Šta je novo** u **Ažuriranja**) ukratko kaže šta je svaka verzija

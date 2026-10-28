@@ -1,4 +1,5 @@
 import { t } from './i18n';
+import { VERSION_NAME } from './version-name';
 // New versions, as in LPHL FASOULI. Every release (.github/workflows/release.yml) also goes to the
 // public repository RELEASES_REPO, one release per version (tag v2.0.0 and up; v0.1.<build> until
 // 0.1.16) with its packages and version.json, which says what the release is. Erevos reads the latest version.json only when
@@ -10,7 +11,7 @@ export const RELEASES_PAGE = `https://github.com/${RELEASES_REPO}/releases/lates
 export const LATEST_URL = `https://github.com/${RELEASES_REPO}/releases/latest/download/version.json`;
 
 export interface Release {
-  /** 2.0.0 and up; 0.1.<build> until 0.1.16. */
+  /** 2.0.0 and up, or a test release such as 4.0.0-rc.1; 0.1.<build> until 0.1.16. */
   version: string;
   /** The build's number, which goes up with every release whatever its version. */
   build: number;
@@ -19,8 +20,6 @@ export interface Release {
   /** The Android package, when the release has one, with its SHA-256 (lowercase hex). */
   apk: { url: string; size: number; sha256: string } | null;
 }
-
-const VERSION_NAME = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 /** The build number in a version until 0.1.16, 0.<minor>.<build>; 0 for any other, and for a build made on a computer (0.0.x). */
 export function buildOf(version: string | null | undefined): number {

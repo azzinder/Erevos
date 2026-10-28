@@ -2602,6 +2602,9 @@ version sort** plus bas. Pour mettre à jour :
    versions : prends le fichier qu’Erevos nomme, celui du paquet que tu as, et mets à jour comme dans le tableau
    ci-dessous.
 
+Une version comme **4.0.0-rc.1** est une version de test avant la 4.0.0 (une version candidate) : elle s’installe et
+se met à jour comme les autres, et la 4.0.0 vient après elle.
+
 ### Nouveautés {#whats-new}
 
 **Réglages** → **Général** → **Nouveautés** (aussi **Nouveautés** dans **Mises à jour**) dit en bref ce que chaque

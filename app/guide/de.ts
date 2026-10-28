@@ -2637,6 +2637,9 @@ unten sagt. Zum Aktualisieren:
    Release-Seite: Nimm die Datei, die Erevos nennt, die des Pakets, das du hast, und aktualisiere wie in der Tabelle
    unten.
 
+Eine Version wie **4.0.0-rc.1** ist eine Testversion vor 4.0.0 (ein Release Candidate): Sie wird wie jede andere
+installiert und aktualisiert, und 4.0.0 kommt nach ihr.
+
 ### Was ist neu {#whats-new}
 
 **Einstellungen** → **Allgemein** → **Was ist neu** (auch **Was ist neu** in **Updates**) sagt kurz, was jede Version

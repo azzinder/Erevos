@@ -1,4 +1,5 @@
 import { mark } from './i18n';
+import { laterThan } from './version-name';
 
 // What's new (Settings → General → What's new, app/whats-new.tsx): what each version changed, in
 // short, newest first, by its number alone, as CHANGELOG.md tells it in full. Each version says
@@ -55,6 +56,7 @@ export const NEXT: Changes = {
     mark('**Nostr reads as soon as Tor is ready.** See [Through Nostr](#nostr).'),
     mark("**Erevos's notices show its mark** in the status bar."),
     mark('**Notices are asked for with receiving off too**, when Say a message came is on.'),
+    mark('**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).'),
   ],
 };
 
@@ -344,21 +346,6 @@ export const VERSIONS: WhatsNew[] = [
     underTheHood: [],
   },
 ];
-
-/** A version's numbers, for comparing: "3.10.0" comes after "3.9.1". */
-function numbers(version: string): number[] {
-  return version.split('.').map((n) => Number.parseInt(n, 10) || 0);
-}
-
-/** Whether `a` comes after `b`. */
-export function laterThan(a: string, b: string): boolean {
-  const x = numbers(a);
-  const y = numbers(b);
-  for (let i = 0; i < Math.max(x.length, y.length); i++) {
-    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0);
-  }
-  return false;
-}
 
 /**
  * The list as the version that runs (`running`) shows it: NEXT under `running`'s number when it
