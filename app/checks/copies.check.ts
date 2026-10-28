@@ -27,7 +27,7 @@ import { signList } from '../lib/device-list';
 import { E2E, fromBase64Url, PENDING_LASTS, toBase64Url } from '../lib/e2e';
 import { entryKey, isSealedPacket, openPacket, packetKeys } from '../lib/sealed-packet';
 import { TooLargeForLoraError } from '../lib/nearby';
-import { keepReceived } from '../lib/receiver';
+import { cameBefore, isNews, keepReceived } from '../lib/receiver';
 import { RelayError, RelayUnreachableError } from '../lib/relay';
 import { MAX_PARTS, PART_SIZE, splitVoice, VoiceAssembler } from '../lib/voice';
 import { loadE2EData, MAX_TOOK, TOOK_DAY, TOOK_LASTS, tookDay, WAY_AGAIN, type Route } from '../lock/e2e-data';
@@ -721,6 +721,30 @@ t('a voice message that went in part, and goes again whole with its tag, is put 
     await take((await carol.e2e.sealVoice(bob.id, audio, 9000, carol.sender, { at: where, tag })).packets);
     assert.equal(shown(tag), 0);
   }
+});
+
+t('a voice message from a contact with no devices that went in part, and goes again whole, says once that it came', async () => {
+  const [bob, carol] = [await chat(), await chat()];
+  await meet(bob, carol);
+  const history = await History.open('space', bob.space, bob.key);
+  const chats = { e2e: bob.e2e, history, voiceParts: new VoiceAssembler() };
+  const audio = randomBytes(PART_SIZE * 10);
+  const tag = newTag();
+  const take = async (packets: Uint8Array[]) => {
+    const news: boolean[] = [];
+    for (const packet of packets) {
+      const received = await bob.e2e.receive(packet);
+      const came = cameBefore(chats, received);
+      news.push(!!came && isNews(came));
+      await keepReceived(chats, received);
+    }
+    return news;
+  };
+  const once = await carol.e2e.sealVoice(bob.id, audio, 9000, carol.sender, { at: where, tag });
+  assert.deepEqual(await take(once.packets.slice(0, 6)), [true, ...Array(5).fill(false)]);
+  const again = await carol.e2e.sealVoice(bob.id, audio, 9000, carol.sender, { at: where, tag });
+  assert.deepEqual(await take(again.packets), Array(10).fill(false));
+  assert.equal(history.messages().filter((m) => m.tag === tag && m.voice).length, 1);
 });
 
 t('a way whose first packet the relay took but its endpoint never read starts again a day later, those before kept to open in, and so ever less often until it answers; one that answered starts none again', async () => {

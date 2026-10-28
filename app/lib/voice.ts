@@ -95,4 +95,10 @@ export class VoiceAssembler {
     }
     return { audio, ms: g.ms, talk: g.talk };
   }
+
+  /** Whether this part already came, as when a voice message that went in part goes again whole. Changes nothing. */
+  has(peer: string, part: VoicePart, now = Date.now()): boolean {
+    const g = this.gathering.get(`${peer} ${part.id}`);
+    return !!g && now - g.at <= STALE && g.parts.length === part.parts && g.parts[part.part] != null;
+  }
 }

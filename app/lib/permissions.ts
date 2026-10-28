@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import { Linking, PermissionsAndroid, Platform, type Permission } from 'react-native';
 
 import { callAudio, type SettingsScreen } from '../modules/erevos-call';
-import { askBattery, askFullScreen, backgroundState, loadMessageNotices, loadRingInBackground } from './background';
+import { askBattery, askFullScreen, backgroundState, loadMessageNotices, loadRingInBackground, noticesAsked } from './background';
 import { checksFrom, known, offerFor, type Check, type CheckId } from './permission-checks';
 import { HAS_RADIO, nearbyPermissions } from './radio';
 import { secureGet, secureSet } from './secure';
@@ -54,6 +54,9 @@ export async function offerChecks(): Promise<boolean> {
   offered = true;
   const seen = await secureGet(SEEN_KEY).catch(() => null);
   if (seen === INSTALLED) return false;
+  // Android's own question whether Erevos may show notices, put as the space opened, is answered
+  // first: the screen then shows what was chosen, not over the question.
+  await noticesAsked();
   const [rings, checks] = await Promise.all([loadRingInBackground(), readChecks()]);
   // Nothing to show this version: not looked at again until the next.
   if (!offerFor(seen, INSTALLED, rings, checks)) {

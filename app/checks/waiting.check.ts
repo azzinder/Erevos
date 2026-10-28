@@ -16,7 +16,7 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { nearby, Nearby } from '../lib/nearby';
 import { createQueue, fromHex, receiveMessage, toHex } from '../lib/relay';
 import { forgetSpaceChats, spaceChats } from '../lib/space-chats';
-import { canPick, firstLater, LATEST, quickTimes, showsAt, stepLater } from '../lib/later';
+import { canPick, firstLater, LATEST, laterTheirs, quickTimes, showsAt, stepLater } from '../lib/later';
 import { nextDue, sendWaiting, takeBack, type SendPlace } from '../lib/waiting';
 import { WAITING } from '../lock/history';
 import { setCurrentSpace } from '../lock/keys';
@@ -248,6 +248,20 @@ test('one that comes well before its time shows then; one sent for later goes at
   assert.equal(canPick(now - 1, now), false);
   assert.equal(canPick(now + LATEST, now), true);
   assert.equal(canPick(now + LATEST + 60_000, now), false);
+});
+
+test('a contact\'s messages that wait for their time are the ones whose notice waits too', () => {
+  const now = Date.now();
+  const m = (peer: string, mine: boolean, at: number, until = 0) => ({ peer, mine, at, until, text: `${peer} ${at}` });
+  const ahead = m('contact:aa', false, now + 3600_000);
+  const list = [
+    ahead,
+    m('contact:aa', true, now + 3600_000),
+    m('contact:aa', false, now - 1000),
+    m('contact:bb', false, now + 7200_000, now - 1),
+    m('group:cc', false, now + 3600_000),
+  ];
+  assert.deepEqual(laterTheirs(list, now), [ahead]);
 });
 
 test('the times to send later: ahead, to the minute, the hour and minutes going round on the same day', () => {

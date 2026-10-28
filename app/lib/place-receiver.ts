@@ -1,6 +1,6 @@
 import { keptPlaces, onKeptChange } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket } from '../lock/hidden-ring';
-import { isWatchedQueue, loadWatched, watchPocket } from '../lock/hidden-watch';
+import { loadWatched, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';
 import { currentSpace } from '../lock/keys';
 import type { QueueKind } from '../lock/queues-data';
 import { placeQueues } from '../lock/queues-data';
@@ -121,6 +121,15 @@ export function receivesPocket(space: number, pocket: number): boolean {
   return openSpace === space && runs.has(pocket);
 }
 
+// The space whose receiver started and has not yet read which places receive: until then no one
+// knows which pockets tell of what came themselves (lib/hidden-notices.ts waits for it).
+let reading: number | null = null;
+
+/** Whether it is known which places of `space` receive while closed: its receiver read them, or none runs. */
+export function placesRead(space: number): boolean {
+  return reading !== space;
+}
+
 /**
  * Stops looking at a place's queue, once a look under way has ended, until the function it gives
  * is called: its chat screen holds it while open, and a chat moved into it while it moves. Let go
@@ -171,13 +180,21 @@ export function startPlaceReceiver(every?: number): () => void {
   }
   const { space, key } = open;
   openSpace = space;
+  reading = space;
   let stopped = false;
   let following: Promise<void> = Promise.resolve();
   // Which places receive, read again each time a switch changes.
   const follow = () => {
     following = following.then(async () => {
       const found = await keptPlaces(space, key).catch(() => null);
-      if (stopped || !found) return;
+      if (stopped) return;
+      // Read, or not to be read: what waits for it waits no longer.
+      const first = reading === space;
+      if (first) reading = null;
+      if (!found) {
+        if (first) changeListeners.forEach((listener) => listener());
+        return;
+      }
       const wanted = new Map(found.map((place) => [place.pocket, place.key]));
       for (const [pocket, run] of runs) {
         const placeKey = wanted.get(pocket);
@@ -208,6 +225,7 @@ export function startPlaceReceiver(every?: number): () => void {
     for (const held of calls.values()) for (const call of held) if (call.timer) clearTimeout(call.timer);
     calls.clear();
     if (openSpace === space) openSpace = null;
+    if (reading === space) reading = null;
     changeListeners.forEach((listener) => listener());
   };
 }
@@ -318,7 +336,8 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
     groups: placeGroupsAt(space, pocket, key).moves,
     moved: async (queue, old) => {
       const spaceKey = currentSpace().key;
-      if (!old || !isWatchedQueue(await loadWatched(space, spaceKey), pocket, old.recipientHex)) return;
+      // Its slot names the old queue, or, as the relay lost it, says it was the one waited on.
+      if (!old || !wasWatchedQueue(await loadWatched(space, spaceKey), pocket, old.recipientHex)) return;
       await watchPocket(space, spaceKey, pocket, { url: own.url, token: own.token ?? '', recipientHex: queue.recipientHex });
     },
     ring: async () => {

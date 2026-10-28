@@ -5,6 +5,7 @@ import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { onSmsEvent, smsShowOnScreen } from '../modules/erevos-sms';
 import { currentCall, RING_MS } from './call';
+import { CONTACT_PREFIX } from './calls';
 import { chatNotify } from './chat-notices';
 import { followDoor, keepDoor, startClosedNotices } from './closed-notices';
 import { onContactQueuesChanged } from './contact-queues';
@@ -14,13 +15,14 @@ import { hiddenRinging, onHiddenRingingChange, ringLeavesLock, setHiddenRinging 
 import { startHiddenRinging } from './hidden-ring-notices';
 import { iconNumberOn } from './icon-number';
 import { networkChanged } from './network-change';
-import { showsAt } from './later';
+import { laterTheirs, showsAt } from './later';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
 import { onPlaceMessage, onPlaceRing } from './place-receiver';
 import { onSpaceMoved } from './queue-move';
 import { appShown, isNews, onAppShown, onMessage } from './receiver';
 import { secureGet, secureSet } from './secure';
+import { spaceChats } from './space-chats';
 import { onSpaceGroupMessage } from './space-groups';
 import { spaceUnreadAt } from './unread';
 
@@ -119,15 +121,15 @@ const unseenCount = () => unread + [...unseen.values()].reduce((sum, count) => s
 
 /**
  * A message came in the open space, from a contact or in a group, shown at `where`: the notice
- * says one more came and sounds, whether Erevos shows or not; where it shows on the screen just
- * then, it only sounds. One sent without sound (`quiet`) makes none: the notice shows or counts on
+ * says one more came (`times` more, that came at once, in one change of the notice) and sounds,
+ * whether Erevos shows or not; where it shows on the screen just then, it only sounds. One sent without sound (`quiet`) makes none: the notice shows or counts on
  * silently. `chat` is the chat or group it came in (`chat:` or `group:`, and who), when `where`
  * does not say it, as for a hidden place: one muted there tells of nothing, and one with a sound of
  * its own sounds with it, or with none (lib/chat-notices.ts); in hidden chats only muting counts,
  * as a sound of their own would tell which chat it is. The chat screen tells of what it opens
  * itself.
  */
-export function messageCame(quiet = false, where = '', chat = where): void {
+export function messageCame(quiet = false, where = '', chat = where, times = 1): void {
   if (!telling) return;
   const pocket = where.startsWith('hidden:') ? Number(where.slice('hidden:'.length)) : undefined;
   const notify = chatNotify(chat, pocket);
@@ -138,7 +140,7 @@ export function messageCame(quiet = false, where = '', chat = where): void {
     if (!silent) chime(sound);
     return;
   }
-  unseen.set(where, (unseen.get(where) ?? 0) + 1);
+  unseen.set(where, (unseen.get(where) ?? 0) + times);
   try {
     if (silent || !sound) callAudio?.tellMessages?.(unseenCount(), silent);
     else callAudio?.tellMessages?.(unseenCount(), false, sound);
@@ -211,11 +213,33 @@ export function showSmsOnScreen(numbers: string[]): () => void {
   };
 }
 
-/** As messageCame, at `at` (milliseconds) when that is ahead: for a message that came before its time (lib/later.ts, showsAt). */
-export function messageCameAt(at: number, quiet = false, where = '', chat = where): void {
+// Notices of messages that came before their time, waiting for it, by chat and tag: they go as
+// the space closes, so none tells in the next; the open space's are set again as it opens.
+const due = new Map<string, ReturnType<typeof setTimeout>>();
+let untagged = 0;
+
+/**
+ * As messageCame, at `at` (milliseconds) when that is ahead: for a message that came before its
+ * time (lib/later.ts, showsAt), once for its `tag`; when `still` says no by then, it tells nothing.
+ */
+export function messageCameAt(at: number, quiet = false, where = '', chat = where, tag?: string, still?: () => boolean): void {
   const wait = at - Date.now();
-  if (wait <= 0) messageCame(quiet, where, chat);
-  else setTimeout(() => messageCame(quiet, where, chat), Math.min(wait, 2 ** 31 - 1));
+  if (wait <= 0) {
+    messageCame(quiet, where, chat);
+    return;
+  }
+  const id = `${chat}|${tag ?? `#${++untagged}`}`;
+  if (due.has(id)) return;
+  const timer = setTimeout(() => {
+    due.delete(id);
+    if (!still || still()) messageCame(quiet, where, chat);
+  }, Math.min(wait, 2 ** 31 - 1));
+  due.set(id, timer);
+}
+
+function dropDue() {
+  due.forEach((timer) => clearTimeout(timer));
+  due.clear();
 }
 
 function clearMessages() {
@@ -239,10 +263,25 @@ export function backgroundState(): BackgroundState | null {
   }
 }
 
-/** Android 13 and later ask once whether Erevos may show notices; without them, it rings with no notice. */
-async function askNotices(): Promise<void> {
-  if (Number(Platform.Version) < 33) return;
-  await PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').catch(() => undefined);
+// The question Android 13 and later put last, while it waits for an answer.
+let asking: Promise<void> = Promise.resolve();
+
+/**
+ * Android 13 and later ask once whether Erevos may show notices; without them, it rings with no
+ * notice, no notice says a message came, and a message in a chat makes no sound.
+ */
+function askNotices(): Promise<void> {
+  if (Number(Platform.Version) < 33) return Promise.resolve();
+  asking = PermissionsAndroid.request('android.permission.POST_NOTIFICATIONS').then(
+    () => undefined,
+    () => undefined,
+  );
+  return asking;
+}
+
+/** Once Android's question whether Erevos may show notices, if one is up, has its answer. */
+export function noticesAsked(): Promise<void> {
+  return asking;
 }
 
 /**
@@ -270,17 +309,13 @@ export function startBackground(): () => void {
   let closed: (() => void) | null = null;
   const tellHidden = (on: boolean) => {
     if (on && !hidden)
-      hidden = startHiddenNotices((count, pocket) => {
-        for (let i = 0; i < count; i++) messageCame(false, screenOfHidden(pocket));
-      });
+      hidden = startHiddenNotices((count, pocket) => messageCame(false, screenOfHidden(pocket), screenOfHidden(pocket), count));
     if (!on && hidden) {
       hidden();
       hidden = null;
     }
     if (on && !closed)
-      closed = startClosedNotices((count, space) => {
-        for (let i = 0; i < count; i++) messageCame(false, screenOfSpace(space));
-      });
+      closed = startClosedNotices((count, space) => messageCame(false, screenOfSpace(space), screenOfSpace(space), count));
     if (!on && closed) {
       closed();
       closed = null;
@@ -319,13 +354,14 @@ export function startBackground(): () => void {
       // A build from before ringing: nothing was playing.
     }
   };
-  // A ring came for a hidden place: play the phone's ringtone and the "Incoming call" notice over
-  // the lock screen, naming no one, and stop after it has rung a while unanswered (a missed call).
-  const onRing = (space: number, pocket: number) => {
+  // A ring came for a hidden place: play the phone's ringtone and, while Erevos is not on screen or
+  // the password screen is in front, the "Incoming call" notice over the lock screen, naming no one,
+  // as for the space's calls; stop after it has rung a while unanswered (a missed call).
+  const onRing = (space: number, pocket: number, at = Date.now()) => {
     if (currentCall() || currentGroupCall() || hiddenRinging()) return;
-    setHiddenRinging({ space, pocket, at: Date.now() });
+    setHiddenRinging({ space, pocket, at });
     try {
-      callAudio?.ring?.(false, true);
+      callAudio?.ring?.(false, !appShown());
       callAudio?.showOverLock?.(true);
     } catch {
       // As above.
@@ -337,7 +373,7 @@ export function startBackground(): () => void {
   // with no name, as the space's chats do, and a call rings with none, as a hidden ring does.
   const places = [
     onPlaceMessage((_space, pocket, received) => {
-      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket), screenOfChat(received.identity));
+      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket), screenOfChat(received.identity), received.tag);
     }),
     // Their groups' too (lib/place-groups.ts).
     onPlaceGroupMessage((_space, pocket, group) => messageCame(false, screenOfHidden(pocket), screenOfGroup(group))),
@@ -384,6 +420,8 @@ export function startBackground(): () => void {
     if (!notices) clearMessages();
     if (!on) {
       if (running) stop();
+      // The notice and the sound of a message while Erevos shows need it too.
+      if (notices) await askNotices();
       return;
     }
     if (running) {
@@ -407,9 +445,17 @@ export function startBackground(): () => void {
   };
   void follow();
   changes.add(follow);
+  // The open space's messages that came before their time and wait for it, from before Erevos
+  // started anew: their notices wait again.
+  void spaceChats()
+    .then(({ history }) => {
+      if (stopped) return;
+      for (const m of laterTheirs(history.messages())) messageCameAt(m.at, !!m.quiet, screenOfChat(m.peer.slice(CONTACT_PREFIX.length)), undefined, m.tag);
+    })
+    .catch(() => undefined);
   const told = [
     onMessage((received) => {
-      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfChat(received.identity));
+      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfChat(received.identity), undefined, received.tag);
     }),
     onSpaceGroupMessage((group) => messageCame(false, screenOfGroup(group))),
   ];
@@ -463,6 +509,7 @@ export function startBackground(): () => void {
   }
   return () => {
     stopped = true;
+    dropDue();
     telling = false;
     moved();
     contactsChanged();

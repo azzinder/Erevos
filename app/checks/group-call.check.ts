@@ -10,7 +10,7 @@ import { afterEach, mock, test } from 'node:test';
 import { RING_MS } from '../lib/call';
 import { currentGroupCall, MAX_GROUP_CALL, MAX_VIDEO } from '../lib/group-call';
 import { decodeGroupCall, type GroupCallSignal } from '../lib/group-call-signal';
-import { closeGroupCall, endGroupCall, groupCallGoingOn, groupCallSignal, joinGroupCall, shownGroupCall, startGroupCall, type GroupCallPlace } from '../lib/group-calls';
+import { closeGroupCall, endGroupCall, groupCallGoingOn, groupCallSignal, joinGroupCall, onGroupCallChange, shownGroupCall, startGroupCall, type GroupCallPlace } from '../lib/group-calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
 
 const GROUP = 'ab'.repeat(16);
@@ -96,6 +96,24 @@ test('a call rings, joins, and takes the offers of those already in it', async (
   assert.equal(connections[0].remote?.sdp, SDP);
   const answer = sent.find((s) => s.kind === 'answer');
   assert.ok(answer && answer.kind === 'answer' && answer.to === BOB);
+});
+
+test('a listener that fails does not keep a group call from ringing, nor the others from hearing', async () => {
+  const { calls } = place();
+  const { rtc } = fakeRtc();
+  let heard = 0;
+  const stopFailing = onGroupCallChange(() => {
+    throw new Error('no ringtone');
+  });
+  const stopHearing = onGroupCallChange(() => void heard++);
+  try {
+    await groupCallSignal(calls, GROUP, BOB, { id: 'ef'.repeat(8), kind: 'start', at: Date.now(), video: false }, rtc);
+    assert.ok(heard > 0);
+    assert.equal(shownGroupCall()?.call.state, 'incoming');
+  } finally {
+    stopFailing();
+    stopHearing();
+  }
 });
 
 test('two joining at once: the lower identity’s offer counts', async () => {

@@ -65,7 +65,8 @@ export type Kept = [
  * Of ours: `h`, the id a relay holds it by, sent for later, and `r` that relay (lib/relay.ts,
  * sendMessageLater), so it can still be taken back before it goes, and `g` the contact's queue it
  * was held for (their sender id), so it is held again should they read elsewhere first; `q` 1 when
- * it goes without sound, kept while it waits. Of either, its Parts: `p`, the tag of the message it
+ * it goes without sound, kept while it waits, or, of theirs, when it came without sound before its
+ * time, for its notice then. Of either, its Parts: `p`, the tag of the message it
  * answers; `y`, our reaction to it, and `o`, theirs; `n`, when it was pinned to the top of the
  * chat; `f` 1 when it is starred, on this phone only; `s`, the name of the sticker it is (its text
  * is the sticker's emoji); `l`, the place it is (its text says where); `k`, the poll it is (its
@@ -98,7 +99,7 @@ export type Message = {
   held?: HeldAt;
   /** The contact's queue (their sender id) it was held for: missing for one held before this was kept. */
   heldFor?: string;
-  /** Ours that waits, to go without sound. */
+  /** Ours that waits, to go without sound; or theirs, sent without sound, that waits to show at its time. */
   quiet?: boolean;
 } & Parts;
 
@@ -215,7 +216,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
   const more: More = {
     ...(held ? { h: v.h as string, r: v.r as string, ...(typeof v.g === 'string' && QUEUE_ID.test(v.g) ? { g: v.g } : {}) } : {}),
-    ...(mine && v.q === 1 ? { q: 1 as const } : {}),
+    ...(v.q === 1 ? { q: 1 as const } : {}),
     ...(isTag(v.p) ? { p: v.p } : {}),
     ...(isReactionEmoji(v.y) ? { y: v.y } : {}),
     ...(isReactionEmoji(v.o) ? { o: v.o } : {}),

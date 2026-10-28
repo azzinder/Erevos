@@ -51,7 +51,13 @@ export function callsElsewhere(busy: (id?: string) => boolean): void {
 }
 
 function changed() {
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // One listener's failure does not keep the others from hearing.
+    }
+  });
 }
 
 /** The call to show, until its screen closes: it stays a moment after it ends. */
@@ -127,17 +133,24 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     return null;
   }
   const identity = peer.slice(CONTACT_PREFIX.length);
-  if (ours || currentGroupCall() || elsewhere(signal.id)) {
+  const busy = () => {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`);
     return null;
-  }
+  };
+  if (ours || currentGroupCall() || elsewhere(signal.id)) return busy();
   const relay = relayToAnswer(signal.sdp, await place.callRelay().catch(() => null));
   // They hung up while the call relay was asked.
   if (endedAlready(peer, signal.id)) {
     place.line(peer, false, `Missed ${kind}`);
     return null;
   }
+  // Another call came, or started, while the call relay was asked (offers of one look are read
+  // together). The same offer again, through another way, says nothing: a busy with its id would
+  // end the call it rings for.
+  const now = currentCall();
+  if (now?.id === signal.id) return null;
+  if (now || currentGroupCall() || elsewhere(signal.id)) return busy();
   const ringing = Call.incoming(signal, { peer, relay, rtc, events: events(place, identity) });
   if (!ringing) return null;
   shown = { call: ringing, place };

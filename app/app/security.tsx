@@ -342,7 +342,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
 
   function chooseNotices(next: boolean) {
     setNotices(next);
-    void saveMessageNotices(next);
+    void saveMessageNotices(next).then(() => setAllowed(backgroundState()));
   }
 
   function chooseDoor(next: boolean) {
@@ -385,7 +385,8 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
             ? t('While a space is open, Erevos keeps running in the background: it waits at the relay and on the links to phones nearby, so messages come and a call rings with the phone\'s ringtone, over the lock screen too. Only that space\'s chats and groups; hidden chats only say that a message came, if you let them. The notices say only "Erevos", "Incoming call" and how many messages came, never who or what; on a locked phone the one for messages says only "Erevos". Swiped away from the recent apps, it goes on the same; stopped by Android, it takes nothing and cannot ring.')
             : t('Messages come, and a call rings, only while Erevos shows. A call shows as missed once you open Erevos.')}
         </Text>
-        {on && allowed && !allowed.notices ? (
+        {/* The notice for messages and their sound while Erevos shows need it with the receiving off too. */}
+        {(on || notices) && allowed && !allowed.notices ? (
           <Text variant="caption" tone="muted" style={hint}>
             {t("Notices are off for Erevos in Android's settings: calls still ring, with no notice to tap, and no notice says a message came.")}
           </Text>
@@ -401,7 +402,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
             {t("Without it, Android's battery saving may stop Erevos after a while in the background.")}
           </Text>
         ) : null}
-        {on ? (
+        {on || (notices && allowed && !allowed.notices) ? (
           <Row wrap>
             <Button title={t('All permissions')} kind="ghost" compact onPress={() => router.push('/permissions')} />
           </Row>

@@ -632,10 +632,16 @@ export function nearbyChanged(): void {
     .catch(() => undefined);
 }
 
-/** A message as the listeners are told it, before it is kept: said to come twice when the chat took it before or the history holds it. Null for what is no message. */
-export function cameBefore({ history }: SpaceChats, received: Received): Extract<Received, { kind: 'message' }> | null {
+/**
+ * A message as the listeners are told it, before it is kept: said to come twice when the chat took
+ * it before, the history holds it, or it is a part of a voice message that came already (one that
+ * went in part goes again whole, with every part). Null for what is no message.
+ */
+export function cameBefore({ history, voiceParts }: SpaceChats, received: Received): Extract<Received, { kind: 'message' }> | null {
   if (received.kind !== 'message') return null;
-  return { ...received, twice: received.twice || (!!received.tag && history.has(`${CONTACT_PREFIX}${received.identity}`, received.tag)) };
+  const peer = `${CONTACT_PREFIX}${received.identity}`;
+  const twice = received.twice || (!!received.tag && history.has(peer, received.tag)) || (!!received.voice && voiceParts.has(peer, received.voice));
+  return { ...received, twice };
 }
 
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
@@ -654,7 +660,8 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   const twice = received.twice || history.has(peer, tag);
   const add = async (message: Partial<Message>) => {
     if (twice) return;
-    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}), ...message });
+    // One sent without sound that waits for its time keeps it, for its notice then (lib/background.ts).
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.quiet && shows > at ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);

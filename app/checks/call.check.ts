@@ -8,7 +8,7 @@ import { afterEach, mock, test } from 'node:test';
 
 import { Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
-import { callClock, callSignal, closeCall, endedLine, shownCall, startCall, type CallPlace } from '../lib/calls';
+import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
 
 function events() {
@@ -234,6 +234,49 @@ test('a call rings wherever it comes from, and leaves its line where it belongs'
   assert.deepEqual(here.lines, [{ peer: 'contact:a', mine: false, text: 'Missed video call' }]);
   closeCall(shown.call);
   assert.equal(shownCall(), null);
+});
+
+test('two calls read in one look: the second is told busy, and the same offer twice rings once', async () => {
+  const { rtc } = fakeRtc();
+  const a = place();
+  const b = place();
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: false, sdp: 'v=0\r\noffer', at: Date.now() };
+  // Both are past the first look at whether a call goes on while their call relay is asked.
+  await Promise.all([callSignal(a.calls, 'contact:a', offer, false, rtc), callSignal(b.calls, 'contact:b', { ...offer, id: '1111111111111111' }, false, rtc)]);
+  const shown = shownCall()!;
+  assert.equal(shown.call.peer, 'contact:a');
+  assert.equal(shown.call.state, 'incoming');
+  assert.deepEqual(b.sent, [{ identity: 'b', signal: { id: '1111111111111111', kind: 'end', reason: 'busy' } }]);
+  assert.deepEqual(b.lines, [{ peer: 'contact:b', mine: false, text: 'Missed voice call, while in another call' }]);
+  shown.call.hangUp();
+  closeCall(shown.call);
+
+  // The same offer through two ways at once: one ring, no busy, no line.
+  const c = place();
+  const again = { ...offer, id: '2222222222222222' };
+  await Promise.all([callSignal(c.calls, 'contact:c', again, false, rtc), callSignal(c.calls, 'contact:c', again, false, rtc)]);
+  assert.deepEqual(c.sent, [{ identity: 'c', signal: { id: again.id, kind: 'ringing' } }]);
+  assert.deepEqual(c.lines, []);
+  assert.equal(shownCall()?.call.state, 'incoming');
+});
+
+test('a listener that fails does not keep a call from ringing, nor the others from hearing', async () => {
+  const { rtc } = fakeRtc();
+  const here = place();
+  let heard = 0;
+  const stopFailing = onCallChange(() => {
+    throw new Error('no ringtone');
+  });
+  const stopHearing = onCallChange(() => void heard++);
+  try {
+    const offer = { id: '3333333333333333', kind: 'offer' as const, video: false, sdp: 'v=0\r\noffer', at: Date.now() };
+    assert.equal(await callSignal(here.calls, 'contact:a', offer, false, rtc), null);
+    assert.ok(heard > 0);
+    assert.equal(shownCall()?.call.state, 'incoming');
+  } finally {
+    stopFailing();
+    stopHearing();
+  }
 });
 
 test('an old call, or one from a message request, does not ring', async () => {

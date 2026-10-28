@@ -14,13 +14,16 @@ import { SLOTS } from './slots';
 // hidden chats it has, and whoever opens the space learns nothing of them from it. Only how many
 // messages came is asked of the relay, as it counts them by what each send said, never for them:
 // they stay there for the hidden chats to take. What the relay last said came is kept with the
-// queue (`heard`), so what was told of is not told of again once Erevos starts anew.
+// queue (`heard`), so what was told of is not told of again once Erevos starts anew. A queue the
+// relay no longer has is given one made for nothing in its place, which keeps the first 16 hex
+// digits of the lost one (`was`), the same for every pocket, so the chats whose queue it was still
+// find their switch on, and wait on their queue again once they open or move it.
 
 /**
  * A queue waited on: its relay, its recipient id, and what the relay last said came into it (round,
  * messages, sends that did not say, rings, each as 8 hex digits, so every entry is of one length).
  */
-export type Watched = { url: string; token: string; recipientHex: string; heard?: string };
+export type Watched = { url: string; token: string; recipientHex: string; heard?: string; was?: string };
 
 /** A pocket's queue, or null while none is kept for it yet. */
 export type WatchList = (Watched | null)[];
@@ -36,10 +39,17 @@ const NOTHING_HEARD = '0'.repeat(32);
 export const isHeardText = (v: unknown): boolean => v === undefined || (typeof v === 'string' && /^[0-9a-f]{32}$/.test(v));
 const isHeard = isHeardText;
 
+const isWas = (v: unknown) => v === undefined || (typeof v === 'string' && /^[0-9a-f]{16}$/.test(v));
+
+const wasOf = (recipientHex: string) => recipientHex.slice(0, 16);
+
+// Kept for every queue, lost or not, so every entry is of one length whatever was lost.
+const NOTHING_LOST = '0'.repeat(16);
+
 /** Whether `value` is a queue waited on, as kept. */
 export function isWatched(value: unknown): value is Watched {
   const v = (value ?? {}) as Partial<Record<keyof Watched, unknown>>;
-  return typeof v.url === 'string' && v.url !== '' && typeof v.token === 'string' && isHex(v.recipientHex) && isHeard(v.heard);
+  return typeof v.url === 'string' && v.url !== '' && typeof v.token === 'string' && isHex(v.recipientHex) && isHeard(v.heard) && isWas(v.was);
 }
 
 /** What the relay last said came into a queue waited on, or null when it has said nothing yet. */
@@ -53,7 +63,7 @@ export function heardOf(kept: Pick<Watched, 'heard'>): News | null {
 export const heardText = (news: News) => [news.round, news.messages, news.unmarked, news.rings].map((n) => (n >>> 0).toString(16).padStart(8, '0')).join('');
 
 function seal(key: Uint8Array, list: WatchList): string {
-  const json = JSON.stringify(list.map((kept) => kept && { ...kept, heard: kept.heard ?? NOTHING_HEARD }));
+  const json = JSON.stringify(list.map((kept) => kept && { ...kept, heard: kept.heard ?? NOTHING_HEARD, was: kept.was ?? NOTHING_LOST }));
   return encryptText(key, json.padEnd(Math.max(1, Math.ceil(json.length / BLOCK)) * BLOCK, ' '));
 }
 
@@ -71,8 +81,8 @@ export async function loadWatched(space: number, key: Uint8Array): Promise<Watch
   return Array.from({ length: POCKETS }, (_, pocket) => {
     const value = Array.isArray(kept) ? kept[pocket] : null;
     if (!isWatched(value)) return null;
-    const { heard, ...rest } = value;
-    return heard && heard !== NOTHING_HEARD ? value : rest;
+    const { heard, was, ...rest } = value;
+    return { ...rest, ...(heard && heard !== NOTHING_HEARD ? { heard } : {}), ...(was && was !== NOTHING_LOST ? { was } : {}) };
   });
 }
 
@@ -140,6 +150,31 @@ export function unwatchPocket(space: number, key: Uint8Array, pocket: number, re
   });
 }
 
+/**
+ * The relay no longer has a pocket's queue (`recipientHex`): one made for nothing on `relay` takes
+ * its place, which keeps whose it was (the first lost one, if it was lost before). Nothing changes
+ * when another queue took its place meanwhile. Throws, saving nothing, when the relay cannot be reached.
+ */
+export function lostPocket(space: number, key: Uint8Array, pocket: number, recipientHex: string, relay: Relay): Promise<WatchList> {
+  return change(space, key, async (list) => {
+    const kept = list[pocket];
+    if (kept?.recipientHex !== recipientHex) return list;
+    const out = [...list];
+    out[pocket] = { ...(await madeForNothing(relay)), was: kept.was ?? wasOf(recipientHex) };
+    return out;
+  });
+}
+
+/** Waits on a pocket's own queue again (`own`), while its slot still says it was lost there; else changes nothing. */
+export function rewatchLost(space: number, key: Uint8Array, pocket: number, own: Watched): Promise<WatchList> {
+  return change(space, key, async (list) => {
+    if (list[pocket]?.was !== wasOf(own.recipientHex)) return list;
+    const out = [...list];
+    out[pocket] = own;
+    return out;
+  });
+}
+
 /** Keeps what the relay said came into a pocket's queue (`recipientHex`), while that is still the one waited on. */
 export function hearPocket(space: number, key: Uint8Array, pocket: number, recipientHex: string, news: News): Promise<WatchList> {
   return change(space, key, async (list) => {
@@ -154,4 +189,9 @@ export function hearPocket(space: number, key: Uint8Array, pocket: number, recip
 /** Whether a pocket's chats say a message came: whether their own queue is the one kept for it. */
 export function isWatchedQueue(list: WatchList, pocket: number, recipientHex: string | undefined): boolean {
   return !!recipientHex && list[pocket]?.recipientHex === recipientHex;
+}
+
+/** Whether a pocket's chats asked to say a message came: their own queue is kept for it, or was, until the relay lost it. */
+export function wasWatchedQueue(list: WatchList, pocket: number, recipientHex: string | undefined): boolean {
+  return isWatchedQueue(list, pocket, recipientHex) || (!!recipientHex && list[pocket]?.was === wasOf(recipientHex));
 }

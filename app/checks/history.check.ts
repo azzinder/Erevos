@@ -42,6 +42,9 @@ t('keeps the messages of a chat between launches, in order, sealed with its key'
   assert.ok(!files.get(FILE)!.includes('hello'));
   assert.deepEqual((await History.open('space', 0, randomBytes(32))).messages(), []);
   assert.deepEqual((await History.open('hidden', 0, key)).messages(), []);
+  // Theirs that waits for its time, sent without sound, keeps it.
+  await again.add({ peer: 'contact:bb', text: 'later', mine: false, at: Date.now() + 3600_000, tag: newTag(), quiet: true });
+  assert.equal((await History.open('space', 0, key)).messages().find((m) => m.text === 'later')?.quiet, true);
 });
 
 t('every value is the same size, used or not, whatever the text', async () => {
@@ -392,7 +395,13 @@ test('a voice message is cut in parts and put back together, whatever order they
   const parts = splitVoice(sound, 5000);
   assert.deepEqual(parts.map((p) => [p.part, p.parts, p.data.length]), [[0, 3, PART_SIZE], [1, 3, PART_SIZE], [2, 3, 123]]);
   const assembler = new VoiceAssembler();
+  assert.equal(assembler.has('contact:aa', parts[2], 0), false);
   assert.equal(assembler.add('contact:aa', parts[2], 0), null);
+  // A part that came already is known, only for its chat, and only while it is not dropped.
+  assert.equal(assembler.has('contact:aa', parts[2], 0), true);
+  assert.equal(assembler.has('contact:aa', parts[0], 0), false);
+  assert.equal(assembler.has('contact:bb', parts[2], 0), false);
+  assert.equal(assembler.has('contact:aa', parts[2], 11 * 60_000), false);
   // Another chat's parts with the same id are another message.
   assert.equal(assembler.add('contact:bb', parts[0], 0), null);
   assert.equal(assembler.add('contact:aa', parts[0], 0), null);

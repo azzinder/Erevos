@@ -24,20 +24,22 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { isGroupPacket } from '../lib/groups';
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
 import { onPlaceGroupMessage, placeGroupsAt } from '../lib/place-groups';
-import { holdPlace, onPlaceMessage, onPlaceRing, receivesPocket, startPlaceReceiver, takePlaceCalls } from '../lib/place-receiver';
+import { startHiddenNotices } from '../lib/hidden-notices';
+import { holdPlace, onPlaceMessage, onPlaceRing, placesRead, receivesPocket, startPlaceReceiver, takePlaceCalls } from '../lib/place-receiver';
 import { setAppShown } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { spaceGroups } from '../lib/space-groups';
 import { loadGroupData } from '../lock/group-data';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { keepPlace, keepsPlace, keptPlaces, onKeptChange, prepareKeepEntries } from '../lock/hidden-keep';
+import { watchPocket } from '../lock/hidden-watch';
 import { setCurrentSpace } from '../lock/keys';
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
-import { EMPTY_SPACE, saveHiddenData } from '../lock/space-data';
+import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
-import { store } from './secure-memory';
+import { slow, store } from './secure-memory';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built);
@@ -118,6 +120,42 @@ test('every space keeps four keys of one size, the real one only where a place r
   } finally {
     setCurrentSpace(null);
   }
+});
+
+test('as a space opens, its hidden chats tell of nothing until it is read which places receive while closed', { skip: !relayReady }, async () => {
+  store.clear();
+  const url = await startRelay();
+  const spaceKey = randomBytes(32);
+  setCurrentSpace(0, spaceKey);
+  await prepareKeepEntries();
+  await updateCurrentSpaceData({ url });
+  const ids = await createQueue({ url });
+  await watchPocket(0, spaceKey, 2, { url, token: '', recipientHex: toHex(ids.recipientId) });
+  await sendMessage({ url }, ids.senderId, Uint8Array.of(1), 'message');
+  // Which places receive is read slowly, as from a busy keystore.
+  slow.get = (key) => (key === 'erevos.keep.0' ? 600 : 0);
+  setAppShown(false);
+  let told = 0;
+  const stopReceiver = startPlaceReceiver(30);
+  const stopNotices = startHiddenNotices((count) => (told += count));
+  try {
+    assert.ok(!placesRead(0));
+    assert.ok(placesRead(1));
+    await sleep(400);
+    assert.equal(told, 0);
+    // Read, and pocket 2 does not receive: it tells of what came, once.
+    await until(() => placesRead(0));
+    await until(() => told === 1);
+    await sleep(200);
+    assert.equal(told, 1);
+  } finally {
+    slow.get = undefined;
+    stopNotices();
+    stopReceiver();
+    setAppShown(true);
+    setCurrentSpace(null);
+  }
+  assert.ok(placesRead(0));
 });
 
 test('a closed place that receives keeps what comes, tells its sender, rings calls with no name, and stops when switched off', { skip: !coreReady || !relayReady }, async () => {

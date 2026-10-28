@@ -97,7 +97,7 @@ import { buildInbox, groupRows, mergeRows, type InboxGroup } from '../lib/inbox'
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
 import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
-import { isWatchedQueue, loadWatched, unwatchPocket, watchPocket } from '../lock/hidden-watch';
+import { loadWatched, rewatchLost, unwatchPocket, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';
 import { keepPlace, keepsPlace } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
@@ -545,6 +545,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [receiving, setReceiving] = useState(false);
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
+  // Whether these chats are still open: false once they close and this screen goes.
+  const hiddenOpen = useRef(true);
+  useEffect(
+    () => () => {
+      hiddenOpen.current = false;
+    },
+    [],
+  );
   // These hidden chats' own Chat with myself (components/myself-chat.tsx): whose notes, the phone
   // telling their reminders only while the place receives closed; the notes, for its row at the
   // top of their chats; and whether it shows in place of them.
@@ -1436,8 +1444,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setOwnQueue(data.ownQueue);
         if (hiddenKey) {
           setRingQueue(data.ringQueue);
+          // A queue the relay lost leaves the switch on: the place's own queue is waited on again.
           void loadWatched(space, key)
-            .then((list) => active && setWatched(isWatchedQueue(list, pocket, data.ownQueue?.recipientHex)))
+            .then(async (list) => {
+              const own = data.ownQueue?.recipientHex;
+              const was = wasWatchedQueue(list, pocket, own);
+              if (active) setWatched(was);
+              if (was && own && list[pocket]?.recipientHex !== own && data.url.trim()) {
+                await rewatchLost(space, key, pocket, { url: data.url.trim(), token: data.token.trim(), recipientHex: own });
+              }
+            })
             .catch(() => undefined);
           void keepsPlace(space, key, pocket, hiddenKey)
             .then((on) => active && setReceiving(on))
@@ -2071,13 +2087,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // for one sent for later that a relay sent too soon (lib/later.ts), and so it shows.
     const shows = showsAt(received.due);
     // One that came already, from their account and again from one of their endpoints, or through
-    // the phone and again directly, is shown once (docs/multi-device.md).
-    const twice = received.twice || (!!received.tag && !!history.current?.has(peer, received.tag));
+    // the phone and again directly, is shown once (docs/multi-device.md); so is a part of a voice
+    // message that came already, as it goes again whole after only some of it went.
+    const twice =
+      received.twice || (!!received.tag && !!history.current?.has(peer, received.tag)) || (!!received.voice && voiceParts.current.has(peer, received.voice));
     if (!twice && isNews(received)) {
-      if (!hiddenKey) messageCameAt(shows, received.quiet, screenOfChat(received.identity));
+      if (!hiddenKey) messageCameAt(shows, received.quiet, screenOfChat(received.identity), undefined, received.tag);
       // Open hidden chats sound as the others do while Erevos shows; in the background they say it
       // only if their place says so while closed (Say when a message comes).
-      else if (appShown() || watchedNow.current) messageCameAt(shows, received.quiet, screenOfHidden(pocket), screenOfChat(received.identity));
+      // One that waits for its time tells then only while these chats are still open, or their place says so.
+      else if (appShown() || watchedNow.current) messageCameAt(shows, received.quiet, screenOfHidden(pocket), screenOfChat(received.identity), received.tag, () => watchedNow.current || (appShown() && hiddenOpen.current));
     }
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
@@ -2091,7 +2110,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
     // What else it is: an answer to one of the chat's messages, a sticker.
-    const parts: Parts = { ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}) };
+    // One sent without sound that waits for its time keeps it, for its notice then (lib/background.ts).
+    const parts: { quiet?: boolean } & Parts = { ...(received.quiet && shows > Date.now() ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}) };
     // Put together while the history does not hold it, from what came before too, and kept once
     // whole, as the receiver does (lib/receiver.ts).
     if (received.voice && !(received.tag && history.current?.has(peer, received.tag))) {
@@ -4196,12 +4216,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
   // one. The ring queue moves too, with the move's own steps (MoveAt.ring).
   const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
-  hiddenMoved.current = async (queue) => {
+  hiddenMoved.current = async (queue, old) => {
     if (!hiddenKey) return;
     const { space, key } = currentSpace();
     const url = relayUrl.trim();
     if (!url) return;
-    if (watched) await watchPocket(space, key, pocket, { url, token: relayToken.trim(), recipientHex: queue.recipientHex }).catch(() => setWatched(false));
+    // Decided by the slot too: the relay may have lost the old queue before the switch was read.
+    const was = watched || (!!old && wasWatchedQueue(await loadWatched(space, key).catch(() => []), pocket, old.recipientHex));
+    if (!was) return;
+    await watchPocket(space, key, pocket, { url, token: relayToken.trim(), recipientHex: queue.recipientHex }).then(
+      () => setWatched(true),
+      () => setWatched(false),
+    );
   };
 
   // A ring of this place answered with the PIN that brought no call within HIDDEN_OFFER_MS

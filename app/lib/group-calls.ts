@@ -35,7 +35,13 @@ const goingOn = new Map<string, GoingOn>();
 const listeners = new Set<() => void>();
 
 function changed() {
-  listeners.forEach((listener) => listener());
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // One listener's failure does not keep the others from hearing.
+    }
+  });
 }
 
 /** Calls `listener` each time the group call, or a call going on in a group, changes. Returns how to stop. */

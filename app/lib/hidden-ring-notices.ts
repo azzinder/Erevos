@@ -27,7 +27,7 @@ const NO_WAITING = 5 * 60_000;
 const DRAIN = 10;
 
 /** Starts waiting for the open space's hidden rings; `ring(space, pocket)` plays the ring. Returns how to stop. */
-export function startHiddenRinging(ring: (space: number, pocket: number) => void): () => void {
+export function startHiddenRinging(ring: (space: number, pocket: number, at?: number) => void): () => void {
   let open: { space: number; key: Uint8Array };
   try {
     open = currentSpace();
@@ -104,10 +104,12 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
         const came = await waitForMessage(relay, fromHex(kept.recipientHex), WAIT_FOR, wait.signal);
         failures = 0;
         if (came && !stopped) {
+          // Rung from when it came, not after the drain, so the message notice knows the call rang.
+          const cameAt = Date.now();
           // Drain the ring before it is answered, so the next call rings again; one that came while
           // the place was open or a ring showed rang already, and is only drained.
           await drain(relay, kept.recipientHex);
-          if (mayRing(pocket)) ring(space, pocket);
+          if (mayRing(pocket)) ring(space, pocket, cameAt);
         }
       } catch (error) {
         // A queue the relay no longer has is not asked again until the slot names another: the

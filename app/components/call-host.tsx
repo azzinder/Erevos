@@ -33,24 +33,32 @@ const LOOK_IN_CALL = 700;
 export function watchCalls(): () => void {
   let known: Call | null = null;
   let knownGroup: GroupCall | null = null;
+  // A ringtone or notice that fails does not stop the call screen, nor the others that hear of the call.
+  const audio = (play: () => void) => {
+    try {
+      play();
+    } catch {
+      // As said.
+    }
+  };
   // The ringtone of `chat`, as it has one of its own, or the phone's.
   const ring = (video: boolean, chat: string) => {
     const tone = chat ? chatNotify(chat)?.ring : undefined;
-    if (tone === undefined) callAudio?.ring?.(video, AppState.currentState !== 'active');
-    else callAudio?.ring?.(video, AppState.currentState !== 'active', tone);
+    if (tone === undefined) audio(() => callAudio?.ring?.(video, AppState.currentState !== 'active'));
+    else audio(() => callAudio?.ring?.(video, AppState.currentState !== 'active', tone));
   };
   setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
   const stopGroupChange = onGroupCallChange(() => {
     const call = shownGroupCall()?.call ?? null;
     if (call && call !== knownGroup) {
       knownGroup = call;
-      if (call.state === 'in') callAudio?.start(call.video);
+      if (call.state === 'in') audio(() => callAudio?.start(call.video));
       else if (call.state === 'incoming') ring(call.video, shownGroupCall()?.place === spaceGroupCalls ? `group:${call.group}` : '');
     }
-    if (call && call.state !== 'incoming' && !currentCall()) callAudio?.stopRinging?.();
+    if (call && call.state !== 'incoming' && !currentCall()) audio(() => callAudio?.stopRinging?.());
     if (call?.state === 'ended' && !currentCall()) {
-      callAudio?.stop();
-      callAudio?.showOverLock?.(false);
+      audio(() => callAudio?.stop());
+      audio(() => callAudio?.showOverLock?.(false));
     }
   });
   const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
@@ -59,14 +67,14 @@ export function watchCalls(): () => void {
     if (call && call !== known) {
       known = call;
       // Ours starts its sound at once; theirs once answered.
-      if (call.outgoing) callAudio?.start(call.video);
+      if (call.outgoing) audio(() => callAudio?.start(call.video));
       // Theirs rings with the phone's ringtone, and in the background with the call notice too.
       else if (call.state === 'incoming') ring(call.video, shownCall()?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : '');
     }
-    if (call?.state !== 'incoming') callAudio?.stopRinging?.();
+    if (call?.state !== 'incoming') audio(() => callAudio?.stopRinging?.());
     if (call?.state === 'ended') {
-      callAudio?.stop();
-      callAudio?.showOverLock?.(false);
+      audio(() => callAudio?.stop());
+      audio(() => callAudio?.showOverLock?.(false));
     }
   });
   const stopMessages = onMessage((received) => {
@@ -81,9 +89,9 @@ export function watchCalls(): () => void {
     setReceiverPace(() => LOOK_EVERY);
     endCall();
     endGroupCall();
-    callAudio?.stopRinging?.();
-    callAudio?.stop();
-    callAudio?.showOverLock?.(false);
+    audio(() => callAudio?.stopRinging?.());
+    audio(() => callAudio?.stop());
+    audio(() => callAudio?.showOverLock?.(false));
   };
 }
 

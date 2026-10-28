@@ -21,6 +21,11 @@ export function showsAt(due: number, now = Date.now()): number {
   return due >= now + EARLY && due <= now + LATEST + 30 * DAY ? due : now;
 }
 
+/** The contacts' messages that came before their time and wait for it still, not gone meanwhile. */
+export function laterTheirs<M extends { peer: string; mine: boolean; at: number; until?: number }>(messages: M[], now = Date.now()): M[] {
+  return messages.filter((m) => m.peer.startsWith('contact:') && !m.mine && m.at > now && (!m.until || m.until > now));
+}
+
 /** Whether `at` can be picked for later: ahead, and not more than LATEST ahead. */
 export function canPick(at: number, now = Date.now()): boolean {
   return at > now && at <= now + LATEST;
