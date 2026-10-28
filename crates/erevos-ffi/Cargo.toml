@@ -19,6 +19,7 @@ erevos-core = { path = "../erevos-core" }
 erevos-group = { path = "../erevos-group" }
 erevos-import = { path = "../erevos-import" }
 erevos-matrix = { path = "../erevos-matrix" }
+erevos-xmpp = { path = "../erevos-xmpp" }
 erevos-nostr = { path = "../erevos-nostr" }
 erevos-tor = { path = "../erevos-tor", optional = true }
 serde_json = "1"

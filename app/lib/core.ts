@@ -111,6 +111,9 @@ export interface Core {
   /** Matrix accounts (crates/erevos-matrix, lib/matrix.ts): the JSON of one request in, the JSON
    *  of its answer out. Missing in a build made before them. */
   matrix?(request: Uint8Array): Promise<Uint8Array>;
+  /** XMPP accounts' OMEMO (crates/erevos-xmpp, lib/xmpp-omemo.ts): the JSON of one request in, the
+   *  JSON of its answer out. Missing in a build made before them. */
+  xmpp?(request: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -248,6 +251,18 @@ export function matrixCore(): (request: Uint8Array) => Promise<Uint8Array> {
   const it = need();
   if (!it.matrix) throw new Error(t('This build of Erevos has no Matrix.'));
   return it.matrix.bind(it);
+}
+
+/** Whether this build can encrypt for XMPP accounts (lib/xmpp-omemo.ts). */
+export function canXmpp(): boolean {
+  return typeof core?.xmpp === 'function';
+}
+
+/** The core's XMPP call, or an error saying this build has none. */
+export function xmppCore(): (request: Uint8Array) => Promise<Uint8Array> {
+  const it = need();
+  if (!it.xmpp) throw new Error(t('This build of Erevos has no XMPP.'));
+  return it.xmpp.bind(it);
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

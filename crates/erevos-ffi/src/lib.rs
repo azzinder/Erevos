@@ -427,6 +427,12 @@ pub fn matrix(request: &[u8]) -> Result<Vec<u8>> {
     erevos_matrix::call(request)
 }
 
+/// XMPP accounts in Erevos (crates/erevos-xmpp, docs/xmpp.md): one JSON request in, its JSON
+/// answer out, for OMEMO.
+pub fn xmpp(request: &[u8]) -> Result<Vec<u8>> {
+    erevos_xmpp::call(request)
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());

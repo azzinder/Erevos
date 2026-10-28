@@ -125,6 +125,7 @@ bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrPublic => crate::
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrWrap => crate::nostr::wrap, to, bytes, now);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_nostrUnwrap => crate::nostr::unwrap, secret, event);
 bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_matrix => crate::matrix, request);
+bytes_call!(Java_expo_modules_erevoscore_ErevosCoreNative_xmpp => crate::xmpp, request);
 
 #[cfg(feature = "tor")]
 #[no_mangle]
