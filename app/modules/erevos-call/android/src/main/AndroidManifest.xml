@@ -12,6 +12,8 @@
   <!-- The same service keeps the links to phones nearby (modules/erevos-radio) going meanwhile. -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <!-- A chat with a sound of its own buzzes on vibrate, as Android's message notice would (Notices). -->
+  <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 

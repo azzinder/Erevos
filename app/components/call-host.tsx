@@ -4,6 +4,7 @@ import { AppState, Modal } from 'react-native';
 import { callAudio } from '../modules/erevos-call';
 import { currentCall, type Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
+import { chatNotify } from '../lib/chat-notices';
 import { callSignal, closeCall, CONTACT_PREFIX, endCall, onCallChange, shownCall } from '../lib/calls';
 import { takeHiddenAnswer } from '../lib/hidden-ring';
 import { onMessage, setReceiverPace } from '../lib/receiver';
@@ -26,17 +27,25 @@ const LOOK_IN_CALL = 700;
 // often during one. On Android a contact's call rings with the phone's ringtone, and while Erevos
 // is in the background (lib/background.ts) also with a notice that says only "Incoming call",
 // over the lock screen; tapping it brings Erevos up to answer. A group's call (lib/group-calls.ts)
-// rings the same way. Returns how to stop, which ends the call, as the space closes.
+// rings the same way. A chat or group of the space given a ringtone of its own, or none
+// (lock/chat-notify.ts), rings with it; hidden chats ring with the phone's, which tells no one's.
+// Returns how to stop, which ends the call, as the space closes.
 export function watchCalls(): () => void {
   let known: Call | null = null;
   let knownGroup: GroupCall | null = null;
+  // The ringtone of `chat`, as it has one of its own, or the phone's.
+  const ring = (video: boolean, chat: string) => {
+    const tone = chat ? chatNotify(chat)?.ring : undefined;
+    if (tone === undefined) callAudio?.ring?.(video, AppState.currentState !== 'active');
+    else callAudio?.ring?.(video, AppState.currentState !== 'active', tone);
+  };
   setReceiverPace(() => (currentCall() || currentGroupCall() ? LOOK_IN_CALL : LOOK_EVERY));
   const stopGroupChange = onGroupCallChange(() => {
     const call = shownGroupCall()?.call ?? null;
     if (call && call !== knownGroup) {
       knownGroup = call;
       if (call.state === 'in') callAudio?.start(call.video);
-      else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
+      else if (call.state === 'incoming') ring(call.video, shownGroupCall()?.place === spaceGroupCalls ? `group:${call.group}` : '');
     }
     if (call && call.state !== 'incoming' && !currentCall()) callAudio?.stopRinging?.();
     if (call?.state === 'ended' && !currentCall()) {
@@ -52,7 +61,7 @@ export function watchCalls(): () => void {
       // Ours starts its sound at once; theirs once answered.
       if (call.outgoing) callAudio?.start(call.video);
       // Theirs rings with the phone's ringtone, and in the background with the call notice too.
-      else if (call.state === 'incoming') callAudio?.ring?.(call.video, AppState.currentState !== 'active');
+      else if (call.state === 'incoming') ring(call.video, shownCall()?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : '');
     }
     if (call?.state !== 'incoming') callAudio?.stopRinging?.();
     if (call?.state === 'ended') {

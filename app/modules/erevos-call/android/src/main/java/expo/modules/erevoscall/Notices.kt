@@ -10,7 +10,10 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 
 // The notices Erevos shows: that it keeps receiving while in the background, or that it stopped,
 // as Android closed it or its space locked, a call that rings, and that messages came. None says who: no name, no message,
@@ -26,6 +29,11 @@ object Notices {
   const val MESSAGES_CHANNEL = "erevos-messages"
   // The same notice, for messages sent without sound: a channel that never sounds.
   private const val QUIET_CHANNEL = "erevos-messages-quiet"
+  // The same notice again, for a chat given a sound of its own (Chat details → Notifications):
+  // the channel never sounds, and the chat's sound plays from Erevos itself (play), so one notice
+  // can sound as each chat says. A channel's sound is fixed once it is made, so one per chat would
+  // be needed otherwise, each named in Android's settings.
+  private const val OWN_CHANNEL = "erevos-messages-own"
   // That Erevos stopped receiving in the background, closed by Android or locked: shows, without sound.
   private const val STOPPED_CHANNEL = "erevos-stopped"
 
@@ -82,6 +90,7 @@ object Notices {
       manager.getNotificationChannel(CALLS_CHANNEL)?.let { it.name = say(context, "Calls", "Κλήσεις"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(MESSAGES_CHANNEL)?.let { it.name = say(context, "Messages", "Μηνύματα"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(QUIET_CHANNEL)?.let { it.name = say(context, "Messages without sound", "Μηνύματα χωρίς ήχο"); manager.createNotificationChannel(it) }
+      manager.getNotificationChannel(OWN_CHANNEL)?.let { it.name = say(context, "Messages with a chat's own sound", "Μηνύματα με δικό τους ήχο"); manager.createNotificationChannel(it) }
       manager.getNotificationChannel(STOPPED_CHANNEL)?.let { it.name = say(context, "Not receiving", "Χωρίς λήψη"); manager.createNotificationChannel(it) }
     }
     if (manager.getNotificationChannel(RECEIVING_CHANNEL) == null) {
@@ -114,6 +123,16 @@ object Notices {
     if (manager.getNotificationChannel(QUIET_CHANNEL) == null) {
       manager.createNotificationChannel(
         NotificationChannel(QUIET_CHANNEL, say(context, "Messages without sound", "Μηνύματα χωρίς ήχο"), NotificationManager.IMPORTANCE_LOW).apply {
+          setSound(null, null as AudioAttributes?)
+          enableVibration(false)
+          setShowBadge(true)
+          lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        },
+      )
+    }
+    if (manager.getNotificationChannel(OWN_CHANNEL) == null) {
+      manager.createNotificationChannel(
+        NotificationChannel(OWN_CHANNEL, say(context, "Messages with a chat's own sound", "Μηνύματα με δικό τους ήχο"), NotificationManager.IMPORTANCE_DEFAULT).apply {
           setSound(null, null as AudioAttributes?)
           enableVibration(false)
           setShowBadge(true)
@@ -214,22 +233,34 @@ object Notices {
     manager(context).cancel(RINGING_ID)
   }
 
-  // Whether the messages notice that shows now has sounded.
-  private var sounded = false
+  // The channel the messages notice that shows now is on: MESSAGES_CHANNEL once it sounded as the
+  // channel says, OWN_CHANNEL or QUIET_CHANNEL while it only showed; null while none shows.
+  private var on: String? = null
 
   // `count` messages came: each one sounds, as the channel says. While only messages sent without
-  // sound (`quiet`) came, it shows on the silent channel; one sent without sound only counts.
-  fun messages(context: Context, count: Int, quiet: Boolean) {
+  // sound (`quiet`) came, it shows on the silent channel; one sent without sound only counts. One
+  // from a chat with a sound of its own (`sound`, its address) shows without the channel's sound,
+  // and its own plays.
+  fun messages(context: Context, count: Int, quiet: Boolean, sound: String? = null) {
     channels(context)
     val manager = manager(context)
     // Swiped away, it shows anew.
-    val showing = showing(manager, count)
-    if (!showing) sounded = false
-    val loud = !quiet || sounded
-    // A notice that showed silently is taken away first, or the one that should sound would not.
-    if (loud && !sounded && showing) manager.cancel(MESSAGES_ID)
-    show(context, count, if (loud) MESSAGES_CHANNEL else QUIET_CHANNEL, quiet)
-    if (loud) sounded = true
+    val shown = showing(manager, count)
+    if (!shown) on = null
+    val channel = when {
+      quiet -> on ?: QUIET_CHANNEL
+      !sound.isNullOrEmpty() -> if (on == MESSAGES_CHANNEL) MESSAGES_CHANNEL else OWN_CHANNEL
+      else -> MESSAGES_CHANNEL
+    }
+    val alert = !quiet && sound.isNullOrEmpty()
+    // A notice that showed silently is taken away first, or the one that should sound would not;
+    // so is one Erevos does not know about, shown before Android closed it and it started again.
+    if (alert && shown && on != MESSAGES_CHANNEL) manager.cancel(MESSAGES_ID)
+    // Its sound plays instead of a chat's own that still does.
+    if (alert) stopChime()
+    show(context, count, channel, !alert)
+    on = channel
+    if (!quiet && !sound.isNullOrEmpty()) play(context, Uri.parse(sound), OWN_CHANNEL, buzz = true)
     Widget.messages(context, count)
   }
 
@@ -238,7 +269,7 @@ object Notices {
   fun recountMessages(context: Context, count: Int) {
     if (count <= 0) return clearMessages(context)
     channels(context)
-    if (showing(manager(context), count)) show(context, count, if (sounded) MESSAGES_CHANNEL else QUIET_CHANNEL, true)
+    if (showing(manager(context), count)) show(context, count, on ?: QUIET_CHANNEL, true)
     Widget.messages(context, count)
   }
 
@@ -271,34 +302,53 @@ object Notices {
     manager(context).notify(MESSAGES_ID, notification)
   }
 
-  // What plays for a message that came where Erevos shows it.
+  // What plays for a message that came where Erevos shows it, or with a chat's own sound.
   private var chiming: Ringtone? = null
 
   // A message came in the chat or group that shows on the screen: no notice, only the messages
-  // channel's own sound, as the owner left it; none while the phone is on silent or vibrate, in
-  // Do not disturb, or with Erevos's notices or that channel turned off.
-  fun chime(context: Context) {
+  // channel's own sound, as the owner left it, or the chat's own (`sound`, its address); none
+  // while the phone is on silent or vibrate, in Do not disturb, or with Erevos's notices or that
+  // channel turned off.
+  fun chime(context: Context, sound: String? = null) {
     channels(context)
+    if (!sound.isNullOrEmpty()) return play(context, Uri.parse(sound), OWN_CHANNEL, buzz = false)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val channel = manager(context).getNotificationChannel(MESSAGES_CHANNEL) ?: return
+      play(context, channel.sound ?: return, MESSAGES_CHANNEL, buzz = false)
+    } else {
+      play(context, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), MESSAGES_CHANNEL, buzz = false)
+    }
+  }
+
+  // Plays `sound` once, as a message's, unless Erevos's notices or `channel` are turned off, or Do
+  // not disturb keeps messages quiet; on silent, nothing, and on vibrate only a buzz with `buzz`,
+  // as Android does for a notice that sounds. A sound that is gone from the phone plays the
+  // messages channel's.
+  private fun play(context: Context, sound: Uri, channel: String, buzz: Boolean) {
     val manager = manager(context)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !manager.areNotificationsEnabled()) return
+    val made = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.getNotificationChannel(channel) ?: return else null
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && made!!.importance < NotificationManager.IMPORTANCE_DEFAULT) return
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      val filter = manager.currentInterruptionFilter
-      if (filter != NotificationManager.INTERRUPTION_FILTER_ALL && filter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN) return
+      when (manager.currentInterruptionFilter) {
+        NotificationManager.INTERRUPTION_FILTER_ALL, NotificationManager.INTERRUPTION_FILTER_UNKNOWN -> {}
+        // Priority only: as for a message's notice, which names no one, when messages from
+        // anyone may come through, or the channel may (Erevos among the apps that can interrupt).
+        NotificationManager.INTERRUPTION_FILTER_PRIORITY -> if (!(made?.canBypassDnd() == true || messagesThrough(manager))) return
+        else -> return
+      }
     }
     val audio = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
-    if (audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
-    val sound = (
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        val channel = manager.getNotificationChannel(MESSAGES_CHANNEL) ?: return
-        if (channel.importance < NotificationManager.IMPORTANCE_DEFAULT) return
-        channel.sound
-      } else {
-        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-      }
-    ) ?: return
+    when (audio.ringerMode) {
+      AudioManager.RINGER_MODE_NORMAL -> {}
+      AudioManager.RINGER_MODE_VIBRATE -> return if (buzz) buzz(context) else Unit
+      else -> return
+    }
     runCatching {
       chiming?.stop()
-      chiming = RingtoneManager.getRingtone(context, sound)?.apply {
+      val fallback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.getNotificationChannel(MESSAGES_CHANNEL)?.sound else null
+      val playing = if (opens(context, sound)) sound else fallback ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+      chiming = playing?.let { RingtoneManager.getRingtone(context, it) }?.apply {
         audioAttributes = AudioAttributes.Builder()
           .setUsage(AudioAttributes.USAGE_NOTIFICATION)
           .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -308,8 +358,53 @@ object Notices {
     }
   }
 
+  // Whether Do not disturb lets messages from anyone through.
+  private fun messagesThrough(manager: NotificationManager): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+      runCatching {
+        val policy = manager.notificationPolicy
+        policy.priorityCategories and NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES != 0 &&
+          policy.priorityMessageSenders == NotificationManager.Policy.PRIORITY_SENDERS_ANY
+      }.getOrDefault(false)
+
+  // Whether the sound at `uri` is still on the phone: not once its file is deleted or the app that
+  // gave it is gone, when Android would play its own fallback ring instead. One Erevos may not read
+  // itself, the phone's player still can.
+  fun opens(context: Context, uri: Uri): Boolean =
+    try {
+      context.contentResolver.openAssetFileDescriptor(uri, "r")?.use { true } ?: false
+    } catch (_: SecurityException) {
+      true
+    } catch (_: Exception) {
+      false
+    }
+
+  // A chat's own sound that still plays stops: its notice was opened or went, or a call rings.
+  fun stopChime() {
+    runCatching { chiming?.stop() }
+    chiming = null
+  }
+
+  // Two short buzzes, as a message's notice makes on vibrate, and only as the phone's notification
+  // vibration allows.
+  @Suppress("DEPRECATION")
+  private fun buzz(context: Context) {
+    runCatching {
+      val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+      if (!vibrator.hasVibrator()) return
+      val pattern = longArrayOf(0, 200, 150, 200)
+      val attributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1), attributes)
+      else vibrator.vibrate(pattern, -1, attributes)
+    }
+  }
+
   fun clearMessages(context: Context) {
-    sounded = false
+    on = null
+    stopChime()
     manager(context).cancel(MESSAGES_ID)
     Widget.messages(context, 0)
   }

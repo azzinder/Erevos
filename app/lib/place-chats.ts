@@ -13,7 +13,8 @@ import { VoiceAssembler } from './voice';
 // receive, and all of them when the space closes, so a place that does not receive leaves nothing
 // in memory once closed.
 
-type Opened = { key: Uint8Array; chats: Promise<SpaceChats> };
+// `ready`: the same once open, for what must know at once (lib/chat-notices.ts).
+type Opened = { key: Uint8Array; chats: Promise<SpaceChats>; ready?: SpaceChats };
 
 const opened = new Map<string, Opened>();
 const at = (space: number, pocket: number) => `${space}.${pocket}`;
@@ -34,11 +35,22 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
     return { e2e, history, voiceParts: new VoiceAssembler() };
   })();
   opened.set(at(space, pocket), { key: key.slice(), chats });
-  // Tried again the next time they are asked for.
-  chats.catch(() => {
-    if (opened.get(at(space, pocket))?.chats === chats) opened.delete(at(space, pocket));
-  });
+  chats.then(
+    (made) => {
+      const entry = opened.get(at(space, pocket));
+      if (entry?.chats === chats) entry.ready = made;
+    },
+    // Tried again the next time they are asked for.
+    () => {
+      if (opened.get(at(space, pocket))?.chats === chats) opened.delete(at(space, pocket));
+    },
+  );
   return chats;
+}
+
+/** The chats of the hidden place in `pocket` of `space` if they are open already, or null. */
+export function placeChatsNow(space: number, pocket: number): SpaceChats | null {
+  return opened.get(at(space, pocket))?.ready ?? null;
 }
 
 const forgets = new Set<(space?: number, pocket?: number) => void>();

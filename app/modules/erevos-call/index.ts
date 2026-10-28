@@ -53,17 +53,25 @@ type CallAudio = {
   stopReceiving?(): void;
   /** While `on`, a quiet notice says Erevos is locked and receives nothing until it is open again. */
   setLocked?(on: boolean): void;
-  /** Plays the phone's ringtone; with `notice`, also shows the call notice, over the lock screen. */
-  ring?(video: boolean, notice: boolean): void;
+  /** Plays the phone's ringtone, or `tone` (a sound's address; '' for none); with `notice`, also
+   *  shows the call notice, over the lock screen. */
+  ring?(video: boolean, notice: boolean, tone?: string | null): void;
   stopRinging?(): void;
   /** A notice that `count` messages came, no more; hidden on a locked phone. Each one sounds;
-   *  `quiet`: the last one came without sound, so it makes none (a build before it sounds as before). */
-  tellMessages?(count: number, quiet?: boolean): void;
+   *  `quiet`: the last one came without sound, so it makes none (a build before it sounds as before);
+   *  `sound`: it came in a chat with a sound of its own, this one (its address). */
+  tellMessages?(count: number, quiet?: boolean, sound?: string | null): void;
   /** Some were read in Erevos: the notice, if it shows, says `count` without sound. */
   recountMessages?(count: number): void;
   clearMessages?(): void;
-  /** A message came where Erevos shows it on the screen: only the messages notice's sound plays. */
-  chime?(): void;
+  /** A message came where Erevos shows it on the screen: only the messages notice's sound plays,
+   *  or `sound` (a chat's own, its address). */
+  chime?(sound?: string | null): void;
+  /** Android's own sound picker, for a chat's messages or its calls, with `current` chosen: the
+   *  sound's address, '' for the picker's Default, or null if the owner went back. */
+  pickSound?(kind: 'message' | 'ring', current?: string | null): Promise<string | null>;
+  /** The name a sound has on this phone; '' if none. */
+  soundName?(uri: string): Promise<string>;
   /** The app's language ('en' or 'el'), for the notices shown while the app is closed. */
   setLanguage?(lang: string): void;
   /** Lets Erevos show over the lock screen and wake the screen, while a call shows. */

@@ -35,6 +35,7 @@ import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { ChatPinGate } from '../components/chat-pin-gate';
+import { canNotifyChats, ChatNotifySheet, notifyValue } from '../components/chat-notify-sheet';
 import { QrCode } from '../components/QrCode';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
@@ -102,6 +103,7 @@ import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } f
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
+import type { ChatNotify } from '../lock/chat-notify';
 import { moveChat } from '../lock/move-chat';
 import { ownSpaceKey, SamePasswordError } from '../lock/config';
 import { useLock } from '../lock/context';
@@ -598,6 +600,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const gated = !hiddenKey && !!selected && selected !== unlocked && contacts.some((c) => c.locked && `${CONTACT_PREFIX}${c.identity}` === selected);
   // What asks for a PIN in a chat's details: a new one to lock it with, or its own to take it off.
   const [pinAsk, setPinAsk] = useState<'on' | 'off' | null>(null);
+  // Whether the chat's own notifications show (Chat details → Notifications).
+  const [notifying, setNotifying] = useState(false);
   const lock = useLock();
   const [messages, setMessages] = useState<Message[]>([]);
   // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
@@ -2072,7 +2076,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (!hiddenKey) messageCameAt(shows, received.quiet, screenOfChat(received.identity));
       // Open hidden chats sound as the others do while Erevos shows; in the background they say it
       // only if their place says so while closed (Say when a message comes).
-      else if (appShown() || watchedNow.current) messageCameAt(shows, received.quiet, screenOfHidden(pocket));
+      else if (appShown() || watchedNow.current) messageCameAt(shows, received.quiet, screenOfHidden(pocket), screenOfChat(received.identity));
     }
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
@@ -3890,6 +3894,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // cannot take that now, their phone learns it with the next message.
   // Makes this chat appear offline to them, or not. Shown again, what was held goes to them now.
   // Locks the chat on the screen with a new PIN, which stays open meanwhile.
+  // Gives the chat on the screen notifications of its own, or the app's again (null).
+  async function changeNotify(next: ChatNotify | null) {
+    if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
+    await e2e.setNotify(selected.slice(CONTACT_PREFIX.length), next);
+    setContacts(e2e.contacts());
+  }
+
   async function lockWithPin(pin: string) {
     if (!e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
     const peer = selected;
@@ -4905,6 +4916,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
   const selectedLocked = contacts.some((c) => c.identity === selectedIdentity && c.locked);
+  const selectedNotify = contacts.find((c) => c.identity === selectedIdentity)?.notify ?? null;
   // A chat opened with its PIN keeps out of screenshots and the recent apps preview, as hidden chats do.
   const pinOpen = shown && !hiddenKey && selectedLocked && !gated;
   useEffect(() => {
@@ -5161,6 +5173,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                               ))}
                             </Row>
                           </View>
+                        ) : null}
+                        {canNotifyChats ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Notifications')} value={notifyValue(selectedNotify, !!hiddenKey)} onPress={() => setNotifying(true)} />
+                          </>
                         ) : null}
                         <View style={styles.rule} />
                         <DetailRow
@@ -6346,6 +6364,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             setTimeout(() => goToDay(day), Platform.OS === 'web' ? 0 : 300);
           }}
           onClose={() => setDayPicking(false)}
+        />
+        <ChatNotifySheet
+          visible={notifying && shown && !!selectedContact}
+          onClose={() => setNotifying(false)}
+          title={t('Notifications for {name}', { name: selectedName })}
+          notify={selectedNotify}
+          hidden={!!hiddenKey}
+          onChange={changeNotify}
         />
         <PasswordSheet
           visible={pinAsk === 'on' && shown}

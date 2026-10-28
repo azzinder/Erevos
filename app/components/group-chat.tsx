@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { AppState, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { canNotifyChats, ChatNotifySheet } from './chat-notify-sheet';
 import { ChatPinGate } from './chat-pin-gate';
 import { DraftComposer, IconButton, useDraft } from './composer';
 import { useGlassBlur } from './glass';
@@ -102,6 +103,8 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const [sheet, setSheet] = useState(false);
   // A public group's ⋯: its video call, and its own screen.
   const [publicMenu, setPublicMenu] = useState(false);
+  // Whether the group's own notifications show (lock/chat-notify.ts).
+  const [notifying, setNotifying] = useState(false);
   const [answering, setAnswering] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
@@ -535,6 +538,14 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
         onSearch={parts.startSearch}
         onExport={parts.exportGroup}
         onVideo={() => void call(true)}
+        onNotify={
+          canNotifyChats
+            ? () => {
+                setSheet(false);
+                setTimeout(() => setNotifying(true), Platform.OS === 'web' ? 0 : 300);
+              }
+            : undefined
+        }
         onPin={
           hidden
             ? undefined
@@ -555,6 +566,14 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
         onSubmit={lockWithPin}
       />
       <PasswordSheet visible={pinAsk === 'off'} title={t('Type its PIN to take it off')} repeat={false} submitLabel={t('Take it off')} onClose={() => setPinAsk(null)} onSubmit={takePinOff} />
+      <ChatNotifySheet
+        visible={notifying}
+        onClose={() => setNotifying(false)}
+        title={t('Notifications for {name}', { name: info.name || t('Group') })}
+        notify={info.notify ?? null}
+        hidden={hidden}
+        onChange={async (next) => (await groupsAt.groups()).setNotify(id, next)}
+      />
       <Sheet visible={publicMenu} onClose={() => setPublicMenu(false)} title={info.name}>
         <Row wrap>
           <Button
@@ -575,6 +594,17 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
               openMembers();
             }}
           />
+          {canNotifyChats ? (
+            <Button
+              title={t('Notifications')}
+              kind="secondary"
+              compact
+              onPress={() => {
+                setPublicMenu(false);
+                setTimeout(() => setNotifying(true), Platform.OS === 'web' ? 0 : 300);
+              }}
+            />
+          ) : null}
         </Row>
       </Sheet>
       {gated ? <ChatPinGate name={info.name} active={focused} open={openWithPin} forgot={lock.passwordLock ? forgotPin : undefined} onBack={onBack} /> : null}
@@ -582,7 +612,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   );
 }
 
-function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo, onPin, onGone }: {
+function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo, onNotify, onPin, onGone }: {
   visible: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -599,6 +629,8 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   onExport: () => void;
   /** Starts a video call in the group, or joins the call going on. */
   onVideo: () => void;
+  /** The group's own notifications (lock/chat-notify.ts): where chats can have them. */
+  onNotify?: () => void;
   /** Locks the group with a PIN of its own, or takes it off (lock/chat-pin.ts): none in hidden chats. */
   onPin?: () => void;
   /** Leaves its chat, once it is deleted here. */
@@ -873,6 +905,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
                   setTimeout(onExport, Platform.OS === 'web' ? 0 : 300);
                 }}
               />
+              {onNotify ? <Button title={t('Notifications')} kind="secondary" compact onPress={onNotify} /> : null}
               {onPin ? <Button title={info.locked ? t('Take the PIN off') : t('Lock with a PIN')} kind="secondary" compact onPress={onPin} /> : null}
             </Row>
             {out ? (

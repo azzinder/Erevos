@@ -20,6 +20,10 @@ export const whatsNew: Record<string, string> = {
     '**Lokacija pronalazi gdje ste, i u zatvorenom**: telefon traži preko satelita i preko svoje mreže odjednom, list kaže da traži, a kad ništa ne pronađe kaže zašto, s Pokušajte ponovo. Pogledajte [Razgovor preko relaya](#relay).',
   '**The web app\'s icon counts what is not read**: on an iPhone, with notifications on for the space, Erevos\'s icon on the home screen shows how many messages are not read, never a hidden chat\'s, unless turned off under Settings → Notifications → Number on the icon. See [On an iPhone](#iphone).':
     '**Ikona web-aplikacije broji nepročitano**: na iPhoneu, s uključenim obavijestima za prostor, ikona Erevosa na početnom ekranu pokazuje koliko poruka nije pročitano, nikad iz skrivenog razgovora, osim ako to isključite u „Postavke → Obavijesti → Broj na ikoni“. Vidi [Na iPhoneu](#iphone).',
+  "**Notifications for each chat**: on Android, mute a chat or a group for 8 hours, a week or always, and give its messages and its calls a sound of their own, or none. See [Chat through a relay](#relay).":
+    "**Obavijesti za svaki razgovor**: na Androidu utišajte razgovor ili grupu na 8 sati, sedmicu ili zauvijek, i dajte njegovim porukama i pozivima vlastiti zvuk, ili nikakav. Pogledajte [Razgovor preko relaya](#relay).",
+  "**A chat locked with its own PIN stays locked**: when its contact's Erevos started a new conversation, as it does about once a month, the chat lost its PIN, and a public group joined again lost its own. See [Hidden chats](#hidden).":
+    "**Razgovor zaključan vlastitim PIN-om ostaje zaključan**: kad bi Erevos kontakta započeo novi razgovor, što radi otprilike jednom mjesečno, razgovor bi izgubio svoj PIN, a javna grupa u koju si se ponovo pridružio izgubila bi svoj. Vidi [Skriveni razgovori](#hidden).",
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Poruka poslata dok se razgovor otvara čeka ga**, označena Šalje se…, i ide čim se razgovor otvori, bez poruke da Erevos ne može da šifruje.',

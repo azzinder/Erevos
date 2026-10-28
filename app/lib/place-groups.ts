@@ -32,7 +32,8 @@ export type PlaceGroupsAt = GroupsAt & {
   moves: MoveGroups;
 };
 
-type Opened = { key: Uint8Array; at: PlaceGroupsAt };
+// `ready`: its groups once open, for what must know at once (lib/chat-notices.ts).
+type Opened = { key: Uint8Array; at: PlaceGroupsAt; ready: () => PublicGroups | null };
 
 const opened = new Map<string, Opened>();
 const at = (space: number, pocket: number) => `${space}.${pocket}`;
@@ -67,6 +68,7 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
   const chats = () => placeChats(space, pocket, kept);
   const settings = async () => groupSettings(await loadHiddenData(space, pocket, kept), placeQueues(space, pocket, kept));
   let made: Promise<PublicGroups> | null = null;
+  let ready: PublicGroups | null = null;
   const groups = (): Promise<PublicGroups> => {
     if (made) return made;
     const opening = (async () => {
@@ -88,10 +90,15 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
       return place;
     })();
     made = opening;
-    // Tried again the next time they are asked for.
-    opening.catch(() => {
-      if (made === opening) made = null;
-    });
+    opening.then(
+      (place) => {
+        if (made === opening) ready = place;
+      },
+      // Tried again the next time they are asked for.
+      () => {
+        if (made === opening) made = null;
+      },
+    );
     return opening;
   };
   const transport = groupTransport(settings, chats, true);
@@ -120,8 +127,13 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
       kinds: ['group'],
     },
   };
-  opened.set(at(space, pocket), { key: kept, at: placeAt });
+  opened.set(at(space, pocket), { key: kept, at: placeAt, ready: () => ready });
   return placeAt;
+}
+
+/** The groups of the hidden place in `pocket` of `space` if they are open already, or null. */
+export function placeGroupsNow(space: number, pocket: number): PublicGroups | null {
+  return opened.get(at(space, pocket))?.ready() ?? null;
 }
 
 /** Lets go of a place's groups, or of every place's, as their chats are let go of (lib/place-chats.ts). */

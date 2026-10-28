@@ -743,6 +743,24 @@ the relay, and either phone can change it: the later change wins. Messages alrea
   on the phone, sealed like the rest.
 - **Not a guarantee:** their Erevos deletes them, but a changed app, a screenshot or a copy can still keep them.
 
+### Notifications for this chat
+
+On Android, open a chat, tap its name and then **Notifications**; in a group, tap its name (in a public group, **⋯**)
+and then **Notifications**. **Muted** for 8 hours, 1 week or **Always**: its messages make no sound and show no
+notice, so Erevos's icon does not count them either; the list still shows them, with a struck-through bell, and its
+calls still ring. **Message sound** and **Ringtone** give it a sound of its own for its messages and for its calls,
+from Android's own list of sounds, or **Without sound**. In a chat's details the row then says **Muted until** and the
+time, or **Sounds of its own**.
+
+**Why:** a muted chat still counts in the list, so nothing that came is lost: only the phone stops calling you to it.
+Its sounds are kept on this phone only, with the chat in the space's encrypted data, as each phone has sounds of its
+own: a linked device keeps its own, and the other phone learns nothing of them.
+
+- **In hidden chats** there is only **Muted**: a sound of its own would tell anyone near which chat it is.
+- **A closed space, and hidden chats while closed,** do not know which chat a message came in, so they tell of it as
+  the app's settings say.
+- **Only on Android** for now: the web app tells of every chat as its settings say.
+
 ### Voice messages
 
 In a contact's chat, with nothing typed, press and hold the microphone at the end of the message bar while you talk,

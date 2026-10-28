@@ -2,6 +2,7 @@ import { isRelayAddress } from '../lib/relay';
 import { MAX_PARTS } from '../lib/voice';
 import { checkedLook, type Look } from '../theme/look';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
+import { checkedChatNotify, type ChatNotify } from './chat-notify';
 import { checkedChatPin, type ChatPin } from './chat-pin';
 import { isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
@@ -142,6 +143,9 @@ export type Contact = {
   /** The PIN this chat opens with, when locked with one of its own (lock/chat-pin.ts), as kept.
    *  Missing when it has none. Only this phone knows it; it asks nothing while in hidden chats. */
   pin?: ChatPin;
+  /** This chat's own notifications (lock/chat-notify.ts): muted, its own sounds. Missing while it
+   *  has none. Kept on this phone only, as its PIN. */
+  notify?: ChatNotify;
   /** This chat's queue for them alone (lib/contact-queues.ts), once they have one: what each
    *  message to them says as where this chat reads (`from`, with its `qa`), so the relay cannot
    *  tell whom else this phone hears from. Missing while they have none: they write to the own
@@ -532,6 +536,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(Array.isArray(v.nostrBackup) ? { nostrBackup: v.nostrBackup.map(checkedNostrBackup).filter((b): b is NostrBackup => b !== null).slice(-MAX_NOSTR_BACKUP) } : {}),
     ...(isTime(v.ri) && v.ri > 0 ? { ri: v.ri } : {}),
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
+    ...(checkedChatNotify(v.notify) ? { notify: checkedChatNotify(v.notify)! } : {}),
     ...(checkedMine(v.mine) ? { mine: checkedMine(v.mine)! } : {}),
     ...(isTime(v.knows) ? { knows: v.knows } : {}),
   };

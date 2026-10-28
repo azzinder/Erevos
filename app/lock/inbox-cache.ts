@@ -44,6 +44,7 @@ function checkedRow(value: unknown): InboxRow | null {
     lastSms: r.lastSms === true,
     ...(r.pinned === true ? { pinned: true } : {}),
     ...(r.locked === true ? { locked: true, last: '' } : {}),
+    ...(r.muted === true ? { muted: true } : {}),
   };
 }
 

@@ -869,6 +869,26 @@ schon im Chat sind, bleiben.
 - **Keine Garantie:** Das Erevos des Kontakts löscht sie, aber eine veränderte App, ein Screenshot oder eine Kopie kann
   sie trotzdem behalten.
 
+### Benachrichtigungen für diesen Chat
+
+Öffne auf Android einen Chat, tippe auf seinen Namen und dann auf **Benachrichtigungen**; in einer Gruppe tippe auf
+ihren Namen (in einer öffentlichen Gruppe auf **⋯**) und dann auf **Benachrichtigungen**. **Stumm** für 8 Stunden,
+1 Woche oder **Immer**: Seine Nachrichten machen keinen Ton und zeigen keine Benachrichtigung, also zählt sie auch das
+Symbol von Erevos nicht; die Liste zeigt sie weiter, mit einer durchgestrichenen Glocke, und seine Anrufe klingeln
+weiter. **Nachrichtenton** und **Klingelton** geben ihm einen eigenen Ton für seine Nachrichten und für seine Anrufe,
+aus Androids eigener Liste von Tönen, oder **Ohne Ton**. In den Details eines Chats sagt die Zeile dann **Stumm bis**
+und die Uhrzeit, oder **Eigene Töne**.
+
+**Warum:** Ein stummer Chat zählt in der Liste weiter, damit nichts verloren geht, was kam: Nur das Telefon ruft dich
+nicht mehr zu ihm. Seine Töne bleiben nur auf diesem Telefon, mit dem Chat in den verschlüsselten Daten des Bereichs,
+weil jedes Telefon seine eigenen Töne hat: Ein verknüpftes Gerät behält seine eigenen, und das andere Telefon erfährt
+nichts davon.
+
+- **In versteckten Chats** gibt es nur **Stumm**: Ein eigener Ton würde jedem in der Nähe verraten, welcher Chat es ist.
+- **Ein geschlossener Bereich, und versteckte Chats, solange sie geschlossen sind,** wissen nicht, in welchem Chat eine
+  Nachricht kam, und melden sie so, wie es die Einstellungen der App sagen.
+- **Nur auf Android**, vorerst: Die Web-App meldet jeden Chat so, wie es ihre Einstellungen sagen.
+
 ### Sprachnachrichten
 
 Halte im Chat eines Kontakts, ohne eingegebenen Text, das Mikrofon am Ende der Nachrichtenleiste gedrückt, während du

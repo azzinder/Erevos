@@ -9,7 +9,7 @@ import { notesSummary, type Note } from '../lib/myself';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
 
-import { BellIcon, LockIcon, PinIcon, TimerIcon } from './icons';
+import { BellIcon, LockIcon, PinIcon, QuietIcon, TimerIcon } from './icons';
 import { KeyFace } from './key-face';
 import { MyselfFace } from './myself-face';
 import { font, Text } from './ui';
@@ -70,6 +70,7 @@ export function ChatRow({ row, now, online = false, onLong, onOpen }: { row: Inb
         <View style={styles.rowLine}>
           <View style={styles.previewLine}>
             {row.locked ? <LockIcon color={colors.textMuted} size={13} /> : null}
+            {row.muted ? <QuietIcon color={colors.textMuted} size={13} /> : null}
             {row.timer ? <TimerIcon color={colors.textMuted} size={13} /> : null}
             {row.draft ? (
               <Text variant="caption" color={colors.danger}>

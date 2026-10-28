@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Notifications for each chat**: on Android, a chat's details, and a group's, have **Notifications**. **Muted** for
+  8 hours, 1 week or **Always**, its messages make no sound and show no notice, and Erevos's icon does not count them;
+  the list still shows them, with a struck-through bell, and its calls still ring. **Message sound** and **Ringtone**
+  give its messages and its calls a sound of their own, from Android's own list of sounds, or **Without sound**. Kept
+  on this phone only, with the chat. Hidden chats can only be muted: a sound of their own would tell which chat it is.
 - **The user guide is in every language of the app**: German, Spanish, French, Italian, Portuguese and
   Serbo-Croatian join Greek and English, with the same parts, and each names the buttons as the app shows them
   in that language. Until now the guide showed in English in those languages. Android's own call screen and
@@ -39,6 +44,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A chat locked with its own PIN stays locked**: a contact's Erevos starts a new conversation with the chat about
+  once a month, once given newer keys, and the chat then lost its PIN and opened without one; a public group joined
+  again lost its own too. Both keep it now.
 - **A contact's SMS no longer stay counted as new**: a contact's chat marked their SMS read only when one
   not read showed among its messages. One older than the SMS that show, or in the Trash, stayed unread on
   the phone, and the home screen kept counting it on their row however often the chat was opened. Opening

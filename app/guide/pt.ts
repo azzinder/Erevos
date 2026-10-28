@@ -806,6 +806,25 @@ ficam.
 - **Não é uma garantia:** o Erevos da pessoa as apaga, mas um app modificado, uma captura de tela ou uma cópia ainda
   podem guardá-las.
 
+### Notificações desta conversa
+
+No Android, abra uma conversa, toque no nome dela e depois em **Notificações**; num grupo, toque no nome dele (num
+grupo público, em **⋯**) e depois em **Notificações**. **Em silêncio** por 8 horas, 1 semana ou **Sempre**: as
+mensagens dela não tocam nem mostram notificação, então o ícone do Erevos também não as conta; a lista continua
+mostrando, com um sino riscado, e as chamadas continuam tocando. **Som das mensagens** e **Toque** dão a ela um som
+próprio para as mensagens e para as chamadas, da própria lista de sons do Android, ou **Sem som**. Nos detalhes de uma
+conversa a linha diz então **Em silêncio até** e a hora, ou **Sons próprios**.
+
+**Por quê:** uma conversa em silêncio continua contando na lista, para que nada do que chegou se perca: só o celular
+para de chamar você até ela. Os sons dela ficam só neste celular, com a conversa nos dados criptografados do espaço,
+porque cada celular tem os próprios sons: um dispositivo conectado guarda os dele, e o outro celular não sabe nada
+deles.
+
+- **Nas conversas ocultas** só existe **Em silêncio**: um som próprio diria a quem estiver perto qual conversa é.
+- **Um espaço fechado, e as conversas ocultas enquanto estão fechadas,** não sabem em que conversa chegou uma mensagem,
+  então avisam dela como dizem as configurações do app.
+- **Só no Android** por enquanto: o app web avisa de cada conversa como dizem as configurações dele.
+
 ### Mensagens de voz
 
 Na conversa de um contato, sem nada digitado, toque e segure o microfone no fim da barra de mensagem enquanto fala, e

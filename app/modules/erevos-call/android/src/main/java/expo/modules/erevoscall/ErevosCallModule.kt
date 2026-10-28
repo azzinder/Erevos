@@ -27,8 +27,12 @@ import com.facebook.react.bridge.ReactContext
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.jstasks.HeadlessJsTaskConfig
 import com.facebook.react.jstasks.HeadlessJsTaskContext
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+
+// Android's sound picker (pickSound), apart from erevos-contacts' 7301.
+private const val SOUND = 7311
 
 // The phone's side of a call that WebRTC leaves to the app: the sound set up for talking, through
 // the earpiece or the loudspeaker, the screen off while the phone is at the ear, and on while a
@@ -43,6 +47,8 @@ class ErevosCallModule : Module() {
   private var keepTask: Int? = null
   // The screen kept on a while for a call that rings (wakeForRing).
   private var ringWake: PowerManager.WakeLock? = null
+  // The answer to pickSound, while Android's picker shows.
+  private var picking: Promise? = null
 
   // Whether the phone shows its screen saver (Android's "dream", as while charging): Erevos's
   // screen, under it, cannot be seen, and Android shows no notice over it, so a call that rings
@@ -96,6 +102,20 @@ class ErevosCallModule : Module() {
       runCatching { context?.applicationContext?.unregisterReceiver(dreams) }
     }
 
+    // The sound picked in Android's picker: its address, '' for the picker's Default, or null if
+    // the owner went back.
+    OnActivityResult { _, payload ->
+      if (payload.requestCode != SOUND) return@OnActivityResult
+      val promise = picking ?: return@OnActivityResult
+      picking = null
+      if (payload.resultCode != Activity.RESULT_OK) {
+        promise.resolve(null)
+        return@OnActivityResult
+      }
+      val uri = payload.data?.let { pickedUri(it) }
+      promise.resolve(if (uri == null || RingtoneManager.isDefault(uri)) "" else uri.toString())
+    }
+
     Function("start") { speaker: Boolean ->
       val manager = audio ?: return@Function
       if (modeBefore == null) modeBefore = manager.mode
@@ -147,15 +167,21 @@ class ErevosCallModule : Module() {
       null
     }
 
-    // A call rings here: the phone's ringtone, as the phone's ring volume and silent mode allow,
-    // and with `notice` the call notice too, shown over the lock screen; also while the screen
-    // saver shows, over Erevos too. A screen that is off, or shows the screen saver, wakes.
-    Function("ring") { video: Boolean, notice: Boolean ->
+    // A call rings here: the phone's ringtone, or the chat's own (`tone`, its address; '' for
+    // none), as the phone's ring volume and silent mode allow, and with `notice` the call notice
+    // too, shown over the lock screen; also while the screen saver shows, over Erevos too. A screen
+    // that is off, or shows the screen saver, wakes.
+    Function("ring") { video: Boolean, notice: Boolean, tone: String? ->
       val context = context ?: return@Function
-      if (ringtone?.isPlaying != true) {
+      if (tone != "" && ringtone?.isPlaying != true) {
         val uri: Uri? = RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_RINGTONE)
           ?: Settings.System.DEFAULT_RINGTONE_URI
-        ringtone = uri?.let { RingtoneManager.getRingtone(context, it) }?.also {
+        // A chat's own message sound that still plays stops for the ring.
+        Notices.stopChime()
+        // A chat's own ringtone that is gone from the phone rings as the phone's.
+        val own = tone?.let { Uri.parse(it) }?.takeIf { Notices.opens(context, it) }
+          ?.let { runCatching { RingtoneManager.getRingtone(context, it) }.getOrNull() }
+        ringtone = (own ?: uri?.let { RingtoneManager.getRingtone(context, it) })?.also {
           it.audioAttributes = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -179,9 +205,9 @@ class ErevosCallModule : Module() {
     }
 
     // Messages came: a notice that says how many, no more, without sound when the last came
-    // without (`quiet`).
-    Function("tellMessages") { count: Int, quiet: Boolean? ->
-      context?.let { Notices.messages(it, count, quiet == true) }
+    // without (`quiet`), or with the sound of the chat it came in (`sound`, its address).
+    Function("tellMessages") { count: Int, quiet: Boolean?, sound: String? ->
+      context?.let { Notices.messages(it, count, quiet == true, sound) }
       null
     }
 
@@ -191,10 +217,54 @@ class ErevosCallModule : Module() {
       null
     }
 
-    // A message came where Erevos shows it on the screen: the messages sound, and no notice.
-    Function("chime") {
-      context?.let { Notices.chime(it) }
+    // A message came where Erevos shows it on the screen: the messages sound, or the chat's own
+    // (`sound`, its address), and no notice.
+    Function("chime") { sound: String? ->
+      context?.let { Notices.chime(it, sound) }
       null
+    }
+
+    // Android's own picker of sounds, for a chat's messages ("message") or its calls ("ring"),
+    // with the one the chat has now (`current`) chosen in it.
+    AsyncFunction("pickSound") { kind: String, current: String?, promise: Promise ->
+      val activity = appContext.currentActivity ?: throw IllegalStateException("No activity")
+      if (picking != null) throw IllegalStateException("A sound is being picked already")
+      val ring = kind == "ring"
+      val default = if (ring) Settings.System.DEFAULT_RINGTONE_URI else Settings.System.DEFAULT_NOTIFICATION_URI
+      val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+        .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, if (ring) RingtoneManager.TYPE_RINGTONE else RingtoneManager.TYPE_NOTIFICATION)
+        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+        .putExtra(RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI, default)
+        .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, current?.takeIf { it.isNotEmpty() }?.let(Uri::parse) ?: default)
+      picking = promise
+      try {
+        activity.startActivityForResult(intent, SOUND)
+      } catch (e: Exception) {
+        picking = null
+        promise.reject("ERR_SOUND", e.message, e)
+      }
+    }
+
+    // The name a sound has on this phone; '' if it has none here, or is gone from it (Android then
+    // names it by the end of its address).
+    AsyncFunction("soundName") { uri: String ->
+      val context = context ?: return@AsyncFunction ""
+      try {
+        val sound = Uri.parse(uri)
+        if (!Notices.opens(context, sound)) return@AsyncFunction ""
+        // Read, then let go: a Ringtone readies a player for the sound.
+        val title = RingtoneManager.getRingtone(context, sound)?.let { ringtone ->
+          try {
+            ringtone.getTitle(context)
+          } finally {
+            ringtone.stop()
+          }
+        } ?: ""
+        if (title == sound.lastPathSegment) "" else title
+      } catch (_: Exception) {
+        ""
+      }
     }
 
     // The app's language (app/lib/i18n.ts), kept for the notices, which show while the app is closed.
@@ -311,6 +381,10 @@ class ErevosCallModule : Module() {
       makerScreens(Build.MANUFACTURER.lowercase()).any { open(context, Intent().setComponent(it)) }
     }
   }
+
+  @Suppress("DEPRECATION")
+  private fun pickedUri(data: Intent): Uri? =
+    if (Build.VERSION.SDK_INT >= 33) data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java) else data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
 
   // Whether the phone shows notices on its lock screen at all, a setting of the whole phone that
   // not every Android lets an app read: then null, and the check goes by the channels alone.

@@ -1,6 +1,7 @@
 import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, isStickerName, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import type { Mark } from '../lib/relay';
 import { isFileRef, type FileRef } from './attachment-files';
+import { checkedChatNotify, type ChatNotify } from './chat-notify';
 import { checkedChatPin, type ChatPin } from './chat-pin';
 import { isRelay, isRelayKey } from './e2e-data';
 import { isReactionEmoji, isTag } from './history';
@@ -79,6 +80,9 @@ export type Group = {
   /** The PIN the group opens with here, when locked with one of its own (lock/chat-pin.ts), as kept.
    *  Missing when it has none. Only this phone knows it. */
   pin?: ChatPin;
+  /** The group's own notifications here (lock/chat-notify.ts): muted, its own sounds. Missing while
+   *  it has none. Kept on this phone only, as its PIN. */
+  notify?: ChatNotify;
 };
 
 export type GroupData = {
@@ -222,6 +226,7 @@ export function checkedGroup(value: unknown): Group | null {
     ...(wants.length > 0 ? { wants } : {}),
     ...(asks.length > 0 ? { asks } : {}),
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
+    ...(checkedChatNotify(v.notify) ? { notify: checkedChatNotify(v.notify)! } : {}),
   };
 }
 

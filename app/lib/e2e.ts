@@ -1,4 +1,5 @@
 import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
 
@@ -454,6 +455,8 @@ export type ContactInfo = {
   hide: boolean;
   /** Locked with a PIN of its own (lock/chat-pin.ts). */
   locked: boolean;
+  /** Its own notifications (lock/chat-notify.ts); missing while it has none. */
+  notify?: ChatNotify;
 };
 
 export type Received =
@@ -1303,7 +1306,7 @@ export class E2E {
   }
 
   contacts(): ContactInfo[] {
-    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide, pin }) => ({
+    return this.data.contacts.map(({ identity, sender, name, timer, request, look, avatar, hide, pin, notify }) => ({
       identity,
       sender,
       name,
@@ -1313,6 +1316,7 @@ export class E2E {
       avatar,
       hide,
       locked: !!pin,
+      ...(notify ? { notify } : {}),
     }));
   }
 
@@ -1465,6 +1469,22 @@ export class E2E {
   /** The PIN a chat opens with, as kept, or null when it has none. */
   pinOf(identity: string): ChatPin | null {
     return this.find(identity)?.pin ?? null;
+  }
+
+  /** Gives a chat notifications of its own (lock/chat-notify.ts); null gives it the app's again. */
+  setNotify(identity: string, notify: ChatNotify | null): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      const { notify: _was, ...rest } = contact;
+      const kept = checkedChatNotify(notify);
+      await this.save(this.withContact(kept ? { ...rest, notify: kept } : rest));
+    });
+  }
+
+  /** A chat's own notifications, or null when it has none. */
+  notifyOf(identity: string): ChatNotify | null {
+    return this.find(identity)?.notify ?? null;
   }
 
   /** Gives a chat its own look, kept with the contact and sealed; null gives it the space's again. */
@@ -2815,6 +2835,9 @@ export class E2E {
       // when they wrote to it, or the contact link names it; else they know none.
       ...(known?.mine ? { mine: known.mine } : {}),
       ...(known ? (known.knows !== undefined ? { knows: known.knows } : {}) : heard || this.linkOwn ? (this.ownAge > 0 ? { knows: this.ownAge } : {}) : { knows: 0 }),
+      // What this phone keeps for the chat stays too: its own PIN and its notifications.
+      ...(known?.pin ? { pin: known.pin } : {}),
+      ...(known?.notify ? { notify: known.notify } : {}),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
     const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);

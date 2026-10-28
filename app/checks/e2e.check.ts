@@ -21,6 +21,7 @@ import { DEFAULT_LOOK } from '../theme/look';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import { History, newTag } from '../lock/history';
 import { makeChatPin, opensChat } from '../lock/chat-pin';
+import { ALWAYS } from '../lock/chat-notify';
 import { moveChat } from '../lock/move-chat';
 import { Archive, type ArchivedChat } from '../lock/archive';
 import { hiddenHolder } from '../lock/sealed-file';
@@ -239,6 +240,34 @@ t('a contact given newer prekeys starts a new conversation with them, and both m
   assert.equal(kept.contacts[0].conversations.length, 2);
   // The safety number stays the same.
   assert.equal(await alice.e2e.safetyNumber(bobId), await bob.e2e.safetyNumber(aliceId));
+});
+
+t('a chat keeps its own PIN and notifications when its contact starts a new conversation', async () => {
+  setHardCost({ m: 64, t: 1 });
+  try {
+    const alice = await chat('space', 0);
+    const bob = await chat('space', 1);
+    const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+    const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+    await alice.e2e.firstSent(bobId);
+    await bob.e2e.acceptRequest(aliceId);
+    // Bob locks the chat with a PIN and mutes it for good, its calls without a ringtone.
+    await bob.e2e.setPin(aliceId, await makeChatPin('2468'));
+    await bob.e2e.setNotify(aliceId, { until: ALWAYS, ring: '' });
+    // Given Bob's newer prekeys, Alice starts a new conversation, and Bob opens it.
+    await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { keys: true })).packet);
+    await bob.e2e.keysGiven(aliceId);
+    const [renew] = alice.e2e.pending();
+    await alice.e2e.firstSent(bobId);
+    assert.equal(message(await bob.e2e.receive(renew.first)).identity, aliceId);
+    for (const e2e of [bob.e2e, await E2E.open('space', 1, bob.key)]) {
+      assert.equal(e2e.contacts()[0].locked, true);
+      assert.equal(await opensChat('2468', e2e.pinOf(aliceId)!), true);
+      assert.deepEqual(e2e.notifyOf(aliceId), { until: ALWAYS, ring: '' });
+    }
+  } finally {
+    setHardCost(null);
+  }
 });
 
 t('a first packet started with prekeys no longer kept does not open, and the link\'s always do', async () => {

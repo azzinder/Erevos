@@ -810,6 +810,26 @@ chat restano.
 - **Non è una garanzia:** il suo Erevos li elimina, ma un’app modificata, uno screenshot o una copia possono comunque
   conservarli.
 
+### Notifiche di questa chat
+
+Su Android, apri una chat, tocca il suo nome e poi **Notifiche**; in un gruppo, tocca il suo nome (in un gruppo
+pubblico, **⋯**) e poi **Notifiche**. **In silenzio** per 8 ore, 1 settimana o **Sempre**: i suoi messaggi non suonano e
+non mostrano notifiche, quindi neanche l’icona di Erevos li conta; la lista li mostra comunque, con una campanella
+barrata, e le sue chiamate suonano comunque. **Suono dei messaggi** e **Suoneria** le danno un suono proprio per i suoi
+messaggi e per le sue chiamate, dall’elenco di suoni di Android stesso, o **Senza suono**. Nei dettagli di una chat la
+riga dice allora **In silenzio fino a** e l’ora, o **Suoni propri**.
+
+**Perché:** una chat in silenzio conta comunque nella lista, così niente di ciò che è arrivato va perso: solo il
+telefono smette di chiamarti lì. I suoi suoni restano solo su questo telefono, con la chat nei dati cifrati dello
+spazio, perché ogni telefono ha i suoi suoni: un dispositivo collegato tiene i suoi, e l’altro telefono non ne sa
+niente.
+
+- **Nelle chat nascoste** c’è solo **In silenzio**: un suono proprio direbbe a chiunque sia vicino di quale chat si
+  tratta.
+- **Uno spazio chiuso, e le chat nascoste finché sono chiuse,** non sanno in quale chat è arrivato un messaggio, quindi
+  lo segnalano come dicono le impostazioni dell’app.
+- **Solo su Android** per ora: la web app segnala ogni chat come dicono le sue impostazioni.
+
 ### Messaggi vocali
 
 Nella chat di un contatto, senza niente di scritto, tieni premuto il microfono alla fine della barra dei messaggi

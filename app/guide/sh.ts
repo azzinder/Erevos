@@ -791,6 +791,25 @@ pogleda relay, a oba telefona je mogu promijeniti: važi kasnija promjena. Poruk
 - **Nije garancija:** Erevos te osobe ih briše, ali izmijenjena aplikacija, snimak ekrana ili kopija ih ipak mogu
   zadržati.
 
+### Obavijesti za ovaj razgovor
+
+Na Androidu otvorite razgovor, dodirnite njegovo ime, pa **Obavijesti**; u grupi dodirnite njeno ime (u javnoj grupi
+**⋯**), pa **Obavijesti**. **Utišano** na 8 sati, 1 sedmicu ili **Uvijek**: njegove poruke ne puštaju zvuk i ne
+prikazuju obavijest, pa ih ni ikona Erevosa ne broji; lista ih i dalje prikazuje, s precrtanim zvoncem, a njegovi
+pozivi i dalje zvone. **Zvuk poruke** i **Melodija zvona** daju mu vlastiti zvuk za poruke i za pozive, s Androidove
+vlastite liste zvukova, ili **Bez zvuka**. U detaljima razgovora red tada kaže **Utišano do** i vrijeme, ili
+**Vlastiti zvukovi**.
+
+**Zašto:** utišan razgovor se i dalje broji u listi, da se ništa od onoga što je stiglo ne izgubi: samo vas telefon
+više ne zove k njemu. Njegovi zvukovi se čuvaju samo na ovom telefonu, s razgovorom u šifriranim podacima prostora,
+jer svaki telefon ima svoje zvukove: povezani uređaj čuva svoje, a drugi telefon ne saznaje ništa o njima.
+
+- **U skrivenim razgovorima** postoji samo **Utišano**: vlastiti zvuk bi svakome u blizini otkrio o kojem je razgovoru
+  riječ.
+- **Zatvoren prostor, i skriveni razgovori dok su zatvoreni,** ne znaju u kojem je razgovoru stigla poruka, pa o njoj
+  javljaju kako kažu postavke aplikacije.
+- **Samo na Androidu** zasad: web-aplikacija javlja o svakom razgovoru kako kažu njene postavke.
+
 ### Glasovne poruke
 
 U razgovoru s kontaktom, kad ništa nije upisano, zadržite prst na mikrofonu na kraju trake za poruku dok govorite, i

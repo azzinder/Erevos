@@ -159,6 +159,11 @@ export function forgetSpaceGroups(): void {
   opened = null;
 }
 
+/** The open space's groups if they are open already, or null. */
+export function spaceGroupsNow(): PublicGroups | null {
+  return shown;
+}
+
 /** A member of one of the open space's public groups, by its key there, once the groups are open; null for anyone else. */
 export function publicMemberName(key: string): string | null {
   return shown?.nameOf(key) ?? null;

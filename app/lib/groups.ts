@@ -1,4 +1,5 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
+import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import {
   checkedAbout,
@@ -151,6 +152,8 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   asks: { id: string; at: number }[];
   /** Locked with a PIN of its own here (lock/chat-pin.ts). */
   locked: boolean;
+  /** Its own notifications here (lock/chat-notify.ts); missing while it has none. */
+  notify?: ChatNotify;
 };
 
 // What members say inside the group's messages. A `file` with `ms` is a voice message's sound. A
@@ -383,7 +386,7 @@ export class Groups {
           .sort((a, b) => a.at - b.at);
         const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length + asks.filter((a) => a.at > g.readAt).length;
         const wants = freshWants(g, now).map(({ id, at }) => ({ id, at }));
-        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin };
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin, ...(g.notify ? { notify: g.notify } : {}) };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
   }
@@ -465,6 +468,23 @@ export class Groups {
   /** The PIN a group opens with here, as kept, or null when it has none. */
   pinOf(id: string): ChatPin | null {
     return this.find(id)?.pin ?? null;
+  }
+
+  /** Gives a group notifications of its own here (lock/chat-notify.ts); null gives it the app's again. */
+  setNotify(id: string, notify: ChatNotify | null): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group) throw new Error(t('This group is not here.'));
+      const { notify: _was, ...rest } = group;
+      const kept = checkedChatNotify(notify);
+      await this.save(this.withGroup(kept ? { ...rest, notify: kept } : rest));
+      this.changed();
+    });
+  }
+
+  /** A group's own notifications here, or null when it has none. */
+  notifyOf(id: string): ChatNotify | null {
+    return this.find(id)?.notify ?? null;
   }
 
   markRead(id: string): Promise<void> {

@@ -1,8 +1,10 @@
 import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-native';
 
+import { mutedNow } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { currentCall, RING_MS } from './call';
+import { chatNotify } from './chat-notices';
 import { keepDoor, startClosedNotices } from './closed-notices';
 import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
@@ -107,25 +109,36 @@ const unseenCount = () => [...unseen.values()].reduce((sum, count) => sum + coun
  * A message came in the open space, from a contact or in a group, shown at `where`: the notice
  * says one more came and sounds, whether Erevos shows or not; where it shows on the screen just
  * then, it only sounds. One sent without sound (`quiet`) makes none: the notice shows or counts on
- * silently. The chat screen tells of what it opens itself.
+ * silently. `chat` is the chat or group it came in (`chat:` or `group:`, and who), when `where`
+ * does not say it, as for a hidden place: one muted there tells of nothing, and one with a sound of
+ * its own sounds with it, or with none (lib/chat-notices.ts); in hidden chats only muting counts,
+ * as a sound of their own would tell which chat it is. The chat screen tells of what it opens
+ * itself.
  */
-export function messageCame(quiet = false, where = ''): void {
+export function messageCame(quiet = false, where = '', chat = where): void {
   if (!telling) return;
+  const pocket = where.startsWith('hidden:') ? Number(where.slice('hidden:'.length)) : undefined;
+  const notify = chatNotify(chat, pocket);
+  if (mutedNow(notify)) return;
+  const sound = pocket === undefined ? notify?.sound : undefined;
+  const silent = quiet || sound === '';
   if (where && where === onScreen && appShown()) {
-    if (!quiet) chime();
+    if (!silent) chime(sound);
     return;
   }
   unseen.set(where, (unseen.get(where) ?? 0) + 1);
   try {
-    callAudio?.tellMessages?.(unseenCount(), quiet);
+    if (silent || !sound) callAudio?.tellMessages?.(unseenCount(), silent);
+    else callAudio?.tellMessages?.(unseenCount(), false, sound);
   } catch {
     // A build from before the notice: nothing shows.
   }
 }
 
-function chime() {
+function chime(sound?: string) {
   try {
-    callAudio?.chime?.();
+    if (sound) callAudio?.chime?.(sound);
+    else callAudio?.chime?.();
   } catch {
     // A build from before the sound: none plays.
   }
@@ -151,10 +164,10 @@ export function showOnScreen(where: string): () => void {
 }
 
 /** As messageCame, at `at` (milliseconds) when that is ahead: for a message that came before its time (lib/later.ts, showsAt). */
-export function messageCameAt(at: number, quiet = false, where = ''): void {
+export function messageCameAt(at: number, quiet = false, where = '', chat = where): void {
   const wait = at - Date.now();
-  if (wait <= 0) messageCame(quiet, where);
-  else setTimeout(() => messageCame(quiet, where), Math.min(wait, 2 ** 31 - 1));
+  if (wait <= 0) messageCame(quiet, where, chat);
+  else setTimeout(() => messageCame(quiet, where, chat), Math.min(wait, 2 ** 31 - 1));
 }
 
 function clearMessages() {
@@ -261,10 +274,10 @@ export function startBackground(): () => void {
   // with no name, as the space's chats do, and a call rings with none, as a hidden ring does.
   const places = [
     onPlaceMessage((_space, pocket, received) => {
-      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket));
+      if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfHidden(pocket), screenOfChat(received.identity));
     }),
     // Their groups' too (lib/place-groups.ts).
-    onPlaceGroupMessage((_space, pocket) => messageCame(false, screenOfHidden(pocket))),
+    onPlaceGroupMessage((_space, pocket, group) => messageCame(false, screenOfHidden(pocket), screenOfGroup(group))),
     onPlaceRing(onRing),
   ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took

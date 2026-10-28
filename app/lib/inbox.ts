@@ -6,14 +6,16 @@
 // When Erevos is the phone's SMS app, the phone's SMS conversations are rows too: one with a
 // number linked to a contact goes into that contact's row, the others have rows of their own.
 
+import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
 import { t, mark } from './i18n';
 
-/** A contact as the list has it: `locked`, with a PIN of its own (lock/chat-pin.ts). */
-export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string; locked?: boolean };
+/** A contact as the list has it: `locked`, with a PIN of its own (lock/chat-pin.ts), and its own
+ *  notifications (lock/chat-notify.ts). */
+export type InboxContact = { identity: string; name: string; timer: number; avatar?: Avatar | null; phone?: string; locked?: boolean; notify?: ChatNotify };
 
 /** The latest SMS of a conversation with one number. `name`: what the phone's contacts call the
  *  number, when the owner lets Erevos show it, and `photo` the picture they have for it. `replied`:
@@ -68,6 +70,8 @@ export type InboxRow = {
   photo?: string;
   /** Locked with a PIN of its own (lock/chat-pin.ts): it shows nothing of its messages, `last` is empty. */
   locked?: boolean;
+  /** Muted now (lock/chat-notify.ts): its messages make no sound and no notice. */
+  muted?: boolean;
 };
 
 const PREFIX = 'contact:';
@@ -121,6 +125,7 @@ export function buildInbox(
     row.unread += texts.reduce((n, t) => n + t.unread, 0);
     // A chat locked with its PIN says only that it moved, and how many came.
     if (contact.locked) Object.assign(row, { last: '', mine: false, mark: 0, lastSms: false, fades: false, locked: true });
+    if (mutedNow(contact.notify, now)) row.muted = true;
     return row;
   });
   for (const t of sms) {
@@ -173,6 +178,8 @@ export type InboxGroup = {
   unread: number;
   /** Locked with a PIN of its own here (lock/chat-pin.ts). */
   locked?: boolean;
+  /** Its own notifications here (lock/chat-notify.ts). */
+  notify?: ChatNotify;
 };
 
 // A group's photo, file or voice message (with `ms`) shows as a chat's does.
@@ -180,7 +187,7 @@ const groupPreview = (last: NonNullable<InboxGroup['last']>) => preview(last.fil
 
 /** The space's groups as rows, `group:` and their id in place of a contact's identity. `name`
  *  gives a member's name by identity, and `note` a note's text. */
-export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string): InboxRow[] {
+export function groupRows(groups: InboxGroup[], name: (identity: string) => string, note: (text: string) => string, now = Date.now()): InboxRow[] {
   return groups.map((g) => {
     const last = g.last;
     const text = !last || g.locked ? '' : last.note ? note(last.text) : last.from ? `${name(last.from)}: ${groupPreview(last)}` : t('You: {text}', { text: groupPreview(last) });
@@ -198,6 +205,7 @@ export function groupRows(groups: InboxGroup[], name: (identity: string) => stri
       sms: '',
       lastSms: false,
       ...(g.locked ? { locked: true } : {}),
+      ...(mutedNow(g.notify, now) ? { muted: true } : {}),
     };
   });
 }

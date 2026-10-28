@@ -852,6 +852,26 @@ l’emporte. Les messages déjà dans la discussion restent.
 - **Pas une garantie :** son Erevos les supprime, mais une app modifiée, une capture d’écran ou une copie peut encore
   les garder.
 
+### Notifications de cette discussion
+
+Sur Android, ouvre une discussion, touche son nom puis **Notifications** ; dans un groupe, touche son nom (dans un
+groupe public, **⋯**) puis **Notifications**. **En sourdine** pendant 8 heures, 1 semaine ou **Toujours** : ses
+messages ne sonnent pas et n’affichent aucune notification, donc l’icône d’Erevos ne les compte pas non plus ; la liste
+les montre toujours, avec une cloche barrée, et ses appels sonnent toujours. **Son des messages** et **Sonnerie** lui
+donnent un son à elle pour ses messages et pour ses appels, pris dans la liste de sons d’Android, ou **Sans son**. Dans
+les détails d’une discussion, la ligne dit alors **En sourdine jusqu’à** et l’heure, ou **Sons propres**.
+
+**Pourquoi :** une discussion en sourdine compte toujours dans la liste, pour que rien de ce qui est arrivé ne se perde :
+seul le téléphone cesse de t’y appeler. Ses sons sont gardés sur ce téléphone seulement, avec la discussion dans les
+données chiffrées de l’espace, car chaque téléphone a ses propres sons : un appareil associé garde les siens, et l’autre
+téléphone n’en sait rien.
+
+- **Dans les discussions masquées** il n’y a que **En sourdine** : un son à elle dirait à quiconque est près de quelle
+  discussion il s’agit.
+- **Un espace fermé, et les discussions masquées tant qu’elles sont fermées,** ne savent pas dans quelle discussion un
+  message est arrivé, et le signalent donc comme le disent les réglages de l’app.
+- **Seulement sur Android** pour l’instant : l’app web signale chaque discussion comme le disent ses réglages.
+
 ### Messages vocaux
 
 Dans la discussion d’un contact, sans rien de tapé, maintiens le micro au bout de la barre de message pendant que tu

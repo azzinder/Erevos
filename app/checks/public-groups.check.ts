@@ -42,6 +42,7 @@ import {
 } from '../lib/public-rules';
 import { createQueue, receiveMessage, relayKey, sendMessage, type QueueIds, type Relay } from '../lib/relay';
 import { contactTarget } from '../lib/space-chats';
+import { ALWAYS } from '../lock/chat-notify';
 import { EMPTY_GROUPS, type About, type GroupData } from '../lock/group-data';
 import { EMPTY_PUBLIC, loadPublicGroupData, savePublicGroupData, type PublicData } from '../lock/public-group-data';
 
@@ -322,9 +323,12 @@ test('admins mute, delete for everyone, take out and ban, and a ban turns the sa
   await net.settle();
   assert.equal(status(carol, id), 'out');
   assert.equal((await alice.groups.publicMembers(id)).length, 2);
+  // What her phone keeps for the group stays when she comes back: muted, it stays muted.
+  await carol.groups.setNotify(id, { until: ALWAYS });
   await carol.groups.ask(linkOf(bob, id), 'Carol');
   await net.settle();
   assert.equal(status(carol, id), 'in');
+  assert.deepEqual(carol.groups.notifyOf(id), { until: ALWAYS });
   assert.equal((await alice.groups.publicMembers(id)).length, 3);
 
   // Bob lifts the ban: Dave can ask again.

@@ -802,6 +802,25 @@ reciente. Los mensajes que ya están en el chat se quedan.
 - **No es una garantía:** su Erevos los elimina, pero una app modificada, una captura de pantalla o una copia todavía
   pueden conservarlos.
 
+### Notificaciones de este chat
+
+En Android, abre un chat, toca su nombre y luego **Notificaciones**; en un grupo, toca su nombre (en un grupo público,
+**⋯**) y luego **Notificaciones**. **Silenciado** durante 8 horas, 1 semana o **Siempre**: sus mensajes no suenan ni
+muestran notificación, así que el icono de Erevos tampoco los cuenta; la lista los sigue mostrando, con una campana
+tachada, y sus llamadas siguen sonando. **Sonido de mensaje** y **Tono de llamada** le dan un sonido propio para sus
+mensajes y para sus llamadas, de la propia lista de sonidos de Android, o **Sin sonido**. En los detalles de un chat la
+fila dice entonces **Silenciado hasta** y la hora, o **Sonidos propios**.
+
+**Por qué:** un chat silenciado sigue contando en la lista, para que no se pierda nada de lo que llegó: solo el
+teléfono deja de llamarte a él. Sus sonidos se guardan solo en este teléfono, con el chat en los datos cifrados del
+espacio, porque cada teléfono tiene sus propios sonidos: un dispositivo vinculado guarda los suyos, y el otro teléfono
+no sabe nada de ellos.
+
+- **En los chats ocultos** solo hay **Silenciado**: un sonido propio le diría a cualquiera cerca qué chat es.
+- **Un espacio cerrado, y los chats ocultos mientras están cerrados,** no saben en qué chat llegó un mensaje, así que
+  avisan de él como dicen los ajustes de la app.
+- **Solo en Android** por ahora: la app web avisa de cada chat como dicen sus ajustes.
+
 ### Mensajes de voz
 
 En el chat de un contacto, sin nada escrito, mantén pulsado el micrófono al final de la barra de mensajes mientras

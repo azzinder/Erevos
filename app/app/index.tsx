@@ -38,6 +38,7 @@ import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
 import { blockedNumbers, contactCards, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady, type ContactCard } from '../modules/erevos-sms';
 import { Archive } from '../lock/archive';
+import type { ChatNotify } from '../lock/chat-notify';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
 import { Logo } from '../lock/gate';
@@ -264,7 +265,7 @@ export default function Home() {
       const quiet = <T,>(promise: Promise<T>, fallback: T) => promise.catch(() => fallback);
       // The chats as the chat screen and the receiver have them (lib/space-chats.ts), or, in a
       // build that cannot encrypt, as kept on the phone.
-      const chats = (): Promise<[{ identity: string; name: string; timer: number; phone?: string; locked?: boolean }[], Message[]]> =>
+      const chats = (): Promise<[{ identity: string; name: string; timer: number; phone?: string; locked?: boolean; notify?: ChatNotify }[], Message[]]> =>
         hasCore()
           ? spaceChats().then(({ e2e, history }) => {
               const phones = new Map(e2e.phones().map((p) => [p.identity, p.phone]));

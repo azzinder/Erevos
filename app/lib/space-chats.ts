@@ -19,6 +19,8 @@ import { t } from './i18n';
 export type SpaceChats = { e2e: E2E; history: History; voiceParts: VoiceAssembler };
 
 let opened: { of: object; chats: Promise<SpaceChats> } | null = null;
+// The same once open, for what must know at once (lib/chat-notices.ts).
+let ready: SpaceChats | null = null;
 // What joins the space's chats as they open, before anything uses them: the links to the account's
 // other devices (lib/devices.ts), which registers itself here so this file need not know it.
 const joiners: ((chats: SpaceChats, space: number, key: Uint8Array) => Promise<void>)[] = [];
@@ -38,9 +40,11 @@ export function spaceChats(): Promise<SpaceChats> {
       const chats = { e2e, history, voiceParts: new VoiceAssembler() };
       // The chats still open without what could not join them.
       for (const join of joiners) await join(chats, current.space, current.key).catch(() => undefined);
+      if (opened?.of === current) ready = chats;
       return chats;
     })();
     opened = { of: current, chats };
+    ready = null;
     // Tried again the next time they are asked for.
     chats.catch(() => {
       if (opened?.chats === chats) opened = null;
@@ -49,9 +53,15 @@ export function spaceChats(): Promise<SpaceChats> {
   return opened.chats;
 }
 
+/** The open space's chats if they are open already, or null. */
+export function spaceChatsNow(): SpaceChats | null {
+  return ready;
+}
+
 /** Lets go of the space's chats when it closes, so nothing of it stays in memory. */
 export function forgetSpaceChats(): void {
   opened = null;
+  ready = null;
 }
 
 /** A relay to send to, with the second relay to go through when one is set, and the space's
