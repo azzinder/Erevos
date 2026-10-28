@@ -2275,7 +2275,12 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
   you: the password lock is what seals it.
 - **Backups** go to \`Documents/Erevos\` on the phone, by hand or every day; copy them from there to a memory card or
   another device. **Save** puts a photo or file in Downloads.
-- **Only while it runs:** when Erevos is closed, messages wait on the relay until it opens.
+- **While it is closed:** with a space open, a small helper of Erevos waits at the relay while Erevos is out of sight
+  or closed, and takes nothing. A notice says only how many messages came, never who or what, and a call rings with
+  the phone's ringtone, as its profile sets it, for 45 seconds at most; a tap on either opens Erevos. Hidden chats say
+  nothing then. Locking the space stops it, and after the phone restarts it waits again only once Erevos opens the
+  space. Like the rest of Erevos here it goes straight, without Tor. Each wait wakes the phone about once a minute, as
+  on Android.
 - **Tested so far** on Sailfish's browser engine (Gecko 91) on a computer, chatting with a browser through a relay.
   Not yet on a Sailfish phone.
 

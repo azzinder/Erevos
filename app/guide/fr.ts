@@ -2609,8 +2609,13 @@ messages et ses réglages scellés de la même façon.
   donc par toute appli qui tourne en ton nom : c’est le verrou par mot de passe qui le scelle.
 - Les **sauvegardes** vont dans \`Documents/Erevos\` sur le téléphone, à la main ou chaque jour ; copie-les de là sur
   une carte mémoire ou un autre appareil. **Enregistrer** met une photo ou un fichier dans Téléchargements.
-- **Seulement pendant qu’il tourne :** quand Erevos est fermé, les messages attendent sur le relais jusqu’à ce qu’il
-  s’ouvre.
+- **Pendant qu’il est fermé :** avec un espace ouvert, un petit assistant d’Erevos attend sur le relais tant qu’Erevos
+  n’est pas à l’écran ou est fermé, et ne prend rien. Une notification dit seulement combien de messages sont arrivés,
+  jamais de qui ni quoi, et un appel sonne avec la sonnerie du téléphone, comme son profil la règle, 45 secondes au
+  plus ; un appui sur l’une ou l’autre ouvre Erevos. Les discussions cachées ne disent rien alors. Verrouiller
+  l’espace l’arrête, et après un redémarrage du téléphone il n’attend de nouveau qu’une fois qu’Erevos a ouvert
+  l’espace. Comme le reste d’Erevos ici, il passe en direct, sans Tor. Chaque attente réveille le téléphone environ
+  une fois par minute, comme sur Android.
 - **Testé jusqu’ici** sur le moteur de navigateur de Sailfish (Gecko 91) sur un ordinateur, en discutant avec un
   navigateur par un relais. Pas encore sur un téléphone Sailfish.
 

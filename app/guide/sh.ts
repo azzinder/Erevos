@@ -2398,7 +2398,12 @@ zapečaćene na isti način.
   svakoj aplikaciji koja radi kao vi: zaključavanje lozinkom je ono što ga zapečaćuje.
 - **Rezervne kopije** idu u \`Documents/Erevos\` na telefonu, ručno ili svaki dan; kopirajte ih odatle na memorijsku
   karticu ili drugi uređaj. **Sačuvaj** stavlja fotografiju ili datoteku u Preuzimanja.
-- **Samo dok radi:** kad je Erevos zatvoren, poruke čekaju na relayu dok se ne otvori.
+- **Dok je zatvoren:** s otvorenim prostorom, mali pomoćnik Erevosa čeka na relayu dok Erevos nije na ekranu ili je
+  zatvoren, i ne uzima ništa. Obavještenje kaže samo koliko je poruka stiglo, nikad od koga ni šta, a poziv zvoni
+  melodijom telefona, kako je profil postavlja, najviše 45 sekundi; dodir na bilo koje od njih otvara Erevos. Skriveni
+  razgovori tada ne kažu ništa. Zaključavanje prostora ga zaustavlja, a nakon ponovnog pokretanja telefona ponovo čeka
+  tek kad Erevos otvori prostor. Kao i ostatak Erevosa ovdje, ide direktno, bez Tora. Svako čekanje budi telefon
+  otprilike jednom u minuti, kao na Androidu.
 - **Dosad testirano** na Sailfishovom pregledniku (Gecko 91) na računaru, uz razgovor s preglednikom preko relaya. Još
   ne na Sailfish telefonu.
 

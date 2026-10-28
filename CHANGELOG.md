@@ -133,6 +133,13 @@ On main, not released yet:
   notification says how many messages the open space has not read, never who or what, never a hidden or muted chat's,
   while the window is closed, hidden or behind another. The tray's icon opens it again or quits it; where the desktop
   shows no tray, starting Erevos again brings the window back.
+- **Erevos on Sailfish OS tells of messages and calls while it is closed**: once it was out of sight or closed, nothing
+  told of a message and no call rang until it was opened again. Now, with a space open, a small helper of its own
+  (`erevos-watch`, in the same package) waits at the relay for it meanwhile, on the space's queues and its contacts',
+  without taking anything: a notification says how many messages came, never who or what, and a call rings with the
+  phone's ringtone, as the profile sets it, for 45 seconds at most; a tap on either opens Erevos. It asks the relay in
+  a channel to the relay's key once the relay proved it, as the app does. Locking the space stops it; after a restart
+  it waits again once Erevos opens the space. Not yet tried on a phone.
 
 ### Under the hood
 

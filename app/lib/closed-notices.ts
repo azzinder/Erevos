@@ -44,8 +44,8 @@ export function doorBunches(space: number, door: Door): Bunch[] {
   );
 }
 
-/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay, and its Tor way. Null with no queue yet. */
-export async function doorOf(space: number, key: Uint8Array): Promise<Door | null> {
+/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay (`most` at most), and its Tor way. Null with no queue yet. */
+export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACTS): Promise<Door | null> {
   const [data, queues, chats] = await Promise.all([loadSpaceData(space, key), spaceQueues(space, key).load(), loadE2EData('space', space, key).catch(() => null)]);
   const own = queues.now ?? (data.ownQueue && data.url.trim() ? { queue: data.ownQueue, url: data.url.trim(), token: data.token.trim() } : null);
   const kept: Watched[] = [];
@@ -66,7 +66,7 @@ export async function doorOf(space: number, key: Uint8Array): Promise<Door | nul
   const at = own ? contactQueuesAt(mines, own.url) : [];
   const contacts: { r: string; g: number }[] = [];
   for (const q of [...at.filter((q) => !q.was), ...at.filter((q) => q.was)]) {
-    if (contacts.length >= DOOR_CONTACTS) break;
+    if (contacts.length >= most) break;
     if (!contacts.some((c) => c.r === q.r) && !kept.some((k) => k.recipientHex === q.r)) contacts.push({ r: q.r, g: q.g });
   }
   return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(own && contacts.length > 0 ? { contacts: { url: own.url, queues: contacts } } : {}) };

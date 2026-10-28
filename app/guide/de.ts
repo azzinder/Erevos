@@ -2642,7 +2642,13 @@ Nachrichten und Einstellungen auf dieselbe Weise versiegelt auf.
   Benutzer und damit für jede App, die als du läuft: Die Passwortsperre ist es, die ihn versiegelt.
 - **Backups** kommen nach \`Documents/Erevos\` auf dem Telefon, von Hand oder jeden Tag; kopiere sie von dort auf eine
   Speicherkarte oder ein anderes Gerät. **Speichern** legt ein Foto oder eine Datei in Downloads.
-- **Nur solange es läuft:** Wenn Erevos geschlossen ist, warten Nachrichten auf dem Relay, bis es öffnet.
+- **Während es geschlossen ist:** Mit einem offenen Raum wartet ein kleiner Helfer von Erevos auf dem Relay, solange
+  Erevos nicht zu sehen oder geschlossen ist, und nimmt nichts. Eine Mitteilung sagt nur, wie viele Nachrichten kamen,
+  nie von wem oder was, und ein Anruf klingelt mit dem Klingelton des Telefons, wie sein Profil ihn einstellt,
+  höchstens 45 Sekunden; ein Tippen auf eine der beiden öffnet Erevos. Versteckte Chats sagen dann nichts. Das Sperren
+  des Raums beendet es, und nach einem Neustart des Telefons wartet er erst wieder, wenn Erevos den Raum öffnet. Wie
+  der Rest von Erevos hier geht er direkt, ohne Tor. Jedes Warten weckt das Telefon etwa einmal pro Minute, wie unter
+  Android.
 - **Bisher getestet** auf der Browser-Engine von Sailfish (Gecko 91) auf einem Computer, im Chat mit einem Browser über
   ein Relay. Noch nicht auf einem Sailfish-Telefon.
 

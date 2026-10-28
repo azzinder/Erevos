@@ -4,10 +4,12 @@
 // browser has it, until the call is answered or ends. A browser lets a page sound only once it was
 // touched, so the sound is readied at each touch or key: a call that comes after one rings. The
 // computer's app lets it ring with no touch, and brings its window back for the call, closed into
-// the tray or not (lib/shell.ts showWindow). The rest of a call's sound is the browser's: it puts it
-// where the phone does.
+// the tray or not (lib/shell.ts showWindow). On Sailfish OS, out of sight, the phone's own ringtone
+// rings for the call instead (lib/shell-watch.ts), so the page does not ring then too; it rings
+// once Erevos shows again, if the call still does. The rest of a call's sound is the browser's: it
+// puts it where the phone does.
 
-import { showWindow } from '../../lib/shell';
+import { SHELL, showWindow } from '../../lib/shell';
 
 const CYCLE_MS = 3000;
 // Each ring, and the pause between the two, in seconds.
@@ -44,7 +46,11 @@ if (typeof window !== 'undefined') {
   for (const type of ['pointerdown', 'touchend', 'keydown']) window.addEventListener(type, ready, { capture: true, passive: true });
 }
 
+// Out of sight on Sailfish OS: the phone rings for it.
+const ringsElsewhere = () => SHELL === 'sailfish' && typeof document !== 'undefined' && document.visibilityState === 'hidden';
+
 function ringOnce(): void {
+  if (ringsElsewhere()) return;
   const context = made();
   // Not yet allowed to sound: nothing is put off to play late, at the next touch.
   if (context?.state === 'running') {

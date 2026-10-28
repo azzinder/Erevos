@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=app.erevos.watch
+Exec=/usr/bin/erevos-watch
+SystemdService=erevos-watch.service

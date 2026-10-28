@@ -14,6 +14,8 @@ import { t } from './i18n';
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
 //   /__latest         the latest release's version.json (lib/updates.ts), which a page cannot read
 //   /__window         the computer's window (lib/desktop.ts): kept running when closed, brought back
+//   /__watch          on Sailfish OS, the open space's queues for its helper to wait on while Erevos
+//                     is closed (lib/shell-watch.ts)
 // The computer's shell also says in the address which of its packages it runs from
 // (#erevos-system=…), so Check for updates can name the file to take (lib/updates.ts packageFile).
 

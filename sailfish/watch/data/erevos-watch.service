@@ -1,0 +1,7 @@
+[Unit]
+Description=Erevos: waits at the relay while Erevos is closed
+
+[Service]
+Type=dbus
+BusName=app.erevos.watch
+ExecStart=/usr/bin/erevos-watch

@@ -16,9 +16,40 @@ window. The code is installed with the package; nothing is fetched from a server
 - `qml/erevos.qml`: one page with the WebView; the app draws its own screens.
 - `polyfills.js`: what the web build uses and Gecko 91 lacks, loaded first.
 - `app/lib/shell.ts`: the app knows it runs here from `EXPO_PUBLIC_SHELL=sailfish` at build time.
+- `watch/`: `erevos-watch`, the helper that waits at the relay while Erevos is not in front, or
+  closed (below). `src/watchlink.cpp` is Erevos's side of it: the name `app.erevos` on D-Bus,
+  with `show()` for a tap on a notice, and the list the page gives on `/__watch`.
 
-What it does not do: the nearby link and SMS (Android only), notifications while closed. Sailfish
-has no keyring for apps, so the keystore is kept as it is: the password lock seals it.
+What it does not do: the nearby link and SMS (Android only). Sailfish has no keyring for apps, so
+the keystore is kept as it is: the password lock seals it.
+
+## While Erevos is closed
+
+With a space open, the page gives the shell, on `/__watch`, the queues the space reads on, each
+relay's key once the relay proved it, and the words of the notices in the app's language
+(`app/lib/shell-watch.ts`): no key of the space, no token, no name. The shell hands them over D-Bus
+to `erevos-watch` (`app.erevos.watch`, `/app/erevos/watch`), which D-Bus starts as the systemd user
+service `erevos-watch.service`, and says each time whether Erevos is in front. While it is not, or
+is closed, the helper holds one connection per relay and 64 queues on the relay's `/read` path,
+in a channel to the relay's key when it has one, and asks `NEWS_ANY` (opcode 30) for up to a
+minute at a time. It never asks anything that takes a message: the app finds it all when it opens.
+
+- Each connection's first answer is heard, not told of: what was there came while Erevos was in
+  front, or before the connection was made. After that, what came is counted as the app counts it
+  (`newsSince`), and one notice (category `x-erevos.message`) says how many, never who or what.
+- A call whose ring the relay counts while the helper waits rings with the profile's ringtone
+  (ngfd's `ringtone` event) and a notice of its own (`x-erevos.call`), for 45 seconds at most. The
+  page does not ring then too (`page-ring.web.ts`).
+- A tap on either calls `app.erevos` `show()`, which starts Erevos when it is not running
+  (`data/app.erevos.service`).
+- nemo-keepalive lets the phone sleep between answers and wakes it every 2½ minutes, to make again
+  a connection that went quiet; a change of network makes them all again.
+- The list is kept in memory only: locking the space takes it back, and after a restart the
+  helper waits on nothing until Erevos opens the space.
+
+To check it on a computer, build it with `qmake CONFIG+=watch_test` (Qt 5 and OpenSSL, no
+Sailfish libraries): it then writes what it would show and ring, and `EREVOS_WATCH_TEST_CA` names
+a certificate authority to trust beside the computer's, for a relay behind TLS there.
 
 ## Build
 
@@ -45,5 +76,8 @@ terminal (Developer mode): `pkcon install-local erevos-<version>-1.aarch64.rpm`.
 
 Built with the SDK for Sailfish OS 5.0.0.43 (aarch64). The server's endpoints were checked with
 curl (wrong token, wrong Host, paths outside its folders), and the page it serves chatted through a
-relay with a browser in Firefox 91, the Gecko of Sailfish WebView, including after a restart. Not
-yet on a phone.
+relay with a browser in Firefox 91, the Gecko of Sailfish WebView, including after a restart.
+`erevos-watch`, in its build for a computer, was checked against `erevos-relay` over `ws://` and,
+through a TLS proxy, `wss://`: counting, a call's ring, a relay that does not prove its key, a
+relay that restarts, and with the shell's `/__watch` and D-Bus, starting it. Not yet on a phone:
+sleep, battery, the profile's ringtone and a tap on the lock screen can only be seen there.

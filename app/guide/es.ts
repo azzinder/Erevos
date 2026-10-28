@@ -2474,7 +2474,12 @@ mensajes y ajustes sellados de la misma manera.
   por cualquier app que se ejecute como tú: el bloqueo con contraseña es lo que lo sella.
 - **Las copias de seguridad** van a \`Documents/Erevos\` en el teléfono, a mano o cada día; cópialas de ahí a una
   tarjeta de memoria u otro dispositivo. **Guardar** pone una foto o un archivo en Descargas.
-- **Solo mientras funciona:** cuando Erevos está cerrado, los mensajes esperan en el relay hasta que se abre.
+- **Mientras está cerrado:** con un espacio abierto, un pequeño ayudante de Erevos espera en el relay mientras Erevos
+  no se ve o está cerrado, y no toma nada. Un aviso dice solo cuántos mensajes llegaron, nunca de quién ni qué, y una
+  llamada suena con el tono del teléfono, como lo pone su perfil, 45 segundos como mucho; un toque en cualquiera de
+  los dos abre Erevos. Los chats ocultos no dicen nada entonces. Bloquear el espacio lo detiene, y tras reiniciar el
+  teléfono vuelve a esperar solo cuando Erevos abre el espacio. Como el resto de Erevos aquí, va directo, sin Tor.
+  Cada espera despierta el teléfono más o menos una vez por minuto, como en Android.
 - **Probado hasta ahora** en el motor de navegador de Sailfish (Gecko 91) en un ordenador, chateando con un navegador a
   través de un relay. Todavía no en un teléfono con Sailfish.
 

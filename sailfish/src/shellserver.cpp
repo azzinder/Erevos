@@ -1,5 +1,7 @@
 #include "shellserver.h"
 
+#include "watchlink.h"
+
 #include <QDateTime>
 #include <QFile>
 #include <QFileInfo>
@@ -26,6 +28,9 @@ const QByteArray Csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
     "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
+
+// The most a list of queues for erevos-watch may be: 2048 queues and the words, with room.
+const int MostWatchList = 512 * 1024;
 
 // The one address /__latest reads, the same as app/lib/updates.ts LATEST_URL, and how much of it.
 const char LatestUrl[] = "https://github.com/azzinder/erevos-releases/releases/latest/download/version.json";
@@ -87,8 +92,8 @@ QByteArray statusText(int status)
 
 } // namespace
 
-ShellServer::ShellServer(const QString &webRoot, const QString &dataRoot, QObject *parent)
-    : QObject(parent), m_web(webRoot), m_data(dataRoot), m_token(randomToken())
+ShellServer::ShellServer(const QString &webRoot, const QString &dataRoot, WatchLink *watch, QObject *parent)
+    : QObject(parent), m_watch(watch), m_web(webRoot), m_data(dataRoot), m_token(randomToken())
 {
     QDir().mkpath(dataRoot);
     QFile::setPermissions(dataRoot, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
@@ -229,6 +234,7 @@ void ShellServer::shell(QTcpSocket *socket, const Request &request, const QUrlQu
     } else if (path == "/__backup") backup(socket, request, query);
     else if (path == "/__save") save(socket, request, value("name"));
     else if (path == "/__latest") latest(socket);
+    else if (path == "/__watch") watch(socket, request);
     else respond(socket, 404);
 }
 
@@ -367,4 +373,21 @@ void ShellServer::latest(QTcpSocket *socket)
         if (status == 0 || body.size() > LatestMost) respond(to, 502);
         else respond(to, status, body, "application/json");
     });
+}
+
+void ShellServer::watch(QTcpSocket *socket, const Request &request)
+{
+    if (request.method == "PUT") {
+        if (request.body.isEmpty() || request.body.size() > MostWatchList) {
+            respond(socket, 400);
+            return;
+        }
+        m_watch->give(request.body);
+    } else if (request.method == "DELETE") {
+        m_watch->takeBack();
+    } else {
+        respond(socket, 405);
+        return;
+    }
+    respond(socket, 204);
 }

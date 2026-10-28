@@ -35,6 +35,7 @@ import { forgetSmsLink } from '../lib/sms-relay';
 import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetPlaceChats } from '../lib/place-chats';
 import { startPlaceReceiver } from '../lib/place-receiver';
+import { startShellWatch } from '../lib/shell-watch';
 import { keepSpaceRunning, onSpaceGatedChange, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
@@ -555,8 +556,9 @@ function OpenLink() {
 // doors of the public groups the space owns are looked at (lib/space-public-groups.ts), and its
 // calls ring (components/call-host.tsx). While the space is open, a call from a number linked to
 // one of its contacts, or kept only in Erevos, shows their name (lib/known-names.ts). On Android,
-// it goes on while Erevos is in the background, so a call rings (lib/background.ts). All of it
-// stops when the space closes, not with the screens (lib/space-running.ts).
+// it goes on while Erevos is in the background, so a call rings (lib/background.ts); on Sailfish
+// OS a helper waits at the relay for it then (lib/shell-watch.ts). All of it stops when the space
+// closes, not with the screens (lib/space-running.ts).
 function Receiver({ space }: { space: number }) {
   useEffect(
     () =>
@@ -571,6 +573,7 @@ function Receiver({ space }: { space: number }) {
         followAppShown(),
         watchCalls(),
         startMatrix(),
+        startShellWatch(),
       ]),
     [space],
   );

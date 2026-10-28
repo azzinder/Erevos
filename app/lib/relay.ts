@@ -458,6 +458,12 @@ export function onRelayCheck(listener: () => void): () => void {
   return () => checkListeners.delete(listener);
 }
 
+/** The key the relay at `url` proved in a channel, or null: for a helper that waits there for the app, which then goes to it only in a channel (lib/shell-watch.ts). */
+export function provenRelayKey(url: string): Uint8Array | null {
+  const pin = pins.get(relayHome(url));
+  return pin?.proven ? pin.key.slice() : null;
+}
+
 export function relayCheck(url: string): RelayCheck {
   const home = relayHome(url);
   if (unproven.has(home)) return 'refused';

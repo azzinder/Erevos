@@ -34,6 +34,8 @@ Object.assign(globalThis, {
 });
 Object.defineProperty(globalThis, 'navigator', { value: { vibrate: (pattern: unknown) => vibrated.push(pattern) }, configurable: true });
 
+// As on Sailfish OS, where out of sight the phone's own ringtone rings instead (lib/shell-watch.ts).
+process.env.EXPO_PUBLIC_SHELL = 'sailfish';
 mock.timers.enable({ apis: ['setInterval'] });
 const { pageRing } = await import('../modules/erevos-call/page-ring.web');
 const settled = () => new Promise((done) => setImmediate(done));
@@ -71,5 +73,18 @@ test('answered or ended, it stops; a chat whose ring is none does not ring', asy
   pageRing.ring(false, false);
   mock.timers.tick(3000);
   assert.equal(played.length, 4 + 4 + 4 + 4);
+  pageRing.stopRinging();
+});
+
+test('on Sailfish OS, out of sight, the page does not ring too; once Erevos shows, it does', () => {
+  played.length = 0;
+  const page = { visibilityState: 'hidden' };
+  Object.assign(globalThis, { document: page });
+  pageRing.ring(false, false);
+  mock.timers.tick(6000);
+  assert.equal(played.length, 0);
+  page.visibilityState = 'visible';
+  mock.timers.tick(3000);
+  assert.equal(played.length, 4);
   pageRing.stopRinging();
 });
