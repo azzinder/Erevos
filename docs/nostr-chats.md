@@ -107,8 +107,19 @@ Not yet run with a Nostr app on a phone.
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a
   key.
 
+## Notices
+
+Each change of the account says how many messages each chat has not read
+(`app/lib/network-notices.ts`): what went up came, and shows the same notice as a message in Erevos's
+own chats (`app/lib/background.ts`, `messageCame`), with its sound; what went down was read. The number
+on Erevos's icon counts them (`app/lib/unread.ts`), the computer's notice too (`app/lib/desktop.ts`).
+What a key brought from another app takes from its relays before they first say that was all
+(`caught` is 0) tells of nothing. A chat has notifications of its own (`notify`, as
+`app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
+Android; a muted one is left out. Its messages are marked read only while Erevos shows the chat.
+
 ## Not yet
 
-Files (kind 15 with its encrypted file), group chats, reactions (kind 7 in a wrap), a notice when a
-message comes (as with Matrix and XMPP), the key in backups and in hidden chats, and a key kept by a
+Files (kind 15 with its encrypted file), group chats, reactions (kind 7 in a wrap), the key in
+backups and in hidden chats, and a key kept by a
 signer app (NIP-55) or a remote signer (NIP-46) in place of the nsec.

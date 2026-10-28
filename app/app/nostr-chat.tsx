@@ -2,18 +2,22 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { nameOf, npubOf, shortNpub, type NostrDmMessage } from '../lib/nostr-dm';
-import { nostrDmForgetChat, nostrDmFreshen, nostrDmNow, nostrDmRead, nostrDmRename, nostrDmRetry, nostrDmSend, onNostrDmChange, runNostrDm } from '../lib/nostr-dm-store';
+import { nostrDmForgetChat, nostrDmFreshen, nostrDmNow, nostrDmRead, nostrDmRename, nostrDmRetry, nostrDmSend, nostrDmSetNotify, onNostrDmChange, runNostrDm } from '../lib/nostr-dm-store';
+import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // One chat with someone on another Nostr app (lib/nostr-dm-store.ts): its messages, oldest first,
-// and a field to write in. It is marked as not anonymous. Opening it marks its messages read here
-// only (NIP-17 tells the other app nothing), and looks up again, once a week, where they take
-// messages and the name they gave themselves. A name given here shows in place of theirs.
+// and a field to write in. It is marked as not anonymous. Opening it, with Erevos on the screen,
+// marks its messages read here only (NIP-17 tells the other app nothing), and looks up again, once
+// a week, where they take messages and the name they gave themselves. A name given here shows in
+// place of theirs. While it shows, what comes in it only sounds, and it can be muted or given a
+// sound of its own (components/network-chat-notify.tsx).
 
 export default function NostrChatScreen() {
   const router = useRouter();
@@ -33,9 +37,10 @@ export default function NostrChatScreen() {
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
   const count = chat?.messages.length ?? 0;
+  const shown = useNetworkChatShown(key ? `nostr:${key}` : undefined);
   useEffect(() => {
-    if (key && chat?.unread) nostrDmRead(key).catch(() => undefined);
-  }, [key, count, chat?.unread]);
+    if (shown && key && chat?.unread) nostrDmRead(key).catch(() => undefined);
+  }, [shown, key, count, chat?.unread]);
   useEffect(() => {
     if (key && chat) nostrDmFreshen(key);
   }, [key, !!chat]);
@@ -83,6 +88,7 @@ export default function NostrChatScreen() {
         <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
+      <NetworkChatNotify notify={checkedChatNotify(chat.notify)} onChange={(next) => nostrDmSetNotify(key, next)} />
 
       {self ? null : naming === null ? (
         <Button title={t('Name them here')} kind="secondary" compact onPress={() => setNaming(chat.name ?? '')} />

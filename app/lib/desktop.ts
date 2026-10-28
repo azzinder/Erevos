@@ -1,4 +1,5 @@
 import { plural, t } from './i18n';
+import { onNetworkMessage } from './network-notices';
 import { onReceived } from './receiver';
 import { SHELL, shellFetch, shellSystem, showWindow } from './shell';
 import { spaceUnread } from './unread';
@@ -7,10 +8,10 @@ import { spaceUnread } from './unread';
 // tray (on a Mac, in the Dock), unless turned off under Settings → Notifications → In the
 // background. Out of sight it goes on waiting at the relay, a call rings
 // (modules/erevos-call/page-ring.web.ts) and brings the window back, and a notice says how many
-// messages the open space has not read, as the number on a phone's icon counts them (lib/unread.ts):
-// never who or what, never a hidden chat's or a muted one's. It shows when more came while the
-// window is closed, hidden or behind another, and goes once Erevos shows; a tap brings the window
-// back. The tray's menu and the notice the shell shows the first time are in the app's language:
+// messages the open space has not read, as the number on a phone's icon counts them (lib/unread.ts),
+// its chats on Matrix, XMPP and Nostr too: never who or what, never a hidden chat's or a muted
+// one's. It shows when more came while the window is closed, hidden or behind another, and goes
+// once Erevos shows; a tap brings the window back. The tray's menu and the notice the shell shows the first time are in the app's language:
 // the page gives the shell their words (push-notice.web.ts, as the language is set).
 
 export const DESKTOP = SHELL === 'electron';
@@ -86,6 +87,7 @@ export function followDesktop(): void {
   if (!DESKTOP || following || typeof window === 'undefined') return;
   following = true;
   onReceived(() => void came());
+  onNetworkMessage(() => void came());
   for (const type of ['focus', 'blur']) window.addEventListener(type, () => void looked());
   document.addEventListener('visibilitychange', () => void looked());
   void looked();

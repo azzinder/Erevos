@@ -13,7 +13,9 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
+import { setCurrentSpace } from '../lock/keys';
 import { setCore, type Core } from '../lib/core';
+import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
 import {
   defaultMatrixHttp,
@@ -39,6 +41,8 @@ import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, Mat
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
 import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
+import { matrixNow, matrixRead, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
+import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import { Homeserver, HS, PASSWORD, type Json } from './matrix-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -377,6 +381,64 @@ test('a Security Key set up on one device opens the cross-signing keys and earli
   // The new device signed itself with the account's self-signing key, so Element trusts it.
   assert.equal(Object.keys(server.deviceKeys.get(frank.userId)!.get(frank2.deviceId)!.signatures[frank.userId]).length, 2);
   await assert.rejects(setUpRecovery(frank2), /already has a Security Key/);
+});
+
+async function until(done: () => boolean, what: string, ms = 5000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!done()) {
+    if (Date.now() > end) throw new Error(`Waited in vain for ${what}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
+test('signed in, the first sync tells of nothing from before; a message after it does, and its reading', { skip: !coreReady }, async () => {
+  let cleo = await signIn(HS, 'cleo', PASSWORD);
+  const dan = await signIn(HS, 'dan', PASSWORD);
+  const room = await startChat(cleo, '@dan:example.org');
+  await sync(dan, 0);
+  await joinRoom(dan, room.id);
+  await sync(dan, 0);
+  await sync(cleo, 0);
+  await sendText(cleo, room.id, 'πριν');
+  cleo = kept(cleo);
+
+  const came: [string, number][] = [];
+  const read: string[][] = [];
+  const stopCame = onNetworkMessage((where, times) => came.push([where, times]));
+  const stopRead = onNetworkRead((where) => read.push(where));
+  // The homeserver here answers at once: a sync that would wait a while waits a little, as the
+  // store syncs on and on.
+  setMatrixHttp(async (request) => {
+    if (request.url.includes('/sync?timeout=30000')) await new Promise((resolve) => setTimeout(resolve, 20));
+    return server.answer(request);
+  });
+  setCurrentSpace(8, randomBytes(32));
+  const where = `matrix:${room.id}`;
+  try {
+    runMatrix();
+    await until(() => matrixNow().loaded, 'the account to load');
+    await matrixSignIn('dan', PASSWORD, HS);
+    await until(() => matrixUnread() === 1, 'the first sync');
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.deepEqual(came, []);
+
+    await sync(cleo, 0);
+    await sendText(cleo, room.id, 'τώρα');
+    await until(() => matrixUnread() === 2, 'the new message');
+    assert.deepEqual(came, [[where, 1]]);
+    await matrixRead(room.id);
+    assert.deepEqual(read, [[where]]);
+    // The homeserver has it read too: the next sync says none.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.equal(matrixUnread(), 0);
+    assert.deepEqual(came, [[where, 1]]);
+  } finally {
+    stopCame();
+    stopRead();
+    stopMatrix();
+    setCurrentSpace(null);
+    setMatrixHttp(async (request) => server.answer(request));
+  }
 });
 
 test("Matrix goes through Tor as the space's Tor way says", async () => {

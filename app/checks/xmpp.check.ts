@@ -13,15 +13,17 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
-import { fromBase64, utf8Decode } from '../lib/crypto';
+import { setCurrentSpace } from '../lock/keys';
+import { fromBase64, randomBytes, utf8Decode } from '../lib/crypto';
 import { setCore, type Core } from '../lib/core';
 import { inboxParts, showsIn, xmppInboxRows } from '../lib/inbox';
 import { addXmppContact, isXmppId, markXmppRead, sendXmppText, signInXmpp, startSession, XmppConnection, XmppError, type XmppState } from '../lib/xmpp';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import { startSasl } from '../lib/xmpp-sasl';
-import { serverOf } from '../lib/xmpp-store';
+import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
+import { runXmpp, serverOf, setXmppConnect, stopXmpp, xmppNow, xmppRead, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
 import { child, el, find, parseXml, render, textOf, XmlStream, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
-import { DOMAIN, person, Server, settle } from './xmpp-server';
+import { DOMAIN, PASSWORD, person, Server, settle } from './xmpp-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built) && typeof (createRequire(import.meta.url)(built.pathname) as Record<string, unknown>).xmpp === 'function';
@@ -127,6 +129,11 @@ test('two people write encrypted both ways, and a second device reads along', { 
   await settle([ann, ben, ann2]);
   assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => [m.text, m.mine]), [['Γεια σου Ben', true], ['Γεια σου Ann', false]]);
   assert.deepEqual(ann2.state.chats[`ben@${DOMAIN}`].messages.map((m) => [m.text, m.mine]), [['Γεια σου Ben', true], ['Γεια σου Ann', false]]);
+  // Ann reads it on her second device: her first has it read too.
+  assert.equal(ann.state.chats[`ben@${DOMAIN}`].unread, 1);
+  await markXmppRead(ann2.state, ann2.connection, `ben@${DOMAIN}`);
+  await settle([ann, ben, ann2]);
+  assert.equal(ann.state.chats[`ben@${DOMAIN}`].unread, 0);
   // Ben reads; Ann sees it read.
   await markXmppRead(ben.state, ben.connection, `ann@${DOMAIN}`);
   await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'δεύτερο');
@@ -148,6 +155,55 @@ test('two people write encrypted both ways, and a second device reads along', { 
   await settle([ben]);
   assert.equal(ben.state.chats[`ann@${DOMAIN}`].messages.length, 4);
   for (const p of [ann, ben, ann2]) p.connection.close();
+});
+
+async function until(done: () => boolean, what: string, ms = 5000): Promise<void> {
+  const end = Date.now() + ms;
+  while (!done()) {
+    if (Date.now() > end) throw new Error(`Waited in vain for ${what}`);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
+}
+
+test('signed in, the archive from before tells of nothing; a message that comes after does, and its reading', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  await addXmppContact(ann.state, ann.connection, `ben@${DOMAIN}`, 'Ben');
+  await settle([ann, ben]);
+  await addXmppContact(ben.state, ben.connection, `ann@${DOMAIN}`);
+  await settle([ann, ben]);
+  ben.connection.close();
+  await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'πριν');
+  await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'κι άλλο πριν');
+
+  const came: [string, number][] = [];
+  const read: string[][] = [];
+  const stopCame = onNetworkMessage((where, times) => came.push([where, times]));
+  const stopRead = onNetworkRead((where) => read.push(where));
+  setXmppConnect(server.connect);
+  setCurrentSpace(7, randomBytes(32));
+  try {
+    runXmpp();
+    await until(() => xmppNow().loaded, 'the account to load');
+    await xmppSignIn(`ben@${DOMAIN}`, PASSWORD);
+    await until(() => xmppNow().online && xmppUnread() === 2, 'the archive');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.deepEqual(came, []);
+
+    await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'τώρα');
+    await until(() => xmppUnread() === 3, 'the new message');
+    assert.deepEqual(came, [[`xmpp:ann@${DOMAIN}`, 1]]);
+    await xmppRead(`ann@${DOMAIN}`);
+    assert.deepEqual(read, [[`xmpp:ann@${DOMAIN}`]]);
+  } finally {
+    stopCame();
+    stopRead();
+    stopXmpp();
+    setXmppConnect(undefined);
+    setCurrentSpace(null);
+    ann.connection.close();
+  }
 });
 
 test('someone without OMEMO gets nothing, unless the chat chooses to write without it', { skip: !coreReady }, async () => {

@@ -212,6 +212,7 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       sms: '',
       lastSms: false,
       network: 'matrix',
+      ...(mutedNow(room.notify, now) ? { muted: true } : {}),
       ...(room.invitedBy ? { invited: true } : {}),
     };
   });
@@ -245,6 +246,7 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
         sms: '',
         lastSms: false,
         network: 'xmpp',
+        ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
       };
     });
   for (const jid of asked) {
@@ -274,7 +276,7 @@ const NOSTR_MARKS = { sending: -1, failed: -1, sent: 0 } as const;
 
 /** The Nostr chats of a space (lib/nostr-dm-store.ts) as rows: named as given here, or as they call
  *  themselves, or by the start and end of their npub. */
-export function nostrInboxRows(state: NostrDmState): InboxRow[] {
+export function nostrInboxRows(state: NostrDmState, now = Date.now()): InboxRow[] {
   return Object.values(state.chats).map((chat): InboxRow => {
     const last = chat.messages[chat.messages.length - 1];
     const mine = !!last?.mine;
@@ -293,6 +295,7 @@ export function nostrInboxRows(state: NostrDmState): InboxRow[] {
       sms: '',
       lastSms: false,
       network: 'nostr',
+      ...(mutedNow(chat.notify, now) ? { muted: true } : {}),
     };
   });
 }

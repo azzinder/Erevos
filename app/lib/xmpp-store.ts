@@ -1,7 +1,9 @@
+import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
 import { t } from './i18n';
+import { addNetwork, hearing } from './network-notices';
 import {
   addCallLine,
   addXmppContact,
@@ -42,6 +44,10 @@ type Live = {
   connection: XmppConnection | null;
   queue: Promise<unknown>;
   saving: ReturnType<typeof setTimeout> | null;
+  /** What its chats had not read after the last change, to tell of what came (lib/network-notices.ts). */
+  heard: ReturnType<typeof hearing>;
+  /** Just signed in: what the archive keeps from before is taken in without telling of it. */
+  fresh: boolean;
 };
 
 let live: Live | null = null;
@@ -73,6 +79,19 @@ export function xmppUnread(): number {
   return Object.values(state.chats).reduce((sum, chat) => sum + chat.unread, 0) + state.requests.length;
 }
 
+// Each chat's messages not read, by its home row (lib/inbox.ts): one who asks to add the account counts as one.
+function unreadAt(state: XmppState | null): Map<string, number> {
+  const at = new Map<string, number>();
+  for (const chat of Object.values(state?.chats ?? {})) if (chat.unread > 0) at.set(`xmpp:${chat.jid}`, chat.unread);
+  for (const jid of state?.requests ?? []) at.set(`xmpp:${jid}`, (at.get(`xmpp:${jid}`) ?? 0) + 1);
+  return at;
+}
+
+addNetwork('xmpp:', {
+  unread: () => (live && !live.stopped ? unreadAt(live.state) : new Map()),
+  notifyOf: (where) => checkedChatNotify(live?.state?.chats[where.slice('xmpp:'.length)]?.notify),
+});
+
 function reason(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -98,9 +117,21 @@ function keepSoon(it: Live): void {
   }, 500);
 }
 
-/** Runs `change` on the account after every change asked for before, then keeps it and tells the screens. */
-function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
-  const run = it.queue.catch(() => undefined).then(change);
+/**
+ * Runs `change` on the account after every change asked for before, then keeps it and tells the
+ * screens, and of the messages that came or were read; a `quiet` change tells of none.
+ */
+function changeAccount<T>(it: Live, change: () => Promise<T>, quiet = false): Promise<T> {
+  const run = it.queue
+    .catch(() => undefined)
+    .then(async () => {
+      const hush = quiet || !it.state;
+      try {
+        return await change();
+      } finally {
+        if (!it.stopped) it.heard.hear(unreadAt(it.state), hush);
+      }
+    });
   it.queue = run;
   return run.finally(() => {
     keepSoon(it);
@@ -108,8 +139,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
   });
 }
 
-/** Takes what waits in the connection's inbox. */
-function drain(it: Live, connection: XmppConnection): Promise<void> {
+/** Takes what waits in the connection's inbox; `quiet`, telling of none of it. */
+function drain(it: Live, connection: XmppConnection, quiet = false): Promise<void> {
   return changeAccount(it, async () => {
     if (!it.state || it.connection !== connection) return;
     const taken: Taken = { chats: [], republish: false };
@@ -117,7 +148,7 @@ function drain(it: Live, connection: XmppConnection): Promise<void> {
       await takeStanza(it.state, connection, stanza, taken).catch(() => undefined);
     }
     if (taken.republish) await publishOmemo(it.state, connection).catch(() => undefined);
-  });
+  }, quiet);
 }
 
 /** Stays connected while the space is open: connects, waits for the connection to end, and
@@ -137,6 +168,11 @@ async function loop(it: Live): Promise<void> {
         }
         it.connection = connection;
         await changeAccount(it, () => startSession(state, connection));
+        // Just signed in: the archive's newest messages, from before, came with the session.
+        if (it.fresh) {
+          await drain(it, connection, true);
+          it.fresh = false;
+        }
         connection.listen(() => void drain(it, connection));
         if (it.problem) it.problem = '';
         told();
@@ -187,11 +223,12 @@ export function runXmpp(): void {
     return;
   }
   stopXmpp();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null };
+  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard: hearing(), fresh: false };
   live = it;
   loadXmpp(space.space, space.key)
     .then((state) => {
       it.state = state;
+      it.heard.hear(unreadAt(state), true);
       it.loaded = true;
       told();
       void loop(it);
@@ -232,6 +269,7 @@ export async function xmppSignIn(jid: string, password: string, server = ''): Pr
   await changeAccount(it, async () => {
     it.state = state;
     it.problem = '';
+    it.fresh = true;
   });
   await saveXmpp(it.space, it.key, state);
   void loop(it);
@@ -274,6 +312,16 @@ export function xmppSetPlain(jid: string, plain: boolean): Promise<void> {
   return changeAccount(it, async () => {
     const chat = (it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
     chat.plain = plain || undefined;
+  });
+}
+
+/** A chat's own notifications (lock/chat-notify.ts), or the app's again with null. */
+export function xmppSetNotify(jid: string, notify: ChatNotify | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const chat = (it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
+    if (notify) chat.notify = notify;
+    else delete chat.notify;
   });
 }
 

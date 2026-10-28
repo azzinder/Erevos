@@ -1,0 +1,107 @@
+import { mutedNow, type ChatNotify } from '../lock/chat-notify';
+
+// The open space's chats on other networks (Matrix, XMPP and Nostr: lib/matrix-store.ts,
+// lib/xmpp-store.ts, lib/nostr-dm-store.ts) tell of their messages as the space's own chats do.
+// Each store says here, after every change, how many messages each of its chats has not read:
+// where that went up, messages came; where it went down, they were read, here or on another device
+// of the account. lib/background.ts makes the Android notice and its sound of it, lib/desktop.ts
+// the computer's notice, and the number on Erevos's icon counts them (lib/unread.ts). A chat is
+// known as its home row is (lib/inbox.ts): `matrix:` and its room, `xmpp:` and the address,
+// `nostr:` and the person's key. Each has notifications of its own (lock/chat-notify.ts), kept
+// with the chat in the account's encrypted value: a muted one tells of nothing, and the icon's
+// number leaves it out. Kept apart from React Native, so the checks run in Node.
+
+export const NETWORK_PREFIXES = ['matrix:', 'xmpp:', 'nostr:'] as const;
+
+/** Whether `where` is a chat on another network. */
+export const isNetworkChat = (where: string): boolean => NETWORK_PREFIXES.some((prefix) => where.startsWith(prefix));
+
+/** What a network's store says of its chats. */
+export type NetworkChats = {
+  /** How many messages each chat has not read, those with any, by where. */
+  unread(): ReadonlyMap<string, number>;
+  /** A chat's own notifications, or null for none. */
+  notifyOf(where: string): ChatNotify | null;
+};
+
+const networks = new Map<string, NetworkChats>();
+
+/** A store says how to read its chats, under its `prefix`. */
+export function addNetwork(prefix: (typeof NETWORK_PREFIXES)[number], chats: NetworkChats): void {
+  networks.set(prefix, chats);
+}
+
+const networkOf = (where: string) => networks.get(NETWORK_PREFIXES.find((prefix) => where.startsWith(prefix)) ?? '');
+
+/** The chats on other networks with messages not read, a muted one's aside, by where. */
+export function networkUnreadAt(now = Date.now()): Map<string, number> {
+  const at = new Map<string, number>();
+  for (const chats of networks.values()) {
+    try {
+      for (const [where, n] of chats.unread()) if (n > 0 && !mutedNow(chats.notifyOf(where), now)) at.set(where, n);
+    } catch {
+      // Its account is not open.
+    }
+  }
+  return at;
+}
+
+/** A network chat's own notifications, or null when it has none or is not one. */
+export function networkNotify(where: string): ChatNotify | null {
+  try {
+    return networkOf(where)?.notifyOf(where) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+const cameListeners = new Set<(where: string, times: number) => void>();
+const readListeners = new Set<(where: string[]) => void>();
+
+/** Calls `listener` as `times` messages come in a network chat. Returns how to stop. */
+export function onNetworkMessage(listener: (where: string, times: number) => void): () => void {
+  cameListeners.add(listener);
+  return () => {
+    cameListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` with the network chats that now have fewer messages not read. Returns how to stop. */
+export function onNetworkRead(listener: (where: string[]) => void): () => void {
+  readListeners.add(listener);
+  return () => {
+    readListeners.delete(listener);
+  };
+}
+
+/** What changed between two counts of messages not read: where more came, and where fewer are. */
+export function unreadChange(before: ReadonlyMap<string, number>, after: ReadonlyMap<string, number>): { came: [string, number][]; read: string[] } {
+  const came: [string, number][] = [];
+  const read: string[] = [];
+  for (const [where, n] of after) {
+    const was = before.get(where) ?? 0;
+    if (n > was) came.push([where, n - was]);
+    else if (n < was) read.push(where);
+  }
+  for (const where of before.keys()) if (!after.has(where)) read.push(where);
+  return { came, read };
+}
+
+/**
+ * What one store last said its chats had not read. `hear` tells of what changed since; a `quiet`
+ * one only takes the count as it is, as when an account is signed in to and fetches what came
+ * before. Until the first, nothing is told.
+ */
+export function hearing(): { hear(now: ReadonlyMap<string, number>, quiet?: boolean): void } {
+  let heard: ReadonlyMap<string, number> | null = null;
+  return {
+    hear(now, quiet = false) {
+      const before = heard;
+      heard = new Map(now);
+      if (!before || quiet) return;
+      const { came, read } = unreadChange(before, now);
+      for (const [where, times] of came) cameListeners.forEach((listener) => listener(where, times));
+      if (read.length) readListeners.forEach((listener) => listener(read));
+    },
+  };
+}

@@ -3,6 +3,7 @@ import { utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
 import { isNostrRelay } from '../lock/e2e-data';
+import type { ChatNotify } from '../lock/chat-notify';
 
 // Chats with people on other Nostr apps (docs/nostr-chats.md): 0xchat, Amethyst, Coracle, Primal
 // and any other that writes private messages as NIP-17 says. A space can have a Nostr key of its
@@ -59,6 +60,8 @@ export type NostrDmChat = {
   relaysAt?: number;
   /** Relays someone or something named for them (an nprofile, a NIP-05 name), to look them up on. */
   hints?: string[];
+  /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
+  notify?: ChatNotify;
 };
 
 export type NostrDmState = {

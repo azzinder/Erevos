@@ -116,12 +116,24 @@ What stays private is what is written.
 - A Megolm message index read once under one event cannot come back under another (replays).
 - A room's key changes after 100 messages, a week, or when a member leaves.
 
+## Notices
+
+Each change of the account says how many messages each room has not read, by the homeserver's
+`unread_notifications.notification_count` (an invite counts as one), to `app/lib/network-notices.ts`:
+what went up came, and shows the same notice as a message in Erevos's own chats
+(`app/lib/background.ts`), with its sound; what went down was read, here or in Element. The number on
+Erevos's icon counts them (`app/lib/unread.ts`), the computer's notice too. The first sync of an
+account just signed in to tells of nothing. A room has notifications of its own (`notify`, as
+`app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
+Android; a muted one is left out. A room is marked read only while Erevos shows it.
+
 ## Not yet
 
 - Voice messages, video thumbnails, reactions, replies, edits.
 - Checking by QR, and trust shown per device in a group.
 - Reading a room's history further back than the last sync, so older locked messages show.
-- Notifications while Erevos is closed.
+- Notices while the space is locked or Android stopped Erevos: that needs a push gateway, which
+  would learn when messages come.
 - Calls on the computer and in the web app (Element Call in a frame), and in a hidden chat's place.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's

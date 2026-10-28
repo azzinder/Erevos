@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
+import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -14,14 +15,16 @@ import { rtc } from '../lib/webrtc';
 import { isXmppId, nameOf, xmppDevices, type XmppMessage } from '../lib/xmpp';
 import { startXmppCall } from '../lib/xmpp-calls';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppForgetChat, xmppNow, xmppRead, xmppSend, xmppSetPlain } from '../lib/xmpp-store';
+import { onXmppChange, runXmpp, xmppForgetChat, xmppNow, xmppRead, xmppSend, xmppSetNotify, xmppSetPlain } from '../lib/xmpp-store';
+import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // One XMPP chat (lib/xmpp-store.ts): its messages, oldest first, and a field to write in. It is
 // marked as not anonymous, and as not encrypted when the person's apps have no OMEMO and the chat
-// was chosen to go without it. Opening it marks its messages read, and tells the other person's app
-// when it asked. The keys of their devices are listed below, to compare with them. The two tiles
+// was chosen to go without it. Opening it, with Erevos on the screen, marks its messages read, and
+// tells the other person's app when it asked; while it shows, what comes in it only sounds, and it
+// can be muted or given sounds of its own (components/network-chat-notify.tsx). The keys of their devices are listed below, to compare with them. The two tiles
 // at the top call them (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls.
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
@@ -45,9 +48,10 @@ export default function XmppChatScreen() {
   const state = now.state;
   const chat = jid && state ? state.chats[jid] : undefined;
   const count = chat?.messages.length ?? 0;
+  const shown = useNetworkChatShown(jid ? `xmpp:${jid}` : undefined);
   useEffect(() => {
-    if (jid && chat?.unread) xmppRead(jid).catch(() => undefined);
-  }, [jid, count, chat?.unread]);
+    if (shown && jid && chat?.unread) xmppRead(jid).catch(() => undefined);
+  }, [shown, jid, count, chat?.unread]);
 
   if (!state || !jid || !isXmppId(jid)) {
     return (
@@ -157,6 +161,7 @@ export default function XmppChatScreen() {
         <Button title={t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
+      <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} />
 
       {devices.length ? (
         <>

@@ -1,5 +1,6 @@
 import { sha1 } from '@noble/hashes/legacy.js';
 
+import type { ChatNotify } from '../lock/chat-notify';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
@@ -96,6 +97,8 @@ export type XmppChat = {
   lastAt: number;
   /** The person chose to write without encryption, to someone whose app has none. */
   plain?: boolean;
+  /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
+  notify?: ChatNotify;
 };
 
 export type XmppContact = {
@@ -573,6 +576,17 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   // Receipts and read marks for our messages.
   const receipt = child(message, 'received', NS.receipts)?.attrs.id ?? child(message, 'received', NS.markers)?.attrs.id;
   const displayed = child(message, 'displayed', NS.markers)?.attrs.id;
+  // Another device of ours read the chat up to that message (its read mark, as a carbon): so it
+  // is read here too, all but what came after it.
+  if (displayed && mine) {
+    const chat = state.chats[peer];
+    const at = chat ? chat.messages.findIndex((m) => !m.mine && m.id === displayed) : -1;
+    const after = at >= 0 ? chat.messages.slice(at + 1).filter((m) => !m.mine).length : chat?.unread ?? 0;
+    if (chat && after < chat.unread) {
+      chat.unread = after;
+      taken.chats.push(peer);
+    }
+  }
   for (const [mark, state2] of [
     [receipt, 'received'],
     [displayed, 'read'],

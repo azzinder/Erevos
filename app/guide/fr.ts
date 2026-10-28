@@ -1540,6 +1540,10 @@ Element : aucun pont ne se met entre les deux.
   serveur Matrix indique, qui voit l’adresse de ce téléphone ; un serveur Matrix sans serveur média ne peut pas appeler.
   Ce qu’Element Call dit au serveur Matrix passe par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même
   ne passe jamais par Tor. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici.
+- **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
+  comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
+  tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
+  discussion en sourdine ne compte pas.
 - **Pas encore :** messages vocaux, et appels sur l’ordinateur et dans l’app web.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
@@ -1588,6 +1592,10 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   **Tout**, seulement par Tor ; avec **Rien**, en direct. L’écran XMPP dit par où il passe en ce moment. Là où Erevos ne
   peut pas ouvrir de connexion propre (l’appli web, un ordinateur), il utilise le WebSocket du serveur, en direct, et un
   serveur sans WebSocket n’est pas joignable.
+- **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
+  comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
+  tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
+  discussion en sourdine ne compte pas.
 - **Pas encore :** photos et fichiers, discussions et appels de groupe, ajouter la vidéo à un appel vocal, et OMEMO 2.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
@@ -1629,8 +1637,12 @@ envoie les messages privés comme le demande NIP-17. Ce n’est pas [Par Nostr](
   réseaux** → **Tor** : avec **Messages**, elles passent par Tor dès que Tor est prêt, et en direct tant que Tor démarre
   ou quand il échoue ; avec **Tout**, seulement par Tor ; avec **Rien**, en direct. L’écran dit par où elles passent en
   ce moment. Dans l’appli web et sur un ordinateur, elles passent en direct.
+- **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
+  comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
+  tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
+  discussion en sourdine ne compte pas.
 - **Pas encore :** photos et fichiers (un fichier qui arrive s’affiche comme un fichier qu’Erevos ne sait pas encore
-  ouvrir), discussions de groupe, réactions, et une notification sur le téléphone quand un message arrive.
+  ouvrir), discussions de groupe et réactions.
 
 **Pourquoi :** beaucoup de gens sont sur Nostr et y resteront. Ainsi tu leur écris depuis Erevos, à part et marqué, car
 une clé Nostr est la même pour tous ceux à qui tu écris, alors que les discussions propres à Erevos cachent qui parle

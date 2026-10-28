@@ -163,7 +163,16 @@ On main, not released yet:
   fill the space with chats: past 300, one with nothing of ours makes room. Chats are in the home list under a
   **Nostr** chip. The key and the chats are kept encrypted in the space only, not in hidden chats or backups yet.
   Checked against NIP-17's and NIP-19's own examples and against nostr-tools both ways; not yet with a Nostr app on a
-  phone. Not yet: files, groups, reactions, and a notice when a message comes.
+  phone. Not yet: files, groups and reactions.
+- **Notices for Matrix, XMPP and Nostr messages**: a message in a space's chat on Matrix, XMPP or Nostr shows the
+  same notice as Erevos's own, with its sound, says nothing of who or what, and counts in the number on Erevos's icon
+  (Android, the web app and the computer); in the chat on the screen it only sounds, and read there or on another
+  device of the account it no longer counts. What an account takes in as it is signed in to (Matrix's first sync, the
+  XMPP archive's newest page, what the relays keep for a Nostr key brought along) tells of nothing. On Android,
+  **Notifications** at the bottom of such a chat mutes it for 8 hours, a week or always, or gives it a sound of its
+  own; a muted chat is not counted, and its row shows the struck-through bell. An XMPP call rings with its chat's
+  ringtone. A chat is read only while Erevos shows it, so what comes with the chat left open behind other apps still
+  tells of itself. While the space is locked, or Android stopped Erevos, nothing comes: these servers send no push.
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short
   rings every 3 seconds, made by the browser, and vibrates where the phone can, until the call is answered or ends; a

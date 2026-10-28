@@ -1457,6 +1457,9 @@ fica no meio.
   que vê o endereço deste telefone; um servidor Matrix sem um não consegue ligar. O que o Element Call diz ao servidor
   Matrix passa pelo Erevos, e pelo Tor como o resto do Matrix, mas a chamada em si nunca passa pelo Tor. As chamadas
   Matrix mais antigas entre duas pessoas, como o FluffyChat faz, não tocam aqui.
+- **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
+  próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
+  **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
 - **Ainda não:** mensagens de voz, e chamadas no computador e no app web.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
@@ -1504,6 +1507,9 @@ esses apps: nenhuma ponte fica no meio.
   **Tudo**, só pelo Tor; com **Nada**, direto. A tela do XMPP diz por onde vai agora. Onde o Erevos não pode abrir uma
   conexão própria (o app web, um computador), usa o WebSocket do servidor, direto, e um servidor sem ele não pode ser
   alcançado.
+- **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
+  próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
+  **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
 - **Ainda não:** fotos e arquivos, conversas e chamadas em grupo, colocar vídeo numa chamada de voz, e OMEMO 2.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
@@ -1544,8 +1550,11 @@ como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as conversas do pr�
   **Tor**: com **Mensagens**, passam pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou quando
   falha; com **Tudo**, só pelo Tor; com **Nada**, direto. A tela diz por onde vão agora. No app web e num computador, vão
   direto.
-- **Ainda não:** fotos e arquivos (um que chega aparece como um arquivo que o Erevos ainda não abre), conversas em grupo,
-  reações, e um aviso no telefone quando chega uma mensagem.
+- **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
+  próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
+  **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+- **Ainda não:** fotos e arquivos (um que chega aparece como um arquivo que o Erevos ainda não abre), conversas em grupo
+  e reações.
 
 **Por quê:** muita gente está no Nostr e vai continuar lá. Assim você escreve para elas pelo Erevos, à parte e marcado,
 porque uma chave Nostr é a mesma para todos com quem você fala, enquanto as conversas do próprio Erevos escondem quem

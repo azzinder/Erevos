@@ -19,12 +19,14 @@ import { randomBytes } from '../lib/crypto';
 import { addMessage, BACKDATE, CHATS_MOST, chatCore, inboxEvent, LOOKUP_RELAYS, newNostrDm, npubOf, profileEvent, readKey, shortNpub, takeWrap, wrapText, type NostrDmState } from '../lib/nostr-dm';
 import { inboxParts, nostrInboxRows, showsIn } from '../lib/inbox';
 import { lookUpNip05, NostrRelay, setNostrOpen } from '../lib/nostr-dm-net';
+import { networkNotify, networkUnreadAt, onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import {
   nostrDmForgetChat,
   nostrDmMake,
   nostrDmNow,
   nostrDmRead,
   nostrDmSend,
+  nostrDmSetNotify,
   nostrDmSetInbox,
   nostrDmSetName,
   nostrDmStart,
@@ -152,6 +154,12 @@ test('a space and someone on another app write both ways through their inbox rel
     r.close();
   }
 
+  // What it tells of the messages that come and are read (lib/network-notices.ts).
+  const came: [string, number][] = [];
+  const read: string[][] = [];
+  const stopCame = onNetworkMessage((where, times) => came.push([where, times]));
+  const stopRead = onNetworkRead((where) => read.push(where));
+
   setCurrentSpace(1, spaceKey);
   runNostrDm();
   await until(() => nostrDmNow().loaded, 'the account to load');
@@ -226,8 +234,20 @@ test('a space and someone on another app write both ways through their inbox rel
     ],
   );
   assert.equal(nostrDmUnread(), 1);
+  // It told of his answer, once, as the home row knows the chat; her own message, of nothing.
+  const where = `nostr:${bob.public}`;
+  assert.deepEqual(came, [[where, 1]]);
+  assert.deepEqual([...networkUnreadAt()], [[where, 1]]);
+  // Muted, it is left out of the icon's number; then as the app has it again.
+  await nostrDmSetNotify(bob.public, { until: Date.now() + 60_000 });
+  assert.deepEqual([...networkUnreadAt()], []);
+  assert.ok(networkNotify(where)?.until);
+  await nostrDmSetNotify(bob.public, null);
+  assert.equal(networkNotify(where), null);
+  assert.deepEqual(read, []);
   await nostrDmRead(bob.public);
   assert.equal(nostrDmUnread(), 0);
+  assert.deepEqual(read, [[where]]);
 
   // Her other app, with the same key, reads both sides from her inbox.
   const other = await newNostrDm(alice.secret);
@@ -273,6 +293,10 @@ test('a space and someone on another app write both ways through their inbox rel
   assert.equal(back.chats[bob.public].messages.length, 2);
   assert.equal(back.chats[alice.public].messages.length, 1);
   assert.equal(nostrDmUnread(), 0);
+  // Loading again told of nothing.
+  assert.deepEqual(came, [[where, 1]]);
+  stopCame();
+  stopRead();
 
   // A relay that goes away is read again.
   const before = aliceInbox.connections;

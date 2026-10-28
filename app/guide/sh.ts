@@ -1422,6 +1422,9 @@ između.
   medijskog servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog telefona; Matrix server bez njega ne
   može zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam
   poziv nikad ne ide preko Tora. Stariji Matrix pozivi udvoje, kakve pravi FluffyChat, ovdje ne zvone.
+- **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
+  razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
 - **Još ne:** glasovne poruke, i pozivi na računaru i u web-aplikaciji.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
@@ -1465,6 +1468,9 @@ aplikacije: nikakav most nije između.
   **Poruke** ide preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; sa **Sve** samo preko
   Tora; s **Ništa** direktno. XMPP ekran kaže kojim putem ide sada. Gdje Erevos ne može otvoriti vlastitu vezu (web
   aplikacija, računar), koristi WebSocket servera, direktno, a server bez njega tamo nije dostupan.
+- **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
+  razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
 - **Još ne:** fotografije i datoteke, grupni razgovori i grupni pozivi, dodavanje videa glasovnom pozivu, i OMEMO 2.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
@@ -1504,8 +1510,11 @@ kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi Erevosove vlast
 - **Preko Tora:** na Androidu, Nostr razgovori slijede izbor ovog prostora pod **Postavke** → **Relay i mreže** →
   **Tor**: s **Poruke** idu preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; sa **Sve**
   samo preko Tora; s **Ništa** direktno. Ekran kaže kojim putem idu sada. U web aplikaciji i na računaru idu direktno.
+- **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
+  razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
 - **Još ne:** fotografije i datoteke (ona koja stigne prikazuje se kao datoteka koju Erevos još ne otvara), grupni
-  razgovori, reakcije, i obavijest na telefonu kad stigne poruka.
+  razgovori i reakcije.
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
 isti za sve kojima pišete, dok Erevosovi vlastiti razgovori skrivaju tko s kim razgovara.

@@ -1,3 +1,4 @@
+import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { currentSpace } from '../lock/keys';
 import { canMatrix } from './core';
@@ -30,6 +31,7 @@ import {
   verifications,
   type Verification,
 } from './matrix-verify';
+import { addNetwork, hearing } from './network-notices';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -52,6 +54,8 @@ type Live = {
   saving: ReturnType<typeof setTimeout> | null;
   /** Room keys already asked of the key backup while it runs. */
   asked: Set<string>;
+  /** What its rooms had not read after the last change, to tell of what came (lib/network-notices.ts). */
+  heard: ReturnType<typeof hearing>;
 };
 
 let live: Live | null = null;
@@ -76,6 +80,21 @@ export function matrixUnread(): number {
   const rooms = Object.values(live?.state?.rooms ?? {});
   return rooms.reduce((sum, room) => sum + (room.invitedBy ? 1 : room.unread), 0);
 }
+
+// Each room's messages not read, by its home row (lib/inbox.ts): an invite counts as one.
+function unreadAt(state: MatrixState | null): Map<string, number> {
+  const at = new Map<string, number>();
+  for (const room of Object.values(state?.rooms ?? {})) {
+    const n = room.invitedBy ? 1 : room.unread;
+    if (n > 0) at.set(`matrix:${room.id}`, n);
+  }
+  return at;
+}
+
+addNetwork('matrix:', {
+  unread: () => (live && !live.stopped ? unreadAt(live.state) : new Map()),
+  notifyOf: (where) => checkedChatNotify(live?.state?.rooms[where.slice('matrix:'.length)]?.notify),
+});
 
 function reason(error: unknown): string {
   if (error instanceof MatrixError && error.code === 'M_FORBIDDEN') return t('The Matrix server says the name or the password is wrong.');
@@ -103,9 +122,22 @@ function keepSoon(it: Live): void {
   }, 500);
 }
 
-/** Runs `change` on the account after every change asked for before, then keeps it and tells the screens. */
+/**
+ * Runs `change` on the account after every change asked for before, then keeps it and tells the
+ * screens, and of the messages that came or were read. Until its first sync, an account only takes
+ * in what came before it, and tells of none of it.
+ */
 function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
-  const run = it.queue.catch(() => undefined).then(change);
+  const run = it.queue
+    .catch(() => undefined)
+    .then(async () => {
+      const quiet = !it.state?.since;
+      try {
+        return await change();
+      } finally {
+        if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
+      }
+    });
   it.queue = run;
   return run.finally(() => {
     keepSoon(it);
@@ -171,11 +203,12 @@ export function runMatrix(): void {
     return;
   }
   stopMatrix();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set() };
+  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing() };
   live = it;
   loadMatrix(space.space, space.key)
     .then((state) => {
       it.state = state;
+      it.heard.hear(unreadAt(state), true);
       it.loaded = true;
       told();
       void loop(it);
@@ -269,6 +302,17 @@ export function matrixJoin(roomId: string): Promise<void> {
 export function matrixLeave(roomId: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => leaveRoom(it.state, roomId));
+}
+
+/** A room's own notifications (lock/chat-notify.ts), or the app's again with null. */
+export function matrixSetNotify(roomId: string, notify: ChatNotify | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const room = it.state.rooms[roomId];
+    if (!room) return;
+    if (notify) room.notify = notify;
+    else delete room.notify;
+  });
 }
 
 export function matrixRead(roomId: string): Promise<void> {

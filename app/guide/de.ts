@@ -1573,6 +1573,10 @@ Element: Keine Brücke sitzt dazwischen.
   der sieht die Adresse dieses Telefons. Ein Matrix-Server ohne einen solchen kann nicht anrufen. Was Element Call dem
   Matrix-Server sagt, geht über Erevos, und über Tor wie der Rest von Matrix, aber der Anruf selbst geht nie über Tor.
   Ältere Matrix-Anrufe zu zweit, wie FluffyChat sie macht, klingeln hier nicht.
+- **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
+  Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
+  Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
+  Chat zählt nicht.
 - **Noch nicht:** Sprachnachrichten, und Anrufe auf dem Computer und in der Web-App.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
@@ -1620,6 +1624,10 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   mit **Alles** nur über Tor; mit **Nichts** direkt. Der XMPP-Bildschirm sagt, welchen Weg es gerade nimmt. Wo Erevos
   keine eigene Verbindung öffnen kann (die Web-App, ein Computer), nutzt es den WebSocket des Servers, direkt, und ein
   Server ohne ihn ist dort nicht erreichbar.
+- **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
+  Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
+  Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
+  Chat zählt nicht.
 - **Noch nicht:** Fotos und Dateien, Gruppenchats und Gruppenanrufe, Video zu einem Sprachanruf hinzufügen und OMEMO 2.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
@@ -1661,8 +1669,12 @@ Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr), das Erevos'
   **Tor**: Mit **Nachrichten** gehen sie über Tor, sobald Tor bereit ist, und direkt, solange Tor startet oder wenn es
   scheitert; mit **Alles** nur über Tor; mit **Nichts** direkt. Der Bildschirm sagt, welchen Weg sie gerade nehmen. In
   der Web-App und auf einem Computer gehen sie direkt.
+- **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
+  Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
+  Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
+  Chat zählt nicht.
 - **Noch nicht:** Fotos und Dateien (eine, die ankommt, erscheint als Datei, die Erevos noch nicht öffnen kann),
-  Gruppenchats, Reaktionen und eine Mitteilung auf dem Telefon, wenn eine Nachricht kommt.
+  Gruppenchats und Reaktionen.
 
 **Warum:** Viele Menschen sind auf Nostr und werden dort bleiben. So schreibst du ihnen aus Erevos, getrennt und
 markiert, denn ein Nostr-Schlüssel ist für alle gleich, denen du schreibst, während Erevos' eigene Chats verbergen, wer

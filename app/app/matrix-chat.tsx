@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
+import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -15,17 +16,19 @@ import { t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
-import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, matrixVerifications, matrixVerify, onMatrixChange, runMatrix } from '../lib/matrix-store';
+import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, matrixSetNotify, matrixVerifications, matrixVerify, onMatrixChange, runMatrix } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { saveBytes } from '../lib/save-file';
+import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // One Matrix chat (lib/matrix-store.ts): its messages, oldest first, and a field to write in.
-// It is marked as not anonymous, and as not encrypted when the room is not. Opening it marks its
-// messages read on the homeserver. Photos and files go encrypted when the room is
+// It is marked as not anonymous, and as not encrypted when the room is not. Opening it, with Erevos
+// on the screen, marks its messages read on the homeserver; while it shows, what comes in it only
+// sounds, and it can be muted or given a sound of its own (components/network-chat-notify.tsx). Photos and files go encrypted when the room is
 // (lib/matrix-media.ts); a photo is fetched only when tapped, so the homeserver does not learn
 // which were looked at merely by scrolling. Its call buttons open Element Call (lib/matrix-calls.ts),
 // where Erevos has it.
@@ -47,9 +50,10 @@ export default function MatrixChatScreen() {
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
   const count = room?.messages.length ?? 0;
+  const shown = useNetworkChatShown(roomId ? `matrix:${roomId}` : undefined);
   useEffect(() => {
-    if (roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
-  }, [roomId, count, room?.unread]);
+    if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
+  }, [shown, roomId, count, room?.unread]);
 
   if (!state || !room || !roomId) {
     return (
@@ -153,6 +157,7 @@ export default function MatrixChatScreen() {
         {sending ? <Text tone="muted">{t('Sending…')}</Text> : null}
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
+      {!room.invitedBy ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
       <Button
         title={t('Leave')}
         kind="secondary"

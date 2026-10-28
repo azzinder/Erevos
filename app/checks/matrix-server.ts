@@ -41,6 +41,8 @@ export class Homeserver {
   readonly delayed = new Map<string, { room: string; sender: string; type: string; stateKey: string; content: Json; delayMs: number; due: number }>();
   /** OpenID tokens given, and whose they are. */
   readonly openId = new Map<string, string>();
+  /** Read receipts: up to which event of the log, by `${user} ${room}`. */
+  readonly readUpTo = new Map<string, number>();
   private seq = 0;
   private made = 0;
 
@@ -290,6 +292,12 @@ export class Homeserver {
       } else return { status: 400, json: { errcode: 'M_INVALID_PARAM' } };
       return { status: 200, json: {} };
     }
+    const receipt = path.match(/^\/rooms\/([^/]+)\/receipt\/m\.read\/([^/]+)$/);
+    if (receipt) {
+      const found = this.log.find((l) => l.room === decodeURIComponent(receipt[1]) && l.event.event_id === decodeURIComponent(receipt[2]));
+      if (found) this.readUpTo.set(`${user} ${found.room}`, Math.max(found.seq, this.readUpTo.get(`${user} ${found.room}`) ?? 0));
+      return { status: 200, json: {} };
+    }
     if (path.match(/^\/rooms\/[^/]+\/receipt\//)) return { status: 200, json: {} };
     if (path === '/sync') return { status: 200, json: this.sync(user, device, Number(url.searchParams.get('since') ?? 0)) };
     return { status: 404, json: { errcode: 'M_UNRECOGNIZED', error: path } };
@@ -297,6 +305,17 @@ export class Homeserver {
 
   private countOneTime(user: string, device: string): number {
     return [...this.oneTime.keys()].filter((k) => k.startsWith(`${user} ${device} `)).length;
+  }
+
+  // Messages from others since the user last read, joined, or wrote, as a homeserver's push rules
+  // count them by default.
+  private unread(user: string, room: string): number {
+    let from = this.readUpTo.get(`${user} ${room}`) ?? 0;
+    for (const { seq, room: r, event } of this.log) {
+      if (r !== room) continue;
+      if (event.sender === user && (event.state_key === undefined || (event.type === 'm.room.member' && event.content.membership === 'join'))) from = Math.max(from, seq);
+    }
+    return this.log.filter((l) => l.room === room && l.seq > from && l.event.sender !== user && l.event.state_key === undefined && ['m.room.message', 'm.room.encrypted'].includes(l.event.type)).length;
   }
 
   private sync(user: string, device: string, since: number): Json {
@@ -308,7 +327,7 @@ export class Homeserver {
       if (now === 'join' && events.length) {
         const joinedNow = events.some((e) => e.type === 'm.room.member' && e.state_key === user && e.content.membership === 'join');
         const state = joinedNow ? this.log.filter((l) => l.room === id && l.seq <= since && l.event.state_key !== undefined).map((l) => l.event) : [];
-        join[id] = { state: { events: state }, timeline: { events } };
+        join[id] = { state: { events: state }, timeline: { events }, unread_notifications: { notification_count: this.unread(user, id) } };
       } else if (now === 'invite' && events.length) {
         invite[id] = { invite_state: { events: this.log.filter((l) => l.room === id && l.event.state_key !== undefined).map((l) => l.event) } };
       }

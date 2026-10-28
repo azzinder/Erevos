@@ -1486,6 +1486,9 @@ sta nel mezzo.
   server Matrix, che vede l’indirizzo di questo telefono; un server Matrix senza uno non può chiamare. Ciò che Element
   Call dice al server Matrix passa per Erevos, e per Tor come il resto di Matrix, ma la chiamata in sé non passa mai per
   Tor. Le chiamate Matrix più vecchie a due, come le fa FluffyChat, non squillano qui.
+- **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
+  Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
 - **Non ancora:** messaggi vocali, e chiamate sul computer e nella web app.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server Matrix non può. Così le chat Matrix restano a
@@ -1532,6 +1535,9 @@ app: nessun ponte sta nel mezzo.
   solo da Tor; con **Niente**, direttamente. La schermata XMPP dice da dove passa ora. Dove Erevos non può aprire una
   connessione propria (l’app web, un computer), usa il WebSocket del server, direttamente, e un server senza non è
   raggiungibile.
+- **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
+  Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
 - **Non ancora:** foto e file, chat e chiamate di gruppo, aggiungere il video a una chiamata vocale, e OMEMO 2.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
@@ -1572,8 +1578,11 @@ come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat proprie di
   **Tor**: con **Messaggi** passano da Tor appena Tor è pronto, e direttamente mentre Tor parte o quando fallisce; con
   **Tutto**, solo da Tor; con **Niente**, direttamente. La schermata dice da dove passano ora. Nell’app web e su un
   computer passano direttamente.
-- **Non ancora:** foto e file (uno che arriva appare come un file che Erevos non apre ancora), chat di gruppo, reazioni,
-  e un avviso sul telefono quando arriva un messaggio.
+- **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
+  Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
+- **Non ancora:** foto e file (uno che arriva appare come un file che Erevos non apre ancora), chat di gruppo e
+  reazioni.
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
 chiave Nostr è la stessa per tutti quelli a cui scrivi, mentre le chat proprie di Erevos nascondono chi parla con chi.

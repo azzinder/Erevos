@@ -147,6 +147,18 @@ the way (sound, sound and picture, addresses one at a time). The same flows were
 against Prosody 0.12 with `mod_turn_external`. Not yet tried with Conversations, Monal or Dino on a
 phone.
 
+## Notices
+
+Each change of the account says how many messages each chat has not read, and one who asks to add
+the account counts as one, to `app/lib/network-notices.ts`: what went up came, and shows the same
+notice as a message in Erevos's own chats (`app/lib/background.ts`), with its sound; what went down
+was read, here or on another device of the account (its read marks, as carbons). The number on
+Erevos's icon counts them (`app/lib/unread.ts`), the computer's notice too. What the archive gives
+just after signing in (`fresh`) tells of nothing. A chat has notifications of its own (`notify`, as
+`app/lock/chat-notify.ts` keeps them), set from **Notifications** at the bottom of its screen on
+Android; a muted one is left out, and a call rings with the chat's ringtone. A chat is marked read
+only while Erevos shows it.
+
 ## Not yet
 
 - OMEMO 2 (`urn:xmpp:omemo:2`), which Kaidan and newer Gajim speak beside 0.3.

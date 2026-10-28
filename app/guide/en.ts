@@ -1355,6 +1355,9 @@ between.
   without one cannot call. What Element Call says to the Matrix server goes through Erevos, and through Tor as the rest
   of Matrix does, but the call itself never goes through Tor. Older one-to-one Matrix calls, as FluffyChat makes them,
   do not ring here.
+- **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
+  chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
+  chat mutes it or gives it a sound of its own; a muted chat is not counted.
 - **Not yet:** voice messages, and calls on the computer and in the web app.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
@@ -1399,6 +1402,9 @@ bridge sits in between.
   **Everything**, only through Tor; with **Nothing**, straight. The XMPP screen says which way it goes now. Where Erevos
   cannot open a connection of its own (the web app, a computer), it uses the server's WebSocket, straight, and a server
   without one cannot be reached.
+- **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
+  chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
+  chat mutes it or gives it a sound of its own; a muted chat is not counted.
 - **Not yet:** photos and files, group chats and group calls, adding video to a voice call, and OMEMO 2.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
@@ -1436,8 +1442,10 @@ asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats.
   **Tor**: with **Messages**, they go through Tor once Tor is ready, and straight while Tor starts or when it fails;
   with **Everything**, only through Tor; with **Nothing**, straight. The screen says which way they go now. In the web
   app and on a computer, they go straight.
-- **Not yet:** photos and files (one that comes shows as a file Erevos cannot open yet), group chats, reactions, and a
-  notice on the phone when a message comes.
+- **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
+  chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
+  chat mutes it or gives it a sound of its own; a muted chat is not counted.
+- **Not yet:** photos and files (one that comes shows as a file Erevos cannot open yet), group chats, and reactions.
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
 because a Nostr key is the same to everyone you write to, while Erevos's own chats hide who talks with whom.

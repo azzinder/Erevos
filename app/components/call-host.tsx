@@ -35,8 +35,8 @@ const LOOK_IN_CALL = 700;
 // often during one. On Android a contact's call rings with the phone's ringtone, and while Erevos
 // is in the background (lib/background.ts) also with a notice that says only "Incoming call",
 // over the lock screen; tapping it brings Erevos up to answer. A group's call (lib/group-calls.ts)
-// rings the same way. A chat or group of the space given a ringtone of its own, or none
-// (lock/chat-notify.ts), rings with it; hidden chats ring with the phone's, which tells no one's.
+// rings the same way. A chat or group of the space, or its XMPP chat, given a ringtone of its own,
+// or none (lock/chat-notify.ts), rings with it; hidden chats ring with the phone's, which tells no one's.
 // Returns how to stop, which ends the call, as the space closes.
 export function watchCalls(): () => void {
   // A ringtone or notice that fails does not stop the call screen, nor the others that hear of the call.
@@ -73,7 +73,8 @@ export function watchCalls(): () => void {
   const stopChange = onCallChange(() => {
     const shown = shownCall();
     const call = shown?.call ?? null;
-    keeper.contact(call, call && shown?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : '');
+    // An XMPP call rings as its chat says too: its peer is the chat's home row (`xmpp:` and the address).
+    keeper.contact(call, !call ? '' : shown?.place === spaceCalls ? `chat:${call.peer.slice(CONTACT_PREFIX.length)}` : shown?.place === xmppCalls ? call.peer : '');
   });
   const stopMessages = onMessage((received) => {
     if (!received.call) return;

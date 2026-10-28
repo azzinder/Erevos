@@ -23,6 +23,7 @@
 // Photos and files are lib/matrix-media.ts's; the key backup and secret storage,
 // lib/matrix-backup.ts's. Not audited.
 
+import type { ChatNotify } from '../lock/chat-notify';
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -88,6 +89,8 @@ export type MatrixRoom = {
   messages: MatrixMessage[];
   /** Set while we are only invited: who asked. */
   invitedBy?: string;
+  /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
+  notify?: ChatNotify;
 };
 
 type Device = { curve25519: string; ed25519: string };

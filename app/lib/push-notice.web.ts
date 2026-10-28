@@ -3,6 +3,7 @@ import { desktopWords, followDesktop } from './desktop';
 import type { Lang } from './i18n';
 import { iconNumber, iconNumberOn, onIconNumberChange } from './icon-number';
 import { WEB_APP } from './integrity';
+import { onNetworkMessage, onNetworkRead } from './network-notices';
 import { onReceived } from './receiver';
 import { lastTakenAt } from './relay';
 import { spaceUnread } from './unread';
@@ -15,9 +16,10 @@ import { healPush, notificationsOn } from './web-push';
 // back, sent before then, is of messages the app has, so it counts nothing.
 //
 // The worker also puts a number on Erevos's icon, from what the app counts (lib/icon-number.ts):
-// as Erevos shows and as it leaves, as messages come, every few seconds while it shows, so a chat
-// read there is no longer counted, and when the number is turned on or off. Not while it is out of
-// sight in a tab: what that tab takes then, the pushes count.
+// as Erevos shows and as it leaves, as messages come (on Matrix, XMPP and Nostr too, and as those
+// are read), every few seconds while it shows, so a chat read there is no longer counted, and when
+// the number is turned on or off. Not while it is out of sight in a tab: what that tab takes then,
+// the pushes count.
 //
 // As Erevos shows again, and when the worker says the browser changed its push address, the relay
 // is given the new one, if it changed (lib/web-push.web.ts).
@@ -79,6 +81,8 @@ function follow(): void {
   if (following) return;
   following = true;
   onReceived(() => icon.changed());
+  onNetworkMessage(() => icon.changed());
+  onNetworkRead(() => icon.changed());
   setInterval(() => icon.changed(), EVERY);
   onIconNumberChange(() => icon.seen());
   navigator.serviceWorker.addEventListener('message', (event) => {

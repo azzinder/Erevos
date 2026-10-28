@@ -17,6 +17,7 @@ import { startHiddenRinging } from './hidden-ring-notices';
 import { iconNumberOn } from './icon-number';
 import { networkChanged } from './network-change';
 import { laterTheirs, showsAt } from './later';
+import { onNetworkMessage, onNetworkRead } from './network-notices';
 import { NoticeCount, onReadElsewhere } from './notice-count';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
@@ -37,7 +38,8 @@ import { spaceUnreadAt } from './unread';
 // they are open; those that asked for it only say how many messages came (lib/hidden-notices.ts),
 // and so do the other spaces that asked for it, while closed (lib/closed-notices.ts).
 // While Erevos shows, a message shows the same notice, with sound, except in the chat or group on
-// the screen, where it only sounds; what came in one goes from the count once it is open.
+// the screen, where it only sounds; what came in one goes from the count once it is open. The
+// space's chats on Matrix, XMPP and Nostr tell of theirs the same way (lib/network-notices.ts).
 // Leaving the screen with messages not read in the open space, a notice without sound says how
 // many, and counts on from them, so the launcher keeps their number on Erevos's icon until they
 // are read (Settings → Notifications → Number on the icon, lib/icon-number.ts).
@@ -117,6 +119,8 @@ export const screenOfGroup = (id: string) => `group:${id}`;
 export const screenOfHidden = (pocket: number) => `hidden:${pocket}`;
 /** Where a closed space's chats show: in it, once it is open. */
 export const screenOfSpace = (space: number) => `space:${space}`;
+// A chat on Matrix, XMPP or Nostr shows where its home row is known (lib/network-notices.ts):
+// `matrix:` and its room, `xmpp:` and the address, `nostr:` and the person's key.
 
 const unseenCount = () => count.total();
 
@@ -496,6 +500,9 @@ export function startBackground(): () => void {
       if (received.erase) void messageGone(screenOfChat(received.identity), 'all' in received.erase ? null : received.erase.tag, true).catch(() => undefined);
     }),
     onSpaceGroupMessage((group) => messageCame(false, screenOfGroup(group))),
+    // The space's chats on other networks: as its own chats, read here or on another device of the account.
+    onNetworkMessage((where, times) => messageCame(false, where, where, times)),
+    onNetworkRead((where) => void heldToUnread(where).catch(() => undefined)),
     // A member deleted for everyone a message not read yet; what was read on a linked device.
     onSpaceGroupGone((group) => void heldToUnread([screenOfGroup(group)]).catch(() => undefined)),
     onReadElsewhere((where) => void heldToUnread(where).catch(() => undefined)),

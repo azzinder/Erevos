@@ -1,8 +1,10 @@
+import { isNetworkChat } from './network-notices';
+
 // How many messages the Android messages notice says (lib/background.ts), by where they show: kept
 // apart from React Native, so the checks run in Node. What came since Erevos last showed counts by
-// where it shows (a chat, a group, a hidden place); with the number on the icon, what the open
-// space had not read as Erevos left the screen counts too, by chat and group (lib/unread.ts
-// spaceUnreadAt). A message deleted for everyone before it was read, or read on a linked device,
+// where it shows (a chat, a group, a chat on another network, a hidden place); with the number on
+// the icon, what the open space had not read as Erevos left the screen counts too, by chat and
+// group (lib/unread.ts spaceUnreadAt). A message deleted for everyone before it was read, or read on a linked device,
 // no longer counts: the count only ever goes down for them, never up.
 
 const add = (map: Map<string, number>, key: string, n: number) => {
@@ -12,12 +14,12 @@ const add = (map: Map<string, number>, key: string, n: number) => {
 
 const sum = (map: ReadonlyMap<string, number>) => [...map.values()].reduce((all, n) => all + n, 0);
 
-const spaceWhere = (where: string) => where.startsWith('chat:') || where.startsWith('group:');
+const spaceWhere = (where: string) => where.startsWith('chat:') || where.startsWith('group:') || isNetworkChat(where);
 
 export class NoticeCount {
   // What came since Erevos last showed, by where it shows.
   private readonly unseen = new Map<string, number>();
-  // What the open space had not read as Erevos left the screen, by chat and group.
+  // What the open space had not read as Erevos left the screen, by chat and group (and network chat).
   private readonly left = new Map<string, number>();
   // The messages counted in `unseen` by their chat and tag: where each was counted.
   private readonly tags = new Map<string, Map<string, string>>();

@@ -1464,6 +1464,9 @@ ningún puente se pone en medio.
   indica tu servidor de Matrix, que ve la dirección de este teléfono; un servidor de Matrix sin uno no puede llamar. Lo
   que Element Call le dice al servidor de Matrix pasa por Erevos, y por Tor como el resto de Matrix, pero la llamada en
   sí nunca pasa por Tor. Las llamadas de Matrix más antiguas entre dos, como las hace FluffyChat, no suenan aquí.
+- **Notificaciones:** un mensaje que llega muestra un aviso y cuenta en el número del icono de Erevos, como en los chats
+  propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
+  **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
 - **Aún no:** mensajes de voz, y llamadas en el ordenador y en la app web.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los
@@ -1508,6 +1511,9 @@ como esas apps: ningún puente se pone en medio.
   **Mensajes**, va por Tor en cuanto Tor está listo, y directo mientras Tor arranca o cuando falla; con **Todo**, solo
   por Tor; con **Nada**, directo. La pantalla de XMPP dice por dónde va ahora. Donde Erevos no puede abrir una conexión
   propia (la app web, un ordenador), usa el WebSocket del servidor, directo, y un servidor sin él no se puede alcanzar.
+- **Notificaciones:** un mensaje que llega muestra un aviso y cuenta en el número del icono de Erevos, como en los chats
+  propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
+  **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
 - **Aún no:** fotos y archivos, chats y llamadas de grupo, añadir video a una llamada de voz, y OMEMO 2.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de XMPP no puede. Por eso los chats
@@ -1546,8 +1552,11 @@ pide NIP-17. No es [A través de Nostr](#nostr), que lleva los chats propios de 
   **Tor**: con **Mensajes**, van por Tor en cuanto Tor está listo, y directo mientras Tor arranca o cuando falla; con
   **Todo**, solo por Tor; con **Nada**, directo. La pantalla dice por dónde van ahora. En la app web y en un ordenador,
   van directo.
-- **Aún no:** fotos y archivos (uno que llega se muestra como un archivo que Erevos aún no abre), chats de grupo,
-  reacciones, y un aviso en el teléfono cuando llega un mensaje.
+- **Notificaciones:** un mensaje que llega muestra un aviso y cuenta en el número del icono de Erevos, como en los chats
+  propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
+  **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
+- **Aún no:** fotos y archivos (uno que llega se muestra como un archivo que Erevos aún no abre), chats de grupo
+  y reacciones.
 
 **Por qué:** mucha gente está en Nostr y seguirá allí. Así les escribes desde Erevos, aparte y marcado, porque una clave
 de Nostr es la misma para todos a quienes escribes, mientras que los chats propios de Erevos ocultan quién habla con
