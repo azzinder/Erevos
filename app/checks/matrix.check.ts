@@ -17,7 +17,8 @@ import { setCore, type Core } from '../lib/core';
 import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
-const coreReady = existsSync(built);
+// A core built before Matrix has no `matrix` call: built again, it has.
+const coreReady = existsSync(built) && typeof (createRequire(import.meta.url)(built.pathname) as Record<string, unknown>).matrix === 'function';
 if (!coreReady) console.log('Skipping the Matrix checks: build the core first with node checks/build-core.mjs');
 
 type Json = Record<string, any>;
