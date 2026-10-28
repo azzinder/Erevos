@@ -33,6 +33,7 @@ import {
   putChunk,
   receiveMessage,
   relayCheck,
+  relayClockOffset,
   relayKey,
   RelayError,
   RelayKeyError,
@@ -216,6 +217,36 @@ test('a relay hands out credentials for its call relay, and one without says so'
   assert.ok(Number(turn.username) > Date.now() / 1000 + 3600);
   assert.equal(turn.credential.length, 28);
   assert.equal(await callRelay({ url: near }), null);
+});
+
+test('a relay says its clock, and one from before it says nothing, not asked again for a while', { skip: !ready }, async () => {
+  // The relay runs on this machine's clock: no offset, give or take the round trip.
+  const offset = await relayClockOffset({ url: near });
+  assert.ok(offset !== null && Math.abs(offset) < 1000, `offset ${offset}`);
+  const { Server } = createRequire(import.meta.url)('ws') as {
+    Server: new (options: { port: number; host: string }) => {
+      on(event: 'connection', listener: (socket: { on(e: 'message', l: (data: Buffer) => void): void; send(d: Uint8Array): void; terminate(): void }) => void): void;
+      close(): void;
+    };
+  };
+  const port = await freePort();
+  const old = new Server({ port, host: '127.0.0.1' });
+  let asked = 0;
+  old.on('connection', (socket) =>
+    socket.on('message', (data) => {
+      asked++;
+      if (data[0] === 5) socket.send(Uint8Array.of(1));
+      else socket.terminate();
+    }),
+  );
+  try {
+    const relay: Relay = { url: `ws://127.0.0.1:${port}` };
+    assert.equal(await relayClockOffset(relay), null);
+    assert.equal(await relayClockOffset(relay), null);
+    assert.equal(asked, 1);
+  } finally {
+    old.close();
+  }
 });
 
 test('a relay waits until a message comes, without taking it, and a wait can be ended', { skip: !ready }, async () => {

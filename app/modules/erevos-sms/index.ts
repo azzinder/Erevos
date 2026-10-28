@@ -53,7 +53,8 @@ export type LaterSmsHolder = {
 export type SmsInvitePart = { from: string; data: string; at: number };
 
 export type SmsEvents = {
-  onSms: (event: { address: string; mms?: number }) => void;
+  /** `shown`: its conversation shows on the screen (smsShowOnScreen), so it came with no notice. */
+  onSms: (event: { address: string; mms?: number; shown?: boolean }) => void;
   onSmsSent: (event: { id: number; ok: boolean; mms?: boolean }) => void;
   onSmsDelivered: (event: { id: number; ok: boolean }) => void;
   /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
@@ -70,6 +71,7 @@ type NativeSms = {
   threads(limit: number): Promise<SmsThread[]>;
   messages(address: string, limit: number): Promise<SmsMessage[]>;
   markRead(address: string): Promise<void>;
+  showOnScreen?(numbers: string[]): void;
   /** `sim` only in a build with MMS (an older one takes two arguments). */
   send(address: string, text: string, sim?: number): Promise<number>;
   sendMms?(address: string, text: string, data: Uint8Array, type: string, sim: number): Promise<number>;
@@ -235,6 +237,13 @@ export function importPhoneSms(data: Uint8Array): Promise<{ sms: number; mms: nu
 /** The invite pieces that came since the last call. Each is given once. */
 export function takeSmsInvites(): Promise<SmsInvitePart[]> {
   return native ? native.takeInvites() : Promise.resolve([]);
+}
+
+/** The numbers of the SMS conversation that shows on the screen now, or none: an SMS from one of
+ *  them comes with no notice, only its sound (lib/background.ts). A build before it notices none
+ *  while Erevos shows. */
+export function smsShowOnScreen(numbers: string[]): void {
+  native?.showOnScreen?.(numbers);
 }
 
 export function onSmsEvent<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription | null {

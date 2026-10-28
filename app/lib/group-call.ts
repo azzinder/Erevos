@@ -1,4 +1,4 @@
-import { connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
+import { callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 import { t } from './i18n';
@@ -97,7 +97,7 @@ export class GroupCall {
     busy();
     const call = new GroupCall(newCallId(), '', 'incoming', options);
     current = call;
-    await call.enter({ id: call.id, kind: 'start', at: Date.now(), video: call.video });
+    await call.enter({ id: call.id, kind: 'start', at: callNow(), video: call.video });
     return call;
   }
 

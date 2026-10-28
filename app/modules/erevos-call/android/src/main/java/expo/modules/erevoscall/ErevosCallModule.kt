@@ -16,9 +16,12 @@ import android.media.AudioManager
 import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.WindowManager
@@ -47,6 +50,9 @@ class ErevosCallModule : Module() {
   private var keepTask: Int? = null
   // The screen kept on a while for a call that rings (wakeForRing).
   private var ringWake: PowerManager.WakeLock? = null
+  // Before Android 9 a ringtone cannot loop: it is played again each time it ends, until it stops.
+  private val ringLoop = Handler(Looper.getMainLooper())
+  private var keepRinging: Runnable? = null
   // The answer to pickSound, while Android's picker shows.
   private var picking: Promise? = null
 
@@ -57,6 +63,20 @@ class ErevosCallModule : Module() {
   private val dreams = object : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
       dreaming = intent.action == Intent.ACTION_DREAMING_STARTED
+    }
+  }
+
+  // The phone's default network as last seen, null once lost: a new one tells the app, whose
+  // waits at the relay on the old one may hang with no error (lib/network-change.ts).
+  @Volatile private var network: Network? = null
+  private val networks = object : ConnectivityManager.NetworkCallback() {
+    override fun onAvailable(found: Network) {
+      if (found == network) return
+      network = found
+      runCatching { sendEvent("onNetwork", mapOf()) }
+    }
+    override fun onLost(gone: Network) {
+      if (gone == network) network = null
     }
   }
 
@@ -84,8 +104,13 @@ class ErevosCallModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ErevosCall")
 
+    Events("onNetwork")
+
     OnCreate {
       (context?.applicationContext as? Application)?.registerActivityLifecycleCallbacks(created)
+      // Nothing rings yet in a new start: an "Incoming call" notice still there is from an Erevos
+      // Android closed while it rang.
+      context?.let { runCatching { Notices.stopRinging(it) } }
       runCatching {
         val filter = IntentFilter().apply {
           addAction(Intent.ACTION_DREAMING_STARTED)
@@ -95,11 +120,22 @@ class ErevosCallModule : Module() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) app?.registerReceiver(dreams, filter, Context.RECEIVER_NOT_EXPORTED)
         else app?.registerReceiver(dreams, filter)
       }
+      // The network as it is now tells nothing; only a change does.
+      runCatching {
+        val connectivity = context?.applicationContext?.getSystemService(ConnectivityManager::class.java)
+        if (connectivity != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          network = connectivity.activeNetwork
+          connectivity.registerDefaultNetworkCallback(networks)
+        }
+      }
     }
 
     OnDestroy {
       (context?.applicationContext as? Application)?.unregisterActivityLifecycleCallbacks(created)
       runCatching { context?.applicationContext?.unregisterReceiver(dreams) }
+      runCatching { context?.applicationContext?.getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(networks) }
+      keepRinging?.let(ringLoop::removeCallbacks)
+      keepRinging = null
     }
 
     // The sound picked in Android's picker: its address, '' for the picker's Default, or null if
@@ -149,7 +185,16 @@ class ErevosCallModule : Module() {
     }
 
     Function("startReceiving") {
-      context?.let { ReceiveService.start(it) }
+      context?.let {
+        try {
+          ReceiveService.start(it)
+        } catch (e: Exception) {
+          // Refused, as Erevos already left the screen (Android 12 and later): a quiet notice says
+          // it receives nothing, until it shows and starts again (lib/background.ts).
+          Notices.stopped(it)
+          throw e
+        }
+      }
       keepTimers(true)
       null
     }
@@ -170,10 +215,13 @@ class ErevosCallModule : Module() {
     // A call rings here: the phone's ringtone, or the chat's own (`tone`, its address; '' for
     // none), as the phone's ring volume and silent mode allow, and with `notice` the call notice
     // too, shown over the lock screen; also while the screen saver shows, over Erevos too. A screen
-    // that is off, or shows the screen saver, wakes.
+    // that is off, or shows the screen saver, wakes. Do not disturb keeps it quiet, and the screen
+    // dark, as it keeps back the call notice (Notices.callsThrough).
     Function("ring") { video: Boolean, notice: Boolean, tone: String? ->
       val context = context ?: return@Function
-      if (tone != "" && ringtone?.isPlaying != true) {
+      val through = Notices.callsThrough(context)
+      // A ringtone that fails to play still leaves the notice, the screen over the lock and its wake.
+      if (tone != "" && through && ringtone?.isPlaying != true) runCatching {
         val uri: Uri? = RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_RINGTONE)
           ?: Settings.System.DEFAULT_RINGTONE_URI
         // A chat's own message sound that still plays stops for the ring.
@@ -188,14 +236,27 @@ class ErevosCallModule : Module() {
             .build()
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) it.isLooping = true
           it.play()
+          if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            keepRinging?.let(ringLoop::removeCallbacks)
+            val playing = it
+            keepRinging = object : Runnable {
+              override fun run() {
+                if (ringtone !== playing) return
+                if (!playing.isPlaying) runCatching { playing.play() }
+                ringLoop.postDelayed(this, 1000)
+              }
+            }.also { again -> ringLoop.postDelayed(again, 1000) }
+          }
         }
       }
       if (notice || dreaming) Notices.ring(context, video)
       showOverLock(true)
-      wakeForRing(context)
+      if (through) wakeForRing(context)
     }
 
     Function("stopRinging") {
+      keepRinging?.let(ringLoop::removeCallbacks)
+      keepRinging = null
       ringtone?.stop()
       ringtone = null
       ringWake?.let { if (it.isHeld) it.release() }

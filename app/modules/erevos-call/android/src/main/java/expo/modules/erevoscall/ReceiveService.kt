@@ -25,6 +25,8 @@ class ReceiveService : Service() {
       // this again on its own. The keys were in the app's memory only, so it can open nothing:
       // it says so with a quiet notice, rather than the notice going without a word, and stops.
       if (receiving) return START_STICKY
+      // A call that rang in the closed one can no longer be answered.
+      Notices.stopRinging(this)
       Notices.stopped(this)
       stopSelf(startId)
       return START_NOT_STICKY

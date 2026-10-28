@@ -1,4 +1,4 @@
-import { Call, currentCall, OFFER_FRESH_MS, relayToAnswer, type Rtc } from './call';
+import { Call, currentCall, OFFER_FRESH_MS, offerMissed, relayToAnswer, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
@@ -122,7 +122,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   const kind = signal.video ? 'video call' : 'voice call';
   if (request) return t('{name} tried to call. Accept their message request to take calls from them.', { name: place.name(peer) });
   // Made while no space was open here: it has stopped ringing on their side. Or hung up already.
-  if (Date.now() - signal.at > OFFER_FRESH_MS || endedAlready(peer, signal.id)) {
+  if (offerMissed(signal.at) || endedAlready(peer, signal.id)) {
     place.line(peer, false, `Missed ${kind}`);
     return null;
   }

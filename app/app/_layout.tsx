@@ -18,6 +18,7 @@ import { forgetOffered } from '../lib/contact-code';
 import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
 import { endGroupCall } from '../lib/group-calls';
+import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '../lib/hidden-ring';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
@@ -243,7 +244,7 @@ export default function RootLayout() {
       // No space is open.
     }
     if (was === null || was.space !== open) start().catch(fail);
-    else if (!was.gated && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null)) goOn(was).catch(fail);
+    else if (!was.gated && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null || hiddenRingHoldsLock())) goOn(was).catch(fail);
     else
       show(was.look)
         .then(() => gate(was.space))
@@ -304,18 +305,32 @@ export default function RootLayout() {
         return;
       }
       // A call that rang in the background, or goes on, would lose its screen behind the password:
-      // it locks once the call ends.
-      if (currentCall()) relockAfterCall.current = true;
+      // it locks once the call ends. So does a hidden call that rings, or that its PIN answered
+      // and that has not come yet (lib/hidden-ring.ts).
+      if (currentCall() || hiddenRingHoldsLock()) relockAfterCall.current = true;
       else gate(current.space).catch(fail);
     });
-    const stopCalls = onCallChange(() => {
+    let answerTimer: ReturnType<typeof setTimeout> | null = null;
+    const relockWhenDone = () => {
+      if (answerTimer) clearTimeout(answerTimer);
+      answerTimer = null;
       if (!relockAfterCall.current || currentCall()) return;
+      if (hiddenRingHoldsLock()) {
+        // The PIN answered a hidden call that has not come: once it no longer waits, it locks.
+        const ends = hiddenAnswerEndsAt();
+        if (ends !== null) answerTimer = setTimeout(relockWhenDone, Math.max(0, ends - Date.now()) + 50);
+        return;
+      }
       relockAfterCall.current = false;
       if (phaseRef.current.kind === 'open') relock().catch(fail);
-    });
+    };
+    const stopCalls = onCallChange(relockWhenDone);
+    const stopRings = onHiddenRingingChange(relockWhenDone);
     return () => {
       subscription.remove();
       stopCalls();
+      stopRings();
+      if (answerTimer) clearTimeout(answerTimer);
     };
   }, [gate, relock, fail]);
 
@@ -392,8 +407,9 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
     return (
       <ScreenBackdrop>
         <Locked lang={lang} config={phase.config} onUnlock={onUnlock} />
-        {/* A call to the space behind the password screen shows over it. */}
+        {/* A call to the space behind the password screen shows over it, a hidden one too. */}
         {phase.behind !== undefined ? <CallHost key={`call-${phase.behind}`} /> : null}
+        {phase.behind !== undefined ? <HiddenRingHost key={`ring-${phase.behind}`} locked /> : null}
         <AlertHost />
         {bar}
       </ScreenBackdrop>

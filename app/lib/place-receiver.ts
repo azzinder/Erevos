@@ -5,7 +5,7 @@ import { currentSpace } from '../lock/keys';
 import type { QueueKind } from '../lock/queues-data';
 import { placeQueues } from '../lock/queues-data';
 import { loadHiddenData, updateHiddenData } from '../lock/space-data';
-import { OFFER_FRESH_MS } from './call';
+import { offerMissed, offerRingsFor } from './call';
 import { callLineMessage, CONTACT_PREFIX } from './calls';
 import { canRelaySeal, hasCore } from './core';
 import { toBase64Url, type Received } from './e2e';
@@ -34,6 +34,7 @@ import {
   type ReceivePlace,
   type ReceiveState,
 } from './receiver';
+import { onNetworkChange } from './network-change';
 import { fromHex, isQueueNotFound, receiveMessage, relayKey, type Relay } from './relay';
 import { relayFor, type SpaceChats } from './space-chats';
 import { hiddenSpare, lookAtSpare, spareBackup, type SpareStore } from './spare';
@@ -191,14 +192,17 @@ export function startPlaceReceiver(every?: number): () => void {
   };
   follow();
   const stopKept = onKeptChange(follow);
-  // Shown again: each looks at once, not after a wait meant for the background.
+  // Shown again: each looks at once, not after a wait meant for the background; and as the phone's
+  // network changes, its waits ended (lib/receiver.ts).
   const stopShown = onAppShown((shown) => {
     if (shown) runs.forEach((run) => run.wake());
   });
+  const stopNetwork = onNetworkChange(() => runs.forEach((run) => run.wake()));
   return () => {
     stopped = true;
     stopKept();
     stopShown();
+    stopNetwork();
     for (const run of runs.values()) stopRun(run);
     runs.clear();
     for (const held of calls.values()) for (const call of held) if (call.timer) clearTimeout(call.timer);
@@ -458,7 +462,7 @@ async function heard(run: Run, chats: SpaceChats, received: Extract<Received, { 
     };
     if (call.kind === 'offer') {
       // Made while the place was closed and no look took it: it has stopped ringing on their side.
-      if (received.request || Date.now() - call.at > OFFER_FRESH_MS) {
+      if (received.request || offerMissed(call.at)) {
         if (!received.request) missed(received);
       } else {
         const entry: Held = { received, timer: null };
@@ -469,7 +473,7 @@ async function heard(run: Run, chats: SpaceChats, received: Extract<Received, { 
             drop(call.id);
             missed(received);
           },
-          Math.max(0, call.at + OFFER_FRESH_MS - Date.now()),
+          offerRingsFor(call.at),
         );
         calls.set(pocket, [...held, entry].slice(-MOST_CALLS));
         ringListeners.forEach((listener) => listener(space, pocket));

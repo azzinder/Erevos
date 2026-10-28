@@ -1,8 +1,9 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, PermissionsAndroid, Platform, StyleSheet } from 'react-native';
 
 import { ask } from '../lib/alert';
+import { showSmsOnScreen } from '../lib/background';
 import { phoneFields } from '../lib/contacts';
 import { forwardTo } from '../lib/forward';
 import { t } from '../lib/i18n';
@@ -298,6 +299,10 @@ export function useChatSms({ identity, phone, hidden, seen }: { identity: string
   // The number as it is now, for what was read for another, or asked for before it changed.
   const numberNow = useRef(number);
   numberNow.current = number;
+
+  // The chat on the screen: an SMS from the number only sounds (lib/background.ts).
+  const focused = useIsFocused();
+  useEffect(() => (number && seen && focused ? showSmsOnScreen([number]) : undefined), [number, seen, focused]);
 
   useEffect(() => {
     setLimit(SMS_PAGE);

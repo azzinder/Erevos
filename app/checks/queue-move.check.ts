@@ -29,6 +29,7 @@ import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { FIRST_QA, GRACE } from '../lib/moves';
 import { linkOf, QueueMove, tookOf, type MoveAt, type MoveGroups, type Take } from '../lib/queue-move';
+import { networkChanged } from '../lib/network-change';
 import { awayQueues, keepReceived, setAppShown, waitWhileAway } from '../lib/receiver';
 import { createQueue, deleteQueue, fromHex, isQueueFull, isQueueNotFound, receiveMessage, sendMessage, toHex, type Mark, type Relay } from '../lib/relay';
 import type { SpareStore } from '../lib/spare';
@@ -533,6 +534,27 @@ test('in the background a wait ends with what comes to the public groups’ queu
   assert.equal(took, 0, 'not read after a wait that found nothing');
   await look([]);
   assert.equal(took, 1);
+});
+
+test('in the background a wait at the relay ends a moment after the phone’s network changed, as one ended from outside', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  files.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const space = await spaceOn(relay, url);
+  await space.look();
+  setAppShown(false);
+  try {
+    const started = Date.now();
+    const waited = waitWhileAway(relay, fromHex(space.first.recipientHex));
+    await new Promise((done) => setTimeout(done, 300));
+    networkChanged();
+    networkChanged();
+    networkChanged();
+    assert.equal(await waited, false);
+    assert.ok(Date.now() - started < 10_000);
+  } finally {
+    setAppShown(true);
+  }
 });
 
 test('old queues let go of early are deleted though the app stopped first; a move cut short finishes as the one it was', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {

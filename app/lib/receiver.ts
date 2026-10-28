@@ -20,6 +20,7 @@ import {
   MAX_ANY,
   queueNotFound,
   receiveMessage,
+  relayClockOffset,
   relayKey,
   sameRelay,
   sendMessage,
@@ -38,6 +39,8 @@ import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
 import { keepPush } from './web-push';
 import { cameUnread, onContactsCame } from './contact-queues';
+import { onNetworkChange } from './network-change';
+import { setClockOffset } from './call';
 import { t } from './i18n';
 
 // Messages that come while a space is open, whatever screen shows. The chat screen takes them
@@ -79,6 +82,11 @@ type State = { place: Place | null; seen: number; receipts: Receipts; answers: S
 // Where this space's messages come and go: our relay, the relay that sends (through the second
 // one when set), our queue, and where contacts reach us, said in every message.
 type Place = { own: Relay; sends: Relay; queue: Queue; here: Where; keyAsked: boolean };
+
+// When this phone's clock was last measured against its relay's, for calls (lib/call.ts callNow):
+// again after CLOCK_EVERY_MS, as the phone's own clock may be set meanwhile.
+let clockAt = 0;
+const CLOCK_EVERY_MS = 60 * 60_000;
 
 /** What a run of looks keeps between them, and where its messages come and go, as the space's has: for a hidden place's own (lib/place-receiver.ts). */
 export type ReceiveState = State;
@@ -134,6 +142,13 @@ export function endWaits(): void {
 // Something came to a contact's own queue (lib/contact-queues.ts): the wait at the relay ends, and
 // a look takes it at once, here or in the chat screen.
 onContactsCame(() => {
+  endWaits();
+  hurry?.();
+});
+
+// The phone's network changed: a wait at the relay on the network gone ends, and a look goes at once.
+onNetworkChange(() => {
+  if (shows) return;
   endWaits();
   hurry?.();
 });
@@ -479,6 +494,14 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     }
   }
   if (place.keyAsked) lastPlace = place;
+  const sinceClock = Date.now() - clockAt;
+  if (sinceClock > CLOCK_EVERY_MS || sinceClock < 0) {
+    const offset = await relayClockOffset(place.own).catch(() => null);
+    if (offset !== null) {
+      setClockOffset(offset);
+      clockAt = Date.now();
+    }
+  }
   await sendPending(chats, place.sends);
   await sendKeys(chats, place);
   // Texts that went through Nostr, not said to have come in time, through the relay as well; and

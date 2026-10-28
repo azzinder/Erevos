@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erevos's mark for the status bar and its notices: the L and the bubble with its keyhole
+     (brand/erevos-mark-on-dark.svg), white on nothing, as Android draws a notice's small icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="180"
+  android:viewportHeight="180">
+  <group android:translateX="10" android:translateY="12">
+    <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M0,0H59.3V98.8H158V158H0Z" />
+    <group android:translateX="-2.25" android:translateY="-3">
+      <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M81,2H156V62H106L88,78V62H81Z M113.53,32.5A9,9 0,1 1,123.47 32.5L127,50H110Z" />
+    </group>
+  </group>
+</vector>

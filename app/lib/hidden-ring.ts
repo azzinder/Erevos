@@ -78,3 +78,21 @@ export function lapseHiddenAnswer(at: number, now = Date.now(), closing = false)
   answer = null;
   return true;
 }
+
+/** A hidden ring that ended (`was`) with no call going on (`inCall`) and no PIN answer waiting for its
+ *  call: Erevos no longer shows over the lock screen (lib/background.ts). */
+export function ringLeavesLock(was: HiddenRinging | null, inCall: boolean): boolean {
+  return was !== null && !inCall && hiddenAnswerAt(was.space, was.pocket) === null;
+}
+
+/** Whether a hidden call keeps Erevos from locking behind its password, as a space call does
+ *  (app/_layout.tsx): while it rings, and once the PIN answered it, until its call takes the answer
+ *  (a call then) or HIDDEN_ANSWER_MS went by. */
+export function hiddenRingHoldsLock(now = Date.now()): boolean {
+  return ringing !== null || (answer !== null && now - answer.at <= HIDDEN_ANSWER_MS);
+}
+
+/** When the PIN's answer waiting for its call stops holding the lock, or null. */
+export function hiddenAnswerEndsAt(): number | null {
+  return answer ? answer.at + HIDDEN_ANSWER_MS : null;
+}

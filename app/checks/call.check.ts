@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { Call, connectionConfig, currentCall, relayToAnswer, RING_MS, soon, type Rtc } from '../lib/call';
+import { Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -246,6 +246,26 @@ test('an old call, or one from a message request, does not ring', async () => {
   assert.match(said ?? '', /Anna tried to call/);
   assert.equal(shownCall(), null);
   assert.deepEqual(here.sent, []);
+});
+
+test('a call is stamped and judged by the relay’s clock: one from a phone minutes behind rings, one stamped hours ahead waits a minute at most', async () => {
+  assert.equal(offerMissed(1000, 1000 + OFFER_FRESH_MS), false);
+  assert.equal(offerMissed(1000, 1000 + OFFER_FRESH_MS + 1), true);
+  assert.equal(offerRingsFor(1000, 1000), OFFER_FRESH_MS);
+  assert.equal(offerRingsFor(1000 + 3 * 3600_000, 1000), OFFER_FRESH_MS);
+  assert.equal(offerRingsFor(1000, 1000 + OFFER_FRESH_MS + 5), 0);
+  // This phone's clock is 5 minutes ahead of the relay's; the caller's is right.
+  setClockOffset(-5 * 60_000);
+  try {
+    assert.ok(Math.abs(callNow() - (Date.now() - 5 * 60_000)) < 100);
+    const { rtc } = fakeRtc();
+    const here = place();
+    const offer = { id: 'fedcba9876543210', kind: 'offer' as const, video: false, sdp: 'v=0\r\noffer', at: Date.now() - 5 * 60_000 };
+    assert.equal(await callSignal(here.calls, 'contact:a', offer, false, rtc), null);
+    assert.equal(shownCall()?.call.state, 'incoming');
+  } finally {
+    setClockOffset(0);
+  }
 });
 
 test('the line a call we made leaves', async () => {

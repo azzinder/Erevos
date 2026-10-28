@@ -16,6 +16,8 @@
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+  <!-- The phone's network changed: the waits at the relay ask again at once (lib/network-change.ts). -->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
   <application>
     <service

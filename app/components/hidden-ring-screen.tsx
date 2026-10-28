@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { currentSpace } from '../lock/keys';
 import { MIN_PIN, searchHidden } from '../lock/hidden';
 import { handOverHidden } from '../lib/hidden-handoff';
-import { answerHiddenCall, setHiddenRinging, useHiddenRinging } from '../lib/hidden-ring';
+import { answerHiddenCall, setHiddenRinging, useHiddenRinging, type HiddenRinging } from '../lib/hidden-ring';
 import { shownCall } from '../lib/calls';
 import { shownGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
@@ -21,15 +21,19 @@ import { Button, Input, Text } from './ui';
 // (app/chat.tsx). Plain Answer cannot connect — there is no call here without the PIN — so it says
 // so and ends, like an ordinary failed call. Decline stops the ring. A wrong PIN does nothing and
 // says nothing (searchHidden counts it apart, as the home search does), so it stays deniable.
+// Over the password screen (`locked`, app/_layout.tsx) the PIN never stands in for the password:
+// the sign steps aside, the ringtone going on, for the password; once it opens the space, the ring
+// shows again and the sign opens the PIN field.
 
 // The screen at the app's root, over whatever shows, while a hidden call rings and no other call does.
-export function HiddenRingHost() {
+export function HiddenRingHost({ locked = false }: { locked?: boolean }) {
   const ringing = useHiddenRinging();
-  if (!ringing || shownCall() || shownGroupCall()) return null;
-  return <HiddenRingScreen space={ringing.space} pocket={ringing.pocket} />;
+  const [aside, setAside] = useState<HiddenRinging | null>(null);
+  if (!ringing || shownCall() || shownGroupCall() || aside === ringing) return null;
+  return <HiddenRingScreen space={ringing.space} pocket={ringing.pocket} onSign={locked ? () => setAside(ringing) : undefined} />;
 }
 
-function HiddenRingScreen({ space, pocket }: { space: number; pocket: number }) {
+function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: number; onSign?: () => void }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   // 'ringing' shows the call; 'pin' the field behind the discreet sign; 'failed' after plain Answer.
@@ -87,10 +91,11 @@ function HiddenRingScreen({ space, pocket }: { space: number; pocket: number }) 
         <Text variant="title" color="#FFFFFF" style={styles.shadow}>
           {mode === 'failed' ? t('The call could not connect') : t('Incoming call')}
         </Text>
-        {/* The discreet sign: small and dim, by the status line. Tapping it opens the PIN field. */}
+        {/* The discreet sign: small and dim, by the status line. Tapping it opens the PIN field, or
+            over the password screen steps aside for the password. */}
         {mode === 'ringing' ? (
           <Pressable
-            onPress={() => setMode('pin')}
+            onPress={() => (onSign ? onSign() : setMode('pin'))}
             accessibilityRole="button"
             accessibilityLabel={t('More')}
             hitSlop={16}

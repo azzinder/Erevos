@@ -17,6 +17,7 @@ import android.provider.BlockedNumberContract
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telecom.TelecomManager
+import android.telephony.PhoneNumberUtils
 import android.telephony.SmsManager
 import android.telephony.SmsMessage
 import android.telephony.SubscriptionManager
@@ -377,12 +378,23 @@ internal object SmsStore {
     came(context, mapOf("address" to address), OneTimeCode.find(text))
   }
 
-  /** Tells the open app that something came, and shows a notice unless Erevos is on the screen:
-   *  in the background its JS side still runs, but nobody looks at it. A one-time code in what
-   *  came gives the notice Copy code (OneTimeCode.kt). */
+  // The numbers of the SMS conversation that shows in Erevos now, in its own screen or a contact's
+  // chat, while Erevos shows and is open (lib/background.ts showSmsOnScreen); else none.
+  @Volatile private var shown: List<String> = emptyList()
+
+  fun showOnScreen(numbers: List<String>) {
+    shown = numbers
+  }
+
+  /** Tells the open app that something came, and shows a notice unless its conversation is on the
+   *  screen, where it only sounds (`shown`, played by the app): in the background its JS side still
+   *  runs, but nobody looks at it, and on another screen, the password's too, the owner does not see
+   *  it. A one-time code in what came gives the notice Copy code (OneTimeCode.kt). */
   fun came(context: Context, body: Map<String, Any?>, code: String? = null) {
-    listener?.invoke("onSms", body)
-    if (!onScreen()) notifyNew(context, code)
+    val address = body["address"] as? String
+    val here = address != null && onScreen() && shown.any { PhoneNumberUtils.compare(context, it, address) }
+    listener?.invoke("onSms", body + ("shown" to here))
+    if (!here) notifyNew(context, code)
     Widget.refresh(context)
   }
 
@@ -400,7 +412,8 @@ internal object SmsStore {
     // In the app's language, as the call module keeps it (erevos-call Notices.kt).
     val greek = context.getSharedPreferences("erevos-lang", Context.MODE_PRIVATE).getString("lang", null) == "el"
     if (Build.VERSION.SDK_INT >= 26) {
-      notifications.createNotificationChannel(NotificationChannel(CHANNEL, if (greek) "Μηνύματα" else "Messages", NotificationManager.IMPORTANCE_HIGH))
+      // "SMS", apart from Erevos's own "Messages" in Android's notice settings; made again, an older one takes the name.
+      notifications.createNotificationChannel(NotificationChannel(CHANNEL, "SMS", NotificationManager.IMPORTANCE_HIGH))
     }
     val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val open = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)

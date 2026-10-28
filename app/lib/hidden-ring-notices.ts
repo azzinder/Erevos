@@ -4,6 +4,7 @@ import { POCKETS } from '../lock/sealed-file';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { openHiddenPlace, onHiddenPlaceChange } from './hidden-contacts';
 import { hiddenRinging, onHiddenRingingChange } from './hidden-ring';
+import { onNetworkChange } from './network-change';
 import { canWaitAt, fromHex, isQueueNotFound, receiveMessage, waitForMessage, type Relay } from './relay';
 
 // While Erevos is in the background (lib/background.ts), a hidden place that rings (lock/hidden-ring.ts)
@@ -131,10 +132,16 @@ export function startHiddenRinging(ring: (space: number, pocket: number) => void
   // A ring ends (answered, turned down, or timed out) or a place opens: the pockets wait anew.
   const ended = onHiddenRingingChange(wake);
   const opened = onHiddenPlaceChange(wake);
+  // The phone's network changed: a wait on the network gone ends, and each asks again at once.
+  const network = onNetworkChange(() => {
+    waits.forEach((wait) => wait.abort());
+    wake();
+  });
   return () => {
     stopped = true;
     ended();
     opened();
+    network();
     waits.forEach((wait) => wait.abort());
     wake();
   };

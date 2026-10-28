@@ -1,4 +1,4 @@
-import { requireOptionalNativeModule } from 'expo-modules-core';
+import { requireOptionalNativeModule, type EventSubscription } from 'expo-modules-core';
 
 /** What Android lets Erevos do for ringing in the background. What came later is missing in a build made before it. */
 export type BackgroundState = {
@@ -85,6 +85,8 @@ type CallAudio = {
   openSettings?(which: SettingsScreen): boolean;
   /** Opens the phone maker's own screen for apps that may run in the background; false if it has none known. */
   openMaker?(): boolean;
+  /** "onNetwork": the phone's network changed (lib/network-change.ts). */
+  addListener?(name: 'onNetwork', listener: () => void): EventSubscription;
 };
 
 // The phone's side of a call on Android (sound route, screen, ringing in the background). Null in

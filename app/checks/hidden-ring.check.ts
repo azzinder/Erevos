@@ -20,7 +20,7 @@ import { test } from 'node:test';
 import type { OpenHiddenPlace } from '../lib/hidden-contacts';
 import { setOpenHiddenPlace } from '../lib/hidden-contacts';
 import { randomBytes } from '../lib/crypto';
-import { answerHiddenCall, HIDDEN_ANSWER_MS, HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer, setHiddenRinging, takeHiddenAnswer } from '../lib/hidden-ring';
+import { answerHiddenCall, HIDDEN_ANSWER_MS, HIDDEN_OFFER_MS, hiddenAnswerAt, hiddenAnswerEndsAt, hiddenRingHoldsLock, lapseHiddenAnswer, ringLeavesLock, setHiddenRinging, takeHiddenAnswer } from '../lib/hidden-ring';
 import { startHiddenRinging } from '../lib/hidden-ring-notices';
 import { setAppShown } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
@@ -125,6 +125,39 @@ test('a ring answered with the PIN that a call takes is no ring for nothing; one
   assert.equal(hiddenAnswerAt(1, 1), null);
   assert.equal(lapseHiddenAnswer(30_000, 30_000 + 1000, true), true);
   assert.equal(hiddenAnswerAt(0, 1), null);
+});
+
+test('a hidden ring turned down or unanswered leaves the lock screen; one a call took, or the PIN answered for its call, keeps it', () => {
+  const ring = { space: 0, pocket: 2, at: 1000 };
+  assert.equal(ringLeavesLock(null, false), false);
+  assert.equal(ringLeavesLock(ring, false), true);
+  assert.equal(ringLeavesLock(ring, true), false);
+  // The PIN answered it: the call it waits for shows over the lock screen, until it comes or lapses.
+  answerHiddenCall(0, 2, 2000);
+  assert.equal(ringLeavesLock(ring, false), false);
+  assert.equal(ringLeavesLock({ space: 0, pocket: 3, at: 1000 }, false), true);
+  assert.equal(lapseHiddenAnswer(2000, 2000 + HIDDEN_OFFER_MS), true);
+  assert.equal(ringLeavesLock(ring, false), true);
+  answerHiddenCall(0, 2, 3000);
+  assert.equal(takeHiddenAnswer(3000), true);
+  assert.equal(ringLeavesLock(ring, false), true);
+});
+
+test('a hidden call holds the password lock while it rings, and once its PIN answered it until its call comes or the answer runs out', () => {
+  assert.equal(hiddenRingHoldsLock(), false);
+  assert.equal(hiddenAnswerEndsAt(), null);
+  setHiddenRinging({ space: 0, pocket: 1, at: 1000 });
+  assert.equal(hiddenRingHoldsLock(1000), true);
+  setHiddenRinging(null);
+  assert.equal(hiddenRingHoldsLock(1000), false);
+  answerHiddenCall(0, 1, 2000);
+  assert.equal(hiddenRingHoldsLock(2000 + HIDDEN_ANSWER_MS), true);
+  assert.equal(hiddenAnswerEndsAt(), 2000 + HIDDEN_ANSWER_MS);
+  assert.equal(hiddenRingHoldsLock(2000 + HIDDEN_ANSWER_MS + 1), false);
+  // Its call came: it took the answer, and holds the lock as a call.
+  assert.equal(takeHiddenAnswer(2500), true);
+  assert.equal(hiddenRingHoldsLock(2500), false);
+  assert.equal(hiddenAnswerEndsAt(), null);
 });
 
 test('in the background a pocket rings when a call comes, drained so the next rings too, only drained after a hidden call rang or its place was open, and ringing on any of the four queues and though the app shows', { skip: !relayReady }, async () => {

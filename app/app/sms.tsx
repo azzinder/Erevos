@@ -14,6 +14,7 @@ import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgai
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
+import { showSmsOnScreen } from '../lib/background';
 import { isContactNumber, sealedNamer } from '../lib/contact-book';
 import { newContactHref } from '../lib/contacts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -218,6 +219,9 @@ export default function Sms() {
         .catch(() => undefined);
     }
   }, [to]);
+
+  // On the screen, an SMS that comes in it only sounds (lib/background.ts).
+  useFocusEffect(useCallback(() => (to ? showSmsOnScreen(numbers.length > 0 ? numbers : [to]) : undefined), [to]));
 
   // A number that is no contact can be added as one, even with the names not shown; looked at
   // again on coming back, as from adding it.

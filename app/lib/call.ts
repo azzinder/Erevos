@@ -25,6 +25,31 @@ export const GATHER_MS = 5_000;
 /** An offer older than this when it comes is a missed call, not one that rings, milliseconds. */
 export const OFFER_FRESH_MS = 60_000;
 
+// How far this phone's clock is behind its relay's, as last measured (lib/receiver.ts): calls are
+// stamped, and judged fresh, by the relay's time, so a phone whose clock is off by minutes still
+// rings and is rung. 0 with no relay to say, or one from before it: this phone's own clock.
+let clockOffset = 0;
+
+/** This phone's clock is `ms` behind its relay's (ahead, when less than 0). */
+export function setClockOffset(ms: number): void {
+  clockOffset = ms;
+}
+
+/** Now, by the relay's clock as far as this phone knows it: what a call's stamp is made and judged by. */
+export function callNow(): number {
+  return Date.now() + clockOffset;
+}
+
+/** Whether an offer stamped `at` is too old to ring: a missed call. */
+export function offerMissed(at: number, now = callNow()): boolean {
+  return now - at > OFFER_FRESH_MS;
+}
+
+/** How much longer an offer stamped `at` may wait to be answered: never more than OFFER_FRESH_MS, though its stamp is ahead. */
+export function offerRingsFor(at: number, now = callNow()): number {
+  return Math.min(OFFER_FRESH_MS, Math.max(0, at + OFFER_FRESH_MS - now));
+}
+
 // What lib/call.ts needs of WebRTC: the phone's (react-native-webrtc) and the browser's both fit.
 export interface Track {
   readonly kind: string;
@@ -259,7 +284,7 @@ export class Call {
       await connection.setLocalDescription(await connection.createOffer());
       const sdp = await describedSdp(connection);
       if (this.state === 'ended') return;
-      await this.options.events.send({ id: this.id, kind: 'offer', video: this.video, sdp, at: Date.now() });
+      await this.options.events.send({ id: this.id, kind: 'offer', video: this.video, sdp, at: callNow() });
     } catch {
       this.end('failed', true);
     }

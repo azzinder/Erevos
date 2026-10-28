@@ -167,6 +167,7 @@ import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
 import { ChatTheme } from '../theme/chat-theme';
+import { callAudio } from '../modules/erevos-call';
 import { sendSms, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
@@ -4222,6 +4223,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const at = hiddenAnswerAt(space, pocket);
     const count = (closing = false) => {
       if (at === null || !lapseHiddenAnswer(at, Date.now(), closing)) return;
+      // The ring it answered showed Erevos over the lock screen: with no call, it shows there no more.
+      if (!currentCall() && !currentGroupCall()) {
+        try {
+          callAudio?.showOverLock?.(false);
+        } catch {
+          // A build from before ringing.
+        }
+      }
       void queues
         .update((d) => {
           const now = Date.now();

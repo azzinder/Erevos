@@ -34,7 +34,7 @@ internal object Updates {
     val tap = PendingIntent.getActivity(context, NOTICE, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     val notice = builder
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_device_notice)
       .setContentTitle(title)
       .setContentText(text)
       .setCategory(Notification.CATEGORY_RECOMMENDATION)

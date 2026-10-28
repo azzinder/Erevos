@@ -1,4 +1,4 @@
-import { currentCall, OFFER_FRESH_MS, type Rtc } from './call';
+import { currentCall, offerMissed, type Rtc } from './call';
 import { callClock, CALL_LINE } from './calls';
 import { GroupCall, currentGroupCall, HERE_EVERY } from './group-call';
 import type { GroupCallSignal } from './group-call-signal';
@@ -144,7 +144,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
   }
   if (ours?.id === signal.id) return;
   const kind = signal.video ? 'group video call' : 'group call';
-  if (now - signal.at > OFFER_FRESH_MS) {
+  if (offerMissed(signal.at)) {
     place.line(group, `${CALL_LINE}Missed ${kind}`);
     return;
   }

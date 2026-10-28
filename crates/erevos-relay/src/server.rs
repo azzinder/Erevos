@@ -46,6 +46,10 @@
 //!   or is not there, or when the time is up. Older relays close the
 //!   connection.
 //! - `DELETE`: recipient id.
+//! - `TIME`: no fields. Reply: `OK` and the relay's clock, 8-byte Unix
+//!   milliseconds. A phone measures how far its own clock is off by it, so a
+//!   call stamped by one phone is judged fresh or old by the other with the
+//!   same time, whatever their clocks say. Older relays close the connection.
 //! - `KEY`: no fields. Reply: the relay's public key (32 bytes) for sealed
 //!   sends, or `NOT_FOUND` if it has none.
 //! - `FORWARD`: a 2-byte length and a relay address (`ws://` or `wss://`),
@@ -263,7 +267,7 @@ use std::net::{Shutdown, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use erevos_core::relay_channel::{self, Channel};
 use erevos_core::relay_seal::{RelayKey, OVERHEAD};
@@ -503,6 +507,7 @@ pub const NEWS: u8 = 27;
 pub const OWN: u8 = 28;
 pub const WAIT_ANY: u8 = 29;
 pub const NEWS_ANY: u8 = 30;
+pub const TIME: u8 = 31;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -972,7 +977,7 @@ fn respond(
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
         Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM),
-        Access::Read => matches!(op[0], RECEIVE | WAIT | NEWS | WAIT_ANY | NEWS_ANY),
+        Access::Read => matches!(op[0], RECEIVE | WAIT | NEWS | WAIT_ANY | NEWS_ANY | TIME),
         Access::Ticket(..) => matches!(op[0], KEY | BORROW),
         Access::Lent(_) => matches!(
             op[0],
@@ -984,6 +989,7 @@ fn respond(
                 | WAIT_ANY
                 | NEWS_ANY
                 | DELETE
+                | TIME
                 | KEY
                 | SEALED_SEND
                 | FILE_PUT
@@ -1152,6 +1158,14 @@ fn respond(
                 }
             }
             status(deleted)
+        }
+        TIME => {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |d| d.as_millis() as u64);
+            let mut out = vec![OK];
+            out.extend_from_slice(&now.to_be_bytes());
+            out
         }
         KEY => match &shared.key {
             Some(key) => {
@@ -3673,6 +3687,19 @@ mod tests {
         let mut r = [0u8; 1];
         s.read_exact(&mut r).unwrap();
         assert_eq!(r[0], NOT_FOUND);
+    }
+
+    #[test]
+    fn time_says_the_relays_clock_in_milliseconds() {
+        let before = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+        let mut s = TcpStream::connect(start()).unwrap();
+        s.write_all(&[TIME]).unwrap();
+        let mut r = [0u8; 9];
+        s.read_exact(&mut r).unwrap();
+        let after = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64;
+        assert_eq!(r[0], OK);
+        let said = u64::from_be_bytes(r[1..9].try_into().unwrap());
+        assert!(before <= said && said <= after);
     }
 
     #[test]

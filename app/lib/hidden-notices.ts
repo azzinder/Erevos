@@ -4,6 +4,7 @@ import { POCKETS } from '../lock/sealed-file';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { onHiddenPlaceChange, openHiddenPlace } from './hidden-contacts';
 import { hiddenRangAt } from './hidden-ring';
+import { onNetworkChange } from './network-change';
 import { onPlacesChange, receivesPocket } from './place-receiver';
 import { canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsSince, NO_NEWS, waitForMessage, waitForNews, type News, type Relay } from './relay';
 
@@ -191,10 +192,16 @@ export function startHiddenNotices(tell: (count: number, pocket: number) => void
     receiving = now;
     wake();
   });
+  // The phone's network changed: a wait on the network gone ends, and each asks again at once.
+  const network = onNetworkChange(() => {
+    waits.forEach((wait) => wait.abort());
+    wake();
+  });
   return () => {
     stopped = true;
     opened();
     places();
+    network();
     waits.forEach((wait) => wait.abort());
     wake();
   };

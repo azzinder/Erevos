@@ -167,7 +167,7 @@ object Notices {
     channels(context)
     @Suppress("DEPRECATION")
     return builder(context, RECEIVING_CHANNEL)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
       .setContentText(say(context, "Ready for calls and messages", "Έτοιμο για κλήσεις και μηνύματα"))
       .setOngoing(true)
@@ -185,13 +185,13 @@ object Notices {
     channels(context)
     @Suppress("DEPRECATION")
     val shown = builder(context, STOPPED_CHANNEL)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
       .setShowWhen(false)
       .build()
     @Suppress("DEPRECATION")
     val notification = builder(context, STOPPED_CHANNEL)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
       .setContentText(
         if (locked) say(context, "Locked. Open it to receive calls and messages again.", "Κλειδωμένο. Άνοιξέ το για να λαμβάνεις ξανά κλήσεις και μηνύματα.")
@@ -210,12 +210,12 @@ object Notices {
     manager(context).cancel(STOPPED_ID)
   }
 
-  fun ring(context: Context, video: Boolean) {
+  fun ring(context: Context, video: Boolean) = runCatching {
     channels(context)
     val open = opening(context, 2)
     @Suppress("DEPRECATION")
     val notification = builder(context, CALLS_CHANNEL)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle(if (video) say(context, "Incoming video call", "Εισερχόμενη βιντεοκλήση") else say(context, "Incoming call", "Εισερχόμενη κλήση"))
       .setContentText(say(context, "Open Erevos to answer", "Άνοιξε το Erevos για να απαντήσεις"))
       .setCategory(Notification.CATEGORY_CALL)
@@ -225,6 +225,8 @@ object Notices {
       .setAutoCancel(true)
       .setContentIntent(open)
       .setFullScreenIntent(open, true)
+      // Gone once the ring would have ended, should Erevos be closed meanwhile with no one to take it away.
+      .apply { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) setTimeoutAfter(ErevosCallModule.RING_WAKE_MS) }
       .build()
     manager(context).notify(RINGING_ID, notification)
   }
@@ -281,13 +283,13 @@ object Notices {
     val text = if (count == 1) say(context, "New message", "Νέο μήνυμα") else say(context, "$count new messages", "$count νέα μηνύματα")
     @Suppress("DEPRECATION")
     val locked = builder(context, channel)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
       .setShowWhen(false)
       .build()
     @Suppress("DEPRECATION")
     val notification = builder(context, channel)
-      .setSmallIcon(context.applicationInfo.icon)
+      .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
       .setContentText(text)
       .setNumber(count)
@@ -357,6 +359,31 @@ object Notices {
       }
     }
   }
+
+  // Whether Do not disturb lets a call ring, as Android lets the call notice through: always without
+  // it; with Priority only, when the Calls channel may break through it or calls from anyone may
+  // (the notice names no one); never with Alarms only or Total silence.
+  fun callsThrough(context: Context): Boolean {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true
+    val manager = manager(context)
+    return when (manager.currentInterruptionFilter) {
+      NotificationManager.INTERRUPTION_FILTER_ALL, NotificationManager.INTERRUPTION_FILTER_UNKNOWN -> true
+      NotificationManager.INTERRUPTION_FILTER_PRIORITY -> {
+        channels(context)
+        val made = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) manager.getNotificationChannel(CALLS_CHANNEL) else null
+        made?.canBypassDnd() == true || callsFromAnyone(manager)
+      }
+      else -> false
+    }
+  }
+
+  // Whether Do not disturb lets calls from anyone through.
+  private fun callsFromAnyone(manager: NotificationManager): Boolean =
+    runCatching {
+      val policy = manager.notificationPolicy
+      policy.priorityCategories and NotificationManager.Policy.PRIORITY_CATEGORY_CALLS != 0 &&
+        policy.priorityCallSenders == NotificationManager.Policy.PRIORITY_SENDERS_ANY
+    }.getOrDefault(false)
 
   // Whether Do not disturb lets messages from anyone through.
   private fun messagesThrough(manager: NotificationManager): Boolean =

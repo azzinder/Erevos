@@ -16,6 +16,9 @@ Where they are used:
   colour the owner can choose, are adaptive icons in the modules' `res/mipmap-anydpi-v26` (with
   `res/mipmap-*dpi` PNGs for older Android)), the web favicon, and `maskable.png` (the two adaptive layers together, for the web app's
   maskable icon).
+- Android's notices (`app/modules/erevos-call` and `app/modules/erevos-device`,
+  `res/drawable/*_notice.xml`): the mark's two paths, the L and the bubble with its keyhole, in white
+  with no fill effects, as Android draws a notice's small icon from its shape alone.
 - The web app (`pwa/build.mjs`) takes its icons from `png/web/`, `png/ios/icon-180.png` and
   `app/assets/icon/maskable.png`.
 - The Sailfish OS app (`sailfish/build-web.sh`) takes `png/sailfish/`.

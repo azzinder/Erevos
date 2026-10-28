@@ -109,6 +109,7 @@ const NEWS = 27;
 const OWN = 28;
 const WAIT_ANY = 29;
 const NEWS_ANY = 30;
+const TIME = 31;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -1148,6 +1149,34 @@ export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seco
   check(reply, 'wait');
   waited.add(addressOf(relay));
   return reply[1] === 1;
+}
+
+// Relays that cannot say their time (from before TIME), by address, until when they are asked again.
+const cannotTime = new Map<string, number>();
+// A round trip longer than this says too little of when the relay read its clock.
+const MAX_TIME_TRIP_MS = 10_000;
+
+/**
+ * How far this phone's clock is behind the relay's, in milliseconds (less than 0: ahead), by one
+ * round trip: what calls are stamped and judged fresh by (lib/call.ts). Null when the relay cannot
+ * say, as one from before it closes the connection (asked again after a while, as one that could
+ * not be reached), or the trip took too long to tell.
+ */
+export async function relayClockOffset(relay: Relay): Promise<number | null> {
+  if ((cannotTime.get(addressOf(relay)) ?? 0) > Date.now()) return null;
+  const sent = Date.now();
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(TIME));
+  } catch (error) {
+    if (error instanceof RelayUnreachableError) cannotTime.set(addressOf(relay), Date.now() + CANNOT_FOR_MS);
+    return null;
+  }
+  const back = Date.now();
+  if (reply[0] !== OK || reply.length < 9 || back - sent > MAX_TIME_TRIP_MS) return null;
+  const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  const at = read.getUint32(1) * 2 ** 32 + read.getUint32(5);
+  return Math.round(at - (sent + back) / 2);
 }
 
 /**

@@ -3,14 +3,16 @@ import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-nativ
 import { mutedNow } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
+import { onSmsEvent, smsShowOnScreen } from '../modules/erevos-sms';
 import { currentCall, RING_MS } from './call';
 import { chatNotify } from './chat-notices';
 import { keepDoor, startClosedNotices } from './closed-notices';
 import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
-import { hiddenRinging, onHiddenRingingChange, setHiddenRinging } from './hidden-ring';
+import { hiddenRinging, onHiddenRingingChange, ringLeavesLock, setHiddenRinging } from './hidden-ring';
 import { startHiddenRinging } from './hidden-ring-notices';
 import { iconNumberOn } from './icon-number';
+import { networkChanged } from './network-change';
 import { showsAt } from './later';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
@@ -172,6 +174,42 @@ export function showOnScreen(where: string): () => void {
   };
 }
 
+// The SMS conversation on the screen, by its numbers (app/sms.tsx, a contact's chat): an SMS from
+// one of them only sounds, as a message in the chat on the screen does; one from another number
+// shows its notice while Erevos shows too (SmsStore.kt). None while Erevos is away or its password
+// screen shows.
+let smsShown: string[] = [];
+const tellSmsShown = () => {
+  try {
+    smsShowOnScreen(appShown() ? smsShown : []);
+  } catch {
+    // A build from before it: SMS come with no notice while Erevos shows.
+  }
+};
+if (Platform.OS === 'android') {
+  // The phone's network changed: the waits at the relay ask again at once (lib/network-change.ts).
+  try {
+    callAudio?.addListener?.('onNetwork', networkChanged);
+  } catch {
+    // A build from before it: the waits run out on their own.
+  }
+  onAppShown(tellSmsShown);
+  onSmsEvent('onSms', ({ shown }) => {
+    if (shown && appShown()) chime();
+  });
+}
+
+/** While the SMS conversation with `numbers` shows on the screen, what comes in it only sounds. Returns how to stop. */
+export function showSmsOnScreen(numbers: string[]): () => void {
+  smsShown = numbers;
+  tellSmsShown();
+  return () => {
+    if (smsShown !== numbers) return;
+    smsShown = [];
+    tellSmsShown();
+  };
+}
+
 /** As messageCame, at `at` (milliseconds) when that is ahead: for a message that came before its time (lib/later.ts, showsAt). */
 export function messageCameAt(at: number, quiet = false, where = '', chat = where): void {
   const wait = at - Date.now();
@@ -215,6 +253,16 @@ export function startBackground(): () => void {
   if (!canRingInBackground) return () => undefined;
   let stopped = false;
   let running = false;
+  // Android refused to start the receiving, as Erevos had already left the screen: it tries again
+  // once Erevos shows, and meanwhile a quiet notice says it is not receiving.
+  let refused = false;
+  // A space opens: the "Locked" notice of the one that closed says nothing of it any more.
+  closedReceiving = false;
+  try {
+    callAudio?.setLocked?.(false);
+  } catch {
+    // A build from before the notice.
+  }
   // The hidden chats' notices, while the messages notice is on (lib/hidden-notices.ts).
   let hidden: (() => void) | null = null;
   // The other spaces' notices, while closed, those that asked for it (lib/closed-notices.ts).
@@ -291,9 +339,20 @@ export function startBackground(): () => void {
     onPlaceRing(onRing),
   ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took
-  // over the sound itself).
+  // over the sound itself). Turned down or unanswered, Erevos no longer shows over the lock screen,
+  // as after a call (components/call-host.tsx); answered with the PIN, the call it waits for may.
+  let rung = hiddenRinging();
   const ringChange = onHiddenRingingChange(() => {
-    if (!hiddenRinging()) stopRing();
+    const was = rung;
+    rung = hiddenRinging();
+    if (rung) return;
+    stopRing();
+    if (!ringLeavesLock(was, !!(currentCall() || currentGroupCall()))) return;
+    try {
+      callAudio?.showOverLock?.(false);
+    } catch {
+      // A build from before ringing: it never showed over the lock screen.
+    }
   });
   const ringHidden = (on: boolean) => {
     if (on && !ringWatch) ringWatch = startHiddenRinging(onRing);
@@ -336,7 +395,9 @@ export function startBackground(): () => void {
       tellHidden(notices);
       ringHidden(true);
     } catch {
-      // Android refused (Erevos was already in the background): it rings while it shows.
+      // Android refused (Erevos was already in the background): it rings while it shows, and tries
+      // again as it shows (the notice "Closed by Android" says so meanwhile, ErevosCallModule.kt).
+      refused = true;
     }
   };
   void follow();
@@ -383,6 +444,10 @@ export function startBackground(): () => void {
   const app = AppState.addEventListener('change', (state) => {
     if (state === 'background' && !isPicking()) void leave().catch(() => undefined);
     else leaving++;
+    if (state === 'active' && refused && !stopped && !running) {
+      refused = false;
+      void follow();
+    }
   });
   // The space opens on the screen: a messages notice still there is from before, kept as Android
   // closed Erevos, and says nothing of it now.

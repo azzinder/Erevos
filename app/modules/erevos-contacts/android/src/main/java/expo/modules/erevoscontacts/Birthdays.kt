@@ -55,7 +55,7 @@ internal object Birthdays {
     return PendingIntent.getBroadcast(context, 1, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
   }
 
-  /** Sets the alarm for the next 9:00, or takes it away when reminders are off. Not exact: a few minutes late is fine. */
+  /** Sets the alarm for the next 9:00, exact when Android allows it (else within about an hour), or takes it away when reminders are off. */
   fun arm(context: Context) {
     val alarms = context.getSystemService(AlarmManager::class.java) ?: return
     if (!isOn(context)) {
@@ -68,6 +68,14 @@ internal object Birthdays {
       set(Calendar.SECOND, 0)
       set(Calendar.MILLISECOND, 0)
       if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
+    }
+    try {
+      if (Build.VERSION.SDK_INT < 31 || alarms.canScheduleExactAlarms()) {
+        alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.timeInMillis, alarm(context))
+        return
+      }
+    } catch (_: SecurityException) {
+      // Exact alarms are not allowed: a close one, then.
     }
     alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, next.timeInMillis, alarm(context))
   }
