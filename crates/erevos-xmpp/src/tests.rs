@@ -222,3 +222,150 @@ fn reads_what_python_oldmemo_sends() {
 const PYTHON_KEY: &str = "MwgHEiEFvxQE+Lba/ymYfNgccjuTxNUMGphvtedk3aKp8AgM10YaIQWBfD0h71w2ruvIAKdz/JJzgBAMFJ3ItaIxVcPmtR2DJCJiMwohBfjV9otKhRmisYKD9bLHzSag5+YZpJDUWOn/J9dimaY6EAAYACIwWxEb6HD/phivVu+p9a1CjwIUovhMFVo6vp8CHdji94c7aqkwRhRn85bxiSp/NDUPaoh6KBKmMqMwAQ==";
 const PYTHON_PAYLOAD: &str = "+Kg9wKXJfIQgl5rJuyqO/PPhUOJCIN2wkcg+uFlJ9qvkKUM=";
 const PYTHON_IV: &str = "Nhipx0k0OQe3FurN";
+
+// ---- OMEMO 2 ----
+
+/// One device speaking OMEMO 2: the same identity, its own signed pre-key and pre-keys.
+struct Two {
+    identity: Value,
+    ik: Value,
+    spk: Value,
+    pre_keys: Vec<Value>,
+}
+
+impl Two {
+    fn new() -> Two {
+        let identity = ask(json!({ "op": "identity_new" }))["identity"].clone();
+        let ik = ask(json!({ "op": "two_identity", "identity": identity }))["ik"].clone();
+        let spk = ask(json!({ "op": "two_signed_pre_key_new", "identity": identity, "id": 1 }));
+        let pre_keys = ask(json!({ "op": "two_pre_keys_new", "start": 1, "count": 3 }))["pre_keys"].as_array().unwrap().clone();
+        Two { identity, ik, spk, pre_keys }
+    }
+
+    fn bundle(&self, pre_key: usize) -> Value {
+        let k = &self.pre_keys[pre_key];
+        json!({
+            "ik": self.ik,
+            "spk": { "id": self.spk["id"], "public": self.spk["public"], "signature": self.spk["signature"] },
+            "pk": { "id": k["id"], "public": k["public"] },
+        })
+    }
+
+    fn decrypt(&self, session: &Value, sent: &Value) -> std::result::Result<Value, String> {
+        let key = &sent["keys"][0];
+        call(
+            json!({
+                "op": "two_decrypt",
+                "identity": self.identity,
+                "signed_pre_keys": [self.spk],
+                "pre_keys": self.pre_keys,
+                "session": session,
+                "key": key["key"],
+                "kex": key["kex"],
+                "payload": sent["payload"],
+            })
+            .to_string()
+            .as_bytes(),
+        )
+        .map(|bytes| serde_json::from_slice(&bytes).expect("JSON"))
+    }
+}
+
+fn send_two(session: &Value, text: Option<&str>) -> (Value, Value) {
+    let mut request = json!({ "op": "two_encrypt", "sessions": [session] });
+    if let Some(text) = text {
+        request["text"] = json!(text);
+    }
+    let sent = ask(request);
+    let session = sent["keys"][0]["session"].clone();
+    (sent, session)
+}
+
+#[test]
+fn omemo_2_keys_are_ed25519_and_bundles_are_checked() {
+    let alice = Two::new();
+    let bob = Two::new();
+    // Plain 32-byte keys, and the identity as an Ed25519 key whose sign bit is 0.
+    assert_eq!(unb64(alice.ik.as_str().unwrap()).unwrap().len(), 32);
+    assert_eq!(unb64(alice.ik.as_str().unwrap()).unwrap()[31] & 0x80, 0);
+    assert_eq!(unb64(alice.spk["public"].as_str().unwrap()).unwrap().len(), 32);
+    assert_eq!(unb64(alice.pre_keys[0]["public"].as_str().unwrap()).unwrap().len(), 32);
+    let mut bundle = bob.bundle(0);
+    bundle["spk"]["signature"] = alice.spk["signature"].clone();
+    assert!(ask_err(json!({ "op": "two_session_start", "identity": alice.identity, "bundle": bundle })).contains("not signed"));
+    // An OMEMO 0.3 session is not one to encrypt with here.
+    let old = Device::new();
+    let three = ask(json!({ "op": "session_start", "identity": alice.identity, "bundle": old.bundle(0) }))["session"].clone();
+    assert!(ask_err(json!({ "op": "two_encrypt", "text": "x", "sessions": [three] })).contains("0.3"));
+}
+
+#[test]
+fn omemo_2_devices_talk_both_ways() {
+    let alice = Two::new();
+    let bob = Two::new();
+    let mut a = ask(json!({ "op": "two_session_start", "identity": alice.identity, "bundle": bob.bundle(1) }))["session"].clone();
+    assert_eq!(a["identity"], bob.ik);
+
+    let (first, a2) = send_two(&a, Some("<envelope>Γεια σου Bob</envelope>"));
+    a = a2;
+    assert_eq!(first["keys"][0]["kex"], true);
+    let (second, a2) = send_two(&a, Some("δεύτερο"));
+    a = a2;
+    assert_eq!(second["keys"][0]["kex"], true);
+
+    let got = bob.decrypt(&Value::Null, &first).unwrap();
+    assert_eq!(got["text"], "<envelope>Γεια σου Bob</envelope>");
+    assert_eq!(got["identity"], alice.ik);
+    assert_eq!(got["used_pre_key"], bob.pre_keys[1]["id"]);
+    let mut b = got["session"].clone();
+    let got = bob.decrypt(&b, &second).unwrap();
+    assert_eq!(got["text"], "δεύτερο");
+    assert!(got["used_pre_key"].is_null());
+    b = got["session"].clone();
+    // Read again, the first opens no more.
+    assert!(bob.decrypt(&b, &first).is_err());
+
+    let (answer, b2) = send_two(&b, Some("Γεια σου Alice"));
+    b = b2;
+    assert_eq!(answer["keys"][0]["kex"], false);
+    let got = alice.decrypt(&a, &answer).unwrap();
+    assert_eq!(got["text"], "Γεια σου Alice");
+    a = got["session"].clone();
+    let (third, a2) = send_two(&a, Some("τρίτο"));
+    a = a2;
+    assert_eq!(third["keys"][0]["kex"], false);
+    let got = bob.decrypt(&b, &third).unwrap();
+    assert_eq!(got["text"], "τρίτο");
+    b = got["session"].clone();
+
+    // Late and out of order, once only.
+    let (m1, a2) = send_two(&a, Some("1"));
+    let (m2, a2) = send_two(&a2, Some("2"));
+    let (m3, a2) = send_two(&a2, Some("3"));
+    for (m, text) in [(&m3, "3"), (&m1, "1"), (&m2, "2")] {
+        let got = bob.decrypt(&b, m).unwrap();
+        assert_eq!(got["text"], text);
+        b = got["session"].clone();
+    }
+    assert!(bob.decrypt(&b, &m2).is_err());
+
+    // Changed on the way: refused.
+    let (m4, _) = send_two(&a2, Some("4"));
+    let mut changed = m4.clone();
+    let mut raw = unb64(m4["payload"].as_str().unwrap()).unwrap();
+    raw[0] ^= 1;
+    changed["payload"] = json!(b64(&raw));
+    assert!(bob.decrypt(&b, &changed).is_err());
+    let mut changed = m4.clone();
+    let mut raw = unb64(m4["keys"][0]["key"].as_str().unwrap()).unwrap();
+    let last = raw.len() - 1;
+    raw[last] ^= 1;
+    changed["keys"][0]["key"] = json!(b64(&raw));
+    assert!(bob.decrypt(&b, &changed).is_err());
+    assert_eq!(bob.decrypt(&b, &m4).unwrap()["text"], "4");
+
+    // A message without text only moves the ratchet on.
+    let (empty, _) = send_two(&b, None);
+    assert!(empty["payload"].is_null());
+    assert!(alice.decrypt(&a2, &empty).unwrap()["text"].is_null());
+}

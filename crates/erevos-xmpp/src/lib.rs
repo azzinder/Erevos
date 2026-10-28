@@ -12,6 +12,10 @@
 //!
 //! Our own code, not audited. Checked against python-oldmemo (Syndace's,
 //! used by Gajim's and Slixmpp's OMEMO) both ways: see the tests.
+//!
+//! OMEMO 2 (`urn:xmpp:omemo:2`, XEP-0384 0.8, as Kaidan and python-twomemo
+//! speak it) is in omemo2.rs: the same ratchet with its own derivations and
+//! messages, and the same identity, said as an Ed25519 key.
 
 use aes::cipher::{block_padding::Pkcs7, BlockModeDecrypt, BlockModeEncrypt, KeyIvInit};
 use aes_gcm::aead::consts::U16;
@@ -65,6 +69,12 @@ pub fn call(request: &[u8]) -> Result<Vec<u8>> {
         "verify" => json!({ "ok": verify_op(&request)? }),
         "file_decrypt" => file_decrypt(&request)?,
         "file_encrypt" => file_encrypt(&request)?,
+        "two_identity" => omemo2::identity(&request)?,
+        "two_signed_pre_key_new" => omemo2::signed_pre_key_new(&request)?,
+        "two_pre_keys_new" => omemo2::pre_keys_new(&request)?,
+        "two_session_start" => omemo2::session_start(&request)?,
+        "two_encrypt" => omemo2::encrypt(&request)?,
+        "two_decrypt" => omemo2::decrypt(&request)?,
         _ => return Err(format!("unknown XMPP call {op}")),
     };
     serde_json::to_vec(&answer).map_err(err)
@@ -286,8 +296,9 @@ fn halves(bytes: &[u8]) -> ([u8; 32], [u8; 32]) {
 }
 
 /// A step of the root chain: the new root key and a chain key, from a new DH.
-fn root_step(root: &[u8; 32], their: &[u8; 32], ours: &[u8; 32]) -> Result<([u8; 32], [u8; 32])> {
-    Ok(halves(&hkdf(&dh(ours, their)?, Some(root), b"WhisperRatchet", 64)))
+fn root_step(root: &[u8; 32], their: &[u8; 32], ours: &[u8; 32], two: bool) -> Result<([u8; 32], [u8; 32])> {
+    let info: &[u8] = if two { b"OMEMO Root Chain" } else { b"WhisperRatchet" };
+    Ok(halves(&hkdf(&dh(ours, their)?, Some(root), info, 64)))
 }
 
 /// A step of a message chain: this message's seed, and the chain key after it.
@@ -296,8 +307,9 @@ fn chain_step(chain: &[u8; 32]) -> ([u8; 32], [u8; 32]) {
 }
 
 /// A message's AES key, MAC key and IV, from its seed.
-fn message_keys(seed: &[u8; 32]) -> ([u8; 32], [u8; 32], [u8; 16]) {
-    let out = hkdf(seed, None, b"WhisperMessageKeys", 80);
+fn message_keys(seed: &[u8; 32], two: bool) -> ([u8; 32], [u8; 32], [u8; 16]) {
+    let info: &[u8] = if two { b"OMEMO Message Key Material" } else { b"WhisperMessageKeys" };
+    let out = hkdf(seed, None, info, 80);
     (out[..32].try_into().expect("32"), out[32..64].try_into().expect("32"), out[64..80].try_into().expect("16"))
 }
 
@@ -415,6 +427,9 @@ struct State {
     pending: Option<Pending>,
     /// Their base key, when they began it, so their first message read again is known.
     base: Option<[u8; 32]>,
+    /// OMEMO 2's, whose identities are Ed25519 keys and whose every MAC takes the identity of
+    /// the side that began it, then the other's.
+    two: Option<[u8; 64]>,
 }
 
 impl Clone for Pair {
@@ -449,6 +464,10 @@ impl State {
         if let Some(base) = &self.base {
             out["base"] = json!(b64(base));
         }
+        if let Some(ad) = &self.two {
+            out["version"] = json!(2);
+            out["ad"] = json!(b64(ad));
+        }
         out
     }
 
@@ -479,6 +498,10 @@ impl State {
             Some(b) => Some(unb64(b)?.try_into().map_err(|_| "base is not 32 bytes")?),
             None => None,
         };
+        let two = match value.get("version").and_then(Value::as_u64) {
+            Some(2) => Some(unb64(text(value, "ad")?)?.try_into().map_err(|_| "ad is not 64 bytes")?),
+            _ => None,
+        };
         Ok(State {
             ours: key32(value, "ours")?,
             theirs: key32(value, "theirs")?,
@@ -490,14 +513,24 @@ impl State {
             chains,
             pending,
             base,
+            two,
         })
     }
 
     /// Encrypts `plain` (the payload's key and tag) as their next message.
     fn encrypt(&mut self, plain: &[u8]) -> (Vec<u8>, bool) {
         let (seed, next) = chain_step(&self.send_chain);
-        let (aes_key, mac_key, iv) = message_keys(&seed);
+        let (aes_key, mac_key, iv) = message_keys(&seed, self.two.is_some());
         let ciphertext = cbc::Encryptor::<aes::Aes256>::new(&aes_key.into(), &iv.into()).encrypt_padded_vec::<Pkcs7>(plain);
+        if let Some(ad) = &self.two {
+            let sealed = omemo2::seal(ad, &mac_key, &self.send.public, self.send_n, self.previous, &ciphertext);
+            self.send_chain = next;
+            self.send_n += 1;
+            return match &self.pending {
+                Some(p) => (omemo2::key_exchange(p, &self.ours, &sealed), true),
+                None => (sealed, false),
+            };
+        }
         let mut message = vec![VERSION];
         put_bytes(&mut message, 1, &wire(&self.send.public));
         put_number(&mut message, 2, self.send_n);
@@ -524,21 +557,30 @@ impl State {
     /// Reads one of their messages (libsignal's SignalMessage), changing the
     /// state only when it is theirs.
     fn decrypt(&self, data: &[u8]) -> Result<(State, Vec<u8>)> {
-        if data.len() < 1 + 8 || data[0] >> 4 != 3 {
-            return Err("not an OMEMO 0.3 message".into());
-        }
-        let (message, mac) = data.split_at(data.len() - 8);
-        let fields = fields(&message[1..])?;
-        let their = public_of(field_bytes(&fields, 1).ok_or("a message without its ratchet key")?)?;
-        let n = field_number(&fields, 2).ok_or("a message without its number")?;
-        let ciphertext = field_bytes(&fields, 4).ok_or("a message without its text")?;
+        // OMEMO 2's: its MAC around its message, which has no version byte.
+        let opened2;
+        let (message, mac, their, n, ciphertext) = if self.two.is_some() {
+            opened2 = omemo2::opened(data)?;
+            (&opened2.message[..], &opened2.mac[..], opened2.their, opened2.n, opened2.ciphertext.clone())
+        } else {
+            if data.len() < 1 + 8 || data[0] >> 4 != 3 {
+                return Err("not an OMEMO 0.3 message".into());
+            }
+            let (message, mac) = data.split_at(data.len() - 8);
+            let fields = fields(&message[1..])?;
+            let their = public_of(field_bytes(&fields, 1).ok_or("a message without its ratchet key")?)?;
+            let n = field_number(&fields, 2).ok_or("a message without its number")?;
+            let ciphertext = field_bytes(&fields, 4).ok_or("a message without its text")?.to_vec();
+            (message, mac, their, n, ciphertext)
+        };
+        let two = self.two.is_some();
         let mut next = self.clone();
         let index = match next.chains.iter().position(|c| c.their == their) {
             Some(i) => i,
             None => {
-                let (root, chain) = root_step(&next.root, &their, &next.send.secret)?;
+                let (root, chain) = root_step(&next.root, &their, &next.send.secret, two)?;
                 let send = Pair::new();
-                let (root, send_chain) = root_step(&root, &their, &send.secret)?;
+                let (root, send_chain) = root_step(&root, &their, &send.secret, two)?;
                 next.chains.insert(0, Chain { their, key: chain, n: 0, skipped: Vec::new() });
                 next.chains.truncate(MOST_CHAINS);
                 next.root = root;
@@ -568,12 +610,15 @@ impl State {
             chain.n += 1;
             seed
         };
-        let (aes_key, mac_key, iv) = message_keys(&seed);
-        let expected = hmac(&mac_key, &[&wire(&next.theirs), &wire(&next.ours), message]);
-        if !bool::from(expected[..8].ct_eq(mac)) {
+        let (aes_key, mac_key, iv) = message_keys(&seed, two);
+        let expected = match &next.two {
+            Some(ad) => hmac(&mac_key, &[ad, message]),
+            None => hmac(&mac_key, &[&wire(&next.theirs), &wire(&next.ours), message]),
+        };
+        if mac.len() != if two { 16 } else { 8 } || !bool::from(expected[..mac.len()].ct_eq(mac)) {
             return Err("a message that is not theirs".into());
         }
-        let plain = cbc::Decryptor::<aes::Aes256>::new(&aes_key.into(), &iv.into()).decrypt_padded_vec::<Pkcs7>(ciphertext).map_err(|_| "a message that does not open")?;
+        let plain = cbc::Decryptor::<aes::Aes256>::new(&aes_key.into(), &iv.into()).decrypt_padded_vec::<Pkcs7>(&ciphertext).map_err(|_| "a message that does not open")?;
         // Only the newest seeds are kept.
         let kept: usize = next.chains.iter().map(|c| c.skipped.len()).sum();
         if kept > MOST_KEPT {
@@ -598,7 +643,8 @@ fn states_of(value: Option<&Value>) -> Result<Vec<State>> {
 }
 
 fn session_json(states: &[State]) -> Value {
-    let identity = states.first().map(|s| b64(&wire(&s.theirs)));
+    // Their identity as their version says it: OMEMO 2's Ed25519 key as it is.
+    let identity = states.first().map(|s| if s.two.is_some() { b64(&s.theirs) } else { b64(&wire(&s.theirs)) });
     json!({ "states": states.iter().map(State::json).collect::<Vec<_>>(), "identity": identity })
 }
 
@@ -623,7 +669,7 @@ fn session_start(request: &Value) -> Result<Value> {
     master.extend_from_slice(&dh(&base.secret, &pre_key_public)?);
     let (root, chain) = halves(&hkdf(&master, None, b"WhisperText", 64));
     let send = Pair::new();
-    let (root, send_chain) = root_step(&root, &spk_public, &send.secret)?;
+    let (root, send_chain) = root_step(&root, &spk_public, &send.secret, false)?;
     let state = State {
         ours: identity.public,
         theirs: their_identity,
@@ -635,6 +681,7 @@ fn session_start(request: &Value) -> Result<Value> {
         chains: vec![Chain { their: spk_public, key: chain, n: 0, skipped: Vec::new() }],
         pending: Some(Pending { pre_key: number(pre_key, "id")?, signed_pre_key: number(spk, "id")?, base: base.public }),
         base: None,
+        two: None,
     };
     Ok(json!({ "session": session_json(&[state]) }))
 }
@@ -726,6 +773,7 @@ fn decrypt(request: &Value) -> Result<Value> {
                     chains: Vec::new(),
                     pending: None,
                     base: Some(base),
+                    two: None,
                 };
                 let (state, plain) = fresh.decrypt(inner)?;
                 used = Some(pk_id);
@@ -814,6 +862,8 @@ fn file_decrypt(request: &Value) -> Result<Value> {
     .map_err(|_| "a file that does not open")?;
     Ok(json!({ "data": b64(&opened) }))
 }
+
+mod omemo2;
 
 #[cfg(test)]
 mod tests;
