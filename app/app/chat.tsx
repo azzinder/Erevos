@@ -1894,13 +1894,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // What came to the backup queue, whether or not our relay answers.
       const spare = () => lookAtSpare(e2e, (bytes) => take(bytes).then(() => undefined), () => !active, spareStore).catch(() => undefined);
       const found = { taken: 0, junk: 0 };
+      // What came to a contact's own queue, as a call's offer, is read before the sends and between
+      // them, which through Tor can take tens of seconds (QueueMove.readCame).
+      const early = () => (active && mover.current ? mover.current.readCame({ own, takeMine: (bytes, r) => take(bytes, 'old', r), stop: () => !active }).catch(() => undefined) : Promise.resolve());
       try {
+        await early();
         await sendPending(e2e, sends);
+        await early();
         await sendCopies(e2e, sends).catch(() => 0);
+        await early();
         // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
         if (!hiddenKey) void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
         // An SMS invite sent from the SMS screen since: its answer may be on its way.
         if (!hiddenKey) await refreshSmsLink().catch(() => undefined);
+        await early();
         // In the background, out of a call: waits at the relay until something comes, to the other queues there too.
         const others = awayQueues((await mover.current?.queues().catch(() => null)) ?? null, url);
         const answers = () => {

@@ -69,6 +69,7 @@ export const NEXT: Changes = {
     mark("**Erevos's notices show its mark** in the status bar."),
     mark('**Notices are asked for with receiving off too**, when Say a message came is on.'),
     mark('**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).'),
+    mark('**A call to a slow phone rings in full**: the caller now waits up to a minute and a quarter for the other phone to say it rings, and then 45 seconds from then, so a call that reached it late no longer rings there only to stop at once; and the phone called reads a call before anything it has to send, and waits for calls again at once after its network changes. See [Chat through a relay](#relay).'),
   ],
 };
 

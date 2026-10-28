@@ -973,6 +973,12 @@ cambiare l’altoparlante, spegnere la tua fotocamera, passare dalla fotocamera 
 **Chiudi**. Ogni chiamata lascia una riga nella chat, come quanto è durata, o
 una chiamata persa.
 
+**Una chiamata a un telefono che la riceve in ritardo:** quando il suo telefono riceve la tua chiamata tardi, per
+esempio perché legge tramite Tor, **Chiamata in corso…** resta visibile fino a un minuto e un quarto, e appena squilla
+là, squilla per 45 secondi da quel momento, così una chiamata arrivata in ritardo non squilla sul suo telefono solo
+per fermarsi subito. Il suo telefono legge inoltre una chiamata prima di tutto ciò che ha da inviare, e dopo un cambio
+di rete (dal Wi-Fi ai dati mobili) torna subito ad aspettare chiamate.
+
 **Una normale chiamata sulla rete mobile:** quando un contatto ha il suo numero di telefono collegato, o è collegato a
 uno dei tuoi contatti con un numero (**Collega a uno dei miei contatti** nella sua chat, prima un numero di cellulare),
 il tastierino arancione in cima alla sua chat, prima della videocamera, apre un tastierino con quel numero già

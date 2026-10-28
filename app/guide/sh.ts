@@ -945,6 +945,11 @@ tamo otvoren, na bilo kojem ekranu prostora: ona dodirne **Javi se** ili **Odbij
 mikrofon, uključiti ili isključiti zvučnik, isključiti kameru, prebacivati se između prednje i zadnje kamere, i
 **Prekini**. Svaki poziv ostavlja red u razgovoru, na primjer koliko je trajao, ili propušteni poziv.
 
+**Poziv na telefon koji ga sporo prima:** kad njihov telefon primi vaš poziv sa zakašnjenjem, na primjer zato što čita
+preko Tora, **Pozivanje…** se vidi do minut i četvrt, a čim tamo zazvoni, zvoni 45 sekundi od tog trenutka, da poziv
+koji je stigao kasno ne zazvoni na njihovom telefonu samo da bi odmah stao. Njihov telefon također čita poziv prije
+svega što ima da pošalje, a nakon promjene mreže (s Wi-Fi-ja na mobilne podatke) odmah ponovo čeka pozive.
+
 **Običan poziv preko mobilne mreže:** kad kontakt ima povezan svoj broj telefona, ili je povezan s nekim od vaših
 kontakata koji ima broj (**Poveži s jednim od mojih kontakata** u njegovom razgovoru, prvo broj mobilnog), narandžasta
 tastatura na vrhu njegovog razgovora, ispred kamere, otvara tastaturu s već upisanim tim brojem, kao i ona na vrhu SMS

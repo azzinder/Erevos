@@ -24,6 +24,13 @@ export const RECONNECT_MS = 10_000;
 export const GATHER_MS = 5_000;
 /** An offer older than this when it comes is a missed call, not one that rings, milliseconds. */
 export const OFFER_FRESH_MS = 60_000;
+/**
+ * How long a call we make waits, once its offer went, for their phone to say it rings, beyond
+ * OFFER_FRESH_MS: their phone still rings for an offer that long on the way, and its word that it
+ * does takes a while to come back, milliseconds. Once it rings there, it rings RING_MS from then, so
+ * an offer that came late does not ring there only to stop at once.
+ */
+export const RINGING_BACK_MS = 15_000;
 
 // How far this phone's clock is behind its relay's, as last measured (lib/receiver.ts): calls are
 // stamped, and judged fresh, by the relay's time, so a phone whose clock is off by minutes still
@@ -278,6 +285,7 @@ export class Call {
     if (signal.id !== this.id || this.state === 'ended') return;
     if (signal.kind === 'ringing' && this.state === 'calling') {
       this.set('ringing');
+      this.wait(RING_MS, 'missed', true);
     } else if (signal.kind === 'answer' && this.outgoing && (this.state === 'calling' || this.state === 'ringing')) {
       this.set('connecting');
       this.wait(CONNECT_MS, 'failed', true);
@@ -326,6 +334,9 @@ export class Call {
       const sdp = await describedSdp(connection);
       if (this.state === 'ended') return;
       await this.options.events.send({ id: this.id, kind: 'offer', video: this.video, sdp, at: callNow() });
+      // Gone: their phone may ring for it until it is OFFER_FRESH_MS old (calls.ts), so this waits
+      // that long for it to say so, unless it said so already, or answered.
+      if (this.state === 'calling') this.wait(OFFER_FRESH_MS + RINGING_BACK_MS, 'missed', true);
     } catch {
       this.end('failed', true);
     }

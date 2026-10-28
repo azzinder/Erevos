@@ -311,6 +311,14 @@ On main, not released yet:
   version and What's new read it and put it in the same order (lib/version-name.ts, checks/release-version.check.ts
   runs the workflow's own script). Erevos 3.4.2 and before still offer it, under 0.1.<build>, but tell no notice of
   it.
+- **A call to a slow phone rings in full**: a call from the web app on an iPhone to an Android that took its offer
+  more than 45 seconds after it went rang there and stopped at once, as the caller had given up already. The caller
+  now waits for the other phone to say it rings as long as that phone may still ring for the offer (OFFER_FRESH_MS,
+  a minute) and 15 seconds more (RINGING_BACK_MS), and once it rings there, RING_MS from then. What the contacts'
+  queue watch found is read before a look's sends and between them, in the receiver and the chat screen
+  (QueueMove.readCame), as those can take tens of seconds through Tor; and the watch's waits end and ask again at
+  once after a change of network (ContactWatch.renew), as a wait on the network gone could hang for minutes, with
+  nothing heard meanwhile.
 
 ## 3.4.2 (2026-10-27)
 

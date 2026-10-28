@@ -729,6 +729,24 @@ export class QueueMove {
     await e2e.goneDropped(dropped);
   }
 
+  /**
+   * Reads at once what the watch found in the contacts' own queues on `look.own` (ContactWatch),
+   * before the rest of a look (lib/receiver.ts): a call's offer then waits for no send and no other
+   * queue, which through Tor can take tens of seconds. What the look reads later is then only what
+   * came since.
+   */
+  async readCame(look: Pick<MoveLook, 'own' | 'takeMine' | 'stop'>): Promise<void> {
+    if (!this.at.contacts || !look.takeMine || !this.watch?.unread()) return;
+    const came = this.watch.came();
+    const now = Date.now();
+    for (const b of bunches(contactQueuesAt(this.at.e2e.contactQueues(), look.own.url), this.at.contacts.way)) {
+      for (const q of b.queues) {
+        if (look.stop?.()) return;
+        if (came.has(q.r)) await this.readContact(look, q, b.way, now);
+      }
+    }
+  }
+
   // The contacts' own queues: those the watch found something in, and every READ_EVERY looks all
   // of them, as one wait of none at the relay finds them. The watch waits on them from now on.
   private async readContacts(look: MoveLook, url: string, now: number) {
@@ -754,7 +772,7 @@ export class QueueMove {
   // Reads one contact's queue, a whole batch at a time as the own queue, so junk is counted the same
   // way: junk filling theirs has them take a new one, once a day at most. One the relay lost, they
   // take a new one at once.
-  private async readContact(look: MoveLook, q: ContactQueue, way: string, now: number) {
+  private async readContact(look: Pick<MoveLook, 'own' | 'takeMine' | 'stop'>, q: ContactQueue, way: string, now: number) {
     const e2e = this.at.e2e;
     const recipient = fromHex(q.r);
     let taken = 0;

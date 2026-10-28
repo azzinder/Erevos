@@ -1019,6 +1019,12 @@ téléphone sonne tant qu’Erevos y est ouvert, sur n’importe quel écran de 
 caméra avant et arrière, et **Raccrocher**. Chaque appel laisse une ligne dans la discussion, comme sa durée, ou un
 appel manqué.
 
+**Un appel vers un téléphone qui tarde à le recevoir :** quand son téléphone reçoit ton appel en retard, par exemple
+parce qu'il lit par Tor, **Appel…** reste affiché jusqu'à une minute et quart, et dès qu'il sonne là-bas, il sonne 45
+secondes à partir de ce moment, pour qu'un appel arrivé en retard ne sonne pas sur son téléphone pour s'arrêter
+aussitôt. Son téléphone lit aussi un appel avant tout ce qu'il a à envoyer, et après un changement de réseau (du Wi-Fi
+aux données mobiles) il attend de nouveau les appels tout de suite.
+
 **Un appel ordinaire sur le réseau mobile :** quand un contact a son numéro de téléphone associé, ou est associé à l’un
 de tes contacts qui a un numéro (**Associer à un de mes contacts** dans sa discussion, un numéro mobile d’abord), le
 clavier orange en haut de sa discussion, avant la caméra, ouvre un clavier avec ce numéro déjà tapé, de même que celui

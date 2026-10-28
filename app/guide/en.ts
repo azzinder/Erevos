@@ -896,6 +896,11 @@ the space: they tap **Answer** or **Decline**. During the call you can mute, swi
 between the front and back camera, and **End**. Each call leaves a line in the chat, such as how long it lasted, or
 a missed call.
 
+**A call to a phone that is slow to take it:** when their phone takes your call late, for example because it reads
+through Tor, **Calling…** shows for up to a minute and a quarter, and once it rings there it rings for 45 seconds from
+then, so a call that arrived late does not ring on their phone only to stop at once. Their phone also reads a call
+before anything it has to send, and after its network changes (Wi-Fi to mobile data) it waits for calls again at once.
+
 **A plain call on the mobile network:** when a contact has their phone number linked to them, or is connected to one
 of your contacts with a number (**Connect to one of my contacts** in their chat, a mobile number first), the orange
 keypad at the top of their chat, before the camera, opens a keypad with that number typed, and so does the one at the

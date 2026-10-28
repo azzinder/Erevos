@@ -960,6 +960,12 @@ teléfono suena mientras Erevos está abierto ahí, en cualquier pantalla del es
 Durante la llamada puedes silenciar, cambiar al altavoz, apagar tu cámara, alternar entre la cámara frontal y la
 trasera, y **Colgar**. Cada llamada deja una línea en el chat, como cuánto duró, o una llamada perdida.
 
+**Una llamada a un teléfono que tarda en recibirla:** cuando su teléfono recibe tu llamada tarde, por ejemplo porque
+lee por Tor, **Llamando…** se ve hasta un minuto y cuarto, y en cuanto suena allí, suena durante 45 segundos desde
+entonces, para que una llamada que llegó tarde no suene en su teléfono solo para parar enseguida. Su teléfono además
+lee una llamada antes de todo lo que tiene que enviar, y tras un cambio de red (de Wi-Fi a datos móviles) vuelve a
+esperar llamadas de inmediato.
+
 **Una llamada normal por la red móvil:** cuando un contacto tiene su número de teléfono vinculado, o está vinculado a
 uno de tus contactos con número (**Vincular a uno de mis contactos** en su chat, primero un número de móvil), el teclado
 naranja de arriba de su chat, antes de la cámara, abre un teclado con ese número escrito, y lo mismo hace el de arriba

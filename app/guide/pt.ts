@@ -964,6 +964,12 @@ celular da pessoa toca enquanto o Erevos está aberto lá, em qualquer tela do e
 entre a câmera frontal e a traseira, e **Encerrar**. Cada chamada deixa uma linha na conversa, como quanto tempo
 durou, ou uma chamada perdida.
 
+**Uma chamada para um telefone que demora a recebê-la:** quando o telefone deles recebe a sua chamada tarde, por
+exemplo porque lê pelo Tor, **Chamando…** aparece por até um minuto e um quarto, e assim que toca lá, toca por 45
+segundos a partir daí, para que uma chamada que chegou tarde não toque no telefone deles só para parar logo em
+seguida. O telefone deles também lê uma chamada antes de tudo o que tem para enviar, e após uma troca de rede (do
+Wi-Fi para dados móveis) volta a esperar chamadas logo em seguida.
+
 **Uma chamada comum pela rede móvel:** quando um contato tem o número de telefone vinculado a ele, ou está vinculado a
 um dos seus contatos com número (**Vincular a um dos meus contatos** na conversa dele, primeiro um número de celular),
 o teclado laranja no topo da conversa dele, antes da câmera, abre um teclado com esse número digitado, e o do topo de

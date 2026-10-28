@@ -1044,6 +1044,12 @@ auf jedem Bildschirm des Bereichs: Dort tippt man auf **Annehmen** oder **Ablehn
 Mikrofon stummschalten, den Lautsprecher umschalten, deine Kamera ausschalten, zwischen Front- und Rückkamera wechseln
 und **Auflegen**. Jeder Anruf hinterlässt eine Zeile im Chat, etwa wie lange er dauerte, oder einen verpassten Anruf.
 
+**Ein Anruf bei einem Telefon, das ihn langsam annimmt:** Nimmt ihr Telefon deinen Anruf spät entgegen, zum Beispiel
+weil es über Tor liest, steht **Ruft an…** bis zu eineinviertel Minuten da, und sobald es dort klingelt, klingelt es
+von da an 45 Sekunden lang, damit ein spät angekommener Anruf nicht auf ihrem Telefon klingelt und sofort wieder
+aufhört. Ihr Telefon liest einen Anruf außerdem vor allem, was es zu senden hat, und wartet nach einem Netzwechsel
+(WLAN zu mobilen Daten) sofort wieder auf Anrufe.
+
 **Ein normaler Anruf im Mobilfunknetz:** Wenn mit einem Kontakt seine Telefonnummer verknüpft ist oder er mit einem
 deiner Kontakte mit Nummer verbunden ist (**Mit einem meiner Kontakte verknüpfen** in seinem Chat, eine Mobilnummer
 zuerst), öffnet das orange Tastenfeld oben in seinem Chat, vor der Kamera, ein Tastenfeld mit dieser Nummer

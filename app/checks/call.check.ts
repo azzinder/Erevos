@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, mock, test } from 'node:test';
 
-import { Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, setClockOffset, soon, type Rtc } from '../lib/call';
+import { Call, callNow, connectionConfig, currentCall, OFFER_FRESH_MS, offerMissed, offerRingsFor, relayToAnswer, RING_MS, RINGING_BACK_MS, setClockOffset, soon, type Rtc } from '../lib/call';
 import { decodeCall, MAX_SDP, type CallSignal } from '../lib/call-signal';
 import { callClock, callSignal, closeCall, endedLine, onCallChange, shownCall, startCall, type CallPlace } from '../lib/calls';
 import { fakeRtc, FakeStream, FakeTrack } from './fake-rtc';
@@ -146,6 +146,61 @@ test('a call nobody answers stops ringing on both phones', async () => {
     mock.timers.tick(RING_MS);
     assert.deepEqual(call.ended, { reason: 'missed', byUs: true });
     assert.equal(currentCall(), null);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+// Lets the promises waiting go on, with setTimeout's timers mocked: the fake's gathering ends 10 ms in.
+const flush = async () => {
+  for (let i = 0; i < 20; i++) await new Promise((resolve) => setImmediate(resolve));
+  mock.timers.tick(10);
+  for (let i = 0; i < 20; i++) await new Promise((resolve) => setImmediate(resolve));
+};
+
+test("a call we make waits for their phone to ring as long as it may still ring there, then RING_MS from then", async () => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    const { rtc } = fakeRtc();
+    // Their phone took the offer late, as through a slow look: it rings well after RING_MS.
+    const ours = events();
+    const call = Call.start({ peer: 'contact:a', video: false, relay: TURN, rtc, events: ours.events });
+    await flush();
+    assert.equal(ours.sent.at(-1)?.kind, 'offer');
+    mock.timers.tick(RING_MS + 5000);
+    assert.equal(call.state, 'calling');
+    call.receive({ id: call.id, kind: 'ringing' });
+    assert.equal(call.state, 'ringing');
+    mock.timers.tick(RING_MS - 1);
+    assert.equal(call.state, 'ringing');
+    mock.timers.tick(1);
+    assert.deepEqual(call.ended, { reason: 'missed', byUs: true });
+    assert.deepEqual(ours.sent.at(-1), { id: call.id, kind: 'end', reason: 'missed' });
+
+    // Their phone never rang: it gives up once the offer could no longer ring there, and a while for its word.
+    const again = events();
+    const unanswered = Call.start({ peer: 'contact:a', video: false, relay: TURN, rtc, events: again.events });
+    await flush();
+    mock.timers.tick(OFFER_FRESH_MS + RINGING_BACK_MS - 1);
+    assert.equal(unanswered.state, 'calling');
+    mock.timers.tick(1);
+    assert.deepEqual(unanswered.ended, { reason: 'missed', byUs: true });
+    assert.deepEqual(again.sent.at(-1), { id: unanswered.id, kind: 'end', reason: 'missed' });
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('a call we make whose offer does not go gives up as before, RING_MS from the start', async () => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    const { rtc } = fakeRtc();
+    const sent: CallSignal[] = [];
+    // The relay never answers the send.
+    const call = Call.start({ peer: 'contact:a', video: false, relay: TURN, rtc, events: { onChange: () => undefined, send: (signal) => (sent.push(signal), signal.kind === 'offer' ? new Promise<void>(() => undefined) : Promise.resolve()) } });
+    await flush();
+    mock.timers.tick(RING_MS);
+    assert.deepEqual(call.ended, { reason: 'missed', byUs: true });
   } finally {
     mock.timers.reset();
   }

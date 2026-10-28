@@ -488,37 +488,6 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
     place = { ...place, sends: { ...place.sends, backup: { ...backup, via: place.sends.via } } };
     state.place = place;
   }
-  // Contacts on other relays reach us through our relay's key, said with every message. Asked
-  // again with the next look when the relay cannot be reached.
-  if (!place.keyAsked) {
-    const key = await relayKey(place.own).catch(() => undefined);
-    if (key !== undefined) {
-      place.here = { ...place.here, relayKey: key ? toBase64Url(key) : '' };
-      place.keyAsked = true;
-    }
-  }
-  if (place.keyAsked) lastPlace = place;
-  const sinceClock = Date.now() - clockAt;
-  if (sinceClock > CLOCK_EVERY_MS || sinceClock < 0) {
-    const offset = await relayClockOffset(place.own).catch(() => null);
-    if (offset !== null) {
-      setClockOffset(offset);
-      clockAt = Date.now();
-    }
-  }
-  await sendPending(chats, place.sends);
-  await sendKeys(chats, place);
-  // Texts that went through Nostr, not said to have come in time, through the relay as well; and
-  // to contacts Nostr is the only way to, there again.
-  await sendNostrBackups(chats.e2e, place.sends);
-  await sendNostrAgain(chats.e2e);
-  watchCopies(chats.e2e);
-  await sendCopies(chats.e2e, place.sends).catch(() => 0);
-  // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
-  const sends = place.sends;
-  void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
-  // An SMS invite sent from the SMS screen since: its answer may be on its way.
-  await refreshSmsLink().catch(() => undefined);
   let changed = false;
   const here = place;
   const mover = spaceMover(chats);
@@ -549,6 +518,47 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       return { junk: false };
     }
   };
+  // What came to a contact's own queue, as a call's offer, is read before the sends and between
+  // them, which through Tor can take tens of seconds (QueueMove.readCame).
+  const early = () => mover.readCame({ own: here.own, takeMine: (bytes, r) => take(bytes, 'old', r), stop }).catch(() => undefined);
+  await early();
+  // Contacts on other relays reach us through our relay's key, said with every message. Asked
+  // again with the next look when the relay cannot be reached.
+  if (!place.keyAsked) {
+    const key = await relayKey(place.own).catch(() => undefined);
+    if (key !== undefined) {
+      place.here = { ...place.here, relayKey: key ? toBase64Url(key) : '' };
+      place.keyAsked = true;
+    }
+  }
+  if (place.keyAsked) lastPlace = place;
+  const sinceClock = Date.now() - clockAt;
+  if (sinceClock > CLOCK_EVERY_MS || sinceClock < 0) {
+    const offset = await relayClockOffset(place.own).catch(() => null);
+    if (offset !== null) {
+      setClockOffset(offset);
+      clockAt = Date.now();
+    }
+  }
+  await early();
+  await sendPending(chats, place.sends);
+  await early();
+  await sendKeys(chats, place);
+  await early();
+  // Texts that went through Nostr, not said to have come in time, through the relay as well; and
+  // to contacts Nostr is the only way to, there again.
+  await sendNostrBackups(chats.e2e, place.sends);
+  await sendNostrAgain(chats.e2e);
+  await early();
+  watchCopies(chats.e2e);
+  await sendCopies(chats.e2e, place.sends).catch(() => 0);
+  await early();
+  // What this phone carries for its relays, from phones nearby or its own (lib/nearby.ts).
+  const sends = place.sends;
+  void nearby.uploadCarried((url, sealed, mark) => carryTo(sends, url, sealed, mark)).catch(() => undefined);
+  // An SMS invite sent from the SMS screen since: its answer may be on its way.
+  await refreshSmsLink().catch(() => undefined);
+  await early();
   const recipient = fromHex(place.queue.recipientHex);
   // In the background, what comes to the other queues at our relay wakes the look too.
   const others = awayQueues(await mover.queues().catch(() => null), place.own.url);

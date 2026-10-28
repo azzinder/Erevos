@@ -19,6 +19,7 @@
 // contact on the own queue.
 
 import type { Mine } from '../lock/e2e-data';
+import { onNetworkChange } from './network-change';
 import { fromHex, MAX_ANY, sameRelay, throughTor, waitForAny, type AnyFound, type Relay } from './relay';
 
 /** How many contacts' queues are read together, on one way through Tor. */
@@ -85,7 +86,13 @@ export function cameUnread(): boolean {
   return false;
 }
 
-type Loop = { ids: string; stop: AbortController; rest: (() => void) | null };
+// A bunch's waits: `stop` ends them for good, `round` the one under way, `rest` a pause between two.
+type Loop = { ids: string; stop: AbortController; round: AbortController | null; rest: (() => void) | null };
+
+// The phone's network changed: a wait on the network gone may hang until its reply timer, up to three
+// minutes through Tor, with what comes meanwhile not heard of, a call's offer too. Each wait ends,
+// and asks again at once on the network now (lib/network-change.ts), as the receiver's does.
+onNetworkChange(() => watches.forEach((watch) => watch.renew()));
 
 // Waits `ms`, or less once `signal` ends it or `wake` is called.
 function pause(ms: number, signal: AbortSignal, loop: Loop): Promise<void> {
@@ -148,6 +155,14 @@ export class ContactWatch {
     return this.found.size > 0;
   }
 
+  /** Ends every wait under way, and every pause between two, so each asks again at once: the network changed. */
+  renew(): void {
+    for (const loop of this.loops.values()) {
+      loop.round?.abort();
+      loop.rest?.();
+    }
+  }
+
   /** Stops every wait, for good: the space closed. */
   stop(): void {
     this.stopped = true;
@@ -162,7 +177,7 @@ export class ContactWatch {
   }
 
   private start(relay: Relay, b: Bunch) {
-    const loop: Loop = { ids: idsOf(b), stop: new AbortController(), rest: null };
+    const loop: Loop = { ids: idsOf(b), stop: new AbortController(), round: null, rest: null };
     this.loops.set(b.way, loop);
     const { signal } = loop.stop;
     const recipients = b.queues.map((q) => fromHex(q.r));
@@ -170,13 +185,21 @@ export class ContactWatch {
       let failures = 0;
       while (!signal.aborted) {
         let found: AnyFound[] | null;
+        // This wait alone, ended by `stop` or a network change (renew): then it finds nothing and waits again.
+        const round = new AbortController();
+        const end = () => round.abort();
+        signal.addEventListener('abort', end);
+        loop.round = round;
         try {
-          found = await waitForAny(relay, recipients, WATCH_FOR, b.way, signal);
+          found = await waitForAny(relay, recipients, WATCH_FOR, b.way, round.signal);
           failures = 0;
         } catch {
           failures++;
           await pause(Math.min(WATCH_RETRY_MOST, WATCH_RETRY * 2 ** (failures - 1)), signal, loop);
           continue;
+        } finally {
+          signal.removeEventListener('abort', end);
+          if (loop.round === round) loop.round = null;
         }
         if (signal.aborted) return;
         // A relay that cannot, or seemed not to as the wait died on the way (lib/relay.ts canReadManyAt):

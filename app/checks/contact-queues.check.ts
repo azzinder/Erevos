@@ -1,19 +1,22 @@
 // Contact queues (lib/contact-queues.ts), through a real relay and the real core: at a relay that
 // reads queues on /read, each of Alice's kept contacts is told a queue of their own, quietly, a few
 // at a time, and writes to it from then on; what they write there comes, read with no token and
-// woken by the watch; someone new gets one of their own with the first answer; deleting one deletes
+// woken by the watch, and at once with no look (as a call's offer); someone new gets one of their own with the first answer; deleting one deletes
 // only theirs on the relay. The queues are read in groups, each on its own way, and many at once
 // without Tor.
 // Skipped, with a note, when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { createServer, type Socket } from 'node:net';
 import { test } from 'node:test';
 
 import { bunches, CONTACT_GROUP, ContactWatch, contactQueuesAt, onContactQueuesChanged } from '../lib/contact-queues';
 import { setCore, type Core } from '../lib/core';
+import { networkChanged } from '../lib/network-change';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { QueueMove, tookOf, type Take } from '../lib/queue-move';
@@ -85,6 +88,45 @@ test("a watch says when the contacts' queues it waits on change, for a closed sp
   } finally {
     watch.stop();
     stopTelling();
+  }
+});
+
+test('a network change ends the watch\'s waits, which hang on the network gone, and each asks again at once', async () => {
+  // A relay whose connections went with the network: it takes them and never answers.
+  const sockets = new Set<Socket>();
+  let opened = 0;
+  const server = createServer((socket) => {
+    opened++;
+    sockets.add(socket);
+    socket.on('close', () => sockets.delete(socket));
+    socket.on('error', () => undefined);
+    socket.once('data', (data) => {
+      const key = /Sec-WebSocket-Key: *(.+)\r\n/i.exec(data.toString())?.[1]?.trim() ?? '';
+      const accept = createHash('sha1').update(`${key}258EAFA5-E914-47DA-95CA-C5AB0DC85B11`).digest('base64');
+      socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
+    });
+  });
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+  const address = server.address();
+  const relay = { url: `ws://127.0.0.1:${typeof address === 'object' && address ? address.port : 0}` };
+  const until = async (ok: () => boolean, ms: number) => {
+    for (const end = Date.now() + ms; !ok() && Date.now() < end; ) await new Promise((done) => setTimeout(done, 20));
+    return ok();
+  };
+  const watch = new ContactWatch();
+  try {
+    watch.use(relay, [{ way: 'contacts-0-0', queues: [{ identity: 'c1', r: '01'.repeat(24), g: 0 }] }]);
+    assert.ok(await until(() => opened === 1, 3000));
+    // Without the change, the wait would hang there until its reply timer, over a minute.
+    networkChanged();
+    assert.ok(await until(() => opened === 2, 4000), `${opened} connections`);
+    // Once more: it is not counted as a failure, which would pause it first.
+    networkChanged();
+    assert.ok(await until(() => opened === 3, 4000), `${opened} connections`);
+  } finally {
+    watch.stop();
+    for (const socket of sockets) socket.destroy();
+    server.close();
   }
 });
 
@@ -205,6 +247,23 @@ test('each kept contact writes to a queue of their own, read with no token, and 
     await until('to my own');
     assert.equal(alice.record(bobId)!.mine!.heard, true);
     assert.ok(!alice.tellsDue(0, 0).includes(bobId));
+
+    // What the watch finds is read at once, before a look's sends and with no look (QueueMove.readCame),
+    // as a call's offer is.
+    await bob.write('at once');
+    const atOnce: string[] = [];
+    const takeAtOnce = async (bytes: Uint8Array, r: string) => {
+      const received = await alice.receive(bytes, { onMine: r });
+      if (received.kind === 'message') atOnce.push(received.text);
+      return tookOf(received);
+    };
+    for (let i = 0; i < 50 && atOnce.length === 0; i++) {
+      await mover.readCame({ own: relay, takeMine: takeAtOnce });
+      if (atOnce.length === 0) await new Promise((done) => setTimeout(done, 100));
+    }
+    assert.deepEqual(atOnce, ['at once']);
+    // Nothing more: the look after it finds nothing of it.
+    assert.ok(!(await look()).includes('at once'));
 
     // Someone new: the answer to their request already says a queue of their own.
     const dave = await person(3);
