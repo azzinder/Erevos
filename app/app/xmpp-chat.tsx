@@ -66,9 +66,10 @@ export default function XmppChatScreen() {
     try {
       await xmppSend(jid, text);
     } catch (error) {
-      // Their apps have no OMEMO: the text waits for the person to say whether to write without it.
+      // Their apps have no OMEMO: the text waits for the person to say whether to write without it,
+      // which the card below explains.
       if (error instanceof NoOmemoError) setUnsent(text);
-      fail(error);
+      else fail(error);
     }
   }
 
@@ -153,7 +154,7 @@ export default function XmppChatScreen() {
 
       <Row>
         <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
-        <Button title={t('Send')} compact disabled={!draft.trim()} onPress={submit} />
+        <Button title={t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
 

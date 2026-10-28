@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { shownLine } from '../lib/call-lines';
 import { canTor, canXmpp } from '../lib/core';
 import { t } from '../lib/i18n';
 import { onTorReady } from '../lib/relay';
@@ -214,7 +215,7 @@ export default function XmppScreen() {
         </Text>
       </Card>
 
-      {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
+      {note ? <Text tone="muted">{note}</Text> : null}
 
       <Button
         title={t('Sign out')}
@@ -244,7 +245,7 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
             </Text>
             {last ? (
               <Text tone="muted" numberOfLines={1}>
-                {last.locked ? t('Locked message') : last.text}
+                {last.locked ? t('Locked message') : last.call ? shownLine(last.text) : last.text}
               </Text>
             ) : null}
           </View>

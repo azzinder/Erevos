@@ -113,7 +113,8 @@ async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
 const trashLooked = new Set<number>();
 
 // Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats, the
-// Matrix ones or the XMPP ones (lib/inbox.ts, showsIn), each with its chip once the list has two of them.
+// Matrix ones, the XMPP ones or the Nostr ones (lib/inbox.ts, showsIn), each with its chip once the
+// list has two of them.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' ? show : 'all');
@@ -527,7 +528,7 @@ export default function Home() {
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP), on the rows too:
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
         <FlatList
