@@ -141,6 +141,8 @@ class ErevosCoreModule : Module() {
     AsyncFunction("matrix") { request: ByteArray -> ErevosCoreNative.matrix(request) }
     // XMPP accounts' OMEMO (crates/erevos-xmpp): one JSON request, its JSON answer.
     AsyncFunction("xmpp") { request: ByteArray -> ErevosCoreNative.xmpp(request) }
+    // Chats with other Nostr apps (crates/erevos-nostr chat): one JSON request, its JSON answer.
+    AsyncFunction("nostrChat") { request: ByteArray -> ErevosCoreNative.nostrChat(request) }
   }
 }
 
@@ -238,4 +240,5 @@ internal object ErevosCoreNative {
   @JvmStatic external fun nostrUnwrap(secret: ByteArray, event: ByteArray): ByteArray
   @JvmStatic external fun matrix(request: ByteArray): ByteArray
   @JvmStatic external fun xmpp(request: ByteArray): ByteArray
+  @JvmStatic external fun nostrChat(request: ByteArray): ByteArray
 }

@@ -158,6 +158,11 @@ pub fn xmpp(request: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::xmpp(request))
 }
 
+#[wasm_bindgen(js_name = nostrChat)]
+pub fn nostr_chat(request: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::nostr_chat(request))
+}
+
 #[wasm_bindgen(js_name = groupNew)]
 pub fn group_new(about: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::group_new(about))

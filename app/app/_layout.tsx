@@ -47,6 +47,7 @@ import { applyTor, leaveTor } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
 import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
+import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
@@ -575,6 +576,7 @@ function Receiver({ space }: { space: number }) {
         watchCalls(),
         startMatrix(),
         startXmpp(),
+        startNostrChats(),
         startShellWatch(),
       ]),
     [space],
@@ -592,6 +594,12 @@ function startMatrix(): () => void {
 function startXmpp(): () => void {
   runXmpp();
   return stopXmpp;
+}
+
+// The open space's chats with other Nostr apps are read while the space stays open (lib/nostr-dm-store.ts).
+function startNostrChats(): () => void {
+  runNostrDm();
+  return stopNostrDm;
 }
 
 // The space shows while Erevos does and the password screen is not in front of it.

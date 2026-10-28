@@ -36,6 +36,8 @@ use zeroize::Zeroizing;
 
 pub type Result<T> = std::result::Result<T, String>;
 
+pub mod chat;
+
 /// A gift wrap's kind (NIP-59).
 pub const WRAP_KIND: u64 = 1059;
 /// How far back, at most, a wrap's time is set, so the relay does not learn when it was sent.

@@ -122,6 +122,9 @@ export interface Core {
   /** XMPP accounts' OMEMO (crates/erevos-xmpp, lib/xmpp-omemo.ts): the JSON of one request in, the
    *  JSON of its answer out. Missing in a build made before them. */
   xmpp?(request: Uint8Array): Promise<Uint8Array>;
+  /** Chats with other Nostr apps (crates/erevos-nostr chat, lib/nostr-dm.ts): the JSON of one
+   *  request in, the JSON of its answer out. Missing in a build made before them. */
+  nostrChat?(request: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -283,6 +286,18 @@ export function xmppCore(): (request: Uint8Array) => Promise<Uint8Array> {
   const it = need();
   if (!it.xmpp) throw new Error(t('This build of Erevos has no XMPP.'));
   return it.xmpp.bind(it);
+}
+
+/** Whether this build can make Nostr keys and chat with other Nostr apps (lib/nostr-dm.ts). */
+export function canNostrChat(): boolean {
+  return typeof core?.nostrChat === 'function';
+}
+
+/** The core's call for chats with other Nostr apps, or an error saying this build has none. */
+export function nostrChatCore(): (request: Uint8Array) => Promise<Uint8Array> {
+  const it = need();
+  if (!it.nostrChat) throw new Error(t('This build of Erevos has no Nostr chats.'));
+  return it.nostrChat.bind(it);
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

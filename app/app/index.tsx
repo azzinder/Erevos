@@ -115,8 +115,8 @@ const trashLooked = new Set<number>();
 // Matrix ones or the XMPP ones (lib/inbox.ts, showsIn), each with its chip once the list has two of them.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
-const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' ? show : 'all');
-const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP' };
+const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' ? show : 'all');
+const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr' };
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
 const DOOR_HOLD = 1000;

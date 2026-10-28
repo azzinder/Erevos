@@ -11,6 +11,7 @@
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
 import type { MatrixState } from './matrix';
+import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
 import { bare, nameOf, type XmppState } from './xmpp';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
@@ -76,8 +77,8 @@ export type InboxRow = {
   locked?: boolean;
   /** Muted now (lock/chat-notify.ts): its messages make no sound and no notice. */
   muted?: boolean;
-  /** The network of a chat that is not Erevos's nor an SMS: a Matrix room (`matrix:` and its id in `identity`) or an XMPP person (`xmpp:` and their address). */
-  network?: 'matrix' | 'xmpp';
+  /** The network of a chat that is not Erevos's nor an SMS: a Matrix room (`matrix:` and its id in `identity`), an XMPP person (`xmpp:` and their address) or someone on another Nostr app (`nostr:` and their key in hex). */
+  network?: 'matrix' | 'xmpp' | 'nostr';
   /** A Matrix room we are only invited to, or an XMPP person who asked to add us. */
   invited?: boolean;
 };
@@ -151,29 +152,30 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
 }
 
 /** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or one other network's. */
-export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix' | 'xmpp';
+export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix' | 'xmpp' | 'nostr';
 
 /**
  * Whether a row shows in that part of the list. The SMS are the SMS conversations, and the chats
  * whose last message was an SMS; the Erevos chats are every contact's and every group's, whatever
  * came last, so a contact whose number's SMS came after stays among them; the Matrix chats are the
- * Matrix rooms, and the XMPP chats the XMPP people.
+ * Matrix rooms, the XMPP chats the XMPP people, and the Nostr chats the people on other Nostr apps.
  */
 export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show: InboxShow): boolean {
   if (show === 'sms') return row.sms !== '' || row.lastSms;
   if (show === 'erevos') return row.sms === '' && !row.network;
-  if (show === 'matrix' || show === 'xmpp') return row.network === show;
+  if (show === 'matrix' || show === 'xmpp' || show === 'nostr') return row.network === show;
   return true;
 }
 
-/** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's
- *  and XMPP's whenever the space is signed in to them, even with no chat yet. */
-export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false): InboxShow[] {
+/** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's,
+ *  XMPP's and Nostr's whenever the space is signed in to them, even with no chat yet. */
+export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false, nostr = false): InboxShow[] {
   const parts: InboxShow[] = [];
   if (rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
   if (rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
   if (matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
   if (xmpp || rows.some((row) => row.network === 'xmpp')) parts.push('xmpp');
+  if (nostr || rows.some((row) => row.network === 'nostr')) parts.push('nostr');
   return parts;
 }
 
@@ -264,6 +266,34 @@ export function xmppInboxRows(state: XmppState, now = Date.now()): InboxRow[] {
     });
   }
   return rows;
+}
+
+/** The marks of a Nostr message we sent: waiting while it goes (or failed), then one tick once a
+ *  relay of theirs took it. NIP-17 has no more to say. */
+const NOSTR_MARKS = { sending: -1, failed: -1, sent: 0 } as const;
+
+/** The Nostr chats of a space (lib/nostr-dm-store.ts) as rows: named as given here, or as they call
+ *  themselves, or by the start and end of their npub. */
+export function nostrInboxRows(state: NostrDmState): InboxRow[] {
+  return Object.values(state.chats).map((chat): InboxRow => {
+    const last = chat.messages[chat.messages.length - 1];
+    const mine = !!last?.mine;
+    return {
+      identity: `nostr:${chat.key}`,
+      name: nostrNameOf(state, chat.key) || shortNpub(npubOf(chat.key)),
+      last: !last ? '' : last.file ? t('A file') : last.text,
+      mine,
+      mark: mine ? NOSTR_MARKS[last.state ?? 'sent'] : 0,
+      at: last?.at ?? chat.lastAt,
+      unread: chat.unread,
+      timer: 0,
+      imported: false,
+      avatar: null,
+      sms: '',
+      lastSms: false,
+      network: 'nostr',
+    };
+  });
 }
 
 /** A row's name, or the start of the contact's key when it has none. */

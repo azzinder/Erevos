@@ -465,6 +465,12 @@ pub fn xmpp(request: &[u8]) -> Result<Vec<u8>> {
     erevos_xmpp::call(request)
 }
 
+/// Chats with other Nostr apps (crates/erevos-nostr chat, docs/nostr-chats.md): one JSON request
+/// in, its JSON answer out, for NIP-17's messages and NIP-19's keys.
+pub fn nostr_chat(request: &[u8]) -> Result<Vec<u8>> {
+    erevos_nostr::chat::call(request)
+}
+
 /// The safety number of two identity keys.
 pub fn safety_number(ours: &[u8], theirs: &[u8]) -> Result<String> {
     let key = |b: &[u8]| <[u8; 32]>::try_from(b).map_err(|_| "an identity key is 32 bytes".to_string());
