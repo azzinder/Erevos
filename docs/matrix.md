@@ -60,16 +60,52 @@ What stays private is what is written.
   and MatrixRTC's rings, declines, call members (`org.matrix.msc3401.call.member`, room state) and
   media keys (`io.element.call.encryption_keys`, to-device through Olm) go to the calls, opened
   first when they came encrypted, and are no message of their own; each call keeps one line in its
-  chat (`addMatrixCallLine`). `sendStateEvent`, `sendToDeviceSealed` (any event type through Olm,
-  to chosen devices) and `openIdToken` are what calls send with.
+  chat (`addMatrixCallLine`). `sendStateEvent`, `sendDelayedState`, `updateDelayed`,
+  `sendToDeviceSealed` (any event type through Olm, to chosen devices), `sendToDevicePlain`,
+  `roomState`, `rtcTransports` and `openIdToken` are what calls send and ask with.
+- Calls (`app/lib/matrix-calls.ts`, `app/lib/matrix-widget.ts`, `app/modules/erevos-webcall`): Element
+  Call (`@element-hq/element-call-embedded`, pinned) is copied out of `node_modules` into the APK's
+  assets when the app is built, without its source maps, its background blur models, its own Rust
+  crypto WebAssembly and old font files, and served from
+  `https://appassets.androidplatform.net/element-call/` by `ElementCallActivity` (its own task,
+  picture in picture, shown over the lock screen). `config.json` is answered empty, so no
+  telemetry, error reports or rageshakes are set up; posthog, sentry and Google hosts are refused,
+  and so is any `/_matrix/` request from the page (it tries `/versions` and MSC4195's delegated
+  leave on its own, without a token). The page and Erevos speak the Matrix Widget API: a listener
+  put in the page's `<head>` hands Erevos what the page posts (`erevosCall.postMessage`), and Erevos
+  answers with `window.postMessage`; `parentUrl` is the page itself, so the widget API accepts it.
+  `hostWidget` approves only a call's capabilities in the call's room: its member state under this
+  account and device's keys, rings, declines, media keys, reactions, and the to-device events of
+  calls; never `m.room.message`, other rooms, other state, downloads or sticky events. It sends
+  the room's readable state once (`update_state`, MSC2762), then each change; timeline events of
+  the room go through `setRoomTap` while the call is open, opened first when encrypted. Room
+  events it sends go through `sendEvent`, so encrypted as the room is; to-device ones through
+  `sendToDeviceSealed` or as they are, as it asks; delayed state through MSC4140's
+  `delayed_event` endpoint, or the older `?org.matrix.msc4140.delay=` for servers that have only
+  that. `get_openid` gives the OpenID token, `get_rtc_transports` (MSC4515) the homeserver's
+  MSC4143 transports or its `.well-known` `org.matrix.msc4143.rtc_foci`. Rings are
+  `org.matrix.msc4075.rtc.notification` (and `m.rtc.notification`, and the older `call.notify`)
+  that mention us, for their `lifetime` from `sender_ts` (from the server's time when the sender's
+  clock is more than 20 s ahead), two minutes at most. The ring screen is
+  `components/matrix-ring.tsx`; the chat's tiles open Element Call with `start_call_dm` (or
+  `start_call` in a room), an answer with `join_existing_dm`. Element Call uses MatrixRTC in its
+  default compatibility mode (state events `org.matrix.msc3401.call.member`).
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
 - `app/app/matrix.tsx` (Settings → Relay and networks → Matrix: sign in, chats, invites, new chat,
   sign out) and `app/app/matrix-chat.tsx` (one chat).
 - `app/checks/matrix.check.ts`: two people and a device that signs in later, against a homeserver
-  played in the check, with the real core; a photo there and back, held by the server only as
-  ciphertext, and refused once a byte of it is changed.
+  played in the check (`app/checks/matrix-server.ts`), with the real core; a photo there and back,
+  held by the server only as ciphertext, and refused once a byte of it is changed.
+- `app/checks/matrix-calls.check.ts`: the capabilities given and refused; the host doing what
+  Element Call asks (state now and delayed both ways, encrypted room and to-device events that the
+  other side opens, OpenID, transports) and nothing else; rings answered, declined, missed, left by
+  the caller, answered or declined on another device, each with one line.
+- `docs/matrix-checks/element-call-browser.ts`: the real Element Call in Chromium, served as the
+  Android window serves it, with Erevos's real host: it loads without the files left out, gets its
+  capabilities and the room's state, asks for the OpenID token and the transports, and asks the
+  media server for its token. No LiveKit runs there, so its member state and ring are not reached.
 
 ## Checks it makes
 
@@ -86,5 +122,9 @@ What stays private is what is written.
 - Checking by QR, and trust shown per device in a group.
 - Reading a room's history further back than the last sync, so older locked messages show.
 - Notifications while Erevos is closed.
-- Calls (Element Call, MatrixRTC), after XMPP's.
-- XMPP, the next network after Matrix, then chats with other Nostr apps (NIP-17).
+- Calls on the computer and in the web app (Element Call in a frame), and in a hidden chat's place.
+- A ring while Erevos is closed: it shows as missed when the space next syncs.
+- Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
+  "Matrix 2.0" mode): Element Call is not given sticky events.
+- Element Call's background blur (its models are left out of the APK).
+- Chats with other Nostr apps (NIP-17), the next network after XMPP.

@@ -1529,7 +1529,15 @@ Element : aucun pont ne se met entre les deux.
   par Element : les messages précédents s’ouvrent depuis la sauvegarde des clés du compte, les nouvelles clés y vont,
   et vos autres appareils font confiance à celui-ci. Un compte sans clé peut **Créer une clé de sécurité** ici ;
   notez-la, car Erevos ne la garde pas.
-- **Pas encore :** messages vocaux et appels.
+- **Appels :** sur Android, les deux tuiles en haut de la discussion appellent en voix ou en vidéo, avec Element Call,
+  l’app d’appel d’Element et d’Element X, qu’Erevos porte en lui et montre dans une fenêtre à elle (Retour la rend
+  petite). Les appels pour toi sonnent ici comme ceux d’Erevos, tant que cet espace est ouvert : **Répondre** ouvre
+  Element Call dans l’appel, **Refuser** le dit à la personne qui appelle. Le son et l’image sont chiffrés de bout en
+  bout, avec des clés que seules les personnes dans l’appel ont, et passent par le serveur média (LiveKit) que ton
+  serveur Matrix indique, qui voit l’adresse de ce téléphone ; un serveur Matrix sans serveur média ne peut pas appeler.
+  Ce qu’Element Call dit au serveur Matrix passe par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même
+  ne passe jamais par Tor. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici.
+- **Pas encore :** messages vocaux, et appels sur l’ordinateur et dans l’app web.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.

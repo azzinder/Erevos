@@ -69,4 +69,8 @@ export const matrix: Record<string, string> = {
   "This Matrix account already has a Security Key: enter it instead.": "Questo account Matrix ha già una chiave di sicurezza: inseriscila invece.",
   "Through Tor: the Matrix server does not see your address.": "Tramite Tor: il server Matrix non vede il tuo indirizzo.",
   "Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.": "Ora non tramite Tor: il server Matrix vede il tuo indirizzo. Tor è in Impostazioni → Relay e reti → Tor.",
+  "Earpiece": "Auricolare",
+  "On Matrix, with Element Call": "Su Matrix, con Element Call",
+  "Matrix calls are not ready on this device.": "Le chiamate Matrix non sono pronte su questo dispositivo.",
+  "Not signed in to Matrix.": "Non hai effettuato l’accesso a Matrix.",
 };

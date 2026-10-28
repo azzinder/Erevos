@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, Modal } from 'react-native';
 
 import { callAudio } from '../modules/erevos-call';
-import { currentCall, type Call } from '../lib/call';
+import { ask } from '../lib/alert';
+import { callsOther, currentCall, type Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { ringKeeper } from '../lib/call-ringing';
 import { chatNotify } from '../lib/chat-notices';
@@ -17,9 +18,13 @@ import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
 import { watchXmppCalls, xmppCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
+import { elementCall } from '../lib/element-call-window';
+import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
+import { matrixNow } from '../lib/matrix-store';
 import { t } from '../lib/i18n';
 import { CallScreen } from './call-screen';
 import { GroupCallScreen } from './group-call-screen';
+import { MatrixRingScreen } from './matrix-ring';
 
 // How often the relay is looked at: often during a call, whose signals should not wait.
 const LOOK_EVERY = 3000;
@@ -76,7 +81,37 @@ export function watchCalls(): () => void {
   });
   // Calls of the space's XMPP account (lib/xmpp-calls.ts), on the same screen.
   const stopXmpp = watchXmppCalls(rtc);
+  // Calls of its Matrix account (lib/matrix-calls.ts), in Element Call's own window: they ring here
+  // as the others do, and Erevos's own do not ring meanwhile.
+  const element = elementCall();
+  const stopMatrix = element ? watchMatrixCalls(element.window, element.space) : () => undefined;
+  callsOther(inMatrixCall);
+  let rangMatrix: MatrixCall | null = null;
+  let openMatrix: MatrixCall | null = null;
+  const stopMatrixChange = onMatrixCallChange(() => {
+    const call = shownMatrixCall();
+    if (call?.state === 'incoming' && rangMatrix !== call) {
+      rangMatrix = call;
+      ring(call.video, '');
+    }
+    if (rangMatrix && (call !== rangMatrix || call.state !== 'incoming')) {
+      rangMatrix = null;
+      audio(() => callAudio?.stopRinging?.());
+    }
+    if (call?.state === 'open' && openMatrix !== call) {
+      openMatrix = call;
+      audio(() => callAudio?.start(call.video));
+    }
+    if (openMatrix && (call !== openMatrix || call.state !== 'open')) {
+      openMatrix = null;
+      audio(() => callAudio?.stop());
+    }
+  });
   return () => {
+    stopMatrixChange();
+    stopMatrix();
+    element?.stop();
+    callsOther(() => false);
     stopChange();
     stopMessages();
     stopGroupChange();
@@ -101,6 +136,8 @@ export function CallHost() {
   const known = useRef<Call | null>(null);
   const knownGroup = useRef<GroupCall | null>(null);
   const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[] }>({ group: '', contacts: [] });
+
+  useEffect(() => onMatrixCallChange(() => setShown((n) => n + 1)), []);
 
   useEffect(() => {
     const groupChanged = () => {
@@ -172,6 +209,31 @@ export function CallHost() {
           onAnswer={joinCall}
           onClose={() => closeGroupCall(call)}
         />
+      </Modal>
+    );
+  }
+
+  // A Matrix call that rings; answered, it goes on in Element Call's window.
+  const matrix = shownMatrixCall();
+  if (matrix?.state === 'incoming') {
+    const room = matrixNow().state?.rooms[matrix.roomId];
+    const answerMatrix = () => {
+      void callPermissions(matrix.video).then((granted) => {
+        if (!granted) {
+          declineMatrixCall(matrix);
+          return;
+        }
+        try {
+          answerMatrixCall(matrix);
+        } catch (error) {
+          declineMatrixCall(matrix);
+          ask(t('Matrix'), error instanceof Error ? error.message : String(error), [{ text: t('OK') }]);
+        }
+      });
+    };
+    return (
+      <Modal visible animationType="fade" statusBarTranslucent onRequestClose={() => undefined}>
+        <MatrixRingScreen call={matrix} name={room?.name || matrix.from || t('Matrix')} onAnswer={answerMatrix} onDecline={() => declineMatrixCall(matrix)} />
       </Modal>
     );
   }

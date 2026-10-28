@@ -133,6 +133,24 @@ On main, not released yet:
   address; with neither, it goes straight. The key fingerprint that proves the call passes through the XMPP servers as
   it is, not end-to-end encrypted, and a call never goes through Tor. Checked against Chromium's WebRTC and a real
   Prosody, not yet with Conversations on a phone.
+- **Voice and video calls with people on Matrix** (Android): the two tiles at the top of a Matrix chat call by voice
+  or with video, with Element Call, the call app Element and Element X use (0.28.0, carried inside the app, its files
+  served from the app itself, with its telemetry, its error reports and its own config left out). It opens in a window
+  of its own, which Back or leaving Erevos makes small (picture in picture), and its earpiece or loudspeaker switch
+  moves Erevos's own call sound. Erevos is its host through the Matrix Widget API, as Element is: it lets it into the
+  call's room only, to send and read a call's events there and nothing else (its own member state, now or delayed with
+  MSC4140 so a lost phone leaves the call by itself, its ring, its decline, its media keys encrypted as the room is,
+  and to-device through Olm), answers who the account is to the media server with an OpenID token, and names that
+  server from the homeserver (MSC4143) or its .well-known. Calls to you ring as Erevos's own do while the space is
+  open (MSC4075 rings that mention you; up to two minutes), stop when the caller leaves, or when another of your
+  devices answers or turns them down, and **Decline** tells the caller (MSC4310). Each call leaves one line in its
+  chat; a ring missed while Erevos was closed leaves its line when the space next syncs. Sound and picture are
+  end-to-end encrypted, per person, and go through the media server (LiveKit) the Matrix server names, never through
+  Tor; what Element Call asks of the Matrix server goes through Erevos, so through Tor as Matrix does, and its own
+  requests to a Matrix server are refused. Older one-to-one Matrix calls (m.call.*, as FluffyChat makes them) do not
+  ring here. While a Matrix call is on or ringing, another call, Erevos's own or one on XMPP, does not ring, and the
+  other way round: it shows as missed. Checked against a homeserver played in the checks with the real core, and the
+  real Element Call in Chromium up to the media server; not yet on a phone with Element X.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

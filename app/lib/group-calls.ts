@@ -1,4 +1,4 @@
-import { currentCall, offerMissed, type Rtc } from './call';
+import { currentCall, offerMissed, otherCallOn, type Rtc } from './call';
 import { callClock, CALL_LINE } from './calls';
 import { GroupCall, currentGroupCall, HERE_EVERY } from './group-call';
 import type { GroupCallSignal } from './group-call-signal';
@@ -165,7 +165,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) }), place);
     return;
   }
-  if (ours || currentCall()) {
+  if (ours || currentCall() || otherCallOn()) {
     place.line(group, `${CALL_LINE}Missed ${kind}, while in another call`);
     return;
   }

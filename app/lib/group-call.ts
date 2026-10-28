@@ -1,4 +1,4 @@
-import { callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
+import { callNow, connectionConfig, CONNECT_MS, currentCall, describedSdp, newCallId, otherCallOn, RECONNECT_MS, relayToAnswer, RING_MS, type Connection, type Rtc, type Stream } from './call';
 import type { GroupCallSignal } from './group-call-signal';
 import type { CallRelay } from './relay';
 import { t } from './i18n';
@@ -112,7 +112,7 @@ export class GroupCall {
 
   /** A call someone started that rings here. Null if a call is already in progress. */
   static incoming(id: string, startedBy: string, options: GroupCallOptions): GroupCall | null {
-    if (currentCall() || currentGroupCall()) return null;
+    if (currentCall() || currentGroupCall() || otherCallOn()) return null;
     const call = new GroupCall(id, startedBy, 'incoming', options);
     current = call;
     call.timer = setTimeout(() => call.end('missed'), RING_MS);
@@ -332,5 +332,5 @@ export class GroupCall {
 }
 
 function busy() {
-  if (currentCall() || currentGroupCall()) throw new Error(t('There is a call already.'));
+  if (currentCall() || currentGroupCall() || otherCallOn()) throw new Error(t('There is a call already.'));
 }

@@ -1,0 +1,416 @@
+import { currentCall } from './call';
+import { CALL_LINE, callClock } from './calls';
+import { currentGroupCall } from './group-call';
+import { lang, t } from './i18n';
+import { randomBytes, toHex } from './crypto';
+import { addMatrixCallLine, sendEvent, setCallHandler, setRoomTap, type CallEvent, type Json, type MatrixState } from './matrix';
+import { CALL_MEMBER, hostWidget, type WidgetHost, type WidgetMessage, type WidgetNews } from './matrix-widget';
+
+// Calls with people on Matrix, as Element X makes them (docs/matrix.md): with Element Call, Element's
+// own call app, which Erevos carries inside it (modules/erevos-webcall) and shows in a window of its
+// own, the call's screen. Erevos is its host (lib/matrix-widget.ts): it lets it into the call's room
+// and does what it asks of the account there. Its sound and picture go to the media server the
+// homeserver names (LiveKit), encrypted with keys that only the people in the call have, which
+// they give each other encrypted through Matrix.
+//
+// A call rings here as Element Call rings it: an event in the room (an RTC notification, MSC4075)
+// that says ring, mentions us, and lasts a while. It stops ringing when it is over, when the caller
+// leaves the call, or when another of our devices answers or turns it down. Turning it down tells
+// the caller (MSC4310). Answering opens Element Call into the call.
+//
+// The older Matrix calls (m.call.*, one to one, as FluffyChat makes them) do not ring here.
+
+/** Where Element Call shows: its window on Android, a frame on the web. The checks give their own. */
+export type CallWindow = {
+  /** Opens Element Call at `url`. */
+  open(url: string, video: boolean): void;
+  /** Hands it a message of the Widget API. */
+  post(message: WidgetMessage): void;
+  close(): void;
+};
+
+/** What the calls need of the open space: its Matrix account (lib/matrix-store.ts), and where
+ *  Element Call's page is. */
+export type MatrixCallsSpace = {
+  /** The account as it is now, or null. */
+  now(): MatrixState | null;
+  /** Runs `use` with the account after the changes asked for before it, and keeps what it changed. */
+  change<T>(use: (state: MatrixState) => Promise<T>): Promise<T>;
+  /** Runs `use` with the account at once, for what changes nothing of it. */
+  read<T>(use: (state: MatrixState) => Promise<T>): Promise<T>;
+  /** Element Call's page, and the address its host says it is at (the Widget API's parentUrl). */
+  page: string;
+  parentUrl: string;
+};
+
+export type MatrixCallState = 'incoming' | 'open' | 'ended';
+
+/** A Matrix call on this phone, from its ring (or our start) to its end. */
+export type MatrixCall = {
+  /** Its own: the ring's event, or one made for ours. Its line in the chat goes by it. */
+  id: string;
+  roomId: string;
+  video: boolean;
+  outgoing: boolean;
+  state: MatrixCallState;
+  /** Who rang, and their ring's event, for a call that rings here. */
+  from?: string;
+  ring?: string;
+  /** When Element Call was in the call, and when someone else was there with us first. */
+  joinedAt?: number;
+  metAt?: number;
+  /** How it ended, when not hung up: turned down (by them, or here or on another of our devices),
+   *  answered on another device, not answered, or rung while in another call. */
+  end?: 'declined' | 'elsewhere' | 'missed' | 'busy';
+};
+
+/** The rings of a call: the one MatrixRTC sends now, and the older one sent beside it. */
+const RINGS = new Set(['org.matrix.msc4075.rtc.notification', 'm.rtc.notification', 'org.matrix.msc4075.call.notify']);
+const DECLINES = new Set(['org.matrix.msc4310.rtc.decline', 'm.rtc.decline']);
+// A ring lasts no longer than this, whatever it says (MSC4075).
+const RING_MOST_MS = 2 * 60_000;
+// A ring said to be sent more than this ahead of when the homeserver had it is measured from the homeserver's time.
+const AHEAD_MOST_MS = 20_000;
+// How long Element Call has to hang up when asked, before its window closes anyway.
+const HANG_UP_WAIT_MS = 4000;
+// Missed rings older than this, as an account's first sync brings them, leave no line.
+const LINE_AGE_MOST_MS = 24 * 3600_000;
+
+let shown: MatrixCall | null = null;
+let host: WidgetHost | null = null;
+let callWindow: CallWindow | null = null;
+let space: MatrixCallsSpace | null = null;
+let ringEnds: ReturnType<typeof setTimeout> | null = null;
+let closing: ReturnType<typeof setTimeout> | null = null;
+const listeners = new Set<() => void>();
+
+function changed(): void {
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // One listener's failure does not keep the others from hearing.
+    }
+  });
+}
+
+/** The Matrix call on this phone: one that rings, or Element Call open. */
+export function shownMatrixCall(): MatrixCall | null {
+  return shown;
+}
+
+/** Whether a Matrix call is on: ringing or open. Erevos's own calls do not ring meanwhile (lib/calls.ts). */
+export function inMatrixCall(): boolean {
+  return !!shown && shown.state !== 'ended';
+}
+
+/** Calls `listener` each time the Matrix call changes. Returns how to stop. */
+export function onMatrixCallChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** The address Element Call opens at, for `intent` (Element Call's: start_call_dm, join_existing…). */
+export function elementCallUrl(o: { page: string; parentUrl: string; widgetId: string; roomId: string; userId: string; deviceId: string; baseUrl: string; intent: string }): string {
+  const params = new URLSearchParams({
+    widgetId: o.widgetId,
+    parentUrl: o.parentUrl,
+    roomId: o.roomId,
+    userId: o.userId,
+    deviceId: o.deviceId,
+    baseUrl: o.baseUrl,
+    intent: o.intent,
+    lang: lang(),
+    theme: 'dark',
+    // Its back arrow puts the call in a small window, as the phone's Back does.
+    header: 'app_bar',
+    confineToRoom: 'true',
+    appPrompt: 'false',
+    // Each person's media under keys of their own, given only to those in the call.
+    perParticipantE2EE: 'true',
+    // Never a public server of Element's to reach the other side through.
+    allowIceFallback: 'false',
+    // Earpiece or loudspeaker: Erevos switches them (lib/call-host.tsx).
+    controlledAudioDevices: 'true',
+    hideScreensharing: 'true',
+  });
+  // In the fragment: the page never sends it anywhere.
+  return `${o.page}#?${params.toString()}`;
+}
+
+/** What a ring says, if it rings for us now: whether it is a video call, and when it stops. */
+export function ringOf(event: CallEvent, me: string, now = Date.now()): { video: boolean; until: number } | null {
+  const c = event.content;
+  if (event.sender === me || !RINGS.has(event.type)) return null;
+  const older = event.type === 'org.matrix.msc4075.call.notify';
+  const type = older ? c.notify_type : c.notification_type;
+  // Newer rings leave how to tell to the app: in a chat with one person a call rings.
+  if (type !== undefined && type !== 'ring') return null;
+  const mentions = c['m.mentions'] as { room?: unknown; user_ids?: unknown } | undefined;
+  const mentioned = mentions?.room === true || (Array.isArray(mentions?.user_ids) && mentions.user_ids.includes(me));
+  if (!mentioned) return null;
+  const at = event.ts;
+  let until: number;
+  if (older) {
+    // The older ring says nothing of how long it lasts: as long as Element rang it.
+    until = at + 60_000;
+  } else {
+    const senderTs = c.sender_ts;
+    const lifetime = c.lifetime;
+    if (typeof senderTs !== 'number' || typeof lifetime !== 'number' || lifetime < 0) return null;
+    const basis = senderTs - at > AHEAD_MOST_MS ? at : senderTs;
+    until = Math.min(basis + lifetime, now + RING_MOST_MS);
+  }
+  const intent = c['m.call.intent'];
+  return { video: intent !== 'audio', until };
+}
+
+/** Whether a call member event says nobody is there: empty, or past its expiry. */
+function memberGone(content: Json, ts: number, now: number): boolean {
+  if (!Object.keys(content).length) return true;
+  const expires = content.expires;
+  return typeof expires === 'number' && ts + expires < now;
+}
+
+/** The line a call leaves in its chat, in English (lib/call-lines.ts shows it). */
+export function matrixCallLine(call: MatrixCall, now = Date.now()): string {
+  const kind = call.video ? 'Video call' : 'Voice call';
+  if (call.metAt !== undefined) return `${kind}, ${callClock(now - call.metAt)}`;
+  if (call.end === 'elsewhere') return `${kind}, answered on another device`;
+  if (call.end === 'declined') return `${kind}, turned down`;
+  if (call.end === 'busy') return `Missed ${kind.toLowerCase()}, while in another call`;
+  if (call.outgoing) return `${kind}, not answered`;
+  return `Missed ${kind.toLowerCase()}`;
+}
+
+function line(call: MatrixCall, state?: MatrixState): void {
+  const text = `${CALL_LINE}${matrixCallLine(call)}`;
+  const mine = call.outgoing || call.end === 'declined' || call.end === 'elsewhere';
+  // Inside a change already (a sync's), or a change of its own.
+  if (state) addMatrixCallLine(state, call.roomId, mine, text, call.id);
+  else void space?.change(async (s) => addMatrixCallLine(s, call.roomId, mine, text, call.id)).catch(() => undefined);
+}
+
+function finish(call: MatrixCall, state?: MatrixState): void {
+  if (call.state === 'ended') return;
+  call.state = 'ended';
+  if (ringEnds) clearTimeout(ringEnds);
+  ringEnds = null;
+  if (closing) clearTimeout(closing);
+  closing = null;
+  host?.stop();
+  host = null;
+  setRoomTap(null);
+  try {
+    callWindow?.close();
+  } catch {
+    // Closed already.
+  }
+  line(call, state);
+  // Nothing of it shows any more: Element Call's window is its screen, and it closed.
+  if (shown === call) shown = null;
+  changed();
+}
+
+/** Busy with another call: Erevos's own, a group's, or a Matrix one. */
+function busy(): boolean {
+  return !!currentCall() || !!currentGroupCall() || inMatrixCall();
+}
+
+// A call's event, as sync brings it (lib/matrix.ts): a ring, a decline, a member come or gone, or
+// one for Element Call, which gets every event of its room through the room tap meanwhile.
+async function onCallEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
+  if (event.encrypted !== undefined) {
+    host?.toDevice({ type: event.type, sender: event.sender, content: event.content }, event.encrypted);
+    return false;
+  }
+  if (!event.roomId) return false;
+  const now = Date.now();
+  const me = state.userId;
+  const call = shown && shown.state !== 'ended' && shown.roomId === event.roomId ? shown : null;
+  if (RINGS.has(event.type)) {
+    const ring = ringOf(event, me, now);
+    if (!ring || !event.eventId) return false;
+    // The older ring beside the newer one, or another for a call that already rings or is open.
+    if (call) return false;
+    const rung: MatrixCall = { id: event.eventId, roomId: event.roomId, video: ring.video, outgoing: false, state: 'incoming', from: event.sender, ring: event.eventId };
+    if (ring.until <= now) {
+      if ((event.age ?? now - event.ts) < LINE_AGE_MOST_MS && !state.rooms[event.roomId]?.messages.some((m) => m.id === event.eventId)) {
+        rung.state = 'ended';
+        line(rung, state);
+        return true;
+      }
+      return false;
+    }
+    if (busy()) {
+      rung.state = 'ended';
+      rung.end = 'busy';
+      line(rung, state);
+      return true;
+    }
+    shown = rung;
+    ringEnds = setTimeout(() => {
+      if (shown === rung && rung.state === 'incoming') {
+        rung.end = 'missed';
+        finish(rung);
+      }
+    }, ring.until - now);
+    changed();
+    return true;
+  }
+  if (!call) return false;
+  const relates = (event.content['m.relates_to'] as Json | undefined)?.event_id;
+  if (DECLINES.has(event.type)) {
+    // Ours from another device, for the ring here; or theirs, for our call (Element Call ends it itself).
+    if (call.state === 'incoming' && event.sender === me && relates === call.ring) {
+      call.end = 'declined';
+      finish(call, state);
+      return true;
+    }
+    if (call.outgoing && event.sender !== me && !call.metAt) call.end = 'declined';
+    return false;
+  }
+  if (event.type === CALL_MEMBER) {
+    const gone = memberGone(event.content, event.ts, now);
+    if (call.state === 'incoming') {
+      // The caller left before it was answered.
+      if (event.sender === call.from && gone) {
+        call.end = 'missed';
+        finish(call, state);
+        return true;
+      }
+      // Another of our devices answered it.
+      if (event.sender === me && !gone && event.content.device_id !== state.deviceId) {
+        call.end = 'elsewhere';
+        finish(call, state);
+        return true;
+      }
+    } else if (call.state === 'open' && call.joinedAt && event.sender !== me && !gone) {
+      call.metAt ??= now;
+    }
+  }
+  return false;
+}
+
+function open(call: MatrixCall, intent: string): void {
+  if (!space || !callWindow) throw new Error(t('Matrix calls are not ready on this device.'));
+  const state = space.now();
+  if (!state) throw new Error(t('Not signed in to Matrix.'));
+  const widgetId = toHex(randomBytes(12));
+  const account = { userId: state.userId, deviceId: state.deviceId, change: space.change, read: space.read };
+  const opened = callWindow;
+  host = hostWidget({
+    widgetId,
+    roomId: call.roomId,
+    account,
+    post: (message) => opened.post(message),
+    told: (news) => heard(call, news),
+  });
+  const own = host;
+  setRoomTap((roomId, event, timeline) => {
+    if (roomId === call.roomId) own.roomEvent(event, timeline);
+  });
+  call.state = 'open';
+  opened.open(
+    elementCallUrl({ page: space.page, parentUrl: space.parentUrl, widgetId, roomId: call.roomId, userId: state.userId, deviceId: state.deviceId, baseUrl: state.homeserver, intent }),
+    call.video,
+  );
+  changed();
+}
+
+function heard(call: MatrixCall, news: WidgetNews): void {
+  if (shown !== call) return;
+  if (news === 'joined') {
+    call.joinedAt ??= Date.now();
+    changed();
+    return;
+  }
+  // Hung up, or closed: the call is over here.
+  finish(call);
+}
+
+/** Calls the people of a Matrix room: Element Call opens and rings them. Throws if a call is on. */
+export function startMatrixCall(roomId: string, video: boolean): MatrixCall {
+  if (busy()) throw new Error(t('There is a call already.'));
+  const room = space?.now()?.rooms[roomId];
+  if (!room) throw new Error(t('Not signed in to Matrix.'));
+  const call: MatrixCall = { id: `call-${toHex(randomBytes(8))}`, roomId, video, outgoing: true, state: 'open' };
+  shown = call;
+  try {
+    open(call, room.direct ? (video ? 'start_call_dm' : 'start_call_dm_voice') : video ? 'start_call' : 'start_call_voice');
+  } catch (error) {
+    shown = null;
+    throw error;
+  }
+  return call;
+}
+
+/** Answers the call that rings: Element Call opens into it. */
+export function answerMatrixCall(call: MatrixCall): void {
+  if (shown !== call || call.state !== 'incoming') return;
+  if (ringEnds) clearTimeout(ringEnds);
+  ringEnds = null;
+  const direct = space?.now()?.rooms[call.roomId]?.direct ?? true;
+  open(call, direct ? (call.video ? 'join_existing_dm' : 'join_existing_dm_voice') : call.video ? 'join_existing' : 'join_existing_voice');
+}
+
+/** Turns down the call that rings, and tells the caller. */
+export function declineMatrixCall(call: MatrixCall): void {
+  if (shown !== call || call.state !== 'incoming') return;
+  call.end = 'declined';
+  const ring = call.ring;
+  // The older ring has no decline: it just stops ringing.
+  if (ring) {
+    void space
+      ?.change((state) => sendEvent(state, call.roomId, 'org.matrix.msc4310.rtc.decline', { 'm.relates_to': { rel_type: 'm.reference', event_id: ring } }))
+      .catch(() => undefined);
+  }
+  finish(call);
+}
+
+/** Hangs up the open call: Element Call leaves it, then its window closes. */
+export function hangUpMatrixCall(): void {
+  const call = shown;
+  if (!call || call.state === 'ended') return;
+  if (call.state === 'incoming') {
+    declineMatrixCall(call);
+    return;
+  }
+  if (closing) return;
+  closing = setTimeout(() => finish(call), HANG_UP_WAIT_MS);
+  void host
+    ?.ask('im.vector.hangup')
+    .catch(() => undefined)
+    .then(() => finish(call));
+}
+
+/** A message from Element Call's window. */
+export function callWindowMessage(message: unknown): void {
+  host?.receive(message);
+}
+
+/** Element Call's window went away by itself (closed by the person, or by Android). */
+export function callWindowClosed(): void {
+  if (shown && shown.state === 'open') finish(shown);
+}
+
+/** Takes Matrix calls in while the space is open (components/call-host.tsx), and shows Element Call
+ *  in `shownIn`. Returns how to stop, which ends the call. */
+export function watchMatrixCalls(shownIn: CallWindow, given: MatrixCallsSpace): () => void {
+  callWindow = shownIn;
+  space = given;
+  setCallHandler(onCallEvent);
+  return () => {
+    if (shown) {
+      if (shown.state === 'incoming') shown.end = 'missed';
+      finish(shown);
+    }
+    setCallHandler(null);
+    setRoomTap(null);
+    callWindow = null;
+    space = null;
+    changed();
+  };
+}

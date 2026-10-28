@@ -1562,7 +1562,15 @@ Element: Keine Brücke sitzt dazwischen.
   (oder die Sicherheitsphrase) ein, den Element erstellt hat: Frühere Nachrichten öffnen sich aus der Schlüsselsicherung
   des Kontos, neue Schlüssel kommen hinein, und deine anderen Geräte vertrauen diesem. Ein Konto ohne kann hier
   **Sicherheitsschlüssel einrichten**; schreib ihn auf, denn Erevos behält ihn nicht.
-- **Noch nicht:** Sprachnachrichten und Anrufe.
+- **Anrufe:** Auf Android rufen die zwei Kacheln oben im Chat mit Sprache oder mit Video an, mit Element Call, der
+  Anruf-App von Element und Element X, die Erevos in sich trägt und in einem eigenen Fenster zeigt (Zurück macht es
+  klein). Anrufe an dich klingeln hier wie Erevos' eigene, solange dieser Bereich offen ist: **Annehmen** öffnet Element
+  Call im Anruf, **Ablehnen** sagt es der anrufenden Person. Ton und Bild sind Ende-zu-Ende-verschlüsselt, mit
+  Schlüsseln, die nur die Leute im Anruf haben, und gehen über den Medienserver (LiveKit), den dein Matrix-Server nennt;
+  der sieht die Adresse dieses Telefons. Ein Matrix-Server ohne einen solchen kann nicht anrufen. Was Element Call dem
+  Matrix-Server sagt, geht über Erevos, und über Tor wie der Rest von Matrix, aber der Anruf selbst geht nie über Tor.
+  Ältere Matrix-Anrufe zu zweit, wie FluffyChat sie macht, klingeln hier nicht.
+- **Noch nicht:** Sprachnachrichten, und Anrufe auf dem Computer und in der Web-App.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben
 Matrix-Chats getrennt und markiert, für die Menschen, die du sonst nur über Matrix erreichst.

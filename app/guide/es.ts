@@ -1453,7 +1453,15 @@ ningún puente se pone en medio.
   que creó Element: los mensajes anteriores se abren desde la copia de claves de la cuenta, las claves nuevas entran
   en ella, y tus otros dispositivos confían en este. Una cuenta sin ella puede **Crear una clave de seguridad** aquí;
   apúntala, porque Erevos no la guarda.
-- **Aún no:** mensajes de voz y llamadas.
+- **Llamadas:** en Android, los dos recuadros de arriba del chat llaman por voz o con video, con Element Call, la app de
+  llamadas de Element y Element X, que Erevos lleva dentro y muestra en una ventana propia (Atrás la hace pequeña). Las
+  llamadas para ti suenan aquí como las propias de Erevos, mientras este espacio está abierto: **Responder** abre
+  Element Call en la llamada, **Rechazar** se lo dice a quien llama. El sonido y la imagen van cifrados de extremo a
+  extremo, con claves que solo tienen los que están en la llamada, y pasan por el servidor de medios (LiveKit) que
+  indica tu servidor de Matrix, que ve la dirección de este teléfono; un servidor de Matrix sin uno no puede llamar. Lo
+  que Element Call le dice al servidor de Matrix pasa por Erevos, y por Tor como el resto de Matrix, pero la llamada en
+  sí nunca pasa por Tor. Las llamadas de Matrix más antiguas entre dos, como las hace FluffyChat, no suenan aquí.
+- **Aún no:** mensajes de voz, y llamadas en el ordenador y en la app web.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los
 chats de Matrix van aparte y marcados, para las personas a las que solo llegarías por Matrix.

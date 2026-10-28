@@ -3,13 +3,17 @@ import { useEffect, useState } from 'react';
 import { Image, View } from 'react-native';
 
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
+import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
+import { callPermissions } from '../lib/call-permissions';
 import { fileSize } from '../lib/attachments';
 import { toBase64 } from '../lib/crypto';
+import { canElementCall } from '../lib/element-call-window';
 import { t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
+import { startMatrixCall } from '../lib/matrix-calls';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import { matrixFile, matrixLeave, matrixNow, matrixRead, matrixSend, matrixSendFile, matrixVerifications, matrixVerify, onMatrixChange, runMatrix } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
@@ -23,7 +27,8 @@ import { useColors } from '../theme/context';
 // It is marked as not anonymous, and as not encrypted when the room is not. Opening it marks its
 // messages read on the homeserver. Photos and files go encrypted when the room is
 // (lib/matrix-media.ts); a photo is fetched only when tapped, so the homeserver does not learn
-// which were looked at merely by scrolling.
+// which were looked at merely by scrolling. Its call buttons open Element Call (lib/matrix-calls.ts),
+// where Erevos has it.
 
 export default function MatrixChatScreen() {
   const router = useRouter();
@@ -82,6 +87,20 @@ export default function MatrixChatScreen() {
     }
   }
 
+  async function call(video: boolean) {
+    if (!roomId) return;
+    setNote('');
+    if (!(await callPermissions(video))) {
+      setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
+      return;
+    }
+    try {
+      startMatrixCall(roomId, video);
+    } catch (error) {
+      fail(error);
+    }
+  }
+
   const sendPhoto = () => sendPicked(() => pickPhoto('photos', 90));
   const sendAnyFile = () =>
     sendPicked(async () => {
@@ -91,9 +110,21 @@ export default function MatrixChatScreen() {
 
   return (
     <Page>
-      <Text variant="title" numberOfLines={2}>
-        {room.name}
-      </Text>
+      <Row>
+        <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
+          {room.name}
+        </Text>
+        {canElementCall() && !room.invitedBy ? (
+          <>
+            <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
+              <VideoSign />
+            </ShortcutTile>
+            <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void call(false)}>
+              <PhoneSign />
+            </ShortcutTile>
+          </>
+        ) : null}
+      </Row>
       <Text variant="caption" tone="muted">
         {room.encrypted ? t('Matrix · encrypted, not anonymous') : t('Not encrypted: the Matrix server can read this chat.')}
       </Text>

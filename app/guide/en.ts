@@ -1344,7 +1344,15 @@ between.
 - **Security Key:** under **Security Key** on the Matrix screen, enter the Security Key (or Security Phrase) Element
   made: earlier messages open from the account's key backup, new keys go into it, and your other devices trust this
   one. An account with none can **Set up a Security Key** here; write it down, as Erevos does not keep it.
-- **Not yet:** voice messages and calls.
+- **Calls:** on Android, the two tiles at the top of a chat call by voice or with video, with Element Call, the call app
+  of Element and Element X, which Erevos carries inside it and shows in a window of its own (Back makes it small). Calls
+  to you ring here as Erevos's own do, while this space is open: **Answer** opens Element Call into the call,
+  **Decline** tells the caller. Sound and picture are end-to-end encrypted, with keys only those in the call have, and
+  go through the media server (LiveKit) your Matrix server names, which sees this phone's address; a Matrix server
+  without one cannot call. What Element Call says to the Matrix server goes through Erevos, and through Tor as the rest
+  of Matrix does, but the call itself never goes through Tor. Older one-to-one Matrix calls, as FluffyChat makes them,
+  do not ring here.
+- **Not yet:** voice messages, and calls on the computer and in the web app.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.

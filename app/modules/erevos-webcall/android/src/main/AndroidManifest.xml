@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- No web page in Erevos tells Google where it goes (Safe Browsing), nor how WebView fares (its metrics). -->
+    <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="false" />
+    <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true" />
+
+    <!-- Element Call's window, the screen of a Matrix call (ElementCallActivity.kt): a task of its
+         own, so it can go on in a small window over Erevos and other apps (picture in picture),
+         and it keeps its page as the phone turns. -->
+    <activity
+      android:name="expo.modules.erevoswebcall.ElementCallActivity"
+      android:exported="false"
+      android:launchMode="singleTask"
+      android:taskAffinity="${applicationId}.matrixcall"
+      android:supportsPictureInPicture="true"
+      android:resizeableActivity="true"
+      android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|keyboardHidden|keyboard|navigation|uiMode|density"
+      android:theme="@android:style/Theme.Material.NoActionBar" />
+  </application>
+</manifest>

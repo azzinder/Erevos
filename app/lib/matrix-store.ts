@@ -197,6 +197,20 @@ export function stopMatrix(): void {
   told();
 }
 
+/** The open space's account for its calls (lib/matrix-calls.ts): as it is now, and changed after
+ *  what was asked before, then kept. */
+export const matrixCallAccount = {
+  now: (): MatrixState | null => live?.state ?? null,
+  change<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
+    const it = need();
+    return changeAccount(it, () => use(it.state));
+  },
+  /** For what changes nothing of the account: at once, and nothing kept. */
+  async read<T>(use: (state: MatrixState) => Promise<T>): Promise<T> {
+    return use(need().state);
+  },
+};
+
 function need(): Live & { state: MatrixState } {
   if (!live?.state) throw new Error(t('There is no Matrix account in this space.'));
   return live as Live & { state: MatrixState };

@@ -1412,7 +1412,14 @@ između.
   napravio Element: ranije poruke se otvaraju iz rezervne kopije ključeva računa, novi ključevi idu u nju, a vaši
   drugi uređaji vjeruju ovom. Račun bez njega ovdje može **Napravite sigurnosni ključ**; zapišite ga, jer ga Erevos
   ne čuva.
-- **Još ne:** glasovne poruke i pozivi.
+- **Pozivi:** na Androidu, dvije pločice na vrhu razgovora zovu glasom ili videom, preko Element Calla, aplikacije za
+  pozive Elementa i Elementa X, koju Erevos nosi u sebi i prikazuje u svom prozoru (Nazad ga smanji). Pozivi vama ovdje
+  zvone kao Erevosovi vlastiti, dok je ovaj prostor otvoren: **Javi se** otvara Element Call u pozivu, **Odbij** to
+  javlja onome ko zove. Zvuk i slika su šifrovani s kraja na kraj, ključevima koje imaju samo oni u pozivu, i idu preko
+  medijskog servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog telefona; Matrix server bez njega ne
+  može zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam
+  poziv nikad ne ide preko Tora. Stariji Matrix pozivi udvoje, kakve pravi FluffyChat, ovdje ne zvone.
+- **Još ne:** glasovne poruke, i pozivi na računaru i u web-aplikaciji.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.

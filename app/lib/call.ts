@@ -126,6 +126,20 @@ export function currentCall(): Call | null {
   return current && current.state !== 'ended' ? current : null;
 }
 
+// A call not of Erevos's own, on this phone (a Matrix one, lib/matrix-calls.ts): none of ours starts
+// or rings meanwhile.
+let other: () => boolean = () => false;
+
+/** How to know whether a call not of Erevos's own is on. */
+export function callsOther(busy: () => boolean): void {
+  other = busy;
+}
+
+/** Whether a call not of Erevos's own is on. */
+export function otherCallOn(): boolean {
+  return other();
+}
+
 /** `promise`, or `fallback` if it has not settled within `ms`: for a relay that may take long to
  *  fail, as on a Wi-Fi with no internet. */
 export function soon<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
@@ -199,7 +213,7 @@ export class Call {
 
   /** Calls a contact. Throws if a call is already in progress. */
   static start(options: CallOptions): Call {
-    if (currentCall()) throw new Error(t('There is a call already.'));
+    if (currentCall() || otherCallOn()) throw new Error(t('There is a call already.'));
     const call = new Call(newCallId(), true, '', options);
     current = call;
     void call.dial();
@@ -208,7 +222,7 @@ export class Call {
 
   /** A contact's call that rings here, from their offer. Null if a call is already in progress. */
   static incoming(signal: Extract<CallSignal, { kind: 'offer' }>, options: Omit<CallOptions, 'video'>): Call | null {
-    if (currentCall()) return null;
+    if (currentCall() || otherCallOn()) return null;
     const call = new Call(signal.id, false, signal.sdp, { ...options, video: signal.video });
     current = call;
     call.wait(RING_MS, 'missed', true);

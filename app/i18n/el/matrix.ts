@@ -69,4 +69,8 @@ export const matrix: Record<string, string> = {
   "This Matrix account already has a Security Key: enter it instead.": "Αυτός ο λογαριασμός Matrix έχει ήδη Κλειδί Ασφαλείας: γράψ’ το εκεί.",
   "Through Tor: the Matrix server does not see your address.": "Μέσω Tor: ο server του Matrix δεν βλέπει τη διεύθυνσή σου.",
   "Not through Tor now: the Matrix server sees your address. Tor is under Settings → Relay and networks → Tor.": "Όχι μέσω Tor τώρα: ο server του Matrix βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Relay και δίκτυα → Tor.",
+  "Earpiece": "Ακουστικό",
+  "On Matrix, with Element Call": "Στο Matrix, με το Element Call",
+  "Matrix calls are not ready on this device.": "Οι κλήσεις Matrix δεν είναι έτοιμες σε αυτή τη συσκευή.",
+  "Not signed in to Matrix.": "Δεν έχεις συνδεθεί στο Matrix.",
 };

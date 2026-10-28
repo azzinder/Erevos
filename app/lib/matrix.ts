@@ -17,9 +17,11 @@
 //    to every device of every member that does not have it yet, through Olm, then sends.
 //  - Starts a chat with someone (startChat), joins, leaves, marks as read, signs out.
 //  - Passes the steps of a check by emoji, to-device or in a room, to lib/matrix-verify.ts.
+//  - Passes a call's events to lib/matrix-calls.ts, and a room's events to Element Call while it
+//    shows that room (lib/matrix-widget.ts), with what Element Call asks of the homeserver.
 //
-// Photos and files are lib/matrix-media.ts's. Not yet: calls, key backup and secret storage, so
-// messages from before this device signed in stay locked. Not audited.
+// Photos and files are lib/matrix-media.ts's; the key backup and secret storage,
+// lib/matrix-backup.ts's. Not audited.
 
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
@@ -229,6 +231,11 @@ export async function call(state: Pick<MatrixState, 'homeserver' | 'accessToken'
   return answered(await http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined }));
 }
 
+/** One request to a part of the Client-Server API still unstable, under the MSC that names it. */
+async function unstable(state: Pick<MatrixState, 'homeserver' | 'accessToken'>, feature: string, method: MatrixRequest['method'], path: string, body?: unknown): Promise<Json> {
+  return answered(await http({ method, url: `${state.homeserver}/_matrix/client/unstable/${feature}${path}`, body, token: state.accessToken }));
+}
+
 /** One request as it is (lib/matrix-media.ts), the homeserver's refusal thrown. */
 export async function request(state: Pick<MatrixState, 'homeserver' | 'accessToken'>, asked: Omit<MatrixRequest, 'token'>): Promise<MatrixAnswer> {
   const answer = await http({ ...asked, token: state.accessToken });
@@ -400,8 +407,20 @@ async function passVerification(state: MatrixState, event: VerificationEvent): P
 
 /** A call's event: one that rings, answers or ends a call, a room's call members, or the keys of a
  *  call's media sent to this device, each opened first when it came encrypted. `age`: how long ago
- *  the homeserver had it, when it says. */
-export type CallEvent = { type: string; content: Json; sender: string; ts: number; roomId?: string; eventId?: string; stateKey?: string; senderDevice?: string; age?: number };
+ *  the homeserver had it, when it says. `encrypted`: for one sent to this device, whether it came
+ *  encrypted. */
+export type CallEvent = {
+  type: string;
+  content: Json;
+  sender: string;
+  ts: number;
+  roomId?: string;
+  eventId?: string;
+  stateKey?: string;
+  senderDevice?: string;
+  age?: number;
+  encrypted?: boolean;
+};
 type CallHandler = (state: MatrixState, event: CallEvent) => Promise<boolean>;
 let callHandler: CallHandler | null = null;
 
@@ -422,6 +441,24 @@ export const isCallEvent = (type: unknown): type is string =>
 
 async function passCall(state: MatrixState, event: CallEvent): Promise<boolean> {
   return callHandler ? callHandler(state, event).catch(() => false) : false;
+}
+
+/** An event of a room as the homeserver has it (`room_id` set), opened when it came encrypted.
+ *  `timeline`: it came in the room's timeline, not only as a piece of its state. */
+export type RoomTap = (roomId: string, event: Json, timeline: boolean) => void;
+let roomTap: RoomTap | null = null;
+
+/** Where every event of the rooms goes as it comes, or nowhere: Element Call, while it shows (lib/matrix-calls.ts). */
+export function setRoomTap(next: RoomTap | null): void {
+  roomTap = next;
+}
+
+function tap(roomId: string, event: Json, timeline: boolean): void {
+  try {
+    roomTap?.(roomId, { ...event, room_id: roomId }, timeline);
+  } catch {
+    // Whoever listens, the sync goes on.
+  }
 }
 
 const callIn = (roomId: string, event: Json, type: string, content: Json): CallEvent => {
@@ -519,11 +556,13 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
   let seen = false;
   for (const event of ((data.state as Json | undefined)?.events as Json[] | undefined) ?? []) {
     takeState(room, event);
+    tap(id, event, false);
     if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
   }
   for (const event of ((data.timeline as Json | undefined)?.events as Json[] | undefined) ?? []) {
     if (typeof event.state_key === 'string') {
       takeState(room, event);
+      tap(id, event, true);
       if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
       continue;
     }
@@ -586,6 +625,7 @@ async function messageOf(state: MatrixState, roomId: string, event: Json): Promi
     type = opened.type;
     content = opened.content;
   }
+  tap(roomId, { ...event, type, content }, true);
   if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
   // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
   if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
@@ -653,9 +693,14 @@ async function openMegolm(state: MatrixState, roomId: string, eventId: string, l
   return { type: String(payload.type), content: (payload.content as Json) ?? {} };
 }
 
-/** Takes in one to-device event: a room key sent us through Olm. Answers whether a locked message opened with it. */
+/** Takes in one to-device event: a room key sent us through Olm, or a call's. Answers whether a
+ *  locked message opened with it, or the call took it. */
 async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
-  if (event.type !== 'm.room.encrypted') return false;
+  if (event.type !== 'm.room.encrypted') {
+    // Sent as it is: the call decides what to make of that.
+    if (!isCallEvent(event.type)) return false;
+    return passCall(state, { type: event.type, content: (event.content as Json) ?? {}, sender: String(event.sender), ts: Date.now(), encrypted: false });
+  }
   const content = (event.content as Json) ?? {};
   const ours = await core<{ curve25519: string; ed25519: string }>('account_keys', { account: state.account });
   const mine = (content.ciphertext as Record<string, { type: number; body: string }> | undefined)?.[ours.curve25519];
@@ -680,7 +725,7 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   if (isVerification(payload.type, payload.content as Json)) return passVerification(state, { type: String(payload.type), content: (payload.content as Json) ?? {}, sender: String(event.sender) });
   if (isCallEvent(payload.type)) {
     const device = typeof payload.sender_device === 'string' ? payload.sender_device : known ? Object.entries(state.devices[String(event.sender)] ?? {}).find(([, d]) => d.curve25519 === senderKey)?.[0] : undefined;
-    return passCall(state, { type: payload.type, content: (payload.content as Json) ?? {}, sender: String(event.sender), ts: Date.now(), ...(device ? { senderDevice: device } : {}) });
+    return passCall(state, { type: payload.type, content: (payload.content as Json) ?? {}, sender: String(event.sender), ts: Date.now(), encrypted: true, ...(device ? { senderDevice: device } : {}) });
   }
   if (payload.type !== 'm.room_key') return false;
   const key = (payload.content as Json) ?? {};
@@ -850,6 +895,11 @@ export async function sendToDeviceSealed(state: MatrixState, type: string, to: R
   if (Object.keys(messages).length) await call(state, 'PUT', `/sendToDevice/m.room.encrypted/${txn()}`, { messages });
 }
 
+/** Sends a to-device event as it is, not encrypted, to devices by user then device ID ('*' for all of a user's). */
+export async function sendToDevicePlain(state: MatrixState, type: string, to: Record<string, Record<string, Json>>): Promise<void> {
+  await call(state, 'PUT', `/sendToDevice/${enc(type)}/${txn()}`, { messages: to });
+}
+
 /** Sends `text` to a room, encrypted when the room is. Answers the message as it now shows. */
 export function sendText(state: MatrixState, roomId: string, text: string): Promise<MatrixMessage> {
   return sendContent(state, roomId, { msgtype: 'm.text', body: text });
@@ -906,6 +956,55 @@ export async function sendEvent(state: MatrixState, roomId: string, type: string
 export async function sendStateEvent(state: MatrixState, roomId: string, type: string, stateKey: string, content: Json): Promise<string> {
   const sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/state/${enc(type)}/${enc(stateKey)}`, content);
   return String(sent.event_id);
+}
+
+/** A room's state as the homeserver has it now: each piece's latest event, `room_id` set. */
+export async function roomState(state: MatrixState, roomId: string): Promise<Json[]> {
+  const answer = (await call(state, 'GET', `/rooms/${enc(roomId)}/state`)) as unknown;
+  return Array.isArray(answer) ? (answer as Json[]).map((event) => ({ ...event, room_id: roomId })) : [];
+}
+
+const DELAYED = 'org.matrix.msc4140';
+
+/** Sets a piece of a room's state after `delayMs`, unless told otherwise before then (MSC4140):
+ *  the homeserver keeps it back meanwhile. A call's "left the call" waits so, and goes out by itself
+ *  if the phone goes quiet. Answers the delay's ID. */
+export async function sendDelayedState(state: MatrixState, roomId: string, type: string, stateKey: string, content: Json, delayMs: number): Promise<string> {
+  try {
+    const sent = await unstable(state, DELAYED, 'PUT', `/rooms/${enc(roomId)}/delayed_event/${enc(type)}/${txn()}`, { delay_ms: delayMs, state_key: stateKey, content });
+    return String(sent.delay_id);
+  } catch (error) {
+    if (!(error instanceof MatrixError && error.code === 'M_UNRECOGNIZED')) throw error;
+  }
+  // A homeserver with MSC4140 as it was first: the delay asked of the usual request.
+  const sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/state/${enc(type)}/${enc(stateKey)}?${DELAYED}.delay=${Math.round(delayMs)}`, content);
+  return String(sent.delay_id);
+}
+
+/** Tells the homeserver what to do with a delayed event now: send it, wait again from now, or drop it. */
+export async function updateDelayed(state: MatrixState, delayId: string, action: 'send' | 'restart' | 'cancel'): Promise<void> {
+  try {
+    await unstable(state, DELAYED, 'POST', `/delayed_events/${enc(delayId)}/${action}`, {});
+    return;
+  } catch (error) {
+    if (!(error instanceof MatrixError && error.code === 'M_UNRECOGNIZED')) throw error;
+  }
+  await unstable(state, DELAYED, 'POST', `/delayed_events/${enc(delayId)}`, { action });
+}
+
+/** Where a call's media may go (MSC4143): the media servers the homeserver lists, or, from a
+ *  homeserver that lists none, those its server's .well-known names, as servers said before. */
+export async function rtcTransports(state: MatrixState): Promise<Json[]> {
+  try {
+    const listed = (await unstable(state, 'org.matrix.msc4143', 'GET', '/rtc/transports')).rtc_transports;
+    if (Array.isArray(listed) && listed.length) return listed as Json[];
+  } catch {
+    // None listed: the .well-known then.
+  }
+  const server = state.userId.slice(state.userId.indexOf(':') + 1);
+  const answer = await http({ method: 'GET', url: `https://${server}/.well-known/matrix/client` });
+  const foci = answer.status === 200 ? answer.json['org.matrix.msc4143.rtc_foci'] : undefined;
+  return Array.isArray(foci) ? (foci as Json[]) : [];
 }
 
 /** A token that proves to another service who this account is (OpenID), as a call's media

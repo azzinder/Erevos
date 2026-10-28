@@ -1,4 +1,4 @@
-import { Call, currentCall, OFFER_FRESH_MS, offerMissed, relayToAnswer, type Rtc } from './call';
+import { Call, currentCall, OFFER_FRESH_MS, offerMissed, otherCallOn, relayToAnswer, type Rtc } from './call';
 import type { CallSignal } from './call-signal';
 import { currentGroupCall } from './group-call';
 import type { CallRelay } from './relay';
@@ -110,7 +110,7 @@ function events(place: CallPlace, identity: string) {
 
 /** Calls a contact. Throws if a call is already in progress. */
 export function startCall(place: CallPlace, peer: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Call {
-  if (currentGroupCall() || elsewhere()) throw new Error(t('There is a call already.'));
+  if (currentGroupCall() || elsewhere() || otherCallOn()) throw new Error(t('There is a call already.'));
   const call = Call.start({ peer, video, relay, rtc, events: events(place, identityOf(peer)) });
   shown = { call, place };
   changed();
@@ -144,7 +144,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     place.line(peer, false, `Missed ${kind}, while in another call`, signal.id);
     return null;
   };
-  if (ours || currentGroupCall() || elsewhere(signal.id)) return busy();
+  if (ours || currentGroupCall() || elsewhere(signal.id) || otherCallOn()) return busy();
   // An offer still to come (XMPP's calls ring first) answers through our call relay, if there is one.
   const callRelay = await place.callRelay().catch(() => null);
   const relay = signal.sdp ? relayToAnswer(signal.sdp, callRelay) : callRelay;
@@ -158,7 +158,7 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
   // end the call it rings for.
   const now = currentCall();
   if (now?.id === signal.id) return null;
-  if (now || currentGroupCall() || elsewhere(signal.id)) return busy();
+  if (now || currentGroupCall() || elsewhere(signal.id) || otherCallOn()) return busy();
   const ringing = Call.incoming(signal, { peer, relay, rtc, events: events(place, identity) });
   if (!ringing) return null;
   shown = { call: ringing, place };
