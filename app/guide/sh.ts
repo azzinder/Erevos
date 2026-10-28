@@ -1402,6 +1402,10 @@ između.
   iste, istim redom, dodirnite **Podudaraju se** na oba telefona. Tada niko ne može neprimjetno biti u sredini, a
   razgovor piše **Provjereno emojijima**. **Provjerite ovaj uređaj drugim svojim**, na Matrix ekranu, radi isto s
   vašim Elementom, da vjeruje uređaju Erevosa. Element može pokrenuti i jedno i drugo.
+- **Sigurnosni ključ:** pod **Sigurnosni ključ** na Matrix ekranu upišite sigurnosni ključ (ili frazu) koji je
+  napravio Element: ranije poruke se otvaraju iz rezervne kopije ključeva računa, novi ključevi idu u nju, a vaši
+  drugi uređaji vjeruju ovom. Račun bez njega ovdje može **Napravite sigurnosni ključ**; zapišite ga, jer ga Erevos
+  ne čuva.
 - **Još ne:** glasovne poruke i pozivi.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix

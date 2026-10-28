@@ -1436,6 +1436,10 @@ fica no meio.
   notado, e a conversa diz **Verificado por emoji**. **Verificar este dispositivo com outro seu**, na tela do Matrix,
   faz o mesmo com o seu próprio Element, para que ele confie no dispositivo do Erevos. O Element também pode começar
   qualquer uma das duas.
+- **Chave de segurança:** em **Chave de segurança**, na tela do Matrix, digite a chave (ou frase) de segurança que o
+  Element criou: as mensagens anteriores abrem a partir do backup de chaves da conta, as chaves novas vão para ele, e
+  seus outros dispositivos confiam neste. Uma conta sem ela pode **Criar uma chave de segurança** aqui; anote-a,
+  porque o Erevos não a guarda.
 - **Ainda não:** mensagens de voz e chamadas.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as

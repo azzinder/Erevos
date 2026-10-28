@@ -7,12 +7,15 @@ import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../co
 import { ask } from '../lib/alert';
 import { canMatrix } from '../lib/core';
 import { t } from '../lib/i18n';
-import { isMatrixId, roomList, type MatrixRoom } from '../lib/matrix';
+import { isMatrixId, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
 import {
   matrixJoin,
   matrixLeave,
   matrixNow,
+  matrixRecoveryInfo,
+  matrixSetUpRecovery,
   matrixSignIn,
+  matrixUnlock,
   matrixSignOut,
   matrixStartChat,
   matrixVerifications,
@@ -158,6 +161,9 @@ export default function MatrixScreen() {
         </Row>
       </Card>
 
+      <SectionTitle title={t('Security Key')} />
+      <RecoveryCard state={state} />
+
       <SectionTitle title={t('Chats')} />
       {rooms.length === 0 ? <Text tone="muted">{t('No Matrix chats yet.')}</Text> : null}
       {rooms.map((room) => (
@@ -233,3 +239,82 @@ function RoomRow({ room, onOpen, onJoin, onDecline }: { room: MatrixRoom; onOpen
     </Pressable>
   );
 }
+
+// The account's Security Key (lib/matrix-backup.ts): asked for once, to open its cross-signing
+// keys and key backup; or, for an account with none, made here for the person to write down.
+function RecoveryCard({ state }: { state: MatrixState }) {
+  const [info, setInfo] = useState<{ storage: boolean; phrase: boolean } | null>(null);
+  const [words, setWords] = useState('');
+  const [made, setMade] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+  const open = !!state.backup && !!state.crossSigning;
+  useEffect(() => {
+    if (open) return;
+    let live = true;
+    matrixRecoveryInfo()
+      .then((found) => live && setInfo(found))
+      .catch((error: unknown) => live && setNote(error instanceof Error ? error.message : String(error)));
+    return () => {
+      live = false;
+    };
+  }, [open]);
+
+  async function act(work: () => Promise<void>) {
+    setBusy(true);
+    setNote('');
+    try {
+      await work();
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      {made ? (
+        <>
+          <Text>{t('Your new Security Key:')}</Text>
+          <Text selectable variant="bodyStrong" style={{ fontFamily: 'monospace' }}>
+            {made}
+          </Text>
+          <Text tone="muted">{t('Write it down and keep it safe: only it opens your earlier messages on a new device. Erevos does not keep it.')}</Text>
+          <Button title={t('I wrote it down')} compact onPress={() => setMade('')} />
+        </>
+      ) : open ? (
+        <Text tone="muted">{t('Key backup is on: earlier messages open with it, and new keys are kept in it.')}</Text>
+      ) : !info ? null : info.storage ? (
+        <>
+          <Text tone="muted">
+            {info.phrase
+              ? t('Enter your Security Key or Security Phrase, as Element made it: earlier messages open, and your other devices trust this one.')
+              : t('Enter your Security Key, as Element made it: earlier messages open, and your other devices trust this one.')}
+          </Text>
+          <Input value={words} onChangeText={setWords} secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('Security Key')} />
+          <Button
+            title={t('Open')}
+            compact
+            loading={busy}
+            disabled={busy || !words.trim()}
+            onPress={() =>
+              void act(async () => {
+                const done = await matrixUnlock(words.trim());
+                setWords('');
+                setNote(t('Opened. Earlier messages that opened: {n}.', { n: done.opened }));
+              })
+            }
+          />
+        </>
+      ) : (
+        <>
+          <Text tone="muted">{t('This account has no Security Key yet. Set one up, so a new device of yours can read earlier messages.')}</Text>
+          <Button title={t('Set up a Security Key')} compact loading={busy} disabled={busy} onPress={() => void act(async () => setMade(await matrixSetUpRecovery()))} />
+        </>
+      )}
+      {note ? <Text tone="muted">{note}</Text> : null}
+    </Card>
+  );
+}
+

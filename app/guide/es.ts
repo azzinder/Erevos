@@ -1443,6 +1443,10 @@ ningún puente se pone en medio.
   que se note, y el chat dice **Comprobado con emojis**. **Comprobar este dispositivo con otro tuyo**, en la pantalla
   de Matrix, hace lo mismo con tu propio Element, para que confíe en el dispositivo de Erevos. Element también puede
   empezar cualquiera de las dos.
+- **Clave de seguridad:** en **Clave de seguridad**, en la pantalla de Matrix, escribe la clave (o frase) de seguridad
+  que creó Element: los mensajes anteriores se abren desde la copia de claves de la cuenta, las claves nuevas entran
+  en ella, y tus otros dispositivos confían en este. Una cuenta sin ella puede **Crear una clave de seguridad** aquí;
+  apúntala, porque Erevos no la guarda.
 - **Aún no:** mensajes de voz y llamadas.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los

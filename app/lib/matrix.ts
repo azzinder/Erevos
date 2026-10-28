@@ -22,6 +22,7 @@
 // messages from before this device signed in stay locked. Not audited.
 
 import { matrixCore } from './core';
+import type { MatrixBackup } from './matrix-backup';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 
@@ -113,6 +114,8 @@ export type MatrixState = {
   seen: Record<string, string>;
   /** What a check by emoji proved (lib/matrix-verify.ts), by user: their devices' Ed25519 keys, and their master key. */
   verified?: Record<string, { devices: Record<string, string>; master?: string }>;
+  /** The key backup, once the Security Key opened it or this device set it up (lib/matrix-backup.ts). */
+  backup?: MatrixBackup;
 };
 
 // The homeserver's answer to one request.
@@ -265,6 +268,15 @@ async function publishOneTimeKeys(state: MatrixState, count: number, fallback: b
 }
 
 const KEY_ID = (publicKey: string) => `ed25519:${publicKey}`;
+
+/** `object` signed by us: with a cross-signing `secret`, or else with this device's own key. Its
+ *  `signatures` hold only the new one, as /keys/signatures/upload wants. */
+export async function signWith(state: MatrixState, object: Json, secret?: string): Promise<Json> {
+  const keyId = secret ? KEY_ID((await core<{ public: string }>('signing_key_public', { secret })).public) : `ed25519:${state.deviceId}`;
+  const { signatures: _, unsigned: __, ...bare } = object;
+  const signed = (await core<{ json: Json }>('sign_json', { json: bare, ...(secret ? { secret } : { account: state.account }), user_id: state.userId, key_id: keyId })).json;
+  return { ...object, signatures: { [state.userId]: { [keyId]: (signed.signatures as Record<string, Json>)[state.userId][keyId] } } };
+}
 
 async function setUpCrossSigning(state: MatrixState, deviceKeys: Json, auth: Json): Promise<void> {
   const own = await call(state, 'POST', '/keys/query', { device_keys: { [state.userId]: [] } });
@@ -583,7 +595,8 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   return retryLocked(state, roomId, made.session_id);
 }
 
-async function retryLocked(state: MatrixState, roomId: string, sessionId: string): Promise<boolean> {
+/** Opens the messages of `roomId` locked under `sessionId`, now that its key is here. */
+export async function retryLocked(state: MatrixState, roomId: string, sessionId: string): Promise<boolean> {
   const room = state.rooms[roomId];
   if (!room) return false;
   let any = false;

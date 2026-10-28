@@ -42,6 +42,14 @@ What stays private is what is written.
   proves is kept in `MatrixState.verified`; with the account's cross-signing keys on this device,
   the other device or the other person's master key gets signed too. The 64 pictures and their
   names are `app/lib/sas-emoji.ts` (Matrix's table, Greek added).
+- `app/lib/matrix-backup.ts`: the Security Key (base58, as Element writes it, or a phrase through
+  PBKDF2-SHA-512 in the core), secret storage (m.secret_storage.v1.aes-hmac-sha2) and key backup
+  (m.megolm_backup.v1.curve25519-aes-sha2, libolm's PkEncryption: X25519 in the core, HKDF,
+  AES-CBC and HMAC with @noble). The account's cross-signing keys are taken only when they make
+  the keys its homeserver has, then sign this device; the backup only when its secret makes the
+  backup's public key. Keys are fetched one session at a time, for the messages shown locked, so
+  the sealed state holds only what this device uses. `setUpRecovery` makes both for an account
+  with none.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.
@@ -64,8 +72,7 @@ What stays private is what is written.
 
 - Voice messages, video thumbnails, reactions, replies, edits.
 - Checking by QR, and trust shown per device in a group.
-- Key backup and secret storage, so this device cannot read what came before it signed in, and an
-  account that already has cross-signing keys does not sign this device.
+- Reading a room's history further back than the last sync, so older locked messages show.
 - Going through Tor, and notifications while Erevos is closed.
 - Calls (Element Call, MatrixRTC), after XMPP's.
 - XMPP, the next network after Matrix, then chats with other Nostr apps (NIP-17).

@@ -18,6 +18,7 @@ import {
   type MatrixRoom,
   type MatrixState,
 } from './matrix';
+import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, unlockRecovery, type Unlocked } from './matrix-backup';
 import { fetchFile, sendFile, type OutgoingFile } from './matrix-media';
 import {
   acceptVerification,
@@ -49,6 +50,8 @@ type Live = {
   running: boolean;
   queue: Promise<unknown>;
   saving: ReturnType<typeof setTimeout> | null;
+  /** Room keys already asked of the key backup while it runs. */
+  asked: Set<string>;
 };
 
 let live: Live | null = null;
@@ -121,7 +124,13 @@ async function loop(it: Live): Promise<void> {
         const news = await syncFetch(it.state, since ? 30_000 : 0);
         if (!stillOpen(it) || !it.state || it.state.since !== since) continue;
         await changeAccount(it, async () => {
-          if (it.state) await syncApply(it.state, news);
+          if (!it.state) return;
+          await syncApply(it.state, news);
+          // With a key backup: locked messages ask it for their keys, and new keys go into it.
+          if (it.state.backup) {
+            await restoreLocked(it.state, it.asked).catch(() => 0);
+            await backUpKeys(it.state).catch(() => 0);
+          }
         });
         if (it.problem) {
           it.problem = '';
@@ -162,7 +171,7 @@ export function runMatrix(): void {
     return;
   }
   stopMatrix();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null };
+  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set() };
   live = it;
   loadMatrix(space.space, space.key)
     .then((state) => {
@@ -309,5 +318,22 @@ export function matrixVerifyMatch(id: string, match: boolean): Promise<void> {
 export function matrixVerifyCancel(id: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => cancelVerification(it.state, id));
+}
+
+/** Whether the account has a Security Key, and a phrase that makes it. */
+export function matrixRecoveryInfo(): Promise<{ storage: boolean; phrase: boolean }> {
+  return recoveryInfo(need().state);
+}
+
+/** Opens the account's secret storage and key backup with its Security Key or phrase. */
+export function matrixUnlock(words: string): Promise<Unlocked> {
+  const it = need();
+  return changeAccount(it, () => unlockRecovery(it.state, words));
+}
+
+/** Sets up a Security Key and key backup for an account with none. Answers the key, to write down. */
+export function matrixSetUpRecovery(): Promise<string> {
+  const it = need();
+  return changeAccount(it, () => setUpRecovery(it.state));
 }
 

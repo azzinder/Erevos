@@ -100,6 +100,12 @@ On main, not released yet:
   does, so either app can start it. Once both say they match, the device's key and the account's master key are taken
   as theirs, and, when this device made the account's cross-signing keys, signed, so Element shows them as checked.
   The check's one-use key never leaves memory.
+- **Matrix Security Key and key backup**: under **Settings** → **Relay and networks** → **Matrix**, the Security Key
+  (or Security Phrase) Element made opens the account's secret storage (m.secret_storage.v1.aes-hmac-sha2): its
+  cross-signing keys, taken only when they match the account's, sign this device; its key backup
+  (m.megolm_backup.v1.curve25519-aes-sha2) gives the keys of the messages shown locked, and takes the room keys this
+  device makes or gets. An account with none gets both here, with a new Security Key to write down; Erevos keeps it
+  nowhere.
 
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short

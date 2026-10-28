@@ -1464,6 +1464,10 @@ sta nel mezzo.
   mezzo senza essere visto, e la chat dice **Verificato con le emoji**. **Verifica questo dispositivo con un altro
   tuo**, nella schermata di Matrix, fa lo stesso con il tuo Element, perché si fidi del dispositivo di Erevos. Anche
   Element può avviare l’una o l’altra.
+- **Chiave di sicurezza:** in **Chiave di sicurezza**, nella schermata di Matrix, inserisci la chiave (o frase) di
+  sicurezza creata da Element: i messaggi precedenti si aprono dal backup delle chiavi dell’account, le nuove chiavi
+  vi entrano, e gli altri tuoi dispositivi si fidano di questo. Un account senza può **Crea una chiave di sicurezza**
+  qui; scrivila, perché Erevos non la conserva.
 - **Non ancora:** messaggi vocali e chiamate.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server Matrix non può. Così le chat Matrix restano a

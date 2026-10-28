@@ -52,6 +52,10 @@ pub fn call(request: &[u8]) -> Result<Vec<u8>> {
         "verify_json" => verify_json(&request)?,
         "canonical_json" => json!({ "text": canonical_json(field(&request, "json")?) }),
         "sas_new" => sas_new(),
+        "x25519_new" => sas_new(),
+        "x25519_public" => x25519_public(&request)?,
+        "x25519_shared" => x25519_shared(&request)?,
+        "pbkdf2_sha512" => pbkdf2_sha512(&request)?,
         "sas_bytes" => sas_bytes(&request)?,
         "sas_mac" => json!({ "mac": B64.encode(sas_mac(&request)?.finalize().into_bytes()) }),
         "sas_verify" => json!({ "ok": sas_mac(&request)?.verify_slice(&B64.decode(text(&request, "mac")?).map_err(err)?).is_ok() }),
@@ -414,6 +418,56 @@ fn sas_mac(request: &Value) -> Result<Hmac<Sha256>> {
     Ok(mac)
 }
 
+// Key backup and secret storage (app/lib/matrix-backup.ts): the X25519 of the backup's key, and
+// the PBKDF2 that turns a Security Phrase into the storage key. The rest (HKDF, AES, HMAC) is
+// done in the app with @noble, as the web app does too.
+
+fn x25519_secret(request: &Value, name: &str) -> Result<x25519_dalek::StaticSecret> {
+    let bytes: [u8; 32] = B64.decode(text(request, name)?.trim_end_matches('=')).map_err(err)?.try_into().map_err(|_| "bad X25519 secret")?;
+    Ok(x25519_dalek::StaticSecret::from(bytes))
+}
+
+/// The public key of an X25519 `secret` (a backup's private key, as secret storage keeps it).
+fn x25519_public(request: &Value) -> Result<Value> {
+    let secret = x25519_secret(request, "secret")?;
+    Ok(json!({ "public": B64.encode(x25519_dalek::PublicKey::from(&secret).as_bytes()) }))
+}
+
+/// The secret our `secret` shares with `their` public key.
+fn x25519_shared(request: &Value) -> Result<Value> {
+    let secret = x25519_secret(request, "secret")?;
+    let their = x25519_dalek::PublicKey::from(curve(request, "their")?.to_bytes());
+    let shared = secret.diffie_hellman(&their);
+    if !shared.was_contributory() {
+        return Err("that X25519 key is not usable".into());
+    }
+    Ok(json!({ "shared": B64.encode(shared.as_bytes()) }))
+}
+
+/// PBKDF2 with HMAC-SHA-512 (RFC 8018), as Matrix makes a storage key from a phrase.
+fn pbkdf2_sha512(request: &Value) -> Result<Value> {
+    use sha2::Sha512;
+    let passphrase = text(request, "passphrase")?.as_bytes();
+    let salt = text(request, "salt")?.as_bytes();
+    let iterations = field(request, "iterations")?.as_u64().filter(|n| (1..=10_000_000).contains(n)).ok_or("bad iterations")?;
+    let length = field(request, "length")?.as_u64().filter(|n| (1..=64).contains(n)).ok_or("bad length")? as usize;
+    let prf = <Hmac<Sha512> as hmac::Mac>::new_from_slice(passphrase).map_err(err)?;
+    let mut block = prf.clone();
+    block.update(salt);
+    block.update(&1u32.to_be_bytes());
+    let mut u = block.finalize().into_bytes();
+    let mut out = u;
+    for _ in 1..iterations {
+        let mut next = prf.clone();
+        next.update(&u);
+        u = next.finalize().into_bytes();
+        for (o, b) in out.iter_mut().zip(u.iter()) {
+            *o ^= b;
+        }
+    }
+    Ok(json!({ "key": B64.encode(&out[..length]) }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -527,6 +581,25 @@ mod tests {
     fn unknown_calls_fail() {
         assert!(call(br#"{"op":"nothing"}"#).unwrap_err().contains("nothing"));
         assert!(call(b"not json").is_err());
+    }
+
+    #[test]
+    fn pbkdf2_matches_rfc_vectors() {
+        // RFC 6070-style vector for SHA-512 (password / salt, 1 and 2 iterations).
+        let key = |n: u64| run(json!({ "op": "pbkdf2_sha512", "passphrase": "password", "salt": "salt", "iterations": n, "length": 64 }))["key"].clone();
+        let hex = |v: Value| B64.decode(v.as_str().unwrap()).unwrap().iter().map(|b| format!("{b:02x}")).collect::<String>();
+        assert_eq!(hex(key(1)), "867f70cf1ade02cff3752599a3a53dc4af34c7a669815ae5d513554e1c8cf252c02d470a285a0501bad999bfe943c08f050235d7d68b1da55e63f73b60a57fce");
+        assert_eq!(hex(key(2)), "e1d9c16aa681708a45f5c7c4e215ceb66e011a2e9f0040713f18aefdb866d53cf76cab2868a39b9f7840edce4fef5a82be67335c77a6068e04112754f27ccf4e");
+    }
+
+    #[test]
+    fn x25519_both_sides_share() {
+        let a = run(json!({ "op": "x25519_new" }));
+        let b = run(json!({ "op": "x25519_new" }));
+        assert_eq!(run(json!({ "op": "x25519_public", "secret": a["secret"] }))["public"], a["public"]);
+        let ab = run(json!({ "op": "x25519_shared", "secret": a["secret"], "their": b["public"] }));
+        let ba = run(json!({ "op": "x25519_shared", "secret": b["secret"], "their": a["public"] }));
+        assert_eq!(ab["shared"], ba["shared"]);
     }
 
     #[test]

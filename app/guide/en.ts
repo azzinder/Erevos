@@ -1334,6 +1334,9 @@ between.
   same, in the same order, tap **They match** on both phones. Nobody can then sit in between unseen, and the chat
   says **Checked by emoji**. **Check this device with another of yours**, on the Matrix screen, does the same with
   your own Element, so it trusts Erevos's device. Element can start either one too.
+- **Security Key:** under **Security Key** on the Matrix screen, enter the Security Key (or Security Phrase) Element
+  made: earlier messages open from the account's key backup, new keys go into it, and your other devices trust this
+  one. An account with none can **Set up a Security Key** here; write it down, as Erevos does not keep it.
 - **Not yet:** voice messages and calls.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and

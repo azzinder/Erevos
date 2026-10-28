@@ -1518,6 +1518,10 @@ Element : aucun pont ne se met entre les deux.
   Personne ne peut alors être au milieu sans qu’on le voie, et la discussion indique **Vérifié par emoji**.
   **Vérifier cet appareil avec un autre des vôtres**, sur l’écran Matrix, fait de même avec votre propre Element, pour
   qu’il fasse confiance à l’appareil d’Erevos. Element peut aussi lancer l’une ou l’autre.
+- **Clé de sécurité :** sous **Clé de sécurité**, sur l’écran Matrix, saisissez la clé (ou phrase) de sécurité créée
+  par Element : les messages précédents s’ouvrent depuis la sauvegarde des clés du compte, les nouvelles clés y vont,
+  et vos autres appareils font confiance à celui-ci. Un compte sans clé peut **Créer une clé de sécurité** ici ;
+  notez-la, car Erevos ne la garde pas.
 - **Pas encore :** messages vocaux et appels.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les

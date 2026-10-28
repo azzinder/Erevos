@@ -1551,6 +1551,10 @@ Element: Keine Brücke sitzt dazwischen.
   dazwischensitzen, und der Chat zeigt **Per Emoji geprüft**. **Dieses Gerät mit einem anderen von dir prüfen**, auf
   dem Matrix-Bildschirm, macht dasselbe mit deinem eigenen Element, damit es dem Gerät von Erevos vertraut. Element
   kann beides auch beginnen.
+- **Sicherheitsschlüssel:** Unter **Sicherheitsschlüssel** auf dem Matrix-Bildschirm gibst du den Sicherheitsschlüssel
+  (oder die Sicherheitsphrase) ein, den Element erstellt hat: Frühere Nachrichten öffnen sich aus der Schlüsselsicherung
+  des Kontos, neue Schlüssel kommen hinein, und deine anderen Geräte vertrauen diesem. Ein Konto ohne kann hier
+  **Sicherheitsschlüssel einrichten**; schreib ihn auf, denn Erevos behält ihn nicht.
 - **Noch nicht:** Sprachnachrichten und Anrufe.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben

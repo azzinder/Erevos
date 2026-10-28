@@ -17,6 +17,7 @@ import { setCore, type Core } from '../lib/core';
 import { findHomeserver, isMatrixId, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
+import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
 import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -39,6 +40,13 @@ class Homeserver {
   readonly oneTime = new Map<string, Json>();
   readonly fallback = new Map<string, Json>();
   readonly master = new Map<string, Json>();
+  readonly selfSigning = new Map<string, Json>();
+  readonly userSigning = new Map<string, Json>();
+  /** Account data by `${user} ${type}`. */
+  readonly accountData = new Map<string, Json>();
+  /** The key backup: its version, and its keys by `${user} ${room} ${session}`. */
+  readonly backups = new Map<string, Json>();
+  readonly backupKeys = new Map<string, Json>();
   readonly toDevice = new Map<string, Json[]>();
   readonly changed: { seq: number; user: string }[] = [];
   readonly direct = new Map<string, Json>();
@@ -119,16 +127,22 @@ class Homeserver {
     if (path === '/keys/query') {
       const device_keys: Json = {};
       const master_keys: Json = {};
+      const self_signing_keys: Json = {};
+      const user_signing_keys: Json = {};
       for (const u of Object.keys(body.device_keys)) {
         device_keys[u] = Object.fromEntries(this.deviceKeys.get(u) ?? []);
         if (this.master.has(u)) master_keys[u] = this.master.get(u);
+        if (this.selfSigning.has(u)) self_signing_keys[u] = this.selfSigning.get(u);
+        if (u === user && this.userSigning.has(u)) user_signing_keys[u] = this.userSigning.get(u);
       }
-      return { status: 200, json: { device_keys, master_keys } };
+      return { status: 200, json: { device_keys, master_keys, self_signing_keys, user_signing_keys } };
     }
     if (path === '/keys/device_signing/upload') {
       if (!body.auth) return { status: 401, json: { session: 'uia1', flows: [{ stages: ['m.login.password'] }] } };
       if (body.auth.password !== PASSWORD || body.auth.session !== 'uia1') return { status: 401, json: { errcode: 'M_FORBIDDEN' } };
       this.master.set(user, body.master_key);
+      this.selfSigning.set(user, body.self_signing_key);
+      this.userSigning.set(user, body.user_signing_key);
       return { status: 200, json: {} };
     }
     if (path === '/keys/signatures/upload') {
@@ -175,6 +189,28 @@ class Homeserver {
     if ((m = path.match(/^\/user\/[^/]+\/account_data\/m\.direct$/))) {
       this.direct.set(user, body);
       return { status: 200, json: {} };
+    }
+    if ((m = path.match(/^\/user\/[^/]+\/account_data\/([^/]+)$/))) {
+      const key = `${user} ${decodeURIComponent(m[1])}`;
+      if (request.method === 'PUT') this.accountData.set(key, body);
+      const found = this.accountData.get(key);
+      return request.method === 'PUT' || found ? { status: 200, json: found ?? {} } : { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+    }
+    if (path === '/room_keys/version') {
+      if (request.method === 'POST') this.backups.set(user, { ...body, version: String(++this.made) });
+      const found = this.backups.get(user);
+      if (request.method === 'POST') return { status: 200, json: { version: found!.version } };
+      return found ? { status: 200, json: found } : { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+    }
+    if (path === '/room_keys/keys' && request.method === 'PUT') {
+      for (const [r, { sessions }] of Object.entries(body.rooms as Record<string, { sessions: Json }>)) {
+        for (const [sid, data] of Object.entries(sessions)) this.backupKeys.set(`${user} ${r} ${sid}`, data);
+      }
+      return { status: 200, json: { count: this.backupKeys.size } };
+    }
+    if ((m = path.match(/^\/room_keys\/keys\/([^/]+)\/([^/?]+)$/))) {
+      const found = this.backupKeys.get(`${user} ${decodeURIComponent(m[1])} ${decodeURIComponent(m[2])}`);
+      return found ? { status: 200, json: found } : { status: 404, json: { errcode: 'M_NOT_FOUND' } };
     }
     if ((m = path.match(/^\/join\/(.+)$/))) {
       const id = room(m[1]);
@@ -473,5 +509,48 @@ test('a new device of ours is checked by emoji from one that holds our cross-sig
   // The first device's self-signing key now signs the new one, so other apps see it checked.
   const signatures = server.deviceKeys.get(carol.userId)!.get(carol2.deviceId)!.signatures[carol.userId];
   assert.equal(Object.keys(signatures).length, 2);
+});
+
+test('Security Keys are written and read as Element does', () => {
+  const key = new Uint8Array(32).map((_, i) => i * 7);
+  const words = recoveryKeyOf(key);
+  assert.match(words, /^Es[1-9A-HJ-NP-Za-km-z]{2}( [1-9A-HJ-NP-Za-km-z]{4}){11}$/);
+  assert.deepEqual(keyOfRecovery(words), key);
+  assert.deepEqual(keyOfRecovery(words.replace(/ /g, '')), key);
+  // One letter changed fails the parity byte (or the prefix).
+  const typo = words.slice(0, 10) + (words[10] === 'a' ? 'b' : 'a') + words.slice(11);
+  assert.equal(keyOfRecovery(typo), null);
+});
+
+test('a Security Key set up on one device opens the cross-signing keys and earlier messages on a new one', { skip: !coreReady }, async () => {
+  const frank = await signIn(HS, '@frank:example.org', PASSWORD);
+  const gina = await signIn(HS, '@gina:example.org', PASSWORD);
+  const words = await setUpRecovery(frank);
+  assert.ok(keyOfRecovery(words));
+  assert.ok(frank.backup);
+  // The server keeps the secrets only encrypted.
+  const stored = JSON.stringify([...server.accountData.values()]);
+  assert.ok(!stored.includes(frank.crossSigning!.master) && !stored.includes(frank.backup.secret));
+
+  const room = await startChat(frank, gina.userId);
+  await sync(gina, 0);
+  await joinRoom(gina, room.id);
+  await sync(gina, 0);
+  await sync(frank, 0);
+  await sendText(frank, room.id, 'before the new phone');
+  assert.equal(await backUpKeys(frank), 1);
+  assert.equal(await backUpKeys(frank), 0);
+
+  const frank2 = await signIn(HS, 'frank', PASSWORD);
+  await sync(frank2, 0);
+  assert.ok(frank2.rooms[room.id].messages.some((m) => m.locked));
+  await assert.rejects(unlockRecovery(frank2, recoveryKeyOf(new Uint8Array(32))), WrongRecoveryError);
+  const unlocked = await unlockRecovery(frank2, words);
+  assert.deepEqual(unlocked, { crossSigning: true, backup: true, opened: 1 });
+  assert.equal(frank2.rooms[room.id].messages.find((m) => m.text === 'before the new phone')?.sender, frank.userId);
+  assert.equal(frank2.crossSigning!.master, frank.crossSigning!.master);
+  // The new device signed itself with the account's self-signing key, so Element trusts it.
+  assert.equal(Object.keys(server.deviceKeys.get(frank.userId)!.get(frank2.deviceId)!.signatures[frank.userId]).length, 2);
+  await assert.rejects(setUpRecovery(frank2), /already has a Security Key/);
 });
 

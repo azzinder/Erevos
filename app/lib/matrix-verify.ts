@@ -2,7 +2,7 @@ import { sha256 } from '@noble/hashes/sha2.js';
 
 import { toBase64, utf8Encode } from './crypto';
 import { mark, t } from './i18n';
-import { call, core, enc, sendEvent, setVerificationHandler, txn, type Json, type MatrixState, type VerificationEvent } from './matrix';
+import { call, core, enc, sendEvent, setVerificationHandler, signWith, txn, type Json, type MatrixState, type VerificationEvent } from './matrix';
 
 // Checking a Matrix device by emoji (docs/matrix.md; spec: Key verification, m.sas.v1): both
 // people see seven pictures made from a secret their two devices agreed on, and say whether they
@@ -253,12 +253,7 @@ async function checkMac(state: MatrixState, v: Verification): Promise<void> {
 async function signProved(state: MatrixState, v: Verification, masterProved: boolean): Promise<void> {
   const keys = state.crossSigning;
   if (!keys) return;
-  const sign = async (object: Json, secret: string) => {
-    const { public: key } = await core<{ public: string }>('signing_key_public', { secret });
-    const signed = (await core<{ json: Json }>('sign_json', { json: object, secret, user_id: state.userId, key_id: `ed25519:${key}` })).json;
-    const signature = (signed.signatures as Record<string, Json>)[state.userId][`ed25519:${key}`];
-    return { ...signed, signatures: { [state.userId]: { [`ed25519:${key}`]: signature } } };
-  };
+  const sign = (object: Json, secret: string) => signWith(state, object, secret);
   if (v.userId === state.userId && v.theirKeys?.deviceKeys) {
     await call(state, 'POST', '/keys/signatures/upload', { [state.userId]: { [v.deviceId!]: await sign(v.theirKeys.deviceKeys, keys.selfSigning) } });
   } else if (v.userId !== state.userId && masterProved && v.theirKeys?.master) {
