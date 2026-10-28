@@ -55,6 +55,8 @@ export type MatrixMessage = {
   state?: 'sending' | 'failed';
   /** A photo, a video, a sound or a file: where it is, and its key when the room is encrypted (lib/matrix-media.ts). */
   file?: MatrixFile;
+  /** A call's line, kept here only: its text in English, shown by lib/call-lines.ts. */
+  call?: true;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -396,6 +398,46 @@ async function passVerification(state: MatrixState, event: VerificationEvent): P
   return verificationHandler ? verificationHandler(state, event).catch(() => false) : false;
 }
 
+/** A call's event: one that rings, answers or ends a call, a room's call members, or the keys of a
+ *  call's media sent to this device, each opened first when it came encrypted. `age`: how long ago
+ *  the homeserver had it, when it says. */
+export type CallEvent = { type: string; content: Json; sender: string; ts: number; roomId?: string; eventId?: string; stateKey?: string; senderDevice?: string; age?: number };
+type CallHandler = (state: MatrixState, event: CallEvent) => Promise<boolean>;
+let callHandler: CallHandler | null = null;
+
+/** Where calls' events go (the calls set it while the space is open), or none. */
+export function setCallHandler(next: CallHandler | null): void {
+  callHandler = next;
+}
+
+/** Legacy calls (m.call.*), and MatrixRTC's: rings, declines, call members, media keys. */
+export const isCallEvent = (type: unknown): type is string =>
+  typeof type === 'string' &&
+  (type.startsWith('m.call.') ||
+    type.startsWith('m.rtc.') ||
+    type.startsWith('org.matrix.msc4075.') ||
+    type.startsWith('org.matrix.msc4310.') ||
+    type === 'org.matrix.msc3401.call.member' ||
+    type.startsWith('io.element.call.'));
+
+async function passCall(state: MatrixState, event: CallEvent): Promise<boolean> {
+  return callHandler ? callHandler(state, event).catch(() => false) : false;
+}
+
+const callIn = (roomId: string, event: Json, type: string, content: Json): CallEvent => {
+  const age = (event.unsigned as Json | undefined)?.age;
+  return {
+    type,
+    content,
+    sender: String(event.sender),
+    ts: Number(event.origin_server_ts ?? Date.now()),
+    roomId,
+    eventId: String(event.event_id),
+    ...(typeof event.state_key === 'string' ? { stateKey: event.state_key } : {}),
+    ...(typeof age === 'number' ? { age } : {}),
+  };
+};
+
 /** Takes in what one sync brought. Answers whether anything a person would see changed. */
 export async function syncApply(state: MatrixState, news: MatrixNews): Promise<boolean> {
   let seen = false;
@@ -474,11 +516,15 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
   const room = roomOf(state, id);
   delete room.invitedBy;
   if (direct) room.direct = direct.has(id);
-  for (const event of ((data.state as Json | undefined)?.events as Json[] | undefined) ?? []) takeState(room, event);
   let seen = false;
+  for (const event of ((data.state as Json | undefined)?.events as Json[] | undefined) ?? []) {
+    takeState(room, event);
+    if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
+  }
   for (const event of ((data.timeline as Json | undefined)?.events as Json[] | undefined) ?? []) {
     if (typeof event.state_key === 'string') {
       takeState(room, event);
+      if (isCallEvent(event.type) && (await passCall(state, callIn(id, event, event.type, (event.content as Json) ?? {})))) seen = true;
       continue;
     }
     if (typeof event.type === 'string' && event.type.startsWith('m.key.verification.')) {
@@ -541,6 +587,8 @@ async function messageOf(state: MatrixState, roomId: string, event: Json): Promi
     content = opened.content;
   }
   if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
+  // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
+  if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
   if (type === 'm.room.message') return { ...base, ...shownOf(content) };
   return null;
 }
@@ -630,6 +678,10 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   const known = Object.values(state.devices[String(event.sender)] ?? {}).find((d) => d.curve25519 === senderKey);
   if (known && known.ed25519 !== claimed) return false;
   if (isVerification(payload.type, payload.content as Json)) return passVerification(state, { type: String(payload.type), content: (payload.content as Json) ?? {}, sender: String(event.sender) });
+  if (isCallEvent(payload.type)) {
+    const device = typeof payload.sender_device === 'string' ? payload.sender_device : known ? Object.entries(state.devices[String(event.sender)] ?? {}).find(([, d]) => d.curve25519 === senderKey)?.[0] : undefined;
+    return passCall(state, { type: payload.type, content: (payload.content as Json) ?? {}, sender: String(event.sender), ts: Date.now(), ...(device ? { senderDevice: device } : {}) });
+  }
   if (payload.type !== 'm.room_key') return false;
   const key = (payload.content as Json) ?? {};
   if (key.algorithm !== MEGOLM || typeof key.room_id !== 'string' || typeof key.session_key !== 'string') return false;
@@ -705,20 +757,13 @@ async function outboundFor(state: MatrixState, roomId: string, members: string[]
   return next;
 }
 
-/** Gives the room's current Megolm key to every member device that does not have it yet. */
-async function shareRoomKey(state: MatrixState, roomId: string, outbound: Outbound, members: string[]): Promise<void> {
-  await queryDevices(state, members);
-  const targets: { user: string; deviceId: string; device: Device }[] = [];
-  for (const user of members) {
-    for (const [deviceId, device] of Object.entries(state.devices[user] ?? {})) {
-      if (user === state.userId && deviceId === state.deviceId) continue;
-      if (outbound.sharedWith.includes(`${user} ${deviceId}`)) continue;
-      targets.push({ user, deviceId, device });
-    }
-  }
-  if (!targets.length) return;
-  // The key as it is now: a member who comes later reads from here on, not what came before.
-  const { session_key } = await core<{ session_key: string }>('megolm_session_key', { session: outbound.session });
+/** One device to send to through Olm. */
+type Target = { user: string; deviceId: string; device: Device };
+
+/** Olm-encrypts to each of `targets` what `payloadOf` gives it, claiming a one-time key for a
+ *  device with no session yet. Answers the to-device messages, by user and device, and the devices
+ *  they are for: one whose one-time key cannot be had, or is not signed by it, is left out. */
+async function sealToDevices<T extends Target>(state: MatrixState, targets: T[], payloadOf: (target: T) => { type: string; content: Json }): Promise<{ messages: Record<string, Record<string, Json>>; sealed: T[] }> {
   const noSession = targets.filter((d) => !state.olm[d.device.curve25519]?.length);
   const claimed: Record<string, string> = {};
   if (noSession.length) {
@@ -736,33 +781,72 @@ async function shareRoomKey(state: MatrixState, roomId: string, outbound: Outbou
   }
   const ours = await core<{ curve25519: string; ed25519: string }>('account_keys', { account: state.account });
   const messages: Record<string, Record<string, Json>> = {};
+  const sealed: T[] = [];
   for (const d of targets) {
     const session = state.olm[d.device.curve25519]?.[0];
     if (!session && !claimed[d.device.curve25519]) continue;
     const payload = {
-      type: 'm.room_key',
-      content: { algorithm: MEGOLM, room_id: roomId, session_id: outbound.sessionId, session_key },
+      ...payloadOf(d),
       sender: state.userId,
       sender_device: state.deviceId,
       keys: { ed25519: ours.ed25519 },
       recipient: d.user,
       recipient_keys: { ed25519: d.device.ed25519 },
     };
-    const sealed = await core<{ session: Json; type: number; body: string }>('olm_encrypt', {
+    const made = await core<{ session: Json; type: number; body: string }>('olm_encrypt', {
       account: state.account,
       session: session ?? null,
       identity_key: d.device.curve25519,
       one_time_key: claimed[d.device.curve25519] ?? null,
       plaintext: JSON.stringify(payload),
     });
-    state.olm[d.device.curve25519] = [sealed.session, ...(state.olm[d.device.curve25519] ?? []).slice(session ? 1 : 0)].slice(0, 5);
+    state.olm[d.device.curve25519] = [made.session, ...(state.olm[d.device.curve25519] ?? []).slice(session ? 1 : 0)].slice(0, 5);
     (messages[d.user] ??= {})[d.deviceId] = {
       algorithm: OLM,
       sender_key: ours.curve25519,
-      ciphertext: { [d.device.curve25519]: { type: sealed.type, body: sealed.body } },
+      ciphertext: { [d.device.curve25519]: { type: made.type, body: made.body } },
     };
-    outbound.sharedWith.push(`${d.user} ${d.deviceId}`);
+    sealed.push(d);
   }
+  return { messages, sealed };
+}
+
+/** Gives the room's current Megolm key to every member device that does not have it yet. */
+async function shareRoomKey(state: MatrixState, roomId: string, outbound: Outbound, members: string[]): Promise<void> {
+  await queryDevices(state, members);
+  const targets: Target[] = [];
+  for (const user of members) {
+    for (const [deviceId, device] of Object.entries(state.devices[user] ?? {})) {
+      if (user === state.userId && deviceId === state.deviceId) continue;
+      if (outbound.sharedWith.includes(`${user} ${deviceId}`)) continue;
+      targets.push({ user, deviceId, device });
+    }
+  }
+  if (!targets.length) return;
+  // The key as it is now: a member who comes later reads from here on, not what came before.
+  const { session_key } = await core<{ session_key: string }>('megolm_session_key', { session: outbound.session });
+  const { messages, sealed } = await sealToDevices(state, targets, () => ({
+    type: 'm.room_key',
+    content: { algorithm: MEGOLM, room_id: roomId, session_id: outbound.sessionId, session_key },
+  }));
+  for (const d of sealed) outbound.sharedWith.push(`${d.user} ${d.deviceId}`);
+  if (Object.keys(messages).length) await call(state, 'PUT', `/sendToDevice/m.room.encrypted/${txn()}`, { messages });
+}
+
+/** Sends an event of `type` to devices, encrypted through Olm: `to` gives, by user, the content for
+ *  each of their device IDs, or for all of them under '*'. This device is left out. */
+export async function sendToDeviceSealed(state: MatrixState, type: string, to: Record<string, Record<string, Json>>): Promise<void> {
+  await queryDevices(state, Object.keys(to));
+  const targets: (Target & { content: Json })[] = [];
+  for (const [user, devices] of Object.entries(to)) {
+    for (const [deviceId, device] of Object.entries(state.devices[user] ?? {})) {
+      if (user === state.userId && deviceId === state.deviceId) continue;
+      const content = devices[deviceId] ?? devices['*'];
+      if (content) targets.push({ user, deviceId, device, content });
+    }
+  }
+  if (!targets.length) return;
+  const { messages } = await sealToDevices(state, targets, (d) => ({ type, content: d.content }));
   if (Object.keys(messages).length) await call(state, 'PUT', `/sendToDevice/m.room.encrypted/${txn()}`, { messages });
 }
 
@@ -815,6 +899,39 @@ export async function sendEvent(state: MatrixState, roomId: string, type: string
     }
   }
   return String(sent.event_id);
+}
+
+/** Sets a piece of a room's state (never encrypted, as Matrix keeps state readable to the
+ *  homeserver), and answers its event's ID. */
+export async function sendStateEvent(state: MatrixState, roomId: string, type: string, stateKey: string, content: Json): Promise<string> {
+  const sent = await call(state, 'PUT', `/rooms/${enc(roomId)}/state/${enc(type)}/${enc(stateKey)}`, content);
+  return String(sent.event_id);
+}
+
+/** A token that proves to another service who this account is (OpenID), as a call's media
+ *  server asks for (MatrixRTC with LiveKit). It says only the account, for an hour or so. */
+export async function openIdToken(state: MatrixState): Promise<Json> {
+  return call(state, 'POST', `/user/${enc(state.userId)}/openid/request_token`, {});
+}
+
+/** A call's line in `roomId`, kept here only; one with the same `id` is replaced. A missed call
+ *  counts as not read. */
+export function addMatrixCallLine(state: MatrixState, roomId: string, mine: boolean, text: string, id: string, at = Date.now()): void {
+  const room = state.rooms[roomId];
+  if (!room) return;
+  const missed = !mine && text.includes('Missed ');
+  const before = room.messages.find((m) => m.call && m.id === id);
+  if (before) {
+    if (before.sender !== state.userId && before.text.includes('Missed ') && !missed && room.unread > 0) room.unread -= 1;
+    before.text = text;
+    if (mine) before.sender = state.userId;
+    return;
+  }
+  const others = Object.keys(room.members).filter((m) => m !== state.userId);
+  room.messages.push({ id, sender: mine ? state.userId : (others[0] ?? ''), ts: at, text, call: true });
+  room.messages.sort((a, b) => a.ts - b.ts);
+  room.messages = room.messages.slice(-KEEP_MESSAGES);
+  if (missed) room.unread += 1;
 }
 
 /** Starts an encrypted chat with one person, by their Matrix ID. Answers the room. */

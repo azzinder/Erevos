@@ -15,7 +15,26 @@ import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
 import { setThroughTor } from '../lib/relay';
-import { defaultMatrixHttp, findHomeserver, isMatrixId, matrixThroughTor, joinRoom, roomList, sendText, setMatrixHttp, signIn, startChat, sync, type MatrixRequest, type MatrixState } from '../lib/matrix';
+import {
+  defaultMatrixHttp,
+  findHomeserver,
+  isMatrixId,
+  matrixThroughTor,
+  joinRoom,
+  roomList,
+  sendEvent,
+  sendStateEvent,
+  sendText,
+  sendToDeviceSealed,
+  setCallHandler,
+  setMatrixHttp,
+  signIn,
+  startChat,
+  sync,
+  type CallEvent,
+  type MatrixRequest,
+  type MatrixState,
+} from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
@@ -230,6 +249,11 @@ class Homeserver {
       if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
       return { status: 200, json: { event_id: this.add(id, user, decodeURIComponent(m[2]), body, undefined, m[3]) } };
     }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/state\/([^/]+)\/([^/]*)$/)) && request.method === 'PUT') {
+      const id = room(m[1]);
+      if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      return { status: 200, json: { event_id: this.add(id, user, decodeURIComponent(m[2]), body, decodeURIComponent(m[3])) } };
+    }
     if (path.match(/^\/rooms\/[^/]+\/receipt\//)) return { status: 200, json: {} };
     if (path === '/sync') return { status: 200, json: this.sync(user, device, Number(url.searchParams.get('since') ?? 0)) };
     return { status: 404, json: { errcode: 'M_UNRECOGNIZED', error: path } };
@@ -367,6 +391,50 @@ test('two people chat encrypted, and a device that comes later reads only from t
   // Bob's first device reads it too, with the key it already had.
   await sync(bob, 0);
   assert.equal(bob.rooms[room.id].messages.at(-1)!.text, 'και στη νέα σου συσκευή');
+});
+
+test("a call's events reach the calls, opened: in the room, in its state, and to one device", { skip: !coreReady }, async () => {
+  let hana = kept(await signIn(HS, 'hana', PASSWORD));
+  let ivan = kept(await signIn(HS, 'ivan', PASSWORD));
+  const room = await startChat(hana, '@ivan:example.org');
+  await sync(ivan, 0);
+  await joinRoom(ivan, room.id);
+  await sync(ivan, 0);
+  await sync(hana, 0);
+  hana = kept(hana);
+  ivan = kept(ivan);
+  const got: CallEvent[] = [];
+  setCallHandler(async (_state, event) => {
+    got.push(event);
+    return true;
+  });
+  try {
+    await sendEvent(hana, room.id, 'm.call.invite', { call_id: 'c1', version: '1', lifetime: 60000, offer: { type: 'offer', sdp: 'v=0 secret-offer' } });
+    const member = `_${hana.userId}_${hana.deviceId}_m.call`;
+    await sendStateEvent(hana, room.id, 'org.matrix.msc3401.call.member', member, { application: 'm.call', call_id: '', device_id: hana.deviceId, scope: 'm.room' });
+    await sendToDeviceSealed(hana, 'io.element.call.encryption_keys', { [ivan.userId]: { '*': { keys: [{ index: 0, key: 'media-key-1' }], room_id: room.id } } });
+    hana = kept(hana);
+    // The ring and the media's key are encrypted on the way; the room's call members are its state, as Matrix has them.
+    assert.ok(!JSON.stringify(server.log).includes('secret-offer'));
+    assert.ok(!JSON.stringify([...server.toDevice.values()]).includes('media-key-1'));
+    assert.ok(await sync(ivan, 0));
+    ivan = kept(ivan);
+    assert.deepEqual(
+      got.map((e) => [e.type, e.sender, e.roomId, e.stateKey, e.senderDevice]),
+      [
+        ['io.element.call.encryption_keys', hana.userId, undefined, undefined, hana.deviceId],
+        ['m.call.invite', hana.userId, room.id, undefined, undefined],
+        ['org.matrix.msc3401.call.member', hana.userId, room.id, member, undefined],
+      ],
+    );
+    assert.equal(got[0].content.keys && (got[0].content.keys as { key: string }[])[0].key, 'media-key-1');
+    assert.equal((got[1].content.offer as { sdp: string }).sdp, 'v=0 secret-offer');
+    assert.ok(got[1].eventId?.startsWith('$'));
+    // A call's events are no message of their own.
+    assert.deepEqual(ivan.rooms[room.id].messages, []);
+  } finally {
+    setCallHandler(null);
+  }
 });
 
 test('a photo goes encrypted, comes back whole, and a changed one is refused', { skip: !coreReady }, async () => {

@@ -192,7 +192,9 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
             ? last.file.kind === 'image'
               ? t('Photo')
               : t('File: {name}', { name: last.file.name })
-            : last.text;
+            : last.call
+              ? shownLine(last.text)
+              : last.text;
     const mine = !room.invitedBy && !!last && last.sender === state.userId;
     return {
       identity: `matrix:${room.id}`,

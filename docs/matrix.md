@@ -56,6 +56,12 @@ What stays private is what is written.
   Everything. `crates/erevos-tor` answers one HTTP/1.1 request over Tor (`http`, TLS for
   `https://`, 64 MB at most, its own circuit per host), passed on as `torHttp` through JNI. The
   computer and the web app have no Tor, so there Matrix goes straight.
+- Calls' events (`setCallHandler`, `CallEvent` in `app/lib/matrix.ts`): legacy calls' `m.call.*`
+  and MatrixRTC's rings, declines, call members (`org.matrix.msc3401.call.member`, room state) and
+  media keys (`io.element.call.encryption_keys`, to-device through Olm) go to the calls, opened
+  first when they came encrypted, and are no message of their own; each call keeps one line in its
+  chat (`addMatrixCallLine`). `sendStateEvent`, `sendToDeviceSealed` (any event type through Olm,
+  to chosen devices) and `openIdToken` are what calls send with.
 - `app/lib/matrix-store.ts` and `app/lock/matrix-data.ts`: the open space's account, kept sealed in
   that space only (not its hidden chats, not in backups yet), synced while the space is open; it
   answers `matrixUnread()` and `onMatrixChange()` for the home screen.

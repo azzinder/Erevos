@@ -5,6 +5,7 @@ import { Image, View } from 'react-native';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { shownLine } from '../lib/call-lines';
 import { fileSize } from '../lib/attachments';
 import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
@@ -166,6 +167,8 @@ function Bubble({ message, mine, sender }: { message: MatrixMessage; mine: boole
         <Text tone="muted">{t('Locked: the key for this message has not come to this device.')}</Text>
       ) : message.file ? (
         <FilePart file={message.file} />
+      ) : message.call ? (
+        <Text>{shownLine(message.text)}</Text>
       ) : (
         <Text selectable>{message.text}</Text>
       )}
