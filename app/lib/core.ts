@@ -104,6 +104,9 @@ export interface Core {
   nostrPublic?(secret: Uint8Array): Promise<Uint8Array>;
   nostrWrap?(to: Uint8Array, bytes: Uint8Array, now: Uint8Array): Promise<string>;
   nostrUnwrap?(secret: Uint8Array, event: string): Promise<Uint8Array>;
+  /** Matrix accounts (crates/erevos-matrix, lib/matrix.ts): the JSON of one request in, the JSON
+   *  of its answer out. Missing in a build made before them. */
+  matrix?(request: Uint8Array): Promise<Uint8Array>;
 }
 
 let core: Core | null = null;
@@ -229,6 +232,18 @@ export function nostrCore(): Required<
     nostrWrap: nostrWrap.bind(it),
     nostrUnwrap: nostrUnwrap.bind(it),
   };
+}
+
+/** Whether this build can encrypt for Matrix accounts (lib/matrix.ts). */
+export function canMatrix(): boolean {
+  return typeof core?.matrix === 'function';
+}
+
+/** The core's Matrix call, or an error saying this build has none. */
+export function matrixCore(): (request: Uint8Array) => Promise<Uint8Array> {
+  const it = need();
+  if (!it.matrix) throw new Error(t('This build of Erevos has no Matrix.'));
+  return it.matrix.bind(it);
 }
 
 /** Whether the core can make and open SMS invites (a core from before them cannot). */

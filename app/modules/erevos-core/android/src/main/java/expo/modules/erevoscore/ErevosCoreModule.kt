@@ -131,6 +131,8 @@ class ErevosCoreModule : Module() {
     AsyncFunction("nostrPublic") { secret: ByteArray -> ErevosCoreNative.nostrPublic(secret) }
     AsyncFunction("nostrWrap") { to: ByteArray, bytes: ByteArray, now: ByteArray -> String(ErevosCoreNative.nostrWrap(to, bytes, now)) }
     AsyncFunction("nostrUnwrap") { secret: ByteArray, event: String -> ErevosCoreNative.nostrUnwrap(secret, event.toByteArray()) }
+    // Matrix accounts (crates/erevos-matrix): one JSON request, its JSON answer.
+    AsyncFunction("matrix") { request: ByteArray -> ErevosCoreNative.matrix(request) }
   }
 }
 
@@ -221,4 +223,5 @@ internal object ErevosCoreNative {
   @JvmStatic external fun nostrPublic(secret: ByteArray): ByteArray
   @JvmStatic external fun nostrWrap(to: ByteArray, bytes: ByteArray, now: ByteArray): ByteArray
   @JvmStatic external fun nostrUnwrap(secret: ByteArray, event: ByteArray): ByteArray
+  @JvmStatic external fun matrix(request: ByteArray): ByteArray
 }
