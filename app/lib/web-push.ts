@@ -15,6 +15,10 @@ export function turnOffPush(): Promise<void> {
   return Promise.resolve();
 }
 
+export function notificationsOn(): Promise<boolean> {
+  return Promise.resolve(false);
+}
+
 export function keepPush(_own: Relay, _queue: Queue): Promise<void> {
   return Promise.resolve();
 }

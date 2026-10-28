@@ -1906,7 +1906,10 @@ nichts in der App zeigt, dass es sie gibt.
   nicht auffällt.
 - **Eines nach dem anderen:** Ein erneut festgelegtes zweites Passwort ersetzt das vorherige.
   **Zweites Passwort entfernen** entfernt es.
-- **Diskretion:** Zum Schutz deiner Privatsphäre zeigt die App nie, ob ein zweites Passwort festgelegt ist.
+- **Diskretion:** Zum Schutz deiner Privatsphäre zeigt die App nie, ob ein zweites Passwort festgelegt ist. In der
+  Web-App mit eingeschalteten Benachrichtigungen, wenn geschlossen, bleibt die Zahl auf dem Symbol von Erevos, solange
+  Erevos geschlossen ist: Passt sie nicht zu dem Bereich, den du öffnest, kann sie auf einen anderen hindeuten
+  (**Zahl auf dem Symbol** schaltet sie aus).
 
 ## Versteckte Chats {#hidden}
 
@@ -2450,7 +2453,11 @@ Glauben:
   bis du es öffnest. Sie gelten pro Bereich, nie für versteckte Chats, und dein Relay muss eingerichtet sein, sie zu
   senden. Sie kommen auch für die eigene Warteschlange jedes Kontakts: Dein Relay hat dann eine Push-Adresse für alle
   Warteschlangen deiner Kontakte, und Apple bekommt einen Push für jeden Kontakt, der geschrieben hat, im Abstand von
-  15 Sekunden, kann also aus einer solchen Folge erraten, wie viele gleichzeitig geschrieben haben, nie wer.
+  15 Sekunden, kann also aus einer solchen Folge erraten, wie viele gleichzeitig geschrieben haben, nie wer. Das Symbol
+  von Erevos auf dem Home-Bildschirm zeigt dann auch eine Zahl: die ungelesenen Nachrichten des Bereichs, den du offen
+  hattest, deren Zahl nach dem Schließen von Erevos bleibt, und die seitdem gekommenen (was ohne Zahl kam, zählt als
+  eine), nie die eines versteckten Chats. **Einstellungen** → **Benachrichtigungen** → **Zahl auf dem Symbol** schaltet
+  sie aus.
 - **Berechtigungen:** In Erevos zeigt **Einstellungen** → **Allgemein** → **Berechtigungen**, was der Browser Erevos
   erlaubt: ob es vom Home-Bildschirm aus läuft, Benachrichtigungen, wenn geschlossen (nötig, sobald dieser Bereich sie
   eingeschaltet hat), das Mikrofon für Anrufe, die Kamera für Videoanrufe und ob der Browser die Daten von Erevos

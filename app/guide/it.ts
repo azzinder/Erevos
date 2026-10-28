@@ -1806,7 +1806,9 @@ esistono.
 - **L’aspetto:** il secondo spazio parte con l’aspetto dello spazio in cui è stato impostato, così non si nota.
 - **Una alla volta:** impostare di nuovo una seconda password sostituisce quella precedente. **Rimuovi la seconda
   password** la rimuove.
-- **Discrezione:** per privacy, l’app non mostra mai se è impostata una seconda password.
+- **Discrezione:** per privacy, l’app non mostra mai se è impostata una seconda password. Nella web app con le
+  notifiche ad app chiusa attive, il numero sull’icona di Erevos resta finché Erevos è chiuso: se non corrisponde allo
+  spazio che apri, può lasciarne intuire un altro (**Numero sull’icona** lo disattiva).
 
 ## Chat nascoste {#hidden}
 
@@ -2327,7 +2329,10 @@ ordinato, potrebbe inviare codice modificato. Erevos non prende quel codice sull
   le chat nascoste, e il tuo relay deve essere configurato per inviarle. Arrivano anche per la coda di ogni contatto: il
   tuo relay ha allora un unico indirizzo push per tutte le code dei tuoi contatti, e Apple riceve un push per ogni
   contatto che ha scritto, a 15 secondi di distanza, quindi da una serie del genere può immaginare quanti hanno scritto
-  insieme, mai chi.
+  insieme, mai chi. L’icona di Erevos nella schermata Home mostra allora anche un numero: i messaggi non letti nello
+  spazio che avevi aperto, che restano una volta chiuso Erevos, e quelli arrivati dopo (ciò che è arrivato senza numero
+  conta per uno), mai quelli di una chat nascosta. **Impostazioni** → **Notifiche** → **Numero sull’icona** lo
+  disattiva.
 - **Autorizzazioni:** in Erevos, **Impostazioni** → **Generali** → **Autorizzazioni** mostra che cosa il browser
   permette a Erevos di fare: se funziona dalla schermata Home, le notifiche ad app chiusa (necessarie una volta che
   questo spazio le ha attivate), il microfono per le chiamate, la fotocamera per le videochiamate, e se il browser

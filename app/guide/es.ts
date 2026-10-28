@@ -1782,7 +1782,9 @@ con sus propios contactos, relay y aspecto. Tus chats reales siguen ocultos, y n
   atención.
 - **Una cada vez:** poner otra vez una segunda contraseña sustituye a la anterior. **Quitar la segunda contraseña** la
   quita.
-- **Discreción:** por privacidad, la app nunca muestra si hay una segunda contraseña puesta.
+- **Discreción:** por privacidad, la app nunca muestra si hay una segunda contraseña puesta. En la app web con las
+  notificaciones con la app cerrada activadas, el número en el icono de Erevos se queda mientras Erevos está cerrado:
+  si no coincide con el espacio que abres, puede delatar otro (**Número en el icono** lo desactiva).
 
 ## Chats ocultos {#hidden}
 
@@ -2296,7 +2298,10 @@ al que se le ordene, podría enviar código modificado. Erevos no se fía de ese
   cuanto llegan más, hasta que lo abras. Son por espacio, nunca para los chats ocultos, y tu relay debe estar
   configurado para enviarlas. También llegan para la cola propia de cada contacto: tu relay tiene entonces una dirección
   push para las colas de todos tus contactos, y Apple recibe un push por cada contacto que escribió, con 15 segundos de
-  diferencia, así que por una serie así puede suponer cuántos escribieron a la vez, nunca quiénes.
+  diferencia, así que por una serie así puede suponer cuántos escribieron a la vez, nunca quiénes. El icono de Erevos
+  en la pantalla de inicio muestra entonces también un número: los mensajes no leídos del espacio que tenías abierto,
+  que se quedan una vez cerrado Erevos, y los que llegaron después (lo que llegó sin número cuenta como uno), nunca los
+  de un chat oculto. **Ajustes** → **Notificaciones** → **Número en el icono** lo desactiva.
 - **Permisos:** en Erevos, **Ajustes** → **General** → **Permisos** muestra lo que el navegador deja hacer a Erevos: si
   funciona desde la pantalla de inicio, las notificaciones con la app cerrada (necesarias en cuanto este espacio las
   activó), el micrófono para las llamadas, la cámara para las videollamadas, y si el navegador conserva los datos de

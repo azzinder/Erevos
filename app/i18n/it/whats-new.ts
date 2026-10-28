@@ -18,6 +18,8 @@ export const whatsNew: Record<string, string> = {
     '**La guida è in tutte le lingue dell’app**: appare in quella che hai scelto e chiama i pulsanti come li mostra l’app. Vedi [Lingua](#start).',
   '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':
     '**Posizione trova dove ti trovi, anche al chiuso**: il telefono cerca via satellite e con la sua rete insieme, un foglio dice che sta cercando, e se non trova niente dice perché, con Riprova. Vedi [Chat tramite un relay](#relay).',
+  '**The web app\'s icon counts what is not read**: on an iPhone, with notifications on for the space, Erevos\'s icon on the home screen shows how many messages are not read, never a hidden chat\'s, unless turned off under Settings → Notifications → Number on the icon. See [On an iPhone](#iphone).':
+    '**L\'icona della web app conta i non letti**: su un iPhone, con le notifiche attive per lo spazio, l\'icona di Erevos nella schermata Home mostra quanti messaggi non sono letti, mai quelli di una chat nascosta, a meno che tu non lo spenga in Impostazioni → Notifiche → Numero sull\'icona. Vedi [Su un iPhone](#iphone).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Un messaggio inviato mentre una chat si apre la aspetta**, segnato Invio…, e parte appena la chat è aperta, senza dire che Erevos non può cifrare.',

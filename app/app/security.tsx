@@ -7,8 +7,10 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { doorIsOpen, setDoorOpen } from '../lib/closed-notices';
+import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
+import { PUSH_AVAILABLE } from '../lib/web-push';
 import {
   askBattery,
   askFullScreen,
@@ -42,6 +44,7 @@ const PARTS = {
   background: mark('In the background'),
   web: mark('This web app'),
   push: mark('Notifications while closed'),
+  icon: mark('Number on the icon'),
 };
 type Part = keyof typeof PARTS;
 
@@ -281,6 +284,8 @@ export default function Security() {
 
       {!part || part === 'web' || part === 'push' ? <IntegrityCard part={part === 'web' || part === 'push' ? part : undefined} /> : null}
 
+      {PUSH_AVAILABLE && shows('icon') ? <IconNumberChoice titled={!part} /> : null}
+
       {note ? (
         <Text variant="label" color={colors.success}>
           {note}
@@ -401,6 +406,39 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
             <Button title={t('All permissions')} kind="ghost" compact onPress={() => router.push('/permissions')} />
           </Row>
         ) : null}
+      </Card>
+    </>
+  );
+}
+
+// The number on Erevos's icon (lib/icon-number.ts), on this device: the web app's for now, with
+// notifications while closed.
+function IconNumberChoice({ titled }: { titled: boolean }) {
+  const [on, setOn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    iconNumberOn().then(setOn);
+  }, []);
+
+  function choose(next: boolean) {
+    setOn(next);
+    void setIconNumberOn(next);
+  }
+
+  if (on === null) return null;
+  return (
+    <>
+      {titled ? <SectionTitle title={t('Number on the icon')} /> : null}
+      <Row wrap>
+        <Chip label={t('Show the number')} selected={on} onPress={() => choose(true)} />
+        <Chip label={t('No number')} selected={!on} onPress={() => choose(false)} />
+      </Row>
+      <Card>
+        <Text variant="caption" tone="muted" style={hint}>
+          {on
+            ? t("Where the browser can show it (an iPhone's or iPad's home screen, a Mac's Dock, Chrome or Edge installed on a computer), Erevos's icon shows how many messages the space you had open has not read, and those that came since, never a hidden chat's. Only for a space with notifications while closed on. The number stays while Erevos is closed: one that does not match the space you open may hint at another. For every space on this device.")
+            : t("Erevos's icon shows no number.")}
+        </Text>
       </Card>
     </>
   );

@@ -80,7 +80,18 @@ app from a store is installed once and changes only when updated.
   many contacts wrote, never who. The push service sees when a message comes, and that
   the device uses Erevos; never what or from whom (though pushes more than 15 seconds apart can be
   counted, and the queues that got messages push in turn, so a run of them can hint how many
-  contacts wrote at once).
+  contacts wrote at once). The pushes also put a number on Erevos's icon (the Badging API: on an
+  iPhone or iPad from 16.4, for the web app on the home screen, once notifications are allowed; a
+  Mac's Safari web app; Chrome or Edge on Windows, macOS or ChromeOS): what the open space had not
+  read when the app last counted it (`lib/unread.ts`, `lib/icon-number.ts`, told by
+  `lib/push-notice.web.ts` as Erevos shows and leaves, and while it shows), never a hidden chat's,
+  and what the pushes said came since, each push or send that did not say how many as one. Only for
+  a space with notifications on; with no space open (at the password) the number stays. A push
+  that comes after Erevos left the screen for a message it had taken there (a push service slow to
+  bring it, or one the relay held back for its gap) counts that message once more, until Erevos shows.
+  **Number on the icon** (Settings → Notifications) turns it off on the device. The worker keeps
+  that number unsealed beside the count, also after Erevos opens, and for it its own tags of the
+  queues that pushed, until the app next counts with a space open.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

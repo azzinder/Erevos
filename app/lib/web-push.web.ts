@@ -125,6 +125,9 @@ async function pushOn(): Promise<boolean> {
   return (await loadCurrentSpaceData().catch(() => null))?.push === true;
 }
 
+/** Whether notifications are on for the open space, and allowed: the number on Erevos's icon is for such a space only (lib/push-notice.web.ts). */
+export const notificationsOn = pushOn;
+
 function spaceRelay(url: string, token: string): Relay {
   return { url: url.trim(), token: token.trim() || undefined };
 }

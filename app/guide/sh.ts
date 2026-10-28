@@ -1731,7 +1731,9 @@ postoje.
 
 - **Izgled:** drugi prostor počinje s izgledom prostora u kojem je postavljen, kako se ne bi isticao.
 - **Jedna po jedna:** ponovno postavljanje druge lozinke zamjenjuje prethodnu. **Ukloni drugu lozinku** je uklanja.
-- **Diskrecija:** radi privatnosti, aplikacija nikad ne pokazuje je li postavljena druga lozinka.
+- **Diskrecija:** radi privatnosti, aplikacija nikad ne pokazuje je li postavljena druga lozinka. U web-aplikaciji s
+  uključenim obavijestima dok je Erevos zatvoren, broj na ikoni Erevosa ostaje dok je Erevos zatvoren: ako se ne slaže
+  s prostorom koji otvarate, može nagovijestiti drugi (**Broj na ikoni** to isključuje).
 
 ## Skriveni razgovori {#hidden}
 
@@ -2227,7 +2229,10 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
   otvorite. Obavijesti su po prostoru, nikad za skrivene razgovore, a vaš relay mora biti podešen da ih šalje.
   Stižu i za vlastiti red svakog kontakta: vaš relay tada ima jednu push adresu za redove svih vaših kontakata, a
   Apple dobija po jedan push za svaki kontakt koji je pisao, u razmaku od 15 sekundi, pa iz takvog niza može
-  pretpostaviti koliko ih je pisalo odjednom, ali nikad ko.
+  pretpostaviti koliko ih je pisalo odjednom, ali nikad ko. Ikona Erevosa na početnom ekranu tada pokazuje i broj:
+  nepročitane poruke u prostoru koji je bio otvoren, koje ostaju u broju i kad se Erevos zatvori, i one koje su
+  stigle poslije (ono što je stiglo bez broja broji se kao jedna), nikad iz skrivenog razgovora. **Postavke** →
+  **Obavijesti** → **Broj na ikoni** to isključuje.
 - **Dozvole:** u Erevosu, **Postavke** → **Općenito** → **Dozvole** prikazuje šta preglednik dozvoljava Erevosu: radi
   li s početnog ekrana, obavijesti dok je zatvoren (potrebne kad ih je ovaj prostor uključio), mikrofon za pozive,
   kameru za videopozive i čuva li preglednik Erevosove podatke trajno. Bez toga Safari može obrisati podatke kad na

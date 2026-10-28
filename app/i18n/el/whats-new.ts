@@ -18,6 +18,8 @@ export const whatsNew: Record<string, string> = {
     '**Ο οδηγός χρήσης είναι σε όλες τις γλώσσες της εφαρμογής**: δείχνεται σε αυτήν που διάλεξες, και λέει τα κουμπιά όπως τα δείχνει η εφαρμογή. Δες [Γλώσσα](#start).',
   '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':
     '**Η Τοποθεσία βρίσκει πού είσαι, και σε κλειστό χώρο**: το τηλέφωνο ψάχνει μέσω δορυφόρου και μέσω δικτύου μαζί, ένα φύλλο λέει ότι ψάχνει, και όταν δεν βρεθεί τίποτα λέει γιατί, με το Δοκίμασε ξανά. Δες [Συνομιλία μέσω relay](#relay).',
+  '**The web app\'s icon counts what is not read**: on an iPhone, with notifications on for the space, Erevos\'s icon on the home screen shows how many messages are not read, never a hidden chat\'s, unless turned off under Settings → Notifications → Number on the icon. See [On an iPhone](#iphone).':
+    '**Το εικονίδιο του web app μετρά τα αδιάβαστα**: σε iPhone, με τις ειδοποιήσεις ανοιχτές για τον χώρο, το εικονίδιο του Erevos στην αρχική οθόνη δείχνει πόσα μηνύματα δεν έχεις διαβάσει, ποτέ μιας κρυφής συνομιλίας, εκτός αν το κλείσεις στις Ρυθμίσεις → Ειδοποιήσεις → Αριθμός στο εικονίδιο. Δες [Σε iPhone](#iphone).',
   // 3.4.2
   '**A message sent as a chat opens waits for it**, marked Sending…, and goes as soon as the chat is open, never saying that Erevos cannot encrypt.':
     '**Ένα μήνυμα που στέλνεις όσο ανοίγει μια συνομιλία την περιμένει**, με την ένδειξη Αποστολή…, και φεύγει μόλις ανοίξει, χωρίς να λέει ότι το Erevos δεν μπορεί να κρυπτογραφήσει.',

@@ -1871,7 +1871,10 @@ dans l’app ne montre qu’elles existent.
   remarquer.
 - **Un seul à la fois :** définir de nouveau un second mot de passe remplace le précédent. **Supprimer le second mot de
   passe** le supprime.
-- **Discrétion :** pour ta confidentialité, l’app ne montre jamais si un second mot de passe est défini.
+- **Discrétion :** pour ta confidentialité, l’app ne montre jamais si un second mot de passe est défini. Dans l’app web
+  avec les notifications quand l’app est fermée activées, le nombre sur l’icône d’Erevos reste tant qu’Erevos est
+  fermé : s’il ne correspond pas à l’espace que tu ouvres, il peut en trahir un autre (**Nombre sur l’icône** le
+  désactive).
 
 ## Discussions masquées {#hidden}
 
@@ -2421,7 +2424,10 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
   masquées, et ton relais doit être configuré pour les envoyer. Elles arrivent aussi pour la file d’attente propre à
   chaque contact : ton relais a alors une seule adresse de push pour toutes les files d’attente de tes contacts, et
   Apple reçoit un push pour chaque contact qui a écrit, à 15 secondes d’intervalle, donc d’une telle série il peut
-  deviner combien ont écrit en même temps, jamais qui.
+  deviner combien ont écrit en même temps, jamais qui. L’icône d’Erevos sur l’écran d’accueil affiche alors aussi un
+  nombre : les messages non lus de l’espace que tu avais ouvert, dont le nombre reste une fois Erevos fermé, et ceux
+  arrivés depuis (ce qui est arrivé sans nombre compte pour un), jamais ceux d’une discussion masquée. **Réglages** →
+  **Notifications** → **Nombre sur l’icône** le désactive.
 - **Autorisations :** dans Erevos, **Réglages** → **Général** → **Autorisations** montre ce que le navigateur permet à
   Erevos : s’il fonctionne depuis l’écran d’accueil, les notifications quand l’app est fermée (nécessaires une fois que
   cet espace les a activées), le micro pour les appels, l’appareil photo pour les appels vidéo, et si le navigateur

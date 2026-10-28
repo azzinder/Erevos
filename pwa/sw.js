@@ -344,6 +344,7 @@ self.addEventListener('message', (event) => {
   else if (ask === 'check') event.waitUntil(check().then(status).then(answer));
   else if (ask === 'lang') event.waitUntil(noticeLanguage(event.data.lang).then(() => true, () => false).then(answer));
   else if (ask === 'seen') event.waitUntil(noticeSeen().then(() => true, () => false).then(answer));
+  else if (ask === 'badge') event.waitUntil(noticeUnread(event.data.unread, event.data.off === true).then(() => true, () => false).then(answer));
   else if (ask === 'check-loader') {
     event.waitUntil(
       knownLoader(String(event.data.hash)).then(async (known) => {
@@ -376,6 +377,15 @@ self.addEventListener('message', (event) => {
 // again ('seen'). The count is kept apart from the release state above, so a release check never
 // undoes it, and not in the notices themselves: an iPhone keeps every notice of the same tag and
 // may list them in any order, and swiping one away would start it again.
+//
+// The pushes also put a number on Erevos's icon (the Badging API: an iPhone shows it from iOS 16.4,
+// for the web app on the home screen once notifications are allowed): the messages the open space
+// had not read when the app last counted them ('badge', lib/push-notice.web.ts), and those the
+// pushes said came since, each push that did not say how many as one. Counted apart from the
+// notice: Erevos opened without a space (at its password) has not read them, so only the app's
+// count starts it again. The app counts only a space with notifications on, and never a hidden
+// chat; no push comes for one (lib/web-push.web.ts). Turned off in the app, there is no number:
+// the pushes count none until the app says one again.
 const NOTICE = 'erevos-new-message';
 const NOTICE_STATE = '/__erevos/notice';
 // For each language: one message, more than one with no number, so many, and a call.
@@ -473,6 +483,12 @@ async function readNotice() {
     others: whole(read?.others ?? (exact ? 0 : pushes)),
     exact,
     rang: read?.rang === true,
+    // For the number on the icon: what the open space had not read when the app last counted, and
+    // what pushes said came since, by streams of their own.
+    unread: whole(read?.unread),
+    came: whole(read?.came),
+    cameStreams: keptStreams(read?.cameStreams),
+    iconOff: read?.iconOff === true,
     lang: knownLang(read?.lang) ? read.lang : 'en',
     streams: keptStreams(read?.streams),
   };
@@ -501,6 +517,34 @@ async function closeNotices(keep) {
   for (const shown of await self.registration.getNotifications({ tag: NOTICE })) {
     if (keep === undefined || shown.data?.shown !== keep) shown.close();
   }
+}
+
+// How long the number on the icon is waited for, in milliseconds: a browser that never answers
+// must not hold back the notices after it.
+const BADGE_WAIT = 2000;
+
+// The number on Erevos's icon, or none. Best effort: a browser without badges, or an iPhone where
+// notifications are not allowed, shows none.
+async function showBadge({ unread, came }) {
+  const badges = self.navigator;
+  if (typeof badges?.setAppBadge !== 'function') return;
+  const count = Math.min(unread + came, Number.MAX_SAFE_INTEGER);
+  let timer;
+  try {
+    const asked = count > 0 ? badges.setAppBadge(count) : badges.clearAppBadge?.();
+    await Promise.race([asked, new Promise((done) => (timer = setTimeout(done, BADGE_WAIT)))]);
+  } catch {
+    // Not allowed: nothing to show it on.
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// A stream's rounds as kept, the latest last, so the oldest go first.
+function keepStream(streams, stream, rounds) {
+  delete streams[stream];
+  streams[stream] = rounds;
+  for (const old of Object.keys(streams).slice(0, -STREAMS)) delete streams[old];
 }
 
 // Erevos on the screen sees the message itself, so it is not counted; the notice still shows,
@@ -535,9 +579,10 @@ let shownLast = 0;
 function showNotice(said) {
   return inTurn(async () => {
     let words = NOTICE_WORDS.en[0];
+    let icon = null;
     try {
       const kept = await readNotice();
-      const next = { ...kept, streams: { ...kept.streams } };
+      const next = { ...kept, streams: { ...kept.streams }, cameStreams: { ...kept.cameStreams } };
       const onScreen = await erevosOnScreen();
       let added = { total: 0, unmarked: 0, rings: 0 };
       if (said) {
@@ -545,11 +590,12 @@ function showNotice(said) {
         added = counted.added;
         // Not kept while Erevos is on the screen, which says 'seen' as it leaves it: its own queues
         // are emptied there, so a new round starts.
-        if (!onScreen) {
-          // The latest last, so the oldest go first.
-          delete next.streams[said.stream];
-          next.streams[said.stream] = counted.stream;
-          for (const stream of Object.keys(next.streams).slice(0, -STREAMS)) delete next.streams[stream];
+        if (!onScreen) keepStream(next.streams, said.stream, counted.stream);
+        // The icon counts by streams of its own, kept until the app counts.
+        if (!onScreen && !kept.iconOff) {
+          const forIcon = counting(kept.cameStreams[said.stream], said);
+          keepStream(next.cameStreams, said.stream, forIcon.stream);
+          next.came = kept.came + forIcon.added.total + forIcon.added.unmarked;
         }
       }
       if (!onScreen) {
@@ -560,10 +606,12 @@ function showNotice(said) {
         next.others = kept.others + others;
         next.exact = kept.exact && others === 0;
         next.rang = kept.rang || added.rings > 0;
+        if (said === null && !kept.iconOff) next.came = kept.came + 1;
       }
       // On the screen nothing is kept for later, but a push that only rang is still a call.
       const onlyRang = said !== null && added.rings > 0 && added.total === 0 && added.unmarked === 0;
       words = noticeWords(onScreen ? { lang: next.lang, pushes: 0, messages: 0, others: 0, exact: true, rang: onlyRang } : next);
+      icon = next;
       await writeNotice(next);
     } catch {
       // The notice below shows all the same.
@@ -572,19 +620,38 @@ function showNotice(said) {
     shownLast = shown;
     await self.registration.showNotification('Erevos', { body: words, tag: NOTICE, icon: '/icon-192.png', data: { shown } });
     await closeNotices(shown).catch(() => undefined);
+    // After the notice, which must show whatever the icon does.
+    if (icon) await showBadge(icon);
   });
 }
 
 // Erevos open, or left, starts the count again. The streams go too: kept, they would show anyone who
 // can read this browser's storage how many queues got messages, so how many contacts wrote, and
 // that it may hold more than one space. A round that goes on after, of a queue Erevos did
-// not empty, then counts again what came before, which is still not read.
+// not empty, then counts again what came before, which is still not read. Not the number on the
+// icon: that waits for the app to count ('badge').
 function noticeSeen() {
   return inTurn(async () => {
     await closeNotices().catch(() => undefined);
     const kept = await readNotice();
     if (kept.pushes !== 0 || kept.messages !== 0 || kept.others !== 0 || !kept.exact || kept.rang || Object.keys(kept.streams).length > 0) {
       await writeNotice({ ...kept, pushes: 0, messages: 0, others: 0, exact: true, rang: false, streams: {} });
+    }
+  });
+}
+
+// What the open space has not read, as the app counted it: the number on the icon, from which the
+// pushes count again. Their streams go then, as above: what the app had not taken yet of a round
+// that goes on is counted again with its next push. Or no number at all (`off`).
+function noticeUnread(unread, off) {
+  return inTurn(async () => {
+    let next = { unread: off ? 0 : whole(unread), came: 0 };
+    try {
+      const kept = await readNotice();
+      next = { ...kept, unread: next.unread, came: 0, cameStreams: {}, iconOff: off };
+      if (kept.unread !== next.unread || kept.came !== 0 || Object.keys(kept.cameStreams).length > 0 || kept.iconOff !== off) await writeNotice(next);
+    } finally {
+      await showBadge(next);
     }
   });
 }

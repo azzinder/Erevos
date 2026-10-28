@@ -29,6 +29,13 @@ On main, not released yet:
 - **What's new in two parts**: each version in **What's new**, and each release here, says first what changes
   **for you**, what you see and use, then what changed **under the hood**: fixes, speed, battery and security
   inside.
+- **The web app's icon counts what is not read**: on an iPhone or iPad (16.4 or later), Erevos on the home
+  screen showed no number on its icon. With notifications while closed on for the space, the icon now shows how
+  many messages the space you had open has not read, also once Erevos is closed, and goes up with each one a
+  push tells of. A hidden chat never counts; a space with notifications off adds none of its own, though pushes
+  for another space with them on still count. **Settings** → **Notifications** → **Number on the icon** turns it
+  off. Also on a Mac with Safari's Add to Dock, and in the web app installed from Chrome or Edge on Windows,
+  macOS or ChromeOS.
 
 ### Under the hood
 

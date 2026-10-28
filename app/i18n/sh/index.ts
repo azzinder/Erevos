@@ -34,5 +34,6 @@ import { connect } from './connect';
 import { textInvite } from './text-invite';
 import { relayKey } from './relay-key';
 import { whatsNew } from './whats-new';
+import { iconNumber } from './icon-number';
 
-export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite, ...relayKey, ...whatsNew };
+export const SH: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber };

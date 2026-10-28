@@ -1640,7 +1640,9 @@ exist.
 
 - **The look:** the second space starts with the look of the space it was set in, so it does not stand out.
 - **One at a time:** setting a second password again replaces the one before. **Remove second password** removes it.
-- **Discretion:** for privacy, the app never shows whether a second password is set.
+- **Discretion:** for privacy, the app never shows whether a second password is set. In the web app with
+  notifications while closed on, the number on Erevos's icon stays while Erevos is closed: one that does not match
+  the space you open may hint at another (**Number on the icon** turns it off).
 
 ## Hidden chats {#hidden}
 
@@ -2110,7 +2112,10 @@ send changed code. Erevos does not take that code on trust:
   relay, there is no number: Erevos shows **New message**, or **New messages** once more came, until you open it. They
   are per space, never for hidden chats, and your relay must be set up to send them. They come for each contact's own
   queue too: your relay then has one push address for all your contacts' queues, and Apple gets one push for each
-  contact who wrote, 15 seconds apart, so from such a run it can guess how many wrote at once, never who.
+  contact who wrote, 15 seconds apart, so from such a run it can guess how many wrote at once, never who. Erevos's
+  icon on the home screen then shows a number too: the messages not read in the space you had open, which stays
+  once Erevos is closed, and those that came since (what came with no number counts as one), never a hidden chat's.
+  **Settings** → **Notifications** → **Number on the icon** turns it off.
 - **Permissions:** in Erevos, **Settings** → **General** → **Permissions** shows what the browser lets Erevos do:
   whether it runs from the home screen, notifications while closed (needed once this space turned them on), the
   microphone for calls, the camera for video calls, and whether the browser keeps Erevos's data for good. Without

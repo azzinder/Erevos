@@ -1,7 +1,8 @@
 // The web app's notice while it is closed (pwa/sw.js): how many messages came since Erevos was last
 // open ("3 new messages"), as a relay that counts says in its pushes, or else "New message", or
 // "New messages" once more pushes came, or "Call" when only a call rang, in the app's language, on an
-// iPhone as on other browsers.
+// iPhone as on other browsers. And the number on Erevos's icon: what the open space had not read, as
+// the app counted it (lib/icon-number.ts), and what came since.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -11,6 +12,7 @@ import { test } from 'node:test';
 import vm from 'node:vm';
 
 import { LANGS } from '../lib/i18n';
+import { iconNumber, type IconParts } from '../lib/icon-number';
 
 const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8');
 
@@ -18,9 +20,29 @@ type Notice = { title: string; body: string; tag: string; data?: unknown; closed
 type Listener = (event: unknown) => void;
 
 // A browser for the worker: its cache survives a restart of the worker, as a real one does. An
-// iPhone keeps every notice of a tag; other browsers replace the one of the same tag.
-function browser(kind: 'iphone' | 'other', store = new Map<string, string>()) {
+// iPhone keeps every notice of a tag; other browsers replace the one of the same tag. Its badges
+// may answer never ('hangs').
+function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), badges: 'yes' | 'refused' | 'none' | 'hangs' = 'yes') {
   let notices: Notice[] = [];
+  // The number on the icon, as the browser shows it: none until one is set.
+  let badge = 0;
+  const never = () => new Promise<void>(() => undefined);
+  const navigator =
+    badges === 'none'
+      ? {}
+      : {
+          setAppBadge: async (count: number) => {
+            if (badges === 'refused') throw new Error('not allowed');
+            if (badges === 'hangs') return never();
+            assert.ok(Number.isSafeInteger(count) && count > 0);
+            badge = count;
+          },
+          clearAppBadge: async () => {
+            if (badges === 'refused') throw new Error('not allowed');
+            if (badges === 'hangs') return never();
+            badge = 0;
+          },
+        };
   const windows: { visibilityState: string }[] = [];
   let cacheFails = false;
   const caches = {
@@ -43,10 +65,13 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>()) {
   const self = {
     addEventListener: (type: string, listener: Listener) => void (listeners[type] = listener),
     registration,
+    navigator,
     clients: { matchAll: async () => windows },
     location: { origin: 'https://erevos.example' },
   };
-  vm.runInContext(WORKER, vm.createContext({ self, caches, Response, URL, crypto, TextEncoder, TextDecoder, setTimeout, fetch: async () => { throw new Error('offline'); } }));
+  // Its timers end at once: what waits on one waits no longer than a check should.
+  const timers = { setTimeout: (done: () => void) => setTimeout(done, 0), clearTimeout };
+  vm.runInContext(WORKER, vm.createContext({ self, caches, Response, URL, crypto, TextEncoder, TextDecoder, ...timers, fetch: async () => { throw new Error('offline'); } }));
 
   // Fires an event and waits for what it asked the browser to wait for.
   function fire(type: string, data?: unknown): Promise<unknown> {
@@ -64,10 +89,13 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>()) {
     push: (bytes?: Uint8Array) => fire('push', bytes ? { arrayBuffer: () => bytes.slice().buffer } : null),
     tell: (question: Record<string, unknown>) => fire('message', question),
     shown: () => notices.filter((notice) => !notice.closed).map((notice) => notice.body),
+    badge: () => badge,
     // The pushes counted since Erevos was last open, as the worker keeps them.
     count: () => (JSON.parse(store.get('/__erevos/notice') ?? '{"pushes":0}') as { pushes: number }).pushes,
-    // The streams the worker keeps, as anyone who can read the browser's storage sees them.
+    // The streams the worker keeps, as anyone who can read the browser's storage sees them: the
+    // notice's, and the icon's.
     streams: () => Object.keys((JSON.parse(store.get('/__erevos/notice') ?? '{}') as { streams?: object }).streams ?? {}),
+    iconStreams: () => Object.keys((JSON.parse(store.get('/__erevos/notice') ?? '{}') as { cameStreams?: object }).cameStreams ?? {}),
   };
 }
 
@@ -376,4 +404,283 @@ test('without its cache the worker still shows a notice for every push', async (
   await other.push();
   assert.deepEqual(other.shown(), ['New message']);
   assert.equal(await other.tell({ erevos: 'seen' }), false);
+});
+
+test("the icon shows what the open space had not read, and what came since Erevos was on the screen", async () => {
+  const iphone = browser('iphone');
+  // Erevos leaves the screen with 2 not read.
+  await iphone.tell({ erevos: 'seen' });
+  assert.equal(await iphone.tell({ erevos: 'badge', unread: 2 }), true);
+  assert.equal(iphone.badge(), 2);
+  await iphone.push(counted(1, 1, 1));
+  assert.equal(iphone.badge(), 3);
+  // Lost, late or twice: counted once, as on the notice.
+  await iphone.push(counted(1, 1, 3));
+  await iphone.push(counted(1, 1, 3));
+  assert.equal(iphone.badge(), 5);
+  assert.deepEqual(iphone.shown(), ['3 new messages']);
+  // A push that did not say how many is one more.
+  await iphone.push();
+  assert.equal(iphone.badge(), 6);
+  // Kept when the worker starts again.
+  const again = browser('iphone', iphone.store);
+  await again.push(counted(2, 1, 1));
+  assert.equal(again.badge(), 7);
+  // Erevos open again: the number waits for the app to count, which takes what the pushes said.
+  await again.tell({ erevos: 'seen' });
+  assert.equal(again.badge(), 7);
+  await again.tell({ erevos: 'badge', unread: 6 });
+  assert.equal(again.badge(), 6);
+  // All read, and no more: no number.
+  await again.tell({ erevos: 'badge', unread: 0 });
+  assert.equal(again.badge(), 0);
+});
+
+test('Erevos opened only to its password keeps the number, and a round that goes on is not counted twice', async () => {
+  const iphone = browser('iphone');
+  await iphone.tell({ erevos: 'badge', unread: 2 });
+  await iphone.push(counted(1, 1, 2));
+  assert.equal(iphone.badge(), 4);
+  // Shown and left, no space opened, so the app counted nothing: the notice starts again, the icon
+  // does not.
+  await iphone.tell({ erevos: 'seen' });
+  await iphone.tell({ erevos: 'seen' });
+  assert.deepEqual(iphone.shown(), []);
+  assert.equal(iphone.badge(), 4);
+  await iphone.push(counted(1, 1, 3));
+  assert.deepEqual(iphone.shown(), ['3 new messages']);
+  assert.equal(iphone.badge(), 5);
+  // Kept when the worker starts again.
+  const again = browser('iphone', iphone.store);
+  await again.push(counted(1, 1, 4));
+  assert.equal(again.badge(), 6);
+  // The app counted before it took them: the round's next push counts all of it again.
+  await again.tell({ erevos: 'badge', unread: 2 });
+  assert.equal(again.badge(), 2);
+  await again.push(counted(1, 1, 5));
+  assert.equal(again.badge(), 7);
+});
+
+test('the icon keeps which queues pushed only until the app counts', async () => {
+  const other = browser('other');
+  await other.push(counted(1, 1, 1));
+  await other.push(counted(2, 1, 2));
+  await other.tell({ erevos: 'seen' });
+  assert.deepEqual(other.streams(), []);
+  assert.equal(other.iconStreams().length, 2);
+  await other.tell({ erevos: 'badge', unread: 0 });
+  assert.deepEqual(other.iconStreams(), []);
+  assert.equal(other.badge(), 0);
+});
+
+test('without its cache the icon still follows what the worker was told', async () => {
+  const iphone = browser('iphone');
+  await iphone.tell({ erevos: 'badge', unread: 2 });
+  await iphone.push(counted(1, 1, 3));
+  assert.equal(iphone.badge(), 5);
+  iphone.failCache();
+  // Not kept, so the app is answered no and tells it again later; shown all the same.
+  assert.equal(await iphone.tell({ erevos: 'badge', unread: 0 }), false);
+  assert.equal(iphone.badge(), 0);
+  await iphone.push(counted(1, 2, 1));
+  assert.deepEqual(iphone.shown(), ['4 new messages']);
+  assert.equal(iphone.badge(), 1);
+  // A worker started again with no cache shows what the app says.
+  const again = browser('iphone', new Map());
+  again.failCache();
+  assert.equal(await again.tell({ erevos: 'badge', unread: 3 }), false);
+  assert.equal(again.badge(), 3);
+});
+
+test('a browser whose badges never answer holds back no notice', async () => {
+  const iphone = browser('iphone', new Map(), 'hangs');
+  await iphone.push(counted(1, 1, 1));
+  assert.deepEqual(iphone.shown(), ['New message']);
+  assert.equal(await iphone.tell({ erevos: 'badge', unread: 2 }), true);
+  await iphone.push(counted(1, 1, 2));
+  assert.deepEqual(iphone.shown(), ['2 new messages']);
+  assert.equal(await iphone.tell({ erevos: 'seen' }), true);
+});
+
+test('a push while Erevos is on the screen leaves the number to the app', async () => {
+  const other = browser('other');
+  await other.tell({ erevos: 'badge', unread: 1 });
+  other.windows.push({ visibilityState: 'visible' });
+  await other.push(counted(1, 1, 2));
+  assert.equal(other.badge(), 1);
+  await other.tell({ erevos: 'badge', unread: 3 });
+  assert.equal(other.badge(), 3);
+});
+
+test('what is not a count the app says is none', async () => {
+  const other = browser('other');
+  await other.tell({ erevos: 'badge', unread: 4 });
+  for (const unread of [-3, 1.5, 'x', null, Number.MAX_VALUE, Infinity, undefined]) {
+    await other.tell({ erevos: 'badge', unread: 4 });
+    await other.tell({ erevos: 'badge', unread });
+    assert.equal(other.badge(), 0, String(unread));
+  }
+  // A count as large as can be stays one the icon can show, pushes or not.
+  await other.tell({ erevos: 'badge', unread: Number.MAX_SAFE_INTEGER });
+  await other.push(counted(1, 1, 1));
+  assert.equal(other.badge(), Number.MAX_SAFE_INTEGER);
+});
+
+test('without badges, or where they are not allowed, the notices show all the same', async () => {
+  for (const badges of ['none', 'refused'] as const) {
+    const iphone = browser('iphone', new Map(), badges);
+    assert.equal(await iphone.tell({ erevos: 'badge', unread: 2 }), true);
+    await iphone.push(counted(1, 1, 2));
+    assert.deepEqual(iphone.shown(), ['2 new messages']);
+    assert.equal(iphone.badge(), 0);
+    assert.equal(await iphone.tell({ erevos: 'seen' }), true);
+    assert.deepEqual(iphone.shown(), []);
+  }
+});
+
+// The app's side (lib/icon-number.ts), with the space, its settings and the worker as a check
+// sets them.
+function app(start: Partial<{ wanted: boolean; space: object | null; on: boolean; unread: number | null; answer: unknown; showing: boolean }> = {}) {
+  const now = { wanted: true, space: {} as object | null, on: true, unread: 3 as number | null, answer: true as unknown, showing: true, ...start };
+  const told: (number | 'off')[] = [];
+  let counts = 0;
+  // A count held until the check lets it go.
+  let held: Promise<void> | null = null;
+  const parts: IconParts = {
+    wanted: async () => now.wanted,
+    space: () => now.space,
+    on: async () => now.on,
+    unread: async () => {
+      counts++;
+      await held;
+      return now.unread;
+    },
+    tell: async (said) => {
+      told.push(said);
+      return now.answer;
+    },
+    showing: () => now.showing,
+  };
+  return { now, told, counts: () => counts, hold: (until: Promise<void>) => (held = until), icon: iconNumber(parts) };
+}
+
+// Until every count asked has ended.
+async function settled(): Promise<void> {
+  for (let i = 0; i < 10; i++) await new Promise((done) => setImmediate(done));
+}
+
+test("the app tells the open space's unread with notifications on, and 0 with them off", async () => {
+  const on = app();
+  on.icon.seen();
+  await settled();
+  assert.deepEqual(on.told, [3]);
+  const off = app({ on: false });
+  off.icon.seen();
+  await settled();
+  assert.deepEqual(off.told, [0]);
+  assert.equal(off.counts(), 0);
+});
+
+test('with no space open, or its chats not read, the app tells nothing: the number stays', async () => {
+  const none = app({ space: null });
+  none.icon.seen();
+  none.icon.changed();
+  await settled();
+  assert.deepEqual(none.told, []);
+  const unread = app({ unread: null });
+  unread.icon.seen();
+  await settled();
+  assert.deepEqual(unread.told, []);
+});
+
+test('the same number is told again only when Erevos shows or leaves, or when the worker did not take it', async () => {
+  const shown = app();
+  shown.icon.seen();
+  shown.icon.changed();
+  await settled();
+  shown.icon.changed();
+  await settled();
+  assert.deepEqual(shown.told, [3]);
+  shown.icon.seen();
+  await settled();
+  assert.deepEqual(shown.told, [3, 3]);
+  shown.now.unread = 1;
+  shown.icon.changed();
+  await settled();
+  assert.deepEqual(shown.told, [3, 3, 1]);
+
+  for (const answer of [null, false]) {
+    const lost = app({ answer });
+    lost.icon.seen();
+    await settled();
+    lost.icon.changed();
+    await settled();
+    assert.deepEqual(lost.told, [3, 3], String(answer));
+  }
+});
+
+test('out of sight, a message or a while that goes by counts nothing: the pushes count then', async () => {
+  const hidden = app({ showing: false });
+  hidden.icon.changed();
+  await settled();
+  assert.equal(hidden.counts(), 0);
+  // As it leaves, it is counted.
+  hidden.icon.seen();
+  await settled();
+  assert.deepEqual(hidden.told, [3]);
+});
+
+test('one count at a time, and one for another space opened meanwhile is told for that one', async () => {
+  const two = app();
+  let letGo = () => undefined as void;
+  two.hold(new Promise<void>((done) => (letGo = done)));
+  two.icon.seen();
+  two.icon.changed();
+  two.icon.changed();
+  await settled();
+  assert.equal(two.counts(), 1);
+  // Another space opens while the count reads the first one's chats.
+  two.now.space = {};
+  two.now.unread = 5;
+  letGo();
+  await settled();
+  assert.deepEqual(two.told, [5]);
+  assert.equal(two.counts(), 2);
+});
+
+test('turned off, the app tells the worker to show no number, a space open or not; on again, the number', async () => {
+  const off = app({ wanted: false, space: null });
+  off.icon.seen();
+  off.icon.changed();
+  await settled();
+  assert.deepEqual(off.told, ['off']);
+  assert.equal(off.counts(), 0);
+  off.now.wanted = true;
+  off.now.space = {};
+  off.icon.seen();
+  await settled();
+  assert.deepEqual(off.told, ['off', 3]);
+});
+
+test('turned off, the icon shows no number, and the pushes count none until the app says one', async () => {
+  const iphone = browser('iphone');
+  await iphone.tell({ erevos: 'badge', unread: 2 });
+  await iphone.push(counted(1, 1, 1));
+  assert.equal(iphone.badge(), 3);
+  assert.equal(await iphone.tell({ erevos: 'badge', off: true, unread: 5 }), true);
+  assert.equal(iphone.badge(), 0);
+  await iphone.push(counted(1, 1, 3));
+  await iphone.push();
+  assert.equal(iphone.badge(), 0);
+  assert.deepEqual(iphone.iconStreams(), []);
+  // The notice still counts.
+  assert.deepEqual(iphone.shown(), ['New messages']);
+  // Kept when the worker starts again; on again with the app's count.
+  const again = browser('iphone', iphone.store);
+  await again.push(counted(2, 1, 1));
+  assert.equal(again.badge(), 0);
+  await again.tell({ erevos: 'badge', unread: 4 });
+  assert.equal(again.badge(), 4);
+  await again.push(counted(2, 1, 2));
+  assert.equal(again.badge(), 6);
 });

@@ -1770,7 +1770,9 @@ existem.
 
 - **A aparência:** o segundo espaço começa com a aparência do espaço em que foi definido, para não chamar atenção.
 - **Uma de cada vez:** definir uma segunda senha de novo substitui a anterior. **Remover a segunda senha** a remove.
-- **Discrição:** por privacidade, o app nunca mostra se há uma segunda senha definida.
+- **Discrição:** por privacidade, o app nunca mostra se há uma segunda senha definida. No app web com as notificações
+  com o app fechado ativadas, o número no ícone do Erevos fica enquanto o Erevos está fechado: se não bater com o
+  espaço que você abre, pode denunciar outro (**Número no ícone** o desliga).
 
 ## Conversas ocultas {#hidden}
 
@@ -2283,7 +2285,10 @@ isso, poderia enviar código alterado. O Erevos não aceita esse código de conf
   as conversas ocultas, e o seu relay precisa estar configurado para enviá-las. Elas chegam também para a fila própria
   de cada contato: o seu relay então tem um endereço de push para todas as filas dos seus contatos, e a Apple recebe um
   push para cada contato que escreveu, com 15 segundos de intervalo, então por uma sequência assim ela pode adivinhar
-  quantos escreveram ao mesmo tempo, nunca quem.
+  quantos escreveram ao mesmo tempo, nunca quem. Com elas, o ícone do Erevos na tela de início também mostra um número:
+  as mensagens não lidas do espaço que você tinha aberto, que ficam depois que o Erevos é fechado, e as que chegaram
+  depois (o que chegou sem número conta como uma), nunca as de uma conversa oculta. **Configurações** →
+  **Notificações** → **Número no ícone** o desliga.
 - **Permissões:** no Erevos, **Configurações** → **Geral** → **Permissões** mostra o que o navegador deixa o Erevos
   fazer: se ele roda pela tela de início, as notificações com o app fechado (necessárias assim que este espaço as
   ativou), o microfone para as chamadas, a câmera para as videochamadas, e se o navegador guarda os dados do Erevos de
