@@ -5,7 +5,7 @@
 /// <reference types="node" />
 import { fromBase64, utf8Decode } from '../lib/crypto';
 import { signInXmpp, startSession, takeStanza, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
-import type { HttpAnswer } from '../lib/net-http';
+import type { HttpAnswer, HttpMethod } from '../lib/net-http';
 import { NS_UPLOAD } from '../lib/xmpp-files';
 import type { XmppLink } from '../lib/xmpp-net';
 import { child, children, el, parseXml, render, textOf, type StreamEvent, type XmlElement } from '../lib/xmpp-xml';
@@ -41,7 +41,7 @@ export class Server {
   connect = async (): Promise<XmppLink> => new Link(this);
 
   /** The upload service's HTTPS, for setXmppHttp: a PUT to a place given, once, with its header and size; a GET of what was put. */
-  http = async (method: 'GET' | 'PUT', url: string, headers: Record<string, string>, body?: Uint8Array): Promise<HttpAnswer> => {
+  http = async (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array): Promise<HttpAnswer> => {
     if (method === 'GET') {
       const file = this.files.get(url);
       return file ? { status: 200, bytes: file.slice() } : { status: 404, bytes: new Uint8Array(0) };

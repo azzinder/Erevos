@@ -1466,6 +1466,14 @@ fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+- **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
+  fechado** na tela do Matrix, deixa este espaço dizer “Nova mensagem” quando chega algo no Matrix enquanto outro
+  espaço está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em
+  **Configurações** → **Notificações** → **Em segundo plano**, que também é preciso. Nunca diz o quê, de quem ou em
+  qual conversa, e uma chamada não toca então: só a chave do espaço abre o que chegou. Para isso o servidor Matrix
+  avisa o relay deste espaço de cada mensagem, sem nenhuma palavra dela, então o servidor Matrix fica sabendo o
+  endereço do relay, e o relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para
+  isso, que o servidor Matrix alcance.
 - **Ainda não:** mensagens de voz, e chamadas no computador e no app web.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as

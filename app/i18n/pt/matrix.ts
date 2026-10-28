@@ -73,4 +73,9 @@ export const matrix: Record<string, string> = {
   "On Matrix, with Element Call": "No Matrix, com o Element Call",
   "Matrix calls are not ready on this device.": "As chamadas do Matrix não estão prontas neste dispositivo.",
   "Not signed in to Matrix.": "Você não entrou no Matrix.",
+  "While this space is closed": "Enquanto este espaço está fechado",
+  "While another space is open, this one says \"New message\" when something comes on Matrix, never what, from whom or in which chat, and a call does not ring. For it the Matrix server tells this space's relay of each message, with no words in it: the Matrix server learns the relay's address, and the relay when messages come.": "Enquanto outro espaço está aberto, este diz “Nova mensagem” quando chega algo no Matrix, nunca o quê, de quem ou em qual conversa, e uma chamada não toca. Para isso o servidor Matrix avisa o relay deste espaço de cada mensagem, sem nenhuma palavra dela: o servidor Matrix fica sabendo o endereço do relay, e o relay quando chegam mensagens.",
+  "Closed, this space hears nothing from Matrix: what came shows when it opens.": "Fechado, este espaço não ouve nada do Matrix: o que chegou aparece quando ele abre.",
+  "This space says nothing while closed for now: choose Also while another space is open under Settings → Notifications → In the background.": "Por enquanto este espaço não diz nada enquanto está fechado: escolha “Também enquanto outro espaço está aberto” em Configurações → Notificações → Em segundo plano.",
+  "Your relay does not take Matrix notices yet: it needs updating.": "O seu relay ainda não aceita avisos do Matrix: precisa ser atualizado.",
 };

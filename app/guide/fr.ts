@@ -1550,6 +1550,14 @@ Element : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
+- **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
+  fermé** sur l’écran Matrix, laisse cet espace dire « New message » quand quelque chose arrive sur Matrix pendant
+  qu’un autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert**
+  dans **Réglages** → **Notifications** → **En arrière-plan**, qu’il faut aussi. Il ne dit jamais quoi, de qui ni dans
+  quelle discussion, et un appel ne sonne pas alors : seule la clé de l’espace ouvre ce qui est arrivé. Pour cela, le
+  serveur Matrix signale chaque message au relais de cet espace, sans aucun de ses mots : le serveur Matrix apprend
+  l’adresse du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut un
+  relais mis à jour pour cela, que le serveur Matrix puisse joindre.
 - **Pas encore :** messages vocaux, et appels sur l’ordinateur et dans l’app web.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les

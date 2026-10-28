@@ -26,6 +26,7 @@
 import type { ChatNotify } from '../lock/chat-notify';
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
+import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { throughTor, torFor } from './relay';
@@ -124,6 +125,8 @@ export type MatrixState = {
   verified?: Record<string, { devices: Record<string, string>; master?: string }>;
   /** The key backup, once the Security Key opened it or this device set it up (lib/matrix-backup.ts). */
   backup?: MatrixBackup;
+  /** Where the homeserver pushes while the space is closed, once asked to (lib/matrix-push.ts). */
+  push?: MatrixPush;
 };
 
 // The homeserver's answer to one request.

@@ -123,6 +123,13 @@
 //! origin and the `/` after it (`https://push.example.org/`), separated by
 //! commas or spaces.
 //!
+//! The WebSocket port also takes Matrix homeservers' pushes, on
+//! `/_matrix/push/v1/notify` (see `matrix_push.rs`), so that a space closed on
+//! a phone can say a message came on its Matrix account: each counts one
+//! message in the news of a queue the space made for it, and nothing is kept.
+//! A proxy in front must pass that path as plain HTTP. Set
+//! `EREVOS_RELAY_MATRIX_PUSH=off` to answer none. On unless set.
+//!
 //! Messages sent for later (see `later.rs`) are kept in the folder
 //! `EREVOS_RELAY_LATER`, or else in `<journal>.later` beside the journal,
 //! until they go. Without either, they live in memory and are lost when the
@@ -140,6 +147,7 @@ mod journal;
 mod later;
 mod lend;
 mod lock;
+mod matrix_push;
 mod oidc;
 mod pages;
 mod peers;
@@ -522,11 +530,29 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+    let matrix_push = match env::var("EREVOS_RELAY_MATRIX_PUSH").as_deref() {
+        Ok("" | "on") | Err(_) => {
+            eprintln!(
+                "erevos-relay: Matrix homeservers may push to {}",
+                matrix_push::NOTIFY_PATH
+            );
+            true
+        }
+        Ok("off") => {
+            eprintln!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH=off, Matrix homeservers' pushes are not taken");
+            false
+        }
+        Ok(_) => {
+            eprintln!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH must be on or off");
+            return ExitCode::FAILURE;
+        }
+    };
     let limits = Limits {
         connections: connections.try_into().unwrap_or(usize::MAX),
         tokenless: tokenless.try_into().unwrap_or(usize::MAX),
         reading: reading.try_into().unwrap_or(usize::MAX),
         private_peers,
+        matrix_push,
         ..Limits::default()
     };
     eprintln!(

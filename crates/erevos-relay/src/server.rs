@@ -220,6 +220,12 @@
 //! handshakes by their request line, on the places of the paths that need
 //! no token. Without one, every connection is a WebSocket as before.
 //!
+//! Matrix pushes (see `matrix_push.rs`): unless turned off, the WebSocket
+//! port answers a homeserver's `POST /_matrix/push/v1/notify` too, told from
+//! WebSocket handshakes by its request line, on the places of the paths that
+//! need no token, counting a message in the news of the queue each push key
+//! names and keeping nothing.
+//!
 //! Lent places (see `lend.rs`): a connection whose token is a ticket may only
 //! `BORROW` (and ask for the `KEY`); one whose token is a lent token may use
 //! its queues and files as a phone with the relay's token does, but not
@@ -291,6 +297,7 @@ use crate::invites::{InviteError, Invites, OwnError, RedeemError, MAX_TYPED};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
 use crate::lend::{Lend, Nonce, Pass};
 use crate::lock::{lock, wait_timeout};
+use crate::matrix_push;
 use crate::peers;
 use crate::push::{Came, Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
 use crate::queue::{system_now, News, QueueError, QueueId, Said, Store};
@@ -386,6 +393,9 @@ pub struct Limits {
     /// on this machine or its network (`EREVOS_RELAY_PRIVATE_PEERS=allow`,
     /// see `peers.rs`). Off unless set.
     pub private_peers: bool,
+    /// Whether the WebSocket port takes Matrix homeservers' pushes (see
+    /// `matrix_push.rs`). On unless `EREVOS_RELAY_MATRIX_PUSH=off`.
+    pub matrix_push: bool,
 }
 
 impl Default for Limits {
@@ -397,6 +407,7 @@ impl Default for Limits {
             idle: IDLE_TIMEOUT,
             handshake: HANDSHAKE_TIMEOUT,
             private_peers: false,
+            matrix_push: true,
         }
     }
 }
@@ -729,6 +740,18 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
     let limits = store.limits;
     stream.set_write_timeout(Some(WRITE_TIMEOUT))?;
     let deadline = Instant::now() + limits.handshake;
+    if limits.matrix_push && matrix_push::is_notify(&stream, deadline)? {
+        // Anyone may come here, as on the paths that need no token.
+        let Some(_slot) = Slot::take(&store.tokenless, limits.tokenless) else {
+            return Ok(());
+        };
+        let mut stream = Timed {
+            stream,
+            idle: limits.idle,
+            deadline: Some(deadline),
+        };
+        return matrix_push::serve(&mut stream, store);
+    }
     if let Some(signin) = store.signin.get() {
         if signin::is_page(&stream, deadline)? {
             // Anyone may come here, as on the paths that need no token.

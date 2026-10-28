@@ -4,14 +4,17 @@
 // none shows its queues; the open space waits on the other spaces' doors only, their contacts'
 // queues too, is told of each message once, word between phones never, what came while that
 // space was open not once it closes, and nothing once its door is shut or a queue is gone; the
-// open space's door follows its contacts as they take queues of their own. The relay part runs
-// with a real relay, and is skipped, with a note, without one.
+// open space's door follows its contacts as they take queues of their own; a closed space's Matrix
+// account pushes through the relay to a queue its door names (lib/matrix-push.ts). The relay part
+// runs with a real relay, and is skipped, with a note, without one.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { doorBunches, doorOf, followDoor, keepDoor, startClosedNotices } from '../lib/closed-notices';
+import { doorBunches, doorOf, followDoor, keepDoor, MATRIX_PUSH_GROUP, startClosedNotices } from '../lib/closed-notices';
+import { setMatrixHttp, type MatrixState } from '../lib/matrix';
+import { keepMatrixPush, MATRIX_PUSH_APP, startMatrixPush, stopMatrixPush } from '../lib/matrix-push';
 import { encryptText, fromHex, randomBytes } from '../lib/crypto';
 import { networkChanged } from '../lib/network-change';
 import { createQueue, deleteQueue, receiveMessage, sendMessage, toHex } from '../lib/relay';
@@ -19,7 +22,9 @@ import { DOOR_CONTACTS, hearDoorAll, loadDoor, openDoors, prepareDoors, saveDoor
 import { EMPTY_E2E, saveE2EData, type E2EData } from '../lock/e2e-data';
 import { heardText } from '../lock/hidden-watch';
 import { newSpaceKey, setCurrentSpace } from '../lock/keys';
+import { saveMatrix } from '../lock/matrix-data';
 import { EMPTY_SPACE, saveSpaceData } from '../lock/space-data';
+import { Homeserver, HS, PASSWORD } from './matrix-server';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import { store } from './secure-memory';
 
@@ -283,4 +288,107 @@ test("a closed space's door names its contacts' queues, tells of their messages 
     stop();
     setCurrentSpace(null);
   }
+});
+
+test("a closed space's Matrix account pushes through its relay to a queue its door names, which tells of each message", { skip: !relayReady }, async () => {
+  store.clear();
+  await prepareDoors();
+  const url = await startRelay();
+  const [open, closed] = [newSpaceKey(), newSpaceKey()];
+  const ids = await createQueue({ url });
+  await saveSpaceData(1, closed, { ...EMPTY_SPACE, url, tor: 'off', ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } });
+  const server = new Homeserver();
+  setMatrixHttp(async (request) => server.answer(request));
+  const login = server.answer({ method: 'POST', url: `${HS}/_matrix/client/v3/login`, body: { identifier: { user: 'ann' }, password: PASSWORD } }).json;
+  const state = {
+    homeserver: HS,
+    userId: login.user_id,
+    deviceId: login.device_id,
+    accessToken: login.access_token,
+    account: {},
+    rooms: {},
+    devices: {},
+    outdated: [],
+    olm: {},
+    inbound: {},
+    outbound: {},
+    seen: {},
+  } as unknown as MatrixState;
+  const pushers = () => server.pushers.get(state.userId) ?? [];
+  const gateway = `${url.replace('ws://', 'http://')}/_matrix/push/v1/notify`;
+
+  const push = await startMatrixPush(state, { url });
+  // A pusher at the relay's gateway, in the format that sends no words, by the queue's sender id.
+  assert.deepEqual(pushers(), [
+    {
+      kind: 'http',
+      app_id: MATRIX_PUSH_APP,
+      pushkey: push.senderHex,
+      app_display_name: 'Erevos',
+      device_display_name: 'Erevos',
+      lang: 'en',
+      data: { url: gateway, format: 'event_id_only' },
+      append: false,
+    },
+  ]);
+  state.push = push;
+  await saveMatrix(1, closed, state);
+  // The door names it first, at the space's relay, in a group of its own.
+  const door = (await doorOf(1, closed))!;
+  assert.deepEqual(door.contacts, { url, queues: [{ r: push.recipientHex, g: MATRIX_PUSH_GROUP }] });
+  await saveDoor(1, door);
+  // What the homeserver told of while that space was open was seen there: heard as it closes.
+  await server.push(state.userId, '$before');
+  await keepDoor(1, closed, true);
+
+  setCurrentSpace(0, open);
+  let told: number[] = [];
+  const stop = startClosedNotices((count, space) => (told = [...told, ...Array<number>(count).fill(space)]));
+  try {
+    await settle();
+    assert.deepEqual(told, []);
+    await server.push(state.userId, '$one');
+    await until(() => told.length === 1);
+    assert.deepEqual(told, [1]);
+    // A count alone, as when something was read elsewhere: nothing.
+    await server.push(state.userId);
+    await settle();
+    assert.equal(told.length, 1);
+    await server.push(state.userId, '$two');
+    await until(() => told.length === 2);
+  } finally {
+    stop();
+    setCurrentSpace(null);
+  }
+  // The queue stays empty: the relay keeps nothing of a push.
+  assert.equal(await receiveMessage({ url }, fromHex(push.recipientHex)), null);
+
+  // Kept as it is while all holds; the pusher set again when the homeserver let go of it.
+  assert.equal(await keepMatrixPush(state, push, { url }), push);
+  server.pushers.set(state.userId, []);
+  assert.equal(await keepMatrixPush(state, push, { url }), push);
+  assert.deepEqual(pushers().map((p) => p.pushkey), [push.senderHex]);
+  // The relay lost the queue: its gateway rejects the key, and the homeserver drops the pusher; a
+  // new queue and pusher take their place.
+  await deleteQueue({ url }, fromHex(push.recipientHex));
+  await server.push(state.userId, '$lost');
+  assert.deepEqual(pushers(), []);
+  const next = await keepMatrixPush(state, push, { url });
+  assert.notEqual(next.senderHex, push.senderHex);
+  assert.deepEqual(pushers().map((p) => p.pushkey), [next.senderHex]);
+  // The space moved to another relay: a queue there, the old pusher off.
+  const elsewhere = await startRelay();
+  const moved = await keepMatrixPush(state, next, { url: elsewhere });
+  assert.equal(moved.url, elsewhere);
+  assert.deepEqual(pushers().map((p) => [p.pushkey, p.data.url]), [[moved.senderHex, `${elsewhere.replace('ws://', 'http://')}/_matrix/push/v1/notify`]]);
+
+  // Turned off: the pusher goes, and the queue.
+  await stopMatrixPush(state, moved, { url: elsewhere });
+  assert.deepEqual(pushers(), []);
+  await assert.rejects(receiveMessage({ url: elsewhere }, fromHex(moved.recipientHex)));
+
+  // A relay that takes no pushes (from before, or turned off): refused, and nothing left behind.
+  const before = await startRelay(false, '', false, { EREVOS_RELAY_MATRIX_PUSH: 'off' });
+  await assert.rejects(startMatrixPush(state, { url: before }), /does not take Matrix notices/);
+  assert.deepEqual(pushers(), []);
 });

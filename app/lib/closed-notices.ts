@@ -1,5 +1,6 @@
 import { DOOR_CONTACTS, DOOR_QUEUES, hearDoor, hearDoorAll, loadDoor, openDoors, saveDoor, type Door } from '../lock/doors';
 import { loadE2EData } from '../lock/e2e-data';
+import { loadMatrix } from '../lock/matrix-data';
 import { heardOf, type Watched } from '../lock/hidden-watch';
 import { currentSpace } from '../lock/keys';
 import { spaceQueues } from '../lock/queues-data';
@@ -7,7 +8,7 @@ import { loadSpaceData } from '../lock/space-data';
 import { bunches, contactQueuesAt, type Bunch } from './contact-queues';
 import { t } from './i18n';
 import { onNetworkChange } from './network-change';
-import { canReadManyAt, canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsOfAny, newsSince, NO_NEWS, torFor, waitForNews, type News, type Relay } from './relay';
+import { canReadManyAt, canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsOfAny, newsSince, NO_NEWS, sameRelay, torFor, waitForNews, type News, type Relay } from './relay';
 
 // While a space is open, the other spaces that asked for it say how many messages came to them,
 // with the same notice as the open space's chats ("New message", "3 new messages"), never which
@@ -44,27 +45,54 @@ export function doorBunches(space: number, door: Door): Bunch[] {
   );
 }
 
-/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay (`most` at most), and its Tor way. Null with no queue yet. */
+/** The group a space's Matrix push queue (lib/matrix-push.ts) is read in, through Tor on a way of its own: no contact's group is ever so high. */
+export const MATRIX_PUSH_GROUP = 1_000_000;
+
+type OwnQueue = { queue: { recipientHex: string }; url: string; token: string };
+
+// The space's own queue as it reads on it now: where its last move put it, else its settings'.
+function ownOf(data: Awaited<ReturnType<typeof loadSpaceData>>, queues: Awaited<ReturnType<ReturnType<typeof spaceQueues>['load']>>): OwnQueue | null {
+  return queues.now ?? (data.ownQueue && data.url.trim() ? { queue: data.ownQueue, url: data.url.trim(), token: data.token.trim() } : null);
+}
+
+/** The relay the space `space` reads at now, with its token: where its contacts write, and its Matrix account is pushed. Null with no queue yet. */
+export async function spaceRelayOf(space: number, key: Uint8Array): Promise<Relay | null> {
+  const [data, queues] = await Promise.all([loadSpaceData(space, key), spaceQueues(space, key).load()]);
+  const own = ownOf(data, queues);
+  return own ? { url: own.url, token: own.token || undefined } : null;
+}
+
+/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay (`most` at most), its Matrix push queue there first, and its Tor way. Null with no queue yet. */
 export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACTS): Promise<Door | null> {
-  const [data, queues, chats] = await Promise.all([loadSpaceData(space, key), spaceQueues(space, key).load(), loadE2EData('space', space, key).catch(() => null)]);
-  const own = queues.now ?? (data.ownQueue && data.url.trim() ? { queue: data.ownQueue, url: data.url.trim(), token: data.token.trim() } : null);
+  const [data, queues, chats, matrix] = await Promise.all([
+    loadSpaceData(space, key),
+    spaceQueues(space, key).load(),
+    loadE2EData('space', space, key).catch(() => null),
+    loadMatrix(space, key).then(
+      (account) => ({ push: account?.push }),
+      () => null,
+    ),
+  ]);
+  const own = ownOf(data, queues);
   const kept: Watched[] = [];
   for (const one of [own, queues.link, queues.group, queues.public]) {
     if (!one || kept.some((k) => k.recipientHex === one.queue.recipientHex)) continue;
     kept.push({ url: one.url, token: one.token, recipientHex: one.queue.recipientHex });
   }
   if (kept.length === 0) return null;
-  if (!chats) {
-    // The chats could not be read just now, as a save of them ran meanwhile (lock/sealed-file.ts): the
-    // contacts' queues the door names stay as they are, rather than be left out until the next change.
+  if (!chats || !matrix) {
+    // The chats or the Matrix account could not be read just now, as a save ran meanwhile
+    // (lock/sealed-file.ts): the contacts' queues the door names stay as they are, rather than be
+    // left out until the next change.
     const was = await loadDoor(space).catch(() => null);
     return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(was?.contacts ? { contacts: was.contacts } : {}) };
   }
-  // The contacts' queues where the space reads them, its own queue's relay: theirs now first, then
-  // those they took the place of, still read for a while.
+  // The Matrix push queue, at the same relay, first: the contacts' queues where the space reads them,
+  // its own queue's relay, then: theirs now first, then those they took the place of, still read for a while.
+  const contacts: { r: string; g: number }[] = [];
+  if (own && matrix.push && sameRelay(matrix.push.url, own.url)) contacts.push({ r: matrix.push.recipientHex, g: MATRIX_PUSH_GROUP });
   const mines = chats.contacts.flatMap((c) => (c.mine ? [{ identity: c.identity, mine: c.mine }] : []));
   const at = own ? contactQueuesAt(mines, own.url) : [];
-  const contacts: { r: string; g: number }[] = [];
   for (const q of [...at.filter((q) => !q.was), ...at.filter((q) => q.was)]) {
     if (contacts.length >= most) break;
     if (!contacts.some((c) => c.r === q.r) && !kept.some((k) => k.recipientHex === q.r)) contacts.push({ r: q.r, g: q.g });

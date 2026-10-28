@@ -1473,6 +1473,14 @@ ningún puente se pone en medio.
 - **Notificaciones:** un mensaje que llega muestra un aviso y cuenta en el número del icono de Erevos, como en los chats
   propios de Erevos, mientras este espacio está abierto; en un ordenador, mientras Erevos funciona. En Android,
   **Notificaciones**, al final de un chat, lo silencia o le da un sonido propio; un chat silenciado no cuenta.
+- **Mientras este espacio está cerrado:** en Android, **Avisar de mensajes nuevos**, en **Mientras este espacio está
+  cerrado** de la pantalla de Matrix, deja que este espacio diga «Mensaje nuevo» cuando llega algo en Matrix mientras
+  otro espacio está abierto, como hacen sus propios chats con **También mientras otro espacio está abierto** en
+  **Ajustes** → **Notificaciones** → **En segundo plano**, que también necesita. Nunca dice qué, de quién ni en qué
+  chat, y una llamada no suena entonces: solo la clave del espacio abre lo que llegó. Para ello el servidor de Matrix
+  avisa al relay de este espacio de cada mensaje, sin ninguna palabra de él, así que el servidor de Matrix conoce la
+  dirección del relay, y el relay cuándo llegan mensajes. Apagado hasta que lo enciendas; necesita un relay
+  actualizado para ello, al que llegue el servidor de Matrix.
 - **Aún no:** mensajes de voz, y llamadas en el ordenador y en la app web.
 
 **Por qué:** los chats propios de Erevos ocultan quién habla con quién; un servidor de Matrix no puede. Por eso los

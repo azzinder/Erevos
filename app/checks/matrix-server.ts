@@ -1,7 +1,8 @@
 // A small Matrix homeserver for the checks (checks/matrix.check.ts, checks/matrix-calls.check.ts),
 // as far as lib/matrix.ts uses one: users, devices and their keys, rooms as one log of events,
 // to-device messages waiting for each device, and what each was asked; and for calls, a room's
-// state, delayed events (MSC4140), OpenID tokens, and where a call's media goes (MSC4143).
+// state, delayed events (MSC4140), OpenID tokens, and where a call's media goes (MSC4143); and
+// pushers, which it tells of events through their gateways (checks/doors.check.ts).
 /// <reference types="node" />
 import type { MatrixRequest } from '../lib/matrix';
 
@@ -94,6 +95,24 @@ export class Homeserver {
     const id = `syd_${++this.made}`;
     this.delayed.set(id, { room, sender, type, stateKey, content, delayMs, due: Date.now() + delayMs });
     return id;
+  }
+
+  /** Pushers by user, as set (/pushers/set). */
+  readonly pushers = new Map<string, Json[]>();
+
+  /**
+   * Tells `user`'s pushers of an event, as a homeserver does of a message its push rules notify of,
+   * in the format event_id_only; with no event, of a count alone, as when something was read. A
+   * pusher its gateway rejects goes, as the spec has it.
+   */
+  async push(user: string, eventId?: string): Promise<void> {
+    for (const pusher of [...(this.pushers.get(user) ?? [])]) {
+      const device = { app_id: pusher.app_id, pushkey: pusher.pushkey, pushkey_ts: 1, data: { format: pusher.data.format } };
+      const notification = { ...(eventId ? { event_id: eventId, room_id: '!room:example.org' } : {}), counts: { unread: 1 }, prio: 'high', devices: [device] };
+      const answer = await fetch(pusher.data.url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ notification }) });
+      const { rejected } = (await answer.json()) as { rejected: string[] };
+      if (rejected.includes(pusher.pushkey)) this.pushers.set(user, (this.pushers.get(user) ?? []).filter((p) => p !== pusher));
+    }
   }
 
   /** Uploaded files, by their mxc:// address. */
@@ -299,6 +318,17 @@ export class Homeserver {
       return { status: 200, json: {} };
     }
     if (path.match(/^\/rooms\/[^/]+\/receipt\//)) return { status: 200, json: {} };
+    if (path === '/pushers/set' && request.method === 'POST') {
+      const kept = (this.pushers.get(user) ?? []).filter((p) => !(p.app_id === body.app_id && p.pushkey === body.pushkey));
+      if (body.kind) {
+        // As Synapse: the gateway must be at the path the spec fixes.
+        if (new URL(String(body.data?.url)).pathname !== '/_matrix/push/v1/notify') return { status: 400, json: { errcode: 'M_INVALID_PARAM' } };
+        kept.push(body);
+      }
+      this.pushers.set(user, kept);
+      return { status: 200, json: {} };
+    }
+    if (path === '/pushers' && request.method === 'GET') return { status: 200, json: { pushers: this.pushers.get(user) ?? [] } };
     if (path === '/sync') return { status: 200, json: this.sync(user, device, Number(url.searchParams.get('since') ?? 0)) };
     return { status: 404, json: { errcode: 'M_UNRECOGNIZED', error: path } };
   }

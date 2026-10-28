@@ -544,6 +544,7 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_LEND_REVOKED` | `relay.key.revoked` beside the key | The file of revoked tickets. |
 | `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
 | `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
+| `EREVOS_RELAY_MATRIX_PUSH` | `on` | `off` stops the relay from taking Matrix pushes (see [Matrix notices](#matrix-notices)). |
 
 ## Connections
 
@@ -668,6 +669,42 @@ then, at most once an hour for each push service and status:
 `the pushes stopped` means no web app is told of a message until the relay
 starts again: run `sudo systemctl restart erevos-relay`.
 
+## Matrix notices
+
+A space signed in to Matrix can ask, on the app's Matrix screen, to say "New message" while it is
+closed (and another space is open) when something comes on its Matrix account. For it the relay is
+the account's Matrix push gateway: the Matrix server posts to
+`https://<relay address>/_matrix/push/v1/notify`, as the Matrix spec fixes the path, with the
+room's and the event's ids and how many are not read, never words or names. The push key is the id
+of a queue the space made for this alone; the relay counts one message in that queue's news, which
+the space's door asks of as of its contacts' queues, and stores nothing and writes nothing to its
+journal. A key it does not know, or of a queue that is gone, it answers as rejected, and the Matrix
+server then drops that pusher.
+
+The relay answers these on its WebSocket port, on that path only, with no token, and counts them
+among the connections on `/sealed`, `/files` and `/join`. `EREVOS_RELAY_MATRIX_PUSH=off` turns it
+off: the path is then closed as any other plain request, and the app says the relay needs updating.
+
+Behind Caddy nothing is needed. Behind Apache, the path needs lines of its own, as `/signin/` does
+(see [In front of the relay](#in-front-of-the-relay)): above the line that passes the WebSocket on,
+
+    ProxyPass        /_matrix/push/ http://127.0.0.1:7879/_matrix/push/
+    ProxyPassReverse /_matrix/push/ http://127.0.0.1:7879/_matrix/push/
+
+and, if the virtual host forbids plain requests with a `RewriteRule` (as the LPHL server's
+`RewriteRule ^ - [F]` does), an exception for it beside the one for `/signin/`, just before the
+first `RewriteCond` or `RewriteRule`:
+
+    RewriteRule ^/_matrix/push/ - [L]
+
+Then `sudo httpd -t && sudo systemctl reload httpd` (on Debian or Ubuntu,
+`sudo apachectl configtest && sudo systemctl reload apache2`). To see it work:
+
+    curl -s -X POST -H 'Content-Type: application/json' -d '{"notification":{"counts":{"unread":0},"devices":[{"app_id":"app.erevos","pushkey":"00"}]}}' https://erevos.lphl.nekten.eu/_matrix/push/v1/notify
+
+answers `{"rejected":["00"]}`, from the relay; a `403`, `404` or an empty answer is Apache's, or a
+relay from before this change.
+
 ## Lending places
 
 A relay can lend places to phones that have no relay of their own. Off unless
@@ -727,7 +764,9 @@ said or shown: calls are end-to-end encrypted too. With lending on, it can
 also see how many places each ticket gave and how much each place used today,
 but not which queue is whose. With signing in set up, it sees each signed-in
 phone's user name at the provider, and the provider sees each sign-in and
-each hourly check. Run the relay on a server you control, and keep
+each hourly check. With Matrix notices asked for, it sees when a Matrix
+server tells of a message for a queue, and that server's address, but not
+which room, from whom or what. Run the relay on a server you control, and keep
 its disk encrypted if the provider offers it.
 
 ## Remove

@@ -31,6 +31,8 @@ import {
   verifications,
   type Verification,
 } from './matrix-verify';
+import { followDoor, spaceRelayOf } from './closed-notices';
+import { keepMatrixPush, startMatrixPush, stopMatrixPush } from './matrix-push';
 import { addNetwork, hearing } from './network-notices';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
@@ -56,6 +58,8 @@ type Live = {
   asked: Set<string>;
   /** What its rooms had not read after the last change, to tell of what came (lib/network-notices.ts). */
   heard: ReturnType<typeof hearing>;
+  /** Whether its push while closed (lib/matrix-push.ts) was looked at this run. */
+  pushChecked: boolean;
 };
 
 let live: Live | null = null;
@@ -168,6 +172,10 @@ async function loop(it: Live): Promise<void> {
           it.problem = '';
           told();
         }
+        if (!it.pushChecked) {
+          it.pushChecked = true;
+          void keepPush(it);
+        }
         wait = 2000;
       } catch (error) {
         // The homeserver signed this device out: the account is forgotten here too.
@@ -189,6 +197,57 @@ async function loop(it: Live): Promise<void> {
   }
 }
 
+// Once a run, after a sync: the push while closed as it should be now, as the space moved to another
+// relay, or the homeserver or the relay let go of it. What fails is tried again the next run.
+async function keepPush(it: Live): Promise<void> {
+  const push = it.state?.push;
+  if (!push || !it.state) return;
+  try {
+    const relay = await spaceRelayOf(it.space, it.key);
+    if (!relay || !stillOpen(it) || !it.state) return;
+    const next = await keepMatrixPush(it.state, push, relay);
+    if (next === push || !stillOpen(it)) return;
+    await changeAccount(it, async () => {
+      if (it.state) it.state.push = next;
+    });
+    await saveMatrix(it.space, it.key, it.state);
+    await followDoor(it.space, it.key);
+  } catch {
+    // Unreachable, or refused: the push stays as it was.
+  }
+}
+
+/** Whether the open space tells of Matrix messages while closed (lib/matrix-push.ts). */
+export function matrixPushOn(): boolean {
+  return !!live?.state?.push;
+}
+
+/**
+ * Lets the open space tell of Matrix messages while closed, or no more: a queue at its relay and a
+ * pusher on the homeserver, or neither. Its door names the queue as it changes (lib/closed-notices.ts).
+ */
+export async function matrixSetPush(on: boolean): Promise<void> {
+  const it = need();
+  const was = it.state.push;
+  if (on === !!was) return;
+  const relay = await spaceRelayOf(it.space, it.key);
+  if (on) {
+    if (!relay) throw new Error(t('This space has no queue at a relay yet: it can say nothing while closed.'));
+    const push = await startMatrixPush(it.state, relay);
+    await changeAccount(it, async () => {
+      it.state.push = push;
+    });
+  } else if (was) {
+    await stopMatrixPush(it.state, was, relay ?? undefined);
+    await changeAccount(it, async () => {
+      delete it.state.push;
+    });
+  }
+  // Kept at once, as the door reads it from what is kept.
+  await saveMatrix(it.space, it.key, it.state);
+  await followDoor(it.space, it.key).catch(() => undefined);
+}
+
 /** Loads the open space's account, once, and syncs it while the space stays open. */
 export function runMatrix(): void {
   if (!canMatrix()) return;
@@ -203,7 +262,7 @@ export function runMatrix(): void {
     return;
   }
   stopMatrix();
-  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing() };
+  const it: Live = { ...space, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing(), pushChecked: false };
   live = it;
   loadMatrix(space.space, space.key)
     .then((state) => {
@@ -272,12 +331,15 @@ export async function matrixSignOut(): Promise<void> {
   const it: Live = need();
   if (it.state) {
     forgetVerifications(it.state);
+    // Its pusher goes with the device; its queue at the relay is deleted here.
+    if (it.state.push) await stopMatrixPush(it.state, it.state.push, (await spaceRelayOf(it.space, it.key).catch(() => null)) ?? undefined);
     await signOut(it.state).catch(() => undefined);
   }
   await changeAccount(it, async () => {
     it.state = null;
   });
   await saveMatrix(it.space, it.key, null);
+  await followDoor(it.space, it.key).catch(() => undefined);
 }
 
 export function matrixSend(roomId: string, text: string): Promise<void> {

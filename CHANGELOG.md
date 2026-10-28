@@ -193,6 +193,17 @@ On main, not released yet:
   own; a muted chat is not counted, and its row shows the struck-through bell. An XMPP or Matrix call rings with
   its chat's ringtone. A chat is read only while Erevos shows it, so what comes with the chat left open behind other apps still
   tells of itself. While the space is locked, or Android stopped Erevos, nothing comes: these servers send no push.
+- **A closed space tells of Matrix messages** (Android): the Matrix screen's **While this space is closed** has
+  **Say a message came**, off until chosen. Then, while another space is open with **Also while another space is
+  open** on, the closed space says "New message" when something comes on its Matrix account, as for its own chats, never
+  what, from whom or in which chat, and a call does not ring. The space makes a queue of its own at its relay and sets a
+  pusher on the Matrix server whose push key is that queue's id, at the relay's `/_matrix/push/v1/notify`, in the
+  format `event_id_only`: the server posts the room's and the event's ids and the counts, never words or names, and
+  the relay counts one message in the queue's news and keeps nothing, which the closed space's door asks of as of its
+  contacts' queues. The pusher is checked at each start and set again, or moved with the space to another relay; it
+  is taken off with **No notice** or on signing out. The Matrix server learns the relay's address, the relay when
+  messages come for that queue. Needs the relay updated (it answers Matrix pushes on its WebSocket port, unless
+  `EREVOS_RELAY_MATRIX_PUSH=off`; behind Apache the path needs proxy lines of its own, see `deploy/relay/README.md`).
 - **Calls ring in the web app, on the computer and on Sailfish OS**: a call that came while Erevos was open showed
   only its screen, with no sound, as only Android had a ringtone. The page now plays a ring of its own, two short
   rings every 3 seconds, made by the browser, and vibrates where the phone can, until the call is answered or ends; a

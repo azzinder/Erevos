@@ -1430,6 +1430,13 @@ između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
+- **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
+  ekranu Matrixa pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na Matrixu dok je otvoren drugi prostor,
+  kao što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
+  pozadini**, što je također potrebno. Nikad ne kaže šta, od koga ni u kojem razgovoru, a poziv tada ne zvoni: samo
+  ključ prostora otvara ono što je stiglo. Za to Matrix server javlja relayu ovog prostora svaku poruku, bez ijedne
+  njene riječi, pa Matrix server saznaje adresu relaya, a relay kad stižu poruke. Isključeno dok ga ne uključite;
+  treba relay ažuriran za to, do kojeg Matrix server može doći.
 - **Još ne:** glasovne poruke, i pozivi na računaru i u web-aplikaciji.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix

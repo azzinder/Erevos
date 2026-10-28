@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
-import { Button, Card, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
+import { doorIsOpen } from '../lib/closed-notices';
 import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
@@ -12,7 +13,9 @@ import {
   matrixJoin,
   matrixLeave,
   matrixNow,
+  matrixPushOn,
   matrixRecoveryInfo,
+  matrixSetPush,
   matrixSetUpRecovery,
   matrixSignIn,
   matrixUnlock,
@@ -28,9 +31,9 @@ import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // The space's Matrix account (lib/matrix-store.ts, docs/matrix.md), under Settings → Relay and
-// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, and
-// signing out. Each chat opens in app/matrix-chat.tsx. Every view says these chats are not
-// anonymous.
+// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, on
+// Android whether it tells of messages while the space is closed (lib/matrix-push.ts), and signing
+// out. Each chat opens in app/matrix-chat.tsx. Every view says these chats are not anonymous.
 
 export default function MatrixScreen() {
   const router = useRouter();
@@ -181,6 +184,8 @@ export default function MatrixScreen() {
       <SectionTitle title={t('Security Key')} />
       <RecoveryCard state={state} />
 
+      {Platform.OS === 'android' ? <ClosedPush busy={busy} run={run} /> : null}
+
       <SectionTitle title={t('Chats')} />
       {rooms.length === 0 ? <Text tone="muted">{t('No Matrix chats yet.')}</Text> : null}
       {rooms.map((room) => (
@@ -207,6 +212,45 @@ export default function MatrixScreen() {
         }
       />
     </Page>
+  );
+}
+
+// Whether the space tells of Matrix messages while it is closed: only while another space is open,
+// and only if it says a message came then (Settings → Notifications → In the background), as its
+// own chats do (lib/closed-notices.ts), which is said when it does not.
+function ClosedPush({ busy, run }: { busy: boolean; run: (work: () => Promise<unknown>) => Promise<void> }) {
+  const on = matrixPushOn();
+  const [door, setDoor] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    doorIsOpen().then(
+      (open) => live && setDoor(open),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [on]);
+  return (
+    <>
+      <SectionTitle title={t('While this space is closed')} />
+      <Card>
+        <Row wrap>
+          <Chip label={t('Say a message came')} selected={on} onPress={() => !busy && !on && void run(() => matrixSetPush(true))} />
+          <Chip label={t('No notice')} selected={!on} onPress={() => !busy && on && void run(() => matrixSetPush(false))} />
+        </Row>
+        <Text variant="caption" tone="muted">
+          {on
+            ? t('While another space is open, this one says "New message" when something comes on Matrix, never what, from whom or in which chat, and a call does not ring. For it the Matrix server tells this space\'s relay of each message, with no words in it: the Matrix server learns the relay\'s address, and the relay when messages come.')
+            : t('Closed, this space hears nothing from Matrix: what came shows when it opens.')}
+        </Text>
+        {on && door === false ? (
+          <Text variant="caption" tone="muted">
+            {t('This space says nothing while closed for now: choose Also while another space is open under Settings → Notifications → In the background.')}
+          </Text>
+        ) : null}
+      </Card>
+    </>
   );
 }
 

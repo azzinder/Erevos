@@ -1363,6 +1363,13 @@ between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
+- **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the Matrix
+  screen lets this space say "New message" when something comes on Matrix while another space is open, as its own
+  chats do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**,
+  which it needs too. It never says what, from whom or in which chat, and a call does not ring then: only the space's
+  key opens what came. For it the Matrix server tells this space's relay of each message, with no words in it, so the
+  Matrix server learns the relay's address, and the relay when messages come. Off unless you turn it on; it needs a
+  relay updated for it, which the Matrix server can reach.
 - **Not yet:** voice messages, and calls on the computer and in the web app.
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and

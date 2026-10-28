@@ -1583,6 +1583,14 @@ Element: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
+- **Solange dieser Bereich geschlossen ist:** Auf Android lässt **Neue Nachrichten melden** unter **Solange dieser
+  Bereich geschlossen ist** auf dem Matrix-Bildschirm diesen Bereich „Neue Nachricht“ sagen, wenn auf Matrix etwas
+  kommt, während ein anderer Bereich offen ist, wie seine eigenen Chats mit **Auch, wenn ein anderer Bereich offen
+  ist** unter **Einstellungen** → **Benachrichtigungen** → **Im Hintergrund**, was es ebenfalls braucht. Er sagt nie,
+  was, von wem oder in welchem Chat, und ein Anruf klingelt dann nicht: Nur der Schlüssel des Bereichs öffnet, was
+  kam. Dafür meldet der Matrix-Server dem Relay dieses Bereichs jede Nachricht, ohne ein Wort von ihr, so erfährt der
+  Matrix-Server die Adresse des Relays, und das Relay, wann Nachrichten kommen. Aus, bis du es einschaltest; es
+  braucht ein dafür aktualisiertes Relay, das der Matrix-Server erreicht.
 - **Noch nicht:** Sprachnachrichten, und Anrufe auf dem Computer und in der Web-App.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein Matrix-Server kann das nicht. Darum bleiben

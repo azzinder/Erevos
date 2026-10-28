@@ -133,13 +133,40 @@ account just signed in to tells of nothing. A room has notifications of its own 
 Android; a muted one is left out. A room is marked read only while Erevos shows it. A call rings
 with the room's own ringtone when it has one (`components/call-host.tsx`).
 
+### While the space is closed
+
+On Android, **While this space is closed** on the Matrix screen (`app/app/matrix.tsx`) chooses
+**Say a message came** or **No notice**, the second until chosen. With the first, the space's relay
+is the account's push gateway (`app/lib/matrix-push.ts`, `crates/erevos-relay/src/matrix_push.rs`):
+
+- The space makes a queue of its own at its relay, and checks that the relay's gateway takes pushes
+  for it with a notification of a count alone, which wakes nothing; a relay that does not is told
+  of as one that needs updating, and the queue goes.
+- It sets a pusher on the homeserver (`/pushers/set`): kind `http`, app id `app.erevos`, the push key
+  the queue's sender id in hex, at `https://<relay host>/_matrix/push/v1/notify`, format
+  `event_id_only`, language `en`. For each message the homeserver would tell of, it posts the
+  room's and the event's ids and the counts, never what was written or by whom.
+- The relay counts one message in that queue's news for each notification with an event id, stores
+  nothing and writes nothing to its journal, and answers any push key it does not know as rejected,
+  so the homeserver drops a pusher whose queue is gone.
+- The queue is kept with the account (`push`, `lock/matrix-data.ts`). After the first sync of each
+  start, the space checks it: the pusher is set again if the homeserver lost it, and a new queue and
+  pusher are made if the queue is gone or the space reads at another relay now, the old pusher taken
+  off. **No notice** and signing out take the pusher off and delete the queue.
+- The space's door (`app/lib/closed-notices.ts`) names the queue first among its contacts' queues,
+  under a Tor way of its own, so while another space is open the closed one says "New message" for
+  it as for its own chats. It cannot say which chat, and a call does not ring: only the space's key
+  opens what came, and it opens on the next sync.
+
+The homeserver learns the relay's address, and the relay when messages come for that queue. With
+no space open, or Erevos stopped by Android, nothing is told, as for the space's own chats.
+
 ## Not yet
 
 - Voice messages, video thumbnails, reactions, replies, edits.
 - Checking by QR, and trust shown per device in a group.
 - Reading a room's history further back than the last sync, so older locked messages show.
-- Notices while the space is locked or Android stopped Erevos: that needs a push gateway, which
-  would learn when messages come.
+- Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
 - Calls on the computer and in the web app (Element Call in a frame from an origin of its own, see
   `element-call-frame.ts` above), and in a hidden chat's place.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.

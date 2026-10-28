@@ -36,9 +36,17 @@ export function isMatrixState(value: unknown): value is MatrixState {
   );
 }
 
+// A kept push (lib/matrix-push.ts MatrixPush) that is not one is left out: the space then tells of nothing while closed.
+const isPush = (value: unknown) => {
+  const v = (value ?? {}) as Record<string, unknown>;
+  return typeof v.url === 'string' && [v.recipientHex, v.senderHex].every((id) => typeof id === 'string' && /^[0-9a-f]{48}$/.test(id));
+};
+
 function checked(value: unknown): MatrixData {
   const account = object(value) ? value.account : null;
-  return { account: isMatrixState(account) ? account : null };
+  if (!isMatrixState(account)) return { account: null };
+  if (account.push !== undefined && !isPush(account.push)) delete account.push;
+  return { account };
 }
 
 const store = sealedFile({ name: FILE, empty: { account: null } as MatrixData, checked, block: BLOCK });

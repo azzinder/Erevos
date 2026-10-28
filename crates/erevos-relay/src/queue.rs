@@ -467,6 +467,18 @@ impl Store {
         Ok(())
     }
 
+    /// Counts one message in the queue's news, keeping nothing: a Matrix
+    /// homeserver's push (see `matrix_push.rs`), which says only that
+    /// something came. Nothing waits in the queue for it, and nothing is
+    /// written to the journal; the count goes at a restart, as all news does.
+    pub fn wake(&mut self, sender_id: &QueueId) -> Result<(), QueueError> {
+        let rid = *self.by_sender.get(sender_id).ok_or(QueueError::NotFound)?;
+        self.expire_queue(&rid)?;
+        let q = self.queues.get_mut(&rid).ok_or(QueueError::NotFound)?;
+        q.news.came(Said::Message);
+        Ok(())
+    }
+
     /// Hands over the oldest message and deletes it from the relay.
     pub fn receive(&mut self, recipient_id: &QueueId) -> Result<Option<Vec<u8>>, QueueError> {
         self.expire_queue(recipient_id)?;
