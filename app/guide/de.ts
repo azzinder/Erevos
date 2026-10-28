@@ -2077,8 +2077,10 @@ löschen, was die weggenommenen Plätze enthalten.
   demselben Relay angelegt, sodass das Öffnen des Bereichs weder zeigt, ob versteckte Chats angelegt sind, noch welche,
   solange sie das Relay des Bereichs nutzen; das Relay wird nur gefragt, wie viele Nachrichten kamen, da es sie an dem
   Byte zählt, das jede trägt (siehe, was das Relay sieht, oben), nie nach ihnen selbst. Wer die Benachrichtigung sieht
-  und in deinen Chats nichts Neues findet, kann ahnen, dass es mehr gibt. Backups behalten es nicht: Schalte es nach
-  dem Wiederherstellen erneut ein.
+  und in deinen Chats nichts Neues findet, kann ahnen, dass es mehr gibt. Nachdem du im Platz jemanden gelöscht oder
+  blockiert hast, macht die erste Nachricht von jemand Neuem, über den Kontaktlink oder QR-Code des Platzes, keine:
+  Sie zeigt sich, wenn du den Platz öffnest. Backups behalten es nicht: Schalte es nach dem Wiederherstellen erneut
+  ein.
 - **Klingeln bei Anrufen, wenn geschlossen** (Android): unter **Melden, wenn eine Nachricht kommt**, solange
   **Empfangen, wenn geschlossen** aus ist. Eingeschaltet lässt ein Anruf von einem seiner Kontakte, solange der Platz
   geschlossen ist, mit Erevos im Hintergrund oder auf irgendeinem Bildschirm, das Telefon klingeln und

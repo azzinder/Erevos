@@ -1937,8 +1937,9 @@ lo que contienen los lugares que se quitaran.
   creadas para nada en el mismo relay, así que abrir el espacio no muestra ni si hay chats ocultos configurados ni
   cuáles, siempre que usen el relay del espacio; al relay solo se le pregunta cuántos mensajes llegaron, ya que los
   cuenta por el byte que lleva cada uno (ver lo que ve el relay, más arriba), nunca se le piden. Quien vea el aviso y no
-  encuentre nada nuevo en tus chats puede suponer que hay más. Las copias de seguridad no lo conservan: vuelve a
-  activarlo tras restaurar.
+  encuentre nada nuevo en tus chats puede suponer que hay más. Después de borrar o bloquear a alguien en el lugar, el
+  primer mensaje de alguien nuevo, por el enlace de contacto o el código QR del lugar, no hace ninguno: se ve al abrir
+  el lugar. Las copias de seguridad no lo conservan: vuelve a activarlo tras restaurar.
 - **Sonar las llamadas cuando están cerrados** (Android): debajo de **Avisar cuando llega un mensaje**, mientras
   **Recibir estando cerrados** está desactivado. Activado, mientras el lugar está cerrado, con Erevos en segundo plano o
   en cualquier pantalla, una llamada de uno de sus contactos hace sonar el teléfono y mostrar «Incoming call» sin

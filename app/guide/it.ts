@@ -1964,8 +1964,9 @@ cancellerebbe quello che contengono i posti tolti.
   create per niente sullo stesso relay, così aprire lo spazio non mostra né se ci sono chat nascoste impostate né
   quali, purché usino il relay dello spazio; al relay si chiede solo quanti messaggi sono arrivati, perché li conta dal
   byte che ognuno porta (vedi che cosa vede il relay, sopra), mai i messaggi stessi. Chi vede la notifica e non trova
-  niente di nuovo nelle tue chat può immaginare che ce ne siano altre. I backup non lo conservano: riattivalo dopo il
-  ripristino.
+  niente di nuovo nelle tue chat può immaginare che ce ne siano altre. Dopo che hai eliminato o bloccato qualcuno nel
+  posto, il primo messaggio di qualcuno di nuovo, dal link di contatto o dal codice QR del posto, non ne fa nessuna:
+  si vede quando apri il posto. I backup non lo conservano: riattivalo dopo il ripristino.
 - **Fai squillare le chiamate quando sono chiuse** (Android): sotto **Avvisa quando arriva un messaggio**, mentre
   **Ricevere da chiuse** è disattivato. Se lo attivi, mentre il posto è chiuso, con Erevos in background o su qualsiasi
   schermata, una chiamata da uno dei suoi contatti fa squillare il telefono e

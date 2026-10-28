@@ -1884,7 +1884,9 @@ sadrže uklonjena mjesta.
   istom relayu, pa otvaranje prostora ne pokazuje ni jesu li postavljeni skriveni razgovori ni koji, dok god koriste
   relay prostora; relay se pita samo koliko je poruka stiglo, jer ih broji po bajtu koji svaka nosi (pogledajte šta
   relay vidi, iznad), nikad se ne traže same poruke. Onaj ko vidi obavijest i ne nađe ništa novo u vašim razgovorima
-  mogao bi pretpostaviti da ih ima još. Rezervne kopije ovo ne zadržavaju: ponovo ga uključite nakon vraćanja kopije.
+  mogao bi pretpostaviti da ih ima još. Nakon što obrišete ili blokirate nekoga u mjestu, prva poruka nekoga novog,
+  preko linka za kontakt ili QR koda mjesta, ne pravi nijednu: vidi se kad otvorite mjesto. Rezervne kopije ovo ne
+  zadržavaju: ponovo ga uključite nakon vraćanja kopije.
 - **Zvonjava poziva kad su zatvoreni** (Android): ispod **Javi kad stigne poruka**, dok je **Primanje dok su
   zatvoreni** isključeno. Kad je uključeno, dok je mjesto zatvoreno, a Erevos u pozadini ili na bilo kojem ekranu,
   poziv od jednog od njegovih kontakata tjera telefon da zvoni i prikaže „Incoming call“ bez imena, kao što to radi

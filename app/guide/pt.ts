@@ -1928,7 +1928,9 @@ as posições retiradas guardam.
   criadas à toa no mesmo relay, para que abrir o espaço não mostre nem se há conversas ocultas definidas nem quais,
   desde que elas usem o relay do espaço; ao relay só se pergunta quantas mensagens chegaram, já que ele as conta pelo
   byte que cada uma leva (veja o que o relay vê, acima), nunca as próprias mensagens. Quem vê o aviso e não encontra
-  nada novo nas suas conversas pode supor que há mais. Os backups não guardam isso: ative de novo depois de restaurar.
+  nada novo nas suas conversas pode supor que há mais. Depois que você apaga ou bloqueia alguém na posição, a primeira
+  mensagem de alguém novo, pelo link de contato ou pelo código QR da posição, não faz nenhum: ela aparece quando você
+  abre a posição. Os backups não guardam isso: ative de novo depois de restaurar.
 - **Tocar as chamadas quando fechadas** (Android): abaixo de **Avisar quando chega uma mensagem**, enquanto **Receber
   quando fechadas** está desativado. Ativado, enquanto a posição está fechada, com o Erevos em segundo plano ou em
   qualquer tela, uma chamada de um dos contatos dela faz o celular tocar e mostrar "Incoming call" sem nome, como faz

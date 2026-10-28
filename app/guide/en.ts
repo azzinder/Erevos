@@ -1781,7 +1781,9 @@ what the places taken away hold.
   relay, so opening the space shows neither whether hidden chats are set nor which, as long as they use the space's
   relay; the relay is asked only how many messages came, as it counts them by the byte each one carries (see what
   the relay sees, above), never for them. Whoever sees the notice and finds nothing new in your chats may guess there
-  are more. Backups do not keep it: turn it on again after restoring.
+  are more. After you delete or block someone in the place, a first message from someone new, by the place's contact
+  link or QR code, makes none: it shows when you open the place. Backups do not keep it: turn it on again after
+  restoring.
 - **Ring calls when closed** (Android): below **Say when a message comes**, while **Receive while closed** is off.
   Turned on, while the place is closed, with Erevos in the background or on any screen, a call from one of its
   contacts makes the phone ring and show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,

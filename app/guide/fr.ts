@@ -2040,7 +2040,9 @@ supprimerait ce que contiennent les emplacements retirés.
   l’espace ne montre ni si des discussions masquées sont définies ni lesquelles, tant qu’elles utilisent le relais de
   l’espace ; on ne demande au relais que combien de messages sont arrivés, car il les compte grâce à l’octet que chacun
   porte (voir ce que voit le relais, plus haut), jamais les messages eux-mêmes. Celui qui voit la notification et ne
-  trouve rien de nouveau dans tes discussions peut deviner qu’il y en a d’autres. Les sauvegardes ne le gardent pas :
+  trouve rien de nouveau dans tes discussions peut deviner qu’il y en a d’autres. Après que tu as supprimé ou bloqué
+  quelqu’un dans l’emplacement, le premier message d’une nouvelle personne, par le lien de contact ou le code QR de
+  l’emplacement, n’en fait aucune : il se voit quand tu ouvres l’emplacement. Les sauvegardes ne le gardent pas :
   active-le de nouveau après une restauration.
 - **Faire sonner les appels quand elles sont fermées** (Android) : sous **Prévenir quand un message arrive**, tant que
   **Recevoir une fois fermées** est désactivé. Activé, tant que l’emplacement est fermé, avec Erevos en arrière-plan ou
