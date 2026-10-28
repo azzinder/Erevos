@@ -86,6 +86,17 @@ On main, not released yet:
 - **The birthday notice and the phone's incoming-call notice no longer replace each other**: both had the
   same notice number, so a phone call removed the day's birthday notice for good, and a birthday at 9:00 took
   **Answer** and **Decline** off a ringing call's notice.
+- **A closed space tells of its contacts' messages too**: with **Also while another space is open**, a closed
+  space waited at its relay on four queues only (its own, its contact link's, its groups' and its public
+  groups'), so since each contact writes to a queue of their own it told only of group messages and the first
+  messages of new contacts, though the guide and the setting say every message. Its door now keeps its
+  contacts' queues too, up to 64, and asks about them on the relay's `/read` path with no token, as the open
+  space reads them, through Tor in the same groups of eight, each on a way named for that space. The door
+  follows the contacts as they take a queue of their own or are deleted, and every door, open or shut, has
+  the same size whatever it keeps; doors from before are sealed again at it. A space that goes through Tor
+  is still asked only through Tor, even when Tor goes to rest while it is asked, and its waits ask again at
+  once when the phone's network changes. Someone who examines the phone with tools may find how many
+  contacts a space that asked for this has: the guide says so.
 
 ## 3.4.2 (2026-10-27)
 

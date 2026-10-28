@@ -987,17 +987,19 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   enquanto há mensagens esperando; ela não diz mais do que quantas são, como sempre disse.
 - **Um espaço que está fechado:** ele não recebe nada, pois a chave dele só está na memória enquanto está aberto: as
   mensagens dele esperam no relay dele e chegam quando você o abre. A menos que você escolha, nesse espaço, **Também
-  enquanto outro espaço está aberto** em **Configurações** → **Notificações** → **Em segundo plano** (o padrão é
-  **Este espaço só enquanto aberto**): então, enquanto outro espaço está aberto e recebe, ele diz só "New message", ou
-  quantas chegaram, com o mesmo aviso desse espaço, nunca qual espaço, e as conversas ocultas dele não dizem nada. Para
-  isso o celular guarda os endereços das filas dele no relay fora da senha dele, nunca as chaves, os contatos ou as
-  mensagens dele, e pergunta ao relay só quantas chegaram, nunca as próprias mensagens: elas ficam lá até o espaço
-  abrir. Um espaço que passa pelo Tor só é consultado pelo Tor, enquanto o espaço aberto tem o Tor pronto.
+  enquanto outro espaço está aberto** em **Configurações** → **Notificações** → **Em segundo plano** (o padrão é **Este
+  espaço só enquanto aberto**): então, enquanto outro espaço está aberto e recebe, ele diz só "New message", ou quantas
+  chegaram, com o mesmo aviso desse espaço, nunca qual espaço, e as conversas ocultas dele não dizem nada. Para isso o
+  celular guarda os endereços das filas dele no relay fora da senha dele, entre elas a fila em que cada contato dele
+  escreve, até 64 contatos, nunca as chaves dele, quem são os contatos dele ou as mensagens dele, e pergunta ao relay só
+  quantas chegaram, nunca as próprias mensagens: elas ficam lá até o espaço abrir. Um espaço que passa pelo Tor só é
+  consultado pelo Tor, enquanto o espaço aberto tem o Tor pronto.
 
   **Por quê:** um espaço atrás de uma segunda senha não pode mostrar que está ali, então isso fica desativado a menos
-  que você o ative, e então ele não diz mais do que o espaço aberto diria. O custo é que o relay dele pode perceber que
-  os dois espaços estão num mesmo celular, e alguém que examine o celular com ferramentas pode descobrir que um segundo
-  espaço guarda endereços ali.
+  que você o ative, e então ele não diz mais do que o espaço aberto diria. Como cada contato escreve numa fila própria,
+  o espaço precisa perguntar também por cada uma delas, senão as mensagens deles não diriam nada. O custo é que o relay
+  dele pode perceber que os dois espaços estão num mesmo celular, e alguém que examine o celular com ferramentas pode
+  descobrir que um segundo espaço guarda endereços ali, e quantos contatos ele tem.
 - **Onde ele não consegue tocar:** parado pelo Android (ou pela economia de bateria do celular, ou pela configuração
   própria do fabricante do celular), depois de o celular reiniciar até você abrir o Erevos e o espaço uma vez, em outro
   espaço (ele só diz que chegou uma mensagem, se você permitir, como acima), ou num computador ou no app web enquanto

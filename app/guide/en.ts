@@ -914,16 +914,18 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   says no more than how many, as it always did.
 - **A space that is closed:** it receives nothing, as its key is only in memory while it is open: its messages wait at
   its relay and come when you open it. Unless you choose, in that space, **Also while another space is open** under
-  **Settings** → **Notifications** → **In the background** (the default is **This space only while open**): then,
-  while another space is open and receives, it says only "New message", or how many came, with the same notice as
-  that space, never which space, and its hidden chats say nothing. For it the phone keeps the addresses of its queues
-  at its relay outside its password, never its keys, contacts or messages, and asks the relay only how many came,
-  never for them: they stay there until the space opens. A space that goes through Tor is asked about only through
-  Tor, while the open space has Tor ready.
+  **Settings** → **Notifications** → **In the background** (the default is **This space only while open**): then, while
+  another space is open and receives, it says only "New message", or how many came, with the same notice as that space,
+  never which space, and its hidden chats say nothing. For it the phone keeps the addresses of its queues at its relay
+  outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its
+  contacts are, or its messages, and asks the relay only how many came, never for them: they stay there until the space
+  opens. A space that goes through Tor is asked about only through Tor, while the open space has Tor ready.
 
-  **Why:** a space behind a second password must not show that it is there, so it is off unless you turn it on, and
-  then it says no more than the space that is open would. The cost is that its relay may tell that the two spaces are
-  on one phone, and someone who examines the phone with tools may find that a second space keeps addresses there.
+  **Why:** a space behind a second password must not show that it is there, so it is off unless you turn it on, and then
+  it says no more than the space that is open would. Since each contact writes to a queue of their own, the space must
+  ask about each of those too, or their messages would say nothing. The cost is that its relay may tell that the two
+  spaces are on one phone, and someone who examines the phone with tools may find that a second space keeps addresses
+  there, and how many contacts it has.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
   after the phone restarts until you open Erevos and the space once, in another space (it only says a message came, if
   you let it, as above), or on a computer or in the web

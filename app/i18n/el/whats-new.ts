@@ -24,6 +24,8 @@ export const whatsNew: Record<string, string> = {
     '**Ο σύνδεσμος επαφής ενός μέλους δεν λέει πια Νέο μήνυμα**: η απάντηση σε ζήτηση από ομάδα μόνο προσθέτει την επαφή, χωρίς ειδοποίηση. Δες [Ομαδικές συνομιλίες](#groups).',
   '**The birthday notice and the phone\'s incoming call no longer replace each other**: they had the same notice number. See [Contacts](#contacts).':
     '**Η ειδοποίηση γενεθλίων και η εισερχόμενη κλήση του τηλεφώνου δεν αντικαθιστούν πια η μία την άλλη**: είχαν τον ίδιο αριθμό ειδοποίησης. Δες [Επαφές](#contacts).',
+  '**A closed space tells of its contacts\' messages too**: since each contact writes to a queue of their own, a space that says a message came while another is open told only of group messages and first messages from new contacts. It now asks about its contacts\' queues too, up to 64. See [Chat through a relay](#relay).':
+    '**Ένας κλειστός χώρος λέει και για τα μηνύματα των επαφών του**: αφού κάθε επαφή γράφει σε δική της ουρά, ένας χώρος που λέει ότι ήρθε μήνυμα όσο είναι ανοιχτός άλλος έλεγε μόνο για μηνύματα ομάδων και για πρώτα μηνύματα νέων επαφών. Τώρα ρωτά και για τις ουρές των επαφών του, ως 64. Δες [Συνομιλία μέσω relay](#relay).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**Ο οδηγός χρήσης είναι σε όλες τις γλώσσες της εφαρμογής**: δείχνεται σε αυτήν που διάλεξες, και λέει τα κουμπιά όπως τα δείχνει η εφαρμογή. Δες [Γλώσσα](#start).',
   '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':

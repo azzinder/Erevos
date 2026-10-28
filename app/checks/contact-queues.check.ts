@@ -12,7 +12,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
-import { bunches, CONTACT_GROUP, contactQueuesAt } from '../lib/contact-queues';
+import { bunches, CONTACT_GROUP, ContactWatch, contactQueuesAt, onContactQueuesChanged } from '../lib/contact-queues';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
@@ -62,6 +62,30 @@ test('queues are read in groups, each on its own way, and many at once without T
     plain.map((b) => b.queues.length),
     [MAX_ANY, 66 - MAX_ANY],
   );
+});
+
+test("a watch says when the contacts' queues it waits on change, for a closed space's door to follow them, and not when they stay", () => {
+  const changed: number[] = [];
+  const stopTelling = onContactQueuesChanged(() => changed.push(changed.length));
+  const watch = new ContactWatch();
+  // A relay that cannot be reached: the waits fail and pause, which is all this needs.
+  const relay = { url: 'ws://127.0.0.1:9' };
+  const queue = (n: number, g = 0) => ({ identity: `c${n}`, r: n.toString(16).padStart(48, '0'), g });
+  try {
+    watch.use(relay, bunches([queue(1), queue(2)], 'contacts-0', true));
+    assert.equal(changed.length, 0);
+    watch.use(relay, bunches([queue(1), queue(2)], 'contacts-0', true));
+    assert.equal(changed.length, 0);
+    // A contact took a queue of their own.
+    watch.use(relay, bunches([queue(1), queue(2), queue(3, 1)], 'contacts-0', true));
+    assert.equal(changed.length, 1);
+    // One was deleted.
+    watch.use(relay, bunches([queue(1), queue(3, 1)], 'contacts-0', true));
+    assert.equal(changed.length, 2);
+  } finally {
+    watch.stop();
+    stopTelling();
+  }
 });
 
 test('each kept contact writes to a queue of their own, read with no token, and deleting one deletes only theirs', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {

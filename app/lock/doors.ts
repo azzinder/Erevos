@@ -1,42 +1,86 @@
-import { decryptText, encryptText, fromHex, randomBytes, toHex } from '../lib/crypto';
+import { decryptText, encryptText, fromHex, randomBytes, toHex, utf8Encode } from '../lib/crypto';
 import type { News, TorWay } from '../lib/relay';
 import { secureGet, secureSet } from '../lib/secure';
 
-import { heardText, isWatched, type Watched } from './hidden-watch';
+import { heardText, isHeardText, isWatched, type Watched } from './hidden-watch';
 import { SLOTS } from './slots';
 import { torWayOf } from './space-data';
 
 // A space that says a message came while another is open (lib/closed-notices.ts): it is closed
 // then, and its key is not in memory, so what is waited on for it is kept outside it, in
-// `erevos.door.<n>`: its queues at its relay, as lock/hidden-watch.ts keeps a pocket's, and whether
-// it goes through Tor. Never its keys, its contacts or its messages. A space whose door is open
-// seals it with the phone's door key (`erevos.doors-key`), which every space reads; every other
-// space's entry is sealed with a random key, and all are padded to whole blocks, so the entries
-// say nothing of which spaces there are or which let themselves be heard. Only the open space's
-// code, trying the door key on each, tells them apart.
+// `erevos.door.<n>`: its queues at its relay, as lock/hidden-watch.ts keeps a pocket's, the queues
+// its contacts write to there (lib/contact-queues.ts), and whether it goes through Tor. Never its
+// keys, who its contacts are, or its messages: only how many contacts write to a queue of their own.
+// A space whose door is open seals it with the phone's door key (`erevos.doors-key`), which every
+// space reads; every other space's entry is sealed with a random key, and all are padded to SIZE, so
+// the entries say nothing of which spaces there are, which let themselves be heard, or how many
+// contacts they have. Only the open space's code, trying the door key on each, tells them apart.
 
-/** What is waited on for a closed space: its queues, and whether it goes through Tor (lib/relay.ts TorWay). */
-export type Door = { tor: TorWay; queues: Watched[] };
+/** A queue one of a closed space's contacts writes to: its recipient id (hex), the group it is read with through Tor (Mine g), and what the relay said came. */
+export type DoorContact = { r: string; g: number; heard?: string };
+
+/**
+ * What is waited on for a closed space: its queues, its contacts' queues at its relay (read on the
+ * relay's `/read` path, with no token, as the open space reads them), and whether it goes through
+ * Tor (lib/relay.ts TorWay).
+ */
+export type Door = { tor: TorWay; queues: Watched[]; contacts?: { url: string; queues: DoorContact[] } };
 
 /** A space's own queue, its contact link's, its groups' and its public groups'. */
 export const DOOR_QUEUES = 4;
+/** The most contacts' queues a door keeps: one relay request (lib/relay.ts MAX_ANY) without Tor. */
+export const DOOR_CONTACTS = 64;
 
 const BLOCK = 2048;
+// Every entry is this long, open or shut and however many contacts it has: DOOR_CONTACTS queues fit,
+// with the four queues, at relays of any usual address; past it the last contacts are left out.
+const SIZE = 5 * BLOCK;
 const KEY = 'erevos.doors-key';
 const entry = (space: number) => `erevos.door.${space}`;
 // Spaces past SLOTS have an entry once a second password made them (prepareDoors); no more than this.
 const MOST_SPACES = 32;
 
+// How long the door's text is once sealed, in bytes: a relay's address may hold letters of more than one.
+const bytesOf = (door: Door | null) => utf8Encode(JSON.stringify(door ?? [])).length;
+
+// The door as it fits SIZE: the last contacts' queues left out until it does.
+function fitted(door: Door): Door {
+  let next = door;
+  while (next.contacts && bytesOf(next) > SIZE) {
+    const queues = next.contacts.queues.slice(0, -1);
+    next = queues.length > 0 ? { ...next, contacts: { url: next.contacts.url, queues } } : { tor: next.tor, queues: next.queues };
+  }
+  return next;
+}
+
 function seal(key: Uint8Array, door: Door | null): string {
-  const json = JSON.stringify(door ?? []);
-  return encryptText(key, json.padEnd(Math.max(1, Math.ceil(json.length / BLOCK)) * BLOCK, ' '));
+  let kept = door ? fitted(door) : null;
+  // Its queues alone longer than SIZE (tokens far longer than any): it stays shut rather than show by its length.
+  if (kept && bytesOf(kept) > SIZE) kept = null;
+  // Padded by bytes, not letters, so a relay's address of other letters seals to the same length too.
+  return encryptText(key, JSON.stringify(kept ?? []) + ' '.repeat(Math.max(0, SIZE - bytesOf(kept))));
+}
+
+const isDoorContact = (value: unknown): value is DoorContact => {
+  const v = (value ?? {}) as Partial<Record<keyof DoorContact, unknown>>;
+  return typeof v.r === 'string' && /^[0-9a-f]{48}$/.test(v.r) && Number.isInteger(v.g) && (v.g as number) >= 0 && isHeardText(v.heard);
+};
+
+function checkedContacts(value: unknown): Door['contacts'] | null {
+  const v = (value ?? {}) as { url?: unknown; queues?: unknown };
+  if (typeof v.url !== 'string' || v.url === '' || v.url.length > 512 || !Array.isArray(v.queues)) return null;
+  const queues = v.queues.filter(isDoorContact).slice(0, DOOR_CONTACTS);
+  return queues.length > 0 ? { url: v.url, queues } : null;
 }
 
 function checkedDoor(value: unknown): Door | null {
   const v = (value ?? {}) as Partial<Record<keyof Door, unknown>>;
   if (!Array.isArray(v.queues)) return null;
   const queues = v.queues.filter(isWatched).slice(0, DOOR_QUEUES);
-  return queues.length > 0 ? { tor: torWayOf(v.tor), queues } : null;
+  const contacts = checkedContacts(v.contacts);
+  // A space's contacts write to queues of their own only once it has a queue of its own.
+  if (queues.length === 0) return null;
+  return { tor: torWayOf(v.tor), queues, ...(contacts ? { contacts } : {}) };
 }
 
 async function doorKey(): Promise<Uint8Array | null> {
@@ -53,11 +97,22 @@ async function madeDoorKey(): Promise<Uint8Array> {
   return key;
 }
 
-/** Every space up to `count` (and SLOTS) has the entry, with its door shut, and the phone has its door key. */
+/**
+ * Every space up to `count` (and SLOTS) has the entry, with its door shut, and the phone has its
+ * door key. An entry of another length, from before doors kept contacts' queues, is sealed again at
+ * the length all have now, open or shut as it was.
+ */
 export async function prepareDoors(count = SLOTS): Promise<void> {
   await madeDoorKey();
-  for (let space = 0; space < Math.min(MOST_SPACES, Math.max(SLOTS, count)); space++) {
-    if (!(await secureGet(entry(space)))) await secureSet(entry(space), seal(randomBytes(32), null));
+  const length = seal(randomBytes(32), null).length;
+  const made = Math.min(MOST_SPACES, Math.max(SLOTS, count));
+  // Every entry there is, those past the ones asked for too, as openDoors reads them.
+  for (let space = 0; space < MOST_SPACES; space++) {
+    const raw = await secureGet(entry(space));
+    if (!raw) {
+      if (space >= made) break;
+      await secureSet(entry(space), seal(randomBytes(32), null));
+    } else if (raw.length !== length) await change(space, (door) => door);
   }
 }
 
@@ -105,16 +160,24 @@ function change(space: number, update: (door: Door | null) => Door | null): Prom
 /**
  * Opens the space's door with these queues, or shuts it (null). What was heard of a queue kept
  * again stays, unless `fresh`: then all is heard anew, as when the space has just read what came.
+ * `whileOpen`: only if it is open as this writes, so a door its owner just shut stays shut.
  */
-export function saveDoor(space: number, door: Door | null, fresh = false): Promise<void> {
+export function saveDoor(space: number, door: Door | null, fresh = false, whileOpen = false): Promise<void> {
   return change(space, (was) => {
-    if (!door) return null;
+    if (!door || (whileOpen && !was)) return null;
     const queues = door.queues.slice(0, DOOR_QUEUES).map((queue) => {
       const { heard: _given, ...rest } = queue;
       const kept = fresh ? undefined : was?.queues.find((old) => old.recipientHex === queue.recipientHex && old.url === queue.url)?.heard;
       return kept ? { ...rest, heard: kept } : rest;
     });
-    return queues.length > 0 ? { tor: door.tor, queues } : null;
+    if (queues.length === 0) return null;
+    const keptContacts = !fresh && was?.contacts && door.contacts && was.contacts.url === door.contacts.url ? was.contacts.queues : [];
+    const contacts = (door.contacts?.queues ?? []).slice(0, DOOR_CONTACTS).map((queue) => {
+      const { heard: _given, ...rest } = queue;
+      const kept = keptContacts.find((old) => old.r === queue.r)?.heard;
+      return kept ? { ...rest, heard: kept } : rest;
+    });
+    return { tor: door.tor, queues, ...(door.contacts && contacts.length > 0 ? { contacts: { url: door.contacts.url, queues: contacts } } : {}) };
   });
 }
 
@@ -131,8 +194,17 @@ export async function shutDoorsPast(space: number): Promise<void> {
 
 /** Keeps what the relay said came into one of a closed space's queues, while its door still has it. */
 export function hearDoor(space: number, recipientHex: string, news: News): Promise<void> {
+  return hearDoorAll(space, [{ recipientHex, news }]);
+}
+
+/** Keeps what the relay said came into a closed space's queues, its contacts' too, those its door still has, in one write. */
+export function hearDoorAll(space: number, heard: { recipientHex: string; news: News }[]): Promise<void> {
+  if (heard.length === 0) return Promise.resolve();
+  const said = new Map(heard.map(({ recipientHex, news }) => [recipientHex, heardText(news)]));
   return change(space, (door) => {
-    if (!door || !door.queues.some((queue) => queue.recipientHex === recipientHex)) return door;
-    return { ...door, queues: door.queues.map((queue) => (queue.recipientHex === recipientHex ? { ...queue, heard: heardText(news) } : queue)) };
+    if (!door) return door;
+    const queues = door.queues.map((queue) => (said.has(queue.recipientHex) ? { ...queue, heard: said.get(queue.recipientHex)! } : queue));
+    const contacts = door.contacts && { url: door.contacts.url, queues: door.contacts.queues.map((queue) => (said.has(queue.r) ? { ...queue, heard: said.get(queue.r)! } : queue)) };
+    return { ...door, queues, ...(contacts ? { contacts } : {}) };
   });
 }

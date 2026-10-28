@@ -24,6 +24,8 @@ export const whatsNew: Record<string, string> = {
     '**Kontaktna poveznica člana više ne javlja Nova poruka**: odgovor na zahtjev iz grupe samo dodaje kontakt, bez obavijesti. Vidi [Grupni razgovori](#groups).',
   '**The birthday notice and the phone\'s incoming call no longer replace each other**: they had the same notice number. See [Contacts](#contacts).':
     '**Obavijest o rođendanu i dolazni poziv telefona više ne zamjenjuju jedno drugo**: imali su isti broj obavijesti. Vidi [Kontakti](#contacts).',
+  '**A closed space tells of its contacts\' messages too**: since each contact writes to a queue of their own, a space that says a message came while another is open told only of group messages and first messages from new contacts. It now asks about its contacts\' queues too, up to 64. See [Chat through a relay](#relay).':
+    '**Zatvoren prostor javlja i poruke svojih kontakata**: pošto svaki kontakt piše u svoj red, prostor koji javlja da je stigla poruka dok je otvoren drugi javljao je samo poruke grupa i prve poruke novih kontakata. Sada pita i za redove svojih kontakata, do 64. Pogledajte [Razgovor preko relaya](#relay).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**Korisnički vodič je na svim jezicima aplikacije**: prikazuje se na onom koji ste izabrali i naziva dugmad kako ih aplikacija prikazuje. Vidi [Jezik](#start).',
   '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':

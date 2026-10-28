@@ -32,7 +32,9 @@ const isHex = (v: unknown): v is string => typeof v === 'string' && v.length ===
 
 const NOTHING_HEARD = '0'.repeat(32);
 
-const isHeard = (v: unknown) => v === undefined || (typeof v === 'string' && /^[0-9a-f]{32}$/.test(v));
+/** Whether `v` is what is kept of what the relay said came (heardText), or nothing. */
+export const isHeardText = (v: unknown): boolean => v === undefined || (typeof v === 'string' && /^[0-9a-f]{32}$/.test(v));
+const isHeard = isHeardText;
 
 /** Whether `value` is a queue waited on, as kept. */
 export function isWatched(value: unknown): value is Watched {

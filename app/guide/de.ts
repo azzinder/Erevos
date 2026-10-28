@@ -1069,18 +1069,21 @@ Versteckte Chats und Computer haben das nicht.
   solange Nachrichten warten; sie sagt nicht mehr als wie viele, wie immer schon.
 - **Ein Bereich, der geschlossen ist:** Er empfängt nichts, da sein Schlüssel nur im Arbeitsspeicher ist, solange er
   offen ist: Seine Nachrichten warten bei seinem Relay und kommen, wenn du ihn öffnest. Außer du wählst in diesem
-  Bereich **Auch, wenn ein anderer Bereich offen ist** unter **Einstellungen** → **Benachrichtigungen** →
-  **Im Hintergrund** (die Voreinstellung ist **Dieser Bereich nur, wenn offen**): Dann sagt er, solange ein anderer
-  Bereich offen ist und empfängt, nur „New message“ oder wie viele kamen, mit derselben Benachrichtigung wie jener
-  Bereich, nie welcher Bereich, und seine versteckten Chats sagen nichts. Dafür bewahrt das Telefon die Adressen seiner
-  Warteschlangen bei seinem Relay außerhalb seines Passworts auf, nie seine Schlüssel, Kontakte oder Nachrichten, und
-  fragt das Relay nur, wie viele kamen, nie nach ihnen selbst: Sie bleiben dort, bis sich der Bereich öffnet. Ein
-  Bereich, der über Tor geht, wird nur über Tor abgefragt, solange der offene Bereich Tor bereit hat.
+  Bereich **Auch, wenn ein anderer Bereich offen ist** unter **Einstellungen** → **Benachrichtigungen** → **Im
+  Hintergrund** (die Voreinstellung ist **Dieser Bereich nur, wenn offen**): Dann sagt er, solange ein anderer Bereich
+  offen ist und empfängt, nur „New message“ oder wie viele kamen, mit derselben Benachrichtigung wie jener Bereich, nie
+  welcher Bereich, und seine versteckten Chats sagen nichts. Dafür bewahrt das Telefon die Adressen seiner
+  Warteschlangen bei seinem Relay außerhalb seines Passworts auf, darunter die, in die jeder seiner Kontakte schreibt,
+  für bis zu 64 Kontakte, nie seine Schlüssel, wer seine Kontakte sind, oder seine Nachrichten, und fragt das Relay nur,
+  wie viele kamen, nie nach ihnen selbst: Sie bleiben dort, bis sich der Bereich öffnet. Ein Bereich, der über Tor geht,
+  wird nur über Tor abgefragt, solange der offene Bereich Tor bereit hat.
 
-  **Warum:** Ein Bereich hinter einem zweiten Passwort darf nicht zeigen, dass es ihn gibt, also ist das aus, solange
-  du es nicht einschaltest, und dann sagt er nicht mehr, als der offene Bereich sagen würde. Der Preis ist, dass sein
-  Relay erkennen kann, dass die beiden Bereiche auf einem Telefon sind, und jemand, der das Telefon mit Werkzeugen
-  untersucht, finden kann, dass ein zweiter Bereich dort Adressen aufbewahrt.
+  **Warum:** Ein Bereich hinter einem zweiten Passwort darf nicht zeigen, dass es ihn gibt, also ist das aus, solange du
+  es nicht einschaltest, und dann sagt er nicht mehr, als der offene Bereich sagen würde. Da jeder Kontakt in eine
+  eigene Warteschlange schreibt, muss der Bereich auch nach jeder davon fragen, sonst würden ihre Nachrichten nichts
+  sagen. Der Preis ist, dass sein Relay erkennen kann, dass die beiden Bereiche auf einem Telefon sind, und jemand, der
+  das Telefon mit Werkzeugen untersucht, finden kann, dass ein zweiter Bereich dort Adressen aufbewahrt, und wie viele
+  Kontakte er hat.
 - **Wo es nicht klingeln kann:** von Android beendet (oder vom Energiesparen des Telefons oder von der eigenen
   Einstellung des Herstellers), nach einem Neustart des Telefons, bis du Erevos und den Bereich einmal öffnest, in
   einem anderen Bereich (er sagt nur, dass eine Nachricht kam, wenn du es erlaubst, wie oben), oder auf einem Computer

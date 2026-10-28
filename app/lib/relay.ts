@@ -764,6 +764,8 @@ async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal
 /** One request on a connection of its own, with no channel; through Tor on the circuits named `way`, when given. */
 function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   if (signal?.aborted) return Promise.reject(new Ended());
+  // Tor may have gone to rest while a channel was tried through it: a Tor-only relay still never goes straight.
+  if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
   const within = answerWithin(bytes);
   if (torFor(false)) {
     const reply =

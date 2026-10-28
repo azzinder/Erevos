@@ -989,14 +989,16 @@ que un SMS normal. Los chats ocultos y los ordenadores no la tienen.
   espacio está abierto** en **Ajustes** → **Notificaciones** → **En segundo plano** (por defecto es **Este espacio solo
   mientras está abierto**): entonces, mientras otro espacio está abierto y recibe, solo dice «New message», o cuántos
   llegaron, con el mismo aviso que ese espacio, nunca qué espacio, y sus chats ocultos no dicen nada. Para ello el
-  teléfono guarda las direcciones de sus colas en su relay fuera de su contraseña, nunca sus claves, contactos o
-  mensajes, y solo pregunta al relay cuántos llegaron, nunca los pide: se quedan ahí hasta que se abre el espacio. A un
-  espacio que va por Tor solo se le pregunta a través de Tor, mientras el espacio abierto tiene Tor listo.
+  teléfono guarda las direcciones de sus colas en su relay fuera de su contraseña, entre ellas la cola en la que escribe
+  cada uno de sus contactos, hasta 64 contactos, nunca sus claves, quiénes son sus contactos ni sus mensajes, y solo
+  pregunta al relay cuántos llegaron, nunca los pide: se quedan ahí hasta que se abre el espacio. A un espacio que va
+  por Tor solo se le pregunta a través de Tor, mientras el espacio abierto tiene Tor listo.
 
   **Por qué:** un espacio tras una segunda contraseña no debe mostrar que existe, así que esto está desactivado salvo
-  que lo actives, y entonces no dice más de lo que diría el espacio abierto. El precio es que su relay puede saber que
-  los dos espacios están en un mismo teléfono, y alguien que examine el teléfono con herramientas puede descubrir que un
-  segundo espacio guarda direcciones ahí.
+  que lo actives, y entonces no dice más de lo que diría el espacio abierto. Como cada contacto escribe en una cola
+  propia, el espacio tiene que preguntar también por cada una de ellas, o sus mensajes no dirían nada. El precio es que
+  su relay puede saber que los dos espacios están en un mismo teléfono, y alguien que examine el teléfono con
+  herramientas puede descubrir que un segundo espacio guarda direcciones ahí, y cuántos contactos tiene.
 - **Donde no puede sonar:** detenido por Android (o por el ahorro de batería del teléfono, o por el ajuste propio del
   fabricante), después de reiniciar el teléfono hasta que abras Erevos y el espacio una vez, en otro espacio (solo dice
   que llegó un mensaje, si lo permites, como arriba), o en un ordenador o en la app

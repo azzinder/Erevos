@@ -1001,19 +1001,20 @@ computer non ce l’hanno.
   **Perché:** su Android solo una notifica può mettere un numero sull’icona di un’app, quindi la notifica resta finché
   ci sono messaggi in attesa; non dice più di quanti sono, come ha sempre fatto.
 - **Uno spazio chiuso:** non riceve nulla, perché la sua chiave è in memoria solo mentre è aperto: i suoi messaggi
-  aspettano sul suo relay e arrivano quando lo apri. A meno che tu non scelga, in quello spazio, **Anche mentre è
-  aperto un altro spazio** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è
-  **Questo spazio solo quando è aperto**): allora, mentre un altro spazio è aperto e riceve, dice solo «New message», o
-  quanti ne sono arrivati, con la stessa notifica di quello spazio, mai quale spazio, e le sue chat nascoste non dicono
-  nulla. Per questo il telefono conserva gli indirizzi delle sue code sul suo relay fuori dalla sua password, mai le sue
-  chiavi, i contatti o i messaggi, e chiede al relay solo quanti ne sono arrivati, mai i messaggi stessi: restano lì
-  finché lo spazio non si apre. A uno spazio che passa da Tor si chiede solo tramite Tor, mentre lo spazio aperto ha Tor
-  pronto.
+  aspettano sul suo relay e arrivano quando lo apri. A meno che tu non scelga, in quello spazio, **Anche mentre è aperto
+  un altro spazio** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è **Questo
+  spazio solo quando è aperto**): allora, mentre un altro spazio è aperto e riceve, dice solo «New message», o quanti ne
+  sono arrivati, con la stessa notifica di quello spazio, mai quale spazio, e le sue chat nascoste non dicono nulla. Per
+  questo il telefono conserva gli indirizzi delle sue code sul suo relay fuori dalla sua password, tra cui quella in cui
+  scrive ciascuno dei suoi contatti, fino a 64 contatti, mai le sue chiavi, chi sono i suoi contatti o i messaggi, e
+  chiede al relay solo quanti ne sono arrivati, mai i messaggi stessi: restano lì finché lo spazio non si apre. A uno
+  spazio che passa da Tor si chiede solo tramite Tor, mentre lo spazio aperto ha Tor pronto.
 
   **Perché:** uno spazio dietro una seconda password non deve mostrare di esistere, quindi questo è disattivato finché
-  non lo attivi, e allora non dice più di quanto direbbe lo spazio aperto. Il prezzo è che il suo relay potrebbe capire
-  che i due spazi sono su un unico telefono, e qualcuno che esamina il telefono con degli strumenti potrebbe scoprire
-  che un secondo spazio conserva lì degli indirizzi.
+  non lo attivi, e allora non dice più di quanto direbbe lo spazio aperto. Poiché ogni contatto scrive in una coda tutta
+  sua, lo spazio deve chiedere anche di ciascuna di esse, altrimenti i loro messaggi non direbbero nulla. Il prezzo è
+  che il suo relay potrebbe capire che i due spazi sono su un unico telefono, e qualcuno che esamina il telefono con
+  degli strumenti potrebbe scoprire che un secondo spazio conserva lì degli indirizzi, e quanti contatti ha.
 - **Dove non può squillare:** fermato da Android (o dal risparmio batteria del telefono, o da un’impostazione del
   produttore del telefono), dopo il riavvio del telefono finché non apri Erevos e lo spazio una volta, in un altro
   spazio (dice solo che è arrivato un messaggio, se lo permetti, come sopra), o su un computer o nella web

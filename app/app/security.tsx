@@ -374,7 +374,7 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
           <Text variant="caption" tone="muted" style={hint}>
             {doorSaid ||
               (door
-                ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, never its keys, contacts or messages, and its relay may tell that the two spaces are on one phone. Through Tor, if this space goes through Tor, and only while the open one has Tor ready.')
+                ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its contacts are, or its messages, and its relay may tell that the two spaces are on one phone. Through Tor, if this space goes through Tor, and only while the open one has Tor ready.')
                 : t('Closed, this space receives nothing: its messages wait at its relay and come when it opens.'))}
           </Text>
         </>

@@ -1049,14 +1049,17 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   seulement quand il est ouvert**) : alors, tant qu’un autre espace est ouvert et reçoit, il dit seulement « Nouveau
   message », ou combien sont arrivés, avec la même notification que cet espace, jamais quel espace, et ses discussions
   masquées ne disent rien. Pour cela, le téléphone garde les adresses de ses files d’attente sur son relais hors de son
-  mot de passe, jamais ses clés, contacts ou messages, et ne demande au relais que combien sont arrivés, jamais les
-  messages eux-mêmes : ils restent là-bas jusqu’à ce que l’espace s’ouvre. Un espace qui passe par Tor n’est interrogé
-  que par Tor, tant que l’espace ouvert a Tor prêt.
+  mot de passe, dont celle où écrit chacun de ses contacts, jusqu’à 64 contacts, jamais ses clés, ni qui sont ses
+  contacts, ni ses messages, et ne demande au relais que combien sont arrivés, jamais les messages eux-mêmes : ils
+  restent là-bas jusqu’à ce que l’espace s’ouvre. Un espace qui passe par Tor n’est interrogé que par Tor, tant que
+  l’espace ouvert a Tor prêt.
 
   **Pourquoi :** un espace derrière un second mot de passe ne doit pas montrer qu’il est là, donc c’est désactivé tant
-  que tu ne l’actives pas, et alors il n’en dit pas plus que ne le dirait l’espace ouvert. Le prix à payer : son relais
-  peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un qui examine le téléphone avec des outils
-  peut trouver qu’un second espace y garde des adresses.
+  que tu ne l’actives pas, et alors il n’en dit pas plus que ne le dirait l’espace ouvert. Comme chaque contact écrit
+  dans sa propre file d’attente, l’espace doit aussi interroger le relais sur chacune d’elles, sinon leurs messages ne
+  diraient rien. Le prix à payer : son relais peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un
+  qui examine le téléphone avec des outils peut trouver qu’un second espace y garde des adresses, et combien de contacts
+  il a.
 - **Là où ça ne peut pas sonner :** arrêté par Android (ou par l’économie de batterie du téléphone, ou par le réglage
   propre du fabricant), après un redémarrage du téléphone jusqu’à ce que tu ouvres Erevos et l’espace une fois, dans un
   autre espace (il dit seulement qu’un message est arrivé, si tu le permets, comme ci-dessus), ou sur un ordinateur ou

@@ -6,7 +6,8 @@ import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { onSmsEvent, smsShowOnScreen } from '../modules/erevos-sms';
 import { currentCall, RING_MS } from './call';
 import { chatNotify } from './chat-notices';
-import { keepDoor, startClosedNotices } from './closed-notices';
+import { followDoor, keepDoor, startClosedNotices } from './closed-notices';
+import { onContactQueuesChanged } from './contact-queues';
 import { currentGroupCall } from './group-call';
 import { startHiddenNotices } from './hidden-notices';
 import { hiddenRinging, onHiddenRingingChange, ringLeavesLock, setHiddenRinging } from './hidden-ring';
@@ -298,6 +299,10 @@ export function startBackground(): () => void {
   const moved = onSpaceMoved(async () => {
     if (door) await keepDoor(door.space, door.key).catch(() => undefined);
   });
+  // A contact took a queue of their own, or was deleted: the door names their queues as they are now.
+  const contactsChanged = onContactQueuesChanged(() => {
+    if (door) void followDoor(door.space, door.key).catch(() => undefined);
+  });
   // A hidden place that rings its contacts' calls (lib/hidden-ring-notices.ts). On whenever
   // receiving runs, not with the messages notice: ringing is its own per-place setting. One hidden
   // call rings at a time, and none while a call is in progress.
@@ -460,6 +465,7 @@ export function startBackground(): () => void {
     stopped = true;
     telling = false;
     moved();
+    contactsChanged();
     if (door) void keepDoor(door.space, door.key, true).catch(() => undefined);
     changes.delete(follow);
     told.forEach((stopTelling) => stopTelling());

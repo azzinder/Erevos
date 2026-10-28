@@ -63,6 +63,7 @@ export function bunches(queues: ContactQueue[], way: string, tor = throughTor())
 }
 
 const cameListeners = new Set<() => void>();
+const changeListeners = new Set<() => void>();
 // The watches going on, to tell whether one found something no look has taken yet.
 const watches = new Set<ContactWatch>();
 
@@ -70,6 +71,12 @@ const watches = new Set<ContactWatch>();
 export function onContactsCame(listener: () => void): () => void {
   cameListeners.add(listener);
   return () => cameListeners.delete(listener);
+}
+
+/** Calls `listener` each time the contacts' queues a watch waits on change, as a contact takes a queue of their own or is deleted, until the function it gives is called: a closed space's door names them (lib/closed-notices.ts followDoor). */
+export function onContactQueuesChanged(listener: () => void): () => void {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
 }
 
 /** Whether a watch found something in a contact's queue that no look has asked for yet (ContactWatch came): a look then does not wait at the relay first. */
@@ -106,6 +113,8 @@ export class ContactWatch {
   private readonly loops = new Map<string, Loop>();
   private readonly found = new Set<string>();
   private stopped = false;
+  // The queues waited on, to tell when they change; null before the first use.
+  private named: string | null = null;
 
   /** Waits on `list` at `relay` from now on; bunches no longer in it stop waiting. */
   use(relay: Relay, list: Bunch[]): void {
@@ -121,6 +130,9 @@ export class ContactWatch {
       this.loops.delete(way);
     }
     for (const b of list) if (!this.loops.has(b.way)) this.start(relay, b);
+    const named = `${relay.url} ${list.map(idsOf).join(';')}`;
+    if (this.named !== null && named !== this.named) changeListeners.forEach((listener) => listener());
+    this.named = named;
   }
 
   /** The queues (recipient ids in hex) a wait found something in, or gone, since this was last asked; their bunches wait again. */

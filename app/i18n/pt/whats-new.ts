@@ -24,6 +24,8 @@ export const whatsNew: Record<string, string> = {
     '**O link de contato de um membro não diz mais Nova mensagem**: a resposta a um pedido feito de um grupo só adiciona o contato, sem aviso. Veja [Conversas em grupo](#groups).',
   '**The birthday notice and the phone\'s incoming call no longer replace each other**: they had the same notice number. See [Contacts](#contacts).':
     '**O aviso de aniversário e a chamada recebida do telefone não se substituem mais**: tinham o mesmo número de aviso. Veja [Contatos](#contacts).',
+  '**A closed space tells of its contacts\' messages too**: since each contact writes to a queue of their own, a space that says a message came while another is open told only of group messages and first messages from new contacts. It now asks about its contacts\' queues too, up to 64. See [Chat through a relay](#relay).':
+    '**Um espaço fechado avisa também das mensagens dos contatos dele**: como cada contato escreve numa fila própria, um espaço que avisa que chegou mensagem enquanto outro está aberto só avisava de mensagens de grupos e de primeiras mensagens de contatos novos. Agora ele pergunta também pelas filas dos contatos dele, até 64. Veja [Conversar por um relay](#relay).',
   '**The user guide is in every language of the app**: it shows in the one you chose, and names the buttons as the app shows them. See [Language](#start).':
     '**O guia de uso está em todos os idiomas do app**: aparece no que você escolheu e chama os botões como o app os mostra. Veja [Idioma](#start).',
   '**Location finds where you are, indoors too**: the phone looks by satellite and by its network at once, a sheet says it is looking, and when nothing is found it says why, with Try again. See [Chat through a relay](#relay).':

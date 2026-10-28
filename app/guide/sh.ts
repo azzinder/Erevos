@@ -967,16 +967,19 @@ Skriveni razgovori i računari to nemaju.
   ne kaže ništa više od toga koliko ih je, kao i uvijek.
 - **Zatvoren prostor:** ne prima ništa, jer je njegov ključ u memoriji samo dok je otvoren: njegove poruke čekaju na
   njegovom relayu i stižu kad ga otvorite. Osim ako u tom prostoru ne izaberete **I dok je otvoren drugi prostor** pod
-  **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Ovaj prostor samo dok je otvoren**): tada, dok je
-  otvoren i prima drugi prostor, kaže samo „New message“ ili koliko ih je stiglo, istom obaviješću kao i taj prostor,
-  nikad koji prostor, a njegovi skriveni razgovori ne kažu ništa. Za to telefon čuva adrese njegovih redova na
-  njegovom relayu izvan njegove lozinke, nikad njegove ključeve, kontakte ni poruke, i pita relay samo koliko ih je
-  stiglo, nikad ne traži same poruke: one ostaju tamo dok se prostor ne otvori. Za prostor koji ide preko Tora pita se
-  samo preko Tora, dok otvoreni prostor ima spreman Tor.
+  **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Ovaj prostor samo dok je otvoren**): tada, dok je otvoren
+  i prima drugi prostor, kaže samo „New message“ ili koliko ih je stiglo, istom obaviješću kao i taj prostor, nikad koji
+  prostor, a njegovi skriveni razgovori ne kažu ništa. Za to telefon čuva adrese njegovih redova na njegovom relayu
+  izvan njegove lozinke, među njima i red u koji piše svaki njegov kontakt, do 64 kontakta, nikad njegove ključeve, ni
+  ko su mu kontakti, ni njegove poruke, i pita relay samo koliko ih je stiglo, nikad ne traži same poruke: one ostaju
+  tamo dok se prostor ne otvori. Za prostor koji ide preko Tora pita se samo preko Tora, dok otvoreni prostor ima
+  spreman Tor.
 
-  **Zašto:** prostor iza druge lozinke ne smije pokazati da postoji, pa je to isključeno dok to ne uključite, a tada
-  ne kaže ništa više od onoga što bi rekao otvoreni prostor. Cijena je to što njegov relay može saznati da su ta dva
-  prostora na jednom telefonu, a neko ko alatima pregleda telefon može otkriti da drugi prostor tamo čuva adrese.
+  **Zašto:** prostor iza druge lozinke ne smije pokazati da postoji, pa je to isključeno dok to ne uključite, a tada ne
+  kaže ništa više od onoga što bi rekao otvoreni prostor. Pošto svaki kontakt piše u svoj red, prostor mora pitati i za
+  svaki od njih, inače njihove poruke ne bi ništa javile. Cijena je to što njegov relay može saznati da su ta dva
+  prostora na jednom telefonu, a neko ko alatima pregleda telefon može otkriti da drugi prostor tamo čuva adrese, i
+  koliko kontakata ima.
 - **Gdje ne može zvoniti:** kad ga zaustavi Android (ili ušteda baterije telefona, ili vlastita postavka proizvođača
   telefona), nakon ponovnog pokretanja telefona dok jednom ne otvorite Erevos i prostor, u drugom prostoru (samo
   javlja da je stigla poruka, ako to dozvolite, kao iznad), ili na računaru ili u web-aplikaciji dok je zatvorena.

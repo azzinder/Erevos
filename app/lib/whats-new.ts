@@ -33,6 +33,7 @@ export const NEXT: Changes = {
     mark('**A hidden call rings once**: a place with Receive while closed and a ring queue rang twice for one call, and a call taken while hidden chats were open rang again as they closed. See [Hidden chats](#hidden).'),
     mark('**A member\'s contact link no longer says New message**: the answer to an ask from a group only adds the contact, with no notice. See [Group chats](#groups).'),
     mark('**The birthday notice and the phone\'s incoming call no longer replace each other**: they had the same notice number. See [Contacts](#contacts).'),
+    mark("**A closed space tells of its contacts' messages too**: since each contact writes to a queue of their own, a space that says a message came while another is open told only of group messages and first messages from new contacts. It now asks about its contacts' queues too, up to 64. See [Chat through a relay](#relay)."),
   ],
 };
 
