@@ -2009,7 +2009,9 @@ export class E2E {
         more: forwarded ? { forwarded: true as const } : {},
       }));
       const { packets, sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, messages, true);
-      const nostr = this.nostrWay(contact, from, sender, first, packets, through, true, due);
+      // Through Nostr only with no relay between the two: with one, a voice message is too large
+      // to be kept for the relay's backup (NOSTR_KEEP_MOST), so it goes through the relay.
+      const nostr = this.nostrWay(contact, from, sender, first, packets, through, false, due);
       return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through, nostr };
     });
   }
