@@ -2920,13 +2920,15 @@ versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una ver
    Android también la ve el servidor de la app web, que guarda la firma de la actualización hecha por el ordenador de
    versiones. Mientras todo lo del espacio va por Tor (**Todo** en Tor), Erevos no comprueba, ya que eso rodearía Tor.
 3. Cuando hay una versión nueva: en Android toca **Instalar**. Se descarga, se comprueba con la versión publicada (su
-   tamaño y su SHA-256), y se abre el instalador de Android: toca **Instalar** ahí. Erevos solo la ofrece una vez que el
-   ordenador de versiones, que guarda su clave sin conexión, ha firmado esa compilación y su SHA-256: quien se hiciera
-   solo con la cuenta de GitHub no podría hacer instalar un APK propio. Hasta entonces dice que la versión ha salido
-   pero aún no está firmada. Cuando no se puede contactar con el servidor de la app web lo dice, con el motivo, y cuando
-   la firma de ahí no coincide lo dice: en ambos casos no se instala nada. La primera vez, Android pide permitir que
-   Erevos instale apps. En un ordenador y en Sailfish OS, **Abrir la página de descargas** abre la página de versiones:
-   toma el archivo que nombra Erevos, el del paquete que tienes, y actualiza como en la tabla de abajo.
+   tamaño y su SHA-256), y se abre el instalador de Android: toca **Instalar** ahí. Erevos solo la ofrece una vez que
+   el ordenador de versiones, que guarda su clave sin conexión, ha firmado esa compilación y su SHA-256: quien se
+   hiciera solo con la cuenta de GitHub no podría hacer instalar un APK propio. Hasta entonces dice que la versión ha
+   salido pero aún no está firmada. Cuando no se puede contactar con el servidor de la app web lo dice, con el motivo,
+   y cuando la firma de ahí no coincide lo dice: en ambos casos no se instala nada. Una descarga cuya conexión no trae
+   nada durante un rato vuelve a empezar sola, desde el principio, tres veces en total; después Erevos lo dice y no se
+   instala nada. La primera vez, Android pide permitir que Erevos instale apps. En un ordenador y en Sailfish OS,
+   **Abrir la página de descargas** abre la página de versiones: toma el archivo que nombra Erevos, el del paquete que
+   tienes, y actualiza como en la tabla de abajo.
 
 Una versión como **4.0.0-rc.1** es una versión de prueba anterior a la 4.0.0 (una versión candidata): se instala y se
 actualiza como cualquier otra, y la 4.0.0 llega después.

@@ -4,7 +4,7 @@ import { startActivityAsync } from 'expo-intent-launcher';
 import { Platform } from 'react-native';
 
 import { FDROID } from './distribution';
-import type { Release } from './updates';
+import { DOWNLOAD_TRIES, stalled, type Release } from './updates';
 import { t } from './i18n';
 
 // Android installs the new APK itself, as in LPHL FASOULI; elsewhere the download page opens
@@ -78,11 +78,24 @@ export async function downloadAndInstall(
   if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
   const target = new File(dir, `erevos-${release.version}.apk`);
   if (!target.exists || target.size !== apk.size) {
-    await File.downloadFileAsync(apk.url, target, {
-      idempotent: true,
-      signal,
-      onProgress: ({ bytesWritten, totalBytes }) => onProgress(bytesWritten, totalBytes > 0 ? totalBytes : apk.size),
-    });
+    // A download whose connection brings nothing for a while is tried again, from the start (it
+    // cannot go on from where it stopped), up to DOWNLOAD_TRIES times.
+    for (let tries = 1; ; tries++) {
+      try {
+        await File.downloadFileAsync(apk.url, target, {
+          idempotent: true,
+          signal,
+          onProgress: ({ bytesWritten, totalBytes }) => onProgress(bytesWritten, totalBytes > 0 ? totalBytes : apk.size),
+        });
+        break;
+      } catch (e) {
+        if (signal.aborted || !stalled(e)) throw e;
+        if (target.exists) target.delete();
+        if (tries >= DOWNLOAD_TRIES) {
+          throw new Error(t('The download stopped each time it was tried, as the connection brought nothing for a while. Nothing was installed: try again later, or on another network.'));
+        }
+      }
+    }
     if (target.size !== apk.size) {
       target.delete();
       throw new Error(t('The download was cut short.'));

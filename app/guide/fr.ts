@@ -3082,14 +3082,15 @@ version sort** plus bas. Pour mettre à jour :
    que tout dans l’espace passe par Tor (**Tout** sous Tor), Erevos ne vérifie pas, puisque cela contournerait Tor.
 3. Quand il y a une nouvelle version : sur Android, appuie sur **Installer**. Elle se télécharge, est vérifiée par
    rapport à la version publiée (sa taille et son SHA-256), et l’installateur d’Android s’ouvre : appuie sur
-   **Installer** là aussi. Erevos ne la propose qu’une fois que l’ordinateur des versions, qui garde sa clé hors ligne,
-   a signé cette compilation et son SHA-256 : quelqu’un qui aurait pris le contrôle du compte GitHub ne pourrait pas, à
-   lui seul, faire installer un APK à lui. D’ici là, il dit que la version est sortie mais pas encore signée. Quand le
-   serveur de l’app web est injoignable, il le dit, avec la raison, et quand la signature là-bas ne correspond pas, il
-   le dit : dans les deux cas, rien ne s’installe. La première fois, Android demande d’autoriser l’installation d’applis
-   depuis Erevos. Sur un ordinateur et sur Sailfish OS, **Ouvrir la page de téléchargement** ouvre la page des
-   versions : prends le fichier qu’Erevos nomme, celui du paquet que tu as, et mets à jour comme dans le tableau
-   ci-dessous.
+   **Installer** là aussi. Erevos ne la propose qu’une fois que l’ordinateur des versions, qui garde sa clé hors
+   ligne, a signé cette compilation et son SHA-256 : quelqu’un qui aurait pris le contrôle du compte GitHub ne
+   pourrait pas, à lui seul, faire installer un APK à lui. D’ici là, il dit que la version est sortie mais pas encore
+   signée. Quand le serveur de l’app web est injoignable, il le dit, avec la raison, et quand la signature là-bas ne
+   correspond pas, il le dit : dans les deux cas, rien ne s’installe. Un téléchargement dont la connexion n’apporte
+   plus rien pendant un moment reprend de lui-même depuis le début, trois fois en tout ; ensuite Erevos le dit, et
+   rien ne s’installe. La première fois, Android demande d’autoriser l’installation d’applis depuis Erevos. Sur un
+   ordinateur et sur Sailfish OS, **Ouvrir la page de téléchargement** ouvre la page des versions : prends le fichier
+   qu’Erevos nomme, celui du paquet que tu as, et mets à jour comme dans le tableau ci-dessous.
 
 Une version comme **4.0.0-rc.1** est une version de test avant la 4.0.0 (une version candidate) : elle s’installe et
 se met à jour comme les autres, et la 4.0.0 vient après elle.

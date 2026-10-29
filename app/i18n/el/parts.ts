@@ -190,6 +190,8 @@ export const parts: Record<string, string> = {
     'Αυτή η έκδοση δεν έχει ασφαλή πηγή τυχαίων αριθμών. Φτιάξε ξανά την εφαρμογή ώστε να περιέχει το expo-crypto.',
   'This release has no Android package.': 'Αυτή η έκδοση δεν έχει πακέτο για Android.',
   'The download was cut short.': 'Η λήψη διακόπηκε.',
+  'The download stopped each time it was tried, as the connection brought nothing for a while. Nothing was installed: try again later, or on another network.':
+    'Η λήψη σταμάτησε σε κάθε προσπάθεια, γιατί η σύνδεση δεν έφερνε τίποτα για αρκετή ώρα. Δεν εγκαταστάθηκε τίποτα: δοκίμασε ξανά αργότερα ή σε άλλο δίκτυο.',
   'The downloaded package is not the one the release published. Nothing was installed.':
     'Το πακέτο που κατέβηκε δεν είναι αυτό που δημοσίευσε η έκδοση. Δεν εγκαταστάθηκε τίποτα.',
   'This version installs from the download page.': 'Αυτή η έκδοση εγκαθίσταται από τη σελίδα λήψης.',

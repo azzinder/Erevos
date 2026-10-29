@@ -2902,10 +2902,12 @@ sai uma versão nova, sem perguntar ao GitHub, como diz **Aviso quando sai uma v
    tamanho e o SHA-256 dela), e o instalador do Android abre: toque em **Instalar** ali. O Erevos só a oferece depois
    que o computador de versões, que guarda a chave dele offline, assinou essa compilação e o SHA-256: quem tomasse a
    conta do GitHub sozinho não conseguiria instalar um APK próprio. Até lá ele diz que a versão saiu mas ainda não foi
-   assinada. Quando não é possível acessar o servidor do app web, ele diz isso, com o motivo, e quando a assinatura ali
-   não confere, diz isso: em ambos os casos nada é instalado. Na primeira vez, o Android pede para permitir instalar
-   apps pelo Erevos. Num computador e no Sailfish OS, **Abrir a página de download** abre a página de versões: pegue o
-   arquivo que o Erevos indica, o do pacote que você tem, e atualize como na tabela abaixo.
+   assinada. Quando não é possível acessar o servidor do app web, ele diz isso, com o motivo, e quando a assinatura
+   ali não confere, diz isso: em ambos os casos nada é instalado. Um download cuja conexão não traz nada durante algum
+   tempo recomeça sozinho, do início, três vezes ao todo; depois o Erevos avisa, e nada é instalado. Na primeira vez,
+   o Android pede para permitir instalar apps pelo Erevos. Num computador e no Sailfish OS, **Abrir a página de
+   download** abre a página de versões: pegue o arquivo que o Erevos indica, o do pacote que você tem, e atualize como
+   na tabela abaixo.
 
 Uma versão como **4.0.0-rc.1** é uma versão de teste anterior à 4.0.0 (uma versão candidata): instala e atualiza como
 qualquer outra, e a 4.0.0 vem depois dela.

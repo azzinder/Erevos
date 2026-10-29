@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **An update's download that stalls is tried again**: on Android, when the connection brings nothing for a while as
+  the new version's APK downloads (`SocketTimeoutException`, a reset connection), Erevos starts the download again by
+  itself, from the start, three times in all (`DOWNLOAD_TRIES`, `stalled` in `lib/updates.ts`), and then says so in
+  words, in the app's language, instead of Android's own message in English. A download that cannot work, such as
+  one with no network or to a full phone, still says why at once. See [Updates](#updates).
+
 ## 4.0.0-rc.1 (2026-10-29)
 
 ### For you

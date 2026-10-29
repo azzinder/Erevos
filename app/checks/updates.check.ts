@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { gunzipSync } from 'node:zlib';
 
-import { buildNumber, buildOf, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO } from '../lib/updates';
+import { buildNumber, buildOf, DOWNLOAD_TRIES, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO, stalled } from '../lib/updates';
 
 const SHA = 'a'.repeat(64);
 const url = (name: string) => `https://github.com/${RELEASES_REPO}/releases/download/v0.1.7/${name}`;
@@ -193,4 +193,23 @@ test('a computer is told the file of its own package, as the release names it', 
     assert.ok(workflow.includes(file), file);
     assert.ok(shell.includes(`'${system}'`), system);
   }
+});
+
+test('a download whose connection stalls or breaks is tried again; one that cannot work is not', () => {
+  // As Android gives them for the APK's download (expo-file-system over OkHttp).
+  for (const message of [
+    "Call to function 'FileSystem.downloadFileAsync' has been rejected.\n→ Caused by: java.net.SocketTimeoutException: timeout",
+    'java.net.SocketTimeoutException: Read timed out',
+    'java.net.SocketException: Connection reset',
+    'java.io.IOException: unexpected end of stream on https://github.com/...',
+    'okhttp3.internal.http2.StreamResetException: stream was reset: CANCEL',
+  ]) {
+    assert.equal(stalled(new Error(message)), true, message);
+  }
+  for (const message of ['java.net.UnknownHostException: Unable to resolve host "github.com"', 'No space left on device', 'Response code 404']) {
+    assert.equal(stalled(new Error(message)), false, message);
+  }
+  assert.equal(stalled('java.net.SocketTimeoutException: timeout'), true);
+  assert.equal(stalled(null), false);
+  assert.ok(DOWNLOAD_TRIES >= 2);
 });

@@ -124,3 +124,16 @@ export function packageFile(shell: 'electron' | 'sailfish' | null, system: strin
 export function formatSize(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }
+
+// How many times a download that stalls is tried, in all.
+export const DOWNLOAD_TRIES = 3;
+
+/**
+ * Whether a download failed as its connection stalled or broke (Android's OkHttp gives
+ * "SocketTimeoutException: timeout", "Connection reset", "unexpected end of stream"), so that
+ * trying again may get it, unlike a refused address or a full phone.
+ */
+export function stalled(error: unknown): boolean {
+  const text = String((error as { message?: unknown } | null)?.message ?? error);
+  return /SocketTimeoutException|timed? ?out|Connection reset|unexpected end of stream|stream was reset|Software caused connection abort/i.test(text);
+}

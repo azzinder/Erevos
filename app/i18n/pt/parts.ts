@@ -188,6 +188,8 @@ export const parts: Record<string, string> = {
     'Esta versão não tem uma fonte aleatória segura. Compile o app de novo para que inclua o expo-crypto.',
   'This release has no Android package.': 'Esta versão não tem pacote para Android.',
   'The download was cut short.': 'O download foi interrompido.',
+  'The download stopped each time it was tried, as the connection brought nothing for a while. Nothing was installed: try again later, or on another network.':
+    'O download parou em cada tentativa, porque a conexão não trazia nada durante algum tempo. Nada foi instalado: tente de novo mais tarde ou em outra rede.',
   'The downloaded package is not the one the release published. Nothing was installed.':
     'O pacote baixado não é o que a versão publicou. Nada foi instalado.',
   'This version installs from the download page.': 'Esta versão é instalada pela página de download.',

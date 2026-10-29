@@ -2820,9 +2820,10 @@ kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
    računar za izdanja, koji svoj ključ čuva van mreže, potpisao tu verziju i njen SHA-256: onaj ko bi sam preuzeo
    GitHub nalog ne bi mogao instalirati vlastiti APK. Do tada kaže da je verzija izašla, ali još nije potpisana. Kad
    server web-aplikacije nije dostupan, kaže to, s razlogom, a kad se potpis tamo ne podudara, kaže i to: u oba
-   slučaja ništa se ne instalira. Prvi put Android traži da dozvolite instaliranje
-   aplikacija iz Erevosa. Na računaru i Sailfish OS-u **Otvori stranicu za preuzimanje** otvara stranicu izdanja:
-   uzmite datoteku koju Erevos navodi, onu za paket koji imate, i ažurirajte kao u tabeli ispod.
+   slučaja ništa se ne instalira. Preuzimanje čija veza neko vrijeme ne donosi ništa samo počinje ispočetka, ukupno
+   tri puta; onda Erevos to kaže i ništa se ne instalira. Prvi put Android traži da dozvolite instaliranje aplikacija
+   iz Erevosa. Na računaru i Sailfish OS-u **Otvori stranicu za preuzimanje** otvara stranicu izdanja: uzmite datoteku
+   koju Erevos navodi, onu za paket koji imate, i ažurirajte kao u tabeli ispod.
 
 Verzija poput **4.0.0-rc.1** je probna verzija prije 4.0.0 (kandidat za izdanje): instalira se i ažurira kao svaka
 druga, a 4.0.0 dolazi poslije nje.

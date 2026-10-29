@@ -2949,11 +2949,12 @@ versione, senza chiedere a GitHub, come spiega **Avvisato quando esce una nuova 
 3. Quando c’è una nuova versione: su Android tocca **Installa**. Si scarica, viene controllata rispetto alla versione
    pubblicata (la sua dimensione e lo SHA-256), e si apre il programma di installazione di Android: tocca lì
    **Installa**. Erevos la offre solo dopo che il computer delle versioni, che tiene la sua chiave offline, ha firmato
-   quella build e il suo SHA-256: chi prendesse il controllo del solo account GitHub non potrebbe far installare un suo
-   APK. Fino ad allora dice che la versione è uscita ma non è ancora firmata. Quando il server della web app non è
-   raggiungibile lo dice, con il motivo, e quando la firma lì non corrisponde dice
-   questo: in entrambi i casi non si installa nulla. La prima volta, Android chiede di consentire l’installazione
-   di app da Erevos. Su un computer e su Sailfish OS, **Apri la pagina di download** apre la pagina delle versioni:
+   quella build e il suo SHA-256: chi prendesse il controllo del solo account GitHub non potrebbe far installare un
+   suo APK. Fino ad allora dice che la versione è uscita ma non è ancora firmata. Quando il server della web app non è
+   raggiungibile lo dice, con il motivo, e quando la firma lì non corrisponde dice questo: in entrambi i casi non si
+   installa nulla. Un download la cui connessione non porta nulla per un po’ riparte da solo dall’inizio, tre volte in
+   tutto; poi Erevos lo dice e non si installa nulla. La prima volta, Android chiede di consentire l’installazione di
+   app da Erevos. Su un computer e su Sailfish OS, **Apri la pagina di download** apre la pagina delle versioni:
    prendi il file che Erevos indica, quello del pacchetto che hai, e aggiorna come nella tabella qui sotto.
 
 Una versione come **4.0.0-rc.1** è una versione di prova prima della 4.0.0 (una release candidate): si installa e si

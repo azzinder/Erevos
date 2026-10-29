@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates).":
+    "**Preuzimanje ažuriranja koje zastane pokušava se ponovo**: kad veza neko vrijeme ne donosi ništa, Erevos sam ponovo počinje preuzimanje, ukupno tri puta, i onda to kaže svojim riječima. Vidi [Ažuriranja](#updates).",
   // 4.0.0-rc.1
   "**Pieces of photos through Nostr stay with their chats**: while a photo that comes through Nostr waits for the rest of its pieces, they are now kept encrypted with the space or the hidden chats they came for, no longer apart where they could be counted, so nothing outside a hidden chats' password says that a photo is on its way to them. Pieces kept before go to the first chats whose photo they are, or after four days. See [Through Nostr](#nostr).":
     "**Komadi fotografija preko Nostra ostaju uz svoje razgovore**: dok fotografija koja stiže preko Nostra čeka ostale svoje komade, oni se sada čuvaju šifrirani s prostorom ili skrivenim razgovorima za koje su stigli, a ne više odvojeno, gdje su se mogli prebrojati, pa ništa izvan lozinke skrivenih razgovora ne govori da im stiže fotografija. Komadi sačuvani ranije idu prvim razgovorima čija su fotografija, ili nestaju nakon četiri dana. Vidi [Preko Nostra](#nostr).",

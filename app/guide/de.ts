@@ -3114,10 +3114,11 @@ unten sagt. Zum Aktualisieren:
    diesen Build und seinen SHA-256 signiert hat: Wer allein das GitHub-Konto übernommen hätte, könnte kein eigenes APK
    installieren lassen. Bis dahin sagt es, dass die Version da, aber noch nicht signiert ist. Wenn der Server der
    Web-App nicht erreichbar ist, sagt es das, mit dem Grund, und wenn die Signatur dort nicht passt, sagt es das: So
-   oder so wird nichts installiert. Beim ersten Mal bittet Android darum, das Installieren
-   von Apps aus Erevos zu erlauben. Auf einem Computer und unter Sailfish OS öffnet **Download-Seite öffnen** die
-   Release-Seite: Nimm die Datei, die Erevos nennt, die des Pakets, das du hast, und aktualisiere wie in der Tabelle
-   unten.
+   oder so wird nichts installiert. Ein Download, bei dem die Verbindung eine Weile nichts bringt, wird von selbst neu
+   begonnen, insgesamt dreimal; danach sagt Erevos es, und nichts wird installiert. Beim ersten Mal bittet Android
+   darum, das Installieren von Apps aus Erevos zu erlauben. Auf einem Computer und unter Sailfish OS öffnet
+   **Download-Seite öffnen** die Release-Seite: Nimm die Datei, die Erevos nennt, die des Pakets, das du hast, und
+   aktualisiere wie in der Tabelle unten.
 
 Eine Version wie **4.0.0-rc.1** ist eine Testversion vor 4.0.0 (ein Release Candidate): Sie wird wie jede andere
 installiert und aktualisiert, und 4.0.0 kommt nach ihr.

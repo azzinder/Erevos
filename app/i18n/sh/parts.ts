@@ -188,6 +188,8 @@ export const parts: Record<string, string> = {
     'Ova verzija nema siguran izvor slučajnih brojeva. Ponovo izgradite aplikaciju tako da sadrži expo-crypto.',
   'This release has no Android package.': 'Ovo izdanje nema Android paket.',
   'The download was cut short.': 'Preuzimanje je prekinuto.',
+  'The download stopped each time it was tried, as the connection brought nothing for a while. Nothing was installed: try again later, or on another network.':
+    'Preuzimanje je stalo pri svakom pokušaju, jer veza neko vrijeme nije donosila ništa. Ništa nije instalirano: pokušajte ponovo kasnije ili na drugoj mreži.',
   'The downloaded package is not the one the release published. Nothing was installed.':
     'Preuzeti paket nije onaj koji je izdanje objavilo. Ništa nije instalirano.',
   'This version installs from the download page.': 'Ova verzija se instalira sa stranice za preuzimanje.',
