@@ -359,26 +359,34 @@ export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array
 // Takes a file that came in Nostr wraps (pieces kept by lib/nostr-pieces.ts) or from a file server,
 // and keeps it here as a file that went through the relay would be.
 async function takeSent(ref: FileRef, from: FileFrom, progress?: Progress): Promise<FileRef> {
-  const { from: _from, ...taken } = ref;
   const key = fromHex(ref.key);
+  const { name, mime, kind, w, h, sticker } = ref;
+  const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}) };
   if (from.via === 'nostr') {
     const came = await piecesCame(from.ids);
     const have = came.filter(Boolean).length;
     if (have < ref.count) throw new PiecesMissingError(have, ref.count);
+    // Opened whole first (a photo here is NOSTR_PHOTO_MOST at most), then kept in chunks as any
+    // file that came: pieces of NOSTR_PIECE kept as they are would make a file whose offer, sent
+    // on to a linked device or forwarded through a relay, no phone takes (readOffer's chunk plan).
+    const parts: Uint8Array[] = [];
     let size = 0;
-    try {
-      for (let n = 0; n < ref.count; n++) {
-        const sealed = await readPiece(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX));
-        if (!sealed) throw new PiecesMissingError(n, ref.count);
-        size += openChunk(key, n, sealed, ref.chunk).length;
-        await saveChunk(ref.id, n, sealed);
-        progress?.(n + 1, ref.count);
-      }
-      if (size !== ref.size) throw new FileDamagedError();
-    } catch (error) {
-      await deleteChunks(ref.id, ref.count).catch(() => undefined);
-      throw error;
+    for (let n = 0; n < ref.count; n++) {
+      const sealed = await readPiece(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX));
+      if (!sealed) throw new PiecesMissingError(n, ref.count);
+      const part = openChunk(key, n, sealed, ref.chunk);
+      size += part.length;
+      if (size > ref.size) throw new FileDamagedError();
+      parts.push(part);
     }
+    if (size !== ref.size) throw new FileDamagedError();
+    const bytes = new Uint8Array(size);
+    let at = 0;
+    for (const part of parts) {
+      bytes.set(part, at);
+      at += part.length;
+    }
+    const taken = await keepFile(bytesSource(bytes), meta, progress);
     await dropPieces(from.ids).catch(() => undefined);
     return taken;
   }
@@ -393,8 +401,7 @@ async function takeSent(ref: FileRef, from: FileFrom, progress?: Progress): Prom
   }
   if (bytes.length !== ref.size) throw new FileDamagedError();
   // Kept here in chunks, under a key of its own, as any file that came.
-  const { name, mime, kind, size: _size, w, h, sticker } = ref;
-  return keepFile(bytesSource(bytes), { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}) }, progress);
+  return keepFile(bytesSource(bytes), meta, progress);
 }
 
 /** Deletes from the relay, through ours (`own`), a file left there once taken. One it cannot delete expires there. */

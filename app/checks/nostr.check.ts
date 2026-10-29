@@ -28,7 +28,7 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { NOSTR_AGAIN_MOST, NOSTR_AGAIN_MS, NOSTR_BACKUP_MS, nostrKeysChanged, nostrOf, nostrPacked, nostrReady, nostrRelays, nostrStates, packNostr, readNostr, setNostr, unpackNostr } from '../lib/nostr';
 import { nostrOnlyWay, nostrReaderOf, orNostr, sendNostrAgain, sendNostrBackups } from '../lib/nostr-chats';
 import { MOST_NOSTR } from '../lib/contact-code';
-import { bytesSource, FileDamagedError, FileTooLargeError, offerRef, PiecesMissingError, readFile, readOffer, takeFile } from '../lib/attachments';
+import { bytesSource, chunkPlan, FileDamagedError, FileTooLargeError, offerRef, PiecesMissingError, readFile, readOffer, takeFile } from '../lib/attachments';
 import { sha256Bytes } from '../lib/crypto';
 import { setNostrHttp } from '../lib/nostr-files';
 import { dropPieces, piecesCame } from '../lib/nostr-pieces';
@@ -764,6 +764,8 @@ t('with no relay between the two, a voice message goes in wraps, a photo in piec
     assert.deepEqual(await readFile(taken), photo, 'the photo, whole');
     assert.deepEqual(await piecesCame(ref.from!.ids), [false, false, false, false], 'its pieces are dropped once taken');
     assert.ok(isFileRef(taken) && !taken.from);
+    assert.equal(taken.chunk, chunkPlan(photo.length).chunk, 'kept in the usual chunks, so a linked device or a forward through a relay takes its offer');
+    assert.ok(readOffer({ ...taken, relay: 'wss://relay.example.org', ids: '00'.repeat(24 * taken.count) }), 'an offer of it as it is kept reads');
 
     // A piece that is missing: nothing is taken, and it says how many came.
     const lacking = await offerOnNostr(bytesSource(randomBytes(70_000)), meta, place);
