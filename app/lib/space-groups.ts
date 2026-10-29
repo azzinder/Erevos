@@ -144,9 +144,12 @@ export function spaceGroups(): Promise<PublicGroups> {
       made.onGone((group) => goneListeners.forEach((listener) => listener(group)));
       if (opened?.of === current) shown = made;
       // A contact deleted here lets go of the asks for its contact link at once (lib/groups.ts contactRemoved).
-      void spaceChats()
-        .then(({ e2e }) => e2e.onContactRemoved((identity) => void made.contactRemoved(identity).catch(() => undefined)))
-        .catch(() => undefined);
+      // Only the same space's chats: another space opened meanwhile has contacts of its own.
+      if (currentSpace() === current) {
+        void spaceChats()
+          .then(({ e2e }) => e2e.onContactRemoved((identity) => void made.contactRemoved(identity).catch(() => undefined)))
+          .catch(() => undefined);
+      }
       return made;
     })();
     opened = { of: current, groups };
