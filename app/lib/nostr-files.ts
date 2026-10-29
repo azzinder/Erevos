@@ -178,7 +178,8 @@ export async function uploadBlob(
       if (answer.status === 200 || answer.status === 201) {
         const descriptor = JSON.parse(utf8Decode(answer.bytes)) as { url?: unknown; sha256?: unknown };
         if (descriptor.sha256 !== undefined && descriptor.sha256 !== hash) throw new Error(t('The server changed the file.'));
-        if (typeof descriptor.url === 'string' && /^https:\/\//.test(descriptor.url)) return descriptor.url;
+        // One a message can carry (lib/attachments.ts readOffer), or where BUD-02 says it is.
+        if (typeof descriptor.url === 'string' && /^https:\/\/\S+$/.test(descriptor.url) && descriptor.url.length <= 2048) return descriptor.url;
         return `${root}/${hash}`;
       }
       said.push(`${host}: ${answer.status}${answer.reason ? ` ${answer.reason.slice(0, 120)}` : ''}`);
