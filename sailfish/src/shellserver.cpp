@@ -1,5 +1,6 @@
 #include "shellserver.h"
 
+#include "lanlink.h"
 #include "watchlink.h"
 
 #include <QDateTime>
@@ -15,6 +16,7 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <QTcpSocket>
+#include <QTimer>
 #include <QUrl>
 #include <QUrlQuery>
 
@@ -35,6 +37,10 @@ const int MostWatchList = 512 * 1024;
 // The one address /__latest reads, the same as app/lib/updates.ts LATEST_URL, and how much of it.
 const char LatestUrl[] = "https://github.com/azzinder/erevos-releases/releases/latest/download/version.json";
 const qint64 LatestMost = 64 * 1024;
+
+// What the same Wi-Fi said lately, kept for the page to take, and how long a page waits to hear more.
+const int LanKept = 500;
+const int LanWaitMs = 20000;
 
 const QRegularExpression FileName(QStringLiteral("^erevos-[a-z0-9-]+$"));
 const QRegularExpression BackupName(QStringLiteral("^erevos-backup-[0-9-]+\\.erevos$"));
@@ -235,6 +241,7 @@ void ShellServer::shell(QTcpSocket *socket, const Request &request, const QUrlQu
     else if (path == "/__save") save(socket, request, value("name"));
     else if (path == "/__latest") latest(socket);
     else if (path == "/__watch") watch(socket, request);
+    else if (path == "/__lan") lan(socket, request, query);
     else respond(socket, 404);
 }
 
@@ -390,4 +397,88 @@ void ShellServer::watch(QTcpSocket *socket, const Request &request)
         return;
     }
     respond(socket, 204);
+}
+
+void ShellServer::lan(QTcpSocket *socket, const Request &request, const QUrlQuery &query)
+{
+    if (request.method == "PUT") {
+        const bool on = query.queryItemValue(QStringLiteral("on")) == QLatin1String("1");
+        if (on && !m_lan) {
+            m_lan = new LanLink(this);
+            connect(m_lan, &LanLink::linked, this, [this](const QString &link) { lanEvent("link", link); });
+            connect(m_lan, &LanLink::gone, this, [this](const QString &link) { lanEvent("gone", link); });
+            connect(m_lan, &LanLink::text, this, [this](const QString &link, const QByteArray &text) { lanEvent("text", link, text); });
+            connect(m_lan, &LanLink::logged, this, [](const QString &line) { qWarning("erevos: %s", qPrintable(line)); });
+            m_lan->start();
+        } else if (!on && m_lan) {
+            m_lan->stop();
+            m_lan->deleteLater();
+            m_lan = nullptr;
+            m_lanEvents.clear();
+        }
+        QJsonArray links;
+        if (m_lan) {
+            for (const QString &link : m_lan->links()) links.append(link);
+        }
+        QJsonObject answer;
+        answer.insert(QStringLiteral("after"), double(m_lanSeq));
+        answer.insert(QStringLiteral("links"), links);
+        respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
+    } else if (request.method == "POST") {
+        const QString link = query.queryItemValue(QStringLiteral("link"), QUrl::FullyDecoded);
+        respond(socket, m_lan && m_lan->send(link, request.body) ? 204 : 404);
+    } else if (request.method == "GET") {
+        const qint64 after = query.queryItemValue(QStringLiteral("after")).toLongLong();
+        bool newer = false;
+        for (const LanEvent &event : m_lanEvents) newer = newer || event.seq > after;
+        if (newer) {
+            lanAnswer(socket, after);
+            return;
+        }
+        // Nothing yet: it waits a while for something, then answers with nothing.
+        QTimer *timer = new QTimer(this);
+        timer->setSingleShot(true);
+        const QPointer<QTcpSocket> to(socket);
+        connect(timer, &QTimer::timeout, this, [this, timer, to, after]() {
+            for (int i = 0; i < m_lanWaiting.size(); ++i) {
+                if (m_lanWaiting[i].timer == timer) m_lanWaiting.removeAt(i--);
+            }
+            timer->deleteLater();
+            if (to) lanAnswer(to, after);
+        });
+        m_lanWaiting.append({to, after, timer});
+        timer->start(LanWaitMs);
+    } else {
+        respond(socket, 405);
+    }
+}
+
+void ShellServer::lanEvent(const QByteArray &kind, const QString &link, const QByteArray &text)
+{
+    m_lanEvents.append({++m_lanSeq, kind, link, text});
+    while (m_lanEvents.size() > LanKept) m_lanEvents.removeFirst();
+    const QList<LanWait> waiting = m_lanWaiting;
+    m_lanWaiting.clear();
+    for (const LanWait &wait : waiting) {
+        wait.timer->stop();
+        wait.timer->deleteLater();
+        if (wait.socket) lanAnswer(wait.socket, wait.after);
+    }
+}
+
+void ShellServer::lanAnswer(QTcpSocket *socket, qint64 after)
+{
+    QJsonArray events;
+    for (const LanEvent &event : m_lanEvents) {
+        if (event.seq <= after) continue;
+        QJsonObject one;
+        one.insert(QStringLiteral("seq"), double(event.seq));
+        one.insert(QStringLiteral("kind"), QString::fromLatin1(event.kind));
+        one.insert(QStringLiteral("link"), event.link);
+        if (event.kind == "text") one.insert(QStringLiteral("text"), QString::fromUtf8(event.text));
+        events.append(one);
+    }
+    QJsonObject answer;
+    answer.insert(QStringLiteral("events"), events);
+    respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
 }

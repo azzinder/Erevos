@@ -20,7 +20,14 @@ window. The code is installed with the package; nothing is fetched from a server
   closed (below). `src/watchlink.cpp` is Erevos's side of it: the name `app.erevos` on D-Bus,
   with `show()` for a tap on a notice, and the list the page gives on `/__watch`.
 
-What it does not do: the nearby link and SMS (Android only). Sailfish has no keyring for apps, so
+- `src/lanlink.cpp`: Erevos on the same Wi-Fi or a hotspot, the protocol of the desktop app's
+  `desktop/lan.js` and Android's `LanLink.kt` (UDP broadcasts `EVL1 <nonce> <port>` on port 47905, a
+  new nonce each start, then TCP frames of text already end-to-end encrypted). The page turns it on
+  and off, sends and hears on `/__lan`, as in the desktop app (`app/lib/radio.ts`), while a space
+  is open and **Find Erevos on the same Wi-Fi** is on. If the phone's firewall drops what comes in,
+  port 47905 (UDP and TCP) must be let in.
+
+What it does not do: Bluetooth, Wi-Fi Aware, Wi-Fi Direct and SMS (Android only). Sailfish has no keyring for apps, so
 the keystore is kept as it is: the password lock seals it.
 
 ## While Erevos is closed
@@ -81,3 +88,7 @@ relay with a browser in Firefox 91, the Gecko of Sailfish WebView, including aft
 through a TLS proxy, `wss://`: counting, a call's ring, a relay that does not prove its key, a
 relay that restarts, and with the shell's `/__watch` and D-Bus, starting it. Not yet on a phone:
 sleep, battery, the profile's ringtone and a tap on the lock screen can only be seen there.
+The same Wi-Fi: `lan-check/run.sh` builds the shell's server with Qt 5 on a computer (no Sailfish
+libraries) and, through `/__lan` as the page asks, links it with `desktop/lan.js` over real UDP
+broadcasts and TCP, both ways, UTF-8 too. The SDK build (Qt 5.6) and a phone's Wi-Fi and firewall
+are not tried yet.

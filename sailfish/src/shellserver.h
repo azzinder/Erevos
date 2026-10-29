@@ -4,12 +4,16 @@
 #include <QByteArray>
 #include <QDir>
 #include <QHash>
+#include <QList>
 #include <QNetworkAccessManager>
+#include <QPointer>
 #include <QObject>
 #include <QString>
 #include <QTcpServer>
 
+class LanLink;
 class QTcpSocket;
+class QTimer;
 class QUrlQuery;
 class WatchLink;
 
@@ -26,6 +30,9 @@ class WatchLink;
 //                     GitHub's downloads do not answer a page's own requests
 //   /__watch          the open space's queues, for erevos-watch to wait on while Erevos is not in
 //                     front, or closed (app/lib/shell-watch.ts, watchlink.h); DELETE: no more
+//   /__lan            Erevos on the same Wi-Fi (lanlink.h), as on a computer: PUT ?on=1 or 0
+//                     starts or stops it, POST ?link=… sends the body on a link, GET ?after=…
+//                     gives what happened since, waiting a while for something (app/lib/radio.ts)
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -61,6 +68,9 @@ private:
     void save(QTcpSocket *socket, const Request &request, const QString &name);
     void latest(QTcpSocket *socket);
     void watch(QTcpSocket *socket, const Request &request);
+    void lan(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
+    void lanEvent(const QByteArray &kind, const QString &link, const QByteArray &text = QByteArray());
+    void lanAnswer(QTcpSocket *socket, qint64 after);
 
     static void respond(QTcpSocket *socket, int status, const QByteArray &body = QByteArray(),
                         const QByteArray &type = QByteArray(), const QList<QPair<QByteArray, QByteArray>> &extra = {});
@@ -72,6 +82,24 @@ private:
     QDir m_data;
     QByteArray m_token;
     QHash<QTcpSocket *, QByteArray> m_buffers;
+
+    // The same Wi-Fi: the link while it is on, what happened on it lately, numbered, and the pages
+    // waiting to hear of it.
+    struct LanEvent {
+        qint64 seq;
+        QByteArray kind;
+        QString link;
+        QByteArray text;
+    };
+    struct LanWait {
+        QPointer<QTcpSocket> socket;
+        qint64 after;
+        QTimer *timer;
+    };
+    LanLink *m_lan = nullptr;
+    qint64 m_lanSeq = 0;
+    QList<LanEvent> m_lanEvents;
+    QList<LanWait> m_lanWaiting;
 };
 
 #endif

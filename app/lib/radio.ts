@@ -26,9 +26,9 @@ import { SHELL, shellFetch } from './shell';
 // The links to Erevos phones nearby that lib/nearby.ts sends over. On Android: the radio
 // (Bluetooth, Wi-Fi Aware), the same Wi-Fi or a hotspot (modules/erevos-radio), a Wi-Fi of their
 // own made with Wi-Fi Direct, linked as the same Wi-Fi is, and a Meshtastic LoRa radio when one is
-// set (lib/lora.ts, app/lora.tsx). In the desktop app: the same Wi-Fi only,
-// through the shell (desktop/lan.js), which tells what happens on /__lan as the page asks.
-// Elsewhere there are none.
+// set (lib/lora.ts, app/lora.tsx). In the desktop app and on Sailfish OS: the same Wi-Fi only,
+// through the shell (desktop/lan.js, sailfish/src/lanlink.cpp), which tells what happens on /__lan
+// as the page asks. Elsewhere there are none.
 
 export type LinkKind = 'wifi-aware' | 'ble-link' | 'ble' | 'lan' | 'lora';
 
@@ -40,7 +40,7 @@ type Events = {
 /** Whether this build has the phone's radio. */
 export const HAS_RADIO = Platform.OS === 'android';
 /** Whether this build has any link to phones nearby. */
-export const HAS_LINKS = HAS_RADIO || SHELL === 'electron';
+export const HAS_LINKS = HAS_RADIO || SHELL !== null;
 
 /** The phone's Meshtastic LoRa radio, off unless one is set (app/lora.tsx). */
 export const lora = new Lora({ connect: meshConnect, disconnect: meshDisconnect, write: (bytes) => meshSend(toBase64(bytes)) });
@@ -170,7 +170,7 @@ export const nearbyPermissions = (): Permissions => radioPermissions(RADIO_PERMI
 
 type DeskEvent = { seq: number; kind: 'link' | 'gone' | 'text'; link: string; text?: string };
 
-// The desktop app's side: the links up, the last event taken, and which start is current.
+// The side of the desktop app, or of Sailfish OS: the links up, the last event taken, and which start is current.
 const desk = { after: 0, up: new Set<string>(), run: 0 };
 const deskListeners = { onPeer: new Set<Events['onPeer']>(), onText: new Set<Events['onText']>() };
 
@@ -258,7 +258,7 @@ export function setLanLinks(on: boolean): void {
     // Stopped with the same Wi-Fi, started again after it.
     directOn = false;
     followDirect();
-  } else if (SHELL === 'electron') {
+  } else if (SHELL) {
     deskLan(on).catch(() => undefined);
   }
 }

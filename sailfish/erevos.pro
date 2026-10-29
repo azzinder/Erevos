@@ -4,8 +4,8 @@ TARGET = erevos
 CONFIG += sailfishapp
 QT += network dbus
 
-SOURCES += src/main.cpp src/shellserver.cpp src/watchlink.cpp
-HEADERS += src/shellserver.h src/watchlink.h
+SOURCES += src/main.cpp src/shellserver.cpp src/watchlink.cpp src/lanlink.cpp
+HEADERS += src/shellserver.h src/watchlink.h src/lanlink.h
 
 DISTFILES += qml/erevos.qml qml/cover/CoverPage.qml rpm/erevos.spec erevos.desktop data/app.erevos.service
 
