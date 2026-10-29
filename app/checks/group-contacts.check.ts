@@ -166,3 +166,20 @@ test('asking members for contact links reaches nothing of hidden chats', () => {
     }
   }
 });
+
+t('a contact removed or deleted tells those who follow it, once, and a stranger tells nothing', async () => {
+  const a = await phone(0);
+  const b = await phone(1);
+  await a.contacts.add(a.about.id, b.about, b.key);
+  const told: string[] = [];
+  const stop = a.e2e.onContactRemoved((identity) => told.push(identity));
+  await a.e2e.deleteContact('ff'.repeat(32));
+  await a.e2e.removeContact('ee'.repeat(32));
+  assert.deepEqual(told, [], 'no contact, nothing told');
+  await a.e2e.deleteContact(b.about.id);
+  assert.deepEqual(told, [b.about.id]);
+  await a.contacts.add(a.about.id, b.about, b.key);
+  stop();
+  await a.e2e.removeContact(b.about.id);
+  assert.deepEqual(told, [b.about.id], 'one that stopped is told no more');
+});

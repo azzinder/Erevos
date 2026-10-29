@@ -1389,6 +1389,26 @@ export class E2E {
     });
   }
 
+  // Who hears that a contact was removed or deleted here (the space's groups let go of asks for
+  // their contact link, lib/groups.ts contactRemoved).
+  private readonly removedListeners = new Set<(identity: string) => void>();
+
+  /** Has `listener` called, with the identity, after a contact was removed or deleted here. Returns how to stop. */
+  onContactRemoved(listener: (identity: string) => void): () => void {
+    this.removedListeners.add(listener);
+    return () => this.removedListeners.delete(listener);
+  }
+
+  private contactRemoved(identity: string): void {
+    this.removedListeners.forEach((listener) => {
+      try {
+        listener(identity);
+      } catch {
+        // A listener that fails does not hold the removal.
+      }
+    });
+  }
+
   /**
    * Forgets a contact and every conversation with them. A message they send later is refused.
    * `held`: what a relay holds for later for them (lib/waiting.ts, heldFor), kept to drop.
@@ -1400,6 +1420,7 @@ export class E2E {
       // Their own queue is deleted on the relay (lib/contact-queues.ts).
       const queues = contact ? withGone(this.data.gone, minesOf(contact, 0)) : undefined;
       await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped(held), ...(queues ? { gone: queues } : {}) });
+      if (contact) this.contactRemoved(identity);
       if (gone?.kind === 'photo') await deletePhoto(gone.id);
     });
   }
@@ -1435,6 +1456,7 @@ export class E2E {
         ...(gone ? { gone } : {}),
       });
       if (blocked) this.link?.blockedChanged?.(blocked);
+      if (contact) this.contactRemoved(identity);
       if (contact?.avatar?.kind === 'photo') await deletePhoto(contact.avatar.id);
     });
   }

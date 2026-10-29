@@ -405,6 +405,22 @@ test('Send adds both, each reached where the group says', { skip: !existsSync(bu
   assert.equal(noteText(notesOf(bob, id).at(-1)!, named(carol)), 'carol sent their contact link. You are each other’s contacts now.');
 });
 
+test('a contact deleted before the next look at the relay takes its asks for a contact link with it, both ways', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const { bob, carol, id } = await trio(net);
+  await bob.groups.askContact(id, carol.identity, bob.transport);
+  await net.settle();
+  assert.equal(info(carol, id).asks.length, 1);
+  assert.equal(info(bob, id).wants.length, 1);
+  // Carol deleted Bob, and Bob's phone Carol, as a contact, before either looked at the relay again.
+  await carol.groups.contactRemoved(bob.identity);
+  await bob.groups.contactRemoved(carol.identity);
+  assert.deepEqual([info(carol, id).asks, info(bob, id).wants], [[], []]);
+  // An ask from another member stays.
+  await carol.groups.contactRemoved('00'.repeat(32));
+  assert.equal(carol.groups.all().length, 1);
+});
+
 test('a member blocked here asks for nothing, and nothing adds them, though they were asked from here', { skip: !existsSync(built) }, async () => {
   const net = network();
   const { bob, carol, id } = await trio(net);

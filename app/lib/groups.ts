@@ -768,6 +768,17 @@ export class Groups {
     return true;
   }
 
+  /**
+   * A contact was removed or deleted here: the asks for its contact link, to it and from it, in
+   * every group are let go of at once, so none is left to add it again, as one is not added again
+   * while the next look at the relay has still to find it is a contact (pruneContactAsks).
+   */
+  contactRemoved(identity: string): Promise<void> {
+    return this.run(async () => {
+      if (await this.dropContactAsks(identity, Date.now())) this.changed();
+    });
+  }
+
   // Asks for contact links with members the space has as contacts now, made some other way. One
   // from here stays while they are a message request: their first packet can come before their
   // answer, and the answer then accepts them.

@@ -360,6 +360,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A contact you delete no longer comes back from an old ask**: in a group, a member you asked for their contact
+  link, or who asked for yours, and whom you then deleted as a contact before Erevos looked at the relay again, could
+  be added again by that old ask. Deleting them now lets go of it at once.
 - **A chat locked with its own PIN stays locked**: a contact's Erevos starts a new conversation with the chat about
   once a month, once given newer keys, and the chat then lost its PIN and opened without one; a public group joined
   again lost its own too. Both keep it now.

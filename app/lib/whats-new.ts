@@ -60,6 +60,7 @@ export const NEXT: Changes = {
     mark("**Group calls in XMPP groups**: in a private XMPP group, start a voice or video call, answer one that rings, or join one going on, together with people who use Dino. See [XMPP](#xmpp)."),
   ],
   underTheHood: [
+    mark("**A contact you delete no longer comes back from an old ask**: in a group, a member you asked for their contact link, or who asked for yours, and whom you then deleted as a contact before Erevos looked at the relay again, could be added again by that old ask. Deleting them now lets go of it at once. See [Group chats](#groups)."),
     mark("**A chat locked with its own PIN stays locked**: when its contact's Erevos started a new conversation, as it does about once a month, the chat lost its PIN, and a public group joined again lost its own. See [Hidden chats](#hidden)."),
     mark('**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.'),
     mark('**A message no longer waits when Tor cannot reach the relay**: with Tor for messages, it goes straight at once, as the Tor settings say. See [Through Tor](#tor).'),
