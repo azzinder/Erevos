@@ -16,8 +16,11 @@ parts that differ say how.
   on (see [Lending places](#lending-places)), a phone may also come with a
   ticket from a contact link or with the lent token it got for it.
 - Queues and waiting messages are kept on disk, so a restart or a reboot loses
-  nothing.
-- No request is logged, by the relay or by Caddy.
+  nothing, and a phone is not told again of messages it was told of before.
+- No request is logged, by the relay or by Caddy. The relay's log names no
+  phone and no one: a line of the file of tokens is named by the first 12
+  hex digits of its token's SHA-256, and a forward or a file fetch that
+  failed by why only, never by the address it went to.
 - A call relay (coturn) runs beside it, so calls go between phones without
   either learning the other's IP address. Phones get credentials for it from
   the relay, so only phones with the token can use it.
@@ -201,7 +204,8 @@ A phone let in by an invite may use the relay only as long as the phone that
 invited it. When that phone's line goes, for whatever reason (its inviter took
 it back, its sign-in was ended, or you deleted it), the lines it invited are
 refused at once, and the ones those invited, all the way down, and the log
-names each. A message one of them sent for later is dropped at its time too.
+names each, by the first 12 hex digits of the line (`grep ^<those digits>
+/var/lib/erevos-relay/phones.tokens` finds it), never by its name. A message one of them sent for later is dropped at its time too.
 For this the relay keeps, in `phones.tokens.invites`, which phone's invite
 each invited line came from, for as long as that line is in the file: keep
 that file with the file of tokens, as without it the invited lines no longer
@@ -356,7 +360,9 @@ the app (`wss://erevos.lphl.nekten.eu` here): the app opens a sign-in page only
 over `https://` on the relay's own host. The log also names, at start, any
 line of the file named as a sign-in (`lphl:` here) that has no record in
 `phones.tokens.signins`: such a line is never checked with the provider, so
-take it out unless you wrote it yourself.
+take it out unless you wrote it yourself. The log names a line by the first
+12 hex digits it starts with, never by the user name in it: `grep
+^9b74c9897bac /var/lib/erevos-relay/phones.tokens` shows which line that is.
 
 ### In front of the relay
 
@@ -474,6 +480,15 @@ and it answers `429` too.
   [Settings](#settings), changes that), and only the hour it came is kept. The
   service runs as a temporary user, so systemd keeps the file under
   `/var/lib/private/erevos-relay/`.
+- `/var/lib/erevos-relay/queues.journal.news`: only while the relay is
+  stopped, after a stop with `systemctl stop` or `restart` (`SIGTERM`): what
+  came into each queue since its phone last found it empty, by kind (how many
+  messages, calls, and sends that did not say), and the journal's length and
+  SHA-256 then. The relay takes it back and deletes it as it starts, so a
+  phone is not told again of messages it was told of before the restart. It
+  is taken only if the journal is exactly as it was at the stop; otherwise,
+  and after a crash, each queue with something waiting counts it as one new
+  message, so a phone may tell of it once more, but never misses one.
 - `/var/lib/erevos-relay/relay.key`: the relay's key for sealed sends from
   other relays (two-hop sending), made on first start, in the same private
   place. Keep it: phones that send through a second relay seal to it, and a
@@ -498,7 +513,11 @@ and it answers `429` too.
   `/etc/caddy/Caddyfile`. If that file was the one the package ships, the
   original is kept as `Caddyfile.orig`.
 
-`journalctl -u erevos-relay` shows the relay's start-up lines and errors.
+`journalctl -u erevos-relay` shows the relay's start-up lines and errors,
+among them a forward to another relay, or a file's chunk taken through it,
+that failed: why (the name could not be looked up, it could not be reached,
+an HTTP status, a timeout), never which relay, queue or file, at most one
+line a minute of each, counting the ones not said in between.
 `systemctl status erevos-relay caddy coturn` shows whether all three run.
 
 If a part of the relay fails while it holds the queues or the files, the relay
@@ -603,6 +622,15 @@ The journal is now written so that an older relay does not take it: put back
 in place of this one, an older relay stops at start with a line saying the
 file is not a journal, rather than cutting it short. Going back means moving
 the journal aside, which loses the queues in it.
+
+What came into each queue since its phone last found it empty (its news, which
+the app asks for to tell of messages while a hidden chat or a space is
+closed) is kept in memory, and at a stop with `SIGTERM` in
+`queues.journal.news` beside the journal, never in the journal itself. An
+older relay leaves that file alone and reads the journal as before, so going
+back to it loses nothing; the news then start afresh, and phones may tell
+once more of messages waiting. The next start of a newer relay finds the
+journal changed since, so it leaves the old news out and deletes them.
 
 ## Notifications for the web app
 
@@ -764,7 +792,8 @@ said or shown: calls are end-to-end encrypted too. With lending on, it can
 also see how many places each ticket gave and how much each place used today,
 but not which queue is whose. With signing in set up, it sees each signed-in
 phone's user name at the provider, and the provider sees each sign-in and
-each hourly check. With Matrix notices asked for, it sees when a Matrix
+each hourly check (the relay's log names a line by the start of its token's
+SHA-256, not by that name). With Matrix notices asked for, it sees when a Matrix
 server tells of a message for a queue, and that server's address, but not
 which room, from whom or what. Run the relay on a server you control, and keep
 its disk encrypted if the provider offers it.

@@ -229,6 +229,11 @@ impl Journal {
         Ok(())
     }
 
+    /// Where the journal is.
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
     #[cfg(test)]
     pub fn len(&self) -> u64 {
         self.len

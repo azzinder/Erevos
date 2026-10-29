@@ -75,7 +75,10 @@
 //!
 //! Set `EREVOS_RELAY_JOURNAL` to a file path to keep queues and waiting
 //! messages there, so they survive a restart. Without it, they live in memory
-//! only and are lost when the relay stops.
+//! only and are lost when the relay stops. Stopped with `SIGTERM` or
+//! `SIGINT`, the relay keeps what came into each queue since its phone last
+//! found it empty in `<journal>.news` until it next starts (see `stop.rs`),
+//! so a phone is not told again of messages it was told of already.
 //!
 //! Messages nobody takes expire after 14 days. Set `EREVOS_RELAY_TTL_DAYS`
 //! to change that.
@@ -155,6 +158,7 @@ mod push;
 mod queue;
 mod server;
 mod signin;
+mod stop;
 mod tokens;
 mod turn;
 
@@ -323,6 +327,8 @@ fn main() -> ExitCode {
     if env::args().nth(1).as_deref() == Some("free-line") {
         return free_line(&env::args().skip(2).collect::<Vec<_>>().join(" "));
     }
+    // Before any thread starts, so that every one has them blocked.
+    let signals = stop::block();
     let tcp_addr = env::args()
         .nth(1)
         .unwrap_or_else(|| "127.0.0.1:7878".to_string());
@@ -563,6 +569,9 @@ fn main() -> ExitCode {
     );
     eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);
+    if let Some(signals) = signals {
+        stop::wait(signals, Arc::clone(&store));
+    }
     let inviting = match invites::wanted(env::var("EREVOS_RELAY_INVITES").ok().as_deref()) {
         Ok(on) => on,
         Err(e) => {
@@ -632,7 +641,7 @@ fn main() -> ExitCode {
                         signin.cut_pending(tokens);
                     }
                     for line in store.tokens.get().map(|t| signin.unrecorded(t)).unwrap_or_default() {
-                        eprintln!("erevos-relay: the line {line:?} is named as a sign-in with {name}, but {kept} has no record of it, so it is never checked with {name}: take it out unless you wrote it yourself");
+                        eprintln!("erevos-relay: the line {} is named as a sign-in with {name}, but {kept} has no record of it, so it is never checked with {name}: take it out unless you wrote it yourself", tokens::short(&line));
                     }
                     let _ = store.signin.set(signin);
                     let checked = Arc::clone(&store);

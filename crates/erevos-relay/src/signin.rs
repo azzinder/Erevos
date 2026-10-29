@@ -89,7 +89,7 @@ use crate::lock::lock;
 use crate::oidc::{self, Config, Failure, Provider};
 use crate::pages::{self, Lang};
 use crate::push::b64url;
-use crate::tokens::Tokens;
+use crate::tokens::{short, Tokens};
 
 /// How long a sign-in may take, from the start in the browser to the claim,
 /// seconds.
@@ -312,19 +312,19 @@ impl SignIn {
     /// that have no record, so the hourly check never asks about them: written
     /// by hand, or left from a relay that stopped at the wrong moment. The
     /// relay says so when it starts.
-    pub fn unrecorded(&self, tokens: &Tokens) -> Vec<String> {
+    pub fn unrecorded(&self, tokens: &Tokens) -> Vec<[u8; 32]> {
         let state = lock(&self.state, SIGNIN_LOCK);
         let prefix = format!("{}:", self.prefix);
-        let mut names: Vec<String> = tokens
+        let mut lines: Vec<[u8; 32]> = tokens
             .lines()
             .into_iter()
             .filter(|(line, name)| {
                 name.starts_with(&prefix) && !state.records.iter().any(|r| &r.line == line)
             })
-            .map(|(_, name)| name)
+            .map(|(line, _)| line)
             .collect();
-        names.sort();
-        names
+        lines.sort();
+        lines
     }
 
     /// Answers a browser's request for a sign-in page on `stream`, which
@@ -544,7 +544,7 @@ impl SignIn {
         }
         if !config.in_group(&info) {
             return Err(Failure::Refused(format!(
-                "{sub:?} is not in the group {:?}",
+                "the account is not in the group {:?}",
                 config.group.as_deref().unwrap_or_default()
             )));
         }
@@ -789,8 +789,8 @@ impl SignIn {
         }
         let Some(refresh) = refresh else {
             eprintln!(
-                "erevos-relay: the refresh token of {:?}'s sign-in cannot be read (was the client secret changed?), so their line goes and they sign in again",
-                record.user
+                "erevos-relay: the refresh token of the sign-in of the line {} cannot be read (was the client secret changed?), so the line goes and its phone signs in again",
+                short(line)
             );
             self.cut(line, tokens);
             return true;
@@ -810,9 +810,9 @@ impl SignIn {
             }
             Err(Failure::Refused(why)) => {
                 eprintln!(
-                    "erevos-relay: {} no longer lets {:?} in ({why}), so their line goes",
+                    "erevos-relay: {} no longer lets the line {} in ({why}), so it goes",
                     self.name(),
-                    record.user
+                    short(line)
                 );
                 self.cut(line, tokens);
                 true
@@ -821,8 +821,8 @@ impl SignIn {
                 if overdue && record.failed != 0 && record.failed + CHECK_EVERY <= now =>
             {
                 eprintln!(
-                    "erevos-relay: {:?}'s sign-in was not found good for {} hours, and {} still cannot be asked, at checks an hour apart ({why}), so their line goes",
-                    record.user,
+                    "erevos-relay: the sign-in of the line {} was not found good for {} hours, and {} still cannot be asked, at checks an hour apart ({why}), so the line goes",
+                    short(line),
                     MAX_UNCHECKED / 3600,
                     self.name()
                 );
@@ -831,8 +831,8 @@ impl SignIn {
             }
             Err(Failure::Later(why)) => {
                 eprintln!(
-                    "erevos-relay: cannot check {:?}'s sign-in with {} now, trying again in an hour: {why}",
-                    record.user,
+                    "erevos-relay: cannot check the sign-in of the line {} with {} now, trying again in an hour: {why}",
+                    short(line),
                     self.name()
                 );
                 self.update(line, |r| {
@@ -2291,7 +2291,7 @@ pub mod tests {
         )
         .unwrap();
         let fresh = Tokens::new(file);
-        assert_eq!(signin.unrecorded(&fresh), ["lphl:by-hand"]);
+        assert_eq!(signin.unrecorded(&fresh), [line_of("by hand")]);
     }
 
     #[test]

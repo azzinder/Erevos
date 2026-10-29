@@ -1927,51 +1927,130 @@ fn read_address(r: &mut impl Read) -> io::Result<String> {
 }
 
 /// Passes a sealed send to the relay at `address`, with its mark, and returns
-/// its status.
+/// its status. A failure is said in the log, without the address or anything
+/// else that could tell who sent to whom (see `say_failed`).
 fn forward(shared: &Shared, address: &str, sealed: &[u8], mark: Mark) -> u8 {
     let url = format!("{}{SEALED_PATH}", address.trim_end_matches('/'));
     let mut request = vec![SEALED_SEND];
     request.extend_from_slice(&(sealed.len() as u32).to_be_bytes());
     request.extend_from_slice(sealed);
     request.extend(mark.byte());
-    match call_relay(shared, &url, request, FORWARD_TIMEOUT) {
-        Ok(reply) if reply.len() == 1 && reply[0] <= FAILED => reply[0],
-        _ => UNREACHABLE,
-    }
+    let (status, why) = match call_relay(shared, &url, request, FORWARD_TIMEOUT) {
+        Ok(reply) if reply == [FAILED] => (FAILED, Cow::Borrowed("it could not keep the message")),
+        Ok(reply) if reply.len() == 1 && reply[0] < FAILED => return reply[0],
+        Ok(_) => (UNREACHABLE, Cow::Borrowed(ODD_REPLY)),
+        Err(why) => (UNREACHABLE, why),
+    };
+    say_failed(&FORWARDS_FAILED, "a forward to another relay", &why);
+    status
 }
 
 /// Passes a `FILE_GET` or `FILE_DELETE` to the relay at `address` and returns
-/// its reply, if it is one such a request can have.
+/// its reply, if it is one such a request can have. A failure to reach it, or
+/// a reply it cannot have, is said in the log as a forward's is.
 fn file_via(shared: &Shared, address: &str, op: u8, id: &ChunkId) -> Vec<u8> {
     let url = format!("{}{FILES_PATH}", address.trim_end_matches('/'));
     let mut request = vec![op];
     request.extend_from_slice(id);
-    match call_relay(shared, &url, request, FILE_TIMEOUT) {
-        Ok(reply) if reply.len() == 1 && reply[0] != OK && reply[0] <= FAILED => reply,
-        Ok(reply) if op == FILE_DELETE && reply == [OK] => reply,
+    let why = match call_relay(shared, &url, request, FILE_TIMEOUT) {
+        Ok(reply) if reply.len() == 1 && reply[0] != OK && reply[0] <= FAILED => return reply,
+        Ok(reply) if op == FILE_DELETE && reply == [OK] => return reply,
         Ok(reply) if op == FILE_GET && reply.len() >= 5 && reply[0] == OK => {
             let len = u32::from_be_bytes([reply[1], reply[2], reply[3], reply[4]]) as usize;
             if len <= MAX_CHUNK && reply.len() == 5 + len {
-                reply
-            } else {
-                vec![UNREACHABLE]
+                return reply;
             }
+            Cow::Borrowed(ODD_REPLY)
         }
-        _ => vec![UNREACHABLE],
+        Ok(_) => Cow::Borrowed(ODD_REPLY),
+        Err(why) => why,
+    };
+    let what = if op == FILE_GET {
+        "taking a file's chunk from another relay"
+    } else {
+        "deleting a file's chunk on another relay"
+    };
+    say_failed(&FILES_FAILED, what, &why);
+    vec![UNREACHABLE]
+}
+
+const ODD_REPLY: &str = "it gave a reply such a request cannot have";
+
+/// Failures of calls to other relays said lately, of one kind: at most one
+/// line a minute, which counts the ones left unsaid before it, so a relay
+/// that is down does not fill the log.
+struct Failures {
+    said: Mutex<Option<Instant>>,
+    unsaid: AtomicUsize,
+}
+
+impl Failures {
+    const fn new() -> Failures {
+        Failures {
+            said: Mutex::new(None),
+            unsaid: AtomicUsize::new(0),
+        }
     }
+}
+
+static FORWARDS_FAILED: Failures = Failures::new();
+static FILES_FAILED: Failures = Failures::new();
+const FAILURES_EVERY: Duration = Duration::from_secs(60);
+
+/// Says in the log that `what` failed and why, as `Failures` allows. `why`
+/// comes from `call_relay` or is fixed text: it never holds the other relay's
+/// address, the queue or file asked for, or anything sent.
+fn say_failed(failures: &Failures, what: &str, why: &str) {
+    let mut said = failures.said.lock().unwrap_or_else(|e| e.into_inner());
+    if said.is_some_and(|at| at.elapsed() < FAILURES_EVERY) {
+        failures.unsaid.fetch_add(1, Ordering::Relaxed);
+        return;
+    }
+    *said = Some(Instant::now());
+    match failures.unsaid.swap(0, Ordering::Relaxed) {
+        0 => eprintln!("erevos-relay: {what} failed: {why}"),
+        more => eprintln!(
+            "erevos-relay: {what} failed: {why} (and {more} more since the last line like this, not said)"
+        ),
+    }
+}
+
+/// Why a call to another relay failed at `step`, in words that name no one:
+/// the kind of error only, never its text, which may hold the address.
+fn io_failed(step: &str, e: &io::Error) -> Cow<'static, str> {
+    Cow::Owned(format!("{step} ({})", e.kind()))
+}
+
+/// As `io_failed`, for the WebSocket client's errors.
+fn ws_failed(step: &str, e: &tungstenite::Error) -> Cow<'static, str> {
+    use tungstenite::Error as E;
+    let why = match e {
+        E::Io(e) => return io_failed(step, e),
+        E::Http(response) => format!("HTTP status {}", response.status().as_u16()),
+        E::Tls(_) => "TLS failed".to_string(),
+        E::ConnectionClosed | E::AlreadyClosed => "the connection closed".to_string(),
+        E::Url(_) => "not an address it can connect to".to_string(),
+        E::Capacity(_) => "a message too large".to_string(),
+        E::Protocol(_) => "not the WebSocket protocol".to_string(),
+        _ => "a WebSocket error".to_string(),
+    };
+    Cow::Owned(format!("{step} ({why})"))
 }
 
 /// Sends one request to the relay at `url` and returns its reply. Only to an
 /// address on the internet, unless the operator allows private peers (see
 /// `peers.rs`); one that is not is an error, as one that cannot be reached is.
+/// An error says why, without the address (see `io_failed`).
 fn call_relay(
     shared: &Shared,
     url: &str,
     request: Vec<u8>,
     timeout: Duration,
-) -> io::Result<Vec<u8>> {
-    let uri: tungstenite::http::Uri = url.parse().map_err(to_io)?;
-    let host = uri.host().ok_or_else(|| to_io("no host"))?;
+) -> Result<Vec<u8>, Cow<'static, str>> {
+    let uri: tungstenite::http::Uri = url
+        .parse()
+        .map_err(|_| Cow::Borrowed("not an address it can connect to"))?;
+    let host = uri.host().ok_or(Cow::Borrowed("an address with no host"))?;
     let host = host.trim_start_matches('[').trim_end_matches(']');
     let port = uri
         .port_u16()
@@ -1985,26 +2064,38 @@ fn call_relay(
     // tried in turn, so one that does not answer does not fail the forward.
     let private_peers = shared.limits.private_peers;
     let addresses: Vec<SocketAddr> = (host, port)
-        .to_socket_addrs()?
+        .to_socket_addrs()
+        .map_err(|e| io_failed("its name could not be looked up", &e))?
         .filter(|addr| private_peers || peers::global(addr.ip()))
         .collect();
     if addresses.is_empty() {
-        return Err(to_io("no address the relay may connect to"));
+        return Err(Cow::Borrowed("no address the relay may connect to"));
     }
-    let stream = connect::to_any(&addresses, FORWARD_TIMEOUT)?;
-    stream.set_read_timeout(Some(timeout))?;
-    stream.set_write_timeout(Some(timeout))?;
-    let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(to_io)?;
+    let stream = connect::to_any(&addresses, FORWARD_TIMEOUT)
+        .map_err(|e| io_failed("it could not be reached", &e))?;
+    stream
+        .set_read_timeout(Some(timeout))
+        .and_then(|()| stream.set_write_timeout(Some(timeout)))
+        .map_err(|e| io_failed("the connection could not be set up", &e))?;
+    let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(|e| match e {
+        tungstenite::HandshakeError::Failure(e) => ws_failed("its WebSocket did not open", &e),
+        tungstenite::HandshakeError::Interrupted(_) => {
+            Cow::Borrowed("its WebSocket did not open (timed out)")
+        }
+    })?;
     socket
         .send(Message::Binary(request.into()))
-        .map_err(to_io)?;
+        .map_err(|e| ws_failed("the request could not be sent", &e))?;
     loop {
-        match socket.read().map_err(to_io)? {
+        match socket
+            .read()
+            .map_err(|e| ws_failed("no reply came", &e))?
+        {
             Message::Binary(bytes) => {
                 let _ = socket.close(None);
                 return Ok(bytes.to_vec());
             }
-            Message::Close(_) => return Err(to_io("closed")),
+            Message::Close(_) => return Err(Cow::Borrowed("it closed with no reply")),
             _ => {}
         }
     }
@@ -3704,6 +3795,59 @@ mod tests {
             forward_request(&format!("ws://{far}/"), &sealed),
         );
         assert_eq!(r, vec![NOT_FOUND]);
+    }
+
+    #[test]
+    fn a_failed_call_to_another_relay_says_why_without_its_address() {
+        let shared = |private_peers| {
+            Shared::new(
+                Store::default(),
+                FileStore::default(),
+                None,
+                None,
+                Limits {
+                    private_peers,
+                    ..Limits::default()
+                },
+            )
+        };
+        let call = |shared: &Shared, url: &str| {
+            call_relay(shared, url, vec![SEALED_SEND], Duration::from_secs(5)).unwrap_err()
+        };
+        let named = |why: &str, addr: &SocketAddr| {
+            why.contains(&addr.ip().to_string()) || why.contains(&addr.port().to_string())
+        };
+        let open = shared(true);
+
+        // Nothing listening.
+        let closed = TcpListener::bind("127.0.0.1:0")
+            .unwrap()
+            .local_addr()
+            .unwrap();
+        let why = call(&open, &format!("ws://{closed}{SEALED_PATH}"));
+        assert!(why.starts_with("it could not be reached ("), "{why}");
+        assert!(!named(&why, &closed), "{why}");
+
+        // Something that is no relay.
+        let other = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = other.local_addr().unwrap();
+        thread::spawn(move || {
+            let (mut s, _) = other.accept().unwrap();
+            let mut buf = [0u8; 1024];
+            let _ = s.read(&mut buf);
+            let _ = s.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n");
+        });
+        let why = call(&open, &format!("ws://{addr}{SEALED_PATH}"));
+        assert_eq!(why, "its WebSocket did not open (HTTP status 404)");
+
+        // On this machine, where only a relay that allows it may go.
+        let why = call(&shared(false), &format!("ws://{closed}{SEALED_PATH}"));
+        assert_eq!(why, "no address the relay may connect to");
+
+        // A name that is nowhere.
+        let why = call(&open, &format!("ws://nowhere.invalid{SEALED_PATH}"));
+        assert!(why.starts_with("its name could not be looked up ("), "{why}");
+        assert!(!why.contains("nowhere"), "{why}");
     }
 
     #[test]

@@ -1529,6 +1529,7 @@ dependencies = [
  "hkdf 0.12.4",
  "hmac 0.12.1",
  "httparse",
+ "libc",
  "p256",
  "rand 0.8.8",
  "rustls",

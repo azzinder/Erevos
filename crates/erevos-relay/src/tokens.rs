@@ -546,8 +546,8 @@ impl Seen {
         let gone = orphans(&held, &self.invited);
         for hash in gone.difference(&self.told) {
             eprintln!(
-                "erevos-relay: the line {:?} is refused: the line of the phone that invited it is gone",
-                self.all.get(hash).map(String::as_str).unwrap_or_default()
+                "erevos-relay: the line {} is refused: the line of the phone that invited it is gone",
+                short(hash)
             );
         }
         self.hashes = self
@@ -667,6 +667,13 @@ fn hash_of(hex: &str) -> Option<[u8; 32]> {
 
 pub fn to_hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// A line as the log names it: the first 12 hex digits of its token's
+/// SHA-256, which start the line in the file, never the name after it, so
+/// the log holds no one's name (`grep ^<these> <file>` finds the line).
+pub fn short(line: &[u8; 32]) -> String {
+    to_hex(&line[..6])
 }
 
 /// A new token for a phone, and its line for the file, with `name` after it.

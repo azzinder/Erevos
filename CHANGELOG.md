@@ -365,6 +365,14 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A relay restart no longer brings a false notice**: a relay that restarted forgot what had come into each queue
+  since its phone last found it empty, so a hidden chat or a closed space with messages waiting, already told of,
+  said **New message** for them once more. Stopped as `systemctl stop` or `restart` stop it, the relay now keeps that
+  beside its journal until it starts again, and takes it back only if the journal is still exactly as it left it;
+  after a crash it starts afresh as before, so a phone may tell of a message twice, but never misses one. Its log also
+  says why a forward to another relay, or a file's chunk taken through it, failed, never which relay, queue or file,
+  and names a line of its file of tokens by the first 12 hex digits of its token's SHA-256, never by the user name in
+  it. Your relay needs an update for it.
 - **The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet
   (a Cyrillic а in a Latin word), full-width or styled letters, or a mark that shows nothing inside a word, no longer
   gets past it. Who sends is never compared so.

@@ -20,19 +20,30 @@
 //! once a day a queue. A queue from a journal written before relays noted
 //! that counts as used the day it was read back.
 //!
-//! Each queue also keeps, in memory only, what came into it since its
-//! recipient last found it empty, by what each send said it carries (`News`):
-//! so a phone can be told how many messages wait in a queue it cannot read
-//! now, as hidden chats' while they are closed, and not of word between
-//! phones. After a restart a queue with something waiting counts it as one
-//! send that did not say.
+//! Each queue also keeps, in memory, what came into it since its recipient
+//! last found it empty, by what each send said it carries (`News`): so a
+//! phone can be told how many messages wait in a queue it cannot read now, as
+//! hidden chats' while they are closed, and not of word between phones.
+//!
+//! A relay stopped cleanly (see `stop.rs`) keeps the news of every queue that
+//! has some in `<journal>.news`, with the journal's length and SHA-256 as it
+//! was then, and takes them back at the next start: so a phone that was told
+//! of a round is not told of it again as new. The file is taken back only
+//! when the journal is still exactly the one it was kept with, and removed
+//! before anything else happens, so news kept once are never taken back after
+//! the queues changed. Older relays leave the file alone, and do not write it.
+//! Otherwise, after a crash say, a queue with something waiting counts it as
+//! one send that did not say, in a new round: a phone may be told of messages
+//! twice, and never misses one.
 
 use std::collections::{HashMap, VecDeque};
 use std::io;
-use std::path::Path;
+use std::io::{ErrorKind, Read};
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rand::RngCore;
+use sha2::{Digest, Sha256};
 
 use crate::journal::{self, Journal, Record};
 
@@ -121,6 +132,96 @@ impl News {
 
 fn new_round() -> u32 {
     rand::rngs::OsRng.next_u32().max(1)
+}
+
+/// The first bytes of the file of news kept at a stop.
+const NEWS_HEADER: &[u8; 8] = b"EREVOSN1";
+/// Bytes of each queue's news in it: recipient id, round, messages, sends
+/// that did not say, rings.
+const NEWS_ENTRY: usize = 24 + 4 * 4;
+
+/// Where the news are kept at a stop, beside the journal at `journal`.
+pub fn news_path(journal: &Path) -> PathBuf {
+    let mut path = journal.as_os_str().to_owned();
+    path.push(".news");
+    PathBuf::from(path)
+}
+
+/// The length and SHA-256 of the file at `path`.
+fn fingerprint(path: &Path) -> io::Result<(u64, [u8; 32])> {
+    let mut file = std::fs::File::open(path)?;
+    let mut hash = Sha256::new();
+    let mut buf = vec![0u8; 64 * 1024];
+    let mut len = 0u64;
+    loop {
+        match file.read(&mut buf) {
+            Ok(0) => return Ok((len, hash.finalize().into())),
+            Ok(n) => {
+                hash.update(&buf[..n]);
+                len += n as u64;
+            }
+            Err(e) if e.kind() == ErrorKind::Interrupted => {}
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+/// The news kept at the last stop beside the journal at `journal`, if they
+/// were kept for that journal exactly as it is now. The file goes either way,
+/// before this returns: news that cannot be removed are not taken, so they
+/// are never taken a second time, after the queues changed.
+fn take_news(journal: &Path) -> Vec<(QueueId, News)> {
+    let path = news_path(journal);
+    let bytes = match std::fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Vec::new(),
+        Err(e) => {
+            eprintln!("erevos-relay: cannot read the news kept at the last stop, so they start afresh: {e}");
+            let _ = std::fs::remove_file(&path);
+            return Vec::new();
+        }
+    };
+    if let Err(e) = std::fs::remove_file(&path).and_then(|()| journal::sync_dir(&path)) {
+        eprintln!("erevos-relay: cannot remove the news kept at the last stop, so they start afresh: {e}");
+        return Vec::new();
+    }
+    let head = NEWS_HEADER.len() + 8 + 32;
+    if bytes.len() < head
+        || &bytes[..NEWS_HEADER.len()] != NEWS_HEADER
+        || !(bytes.len() - head).is_multiple_of(NEWS_ENTRY)
+    {
+        eprintln!("erevos-relay: the news kept at the last stop cannot be read, so they start afresh");
+        return Vec::new();
+    }
+    let len = u64::from_be_bytes(bytes[8..16].try_into().unwrap_or_default());
+    let matches = match fingerprint(journal) {
+        Ok((now_len, hash)) => now_len == len && hash[..] == bytes[16..48],
+        Err(e) if e.kind() == ErrorKind::NotFound => false,
+        Err(e) => {
+            eprintln!("erevos-relay: cannot read the journal to check the news kept at the last stop, so they start afresh: {e}");
+            return Vec::new();
+        }
+    };
+    if !matches {
+        eprintln!("erevos-relay: the news kept at the last stop are of another journal (changed since, by an older relay say), so they start afresh");
+        return Vec::new();
+    }
+    let word = |b: &[u8]| u32::from_be_bytes([b[0], b[1], b[2], b[3]]);
+    (head..bytes.len())
+        .step_by(NEWS_ENTRY)
+        .map(|at| &bytes[at..at + NEWS_ENTRY])
+        .filter_map(|entry| {
+            let mut id = [0u8; 24];
+            id.copy_from_slice(&entry[..24]);
+            let news = News {
+                round: word(&entry[24..]),
+                messages: word(&entry[28..]),
+                unmarked: word(&entry[32..]),
+                rings: word(&entry[36..]),
+            };
+            (news.round != 0).then_some((id, news))
+        })
+        .collect()
 }
 
 pub struct Store {
@@ -212,6 +313,17 @@ impl Store {
                 "erevos-relay: skipped {skipped} bytes at the end of {}, left by a write that did not finish",
                 path.display()
             );
+        }
+        let kept = take_news(path);
+        let mut taken = 0;
+        for (id, news) in kept {
+            if let Some(q) = store.queues.get_mut(&id) {
+                q.news = news;
+                taken += 1;
+            }
+        }
+        if taken > 0 {
+            eprintln!("erevos-relay: took back the news of {taken} queues, kept at the last stop");
         }
         store.drop_expired();
         store.journal = Some(Journal::create(path, records(&store.queues))?);
@@ -470,7 +582,8 @@ impl Store {
     /// Counts one message in the queue's news, keeping nothing: a Matrix
     /// homeserver's push (see `matrix_push.rs`), which says only that
     /// something came. Nothing waits in the queue for it, and nothing is
-    /// written to the journal; the count goes at a restart, as all news does.
+    /// written to the journal; the count is kept at a clean stop, as all news
+    /// are, and goes at a crash.
     pub fn wake(&mut self, sender_id: &QueueId) -> Result<(), QueueError> {
         let rid = *self.by_sender.get(sender_id).ok_or(QueueError::NotFound)?;
         self.expire_queue(&rid)?;
@@ -514,8 +627,8 @@ impl Store {
 
     /// What came into the queue since its recipient last found it empty.
     /// Nothing is taken. Asked by the queue's recipient, so it counts as a
-    /// use. What waits from before a restart counts as one send that did not
-    /// say.
+    /// use. What waits from before a restart whose news were not kept counts
+    /// as one send that did not say.
     pub fn news(&mut self, recipient_id: &QueueId) -> Result<News, QueueError> {
         self.expire_queue(recipient_id)?;
         self.touch(recipient_id);
@@ -527,6 +640,34 @@ impl Store {
             q.news.came(Said::Unknown);
         }
         Ok(q.news)
+    }
+
+    /// Keeps the news of every queue that has some beside the journal, with
+    /// the journal's length and SHA-256 as it is now, for the next start to
+    /// take back (see `take_news`). Called at a clean stop, holding the lock
+    /// until the process ends, so nothing changes after. `None` for a store
+    /// with no journal, which keeps nothing; else how many queues' news.
+    pub fn keep_news(&self) -> io::Result<Option<usize>> {
+        let Some(journal) = &self.journal else {
+            return Ok(None);
+        };
+        let (len, hash) = fingerprint(journal.path())?;
+        let mut out = NEWS_HEADER.to_vec();
+        out.extend_from_slice(&len.to_be_bytes());
+        out.extend_from_slice(&hash);
+        let mut kept = 0;
+        for (id, q) in &self.queues {
+            if q.news.round == 0 {
+                continue;
+            }
+            out.extend_from_slice(id);
+            for n in [q.news.round, q.news.messages, q.news.unmarked, q.news.rings] {
+                out.extend_from_slice(&n.to_be_bytes());
+            }
+            kept += 1;
+        }
+        journal::write_whole(&news_path(journal.path()), &out)?;
+        Ok(Some(kept))
     }
 
     pub fn delete(&mut self, recipient_id: &QueueId) -> Result<(), QueueError> {
@@ -664,6 +805,93 @@ mod tests {
         assert_eq!(s.news(&empty.recipient_id).unwrap(), News::default());
     }
 
+    #[test]
+    fn news_kept_at_a_clean_stop_come_back_once() {
+        let path = TempPath::new();
+        let news_file = news_path(&path.0);
+        let (full, emptied, before) = {
+            let mut s = Store::open(&path.0).unwrap();
+            let full = s.create().unwrap();
+            let emptied = s.create().unwrap();
+            s.send_said(&full.sender_id, b"one".to_vec(), Said::Message)
+                .unwrap();
+            s.send_said(&full.sender_id, b"call".to_vec(), Said::Ring)
+                .unwrap();
+            s.send(&full.sender_id, b"old".to_vec()).unwrap();
+            s.wake(&full.sender_id).unwrap();
+            s.send_said(&emptied.sender_id, b"x".to_vec(), Said::Message)
+                .unwrap();
+            assert!(s.receive(&emptied.recipient_id).unwrap().is_some());
+            assert_eq!(s.receive(&emptied.recipient_id).unwrap(), None);
+            let before = s.news(&full.recipient_id).unwrap();
+            assert_eq!(s.keep_news().unwrap(), Some(1));
+            (full, emptied, before)
+        };
+        assert!(news_file.exists());
+        let mut s = Store::open(&path.0).unwrap();
+        // Taken back as they were, and the file is gone.
+        assert!(!news_file.exists());
+        assert_eq!(s.news(&full.recipient_id).unwrap(), before);
+        assert_eq!(s.news(&emptied.recipient_id).unwrap(), News::default());
+        // A message after the restart counts on in the same round, so the
+        // phone that heard `before` is told of exactly one more.
+        s.send_said(&full.sender_id, b"two".to_vec(), Said::Message)
+            .unwrap();
+        let after = s.news(&full.recipient_id).unwrap();
+        assert_eq!(after.round, before.round);
+        assert_eq!(after.messages, before.messages + 1);
+        drop(s);
+        // Stopped without keeping them (a crash): a new round, never the old
+        // one with counts that could be behind.
+        let mut s = Store::open(&path.0).unwrap();
+        let fresh = s.news(&full.recipient_id).unwrap();
+        assert_ne!(fresh.round, before.round);
+        assert_eq!((fresh.messages, fresh.unmarked, fresh.rings), (0, 1, 0));
+    }
+
+    #[test]
+    fn news_kept_for_a_journal_that_changed_since_are_left_out() {
+        let path = TempPath::new();
+        let news_file = news_path(&path.0);
+        let (q, before, kept) = {
+            let mut s = Store::open(&path.0).unwrap();
+            let q = s.create().unwrap();
+            s.send_said(&q.sender_id, b"one".to_vec(), Said::Message)
+                .unwrap();
+            let before = s.news(&q.recipient_id).unwrap();
+            s.keep_news().unwrap();
+            (q, before, std::fs::read(&news_file).unwrap())
+        };
+        // What an older relay would do: start, take a message in, and leave
+        // the file of news as it was.
+        {
+            let mut s = Store::open(&path.0).unwrap();
+            s.send_said(&q.sender_id, b"two".to_vec(), Said::Message)
+                .unwrap();
+        }
+        std::fs::write(&news_file, &kept).unwrap();
+        let mut s = Store::open(&path.0).unwrap();
+        assert!(!news_file.exists());
+        let news = s.news(&q.recipient_id).unwrap();
+        assert_ne!(news.round, before.round);
+        assert_eq!((news.messages, news.unmarked), (0, 1));
+        drop(s);
+
+        // A file that is not news is removed and left out too.
+        std::fs::write(&news_file, b"EREVOSN1 but cut").unwrap();
+        let mut s = Store::open(&path.0).unwrap();
+        assert!(!news_file.exists());
+        assert_eq!(s.news(&q.recipient_id).unwrap().unmarked, 1);
+    }
+
+    #[test]
+    fn a_store_with_no_journal_keeps_no_news() {
+        let mut s = Store::default();
+        let q = s.create().unwrap();
+        s.send(&q.sender_id, b"one".to_vec()).unwrap();
+        assert_eq!(s.keep_news().unwrap(), None);
+    }
+
     /// A fresh path in the system temp directory, removed when dropped.
     struct TempPath(PathBuf);
 
@@ -683,6 +911,7 @@ mod tests {
     impl Drop for TempPath {
         fn drop(&mut self) {
             let _ = std::fs::remove_file(&self.0);
+            let _ = std::fs::remove_file(news_path(&self.0));
         }
     }
 
