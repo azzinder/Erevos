@@ -1431,6 +1431,10 @@ between.
   restore, the space signs in again, as a new device. Its hidden chats can have a Matrix account of their own, see
   [Hidden chats](#hidden).
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
+- **Groups:** **New group**, on the Matrix screen, makes an encrypted group from a name and the Matrix IDs you write,
+  each asked to join, as Element makes one; everyone in it sees who the others are. **Join a group** joins one by its
+  address, such as #name:matrix.org. A public group may not be encrypted, and its screen then says so. In a group,
+  **Invite** asks someone else to join, if the group lets you.
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
 - **Not anonymous:** the Matrix server sees your account, who talks with whom and when, and, without Tor, from where.
@@ -1547,6 +1551,8 @@ bridge sits in between.
   cannot read; Conversations, Monal, Gajim and Dino open it. In a chat written without encryption the file goes as it
   is. A photo, sound or file that comes is fetched only when you tap **Show photo**, **Play** or **Save**. On Android,
   files go through Tor as the chat does.
+- **Voice messages:** press and hold the microphone under the message box to record, and let go to send, as in a
+  Matrix chat. It goes as a sound file, encrypted as the chat is, as Conversations sends one, and plays with **Play**.
 - **Groups:** a **private group** is for its members only, and each of them sees who the others are. Every message in it
   is encrypted with OMEMO for each member's devices, as Conversations' private groups do it, so the XMPP servers cannot
   read it; what was written before you joined shows as locked. A **channel** is any other group: it is not encrypted,

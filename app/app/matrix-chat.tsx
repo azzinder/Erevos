@@ -18,12 +18,13 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
-import { MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, type MatrixMessage } from '../lib/matrix';
+import { isMatrixId, MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, type MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import {
   matrixChange,
   matrixDelete,
+  matrixInvite,
   matrixLeave,
   matrixLoadEarlier,
   matrixNow,
@@ -399,6 +400,7 @@ export default function MatrixChatScreen() {
         <MicButton voice={voice} disabled={sending || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
+      {!room.direct && !room.invitedBy ? <InviteCard roomId={roomId} say={setNote} /> : null}
       {!room.invitedBy && where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
       <Button
         title={t('Leave')}
@@ -426,6 +428,36 @@ export default function MatrixChatScreen() {
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
     </KeyboardAwareScrollView>
+  );
+}
+
+// In a group: someone asked to join it by their Matrix ID. The homeserver refuses it for one who may not invite.
+function InviteCard({ roomId, say }: { roomId: string; say: (text: string) => void }) {
+  const [who, setWho] = useState('');
+  const [busy, setBusy] = useState(false);
+  const invite = () => {
+    setBusy(true);
+    matrixInvite(roomId, who)
+      .then(() => {
+        say(t('Invited.'));
+        setWho('');
+      })
+      .catch((error: unknown) => say(errorText(error)))
+      .finally(() => setBusy(false));
+  };
+  return (
+    <Row>
+      <Input
+        style={{ flex: 1 }}
+        value={who}
+        onChangeText={setWho}
+        autoCapitalize="none"
+        autoCorrect={false}
+        placeholder="@name:matrix.org"
+        accessibilityLabel={t('Invite someone by their Matrix ID')}
+      />
+      <Button title={t('Invite')} kind="secondary" compact disabled={busy || !isMatrixId(who.trim())} onPress={invite} />
+    </Row>
   );
 }
 

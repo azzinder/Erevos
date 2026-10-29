@@ -10,6 +10,7 @@ import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
 import {
+  matrixCreateGroup,
   matrixJoin,
   matrixLeave,
   matrixNow,
@@ -32,7 +33,8 @@ import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 // The space's Matrix account (lib/matrix-store.ts, docs/matrix.md), under Settings → Relay and
-// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, on
+// networks → Matrix: signing in, then its chats, invites first, a new chat with a Matrix ID, a new
+// group with a name and the Matrix IDs asked to join it, joining a group by its address, on
 // Android whether it tells of messages while the space is closed (lib/matrix-push.ts), and signing
 // out. Each chat opens in app/matrix-chat.tsx. Every view says these chats are not anonymous.
 // Opened from a hidden place's hidden chats (`hidden=1`) it is that place's own account
@@ -49,6 +51,9 @@ export default function MatrixScreen() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const [newId, setNewId] = useState('');
+  const [groupName, setGroupName] = useState('');
+  const [groupPeople, setGroupPeople] = useState('');
+  const [address, setAddress] = useState('');
 
   useEffect(() => {
     runMatrix();
@@ -196,6 +201,68 @@ export default function MatrixScreen() {
             }
           />
         </Row>
+      </Card>
+
+      <SectionTitle title={t('New group')} />
+      <Card>
+        <Input value={groupName} onChangeText={setGroupName} placeholder={t('Name of the group')} accessibilityLabel={t('Name of the group')} />
+        <Input
+          value={groupPeople}
+          onChangeText={setGroupPeople}
+          autoCapitalize="none"
+          autoCorrect={false}
+          multiline
+          placeholder="@anna:matrix.org @ben:example.org"
+          accessibilityLabel={t('Matrix IDs to invite, with spaces between them')}
+        />
+        <Text variant="caption" tone="muted">
+          {t('Encrypted, for those invited only. Everyone in it sees who the others are.')}
+        </Text>
+        <Row>
+          <Button
+            title={t('Create')}
+            compact
+            disabled={busy || !groupName.trim()}
+            onPress={() =>
+              void run(async () => {
+                const room = await matrixCreateGroup(groupName, groupPeople.split(/[\s,;]+/).filter(Boolean));
+                setGroupName('');
+                setGroupPeople('');
+                router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } });
+              })
+            }
+          />
+        </Row>
+      </Card>
+
+      <SectionTitle title={t('Join a group')} />
+      <Card>
+        <Row>
+          <Input
+            style={{ flex: 1 }}
+            value={address}
+            onChangeText={setAddress}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="#name:matrix.org"
+            accessibilityLabel={t('Address of the group')}
+          />
+          <Button
+            title={t('Join')}
+            compact
+            disabled={busy || !/^[#!][^\s:]+:[^\s]+$/.test(address.trim())}
+            onPress={() =>
+              void run(async () => {
+                const id = await matrixJoin(address.trim());
+                setAddress('');
+                router.push({ pathname: '/matrix-chat', params: { room: id, ...whereParams(where) } });
+              })
+            }
+          />
+        </Row>
+        <Text variant="caption" tone="muted">
+          {t('A public group may not be encrypted: its screen says so. Everyone in it, and the Matrix servers, can then read it.')}
+        </Text>
       </Card>
 
       <SectionTitle title={t('Security Key')} />

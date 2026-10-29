@@ -1537,6 +1537,10 @@ fica no meio.
   própria, veja [Conversas ocultas](#hidden).
 - **Conversas:** **Nova conversa** começa uma conversa criptografada com um ID Matrix. Os convites aparecem primeiro,
   com **Entrar** e **Recusar**.
+- **Grupos:** **Novo grupo**, na tela do Matrix, cria um grupo criptografado com um nome e os IDs do Matrix que você
+  escrever, cada um convidado a entrar, como o Element cria um; todos nele veem quem são os outros. **Entrar num
+  grupo** entra em um pelo endereço, como #name:matrix.org. Um grupo público pode não ser criptografado, e então a
+  tela dele diz isso. Num grupo, **Convidar** convida outra pessoa, se o grupo deixar.
 - **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
   Megolm, pelo vodozemac). Uma conversa sem criptografia avisa.
 - **Não anônimo:** o servidor Matrix vê sua conta, quem fala com quem e quando, e, sem Tor, de onde. Numa conversa com
@@ -1661,6 +1665,8 @@ esses apps: nenhuma ponte fica no meio.
   servidor guarda só o que não consegue ler; Conversations, Monal, Gajim e Dino o abrem. Numa conversa escrita sem
   criptografia o arquivo vai como está. Uma foto, um som ou um arquivo que chega só é baixado ao tocar em
   **Mostrar foto**, **Reproduzir** ou **Salvar**. No Android, os arquivos passam pelo Tor como a conversa.
+- **Mensagens de voz:** segure o microfone abaixo da caixa de mensagem para gravar, e solte para enviar, como numa
+  conversa do Matrix. Vai como arquivo de som, criptografado como a conversa, do jeito que o Conversations envia.
 - **Grupos:** um **grupo privado** é só para os seus membros, e cada um vê quem são os outros. Cada mensagem nele é
   criptografada com OMEMO para os dispositivos de cada membro, como fazem os grupos privados do Conversations, então os
   servidores XMPP não conseguem lê-la; o que foi escrito antes de você entrar aparece bloqueado. Um **canal** é qualquer

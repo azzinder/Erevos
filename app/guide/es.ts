@@ -1548,6 +1548,10 @@ ningún puente se pone en medio.
   chats ocultos pueden tener una cuenta de Matrix propia, ver [Chats ocultos](#hidden).
 - **Chats:** **Chat nuevo** empieza un chat cifrado con un ID de Matrix. Las invitaciones salen primero, con **Unirse**
   y **Rechazar**.
+- **Grupos:** **Grupo nuevo**, en la pantalla de Matrix, crea un grupo cifrado con un nombre y los ID de Matrix que
+  escribas, cada uno invitado a unirse, como lo crea Element; todos en él ven quiénes son los demás. **Unirse a un
+  grupo** entra en uno por su dirección, como #name:matrix.org. Un grupo público puede no estar cifrado, y entonces su
+  pantalla lo dice. En un grupo, **Invitar** invita a otra persona, si el grupo te deja.
 - **Cifrado:** los mensajes van cifrados de extremo a extremo con el cifrado propio de Matrix (Olm y Megolm, a través
   de vodozemac). Un chat sin cifrar lo dice.
 - **No anónimo:** el servidor de Matrix ve tu cuenta, quién habla con quién y cuándo, y, sin Tor, desde dónde. En un
@@ -1673,6 +1677,8 @@ como esas apps: ningún puente se pone en medio.
   guarda solo lo que no puede leer; Conversations, Monal, Gajim y Dino lo abren. En un chat escrito sin cifrado el
   archivo va tal cual. Una foto, un sonido o un archivo que llega se descarga solo al tocar **Mostrar foto**,
   **Reproducir** o **Guardar**. En Android, los archivos van por Tor como el chat.
+- **Mensajes de voz:** mantén pulsado el micrófono bajo el cuadro de mensaje para grabar, y suelta para enviar, como en
+  un chat de Matrix. Va como archivo de sonido, cifrado como el chat, igual que lo envía Conversations.
 - **Grupos:** un **grupo privado** es solo para sus miembros, y cada uno ve quiénes son los demás. Cada mensaje se cifra
   con OMEMO para los dispositivos de cada miembro, como hacen los grupos privados de Conversations, así que los
   servidores de XMPP no pueden leerlo; lo escrito antes de que entraras sale bloqueado. Un **canal** es cualquier otro

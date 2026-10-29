@@ -221,6 +221,7 @@ export class Homeserver {
       this.add(id, user, 'm.room.create', { creator: user }, '');
       this.add(id, user, 'm.room.member', { membership: 'join' }, user);
       for (const s of body.initial_state ?? []) this.add(id, user, s.type, s.content, s.state_key);
+      if (typeof body.name === 'string') this.add(id, user, 'm.room.name', { name: body.name }, '');
       for (const invited of body.invite ?? []) this.add(id, user, 'm.room.member', { membership: 'invite', is_direct: body.is_direct }, invited);
       return { status: 200, json: { room_id: id } };
     }
@@ -249,6 +250,12 @@ export class Homeserver {
     if ((m = path.match(/^\/room_keys\/keys\/([^/]+)\/([^/?]+)$/))) {
       const found = this.backupKeys.get(`${user} ${decodeURIComponent(m[1])} ${decodeURIComponent(m[2])}`);
       return found ? { status: 200, json: found } : { status: 404, json: { errcode: 'M_NOT_FOUND' } };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/invite$/))) {
+      const id = room(m[1]);
+      if (this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      this.add(id, user, 'm.room.member', { membership: 'invite' }, body.user_id);
+      return { status: 200, json: {} };
     }
     if ((m = path.match(/^\/join\/(.+)$/))) {
       const id = room(m[1]);

@@ -1384,6 +1384,44 @@ export async function startChat(state: MatrixState, userId: string): Promise<Mat
   return room;
 }
 
+/** The most people a new group is made with at once. */
+export const MOST_INVITED = 50;
+
+/**
+ * Makes a group: a room for those invited only (private_chat), encrypted, with its name, as
+ * Element makes one; `invite` are Matrix IDs, each asked to join.
+ */
+export async function createGroup(state: MatrixState, name: string, invite: string[]): Promise<MatrixRoom> {
+  const named = name.trim().slice(0, 100);
+  if (!named) throw new Error(t('Give the group a name.'));
+  const people = [...new Set(invite.map((who) => who.trim()).filter(Boolean))];
+  const wrong = people.find((who) => !isMatrixId(who));
+  if (wrong) throw new Error(t('Write a Matrix ID, such as @name:matrix.org.'));
+  if (people.length > MOST_INVITED) throw new Error(t('At most {count} people at once.', { count: MOST_INVITED }));
+  const made = await call(state, 'POST', '/createRoom', {
+    preset: 'private_chat',
+    name: named,
+    invite: people.filter((who) => who !== state.userId),
+    initial_state: [{ type: 'm.room.encryption', state_key: '', content: { algorithm: MEGOLM } }],
+  });
+  const room = roomOf(state, String(made.room_id));
+  room.encrypted = true;
+  room.direct = false;
+  room.name = named;
+  room.members[state.userId] = { membership: 'join' };
+  for (const who of people) if (who !== state.userId) room.members[who] = { membership: 'invite' };
+  return room;
+}
+
+/** Asks someone to join a room we are in. */
+export async function inviteToRoom(state: MatrixState, roomId: string, userId: string): Promise<void> {
+  const who = userId.trim();
+  if (!isMatrixId(who)) throw new Error(t('Write a Matrix ID, such as @name:matrix.org.'));
+  await call(state, 'POST', `/rooms/${enc(roomId)}/invite`, { user_id: who });
+  const room = state.rooms[roomId];
+  if (room && room.members[who]?.membership !== 'join') room.members[who] = { ...(room.members[who] ?? {}), membership: 'invite' };
+}
+
 /** Joins a room we were invited to, or one by its ID or #alias:server. */
 export async function joinRoom(state: MatrixState, idOrAlias: string): Promise<string> {
   const joined = await call(state, 'POST', `/join/${enc(idOrAlias.trim())}`, {});

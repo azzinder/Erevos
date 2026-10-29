@@ -23,7 +23,9 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
 import {
+  createGroup,
   defaultMatrixHttp,
+  inviteToRoom,
   deleteMessage,
   findHomeserver,
   isMatrixId,
@@ -268,6 +270,44 @@ test('reactions, answers, changes and messages taken back go both ways; older me
   } finally {
     server.timelineLimit = Infinity;
   }
+});
+
+test('a group is made encrypted with its name, read by all who join, and someone is invited later', { skip: !coreReady }, async () => {
+  let gina = kept(await signIn(HS, 'gina', PASSWORD));
+  let hal = kept(await signIn(HS, 'hal', PASSWORD));
+  let ivy = kept(await signIn(HS, 'ivy', PASSWORD));
+  await assert.rejects(createGroup(gina, '  ', [hal.userId]));
+  await assert.rejects(createGroup(gina, 'Club', ['hal']));
+  const group = await createGroup(gina, 'Βιβλιοφάγοι', [hal.userId, hal.userId]);
+  gina = kept(gina);
+  assert.deepEqual([group.name, group.encrypted, group.direct], ['Βιβλιοφάγοι', true, false]);
+  assert.equal(server.direct.get(gina.userId), undefined);
+  await sync(hal, 0);
+  hal = kept(hal);
+  assert.equal(hal.rooms[group.id].invitedBy, gina.userId);
+  await joinRoom(hal, group.id);
+  await sync(hal, 0);
+  hal = kept(hal);
+  assert.equal(hal.rooms[group.id].name, 'Βιβλιοφάγοι');
+  await sync(gina, 0);
+  await sendText(gina, group.id, 'πρώτο βιβλίο;');
+  gina = kept(gina);
+  await sync(hal, 0);
+  hal = kept(hal);
+  assert.equal(hal.rooms[group.id].messages.at(-1)?.text, 'πρώτο βιβλίο;');
+  assert.ok(!JSON.stringify(server.log).includes('βιβλίο;'));
+  // Ivy comes later: invited, she joins and reads what comes after.
+  await inviteToRoom(hal, group.id, ivy.userId);
+  await sync(ivy, 0);
+  ivy = kept(ivy);
+  assert.equal(ivy.rooms[group.id].invitedBy, hal.userId);
+  await joinRoom(ivy, group.id);
+  await sync(ivy, 0);
+  ivy = kept(ivy);
+  await sync(gina, 0);
+  await sendText(gina, group.id, 'καλώς ήρθες, Ivy');
+  await sync(ivy, 0);
+  assert.equal(ivy.rooms[group.id].messages.at(-1)?.text, 'καλώς ήρθες, Ivy');
 });
 
 test('who writes in a room shows as the homeserver says, never ourselves', { skip: !coreReady }, async () => {

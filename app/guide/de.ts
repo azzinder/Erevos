@@ -1657,6 +1657,11 @@ Element: Keine Brücke sitzt dazwischen.
   eigenes Matrix-Konto haben, siehe [Versteckte Chats](#hidden).
 - **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
   **Beitreten** und **Ablehnen**.
+- **Gruppen:** **Neue Gruppe**, auf dem Matrix-Bildschirm, erstellt eine verschlüsselte Gruppe aus einem Namen und den
+  Matrix-IDs, die du schreibst, jede eingeladen, wie Element eine erstellt; alle darin sehen, wer die anderen sind.
+  **Einer Gruppe beitreten** tritt einer Gruppe über ihre Adresse bei, etwa #name:matrix.org. Eine öffentliche Gruppe
+  ist vielleicht nicht verschlüsselt, und ihr Bildschirm sagt es dann. In einer Gruppe lädt **Einladen** jemand anderen
+  ein, wenn die Gruppe es dir erlaubt.
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
   Megolm, über vodozemac). Ein nicht verschlüsselter Chat sagt es.
 - **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht und wann, und ohne Tor auch, von wo. In
@@ -1790,6 +1795,8 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Dino öffnen sie. In einem Chat ohne Verschlüsselung geht die Datei, wie sie ist. Ein Foto, ein Ton oder eine Datei,
   die ankommt, wird erst geladen, wenn du **Foto anzeigen**, **Abspielen** oder **Speichern** tippst. Auf Android
   gehen Dateien über Tor, wie der Chat.
+- **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
+  senden, wie in einem Matrix-Chat. Sie geht als Tondatei, verschlüsselt wie der Chat, so wie Conversations sie sendet.
 - **Gruppen:** Eine **private Gruppe** ist nur für ihre Mitglieder, und jedes sieht, wer die anderen sind. Jede Nachricht
   darin wird mit OMEMO für die Geräte jedes Mitglieds verschlüsselt, wie bei den privaten Gruppen von Conversations,
   sodass die XMPP-Server sie nicht lesen können; was vor deinem Beitritt geschrieben wurde, erscheint gesperrt. Ein

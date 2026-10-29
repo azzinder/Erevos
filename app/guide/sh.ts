@@ -1501,6 +1501,10 @@ između.
   pogledajte [Skriveni razgovori](#hidden).
 - **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
   **Pridruži se** i **Odbij**.
+- **Grupe:** **Nova grupa**, na Matrix ekranu, pravi šifrovanu grupu od imena i Matrix ID-ova koje napišete, svaki
+  pozvan da uđe, kako je pravi Element; svi u njoj vide ko su ostali. **Pridruži se grupi** ulazi u grupu po njenoj adresi,
+  kao #name:matrix.org. Javna grupa možda nije šifrovana, i tada to kaže njen ekran. U grupi, **Pozovi** poziva nekog
+  drugog, ako vam grupa to dozvoljava.
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
   vodozemac). Razgovor koji nije šifrovan to kaže.
 - **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara i kada, i, bez Tora, odakle. U razgovoru s
@@ -1618,6 +1622,8 @@ aplikacije: nikakav most nije između.
   može pročitati; Conversations, Monal, Gajim i Dino je otvaraju. U razgovoru pisanom bez šifrovanja datoteka ide
   kakva jeste. Fotografija, zvuk ili datoteka koja stigne preuzima se tek kad dodirnete **Prikaži fotografiju**,
   **Pusti** ili **Sačuvaj**. Na Androidu, datoteke idu preko Tora kao i razgovor.
+- **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete, kao u
+  Matrix razgovoru. Ide kao zvučna datoteka, šifrovana kao razgovor, kako je šalje Conversations.
 - **Grupe:** **privatna grupa** je samo za svoje članove, i svaki vidi ko su ostali. Svaka poruka u njoj šifrovana je
   OMEMO-om za uređaje svakog člana, kao u privatnim grupama Conversationsa, pa je XMPP serveri ne mogu čitati; ono što je
   napisano prije vašeg ulaska prikazuje se zaključano. **Kanal** je svaka druga grupa: nije šifrovan, pa ga svi u njemu,

@@ -1568,6 +1568,10 @@ sta nel mezzo.
   account Matrix proprio, vedi [Chat nascoste](#hidden).
 - **Chat:** **Nuova chat** avvia una chat cifrata con un ID Matrix. Gli inviti compaiono per primi, con **Partecipa** e
   **Rifiuta**.
+- **Gruppi:** **Nuovo gruppo**, nella schermata di Matrix, crea un gruppo cifrato da un nome e dagli ID Matrix che
+  scrivi, ognuno invitato a entrare, come lo crea Element; tutti vedono chi sono gli altri. **Entra in un gruppo** entra
+  in uno con il suo indirizzo, come #name:matrix.org. Un gruppo pubblico potrebbe non essere cifrato, e allora la sua
+  schermata lo dice. In un gruppo, **Invita** invita qualcun altro, se il gruppo te lo permette.
 - **Cifratura:** i messaggi sono cifrati end-to-end con la cifratura di Matrix stesso (Olm e Megolm, tramite
   vodozemac). Una chat non cifrata lo dice.
 - **Non anonimo:** il server Matrix vede il tuo account, chi parla con chi e quando, e, senza Tor, da dove. In una
@@ -1695,6 +1699,8 @@ app: nessun ponte sta nel mezzo.
   tiene solo ciò che non può leggere; Conversations, Monal, Gajim e Dino lo aprono. In una chat scritta senza
   cifratura il file va così com’è. Una foto, un suono o un file che arriva si scarica solo toccando **Mostra foto**,
   **Riproduci** o **Salva**. Su Android, i file passano per Tor come la chat.
+- **Messaggi vocali:** tieni premuto il microfono sotto il campo del messaggio per registrare, e rilascia per inviare,
+  come in una chat Matrix. Parte come file audio, cifrato come la chat, come lo invia Conversations.
 - **Gruppi:** un **gruppo privato** è solo per i suoi membri, e ognuno vede chi sono gli altri. Ogni messaggio al suo
   interno è cifrato con OMEMO per i dispositivi di ogni membro, come fanno i gruppi privati di Conversations, così i
   server XMPP non possono leggerlo; ciò che è stato scritto prima che entrassi appare bloccato. Un **canale** è ogni

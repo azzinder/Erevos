@@ -8,6 +8,8 @@ import { t } from './i18n';
 import {
   deleteMessage,
   findHomeserver,
+  createGroup,
+  inviteToRoom,
   joinRoom,
   leaveRoom,
   loadEarlier,
@@ -490,11 +492,22 @@ export function matrixStartChat(userId: string): Promise<MatrixRoom> {
   return changeAccount(it, () => startChat(it.state, userId));
 }
 
-export function matrixJoin(roomId: string): Promise<void> {
+/** Makes an encrypted group with a name, and invites `invite` to it. */
+export function matrixCreateGroup(name: string, invite: string[]): Promise<MatrixRoom> {
   const it = need();
-  return changeAccount(it, async () => {
-    await joinRoom(it.state, roomId);
-  });
+  return changeAccount(it, () => createGroup(it.state, name, invite));
+}
+
+/** Asks someone to join a room we are in. */
+export function matrixInvite(roomId: string, userId: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => inviteToRoom(it.state, roomId, userId));
+}
+
+/** Joins a room we were invited to, or one by its ID or #alias:server; says its ID. */
+export function matrixJoin(roomId: string): Promise<string> {
+  const it = need();
+  return changeAccount(it, () => joinRoom(it.state, roomId));
 }
 
 export function matrixLeave(roomId: string): Promise<void> {

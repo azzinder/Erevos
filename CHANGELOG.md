@@ -52,6 +52,13 @@ On main, not released yet:
   `blockXmpp` in `lib/xmpp.ts`), so every app of the account is spared; the block list is read at each sign-in and
   follows the server's pushes from the account's other apps; what the archive still holds of someone blocked, and their
   requests, are dropped here too. See [XMPP](#xmpp).
+- **Voice messages in XMPP chats**: the microphone of a Matrix chat (`components/matrix-voice.tsx`) under an XMPP
+  chat's box too; the recording goes as a file through HTTP upload, encrypted as the chat is (`aesgcm://`), as
+  Conversations sends one, and plays with **Play**. See [XMPP](#xmpp).
+- **Matrix groups from Erevos**: **New group** on the Matrix screen (`createGroup` in `lib/matrix.ts`: `private_chat`,
+  its name, Megolm from the start, the IDs written invited, at most 50), **Join a group** by `#alias:server` or room
+  ID, and **Invite** in a group's chat (`inviteToRoom`; the homeserver refuses it for one who may not). See
+  [Matrix](#matrix).
 - **The panic button on a computer and on Sailfish OS**: **Settings** → **Privacy and security** → **Panic button**
   wipes Erevos there too. The shell does it (`/__wipe`, `desktop/main.js` and `sailfish/src/shellserver.cpp`, behind
   the page's token as every shell path): the keystore, the sealed files, the page's own storage and the rest of the

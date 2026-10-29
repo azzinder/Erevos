@@ -1626,6 +1626,10 @@ Element : aucun pont ne se met entre les deux.
   masquées peuvent avoir un compte Matrix à elles, voir [Discussions masquées](#hidden).
 - **Discussions :** **Nouvelle discussion** lance une discussion chiffrée avec un identifiant Matrix. Les invitations
   s’affichent en premier, avec **Rejoindre** et **Refuser**.
+- **Groupes :** **Nouveau groupe**, sur l’écran Matrix, crée un groupe chiffré à partir d’un nom et des ID Matrix que tu
+  écris, chacun invité à le rejoindre, comme Element en crée un ; chacun y voit qui sont les autres. **Rejoindre un
+  groupe** en rejoint un par son adresse, comme #name:matrix.org. Un groupe public peut ne pas être chiffré, et son
+  écran le dit alors. Dans un groupe, **Inviter** invite quelqu’un d’autre, si le groupe te le permet.
 - **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
   vodozemac). Une discussion non chiffrée le dit.
 - **Pas anonyme :** le serveur Matrix voit ton compte, qui parle avec qui et quand, et, sans Tor, d’où. Dans une
@@ -1759,6 +1763,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   une discussion écrite sans chiffrement, le fichier part tel quel. Une photo, un son ou un fichier qui arrive n’est
   téléchargé que si tu touches **Afficher la photo**, **Lire** ou **Enregistrer**. Sur Android, les fichiers passent
   par Tor comme la discussion.
+- **Messages vocaux :** appuie longuement sur le micro sous la zone de message pour enregistrer, et relâche pour
+  envoyer, comme dans une discussion Matrix. Il part comme fichier son, chiffré comme la discussion, comme Conversations
+  l’envoie.
 - **Groupes :** un **groupe privé** est réservé à ses membres, et chacun voit qui sont les autres. Chaque message y est
   chiffré avec OMEMO pour les appareils de chaque membre, comme dans les groupes privés de Conversations, si bien que les
   serveurs XMPP ne peuvent pas le lire ; ce qui a été écrit avant ton arrivée s’affiche verrouillé. Un **canal** est tout

@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Missing, ReactionChips } from '../components/matrix-message';
+import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
 
@@ -16,6 +17,7 @@ import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { currentGroupCall } from '../lib/group-call';
+import { voiceNamed } from '../lib/group-media';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
@@ -113,6 +115,9 @@ export default function XmppChatScreen() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
   const [, setTyped] = useState(0);
+  // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
+  const sendVoice = useRef<(audio: Uint8Array) => Promise<void>>(async () => undefined);
+  const voice = useVoiceCapture({ send: (audio) => sendVoice.current(audio), say: setNote });
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
   const [, setCalls] = useState(0);
 
@@ -173,6 +178,8 @@ export default function XmppChatScreen() {
       else fail(error);
     }
   }
+
+  sendVoice.current = (audio) => sendFile({ bytes: audio, ...voiceNamed(audio) });
 
   async function sendFile(file: XmppOutgoingFile) {
     if (!jid) return;
@@ -465,9 +472,16 @@ export default function XmppChatScreen() {
         <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
       <Row>
-        <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
-        <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
-        {sending ? <Text tone="muted">{t('Sending…')}</Text> : null}
+        {voice.recording ? (
+          <RecordingLine />
+        ) : (
+          <>
+            <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
+            <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
+            {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
+          </>
+        )}
+        <MicButton voice={voice} disabled={sending || unsent !== null || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
       {channel ? (
