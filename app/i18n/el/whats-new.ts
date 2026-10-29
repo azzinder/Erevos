@@ -8,6 +8,9 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 4.0.0-rc.2
+  "**See what you type in a password or a PIN**: every field for a password, a PIN or a token has an eye at its end: tap it to see what you type, and again to hide it. It is hidden again the next time. See [Password lock](#lock).":
+    "**Δες τι γράφεις σε κωδικό ή PIN**: κάθε πεδίο για κωδικό, PIN ή token έχει ένα μάτι στην άκρη του: πάτα το για να δεις τι γράφεις, και ξανά για να κρυφτεί. Την επόμενη φορά είναι πάλι κρυμμένο. Δες [Κλείδωμα με κωδικό](#lock).",
   "**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show.":
     "**Μια συνομιλία που διαβάστηκε όσο άνοιγε μένει διαβασμένη**: μηνύματα που διάβασες ενώ η συνομιλία τους άνοιγε ακόμη, όσο το Erevos τελείωνε μια ματιά στο relay, έδειχναν αδιάβαστα στην αρχική οθόνη μόλις γύριζες πίσω. Τώρα σημειώνονται διαβασμένα μόλις φανούν.",
   "**Link for a website**: under New chat → Your contact link, a link to put on a web page, such as your contact page. It opens a page that offers Erevos to whoever has none yet, then adds you; what they send comes as a message request. See [Chat through a relay](#relay).":

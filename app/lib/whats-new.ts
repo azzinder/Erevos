@@ -17,16 +17,22 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**Link for a website**: under New chat → Your contact link, a link to put on a web page, such as your contact page. It opens a page that offers Erevos to whoever has none yet, then adds you; what they send comes as a message request. See [Chat through a relay](#relay)."),
-  ],
-  underTheHood: [
-    mark("**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show."),
-    mark("**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates)."),
-  ],
+  forYou: [],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '4.0.0-rc.2',
+    forYou: [
+      mark("**See what you type in a password or a PIN**: every field for a password, a PIN or a token has an eye at its end: tap it to see what you type, and again to hide it. It is hidden again the next time. See [Password lock](#lock)."),
+      mark("**Link for a website**: under New chat → Your contact link, a link to put on a web page, such as your contact page. It opens a page that offers Erevos to whoever has none yet, then adds you; what they send comes as a message request. See [Chat through a relay](#relay)."),
+    ],
+    underTheHood: [
+      mark("**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show."),
+      mark("**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates)."),
+    ],
+  },
   {
     version: '4.0.0-rc.1',
     forYou: [

@@ -14,6 +14,18 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.2 (2026-10-29)
+
+### For you
+
+- **See what you type in a password or a PIN**: every secret field (the lock's password, the second password,
+  backups' and backup pieces' passwords, a chat's PIN, the hidden chats' PIN, relay and home relay tokens, Matrix,
+  XMPP and Nostr passwords and keys) has an eye at its end that shows what is typed and hides it again. They all go
+  through `Input` in `components/ui.tsx`, which draws it (`EyeIcon`); hidden again each time the field shows anew, and
+  still never offered to the password manager. Shown, it asks for no spelling or corrections, and on Android uses the
+  `visible-password` keyboard, which keeps no words. See [Password lock](#lock).
 - **Link for a website**: under **New chat** → **Your contact link**, **Link for a website** gives a link to put on a
   web page, such as a contact page, with a name for it: `https://erevos-web.lphl.nekten.eu/c#<the contact link>`
   (`contactPageLink` in `lib/contact-code.ts`). Its page in the web app (`pwa/c/`, signed with the rest, served as

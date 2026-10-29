@@ -186,6 +186,9 @@ cryptography. Do not rely on it to protect anyone yet.
   contacts at once, with no message request. On Android a contact who is not in Erevos yet can be
   invited by SMS: a short link, good for 2 days, whose page offers them the app or the web app; the
   invite is after the # in the link, which no web server is sent.
+- **Link for a website**: under **Your contact link**, a link that does not expire, to put on a web
+  page such as a contact page. Its page offers Erevos to whoever has none yet, then adds you; what
+  they send comes as a message request, and it gives no one a place on your relay.
 - **Share to Erevos** (Android): Erevos is in other apps' Share menu. **Send to** lists your chats,
   groups and SMS conversations, never hidden chats; words and links open in the message field, a
   photo or file goes as soon as that chat opens.
@@ -194,9 +197,9 @@ cryptography. Do not rely on it to protect anyone yet.
   with their words. Imported chats stay on the phone, marked as imported. A chat's details have
   **Import a chat here**, also in a hidden place, where the import is kept with that place.
 - **Updates in the app**: Updates → Check for updates reads `version.json` from the public
-  release repository, only when you tap it. On Android it downloads the APK, checks its size and
-  SHA-256 against `version.json`, and opens Android's installer, but only once the release computer
-  has signed that build. Also on Android, a space on LPHL's relay that does not send everything
+  release repository, only when you tap it. On Android it downloads the APK (one that stalls is
+  tried again, three times in all), checks its size and SHA-256 against `version.json`, and opens
+  Android's installer, but only once the release computer has signed that build. Also on Android, a space on LPHL's relay that does not send everything
   through Tor asks that server once a day whether a new version is out and says so at the top of
   the chats; it can be turned off, and it is not in the F-Droid build. **What's new** says what each
   version changed, in the app's language. Test versions such as 4.0.0-rc.1 install and update like
