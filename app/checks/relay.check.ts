@@ -76,6 +76,19 @@ const dir = mkdtempSync(join(tmpdir(), 'erevos-relay-check-'));
  *  give it are let in. They forward to each other on 127.0.0.1, which a relay does only when
  *  allowed private peers. */
 async function startRelay(key: boolean, token = ''): Promise<string> {
+  // A slow runner, or a port taken between choosing and binding, gives it a second and a third go.
+  let failed: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await startRelayOnce(key, token);
+    } catch (error) {
+      failed = error;
+    }
+  }
+  throw failed;
+}
+
+async function startRelayOnce(key: boolean, token: string): Promise<string> {
   const [tcp, ws] = [await freePort(), await freePort()];
   const env = {
     ...process.env,
@@ -89,14 +102,16 @@ async function startRelay(key: boolean, token = ''): Promise<string> {
   const child = spawn(binary, [`127.0.0.1:${tcp}`, `127.0.0.1:${ws}`], { env, stdio: 'ignore' });
   relays.push(child);
   const url = `ws://127.0.0.1:${ws}`;
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < 150; i++) {
     try {
       await relayKey({ url: `${url}/none-${i}`, token });
       return url;
     } catch {
+      if (child.exitCode !== null) break;
       await new Promise((r) => setTimeout(r, 100));
     }
   }
+  child.kill();
   throw new Error(`the relay at ${url} did not start`);
 }
 
