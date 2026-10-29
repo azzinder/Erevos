@@ -31,7 +31,7 @@ import { MOST_NOSTR } from '../lib/contact-code';
 import { bytesSource, chunkPlan, FileDamagedError, FileTooLargeError, offerRef, PiecesMissingError, readFile, readOffer, takeFile } from '../lib/attachments';
 import { sha256Bytes } from '../lib/crypto';
 import { setNostrHttp } from '../lib/nostr-files';
-import { dropPieces, piecesCame } from '../lib/nostr-pieces';
+import { dropPieces, heldPieces, piecesCame, type PiecePlace } from '../lib/nostr-pieces';
 import { offerOnNostr } from '../lib/nostr-send-files';
 import { isFileRef } from '../lock/attachment-files';
 import { offerOf } from '../lib/relay-offer';
@@ -281,18 +281,19 @@ const message = (r: Received) => {
 
 /** A chat with a queue for its contacts to write to: on the relay at `url`, or a made-up one. */
 // Until every piece with these ids has come.
-async function allCame(ids: string): Promise<void> {
+async function allCame(place: PiecePlace | null, ids: string): Promise<void> {
   for (let n = 0; n < 100; n++) {
-    if ((await piecesCame(ids)).every(Boolean)) return;
+    if ((await piecesCame(place, ids)).every(Boolean)) return;
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
   assert.fail('the pieces did not come');
 }
 
 async function chat(holder: 'space' | 'hidden', space: number, url = '') {
-  const e2e = await E2E.open(holder, space, randomBytes(32));
+  const key = randomBytes(32);
+  const e2e = await E2E.open(holder, space, key);
   const ids = url ? await createQueue({ url }) : { recipientId: randomBytes(24), senderId: randomBytes(24) };
-  return { e2e, from: toHex(ids.senderId), recipient: ids.recipientId };
+  return { e2e, from: toHex(ids.senderId), recipient: ids.recipientId, place: { holder, space, key } as PiecePlace };
 }
 
 type Chat = Awaited<ReturnType<typeof chat>>;
@@ -714,6 +715,7 @@ t('with no relay between the two, a voice message goes in wraps, a photo in piec
         const received = await bob.e2e.receive(packet);
         if (received.kind === 'message') came.push(received);
       },
+      () => bob.place,
     ),
   );
   // A file server: what is put on it by its hash.
@@ -759,10 +761,14 @@ t('with no relay between the two, a voice message goes in wraps, a photo in piec
     await until(() => came.some((m) => m.file));
     const ref = offerRef(readOffer(came.find((m) => m.file)!.file)!);
     assert.ok(isFileRef(ref));
-    await allCame(ref.from!.ids);
-    const taken = await takeFile(null, ref);
+    await allCame(bob.place, ref.from!.ids);
+    assert.equal(heldPieces(), 0, 'kept in the place it came for, none in memory');
+    assert.deepEqual(await piecesCame(alice.place, ref.from!.ids), [false, false, false, false], 'none in another place');
+    assert.ok(![...files.keys()].some((name) => name.startsWith('erevos-piece')), 'nothing in the files of before');
+    await assert.rejects(takeFile(null, ref, undefined, undefined, alice.place), PiecesMissingError, 'another place does not take it');
+    const taken = await takeFile(null, ref, undefined, undefined, bob.place);
     assert.deepEqual(await readFile(taken), photo, 'the photo, whole');
-    assert.deepEqual(await piecesCame(ref.from!.ids), [false, false, false, false], 'its pieces are dropped once taken');
+    assert.deepEqual(await piecesCame(bob.place, ref.from!.ids), [false, false, false, false], 'its pieces are dropped once taken');
     assert.ok(isFileRef(taken) && !taken.from);
     assert.equal(taken.chunk, chunkPlan(photo.length).chunk, 'kept in the usual chunks, so a linked device or a forward through a relay takes its offer');
     assert.ok(readOffer({ ...taken, relay: 'wss://relay.example.org', ids: '00'.repeat(24 * taken.count) }), 'an offer of it as it is kept reads');
@@ -770,10 +776,10 @@ t('with no relay between the two, a voice message goes in wraps, a photo in piec
     // A piece that is missing: nothing is taken, and it says how many came.
     const lacking = await offerOnNostr(bytesSource(randomBytes(70_000)), meta, place);
     const lackingRef = offerRef(lacking);
-    await allCame(lackingRef.from!.ids);
+    await allCame(bob.place, lackingRef.from!.ids);
     const ids = lacking.ids;
-    await dropPieces(ids.slice(48, 96));
-    await assert.rejects(takeFile(null, lackingRef), PiecesMissingError);
+    await dropPieces(bob.place, ids.slice(48, 96));
+    await assert.rejects(takeFile(null, lackingRef, undefined, undefined, bob.place), PiecesMissingError);
 
     // A larger photo, and a file, go to a file server as one blob; the server holds only noise.
     const video = randomBytes(300_000);
@@ -808,7 +814,7 @@ t('a closed place that receives reads its texts on Nostr too, tells their sender
   const ids = await createQueue(own);
   await saveHiddenData(0, 1, placeKey, { ...EMPTY_SPACE, url, ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } });
   const place = await placeChats(0, 1, placeKey);
-  const bob: Chat = { e2e: place.e2e, from: toHex(ids.senderId), recipient: ids.recipientId };
+  const bob: Chat = { e2e: place.e2e, from: toHex(ids.senderId), recipient: ids.recipientId, place: place.pieces! };
   const alice = await chat('space', 5, url);
   const { toBob, toAlice } = await meet(alice, bob, url);
   if (bob.e2e.contacts().find((c) => c.identity === toAlice)?.request) await bob.e2e.acceptRequest(toAlice);

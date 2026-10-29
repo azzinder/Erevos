@@ -24,7 +24,7 @@ import type { NostrSetting } from '../lock/space-data';
 import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
-import { isPiece, keepPiece } from './nostr-pieces';
+import { isPiece, keepPiece, type PiecePlace } from './nostr-pieces';
 import { onTorReady, torFor } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
@@ -331,13 +331,16 @@ export async function publishNostr(to: { k: string; r: string[] }, bytes: Uint8A
 
 /**
  * What reads on Nostr: a chat's keys, until when it read (seconds, 0 for never), told when it read
- * until a time, and what to do with what came for one of its keys (a packet, as from the relay).
+ * until a time, and what to do with what came for one of its keys (a packet, as from the relay),
+ * and where the place it reads for keeps pieces of photos (lib/nostr-pieces.ts): none, while it
+ * cannot say, holds them in memory.
  */
 export type NostrReader = {
   keys(): NostrKey[];
   since(): number;
   caught(at: number): void;
   take(bytes: Uint8Array): Promise<void>;
+  place?(): PiecePlace | null;
 };
 
 const readers = new Set<NostrReader>();
@@ -413,9 +416,10 @@ async function takeWrap(event: unknown): Promise<void> {
     }
     // Its id (32 bytes) and time (8) first, then what it carried: one packet, or several in order.
     const carried = opened.slice(40);
-    // A piece of a photo (lib/nostr-pieces.ts) is kept as it came, for the message that offers the photo.
+    // A piece of a photo (lib/nostr-pieces.ts) is kept as it came, for the message that offers the
+    // photo, by the place whose key it came for, in its own encrypted storage.
     if (isPiece(carried)) {
-      await keepPiece(carried).catch(() => undefined);
+      await keepPiece(reader.place?.() ?? null, carried).catch(() => undefined);
       return;
     }
     for (const packet of unpackNostr(carried)) await reader.take(packet).catch(() => undefined);

@@ -1481,7 +1481,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e) return;
     const take = (packet: Uint8Array) => nearbyCame.current(null, packet, true);
     if (!hiddenKey) return takeNostr(take);
-    return readNostr(nostrReaderOf(() => e2e, take));
+    // Pieces of photos it reads are kept in its own encrypted storage (lib/nostr-pieces.ts).
+    return readNostr(nostrReaderOf(() => e2e, take, () => contactsPlace));
   }, [e2e]);
 
   // A text a Nostr relay took says so in its menu.
@@ -3827,7 +3828,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setTaking((now) => ({ ...now, [key]: '0%' }));
     try {
       // Hidden chats are never linked: what they take goes from the relay at once, and no other device hears of it.
-      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? false : undefined);
+      // A photo that came in pieces through Nostr is taken from those this place keeps (lib/nostr-pieces.ts).
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? false : undefined, contactsPlace);
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
       // Deleted while it came: its chunks go too.
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);

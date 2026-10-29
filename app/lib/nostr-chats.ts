@@ -21,6 +21,7 @@
 import type { E2E } from './e2e';
 import type { NostrTo } from '../lock/e2e-data';
 import { nostrReady, nostrWraps, publishNostr, unpackNostr, type NostrReader } from './nostr';
+import type { PiecePlace } from './nostr-pieces';
 import { fromHex, RelayUnreachableError, sendMessage, type Relay } from './relay';
 import { contactTarget, sendSealed } from './space-chats';
 import { t } from './i18n';
@@ -147,12 +148,13 @@ export async function sendNostrBackups(e2e: E2E, own: Relay, now = Date.now()): 
   }
 }
 
-/** A chat as it reads on Nostr: its keys, until when it read, and `take` for what came. */
-export function nostrReaderOf(e2e: () => E2E | null, take: (bytes: Uint8Array) => Promise<void>): NostrReader {
+/** A chat as it reads on Nostr: its keys, until when it read, `take` for what came, and where it keeps pieces of photos (`place`; none holds them in memory). */
+export function nostrReaderOf(e2e: () => E2E | null, take: (bytes: Uint8Array) => Promise<void>, place?: () => PiecePlace | null): NostrReader {
   return {
     keys: () => e2e()?.nostrKeys() ?? [],
     since: () => e2e()?.nostrSince() ?? 0,
     caught: (at) => void e2e()?.nostrRead(at).catch(() => undefined),
     take,
+    place: () => (e2e() ? (place?.() ?? null) : null),
   };
 }

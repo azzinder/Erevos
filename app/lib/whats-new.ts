@@ -76,6 +76,7 @@ export const NEXT: Changes = {
     mark("**The same Wi-Fi on Sailfish OS**: Erevos on Sailfish OS finds Erevos phones and computers on the same Wi-Fi or a phone's hotspot and talks with them with no internet, as on a computer. See [On Sailfish OS](#sailfish)."),
   ],
   underTheHood: [
+    mark("**Pieces of photos through Nostr stay with their chats**: while a photo that comes through Nostr waits for the rest of its pieces, they are now kept encrypted with the space or the hidden chats they came for, no longer apart where they could be counted, so nothing outside a hidden chats' password says that a photo is on its way to them. Pieces kept before go to the first chats whose photo they are, or after four days. See [Through Nostr](#nostr)."),
     mark("**A relay restart no longer brings a false notice**: after your relay restarted, a hidden chat or a closed space said New message once more for messages it had told of already. Your relay needs an update for it. See [Hidden chats](#hidden)."),
     mark("**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms)."),
     mark("**A contact you delete no longer comes back from an old ask**: in a group, a member you asked for their contact link, or who asked for yours, and whom you then deleted as a contact before Erevos looked at the relay again, could be added again by that old ask. Deleting them now lets go of it at once. See [Group chats](#groups)."),

@@ -261,6 +261,7 @@ function listen(run: Run) {
         run.nostrTurn = next;
         return next;
       },
+      () => run.chats?.pieces ?? null,
     ),
   );
 }

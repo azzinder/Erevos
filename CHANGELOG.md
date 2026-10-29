@@ -530,6 +530,17 @@ On main, not released yet:
   `/__webdav` reads the server's answer the same way, 100 MB at most, and answers 413 past it (`desktop/main.js`).
   Checked against a local server sending more than the cap with and without `Content-Length`
   (`checks/net-http.check.ts`).
+- **Pieces of photos through Nostr kept per space and per hidden place, encrypted**: the pieces of a photo that comes
+  through Nostr wait for the rest, and for the message that offers it, no longer in one store for the whole phone (an
+  index in the clear, with when each came, and a file named by each piece's hash), but in the encrypted storage of the
+  space or hidden place whose key they came for (`lib/nostr-pieces.ts`, `lock/nostr-pieces-data.ts`): which pieces it
+  holds and when they came are in its sealed value of `erevos-nostr-pieces`, one per space and hidden place, the same
+  size used or not, and each piece lies in two pages sealed with its key, the size of the history's pages and among
+  them. So neither whether a hidden place waits for a photo nor how many pieces shows outside its password, and no
+  place sees another's. The limits hold in each place: a thousand pieces (32 MB), four days. A piece that comes while
+  no place can take it is held in memory only, 128 at most, until the place whose photo names it takes it. Pieces an
+  Erevos from before kept go into the first place whose photo names them, or are deleted once four days old. Backups
+  hold them with their pages; a wipe deletes them with the rest (`checks/nostr-pieces.check.ts`).
 - **BLE beacons that change** (Android): the 4-byte nonce a phone advertises for others nearby to find it, which
   decides which of two phones dials, was drawn once per run of the app (`kotlin.random.Random`) and so followed the
   phone from place to place across Android's own address changes. It now comes from `SecureRandom` and changes every

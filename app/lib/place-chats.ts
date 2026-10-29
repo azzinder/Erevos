@@ -2,6 +2,7 @@ import { History } from '../lock/history';
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
 import { E2E } from './e2e';
+import { sweepPieces, type PiecePlace } from './nostr-pieces';
 import type { SpaceChats } from './space-chats';
 import { VoiceAssembler } from './voice';
 
@@ -32,7 +33,10 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
     const kept = await placeQueues(space, pocket, key).load();
     if (kept.moved > 0) e2e.setQueueAge(kept.moved, kept.now?.queue.senderHex);
     if (kept.now) e2e.setLinkOwn(!kept.link);
-    return { e2e, history, voiceParts: new VoiceAssembler() };
+    const pieces: PiecePlace = { holder: hiddenHolder(pocket), space, key: key.slice() };
+    // What waited too long among the pieces of photos it keeps goes.
+    void sweepPieces(pieces).catch(() => undefined);
+    return { e2e, history, voiceParts: new VoiceAssembler(), pieces };
   })();
   opened.set(at(space, pocket), { key: key.slice(), chats });
   chats.then(

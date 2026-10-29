@@ -7,6 +7,8 @@ import type { Carried } from './nearby';
 import { sparesOf, type Spare } from '../lock/e2e-data';
 import { fromHex, sameRelay, sendMessage, type Fallback, type Mark, type Relay } from './relay';
 import { VoiceAssembler } from './voice';
+import { sweepPieces, type PiecePlace } from './nostr-pieces';
+import { keepPiecesFile } from '../lock/nostr-pieces-data';
 import { t } from './i18n';
 
 // The open space's chats through the relay, opened once while the space is: its account and
@@ -16,7 +18,8 @@ import { t } from './i18n';
 // one sealed the contact could no longer open. Hidden chats are not here: the chat screen opens
 // them itself, only while they are open.
 
-export type SpaceChats = { e2e: E2E; history: History; voiceParts: VoiceAssembler };
+/** A place's chats: its account and contacts, its messages, its voice messages coming in parts, and where it keeps pieces of photos that come through Nostr (lib/nostr-pieces.ts). */
+export type SpaceChats = { e2e: E2E; history: History; voiceParts: VoiceAssembler; pieces?: PiecePlace };
 
 let opened: { of: object; chats: Promise<SpaceChats> } | null = null;
 // The same once open, for what must know at once (lib/chat-notices.ts).
@@ -37,7 +40,12 @@ export function spaceChats(): Promise<SpaceChats> {
     const chats = (async () => {
       const history = await History.open('space', current.space, current.key);
       const e2e = await E2E.open('space', current.space, current.key);
-      const chats = { e2e, history, voiceParts: new VoiceAssembler() };
+      const pieces: PiecePlace = { holder: 'space', space: current.space, key: current.key };
+      // The space's value among the pieces' (lock/nostr-pieces-data.ts), so the file is there
+      // whichever place waits for pieces, and what waited too long goes.
+      await keepPiecesFile(current.space, current.key).catch(() => undefined);
+      void sweepPieces(pieces).catch(() => undefined);
+      const chats = { e2e, history, voiceParts: new VoiceAssembler(), pieces };
       // The chats still open without what could not join them.
       for (const join of joiners) await join(chats, current.space, current.key).catch(() => undefined);
       if (opened?.of === current) ready = chats;

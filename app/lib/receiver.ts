@@ -341,7 +341,7 @@ export function startReceiver(every?: number): () => void {
   let again = false;
   // What comes on Nostr for the space's chats (lib/nostr.ts), once they are open.
   let chats: SpaceChats | null = null;
-  const stopNostr = readNostr(nostrReaderOf(() => chats?.e2e ?? null, openNostr));
+  const stopNostr = readNostr(nostrReaderOf(() => chats?.e2e ?? null, openNostr, () => chats?.pieces ?? null));
   // A text that went through Nostr while the chat was not open says so in it.
   const stopWent = onNostrWent((identity, tag) => void chats?.history.throughNostr(`${CONTACT_PREFIX}${identity}`, tag).catch(() => undefined));
   const openChats = () => {

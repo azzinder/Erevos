@@ -12,6 +12,7 @@ import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
 import { FILE as MATRIX } from './matrix-data';
 import { FILE as MYSELF } from './myself-data';
 import { FILE as NOSTR_DM } from './nostr-dm-data';
+import { FILE as NOSTR_PIECES } from './nostr-pieces-data';
 import { FILE as PUBLIC_GROUPS } from './public-group-data';
 import { prepareQueueEntries } from './queues-data';
 import { markRestore } from './restored';
@@ -85,8 +86,9 @@ const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), 
 // Nostr, the spaces' and their hidden places', are among them, with the pages their values take:
 // restored, a Nostr key goes on as it was, an XMPP account as a new device of itself, and a Matrix
 // one is let go of, to sign in again (lib/xmpp-store.ts, lib/matrix-store.ts). An older Erevos
-// leaves them out of what it restores.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM];
+// leaves them out of what it restores. So are the pieces of photos that came through Nostr and
+// wait for their message, each place's (lock/nostr-pieces-data.ts), with their pages.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES];
 
 const KIND_KEY = 0;
 const KIND_TEXT = 1;
