@@ -1699,7 +1699,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   dich in eine Gruppe einlädt, steht unter **Einladungen in Gruppen**, mit **Beitreten** und **Ablehnen**; die Einladung
   von jemand anderem wird nicht gezeigt. Deine Gruppen folgen den anderen XMPP-Apps deines Kontos über seine
   Lesezeichen: Eine Gruppe, der du dort beitrittst, erscheint auch hier, und **Gruppe verlassen** verlässt sie dort
-  ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen. Gruppenanrufe gibt es noch nicht.
+  ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen.
 - **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
   Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
   ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so
@@ -1713,6 +1713,17 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Kamera ein und fragt zuerst die andere Person, die **Nicht jetzt** oder **Video einschalten** wählt. Das Video beginnt
   nur, wenn sie Ja sagt, und ein Nein lässt den Anruf, wie er war. Es funktioniert mit Apps, die Video zu einem Anruf
   hinzufügen wie Conversations.
+- **Gruppenanrufe:** In einer privaten Gruppe, in der du bist, starten die zwei Kacheln oben einen Sprach- oder
+  Videoanruf in der Gruppe, und ein Anruf, der in einer deiner Gruppen beginnt, klingelt hier, solange dieser Bereich
+  offen ist. Während in einer Gruppe ein Anruf läuft, sagen das eine Kachel oben und eine Zeile unter ihrem Namen, und
+  ein Tipp auf eines von beiden tritt dem Anruf bei, bis seine letzte Person geht. Es klappt mit Dino, das in Gruppen
+  genauso anruft (MUJI): Jeder Anruf hat einen eigenen Raum auf dem Gruppendienst, dem nur die Mitglieder der Gruppe
+  beitreten dürfen, und jedes Telefon im Anruf verbindet sich direkt mit jedem anderen, wie in Erevos' eigenen
+  Gruppenanrufen, über das Anruf-Relay dieses Bereichs oder den TURN-Server des XMPP-Servers, höchstens acht Personen.
+  Wie in einem Anruf mit einer Person ist der Anruf verschlüsselt (DTLS-SRTP), aber die Fingerabdrücke seiner Schlüssel
+  und die Einladungen gehen so, wie sie sind, über die XMPP-Server, und der Gruppendienst sieht, wer im Anruf ist und
+  wann. Das eigene XMPP-Konto der versteckten Chats ruft in seinen Gruppen genauso an, solange die versteckten Chats
+  offen sind.
 - **Nicht anonym:** Der XMPP-Server sieht dein Konto, deine Kontakte, wer mit wem spricht und wann, und ohne Tor auch,
   von wo. Der Server der anderen Person sieht dasselbe von seinen Chats mit dir.
 - **Über Tor:** Auf Android folgt XMPP der Wahl dieses Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**:
@@ -1724,7 +1735,6 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
   Chat zählt nicht.
-- **Noch nicht:** Gruppenanrufe.
 
 **Warum:** Erevos' eigene Chats verbergen, wer mit wem spricht; ein XMPP-Server kann das nicht. Darum bleiben XMPP-Chats
 getrennt und markiert, für die Menschen, die du sonst nur über XMPP erreichst.

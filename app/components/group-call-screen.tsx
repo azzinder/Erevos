@@ -22,7 +22,7 @@ function status(call: GroupCall, now: number, starter: string | null): string {
     case 'in':
       return call.peers().length === 0 ? t('Waiting for others · {time}', { time: callClock(now - call.joinedAt) }) : callClock(now - call.joinedAt);
     case 'ended':
-      return call.ended === 'missed' ? t('Missed group call') : call.ended === 'failed' ? t('Could not open the microphone') : t('Call ended');
+      return call.ended === 'missed' ? t('Missed group call') : call.ended === 'failed' ? call.problem || t('Could not open the microphone') : t('Call ended');
   }
 }
 

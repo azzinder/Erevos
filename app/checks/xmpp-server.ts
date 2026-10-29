@@ -25,6 +25,10 @@ export type Room = {
   name: string;
   affiliations: Map<string, Affiliation>;
   occupants: Map<string, string>;
+  /** What each one in it said in their presence besides joining (a group call's, XEP-0272), by full address. */
+  said?: Map<string, XmlElement[]>;
+  /** Set up as not kept: it goes away once the last one leaves it. */
+  passing?: boolean;
   archive: Archived[];
 };
 
@@ -125,7 +129,13 @@ export class Server {
       'presence',
       { from: `${room.jid}/${nick}`, to, type, xmlns: 'jabber:client' },
       el('x', { xmlns: NS_MUC_USER }, el('item', { affiliation, role, jid: room.nonAnonymous ? full : undefined }), ...codes.map((code) => el('status', { code }))),
+      ...(type === 'unavailable' ? [] : (room.said?.get(full) ?? [])),
     );
+  }
+
+  /** What a presence to a room says besides joining it. */
+  private saidIn(stanza: XmlElement): XmlElement[] {
+    return stanza.children.filter((c): c is XmlElement => typeof c !== 'string' && c.ns !== NS_MUC);
   }
 
   roomError(link: Link, stanza: XmlElement, condition: string): void {
@@ -142,14 +152,22 @@ export class Server {
       if (!room || !room.occupants.has(link.full)) return;
       const was = room.occupants.get(link.full)!;
       room.occupants.delete(link.full);
+      room.said?.delete(link.full);
       link.push(this.occupantPresence(room, was, link.full, link.full, ['110'], 'unavailable'));
       for (const other of room.occupants.keys()) this.deliver(other, this.occupantPresence(room, was, link.full, other, [], 'unavailable'));
+      if (room.passing && !room.occupants.size) this.rooms.delete(roomJid);
       return;
     }
     if (!room) {
-      room = { jid: roomJid, locked: true, membersOnly: false, nonAnonymous: false, mam: false, name: '', affiliations: new Map([[real, 'owner']]), occupants: new Map([[link.full, nick]]), archive: [] };
+      room = { jid: roomJid, locked: true, membersOnly: false, nonAnonymous: false, mam: false, name: '', affiliations: new Map([[real, 'owner']]), occupants: new Map([[link.full, nick]]), said: new Map([[link.full, this.saidIn(stanza)]]), archive: [] };
       this.rooms.set(roomJid, room);
       return link.push(this.occupantPresence(room, nick, link.full, link.full, ['110', '201']));
+    }
+    // In it already, with a new presence: to everyone in it, ourselves too.
+    if (room.occupants.get(link.full) === nick) {
+      (room.said ??= new Map()).set(link.full, this.saidIn(stanza));
+      for (const other of room.occupants.keys()) this.deliver(other, this.occupantPresence(room, nick, link.full, other, other === link.full ? ['110'] : []));
+      return;
     }
     const affiliation = room.affiliations.get(real);
     if (room.locked && affiliation !== 'owner') return this.roomError(link, stanza, 'item-not-found');
@@ -159,6 +177,7 @@ export class Server {
     if (holders.some((full) => bareOf(full) !== real)) return this.roomError(link, stanza, 'conflict');
     for (const [otherNick, fulls] of this.occupantsByNick(room)) if (otherNick !== nick) link.push(this.occupantPresence(room, otherNick, fulls[0], link.full, []));
     room.occupants.set(link.full, nick);
+    (room.said ??= new Map()).set(link.full, this.saidIn(stanza));
     link.push(this.occupantPresence(room, nick, link.full, link.full, room.nonAnonymous ? ['110', '100'] : ['110']));
     for (const other of room.occupants.keys()) if (other !== link.full) this.deliver(other, this.occupantPresence(room, nick, link.full, other, []));
     // What came before, as the presence asks: the last few, or since a time.
@@ -252,6 +271,7 @@ export class Server {
       if (values.has('muc#roomconfig_membersonly')) room.membersOnly = ['1', 'true'].includes(values.get('muc#roomconfig_membersonly')!);
       if (values.has('muc#roomconfig_whois')) room.nonAnonymous = values.get('muc#roomconfig_whois') === 'anyone';
       if (values.has('muc#roomconfig_enablearchiving')) room.mam = ['1', 'true'].includes(values.get('muc#roomconfig_enablearchiving')!);
+      if (values.has('muc#roomconfig_persistentroom')) room.passing = !['1', 'true'].includes(values.get('muc#roomconfig_persistentroom')!);
       room.locked = false;
       return reply();
     }

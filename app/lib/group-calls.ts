@@ -21,6 +21,10 @@ export type GroupCallPlace = {
   line(group: string, text: string): void;
   /** The group's name, and the contacts its members are named by, for the call screen. */
   names?(group: string): Promise<{ group: string; contacts: { identity: string; name: string }[] }>;
+  /** A member's name by their identity, when the place names them itself (XMPP: by address). */
+  name?(identity: string): string;
+  /** Answers through the call relay whatever the offer has (GroupCallOptions.relayAlways). */
+  relayAlways?: boolean;
 };
 
 /** A call going on in a group: its id, who started it, whether it is a video call, and who is in
@@ -82,6 +86,7 @@ export function groupCallLine(call: GroupCall, now = Date.now()): string {
   const kind = call.video ? 'Group video call' : 'Group call';
   if (call.joinedAt) return `${CALL_LINE}${kind}, ${callClock(now - call.joinedAt)}`;
   if (call.ended === 'decline') return `${CALL_LINE}${kind}, turned down`;
+  if (call.ended === 'elsewhere') return `${CALL_LINE}${kind}, answered on another device`;
   return `${CALL_LINE}Missed ${kind.toLowerCase()}`;
 }
 
@@ -103,7 +108,7 @@ function events(place: GroupCallPlace, group: string) {
 /** Starts a call in a group. Throws if a call is already in progress, or it could not start. */
 export async function startGroupCall(place: GroupCallPlace, group: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
   const me = await place.me();
-  const call = await GroupCall.start({ group, video, me, relay, rtc, events: events(place, group) });
+  const call = await GroupCall.start({ group, video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) });
   show(call, place);
   return call;
 }
@@ -113,7 +118,7 @@ export async function joinGroupCall(place: GroupCallPlace, group: string, relay:
   const going = groupCallGoingOn(group);
   if (!going) throw new Error(t('The call has ended.'));
   const me = await place.me();
-  const call = await GroupCall.join(going.id, going.startedBy, { group, video: going.video, me, relay, rtc, events: events(place, group) });
+  const call = await GroupCall.join(going.id, going.startedBy, { group, video: going.video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) });
   show(call, place);
   return call;
 }
@@ -162,7 +167,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     ours.hangUp();
     const relay = await place.callRelay().catch(() => null);
     const me = await place.me();
-    show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) }), place);
+    show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) }), place);
     return;
   }
   if (ours || currentCall() || otherCallOn()) {
@@ -176,7 +181,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     place.line(group, `${CALL_LINE}Missed ${kind}`);
     return;
   }
-  const ringing = GroupCall.incoming(signal.id, from, { group, video: signal.video, me, relay, rtc, events: events(place, group) });
+  const ringing = GroupCall.incoming(signal.id, from, { group, video: signal.video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) });
   if (ringing) show(ringing, place);
 }
 

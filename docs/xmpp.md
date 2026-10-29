@@ -159,7 +159,8 @@ phone.
   **Photo** and **File** under the message box, and below the chat the fingerprints of the person's devices, with a note for a key that
   changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
   (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
-  A group (`room` in `XmppChat`) is the same screen with its own words and no call tiles: its name and address, a line
+  A group (`room` in `XmppChat`) is the same screen with its own words, and call tiles only in a private group the
+  account is in (group calls, below): its name and address, a line
   saying a private group is encrypted with OMEMO for every member and not anonymous, or that a channel is not
   encrypted and that everyone in it, and the servers, can read it, a status line while it is being joined or when the
   room did not let the account in (`room.problem`), its subject, and for each message the name of whoever wrote it, with
@@ -292,6 +293,77 @@ the way (sound, sound and picture, addresses one at a time). The same flows were
 against Prosody 0.12 with `mod_turn_external`. Not yet tried with Conversations, Monal or Dino on a
 phone.
 
+## Group calls
+
+Voice and video calls in a private group, as Dino makes them, so they work with Dino's
+(`app/lib/xmpp-muji.ts`, a `GroupCallPlace` of `app/lib/group-calls.ts`; the call is
+`app/lib/group-call.ts`'s mesh, the same as Erevos's own group calls, on the same screen):
+
+- **The call's room (MUJI, XEP-0272):** each call has a room of its own on the account's group
+  service, named with 8 random hex digits (`%08x@` the service, as Dino names them). The phone that
+  starts it joins it, which makes it, and sets it up from the form the room gives, with only the
+  fields it has: `persistentroom` 0, `membersonly` 1, `whois` anyone, `allowinvites` 1,
+  `publicroom` 0. Each person in the group (its members and those in it) is made an owner of it, one
+  question each, so they may join it.
+- **Joining:** each one joins with a random hex name and `<muji><preparing/></muji>` in its
+  presence, waits until the room lets it in, then until everyone getting ready there is ready (or
+  gone, at most 15 seconds), then says in its presence what it takes: one `<content>` per media with
+  a `<description>` and its payload types. A phone that joins a room with people in it says the
+  payload types the first of them said, of those WebRTC takes (opus, PCMU, PCMA, G722,
+  telephone-event, VP8, VP9, H264, AV1), as they said them, since Dino keeps only what everyone says
+  exactly alike; in an empty room, opus 111 and VP8 96. A room that answers our joining with status
+  201 was gone, and joining it made a new one: the call is over, and that is said.
+- **The connections:** whoever joins starts a Jingle session (XEP-0166, XEP-0167) with each one
+  ready in the room, at the address the room gives for them (`whois` anyone), with
+  `<muji room>` in the `<jingle>` element; those already in it wait for that. On the call's side this
+  is `GroupCall.receive` with `join` from each one ready, which makes it offer to them. A session that
+  comes with a `<muji room>` of the call going on here is answered (`session-accept`) only once its
+  sender is ready in the room, which only the group's members may join; one that comes first waits
+  for that up to 10 seconds, then is ended. One for any other room is said no to (`item-not-found`
+  with `unknown-session`). `transport-info` adds addresses (`GroupCall.addCandidates`, held until
+  the connection and its description are there), `session-terminate` or leaving the room drops that
+  person, `session-info` is answered and nothing more, and the rest is said no to. More than seven
+  others in the room: the call is full.
+- **The way it goes:** as a call with one person: our call relay, else the XMPP server's TURN
+  server, with `iceTransportPolicy: 'relay'`, and for answers too, whatever the offer has
+  (`relayAlways`), as Dino tells its addresses after its offer; with neither, straight.
+- **Ringing (Call Invites, XEP-0482):** a call started here is told in the group as a `groupchat`
+  message with `<invite xmlns='urn:xmpp:call-invites:0' id video multi='true'>` and inside it
+  `<muji room>`, with the older `<propose xmlns='urn:xmpp:call-message:1'>` beside it holding the
+  same, and a `<store>` hint, as Dino sends both. An invitation in a group the account is in rings
+  here (`groupCallSignal` with `start`), from anyone in it but ourselves; one sent to us alone
+  (`chat`, as Dino asks someone into a call it makes a group call of) rings only from a contact.
+  Answering it says `<accept id><muji room/></accept>` in both forms where it came from (the group,
+  or the person's address); turning it down says `<reject>`; ending a call says `<left>` (in the
+  older form `<finish>`), or `<retract>` for one started here that nobody joined. Their `<retract>`
+  stops the ring (a missed call), and an `<accept>` or `<reject>` of another device of ours, while it
+  rings here, stops it too (`GroupCall.endedElsewhere`, a line that it was answered on another
+  device). `<left>` and `<finish>` are not needed: who is in the call is what its room says. An
+  invitation from an archive or a group's history, or older than a minute, is a missed line.
+- **Joining later:** a call that rang here and was not joined, or was left, can be joined while it
+  goes on: each minute the phone asks its room what it is (disco#info); while it is there, the call
+  goes on (`here`), and once it is gone (`item-not-found`), it is over. A call is looked after for
+  12 hours at most.
+- **The messages it takes** come through `CallHook.invite` and `CallHook.presence` in
+  `app/lib/xmpp.ts` (an invitation in either form, in a chat or a group, once, not a chat message;
+  a presence from a call's room, before the rooms of the groups), and its Jingle questions through
+  `CallHook.iq`, before those of calls with one person.
+- **What it does not protect:** as with one person, the descriptions with the DTLS fingerprints, and
+  the invitations, go through the XMPP servers as they are, not end-to-end encrypted; and the call's
+  room tells the group service who is in the call and when.
+- **Hidden places:** a hidden place's own account has its group calls apart, as its calls
+  (`xmppPlaceGroupCalls`): they ring while its hidden chats are open, with the phone's ringtone, and
+  as they close the call ends and the place's calls are forgotten.
+
+`app/checks/xmpp-muji.check.ts` plays Dino stanza by stanza through the checks' server, which keeps
+what each one says in its presence in a room and drops a room that is not kept once it is empty: a
+call started here, its room and owners, its invitation, someone joining it through the server's TURN
+only with an address told after, and leaving; Dino's call rung and answered here, with what it takes
+said back, a session to the one ready in it, and one who comes later and calls us before we see them
+ready; taken back, from the history, from a stranger, answered on another device; turned down and
+joined later, then over when its room is gone, and one whose room went before it was joined; and a
+hidden place's call that ends as its chats close. Not yet tried with Dino itself.
+
 ## Photos and files
 
 As Conversations, Monal, Gajim and Dino share them:
@@ -380,7 +452,9 @@ come back and that those of the phone it is restored on go. Not yet on a phone.
 
 ## Not yet
 
-- Group calls, and moving a call to another device.
+- Moving a call to another device, and a call with one person that Dino makes into a group call
+  while it goes on: it stays a call with that one person here (the invitation shows as missed while
+  in another call).
 - OMEMO 2 with Kaidan on a phone: so far only against python-twomemo and the server played in the
   checks.
 - Photos and files against a real upload service: so far only the one played in the checks.

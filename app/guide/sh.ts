@@ -1534,7 +1534,7 @@ aplikacije: nikakav most nije između.
   šifrovano; njen administrator može **Dodaj ljude**. Kontakt koji vas pozove u grupu prikazuje se pod **Pozivi u
   grupe**, s **Pridruži se** i **Odbij**; poziv bilo koga drugog se ne prikazuje. Vaše grupe prate ostale XMPP
   aplikacije vašeg računa preko njegovih zabilješki: grupa kojoj se tamo pridružite pridružena je i ovdje, a **Napusti
-  grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju. Grupnih poziva još nema.
+  grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju.
 - **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
   vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
   kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem
@@ -1546,6 +1546,15 @@ aplikacije: nikakav most nije između.
   U glasovnom pozivu svako od vas može uključiti video: **Dodaj video**, na ekranu poziva, uključuje vašu kameru i prvo
   pita drugu osobu, koja bira **Ne sada** ili **Uključi video**. Video počinje samo ako ona kaže da, a ne ostavlja poziv
   kakav je bio. Radi s aplikacijama koje dodaju video pozivu kao Conversations.
+- **Grupni pozivi:** u privatnoj grupi u kojoj ste, dvije pločice na vrhu pokreću glasovni poziv ili videopoziv u grupi,
+  a poziv pokrenut u jednoj od vaših grupa zvoni ovdje, dok je ovaj prostor otvoren. Dok u grupi traje poziv, to kažu
+  pločica na vrhu i red ispod njenog imena, a dodir na bilo koje od to dvoje pridružuje vas pozivu, dok ne ode njegova
+  posljednja osoba. Radi s aplikacijom Dino, koja u grupama zove na isti način (MUJI): svaki poziv ima vlastitu sobu na
+  servisu za grupe, kojoj se mogu pridružiti samo članovi grupe, a svaki telefon u pozivu povezuje se direktno sa svakim
+  drugim, kao u Erevosovim vlastitim grupnim pozivima, preko relaya za pozive ovog prostora ili TURN servera XMPP
+  servera, najviše osam osoba. Kao u pozivu s jednom osobom, poziv je šifrovan (DTLS-SRTP), ali otisci njegovih
+  ključeva, i pozivnice, idu preko XMPP servera takvi kakvi jesu, a servis za grupe vidi ko je u pozivu i kada. Vlastiti
+  XMPP račun skrivenih razgovora zove u svojim grupama na isti način, dok su skriveni razgovori otvoreni.
 - **Nije anonimno:** XMPP server vidi vaš račun, vaše kontakte, ko s kim razgovara i kada, i, bez Tora, odakle. Server
   druge osobe vidi isto o svojim razgovorima s vama.
 - **Preko Tora:** na Androidu, XMPP slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**: s
@@ -1555,7 +1564,6 @@ aplikacije: nikakav most nije između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
-- **Još ne:** grupni pozivi.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.

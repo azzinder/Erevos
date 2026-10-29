@@ -1466,7 +1466,7 @@ bridge sits in between.
   read what is encrypted; its admin can **Add people**. A contact who invites you to a group shows under **Invitations
   to groups**, with **Join** and **Decline**; an invitation from anyone else is not shown. Your groups follow your
   account's other XMPP apps through its bookmarks: a group joined there is joined here, and **Leave the group** leaves it
-  there too. A channel tells only of messages that name you. Group calls are not there yet.
+  there too. A channel tells only of messages that name you.
 - **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
   Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
   contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The
@@ -1478,6 +1478,15 @@ bridge sits in between.
   In a voice call, either of you can turn on video: **Add video**, on the call screen, turns your camera on and asks the
   other person first, who chooses **Not now** or **Turn on video**. Video starts only if they say yes, and a no leaves
   the call as it was. It works with apps that add video to a call as Conversations does.
+- **Group calls:** in a private group you are in, the two tiles at the top start a voice or a video call in the group,
+  and a call started in one of your groups rings here, while this space is open. While a call goes on in a group, a tile
+  at the top and a line under its name say so, and tapping either joins it, until its last person leaves. It works with
+  Dino, which calls in groups the same way (MUJI): each call has a room of its own on the group service, which only the
+  group's members may join, and each phone in the call connects straight to each other one, as in Erevos's own group
+  calls, through this space's call relay or the XMPP server's TURN server, eight people at most. As in a call with one
+  person, the call is encrypted (DTLS-SRTP), but the fingerprints of its keys, and the invitations, go through the XMPP
+  servers as they are, and the group service sees who is in the call and when. A hidden chats' own XMPP account calls in
+  its groups the same way, while the hidden chats are open.
 - **Not anonymous:** the XMPP server sees your account, your contacts, who talks with whom and when, and, without Tor,
   from where. The other person's server sees the same of its chats with you.
 - **Through Tor:** on Android, XMPP follows this space's choice under **Settings** → **Relay and networks** → **Tor**:
@@ -1488,7 +1497,6 @@ bridge sits in between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
-- **Not yet:** group calls.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.

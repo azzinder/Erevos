@@ -1575,7 +1575,7 @@ esses apps: nenhuma ponte fica no meio.
   contato que convida você para um grupo aparece em **Convites para grupos**, com **Entrar** e **Recusar**; o convite de
   qualquer outra pessoa não é mostrado. Seus grupos acompanham os outros apps XMPP da sua conta pelos favoritos dela: um
   grupo em que você entra lá aparece aqui também, e **Sair do grupo** sai dele lá também. Um canal avisa só das
-  mensagens que citam você. As chamadas em grupo ainda não existem.
+  mensagens que citam você.
 - **Chamadas:** os dois blocos no topo da conversa ligam para a pessoa, por voz ou com vídeo, na mesma tela de chamada
   das chamadas do próprio Erevos, e as chamadas dela tocam aqui do mesmo jeito, enquanto este espaço está aberto; uma
   chamada de alguém que não está nos seus contatos aparece só como perdida. Funciona com apps que ligam como o
@@ -1589,6 +1589,16 @@ esses apps: nenhuma ponte fica no meio.
   câmera e pergunta primeiro à outra pessoa, que escolhe **Agora não** ou **Ativar vídeo**. O vídeo só começa se ela
   disser que sim, e um não deixa a chamada como estava. Funciona com apps que adicionam vídeo a uma chamada como o
   Conversations.
+- **Chamadas de grupo:** num grupo privado em que você está, os dois blocos no topo iniciam uma chamada de voz ou de
+  vídeo no grupo, e uma chamada iniciada em um dos seus grupos toca aqui, enquanto este espaço está aberto. Enquanto uma
+  chamada acontece num grupo, um bloco no topo e uma linha sob o nome dele dizem isso, e tocar em qualquer um dos dois
+  entra na chamada, até a última pessoa sair. Funciona com o Dino, que liga em grupos do mesmo jeito (MUJI): cada
+  chamada tem uma sala própria no serviço de grupos, na qual só os membros do grupo podem entrar, e cada celular da
+  chamada se conecta direto a cada um dos outros, como nas chamadas de grupo do próprio Erevos, pelo relay de chamadas
+  deste espaço ou pelo servidor TURN do servidor XMPP, no máximo oito pessoas. Como numa chamada com uma pessoa, a
+  chamada é criptografada (DTLS-SRTP), mas as impressões digitais das suas chaves, e os convites, passam pelos
+  servidores XMPP como estão, e o serviço de grupos vê quem está na chamada e quando. A conta XMPP própria das conversas
+  ocultas liga nos grupos dela do mesmo jeito, enquanto as conversas ocultas estão abertas.
 - **Não anônimo:** o servidor XMPP vê sua conta, seus contatos, quem fala com quem e quando, e, sem Tor, de onde. O
   servidor da outra pessoa vê o mesmo das conversas dele com você.
 - **Pelo Tor:** no Android, o XMPP segue a escolha deste espaço em **Configurações** → **Relay e redes** → **Tor**: com
@@ -1599,7 +1609,6 @@ esses apps: nenhuma ponte fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
-- **Ainda não:** chamadas em grupo.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
 conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.

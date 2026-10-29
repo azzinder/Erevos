@@ -205,8 +205,8 @@ On main, not released yet:
   you. Under a private group are its **Members** with their keys to compare, and its admin can **Add people**.
   Invitations from the account's contacts show on the XMPP screen and at the top of the home list, with **Join** and
   **Decline**; anyone else's are not shown. The groups are kept in the account's bookmarks (XEP-0402), so its other XMPP
-  apps join and leave the same ones, and what a group's archive holds comes when it is joined. No group calls yet.
-  Checked with a group service played in the checks; not yet with a real server or with Conversations on a phone.
+  apps join and leave the same ones, and what a group's archive holds comes when it is joined. Checked with a group
+  service played in the checks; not yet with a real server or with Conversations on a phone.
 - **Reactions, replies, edits, deleting, older messages and voice messages in Matrix chats**: a message held down opens
   its menu: a reaction at the top, **Reply**, **Copy**, and for one of yours **Edit** and **Delete**. A reaction goes as
   a plain `m.reaction`, as Element sends it, because its relation is readable to the homeserver anyway and an encrypted
@@ -341,6 +341,11 @@ On main, not released yet:
   Snowflake and WebTunnel, vodozemac, OpenMLS, the RustCrypto and dalek-cryptography libraries, React Native, Expo and
   react-native-webrtc, Electron, and the Inter fonts. Every package with its licence is in `CREDITS.md`, which comes
   with Erevos's source code.
+- **Group calls in XMPP groups**: a private XMPP group's tiles start a voice or video call in it, a call started in one
+  of the account's groups rings, and one going on can be joined. They are made as Dino makes them (MUJI, XEP-0272, rung
+  with Call Invites, XEP-0482), so they work with Dino's: each call has a room of its own, only for the group's members,
+  and each phone connects straight to each other one through the call relay or the XMPP server's TURN server. A hidden
+  chats' own account calls in its groups too, while they are open.
 
 ### Under the hood
 

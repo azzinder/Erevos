@@ -98,4 +98,7 @@ export const xmpp: Record<string, string> = {
   "Asking…": "Αναμονή…",
   "{name} wants to turn on video": "Αίτημα για βίντεο από {name}",
   "Turn on video": "Άνοιγμα βίντεο",
+  "Group calls are only in private groups.": "Οι ομαδικές κλήσεις γίνονται μόνο σε ιδιωτικές ομάδες.",
+  "This call is full.": "Αυτή η κλήση είναι γεμάτη.",
+  "Could not get into the call.": "Η είσοδος στην κλήση δεν έγινε.",
 };

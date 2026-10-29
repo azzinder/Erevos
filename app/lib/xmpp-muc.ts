@@ -13,14 +13,14 @@ import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 
 export const NS_MUC = 'http://jabber.org/protocol/muc';
 export const NS_MUC_USER = `${NS_MUC}#user`;
-const NS_MUC_ADMIN = `${NS_MUC}#admin`;
-const NS_MUC_OWNER = `${NS_MUC}#owner`;
+export const NS_MUC_ADMIN = `${NS_MUC}#admin`;
+export const NS_MUC_OWNER = `${NS_MUC}#owner`;
 export const NS_CONFERENCE = 'jabber:x:conference';
 export const NS_BOOKMARKS = 'urn:xmpp:bookmarks:1';
 const NS_PUBSUB = 'http://jabber.org/protocol/pubsub';
 const NS_INFO = 'http://jabber.org/protocol/disco#info';
 const NS_ITEMS = 'http://jabber.org/protocol/disco#items';
-const NS_DATA = 'jabber:x:data';
+export const NS_DATA = 'jabber:x:data';
 
 /** How long the server's group service is known before it is looked for again. */
 const SERVICE_FRESH_MS = 24 * 3600_000;

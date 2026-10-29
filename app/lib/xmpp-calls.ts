@@ -6,6 +6,7 @@ import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpT
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
 import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
+import { watchXmppGroupCalls } from './xmpp-muji';
 import { onXmppChange, xmppCallLine, xmppLink, xmppNow, xmppPlaceAccount } from './xmpp-store';
 import { child, children, el, type XmlElement } from './xmpp-xml';
 
@@ -31,6 +32,8 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
 // hidden chats are open, and only then, as a place of calls of its own (xmppPlaceCalls): they stay
 // open through its call (app/chat.tsx), and it ends as they close.
+//
+// Group calls, as Dino makes them, are lib/xmpp-muji.ts's: what comes for them is handed over here.
 
 export const XMPP_PREFIX = 'xmpp:';
 
@@ -536,7 +539,24 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
 export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () => void {
   rtcNow = rtc;
   space = given;
-  setCallHook({ message: onMessage, iq: onIq });
+  const groups = watchXmppGroupCalls(rtc, {
+    link: (place) => accountOf(place)?.link() ?? null,
+    line: (place, jid, mine, text, id, at) => accountOf(place)?.line(jid, mine, text, id, at) ?? Promise.resolve(),
+    callRelay: (place) => callsFor(place).callRelay(),
+    placeOf,
+    mayRing,
+    placeOpen: () => !!given.place?.open(),
+    watch: given.watch,
+  });
+  setCallHook({
+    message: onMessage,
+    // A group call's session first: the rest are calls with one person.
+    iq: async (state, connection, iq) => {
+      if (!(await groups.iq(state, connection, iq))) await onIq(state, connection, iq);
+    },
+    invite: groups.invite,
+    presence: groups.presence,
+  });
   // A hidden place's call ends as its hidden chats close: its account goes with them.
   const stopWatch = given.watch?.(() => {
     const shown = shownCall();
@@ -546,6 +566,7 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
   });
   return () => {
     stopWatch?.();
+    groups.stop();
     setCallHook(null);
     rtcNow = null;
     space = theSpace;

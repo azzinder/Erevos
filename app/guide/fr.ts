@@ -1667,8 +1667,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   administrateur peut **Ajouter des personnes**. Un contact qui t’invite dans un groupe s’affiche sous **Invitations à
   des groupes**, avec **Rejoindre** et **Refuser** ; l’invitation de toute autre personne n’est pas montrée. Tes groupes
   suivent les autres apps XMPP de ton compte par ses marque-pages : un groupe rejoint là-bas l’est ici aussi, et
-  **Quitter le groupe** le quitte là-bas aussi. Un canal ne signale que les messages qui te nomment. Les appels de
-  groupe ne sont pas encore là.
+  **Quitter le groupe** le quitte là-bas aussi. Un canal ne signale que les messages qui te nomment.
 - **Appels :** les deux tuiles en haut de la discussion appellent la personne, en voix ou en vidéo, sur le même écran
   d’appel que les appels propres d’Erevos, et ses appels sonnent ici de la même façon, tant que cet espace est ouvert ;
   un appel de quelqu’un qui n’est pas dans tes contacts s’affiche seulement comme manqué. Cela marche avec les apps qui
@@ -1682,6 +1681,17 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   caméra et demande d’abord à l’autre personne, qui choisit **Pas maintenant** ou **Activer la vidéo**. La vidéo ne
   démarre que si elle dit oui, et un non laisse l’appel comme il était. Cela marche avec les applis qui ajoutent la
   vidéo à un appel comme Conversations.
+- **Appels de groupe :** dans un groupe privé où tu es, les deux tuiles en haut lancent un appel vocal ou un appel vidéo
+  dans le groupe, et un appel lancé dans l’un de tes groupes sonne ici, tant que cet espace est ouvert. Tant qu’un appel
+  est en cours dans un groupe, une tuile en haut et une ligne sous son nom le disent, et toucher l’une ou l’autre
+  rejoint l’appel, jusqu’à ce que sa dernière personne parte. Cela marche avec Dino, qui appelle dans les groupes de la
+  même façon (MUJI) : chaque appel a un salon à lui sur le service de groupes, que seuls les membres du groupe peuvent
+  rejoindre, et chaque téléphone de l’appel se connecte directement à chacun des autres, comme dans les appels de groupe
+  propres d’Erevos, par le relais d’appel de cet espace ou par le serveur TURN du serveur XMPP, huit personnes au plus.
+  Comme dans un appel avec une personne, l’appel est chiffré (DTLS-SRTP), mais les empreintes de ses clés, et les
+  invitations, passent par les serveurs XMPP telles quelles, et le service de groupes voit qui est dans l’appel et
+  quand. Le compte XMPP propre aux discussions masquées appelle dans ses groupes de la même façon, tant que les
+  discussions masquées sont ouvertes.
 - **Pas anonyme :** le serveur XMPP voit ton compte, tes contacts, qui parle avec qui et quand, et, sans Tor, d’où. Le
   serveur de l’autre personne voit la même chose de ses discussions avec toi.
 - **Par Tor :** sur Android, XMPP suit le choix de cet espace sous **Réglages** → **Relais et réseaux** → **Tor** : avec
@@ -1693,7 +1703,6 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
-- **Pas encore :** appels de groupe.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.

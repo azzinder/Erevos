@@ -5,12 +5,13 @@ import { View } from 'react-native';
 import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
-import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
+import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
 import { useNetworkWhere } from '../lib/network-place';
@@ -21,6 +22,7 @@ import { isXmppId, nameOf, xmppDevices, type XmppMessage, type XmppState } from 
 import { startXmppCall } from '../lib/xmpp-calls';
 import { XMPP_FILE_MOST } from '../lib/xmpp-files';
 import { groupPeople, type XmppRoom } from '../lib/xmpp-muc';
+import { xmppGroupCalls, xmppPlaceGroupCalls } from '../lib/xmpp-muji';
 import { fingerprint, NoOmemoError } from '../lib/xmpp-omemo';
 import {
   onXmppChange,
@@ -56,9 +58,11 @@ import { useColors } from '../theme/context';
 //
 // A group (lib/xmpp-muc.ts) is the same screen with its own words: its name and address, whether
 // it is encrypted (a private group is, to every member; a channel is not), whether we are in it
-// yet, its subject; each message says who wrote it and has no read marks, and there are no call
-// tiles. Below a private group are its members, each with their keys and a note when they have
-// none, and for its admin Add people; Leave the group leaves it on the account's other apps too.
+// yet, its subject; each message says who wrote it and has no read marks. A private group we are
+// in has call tiles too, which call in the group as Dino does (lib/xmpp-muji.ts), and a call going
+// on in it can be joined, by its tile and by the line under its address; a channel has none.
+// Below a private group are its members, each with their keys and a note when they have none, and
+// for its admin Add people; Leave the group leaves it on the account's other apps too.
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
@@ -73,6 +77,10 @@ export default function XmppChatScreen() {
   // What could not be sent with OMEMO, a text or a file, kept while the person decides about writing without it.
   const [unsent, setUnsent] = useState<{ text: string } | { file: XmppOutgoingFile } | null>(null);
   const [sending, setSending] = useState(false);
+  // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
+  const [, setCalls] = useState(0);
+
+  useEffect(() => onGroupCallChange(() => setCalls((n) => n + 1)), []);
 
   useEffect(() => {
     runXmpp();
@@ -172,12 +180,39 @@ export default function XmppChatScreen() {
     await startXmppCall(jid, video, rtc, where === 'place').catch(fail);
   }
 
+  // Starts a call in the private group, or joins the one going on, as it is: voice or video.
+  async function callGroup(asked: boolean) {
+    if (!jid) return;
+    setNote('');
+    if (currentCall() || currentGroupCall()) {
+      setNote(t('There is a call already.'));
+      return;
+    }
+    const calls = where === 'place' ? xmppPlaceGroupCalls : xmppGroupCalls;
+    const going = groupCallGoingOn(jid);
+    const video = going ? going.video : asked;
+    if (!(await callPermissions(video))) {
+      setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
+      return;
+    }
+    try {
+      const relay = await calls.callRelay();
+      if (going) await joinGroupCall(calls, jid, relay, rtc);
+      else await startGroupCall(calls, jid, video, relay, rtc);
+    } catch (error) {
+      fail(error);
+    }
+  }
+
   const name = nameOf(state, jid);
   const room = chat?.room;
   // A private group is encrypted to every member, a channel never is, and any other chat may be chosen to go without.
   const channel = !!room && !room.private;
   const plain = !!chat?.plain;
   const devices = xmppDevices(state, jid);
+  // A private group we are in has call tiles, and one going on in it can be joined.
+  const groupCalls = !!(room?.private && room.joined);
+  const going = groupCalls ? groupCallGoingOn(jid) : null;
   const how = channel
     ? t('XMPP channel · not encrypted: everyone in it, and the servers, can read it')
     : plain
@@ -201,6 +236,29 @@ export default function XmppChatScreen() {
             </ShortcutTile>
           </>
         )}
+        {/* In a private group: a video call and a voice call; one going on is joined as it is, by its own tile alone. */}
+        {groupCalls ? (
+          going ? (
+            going.video ? (
+              <ShortcutTile label={t('A group video call is going on · Join')} tint="blue" onPress={() => void callGroup(true)}>
+                <VideoSign />
+              </ShortcutTile>
+            ) : (
+              <ShortcutTile label={t('A group call is going on · Join')} tint="green" onPress={() => void callGroup(false)}>
+                <PhoneSign />
+              </ShortcutTile>
+            )
+          ) : (
+            <>
+              <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void callGroup(true)}>
+                <VideoSign />
+              </ShortcutTile>
+              <ShortcutTile label={t('Voice call')} tint="green" onPress={() => void callGroup(false)}>
+                <PhoneSign />
+              </ShortcutTile>
+            </>
+          )
+        ) : null}
       </Row>
       <Text variant="caption" tone="muted">
         {jid}
@@ -208,6 +266,12 @@ export default function XmppChatScreen() {
       <Text variant="caption" tone="muted">
         {how}
       </Text>
+      {going ? (
+        <TextButton
+          title={going.video ? t('A group video call is going on · Join') : t('A group call is going on · Join')}
+          onPress={() => void callGroup(going.video)}
+        />
+      ) : null}
       {plain ? <Button title={t('Encrypt again')} kind="secondary" compact onPress={() => xmppSetPlain(jid, false).catch(fail)} /> : null}
       {room && !room.joined ? (
         <Text variant="caption" tone="muted">

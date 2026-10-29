@@ -98,4 +98,7 @@ export const xmpp: Record<string, string> = {
   "Asking…": "Perguntando…",
   "{name} wants to turn on video": "{name} quer ativar o vídeo",
   "Turn on video": "Ativar vídeo",
+  "Group calls are only in private groups.": "As chamadas em grupo só existem em grupos privados.",
+  "This call is full.": "Esta chamada está lotada.",
+  "Could not get into the call.": "Não foi possível entrar na chamada.",
 };

@@ -84,6 +84,10 @@ export const NS = {
   discoInfo: 'http://jabber.org/protocol/disco#info',
   jmi: 'urn:xmpp:jingle-message:0',
   jingle: 'urn:xmpp:jingle:1',
+  muji: 'urn:xmpp:jingle:muji:0',
+  callInvites: 'urn:xmpp:call-invites:0',
+  /** The older Call Invites, which Dino still sends and reads. */
+  callMessage: 'urn:xmpp:call-message:1',
   extdisco: 'urn:xmpp:extdisco:2',
   caps: 'http://jabber.org/protocol/caps',
   pubsubEvent: 'http://jabber.org/protocol/pubsub#event',
@@ -594,13 +598,22 @@ export async function fetchArchive(state: XmppState, connection: XmppConnection)
 // ---- what comes ----
 
 /** What calls need of what comes (lib/xmpp-calls.ts): the messages that ring and answer a call
- *  (XEP-0353), and Jingle's questions (XEP-0166), which the hook answers. */
+ *  (XEP-0353), and Jingle's questions (XEP-0166), which the hook answers; and for group calls
+ *  (lib/xmpp-muji.ts), their invitations (XEP-0482) and the presence of their rooms (XEP-0272). */
 export type CallHook = {
   /** A call message: `mine` when it is from this account, as a carbon of another device's or the
    *  accept it tells its devices; `live` unless it came from the archive. */
   message(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void;
   iq(state: XmppState, connection: XmppConnection, iq: XmlElement): Promise<void>;
+  /** A group call's invitation, or an answer to one, from a person or in a group; `live` unless it
+   *  came from an archive or a group's history. */
+  invite?(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean }): void;
+  /** A presence: true when it is of a group call's room, and so taken. */
+  presence?(state: XmppState, connection: XmppConnection, presence: XmlElement): boolean;
 };
+
+/** A group call's invitation, or an answer to one (XEP-0482, and the older form), in `message`. */
+const callInviteOf = (message: XmlElement) => message.children.find((c): c is XmlElement => typeof c !== 'string' && (c.ns === NS.callInvites || c.ns === NS.callMessage));
 
 let callHook: CallHook | null = null;
 
@@ -622,6 +635,7 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
   const from = stanza.attrs.from ?? '';
   if (stanza.name === 'iq') return answerIq(state, connection, stanza, taken);
   if (stanza.name === 'presence') {
+    if (callHook?.presence?.(state, connection, stanza)) return;
     if (await takeRoomPresence(state, connection, stanza, taken)) return;
     return takePresence(state, connection, stanza);
   }
@@ -725,6 +739,13 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   if (call) {
     if (how.archiveId) state.archived = how.archiveId;
     if (callHook && remember(state, `call|${message.attrs.from ?? ''}|${call.name}|${call.attrs.id ?? ''}`)) callHook.message(state, connection, message, { at: how.at, live: how.live, mine });
+    return;
+  }
+  // A group call's invitation, or an answer to one: for the group calls, once.
+  const invite = callInviteOf(message);
+  if (invite) {
+    if (how.archiveId) state.archived = how.archiveId;
+    if (callHook?.invite && remember(state, `call|${message.attrs.from ?? ''}|${invite.name}|${invite.attrs.id ?? ''}`)) callHook.invite(state, connection, message, { at: how.at, live: how.live && !child(message, 'delay', NS.delay) });
     return;
   }
   const peer = mine ? to : from;
@@ -838,6 +859,12 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
   if (how.archiveId) room.archived = how.archiveId;
   const slash = from.indexOf('/');
   const nick = slash >= 0 ? from.slice(slash + 1) : '';
+  // A call in the group, or an answer to one: for the group calls, once, and not a chat message.
+  const invite = callInviteOf(message);
+  if (invite) {
+    if (nick && callHook?.invite && remember(state, `call|${from}|${invite.name}|${invite.attrs.id ?? ''}`)) callHook.invite(state, connection, message, { at: how.at, live: how.live && !child(message, 'delay', NS.delay) });
+    return;
+  }
   const encrypted = encryptedOf(state, message);
   const body = textOf(child(message, 'body')).trim();
   const subject = child(message, 'subject');

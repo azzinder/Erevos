@@ -18,6 +18,7 @@ import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
 import { watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
+import { xmppGroupCalls } from '../lib/xmpp-muji';
 import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
 import { matrixNow } from '../lib/matrix-store';
@@ -68,7 +69,8 @@ export function watchCalls(): () => void {
   const stopGroupChange = onGroupCallChange(() => {
     const shown = shownGroupCall();
     const call = shown?.call ?? null;
-    keeper.group(call, call && shown?.place === spaceGroupCalls ? `group:${call.group}` : '', !!currentCall());
+    // An XMPP group's call rings as its chat says too (`xmpp:` and the group's address); a hidden place's with the phone's.
+    keeper.group(call, !call ? '' : shown?.place === spaceGroupCalls ? `group:${call.group}` : shown?.place === xmppGroupCalls ? `xmpp:${call.group}` : '', !!currentCall());
   });
   const stopGroupSignals = onSpaceGroupCall((group, from, signal) => void groupCallSignal(spaceGroupCalls, group, from, signal, rtc).catch(() => undefined));
   const stopChange = onCallChange(() => {
@@ -204,7 +206,7 @@ export function CallHost() {
         <GroupCallScreen
           call={call}
           groupName={names.group || t('Group')}
-          name={(identity) => memberName(identity, names.contacts)}
+          name={(identity) => group.place.name?.(identity) ?? memberName(identity, names.contacts)}
           speaker={speaker}
           onSpeaker={(on) => {
             setSpeaker(on);

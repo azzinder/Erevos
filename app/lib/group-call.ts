@@ -14,6 +14,8 @@ import { t } from './i18n';
 // the group, and each member already in it offers a connection to them: so two members never
 // offer to each other, but for two joining at once, when the one with the lower identity's offer
 // counts. A phone has one call at a time, a group's or a contact's.
+//
+// An XMPP private group's call is the same mesh, with Jingle for its signals (lib/xmpp-muji.ts).
 
 /** The most members in a group call: each sends its sound to each other one. */
 export const MAX_GROUP_CALL = 8;
@@ -45,9 +47,14 @@ export type GroupCallOptions = {
   me: string;
   /** The call relay, or null to connect directly on the same network. */
   relay: CallRelay | null;
+  /** Answers through the call relay too, whether or not the offer has an address of one: an XMPP
+   *  app's offer tells its addresses after it (lib/xmpp-muji.ts). */
+  relayAlways?: boolean;
   rtc: Rtc;
   events: GroupCallEvents;
 };
+
+type Candidate = { candidate: string; sdpMid: string };
 
 type Peer = CallPeer & {
   connection: Connection;
@@ -55,6 +62,10 @@ type Peer = CallPeer & {
   offered: boolean;
   answered: boolean;
   timer: ReturnType<typeof setTimeout> | null;
+  /** Their description is set: addresses that come apart from it are tried at once. */
+  described: boolean;
+  /** Their addresses that came before their description was set. */
+  candidates: Candidate[];
 };
 
 let current: GroupCall | null = null;
@@ -71,14 +82,19 @@ export class GroupCall {
   readonly startedBy: string;
   readonly video: boolean;
   state: GroupCallState;
-  /** Why it ended: hung up here, or it rang here without an answer or was turned down. */
-  ended: 'hangup' | 'missed' | 'decline' | 'failed' | null = null;
+  /** Why it ended: hung up here, or it rang here without an answer, was turned down, or was
+   *  answered on another device of the account. */
+  ended: 'hangup' | 'missed' | 'decline' | 'failed' | 'elsewhere' | null = null;
+  /** Why it could not be joined, when it was not the microphone. */
+  problem = '';
   local: Stream | null = null;
   muted = false;
   cameraOff = false;
   /** When this phone joined, milliseconds, or 0. */
   joinedAt = 0;
   private readonly peerMap = new Map<string, Peer>();
+  // Addresses of members whose connection is not there yet.
+  private readonly early = new Map<string, Candidate[]>();
   private readonly options: GroupCallOptions;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private here: ReturnType<typeof setInterval> | null = null;
@@ -148,6 +164,23 @@ export class GroupCall {
     if (this.state === 'incoming') this.end('missed');
   }
 
+  /** Another device of the account answered the call that rings here. */
+  endedElsewhere(): void {
+    if (this.state === 'incoming') this.end('elsewhere');
+  }
+
+  /** A member's addresses that came apart from their description, tried once it is set. */
+  addCandidates(from: string, candidates: Candidate[]): void {
+    if (this.state === 'ended' || !candidates.length) return;
+    const peer = this.peerMap.get(from);
+    if (!peer) {
+      this.early.set(from, [...(this.early.get(from) ?? []), ...candidates]);
+      return;
+    }
+    peer.candidates.push(...candidates);
+    if (peer.described) this.tryCandidates(peer);
+  }
+
   setMuted(muted: boolean): void {
     this.muted = muted;
     this.local?.getAudioTracks().forEach((track) => (track.enabled = !muted));
@@ -189,7 +222,10 @@ export class GroupCall {
         const peer = this.peerMap.get(from);
         if (!peer?.offered || peer.answered) return;
         peer.answered = true;
-        peer.connection.setRemoteDescription({ type: 'answer', sdp: signal.sdp }).catch(() => this.drop(from));
+        peer.connection
+          .setRemoteDescription({ type: 'answer', sdp: signal.sdp })
+          .then(() => this.described(peer))
+          .catch(() => this.drop(from));
         break;
       }
       case 'leave':
@@ -216,6 +252,8 @@ export class GroupCall {
       this.changed();
       await this.options.events.send(signal);
     } catch (error) {
+      // Not the microphone: saying so to the others could not be done.
+      if (this.local) this.problem = error instanceof Error ? error.message : String(error);
       this.end('failed');
       throw error;
     }
@@ -223,8 +261,10 @@ export class GroupCall {
 
   // A connection to a member: through our call relay, or direct when answering an offer without one.
   private connect(identity: string, offered: boolean, offer = ''): Peer {
-    const connection = this.options.rtc.connect(connectionConfig(offered ? this.options.relay : relayToAnswer(offer, this.options.relay)));
-    const peer: Peer = { identity, state: 'connecting', remote: null, connection, offered, answered: false, timer: null };
+    const relay = offered || this.options.relayAlways ? this.options.relay : relayToAnswer(offer, this.options.relay);
+    const connection = this.options.rtc.connect(connectionConfig(relay));
+    const peer: Peer = { identity, state: 'connecting', remote: null, connection, offered, answered: false, timer: null, described: false, candidates: this.early.get(identity) ?? [] };
+    this.early.delete(identity);
     this.peerMap.set(identity, peer);
     const local = this.local!;
     local.getTracks().forEach((track) => connection.addTrack(track, local));
@@ -256,6 +296,7 @@ export class GroupCall {
     const peer = this.connect(identity, false, offer);
     try {
       await peer.connection.setRemoteDescription({ type: 'offer', sdp: offer });
+      this.described(peer);
       await peer.connection.setLocalDescription(await peer.connection.createAnswer());
       const sdp = await describedSdp(peer.connection);
       if (this.peerMap.get(identity) !== peer) return;
@@ -263,6 +304,17 @@ export class GroupCall {
     } catch {
       if (this.peerMap.get(identity) === peer) this.drop(identity);
     }
+  }
+
+  private described(peer: Peer) {
+    peer.described = true;
+    this.tryCandidates(peer);
+  }
+
+  private tryCandidates(peer: Peer) {
+    const connection = peer.connection;
+    if (this.peerMap.get(peer.identity) !== peer || !connection.addIceCandidate) return;
+    for (const candidate of peer.candidates.splice(0)) connection.addIceCandidate(candidate).catch(() => undefined);
   }
 
   private connectionChanged(peer: Peer, state: string) {
@@ -306,6 +358,7 @@ export class GroupCall {
     if (this.here) clearInterval(this.here);
     this.here = null;
     for (const identity of [...this.peerMap.keys()]) this.drop(identity);
+    this.early.clear();
     this.local?.getTracks().forEach((track) => track.stop());
     this.ended = reason;
     this.state = 'ended';
