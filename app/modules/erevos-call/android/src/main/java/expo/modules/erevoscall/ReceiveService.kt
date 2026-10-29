@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 
 // Keeps Erevos running while it is in the background with a space open, so it goes on waiting at
@@ -88,11 +90,20 @@ class ReceiveService : Service() {
     @Volatile private var sleepy = false
     @Volatile private var instance: ReceiveService? = null
 
+    // The app calls this from its own thread; the wake lock is the service's, changed on the
+    // main thread only, as onStartCommand and onDestroy change it.
     fun setSleepy(context: Context, on: Boolean) {
       sleepy = on
-      instance?.holdPower()
-      if (instance == null && !on) SleepWake.cancel(context)
+      val app = context.applicationContext
+      Handler(Looper.getMainLooper()).post {
+        instance?.holdPower()
+        if (instance == null) SleepWake.cancel(app)
+      }
     }
+
+    // Whether the alarm is still wanted: the service runs, in this process, and may sleep. An
+    // alarm left from a process Android closed finds no service, and sets no next one.
+    fun looks(): Boolean = sleepy && instance != null
 
     fun start(context: Context) {
       val intent = Intent(context, ReceiveService::class.java)

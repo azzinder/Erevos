@@ -14,6 +14,7 @@ import android.os.SystemClock
 // Erevos is not left out of battery saving.
 class SleepWake : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent?) {
+    if (!ReceiveService.looks()) return
     val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "erevos:look").also {
       it.setReferenceCounted(false)
