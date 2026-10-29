@@ -634,9 +634,11 @@ at the relay, or at once when they are nearby. A message counts as read once its
   days, or a week. It goes to the relay at once, as one sent for later, and the relay sends it by itself at that time.
   Each time you open Erevos, past its password, it moves on that long again, so it goes only if you do not open Erevos
   in time: if the phone is lost, taken, broken or kept from the internet, or something happened to you. Erevos running
-  in the background does not move it, nor does its password screen. In the chat it is marked **Safety message** with
-  the time it would go; delete it to stop it. Write it so that it says what it is: to your contact it comes as an
-  ordinary message. If the relay cannot be reached when you open Erevos, it keeps its time.
+  in the background does not move it, nor does its password screen, nor a window left open that no one has touched or
+  typed in for 10 minutes. In hidden chats it moves on while their place receives, or when you open it. In the chat it
+  is marked **Safety message** with the time it would go; delete it to stop it. Write it so that it says what it is: to
+  your contact it comes as an ordinary message. If the relay cannot be reached when you open Erevos, it keeps its time.
+  It is encrypted once and goes to the relay again as it is each time it moves on, so it costs your chat nothing.
   **Why:** a message held by the relay needs nothing from this phone to go, so no one who takes the phone can stop it,
   except by opening Erevos with its password.
 - **Send without sound:** hold the send arrow down and choose **Without sound**: their phone shows the notice without

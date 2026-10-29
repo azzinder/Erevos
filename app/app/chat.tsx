@@ -79,7 +79,7 @@ import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type F
 import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
-import { SAFETY_HOURS, safetyDue } from '../lib/safety';
+import { inTurn, SAFETY_HOURS, safetyDue, stopSafety } from '../lib/safety';
 import { ask, choose } from '../lib/alert';
 import { contactLink, contactLinkName, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
@@ -2446,14 +2446,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // One a relay holds for later is taken back from it, if it did not go yet: where it is held as
     // kept, should it have been held anew since the chat showed it.
     if (message.held && message.at > Date.now()) {
-      const held = history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.held ?? message.held;
+      // Where it is held as kept when taken back, in turn with a safety message being held anew
+      // (lib/safety.ts), which then never is again.
+      const heldNow = () => history.current?.messages().find((m) => m.peer === message.peer && m.tag === message.tag)?.held ?? message.held!;
       ask(t('Delete message'), t('Delete this message before it goes? The relay that keeps it drops it.'), [
         { text: t('Cancel'), style: 'cancel' },
         {
           text: t('Delete'),
           style: 'destructive',
           onPress: () =>
-            void takeBack(relayTarget(), held)
+            void inTurn(message.tag, async () => {
+              const dropped = await takeBack(relayTarget(), heldNow());
+              if (dropped) stopSafety(message.tag);
+              return dropped;
+            })
               .then((dropped) => {
                 if (dropped) {
                   forgetHere(message);

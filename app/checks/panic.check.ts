@@ -36,7 +36,7 @@ test('on a computer and on Sailfish OS the shell wipes: only by the page with it
   const wipe = desktop.slice(desktop.indexOf('async function wipe('), desktop.indexOf('function handle('));
   assert.match(wipe, /request\.method !== 'POST'/);
   assert.match(wipe, /chosenFolders\(\)\.includes\(where\)/, 'backups only in a folder chosen for them');
-  assert.match(wipe, /if \(BACKUP\.test\(name\)\)/, 'only the files Erevos named');
+  assert.match(wipe, /if \(!BACKUP\.test\(name\)\) continue;/, 'only the files Erevos named');
   assert.match(wipe, /'secrets\.json', 'files'/);
   assert.match(wipe, /clearStorageData\(\)/);
   assert.match(wipe, /app\.relaunch\(\)/);
@@ -47,6 +47,7 @@ test('on a computer and on Sailfish OS the shell wipes: only by the page with it
   assert.match(swipe, /request\.method != "POST"/);
   assert.match(swipe, /m_watch->takeBack\(\)/, 'the helper stops waiting at the relay');
   assert.match(swipe, /BackupName\.match\(entry\)\.hasMatch\(\)/);
+  assert.match(swipe, /data == home \|\| !data\.startsWith\(home/, 'never the home folder, nor outside it');
   assert.match(swipe, /m_data\.removeRecursively\(\)/);
 
   const lib = read(ROOT, 'lib', 'panic.ts');
@@ -90,7 +91,8 @@ test('only the app trusted, named by Android and signed as when trusted, may wip
   assert.match(signed, /hasSigningCertificate\(pkg, unhex\(it\), PackageManager\.CERT_INPUT_SHA256\)/);
   assert.match(signed, /\.all \{/, 'every certificate trusted must still be there');
   // A refusal is kept for the panic screen, and shown nowhere else.
-  assert.match(trusted, /if \(!ok\) prefs\.edit\(\)\.putLong\(REFUSED/);
+  assert.match(trusted, /if \(!on \|\| !signed\) prefs\.edit\(\)\.putLong\(REFUSED/);
+  assert.match(trusted, /return on && signed/);
   const renew = panic.slice(panic.indexOf('fun renew('), panic.indexOf('\n  }\n', panic.indexOf('fun renew(')));
   assert.match(renew, /getString\(TRIGGER, null\) \?: return false/, 'renews only the app already trusted');
   assert.match(panic, /clearApplicationUserData\(\)/);

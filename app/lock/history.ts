@@ -76,7 +76,34 @@ export type Kept = [
  * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
  * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr.
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend };
+
+/**
+ * A safety message as sealed once (lib/safety.ts): the packets and where they go (the contact's
+ * queue `s` on relay `r`, whose key is `k`), with their mark `m`, so that it is held anew as it is,
+ * never sealed again, which would spend a key of the conversation each time.
+ */
+export type Resend = { s: string; r: string; k: string; p: string[]; m?: 'quiet' };
+
+const B64 = /^[A-Za-z0-9+/]+={0,2}$/;
+/** Whether `value`, as kept, is a Resend: a few packets, each a message's size at most. */
+export function isResend(value: unknown): value is Resend {
+  const v = value as Partial<Resend> | null;
+  return (
+    !!v &&
+    typeof v.s === 'string' &&
+    /^[0-9a-f]{48}$/.test(v.s) &&
+    typeof v.r === 'string' &&
+    isRelayAddress(v.r) &&
+    typeof v.k === 'string' &&
+    v.k.length <= 256 &&
+    Array.isArray(v.p) &&
+    v.p.length > 0 &&
+    v.p.length <= 4 &&
+    v.p.every((p) => typeof p === 'string' && p.length <= 90_000 && B64.test(p)) &&
+    (v.m === undefined || v.m === 'quiet')
+  );
+}
 
 /** The way a message went or came, as the phone knew it (lib/nearby.ts Delivery): this phone only. */
 export type Route = 'relay' | 'nearby' | 'spread' | 'carried' | 'lora' | 'sms';
@@ -140,12 +167,14 @@ export type Parts = {
   edited?: number;
   /** Ours, a safety message (lib/safety.ts): it goes this many hours after Erevos was last opened, held by the relay till then. */
   safety?: number;
+  /** Ours, a safety message as sealed once, to hold anew as it is. */
+  resend?: Resend;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety, resend }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -163,6 +192,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(route ? { v: route } : {}),
     ...(edited ? { e: edited } : {}),
     ...(safety ? { z: safety } : {}),
+    ...(safety && resend ? { c: resend } : {}),
   };
 }
 
@@ -184,6 +214,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.v ? { route: more.v } : {}),
     ...(more?.e ? { edited: more.e } : {}),
     ...(more?.z ? { safety: more.z } : {}),
+    ...(more?.z && more.c ? { resend: more.c } : {}),
   };
 }
 
@@ -220,7 +251,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -246,7 +277,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(v.t === 1 ? { t: 1 as const } : {}),
     ...(isRoute(v.v) ? { v: v.v } : {}),
     ...(count(v.e) ? { e: count(v.e) } : {}),
-    ...(mine && isSafetyHours(v.z) ? { z: v.z } : {}),
+    ...(mine && isSafetyHours(v.z) ? { z: v.z, ...(isResend(v.c) ? { c: v.c } : {}) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -517,10 +548,10 @@ export class History {
    * `bare`, it went without its link's preview (over LoRa, lib/waiting.ts), which it no longer
    * keeps. False if it is gone.
    */
-  async sent(peer: string, tag: string, lasts: number, { held, heldFor, bare = false }: { held?: HeldAt; heldFor?: string; bare?: boolean } = {}): Promise<boolean> {
+  async sent(peer: string, tag: string, lasts: number, { held, heldFor, bare = false, resend }: { held?: HeldAt; heldFor?: string; bare?: boolean; resend?: Resend } = {}): Promise<boolean> {
     const list = this.data.chats[peer];
     if (!list?.some((m) => m[3] === tag && m[6] === WAITING)) return false;
-    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, heldFor, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
+    const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, heldFor, quiet: false, ...(bare ? { preview: undefined } : {}), ...(resend ? { resend } : {}) }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
   }
@@ -530,10 +561,17 @@ export class History {
    * queue `heldFor`, in place of the one held as `was`. False if it is gone, is no longer one, or
    * was held anew meanwhile by another look: then the caller takes its own back.
    */
-  rearmed(peer: string, tag: string, at: number, held: HeldAt, heldFor: string, was: string): Promise<boolean> {
+  rearmed(peer: string, tag: string, at: number, held: HeldAt, heldFor: string, was: string, resend?: Resend): Promise<boolean> {
     const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
     if (!kept || !kept[9]?.z || kept[9]?.h !== was) return Promise.resolve(false);
-    return this.change(peer, tag, { at, held, heldFor });
+    return this.change(peer, tag, { at, held, heldFor, ...(resend ? { resend } : {}) });
+  }
+
+  /** A waiting safety message (lib/safety.ts) that no relay holds yet is put off to `at`, as the owner looks. False if it is gone, or is not one that waits. */
+  putOff(peer: string, tag: string, at: number): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    if (!kept || !kept[9]?.z || kept[6] !== WAITING || kept[1] !== 1) return Promise.resolve(false);
+    return this.change(peer, tag, { at });
   }
 
   /** Ours held for later is held anew (lib/waiting.ts, holdAgain): by `held` now, for the contact's queue `heldFor`. False if it is gone. */

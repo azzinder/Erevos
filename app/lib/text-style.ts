@@ -5,6 +5,8 @@
 // and closes only after one, not before one; bold, italic and struck through stay on one line,
 // code never takes marks inside it, and web addresses are never read for marks (lib/links.ts).
 // What is hidden is hidden in a message's line too (lib/message-line.ts), as plainWords says.
+// Read in one pass over the words, each web address found once; words longer than MOST_STYLED
+// show as typed, so no message, however made, holds the screen up.
 
 export type Look = { bold?: true; italic?: true; strike?: true; code?: true; hidden?: true };
 
@@ -23,97 +25,121 @@ const MARKS: Mark[] = [
   { open: '~', look: 'strike', line: true },
 ];
 
+/** Words longer than this are shown as typed, with no marks read. */
+export const MOST_STYLED = 8000;
+
 const WORD = /[\p{L}\p{N}]/u;
-// A web address (as lib/links.ts finds them), taken whole: no mark is read inside it. Marks and
-// sentence marks at its end are not part of it.
-const LINK_AT = /(?:https?:\/\/|www\.)[^\s<>"]+/iy;
-const LINK_END = /[.,;:!?'’”»*_~`|]+$/;
-
-// The web address that starts at `at`, or ''.
-function linkAt(text: string, at: number): string {
-  if (at > 0 && WORD.test(text[at - 1])) return '';
-  LINK_AT.lastIndex = at;
-  const match = LINK_AT.exec(text);
-  return match ? match[0].replace(LINK_END, '') : '';
-}
 const SPACE = /\s/u;
+// Web addresses (as lib/links.ts finds them): no mark is read inside one. Marks and sentence marks
+// at its end are not part of it.
+const LINKS = /(?:https?:\/\/|www\.)[^\s<>"]+/gi;
+const LINK_END = /[.,;:!?'’”»*_~`|]+$/;
+const MARK_CHAR = /[*_~`|]/;
 
-// Whether a mark may open at `at`: not after a letter or digit, and before something that is not a space.
-function opens(text: string, at: number, mark: string): boolean {
-  const before = at > 0 ? text[at - 1] : '';
-  const after = text[at + mark.length] ?? '';
-  if (WORD.test(before) || before === mark[0] || after === '') return false;
-  // A block of code may start on the next line.
-  return mark === '```' || (!SPACE.test(after) && after !== mark[0]);
-}
-
-// Whether a mark may close at `at`: after something that is not a space, and not before a letter or digit.
-function closes(text: string, at: number, mark: string): boolean {
-  const before = at > 0 ? text[at - 1] : '';
-  const after = text[at + mark.length] ?? '';
-  return before !== '' && !SPACE.test(before) && !WORD.test(after) && after !== mark[0];
-}
-
-// Whether `at` is inside a web address that starts between `from` and it.
-function insideLink(text: string, from: number, at: number): boolean {
-  for (let i = from; i < at; i += 1) {
-    const link = linkAt(text, i);
-    if (link.length > 4) {
-      if (i + link.length > at) return true;
-      i += link.length - 1;
-    }
-  }
-  return false;
-}
-
-/** Where the mark opened at `start` closes, or -1. */
-function closing(text: string, start: number, mark: Mark): number {
-  const from = start + mark.open.length;
-  for (let at = text.indexOf(mark.open, from); at >= 0; at = text.indexOf(mark.open, at + 1)) {
-    if (mark.line && text.slice(from, at).includes('\n')) return -1;
-    if (mark.look !== 'code' && insideLink(text, from, at)) continue;
-    if (at > from && (mark.look === 'code' || closes(text, at, mark.open))) return at;
-  }
-  return -1;
-}
+// Each text's parts, as read last, a few hundred at most.
+const read = new Map<string, StyledPart[]>();
+const MOST_KEPT = 300;
 
 /** The words in runs of one look each, the marks taken away; words with no mark are one run. */
 export function styleText(text: string): StyledPart[] {
+  if (text.length > MOST_STYLED || !MARK_CHAR.test(text)) return text ? [{ text, look: {} }] : [];
+  const kept = read.get(text);
+  if (kept) return kept;
+  const parts = parse(text);
+  if (read.size >= MOST_KEPT) read.delete(read.keys().next().value!);
+  read.set(text, parts);
+  return parts;
+}
+
+function parse(text: string): StyledPart[] {
+  // Where each web address starts (its length), and which characters are in one.
+  const linkAt = new Map<number, number>();
+  const inLink = new Uint8Array(text.length);
+  for (const match of text.matchAll(LINKS)) {
+    const at = match.index ?? 0;
+    if (at > 0 && WORD.test(text[at - 1])) continue;
+    const length = match[0].replace(LINK_END, '').length;
+    if (length <= 4) continue;
+    linkAt.set(at, length);
+    inLink.fill(1, at, at + length);
+  }
+
+  // Whether a mark may open at `at`, inside [start, end): not after a letter or digit, nor after
+  // its own sign, and before something that is not a space (a block of code may start on the next line).
+  const opens = (at: number, mark: string, start: number, end: number) => {
+    const before = at > start ? text[at - 1] : '';
+    const after = at + mark.length < end ? text[at + mark.length] : '';
+    if (WORD.test(before) || before === mark[0] || after === '') return false;
+    return mark === '```' || (!SPACE.test(after) && after !== mark[0]);
+  };
+  // Whether a mark may close at `at`: after something that is not a space, and not before a letter
+  // or digit, nor its own sign.
+  const closes = (at: number, mark: string, start: number, end: number) => {
+    const before = at > start ? text[at - 1] : '';
+    const after = at + mark.length < end ? text[at + mark.length] : '';
+    return before !== '' && !SPACE.test(before) && !WORD.test(after) && after !== mark[0];
+  };
+  // Where a mark found no closing, by mark and end: from where, up to where (its line's end). A
+  // mark opened later in that stretch has fewer places to close, so none either: the words are
+  // read once, not again for each mark that never closes.
+  const unclosed = new Map<string, { from: number; until: number }>();
+  // Where the mark opened at `at` closes, before `end`, or -1.
+  const closing = (at: number, mark: Mark, end: number) => {
+    const from = at + mark.open.length;
+    const key = `${mark.open}:${end}`;
+    const known = unclosed.get(key);
+    if (known && from >= known.from && from < known.until) return -1;
+    const line = mark.line ? text.indexOf('\n', from) : -1;
+    const until = line >= 0 && line < end ? line : end;
+    for (let next = text.indexOf(mark.open, from); next >= 0 && next + mark.open.length <= end; next = text.indexOf(mark.open, next + 1)) {
+      if (line >= 0 && line < next) break;
+      if (next === from) continue;
+      if (mark.look === 'code') return next;
+      if (!inLink[next] && closes(next, mark.open, from, end)) return next;
+    }
+    unclosed.set(key, { from, until });
+    return -1;
+  };
+
   const parts: StyledPart[] = [];
   let spoilers = 0;
-  const walk = (piece: string, look: Look, spoiler: number | undefined) => {
+  const walk = (start: number, end: number, look: Look, spoiler: number | undefined) => {
     let plain = '';
-    let i = 0;
     const flush = () => {
       if (plain) parts.push({ text: plain, look, ...(spoiler !== undefined ? { spoiler } : {}) });
       plain = '';
     };
-    while (i < piece.length) {
-      const link = look.code ? '' : linkAt(piece, i);
-      if (link.length > 4) {
-        plain += link;
-        i += link.length;
+    let i = start;
+    while (i < end) {
+      const link = linkAt.get(i);
+      if (link !== undefined && i + link <= end) {
+        plain += text.slice(i, i + link);
+        i += link;
         continue;
       }
-      const mark = look.code ? undefined : MARKS.find((m) => piece.startsWith(m.open, i) && !look[m.look] && opens(piece, i, m.open));
-      const end = mark ? closing(piece, i, mark) : -1;
-      if (!mark || end < 0) {
-        plain += piece[i];
+      const mark = MARKS.find((m) => text.startsWith(m.open, i) && !look[m.look] && opens(i, m.open, start, end));
+      const close = mark ? closing(i, mark, end) : -1;
+      if (!mark || close < 0) {
+        plain += text[i];
         i += 1;
         continue;
       }
       flush();
-      let inner = piece.slice(i + mark.open.length, end);
-      // A block of code drops the line break right after its opening and before its closing marks.
-      if (mark.open === '```') inner = inner.replace(/^\n/, '').replace(/\n$/, '');
-      if (mark.look === 'hidden') walk(inner, { ...look, hidden: true }, spoilers++);
-      else if (mark.look === 'code') parts.push({ text: inner, look: { ...look, code: true }, ...(spoiler !== undefined ? { spoiler } : {}) });
-      else walk(inner, { ...look, [mark.look]: true }, spoiler);
-      i = end + mark.open.length;
+      let from = i + mark.open.length;
+      let to = close;
+      if (mark.look === 'code') {
+        // A block of code drops the line break right after its opening and before its closing marks.
+        if (mark.open === '```' && text[from] === '\n') from += 1;
+        if (mark.open === '```' && to > from && text[to - 1] === '\n') to -= 1;
+        const inner = text.slice(from, to);
+        if (inner) parts.push({ text: inner, look: { ...look, code: true }, ...(spoiler !== undefined ? { spoiler } : {}) });
+      } else if (mark.look === 'hidden') walk(from, to, { ...look, hidden: true }, spoilers++);
+      else walk(from, to, { ...look, [mark.look]: true }, spoiler);
+      i = close + mark.open.length;
     }
     flush();
   };
-  walk(text, {}, undefined);
+  walk(0, text.length, {}, undefined);
   return parts;
 }
 
@@ -124,7 +150,7 @@ export function hasStyle(text: string): boolean {
 
 /** The words with their marks taken away and what is hidden as ▒▒▒, for a line: the home screen, a quote, a search. */
 export function plainWords(text: string): string {
-  if (!/[*_~`|]/.test(text)) return text;
+  if (!MARK_CHAR.test(text)) return text;
   let out = '';
   let last: number | undefined;
   for (const part of styleText(text)) {

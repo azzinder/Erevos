@@ -320,7 +320,7 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
                 style={({ pressed }) => [styles.cell, { width: cell, height: cell }, item.at > 0 && lit === dayKey(item.at) && styles.lit, pressed && { opacity: 0.7 }]}
               >
                 {uri ? (
-                  <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" resizeMethod="resize" />
+                  <Image source={{ uri }} style={StyleSheet.absoluteFill} resizeMode="cover" resizeMethod="resize" blurRadius={item.file?.hidden ? 40 : undefined} />
                 ) : (
                   <PhotoIcon color={withAlpha(colors.text, item.file?.from ? 0.25 : 0.4)} size={Math.min(28, cell / 3)} />
                 )}

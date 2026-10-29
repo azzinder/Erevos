@@ -9,7 +9,8 @@ export type DeviceEvents = {
  * The panic button's settings (Panic.kt): `trigger` and `pending` are packages, '' for none.
  * `triggerThere`: the trusted app is installed and signed as when trusted (or moved to a new key by
  * APK key rotation); `triggerInstalled`: installed at all. `refused`: when the trusted app last
- * asked to wipe and was refused (ms, 0 for never); missing in a build before it.
+ * asked to wipe and was refused (ms, 0 for never), and `refusedKey` whether for its signature;
+ * missing in a build before them.
  */
 export type PanicState = {
   on: boolean;
@@ -19,6 +20,8 @@ export type PanicState = {
   triggerThere: boolean;
   triggerInstalled?: boolean;
   refused?: number;
+  /** Whether that refusal was for the app's signature, not the switch. */
+  refusedKey?: boolean;
   pending: string;
   pendingLabel: string;
 };

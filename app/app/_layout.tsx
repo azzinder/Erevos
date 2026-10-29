@@ -30,6 +30,7 @@ import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { refreshKnownNames, watchKnownNames } from '../lib/known-names';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
+import { ownerTouched } from '../lib/safety';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
@@ -369,7 +370,10 @@ export default function RootLayout() {
   return (
     <KeyboardProvider>
       <ThemeProvider look={look} onChange={keepLook}>
-        <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} />
+        {/* A touch anywhere says the owner is there, for safety messages (lib/safety.ts). */}
+        <View style={{ flex: 1 }} onTouchStart={() => ownerTouched()}>
+          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} />
+        </View>
       </ThemeProvider>
     </KeyboardProvider>
   );

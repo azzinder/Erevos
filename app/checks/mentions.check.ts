@@ -53,5 +53,5 @@ test('a member named is told in a muted group too, and only then', () => {
   const background = readFileSync(join(import.meta.dirname, '..', 'lib', 'background.ts'), 'utf8');
   assert.match(background, /if \(mutedNow\(notify\) && !named\) return;/);
   const groups = readFileSync(join(import.meta.dirname, '..', 'lib', 'groups.ts'), 'utf8');
-  assert.match(groups, /const named = !!parts\.named\?\.includes\(\(await this\.me\(\)\)\.id\);/);
+  assert.match(groups, /const named = said\.text\.includes\('@'\) && !!parts\.named\?\.includes\(\(await this\.me\(\)\)\.id\);/);
 });

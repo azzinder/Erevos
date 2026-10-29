@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Linking, Platform, Text as NativeText, type StyleProp, type TextStyle } from 'react-native';
 
 import { ask } from '../lib/alert';
@@ -59,6 +59,8 @@ function withLinks(text: string, key: string, style: StyleProp<TextStyle>, tappa
  */
 export function LinkedText({ text, style }: { text: string; style?: StyleProp<TextStyle> }) {
   const [shown, setShown] = useState<number[]>([]);
+  // Edited words hide again: their hidden parts may be others.
+  useEffect(() => setShown([]), [text]);
   if (!hasStyle(text)) {
     const parts = splitLinks(text);
     if (parts.every((part) => !part.url)) return <>{text}</>;

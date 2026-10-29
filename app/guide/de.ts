@@ -731,13 +731,16 @@ Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm 
   **Im Hintergrund** auf **Empfangen und klingeln** steht (siehe unten), oder wenn Erevos das nächste Mal öffnet.
 - **Sicherheitsnachricht:** tippe sie, tippe auf **+** und dann auf **Sicherheitsnachricht**, und wähle, wie lange: 6
   oder 12 Stunden, 1, 2 oder 3 Tage oder eine Woche. Sie geht sofort an das Relay, wie eine auf später gesendete, und
-  das Relay sendet sie zu dieser Zeit von selbst. Jedes Mal, wenn du Erevos öffnest, nach dem Passwort, wird sie
-  wieder um diese Zeit verschoben, sie geht also nur, wenn du Erevos nicht rechtzeitig öffnest: wenn das Telefon
-  verloren, weggenommen, kaputt oder vom Internet abgeschnitten ist oder dir etwas zugestoßen ist. Erevos im
-  Hintergrund verschiebt sie nicht, ebenso wenig sein Passwortbildschirm. Im Chat ist sie als **Sicherheitsnachricht**
-  mit der Zeit markiert, zu der sie gehen würde; lösche sie, um sie zu stoppen. Schreibe sie so, dass sie sagt, was
-  sie ist: Bei deinem Kontakt kommt sie als gewöhnliche Nachricht an. Ist das Relay beim Öffnen von Erevos nicht
-  erreichbar, behält sie ihre Zeit.
+  das Relay sendet sie zu dieser Zeit von selbst. Jedes Mal, wenn du Erevos öffnest, nach dem Passwort, wird sie wieder
+  um diese Zeit verschoben, sie geht also nur, wenn du Erevos nicht rechtzeitig öffnest: wenn das Telefon verloren,
+  weggenommen, kaputt oder vom Internet abgeschnitten ist oder dir etwas zugestoßen ist. Erevos im Hintergrund
+  verschiebt sie nicht, ebenso wenig sein Passwortbildschirm, noch ein offen gelassenes Fenster, das 10 Minuten lang
+  niemand berührt oder in dem niemand getippt hat. In versteckten Chats wird sie verschoben, solange ihr Ort empfängt,
+  oder wenn du ihn öffnest. Im Chat ist sie als **Sicherheitsnachricht** mit der Zeit markiert, zu der sie gehen würde;
+  lösche sie, um sie zu stoppen. Schreibe sie so, dass sie sagt, was sie ist: Bei deinem Kontakt kommt sie als
+  gewöhnliche Nachricht an. Ist das Relay beim Öffnen von Erevos nicht erreichbar, behält sie ihre Zeit. Sie wird einmal
+  verschlüsselt und geht jedes Mal, wenn sie verschoben wird, unverändert erneut an das Relay, das kostet deinen Chat
+  also nichts.
   **Warum:** Eine Nachricht, die das Relay hält, braucht nichts von diesem Telefon, um zu gehen; wer das Telefon an
   sich nimmt, kann sie also nicht stoppen, außer indem er Erevos mit dem Passwort öffnet.
 - **Ohne Ton senden:** Halte den Sendepfeil gedrückt und wähle **Ohne Ton**: Das andere Telefon zeigt die

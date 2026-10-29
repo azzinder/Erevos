@@ -681,12 +681,14 @@ chat appare sullo schermo.
   **In background** è su **Ricevi e squilla** (più sotto), o alla prossima apertura di Erevos.
 - **Messaggio di sicurezza:** scrivilo, tocca **+** e poi **Messaggio di sicurezza**, e scegli per quanto tempo: 6 o
   12 ore, 1, 2 o 3 giorni, o una settimana. Va subito al relay, come uno inviato per più tardi, e il relay lo invia da
-  solo a quell’ora. Ogni volta che apri Erevos, dopo la sua password, slitta di nuovo di altrettanto, quindi parte
-  solo se non apri Erevos in tempo: se il telefono viene perso, sottratto, si rompe o resta senza internet, o se ti è
-  successo qualcosa. Erevos in background non lo sposta, e nemmeno la sua schermata della password. Nella chat è
-  segnato **Messaggio di sicurezza** con l’ora a cui partirebbe; eliminalo per fermarlo. Scrivilo in modo che dica
-  cos’è: al tuo contatto arriva come un messaggio qualunque. Se il relay non è raggiungibile quando apri Erevos,
-  mantiene la sua ora.
+  solo a quell’ora. Ogni volta che apri Erevos, dopo la sua password, slitta di nuovo di altrettanto, quindi parte solo
+  se non apri Erevos in tempo: se il telefono viene perso, sottratto, si rompe o resta senza internet, o se ti è
+  successo qualcosa. Erevos in background non lo sposta, e nemmeno la sua schermata della password, né una finestra
+  lasciata aperta che nessuno tocca o in cui nessuno scrive da 10 minuti. Nelle chat nascoste slitta finché il loro
+  posto riceve, o quando lo apri. Nella chat è segnato **Messaggio di sicurezza** con l’ora a cui partirebbe; eliminalo
+  per fermarlo. Scrivilo in modo che dica cos’è: al tuo contatto arriva come un messaggio qualunque. Se il relay non è
+  raggiungibile quando apri Erevos, mantiene la sua ora. È cifrato una volta sola e va di nuovo al relay così com’è ogni
+  volta che slitta, quindi non costa nulla alla tua chat.
   **Perché:** un messaggio tenuto dal relay non ha bisogno di niente di questo telefono per partire, quindi chi prende
   il telefono non può fermarlo, se non aprendo Erevos con la sua password.
 - **Invia senza suono:** tieni premuta la freccia di invio e scegli **Senza suono**: il suo telefono mostra la

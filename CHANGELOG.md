@@ -28,8 +28,11 @@ On main, not released yet:
   open Erevos for 6 or 12 hours, 1, 2 or 3 days or a week (`lib/safety.ts`). It is held by the relay as a message sent
   for later (`LATER`, no relay change); while Erevos shows past its password (`ownerLooks`, never in the background
   nor behind the password screen) it is held anew, at most every half hour, to go that long from then, and the one held
-  before is taken back (`rearmSafety` in `lib/waiting.ts`, kept as `z` in `lock/history.ts`). Same tag, so should both
-  ever go, the contact keeps it once. See [Chat through a relay](#relay).
+  before is taken back (`rearmSafety` in `lib/waiting.ts`, kept as `z` in `lock/history.ts`). It is sealed once and
+  held anew as the same packets (`c`, `Resend`), so no key of the conversation is spent each time; "looking" also
+  needs a touch, click or key in the last 10 minutes (`ownerTouched`); holding anew and deleting take turns
+  (`inTurn`), and a deleted one is never held again. One no relay holds yet is put off too. See
+  [Chat through a relay](#relay).
 - **Name a member in a group with @**: typing **@** offers the members whose names start so, above the message box;
   the message carries who was named, by identity (`named`, at most 32, `lib/mentions.ts`), and a member named is told
   of it even in a group they muted (`messageCame`'s `named`, for the open space's groups and hidden places'). Only

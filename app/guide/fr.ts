@@ -719,12 +719,15 @@ discussion s’affiche à l’écran.
   prochaine ouverture d’Erevos.
 - **Message de sécurité :** écris-le, appuie sur **+** puis sur **Message de sécurité**, et choisis combien de temps :
   6 ou 12 heures, 1, 2 ou 3 jours, ou une semaine. Il part aussitôt vers le relais, comme un message envoyé pour plus
-  tard, et le relais l’envoie tout seul à cette heure. Chaque fois que tu ouvres Erevos, après son mot de passe, il
-  est repoussé d’autant, donc il ne part que si tu n’ouvres pas Erevos à temps : si le téléphone est perdu, pris,
-  cassé ou coupé d’internet, ou s’il t’est arrivé quelque chose. Erevos qui tourne en arrière-plan ne le repousse pas,
-  ni son écran de mot de passe. Dans la discussion, il est marqué **Message de sécurité** avec l’heure à laquelle il
-  partirait ; supprime-le pour l’arrêter. Écris-le de façon qu’il dise ce qu’il est : chez ton contact, il arrive
-  comme un message ordinaire. Si le relais est injoignable quand tu ouvres Erevos, il garde son heure.
+  tard, et le relais l’envoie tout seul à cette heure. Chaque fois que tu ouvres Erevos, après son mot de passe, il est
+  repoussé d’autant, donc il ne part que si tu n’ouvres pas Erevos à temps : si le téléphone est perdu, pris, cassé ou
+  coupé d’internet, ou s’il t’est arrivé quelque chose. Erevos qui tourne en arrière-plan ne le repousse pas, ni son
+  écran de mot de passe, ni une fenêtre laissée ouverte que personne n’a touchée ni dans laquelle personne n’a écrit
+  depuis 10 minutes. Dans les discussions masquées, il est repoussé tant que leur place reçoit, ou quand tu l’ouvres.
+  Dans la discussion, il est marqué **Message de sécurité** avec l’heure à laquelle il partirait ; supprime-le pour
+  l’arrêter. Écris-le de façon qu’il dise ce qu’il est : chez ton contact, il arrive comme un message ordinaire. Si le
+  relais est injoignable quand tu ouvres Erevos, il garde son heure. Il est chiffré une seule fois et repart vers le
+  relais tel quel à chaque fois qu’il est repoussé, donc il ne coûte rien à ta discussion.
   **Pourquoi :** un message gardé par le relais n’a besoin de rien de ce téléphone pour partir, donc personne qui
   prend le téléphone ne peut l’arrêter, sauf en ouvrant Erevos avec son mot de passe.
 - **Envoyer sans son :** maintiens la flèche d’envoi et choisis **Sans son** : son téléphone affiche la notification

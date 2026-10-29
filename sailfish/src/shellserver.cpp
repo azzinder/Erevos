@@ -416,24 +416,33 @@ void ShellServer::wipe(QTcpSocket *socket, const Request &request, const QUrlQue
         m_lan = nullptr;
         m_lanEvents.clear();
     }
+    bool left = false;
     // The automatic backups, when the owner chose it: only those Erevos named, in its own folder.
     if (query.queryItemValue(QStringLiteral("backups")) == QLatin1String("1")) {
         QDir backups(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QStringLiteral("/Erevos"));
         for (const QString &entry : backups.entryList(QDir::Files)) {
-            if (BackupName.match(entry).hasMatch()) backups.remove(entry);
+            if (BackupName.match(entry).hasMatch() && !backups.remove(entry)) left = true;
         }
+    }
+    // Only a folder of the app's own: never one Qt could not name, nor the home folder itself.
+    const QString data = m_data.absolutePath();
+    const QString home = QDir::homePath();
+    if (QStandardPaths::writableLocation(QStandardPaths::AppDataLocation).isEmpty() || data == home || !data.startsWith(home + QLatin1Char('/'))) {
+        respond(socket, 500, "Erevos's folder is not where it should be: nothing was deleted.");
+        return;
     }
     // Everything the app keeps: its keystore (secrets/), its sealed files (files/), and Sailfish
     // WebView's own folder for it (.mozilla), which is in the same place; and the WebView's cache.
     bool gone = m_data.removeRecursively();
-    QDir(QStandardPaths::writableLocation(QStandardPaths::CacheLocation)).removeRecursively();
+    const QString cache = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (!cache.isEmpty() && cache.startsWith(home + QLatin1Char('/'))) QDir(cache).removeRecursively();
     // What could not be deleted at once (a file the WebView holds open) goes one by one.
     if (!gone) {
         QDirIterator left(m_data.absolutePath(), QDir::Files | QDir::Hidden | QDir::System, QDirIterator::Subdirectories);
         while (left.hasNext()) QFile::remove(left.next());
         gone = !QDirIterator(m_data.absolutePath(), QDir::Files | QDir::Hidden | QDir::System, QDirIterator::Subdirectories).hasNext();
     }
-    respond(socket, gone ? 204 : 500, gone ? QByteArray() : QByteArray("Some of Erevos's files could not be deleted."));
+    respond(socket, gone && !left ? 204 : 500, gone && !left ? QByteArray() : QByteArray("Some of Erevos's files could not be deleted."));
     // Then Erevos closes, and opens next time as if just installed.
     QTimer::singleShot(500, qApp, &QCoreApplication::quit);
 }

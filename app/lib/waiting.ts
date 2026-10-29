@@ -1,5 +1,5 @@
 import type { Spare, Undropped } from '../lock/e2e-data';
-import type { History, Message } from '../lock/history';
+import type { History, Message, Resend } from '../lock/history';
 import { loadClip } from '../lock/voice-clips';
 import { refSource, uploadFile } from './attachments';
 import { offerOnNostr } from './nostr-send-files';
@@ -7,12 +7,13 @@ import { contentOf, withoutPreview } from './chat-parts';
 import { pieceToGo, pieceWent } from './pieces-kept';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForSlowWayError, type NearHeard } from './nearby';
+import { toBase64, fromBase64 } from './crypto';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
 import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
 import { nostrReady } from './nostr';
 import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
-import { needsRearm, ownerLooks, safetyDue } from './safety';
+import { inTurn, needsRearm, ownerLooks, safetyDue, safetyStopped } from './safety';
 
 type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 
@@ -116,6 +117,12 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     if (ownerLooks()) went.push(...(await rearmSafety({ e2e, history }, place, now)));
     await dropHeld(e2e, place.sends, now);
   }
+  // Safety messages no relay holds yet are put off too, as the owner looks (lib/safety.ts).
+  if (ownerLooks()) {
+    for (const message of history.waiting()) {
+      if (message.safety && needsRearm(Math.max(message.at, now + 1), message.safety, now)) await history.putOff(message.peer, message.tag, safetyDue(message.safety, now)).catch(() => false);
+    }
+  }
   const stuck = new Set<string>();
   for (const message of history.waiting()) {
     const { peer, tag } = message;
@@ -125,9 +132,9 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     if (message.at > now) {
       if ((tried && tried.next > now) || !place.relayUp || !place.sends) continue;
       try {
-        const { lasts, held, heldFor } = await holdLater(e2e, place, identity, message);
+        const { lasts, held, heldFor, resend } = await holdLater(e2e, place, identity, message);
         tries.delete(tag);
-        if (await history.sent(peer, tag, lasts, { held, heldFor })) went.push({ peer, tag, lasts, held, heldFor });
+        if (await history.sent(peer, tag, lasts, { held, heldFor, resend })) went.push({ peer, tag, lasts, held, heldFor });
       } catch {
         const count = (tried?.count ?? 0) + 1;
         tries.set(tag, { count, next: now + Math.min(LONGEST_WAIT, FIRST_WAIT * 2 ** (count - 1)) });
@@ -169,7 +176,7 @@ export function nextDue(history: Pick<Chats['history'], 'waiting'>, now = Date.n
  * It does not say where we are (our queue, our relay): when it comes, that may have changed since,
  * and their phone goes on writing where we last said.
  */
-export async function holdLater(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; held: HeldAt; heldFor: string }> {
+export async function holdLater(e2e: E2E, place: SendPlace, identity: string, message: Message): Promise<{ lasts: number; held: HeldAt; heldFor: string; resend?: Resend }> {
   const queue = e2e.queueOf(identity);
   const sends = place.sends;
   if (!sends || !queue?.sender) throw new NoWayError();
@@ -207,7 +214,12 @@ export async function holdLater(e2e: E2E, place: SendPlace, identity: string, me
     })(),
     true,
   );
-  return { lasts: sealed.timer, held, heldFor: queue.sender };
+  // A safety message keeps its packets, to be held anew as they are (rearmOne).
+  const mark = sentMark(sealed, 'message');
+  const resend: Resend | undefined = message.safety
+    ? { s: sealed.sender, r: sealed.relay, k: sealed.relayKey, p: packets.map(toBase64), ...(mark === 'quiet' ? { m: 'quiet' as const } : {}) }
+    : undefined;
+  return { lasts: sealed.timer, held, heldFor: queue.sender, ...(resend ? { resend } : {}) };
 }
 
 /**
@@ -318,22 +330,18 @@ async function holdAll({ e2e, history }: Chats, place: SendPlace, now: number): 
  */
 export async function rearmSafety({ e2e, history }: Chats, place: SendPlace, now = Date.now()): Promise<Went[]> {
   const again: Went[] = [];
-  for (const message of history.heldLater(now)) {
-    const { peer, tag, held, safety } = message;
-    if (!held || !safety || !peer.startsWith(CONTACT_PREFIX) || !needsRearm(message.at, safety, now) || rearming.has(tag)) continue;
-    rearming.add(tag);
-    try {
-      const went = await rearmOne(e2e, history, place, message, held, safety, now);
-      if (went) again.push(went);
-    } finally {
-      rearming.delete(tag);
-    }
+  for (const seen of history.heldLater(now)) {
+    if (!seen.safety || !seen.held || !seen.peer.startsWith(CONTACT_PREFIX)) continue;
+    // In turn with deleting it (app/chat.tsx), and with another look: read again once it is its turn.
+    const went = await inTurn(seen.tag, async () => {
+      const message = history.heldLater(now).find((m) => m.peer === seen.peer && m.tag === seen.tag);
+      if (!message?.held || !message.safety || safetyStopped(message.tag) || !needsRearm(message.at, message.safety, now)) return null;
+      return rearmOne(e2e, history, place, message, message.held, message.safety, now);
+    });
+    if (went) again.push(went);
   }
   return again;
 }
-
-// The safety messages being held anew now, by tag: two looks at once never both hold one.
-const rearming = new Set<string>();
 
 async function rearmOne(e2e: E2E, history: History, place: SendPlace, message: Message, held: HeldAt, safety: number, now: number): Promise<Went | null> {
   const { peer, tag } = message;
@@ -342,14 +350,23 @@ async function rearmOne(e2e: E2E, history: History, place: SendPlace, message: M
   const at = safetyDue(safety, now);
   let made: Awaited<ReturnType<typeof holdLater>>;
   try {
-    made = await holdLater(e2e, place, identity, { ...message, at });
+    // As it was sealed, while the contact reads where it was sealed for; sealed anew only after
+    // their queue moved.
+    const kept = message.resend;
+    if (kept && place.sends && e2e.queueOf(identity)?.sender === kept.s) {
+      const target = contactTarget(place.sends, { relay: kept.r, relayKey: kept.k });
+      const again = await sendMessageLater(target, fromHex(kept.s), kept.p.map(fromBase64), at, kept.m ?? 'message');
+      made = { lasts: message.lasts ?? 0, held: again, heldFor: kept.s, resend: kept };
+    } else {
+      made = await holdLater(e2e, place, identity, { ...message, at });
+    }
   } catch {
     // It keeps its time: the next look tries again.
     return null;
   }
   const ofIt = (h: HeldAt, due: number): Undropped => ({ id: h.id, relay: h.relay, at: due });
   // Deleted meanwhile, no longer one, or held anew by another look: the one just held goes no more.
-  if (!(await history.rearmed(peer, tag, at, made.held, made.heldFor, held.id).catch(() => false))) {
+  if (!(await history.rearmed(peer, tag, at, made.held, made.heldFor, held.id, made.resend).catch(() => false))) {
     await letGo(e2e, place.sends, [ofIt(made.held, at)]);
     return null;
   }

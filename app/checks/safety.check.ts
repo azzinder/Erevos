@@ -8,7 +8,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { isSafetyHours, needsRearm, ownerLooks, REARM_AFTER, safetyDue, SAFETY_HOURS, setShownCheck } from '../lib/safety';
+import { isResend } from '../lock/history';
+import { ACTIVE_MS, inTurn, isSafetyHours, needsRearm, ownerLooks, ownerTouched, REARM_AFTER, safetyDue, SAFETY_HOURS, safetyStopped, setShownCheck, stopSafety } from '../lib/safety';
 import { setSpaceGated } from '../lib/space-running';
 
 const HOUR = 3_600_000;
@@ -29,28 +30,63 @@ test('held anew only once it was held more than half an hour ago, and never once
   assert.ok(!needsRearm(now - 1, 24, now), 'gone already');
 });
 
-test('the owner looks only while Erevos shows, past its password', () => {
+test('the owner looks only while Erevos shows, past its password, touched lately', () => {
+  const now = Date.now();
+  ownerTouched(now);
   setShownCheck(() => false);
-  assert.ok(!ownerLooks());
+  assert.ok(!ownerLooks(now));
   setShownCheck(() => true);
-  assert.ok(ownerLooks());
+  assert.ok(ownerLooks(now));
+  assert.ok(!ownerLooks(now + ACTIVE_MS), 'shown, but untouched for a while');
   setSpaceGated(true);
-  assert.ok(!ownerLooks(), 'the password screen in front');
+  assert.ok(!ownerLooks(now), 'the password screen in front');
   setSpaceGated(false);
   setShownCheck(() => false);
+});
+
+test('holding anew and deleting take turns, and a deleted one is never held again', async () => {
+  const order: string[] = [];
+  const first = inTurn('aaaaaaaaaaaa', async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    order.push('held anew');
+  });
+  const second = inTurn('aaaaaaaaaaaa', async () => {
+    order.push('taken back');
+    stopSafety('aaaaaaaaaaaa');
+  });
+  await Promise.all([first, second]);
+  assert.deepEqual(order, ['held anew', 'taken back']);
+  assert.ok(safetyStopped('aaaaaaaaaaaa'));
+  const waiting = read('lib', 'waiting.ts');
+  assert.match(waiting, /safetyStopped\(message\.tag\)/);
+  const chat = read('app', 'chat.tsx');
+  assert.match(chat, /void inTurn\(message\.tag, async \(\) => \{\s*const dropped = await takeBack\(relayTarget\(\), heldNow\(\)\);\s*if \(dropped\) stopSafety\(message\.tag\);/);
+});
+
+test('sealed once: held anew as the same packets while the contact reads where they went', () => {
+  const ok = { s: 'ab'.repeat(24), r: 'wss://relay.example.org', k: 'key', p: ['AAEC'] };
+  assert.ok(isResend(ok));
+  assert.ok(isResend({ ...ok, m: 'quiet' }));
+  assert.ok(!isResend({ ...ok, p: [] }));
+  assert.ok(!isResend({ ...ok, p: ['AAEC', 'AAEC', 'AAEC', 'AAEC', 'AAEC'] }));
+  assert.ok(!isResend({ ...ok, s: 'x' }));
+  assert.ok(!isResend({ ...ok, r: 'file:///etc' }));
+  const waiting = read('lib', 'waiting.ts');
+  const rearm = waiting.slice(waiting.indexOf('async function rearmOne'));
+  assert.match(rearm, /e2e\.queueOf\(identity\)\?\.sender === kept\.s/);
+  assert.match(rearm, /sendMessageLater\(target, fromHex\(kept\.s\), kept\.p\.map\(fromBase64\), at, kept\.m \?\? 'message'\)/);
 });
 
 test('only a look of the owner puts them off; the old one held is taken back; kept as ours only', () => {
   const waiting = read('lib', 'waiting.ts');
   assert.match(waiting, /if \(ownerLooks\(\)\) went\.push\(\.\.\.\(await rearmSafety\(/);
   const rearm = waiting.slice(waiting.indexOf('export async function rearmSafety'), waiting.indexOf('// Takes back each of `held`'));
-  assert.match(rearm, /needsRearm\(message\.at, safety, now\)/);
+  assert.match(rearm, /needsRearm\(message\.at, message\.safety, now\)/);
   assert.match(rearm, /await letGo\(e2e, place\.sends, \[ofIt\(held, message\.at\)\]\)/);
   const receiver = read('lib', 'receiver.ts');
   assert.match(receiver, /setShownCheck\(\(\) => shows\)/);
   const history = read('lock', 'history.ts');
-  assert.match(history, /\.\.\.\(mine && isSafetyHours\(v\.z\) \? \{ z: v\.z \} : \{\}\)/);
+  assert.match(history, /\.\.\.\(mine && isSafetyHours\(v\.z\) \? \{ z: v\.z, \.\.\.\(isResend\(v\.c\) \? \{ c: v\.c \} : \{\}\) \} : \{\}\)/);
   // Held anew only in place of the one held as it was read: two looks never both hold it.
   assert.match(history, /if \(!kept \|\| !kept\[9\]\?\.z \|\| kept\[9\]\?\.h !== was\) return Promise\.resolve\(false\);/);
-  assert.match(rearm, /rearming\.has\(tag\)/);
 });

@@ -674,13 +674,16 @@ conversa dela aparece na tela.
   espera neste celular e vai no horário dela enquanto o Erevos roda, também em segundo plano enquanto **Em segundo
   plano** está em **Receber e tocar** (abaixo), ou quando o Erevos abrir de novo.
 - **Mensagem de segurança:** digite-a, toque em **+** e depois em **Mensagem de segurança**, e escolha por quanto
-  tempo: 6 ou 12 horas, 1, 2 ou 3 dias, ou uma semana. Ela vai para o relay na hora, como uma enviada para mais tarde,
-  e o relay a envia sozinho nesse horário. Cada vez que você abre o Erevos, depois da senha, ela é adiada de novo por
-  esse mesmo tempo, então só sai se você não abrir o Erevos a tempo: se o celular for perdido, levado, quebrar ou
-  ficar sem internet, ou se algo acontecer com você. O Erevos rodando em segundo plano não a adia, nem a tela de senha
-  dele. Na conversa ela aparece marcada como **Mensagem de segurança** com o horário em que sairia; apague-a para
-  pará-la. Escreva-a de modo que diga o que é: para o seu contato ela chega como uma mensagem comum. Se o relay não
-  puder ser alcançado quando você abrir o Erevos, ela mantém o horário.
+  tempo: 6 ou 12 horas, 1, 2 ou 3 dias, ou uma semana. Ela vai para o relay na hora, como uma enviada para mais tarde, e
+  o relay a envia sozinho nesse horário. Cada vez que você abre o Erevos, depois da senha, ela é adiada de novo por esse
+  mesmo tempo, então só sai se você não abrir o Erevos a tempo: se o celular for perdido, levado, quebrar ou ficar sem
+  internet, ou se algo acontecer com você. O Erevos rodando em segundo plano não a adia, nem a tela de senha dele, nem
+  uma janela deixada aberta que ninguém tocou ou em que ninguém digitou por 10 minutos. Nas conversas ocultas ela é
+  adiada enquanto o lugar delas recebe, ou quando você a abre. Na conversa ela aparece marcada como **Mensagem de
+  segurança** com o horário em que sairia; apague-a para pará-la. Escreva-a de modo que diga o que é: para o seu contato
+  ela chega como uma mensagem comum. Se o relay não puder ser alcançado quando você abrir o Erevos, ela mantém o
+  horário. Ela é criptografada uma só vez e vai de novo para o relay como está cada vez que é adiada, então não custa
+  nada à sua conversa.
   **Por quê:** uma mensagem guardada pelo relay não precisa de nada deste celular para sair, então quem levar o
   celular não consegue pará-la, a não ser abrindo o Erevos com a senha.
 - **Enviar sem som:** segure a seta de enviar e escolha **Sem som**: o celular da pessoa mostra o aviso sem som nem

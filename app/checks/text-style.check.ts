@@ -52,3 +52,13 @@ test('hidden words are numbered apart, and hidden in a line', () => {
   assert.equal(plainWords('*bold* words'), 'bold words');
   assert.equal(plainWords('no marks'), 'no marks');
 });
+
+test('no message, however made, holds the screen up', () => {
+  for (const text of [' *b'.repeat(2666), ' ||b'.repeat(2000), ' *www.a'.repeat(1100), '_'.repeat(8000), '*a '.repeat(2666), 'x'.repeat(100_000) + '*a*']) {
+    const start = Date.now();
+    styleText(text);
+    plainWords(text + ' ');
+    assert.ok(Date.now() - start < 500, `${text.length} characters took ${Date.now() - start} ms`);
+  }
+  assert.ok(!hasStyle(`${'x'.repeat(9000)} *bold*`), 'too long: shown as typed');
+});

@@ -561,26 +561,31 @@ async function wipe(request, url) {
   lan?.stop();
   lan = null;
   const where = url.searchParams.get('folder');
+  let left = 0;
   if (url.searchParams.get('backups') === '1' && where && chosenFolders().includes(where)) {
+    let names = [];
     try {
-      for (const name of fs.readdirSync(where)) if (BACKUP.test(name)) fs.rmSync(path.join(where, name), { force: true });
+      names = fs.readdirSync(where);
     } catch {
       // The folder is gone, or out of reach: nothing of Erevos's to delete there.
     }
-  }
-  const root = app.getPath('userData');
-  const rest = () => {
-    let left = 0;
-    for (const name of ['secrets.json', 'files', 'folders.json', 'window.json']) {
+    for (const name of names) {
+      if (!BACKUP.test(name)) continue;
       try {
-        fs.rmSync(path.join(root, name), { recursive: true, force: true });
+        fs.rmSync(path.join(where, name), { force: true });
       } catch {
         left += 1;
       }
     }
-    return left;
-  };
-  const left = rest();
+  }
+  const root = app.getPath('userData');
+  for (const name of ['secrets.json', 'files', 'folders.json', 'window.json']) {
+    try {
+      fs.rmSync(path.join(root, name), { recursive: true, force: true });
+    } catch {
+      left += 1;
+    }
+  }
   try {
     await session.defaultSession.clearStorageData();
     await session.defaultSession.clearCache();

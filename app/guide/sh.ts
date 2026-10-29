@@ -669,11 +669,14 @@ na ekranu.
   put otvori.
 - **Sigurnosna poruka:** upišite je, dodirnite **+**, a zatim **Sigurnosna poruka**, i izaberite koliko dugo: 6 ili 12
   sati, 1, 2 ili 3 dana, ili sedmicu. Odmah ide na relay, kao poruka poslana za kasnije, a relay je sam šalje u to
-  vrijeme. Svaki put kad otvorite Erevos, nakon njegove lozinke, pomjera se ponovo za toliko, pa ide samo ako na
-  vrijeme ne otvorite Erevos: ako je telefon izgubljen, oduzet, pokvaren ili bez interneta, ili vam se nešto dogodilo.
-  Erevos koji radi u pozadini je ne pomjera, kao ni njegov ekran lozinke. U razgovoru je označena sa **Sigurnosna
-  poruka** i vremenom kad bi otišla; obrišite je da biste je zaustavili. Napišite je tako da kaže šta jeste: vašem
-  kontaktu stiže kao obična poruka. Ako se relay ne može dosegnuti kad otvorite Erevos, zadržava svoje vrijeme.
+  vrijeme. Svaki put kad otvorite Erevos, nakon njegove lozinke, pomjera se ponovo za toliko, pa ide samo ako na vrijeme
+  ne otvorite Erevos: ako je telefon izgubljen, oduzet, pokvaren ili bez interneta, ili vam se nešto dogodilo. Erevos
+  koji radi u pozadini je ne pomjera, kao ni njegov ekran lozinke, niti prozor ostavljen otvoren koji niko nije dodirnuo
+  ni u njemu kucao 10 minuta. U skrivenim razgovorima pomjera se dok njihovo mjesto prima, ili kad ga otvorite. U
+  razgovoru je označena sa **Sigurnosna poruka** i vremenom kad bi otišla; obrišite je da biste je zaustavili. Napišite
+  je tako da kaže šta jeste: vašem kontaktu stiže kao obična poruka. Ako se relay ne može dosegnuti kad otvorite Erevos,
+  zadržava svoje vrijeme. Šifrira se jednom i ponovo ide na relay onakva kakva jest svaki put kad se pomjeri, pa vašem
+  razgovoru ne košta ništa.
   **Zašto:** poruci koju drži relay ne treba ništa s ovog telefona da bi otišla, pa je niko ko uzme telefon ne može
   zaustaviti, osim otvaranjem Erevosa njegovom lozinkom.
 - **Slanje bez zvuka:** zadržite prst na strelici za slanje i izaberite **Bez zvuka**: telefon te osobe prikazuje

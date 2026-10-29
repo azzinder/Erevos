@@ -1333,7 +1333,8 @@ export class Groups {
       } else {
         const parts = groupPartsOf(said, true);
         await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag, ...parts }]) }));
-        const named = !!parts.named?.includes((await this.me()).id);
+        // Named only where the words name someone with @: a list alone tells through no mute.
+        const named = said.text.includes('@') && !!parts.named?.includes((await this.me()).id);
         this.messageListeners.forEach((listener) => listener(id, named));
       }
       this.changed();

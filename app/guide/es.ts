@@ -676,13 +676,15 @@ pantalla.
   espera en este teléfono y sale a su hora mientras Erevos funciona, también en segundo plano mientras **En segundo
   plano** está en **Recibir y sonar** (más abajo), o cuando Erevos se vuelva a abrir.
 - **Mensaje de seguridad:** escríbelo, toca **+** y luego **Mensaje de seguridad**, y elige cuánto tiempo: 6 o 12
-  horas, 1, 2 o 3 días, o una semana. Va al relay al instante, como uno enviado para más tarde, y el relay lo envía
-  por sí solo a esa hora. Cada vez que abres Erevos, pasada su contraseña, se retrasa de nuevo ese tiempo, así que
-  solo sale si no abres Erevos a tiempo: si el teléfono se pierde, te lo quitan, se rompe o se queda sin internet, o
-  si te ha pasado algo. Erevos en segundo plano no lo retrasa, ni tampoco su pantalla de contraseña. En el chat
-  aparece marcado como **Mensaje de seguridad** con la hora a la que saldría; elimínalo para detenerlo. Escríbelo de
-  modo que diga lo que es: a tu contacto le llega como un mensaje corriente. Si no se puede contactar con el relay
-  cuando abres Erevos, conserva su hora.
+  horas, 1, 2 o 3 días, o una semana. Va al relay al instante, como uno enviado para más tarde, y el relay lo envía por
+  sí solo a esa hora. Cada vez que abres Erevos, pasada su contraseña, se retrasa de nuevo ese tiempo, así que solo sale
+  si no abres Erevos a tiempo: si el teléfono se pierde, te lo quitan, se rompe o se queda sin internet, o si te ha
+  pasado algo. Erevos en segundo plano no lo retrasa, ni tampoco su pantalla de contraseña, ni una ventana que se deja
+  abierta sin que nadie la toque ni escriba en ella durante 10 minutos. En los chats ocultos se retrasa mientras su
+  lugar recibe, o cuando lo abres. En el chat aparece marcado como **Mensaje de seguridad** con la hora a la que
+  saldría; elimínalo para detenerlo. Escríbelo de modo que diga lo que es: a tu contacto le llega como un mensaje
+  corriente. Si no se puede contactar con el relay cuando abres Erevos, conserva su hora. Se cifra una sola vez y va al
+  relay otra vez tal como está cada vez que se retrasa, así que no le cuesta nada a tu chat.
   **Por qué:** un mensaje que guarda el relay no necesita nada de este teléfono para salir, así que quien se lleve el
   teléfono no puede detenerlo, salvo abriendo Erevos con su contraseña.
 - **Enviar sin sonido:** mantén pulsada la flecha de enviar y elige **Sin sonido**: su teléfono muestra el aviso sin

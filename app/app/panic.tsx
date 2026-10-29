@@ -158,7 +158,7 @@ export default function Panic() {
             {state.trigger && state.refused ? (
               <>
                 <Text variant="label" color={colors.danger}>
-                  {state.on && !state.triggerThere
+                  {state.refusedKey
                     ? t('On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.', { when: whenText(state.refused), app: state.triggerLabel })
                     : t('On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.', { when: whenText(state.refused), app: state.triggerLabel })}
                 </Text>

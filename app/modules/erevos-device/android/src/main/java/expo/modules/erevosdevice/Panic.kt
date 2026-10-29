@@ -49,6 +49,7 @@ internal object Panic {
   private const val BACKUPS = "backups"
   private const val FOLDER = "folder"
   private const val REFUSED = "refused"
+  private const val REFUSED_KEY = "refused-key"
   // The names Erevos gives backups (lock/backup.ts BACKUP_PREFIX).
   private const val BACKUP_PREFIX = "erevos-backup-"
 
@@ -108,9 +109,10 @@ internal object Panic {
     val trigger = prefs.getString(TRIGGER, null) ?: return false
     val cert = prefs.getString(CERT, null) ?: return false
     if (caller != trigger) return false
-    val ok = prefs.getBoolean(ON, false) && signedAsTrusted(context, caller, cert)
-    if (!ok) prefs.edit().putLong(REFUSED, System.currentTimeMillis()).apply()
-    return ok
+    val on = prefs.getBoolean(ON, false)
+    val signed = signedAsTrusted(context, caller, cert)
+    if (!on || !signed) prefs.edit().putLong(REFUSED, System.currentTimeMillis()).putBoolean(REFUSED_KEY, !signed).apply()
+    return on && signed
   }
 
   /** The owner trusts the panic app as it is signed now, after the panic screen said it changed. False when it is not installed. */
@@ -118,13 +120,13 @@ internal object Panic {
     val prefs = prefs(context)
     val trigger = prefs.getString(TRIGGER, null) ?: return false
     val cert = certOf(context, trigger) ?: return false
-    prefs.edit().putString(CERT, cert).remove(REFUSED).apply()
+    prefs.edit().putString(CERT, cert).remove(REFUSED).remove(REFUSED_KEY).apply()
     return true
   }
 
   /** The owner read that a wipe was refused. */
   fun seenRefused(context: Context) {
-    prefs(context).edit().remove(REFUSED).apply()
+    prefs(context).edit().remove(REFUSED).remove(REFUSED_KEY).apply()
   }
 
   /** A panic app asked to be the one (PanicKit's CONNECT): kept until the owner answers in Erevos. */
@@ -138,7 +140,7 @@ internal object Panic {
     val prefs = prefs(context)
     val cert = prefs.getString(PENDING_CERT, null)
     if (prefs.getString(PENDING, null) != pkg || cert == null || certOf(context, pkg) != cert) return false
-    prefs.edit().putString(TRIGGER, pkg).putString(CERT, cert).remove(PENDING).remove(PENDING_CERT).remove(REFUSED).apply()
+    prefs.edit().putString(TRIGGER, pkg).putString(CERT, cert).remove(PENDING).remove(PENDING_CERT).remove(REFUSED).remove(REFUSED_KEY).apply()
     return true
   }
 
@@ -150,7 +152,7 @@ internal object Panic {
   fun trigger(context: Context): String? = prefs(context).getString(TRIGGER, null)
 
   fun forget(context: Context) {
-    prefs(context).edit().remove(TRIGGER).remove(CERT).remove(REFUSED).apply()
+    prefs(context).edit().remove(TRIGGER).remove(CERT).remove(REFUSED).remove(REFUSED_KEY).apply()
   }
 
   /** Whether a panic app may wipe, and whether automatic backups in `folder` go too. */
@@ -171,6 +173,7 @@ internal object Panic {
       "triggerThere" to (trigger.isNotEmpty() && signedAsTrusted(context, trigger, prefs.getString(CERT, null).orEmpty())),
       "triggerInstalled" to (trigger.isNotEmpty() && certOf(context, trigger) != null),
       "refused" to prefs.getLong(REFUSED, 0L).toDouble(),
+      "refusedKey" to prefs.getBoolean(REFUSED_KEY, false),
       "pending" to pending,
       "pendingLabel" to if (pending.isEmpty()) "" else labelOf(context, pending),
     )
