@@ -1,5 +1,6 @@
 import type { LinkedMessage } from '../lock/archive';
 import type { FileRef } from '../lock/attachment-files';
+import type { GroupMessage } from '../lock/group-data';
 import type { Message } from '../lock/history';
 import type { VoiceRef } from '../lock/voice-clips';
 import { splitLinks } from './links';
@@ -31,6 +32,8 @@ export type MediaItem = {
   tag: string;
   file?: FileRef;
   voice?: VoiceRef;
+  /** A group's voice message is a file that lasts this long, milliseconds. */
+  ms?: number;
   /** A link: where it opens, and its preview's title when the message has one for it. */
   url?: string;
   title?: string;
@@ -86,6 +89,22 @@ export function chatMedia(messages: Message[], imported: LinkedMessage[] = []): 
     });
     if (message.text) items.push(...linkItems(key, base, message.text));
   });
+  return items.sort((a, b) => b.at - a.at);
+}
+
+/** The media of a group whose messages are `messages`, `nameOf` naming a member, the newest first. */
+export function groupMedia(messages: GroupMessage[], nameOf: (identity: string) => string): MediaItem[] {
+  const items: MediaItem[] = [];
+  for (const message of messages) {
+    if (message.note) continue;
+    const base = { at: message.at, mine: !message.from, sender: message.from ? nameOf(message.from) : '', tag: message.tag };
+    const key = `group|${message.tag}`;
+    if (message.file) {
+      const kind = message.ms !== undefined ? 'voice' : fileKind(message.file);
+      if (kind) items.push({ ...base, key: `${key}|file`, kind, file: message.file, ...(message.ms !== undefined ? { ms: message.ms } : {}) });
+    }
+    if (message.text && !message.sticker && !message.place && !message.poll) items.push(...linkItems(key, base, message.text, message.preview));
+  }
   return items.sort((a, b) => b.at - a.at);
 }
 

@@ -45,6 +45,8 @@ import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
 import { ContactPicker, groupableContacts } from './contact-picker';
+import { ChatMedia } from './chat-media';
+import { groupMedia } from '../lib/chat-media';
 
 // A group chat (lib/groups.ts), of the space or of a hidden place (components/groups-at.tsx): its messages, each of others' with the sender's name, notes of who
 // joined and left, and the message bar to write in (components/composer.tsx). Its members sheet,
@@ -107,6 +109,8 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   // Whether the group's own notifications show (lock/chat-notify.ts).
   const [notifying, setNotifying] = useState(false);
   const [answering, setAnswering] = useState(false);
+  // The group's photos, files, voice messages and links, apart (components/chat-media.tsx).
+  const [mediaOpen, setMediaOpen] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
   // Whether the thread is away from its start and its end, for the arrows to them.
@@ -536,6 +540,13 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
       )}
       {media.sheets}
       {parts.sheets}
+      <ChatMedia
+        visible={mediaOpen && !gated}
+        items={mediaOpen ? groupMedia(shown, name) : []}
+        name={info.name}
+        onClose={() => setMediaOpen(false)}
+        onShow={(item) => parts.goTo(item.tag)}
+      />
       <MembersSheet
         visible={sheet}
         onClose={() => setSheet(false)}
@@ -547,6 +558,10 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
         onContacts={readContacts}
         onNote={setNote}
         onSearch={parts.startSearch}
+        onMedia={() => {
+          setSheet(false);
+          setTimeout(() => setMediaOpen(true), Platform.OS === 'web' ? 0 : 300);
+        }}
         onExport={parts.exportGroup}
         onVideo={() => void call(true)}
         onNotify={
@@ -623,7 +638,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   );
 }
 
-function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onExport, onVideo, onNotify, onPin, onGone }: {
+function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onMedia, onExport, onVideo, onNotify, onPin, onGone }: {
   visible: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -637,6 +652,8 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   onNote: (text: string) => void;
   /** Opens the search through the group's messages, and writes the group out as text. */
   onSearch: () => void;
+  /** Opens the group's media, links and files. */
+  onMedia: () => void;
   onExport: () => void;
   /** Starts a video call in the group, or joins the call going on. */
   onVideo: () => void;
@@ -907,6 +924,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
                   onSearch();
                 }}
               />
+              <Button title={t('Media, links and files')} kind="secondary" compact onPress={onMedia} />
               <Button
                 title={t('Export chat')}
                 kind="secondary"

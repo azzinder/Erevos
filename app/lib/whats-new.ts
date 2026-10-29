@@ -18,6 +18,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages, music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or plays; held, each goes to its message. See [Group chats](#groups)."),
     mark("**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr)."),
     mark("**More battery saved in the background, if you choose**: under Settings → Notifications → In the background, Only the waste stays the default; And nearby phones also turns off the radios for phones nearby while Erevos is in the background; And sleep also lets the phone sleep, so Erevos looks at your relay about once a minute and a message or a call can be a minute or two late. Android only. See [Chat through a relay](#relay)."),
     mark("**Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they read on Nostr, a voice message goes through Nostr like a text, a photo up to 3 MB in pieces, and a larger photo, a video or another file, up to 20 MB, to an encrypted file server (Blossom), all through Tor. See [Through Nostr](#nostr)."),

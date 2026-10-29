@@ -1169,7 +1169,7 @@ ou remove membros.
   **Figurinha**, **Localização** e **Enquete** aqui também. Os links ficam sublinhados e pedem confirmação antes de
   abrir, e as **Prévias de links**, quando ativadas, vão com os seus. Na lista de membros, ou na própria tela de um
   grupo público, **Buscar nesta conversa** percorre as mensagens do grupo e **Exportar conversa** as grava num
-  arquivo; **Mensagens favoritas** e a busca da tela inicial também incluem os grupos. Um membro cujo Erevos é de
+  arquivo, e **Mídia, links e arquivos** lista as fotos, vídeos, mensagens de voz, músicas, arquivos e links do grupo, cada tipo à parte, como na conversa de um contato (veja acima), cada um indo até a sua mensagem; **Mensagens favoritas** e a busca da tela inicial também incluem os grupos. Um membro cujo Erevos é de
   antes desta versão vê as palavras, o emoji de uma figurinha, as coordenadas de um lugar e a pergunta de uma enquete,
   e nada das reações, mensagens fixadas, edições e exclusões.
 - **Ainda não:** marcas, digitando e mensagens temporárias nos grupos, e grupos por um celular por perto.

@@ -1141,7 +1141,7 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
   fotografija, datoteka ili glasovna poruka napušta vaš relay odmah umjesto za 14 dana. **+** i ovdje ima
   **Naljepnica**, **Lokacija** i **Anketa**. Linkovi su podvučeni i pitaju prije otvaranja, a **Pregledi linkova**, kad
   su uključeni, idu s vašim linkovima. Na popisu članova, ili na vlastitom ekranu javne grupe, **Traži u ovom
-  razgovoru** pretražuje poruke grupe, a **Izvezi razgovor** ih ispisuje; **Poruke sa zvjezdicom** i pretraga
+  razgovoru** pretražuje poruke grupe, a **Izvezi razgovor** ih ispisuje, a **Mediji, linkovi i fajlovi** navodi fotografije, videe, glasovne poruke, muziku, fajlove i linkove grupe, svaku vrstu posebno, kao u razgovoru s kontaktom (vidi gore), svaki s skokom na svoju poruku; **Poruke sa zvjezdicom** i pretraga
   početnog ekrana obuhvataju i grupe. Član čiji je Erevos od prije ove verzije vidi riječi, emoji naljepnice,
   koordinate lokacije i pitanje ankete, a ništa od reakcija, prikvačenih poruka, izmjena i brisanja.
 - **Još ne:** oznake, kucanje i poruke koje nestaju u grupama, te grupe preko telefona u blizini.

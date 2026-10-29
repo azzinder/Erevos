@@ -330,4 +330,6 @@ export const whatsNew: Record<string, string> = {
     "**Svaka poruka kaže kojim je putem išla**: zadržite prst na poruci i njen meni kaže je li otišla ili stigla preko relaya, preko Nostra, preko obližnjeg telefona ili preko LoRa. Starije poruke ne kažu ništa. Pogledajte [Preko Nostra](#nostr).",
   "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
     "**Filter za spam čita riječi kako izgledaju**: prevarantska SMS poruka koja zamijeni slovo sličnim slovom iz drugog pisma, ili u riječ sakrije znak koji se ne vidi, više ga ne zavarava. Pogledajte [SMS](#sms).",
+  "**Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages, music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or plays; held, each goes to its message. See [Group chats](#groups).":
+    "**Mediji, linkovi i fajlovi i u grupama**: u detaljima grupe popis njenih fotografija, videa, glasovnih poruka, muzike, fajlova i linkova, svaka vrsta posebno pod svojim mjesecima, s kalendarom, kao u razgovoru s kontaktom. Dodir otvara ili pušta; držanjem svaki ide na svoju poruku. Pogledajte [Grupni razgovori](#groups).",
 };

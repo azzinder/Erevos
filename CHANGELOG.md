@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages,
+  music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or
+  plays; held, each goes to its message.
 - **Every message says which way it went**: hold a message and its menu says whether it went or came through the relay,
   through Nostr, to a phone nearby or over LoRa. Messages from before say nothing.
 - **More battery saved in the background, if you choose** (Android): under **Settings** → **Notifications** →

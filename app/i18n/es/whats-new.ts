@@ -329,4 +329,6 @@ export const whatsNew: Record<string, string> = {
     "**Cada mensaje dice por dónde fue**: mantén pulsado un mensaje y su menú dice si fue o llegó por el relay, por Nostr, por un teléfono cercano o por LoRa. Los mensajes anteriores no dicen nada. Mira [A través de Nostr](#nostr).",
   "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
     "**El filtro de spam lee las palabras como se ven**: un SMS de estafa que cambia una letra por una parecida de otro alfabeto, o esconde dentro de una palabra una marca que no se ve, ya no lo engaña. Mira [SMS](#sms).",
+  "**Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages, music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or plays; held, each goes to its message. See [Group chats](#groups).":
+    "**Multimedia, enlaces y archivos también en los grupos**: en los detalles de un grupo, una lista de sus fotos, vídeos, mensajes de voz, música, archivos y enlaces, cada tipo aparte bajo sus meses, con un calendario, como en el chat de un contacto. Un toque abre o reproduce; mantenido, cada uno va a su mensaje. Mira [Chats de grupo](#groups).",
 };

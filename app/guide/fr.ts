@@ -1238,7 +1238,7 @@ l’admin, et seul l’admin ajoute ou retire des membres.
   **Sondage** ici. Les liens sont soulignés et demandent confirmation avant de s’ouvrir, et les **Aperçus des liens**,
   quand ils sont activés, partent avec les tiens. Dans la feuille des membres, ou l’écran propre d’un groupe public,
   **Rechercher dans cette discussion** parcourt les messages du groupe et **Exporter la discussion** les écrit dans un
-  fichier ; **Messages avec étoile** et la recherche de l’écran d’accueil incluent aussi les groupes. Un membre dont
+  fichier, et **Médias, liens et fichiers** liste les photos, vidéos, messages vocaux, musiques, fichiers et liens du groupe, chaque sorte à part, comme dans la discussion d’un contact (voir plus haut), chacun menant à son message ; **Messages avec étoile** et la recherche de l’écran d’accueil incluent aussi les groupes. Un membre dont
   l’Erevos est d’avant cette version voit les mots, l’emoji d’un sticker, les coordonnées d’un lieu et la question d’un
   sondage, et rien des réactions, épingles, modifications et suppressions.
 - **Pas encore :** les marques, la saisie et les messages éphémères dans les groupes, et les groupes par un téléphone à

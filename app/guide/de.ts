@@ -1267,7 +1267,7 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
   **Standort** und **Umfrage**. Links sind unterstrichen und werden vor dem Öffnen bestätigt, und **Linkvorschauen**
   gehen, wenn eingeschaltet, mit deinen mit. In der Mitgliederliste, oder auf dem eigenen Bildschirm einer
   öffentlichen Gruppe, durchsucht **In diesem Chat suchen** die Nachrichten der Gruppe, und **Chat exportieren**
-  schreibt sie heraus; **Markierte Nachrichten** und die Suche des Startbildschirms schließen die Gruppen mit ein. Ein
+  schreibt sie heraus, und **Medien, Links und Dateien** listet die Fotos, Videos, Sprachnachrichten, Musik, Dateien und Links der Gruppe auf, jede Art für sich, wie im Chat eines Kontakts (siehe oben), jedes mit Sprung zu seiner Nachricht; **Markierte Nachrichten** und die Suche des Startbildschirms schließen die Gruppen mit ein. Ein
   Mitglied, dessen Erevos von vor dieser Version ist, sieht die Worte, das Emoji eines Stickers, die Koordinaten eines
   Orts und die Frage einer Umfrage, und nichts von Reaktionen, Anheftungen, Bearbeitungen und Löschen.
 - **Noch nicht:** Zeichen, Tippen und verschwindende Nachrichten in Gruppen, und Gruppen über ein Telefon in der Nähe.

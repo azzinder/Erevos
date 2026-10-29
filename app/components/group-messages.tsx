@@ -381,6 +381,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
         setTimeout(() => goTo(m.tag), 400);
       }
     },
+    /** Goes to one of the group's messages, by its tag, and lights it a moment. */
+    goTo,
     /** Whether the thread follows what comes, to its end: not once a message was gone to, until we write. */
     follows: () => !stays.current,
     /** As its arrows go: kept where it is read, at its start, or following what comes again, at its end. */

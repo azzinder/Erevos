@@ -1192,7 +1192,7 @@ solo l’admin aggiunge o rimuove membri.
   invece che dopo 14 giorni. Anche qui **+** ha **Sticker**, **Posizione** e **Sondaggio**. I link sono sottolineati e
   prima di aprirli viene chiesto, e le **Anteprime dei link**, se attive, partono con i tuoi. Nel pannello dei membri, o
   nella schermata di un gruppo pubblico, **Cerca in questa chat** cerca tra i messaggi del gruppo ed **Esporta chat**
-  li scrive su file; anche **Messaggi importanti** e la ricerca della schermata principale includono i gruppi. Un
+  li scrive su file, e **Media, link e file** elenca le foto, i video, i messaggi vocali, la musica, i file e i link del gruppo, ogni tipo a parte, come nella chat di un contatto (vedi sopra), ciascuno con il salto al suo messaggio; anche **Messaggi importanti** e la ricerca della schermata principale includono i gruppi. Un
   membro il cui Erevos è di prima di questa versione vede le parole, l’emoji di uno sticker, le coordinate di un luogo
   e la domanda di un sondaggio, e niente di reazioni, messaggi fissati, modifiche ed eliminazioni.
 - **Non ancora:** segni, scrittura in corso e messaggi effimeri nei gruppi, e gruppi tramite un telefono vicino.

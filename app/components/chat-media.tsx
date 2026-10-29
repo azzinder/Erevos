@@ -271,7 +271,10 @@ export function ChatMedia({ visible, items, name, onClose, onShow }: {
 
   function lineTitle(item: MediaItem): string {
     if (item.kind === 'link') return item.title || hostOf(item.url ?? '');
-    if (item.kind === 'voice') return item.voice ? `${t('Voice message')} · ${voiceDuration(item.voice.ms)}` : t('Voice message');
+    if (item.kind === 'voice') {
+      const ms = item.voice?.ms ?? item.ms;
+      return ms !== undefined ? `${t('Voice message')} · ${voiceDuration(ms)}` : t('Voice message');
+    }
     return item.file?.name ?? '';
   }
 

@@ -1171,7 +1171,7 @@ añade o saca miembros.
   en lugar de a los 14 días. **+** también tiene aquí **Sticker**, **Ubicación** y **Encuesta**. Los enlaces aparecen
   subrayados y se pregunta antes de abrirlos, y las **Vistas previas de enlaces**, cuando están activadas, van con los
   tuyos. En la hoja de miembros, o en la pantalla propia de un grupo público, **Buscar en este chat** recorre los
-  mensajes del grupo y **Exportar chat** los escribe en un archivo; **Mensajes destacados** y la búsqueda de la pantalla
+  mensajes del grupo y **Exportar chat** los escribe en un archivo, y **Multimedia, enlaces y archivos** lista las fotos, vídeos, mensajes de voz, música, archivos y enlaces del grupo, cada tipo aparte, como en el chat de un contacto (mira arriba), y cada uno va a su mensaje; **Mensajes destacados** y la búsqueda de la pantalla
   de inicio también incluyen los grupos. Un miembro cuyo Erevos sea anterior a esta versión ve las palabras, el emoji de
   un sticker, las coordenadas de un lugar y la pregunta de una encuesta, y nada de reacciones, mensajes fijados,
   ediciones y eliminaciones.

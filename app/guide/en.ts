@@ -1084,7 +1084,7 @@ out members.
   the members' Erevos delete it too, and a photo, file or voice message of yours leaves your relay at once instead of
   in 14 days. **+** has **Sticker**, **Location** and **Poll** here too. Links are underlined and asked before
   they open, and **Link previews**, when on, go with yours. In the members sheet, or a public group's own screen, **Search in this chat** goes through the group's messages and **Export chat**
-  writes them out; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
+  writes them out, and **Media, links and files** lists the group's photos, videos, voice messages, music, files and links, each kind apart, as in a contact's chat (see above), each going to its message; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
   nothing of reactions, pins, edits and deleting.
 - **Not yet:** marks, typing and disappearing messages in groups, and groups over a nearby phone.

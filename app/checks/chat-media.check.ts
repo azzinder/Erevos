@@ -6,7 +6,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { chatMedia, dayKey, daysOf, fileKind, importedTag, linksIn, monthWeeks } from '../lib/chat-media';
+import { chatMedia, dayKey, daysOf, fileKind, groupMedia, importedTag, linksIn, monthWeeks } from '../lib/chat-media';
+import type { GroupMessage } from '../lock/group-data';
 import type { LinkedMessage } from '../lock/archive';
 import type { FileRef } from '../lock/attachment-files';
 import type { Message } from '../lock/history';
@@ -93,4 +94,30 @@ test("the calendar's days are those that have any, and its weeks start on Monday
   // February 2027 starts on a Monday: four whole weeks.
   assert.deepEqual(monthWeeks(2027, 1)[0], [1, 2, 3, 4, 5, 6, 7]);
   assert.equal(monthWeeks(2027, 1).length, 4);
+});
+
+test('a group lists its photos, voice messages, files and links, with who sent them, the newest first', () => {
+  const sent = (tag: string, at: number, more: Partial<GroupMessage> = {}): GroupMessage => ({ at, from: 'aa', text: '', tag, ...more });
+  const items = groupMedia(
+    [
+      sent('one', 1000, { file: file('a.jpg', 'image/jpeg', 'photo') }),
+      sent('two', 2000, { file: file('voice', 'audio/mp4'), ms: 4000, from: '' }),
+      sent('three', 3000, { text: 'see https://example.org/x and https://example.org/x' }),
+      sent('four', 4000, { file: file('big.pdf', 'application/pdf', 'file', { from: { kind: 'blossom' } as never }) }),
+      sent('five', 5000, { text: 'joined', note: true }),
+      sent('six', 6000, { text: 'https://example.org/sticker', sticker: 'tux-1' }),
+      sent('seven', 7000, { file: file('s.png', 'image/png', 'photo', { sticker: true }) }),
+    ],
+    (id) => `member ${id}`,
+  );
+  assert.deepEqual(
+    items.map((i) => [i.tag, i.kind, i.sender, i.mine]),
+    [
+      ['four', 'file', 'member aa', false],
+      ['three', 'link', 'member aa', false],
+      ['two', 'voice', '', true],
+      ['one', 'photo', 'member aa', false],
+    ],
+  );
+  assert.equal(items.find((i) => i.kind === 'voice')?.ms, 4000);
 });
