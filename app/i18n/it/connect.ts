@@ -35,4 +35,11 @@ export const connect: Record<string, string> = {
   "For advanced users": "Per utenti esperti",
   "A relay of your own, or one whose address and token you were given. Most people need none of this.": "Un relay tuo, o uno di cui ti hanno dato indirizzo e token. Alla maggior parte delle persone non serve nulla di questo.",
   "Relay address and token, a second relay, invites to your relay": "Indirizzo e token del relay, un secondo relay, inviti al tuo relay",
+  "Link for a website": "Link per un sito web",
+  "Link for a website copied.": "Link per un sito web copiato.",
+  "A link to put on a web page, such as your contact page: it opens a page that offers Erevos to whoever has no Erevos yet, then adds you. It works for as long as your contact link does.": "Un link da mettere su una pagina web, come la tua pagina dei contatti: apre una pagina che offre Erevos a chi non ce l’ha ancora, poi ti aggiunge. Vale finché vale il tuo link di contatto.",
+  "Anyone can see it, so anyone can write to you: what they send comes as a message request, which you accept or refuse, and you can block them. It gives no one a place on your relay. New contact link ends it.": "Chiunque può vederlo, quindi chiunque può scriverti: ciò che invia arriva come richiesta di messaggio, che accetti o rifiuti, e puoi bloccarlo. Non dà a nessuno un posto sul tuo relay. «Nuovo link di contatto» lo annulla.",
+  "Shown on the page, and their phone names you with it. Optional.": "Mostrato sulla pagina, e il suo telefono ti chiama così. Facoltativo.",
+  "Your contact link has no keys yet, so there is no link for a website.": "Il tuo link di contatto non ha ancora chiavi, quindi non c’è un link per un sito web.",
+  "Copy the link": "Copia il link",
 };

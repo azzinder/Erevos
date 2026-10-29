@@ -35,4 +35,11 @@ export const connect: Record<string, string> = {
   "For advanced users": "Για προχωρημένους",
   "A relay of your own, or one whose address and token you were given. Most people need none of this.": "Για δικό σου relay, ή για ένα που σου έδωσαν τη διεύθυνση και το token του. Οι περισσότεροι δεν χρειάζονται τίποτα από αυτά.",
   "Relay address and token, a second relay, invites to your relay": "Διεύθυνση και token του relay, δεύτερο relay, προσκλήσεις στο relay σου",
+  "Link for a website": "Σύνδεσμος για ιστοσελίδα",
+  "Link for a website copied.": "Ο σύνδεσμος για ιστοσελίδα αντιγράφηκε.",
+  "A link to put on a web page, such as your contact page: it opens a page that offers Erevos to whoever has no Erevos yet, then adds you. It works for as long as your contact link does.": "Ένας σύνδεσμος για να τον βάλεις σε μια ιστοσελίδα, όπως τη σελίδα επικοινωνίας σου: ανοίγει μια σελίδα που προτείνει το Erevos σε όποιον δεν το έχει ακόμα, και μετά σε προσθέτει. Ισχύει όσο ισχύει και ο σύνδεσμος επαφής σου.",
+  "Anyone can see it, so anyone can write to you: what they send comes as a message request, which you accept or refuse, and you can block them. It gives no one a place on your relay. New contact link ends it.": "Τον βλέπει οποιοσδήποτε, άρα οποιοσδήποτε μπορεί να σου γράψει: ό,τι στείλει έρχεται ως αίτημα μηνύματος, που το αποδέχεσαι ή το απορρίπτεις, και μπορείς να τον αποκλείσεις. Δεν δίνει σε κανέναν θέση στο relay σου. Ο «Νέος σύνδεσμος επαφής» τον καταργεί.",
+  "Shown on the page, and their phone names you with it. Optional.": "Φαίνεται στη σελίδα, και με αυτό σε ονομάζει το κινητό του. Προαιρετικό.",
+  "Your contact link has no keys yet, so there is no link for a website.": "Ο σύνδεσμος επαφής σου δεν έχει ακόμα κλειδιά, άρα δεν υπάρχει σύνδεσμος για ιστοσελίδα.",
+  "Copy the link": "Αντιγραφή συνδέσμου",
 };

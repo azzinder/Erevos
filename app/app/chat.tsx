@@ -45,6 +45,7 @@ import { QrCode } from '../components/QrCode';
 import { ContactPicker } from '../components/contact-picker';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
+import { WebsiteLink } from '../components/website-link';
 import { WelcomeInvite } from '../components/welcome-invite';
 import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
 import { RelayKeyNote } from '../components/relay-key-note';
@@ -79,7 +80,7 @@ import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { ask, choose } from '../lib/alert';
-import { contactLink, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
+import { contactLink, contactLinkName, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/relay-offer';
 import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../lib/welcome';
@@ -712,6 +713,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [showQr, setShowQr] = useState(false);
   // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
   const [welcoming, setWelcoming] = useState(false);
+  // Link for a website (components/website-link.tsx), from the space's contact link.
+  const [webLinking, setWebLinking] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
   // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
   // Introductions (lib/intros.ts): changes as one is made, answered or comes. `introducing`: the
@@ -4701,7 +4704,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return false;
     }
     setContactDraft('');
-    void acceptContact(code, undefined, true);
+    // A link from a web page names its phone: the name it takes while it has none of its own.
+    const name = contactLinkName(text);
+    void acceptContact(code, name ? { place: contactsPlace, name } : undefined, true);
     return true;
   }
 
@@ -5953,6 +5958,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           contactLink={ownLink}
           onNote={setNote}
         />
+        <WebsiteLink
+          visible={webLinking && shown && !hiddenKey && !!ownLink}
+          onClose={() => setWebLinking(false)}
+          contactLink={ownLink}
+          name={e2e?.invitedAs() ?? ''}
+          onNote={setNote}
+        />
         <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
           {ownLink ? <QrCode text={ownLink} size={240} /> : null}
           <Text variant="caption" tone="muted">
@@ -6225,6 +6237,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         compact
                         onPress={() => void shareLink(ownLink)}
                       />
+                      {!hiddenKey ? <Button title={t('Link for a website')} kind="secondary" compact onPress={() => setWebLinking(true)} /> : null}
                       {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
                     </Row>
                     {ownQueue && canSharePlace ? (

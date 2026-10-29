@@ -817,6 +817,11 @@ un indirizzo push per tutte le code dei tuoi contatti (vedi [Su iPhone](#iphone)
   QR che hai dato prima funzionano per altri 14 giorni, poi non più. I tuoi contatti non ne risentono. Se il relay
   perde la coda che nomina il tuo link, ricevi un nuovo link allo stesso modo, ma quelli che hai dato prima smettono
   subito di funzionare.
+- **Link per un sito web**, accanto, nelle chat dello spazio, ti dà un link da mettere su una pagina web, come la tua
+  pagina dei contatti, con il nome che scegli. Apre una pagina che offre Erevos a chi non ce l’ha ancora, su Android, un
+  iPhone o un computer, e poi ti aggiunge. Chiunque lo veda può scriverti, quindi ciò che invia arriva come richiesta di
+  messaggio, che accetti, rifiuti o blocchi. Non dà un posto sul tuo relay e vale finché vale il tuo link di contatto:
+  **Nuovo link di contatto** annulla anche lui.
 - **Su un computer collegato** passa al telefono, che a sua volta lo elimina o lo blocca e sposta le sue code, anche
   quella del computer. Il telefono tiene chi è bloccato e lo dice al computer: aggiungerlo lì dal suo link ti chiede di
   sbloccarlo anche lì, e **Sblocca** lo sblocca anche sul telefono.

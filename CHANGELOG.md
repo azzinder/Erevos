@@ -14,6 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Link for a website**: under **New chat** → **Your contact link**, **Link for a website** gives a link to put on a
+  web page, such as a contact page, with a name for it: `https://erevos-web.lphl.nekten.eu/c#<the contact link>`
+  (`contactPageLink` in `lib/contact-code.ts`). Its page in the web app (`pwa/c/`, signed with the rest, served as
+  `/i/` is) reads the link on the device, offers Erevos (the APK on Android, the web app on an iPhone, the computer
+  app) and opens `erevos://contact?…` or, in the web app, `/contact?…`; pasted in New chat, the app takes it too.
+  It has no place on the relay in it (no `lend`), lasts as long as the contact link (New contact link ends it), and
+  whoever adds it writes a message request first. The Add a contact screen now reads the whole link, backup relays
+  and Nostr included, and shows the name it gives. Needs the next web publish for the page. See [Chat through a
+  relay](#relay).
+
 ### Under the hood
 
 - **A chat read as it opens stays read**: a chat opened right after its message came, from its notice or the home

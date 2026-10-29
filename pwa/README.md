@@ -123,6 +123,18 @@ The first time, the page comes straight from the server, unchecked, as the web a
 start does. A server that is broken into could send a page that passes the invite on: an invite is
 as safe as the text message that carries it, for the 2 days it lasts.
 
+## The contact page
+
+A contact link for a website (**Link for a website**, under New chat → Your contact link) is a
+link to `/c#<the contact link's fields>[&n=<name>]` (`app/lib/contact-code.ts`, `contactPageLink`),
+for a page anyone may open, such as a contact page. `/c/` is a page of its own in every release
+(`pwa/c/`, with the invite page's style), signed with the rest, served as `/i/` is. It reads the
+link on the device and shows whom it adds and how: on Android, Erevos and then
+`erevos://contact?<fields>`; on an iPhone, the link copied, Erevos added to the home screen and the
+link pasted in New chat; elsewhere, the app or the web app; where the web app's worker serves the
+page, `/contact?<fields>`. The link has no place on a relay in it, and it lasts as long as the
+contact link does (New contact link ends it). Whoever adds it writes a message request first.
+
 ## Matrix calls
 
 A Matrix call opens Element Call (Element's call app, AGPL-3.0, from the npm package
@@ -212,6 +224,7 @@ app makes no Matrix calls and needs no second address.
 - `sw.js`: the service worker; `build.mjs` writes the public key into it.
 - `boot.js`, `boot.css`: the page's first script, and its screens before the app starts.
 - `i/`: the page an invite sent by text message opens, `/i#<invite>`.
+- `c/`: the page a contact link for a website opens, `/c#<contact link>`.
 - `element-call.mjs`: makes Element Call ready for its frame, for the web app and the computer.
 - `build.mjs`: makes the web app from the web build, with the icons from `brand/`.
 - `release.mjs`: `keygen`, `sign`, `verify`.

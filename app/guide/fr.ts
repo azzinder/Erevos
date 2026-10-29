@@ -861,6 +861,11 @@ contacts (voir [Sur un iPhone](#iphone)).
   QR que tu as donnés avant fonctionnent encore 14 jours, puis plus du tout. Tes contacts ne sont pas touchés. Si le
   relais perdait la file que nomme ton lien, tu obtiendrais un nouveau lien de la même façon, mais ceux que tu as donnés
   avant cesseraient aussitôt de fonctionner.
+- **Lien pour un site web**, à côté, dans les discussions de l’espace, te donne un lien à mettre sur une page web, comme
+  ta page de contact, avec le nom que tu choisis. Il ouvre une page qui propose Erevos à qui ne l’a pas encore, sur
+  Android, un iPhone ou un ordinateur, puis t’ajoute. Quiconque le voit peut t’écrire, donc ce qu’on envoie arrive comme
+  demande de message, que tu acceptes, refuses ou bloques. Il ne donne aucune place sur ton relais et vaut tant que ton
+  lien de contact vaut : **Nouveau lien de contact** l’annule aussi.
 - **Sur un ordinateur associé**, cela passe par le téléphone, qui le supprime ou le bloque aussi et déplace ses files,
   celle de l’ordinateur aussi. Le téléphone garde qui est bloqué et le dit à l’ordinateur : l’y ajouter depuis son lien
   te demande aussi de le débloquer, et **Débloquer** le débloque aussi sur le téléphone.

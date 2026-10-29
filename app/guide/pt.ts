@@ -812,6 +812,11 @@ endereço de push para todas as filas dos seus contatos (veja [Num iPhone](#ipho
   códigos QR que você deu antes funcionam por mais 14 dias, e depois não mais. Os seus contatos não são afetados. Se o
   relay perder a fila que o seu link nomeia, você ganha um novo link do mesmo jeito, mas os que você deu antes param
   de funcionar na hora.
+- **Link para um site**, ao lado, nas conversas do espaço, dá a você um link para pôr numa página web, como sua página
+  de contato, com o nome que escolher. Ele abre uma página que oferece o Erevos a quem ainda não o tem, no Android, num
+  iPhone ou num computador, e depois adiciona você. Qualquer pessoa que o veja pode escrever para você, então o que
+  enviar chega como solicitação de mensagem, que você aceita, recusa ou bloqueia. Não dá lugar no seu relay e vale
+  enquanto valer seu link de contato: **Novo link de contato** também o anula.
 - **Num computador conectado** isso vai para o celular, que também o apaga ou bloqueia e muda as filas dele, também as
   do computador. O celular guarda quem está bloqueado e avisa o computador: adicioná-lo ali pelo link dele também pede
   que você o desbloqueie, e **Desbloquear** o desbloqueia no celular também.

@@ -8,7 +8,7 @@
 //   files in a cache of their own. Anything that does not match, and it does not install;
 // - serves the app from that cache only: a file the release does not list is not served, and
 //   nothing of the app comes from the network once installed, so the server cannot change it. An
-//   address with a page of its own in the release (the invite page, /i/) gets that page, every
+//   address with a page of its own in the release (the invite page, /i/, and the contact page, /c/) gets that page, every
 //   other address the app;
 // - on Element Call's own origin (CALL_ORIGIN, where the app's frame for Matrix calls comes from:
 //   app/lib/element-call-window.web.ts), the same, but only Element Call's files (/element-call/),
@@ -308,7 +308,7 @@ async function serve(path) {
   }
 }
 
-/** The page an address opens: one of its own the release lists (the invite page, /i/), else the
+/** The page an address opens: one of its own the release lists (the invite page, /i/, and the contact page, /c/), else the
  *  app. On Element Call's origin only its pages, else none. */
 function pageOf(pathname, release) {
   const pages = [pathname, `${pathname.replace(/\/?$/, '/')}index.html`];

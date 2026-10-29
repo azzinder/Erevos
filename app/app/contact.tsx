@@ -4,18 +4,22 @@ import { useState } from 'react';
 import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { Button, Field, Page, Text, TextButton } from '../components/ui';
 import { amongPlace, type Among, type Card as ContactCard } from '../lib/contact-book';
-import { checkContact, offerContact } from '../lib/contact-code';
+import { contactLinkName, linkOfFields, offerContact, parseContact } from '../lib/contact-code';
 import { useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { linkCard } from '../lib/sealed-contacts';
 
-// Opens from a scanned contact code, erevos://contact?id=...&relay=...&key=... (see lib/contact-code.ts).
+// Opens from a scanned contact code, erevos://contact?id=...&relay=...&key=... (see lib/contact-code.ts),
+// or a contact page's link (CONTACT_PAGE there, opened by pwa/c/), which may name its phone.
 // Nothing is added until the person confirms, because any link can open this screen. Or added and
 // connected to one of my contacts, whose name it then takes (components/connect-picker.tsx).
 
 export default function Contact() {
-  const { id, relay, key, rk } = useLocalSearchParams<{ id?: string; relay?: string; key?: string; rk?: string }>();
-  const code = checkContact(id, relay ?? '', key ?? '', rk ?? '');
+  // All of the link, as it reads when pasted: its backup relays and where it reads on Nostr too.
+  const fields = useLocalSearchParams<Record<string, string | string[]>>();
+  const link = linkOfFields(fields);
+  const code = parseContact(link);
+  const name = contactLinkName(link);
   // The chats it goes to: open hidden chats beneath take it, so their contacts are offered; else the space's.
   const hiddenOpen = useOpenHiddenPlace();
   const among: Among = hiddenOpen ?? 'space';
@@ -45,6 +49,11 @@ export default function Contact() {
   return (
     <Page>
       <Text variant="title">{t('Add a contact')}</Text>
+      {name ? (
+        <Field label={t('Name')}>
+          <Text selectable>{name}</Text>
+        </Field>
+      ) : null}
       <Field label={t('Relay sender id')}>
         <Text selectable variant="mono" style={{ fontSize: 13 }}>
           {code.senderHex || t('None yet: their phone has no relay queue. You reach them nearby, over Wi-Fi or Bluetooth, until it has.')}
@@ -68,7 +77,8 @@ export default function Contact() {
       <Button
         title={t('Add to chat')}
         onPress={() => {
-          offerContact(code);
+          const into = name ? amongPlace(among) : null;
+          offerContact(code, into ? { place: into, name } : undefined);
           router.dismissTo('/chat');
         }}
       />

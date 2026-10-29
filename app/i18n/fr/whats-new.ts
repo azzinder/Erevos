@@ -10,6 +10,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show.":
     "**Une discussion lue pendant qu’elle s’ouvre reste lue** : les messages lus alors que leur discussion s’ouvrait encore, le temps qu’Erevos finisse de regarder sur le relais, apparaissaient comme non lus sur l’écran d’accueil dès que tu revenais. Maintenant, ils sont marqués comme lus dès qu’ils s’affichent.",
+  "**Link for a website**: under New chat → Your contact link, a link to put on a web page, such as your contact page. It opens a page that offers Erevos to whoever has none yet, then adds you; what they send comes as a message request. See [Chat through a relay](#relay).":
+    "**Lien pour un site web** : dans Nouvelle discussion → Ton lien de contact, un lien à mettre sur une page web, comme ta page de contact. Il ouvre une page qui propose Erevos à qui ne l’a pas encore, puis t’ajoute ; ce qu’on envoie arrive comme demande de message. Voir [Discuter par un relais](#relay).",
   "**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates).":
     "**Un téléchargement de mise à jour qui se bloque est réessayé** : quand la connexion n’apporte plus rien pendant un moment, Erevos reprend le téléchargement de lui-même, trois fois en tout, puis le dit avec ses propres mots. Voir [Mises à jour](#updates).",
   // 4.0.0-rc.1

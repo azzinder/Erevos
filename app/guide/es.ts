@@ -814,6 +814,11 @@ tiene una dirección push para las colas de todos tus contactos (ver [En un iPho
   códigos QR que diste antes funcionan 14 días más, y luego ya no. Tus contactos no se ven afectados. Si el relay pierde
   la cola que nombra tu enlace, recibes un enlace nuevo de la misma manera, pero los que diste antes dejan de funcionar
   al instante.
+- **Enlace para una web**, a su lado, en los chats del espacio, te da un enlace para poner en una página web, como tu
+  página de contacto, con el nombre que elijas. Abre una página que ofrece Erevos a quien aún no lo tiene, en Android,
+  un iPhone o un ordenador, y luego te añade. Cualquiera que lo vea puede escribirte, así que lo que envíe llega como
+  solicitud de mensaje, que aceptas, rechazas o bloqueas. No da un lugar en tu relay y vale mientras valga tu enlace de
+  contacto: **Nuevo enlace de contacto** también lo anula.
 - **En un ordenador vinculado** va al teléfono, que también lo elimina o lo bloquea y mueve sus colas, también las del
   ordenador. El teléfono guarda quién está bloqueado y se lo dice al ordenador: añadirlo ahí desde su enlace también te
   pide desbloquearlo, y **Desbloquear** también lo desbloquea en el teléfono.

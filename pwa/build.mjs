@@ -103,19 +103,26 @@ write(
 
 write('boot.js', fs.readFileSync(path.join(here, 'boot.js')));
 write('boot.css', fs.readFileSync(path.join(here, 'boot.css')));
-// The page an invite sent by text message opens, /i/ (i/invite.js), under the same policy.
-if (fs.existsSync(path.join(out, 'i'))) fail(`${from} has an i/ of its own, where the invite page goes.`);
-fs.cpSync(path.join(here, 'i'), path.join(out, 'i'), { recursive: true });
-let invitePage = fs.readFileSync(path.join(out, 'i', 'index.html'), 'utf8');
-if (!invitePage.includes('<meta charset="utf-8" />')) fail('pwa/i/index.html has lost its charset line.');
-// Its script and style named with their hash: the server sends them with no no-cache, so a browser
-// that kept older ones from an invite before fetches these.
-for (const name of ['invite.js', 'invite.css']) {
-  if (!invitePage.includes(`"/i/${name}"`)) fail(`pwa/i/index.html no longer loads /i/${name}.`);
-  const hash = createHash('sha256').update(fs.readFileSync(path.join(out, 'i', name))).digest('hex').slice(0, 16);
-  invitePage = invitePage.replace(`"/i/${name}"`, `"/i/${name}?${hash}"`);
+// The pages of their own, under the same policy: the one an invite sent by text message opens, /i/
+// (i/invite.js), and the one a contact link for a website opens, /c/ (c/contact.js, with the
+// invite page's style).
+for (const [dir, files] of [
+  ['i', ['i/invite.js', 'i/invite.css']],
+  ['c', ['c/contact.js', 'i/invite.css']],
+]) {
+  if (fs.existsSync(path.join(out, dir))) fail(`${from} has a ${dir}/ of its own, where a page of Erevos goes.`);
+  fs.cpSync(path.join(here, dir), path.join(out, dir), { recursive: true });
+  let page = fs.readFileSync(path.join(out, dir, 'index.html'), 'utf8');
+  if (!page.includes('<meta charset="utf-8" />')) fail(`pwa/${dir}/index.html has lost its charset line.`);
+  // Its script and style named with their hash: the server sends them with no no-cache, so a browser
+  // that kept older ones from a visit before fetches these.
+  for (const name of files) {
+    if (!page.includes(`"/${name}"`)) fail(`pwa/${dir}/index.html no longer loads /${name}.`);
+    const hash = createHash('sha256').update(fs.readFileSync(path.join(here, name))).digest('hex').slice(0, 16);
+    page = page.replace(`"/${name}"`, `"/${name}?${hash}"`);
+  }
+  write(`${dir}/index.html`, page.replace('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`));
 }
-write('i/index.html', invitePage.replace('<meta charset="utf-8" />', `<meta charset="utf-8" />\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`));
 // Element Call, which the worker serves only on its own origin.
 if (!withoutCalls) {
   if (fs.existsSync(path.join(out, 'element-call'))) fail(`${from} has an element-call/ of its own, where Element Call goes.`);

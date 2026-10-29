@@ -10,6 +10,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show.":
     "**Μια συνομιλία που διαβάστηκε όσο άνοιγε μένει διαβασμένη**: μηνύματα που διάβασες ενώ η συνομιλία τους άνοιγε ακόμη, όσο το Erevos τελείωνε μια ματιά στο relay, έδειχναν αδιάβαστα στην αρχική οθόνη μόλις γύριζες πίσω. Τώρα σημειώνονται διαβασμένα μόλις φανούν.",
+  "**Link for a website**: under New chat → Your contact link, a link to put on a web page, such as your contact page. It opens a page that offers Erevos to whoever has none yet, then adds you; what they send comes as a message request. See [Chat through a relay](#relay).":
+    "**Σύνδεσμος για ιστοσελίδα**: στη Νέα συνομιλία → Ο σύνδεσμος επαφής σου, ένας σύνδεσμος για να τον βάλεις σε μια ιστοσελίδα, όπως τη σελίδα επικοινωνίας σου. Ανοίγει μια σελίδα που προτείνει το Erevos σε όποιον δεν το έχει ακόμα, και μετά σε προσθέτει· ό,τι στέλνει έρχεται ως αίτημα μηνύματος. Δες [Συνομιλία μέσω relay](#relay).",
   "**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates).":
     "**Η λήψη μιας ενημέρωσης που κολλά ξαναρχίζει**: όταν η σύνδεση δεν φέρνει τίποτα για αρκετή ώρα, το Erevos ξαναρχίζει μόνο του τη λήψη, τρεις φορές συνολικά, και μετά το λέει με δικά του λόγια. Δες [Ενημερώσεις](#updates).",
   // 4.0.0-rc.1

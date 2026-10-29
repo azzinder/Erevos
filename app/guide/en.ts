@@ -755,6 +755,11 @@ push address for all your contacts' queues (see [On an iPhone](#iphone)).
 - **New contact link**, beside **Share my contact link**, gives you a new link: the links and QR codes you gave before
   work for 14 more days, then no more. Your contacts are not affected. Should the relay lose the queue your link
   names, you get a new link the same way, but the ones you gave before stop working at once.
+- **Link for a website**, beside it, in the space's chats, gives you a link to put on a web page, such as your contact
+  page, with the name you choose for it. It opens a page that offers Erevos to whoever has none yet, on Android, an
+  iPhone or a computer, and then adds you. Anyone who sees it can write to you, so what they send comes as a message
+  request, which you accept, refuse or block. It gives no place on your relay, and it works for as long as your contact
+  link does: **New contact link** ends it too.
 - **On a linked computer** it goes to the phone, which deletes or blocks them too and moves its queues, the computer's
   as well. The phone keeps who is blocked and tells the computer: adding them there from their link asks you to
   unblock them too, and **Unblock** unblocks them on the phone as well.

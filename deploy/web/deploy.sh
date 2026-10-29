@@ -50,15 +50,18 @@ ssh -t "$target" "if [ \"\$(id -u)\" -eq 0 ]; then sh erevos-web-install.sh $fil
 echo "== Checking the server"
 sleep 3
 node "$root/pwa/release.mjs" verify "https://$domain"
-# The address an invite sent by text message opens must give the invite page, not the app.
-invite=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$release/release.json')).files['/i/index.html'] ?? '')")
-if [ -n "$invite" ]; then
-	if [ "$(curl -fsSL "https://$domain/i" | sha256sum | cut -d' ' -f1)" = "$invite" ]; then
-		echo "OK: https://$domain/i gives the invite page."
-	else
-		echo "WARNING: https://$domain/i does not give the invite page (i/index.html), so invites sent by text message open the app instead. The web server must serve /i/ as a folder, as Apache and Caddy do with install.sh's settings, not send it to index.html." >&2
+# The addresses an invite sent by text message and a contact link for a website open must give
+# their pages, not the app.
+for page in i c; do
+	own=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$release/release.json')).files['/$page/index.html'] ?? '')")
+	if [ -n "$own" ]; then
+		if [ "$(curl -fsSL "https://$domain/$page" | sha256sum | cut -d' ' -f1)" = "$own" ]; then
+			echo "OK: https://$domain/$page gives its page."
+		else
+			echo "WARNING: https://$domain/$page does not give its page ($page/index.html), so links to it open the app instead. The web server must serve /$page/ as a folder, as Apache and Caddy do with install.sh's settings, not send it to index.html." >&2
+		fi
 	fi
-fi
+done
 
 # Element Call's files are served only at its own address (pwa/README.md): the app's must not give
 # them, so that no page of Element Call's ever runs where Erevos's keys are.

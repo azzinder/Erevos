@@ -100,7 +100,7 @@ $domain {
 		Permissions-Policy "$media, geolocation=(), payment=(), usb=()"
 		-Server
 	}
-	@fresh path /sw.js /boot.js /release.json /release.sig /android-update.json /index.html / /i /i/ /i/index.html
+	@fresh path /sw.js /boot.js /release.json /release.sig /android-update.json /index.html / /i /i/ /i/index.html /c /c/ /c/index.html
 	header @fresh Cache-Control "no-cache"
 	@call path /element-call /element-call/*
 	respond @call 404

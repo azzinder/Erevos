@@ -876,6 +876,11 @@ für alle Warteschlangen deiner Kontakte (siehe [Auf einem iPhone](#iphone)).
   du vorher gegeben hast, funktionieren noch 14 Tage, dann nicht mehr. Deine Kontakte sind nicht betroffen. Sollte das
   Relay die Warteschlange verlieren, die dein Link nennt, bekommst du auf dieselbe Weise einen neuen Link, aber die
   vorher gegebenen funktionieren sofort nicht mehr.
+- **Link für eine Website**, daneben, in den Chats des Bereichs, gibt dir einen Link für eine Webseite, etwa deine
+  Kontaktseite, mit dem Namen, den du dafür wählst. Er öffnet eine Seite, die Erevos jedem anbietet, der es noch nicht
+  hat, auf Android, einem iPhone oder einem Computer, und fügt dich dann hinzu. Wer ihn sieht, kann dir schreiben,
+  deshalb kommt, was jemand schickt, als Nachrichtenanfrage, die du annimmst, ablehnst oder blockierst. Er gibt keinen
+  Platz auf deinem Relay und gilt, solange dein Kontaktlink gilt: **Neuer Kontaktlink** beendet auch ihn.
 - **Auf einem verknüpften Computer** geht es an das Telefon, das ihn ebenfalls löscht oder blockiert und seine
   Warteschlangen umziehen lässt, auch die des Computers. Das Telefon merkt sich, wer blockiert ist, und sagt es dem
   Computer: Wenn du ihn dort über seinen Link hinzufügst, wirst du auch gebeten, die Blockierung aufzuheben, und

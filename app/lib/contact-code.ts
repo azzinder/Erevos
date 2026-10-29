@@ -20,6 +20,12 @@
 //   &nk=<64 hex>&nr=<Nostr relay address>,<another>
 // so whoever adds it with no relay between the two writes to it there, through Tor
 // (lib/nostr-chats.ts nostrOnlyWay), with or without an id and a relay.
+// For a web page, as a contact page anyone may open, the same fields go after # on LPHL's web
+// server, with the name the phone gives itself for them:
+//   https://erevos-web.lphl.nekten.eu/c#id=...&relay=...&key=...[&n=<name>]
+// whose page (pwa/c/) offers Erevos and then opens the link in it. What follows # never goes to the
+// web server. It has no place on a relay in it (no `lend`): anyone who sees the page has the link,
+// and whoever adds it writes a message request first, as with any contact link.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
 export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string; more?: SpareCode[] };
@@ -33,6 +39,10 @@ export type NostrCode = { k: string; r: string[] };
 export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string; nostr?: NostrCode };
 
 const LINK = 'erevos://contact?';
+/** Where a contact link for a web page goes: the page that offers Erevos, then opens the link (pwa/c/). */
+export const CONTACT_PAGE = 'https://erevos-web.lphl.nekten.eu/c';
+/** The longest name a link for a web page gives its phone (lib/welcome.ts MAX_NAME, as there). */
+const PAGE_NAME = 40;
 // A bundle is about 1800 characters. Anything far longer is not one.
 const MAX_KEY = 4096;
 const TICKET = /^ticket\.[0-9a-f]{80}$/;
@@ -96,6 +106,8 @@ export function checkContact(senderHex: unknown, relayUrl: unknown, key: unknown
 /** Reads a contact link, or a bare 48-character relay sender id. Null if the text is neither. */
 export function parseContact(text: string): ContactCode | null {
   const clean = text.trim();
+  const page = pageFields(clean);
+  if (page !== null) return parseContact(`${LINK}${page}`);
   if (!clean.toLowerCase().startsWith(LINK)) return checkContact(clean, '');
   const fields: Record<string, string> = {};
   // The Nostr relays, each encoded on its own, as they are said between commas.
@@ -123,6 +135,59 @@ export function parseContact(text: string): ContactCode | null {
   const lend = code?.relayUrl && fields.lend && TICKET.test(fields.lend) ? fields.lend : '';
   const nostr = code?.key && fields.nk ? checkNostr(fields.nk, relays) : null;
   return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}), ...(nostr ? { nostr } : {}) } : code;
+}
+
+/** The fields of a link for a web page, after #, or null when the text is not one. The server answers /c with /c/, so a link copied from the address bar may read /c/#. */
+function pageFields(text: string): string | null {
+  const lower = text.toLowerCase();
+  for (const page of [`${CONTACT_PAGE}#`, `${CONTACT_PAGE}/#`]) {
+    if (lower.startsWith(page)) return text.slice(page.length);
+  }
+  return null;
+}
+
+/** A name as a link gives it: one line, no marks that could turn it around, at most PAGE_NAME letters. */
+function cleanName(text: string): string {
+  const line = text.replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2028\u2029\u2066-\u2069]/g, ' ');
+  return [...line.replace(/\s+/g, ' ').trim()].slice(0, PAGE_NAME).join('').trim();
+}
+
+/**
+ * This phone's contact link as a web page's link (CONTACT_PAGE), named `name` for whoever opens it,
+ * or null when the link has no keys. Any place on a relay it holds is left out: a page is for anyone.
+ */
+export function contactPageLink(link: string, name = ''): string | null {
+  const code = parseContact(link);
+  if (!code?.key) return null;
+  const { lend: _lend, ...kept } = code;
+  const named = cleanName(name);
+  return `${CONTACT_PAGE}#${contactLink(kept).slice(LINK.length)}${named ? `&n=${encodeURIComponent(named)}` : ''}`;
+}
+
+/** The name a contact link gives its phone (`n`, as a link for a web page has it), or ''. */
+export function contactLinkName(text: string): string {
+  const clean = text.trim();
+  const fields = pageFields(clean) ?? (clean.toLowerCase().startsWith(LINK) ? clean.slice(LINK.length) : '');
+  for (const pair of fields.split('&')) {
+    if (!pair.startsWith('n=')) continue;
+    try {
+      return cleanName(decodeURIComponent(pair.slice(2).replace(/\+/g, ' ')));
+    } catch {
+      return '';
+    }
+  }
+  return '';
+}
+
+/** A contact link again from the fields a link opened a screen with (app/contact.tsx, app/c.tsx), each as given. */
+export function linkOfFields(fields: Record<string, string | string[] | undefined>): string {
+  const pairs: string[] = [];
+  for (const [name, value] of Object.entries(fields)) {
+    if (typeof value !== 'string' || !/^[a-z0-9]+$/.test(name)) continue;
+    // The Nostr relays, each encoded on its own, between commas, as contactLink says them.
+    pairs.push(name === 'nr' ? `nr=${value.split(',').map(encodeURIComponent).join(',')}` : `${name}=${encodeURIComponent(value)}`);
+  }
+  return `${LINK}${pairs.join('&')}`;
 }
 
 // Hands a contact from the screen a scanned link opens, or from a contact's Erevos ID

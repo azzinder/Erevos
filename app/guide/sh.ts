@@ -798,6 +798,11 @@ redove svih vaših kontakata (pogledajte [Na iPhoneu](#iphone)).
 - **Novi link za kontakt**, pored **Podijeli moj link za kontakt**, daje vam novi link: linkovi i QR kodovi koje ste
   ranije dali rade još 14 dana, a zatim više ne. Vaših kontakata se to ne tiče. Ako relay izgubi red koji navodi vaš
   link, na isti način dobijate novi link, ali oni koje ste ranije dali odmah prestaju raditi.
+- **Link za web stranicu**, pored njega, u razgovorima prostora, daje vam link koji možete staviti na web stranicu, npr.
+  stranicu za kontakt, s imenom koje odaberete. Otvara stranicu koja nudi Erevos onome ko ga još nema, na Androidu,
+  iPhoneu ili računaru, a zatim vas dodaje. Svako ko ga vidi može vam pisati, pa ono što pošalje stiže kao zahtjev za
+  razgovor, koji prihvatate, odbijate ili blokirate. Ne daje mjesto na vašem relayu i važi dok važi vaš link za kontakt:
+  **Novi link za kontakt** ukida i njega.
 - **Na povezanom računaru** to ide na telefon, koji i sam briše ili blokira tu osobu i premješta svoje redove, a i
   redove računara. Telefon čuva ko je blokiran i to javlja računaru: dodavanje osobe tamo iz njenog linka i tamo traži
   da je odblokirate, a **Odblokiraj** je odblokira i na telefonu.
