@@ -169,7 +169,7 @@ import { placeChats } from '../lib/place-chats';
 import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
-import { forgetSpare, hiddenSpare, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
+import { forgetSpare, hiddenSpare, homeRelays, lookAtSpare, readySpare, setSpareRelay, spaceSpare, spareBackup, spareCode } from '../lib/spare';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
@@ -4311,7 +4311,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     const space = await loadCurrentSpaceData().catch(() => null);
-    if (address && (sameRelay(address, relayUrl) || (space?.spare.url && sameRelay(address, space.spare.url)))) {
+    if (address && (sameRelay(address, relayUrl) || (space ? homeRelays(space.spare).some((one) => one.url && sameRelay(address, one.url)) : false))) {
       setHomeNote(t('Use another relay than this relay, and than the space’s home relay: one relay seeing both would tie them together.'));
       return;
     }

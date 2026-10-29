@@ -1447,6 +1447,11 @@ vertraust. Es ist optional.
   mit seiner PIN, sodass der Bereich nichts davon weiß, und es wird abgefragt, solange der Platz offen ist. Nutze ein
   anderes Relay als das des Bereichs: Ein Relay, das beide Warteschlangen sieht, würde sie miteinander verbinden.
 
+**Mehr als eines:** **Weiteres Heim-Relay hinzufügen** gibt bis zu zwei weitere, jedes mit einer eigenen Warteschlange,
+zum Beispiel eines zu Hause und eines bei einem Freund. Kontakte probieren sie in der gezeigten Reihenfolge, und Erevos
+holt ab, was bei jedem ankommt. Dein Kontaktlink nennt die weiteren nur, solange er kurz genug für einen QR-Code bleibt;
+der Rest erreicht deine Kontakte mit deiner nächsten Nachricht. Ein Kontakt mit einem älteren Erevos nutzt nur das erste.
+
 ## Über Tor {#tor}
 
 Unter **Einstellungen** → **Relay und Netze** → **Tor** wählt **Was über Tor geht**, welche Anfragen dieses Bereichs

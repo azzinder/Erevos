@@ -361,8 +361,10 @@ function whereOf(said: { relay?: string; relayUrl?: string; relayKey?: string })
 }
 
 /** A link's backup queue, as kept. */
-function spareOf(code: { spare?: { senderHex: string; relayUrl: string; relayKey?: string } }): Spare | null {
-  return code.spare ? checkedSpare({ sender: code.spare.senderHex, relay: code.spare.relayUrl, relayKey: code.spare.relayKey }) : null;
+type SpareSaid = { senderHex: string; relayUrl: string; relayKey?: string; more?: SpareSaid[] };
+function spareOf(code: { spare?: SpareSaid }): Spare | null {
+  const said = (one: SpareSaid) => ({ sender: one.senderHex, relay: one.relayUrl, relayKey: one.relayKey });
+  return code.spare ? checkedSpare({ ...said(code.spare), more: (code.spare.more ?? []).map(said) }) : null;
 }
 
 function decodeErase(value: unknown): Erase | null {
@@ -1760,7 +1762,7 @@ export class E2E {
    * chat as a contact at once.
    */
   addContact(
-    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: { senderHex: string; relayUrl: string; relayKey?: string }; nostr?: { k: string; r: string[] } },
+    code: { senderHex: string; key: string; relayUrl?: string; relayKey?: string; spare?: SpareSaid; nostr?: { k: string; r: string[] } },
     from: string,
     at: Where = { relay: '', relayKey: '' },
     hi = '',

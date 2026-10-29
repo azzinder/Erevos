@@ -12,4 +12,8 @@ export const contactTrust: Record<string, string> = {
   "It does not match. Someone may be in between, or it is the code of another chat. Compare the safety numbers, and ask them.": "Non corrisponde. Forse qualcuno è in mezzo, o è il codice di un’altra chat. Confrontate i codici di sicurezza e chiediglielo.",
   "That code is from a newer Erevos. Update Erevos, then take the photo again.": "Questo codice è di un Erevos più recente. Aggiorna Erevos, poi rifai la foto.",
   "That QR code is not a code to check a contact by.": "Questo codice QR non è un codice per verificare un contatto.",
+  "Another home relay ({n})": "Altro relay di casa ({n})",
+  "Each home relay is a different one.": "Ogni relay di casa è uno diverso.",
+  "Add another home relay": "Aggiungi un altro relay di casa",
+  "With more than one, contacts try them in this order, and Erevos takes what comes on each. Each one more makes your contact link a little longer, and its QR code a little denser.": "Con più di uno, i contatti li provano in quest’ordine, ed Erevos prende ciò che arriva su ciascuno. Ognuno in più rende il tuo link di contatto un po’ più lungo, e il suo codice QR un po’ più fitto.",
 };

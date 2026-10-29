@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 
 import { Button, Card, Field, Input, Page, Text } from '../components/ui';
 import { t } from '../lib/i18n';
 import { sameRelay } from '../lib/relay';
-import { readySpare, setSpareRelay } from '../lib/spare';
-import { loadCurrentSpaceData } from '../lock/space-data';
+import { homeRelays, readySpare, setSpareRelays } from '../lib/spare';
+import { loadCurrentSpaceData, MORE_SPARES } from '../lock/space-data';
 
-// The space's home relay (lib/spare.ts): a second relay with a queue of its own, which contacts
-// write to while the main relay cannot be reached.
+// The space's home relays (lib/spare.ts): a second relay with a queue of its own, which contacts
+// write to while the main relay cannot be reached, and up to MORE_SPARES more, tried in order.
+
+type Line = { url: string; token: string };
+
+const EMPTY: Line = { url: '', token: '' };
 
 export default function HomeRelay() {
-  const [url, setUrl] = useState('');
-  const [token, setToken] = useState('');
+  const [lines, setLines] = useState<Line[]>([EMPTY]);
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState('');
   const [mainUrl, setMainUrl] = useState('');
@@ -20,28 +24,39 @@ export default function HomeRelay() {
     loadCurrentSpaceData()
       .then((data) => {
         setMainUrl(data.url);
-        setUrl(data.spare.url);
-        setToken(data.spare.token);
+        const kept = homeRelays(data.spare).map((one) => ({ url: one.url, token: one.token }));
+        setLines(kept.length > 0 ? kept : [EMPTY]);
         setReady(!!data.spare.url && !!data.spare.queue);
       })
       .catch(() => setNote(t('The settings of this space could not open.')));
   }, []);
 
+  function change(at: number, patch: Partial<Line>) {
+    setLines((now) => now.map((line, i) => (i === at ? { ...line, ...patch } : line)));
+  }
+
   async function save() {
     setNote('');
-    const address = url.trim();
-    if (address && !/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(address)) {
-      setNote(t('A relay address starts with ws:// or wss://.'));
-      return;
+    const given = lines.map((line) => ({ url: line.url.trim(), token: line.token })).filter((line) => line.url);
+    for (const { url } of given) {
+      if (!/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(url)) {
+        setNote(t('A relay address starts with ws:// or wss://.'));
+        return;
+      }
+      if (sameRelay(url, mainUrl)) {
+        setNote(t('That is your relay already. A home relay is another one.'));
+        return;
+      }
     }
-    if (address && sameRelay(address, mainUrl)) {
-      setNote(t('That is your relay already. A home relay is another one.'));
+    if (given.some((line, i) => given.findIndex((other) => sameRelay(other.url, line.url)) !== i)) {
+      setNote(t('Each home relay is a different one.'));
       return;
     }
     try {
-      await setSpareRelay(address, token);
+      await setSpareRelays(given);
       setReady(false);
-      if (!address) {
+      setLines(given.length > 0 ? given : [EMPTY]);
+      if (given.length === 0) {
         setNote(t('No home relay. Contacts write only to your relay.'));
         return;
       }
@@ -71,12 +86,38 @@ export default function HomeRelay() {
             "Whoever runs it sees what your relay sees: this phone's address when it takes messages, and when and how much comes. Hidden chats do not use it: each hidden place can have its own, set while it is open.",
           )}
         </Text>
-        <Field label={t('Home relay address')}>
-          <Input value={url} onChangeText={setUrl} placeholder="wss://relay.at-home.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
-        </Field>
-        <Field label={t('Token (optional)')}>
-          <Input value={token} onChangeText={setToken} placeholder={t('Token, if the relay needs one')} autoCapitalize="none" autoCorrect={false} secureTextEntry />
-        </Field>
+        {lines.map((line, at) => (
+          <View key={at}>
+            <Field label={at === 0 ? t('Home relay address') : t('Another home relay ({n})', { n: at + 1 })}>
+              <Input
+                value={line.url}
+                onChangeText={(url) => change(at, { url })}
+                placeholder="wss://relay.at-home.example"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </Field>
+            <Field label={t('Token (optional)')}>
+              <Input
+                value={line.token}
+                onChangeText={(token) => change(at, { token })}
+                placeholder={t('Token, if the relay needs one')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
+            </Field>
+          </View>
+        ))}
+        {lines.length <= MORE_SPARES && lines[lines.length - 1].url.trim() ? (
+          <Button title={t('Add another home relay')} kind="secondary" compact onPress={() => setLines((now) => [...now, EMPTY])} />
+        ) : null}
+        <Text variant="caption" tone="muted">
+          {t(
+            'With more than one, contacts try them in this order, and Erevos takes what comes on each. Each one more makes your contact link a little longer, and its QR code a little denser.',
+          )}
+        </Text>
         <Button title={t('Save')} onPress={() => void save()} />
         {ready ? <Text variant="caption" tone="faint">{t('Your queue there is ready.')}</Text> : null}
       </Card>

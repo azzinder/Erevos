@@ -327,14 +327,36 @@ export const TOOK_DAY = 24 * 60 * 60_000;
 export const tookDay = (ms: number): number => ms - (ms % TOOK_DAY);
 
 /** A queue on a backup relay: its sender id (hex), the relay, and the relay's key (base64url, or
- *  empty when it has none). */
-export type Spare = { sender: string; relay: string; relayKey: string };
+ *  empty when it has none). `more`: the queues on the phone's other home relays, up to MORE_SPARE,
+ *  tried after it in their order. An Erevos before them leaves `more` out and keeps the first. */
+export type Spare = { sender: string; relay: string; relayKey: string; more?: Spare[] };
 
-/** A backup queue as said, checked: null when it is not one. */
-export function checkedSpare(value: unknown): Spare | null {
+/** The most queues on other home relays a backup queue says beside it. */
+export const MORE_SPARE = 2;
+
+/** A backup queue as said, checked: null when it is not one. One of `more` that does not read, or
+ *  says the same relay twice, is left out; past MORE_SPARE they are too. */
+export function checkedSpare(value: unknown, inner = false): Spare | null {
   const v = (value ?? {}) as Partial<Record<keyof Spare, unknown>>;
   if (!isHex(v.sender) || v.sender.length !== 48 || !isRelay(v.relay)) return null;
-  return { sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '' };
+  const first: Spare = { sender: v.sender, relay: v.relay, relayKey: isRelayKey(v.relayKey) ? v.relayKey : '' };
+  if (inner || !Array.isArray(v.more)) return first;
+  const seen = new Set([first.relay.toLowerCase()]);
+  const more: Spare[] = [];
+  for (const m of v.more.slice(0, MORE_SPARE * 2)) {
+    const one = checkedSpare(m, true);
+    if (!one || seen.has(one.relay.toLowerCase()) || more.length >= MORE_SPARE) continue;
+    seen.add(one.relay.toLowerCase());
+    more.push(one);
+  }
+  return more.length > 0 ? { ...first, more } : first;
+}
+
+/** Each queue a backup queue names, the first and then `more`, in order. */
+export function sparesOf(spare: Spare | null | undefined): Spare[] {
+  if (!spare) return [];
+  const { more, ...first } = spare;
+  return [first, ...(more ?? [])];
 }
 
 /** A contact's picture of this chat's choosing: a sign (an emoji) on a colour, or a photo (lock/avatar-photos.ts). */

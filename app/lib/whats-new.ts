@@ -65,6 +65,7 @@ export const NEXT: Changes = {
     mark("**Group calls in XMPP groups**: in a private XMPP group, start a voice or video call, answer one that rings, or join one going on, together with people who use Dino. See [XMPP](#xmpp)."),
     mark("**Spam SMS come quietly**: on Android, an SMS that the spam filter's own words catch, a link with words that try to fool from a number that is no contact and that you never answered, still goes to Spam but no longer shows a notice or makes a sound. Spam by your own words and rules still shows one, as they stay encrypted in the space; with the Spam filter off, every SMS does. See [SMS](#sms)."),
     mark("**Check a contact in person with QR codes**: under Safety number in a chat's details, each phone shows a code; take a photo of the code on the other phone, and they of yours. When it matches, the contact is marked Checked in person. Nothing is sent. See [Chat through a relay](#relay)."),
+    mark("**Up to three home relays**: under Settings → Relay and networks → Home relay, Add another home relay gives a space up to two more, each with a queue of its own. Your contact link and your messages name them in order, and contacts try each while the ones before cannot be reached. See [Home relay](#home-relay)."),
   ],
   underTheHood: [
     mark("**A relay restart no longer brings a false notice**: after your relay restarted, a hidden chat or a closed space said New message once more for messages it had told of already. Your relay needs an update for it. See [Hidden chats](#hidden)."),

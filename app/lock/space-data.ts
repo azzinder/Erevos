@@ -59,7 +59,8 @@ export type SpaceData = {
   // on, on NOSTR_RELAYS, unless changed. Only through Tor: with Tor off, none go there.
   nostr: NostrSetting;
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
-  // relay cannot be reached (lib/spare.ts). Its address is empty when there is none.
+  // relay cannot be reached (lib/spare.ts). Its address is empty when there is none. `more`: up to
+  // MORE_SPARES others, each with its own queue, said beside it (a list of home relays).
   spare: SpareRelay;
   // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
   push: boolean;
@@ -80,7 +81,9 @@ export type SpaceData = {
   relayKeys: Record<string, string>;
 };
 
-export type SpareRelay = { url: string; token: string; queue: Queue | null };
+export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
+/** The most home relays a space has besides the first (SpareRelay.more): a contact link says each. */
+export const MORE_SPARES = 2;
 export type NostrSetting = { on: boolean; relays: string[] };
 /** The Nostr relays a space reads on unless it names others. */
 export const NOSTR_RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
@@ -127,14 +130,16 @@ function seal(key: Uint8Array, data: SpaceData): string {
 
 const isHex = (v: unknown, length: number): v is string => typeof v === 'string' && v.length === length && /^[0-9a-f]+$/.test(v);
 
-function checkedSpareRelay(value: unknown): SpareRelay {
+function checkedSpareRelay(value: unknown, inner = false): SpareRelay {
   const v = (value ?? {}) as Partial<Record<keyof SpareRelay, unknown>>;
   const q = v.queue as Partial<Queue> | null | undefined;
   if (typeof v.url !== 'string') return NO_SPARE;
+  const more = !inner && Array.isArray(v.more) ? v.more.map((m) => checkedSpareRelay(m, true)).filter((m) => m.url.trim()).slice(0, MORE_SPARES) : [];
   return {
     url: v.url,
     token: typeof v.token === 'string' ? v.token : '',
     queue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
+    ...(more.length > 0 ? { more } : {}),
   };
 }
 
@@ -216,7 +221,7 @@ function checkedRelayKeys(value: unknown): Record<string, string> {
 
 // The relays a space uses, by home address.
 function homesOf(data: SpaceData): Set<string> {
-  return new Set([data.url, data.via, data.spare.url].filter(Boolean).map(relayHome));
+  return new Set([data.url, data.via, data.spare.url, ...(data.spare.more ?? []).map((m) => m.url)].filter(Boolean).map(relayHome));
 }
 
 // The keys an entry keeps, pinned for every connection from now on.

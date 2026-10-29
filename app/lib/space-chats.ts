@@ -4,7 +4,7 @@ import { canRelaySeal, relaySeal } from './core';
 import { randomBytes } from './crypto';
 import { E2E, fromBase64Url } from './e2e';
 import type { Carried } from './nearby';
-import type { Spare } from '../lock/e2e-data';
+import { sparesOf, type Spare } from '../lock/e2e-data';
 import { fromHex, sameRelay, sendMessage, type Fallback, type Mark, type Relay } from './relay';
 import { VoiceAssembler } from './voice';
 import { t } from './i18n';
@@ -98,12 +98,13 @@ function reach(hop: Relay, where: { relay: string; relayKey: string }, home: str
  */
 export function contactTarget(own: Relay, where: { relay: string; relayKey: string; spare?: Spare | null }): Relay {
   const routes: { make: () => Relay; sender?: string }[] = [{ make: () => reach(own, where, own.url) }];
-  const spare = where.spare;
-  if (spare) routes.push({ make: () => reach(own, spare, own.url), sender: spare.sender });
+  // Each of their home relays in turn (lib/spare.ts), the first one first.
+  const spares = sparesOf(where.spare);
+  for (const spare of spares) routes.push({ make: () => reach(own, spare, own.url), sender: spare.sender });
   if (own.backup) {
     const backup = own.backup;
     routes.push({ make: () => reach(backup, where, own.url) });
-    if (spare) routes.push({ make: () => reach(backup, spare, own.url), sender: spare.sender });
+    for (const spare of spares) routes.push({ make: () => reach(backup, spare, own.url), sender: spare.sender });
   }
   let first: { relay: Relay; sender?: string } | null = null;
   let failed: unknown = null;

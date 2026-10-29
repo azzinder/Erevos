@@ -1366,6 +1366,11 @@ uno a casa, su un Raspberry Pi o un vecchio computer, o qualsiasi altro relay di
   così lo spazio non ne sa nulla, e viene controllato mentre il posto è aperto. Usa un relay diverso da quello dello
   spazio: un relay che vedesse entrambe le code potrebbe collegarle tra loro.
 
+**Più di uno:** **Aggiungi un altro relay di casa** ne dà fino a due in più, ognuno con la sua coda, per esempio uno a
+casa e uno da un amico. I contatti li provano nell’ordine mostrato, ed Erevos prende ciò che arriva su ciascuno. Il tuo
+link di contatto nomina gli altri solo finché resta abbastanza corto per un codice QR; il resto arriva ai contatti con
+il tuo prossimo messaggio. Un contatto con un Erevos più vecchio usa solo il primo.
+
 ## Tramite Tor {#tor}
 
 In **Impostazioni** → **Relay e reti** → **Tor**, **Cosa passa da Tor** sceglie quali richieste di questo spazio ai

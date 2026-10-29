@@ -1241,6 +1241,11 @@ one at home, on a Raspberry Pi or an old computer, or any other relay you trust.
   at while the place is open. Use another relay than the space's: one relay seeing both queues would tie them
   together.
 
+**More than one:** **Add another home relay** gives up to two more, each with a queue of its own, for example one at
+home and one at a friend's. Contacts try them in the order shown, and Erevos takes what comes on each. Your contact
+link names the others only while it stays short enough for one QR code; the rest reach contacts with your next
+message. A contact with an older Erevos uses only the first.
+
 ## Through Tor {#tor}
 
 Under **Settings** → **Relay and networks** → **Tor**, **What goes through Tor** chooses which of this space's

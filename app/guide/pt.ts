@@ -1336,6 +1336,11 @@ própria: um em casa, num Raspberry Pi ou num computador velho, ou qualquer outr
   selado com o PIN dela, então o espaço não sabe nada dele, e é consultado enquanto a posição está aberta. Use um
   relay diferente do do espaço: um relay que visse as duas filas as ligaria entre si.
 
+**Mais de um:** **Adicionar outro relay de casa** dá até mais dois, cada um com sua própria fila, por exemplo um em
+casa e outro na casa de um amigo. Os contatos tentam na ordem mostrada, e o Erevos pega o que chega em cada um. Seu
+link de contato cita os outros só enquanto continua curto o bastante para um código QR; o resto chega aos contatos com
+sua próxima mensagem. Um contato com um Erevos mais antigo usa só o primeiro.
+
 ## Pelo Tor {#tor}
 
 Em **Configurações** → **Relay e redes** → **Tor**, **O que passa pelo Tor** escolhe quais pedidos deste espaço aos

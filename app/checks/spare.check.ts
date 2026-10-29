@@ -9,14 +9,17 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { test } from 'node:test';
 
-import { contactLink, parseContact } from '../lib/contact-code';
+import { contactLink, LINK_MOST, parseContact } from '../lib/contact-code';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { E2E, toBase64Url } from '../lib/e2e';
 import { startReceiver } from '../lib/receiver';
 import { createQueue, fromHex, receiveMessage, relayKey, sendMessage, toHex } from '../lib/relay';
 import { contactTarget, forgetSpaceChats, relayFor, spaceChats } from '../lib/space-chats';
-import { forgetSpare, hiddenSpare, readySpare, setSpareRelay, spareBackup, spareCode } from '../lib/spare';
+import { forgetSpare, hiddenSpare, homeRelays, readySpare, setSpareRelay, setSpareRelays, spareBackup, spareCode } from '../lib/spare';
+import { qrRows } from '../lib/qr';
+import { parseWelcome, welcomeLink } from '../lib/welcome';
+import { checkedSpare, MORE_SPARE, sparesOf } from '../lock/e2e-data';
 import { setCurrentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
@@ -50,6 +53,72 @@ test('a contact link carries the backup queue, and one that does not read is lef
   });
 });
 
+test('a contact link carries a list of home relays, in order, each once, and an older reader keeps the first', () => {
+  const first = { senderHex: hex(24), relayUrl: 'wss://home.example.org/erevos', relayKey: KEY };
+  const second = { senderHex: hex(24), relayUrl: 'wss://friend.example.net', relayKey: KEY };
+  const third = { senderHex: hex(24), relayUrl: 'ws://192.168.1.10:7879' };
+  const code = { senderHex: hex(24), relayUrl: 'wss://relay.example.org', key: 'abc', relayKey: KEY, spare: { ...first, more: [second, third] } };
+  const link = contactLink(code);
+  assert.match(link, /&sid2=.*&srelay2=.*&srk2=.*&sid3=.*&srelay3=/);
+  assert.deepEqual(parseContact(link), code);
+  // An Erevos before the list reads the link as it always did: the numbered ones are names it does not know.
+  const old = link.replace(/&(sid|srelay|srk)[23]=[^&]*/g, '');
+  assert.deepEqual(parseContact(old), { ...code, spare: first });
+  // Past the most a link says, the same relay twice, one that does not read: left out.
+  const fourth = `&sid4=${hex(24)}&srelay4=${encodeURIComponent('wss://four.example')}`;
+  assert.deepEqual(parseContact(link + fourth), code);
+  const twice = contactLink({ ...code, spare: { ...first, more: [{ ...second, relayUrl: first.relayUrl }, third] } });
+  assert.deepEqual(parseContact(twice)?.spare, { ...first, more: [third] });
+  const bad = link.replace(/srelay2=[^&]*/, 'srelay2=http%3A%2F%2Fnope');
+  assert.deepEqual(parseContact(bad)?.spare, { ...first, more: [third] });
+  // Without a first, the others say nothing.
+  assert.equal(parseContact(link.replace(/&sid=[^&]*/, ''))?.spare, undefined);
+  // An invite brings the list whole.
+  assert.deepEqual(parseWelcome(welcomeLink(link, { hi: 'ab'.repeat(16) }))?.contact, code);
+});
+
+test('a contact link with every home relay, Nostr and a ticket still fits one QR code', () => {
+  const long = (name: string) => `wss://${name}.a-rather-long-name-for-a-home-relay.example.org/erevos`;
+  const code = {
+    senderHex: hex(24),
+    relayUrl: long('relay'),
+    // An account bundle is about 1800 characters.
+    key: 'A'.repeat(1800),
+    relayKey: KEY,
+    spare: { senderHex: hex(24), relayUrl: long('home'), relayKey: KEY, more: [1, 2].map((n) => ({ senderHex: hex(24), relayUrl: long(`home${n}`), relayKey: KEY })) },
+    lend: `ticket.${'a'.repeat(80)}`,
+    nostr: { k: hex(32), r: [1, 2, 3, 4, 5].map((n) => `wss://nostr${n}.example.org`) },
+  };
+  // Too long with both others: the link says the first only, and the others come with the first message.
+  const link = contactLink(code);
+  const without = contactLink({ ...code, spare: { ...code.spare, more: [] } });
+  assert.equal(link, without);
+  assert.ok(without.length > LINK_MOST - 300);
+  assert.deepEqual(parseContact(link)?.spare, { senderHex: code.spare.senderHex, relayUrl: code.spare.relayUrl, relayKey: KEY });
+  // Greek letters take six characters each in a link.
+  const invite = welcomeLink(link, { code: 'cd'.repeat(32), hi: 'ab'.repeat(16), name: 'Ν'.repeat(40) });
+  assert.ok(invite.length < 2950, `${invite.length} characters`);
+  assert.ok(qrRows(invite).length <= 177);
+  // With shorter addresses both fit, and all of it reads back.
+  const short = (name: string) => `wss://${name}.example.org`;
+  const { lend: _lend, nostr: _nostr, ...plain } = code;
+  const fits = { ...plain, relayUrl: short('relay'), spare: { ...code.spare, relayUrl: short('home'), more: code.spare.more.map((m, i) => ({ ...m, relayUrl: short(`h${i}`) })) } };
+  assert.deepEqual(parseContact(contactLink(fits)), fits);
+  assert.ok(qrRows(welcomeLink(contactLink(fits), { code: 'cd'.repeat(32), hi: 'ab'.repeat(16), name: 'Ν'.repeat(40) })).length <= 177);
+});
+
+test('a backup queue as kept or said holds at most two more, each relay once', () => {
+  const one = (relay: string) => ({ sender: hex(24), relay, relayKey: KEY });
+  const first = one('wss://a.example');
+  const said = checkedSpare({ ...first, more: [one('wss://b.example'), one('wss://A.example'), { sender: 'x', relay: 'wss://c.example' }, one('wss://d.example'), one('wss://e.example')] });
+  assert.deepEqual(said?.more?.map((m) => m.relay), ['wss://b.example', 'wss://d.example']);
+  assert.deepEqual(sparesOf(said).map((s) => s.relay), ['wss://a.example', 'wss://b.example', 'wss://d.example']);
+  // One said inside another says no more of its own.
+  assert.equal(checkedSpare({ ...first, more: [{ ...one('wss://b.example'), more: [one('wss://c.example')] }] })?.more?.[0].more, undefined);
+  assert.equal(MORE_SPARE, 2);
+  assert.deepEqual(sparesOf(null), []);
+});
+
 test('a send goes to the main queue first, then the backup queue, then the same through the home relay', () => {
   const own = relayFor('wss://mine.example.org', 't', '', '', { url: 'wss://home.mine.example', token: 'h' })!;
   const spare = { sender: hex(24), relay: 'wss://home.theirs.example', relayKey: KEY };
@@ -73,6 +142,19 @@ test('a send goes to the main queue first, then the backup queue, then the same 
   const plain = relayFor('wss://mine.example.org', '', '', '')!;
   assert.equal(contactTarget(plain, { relay: '', relayKey: '' }).fallback, undefined);
   assert.throws(() => contactTarget(plain, { relay: 'wss://theirs.example.org', relayKey: '' }), /no key/);
+  // Their other home relays come after the first, each through ours, then each through our home relay.
+  const second = { sender: hex(24), relay: 'wss://second.theirs.example', relayKey: KEY };
+  const list = contactTarget(own, { relay: 'wss://theirs.example.org', relayKey: KEY, spare: { ...spare, more: [second] } });
+  assert.deepEqual(
+    list.fallback?.map((f) => [f.relay.url, f.relay.via?.url, f.senderId ? toHex(f.senderId) : '']),
+    [
+      ['wss://home.theirs.example', 'wss://mine.example.org', spare.sender],
+      ['wss://second.theirs.example', 'wss://mine.example.org', second.sender],
+      ['wss://theirs.example.org', 'wss://home.mine.example', ''],
+      ['wss://home.theirs.example', 'wss://home.mine.example', spare.sender],
+      ['wss://second.theirs.example', 'wss://home.mine.example', second.sender],
+    ],
+  );
 });
 
 test('while the main relay is down, messages come through the home relay, and receipts go back through it', { skip: !coreReady || !relayReady }, async () => {
@@ -136,6 +218,71 @@ test('while the main relay is down, messages come through the home relay, and re
     assert.ok(got?.kind === 'message' && got.got.includes(again.tag));
     // What Bob writes says the home relay too, so Alice keeps it.
     assert.deepEqual((await alice.seal(bobId, '', aliceQueue.senderHex, { at: where })).spare, said);
+  } finally {
+    stop();
+    forgetSpaceChats();
+    forgetSpare();
+  }
+});
+
+test('with two home relays, both are said, kept and looked at, and a message to the second comes', { skip: !coreReady || !relayReady }, async () => {
+  files.clear();
+  blobs.clear();
+  forgetSpaceChats();
+  forgetSpare();
+  const alicesRelay = await startRelay(true);
+  const homeOne = await startRelay(true);
+  const homeTwo = await startRelay(true);
+  const down = 'ws://127.0.0.1:1';
+  const fake = { recipientHex: hex(24), senderHex: hex(24) };
+
+  setCurrentSpace(0, randomBytes(32));
+  await updateCurrentSpaceData({ url: down, ownQueue: fake });
+  await setSpareRelays([
+    { url: homeOne, token: '' },
+    { url: homeTwo, token: '' },
+    { url: homeOne, token: '' },
+    { url: '', token: '' },
+  ]);
+  assert.deepEqual(homeRelays((await loadCurrentSpaceData()).spare).map((h) => h.url), [homeOne, homeTwo]);
+  const bob = await spaceChats();
+  const stop = startReceiver(50);
+  try {
+    for (let i = 0; i < 200 && !bob.e2e.spare()?.more; i++) await new Promise((r) => setTimeout(r, 25));
+    const said = bob.e2e.spare();
+    assert.equal(said?.relay, homeOne);
+    assert.equal(said?.more?.[0].relay, homeTwo);
+    // Both queues are kept, each with its relay.
+    const kept = (await loadCurrentSpaceData()).spare;
+    assert.ok(kept.queue && kept.more?.[0].queue);
+    assert.equal(kept.more[0].queue.senderHex, said?.more?.[0].sender);
+
+    // Alice adds the link, which says both, and writes to the second one, as when the first is down too.
+    const link = contactLink({ senderHex: fake.senderHex, relayUrl: down, key: toBase64Url(bob.e2e.bundle), relayKey: KEY, spare: spareCode(said) });
+    const alice = await E2E.open('space', 1, randomBytes(32));
+    const ids = await createQueue({ url: alicesRelay });
+    const aliceQueue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+    const key = await relayKey({ url: alicesRelay });
+    const where = { relay: alicesRelay, relayKey: toBase64Url(key!) };
+    const { identity: bobId } = await alice.addContact(parseContact(link)!, aliceQueue.senderHex, where);
+    const [first] = alice.pending();
+    assert.deepEqual(first.spare, said);
+    const second = said!.more![0];
+    await sendMessage({ url: homeTwo }, fromHex(second.sender), first.first);
+    await alice.firstSent(bobId);
+    const sealed = await alice.seal(bobId, 'through the second home relay', aliceQueue.senderHex, { at: where });
+    await sendMessage({ url: homeTwo }, fromHex(second.sender), sealed.packet);
+    const peer = `contact:${toHex(alice.identity)}`;
+    for (let i = 0; i < 200 && !bob.history.messages().some((m) => m.peer === peer && m.text === 'through the second home relay'); i++) {
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    assert.ok(bob.history.messages().some((m) => m.peer === peer && m.text === 'through the second home relay'));
+
+    // Down to one: the second is let go of, and no longer said.
+    await setSpareRelays([{ url: homeOne, token: '' }]);
+    const left = await loadCurrentSpaceData();
+    assert.equal(left.spare.more, undefined);
+    assert.equal(left.spare.queue?.senderHex, said?.sender);
   } finally {
     stop();
     forgetSpaceChats();

@@ -1414,6 +1414,11 @@ confiance. C’est facultatif.
   seul, scellé avec son code PIN, si bien que l’espace n’en sait rien, et il est consulté tant que l’emplacement est
   ouvert. Utilise un autre relais que celui de l’espace : un même relais qui verrait les deux files les relierait.
 
+**Plus d’un :** **Ajouter un autre relais d’attache** en donne jusqu’à deux de plus, chacun avec sa propre file, par
+exemple un à la maison et un chez un ami. Vos contacts les essaient dans l’ordre affiché, et Erevos prend ce qui arrive
+sur chacun. Votre lien de contact ne nomme les autres que tant qu’il reste assez court pour un code QR ; le reste
+parvient à vos contacts avec votre prochain message. Un contact avec un Erevos plus ancien n’utilise que le premier.
+
 ## Par Tor {#tor}
 
 Sous **Réglages** → **Relais et réseaux** → **Tor**, **Ce qui passe par Tor** choisit lesquelles des requêtes de cet

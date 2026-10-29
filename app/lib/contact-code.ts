@@ -9,7 +9,10 @@
 // nearby (lib/nearby.ts) until it says where its queue is. The relay token is never part of it.
 // A phone with a backup relay (lib/spare.ts) adds its queue there:
 //   &sid=<sender id there>&srelay=<backup relay address>&srk=<its key>
-// so a contact writes there while the first relay cannot be reached.
+// so a contact writes there while the first relay cannot be reached. One with more home relays
+// (up to MORE_SPARES besides the first) adds each of the others the same way, numbered from 2:
+//   &sid2=<sender id>&srelay2=<address>&srk2=<key>&sid3=...
+// tried in that order. An Erevos before them reads the first and leaves the others out.
 // A phone whose relay lends places (crates/erevos-relay/src/lend.rs) adds a ticket for one:
 //   &lend=ticket.<80 hex characters>
 // so whoever adds it with no relay of their own takes a place there (lib/relay.ts, borrowPlace).
@@ -19,7 +22,12 @@
 // (lib/nostr-chats.ts nostrOnlyWay), with or without an id and a relay.
 // Self-contained on purpose, so it can run under plain Node for checks.
 
-export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string };
+export type SpareCode = { senderHex: string; relayUrl: string; relayKey?: string; more?: SpareCode[] };
+/** The most home relays a link names besides the first (lock/e2e-data.ts MORE_SPARE, as there). */
+export const MORE_SPARES = 2;
+/** The longest a link grows by naming more home relays: one QR code holds about 2950 characters at
+ *  its largest, and an invite (lib/welcome.ts) adds up to about 350 around a contact link. */
+export const LINK_MOST = 2550;
 /** Where a link's phone reads on Nostr: the key its link has there (hex), and its relays. */
 export type NostrCode = { k: string; r: string[] };
 export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string; nostr?: NostrCode };
@@ -45,13 +53,21 @@ export function checkNostr(k: unknown, r: unknown): NostrCode | null {
 }
 
 export function contactLink({ senderHex, relayUrl, key, relayKey, spare, lend, nostr }: ContactCode): string {
-  const backup = spare
-    ? `&sid=${spare.senderHex}&srelay=${encodeURIComponent(spare.relayUrl)}${spare.relayKey ? `&srk=${spare.relayKey}` : ''}`
-    : '';
+  const backupAt = (one: SpareCode, n: string) =>
+    `&sid${n}=${one.senderHex}&srelay${n}=${encodeURIComponent(one.relayUrl)}${one.relayKey ? `&srk${n}=${one.relayKey}` : ''}`;
+  const backup = spare ? backupAt(spare, '') : '';
   const ticket = lend && relayUrl && TICKET.test(lend) ? `&lend=${lend}` : '';
   const there = nostr ? checkNostr(nostr.k, nostr.r) : null;
   const onNostr = there ? `&nk=${there.k}&nr=${there.r.map(encodeURIComponent).join(',')}` : '';
-  return `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}${onNostr}`;
+  let link = `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}${onNostr}`;
+  // The other home relays, while the link stays short enough for one QR code with an invite around
+  // it: the rest are said with the first message anyway (lib/e2e.ts, Spare.more).
+  for (const [i, one] of (spare?.more ?? []).slice(0, MORE_SPARES).entries()) {
+    const more = backupAt(one, String(i + 2));
+    if (link.length + more.length > LINK_MOST) break;
+    link += more;
+  }
+  return link;
 }
 
 /** Checks a backup queue of a link: null when it is not one, as when a part is missing. */
@@ -96,7 +112,14 @@ export function parseContact(text: string): ContactCode | null {
   }
   const code = checkContact(fields.id, fields.relay ?? '', fields.key ?? '', fields.rk ?? '');
   // A backup queue, a ticket or a Nostr place that does not read is left out: the link still works without it.
-  const spare = code?.relayUrl && fields.sid ? checkSpare(fields.sid, fields.srelay ?? '', fields.srk ?? '') : null;
+  const first = code?.relayUrl && fields.sid ? checkSpare(fields.sid, fields.srelay ?? '', fields.srk ?? '') : null;
+  // The other home relays, each that reads, once each, after the first.
+  const more: SpareCode[] = [];
+  for (let n = 2; first && n < 2 + MORE_SPARES; n++) {
+    const one = fields[`sid${n}`] ? checkSpare(fields[`sid${n}`], fields[`srelay${n}`] ?? '', fields[`srk${n}`] ?? '') : null;
+    if (one && ![first, ...more].some((s) => s.relayUrl.toLowerCase() === one.relayUrl.toLowerCase())) more.push(one);
+  }
+  const spare = first && more.length > 0 ? { ...first, more } : first;
   const lend = code?.relayUrl && fields.lend && TICKET.test(fields.lend) ? fields.lend : '';
   const nostr = code?.key && fields.nk ? checkNostr(fields.nk, relays) : null;
   return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}), ...(nostr ? { nostr } : {}) } : code;

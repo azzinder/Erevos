@@ -1301,6 +1301,11 @@ kuće, na Raspberry Piju ili starom računaru, ili bilo koji drugi relay kojem v
   PIN-om, pa prostor ne zna ništa o njemu, a gleda se dok je mjesto otvoreno. Koristite drugi relay, a ne relay
   prostora: jedan relay koji vidi oba reda povezao bi ih.
 
+**Više od jednog:** **Dodajte još jedan kućni relay** daje do još dva, svaki s vlastitim redom, na primjer jedan kod
+kuće i jedan kod prijatelja. Kontakti ih probaju prikazanim redom, a Erevos preuzima ono što stigne na svaki. Vaš link
+za kontakt navodi ostale samo dok ostaje dovoljno kratak za jedan QR kod; ostali stižu do kontakata s vašom sljedećom
+porukom. Kontakt sa starijim Erevosom koristi samo prvi.
+
 ## Preko Tora {#tor}
 
 Pod **Postavke** → **Relay i mreže** → **Tor**, **Što ide preko Tora** određuje koji zahtjevi ovog prostora prema

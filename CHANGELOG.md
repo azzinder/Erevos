@@ -14,6 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **A list of home relays in the contact link**: **Settings** → **Relay and networks** → **Home relay** takes up to
+  three, each with a queue of its own (`SpaceData.spare.more`, `lib/spare.ts` `setSpareRelays`, `homeRelays`); each
+  is looked at, and this phone's own sends go through the first one ready when its relay is down. The contact link
+  names the others after the first as `sid2`/`srelay2`/`srk2` and `sid3`/... (`lib/contact-code.ts`), but only while
+  the link stays within 2550 characters (`LINK_MOST`), so it and an invite around it still fit one QR code; every
+  message says them all inside the encryption (`Spare.more`, at most two, each relay once), so a contact also learns
+  those the link left out. A contact tries the main queue, then each home relay in order, through its own relay and
+  then through its own first home relay (`contactTarget`). An Erevos before this reads the link and the messages as
+  before and uses only the first home relay; hidden places keep one home relay each. Checked with real relays in
+  `checks/spare.check.ts`.
 - **Check a contact in person with QR codes**: under **Safety number** in a contact's details, each phone shows a QR
   code; **Take a photo of their code** (or **Choose a photo of their code**) checks the other phone's, and the contact
   is marked **Checked in person** with the day, until **Take the mark off**. The code is `EREVOSV1:` and the SHA-256
