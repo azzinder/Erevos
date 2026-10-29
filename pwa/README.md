@@ -135,6 +135,10 @@ link pasted in New chat; elsewhere, the app or the web app; where the web app's 
 page, `/contact?<fields>`. The link has no place on a relay in it, and it lasts as long as the
 contact link does (New contact link ends it). Whoever adds it writes a message request first.
 
+As with `/i/`, the first time the page comes straight from the server, unchecked. A server that is
+broken into could send a page that adds someone else in the link's place, under the same name; the
+chat's **Safety number**, compared with the person it was meant for, tells.
+
 ## Matrix calls
 
 A Matrix call opens Element Call (Element's call app, AGPL-3.0, from the npm package
