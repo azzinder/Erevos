@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.1 (2026-10-29)
+
+### For you
+
 - **Hidden chats with phones nearby**: hidden chats used only their relay or Nostr; now, while a place is open, or
   receives while closed, its chats also reach a contact's phone over the same links as the space's (Bluetooth, Wi-Fi
   Aware, Wi-Fi Direct, the same Wi-Fi). What comes on the links opens in the space's chats first, as before; what opens
