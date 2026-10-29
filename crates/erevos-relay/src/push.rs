@@ -386,7 +386,7 @@ impl Push {
         }
         let sent = lock(&self.queue, PUSH_LOCK).send((*queue, came));
         if sent.is_err() && !self.stopped.swap(true, Ordering::Relaxed) {
-            eprintln!("erevos-relay: the pushes stopped, no web app is told of a message until the relay starts again");
+            elog!("erevos-relay: the pushes stopped, no web app is told of a message until the relay starts again");
         }
     }
 
@@ -724,7 +724,7 @@ impl Push {
         if tries >= PUSH_TRIES {
             let host = host(&endpoint).unwrap_or_default();
             if self.tells(host, "given up") {
-                eprintln!("erevos-relay: a push to {host} did not get through in {PUSH_TRIES} tries, it waits for the next message");
+                elog!("erevos-relay: a push to {host} did not get through in {PUSH_TRIES} tries, it waits for the next message");
             }
         } else if tries > 0 {
             let wait = self.gap.saturating_mul(1 << (tries - 1)).min(MAX_RETRY);
@@ -770,26 +770,26 @@ impl Push {
             Ok(200..=299) => false,
             Ok(status @ (404 | 410)) => {
                 if self.tells(host, &status.to_string()) {
-                    eprintln!("erevos-relay: {host} says a push address is gone ({status}), its queues push no more");
+                    elog!("erevos-relay: {host} says a push address is gone ({status}), its queues push no more");
                 }
                 self.went_gone(&address.endpoint);
                 false
             }
             Ok(status @ (429 | 500..=599)) => {
                 if self.tells(host, &status.to_string()) {
-                    eprintln!("erevos-relay: {host} could not take a push now ({status}), it is tried again");
+                    elog!("erevos-relay: {host} could not take a push now ({status}), it is tried again");
                 }
                 true
             }
             Ok(status) => {
                 if self.tells(host, &status.to_string()) {
-                    eprintln!("erevos-relay: {host} refused a push ({status})");
+                    elog!("erevos-relay: {host} refused a push ({status})");
                 }
                 false
             }
             Err(e) => {
                 if self.tells(host, &format!("{:?}", e.kind())) {
-                    eprintln!("erevos-relay: a push to {host} could not be sent: {e}");
+                    elog!("erevos-relay: a push to {host} could not be sent: {e}");
                 }
                 true
             }

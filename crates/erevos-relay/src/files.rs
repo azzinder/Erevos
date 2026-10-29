@@ -89,7 +89,7 @@ fn from_hex(name: &str) -> Option<ChunkId> {
 }
 
 fn storage(e: io::Error) -> FileError {
-    eprintln!("erevos-relay: cannot use the file store: {e}");
+    elog!("erevos-relay: cannot use the file store: {e}");
     FileError::Storage
 }
 

@@ -176,13 +176,13 @@ fn take_news(journal: &Path) -> Vec<(QueueId, News)> {
         Ok(bytes) => bytes,
         Err(e) if e.kind() == ErrorKind::NotFound => return Vec::new(),
         Err(e) => {
-            eprintln!("erevos-relay: cannot read the news kept at the last stop, so they start afresh: {e}");
+            elog!("erevos-relay: cannot read the news kept at the last stop, so they start afresh: {e}");
             let _ = std::fs::remove_file(&path);
             return Vec::new();
         }
     };
     if let Err(e) = std::fs::remove_file(&path).and_then(|()| journal::sync_dir(&path)) {
-        eprintln!("erevos-relay: cannot remove the news kept at the last stop, so they start afresh: {e}");
+        elog!("erevos-relay: cannot remove the news kept at the last stop, so they start afresh: {e}");
         return Vec::new();
     }
     let head = NEWS_HEADER.len() + 8 + 32;
@@ -190,7 +190,7 @@ fn take_news(journal: &Path) -> Vec<(QueueId, News)> {
         || &bytes[..NEWS_HEADER.len()] != NEWS_HEADER
         || !(bytes.len() - head).is_multiple_of(NEWS_ENTRY)
     {
-        eprintln!("erevos-relay: the news kept at the last stop cannot be read, so they start afresh");
+        elog!("erevos-relay: the news kept at the last stop cannot be read, so they start afresh");
         return Vec::new();
     }
     let len = u64::from_be_bytes(bytes[8..16].try_into().unwrap_or_default());
@@ -198,12 +198,12 @@ fn take_news(journal: &Path) -> Vec<(QueueId, News)> {
         Ok((now_len, hash)) => now_len == len && hash[..] == bytes[16..48],
         Err(e) if e.kind() == ErrorKind::NotFound => false,
         Err(e) => {
-            eprintln!("erevos-relay: cannot read the journal to check the news kept at the last stop, so they start afresh: {e}");
+            elog!("erevos-relay: cannot read the journal to check the news kept at the last stop, so they start afresh: {e}");
             return Vec::new();
         }
     };
     if !matches {
-        eprintln!("erevos-relay: the news kept at the last stop are of another journal (changed since, by an older relay say), so they start afresh");
+        elog!("erevos-relay: the news kept at the last stop are of another journal (changed since, by an older relay say), so they start afresh");
         return Vec::new();
     }
     let word = |b: &[u8]| u32::from_be_bytes([b[0], b[1], b[2], b[3]]);
@@ -282,7 +282,7 @@ fn log(journal: &mut Option<Journal>, record: &Record) -> Result<(), QueueError>
         return Ok(());
     };
     journal.append(record).map_err(|e| {
-        eprintln!("erevos-relay: cannot write the journal: {e}");
+        elog!("erevos-relay: cannot write the journal: {e}");
         QueueError::Storage
     })
 }
@@ -309,7 +309,7 @@ impl Store {
         };
         let skipped = journal::replay(path, |record| store.apply(record))?;
         if skipped > 0 {
-            eprintln!(
+            elog!(
                 "erevos-relay: skipped {skipped} bytes at the end of {}, left by a write that did not finish",
                 path.display()
             );
@@ -323,7 +323,7 @@ impl Store {
             }
         }
         if taken > 0 {
-            eprintln!("erevos-relay: took back the news of {taken} queues, kept at the last stop");
+            elog!("erevos-relay: took back the news of {taken} queues, kept at the last stop");
         }
         store.drop_expired();
         store.journal = Some(Journal::create(path, records(&store.queues))?);
@@ -698,7 +698,7 @@ impl Store {
         }
         let live = journal::size(records(&self.queues));
         if let Err(e) = journal.tidy(live, records(&self.queues)) {
-            eprintln!("erevos-relay: cannot rewrite the journal, keeping the old one: {e}");
+            elog!("erevos-relay: cannot rewrite the journal, keeping the old one: {e}");
         }
     }
 }

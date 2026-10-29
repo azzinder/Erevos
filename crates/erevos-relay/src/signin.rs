@@ -416,7 +416,7 @@ impl SignIn {
                 body: String::new(),
             },
             Err(e) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: cannot start a sign-in with {}: {e}",
                     self.name()
                 );
@@ -442,7 +442,7 @@ impl SignIn {
             if error == "access_denied" {
                 return self.say(200, lang, words.cancelled);
             }
-            eprintln!(
+            elog!(
                 "erevos-relay: {} did not let a sign-in through: {}",
                 self.name(),
                 error_word(error)
@@ -456,14 +456,14 @@ impl SignIn {
         let (sub, user, refresh) = match who {
             Ok(who) => who,
             Err(Failure::Refused(why)) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: {} let a sign-in through that may not use the relay: {why}",
                     self.name()
                 );
                 return self.say(403, lang, words.refused);
             }
             Err(e) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: a sign-in with {} did not work: {e}",
                     self.name()
                 );
@@ -630,13 +630,13 @@ impl SignIn {
             sealed: seal(&self.key, line, &done.refresh),
         });
         self.save(&records).map_err(|e| {
-            eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+            elog!("erevos-relay: cannot write the sign-ins: {e}");
             ClaimError::Storage
         })?;
         let undo = |why: ClaimError| {
             if let Err(e) = self.save(&before) {
                 // A record with no line is forgotten at its first check.
-                eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+                elog!("erevos-relay: cannot write the sign-ins: {e}");
             }
             why
         };
@@ -645,7 +645,7 @@ impl SignIn {
         let moving = match (&instead, invites) {
             (Some(old), Some(invites)) => {
                 if let Err(e) = invites.moving(&old.line, line) {
-                    eprintln!("erevos-relay: cannot write the invites: {e}");
+                    elog!("erevos-relay: cannot write the invites: {e}");
                     return Err(undo(ClaimError::Storage));
                 }
                 Some((invites, old.line))
@@ -681,7 +681,7 @@ impl SignIn {
         // The record of the line replaced goes now that its line has gone.
         records.retain(|r| Some(r.line) != instead.as_ref().map(|i| i.line));
         if let Err(e) = self.save(&records) {
-            eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+            elog!("erevos-relay: cannot write the sign-ins: {e}");
         }
         state.records = records;
         state.ready.remove(&claim);
@@ -729,7 +729,7 @@ impl SignIn {
             }
             if ahead {
                 if let Err(e) = self.save(&records) {
-                    eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+                    elog!("erevos-relay: cannot write the sign-ins: {e}");
                 }
                 state.records = records;
             }
@@ -788,7 +788,7 @@ impl SignIn {
             return true;
         }
         let Some(refresh) = refresh else {
-            eprintln!(
+            elog!(
                 "erevos-relay: the refresh token of the sign-in of the line {} cannot be read (was the client secret changed?), so the line goes and its phone signs in again",
                 short(line)
             );
@@ -809,7 +809,7 @@ impl SignIn {
                 true
             }
             Err(Failure::Refused(why)) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: {} no longer lets the line {} in ({why}), so it goes",
                     self.name(),
                     short(line)
@@ -820,7 +820,7 @@ impl SignIn {
             Err(Failure::Later(why))
                 if overdue && record.failed != 0 && record.failed + CHECK_EVERY <= now =>
             {
-                eprintln!(
+                elog!(
                     "erevos-relay: the sign-in of the line {} was not found good for {} hours, and {} still cannot be asked, at checks an hour apart ({why}), so the line goes",
                     short(line),
                     MAX_UNCHECKED / 3600,
@@ -830,7 +830,7 @@ impl SignIn {
                 false
             }
             Err(Failure::Later(why)) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: cannot check the sign-in of the line {} with {} now, trying again in an hour: {why}",
                     short(line),
                     self.name()
@@ -890,7 +890,7 @@ impl SignIn {
         };
         change(record);
         if let Err(e) = self.save(&records) {
-            eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+            elog!("erevos-relay: cannot write the sign-ins: {e}");
         }
         state.records = records;
     }
@@ -901,7 +901,7 @@ impl SignIn {
         let mut records = state.records.clone();
         records.retain(|r| &r.line != line);
         if let Err(e) = self.save(&records) {
-            eprintln!("erevos-relay: cannot write the sign-ins: {e}");
+            elog!("erevos-relay: cannot write the sign-ins: {e}");
         }
         state.records = records;
     }
@@ -917,7 +917,7 @@ impl SignIn {
         match tokens.remove(line) {
             Ok(_) if tokens.gone(line) => self.forget(line),
             Ok(_) => {}
-            Err(e) => eprintln!("erevos-relay: cannot take a line out of the file of tokens now, so it is refused until the next look takes it out: {e}"),
+            Err(e) => elog!("erevos-relay: cannot take a line out of the file of tokens now, so it is refused until the next look takes it out: {e}"),
         }
     }
 }

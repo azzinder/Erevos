@@ -87,3 +87,54 @@ fn a_relay_stopped_with_sigterm_keeps_its_news_for_the_next_start() {
     assert!(news.exists());
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn a_relay_whose_log_is_gone_still_stops_on_sigterm() {
+    let dir = std::env::temp_dir().join(format!("erevos-relay-stop-nolog-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let journal = dir.join("queues.journal");
+    let mut news = journal.as_os_str().to_owned();
+    news.push(".news");
+    let news = PathBuf::from(news);
+
+    let mut relay = Command::new(env!("CARGO_BIN_EXE_erevos-relay"))
+        .args(["127.0.0.1:0", "127.0.0.1:0"])
+        .env_clear()
+        .env("EREVOS_RELAY_JOURNAL", &journal)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    // Read its log until it listens, then close the pipe, as a `| head` that has
+    // had its lines does: what it logs after that cannot be written.
+    let mut lines = BufReader::new(relay.stderr.take().unwrap()).lines();
+    loop {
+        match lines.next() {
+            Some(Ok(line)) if line.starts_with("erevos-relay listening") => break,
+            Some(Ok(_)) => {}
+            _ => panic!("the relay did not start"),
+        }
+    }
+    drop(lines);
+
+    // SAFETY: kill only sends a signal, to the child started above.
+    assert_eq!(unsafe { libc::kill(relay.id() as libc::pid_t, libc::SIGTERM) }, 0);
+    let mut status = None;
+    for _ in 0..100 {
+        status = relay.try_wait().unwrap();
+        if status.is_some() {
+            break;
+        }
+        thread::sleep(Duration::from_millis(100));
+    }
+    if status.is_none() {
+        let _ = relay.kill();
+        let _ = relay.wait();
+        panic!("the relay did not stop on SIGTERM once its log was gone");
+    }
+    assert!(status.unwrap().success(), "{status:?}");
+    assert!(news.exists());
+    std::fs::remove_dir_all(&dir).unwrap();
+}

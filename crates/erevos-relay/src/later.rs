@@ -114,7 +114,7 @@ fn from_hex(name: &str) -> Option<HeldId> {
 }
 
 fn storage(e: io::Error) -> HeldError {
-    eprintln!("erevos-relay: cannot use the folder of requests held for later: {e}");
+    elog!("erevos-relay: cannot use the folder of requests held for later: {e}");
     HeldError::Storage
 }
 
@@ -289,7 +289,7 @@ impl Held {
             if let Err(e) = fs::remove_file(&path) {
                 if e.kind() != ErrorKind::NotFound {
                     // Run again after a restart, the other phone takes it as one it has.
-                    eprintln!("erevos-relay: cannot remove a request that went: {e}");
+                    elog!("erevos-relay: cannot remove a request that went: {e}");
                 }
             }
         }

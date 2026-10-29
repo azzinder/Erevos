@@ -21,6 +21,10 @@ On main, not released yet:
   itself, from the start, three times in all (`DOWNLOAD_TRIES`, `stalled` in `lib/updates.ts`), and then says so in
   words, in the app's language, instead of Android's own message in English. A download that cannot work, such as
   one with no network or to a full phone, still says why at once. See [Updates](#updates).
+- **The relay stops on `SIGTERM` even with nowhere to log**: everything the relay logs goes through `elog!`, which
+  drops a line it cannot write. `eprintln!` panicked when stderr was a closed pipe, which ended the thread that stops
+  the relay on `SIGTERM` after it had kept the queues' news, so the relay went on running until killed, and could end
+  a push thread the same way. Under systemd stderr goes to journald, which keeps it, so this did not arise there.
 
 ## 4.0.0-rc.1 (2026-10-29)
 

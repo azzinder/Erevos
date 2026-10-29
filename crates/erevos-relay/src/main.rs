@@ -143,6 +143,23 @@
 //! relay) to hand phones credentials for calls through it (see `turn.rs`).
 //! Without them, phones can only call directly, on the same network.
 
+/// `eprintln!` that never panics: a line to stderr, dropped if it cannot be
+/// written. `eprintln!` panics when stderr is gone (a closed pipe, a stopped
+/// terminal), which would end the thread that logs, so the stop on `SIGTERM`
+/// (`stop.rs`) or a push thread. Everything the relay logs goes through this.
+/// In unit tests it stays `eprintln!`, which the test harness captures.
+#[cfg(not(test))]
+macro_rules! elog {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        let _ = writeln!(std::io::stderr(), $($arg)*);
+    }};
+}
+#[cfg(test)]
+macro_rules! elog {
+    ($($arg:tt)*) => { eprintln!($($arg)*) };
+}
+
 mod connect;
 mod files;
 mod invites;
@@ -187,7 +204,7 @@ fn number(name: &str, default: u64, least: u64) -> Option<u64> {
         Ok(text) if !text.is_empty() => match text.parse::<u64>() {
             Ok(n) if n >= least => Some(n),
             _ => {
-                eprintln!("erevos-relay: {name} must be a whole number, at least {least}");
+                elog!("erevos-relay: {name} must be a whole number, at least {least}");
                 None
             }
         },
@@ -225,22 +242,22 @@ fn free_line(name: &str) -> ExitCode {
         .ok()
         .filter(|path| !path.is_empty())
     else {
-        eprintln!("erevos-relay: free-line needs EREVOS_RELAY_TOKENS set to the file of tokens the relay uses");
+        elog!("erevos-relay: free-line needs EREVOS_RELAY_TOKENS set to the file of tokens the relay uses");
         return ExitCode::FAILURE;
     };
     if name.is_empty() {
-        eprintln!("erevos-relay: free-line needs the name on the line, as in erevos-relay free-line maria");
+        elog!("erevos-relay: free-line needs the name on the line, as in erevos-relay free-line maria");
         return ExitCode::FAILURE;
     }
     let lines = tokens::Tokens::new(PathBuf::from(&path)).named(name);
     let line = match lines.as_slice() {
         [line] => *line,
         [] => {
-            eprintln!("erevos-relay: no line of {path} is named {name:?}");
+            elog!("erevos-relay: no line of {path} is named {name:?}");
             return ExitCode::FAILURE;
         }
         _ => {
-            eprintln!(
+            elog!(
                 "erevos-relay: {} lines of {path} are named {name:?}; give all but one another name first",
                 lines.len()
             );
@@ -252,7 +269,7 @@ fn free_line(name: &str) -> ExitCode {
     let invites = match invites::Invites::open(&kept, false, usize::MAX) {
         Ok(invites) => invites,
         Err(e) => {
-            eprintln!(
+            elog!(
                 "erevos-relay: cannot read the invites {}: {e}",
                 kept.display()
             );
@@ -276,7 +293,7 @@ fn free_line(name: &str) -> ExitCode {
             ExitCode::SUCCESS
         }
         Err(e) => {
-            eprintln!(
+            elog!(
                 "erevos-relay: cannot write the invites {}: {e}",
                 kept.display()
             );
@@ -305,7 +322,7 @@ fn give_back(path: &Path, owner: Option<(u32, u32)>) {
     if let Some((uid, gid)) = owner.filter(|owner| owner_of(path) != Some(*owner)) {
         // lchown: a link put there since changes the link, never what it points to.
         if let Err(e) = std::os::unix::fs::lchown(path, Some(uid), Some(gid)) {
-            eprintln!(
+            elog!(
                 "erevos-relay: cannot give {} back to its owner: {e}",
                 path.display()
             );
@@ -340,14 +357,14 @@ fn main() -> ExitCode {
     let tcp = match TcpListener::bind(&tcp_addr) {
         Ok(l) => l,
         Err(e) => {
-            eprintln!("erevos-relay: cannot listen on {tcp_addr}: {e}");
+            elog!("erevos-relay: cannot listen on {tcp_addr}: {e}");
             return ExitCode::FAILURE;
         }
     };
     let ws = match TcpListener::bind(&ws_addr) {
         Ok(l) => l,
         Err(e) => {
-            eprintln!("erevos-relay: cannot listen on {ws_addr}: {e}");
+            elog!("erevos-relay: cannot listen on {ws_addr}: {e}");
             return ExitCode::FAILURE;
         }
     };
@@ -359,13 +376,13 @@ fn main() -> ExitCode {
         .ok()
         .filter(|path| !path.is_empty());
     if token.is_none() && phones.is_none() {
-        eprintln!("erevos-relay: no EREVOS_RELAY_TOKEN or EREVOS_RELAY_TOKENS set, the WebSocket accepts anyone");
+        elog!("erevos-relay: no EREVOS_RELAY_TOKEN or EREVOS_RELAY_TOKENS set, the WebSocket accepts anyone");
     }
     let ttl = match env::var("EREVOS_RELAY_TTL_DAYS") {
         Ok(days) if !days.is_empty() => match days.parse::<u64>() {
             Ok(days) if days > 0 => days * 24 * 60 * 60,
             _ => {
-                eprintln!("erevos-relay: EREVOS_RELAY_TTL_DAYS must be a whole number of days, at least 1");
+                elog!("erevos-relay: EREVOS_RELAY_TTL_DAYS must be a whole number of days, at least 1");
                 return ExitCode::FAILURE;
             }
         },
@@ -392,35 +409,35 @@ fn main() -> ExitCode {
     let store = match env::var("EREVOS_RELAY_JOURNAL") {
         Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl) {
             Ok(store) => {
-                eprintln!("erevos-relay: keeping queues in {path}");
+                elog!("erevos-relay: keeping queues in {path}");
                 store
             }
             Err(e) => {
-                eprintln!("erevos-relay: cannot open the journal {path}: {e}");
+                elog!("erevos-relay: cannot open the journal {path}: {e}");
                 return ExitCode::FAILURE;
             }
         },
         _ => {
-            eprintln!(
+            elog!(
                 "erevos-relay: no EREVOS_RELAY_JOURNAL set, queues are lost when the relay stops"
             );
             Store::with_ttl(ttl)
         }
     };
     let store = store.with_queue_limits(max_queues, queue_ttl);
-    eprintln!(
+    elog!(
         "erevos-relay: holding {max_queues} queues at most, each until its phone leaves it unused for {queue_days} days"
     );
     let key = match env::var("EREVOS_RELAY_KEY") {
         Ok(path) if !path.is_empty() => match load_key(Path::new(&path)) {
             Ok(key) => Some(key),
             Err(e) => {
-                eprintln!("erevos-relay: cannot use the key file {path}: {e}");
+                elog!("erevos-relay: cannot use the key file {path}: {e}");
                 return ExitCode::FAILURE;
             }
         },
         _ => {
-            eprintln!(
+            elog!(
                 "erevos-relay: no EREVOS_RELAY_KEY set, sealed sends from other relays are refused"
             );
             None
@@ -431,13 +448,13 @@ fn main() -> ExitCode {
             match Turn::new(&urls, &secret) {
                 Some(turn) => Some(turn),
                 None => {
-                    eprintln!("erevos-relay: EREVOS_TURN_URLS needs turn: or turns: addresses, at most {}, and EREVOS_TURN_SECRET a secret", turn::MAX_URLS);
+                    elog!("erevos-relay: EREVOS_TURN_URLS needs turn: or turns: addresses, at most {}, and EREVOS_TURN_SECRET a secret", turn::MAX_URLS);
                     return ExitCode::FAILURE;
                 }
             }
         }
         _ => {
-            eprintln!("erevos-relay: no EREVOS_TURN_URLS and EREVOS_TURN_SECRET set, calls cannot go through a call relay");
+            elog!("erevos-relay: no EREVOS_TURN_URLS and EREVOS_TURN_SECRET set, calls cannot go through a call relay");
             None
         }
     };
@@ -445,7 +462,7 @@ fn main() -> ExitCode {
         Ok(mb) if !mb.is_empty() => match mb.parse::<u64>() {
             Ok(mb) => Some(mb << 20),
             Err(_) => {
-                eprintln!(
+                elog!(
                     "erevos-relay: EREVOS_RELAY_FILES_MB must be a whole number of megabytes"
                 );
                 return ExitCode::FAILURE;
@@ -457,20 +474,20 @@ fn main() -> ExitCode {
         Ok(dir) if !dir.is_empty() => {
             match FileStore::open(Path::new(&dir), cap.unwrap_or(files::DEFAULT_CAP), ttl) {
                 Ok(files) => {
-                    eprintln!(
+                    elog!(
                         "erevos-relay: keeping files in {dir}, {} MB now",
                         files.used() >> 20
                     );
                     files
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot open the file folder {dir}: {e}");
+                    elog!("erevos-relay: cannot open the file folder {dir}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
         _ => {
-            eprintln!("erevos-relay: no EREVOS_RELAY_FILES set, files are kept in memory and lost when the relay stops");
+            elog!("erevos-relay: no EREVOS_RELAY_FILES set, files are kept in memory and lost when the relay stops");
             FileStore::in_memory(cap.unwrap_or(files::DEFAULT_MEMORY_CAP), ttl)
         }
     };
@@ -487,20 +504,20 @@ fn main() -> ExitCode {
         Some(dir) => {
             match Held::open(Path::new(dir), ttl) {
                 Ok(held) => {
-                    eprintln!(
+                    elog!(
                         "erevos-relay: keeping messages sent for later in {dir}, {} now",
                         held.len()
                     );
                     held
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot open the folder for messages sent for later {dir}: {e}");
+                    elog!("erevos-relay: cannot open the folder for messages sent for later {dir}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
         None => {
-            eprintln!("erevos-relay: messages sent for later are kept in memory and lost when the relay stops");
+            elog!("erevos-relay: messages sent for later are kept in memory and lost when the relay stops");
             Held::in_memory(ttl)
         }
     };
@@ -527,29 +544,29 @@ fn main() -> ExitCode {
     };
     let private_peers = match env::var("EREVOS_RELAY_PRIVATE_PEERS").as_deref() {
         Ok("allow") => {
-            eprintln!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS=allow, forwards may go to relays on this machine and its network");
+            elog!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS=allow, forwards may go to relays on this machine and its network");
             true
         }
         Ok("" | "deny") | Err(_) => false,
         Ok(_) => {
-            eprintln!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS must be allow or deny");
+            elog!("erevos-relay: EREVOS_RELAY_PRIVATE_PEERS must be allow or deny");
             return ExitCode::FAILURE;
         }
     };
     let matrix_push = match env::var("EREVOS_RELAY_MATRIX_PUSH").as_deref() {
         Ok("" | "on") | Err(_) => {
-            eprintln!(
+            elog!(
                 "erevos-relay: Matrix homeservers may push to {}",
                 matrix_push::NOTIFY_PATH
             );
             true
         }
         Ok("off") => {
-            eprintln!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH=off, Matrix homeservers' pushes are not taken");
+            elog!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH=off, Matrix homeservers' pushes are not taken");
             false
         }
         Ok(_) => {
-            eprintln!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH must be on or off");
+            elog!("erevos-relay: EREVOS_RELAY_MATRIX_PUSH must be on or off");
             return ExitCode::FAILURE;
         }
     };
@@ -561,13 +578,13 @@ fn main() -> ExitCode {
         matrix_push,
         ..Limits::default()
     };
-    eprintln!(
+    elog!(
         "erevos-relay: taking {} connections at once, {} of them on the paths that need no token, and {} reading queues",
         limits.connections,
         limits.tokenless.min(limits.connections),
         limits.reading.min(limits.connections)
     );
-    eprintln!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
+    elog!("erevos-relay listening on tcp {tcp_addr} and ws {ws_addr}");
     let store = Shared::new(store, files, key, turn, limits);
     if let Some(signals) = signals {
         stop::wait(signals, Arc::clone(&store));
@@ -575,7 +592,7 @@ fn main() -> ExitCode {
     let inviting = match invites::wanted(env::var("EREVOS_RELAY_INVITES").ok().as_deref()) {
         Ok(on) => on,
         Err(e) => {
-            eprintln!("erevos-relay: {e}");
+            elog!("erevos-relay: {e}");
             return ExitCode::FAILURE;
         }
     };
@@ -586,7 +603,7 @@ fn main() -> ExitCode {
     if let Some(path) = &phones {
         // The relay writes the file through a rename, which would put a file where a link was.
         if let Err(e) = tokens::plain_file(Path::new(path)) {
-            eprintln!("erevos-relay: cannot use the phones' tokens: {e}");
+            elog!("erevos-relay: cannot use the phones' tokens: {e}");
             return ExitCode::FAILURE;
         }
         let tokens = tokens::Tokens::new(PathBuf::from(path));
@@ -602,9 +619,9 @@ fn main() -> ExitCode {
             match invites::Invites::open(Path::new(kept), on, most) {
                 Ok(invites) => {
                     if on {
-                        eprintln!("erevos-relay: phones with tokens of their own may invite others, {most} at most let in by invite, {} invites kept in {kept}", invites.len());
+                        elog!("erevos-relay: phones with tokens of their own may invite others, {most} at most let in by invite, {} invites kept in {kept}", invites.len());
                     } else {
-                        eprintln!("erevos-relay: invites are off, but the phones let in by invite before, kept in {kept}, still go with the phones that invited them");
+                        elog!("erevos-relay: invites are off, but the phones let in by invite before, kept in {kept}, still go with the phones that invited them");
                     }
                     if let Some(tokens) = store.tokens.get() {
                         tokens.set_invited(invites.edges(tokens));
@@ -612,12 +629,12 @@ fn main() -> ExitCode {
                     let _ = store.invites.set(invites);
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot read the invites {kept}: {e}");
+                    elog!("erevos-relay: cannot read the invites {kept}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
-        (None, true) => eprintln!(
+        (None, true) => elog!(
             "erevos-relay: EREVOS_RELAY_INVITES=on but no EREVOS_RELAY_TOKENS set, nobody may invite"
         ),
         _ => {}
@@ -625,7 +642,7 @@ fn main() -> ExitCode {
     let signing = match oidc::Config::from(|name| env::var(name).ok()) {
         Ok(config) => config,
         Err(e) => {
-            eprintln!("erevos-relay: {e}");
+            elog!("erevos-relay: {e}");
             return ExitCode::FAILURE;
         }
     };
@@ -635,25 +652,25 @@ fn main() -> ExitCode {
             let name = config.name.clone();
             match signin::SignIn::open(config, Some(PathBuf::from(&kept))) {
                 Ok(signin) => {
-                    eprintln!("erevos-relay: phones may sign in with {name} for tokens of their own, {} signed in, kept in {kept}", signin.len());
+                    elog!("erevos-relay: phones may sign in with {name} for tokens of their own, {} signed in, kept in {kept}", signin.len());
                     if let Some(tokens) = store.tokens.get() {
                         // Lines the relay was taking out when it stopped go now, not at the first look.
                         signin.cut_pending(tokens);
                     }
                     for line in store.tokens.get().map(|t| signin.unrecorded(t)).unwrap_or_default() {
-                        eprintln!("erevos-relay: the line {} is named as a sign-in with {name}, but {kept} has no record of it, so it is never checked with {name}: take it out unless you wrote it yourself", tokens::short(&line));
+                        elog!("erevos-relay: the line {} is named as a sign-in with {name}, but {kept} has no record of it, so it is never checked with {name}: take it out unless you wrote it yourself", tokens::short(&line));
                     }
                     let _ = store.signin.set(signin);
                     let checked = Arc::clone(&store);
                     thread::spawn(move || server::run_signin_checks(checked));
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot read the sign-ins {kept}: {e}");
+                    elog!("erevos-relay: cannot read the sign-ins {kept}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
-        (None, Some(_)) => eprintln!(
+        (None, Some(_)) => elog!(
             "erevos-relay: EREVOS_RELAY_OIDC_ISSUER is set but no EREVOS_RELAY_TOKENS, nobody may sign in"
         ),
         (_, None) => {}
@@ -661,7 +678,7 @@ fn main() -> ExitCode {
     let lending = match lend::wanted(env::var("EREVOS_RELAY_LEND").ok().as_deref()) {
         Ok(on) => on,
         Err(e) => {
-            eprintln!("erevos-relay: {e}");
+            elog!("erevos-relay: {e}");
             return ExitCode::FAILURE;
         }
     };
@@ -677,7 +694,7 @@ fn main() -> ExitCode {
             let list = lend::Revoked::new(PathBuf::from(&revoked));
             match lend::Lend::open(key, Path::new(&counts), list) {
                 Ok(lend) => {
-                    eprintln!("erevos-relay: lending places to phones without a relay, counting them in {counts}, revoked tickets in {revoked}");
+                    elog!("erevos-relay: lending places to phones without a relay, counting them in {counts}, revoked tickets in {revoked}");
                     // Read now, so what it holds, and a line it cannot read, is said at start.
                     if let Some(revoked) = lend.revoked() {
                         revoked.count();
@@ -685,15 +702,15 @@ fn main() -> ExitCode {
                     let _ = store.lend.set(lend);
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot read the counts of lent places {counts}: {e}");
+                    elog!("erevos-relay: cannot read the counts of lent places {counts}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
-        (None, true) => eprintln!(
+        (None, true) => elog!(
             "erevos-relay: EREVOS_RELAY_LEND=on but no EREVOS_RELAY_KEY set, no places are lent"
         ),
-        (_, false) => eprintln!(
+        (_, false) => elog!(
             "erevos-relay: no EREVOS_RELAY_LEND=on set, no places are lent to phones without a relay"
         ),
     }
@@ -703,7 +720,7 @@ fn main() -> ExitCode {
             let key = match push::load_key(Path::new(&path)) {
                 Ok(key) => key,
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot use the push key file {path}: {e}");
+                    elog!("erevos-relay: cannot use the push key file {path}: {e}");
                     return ExitCode::FAILURE;
                 }
             };
@@ -713,7 +730,7 @@ fn main() -> ExitCode {
             {
                 Some(subject) => subject,
                 None => {
-                    eprintln!("erevos-relay: no EREVOS_RELAY_PUSH_SUBJECT set, or not a mailto: or https: address, so push services are given mailto:erevos-relay@invalid");
+                    elog!("erevos-relay: no EREVOS_RELAY_PUSH_SUBJECT set, or not a mailto: or https: address, so push services are given mailto:erevos-relay@invalid");
                     "mailto:erevos-relay@invalid".to_string()
                 }
             };
@@ -725,16 +742,16 @@ fn main() -> ExitCode {
                 .filter(|s| !s.is_empty())
             {
                 if push::is_service(service) {
-                    eprintln!("erevos-relay: push addresses at {service} are taken too");
+                    elog!("erevos-relay: push addresses at {service} are taken too");
                     allowed.push(service.to_string());
                 } else {
-                    eprintln!("erevos-relay: EREVOS_RELAY_PUSH_SERVICES: {service:?} is not an https: origin ending in /, so it is left out");
+                    elog!("erevos-relay: EREVOS_RELAY_PUSH_SERVICES: {service:?} is not an https: origin ending in /, so it is left out");
                 }
             }
             let addresses = format!("{path}.addresses");
             match push::Push::new(key, subject, allowed, Some(addresses.clone().into())) {
                 Ok(push) => {
-                    eprintln!(
+                    elog!(
                         "erevos-relay: web apps may ask for notifications, {} push addresses for {} queues kept in {addresses}",
                         push.addresses(),
                         push.len()
@@ -742,12 +759,12 @@ fn main() -> ExitCode {
                     let _ = store.push.set(push);
                 }
                 Err(e) => {
-                    eprintln!("erevos-relay: cannot read the push addresses beside {path}: {e}");
+                    elog!("erevos-relay: cannot read the push addresses beside {path}: {e}");
                     return ExitCode::FAILURE;
                 }
             }
         }
-        _ => eprintln!(
+        _ => elog!(
             "erevos-relay: no EREVOS_RELAY_PUSH_KEY set, web apps cannot ask for notifications"
         ),
     }

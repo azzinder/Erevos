@@ -534,7 +534,7 @@ impl Invites {
                 if let Err(e) = self.save(&state) {
                     // Used here and in the file of invites, with no line: it lets
                     // no one else in, which is the safe way to be wrong.
-                    eprintln!("erevos-relay: cannot write the invites: {e}");
+                    elog!("erevos-relay: cannot write the invites: {e}");
                     *state = next;
                 }
                 return Err(if e.kind() == ErrorKind::AlreadyExists {
@@ -547,7 +547,7 @@ impl Invites {
         next.invites[at].name = name.clone();
         if let Err(e) = self.save(&next) {
             // The name kept is the one asked for, shown to the inviter only.
-            eprintln!("erevos-relay: cannot write the invites: {e}");
+            elog!("erevos-relay: cannot write the invites: {e}");
         }
         *state = next;
         Ok(name)
@@ -635,7 +635,7 @@ impl Invites {
         }
         state.moving.retain(|move_| move_ != &(*old, *new));
         if let Err(e) = self.save(&state) {
-            eprintln!("erevos-relay: cannot write the invites, so the next start finishes moving them: {e}");
+            elog!("erevos-relay: cannot write the invites, so the next start finishes moving them: {e}");
         }
     }
 
@@ -647,7 +647,7 @@ impl Invites {
         }
         state.moving.retain(|move_| move_ != &(*old, *new));
         if let Err(e) = self.save(&state) {
-            eprintln!("erevos-relay: cannot write the invites, so the next start leaves them as they were: {e}");
+            elog!("erevos-relay: cannot write the invites, so the next start leaves them as they were: {e}");
         }
     }
 
@@ -705,7 +705,7 @@ impl Invites {
         });
         if new_day || state.invites.len() != before {
             if let Err(e) = self.save(&state) {
-                eprintln!("erevos-relay: cannot write the invites: {e}");
+                elog!("erevos-relay: cannot write the invites: {e}");
             }
         }
         drop(state);

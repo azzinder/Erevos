@@ -672,7 +672,7 @@ fn accept(listener: &TcpListener) -> TcpStream {
             Ok((stream, _)) => return stream,
             Err(e) => {
                 if !said {
-                    eprintln!("erevos-relay: cannot take connections for now: {e}");
+                    elog!("erevos-relay: cannot take connections for now: {e}");
                     said = true;
                 }
                 thread::sleep(ACCEPT_PAUSE);
@@ -2008,8 +2008,8 @@ fn say_failed(failures: &Failures, what: &str, why: &str) {
     }
     *said = Some(Instant::now());
     match failures.unsaid.swap(0, Ordering::Relaxed) {
-        0 => eprintln!("erevos-relay: {what} failed: {why}"),
-        more => eprintln!(
+        0 => elog!("erevos-relay: {what} failed: {why}"),
+        more => elog!(
             "erevos-relay: {what} failed: {why} (and {more} more since the last line like this, not said)"
         ),
     }

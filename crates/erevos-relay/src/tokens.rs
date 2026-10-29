@@ -257,7 +257,7 @@ impl Tokens {
         }
         let invited = seen.invited.clone();
         if let Err(e) = self.rewrite(&mut seen, invited, |_| Ok(())) {
-            eprintln!(
+            elog!(
                 "erevos-relay: cannot take the lines out of force out of {} now, so they are only refused until the next try: {e}",
                 self.path.display()
             );
@@ -501,7 +501,7 @@ impl Tokens {
                 Some(hash) => {
                     all.insert(hash, line_name(line).unwrap_or_default().to_string());
                 }
-                None => eprintln!(
+                None => elog!(
                     "erevos-relay: line {} of {} does not start with a token's SHA-256 (64 hex characters), left out",
                     n + 1,
                     self.path.display()
@@ -517,7 +517,7 @@ impl Tokens {
         seen.read = true;
         seen.complained = false;
         seen.force();
-        eprintln!(
+        elog!(
             "erevos-relay: {} phones' tokens in {}",
             seen.hashes.len(),
             self.path.display()
@@ -528,7 +528,7 @@ impl Tokens {
 impl Seen {
     fn complain(&mut self, what: &str) {
         if !self.complained {
-            eprintln!("erevos-relay: {what}");
+            elog!("erevos-relay: {what}");
             self.complained = true;
         }
     }
@@ -545,7 +545,7 @@ impl Seen {
             .collect();
         let gone = orphans(&held, &self.invited);
         for hash in gone.difference(&self.told) {
-            eprintln!(
+            elog!(
                 "erevos-relay: the line {} is refused: the line of the phone that invited it is gone",
                 short(hash)
             );

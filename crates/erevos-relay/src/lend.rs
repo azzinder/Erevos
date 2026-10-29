@@ -286,7 +286,7 @@ impl Revoked {
                 Some(nonce) => {
                     seen.nonces.insert(nonce);
                 }
-                None => eprintln!(
+                None => elog!(
                     "erevos-relay: line {} of {} is not a ticket's nonce (32 hex characters) or a ticket, left out",
                     n + 1,
                     self.path.display()
@@ -294,7 +294,7 @@ impl Revoked {
             }
         }
         if seen.read || !seen.nonces.is_empty() {
-            eprintln!(
+            elog!(
                 "erevos-relay: {} tickets revoked in {}",
                 seen.nonces.len(),
                 self.path.display()
@@ -311,7 +311,7 @@ impl Seen {
     /// the file was last read.
     fn complain(&mut self, what: &str) {
         if !self.complained {
-            eprintln!("erevos-relay: {what}");
+            elog!("erevos-relay: {what}");
             self.complained = true;
         }
     }
@@ -390,7 +390,7 @@ impl Lend {
             return;
         };
         if let Err(e) = journal::write_whole(path, &counts.encode()) {
-            eprintln!(
+            elog!(
                 "erevos-relay: cannot write the counts of lent places to {}: {e}",
                 path.display()
             );

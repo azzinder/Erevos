@@ -43,7 +43,7 @@ pub fn wait_timeout<'a, T>(
 }
 
 fn poisoned(what: &str) -> ! {
-    eprintln!(
+    elog!(
         "erevos-relay: a thread panicked while holding the {what}, so the relay stops here to be started again"
     );
     std::process::exit(POISONED);

@@ -50,11 +50,11 @@ pub fn wait(signals: Signals, store: SharedStore) {
         let signal = next(&signals);
         let store = store.store();
         match store.keep_news() {
-            Ok(Some(kept)) => eprintln!(
+            Ok(Some(kept)) => elog!(
                 "erevos-relay: stopping on {signal}, with the news of {kept} queues kept for the next start"
             ),
-            Ok(None) => eprintln!("erevos-relay: stopping on {signal}"),
-            Err(e) => eprintln!(
+            Ok(None) => elog!("erevos-relay: stopping on {signal}"),
+            Err(e) => elog!(
                 "erevos-relay: stopping on {signal}; cannot keep the queues' news, so they start afresh: {e}"
             ),
         }
