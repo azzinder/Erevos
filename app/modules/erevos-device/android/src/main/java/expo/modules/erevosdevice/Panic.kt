@@ -1,0 +1,187 @@
+package expo.modules.erevosdevice
+
+import android.app.ActivityManager
+import android.app.NotificationManager
+import android.content.Context
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.Process
+import android.provider.DocumentsContract
+import android.util.Log
+import java.io.File
+import java.security.KeyStore
+import java.security.MessageDigest
+
+/**
+ * The panic button (lib/panic.ts): wiping everything Erevos keeps on the phone, at once, from its
+ * own Settings or from a panic app the owner trusts, through PanicKit's intents (PanicActivity.kt).
+ *
+ * What goes: Erevos's whole app data, by Android's own clearApplicationUserData, which is what
+ * Settings → Apps → Erevos → Clear storage does: every space and hidden chats with their keys,
+ * contacts, messages, photos, files and voice messages, the lock, the Matrix, XMPP and Nostr
+ * accounts, the relay's tokens, automatic backups' key and settings, the backup server's address
+ * and password, and the keys Erevos keeps in the Android Keystore, which Android deletes with the
+ * data. Android then stops Erevos, with its notices and alarms. When the owner chose it, the
+ * automatic backups in their folder go first (erevos-backup-*, the names Erevos gives them).
+ *
+ * What stays: backups elsewhere (copied away, on a server: their password still guards them), what
+ * a relay holds for this phone until it expires, what contacts' phones keep, and Erevos itself,
+ * installed, as if just installed. Deleting on flash memory does not overwrite: what was deleted
+ * stays unreadable because it was encrypted, with keys that are gone.
+ *
+ * The settings are kept apart from everything else, in SharedPreferences PREFS, as they have to be
+ * read with no space open: whether a panic app may wipe (`on`), which one (its package and the
+ * SHA-256 of its signing certificate, so another app installed later under its name is not
+ * trusted), and the one that asked last to be it, until the owner says yes or no. They say that
+ * the owner set a panic app, and which; nothing more.
+ */
+internal object Panic {
+  private const val TAG = "ErevosDevice"
+  private const val PREFS = "erevos-panic"
+  private const val ON = "on"
+  private const val TRIGGER = "trigger"
+  private const val CERT = "cert"
+  private const val PENDING = "pending"
+  private const val PENDING_CERT = "pending-cert"
+  private const val BACKUPS = "backups"
+  private const val FOLDER = "folder"
+  // The names Erevos gives backups (lock/backup.ts BACKUP_PREFIX).
+  private const val BACKUP_PREFIX = "erevos-backup-"
+
+  // PanicKit's intents (info.guardianproject.panic.Panic).
+  const val ACTION_TRIGGER = "info.guardianproject.panic.action.TRIGGER"
+  const val ACTION_CONNECT = "info.guardianproject.panic.action.CONNECT"
+  const val ACTION_DISCONNECT = "info.guardianproject.panic.action.DISCONNECT"
+
+  private fun prefs(context: Context): SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+  /** The SHA-256 of the certificates `pkg` is signed with, hex, sorted and joined; null when not installed. */
+  fun certOf(context: Context, pkg: String): String? = runCatching {
+    val pm = context.packageManager
+    val signatures = if (Build.VERSION.SDK_INT >= 28) {
+      val info = pm.getPackageInfo(pkg, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo ?: return@runCatching null
+      if (info.hasMultipleSigners()) info.apkContentsSigners else info.signingCertificateHistory
+    } else {
+      @Suppress("DEPRECATION")
+      pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES).signatures
+    }
+    signatures?.map { hex(MessageDigest.getInstance("SHA-256").digest(it.toByteArray())) }?.sorted()?.joinToString(",")?.ifEmpty { null }
+  }.getOrNull()
+
+  fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
+
+  /** An app's name as the launcher shows it, or its package. */
+  fun labelOf(context: Context, pkg: String): String = runCatching {
+    val pm = context.packageManager
+    pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
+  }.getOrDefault(pkg)
+
+  /** Whether `caller`, as Android names the app that started PanicActivity, is the panic app trusted to wipe. */
+  fun trusted(context: Context, caller: String): Boolean {
+    val prefs = prefs(context)
+    if (!prefs.getBoolean(ON, false)) return false
+    val trigger = prefs.getString(TRIGGER, null) ?: return false
+    val cert = prefs.getString(CERT, null) ?: return false
+    return caller == trigger && certOf(context, caller) == cert
+  }
+
+  /** A panic app asked to be the one (PanicKit's CONNECT): kept until the owner answers in Erevos. */
+  fun ask(context: Context, caller: String) {
+    val cert = certOf(context, caller) ?: return
+    prefs(context).edit().putString(PENDING, caller).putString(PENDING_CERT, cert).apply()
+  }
+
+  /** The owner said yes to the app that asked: it may wipe, while the panic setting is on. False when it is no longer the one that asked, or was changed since. */
+  fun allow(context: Context, pkg: String): Boolean {
+    val prefs = prefs(context)
+    val cert = prefs.getString(PENDING_CERT, null)
+    if (prefs.getString(PENDING, null) != pkg || cert == null || certOf(context, pkg) != cert) return false
+    prefs.edit().putString(TRIGGER, pkg).putString(CERT, cert).remove(PENDING).remove(PENDING_CERT).apply()
+    return true
+  }
+
+  fun refuse(context: Context) {
+    prefs(context).edit().remove(PENDING).remove(PENDING_CERT).apply()
+  }
+
+  /** The panic app trusted, if any. */
+  fun trigger(context: Context): String? = prefs(context).getString(TRIGGER, null)
+
+  fun forget(context: Context) {
+    prefs(context).edit().remove(TRIGGER).remove(CERT).apply()
+  }
+
+  /** Whether a panic app may wipe, and whether automatic backups in `folder` go too. */
+  fun set(context: Context, on: Boolean, backups: Boolean, folder: String) {
+    prefs(context).edit().putBoolean(ON, on).putBoolean(BACKUPS, backups && folder.isNotEmpty()).putString(FOLDER, folder).apply()
+  }
+
+  /** The settings, as lib/panic.ts reads them. */
+  fun state(context: Context): Map<String, Any> {
+    val prefs = prefs(context)
+    val trigger = prefs.getString(TRIGGER, null).orEmpty()
+    val pending = prefs.getString(PENDING, null).orEmpty()
+    return mapOf(
+      "on" to prefs.getBoolean(ON, false),
+      "backups" to prefs.getBoolean(BACKUPS, false),
+      "trigger" to trigger,
+      "triggerLabel" to if (trigger.isEmpty()) "" else labelOf(context, trigger),
+      "triggerThere" to (trigger.isNotEmpty() && certOf(context, trigger) == prefs.getString(CERT, null)),
+      "pending" to pending,
+      "pendingLabel" to if (pending.isEmpty()) "" else labelOf(context, pending),
+    )
+  }
+
+  /**
+   * Wipes everything Erevos keeps, on a thread of its own, as said above; Android then stops
+   * Erevos. Nothing is asked and nothing is told.
+   */
+  fun wipe(context: Context) {
+    val app = context.applicationContext
+    Thread {
+      Log.i(TAG, "Wiping")
+      val prefs = prefs(app)
+      if (prefs.getBoolean(BACKUPS, false)) deleteBackups(app, prefs.getString(FOLDER, null).orEmpty())
+      runCatching { app.getSystemService(NotificationManager::class.java)?.cancelAll() }
+      val cleared = runCatching { app.getSystemService(ActivityManager::class.java)?.clearApplicationUserData() == true }.getOrDefault(false)
+      if (!cleared) {
+        // Android refused, as it should never: everything Erevos keeps is deleted here instead.
+        wipeHere(app)
+        Process.killProcess(Process.myPid())
+      }
+    }.start()
+  }
+
+  // The automatic backups in their folder (a tree Android's folder picker gave, lib/backup-place.ts).
+  private fun deleteBackups(context: Context, folder: String) {
+    if (folder.isEmpty()) return
+    runCatching {
+      val tree = Uri.parse(folder)
+      val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+      val columns = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+      val found = mutableListOf<String>()
+      context.contentResolver.query(children, columns, null, null, null)?.use { rows ->
+        while (rows.moveToNext()) {
+          val id = rows.getString(0) ?: continue
+          val name = rows.getString(1) ?: continue
+          if (name.startsWith(BACKUP_PREFIX)) found += id
+        }
+      }
+      for (id in found) runCatching { DocumentsContract.deleteDocument(context.contentResolver, DocumentsContract.buildDocumentUriUsingTree(tree, id)) }
+    }.onFailure { Log.i(TAG, "The backups folder could not be read") }
+  }
+
+  // What clearApplicationUserData does, by hand: the app's own folders and its Keystore keys.
+  private fun wipeHere(context: Context) {
+    runCatching {
+      val keys = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+      for (alias in keys.aliases().toList()) runCatching { keys.deleteEntry(alias) }
+    }
+    val data = File(context.applicationInfo.dataDir)
+    data.listFiles()?.forEach { if (it.name != "lib") it.deleteRecursively() }
+    context.externalCacheDir?.deleteRecursively()
+    context.getExternalFilesDirs(null).filterNotNull().forEach { it.deleteRecursively() }
+  }
+}

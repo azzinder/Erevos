@@ -1,0 +1,81 @@
+import { Platform } from 'react-native';
+
+import { device, type PanicState } from '../modules/erevos-device';
+import { t } from './i18n';
+import { SHELL } from './shell';
+import { webWipe } from './web-store';
+
+export type { PanicState };
+
+// The panic button (app/panic.tsx): everything Erevos keeps on this device wiped at once, from its
+// own Settings or, on Android, from a panic app the owner trusts (PanicKit, Panic.kt and
+// PanicActivity.kt in modules/erevos-device).
+//
+// On Android, Android itself clears Erevos's data, as Settings → Apps → Erevos → Clear storage
+// does: every space and hidden chats, with their keys, contacts, messages, photos, files and voice
+// messages, the lock, the Matrix, XMPP and Nostr accounts, the relay's tokens, automatic backups'
+// key and settings, the backup server's address and password, and the keys Erevos keeps in the
+// Android Keystore; then Android stops Erevos, with its notices. When the owner chose it, the
+// automatic backups in their folder are deleted first.
+//
+// In the web app, the browser's whole Erevos database goes, with the key that sealed its secrets,
+// and its Web Push subscription; the page then starts as new.
+//
+// Not in the desktop app or on Sailfish OS yet: there the data is in the computer's keyring and
+// folders, which the app's page cannot clear by itself.
+
+/** Whether a panic app can be set: Android, in a build with the panic button. */
+export const CAN_PANIC_APP = Platform.OS === 'android' && !!device?.panicState;
+
+/** Whether this device can wipe Erevos from its Settings. */
+export const CAN_WIPE = CAN_PANIC_APP || (Platform.OS === 'web' && !SHELL);
+
+/** The panic settings, or null where there are none (not Android, or a build before them). */
+export function panicState(): PanicState | null {
+  return CAN_PANIC_APP ? (device?.panicState?.() ?? null) : null;
+}
+
+/** Whether the trusted panic app may wipe, and whether the automatic backups in `folder` go too. */
+export function setPanic(on: boolean, backups: boolean, folder: string): void {
+  device?.setPanic?.(on, backups, folder);
+}
+
+/** Trusts the panic app that asked to be the one. False when another asked since, or it changed. */
+export function allowPanicApp(pkg: string): boolean {
+  return device?.allowPanicApp?.(pkg) ?? false;
+}
+
+export function refusePanicApp(): void {
+  device?.refusePanicApp?.();
+}
+
+export function forgetPanicApp(): void {
+  device?.forgetPanicApp?.();
+}
+
+/** Automatic backups went to another folder, or stopped (''): a wipe that deletes them looks there. */
+export function panicFolderChanged(folder: string): void {
+  const state = panicState();
+  if (state?.backups) setPanic(state.on, !!folder, folder);
+}
+
+/** Wipes everything Erevos keeps on this device, now. On Android, Android then stops Erevos. */
+export async function wipeNow(): Promise<void> {
+  if (CAN_PANIC_APP && device?.wipeNow?.()) return;
+  if (Platform.OS !== 'web' || SHELL) throw new Error(t('Erevos cannot wipe itself here.'));
+  await stopWebPush();
+  await webWipe();
+  globalThis.location?.replace?.('/');
+}
+
+// The browser's Web Push subscription, so no relay can wake this page any more.
+async function stopWebPush(): Promise<void> {
+  try {
+    const ready = navigator.serviceWorker?.ready;
+    if (!ready) return;
+    const registration = await Promise.race([ready, new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))]);
+    await (await registration?.pushManager?.getSubscription())?.unsubscribe();
+  } catch {
+    // Wiped all the same: what is kept goes below.
+  }
+}

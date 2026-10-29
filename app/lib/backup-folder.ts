@@ -3,6 +3,7 @@ import { hardBackupKey, isBackupPassword, makeBackup, newBackupHard, type Backup
 import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
 import { writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
+import { panicFolderChanged } from './panic';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
@@ -80,6 +81,7 @@ export async function startAutoBackup(every: number, folder: string, { key, salt
     error: '',
   };
   await secureSet(AUTO, JSON.stringify(auto));
+  panicFolderChanged(folder);
   return auto;
 }
 
@@ -88,6 +90,7 @@ export async function changeAutoBackup(patch: Partial<Pick<AutoBackup, 'every' |
   if (!auto) return null;
   const next = { ...auto, ...patch, error: '' };
   await secureSet(AUTO, JSON.stringify(next));
+  panicFolderChanged(next.folder);
   return next;
 }
 
@@ -95,6 +98,7 @@ export async function changeAutoBackup(patch: Partial<Pick<AutoBackup, 'every' |
 export async function stopAutoBackup(): Promise<void> {
   await secureDelete(AUTO);
   await stopCloudBackup();
+  panicFolderChanged('');
 }
 
 /** Automatic backups' settings, and the server's, as they are after a run. */

@@ -26,6 +26,26 @@
         <data android:mimeType="*/*" />
       </intent-filter>
     </activity>
+    <!-- The panic button (Panic.kt, PanicActivity.kt): PanicKit's requests from a panic app the
+         owner chose. Exported, as panic apps must reach it; it trusts only the app the owner said
+         yes to, as Android names it, and shows nothing. -->
+    <activity
+      android:name="expo.modules.erevosdevice.PanicActivity"
+      android:taskAffinity=""
+      android:exported="true"
+      android:excludeFromRecents="true"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="info.guardianproject.panic.action.TRIGGER" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+      <intent-filter>
+        <action android:name="info.guardianproject.panic.action.CONNECT" />
+        <action android:name="info.guardianproject.panic.action.DISCONNECT" />
+        <category android:name="android.intent.category.DEFAULT" />
+      </intent-filter>
+    </activity>
     <receiver android:name="expo.modules.erevosdevice.ReminderReceiver" android:exported="false">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />

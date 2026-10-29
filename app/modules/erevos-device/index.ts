@@ -5,6 +5,9 @@ export type DeviceEvents = {
   onPlace: (event: { lat?: number; lon?: number; acc?: number; age?: number; error?: 'timeout' }) => void;
 };
 
+/** The panic button's settings (Panic.kt): `trigger` and `pending` are packages, '' for none. */
+export type PanicState = { on: boolean; backups: boolean; trigger: string; triggerLabel: string; triggerThere: boolean; pending: string; pendingLabel: string };
+
 type Device = {
   /** Puts the text on the phone's clipboard, marked sensitive. False when it could not. */
   copyText(text: string): boolean;
@@ -24,6 +27,18 @@ type Device = {
   seenReminders?(ids: string[]): void;
   /** A notice says that Erevos `name` is out, and opens Updates (lib/release-notice.ts). Missing in a build before it. */
   tellUpdate?(name: string): void;
+  /** The panic button's settings (Panic.kt). Null with no app context. Missing in a build before it. */
+  panicState?(): PanicState | null;
+  /** Whether the trusted panic app may wipe, and whether automatic backups in `folder` (a tree uri) go too. */
+  setPanic?(on: boolean, backups: boolean, folder: string): void;
+  /** Trusts the panic app that asked (`pkg`, as panicState's `pending` names it). False when it is no longer that one. */
+  allowPanicApp?(pkg: string): boolean;
+  /** Says no to the panic app that asked. */
+  refusePanicApp?(): void;
+  /** Trusts no panic app any more. */
+  forgetPanicApp?(): void;
+  /** Wipes everything Erevos keeps; Android then stops Erevos. */
+  wipeNow?(): boolean;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

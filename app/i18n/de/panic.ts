@@ -1,0 +1,32 @@
+// The German of the panic button (app/panic.tsx, lib/panic.ts) (i18n/de/index.ts).
+export const panic: Record<string, string> = {
+  "{app} can now wipe Erevos.": "{app} kann Erevos jetzt löschen.",
+  "That app changed since it asked. Ask again from it.": "Diese App hat sich verändert, seit sie gefragt hat. Frage erneut aus ihr.",
+  "Stop trusting {app}": "{app} nicht mehr vertrauen",
+  "{app} will no longer be able to wipe Erevos.": "{app} wird Erevos nicht mehr löschen können.",
+  "The automatic backups in {folder} go too.": "Die automatischen Backups in {folder} werden ebenfalls gelöscht.",
+  "Wipe everything": "Alles löschen",
+  "Everything Erevos keeps here goes now, for good: every space and its hidden chats, contacts, messages and keys. Erevos then starts as if just installed. This cannot be undone.":
+    "Alles, was Erevos hier aufbewahrt, wird jetzt endgültig gelöscht: jeder Raum mit seinen versteckten Chats, Kontakten, Nachrichten und Schlüsseln. Erevos startet danach wie frisch installiert. Das lässt sich nicht rückgängig machen.",
+  "Wipe": "Löschen",
+  "In danger, wipe Erevos at once: every space and its hidden chats, with their contacts, messages, photos, files and keys, the lock, the Matrix, XMPP and Nostr accounts, the relay tokens, and the settings and password of automatic backups and of their server.":
+    "In Gefahr lösche Erevos sofort: jeden Raum mit seinen versteckten Chats, mit ihren Kontakten, Nachrichten, Fotos, Dateien und Schlüsseln, die Sperre, die Matrix-, XMPP- und Nostr-Konten, die Relay-Tokens sowie Einstellungen und Passwort der automatischen Backups und ihres Servers.",
+  "What it cannot reach stays: backups you copied elsewhere or sent to a server (their password still guards them), what the relay holds for you until it expires, and what your contacts have.":
+    "Was es nicht erreicht, bleibt: Backups, die du anderswohin kopiert oder an einen Server geschickt hast (ihr Passwort schützt sie weiter), was das Relay für dich bereithält, bis es abläuft, und was deine Kontakte haben.",
+  "Wipe now": "Jetzt löschen",
+  "Wipe everything now": "Jetzt alles löschen",
+  "Here Erevos cannot wipe itself: delete its data from the computer instead.": "Hier kann Erevos sich nicht selbst löschen: Lösche seine Daten stattdessen auf dem Computer.",
+  "From a panic app": "Aus einer Panik-App",
+  "A panic app, such as Ripple, wipes the apps you choose with one gesture. Install one, choose Erevos in it, then say yes here. Only the app you say yes to can wipe Erevos, and only while this is on.":
+    "Eine Panik-App wie Ripple löscht die Apps, die du wählst, mit einer Geste. Installiere eine, wähle darin Erevos und sag dann hier Ja. Nur die App, der du zustimmst, kann Erevos löschen, und nur solange dies eingeschaltet ist.",
+  "{app} asks to be able to wipe Erevos.": "{app} möchte Erevos löschen dürfen.",
+  "Trusted panic app: {app}": "Vertrauenswürdige Panik-App: {app}",
+  "Trusted panic app: {app}, no longer installed as it was.": "Vertrauenswürdige Panik-App: {app}, nicht mehr so installiert wie zuvor.",
+  "No panic app yet.": "Noch keine Panik-App.",
+  "A panic app may wipe Erevos": "Eine Panik-App darf Erevos löschen",
+  "Also the automatic backups in {folder}": "Auch die automatischen Backups in {folder}",
+  "This build of Erevos cannot be wiped by a panic app. Update Erevos for it.": "Diese Erevos-Version kann nicht von einer Panik-App gelöscht werden. Aktualisiere Erevos dafür.",
+  "Panic button": "Panikknopf",
+  "Wipe Erevos at once, from here or from a panic app": "Erevos sofort löschen, von hier oder aus einer Panik-App",
+  "Erevos cannot wipe itself here.": "Hier kann Erevos sich nicht selbst löschen.",
+};

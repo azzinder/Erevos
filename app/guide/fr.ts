@@ -2624,6 +2624,35 @@ Chaque contact reçoit un message qui dit ce que c’est, et son Erevos garde le
 **Pourquoi :** une sauvegarde n’est pas plus sûre que son mot de passe, et un mot de passe fort se perd facilement.
 Partagé ainsi (le partage de secret de Shamir), aucun ami seul, ni aucun relay, ne détient de quoi l’ouvrir.
 
+## Bouton de panique {#panic}
+
+Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglages** → **Confidentialité et sécurité** →
+**Bouton de panique** : touchez **Tout effacer maintenant** et dites **Effacer**. Sur Android et dans l’app web.
+
+- **Ce qui part :** chaque espace avec ses discussions cachées, leurs contacts, messages, photos, fichiers et clés ; le
+  verrou et ses mots de passe ; les comptes Matrix, XMPP et Nostr et les jetons du relay ; les réglages et le mot de
+  passe des sauvegardes automatiques, et de leur serveur. Sur Android, Erevos se ferme ensuite et s’ouvre la fois
+  suivante comme fraîchement installé. Avec **Aussi les sauvegardes automatiques de** choisi, les fichiers de
+  sauvegarde qui s’y trouvent partent d’abord.
+- **Ce qui reste :** ce qu’Erevos ne peut atteindre : les sauvegardes copiées ailleurs ou envoyées à un serveur (leur
+  mot de passe les protège toujours), ce que le relay garde pour vous jusqu’à expiration, et ce qu’ont vos contacts.
+
+1. **Depuis une app de panique :** sur Android, une app de panique comme Ripple efface les apps que vous choisissez
+   d’un seul geste. Installez-en une et choisissez-y Erevos : Erevos ouvre cet écran, après son mot de passe, et
+   demande. Touchez **Dire oui**.
+2. **Seulement cette app :** seule l’app à laquelle vous avez dit oui peut effacer Erevos, et seulement tant que **Une
+   app de panique peut effacer Erevos** est activé. Erevos vérifie le nom de l’app et sa signature : une autre app, ou
+   le même nom réinstallé par quelqu’un d’autre, ne le peut pas. **Ne plus faire confiance** y met fin.
+3. **Après l’effacement :** l’app de panique est oubliée aussi : redites-lui oui quand vous configurez Erevos à
+   nouveau.
+
+- **Sur un ordinateur :** Erevos ne peut pas s’y effacer lui-même : supprimez plutôt ses données depuis l’ordinateur.
+- **Ce qu’il ne peut cacher :** sur le téléphone, sans le mot de passe, on voit encore qu’Erevos est installé et
+  qu’une app de panique peut l’effacer, mais pas ce qu’il contenait.
+
+**Pourquoi :** à une frontière ou lors d’une arrestation, il n’y a peut-être pas le temps d’ouvrir chaque discussion.
+Un toucher, ou le geste d’une app de panique, ne laisse rien à ouvrir.
+
 ## Discussions importées {#import}
 
 Tes anciennes discussions de Telegram et de WhatsApp peuvent entrer dans Erevos, pour être lues, avec leurs photos,

@@ -31,6 +31,19 @@ On main, not released yet:
   split, k - 1 refused, uniform share values for every secret, forged and mixed pieces, the full trip through three
   chats with the real core).
 
+- **Panic button**: **Settings** → **Privacy and security** → **Panic button** (`app/panic.tsx`, `lib/panic.ts`)
+  wipes everything Erevos keeps on the device, on Android and in the web app. On Android, Android clears Erevos's data
+  as **Clear storage** does (`ActivityManager.clearApplicationUserData`, `Panic.kt`): every space and hidden chat with
+  keys, contacts, history and files, the lock, the Matrix, XMPP and Nostr accounts, the relay tokens, automatic
+  backups' key, settings and server credentials, and the Android Keystore keys; when chosen, the `erevos-backup-*`
+  files in the automatic backups' folder go first. In the web app, the whole IndexedDB database goes, with the key
+  that sealed its secrets, and the Web Push subscription. Erevos is also a PanicKit responder (`PanicActivity.kt`,
+  `info.guardianproject.panic.action.TRIGGER`, `CONNECT`, `DISCONNECT`): a panic app such as Ripple asks with
+  CONNECT, the owner says yes on the panic screen after the password, and only then, and only while **A panic app may
+  wipe Erevos** is on, does a TRIGGER from that package, named by Android through `getCallingActivity` and signed with
+  the certificates hashed when it was trusted, wipe; any other request does nothing and is told nothing
+  (`checks/panic.check.ts`). Not on the desktop app or Sailfish OS.
+
 - **Introduce two contacts to each other**: in a contact's chat details, **Introduce to a contact** and **Ask both**
   (`lib/intros.ts`). The phone that introduces (R) asks each of the two in its own chat with them, inside the
   end-to-end encryption, with words an older Erevos shows as they are (`intro` step `ask`, `lib/chat-parts.ts`), each

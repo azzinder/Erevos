@@ -2483,6 +2483,34 @@ es, y su Erevos guarda la pieza aparte del chat, en **Piezas que guardas para am
 **Por qué:** una copia de seguridad es tan segura como su contraseña, y una contraseña fuerte se pierde con facilidad.
 Repartida así (el reparto de secretos de Shamir), ningún amigo por sí solo, ni ningún relay, tiene nada que la abra.
 
+## Botón de pánico {#panic}
+
+Cuando estás en peligro, Erevos puede borrarse al instante, en **Ajustes** → **Privacidad y seguridad** → **Botón de
+pánico**: toca **Borrarlo todo ahora** y di **Borrar**. En Android y en la app web.
+
+- **Qué se borra:** cada espacio con sus chats ocultos, con sus contactos, mensajes, fotos, archivos y claves; el
+  bloqueo y sus contraseñas; las cuentas de Matrix, XMPP y Nostr y los tokens del relay; los ajustes y la contraseña de
+  las copias automáticas, y de su servidor. En Android, Erevos se cierra después y la próxima vez se abre como recién
+  instalado. Con **También las copias automáticas de** elegido, primero se borran los archivos de copia de allí.
+- **Qué se queda:** lo que Erevos no alcanza: copias que copiaste a otro sitio o enviaste a un servidor (su contraseña
+  las sigue protegiendo), lo que el relay guarda para ti hasta que caduca, y lo que tienen tus contactos.
+
+1. **Desde una app de pánico:** en Android, una app de pánico como Ripple borra las apps que elijas con un solo gesto.
+   Instala una y elige Erevos en ella: Erevos abre esta pantalla, tras su contraseña, y pregunta. Toca **Decir que
+   sí**.
+2. **Solo esa app:** solo la app a la que dijiste que sí puede borrar Erevos, y solo mientras **Una app de pánico puede
+   borrar Erevos** esté activado. Erevos comprueba el nombre de la app y su firma: otra app, o el mismo nombre
+   instalado de nuevo por otra persona, no puede. **Dejar de confiar** lo termina.
+3. **Después de borrar:** la app de pánico también se olvida: vuelve a decirle que sí cuando configures Erevos de
+   nuevo.
+
+- **En un ordenador:** allí Erevos no puede borrarse solo: borra sus datos desde el ordenador.
+- **Lo que no puede ocultar:** en el teléfono, sin la contraseña, aún se ve que Erevos está instalado y que una app de
+  pánico puede borrarlo, pero no lo que contenía.
+
+**Por qué:** en una frontera o en una detención puede no haber tiempo para abrir cada chat. Un toque, o el gesto de una
+app de pánico, no deja nada que abrir.
+
 ## Chats importados {#import}
 
 Tus chats antiguos de Telegram y WhatsApp pueden entrar en Erevos, para leerlos, con sus fotos, vídeos, mensajes de voz

@@ -2287,6 +2287,32 @@ chat, under **Pieces you keep for friends**.
 **Why:** a backup is only as safe as its password, and a strong password is easy to lose. Split this way (Shamir's
 secret sharing), no single friend, and no relay, holds anything that opens it.
 
+## Panic button {#panic}
+
+When you are in danger, Erevos can wipe itself at once, under **Settings** → **Privacy and security** → **Panic
+button**: tap **Wipe everything now** and say **Wipe**. On Android and in the web app.
+
+- **What goes:** every space and its hidden chats, with their contacts, messages, photos, files and keys; the lock and
+  its passwords; the Matrix, XMPP and Nostr accounts and the relay tokens; the settings and password of automatic
+  backups, and of their server. On Android, Erevos then closes, and opens next time as if just installed. With **Also the
+  automatic backups in** the folder chosen, the backup files there go first.
+- **What stays:** what Erevos cannot reach: backups you copied elsewhere or sent to a server (their password still
+  guards them), what the relay holds for you until it expires, and what your contacts have.
+
+1. **From a panic app:** on Android, a panic app such as Ripple wipes the apps you choose with one gesture. Install
+   one, choose Erevos in it: Erevos opens this screen, after its password, and asks. Tap **Say yes**.
+2. **Only that app:** only the app you said yes to can wipe Erevos, and only while **A panic app may wipe Erevos** is
+   on. Erevos checks the app's name and its signature: another app, or the same name installed again by someone else,
+   cannot. **Stop trusting** ends it.
+3. **After a wipe:** the panic app is forgotten too: say yes to it again once you set Erevos up again.
+
+- **On a computer:** Erevos cannot wipe itself there: delete its data from the computer instead.
+- **What it cannot hide:** on the phone, without the password, one can still see that Erevos is installed, and that a
+  panic app may wipe it, though not what was in it.
+
+**Why:** at a border or in an arrest there may be no time to open each chat. One tap, or the gesture of a panic app,
+leaves nothing to open.
+
 ## Imported chats {#import}
 
 Your old chats from Telegram and WhatsApp can come into Erevos, to read, with their photos, videos, voice messages and

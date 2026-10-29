@@ -1,0 +1,32 @@
+// The Greek of the panic button (app/panic.tsx, lib/panic.ts) (i18n/el/index.ts).
+export const panic: Record<string, string> = {
+  "{app} can now wipe Erevos.": "Το {app} μπορεί πλέον να σβήσει το Erevos.",
+  "That app changed since it asked. Ask again from it.": "Η εφαρμογή άλλαξε από τότε που ρώτησε. Ρώτα ξανά από εκείνη.",
+  "Stop trusting {app}": "Τέλος η εμπιστοσύνη στο {app}",
+  "{app} will no longer be able to wipe Erevos.": "Το {app} δεν θα μπορεί πια να σβήσει το Erevos.",
+  "The automatic backups in {folder} go too.": "Σβήνονται και τα αυτόματα αντίγραφα στο {folder}.",
+  "Wipe everything": "Σβήσιμο όλων",
+  "Everything Erevos keeps here goes now, for good: every space and its hidden chats, contacts, messages and keys. Erevos then starts as if just installed. This cannot be undone.":
+    "Ό,τι κρατά εδώ το Erevos σβήνεται τώρα, για πάντα: κάθε χώρος με τις κρυφές συνομιλίες του, τις επαφές, τα μηνύματα και τα κλειδιά. Μετά το Erevos ανοίγει σαν μόλις εγκατεστημένο. Δεν γυρίζει πίσω.",
+  "Wipe": "Σβήσιμο",
+  "In danger, wipe Erevos at once: every space and its hidden chats, with their contacts, messages, photos, files and keys, the lock, the Matrix, XMPP and Nostr accounts, the relay tokens, and the settings and password of automatic backups and of their server.":
+    "Σε κίνδυνο, σβήσε το Erevos αμέσως: κάθε χώρο με τις κρυφές συνομιλίες του, με τις επαφές, τα μηνύματα, τις φωτογραφίες, τα αρχεία και τα κλειδιά τους, το κλείδωμα, τους λογαριασμούς Matrix, XMPP και Nostr, τα tokens του relay, και τις ρυθμίσεις και τον κωδικό των αυτόματων αντιγράφων και του server τους.",
+  "What it cannot reach stays: backups you copied elsewhere or sent to a server (their password still guards them), what the relay holds for you until it expires, and what your contacts have.":
+    "Ό,τι δεν φτάνει μένει: αντίγραφα που αντέγραψες αλλού ή έστειλες σε server (τα προστατεύει ακόμα ο κωδικός τους), ό,τι κρατά το relay για σένα ώσπου να λήξει, και ό,τι έχουν οι επαφές σου.",
+  "Wipe now": "Σβήσιμο τώρα",
+  "Wipe everything now": "Σβήσε τα πάντα τώρα",
+  "Here Erevos cannot wipe itself: delete its data from the computer instead.": "Εδώ το Erevos δεν μπορεί να σβηστεί μόνο του: σβήσε καλύτερα τα δεδομένα του από τον υπολογιστή.",
+  "From a panic app": "Από εφαρμογή πανικού",
+  "A panic app, such as Ripple, wipes the apps you choose with one gesture. Install one, choose Erevos in it, then say yes here. Only the app you say yes to can wipe Erevos, and only while this is on.":
+    "Μια εφαρμογή πανικού, όπως το Ripple, σβήνει τις εφαρμογές που διαλέγεις με μία κίνηση. Εγκατάστησε μία, διάλεξε μέσα της το Erevos, και μετά πες ναι εδώ. Μόνο η εφαρμογή στην οποία λες ναι μπορεί να σβήσει το Erevos, και μόνο όσο αυτό είναι ανοιχτό.",
+  "{app} asks to be able to wipe Erevos.": "Το {app} ζητά να μπορεί να σβήσει το Erevos.",
+  "Trusted panic app: {app}": "Εφαρμογή πανικού που εμπιστεύεσαι: {app}",
+  "Trusted panic app: {app}, no longer installed as it was.": "Εφαρμογή πανικού που εμπιστεύεσαι: {app}, δεν είναι πια εγκατεστημένη όπως ήταν.",
+  "No panic app yet.": "Καμία εφαρμογή πανικού ακόμα.",
+  "A panic app may wipe Erevos": "Μια εφαρμογή πανικού μπορεί να σβήσει το Erevos",
+  "Also the automatic backups in {folder}": "Και τα αυτόματα αντίγραφα στο {folder}",
+  "This build of Erevos cannot be wiped by a panic app. Update Erevos for it.": "Αυτή η έκδοση του Erevos δεν σβήνεται από εφαρμογή πανικού. Ενημέρωσε το Erevos γι' αυτό.",
+  "Panic button": "Κουμπί πανικού",
+  "Wipe Erevos at once, from here or from a panic app": "Σβήσε το Erevos αμέσως, από εδώ ή από εφαρμογή πανικού",
+  "Erevos cannot wipe itself here.": "Εδώ το Erevos δεν μπορεί να σβηστεί μόνο του.",
+};

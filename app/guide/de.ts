@@ -2655,6 +2655,34 @@ es ist, und sein Erevos bewahrt das Teil getrennt vom Chat auf, unter **Teile, d
 **Warum:** Ein Backup ist nur so sicher wie sein Passwort, und ein starkes Passwort geht leicht verloren. So geteilt
 (Shamirs Geheimnisteilung) hält kein einzelner Freund und kein Relay etwas, das es öffnet.
 
+## Panikknopf {#panic}
+
+Wenn du in Gefahr bist, kann Erevos sich sofort löschen, unter **Einstellungen** → **Datenschutz und Sicherheit** →
+**Panikknopf**: Tippe auf **Jetzt alles löschen** und bestätige mit **Löschen**. Auf Android und in der Web-App.
+
+- **Was gelöscht wird:** jeder Raum mit seinen versteckten Chats, mit ihren Kontakten, Nachrichten, Fotos, Dateien und
+  Schlüsseln; die Sperre und ihre Passwörter; die Matrix-, XMPP- und Nostr-Konten und die Relay-Tokens; Einstellungen
+  und Passwort der automatischen Backups und ihres Servers. Auf Android schließt Erevos sich danach und startet beim
+  nächsten Mal wie frisch installiert. Mit **Auch die automatischen Backups in** ausgewählt werden zuerst die
+  Backup-Dateien dort gelöscht.
+- **Was bleibt:** was Erevos nicht erreicht: Backups, die du anderswohin kopiert oder an einen Server geschickt hast
+  (ihr Passwort schützt sie weiter), was das Relay für dich bereithält, bis es abläuft, und was deine Kontakte haben.
+
+1. **Aus einer Panik-App:** Auf Android löscht eine Panik-App wie Ripple die Apps, die du wählst, mit einer Geste.
+   Installiere eine und wähle darin Erevos: Erevos öffnet diese Seite, nach seinem Passwort, und fragt. Tippe auf
+   **Zustimmen**.
+2. **Nur diese App:** Nur die App, der du zugestimmt hast, kann Erevos löschen, und nur solange **Eine Panik-App darf
+   Erevos löschen** eingeschaltet ist. Erevos prüft den Namen der App und ihre Signatur: Eine andere App, oder derselbe
+   Name von jemand anderem neu installiert, kann es nicht. **Nicht mehr vertrauen** beendet es.
+3. **Nach dem Löschen:** Auch die Panik-App ist vergessen: Stimme ihr erneut zu, wenn du Erevos wieder einrichtest.
+
+- **Auf einem Computer:** Dort kann Erevos sich nicht selbst löschen: Lösche seine Daten stattdessen auf dem Computer.
+- **Was es nicht verbergen kann:** Auf dem Telefon sieht man auch ohne Passwort, dass Erevos installiert ist und dass
+  eine Panik-App es löschen darf, aber nicht, was darin war.
+
+**Warum:** An einer Grenze oder bei einer Festnahme bleibt vielleicht keine Zeit, jeden Chat zu öffnen. Ein Tippen,
+oder die Geste einer Panik-App, lässt nichts zum Öffnen zurück.
+
 ## Importierte Chats {#import}
 
 Deine alten Chats aus Telegram und WhatsApp können in Erevos kommen, zum Lesen, mit ihren Fotos, Videos,

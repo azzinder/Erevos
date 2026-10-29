@@ -108,6 +108,39 @@ class ErevosDeviceModule : Module() {
       Updates.tell(app, name)
     }
 
+    // The panic button (Panic.kt): its settings, the panic app that asked to be the one, and the
+    // wipe itself, after which Android stops Erevos.
+    Function("panicState") {
+      val app = context?.applicationContext ?: return@Function null
+      Panic.state(app)
+    }
+
+    Function("setPanic") { on: Boolean, backups: Boolean, folder: String ->
+      val app = context?.applicationContext ?: return@Function Unit
+      Panic.set(app, on, backups, folder)
+    }
+
+    Function("allowPanicApp") { pkg: String ->
+      val app = context?.applicationContext ?: return@Function false
+      Panic.allow(app, pkg)
+    }
+
+    Function("refusePanicApp") {
+      val app = context?.applicationContext ?: return@Function Unit
+      Panic.refuse(app)
+    }
+
+    Function("forgetPanicApp") {
+      val app = context?.applicationContext ?: return@Function Unit
+      Panic.forget(app)
+    }
+
+    Function("wipeNow") {
+      val app = context?.applicationContext ?: return@Function false
+      Panic.wipe(app)
+      true
+    }
+
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it
     // started, "permission" when Erevos may not use the location, "off" when the phone's location
     // is off, "approximate" when Erevos may use only the approximate location and the phone has no

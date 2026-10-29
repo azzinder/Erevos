@@ -149,3 +149,16 @@ export async function webSetSecret(key: string, value: string): Promise<void> {
 export async function webDeleteSecret(key: string): Promise<void> {
   await remove(SECRETS, key);
 }
+
+/** Deletes everything Erevos keeps in this browser: its whole database, files, secrets and the key that seals them (lib/panic.ts). */
+export async function webWipe(): Promise<void> {
+  const db = await opened?.catch(() => null);
+  db?.close();
+  opened = null;
+  sealKey = null;
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}

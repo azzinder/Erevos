@@ -2511,6 +2511,33 @@ Erevos conserva il pezzo a parte dalla chat, in **Pezzi che tieni per gli amici*
 **Perché:** un backup è sicuro quanto la sua password, e una password forte si perde facilmente. Divisa così (la
 condivisione di segreti di Shamir), nessun amico da solo, e nessun relay, tiene qualcosa che la apra.
 
+## Pulsante di panico {#panic}
+
+Quando sei in pericolo, Erevos può cancellarsi all’istante, in **Impostazioni** → **Privacy e sicurezza** →
+**Pulsante di panico**: tocca **Cancella tutto ora** e conferma con **Cancella**. Su Android e nell’app web.
+
+- **Cosa va via:** ogni spazio con le sue chat nascoste, con i loro contatti, messaggi, foto, file e chiavi; il blocco
+  e le sue password; gli account Matrix, XMPP e Nostr e i token del relay; le impostazioni e la password dei backup
+  automatici, e del loro server. Su Android, Erevos poi si chiude e la volta dopo si apre come appena installato. Con
+  **Anche i backup automatici in** scelto, prima vanno via i file di backup lì.
+- **Cosa resta:** ciò che Erevos non può raggiungere: i backup copiati altrove o inviati a un server (la loro password
+  li protegge ancora), ciò che il relay tiene per te finché scade, e ciò che hanno i tuoi contatti.
+
+1. **Da un’app di panico:** su Android, un’app di panico come Ripple cancella le app che scegli con un solo gesto.
+   Installane una e scegli Erevos al suo interno: Erevos apre questa schermata, dopo la sua password, e chiede. Tocca
+   **Di’ di sì**.
+2. **Solo quell’app:** solo l’app a cui hai detto di sì può cancellare Erevos, e solo finché **Un’app di panico può
+   cancellare Erevos** è attivo. Erevos controlla il nome dell’app e la sua firma: un’altra app, o lo stesso nome
+   reinstallato da qualcun altro, non può. **Non fidarti più** lo termina.
+3. **Dopo la cancellazione:** anche l’app di panico viene dimenticata: dille di nuovo di sì quando riconfiguri Erevos.
+
+- **Su un computer:** lì Erevos non può cancellarsi da solo: elimina invece i suoi dati dal computer.
+- **Cosa non può nascondere:** sul telefono, senza la password, si vede ancora che Erevos è installato e che un’app di
+  panico può cancellarlo, ma non cosa conteneva.
+
+**Perché:** a una frontiera o in un arresto può non esserci il tempo di aprire ogni chat. Un tocco, o il gesto di
+un’app di panico, non lascia niente da aprire.
+
 ## Chat importate {#import}
 
 Le tue vecchie chat da Telegram e WhatsApp possono entrare in Erevos, da leggere, con le loro foto, video, messaggi

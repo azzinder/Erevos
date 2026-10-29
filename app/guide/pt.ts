@@ -2467,6 +2467,35 @@ e o Erevos dele guarda a parte separada da conversa, em **Partes que você guard
 **Por quê:** um backup é tão seguro quanto a senha dele, e uma senha forte se perde com facilidade. Dividida assim (o
 compartilhamento de segredos de Shamir), nenhum amigo sozinho, e nenhum relay, tem algo que o abra.
 
+## Botão de pânico {#panic}
+
+Quando você está em perigo, o Erevos pode se apagar na hora, em **Configurações** → **Privacidade e segurança** →
+**Botão de pânico**: toque em **Apagar tudo agora** e confirme com **Apagar**. No Android e no app web.
+
+- **O que é apagado:** cada espaço com suas conversas ocultas, com seus contatos, mensagens, fotos, arquivos e chaves;
+  o bloqueio e suas senhas; as contas de Matrix, XMPP e Nostr e os tokens do relay; as configurações e a senha dos
+  backups automáticos, e do servidor deles. No Android, o Erevos depois se fecha e da próxima vez abre como
+  recém-instalado. Com **Também os backups automáticos em** escolhido, os arquivos de backup de lá são apagados
+  primeiro.
+- **O que fica:** o que o Erevos não alcança: backups que você copiou para outro lugar ou enviou a um servidor (a senha
+  deles ainda os protege), o que o relay guarda para você até expirar, e o que seus contatos têm.
+
+1. **Por um app de pânico:** no Android, um app de pânico como o Ripple apaga os apps que você escolher com um só
+   gesto. Instale um e escolha o Erevos nele: o Erevos abre esta tela, depois da senha dele, e pergunta. Toque em
+   **Dizer sim**.
+2. **Só esse app:** só o app a que você disse sim pode apagar o Erevos, e só enquanto **Um app de pânico pode apagar o
+   Erevos** estiver ligado. O Erevos confere o nome do app e a assinatura dele: outro app, ou o mesmo nome instalado de
+   novo por outra pessoa, não consegue. **Parar de confiar** encerra isso.
+3. **Depois de apagar:** o app de pânico também é esquecido: diga sim a ele de novo quando configurar o Erevos outra
+   vez.
+
+- **Num computador:** lá o Erevos não consegue se apagar sozinho: apague os dados dele pelo computador.
+- **O que ele não pode esconder:** no telefone, sem a senha, ainda dá para ver que o Erevos está instalado e que um
+  app de pânico pode apagá-lo, mas não o que havia nele.
+
+**Por quê:** numa fronteira ou numa prisão pode não haver tempo de abrir cada conversa. Um toque, ou o gesto de um app
+de pânico, não deixa nada para abrir.
+
 ## Conversas importadas {#import}
 
 As suas conversas antigas do Telegram e do WhatsApp podem vir para o Erevos, para leitura, com as fotos, vídeos,

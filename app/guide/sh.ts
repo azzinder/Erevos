@@ -2400,6 +2400,33 @@ njegov Erevos čuva dio odvojeno od razgovora, pod **Dijelovi koje čuvate za pr
 **Zašto:** rezervna kopija sigurna je koliko i njena lozinka, a jaka lozinka lako se izgubi. Podijeljena ovako
 (Shamirovo dijeljenje tajne), nijedan prijatelj sam, ni nijedan relay, ne drži ništa što je otvara.
 
+## Gumb za paniku {#panic}
+
+Kad ste u opasnosti, Erevos se može odmah obrisati, u **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**:
+dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu i u web aplikaciji.
+
+- **Što se briše:** svaki prostor s njegovim skrivenim razgovorima, s njihovim kontaktima, porukama, fotografijama,
+  datotekama i ključevima; zaključavanje i njegove lozinke; Matrix, XMPP i Nostr računi i tokeni relaya; postavke i
+  lozinka automatskih rezervnih kopija, i njihovog servera. Na Androidu se Erevos zatim zatvara, a sljedeći put se
+  otvara kao tek instaliran. S odabranim **I automatske rezervne kopije u** prvo se brišu datoteke kopija ondje.
+- **Što ostaje:** ono do čega Erevos ne može doći: rezervne kopije koje ste kopirali drugdje ili poslali na server
+  (njihova ih lozinka i dalje štiti), ono što relay čuva za vas dok ne istekne, i ono što imaju vaši kontakti.
+
+1. **Iz aplikacije za paniku:** na Androidu aplikacija za paniku poput Ripplea jednim pokretom briše aplikacije koje
+   odaberete. Instalirajte jednu i u njoj odaberite Erevos: Erevos otvara ovaj zaslon, nakon svoje lozinke, i pita.
+   Dodirnite **Recite da**.
+2. **Samo ta aplikacija:** samo aplikacija kojoj ste rekli da može obrisati Erevos, i to samo dok je **Aplikacija za
+   paniku smije obrisati Erevos** uključeno. Erevos provjerava ime aplikacije i njezin potpis: druga aplikacija, ili
+   isto ime koje je netko drugi ponovno instalirao, ne može. **Prestani vjerovati** to završava.
+3. **Nakon brisanja:** zaboravlja se i aplikacija za paniku: recite joj ponovno da kad opet postavite Erevos.
+
+- **Na računalu:** ondje se Erevos ne može sam obrisati: umjesto toga obrišite njegove podatke s računala.
+- **Što ne može sakriti:** na telefonu se i bez lozinke i dalje vidi da je Erevos instaliran i da ga aplikacija za
+  paniku smije obrisati, ali ne i što je u njemu bilo.
+
+**Zašto:** na granici ili pri uhićenju možda nema vremena otvoriti svaki razgovor. Jedan dodir, ili pokret aplikacije
+za paniku, ne ostavlja ništa za otvoriti.
+
 ## Uvezeni razgovori {#import}
 
 Vaši stari razgovori iz Telegrama i WhatsAppa mogu doći u Erevos, za čitanje, sa svojim fotografijama, videozapisima,
