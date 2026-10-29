@@ -24,14 +24,16 @@ class SmsDeliverReceiver : BroadcastReceiver() {
   }
 }
 
-/** A piece of an SMS invite from another Erevos phone, on the invite port. */
+/** A piece of an SMS invite from another Erevos phone, on Erevos's SMS port, or a piece of an
+ *  encrypted message that came by SMS (lib/sms-packets.ts), by its first byte. */
 class InviteReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent) {
     val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent) ?: return
     for (part in parts) {
       val address = part.originatingAddress ?: continue
       val data = part.userData ?: continue
-      SmsStore.invite(context, address, data)
+      if (data.isNotEmpty() && data[0] == SmsStore.PACKET_MAGIC) SmsStore.packetPiece(context, address, data)
+      else SmsStore.invite(context, address, data)
     }
   }
 }

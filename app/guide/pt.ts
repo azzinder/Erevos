@@ -1275,6 +1275,8 @@ Quando você envia uma mensagem, o Erevos escolhe o caminho sozinho:
 4. **E por LoRa,** quando há um rádio configurado e o relay não pôde pegar um texto, como em
    [Por um rádio LoRa](#lora). Sem nenhum caminho, a mensagem aguarda, marcada **Aguardando**, e vai sozinha assim que
    houver um, como em [Enviada, chegou e lida](#relay); uma linha abaixo da conversa diz por quê.
+5. **E por SMS,** por último, quando você ativou isso para aquele contato e nada mais levou um texto, como em
+   [SMS](#sms).
 
 Todo caminho é criptografado de ponta a ponta: nenhum relay e nenhum celular no meio consegue ler o que você envia.
 
@@ -1285,8 +1287,10 @@ Todo caminho é criptografado de ponta a ponta: nenhum relay e nenhum celular no
 | **Enviada aos celulares com Erevos por perto, criptografada de ponta a ponta, porque o relay não estava acessível.** | Ela só chega se um deles for o da pessoa: espere o **✓✓**, ou verifique o relay. |
 | **… Se o celular da pessoa não estiver entre eles, eles a entregam ao relay dela assim que tiverem internet, e este celular também.** | Nada: ela chega assim que um deles, ou este celular, tiver internet. Espere o **✓✓**. |
 | **Enviada por LoRa, criptografada de ponta a ponta, porque o relay não estava acessível.** | Ela chega se o Erevos da pessoa tiver um rádio na mesma malha, ao alcance: espere o **✓✓**, ou verifique o relay. |
+| **Foi por SMS, criptografada de ponta a ponta, porque nada mais conseguia levá-la.** | Nada: custa SMS, e a operadora vê que você escreveu para o número dele. **✓✓** chega assim que o relay ou o Nostr estiverem acessíveis. |
 | **Aguardando. O relay não está acessível (ou Não há relay), e o celular da pessoa não está por perto.** | Nada: ela sai sozinha assim que o relay ou o celular da pessoa por perto puder recebê-la, e então mostra **✓**. Sem relay, preencha o endereço dele, como em [Conversar por um relay](#relay), ou chegue perto do celular da pessoa. |
 | **Aguardando. É longa demais para LoRa.** | Nada: ela sai assim que o relay ou o celular da pessoa por perto puder recebê-la. Ou envie-a em partes mais curtas. |
+| **Aguardando. É longa demais para SMS.** | Nada: ela vai assim que o relay ou o celular dele por perto puder levá-la. Ou envie em partes mais curtas. |
 | **Não enviada. O relay não tem mais a fila deste contato.** | Peça que ele escreva para você, ou peça o novo link de contato dele. |
 | **Esta versão não consegue criptografar, então as conversas pelo relay estão desativadas.** | Compile o app de novo: esta versão é mais antiga que a criptografia dele. |
 
@@ -1795,6 +1799,34 @@ mostra nada.
   **Nomes** de novo para ver só números. O Erevos só os lê para mostrá-los, e não guarda cópia.
 - **Remetentes com nome:** um SMS de um nome em vez de um número, como o de um banco, abre para leitura, mas não pode
   ser respondido.
+
+### SMS criptografados quando nada mais funciona
+
+Quando o relay, o Nostr, os celulares por perto e o LoRa falham todos, um texto para um contato do Erevos com número
+vinculado pode ir por SMS, criptografado de ponta a ponta como qualquer mensagem do Erevos. Fica desativado até você
+ativar: para todos esses contatos em **Configurações** → **Telefone e SMS** → **SMS** → **SMS quando nada mais
+funciona** (**Ativar para todos os contatos**), ou para um só nos **Detalhes** da conversa dele → **SMS quando nada
+mais funciona**.
+
+- **Quanto custa:** cada SMS custa o que diz o seu plano. Um texto curto ocupa 3 SMS e um mais longo até 10; no
+  exterior um SMS pode custar bem mais.
+- **O que a operadora vê:** qual número escreveu para qual, quando e quantos SMS, como em qualquer SMS; nunca o que foi
+  escrito, que vai como a mesma mensagem criptografada que o relay teria levado.
+- **O que vai:** só textos e exclusões. Não fotos, arquivos, mensagens de voz, chamadas, reações nem as marcas de que
+  uma mensagem chegou ou foi lida, nem textos com mais de umas 800 letras latinas (400 gregas), nem a primeiríssima
+  mensagem para um contato novo, que leva as chaves. Essas esperam, marcadas **Aguardando**, como em
+  [Como o Erevos escolhe o caminho](#paths). As conversas ocultas nunca vão por SMS.
+- **Os dois celulares** precisam do Erevos como app de SMS, e do número do contato vinculado à conversa dele. Os SMS
+  são SMS de dados ocultos para o Erevos, que nenhum app de SMS mostra, e nada deles fica nos SMS do celular.
+- **Por onde foi:** toque e segure a mensagem: o menu dela diz **Foi por SMS** ou **Veio por SMS**. **✓✓** chega assim
+  que o relay ou o Nostr estiverem acessíveis de novo: nenhum SMS volta sozinho.
+
+**Por quê:** o SMS chega a um celular sem internet nenhuma, onde houver rede móvel. Mas custa dinheiro e conta à
+operadora quem fala com quem, o que o Erevos de outro modo esconde; por isso o SMS é o último caminho, e só quando você
+escolhe.
+
+> Ative só para quem você precisa alcançar assim. A operadora, e quem puder ver os registros dela, sabe por esses SMS
+> que os seus dois números conversam, e quando.
 
 ### Manter os SMS em ordem
 
@@ -2879,6 +2911,7 @@ O Erevos diz claramente o que protege e o que ainda não protege.
 | **Mensagens para um celular por perto** | Criptografadas de ponta a ponta, do mesmo jeito que pelo relay. Quem escuta por perto consegue saber que há celulares com o Erevos perto uns dos outros, e quando e quanto eles enviam; na mesma rede Wi-Fi, qualquer um nela também, e pelo Wi-Fi Direct qualquer um que entre na própria rede Wi-Fi dos celulares. Até o celular do seu contato ser conhecido, os outros celulares com o Erevos conectados por perto recebem as suas mensagens curtas, seladas. | |
 | **Mensagens levadas por outros celulares** | Seladas duas vezes: de ponta a ponta para o seu contato, e para o relay dele. Um celular que leva uma vê para que relay ela vai, quando, e de que tamanho; não de quem ela é nem para quem. O relay dele vê para que relay ela vai, e esse relay vê o relay de quem a leva, não o celular dele. Guardadas seladas no celular, três dias no máximo: as dos outros num arquivo do celular, cujo tamanho mostra mais ou menos quantas são; as suas no seu espaço, seladas com a chave dele. As conversas ocultas nunca são levadas. | |
 | **Mensagens por LoRa** | Criptografadas de ponta a ponta, do mesmo jeito que pelo relay. Qualquer um com um rádio, a quilômetros, consegue saber que o seu envia, quando e quanto, e o sinal dele pode ser rastreado até onde ele está. O Erevos impede o seu rádio de dizer o nome dele e onde está (função Client hidden, GPS desligado, sem posição fixa) a menos que você deixe; ele ainda responde a um rádio que pergunta o nome dele. Todo Erevos na malha recebe as suas mensagens LoRa, seladas. | Definir o nome do rádio pelo Erevos. |
+| **Mensagens por SMS, quando nada mais funciona** | Criptografadas de ponta a ponta, como pelo relay, em SMS de dados ocultos. Desativado até você ativar. A operadora vê qual número escreveu para qual, quando e quantos SMS; nunca o que foi escrito. Cada uma custa o que custa um SMS. | |
 | **Quem fala com quem** | O relay vê endereços IP, IDs de fila, e quando e quanto. Com um segundo relay, o seu relay nunca vê o seu endereço. De um lugar emprestado no relay de um contato, cada relay para o qual você envia o vê. [Pelo Tor](#tor), que leva as mensagens a menos que você mude, nenhum relay o vê para o que você escreve, e com **Tudo** também para imagens e arquivos; com pontes, para onde o Tor está bloqueado, a rede só vê uma ponte. O broker e os servidores STUN do Snowflake veem o seu endereço. | O Tor num computador. |
 | **A conexão com o relay** | TLS, e dentro dele, assim que a chave do relay é conhecida, um canal para essa chave: o relay prova que a tem a cada conexão, e o token e cada pedido vão criptografados para ela, então alguém no meio com um certificado para o nome do relay não consegue se passar por ele. Um relay que provou a chave dele uma vez nunca mais é acessado sem ela. Um relay mais antigo que este app funciona como antes, e **Como você se conecta agora** diz isso. A primeira chave vem do relay na primeira vez que ele é consultado, ou de um link de contato: quem estiver no meio nessa primeiríssima vez poderia dar uma própria. [A própria chave do relay](#relay). Não auditado. | A chave do nosso relay embutida no app, e nos convites. |
 | **Textos pelo Nostr** | Criptografados de ponta a ponta como por um relay, depois embrulhados mais uma vez para uma chave que o seu contato deu só àquela conversa, assinados por uma chave feita só para aquele texto. Os relays Nostr veem quando e de que tamanho, e que uma chave que não nomeia ninguém recebe um texto; o seu celular lê todas as chaves dele numa só conexão, pelo Tor, então um relay pode saber que elas são lidas juntas, nunca de onde. O seu relay só os vê como reserva, e um sino para as conversas ocultas. [Pelo Nostr](#nostr). | Imagens e mensagens de voz pelo Nostr. |

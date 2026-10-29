@@ -43,6 +43,19 @@ internal object SmsStore {
   private const val PREFS = "erevos-sms"
   private const val INVITES = "invites"
   private const val MAX_INVITES = 50
+  // Pieces of encrypted messages that came by SMS (lib/sms-packets.ts), until the app has put them
+  // together: the first byte that says one, how many are kept at most, from one number at most, and
+  // how long. Only these bytes are kept (each sealed, end-to-end encrypted), the number they came
+  // from and when, in the app's own storage; nothing is written to the phone's SMS or its log.
+  const val PACKET_MAGIC: Byte = 0x50
+  private const val PACKETS = "packets"
+  private const val PACKET_COUNT = "packet-count"
+  private const val MAX_PACKET_PIECES = 96
+  private const val MAX_PACKET_PIECES_FROM = 32
+  private const val PACKET_KEEP_MS = 2L * 3600 * 1000
+  private const val PACKET_PIECE = 140
+  // The longest wait for the phone to say all pieces went, seconds.
+  private const val PACKET_SENT_WITHIN = 60L
 
   /** Set while the JS side runs: tells it what changed, as an event name and its body. */
   @Volatile var listener: ((String, Map<String, Any?>) -> Unit)? = null
@@ -602,6 +615,105 @@ internal object SmsStore {
 
   fun sendData(context: Context, address: String, data: ByteArray) {
     manager(context).sendDataMessage(address, null, INVITE_PORT, data, null, null)
+  }
+
+  /**
+   * Sends the pieces of one encrypted message (lib/sms-packets.ts), `data` holding them one after
+   * the other, each `piece` bytes but the last, as data SMS to Erevos's SMS port on `sim` (-1: the
+   * phone's default). Tells `done`, once, whether the phone said each went, within PACKET_SENT_WITHIN.
+   */
+  fun sendPacket(context: Context, address: String, data: ByteArray, piece: Int, sim: Int, done: (Boolean) -> Unit) {
+    require(piece in 9..PACKET_PIECE && data.isNotEmpty()) { "Not pieces of a message" }
+    val pieces = (data.indices step piece).map { data.copyOfRange(it, minOf(it + piece, data.size)) }
+    val app = context.applicationContext
+    val action = "${app.packageName}.erevossms.PACKET_SENT.${System.nanoTime()}"
+    val main = android.os.Handler(android.os.Looper.getMainLooper())
+    val told = java.util.concurrent.atomic.AtomicBoolean(false)
+    var left = pieces.size
+    var ok = true
+    lateinit var receiver: android.content.BroadcastReceiver
+    val finish = { went: Boolean ->
+      if (told.compareAndSet(false, true)) {
+        runCatching { app.unregisterReceiver(receiver) }
+        done(went)
+      }
+    }
+    // Told on the main thread, as the timeout below.
+    receiver = object : android.content.BroadcastReceiver() {
+      override fun onReceive(c: Context, intent: Intent) {
+        if (resultCode != android.app.Activity.RESULT_OK) ok = false
+        left--
+        if (left <= 0 || !ok) finish(ok)
+      }
+    }
+    val filter = android.content.IntentFilter(action)
+    if (Build.VERSION.SDK_INT >= 33) app.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    else @Suppress("UnspecifiedRegisterReceiverFlag") app.registerReceiver(receiver, filter)
+    main.postDelayed({ finish(false) }, PACKET_SENT_WITHIN * 1000)
+    try {
+      val manager = manager(app, sim)
+      pieces.forEachIndexed { index, bytes ->
+        val sent = PendingIntent.getBroadcast(app, index, Intent(action).setPackage(app.packageName), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT)
+        manager.sendDataMessage(address, null, INVITE_PORT, bytes, sent, null)
+      }
+    } catch (error: Exception) {
+      main.post { finish(false) }
+      throw error
+    }
+  }
+
+  /** Keeps a piece of an encrypted message that came by SMS until the JS side has put it together
+   *  with the rest (smsPackets, forgetPackets). Too many kept, the oldest go; from one number, its
+   *  oldest; and any older than PACKET_KEEP_MS. */
+  fun packetPiece(context: Context, address: String, data: ByteArray) {
+    if (data.size > PACKET_PIECE) return
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    synchronized(this) {
+      val now = System.currentTimeMillis()
+      val kept = keptPackets(prefs, now).toMutableList()
+      val same = kept.filter { it.getString("from") == address }
+      if (same.size >= MAX_PACKET_PIECES_FROM) kept.remove(same.first())
+      while (kept.size >= MAX_PACKET_PIECES) kept.removeAt(0)
+      val n = prefs.getLong(PACKET_COUNT, 0L) + 1
+      kept.add(
+        JSONObject()
+          .put("n", n.toDouble())
+          .put("from", address)
+          .put("data", Base64.encodeToString(data, Base64.NO_WRAP))
+          .put("at", now.toDouble()),
+      )
+      prefs.edit().putString(PACKETS, JSONArray(kept).toString()).putLong(PACKET_COUNT, n).apply()
+    }
+    listener?.invoke("onSmsPacket", mapOf<String, Any?>())
+  }
+
+  private fun keptPackets(prefs: android.content.SharedPreferences, now: Long): List<JSONObject> {
+    val list = try {
+      JSONArray(prefs.getString(PACKETS, "[]"))
+    } catch (_: Exception) {
+      JSONArray()
+    }
+    return (0 until list.length()).mapNotNull { list.optJSONObject(it) }.filter { now - it.optDouble("at", 0.0).toLong() < PACKET_KEEP_MS }
+  }
+
+  /** The pieces of encrypted messages kept, oldest first. They stay until forgotten (forgetPackets). */
+  fun smsPackets(context: Context): List<Map<String, Any?>> {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    synchronized(this) {
+      return keptPackets(prefs, System.currentTimeMillis()).map {
+        mapOf("n" to it.getDouble("n"), "from" to it.getString("from"), "data" to it.getString("data"), "at" to it.getDouble("at"))
+      }
+    }
+  }
+
+  /** Forgets the pieces kept under these numbers: put together, or never to be. */
+  fun forgetPackets(context: Context, ns: List<Double>) {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    synchronized(this) {
+      val gone = ns.map { it.toLong() }.toSet()
+      val kept = keptPackets(prefs, System.currentTimeMillis()).filter { it.optDouble("n", 0.0).toLong() !in gone }
+      prefs.edit().putString(PACKETS, JSONArray(kept).toString()).apply()
+    }
   }
 
   /** Keeps a piece of an SMS invite until the JS side takes it. */

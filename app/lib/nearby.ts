@@ -1,6 +1,7 @@
 import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex } from './crypto';
 import { t } from './i18n';
 import type { Mark } from './relay';
+import { fitsSms } from './sms-packets';
 
 // Messages to and from contacts over the nearby radio link (modules/erevos-radio): Wi-Fi Aware or
 // Bluetooth, phone to phone, with no internet. They are the same end-to-end encrypted packets as
@@ -31,13 +32,28 @@ import type { Mark } from './relay';
 // take seconds on the air, and the law allows a radio only so much air time. So a slow link is the
 // last way: it takes a message only when the relay and the other links did not, only small ones
 // (text and deletes, not voice), and nothing carried for others.
+//
+// SMS: after all of these, and only for a contact whose phone number is linked and only when the
+// owner turned it on (lib/sms-way.ts), a text or a delete goes in data SMS (lib/sms-packets.ts),
+// the same encrypted packets. It costs what SMS cost, and the phone company sees who wrote to whom
+// and when, so it is off unless turned on.
 
 /**
  * How a message went: to the contact's phone nearby, through the relay, or to the phones nearby,
  * not knowing whether theirs is one; carried, when they also took it to hand to the contact's relay;
- * over LoRa, when only a slow link took it.
+ * over LoRa, when only a slow link took it; by SMS, when nothing else did.
  */
-export type Delivery = 'nearby' | 'relay' | 'nostr' | 'spread' | 'carried' | 'lora';
+export type Delivery = 'nearby' | 'relay' | 'nostr' | 'spread' | 'carried' | 'lora' | 'sms';
+
+/** What a packet that came by SMS is said to come on (lib/sms-way.ts), in place of a link nearby. */
+export const SMS_LINK = 'sms';
+
+/**
+ * The SMS way to contacts (lib/sms-way.ts): `can`, whether it is on for a contact as far as known
+ * now; `send`, sends a message's packets to them by SMS, false when it is not on for them after all.
+ * Throws when the SMS did not go.
+ */
+export type SmsWay = { can(identity: string): boolean; send(identity: string, packets: Uint8Array[]): Promise<boolean> };
 
 /** A packet sealed for the contact's relay (relaySeal), to hand to the relay at `url` from wherever there is internet.
  *  `mark`: what it carries (lib/relay.ts, Mark), on this phone's own only, said as it hands them
@@ -177,13 +193,27 @@ export class NoWayError extends Error {
   }
 }
 
-/** Only a slow link was up, and it does not take something this large. `relayError`: what the relay said, when it was tried first, or null. */
-export class TooLargeForLoraError extends Error {
+/** Only a slow way was left (LoRa or SMS), and it does not take something this large. `relayError`: what the relay said, when it was tried first, or null. */
+export class TooLargeForSlowWayError extends Error {
   readonly relayError: unknown;
 
-  constructor(relayError: unknown = null) {
-    super(t('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.'));
+  constructor(message: string, relayError: unknown = null) {
+    super(message);
     this.relayError = relayError;
+  }
+}
+
+/** Only a slow link was up, and it does not take something this large. */
+export class TooLargeForLoraError extends TooLargeForSlowWayError {
+  constructor(relayError: unknown = null) {
+    super(t('Too large for LoRa, which takes only text. It can go once the relay can be reached, or near their phone.'), relayError);
+  }
+}
+
+/** Only SMS was left, and it does not take something this large. */
+export class TooLargeForSmsError extends TooLargeForSlowWayError {
+  constructor(relayError: unknown = null) {
+    super(t('Too long for SMS, which takes only short texts. It can go once the relay can be reached, or near their phone.'), relayError);
   }
 }
 
@@ -205,6 +235,8 @@ export class Nearby {
    *  on this computer let any). */
   carriable: (url: string) => boolean = isCarriable;
   private uploading: Promise<number> | null = null;
+  /** The SMS way to contacts, the last of all, while a space is open (lib/sms-way.ts). */
+  smsWay: SmsWay | null = null;
   // Where carried packets stay: those for others, and the open space's own. Saved to only once
   // loaded, so what was kept is not written over first; `dirty`: those to save again.
   private others: CarriedStore | null = null;
@@ -327,7 +359,9 @@ export class Nearby {
    * nearby take those too, to hand over. With `slow`, the slow links take them too then, when
    * they are small enough. Throws the relay's error, or NoWayError, when nothing took them; or,
    * when only a slow link was up and they are too large for it, TooLargeForLoraError, which holds
-   * the relay's error if the relay was tried.
+   * the relay's error if the relay was tried. With `slow`, when nothing took them, SMS takes them
+   * last, if it is on for the contact (`smsWay`) and they are small enough; too large, it throws
+   * TooLargeForSmsError, and if the SMS did not go, what it would have thrown without SMS.
    */
   async deliver(
     identity: string,
@@ -357,6 +391,15 @@ export class Nearby {
       return carried === 'spread' && far ? 'lora' : carried;
     }
     if (far) return 'lora';
+    const sms = slow ? this.smsWay : null;
+    if (sms?.can(identity)) {
+      if (!fitsSms(packets)) throw new TooLargeForSmsError(relay ? failed : null);
+      try {
+        if (await sms.send(identity, packets)) return 'sms';
+      } catch {
+        // The SMS did not go (no signal, say): it fails as it would have without SMS, and can wait.
+      }
+    }
     const total = packets.reduce((sum, packet) => sum + packet.length, 0);
     if (slow && total > MAX_SLOW && [...this.links].some(isSlow)) throw new TooLargeForLoraError(relay ? failed : null);
     throw failed;

@@ -1350,6 +1350,8 @@ Quand tu envoies un message, Erevos choisit le chemin tout seul :
 4. **Et par LoRa,** quand une radio est configurée et que le relais n’a pas pu prendre un texte, comme dans [Par une
    radio LoRa](#lora). Sans aucun moyen, le message attend, marqué **En attente**, et part tout seul dès qu’il y en a
    un, comme dans [Envoyé, arrivé et lu](#relay) ; une ligne sous la discussion dit pourquoi.
+5. **Et par SMS,** en tout dernier, quand tu l’as activé pour ce contact et que rien d’autre n’a pris un texte,
+   comme dans [SMS](#sms).
 
 Tous les chemins sont chiffrés de bout en bout : aucun relais ni aucun téléphone entre les deux ne peut lire ce que tu
 envoies.
@@ -1361,8 +1363,10 @@ envoies.
 | **Envoyé aux téléphones Erevos à proximité, chiffré de bout en bout, car le relais était injoignable.** | Il n’arrive que si l’un d’eux est le sien : attends **✓✓**, ou vérifie le relais. |
 | **… Si le sien n’en fait pas partie, ils le remettent à son relais dès qu’ils ont internet, et ce téléphone aussi.** | Rien : il arrive dès que l’un d’eux, ou ce téléphone, atteint internet. Attends **✓✓**. |
 | **Envoyé par LoRa, chiffré de bout en bout, car le relais était injoignable.** | Il arrive si son Erevos a une radio sur le même mesh, à portée : attends **✓✓**, ou vérifie le relais. |
+| **Envoyé par SMS, chiffré de bout en bout, car rien d’autre ne pouvait le prendre.** | Rien : ça coûte des SMS, et l’opérateur voit que tu as écrit à son numéro. **✓✓** arrive dès que le relais ou Nostr sont joignables. |
 | **En attente. Le relais est injoignable (ou Il n’y a pas de relais), et son téléphone n’est pas à proximité.** | Rien : il part tout seul dès que le relais ou son téléphone à proximité peut le recevoir, puis affiche **✓**. Sans relais, remplis son adresse, comme dans [Discuter par un relais](#relay), ou approche-toi de son téléphone. |
 | **En attente. Il est trop long pour LoRa.** | Rien : il part dès que le relais ou son téléphone à proximité peut le recevoir. Ou envoie-le en parties plus courtes. |
+| **En attente. Il est trop long pour un SMS.** | Rien : il part dès que le relais ou son téléphone à proximité peut le prendre. Ou envoie-le en parties plus courtes. |
 | **Non envoyé. Le relais n’a plus la file d’attente de ce contact.** | Demande-lui de t’écrire, ou son nouveau lien de contact. |
 | **Cette version ne peut pas chiffrer, donc les discussions par le relais sont désactivées.** | Recompile l’app : cette version est plus ancienne que son chiffrement. |
 
@@ -1900,6 +1904,35 @@ téléphone sans Erevos n’affiche rien.
   et n’en garde aucune copie.
 - **Expéditeurs avec un nom :** un SMS venant d’un nom au lieu d’un numéro, comme celui d’une banque, s’ouvre pour être
   lu, mais on ne peut pas y répondre.
+
+### SMS chiffrés quand rien d’autre ne marche
+
+Quand le relais, Nostr, les téléphones à proximité et LoRa échouent tous, un texte à un contact Erevos dont le numéro
+est lié peut partir par SMS, chiffré de bout en bout comme tout message Erevos. C’est désactivé sauf si tu l’actives :
+pour tous ces contacts dans **Réglages** → **Téléphone et SMS** → **SMS** → **SMS quand rien d’autre ne marche**
+(**Activer pour tous les contacts**), ou pour un seul dans les **Détails** de sa discussion → **SMS quand rien d’autre
+ne marche**.
+
+- **Ce que ça coûte :** chaque SMS coûte ce que dit ton forfait. Un texte court prend 3 SMS, un plus long jusqu’à 10 ; à
+  l’étranger un SMS peut coûter bien plus.
+- **Ce que voit l’opérateur :** quel numéro a écrit à quel autre, quand, et combien de SMS, comme pour tout SMS ; jamais
+  ce qui a été écrit, qui part comme le même message chiffré que le relais aurait porté.
+- **Ce qui part :** seulement les textes et les suppressions. Pas les photos, fichiers, messages vocaux, appels,
+  réactions ni les marques qu’un message est arrivé ou a été lu, ni les textes de plus d’environ 800 lettres latines
+  (400 grecques), ni le tout premier message à un nouveau contact, qui porte les clés. Ceux-là attendent, marqués
+  **En attente**, comme dans [Comment Erevos choisit le chemin](#paths). Les discussions cachées ne passent jamais
+  par SMS.
+- **Les deux téléphones** ont besoin d’Erevos comme app SMS, et du numéro du contact lié à sa discussion. Ces SMS sont
+  des SMS de données cachés pour Erevos, qu’aucune app SMS n’affiche, et rien n’en reste dans les SMS du téléphone.
+- **Par où il est passé :** reste appuyé sur le message : son menu dit **Envoyé par SMS** ou **Arrivé par SMS**.
+  **✓✓** arrive dès que le relais ou Nostr sont de nouveau joignables : aucun SMS ne repart tout seul.
+
+**Pourquoi :** les SMS atteignent un téléphone sans aucun internet, partout où il y a un réseau mobile. Mais ils
+coûtent de l’argent et disent à l’opérateur qui parle à qui, ce qu’Erevos cache sinon ; c’est pourquoi le SMS est le
+dernier chemin, et seulement quand tu le choisis.
+
+> Active-le seulement pour ceux que tu dois joindre ainsi. L’opérateur, et quiconque peut voir ses registres, sait
+> grâce à ces SMS que vos deux numéros se parlent, et quand.
 
 ### Garder les SMS en ordre
 
@@ -3062,6 +3095,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Messages vers un téléphone à proximité** | Chiffrés de bout en bout, comme par le relais. Qui écoute à proximité peut savoir que des téléphones Erevos sont proches l’un de l’autre, et quand et combien ils envoient ; sur le même Wi-Fi, quiconque s’y trouve le peut aussi, et par Wi-Fi Direct, quiconque rejoint le Wi-Fi propre aux téléphones. Tant que le téléphone de ton contact n’est pas connu, les autres téléphones Erevos reliés à proximité reçoivent tes messages courts, scellés. | |
 | **Messages portés par d’autres téléphones** | Scellés deux fois : de bout en bout pour ton contact, et pour son relais. Un téléphone qui en porte un voit vers quel relais il va, quand, et sa taille ; pas de qui il vient ni pour qui il est. Son relais voit vers quel relais il va, et ce relais voit le relais du porteur, pas son téléphone. Gardés scellés sur le téléphone, trois jours au plus : ceux des autres dans un fichier du téléphone, dont la taille montre à peu près combien il y en a ; les tiens dans ton espace, scellés avec sa clé. Les discussions masquées ne sont jamais portées. | |
 | **Messages par LoRa** | Chiffrés de bout en bout, comme par le relais. Quiconque a une radio, à des kilomètres, peut savoir que la tienne émet, quand et combien, et son signal peut être suivi jusqu’à l’endroit où elle se trouve. Erevos empêche ta radio de dire son nom et où elle est (rôle Client hidden, GPS coupé, pas de position fixe) sauf si tu le permets ; elle répond quand même à une radio qui demande son nom. Chaque Erevos sur le mesh reçoit tes messages LoRa, scellés. | Régler le nom de la radio depuis Erevos. |
+| **Messages par SMS, quand rien d’autre ne marche** | Chiffrés de bout en bout, comme par le relais, dans des SMS de données cachés. Désactivé sauf si tu l’actives. L’opérateur voit quel numéro a écrit à quel autre, quand, et combien de SMS ; jamais ce qui a été écrit. Chacun coûte ce que coûte un SMS. | |
 | **Qui parle à qui** | Le relais voit les adresses IP, les identifiants de file d’attente, et quand et combien. Avec un second relais, ton relais ne voit jamais ton adresse. Depuis une place prêtée sur le relais d’un contact, chaque relais auquel tu envoies la voit. [Par Tor](#tor), qui porte les messages sauf si tu changes cela, aucun relais ne la voit pour ce que tu écris, et avec **Tout** pour les images et les fichiers aussi ; avec des ponts, pour là où Tor est bloqué, le réseau ne voit qu’un pont. Le broker de Snowflake et les serveurs STUN voient ton adresse. | Tor sur un ordinateur. |
 | **La connexion au relais** | TLS, et à l’intérieur, une fois la clé du relais connue, un canal vers cette clé : le relais prouve qu’il la détient à chaque connexion, et le jeton et chaque requête lui parviennent chiffrés, si bien que quelqu’un entre les deux avec un certificat pour le nom du relais ne peut pas se faire passer pour lui. Un relais qui a prouvé sa clé une fois n’est plus jamais joint sans elle. Un relais plus ancien que cette appli fonctionne comme avant, et **Comment tu te connectes maintenant** le dit. La première clé vient du relais la première fois qu’on la lui demande, ou d’un lien de contact : quiconque est entre les deux cette toute première fois pourrait en donner une à lui. [La clé propre du relais](#relay). Pas audité. | La clé de notre relais intégrée à l’appli, et dans les invitations. |
 | **Les textes par Nostr** | Chiffrés de bout en bout comme par un relais, puis enveloppés une fois de plus pour une clé que ton contact a donnée à cette seule discussion, signés par une clé faite pour ce seul texte. Les relais Nostr voient quand et quelle taille, et qu’une clé qui ne nomme personne reçoit un texte ; ton téléphone lit toutes ses clés sur une seule connexion, par Tor, donc un relais peut savoir qu’elles sont lues ensemble, jamais d’où. Ton relais ne les voit que comme la sauvegarde, et une sonnette pour les discussions masquées. [Par Nostr](#nostr). | Les images et les messages vocaux par Nostr. |

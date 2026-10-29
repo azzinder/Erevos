@@ -7,6 +7,10 @@ import { sealedFile, type Holder } from './sealed-file';
 // The SMS themselves stay in the phone's SMS store, where every SMS app keeps them; one sent for
 // later is kept here instead until it goes (lib/sms-later.ts), so no other app sees it before, and
 // Android holds a copy locked with this phone's own key, to send it then with the space locked.
+// Whether messages to Erevos contacts may go by SMS, encrypted, when nothing else takes them
+// (lib/sms-way.ts): for every contact with a number, or for some; off unless turned on, as it costs
+// what SMS cost and tells the phone company who wrote to whom and when. Backups do not hold it, so
+// a backup restored never starts sending SMS by itself.
 // The space's own order of its SMS is sealed in ORDER_FILE, never in the phone's store, so no other
 // app and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put
 // in the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
@@ -69,6 +73,10 @@ export type SmsData = {
   marks: SpamMark[];
   /** Seconds an SMS waits before it goes, to be taken back: 0, 5 or 10. */
   undo: number;
+  /** Messages to every Erevos contact with a number go by SMS, encrypted, when nothing else takes them. Off unless turned on. */
+  smsWay: boolean;
+  /** The contacts (identity, hex) whose messages go so, whatever `smsWay` says. */
+  smsWayFor: string[];
 };
 
 export const EMPTY_SMS: SmsData = {
@@ -92,6 +100,8 @@ export const EMPTY_SMS: SmsData = {
   home: '',
   marks: [],
   undo: 5,
+  smsWay: false,
+  smsWayFor: [],
 };
 
 const FILE = 'erevos-sms';
@@ -117,6 +127,8 @@ export const WORD = 40;
 /** Days a conversation stays in the Trash before it goes from the phone. */
 export const TRASH_DAYS = 30;
 export const UNDO_SECONDS = [0, 5, 10];
+/** The contacts SMS can be on for one by one, at most. */
+export const MAX_SMS_WAY = 500;
 
 const isText = (v: unknown): v is string => typeof v === 'string';
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v) && v >= 0;
@@ -167,6 +179,8 @@ function checked(value: unknown): SmsData {
     home: isText(v.home) && /^[1-9][0-9]{0,2}$/.test(v.home) ? v.home : '',
     marks: list(v.marks, (m) => (isNumber(m.number) && typeof m.spam === 'boolean' && isTime(m.at) ? { number: m.number, spam: m.spam, at: m.at } : null), MAX_MARKS),
     undo: UNDO_SECONDS.includes(v.undo as number) ? (v.undo as number) : EMPTY_SMS.undo,
+    smsWay: v.smsWay === true,
+    smsWayFor: [...new Set((Array.isArray(v.smsWayFor) ? v.smsWayFor : []).filter((id): id is string => isText(id) && /^[0-9a-f]{2,128}$/.test(id)))].slice(-MAX_SMS_WAY),
   };
 }
 

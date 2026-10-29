@@ -1280,6 +1280,8 @@ Cuando envías un mensaje, Erevos elige el camino por sí solo:
 4. **Y por LoRa,** cuando hay una radio configurada y el relay no pudo recibir un texto, como en
    [Con una radio LoRa](#lora). Sin ningún camino, el mensaje espera, marcado como **En espera**, y sale solo en cuanto
    haya uno, como en [Enviado, llegado y leído](#relay); una línea bajo el chat dice por qué.
+5. **Y por SMS,** lo último de todo, cuando lo activaste para ese contacto y nada más llevó un texto, como en
+   [SMS](#sms).
 
 Todos los caminos están cifrados de extremo a extremo: ningún relay ni ningún teléfono entre medias puede leer lo que
 envías.
@@ -1291,8 +1293,10 @@ envías.
 | **Enviado a los teléfonos con Erevos cercanos, cifrado de extremo a extremo, porque el relay no estaba disponible.** | Solo llega si uno de ellos es el suyo: espera a **✓✓**, o revisa el relay. |
 | **… Si el suyo no está entre ellos, se lo entregan a su relay en cuanto tengan internet, y este teléfono también.** | Nada: llega en cuanto uno de ellos, o este teléfono, tenga internet. Espera a **✓✓**. |
 | **Enviado por LoRa, cifrado de extremo a extremo, porque el relay no estaba disponible.** | Llega si su Erevos tiene una radio en la misma malla, al alcance: espera a **✓✓**, o revisa el relay. |
+| **Enviado por SMS, cifrado de extremo a extremo, porque nada más podía llevarlo.** | Nada: cuesta SMS, y la compañía telefónica ve que escribiste a su número. **✓✓** llega en cuanto se puede llegar al relay o a Nostr. |
 | **En espera. El relay no está disponible (o No hay relay), y su teléfono no está cerca.** | Nada: sale solo en cuanto el relay o su teléfono cercano puedan recibirlo, y entonces muestra **✓**. Sin relay, rellena su dirección, como en [Chatear a través de un relay](#relay), o acércate a su teléfono. |
 | **En espera. Es demasiado largo para LoRa.** | Nada: sale en cuanto el relay o su teléfono cercano puedan recibirlo. O envíalo en partes más cortas. |
+| **En espera. Es demasiado largo para SMS.** | Nada: se envía en cuanto el relay o su teléfono cercano puedan llevarlo. O envíalo en partes más cortas. |
 | **No enviado. El relay ya no tiene la cola de este contacto.** | Pídele que te escriba, o su nuevo enlace de contacto. |
 | **Esta versión no puede cifrar, así que los chats por el relay están desactivados.** | Vuelve a compilar la app: esta compilación es anterior a su cifrado. |
 
@@ -1807,6 +1811,33 @@ Erevos no muestra nada.
   ninguna copia.
 - **Remitentes con nombre:** un SMS de un nombre en lugar de un número, como el de un banco, se abre para leerlo, pero
   no se puede responder.
+
+### SMS cifrados cuando nada más funciona
+
+Cuando fallan el relay, Nostr, los teléfonos cercanos y LoRa, un texto a un contacto de Erevos con número vinculado
+puede ir por SMS, cifrado de extremo a extremo como cualquier mensaje de Erevos. Está desactivado salvo que lo actives:
+para todos esos contactos en **Ajustes** → **Teléfono y SMS** → **SMS** → **SMS cuando nada más funciona** (**Activar
+para todos los contactos**), o para uno en los **Detalles** de su chat → **SMS cuando nada más funciona**.
+
+- **Lo que cuesta:** cada SMS cuesta lo que diga tu tarifa. Un texto corto ocupa 3 SMS y uno más largo hasta 10; en el
+  extranjero un SMS puede costar mucho más.
+- **Lo que ve la compañía telefónica:** qué número escribió a cuál, cuándo y cuántos SMS, como con cualquier SMS; nunca
+  lo que se escribió, que va como el mismo mensaje cifrado que habría llevado el relay.
+- **Lo que va:** solo textos y borrados. No fotos, archivos, mensajes de voz, llamadas, reacciones ni las marcas de que
+  un mensaje llegó o se leyó, ni textos de más de unas 800 letras latinas (400 griegas), ni el primer mensaje a un
+  contacto nuevo, que lleva las claves. Esos esperan, marcados **En espera**, como en
+  [Cómo elige Erevos el camino](#paths). Los chats ocultos nunca van por SMS.
+- **Ambos teléfonos** necesitan Erevos como app de SMS, y el número del contacto vinculado a su chat. Los SMS son SMS
+  de datos ocultos para Erevos, que ninguna app de SMS muestra, y nada de ellos queda en los SMS del teléfono.
+- **Por dónde fue:** mantén pulsado el mensaje: su menú dice **Enviado por SMS** o **Llegó por SMS**. **✓✓** llega en
+  cuanto se puede llegar de nuevo al relay o a Nostr: ningún SMS vuelve por sí solo.
+
+**Por qué:** los SMS llegan a un teléfono sin nada de internet, donde haya red móvil. Pero cuestan dinero y le dicen a
+la compañía telefónica quién habla con quién, lo que Erevos si no oculta; por eso el SMS es el último camino, y solo
+cuando tú lo eliges.
+
+> Actívalo solo para quienes necesites alcanzar así. La compañía telefónica, y quien pueda ver sus registros, sabe por
+> estos SMS que vuestros dos números hablan, y cuándo.
 
 ### Mantener los SMS en orden
 
@@ -2903,6 +2934,7 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Mensajes a un teléfono cercano** | Cifrados de extremo a extremo, igual que por el relay. Quien escuche cerca puede saber que hay teléfonos con Erevos cerca unos de otros, y cuándo y cuánto envían; en la misma Wi-Fi, también cualquiera que esté en ella, y por Wi-Fi Direct cualquiera que se una a la Wi-Fi propia de los teléfonos. Hasta que se conoce el teléfono de tu contacto, los otros teléfonos con Erevos conectados cerca reciben tus mensajes cortos, sellados. | |
 | **Mensajes llevados por otros teléfonos** | Sellados dos veces: de extremo a extremo para tu contacto, y para su relay. Un teléfono que lleva uno ve a qué relay va, cuándo, y de qué tamaño; no de quién es ni para quién. Su relay ve a qué relay va, y ese relay ve el relay del portador, no su teléfono. Guardados sellados en el teléfono, tres días como mucho: los de otros en un archivo del teléfono, cuyo tamaño muestra más o menos cuántos hay; los tuyos en tu espacio, sellados con su clave. Los chats ocultos nunca se llevan. | |
 | **Mensajes por LoRa** | Cifrados de extremo a extremo, igual que por el relay. Cualquiera con una radio, a kilómetros, puede saber que la tuya transmite, cuándo y cuánto, y su señal se puede rastrear hasta donde está. Erevos impide que tu radio anuncie su nombre y dónde está (rol Client hidden, GPS apagado, sin posición fija) salvo que lo permitas; aun así responde a una radio que le pregunte su nombre. Todos los Erevos de la malla reciben tus mensajes LoRa, sellados. | Poner el nombre de la radio desde Erevos. |
+| **Mensajes por SMS, cuando nada más funciona** | Cifrados de extremo a extremo, igual que por el relay, en SMS de datos ocultos. Desactivado salvo que lo actives. La compañía telefónica ve qué número escribió a cuál, cuándo y cuántos SMS; nunca lo que se escribió. Cada uno cuesta lo que un SMS. | |
 | **Quién habla con quién** | El relay ve direcciones IP, ids de colas, y cuándo y cuánto. Con un segundo relay, tu relay nunca ve tu dirección. Desde un sitio prestado en el relay de un contacto, cada relay al que envías la ve. [A través de Tor](#tor), que lleva los mensajes salvo que lo cambies, ningún relay la ve para lo que escribes, y con **Todo** tampoco para las imágenes y los archivos; con puentes, para donde Tor está bloqueado, la red solo ve un puente. El broker de Snowflake y los servidores STUN ven tu dirección. | Tor en un ordenador. |
 | **La conexión con el relay** | TLS, y dentro, en cuanto se conoce la clave del relay, un canal hacia esa clave: el relay demuestra que la tiene en cada conexión, y el token y cada petición van cifrados con ella, así que alguien entre medias con un certificado para el nombre del relay no puede hacerse pasar por él. A un relay que demostró su clave una vez nunca se vuelve a llegar sin ella. Un relay más antiguo que esta app funciona como antes, y **Cómo te conectas ahora** lo dice. La primera clave viene del relay la primera vez que se le pregunta, o de un enlace de contacto: quien esté entre medias justo esa primera vez podría dar una propia. [La clave propia del relay](#relay). Sin auditar. | La clave de nuestro relay incluida en la app, y en las invitaciones. |
 | **Textos por Nostr** | Cifrados de extremo a extremo como por un relay, luego envueltos una vez más para una clave que tu contacto dio solo para ese chat, firmados por una clave hecha solo para ese texto. Los relays de Nostr ven cuándo y de qué tamaño, y que una clave que no nombra a nadie recibe un texto; tu teléfono lee todas sus claves en una sola conexión, a través de Tor, así que un relay puede saber que se leen juntas, nunca desde dónde. Tu relay solo los ve como respaldo, y una campanita para los chats ocultos. [A través de Nostr](#nostr). | Imágenes y mensajes de voz por Nostr. |

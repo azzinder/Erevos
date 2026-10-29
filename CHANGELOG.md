@@ -45,6 +45,20 @@ On main, not released yet:
   said to be from a newer Erevos, never read as an older one. Not a link, so a camera app opens nothing. The mark
   (`Contact.verified`) is kept with the contact, moves with the chat into or out of hidden chats, and is not shared
   with linked devices (`checks/verify-code.check.ts`).
+- **Encrypted SMS when nothing else works** (Android, off unless turned on): when the relay, Nostr, the phones nearby
+  and LoRa all fail, a text or a delete to an Erevos contact whose phone number is linked goes as data SMS to Erevos's
+  SMS port (the invite port, told apart by its first byte), so no SMS app shows them: the same end-to-end encrypted
+  packets the relay carries, nothing sealed anew, in pieces of 133 bytes (`lib/sms-packets.ts`: 'P', version, a 4-byte
+  id that is the start of the whole's SHA-256, index, count), 3 SMS for a short text and at most 10, so the first
+  message of a conversation, photos, files, voice messages, marks and calls never go so. On for every contact with a
+  number under **Settings** → **Phone and SMS** → **SMS** → **SMS when nothing else works**, or for one in the chat's
+  **Details**; kept in the space's SMS state, not in backups. The phone that gets them keeps the pieces in the app's
+  own storage (at most 96, 32 from one number, two hours), puts them together (a whole whose digest does not match is
+  dropped, as is a message that does not come whole in 30 minutes; at most 12 wait), opens them as what comes from a
+  phone nearby, and forgets them; a message taken twice opens once. Marks go back through the relay or Nostr once
+  they can be reached. The message menu says **Went by SMS** / **Came by SMS** (route `sms`), and the note under the
+  messages says what it costs and what the phone company sees. Both phones need Erevos as the SMS app; sending waits
+  for the phone to say each piece went. Hidden chats never use it. `checks/sms-way.check.ts`.
 - **Spam SMS come quietly** (Android): an SMS that Spam's built-in rule catches (from a phone number that is in none
   of the phone's contacts and was never answered, with a link and words that try to fool, read as the filter reads
   them: look-alike letters and invisible marks folded) is kept and goes to **Spam** as before, but the phone shows no

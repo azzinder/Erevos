@@ -16,7 +16,7 @@ import { bodyOf, checkedList, verifyList, type DeviceList } from './device-list'
 import { blankWay, copiedAs, waysFor, withEarlyFirst, withRoutes, withUnverified } from './endpoints';
 import { fromBase64, fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { canTryLater, isQueueFull, sameRelay } from './relay';
-import { TooLargeForLoraError } from './nearby';
+import { TooLargeForSlowWayError } from './nearby';
 import type { Look } from '../theme/look';
 import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
@@ -2340,7 +2340,7 @@ export class E2E {
     try {
       went = await going;
     } catch (error) {
-      const later = canTryLater(error) || (error instanceof TooLargeForLoraError && canTryLater(error.relayError));
+      const later = canTryLater(error) || (error instanceof TooLargeForSlowWayError && canTryLater(error.relayError));
       if (waits === 'full' ? isQueueFull(error) : waits && later) await this.copiesGo(copies).catch(() => undefined);
       else this.heldCopies.delete(copies);
       throw error;

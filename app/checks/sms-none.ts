@@ -11,3 +11,10 @@ export const onSmsEvent = () => null;
 export const smsSpamFilter = (_on: boolean): void => undefined;
 export const smsToolsReady = () => false;
 export const exportPhoneSms = async (): Promise<Uint8Array | null> => null;
+export type SmsPacketPart = { n: number; from: string; data: string; at: number };
+export const smsPacketsReady = () => false;
+export const sendSmsPacket = async (): Promise<boolean> => {
+  throw new Error('This app was built without SMS.');
+};
+export const smsPacketParts = async (): Promise<SmsPacketPart[]> => [];
+export const forgetSmsPacketParts = async (_ns: number[]): Promise<void> => undefined;

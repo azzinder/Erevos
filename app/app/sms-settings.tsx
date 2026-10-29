@@ -11,11 +11,12 @@ import { smsAddress, smsNumbers } from '../lib/sms-group';
 import { SmsLink } from '../lib/sms-link';
 import { currentSpace } from '../lock/keys';
 import { MAX_WORDS, UNDO_SECONDS, WORD, type SmsData } from '../lock/sms-data';
-import { requestDefaultSms, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
+import { requestDefaultSms, smsPacketsReady, smsReady, smsStatus, smsThreads, smsToolsReady, type SmsStatus } from '../modules/erevos-sms';
 
 // Erevos as the phone's SMS app: then the home screen shows SMS and Erevos chats in one list, and
 // writing to a number that has Erevos goes through Erevos. Whether to look for Erevos on a number
-// with a hidden SMS invite, whether SMS numbers show the names the phone's contacts give them, and
+// with a hidden SMS invite, whether texts to Erevos contacts go by SMS, encrypted, when nothing else
+// takes them (lib/sms-way.ts), whether SMS numbers show the names the phone's contacts give them, and
 // a new SMS conversation. The space's SMS folders, its spam filter's rules, the seconds an SMS waits
 // to be taken back, and the numbers blocked in Android's own list.
 
@@ -41,6 +42,7 @@ const RESTRICTED = mark(
 const PARTS = {
   app: mark('Erevos as the SMS app'),
   find: mark('Find Erevos on a number'),
+  last: mark('SMS when nothing else works'),
   names: mark('Names from your contacts'),
   folders: mark('Archived, Spam and Trash'),
   spam: mark('Spam filter'),
@@ -77,6 +79,8 @@ export default function SmsSettings() {
   const [reading, setReading] = useState<{ count: number } | { error: string } | null>(null);
   const [link, setLink] = useState<SmsLink | null>(null);
   const [invites, setInvites] = useState(true);
+  // SMS when nothing else works, for every contact with a number, and how many have it one by one.
+  const [smsWay, setSmsWay] = useState<{ all: boolean; some: number }>({ all: false, some: 0 });
   const [names, setNames] = useState(false);
   const [number, setNumber] = useState('');
   const [note, setNote] = useState('');
@@ -94,6 +98,7 @@ export default function SmsSettings() {
       .then((opened) => {
         setLink(opened);
         setInvites(opened.invites);
+        setSmsWay({ all: opened.smsWay.all, some: opened.smsWay.some.length });
         setNames(opened.names);
         setSpam(spamOf(opened.state));
         setHome(opened.state.home);
@@ -169,6 +174,13 @@ export default function SmsSettings() {
     const next = !invites;
     await link.setInvites(next);
     setInvites(next);
+  }
+
+  async function toggleSmsWay() {
+    if (!link) return;
+    const next = !smsWay.all;
+    await link.setSmsWay(next);
+    setSmsWay({ all: next, some: link.smsWay.some.length });
   }
 
   // Names from the phone's contacts: Android asks once, when the owner turns them on.
@@ -312,6 +324,30 @@ export default function SmsSettings() {
             <Text variant="caption" tone="faint">
               {t('A number can also be linked by hand: open its SMS conversation and choose the contact.')}
             </Text>
+          </Card>
+        </>
+      ) : null}
+
+      {shows('last') && smsPacketsReady() ? (
+        <>
+          {part ? null : <SectionTitle title={t('SMS when nothing else works')} />}
+          <Card>
+            <Text tone="muted">
+              {t("When the relay, Nostr, the phones nearby and LoRa all fail, a text to an Erevos contact whose number is linked can go by SMS instead, end-to-end encrypted like any Erevos message, as hidden data SMS their SMS app does not show. Off unless you turn it on, here for all such contacts or in a chat's Details for one.")}
+            </Text>
+            <Text tone="muted">
+              {t('Mind what it costs: each SMS costs what your plan says, a short text takes 3 SMS and a longer one up to 10. And the phone company sees which number wrote to which, and when, as with any SMS; never what was written.')}
+            </Text>
+            <Text tone="muted">
+              {t('Only texts and deletes go so, not photos, files, voice messages, marks or calls, nor long texts (about 800 Latin letters at most, or 400 Greek ones), nor anything from hidden chats. Both phones need Erevos as the SMS app.')}
+            </Text>
+            <Button title={smsWay.all ? t('Turn off for all contacts') : t('Turn on for all contacts')} kind="secondary" onPress={() => void toggleSmsWay()} />
+            {smsWay.some > 0 ? (
+              <Text variant="caption" tone="faint">
+                {plural(smsWay.some, "On for {n} contact in their chat's Details.", "On for {n} contacts in their chats' Details.")}
+              </Text>
+            ) : null}
+            {status && !status.isDefault ? <Text variant="caption" tone="faint">{t('Erevos is not the SMS app yet, so nothing goes by SMS.')}</Text> : null}
           </Card>
         </>
       ) : null}

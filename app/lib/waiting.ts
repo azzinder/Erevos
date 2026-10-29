@@ -5,7 +5,7 @@ import { refSource, uploadFile } from './attachments';
 import { offerOnNostr } from './nostr-send-files';
 import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
-import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
+import { nearby, NoWayError, TooLargeForSlowWayError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
 import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
 import { nostrReady } from './nostr';
@@ -20,7 +20,8 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // first and each contact's in order, once the relay or the contact's phone nearby can take them:
 // with each look at the relay that answers (the chat screen's, or the receiver's beside the
 // screens), and when a contact is heard nearby. A waiting text goes over LoRa too, once a radio
-// is linked; one too much for LoRa with its link's preview goes there without the preview. Each
+// is linked, and by SMS with a try, when that is on for the contact (lib/sms-way.ts); one too much
+// for LoRa or SMS with its link's preview goes there without the preview. Each
 // keeps its tag, so it can still be deleted on both phones once it went.
 //
 // Each try seals the message anew, which moves the conversation on, and a contact's phone can skip
@@ -65,7 +66,7 @@ const LONGEST_WAIT = 30 * 60_000;
 
 /** Whether what failed failed only because nothing could take it now, so it can wait and go later. */
 export function canWait(error: unknown): boolean {
-  return error instanceof NoWayError || error instanceof TooLargeForLoraError || canTryLater(error);
+  return error instanceof NoWayError || error instanceof TooLargeForSlowWayError || canTryLater(error);
 }
 
 /**
@@ -331,15 +332,20 @@ export async function heldAfter({ e2e, history }: Chats, identity: string, kept:
 }
 
 // Whether there is a way for it now, before sealing it: the relay answers and can reach their
-// queue, their phone is near, or, for a text, a LoRa radio is linked. A photo or file goes to our
-// relay first in any case.
+// queue, their phone is near, or, for a text, a LoRa radio is linked, or SMS is on for them
+// (lib/sms-way.ts). A photo or file goes to our relay first in any case.
 function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): boolean {
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
   // Photos, files and voice messages go through Nostr too, as the contact's phone puts them together.
   if (place.hidden) return (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || throughNostr(e2e, place, identity, queue);
   if (message.file) return (!!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue))) || throughNostr(e2e, place, identity, queue);
-  return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && nearby.hasSlow()) || throughNostr(e2e, place, identity, queue);
+  return (
+    nearby.isNear(identity) ||
+    (place.relayUp && throughRelay(place, queue)) ||
+    (!message.voice && (nearby.hasSlow() || !!nearby.smsWay?.can(identity))) ||
+    throughNostr(e2e, place, identity, queue)
+  );
 }
 
 // Whether Nostr is the way to them now: no relay between the two, they read there, and Tor is ready (lib/nostr-chats.ts nostrOnlyWay).
@@ -401,7 +407,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
   try {
     await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, all, relay, carry, worthCarrying), true);
   } catch (error) {
-    if (!(error instanceof TooLargeForLoraError) || !message.preview || message.voice || message.file) throw error;
+    if (!(error instanceof TooLargeForSlowWayError) || !message.preview || message.voice || message.file) throw error;
     const bare = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: withoutPreview(contentOf(message)) });
     const again = bare.first ? [bare.first, bare.packet] : [bare.packet];
     await e2e.copiesAfter(bare.copies, nearby.deliver(identity, again, null, () => carriedFor(bare, again, { url: place.own?.url ?? '', key: place.ownKey }, sentMark(bare, 'message')), true), true);

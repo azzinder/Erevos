@@ -22,6 +22,7 @@ import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
+import { startSmsWay } from '../lib/sms-way';
 import { linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenParams, takeLink } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
@@ -553,7 +554,7 @@ function OpenLink() {
 }
 
 // Takes the space's messages while it is open, whatever screen shows (lib/receiver.ts), from the
-// relay and from phones nearby (lib/nearby-links.ts), and those of its hidden chats that receive
+// relay, from phones nearby (lib/nearby-links.ts) and by SMS when that is on (lib/sms-way.ts), and those of its hidden chats that receive
 // while closed (lib/place-receiver.ts), and tells it whether the app shows: only then
 // do contacts hear the phone is open. SMS sent for later go from here too (lib/sms-later.ts), the
 // doors of the public groups the space owns are looked at (lib/space-public-groups.ts), and its
@@ -569,6 +570,7 @@ function Receiver({ space }: { space: number }) {
         startReceiver(),
         startPlaceReceiver(),
         startNearbyLinks(),
+        startSmsWay(),
         startSmsLater(),
         startPublicDoors(),
         watchKnownNames(),

@@ -52,6 +52,9 @@ export type LaterSmsHolder = {
 /** A piece of an SMS invite that came, base64. */
 export type SmsInvitePart = { from: string; data: string; at: number };
 
+/** A piece of an encrypted message that came by SMS (lib/sms-packets.ts), base64; `n` names it, to forget it. */
+export type SmsPacketPart = { n: number; from: string; data: string; at: number };
+
 export type SmsEvents = {
   /** `shown`: its conversation shows on the screen (smsShowOnScreen), so it came with no notice.
    *  `spam`: Spam's built-in rule caught it (BuiltInSpam.kt), so it came with no notice and plays
@@ -62,6 +65,8 @@ export type SmsEvents = {
   /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
   onSmsLaterSent: (event: { id: string }) => void;
   onInvite: (event: { from: string }) => void;
+  /** A piece of an encrypted message came by SMS (smsPacketParts). */
+  onSmsPacket: () => void;
   /** The phone's SMS or MMS changed, a moment before, while another app is the SMS app: watched
    *  only while this is listened to. */
   onSmsChanged: () => void;
@@ -82,6 +87,9 @@ type NativeSms = {
   contactNames?(numbers: string[]): Promise<Record<string, string>>;
   sendData(address: string, data: Uint8Array): Promise<void>;
   takeInvites(): Promise<SmsInvitePart[]>;
+  sendPacket?(address: string, data: Uint8Array, piece: number, sim: number): Promise<boolean>;
+  smsPackets?(): Promise<SmsPacketPart[]>;
+  forgetPackets?(ns: number[]): Promise<void>;
   scheduleLater?(id: string, to: string, text: string, sim: number, at: number): Promise<void>;
   cancelLater?(id: string): Promise<boolean>;
   laterState?(ids: string[]): Promise<Record<string, LaterSmsState>>;
@@ -158,6 +166,30 @@ export function contactNames(numbers: string[]): Promise<Record<string, string>>
 export function sendSmsData(address: string, data: Uint8Array): Promise<void> {
   if (!native) return Promise.reject(new Error('This app was built without SMS.'));
   return native.sendData(address, data);
+}
+
+/** Whether this build can send and take encrypted messages by SMS (lib/sms-way.ts). */
+export function smsPacketsReady(): boolean {
+  return typeof native?.sendPacket === 'function';
+}
+
+/**
+ * Sends the pieces of an encrypted message as data SMS to Erevos's SMS port, `data` holding them
+ * one after the other, each `piece` bytes but the last, on a SIM (-1: the phone's default).
+ * True once the phone said each went.
+ */
+export function sendSmsPacket(address: string, data: Uint8Array, piece: number, sim = -1): Promise<boolean> {
+  return native?.sendPacket ? native.sendPacket(address, data, piece, sim) : notInBuild();
+}
+
+/** The pieces of encrypted messages that came by SMS and are kept until forgotten, oldest first. */
+export function smsPacketParts(): Promise<SmsPacketPart[]> {
+  return native?.smsPackets ? native.smsPackets() : Promise.resolve([]);
+}
+
+/** Forgets pieces kept: put together, or never to be. */
+export function forgetSmsPacketParts(ns: number[]): Promise<void> {
+  return native?.forgetPackets && ns.length > 0 ? native.forgetPackets(ns) : Promise.resolve();
 }
 
 /** Android's hold on SMS sent for later, or null in a build without it (and with no SMS). */

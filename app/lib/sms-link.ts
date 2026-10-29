@@ -7,7 +7,7 @@ import { canSealOpen, sealOpen, sealPublic } from './core';
 import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
-import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
+import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_SMS_WAY, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
@@ -59,6 +59,32 @@ export class SmsLink {
 
   get invites(): boolean {
     return this.data.invites;
+  }
+
+  /** Whether messages to Erevos contacts with a number go by SMS when nothing else takes them: for all (`all`), and for which besides. */
+  get smsWay(): { all: boolean; some: readonly string[] } {
+    return { all: this.data.smsWay, some: this.data.smsWayFor };
+  }
+
+  /** Whether messages to this contact go by SMS when nothing else takes them. */
+  smsWayOn(identity: string): boolean {
+    return this.data.smsWay || this.data.smsWayFor.includes(identity);
+  }
+
+  /** Lets messages to every contact with a number go by SMS last, or no longer; one by one stays as it was. */
+  setSmsWay(on: boolean): Promise<void> {
+    return this.update((d) => ({ ...d, smsWay: on }));
+  }
+
+  /** Lets messages to one contact go by SMS last, or no longer. False, and nothing changed, when MAX_SMS_WAY are on already. */
+  async setSmsWayFor(identity: string, on: boolean): Promise<boolean> {
+    let done = true;
+    await this.update((d) => {
+      const others = d.smsWayFor.filter((id) => id !== identity);
+      done = !on || others.length < MAX_SMS_WAY;
+      return done ? { ...d, smsWayFor: on ? [...others, identity] : others } : d;
+    });
+    return done;
   }
 
   setInvites(on: boolean): Promise<void> {

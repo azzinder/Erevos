@@ -7,7 +7,7 @@ import { takeCall } from '../lib/call-handoff';
 import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
-import { nearby, TooLargeForLoraError, type Delivery } from '../lib/nearby';
+import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery } from '../lib/nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
@@ -110,6 +110,7 @@ import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } f
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
+import { MAX_SMS_WAY } from '../lock/sms-data';
 import type { ChatNotify } from '../lock/chat-notify';
 import { moveChat } from '../lock/move-chat';
 import { ownSpaceKey, SamePasswordError } from '../lock/config';
@@ -164,7 +165,7 @@ import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openN
 import { nostrReady, readNostr } from '../lib/nostr';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
-import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
 import { placeChats } from '../lib/place-chats';
@@ -177,7 +178,7 @@ import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
 import { ChatTheme } from '../theme/chat-theme';
 import { callAudio } from '../modules/erevos-call';
-import { sendSms, type SmsMessage } from '../modules/erevos-sms';
+import { sendSms, smsPacketsReady, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
@@ -1420,8 +1421,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     if (!link) nearby.dropHeld(packet);
-    if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
-    handle(received, nostr, link ? 'nearby' : undefined);
+    if (received.kind === 'message' && link && link !== SMS_LINK) nearby.heardOn(received.identity, link);
+    handle(received, nostr, link === SMS_LINK ? 'sms' : link ? 'nearby' : undefined);
     await sendReceipts(relayTarget());
   };
 
@@ -2904,7 +2905,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         : nostrOnlyWay(chats, identity, sealed, packets);
     const all = sealed.first ? [sealed.first, ...packets] : packets;
     const carry = carried ? () => carriedFor(sealed, all, { url: relayUrl, key: ownRelayKey }, sentMark(sealed, mark)) : null;
-    // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts).
+    // What is worth carrying is worth LoRa's air time too, when it is small (lib/lora.ts), and,
+    // when nothing else took it, an SMS, where the owner turned that on (lib/sms-way.ts).
     return chats.copiesAfter(sealed.copies, nearby.deliver(identity, all, relay, carry, carried), waits);
   }
 
@@ -3009,6 +3011,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (m.route === 'relay') return m.mine ? t('Went through the relay.') : t('Came through the relay.');
     if (m.route === 'nearby') return m.mine ? t('Went to their phone nearby.') : t('Came from a phone nearby.');
     if (m.route === 'lora') return t('Went over LoRa.');
+    if (m.route === 'sms') return m.mine ? t('Went by SMS, end-to-end encrypted.') : t('Came by SMS, end-to-end encrypted.');
     if (m.route === 'carried') return t('Went to the phones nearby, which carry it to their relay.');
     if (m.route === 'spread') return t('Went to the phones nearby, in case theirs is one of them.');
     return undefined;
@@ -3018,6 +3021,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (way === 'nearby') return t('{what} nearby, end-to-end encrypted.', { what });
     if (way === 'relay') return t('{what} through the relay, end-to-end encrypted.', { what });
     if (way === 'nostr') return t('{what} through Nostr, end-to-end encrypted.', { what });
+    if (way === 'sms') {
+      return t("{what} by SMS, end-to-end encrypted, as nothing else could take it. The phone company sees that you wrote to {name}'s number, and when, as with any SMS.", { what, name });
+    }
     if (way === 'lora') {
       return t("{what} over LoRa, end-to-end encrypted, as the relay could not be reached. It comes if {name}'s Erevos has a radio on the same mesh, within reach.", { what, name });
     }
@@ -3055,8 +3061,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // when it has to wait. Given `content`, it sends
   // that instead, a sticker, a place or a poll with its words (its emoji, where it is, or what it
   // asks), or words forwarded, and what is typed stays; with `to`, to that chat, not the one shown.
-  // When only LoRa can take it, and it is too much for LoRa with its link's preview, the words go
-  // without the preview rather than wait.
+  // When only LoRa or SMS can take it, and it is too much for them with its link's preview, the
+  // words go without the preview rather than wait.
   async function send(lasts = vanishing ? vanishFor : 0, quiet = false, content?: Content & { text: string }, to = selected) {
     if (!content && editing && editing.peer === to) {
       await sendEdit(editing);
@@ -3097,8 +3103,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       let bare = false;
       const { tag, timer, way } = await sendToContact(relayTarget(), identity, text, extra, true).catch((error: unknown) => {
-        if (!(error instanceof TooLargeForLoraError) || !carried.preview) throw error;
-        // Sealed anew without it, for LoRa only: the relay just failed.
+        if (!(error instanceof TooLargeForSlowWayError) || !carried.preview) throw error;
+        // Sealed anew without it, for LoRa or SMS only: the relay just failed.
         bare = true;
         return sendToContact(null, identity, text, { ...extra, more: withoutPreview(carried) }, true);
       });
@@ -3106,7 +3112,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       addMessage(to, text, true, tag, timer, undefined, undefined, 0, Date.now(), { ...(bare ? { ...answer, ...withoutPreview(carried) } : parts), ...wayParts(way) });
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
       const said = timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent;
-      setNote(bare ? `${said} ${t('It went without the link’s preview, which is too much for LoRa.')}` : said);
+      const without = way === 'sms' ? t('It went without the link’s preview, which is too much for SMS.') : t('It went without the link’s preview, which is too much for LoRa.');
+      setNote(bare ? `${said} ${without}` : said);
     } catch (error) {
       shown();
       if (error instanceof OwedError && e2e) {
@@ -3201,7 +3208,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function waitingReason(error: unknown, peer: string, lora: string): string {
     // Hidden chats go through the relay only, or Nostr, which says why it could not take it.
     if (hiddenKey) return relayTarget() ? t('The relay cannot be reached.') : error instanceof RelayUnreachableError ? error.message : t('There is no relay.');
-    if (error instanceof TooLargeForLoraError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
+    if (error instanceof TooLargeForSmsError) return `${t('It is too long for SMS.')} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
+    if (error instanceof TooLargeForSlowWayError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
     const name = label(peer, contacts);
     return relayTarget()
       ? t("The relay cannot be reached, and {name}'s phone is not near.", { name })
@@ -4152,6 +4160,31 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (kept && !(await opensChat(pin, kept))) return false;
     setUnlocked(peer);
     return true;
+  }
+
+  // SMS when nothing else works, for one contact (lib/sms-way.ts): kept with the space's SMS state.
+  async function changeSmsWay(peer: string, on: boolean) {
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    try {
+      const link = await spaceSmsLink();
+      await link.refresh();
+      if (!on && link.smsWay.all) {
+        setNote(t('SMS is on for every contact with a number. Turn it off in Settings → Phone and SMS → SMS.'));
+        return;
+      }
+      if (!(await link.setSmsWayFor(identity, on))) {
+        setNote(t('SMS can be on for {n} contacts one by one at most. Turn it on for all in Settings → Phone and SMS → SMS.', { n: MAX_SMS_WAY }));
+        return;
+      }
+      setSmsWay(link.smsWay);
+      setNote(
+        on
+          ? t("When nothing else can take a text to {name}, it goes by SMS, end-to-end encrypted. Each SMS costs what your plan says, and the phone company sees that you wrote to their number, and when.", { name: label(peer, shownContacts) })
+          : t('Messages to {name} no longer go by SMS.', { name: label(peer, shownContacts) }),
+      );
+    } catch (error) {
+      setNote(errorText(error));
+    }
   }
 
   async function changeHidden(peer: string, hide: boolean) {
@@ -5168,6 +5201,23 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const selectedLook = contacts.find((c) => c.identity === selectedIdentity)?.look ?? null;
   const selectedLocked = contacts.some((c) => c.identity === selectedIdentity && c.locked);
   const selectedNotify = contacts.find((c) => c.identity === selectedIdentity)?.notify ?? null;
+  // Whom SMS is on for when nothing else works (lib/sms-way.ts), read as the details open.
+  const [smsWay, setSmsWay] = useState<{ all: boolean; some: readonly string[] } | null>(null);
+  const canSmsWay = !hiddenKey && !!linkedPhone && smsPacketsReady();
+  useEffect(() => {
+    if (!details || !canSmsWay) return;
+    let live = true;
+    void spaceSmsLink()
+      .then(async (link) => {
+        await link.refresh();
+        if (live) setSmsWay(link.smsWay);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [details, canSmsWay]);
+  const selectedSmsWay = !!smsWay && !!selectedIdentity && (smsWay.all || smsWay.some.includes(selectedIdentity));
   // A chat opened with its PIN keeps out of screenshots and the recent apps preview, as hidden chats do.
   const pinOpen = shown && !hiddenKey && selectedLocked && !gated;
   useEffect(() => {
@@ -5429,6 +5479,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           <>
                             <View style={styles.rule} />
                             <DetailRow title={t('Notifications')} value={notifyValue(selectedNotify, !!hiddenKey)} onPress={() => setNotifying(true)} />
+                          </>
+                        ) : null}
+                        {canSmsWay && smsWay ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('SMS when nothing else works')} checked={selectedSmsWay} onPress={() => void changeSmsWay(selectedContact, !selectedSmsWay)} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {t('Texts go by SMS to their number, end-to-end encrypted, only when the relay, Nostr, the phones nearby and LoRa all fail. Each costs SMS, and the phone company sees who wrote to whom, and when. Both phones need Erevos as the SMS app.')}
+                            </Text>
                           </>
                         ) : null}
                         <View style={styles.rule} />

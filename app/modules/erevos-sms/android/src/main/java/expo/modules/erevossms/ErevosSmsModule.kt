@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -57,7 +58,7 @@ class ErevosSmsModule : Module() {
 
   override fun definition() = ModuleDefinition {
     Name("ErevosSms")
-    Events("onSms", "onSmsSent", "onSmsDelivered", "onSmsLaterSent", "onInvite", "onSmsChanged")
+    Events("onSms", "onSmsSent", "onSmsDelivered", "onSmsLaterSent", "onInvite", "onSmsChanged", "onSmsPacket")
 
     OnCreate {
       SmsStore.listener = { name, body -> main.post { sendEvent(name, body) } }
@@ -111,6 +112,12 @@ class ErevosSmsModule : Module() {
     AsyncFunction("contactNames") { numbers: List<String> -> SmsStore.contactNames(context(), numbers) }
     AsyncFunction("sendData") { address: String, data: ByteArray -> SmsStore.sendData(context(), address, data) }
     AsyncFunction("takeInvites") { SmsStore.takeInvites(context()) }
+    // Encrypted messages by SMS when nothing else takes them (lib/sms-way.ts).
+    AsyncFunction("sendPacket") { address: String, data: ByteArray, piece: Int, sim: Int, promise: Promise ->
+      SmsStore.sendPacket(context(), address, data, piece, sim) { went -> promise.resolve(went) }
+    }
+    AsyncFunction("smsPackets") { SmsStore.smsPackets(context()) }
+    AsyncFunction("forgetPackets") { ns: List<Double> -> SmsStore.forgetPackets(context(), ns) }
     // SMS sent for later, held by Android until their time (LaterSms.kt).
     AsyncFunction("scheduleLater") { id: String, to: String, text: String, sim: Int, at: Double ->
       LaterSms.schedule(context(), id, to, text, sim, at.toLong())

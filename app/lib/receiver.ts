@@ -7,7 +7,7 @@ import { contentOf } from './chat-parts';
 import { canRelaySeal, hasCore } from './core';
 import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
 import { sendCopies } from './fanout';
-import { nearby } from './nearby';
+import { nearby, SMS_LINK } from './nearby';
 import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
 import { keepOffer, offerOf } from './relay-offer';
@@ -390,9 +390,9 @@ export function startReceiver(every?: number): () => void {
 }
 
 /**
- * Opens a packet from a phone nearby, on `link`, or one kept for this space (null): in the chat
- * screen while it takes them, otherwise here, as one from the relay. One for none of the space's
- * chats is kept for the others.
+ * Opens a packet from a phone nearby, on `link`, one that came by SMS (SMS_LINK, lib/sms-way.ts),
+ * or one kept for this space (null): in the chat screen while it takes them, otherwise here, as
+ * one from the relay. One for none of the space's chats is kept for the others.
  */
 export function openNearby(link: string | null, packet: Uint8Array): Promise<void> {
   const next = nearbyTurn.catch(() => undefined).then(() => (nearbyTaker ? nearbyTaker(link, packet) : openHere(link, packet)));
@@ -451,9 +451,9 @@ async function openHere(link: string | null, packet: Uint8Array, nostr = false):
     return;
   }
   if (!link) nearby.dropHeld(packet);
-  if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
+  if (received.kind === 'message' && link && link !== SMS_LINK) nearby.heardOn(received.identity, link);
   const came = cameBefore(chats, received);
-  const changed = await keep(chats, received, nearbyState, nostr, link ? 'nearby' : undefined);
+  const changed = await keep(chats, received, nearbyState, nostr, link === SMS_LINK ? 'sms' : link ? 'nearby' : undefined);
   if (came) {
     messageListeners.forEach((listener) => listener(came));
     if (came.group) await takeGroupSignal(came.identity, came.group, came.request).catch(() => undefined);

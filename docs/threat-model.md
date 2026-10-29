@@ -28,6 +28,18 @@ Notes:
   Wi-Fi Aware publishes the service `erevos`, the same Wi-Fi gets UDP broadcasts `EVL1 …` on port
   47905, and Wi-Fi Direct announces `_erevos._tcp`. The nonce in them is new at each start. A LoRa
   radio can be heard kilometres away, and its signal traced.
+- **SMS when nothing else works** (Android, off unless turned on, for one contact or for all):
+  a text or a delete to a contact whose phone number is linked, that the relay, Nostr, the phones
+  nearby and LoRa did not take, goes as data SMS to Erevos's SMS port, the same end-to-end
+  encrypted packets as through the relay (`app/lib/sms-packets.ts`). The phone company sees which
+  number wrote to which, when, and how many SMS (3 for a short text, at most 10), never the words;
+  from the port it can tell that both phones run Erevos. The phone that gets them keeps the pieces
+  in the app's own storage, outside the space, with the sender's number, until they are put
+  together and opened (two hours at most). Whoever can send data SMS to the port can fill that
+  store (96 pieces at most, 32 from one number) and so drop a message still coming in pieces, or
+  spoil one by a piece of their own with its id, but cannot get anything opened that the contact
+  did not seal, nor one opened twice. Marks go back through the relay or Nostr only. Hidden chats
+  never use it.
 - **The Android app uses no push service.** It waits at the relay itself.
 - **Tor** is on Android only, per space, and carries only relay and Nostr relay connections. Calls,
   through the call relay or direct, never go through Tor. Link previews are not made while Tor is

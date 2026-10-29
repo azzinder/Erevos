@@ -78,8 +78,8 @@ export type Kept = [
 type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route };
 
 /** The way a message went or came, as the phone knew it (lib/nearby.ts Delivery): this phone only. */
-export type Route = 'relay' | 'nearby' | 'spread' | 'carried' | 'lora';
-const ROUTES: readonly string[] = ['relay', 'nearby', 'spread', 'carried', 'lora'];
+export type Route = 'relay' | 'nearby' | 'spread' | 'carried' | 'lora' | 'sms';
+const ROUTES: readonly string[] = ['relay', 'nearby', 'spread', 'carried', 'lora', 'sms'];
 export const isRoute = (v: unknown): v is Route => typeof v === 'string' && ROUTES.includes(v);
 
 /** Each chat's messages, oldest first. */

@@ -1241,6 +1241,8 @@ Kad pošaljete poruku, Erevos sam bira put:
 4. **I preko LoRa veze,** kad je postavljen radio, a relay nije mogao preuzeti tekst, kao u [Preko LoRa
    radija](#lora). Ako nema nikakvog puta, poruka čeka, označena s **Na čekanju**, i odlazi sama čim se put pojavi,
    kao u [Poslano, stiglo i pročitano](#relay); linija ispod razgovora kaže zašto.
+5. **I SMS-om,** na samom kraju, kad ste ga uključili za taj kontakt i ništa drugo nije prenijelo tekst, kao u
+   [SMS](#sms).
 
 Svaki put je šifriran s kraja na kraj: nijedan relay ni telefon između ne može pročitati ono što šaljete.
 
@@ -1251,8 +1253,10 @@ Svaki put je šifriran s kraja na kraj: nijedan relay ni telefon između ne mož
 | **Poslano Erevos telefonima u blizini, šifrirano s kraja na kraj, jer relay nije dostupan.** | Stiže samo ako je jedan od njih telefon te osobe: sačekajte **✓✓** ili provjerite relay. |
 | **… Ako njegov telefon nije među njima, oni poruku predaju njegovom relayu kad dođu do interneta, a isto radi i ovaj telefon.** | Ništa: stiže kad jedan od njih, ili ovaj telefon, dođe do interneta. Sačekajte **✓✓**. |
 | **Poslano preko LoRa veze, šifrirano s kraja na kraj, jer relay nije dostupan.** | Stiže ako Erevos te osobe ima radio na istoj mesh mreži, u dometu: sačekajte **✓✓** ili provjerite relay. |
+| **Poslano SMS-om, šifrirano s kraja na kraj, jer ništa drugo nije moglo.** | Ništa: košta SMS, a mobilni operater vidi da ste pisali na njihov broj. **✓✓** stiže čim relay ili Nostr budu dostupni. |
 | **Na čekanju. Relay nije dostupan (ili Nema relaya), a telefon te osobe nije u blizini.** | Ništa: odlazi sama čim je relay ili telefon te osobe u blizini može preuzeti, a tada prikazuje **✓**. Bez relaya upišite njegovu adresu, kao u [Razgovor preko relaya](#relay), ili priđite telefonu te osobe. |
 | **Na čekanju. Preduga je za LoRa vezu.** | Ništa: odlazi čim je relay ili telefon te osobe u blizini može preuzeti. Ili je pošaljite u kraćim dijelovima. |
+| **Na čekanju. Preduga je za SMS.** | Ništa: ide čim je relay ili njihov telefon u blizini može prenijeti. Ili je pošaljite u kraćim dijelovima. |
 | **Nije poslano. Relay više nema red ovog kontakta.** | Zamolite tu osobu da vam piše ili da vam da svoj novi link za kontakt. |
 | **Ova verzija ne može šifrirati, pa su razgovori preko relaya isključeni.** | Ponovo izgradite aplikaciju: ova verzija je starija od svog šifriranja. |
 
@@ -1744,6 +1748,33 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   brojeve. Erevos ih samo čita da bi ih prikazao i ne čuva nikakvu kopiju.
 - **Pošiljaoci s imenom:** SMS od imena umjesto broja, kao od banke, otvara se za čitanje, ali se na njega ne može
   odgovoriti.
+
+### Šifrirani SMS kad ništa drugo ne radi
+
+Kad relay, Nostr, telefoni u blizini i LoRa svi zakažu, tekst Erevos kontaktu s povezanim brojem može ići SMS-om,
+šifrirano s kraja na kraj kao svaka Erevos poruka. Isključeno je dok ga ne uključite: za sve takve kontakte pod
+**Postavke** → **Telefon i SMS** → **SMS** → **SMS kad ništa drugo ne radi** (**Uključi za sve kontakte**), ili za
+jedan u **Detaljima** njegovog razgovora → **SMS kad ništa drugo ne radi**.
+
+- **Koliko košta:** svaki SMS košta koliko kaže vaša tarifa. Kratak tekst zauzima 3 SMS-a, duži do 10; u inostranstvu
+  SMS može koštati mnogo više.
+- **Šta vidi mobilni operater:** koji je broj pisao kojem, kada i koliko SMS-ova, kao kod svakog SMS-a; nikad šta je
+  napisano, jer to ide kao ista šifrirana poruka koju bi nosio relay.
+- **Šta ide:** samo tekstovi i brisanja. Ne fotografije, datoteke, glasovne poruke, pozivi, reakcije ni oznake da je
+  poruka stigla ili pročitana, ni tekstovi duži od oko 800 latiničnih slova (400 grčkih), ni prva poruka novom
+  kontaktu, koja nosi ključeve. Te čekaju, označene **Na čekanju**, kao u [Kako Erevos bira put](#paths). Skriveni
+  razgovori nikad ne idu SMS-om.
+- **Oba telefona** trebaju Erevos kao SMS aplikaciju, i broj kontakta povezan s njegovim razgovorom. Ti SMS-ovi su
+  skriveni podatkovni SMS-ovi za Erevos, koje nijedna SMS aplikacija ne prikazuje, i ništa od njih ne ostaje u SMS
+  porukama telefona.
+- **Kojim je putem išla:** držite poruku: njen meni kaže **Poslano SMS-om** ili **Stiglo SMS-om**. **✓✓** stiže čim
+  relay ili Nostr ponovo budu dostupni: nijedan SMS se ne vraća sam od sebe.
+
+**Zašto:** SMS stiže do telefona bez ikakvog interneta, gdje god postoji mobilna mreža. Ali košta i govori mobilnom
+operateru ko s kim razgovara, što Erevos inače skriva; zato je SMS posljednji put, i samo kad ga vi izaberete.
+
+> Uključite ga samo za one do kojih morate doći ovako. Mobilni operater, i svako ko vidi njegove zapise, zna iz ovih
+> SMS-ova da vaša dva broja razgovaraju, i kada.
 
 ### Održavanje reda u SMS porukama
 
@@ -2802,6 +2833,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Poruke telefonu u blizini** | Šifrirane s kraja na kraj, isto kao preko relaya. Onaj ko prisluškuje u blizini može saznati da su Erevos telefoni blizu jedan drugog, te kada i koliko šalju; na istoj Wi-Fi mreži to može svako na njoj, a preko Wi-Fi Directa svako ko se pridruži vlastitoj Wi-Fi mreži telefona. Dok telefon vašeg kontakta nije poznat, drugi Erevos telefoni povezani u blizini dobijaju vaše kratke poruke, zapečaćene. | |
 | **Poruke koje prenose drugi telefoni** | Zapečaćene dvaput: s kraja na kraj za vaš kontakt, i za njegov relay. Telefon koji prenosi poruku vidi na koji relay ide, kada i koliko je velika; ne vidi od koga je ni za koga. Njegov relay vidi na koji relay ide, a taj relay vidi relay prenosioca, ali ne i njegov telefon. Čuvaju se zapečaćene na telefonu, najviše tri dana: one za druge u datoteci telefona, čija veličina otprilike pokazuje koliko ih ima; vaše vlastite u vašem prostoru, zapečaćene njegovim ključem. Skriveni razgovori se nikad ne prenose. | |
 | **Poruke preko LoRa veze** | Šifrirane s kraja na kraj, isto kao preko relaya. Svako s radiom, kilometrima daleko, može saznati da vaš radio šalje, kada i koliko, a njegov signal može se pratiti do mjesta gdje se nalazi. Erevos sprječava da vaš radio javlja svoje ime i lokaciju (uloga Client hidden, GPS isključen, bez fiksne pozicije) osim ako mu to ne dozvolite; i dalje odgovara radiju koji pita za njegovo ime. Svaki Erevos na mesh mreži dobija vaše LoRa poruke, zapečaćene. | Postavljanje imena radija iz Erevosa. |
+| **Poruke SMS-om, kad ništa drugo ne radi** | Šifrirano s kraja na kraj, isto kao preko relaya, u skrivenim podatkovnim SMS-ovima. Isključeno dok ga ne uključite. Mobilni operater vidi koji je broj pisao kojem, kada i koliko SMS-ova; nikad šta je napisano. Svaki košta koliko jedan SMS. | |
 | **Ko s kim razgovara** | Relay vidi IP adrese, identifikatore redova, te kada i koliko. S drugim relayem vaš relay nikad ne vidi vašu adresu. S mjesta posuđenog na relayu kontakta vidi je svaki relay kojem šaljete. [Preko Tora](#tor), koji prenosi poruke ako to ne promijenite, nijedan relay je ne vidi za ono što pišete, a sa **Sve** ni za slike i datoteke; s mostovima, tamo gdje je Tor blokiran, mreža vidi samo most. Snowflakeov posrednik i STUN serveri vide vašu adresu. | Tor na računaru. |
 | **Veza s relayem** | TLS, a unutar njega, kad je ključ relaya poznat, kanal do tog ključa: relay pri svakoj vezi dokazuje da ga ima, a token i svaki zahtjev idu šifrirani za njega, pa neko između s certifikatom za ime relaya ne može da se predstavi kao relay. Relayu koji je jednom dokazao svoj ključ nikad se više ne pristupa bez njega. Relay stariji od ove aplikacije radi kao i prije, a **Kako ste sada povezani** to kaže. Prvi ključ dolazi od relaya prvi put kad ga se pita, ili iz linka za kontakt: onaj ko je između upravo tog prvog puta mogao bi dati svoj. [Vlastiti ključ relaya](#relay). Nije nezavisno provjereno. | Ključ našeg relaya ugrađen u aplikaciju i u pozivnice. |
 | **Tekstovi preko Nostra** | Šifrirani s kraja na kraj kao preko relaya, zatim još jednom umotani za ključ koji je vaš kontakt dao samo tom razgovoru, potpisani ključem napravljenim samo za taj tekst. Nostr relayi vide kada i koliko je veliko, i da ključ koji ne imenuje nikoga dobija tekst; vaš telefon čita sve svoje ključeve na jednoj vezi, preko Tora, pa relay može saznati da se čitaju zajedno, ali nikad odakle. Vaš relay ih vidi samo kao rezervu, i zvono za skrivene razgovore. [Preko Nostra](#nostr). | Slike i glasovne poruke preko Nostra. |

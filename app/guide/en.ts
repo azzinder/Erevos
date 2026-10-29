@@ -1182,6 +1182,8 @@ When you send a message, Erevos picks the path by itself:
 4. **And over LoRa,** when a radio is set and the relay could not take a text, as in [Over a LoRa radio](#lora). With
    no way at all, the message waits, marked **Waiting**, and goes by itself once there is one, as in
    [Sent, came and read](#relay); a line under the chat says why.
+5. **And by SMS,** last of all, when you turned it on for that contact and nothing else took a text, as in
+   [SMS](#sms).
 
 Every path is end-to-end encrypted: no relay and no phone in between can read what you send.
 
@@ -1192,8 +1194,10 @@ Every path is end-to-end encrypted: no relay and no phone in between can read wh
 | **Sent to the Erevos phones nearby, end-to-end encrypted, as the relay could not be reached.** | It comes only if one of them is theirs: wait for **✓✓**, or check the relay. |
 | **… If their phone is not one of them, they hand it to their relay once they reach the internet, and so does this phone.** | Nothing: it comes once one of them, or this phone, reaches the internet. Wait for **✓✓**. |
 | **Sent over LoRa, end-to-end encrypted, as the relay could not be reached.** | It comes if their Erevos has a radio on the same mesh, within reach: wait for **✓✓**, or check the relay. |
+| **Sent by SMS, end-to-end encrypted, as nothing else could take it.** | Nothing: it costs SMS, and the phone company sees that you wrote to their number. **✓✓** comes once the relay or Nostr can be reached. |
 | **Waiting. The relay cannot be reached (or There is no relay), and their phone is not near.** | Nothing: it goes by itself once the relay or their phone nearby can take it, and then shows **✓**. Without a relay, fill in its address, as in [Chat through a relay](#relay), or come near their phone. |
 | **Waiting. It is too long for LoRa.** | Nothing: it goes once the relay or their phone nearby can take it. Or send it in shorter parts. |
+| **Waiting. It is too long for SMS.** | Nothing: it goes once the relay or their phone nearby can take it. Or send it in shorter parts. |
 | **Not sent. The relay does not have this contact's queue any more.** | Ask them to write to you, or for their new contact link. |
 | **This build cannot encrypt, so chats through the relay are off.** | Build the app again: this build is older than its encryption. |
 
@@ -1669,6 +1673,32 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   only reads them to show them, and keeps no copy.
 - **Senders with a name:** an SMS from a name instead of a number, like a bank's, opens to read, but cannot be
   answered.
+
+### Encrypted SMS when nothing else works
+
+When the relay, Nostr, the phones nearby and LoRa all fail, a text to an Erevos contact whose number is linked can go
+by SMS instead, end-to-end encrypted like any Erevos message. It is off unless you turn it on: for all such contacts
+under **Settings** → **Phone and SMS** → **SMS** → **SMS when nothing else works** (**Turn on for all contacts**), or
+for one in their chat's **Details** → **SMS when nothing else works**.
+
+- **What it costs:** each SMS costs what your plan says. A short text takes 3 SMS, a longer one up to 10; abroad an
+  SMS can cost much more.
+- **What the phone company sees:** which number wrote to which, when, and how many SMS, as with any SMS; never what
+  was written, which goes as the same encrypted message the relay would have carried.
+- **What goes:** only texts and deletes. Not photos, files, voice messages, calls, reactions or the marks that a
+  message came or was read, nor texts longer than about 800 Latin letters (400 Greek ones), nor the very first message
+  to a new contact, which holds the keys. Those wait, marked **Waiting**, as in [How Erevos picks the path](#paths).
+  Hidden chats never go by SMS.
+- **Both phones** need Erevos as the SMS app, and the contact's number linked to their chat. The SMS are hidden data
+  SMS for Erevos, which no SMS app shows, and nothing of them is kept in the phone's SMS.
+- **Which way it went:** hold the message: its menu says **Went by SMS** or **Came by SMS**. **✓✓** comes once the
+  relay or Nostr can be reached again: no SMS goes back by itself.
+
+**Why:** SMS reach a phone with no internet at all, wherever there is a mobile network. But they cost money and tell
+the phone company who talks to whom, which Erevos otherwise hides, so SMS is the last way, and only when you choose it.
+
+> Turn it on only for those you need to reach this way. The phone company, and anyone who can see its records, can
+> tell from these SMS that your two numbers talk, and when.
 
 ### Keeping the SMS in order
 
@@ -2674,6 +2704,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Messages to a nearby phone** | End-to-end encrypted, the same as through the relay. Whoever listens nearby can tell that Erevos phones are near each other, and when and how much they send; on the same Wi-Fi, so can anyone on it, and over Wi-Fi Direct anyone who joins the phones' own Wi-Fi. Until your contact's phone is known, the other Erevos phones linked nearby get your short messages, sealed. | |
 | **Messages carried by other phones** | Sealed twice: end-to-end for your contact, and for their relay. A phone that carries one sees which relay it goes to, when, and how big; not who it is from or for. Its relay sees which relay it goes to, and that relay sees the carrier's relay, not its phone. Kept sealed on the phone, three days at most: those for others in a file of the phone's, whose size shows roughly how many; your own in your space, sealed with its key. Hidden chats are never carried. | |
 | **Messages over LoRa** | End-to-end encrypted, the same as through the relay. Anyone with a radio, kilometres away, can tell that yours sends, when and how much, and its signal can be traced to where it is. Erevos keeps your radio from saying its name and where it is (role Client hidden, GPS off, no fixed position) unless you let it; it still answers a radio that asks its name. Every Erevos on the mesh gets your LoRa messages, sealed. | Setting the radio's name from Erevos. |
+| **Messages by SMS, when nothing else works** | End-to-end encrypted, the same as through the relay, in hidden data SMS. Off unless you turn it on. The phone company sees which number wrote to which, when, and how many SMS; never what was written. Each costs what an SMS costs. | |
 | **Who talks to whom** | The relay sees IP addresses, queue ids, and when and how much. With a second relay, your relay never sees your address. From a place lent on a contact's relay, every relay you send to sees it. [Through Tor](#tor), which carries messages unless you change it, no relay sees it for what you write, and with **Everything** for pictures and files too; with bridges, for where Tor is blocked, the network sees only a bridge. Snowflake's broker and STUN servers see your address. | Tor on a computer. |
 | **The connection to the relay** | TLS, and inside it, once the relay's key is known, a channel to that key: the relay proves it holds it on every connection, and the token and every request go encrypted to it, so someone in between with a certificate for the relay's name cannot pass for it. A relay that proved its key once is never reached without it again. A relay older than this app goes as before, and **How you connect now** says so. The first key comes from the relay the first time it is asked, or from a contact link: whoever is in between that very first time could give one of their own. [The relay's own key](#relay). Not audited. | Our relay's key built into the app, and in invites. |
 | **Texts through Nostr** | End-to-end encrypted as through a relay, then wrapped once more for a key your contact gave that chat alone, signed by a key made for that text alone. The Nostr relays see when and how big, and that a key that names no one gets a text; your phone reads all its keys on one connection, through Tor, so a relay can tell they are read together, never from where. Your relay sees them only as the backup, and a bell for hidden chats. [Through Nostr](#nostr). | Pictures and voice messages through Nostr. |

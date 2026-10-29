@@ -19,6 +19,12 @@ not been compiled yet.
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.
+- **Encrypted messages by SMS.** On the same port, told from an invite by the first byte (`P`):
+  pieces of end-to-end encrypted messages sent when nothing else works (`lib/sms-way.ts`, format in
+  `lib/sms-packets.ts`). `sendPacket()` sends a message's pieces and says whether the phone sent
+  them all; pieces that come are kept in the app's preferences (96 at most, 32 from one number, two
+  hours) until `forgetPackets()` drops them, `smsPackets()` reads them, and `onSmsPacket` says one
+  came. Nothing is logged, and nothing goes into the phone's SMS.
 - **Deleting and sending again.** As the default app, `deleteThread()` deletes a conversation's SMS
   and MMS up to a time (the space's Trash, `lib/sms-folders.ts`), `deleteMessages()` single ones,
   and `resend()` sends one of ours that failed again, in place of the old row.

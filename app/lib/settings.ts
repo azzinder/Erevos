@@ -158,6 +158,7 @@ export const SETTINGS: SettingsGroup[] = [
         parts: [
           { id: 'app', title: mark('Erevos as the SMS app'), detail: mark('Making it the SMS app, and what Android allows it'), href: '/sms-settings?part=app' },
           { id: 'find', title: mark('Find Erevos on a number'), detail: mark('A hidden invite with the first SMS to a number'), href: '/sms-settings?part=find' },
+          { id: 'last', title: mark('SMS when nothing else works'), detail: mark('Texts to Erevos contacts by SMS, encrypted: off unless turned on'), href: '/sms-settings?part=last' },
           { id: 'names', title: mark('Names from your contacts'), detail: mark('Names and pictures in place of numbers'), href: '/sms-settings?part=names' },
           { id: 'folders', title: mark('Archived, Spam and Trash'), detail: mark("This space's own folders of SMS conversations"), href: '/sms-settings?part=folders' },
           { id: 'spam', title: mark('Spam filter'), detail: mark('Its rules, your words, senders, numbers from abroad'), href: '/sms-settings?part=spam' },

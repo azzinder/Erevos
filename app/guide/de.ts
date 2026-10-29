@@ -1379,6 +1379,8 @@ Wenn du eine Nachricht sendest, wählt Erevos den Weg von selbst:
 4. **Und über LoRa,** wenn ein Funkgerät eingestellt ist und das Relay einen Text nicht annehmen konnte, wie in
    [Über LoRa-Funk](#lora). Gibt es gar keinen Weg, wartet die Nachricht, als **Wartet** markiert, und geht von selbst,
    sobald es einen gibt, wie in [Gesendet, angekommen und gelesen](#relay); eine Zeile unter dem Chat sagt, warum.
+5. **Und per SMS,** als Letztes, wenn du es für diesen Kontakt eingeschaltet hast und sonst nichts einen Text
+   genommen hat, wie in [SMS](#sms).
 
 Jeder Weg ist Ende-zu-Ende-verschlüsselt: Kein Relay und kein Telefon dazwischen kann lesen, was du sendest.
 
@@ -1389,8 +1391,10 @@ Jeder Weg ist Ende-zu-Ende-verschlüsselt: Kein Relay und kein Telefon dazwische
 | **Gesendet: an die Erevos-Telefone in der Nähe, Ende-zu-Ende-verschlüsselt, weil das Relay nicht erreichbar war.** | Sie kommt nur an, wenn eines davon das des Kontakts ist: Warte auf **✓✓** oder prüfe das Relay. |
 | **… Ist das Telefon des Kontakts nicht dabei, geben sie sie an sein Relay weiter, sobald sie ins Internet kommen, und dieses Telefon ebenso.** | Nichts: Sie kommt an, sobald eines davon, oder dieses Telefon, ins Internet kommt. Warte auf **✓✓**. |
 | **Gesendet: über LoRa, Ende-zu-Ende-verschlüsselt, weil das Relay nicht erreichbar war.** | Sie kommt an, wenn das Erevos des Kontakts ein Funkgerät im selben Mesh in Reichweite hat: Warte auf **✓✓** oder prüfe das Relay. |
+| **Per SMS gesendet, Ende-zu-Ende-verschlüsselt, weil sonst nichts sie nehmen konnte.** | Nichts: Das kostet SMS, und der Mobilfunkanbieter sieht, dass du ihrer Nummer geschrieben hast. **✓✓** kommt, sobald Relay oder Nostr erreichbar sind. |
 | **Wartet. Das Relay ist nicht erreichbar (oder Es gibt kein Relay), und das Telefon des Kontakts ist nicht in der Nähe.** | Nichts: Sie geht von selbst, sobald das Relay oder das andere Telefon in der Nähe sie annehmen kann, und zeigt dann **✓**. Ohne Relay trage seine Adresse ein, wie in [Chat über ein Relay](#relay), oder geh in die Nähe des anderen Telefons. |
 | **Wartet. Sie ist zu lang für LoRa.** | Nichts: Sie geht, sobald das Relay oder das andere Telefon in der Nähe sie annehmen kann. Oder sende sie in kürzeren Teilen. |
+| **Wartet. Sie ist zu lang für SMS.** | Nichts: Sie geht, sobald das Relay oder das Telefon in der Nähe sie nehmen kann. Oder schicke sie in kürzeren Teilen. |
 | **Nicht gesendet. Das Relay hat die Warteschlange dieses Kontakts nicht mehr.** | Bitte den Kontakt, dir zu schreiben, oder um seinen neuen Kontaktlink. |
 | **Diese Version kann nicht verschlüsseln, deshalb sind Chats über das Relay aus.** | Baue die App neu: Diese Version ist älter als ihre Verschlüsselung. |
 
@@ -1931,6 +1935,34 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   Tippe erneut auf **Namen**, um nur Nummern zu sehen. Erevos liest sie nur, um sie zu zeigen, und behält keine Kopie.
 - **Absender mit Namen:** Eine SMS von einem Namen statt einer Nummer, etwa von einer Bank, lässt sich zum Lesen
   öffnen, aber nicht beantworten.
+
+### Verschlüsselte SMS, wenn sonst nichts geht
+
+Wenn Relay, Nostr, die Telefone in der Nähe und LoRa alle versagen, kann ein Text an einen Erevos-Kontakt mit
+verknüpfter Nummer stattdessen per SMS gehen, Ende-zu-Ende-verschlüsselt wie jede Erevos-Nachricht. Es ist aus, bis du
+es einschaltest: für alle solchen Kontakte unter **Einstellungen** → **Telefon und SMS** → **SMS** → **SMS, wenn sonst
+nichts geht** (**Für alle Kontakte einschalten**), oder für einen in den **Details** seines Chats → **SMS, wenn sonst
+nichts geht**.
+
+- **Was es kostet:** Jede SMS kostet, was dein Tarif sagt. Ein kurzer Text braucht 3 SMS, ein längerer bis zu 10; im
+  Ausland kann eine SMS viel mehr kosten.
+- **Was der Mobilfunkanbieter sieht:** welche Nummer welcher geschrieben hat, wann und wie viele SMS, wie bei jeder
+  SMS; nie, was geschrieben wurde, denn es geht als dieselbe verschlüsselte Nachricht, die das Relay getragen hätte.
+- **Was geht:** nur Texte und Löschungen. Keine Fotos, Dateien, Sprachnachrichten, Anrufe, Reaktionen oder die
+  Markierungen, dass eine Nachricht ankam oder gelesen wurde, keine Texte über etwa 800 lateinische Buchstaben (400
+  griechische) und nicht die allererste Nachricht an einen neuen Kontakt, die die Schlüssel trägt. Diese warten,
+  markiert mit **Wartet**, wie in [Wie Erevos den Weg wählt](#paths). Versteckte Chats gehen nie per SMS.
+- **Beide Telefone** brauchen Erevos als SMS-App und die Nummer des Kontakts mit seinem Chat verknüpft. Die SMS sind
+  versteckte Daten-SMS für Erevos, die keine SMS-App zeigt, und nichts davon bleibt in den SMS des Telefons.
+- **Welchen Weg sie nahm:** Halte die Nachricht gedrückt: Ihr Menü sagt **Per SMS gesendet** oder **Per SMS gekommen**.
+  **✓✓** kommt, sobald Relay oder Nostr wieder erreichbar sind: Keine SMS geht von selbst zurück.
+
+**Warum:** SMS erreichen ein Telefon ganz ohne Internet, wo immer es ein Mobilfunknetz gibt. Aber sie kosten Geld und
+verraten dem Mobilfunkanbieter, wer mit wem spricht, was Erevos sonst verbirgt; darum ist SMS der letzte Weg, und nur,
+wenn du ihn wählst.
+
+> Schalte es nur für die ein, die du so erreichen musst. Der Mobilfunkanbieter und jeder, der seine Aufzeichnungen
+> sehen kann, erkennt an diesen SMS, dass eure beiden Nummern miteinander sprechen, und wann.
 
 ### Die SMS in Ordnung halten
 
@@ -3094,6 +3126,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Nachrichten an ein Telefon in der Nähe** | Ende-zu-Ende-verschlüsselt, genauso wie über das Relay. Wer in der Nähe mithört, kann erkennen, dass Erevos-Telefone nah beieinander sind und wann und wie viel sie senden; im selben WLAN kann das jeder darin, und über Wi-Fi Direct jeder, der dem eigenen WLAN der Telefone beitritt. Bis das Telefon deines Kontakts bekannt ist, bekommen die anderen in der Nähe verbundenen Erevos-Telefone deine kurzen Nachrichten, versiegelt. | |
 | **Von anderen Telefonen mitgenommene Nachrichten** | Zweimal versiegelt: Ende zu Ende für deinen Kontakt und für sein Relay. Ein Telefon, das eine mitnimmt, sieht, an welches Relay sie geht, wann und wie groß sie ist; nicht, von wem oder für wen sie ist. Sein Relay sieht, an welches Relay sie geht, und jenes Relay sieht das Relay des Überbringers, nicht sein Telefon. Versiegelt auf dem Telefon aufbewahrt, höchstens drei Tage: die für andere in einer Datei des Telefons, deren Größe ungefähr zeigt, wie viele es sind; deine eigenen in deinem Bereich, mit seinem Schlüssel versiegelt. Versteckte Chats werden nie mitgenommen. | |
 | **Nachrichten über LoRa** | Ende-zu-Ende-verschlüsselt, genauso wie über das Relay. Jeder mit einem Funkgerät, kilometerweit entfernt, kann erkennen, dass deines sendet, wann und wie viel, und sein Signal lässt sich bis zu seinem Standort zurückverfolgen. Erevos hält dein Funkgerät davon ab, seinen Namen und seinen Standort zu nennen (Rolle Client hidden, GPS aus, keine feste Position), außer du erlaubst es; einem Funkgerät, das nach seinem Namen fragt, antwortet es trotzdem. Jedes Erevos im Mesh bekommt deine LoRa-Nachrichten, versiegelt. | Den Namen des Funkgeräts aus Erevos festlegen. |
+| **Nachrichten per SMS, wenn sonst nichts geht** | Ende-zu-Ende-verschlüsselt wie über das Relay, in versteckten Daten-SMS. Aus, bis du es einschaltest. Der Mobilfunkanbieter sieht, welche Nummer welcher geschrieben hat, wann und wie viele SMS; nie, was geschrieben wurde. Jede kostet, was eine SMS kostet. | |
 | **Wer mit wem redet** | Das Relay sieht IP-Adressen, Warteschlangen-IDs und wann und wie viel. Mit einem zweiten Relay sieht dein Relay nie deine Adresse. Von einem auf dem Relay eines Kontakts geliehenen Platz aus sieht sie jedes Relay, an das du sendest. [Über Tor](#tor), das Nachrichten trägt, sofern du es nicht änderst, sieht kein Relay sie für das, was du schreibst, und mit **Alles** auch für Bilder und Dateien; mit Brücken, für Orte, an denen Tor blockiert ist, sieht das Netz nur eine Brücke. Der Broker von Snowflake und STUN-Server sehen deine Adresse. | Tor auf einem Computer. |
 | **Die Verbindung zum Relay** | TLS, und darin, sobald der Schlüssel des Relays bekannt ist, ein Kanal zu diesem Schlüssel: Das Relay beweist bei jeder Verbindung, dass es ihn hat, und das Token und jede Anfrage gehen verschlüsselt an ihn, sodass sich jemand dazwischen mit einem Zertifikat für den Namen des Relays nicht als es ausgeben kann. Ein Relay, das seinen Schlüssel einmal bewiesen hat, wird nie wieder ohne ihn erreicht. Ein Relay, das älter ist als diese App, geht wie bisher, und **So bist du jetzt verbunden** sagt es. Der erste Schlüssel kommt beim ersten Fragen vom Relay oder aus einem Kontaktlink: Wer genau bei diesem allerersten Mal dazwischen ist, könnte einen eigenen geben. [Der eigene Schlüssel des Relays](#relay). Nicht geprüft. | Der Schlüssel unseres Relays fest in der App und in Einladungen. |
 | **Texte über Nostr** | Ende-zu-Ende-verschlüsselt wie über ein Relay, dann noch einmal verpackt für einen Schlüssel, den dein Kontakt nur diesem Chat gegeben hat, signiert mit einem nur für diesen Text gemachten Schlüssel. Die Nostr-Relays sehen wann und wie groß, und dass ein Schlüssel, der niemanden nennt, einen Text bekommt; dein Telefon liest all seine Schlüssel über eine Verbindung, über Tor, sodass ein Relay erkennen kann, dass sie zusammen gelesen werden, nie von wo. Dein Relay sieht sie nur als Reserve, und eine Klingel für versteckte Chats. [Über Nostr](#nostr). | Bilder und Sprachnachrichten über Nostr. |
