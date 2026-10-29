@@ -1,7 +1,8 @@
 import { canTorHttp } from './core';
 import { randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
-import { netHttp, type HttpMethod } from './net-http';
+import { cloudRequest } from './backup-http';
+import type { HttpMethod } from './net-http';
 import { throughTor, torFor, waitForTor } from './relay';
 import { secureDelete, secureGet, secureSet } from './secure';
 
@@ -20,7 +21,11 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // through lib/net-http.ts, as Matrix's and the other networks' files do: with Everything only
 // through Tor, and none when Tor cannot reach the server; with Messages through Tor while it is
 // ready, straight when it is not or fails; with Nothing straight. Just after a space opens Tor is
-// still starting, so a backup first waits for it a while (TOR_WAIT_MS).
+// still starting, so a backup first waits for it a while (torWaitMs).
+//
+// On a computer the desktop app sends each request from its shell, as a page may not reach such a
+// server (CORS); the web app reaches only a server that lets it (lib/backup-http.web.ts). Neither
+// has Tor for it: with a space sending Everything through Tor, nothing goes there.
 //
 // A backup there can be put back from the server itself (listCloud, fetchFromCloud): the folder is
 // listed, only the names Erevos gives are shown, newest first, and the one chosen is downloaded
@@ -56,7 +61,7 @@ export type CloudAnswer = { status: number; bytes: Uint8Array };
 /** How a request goes to the server. The checks put a server of their own here. */
 export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<CloudAnswer>;
 
-const viaNet: CloudHttp = (method, url, headers, body) => netHttp(method, url, headers, body);
+const viaNet: CloudHttp = cloudRequest;
 
 let http = viaNet;
 

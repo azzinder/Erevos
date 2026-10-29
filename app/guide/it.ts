@@ -2325,10 +2325,12 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
    uno quando si apre e l’ultimo è più vecchio di così, e la cartella conserva i 3 più recenti. Sotto ci sono **Fai il
    backup ora**, **Cambia cartella** e **Cambia password**; **Disattivato** li ferma, e quelli fatti restano nella
    cartella.
-3. **Anche su un server:** su Android, con i backup automatici attivi, **Aggiungi un server** sotto **Anche su un
-   server** invia ognuno anche in una cartella su un server che scegli tu e che parla WebDAV, come il tuo Nextcloud:
-   dai l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per Erevos, poi tocca
-   **Connetti**. Il server tiene i 3 più recenti; **Smetti di inviare** lo ferma, e quelli che ci sono restano.
+3. **Anche su un server:** su Android e nell’app per computer, con i backup automatici attivi, **Aggiungi un server**
+   sotto **Anche su un server** invia ognuno anche in una cartella su un server che scegli tu e che parla WebDAV, come
+   il tuo Nextcloud: dai l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per Erevos,
+   poi tocca **Connetti**. Il server tiene i 3 più recenti; **Smetti di inviare** lo ferma, e quelli che ci sono
+   restano. Nella web app, che non fa backup da sé, **Invia un backup ora** ne invia uno lì, con una password che
+   scrivi ogni volta.
 4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
    volta, poi mette il backup al posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è
    stato fatto, con le password di allora. **Ripristina da un server** guarda nella cartella in cui vanno i backup
@@ -2349,11 +2351,15 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   tramite Tor, così il server non vede l’indirizzo del telefono; con **Messaggi** tramite Tor appena Tor è pronto, e
   direttamente mentre Tor parte o quando fallisce; con **Niente** direttamente, e il server vede l’indirizzo del
   telefono. Un backup aspetta prima fino a due minuti che Tor parta, e **Anche su un server** dice da dove passa ora.
-  **Ripristina da un server** scarica quello che scegli allo stesso modo, tramite Tor come dice lo spazio, e lì non
-  scrive nulla; una password scritta per questo serve solo a quel ripristino e non viene conservata. Tramite Tor un
-  backup di più di 64 MB non arriva: allora scaricalo dal server e tocca **Ripristina un backup**. Un Erevos
-  precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google lega il file al tuo
-  nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
+  Nell’app per computer li invia l’app stessa, non la sua pagina, perché una pagina non può raggiungere un server
+  così; nella web app li invia il browser, che raggiunge solo un server impostato per far entrare la web app (CORS),
+  cosa che Nextcloud di suo non fa. Nessuna delle due ha Tor per questo: finché uno spazio invia **Tutto** tramite
+  Tor, da lì non ne parte nessuno. Nella web app la password del server è conservata nel browser, sigillata con una
+  chiave che il browser non dà fuori. **Ripristina da un server** scarica quello che scegli allo stesso modo, tramite
+  Tor come dice lo spazio, e lì non scrive nulla; una password scritta per questo serve solo a quel ripristino e non
+  viene conservata. Tramite Tor un backup di più di 64 MB non arriva: allora scaricalo dal server e tocca **Ripristina
+  un backup**. Un Erevos precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google
+  lega il file al tuo nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
   messaggi arrivati dopo il backup e già letti non ci sono, e una chat che è proseguita potrebbe non aprire più i nuovi
   messaggi. Allora chiedi di nuovo al contatto il suo link di contatto. Prima che una chat ripristinata scriva di nuovo,

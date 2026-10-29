@@ -18,6 +18,13 @@
  *                              happened since, waiting a while for something
  *   /__latest                  the latest release's version.json (app/lib/updates.ts), asked for
  *                              here: GitHub's downloads do not answer a page's own requests
+ *   /__webdav?method=&url=     one request to the WebDAV server automatic backups go to, or are
+ *                              restored from (app/lib/backup-cloud.ts), asked for here: such
+ *                              servers do not answer a page's own requests (CORS). Only https,
+ *                              only PROPFIND, PUT, GET and DELETE, only the headers Authorization,
+ *                              Depth and Content-Type, no cookies, no redirects; answers 200 with
+ *                              the server's status in X-Erevos-Status and its body, 502 when it
+ *                              cannot be reached. Nothing of it is logged.
  *   /__window                  the window (app/lib/desktop.ts): GET says whether Erevos keeps
  *                              running when it is closed, PUT ?keep=1 or 0 sets it, PUT ?show=1
  *                              brings it back (a call, a tapped notice), POST gives the words of
@@ -388,6 +395,41 @@ async function latest() {
   }
 }
 
+// What /__webdav sends on, and how much it takes back: a backup, which the app takes up to 200 MB.
+const WEBDAV_METHODS = new Set(['PROPFIND', 'PUT', 'GET', 'DELETE']);
+const WEBDAV_HEADERS = ['authorization', 'depth', 'content-type'];
+const WEBDAV_MOST = 256 * 1024 * 1024;
+
+/** One request to a WebDAV server, for backups (app/lib/backup-cloud.ts); see /__webdav above. */
+async function webdav(request, url) {
+  if (request.method !== 'POST') return new Response('', { status: 405 });
+  const method = url.searchParams.get('method') ?? '';
+  let target;
+  try {
+    target = new URL(url.searchParams.get('url') ?? '');
+  } catch {
+    return new Response('not a web address', { status: 400 });
+  }
+  if (!WEBDAV_METHODS.has(method) || target.protocol !== 'https:' || target.username || target.password) {
+    return new Response('not a request for a backup server', { status: 400 });
+  }
+  const headers = {};
+  for (const name of WEBDAV_HEADERS) {
+    const value = request.headers.get(name);
+    if (value) headers[name] = value;
+  }
+  const body = method === 'PUT' || method === 'PROPFIND' ? Buffer.from(await request.arrayBuffer()) : undefined;
+  try {
+    const answer = await net.fetch(target.href, { method, headers, body, credentials: 'omit', redirect: 'error', cache: 'no-store' });
+    const said = Buffer.from(await answer.arrayBuffer());
+    if (said.length > WEBDAV_MOST) return new Response('the answer is too large', { status: 502 });
+    return new Response(said, { status: 200, headers: { 'X-Erevos-Status': String(answer.status) } });
+  } catch (error) {
+    // Chromium's own words (net::ERR_…), which hold no password: the request's headers are not in them.
+    return new Response(String(error?.message ?? error).slice(0, 200), { status: 502 });
+  }
+}
+
 // Whether Erevos keeps running with its window closed (on unless turned off), and whether it said
 // so the first time it did.
 const windowFile = () => dataPath('window.json');
@@ -489,6 +531,7 @@ function handle(request) {
     if (url.pathname === '/__save') return save(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
     if (url.pathname === '/__latest') return latest();
+    if (url.pathname === '/__webdav') return webdav(request, url);
     if (url.pathname === '/__window') return windowRequest(request, url);
     return new Response('', { status: 404 });
   }

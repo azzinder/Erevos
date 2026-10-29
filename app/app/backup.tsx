@@ -12,6 +12,7 @@ import {
   fetchFromCloud,
   listCloud,
   loadCloudBackup,
+  sendToCloud,
   startCloudBackup,
   stopCloudBackup,
   type CloudBackup,
@@ -26,6 +27,7 @@ import {
   CAN_CLOUD_BACKUP,
   CAN_CLOUD_RESTORE,
   changeAutoBackup,
+  CLOUD_NEEDS_CORS,
   folderLabel,
   KEEP,
   loadAutoBackup,
@@ -51,10 +53,11 @@ import { useTheme } from '../theme/context';
 // here says how many there are. On Android a backup can hold the phone's SMS and MMS too
 // (lib/backup-sms.ts), put back into the phone's SMS when it is restored. On Android, automatic
 // backups can go to a server too (lib/backup-cloud.ts), once the owner gives one, and a backup there
-// can be restored from the server itself.
+// can be restored from the server itself; in the desktop app too, and in the web app, which makes
+// no backups by itself, one sent there when the owner asks.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
-type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | null;
+type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | { kind: 'cloud' } | null;
 
 // A backup larger than this is not one Erevos made: every space's chats are far smaller.
 const MAX_BYTES = 200 * 1024 * 1024;
@@ -204,11 +207,15 @@ export default function Backups() {
     } finally {
       setBusy(false);
     }
-    await backUpNow();
+    if (CAN_AUTO_BACKUP) await backUpNow();
+    else setAsking({ kind: 'cloud' });
   }
 
   async function stopServer() {
-    if (!(await confirm(t('Stop sending to the server'), t('Automatic backups will go only to the folder from now on. Those already on the server stay there until you delete them.')))) return;
+    const told = CAN_AUTO_BACKUP
+      ? t('Automatic backups will go only to the folder from now on. Those already on the server stay there until you delete them.')
+      : t('Erevos forgets the server and its password here. The backups already on it stay there until you delete them.');
+    if (!(await confirm(t('Stop sending to the server'), told))) return;
     await stopCloudBackup();
     setCloud(null);
     say(t('Backups no longer go to the server.'));
@@ -310,6 +317,22 @@ export default function Backups() {
         say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + smsText(sms));
       } catch (error) {
         say(errorText(error), true);
+      }
+    } else if (asking.kind === 'cloud') {
+      // The web app's backup sent now, with a password of its own: it keeps none for backups.
+      const key = await backupKey(password);
+      setAsking(null);
+      if (!cloud) return;
+      setBusy(true);
+      try {
+        const sent = await sendToCloud(cloud, await makeBackup(key, null, true), KEEP);
+        setCloud(sent);
+        if (sent.error) say(t('Not sent. {error}', { error: sent.error }), true);
+        else say(t('Sent a backup to {server}. Keep its password: nothing opens the backup without it.', { server: cloudLabel(sent) }));
+      } catch (error) {
+        say(errorText(error), true);
+      } finally {
+        setBusy(false);
       }
     } else if (asking.kind === 'auto') {
       await startAutoBackup(asking.every, asking.folder, await backupKey(password));
@@ -443,7 +466,7 @@ export default function Backups() {
         </>
       ) : null}
 
-      {CAN_AUTO_BACKUP && CAN_CLOUD_BACKUP && auto ? (
+      {CAN_CLOUD_BACKUP && (auto || !CAN_AUTO_BACKUP) ? (
         <>
           <SectionTitle title={t('To a server too')} />
           <Card>
@@ -452,7 +475,9 @@ export default function Backups() {
                 <Text variant="bodyStrong">{t('To {server}', { server: cloudLabel(cloud) })}</Text>
                 <Text variant="caption" tone="muted" style={hint}>
                   {cloud.last ? t('Last one sent {when}.', { when: whenText(cloud.last) }) : t('None sent yet.')}{' '}
-                  {t('Each automatic backup goes there too, and the server keeps the {n} newest.', { n: KEEP })}
+                  {CAN_AUTO_BACKUP
+                    ? t('Each automatic backup goes there too, and the server keeps the {n} newest.', { n: KEEP })
+                    : t('Send a backup there now and then; the server keeps the {n} newest.', { n: KEEP })}
                 </Text>
                 {canTor() ? (
                   <Text variant="caption" tone="muted" style={hint}>
@@ -463,10 +488,13 @@ export default function Backups() {
                 ) : null}
                 {cloud.error ? (
                   <Text variant="caption" color={colors.danger} style={hint}>
-                    {t('The last one did not go: {error} Erevos tries again next time it opens.', { error: cloud.error })}
+                    {CAN_AUTO_BACKUP ? t('The last one did not go: {error} Erevos tries again next time it opens.', { error: cloud.error }) : t('The last one did not go: {error}', { error: cloud.error })}
                   </Text>
                 ) : null}
                 <Row wrap>
+                  {CAN_AUTO_BACKUP ? null : (
+                    <Button title={busy ? t('One moment…') : t('Send a backup now')} kind="secondary" compact onPress={() => setAsking({ kind: 'cloud' })} disabled={busy} />
+                  )}
                   <Button title={t('Stop sending')} kind="secondary" compact onPress={() => void stopServer()} disabled={busy} />
                 </Row>
               </>
@@ -481,10 +509,23 @@ export default function Backups() {
             ) : (
               <>
                 <Text variant="caption" tone="muted" style={hint}>
-                  {t(
-                    "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.",
-                  )}
+                  {!CAN_AUTO_BACKUP
+                    ? t(
+                        "A backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV, each time you send one. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.",
+                      )
+                    : canTor()
+                      ? t(
+                          "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.",
+                        )
+                      : t(
+                          "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.",
+                        )}
                 </Text>
+                {CLOUD_NEEDS_CORS ? (
+                  <Text variant="caption" tone="muted" style={hint}>
+                    {t('In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.')}
+                  </Text>
+                ) : null}
                 <Row wrap>
                   <Button title={t('Add a server')} kind="secondary" compact onPress={() => setForm('add')} disabled={busy} />
                 </Row>

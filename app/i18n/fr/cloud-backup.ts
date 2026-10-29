@@ -47,4 +47,24 @@ export const cloudBackup: Record<string, string> = {
     "Chercher là",
   "Backups on {server}, newest first. Choose one, then type its password.":
     "Sauvegardes sur {server}, les plus récentes d’abord. Choisis-en une, puis tape son mot de passe.",
+  "Backups to a server do not work here yet.":
+    "Les sauvegardes vers un serveur ne marchent pas encore ici.",
+  "In a browser the server has to let the web app in (CORS), and this one did not, or could not be reached.":
+    "Dans un navigateur, le serveur doit laisser entrer l’app web (CORS), et celui-ci ne l’a pas fait ou n’a pas pu être joint.",
+  "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.":
+    "Erevos oublie ici le serveur et son mot de passe. Les sauvegardes déjà dessus y restent jusqu’à ce que tu les supprimes.",
+  "Sent a backup to {server}. Keep its password: nothing opens the backup without it.":
+    "Une sauvegarde est partie vers {server}. Garde son mot de passe : rien n’ouvre la sauvegarde sans lui.",
+  "Send a backup there now and then; the server keeps the {n} newest.":
+    "Envoies-y une sauvegarde de temps en temps ; le serveur garde les {n} plus récentes.",
+  "The last one did not go: {error}":
+    "La dernière n’est pas partie : {error}",
+  "Send a backup now":
+    "Envoyer une sauvegarde maintenant",
+  "A backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV, each time you send one. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
+    "Une sauvegarde peut aussi aller dans un dossier sur un serveur de ton choix, comme ton Nextcloud, par WebDAV, chaque fois que tu en envoies une. Le serveur reçoit des octets aléatoires sous un nom aléatoire : il ne peut ni les ouvrir ni savoir qu’ils sont d’Erevos. Il voit quand même ton compte, ton adresse, quand une arrive et à peu près sa taille. Rien ne part tant que tu n’en ajoutes pas un.",
+  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
+    "Chaque sauvegarde automatique peut aussi aller dans un dossier sur un serveur de ton choix, comme ton Nextcloud, par WebDAV. Le serveur reçoit des octets aléatoires sous un nom aléatoire : il ne peut ni les ouvrir ni savoir qu’ils sont d’Erevos. Il voit quand même ton compte, ton adresse, quand une arrive et à peu près sa taille. Rien ne part tant que tu n’en ajoutes pas un.",
+  "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
+    "Dans un navigateur, cela ne marche qu’avec un serveur réglé pour laisser entrer l’app web (CORS), ce que Nextcloud n’est pas de base. L’app de bureau et Android n’en ont pas besoin.",
 };

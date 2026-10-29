@@ -2115,10 +2115,11 @@ again with a password of its own. It is under **Settings** → **Data and device
 2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
    it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
-3. **To a server too:** on Android, with automatic backups on, **Add a server** under **To a server too** sends each
-   one also to a folder on a server you choose that speaks WebDAV, such as your own Nextcloud: give the folder's
-   address, a user name and, best, an app password made for Erevos alone, then tap **Connect**. The server keeps the 3
-   newest; **Stop sending** stops it, and those there stay.
+3. **To a server too:** on Android and in the desktop app, with automatic backups on, **Add a server** under **To a
+   server too** sends each one also to a folder on a server you choose that speaks WebDAV, such as your own Nextcloud:
+   give the folder's address, a user name and, best, an app password made for Erevos alone, then tap **Connect**. The
+   server keeps the 3 newest; **Stop sending** stops it, and those there stay. In the web app, which makes no backups
+   by itself, **Send a backup now** sends one there, with a password you type each time.
 4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
    backup in place of everything on the phone, and opens as it was when the backup was made, with the passwords used
    then. **Restore from a server** looks in the folder automatic backups go to, or in one you give with its user name
@@ -2137,12 +2138,15 @@ again with a password of its own. It is under **Settings** → **Data and device
   and networks** → **Tor** says, as Matrix does: with **Everything** only through Tor, so the server does not see the
   phone's address; with **Messages** through Tor once Tor is ready, and straight while Tor starts or when it fails;
   with **Nothing** straight, and the server sees the phone's address. A backup first waits up to two minutes for Tor
-  to start, and **To a server too** says which way it goes now. **Restore from a server** downloads the one you choose
-  the same way, through Tor as the space says, and writes nothing there; a password typed for it is used for that
-  restore only and not kept. Through Tor a backup larger than 64 MB does not come: then download it from the server
-  and tap **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left
-  out on purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the
-  phone.
+  to start, and **To a server too** says which way it goes now. In the desktop app the app itself sends them, not its
+  page, as a page may not reach such a server; in the web app the browser sends them, and it reaches only a server set
+  to let the web app in (CORS), which Nextcloud is not as it comes. Neither has Tor for it: while a space sends
+  **Everything** through Tor, none goes from there. In the web app the server's password is kept in the browser,
+  sealed with a key the browser does not give out. **Restore from a server** downloads the one you choose the same
+  way, through Tor as the space says, and writes nothing there; a password typed for it is used for that restore only
+  and not kept. Through Tor a backup larger than 64 MB does not come: then download it from the server and tap
+  **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
+  purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new
   messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations

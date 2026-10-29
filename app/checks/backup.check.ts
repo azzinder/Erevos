@@ -2,6 +2,8 @@
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
@@ -41,6 +43,7 @@ import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import type { MatrixState } from '../lib/matrix';
 import { newNostrDm, type NostrDmState } from '../lib/nostr-dm';
 import type { XmppState } from '../lib/xmpp';
+import { cloudRequest as browserRequest } from '../lib/backup-http.web';
 import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
@@ -518,4 +521,27 @@ t("sends backups to a server through Tor as the space's Tor way says, waiting fo
     setCore(wasmCore);
     await stopCloudBackup();
   }
+});
+
+test('in a browser, a server that does not let the web app in says so', async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    throw new TypeError('Failed to fetch');
+  }) as typeof fetch;
+  try {
+    await assert.rejects(browserRequest('PROPFIND', 'https://cloud.example/dav/Backups/', { Depth: '0' }), /CORS/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test("the desktop app's shell sends only WebDAV's requests for backups, over https, with no cookies and no redirects", () => {
+  const shell = readFileSync(join(import.meta.dirname, '../../desktop/main.js'), 'utf8');
+  const webdav = shell.slice(shell.indexOf('async function webdav('), shell.indexOf('// Whether Erevos keeps running'));
+  assert.match(shell, /const WEBDAV_METHODS = new Set\(\['PROPFIND', 'PUT', 'GET', 'DELETE'\]\);/);
+  assert.match(shell, /const WEBDAV_HEADERS = \['authorization', 'depth', 'content-type'\];/);
+  assert.match(webdav, /target\.protocol !== 'https:'/);
+  assert.match(webdav, /credentials: 'omit', redirect: 'error'/);
+  assert.doesNotMatch(webdav, /console\./);
+  assert.match(shell, /url\.pathname === '\/__webdav'\) return webdav\(request, url\)/);
 });

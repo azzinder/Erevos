@@ -48,4 +48,24 @@ export const cloudBackup: Record<string, string> = {
     "Αναζήτηση εκεί",
   "Backups on {server}, newest first. Choose one, then type its password.":
     "Αντίγραφα στο {server}, τα νεότερα πρώτα. Διάλεξε ένα και μετά γράψε τον κωδικό του.",
+  "Backups to a server do not work here yet.":
+    "Τα αντίγραφα σε server δεν λειτουργούν εδώ ακόμα.",
+  "In a browser the server has to let the web app in (CORS), and this one did not, or could not be reached.":
+    "Σε έναν browser ο server πρέπει να αφήνει το web app να μπει (CORS), και αυτός δεν το άφησε ή δεν βρέθηκε.",
+  "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.":
+    "Το Erevos ξεχνά εδώ τον server και τον κωδικό του. Τα αντίγραφα που είναι ήδη εκεί μένουν μέχρι να τα σβήσεις.",
+  "Sent a backup to {server}. Keep its password: nothing opens the backup without it.":
+    "Στάλθηκε αντίγραφο στο {server}. Κράτα τον κωδικό του: τίποτα δεν ανοίγει το αντίγραφο χωρίς αυτόν.",
+  "Send a backup there now and then; the server keeps the {n} newest.":
+    "Στέλνε εκεί ένα αντίγραφο πού και πού· ο server κρατά τα {n} πιο πρόσφατα.",
+  "The last one did not go: {error}":
+    "Το τελευταίο δεν πήγε: {error}",
+  "Send a backup now":
+    "Αποστολή αντιγράφου τώρα",
+  "A backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV, each time you send one. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
+    "Ένα αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV, κάθε φορά που στέλνεις ένα. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, τη διεύθυνσή σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.",
+  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
+    "Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, τη διεύθυνσή σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.",
+  "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
+    "Σε έναν browser αυτό δουλεύει μόνο με server ρυθμισμένο να αφήνει το web app να μπει (CORS), όπως δεν είναι το Nextcloud από μόνο του. Η εφαρμογή υπολογιστή και το Android δεν χρειάζονται τίποτα τέτοιο.",
 };

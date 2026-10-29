@@ -13,6 +13,8 @@ import { t } from './i18n';
 //   /__backup?…       writes a backup into such a folder, keeping the newest
 //   /__pick           asks for a file to open (lib/pick-file.web.ts), and gives its bytes
 //   /__latest         the latest release's version.json (lib/updates.ts), which a page cannot read
+//   /__webdav?…       on a computer, one request to the server backups go to (lib/backup-http.web.ts),
+//                     which a page may not make itself (CORS)
 //   /__window         the computer's window (lib/desktop.ts): kept running when closed, brought back
 //   /__watch          on Sailfish OS, the open space's queues for its helper to wait on while Erevos
 //                     is closed (lib/shell-watch.ts)

@@ -16,12 +16,17 @@ export const CAN_BACK_UP = true;
 /** Whether backups can be made by themselves, every day or week: in the desktop app. */
 export const CAN_AUTO_BACKUP = SHELL !== null;
 
-/** Whether automatic backups can go to a server too (lib/backup-cloud.ts): not yet. A browser
- *  reaches no server that does not let it, as WebDAV servers do not. */
-export const CAN_CLOUD_BACKUP = false;
+/** Whether backups can go to a server too (lib/backup-cloud.ts): the desktop app's go through its
+ *  shell; the web app's straight from the browser, which works only with a server that lets the
+ *  web app in (CORS, lib/backup-http.web.ts), and only one at a time, as it makes none by itself.
+ *  Not on Sailfish OS, whose shell does not send them. */
+export const CAN_CLOUD_BACKUP = SHELL !== 'sailfish';
 
-/** Whether a backup can be restored from such a server: not yet, for the same reason. */
-export const CAN_CLOUD_RESTORE = false;
+/** Whether a backup can be restored from such a server: where they can be sent. */
+export const CAN_CLOUD_RESTORE = CAN_CLOUD_BACKUP;
+
+/** Whether the server has to let this app in (CORS): in a plain browser. */
+export const CLOUD_NEEDS_CORS = SHELL === null;
 
 // The one "folder" of a plain browser.
 const HANDED = 'browser';

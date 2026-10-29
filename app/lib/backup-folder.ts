@@ -6,7 +6,7 @@ import { phoneSmsForBackup } from './backup-sms';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
-export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, folderLabel, pickFolder, writeBackup } from './backup-place';
+export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, pickFolder, writeBackup } from './backup-place';
 
 // Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
 // phone with Android's folder picker, on a computer in the desktop app.
@@ -18,6 +18,7 @@ export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, fold
 // backups are of all of them. Settings from before Argon2id kept PBKDF2's key: the next automatic
 // backup gives it Argon2id (lock/backup.ts), without the password, and keeps that key instead.
 // When the owner gave a server (lib/backup-cloud.ts), each automatic backup goes there too, bare,
+// on the phone and in the desktop app,
 // and one the server missed goes the next time a space opens, even when the folder's is not due.
 
 /** How automatic backups are made. `every` is days, 0 when off; `last` milliseconds, 0 if never.

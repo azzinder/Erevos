@@ -2422,11 +2422,13 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
    Erevos en crée une quand il s’ouvre et que la dernière est plus ancienne que cela, et le dossier garde les 3 plus
    récentes. En dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
    **Désactivé** les arrête, et celles déjà faites restent dans le dossier.
-3. **Aussi vers un serveur :** sur Android, avec les sauvegardes automatiques activées, **Ajouter un serveur** sous
-   **Aussi vers un serveur** envoie chacune aussi dans un dossier sur un serveur de ton choix qui parle WebDAV, comme
-   ton propre Nextcloud : donne l’adresse du dossier, un nom d’utilisateur et, mieux, un mot de passe d’application
-   rien que pour Erevos, puis appuie sur **Connecter**. Le serveur garde les 3 plus récentes ; **Ne plus envoyer**
-   l’arrête, et celles qui y sont restent.
+3. **Aussi vers un serveur :** sur Android et dans l’app de bureau, avec les sauvegardes automatiques activées,
+   **Ajouter un serveur** sous **Aussi vers un serveur** envoie chacune aussi dans un dossier sur un serveur de ton
+   choix qui parle WebDAV, comme ton propre Nextcloud : donne l’adresse du dossier, un nom d’utilisateur et, mieux, un
+   mot de passe d’application rien que pour Erevos, puis appuie sur **Connecter**. Le serveur garde les 3 plus
+   récentes ; **Ne plus envoyer** l’arrête, et celles qui y sont restent. Dans l’app web, qui ne fait pas de
+   sauvegardes d’elle-même, **Envoyer une sauvegarde maintenant** en envoie une là-bas, avec un mot de passe que tu
+   tapes à chaque fois.
 4. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
    demande encore une fois, puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel
    qu’il était quand la sauvegarde a été faite, avec les mots de passe utilisés alors. **Restaurer depuis un serveur**
@@ -2448,12 +2450,17 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   réseaux** → **Tor**, comme Matrix : avec **Tout** seulement par Tor, donc le serveur ne voit pas l’adresse du
   téléphone ; avec **Messages** par Tor dès que Tor est prêt, et en direct tant que Tor démarre ou quand il échoue ;
   avec **Rien** en direct, et le serveur voit l’adresse du téléphone. Une sauvegarde attend d’abord jusqu’à deux
-  minutes que Tor démarre, et **Aussi vers un serveur** dit par où elle passe en ce moment. **Restaurer depuis un
-  serveur** télécharge celle que tu choisis de la même façon, par Tor comme le dit l’espace, et n’écrit rien là-bas ;
-  un mot de passe tapé pour cela ne sert qu’à cette restauration et n’est pas gardé. Par Tor, une sauvegarde de plus
-  de 64 Mo ne vient pas : télécharge-la alors depuis le serveur et appuie sur **Restaurer une sauvegarde**. Un Erevos
-  d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est laissé de côté exprès : Google lie le
-  fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une connexion Google sur le téléphone.
+  minutes que Tor démarre, et **Aussi vers un serveur** dit par où elle passe en ce moment. Dans l’app de bureau,
+  c’est l’app elle-même qui les envoie, pas sa page, car une page ne peut pas joindre un tel serveur ; dans l’app web,
+  c’est le navigateur, qui ne joint qu’un serveur réglé pour laisser entrer l’app web (CORS), ce que Nextcloud n’est
+  pas de base. Aucune des deux n’a Tor pour cela : tant qu’un espace envoie **Tout** par Tor, aucune ne part de là.
+  Dans l’app web, le mot de passe du serveur est gardé dans le navigateur, scellé avec une clé que le navigateur ne
+  donne pas. **Restaurer depuis un serveur** télécharge celle que tu choisis de la même façon, par Tor comme le dit
+  l’espace, et n’écrit rien là-bas ; un mot de passe tapé pour cela ne sert qu’à cette restauration et n’est pas
+  gardé. Par Tor, une sauvegarde de plus de 64 Mo ne vient pas : télécharge-la alors depuis le serveur et appuie sur
+  **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
+  laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
+  connexion Google sur le téléphone.
 - **Les discussions qui ont continué après la sauvegarde :** restaurer remet les clés de chaque conversation telles
   qu’elles étaient alors. Les messages arrivés après la sauvegarde et déjà lus n’y sont pas, et une discussion qui a
   continué peut ne plus ouvrir les nouveaux messages. Demande alors de nouveau son lien de contact au contact. Avant

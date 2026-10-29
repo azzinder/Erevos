@@ -2284,11 +2284,12 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
    quando abre e o último é mais antigo que isso, e a pasta guarda os 3 mais recentes. Abaixo deles ficam **Fazer
    backup agora**, **Mudar de pasta** e **Alterar senha**; **Desativado** os interrompe, e os já feitos ficam na
    pasta.
-3. **Também para um servidor:** no Android, com os backups automáticos ligados, **Adicionar um servidor** em **Também
-   para um servidor** envia cada um também para uma pasta num servidor que você escolher e que fale WebDAV, como o seu
-   próprio Nextcloud: informe o endereço da pasta, um nome de usuário e, melhor, uma senha de aplicativo só para o
-   Erevos, e toque em **Conectar**. O servidor guarda os 3 mais recentes; **Parar de enviar** interrompe, e os que
-   estão lá ficam.
+3. **Também para um servidor:** no Android e no app para computador, com os backups automáticos ligados, **Adicionar
+   um servidor** em **Também para um servidor** envia cada um também para uma pasta num servidor que você escolher e
+   que fale WebDAV, como o seu próprio Nextcloud: informe o endereço da pasta, um nome de usuário e, melhor, uma senha
+   de aplicativo só para o Erevos, e toque em **Conectar**. O servidor guarda os 3 mais recentes; **Parar de enviar**
+   interrompe, e os que estão lá ficam. No web app, que não faz backups sozinho, **Enviar um backup agora** envia um
+   para lá, com uma senha que você digita a cada vez.
 4. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
    uma vez, depois põe o backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito,
    com as senhas usadas então. **Restaurar de um servidor** procura na pasta para onde vão os backups automáticos, ou
@@ -2308,12 +2309,16 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   **Configurações** → **Relay e redes** → **Tor**, como o Matrix: com **Tudo** só pelo Tor, então o servidor não vê o
   endereço do celular; com **Mensagens** pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou
   quando falha; com **Nada** direto, e o servidor vê o endereço do celular. Um backup espera primeiro até dois minutos
-  o Tor iniciar, e **Também para um servidor** diz por onde vai agora. **Restaurar de um servidor** baixa o que você
-  escolher do mesmo jeito, pelo Tor como diz o espaço, e não escreve nada lá; uma senha digitada para isso serve só
-  para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega: então baixe-o do servidor e
-  toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup assim. O Google Drive ficou de
-  fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos apps do Google e de um login no
-  Google no celular.
+  o Tor iniciar, e **Também para um servidor** diz por onde vai agora. No app para computador quem os envia é o
+  próprio app, não a página dele, pois uma página não pode chegar a um servidor assim; no web app quem os envia é o
+  navegador, que só chega a um servidor configurado para deixar o web app entrar (CORS), o que o Nextcloud não é de
+  fábrica. Nenhum dos dois tem Tor para isso: enquanto um espaço envia **Tudo** pelo Tor, nenhum vai de lá. No web app
+  a senha do servidor fica guardada no navegador, selada com uma chave que o navegador não entrega. **Restaurar de um
+  servidor** baixa o que você escolher do mesmo jeito, pelo Tor como diz o espaço, e não escreve nada lá; uma senha
+  digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega:
+  então baixe-o do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
+  assim. O Google Drive ficou de fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos
+  apps do Google e de um login no Google no celular.
 - **Conversas que continuaram depois do backup:** restaurar devolve as chaves de cada conversa como estavam então. As
   mensagens que chegaram depois do backup e já foram lidas não estão nele, e uma conversa que continuou pode deixar de
   abrir mensagens novas. Então peça de novo ao contato o link de contato dele. Antes de uma conversa restaurada

@@ -20,6 +20,9 @@ export const CAN_CLOUD_BACKUP = true;
 /** Whether a backup can be restored from such a server: on the phone, yes. */
 export const CAN_CLOUD_RESTORE = true;
 
+/** Whether the server has to let this app in (CORS): only a browser asks that. */
+export const CLOUD_NEEDS_CORS = false;
+
 /** A folder picked by the owner, or null if they went back. */
 export async function pickFolder(): Promise<string | null> {
   try {

@@ -2221,10 +2221,12 @@ uređaji** → **Rezervne kopije**.
 2. **Automatske rezervne kopije:** izaberite **Svaki dan** ili **Svake sedmice**, zatim folder i lozinku. Erevos pravi
    kopiju kad se otvori, a posljednja je starija od toga, a folder čuva 3 najnovije. Ispod njih su **Napravi kopiju
    sada**, **Promijeni folder** i **Promijeni lozinku**; **Isključeno** ih zaustavlja, a napravljene ostaju u folderu.
-3. **I na server:** na Androidu, s uključenim automatskim rezervnim kopijama, **Dodaj server** pod **I na server**
-   šalje svaku i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš vlastiti Nextcloud: upišite adresu
-   foldera, korisničko ime i, najbolje, lozinku aplikacije samo za Erevos, pa dodirnite **Poveži**. Server čuva 3
-   najnovije; **Prestani slati** to zaustavlja, a one koje su tamo ostaju.
+3. **I na server:** na Androidu i u aplikaciji za računar, s uključenim automatskim rezervnim kopijama, **Dodaj
+   server** pod **I na server** šalje svaku i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš
+   vlastiti Nextcloud: upišite adresu foldera, korisničko ime i, najbolje, lozinku aplikacije samo za Erevos, pa
+   dodirnite **Poveži**. Server čuva 3 najnovije; **Prestani slati** to zaustavlja, a one koje su tamo ostaju. U web
+   aplikaciji, koja ne pravi rezervne kopije sama, **Pošalji rezervnu kopiju sada** šalje jednu tamo, s lozinkom koju
+   upisujete svaki put.
 4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    a zatim stavlja rezervnu kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija
    napravljena, s lozinkama koje su se tada koristile. **Vrati sa servera** gleda u folder u koji idu automatske
@@ -2244,7 +2246,11 @@ uređaji** → **Rezervne kopije**.
   prostora pod **Postavke** → **Relay i mreže** → **Tor**, kao i Matrix: sa **Sve** samo preko Tora, pa server ne vidi
   adresu telefona; s **Poruke** preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; s
   **Ništa** direktno, i server vidi adresu telefona. Kopija prvo čeka do dvije minute da se Tor pokrene, a **I na
-  server** kaže kojim putem ide sada. **Vrati sa servera** preuzima onu koju izaberete na isti način, preko Tora kako
+  server** kaže kojim putem ide sada. U aplikaciji za računar šalje ih sama aplikacija, ne njena stranica, jer
+  stranica ne može doći do takvog servera; u web aplikaciji šalje ih preglednik, koji dolazi samo do servera podešenog
+  da pusti web aplikaciju (CORS), što Nextcloud sam po sebi nije. Nijedna nema Tor za to: dok neki prostor šalje
+  **Sve** preko Tora, odatle ne ide nijedna. U web aplikaciji lozinka servera čuva se u pregledniku, zapečaćena
+  ključem koji preglednik ne daje van. **Vrati sa servera** preuzima onu koju izaberete na isti način, preko Tora kako
   kaže prostor, i tamo ništa ne piše; lozinka upisana za to koristi se samo za to vraćanje i ne čuva se. Preko Tora
   rezervna kopija veća od 64 MB ne stiže: tada je preuzmite sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
   stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše

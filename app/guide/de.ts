@@ -2459,11 +2459,12 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
    eines, wenn es öffnet und das letzte älter ist, und der Ordner behält die 3 neuesten. Darunter sind
    **Jetzt sichern**, **Ordner ändern** und **Passwort ändern**; **Aus** beendet sie, und die gemachten bleiben im
    Ordner.
-3. **Auch auf einen Server:** Auf Android schickt **Server hinzufügen** unter **Auch auf einen Server**, bei
-   eingeschalteten automatischen Backups, jedes davon auch in einen Ordner auf einem Server deiner Wahl, der WebDAV
-   spricht, etwa deiner eigenen Nextcloud: Gib die Adresse des Ordners, einen Benutzernamen und am besten ein
-   App-Passwort nur für Erevos ein, dann tippe auf **Verbinden**. Der Server behält die 3 neuesten; **Nicht mehr
-   senden** beendet es, und die dort bleiben.
+3. **Auch auf einen Server:** Auf Android und in der Desktop-App schickt **Server hinzufügen** unter **Auch auf einen
+   Server**, bei eingeschalteten automatischen Backups, jedes davon auch in einen Ordner auf einem Server deiner Wahl,
+   der WebDAV spricht, etwa deiner eigenen Nextcloud: Gib die Adresse des Ordners, einen Benutzernamen und am besten
+   ein App-Passwort nur für Erevos ein, dann tippe auf **Verbinden**. Der Server behält die 3 neuesten; **Nicht mehr
+   senden** beendet es, und die dort bleiben. In der Web-App, die keine Backups von selbst macht, schickt **Jetzt ein
+   Backup senden** eines dorthin, mit einem Passwort, das du jedes Mal eingibst.
 4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
    noch einmal, setzt dann das Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das
    Backup gemacht wurde, mit den damals genutzten Passwörtern. **Von einem Server wiederherstellen** sieht im Ordner
@@ -2484,12 +2485,17 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   sagt, wie bei Matrix: mit **Alles** nur über Tor, sodass der Server die Adresse des Telefons nicht sieht; mit
   **Nachrichten** über Tor, sobald Tor bereit ist, und direkt, solange Tor startet oder wenn es scheitert; mit
   **Nichts** direkt, und der Server sieht die Adresse des Telefons. Ein Backup wartet zuerst bis zu zwei Minuten, bis
-  Tor gestartet ist, und **Auch auf einen Server** sagt, welchen Weg es gerade nimmt. **Von einem Server
-  wiederherstellen** lädt das gewählte auf demselben Weg herunter, über Tor, wie der Bereich sagt, und schreibt dort
-  nichts; ein dafür eingegebenes Passwort dient nur dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt
-  ein Backup über 64 MB nicht: Dann lade es vom Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos
-  vor dieser Version öffnet ein solches Backup nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit
-  deinem Namen, und Erevos bräuchte die Apps von Google und eine Google-Anmeldung auf dem Telefon.
+  Tor gestartet ist, und **Auch auf einen Server** sagt, welchen Weg es gerade nimmt. In der Desktop-App schickt sie
+  die App selbst, nicht ihre Seite, da eine Seite einen solchen Server nicht erreichen darf; in der Web-App schickt
+  sie der Browser, und der erreicht nur einen Server, der so eingestellt ist, dass er die Web-App hereinlässt (CORS),
+  was Nextcloud von Haus aus nicht ist. Keine von beiden hat Tor dafür: Solange ein Bereich **Alles** über Tor sendet,
+  geht von dort keines. In der Web-App wird das Passwort des Servers im Browser aufbewahrt, versiegelt mit einem
+  Schlüssel, den der Browser nicht herausgibt. **Von einem Server wiederherstellen** lädt das gewählte auf demselben
+  Weg herunter, über Tor, wie der Bereich sagt, und schreibt dort nichts; ein dafür eingegebenes Passwort dient nur
+  dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt ein Backup über 64 MB nicht: Dann lade es vom
+  Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos vor dieser Version öffnet ein solches Backup
+  nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
+  Google und eine Google-Anmeldung auf dem Telefon.
 - **Chats, die nach dem Backup weitergingen:** Das Wiederherstellen setzt die Schlüssel jeder Unterhaltung so zurück,
   wie sie damals waren. Nachrichten, die nach dem Backup kamen und schon gelesen waren, sind nicht darin, und ein Chat,
   der weiterging, kann aufhören, neue Nachrichten zu öffnen. Bitte den Kontakt dann erneut um seinen Kontaktlink. Bevor

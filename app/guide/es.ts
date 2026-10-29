@@ -2296,11 +2296,12 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
    cuando se abre y la última es más antigua que eso, y la carpeta conserva las 3 más nuevas. Debajo están **Hacer
    copia ahora**, **Cambiar carpeta** y **Cambiar contraseña**; **Desactivado** las detiene, y las ya hechas se quedan
    en la carpeta.
-3. **También a un servidor:** en Android, con las copias automáticas activadas, **Añadir un servidor** en **También a
-   un servidor** envía cada una también a una carpeta en un servidor que elijas y que hable WebDAV, como tu propio
-   Nextcloud: da la dirección de la carpeta, un nombre de usuario y, mejor, una contraseña de aplicación solo para
-   Erevos, y toca **Conectar**. El servidor guarda las 3 más recientes; **Dejar de enviar** lo detiene, y las que hay
-   allí se quedan.
+3. **También a un servidor:** en Android y en la app de escritorio, con las copias automáticas activadas, **Añadir un
+   servidor** en **También a un servidor** envía cada una también a una carpeta en un servidor que elijas y que hable
+   WebDAV, como tu propio Nextcloud: da la dirección de la carpeta, un nombre de usuario y, mejor, una contraseña de
+   aplicación solo para Erevos, y toca **Conectar**. El servidor guarda las 3 más recientes; **Dejar de enviar** lo
+   detiene, y las que hay allí se quedan. En la web app, que no hace copias por sí sola, **Enviar una copia ahora**
+   envía una allí, con una contraseña que escribes cada vez.
 4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
    una vez más, y luego pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo
    la copia, con las contraseñas de entonces. **Restaurar desde un servidor** mira en la carpeta a la que van las
@@ -2320,12 +2321,16 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   espacio en **Ajustes** → **Relay y redes** → **Tor**, como Matrix: con **Todo** solo por Tor, así que el servidor no
   ve la dirección del teléfono; con **Mensajes** por Tor en cuanto Tor está listo, y directo mientras Tor arranca o
   cuando falla; con **Nada** directo, y el servidor ve la dirección del teléfono. Una copia espera primero hasta dos
-  minutos a que arranque Tor, y **También a un servidor** dice por dónde va ahora. **Restaurar desde un servidor**
-  descarga la que elijas del mismo modo, por Tor según diga el espacio, y no escribe nada allí; una contraseña escrita
-  para ello se usa solo para esa restauración y no se guarda. Por Tor no llega una copia de más de 64 MB: entonces
-  descárgala del servidor y toca **Restaurar una copia de seguridad**. Un Erevos anterior a esta versión no abre una
-  copia así. Google Drive queda fuera a propósito: Google ata el archivo a tu nombre, y Erevos necesitaría las apps de
-  Google y una sesión de Google en el teléfono.
+  minutos a que arranque Tor, y **También a un servidor** dice por dónde va ahora. En la app de escritorio las envía
+  la propia app, no su página, ya que una página no puede llegar a un servidor así; en la web app las envía el
+  navegador, que solo llega a un servidor configurado para dejar entrar a la web app (CORS), cosa que Nextcloud no
+  hace de serie. Ninguna de las dos tiene Tor para ello: mientras un espacio envía **Todo** por Tor, no va ninguna
+  desde ahí. En la web app la contraseña del servidor se guarda en el navegador, sellada con una clave que el
+  navegador no entrega. **Restaurar desde un servidor** descarga la que elijas del mismo modo, por Tor según diga el
+  espacio, y no escribe nada allí; una contraseña escrita para ello se usa solo para esa restauración y no se guarda.
+  Por Tor no llega una copia de más de 64 MB: entonces descárgala del servidor y toca **Restaurar una copia de
+  seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive queda fuera a propósito: Google
+  ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban
   entonces. Los mensajes que llegaron después de la copia y ya se leyeron no están en ella, y un chat que siguió puede
   dejar de abrir mensajes nuevos. Entonces pide al contacto su enlace de contacto otra vez. Antes de que un chat

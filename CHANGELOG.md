@@ -14,6 +14,15 @@ On main, not released yet:
 
 ### For you
 
+- **Backups to your own server from a computer and the web app too**: in the desktop app, automatic backups can go to a
+  WebDAV server as on Android, and **Restore from a server** works there too. The app's shell sends each request
+  (a new path, /__webdav: https only, only PROPFIND, PUT, GET and DELETE, only the Authorization, Depth and
+  Content-Type headers, no cookies, no redirects), because a page may not read such a server's answers (CORS). In the
+  web app, which makes no backups by itself, **Send a backup now** sends one there with a password typed each time,
+  and **Restore from a server** lists and opens them; a browser reaches only a server set to let the web app in
+  (CORS), which Nextcloud is not as it comes, and says so when it is not let in. Neither has Tor for it, so a space
+  sending Everything through Tor sends none from there. Not on Sailfish OS. The web app's and the desktop's content
+  security policies are unchanged (they already let the page reach any https address).
 - **Restore a backup straight from your server**: under **Settings** → **Data and devices** → **Backups**,
   **Restore from a server** lists the backups in the folder automatic backups go to, or in one you give with its user
   name and password (on a new phone), newest first; the one chosen is downloaded, through Tor as the space says, and

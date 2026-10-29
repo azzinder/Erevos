@@ -18,6 +18,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Backups to your server from a computer and the web app too**: in the desktop app, automatic backups go to your WebDAV server as on Android; in the web app, Send a backup now sends one there, with a server that lets the web app in. Both can restore from it. Not through Tor. See [Backups](#backup)."),
     mark("**Restore a backup straight from your server**: Restore from a server, under Backups, lists the backups on your server, newest first, and opens the one you choose with its password, with no download by hand, on a new phone too. See [Backups](#backup)."),
     mark("**Backups to your server through Tor**: on Android, automatic backups sent to your own server now follow the space's choice under Settings → Relay and networks → Tor, as Matrix does, so with Tor the server no longer sees where you are. To a server too says when they go through Tor. See [Backups](#backup)."),
     mark("**Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages, music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or plays; held, each goes to its message. See [Group chats](#groups)."),
