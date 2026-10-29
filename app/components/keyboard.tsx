@@ -1,6 +1,7 @@
-import type { ViewProps } from 'react-native';
+import { useEffect } from 'react';
+import { AppState, Keyboard, type ViewProps } from 'react-native';
 import { KeyboardController, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
-import Reanimated, { useAnimatedStyle } from 'react-native-reanimated';
+import Reanimated, { makeMutable, useAnimatedReaction, useAnimatedStyle } from 'react-native-reanimated';
 
 /**
  * The keyboard helpers, as in LPHL FASOULI (src/components/keyboard.tsx there): the native library
@@ -26,8 +27,53 @@ export { KeyboardAvoidingView, KeyboardAwareScrollView, KeyboardProvider } from 
  */
 export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   const { height } = useReanimatedKeyboardAnimation();
-  const margin = useAnimatedStyle(() => ({ marginBottom: Math.max(-height.value - inset - bottom, 0) }), [bottom, inset]);
+  useEffect(watchKeyboard, []);
+  // The keyboard moves: whatever it was, the library's height is right again.
+  useAnimatedReaction(
+    () => height.value,
+    (now, before) => {
+      if (before !== null && now !== before) keyboardDown.value = false;
+    },
+  );
+  const margin = useAnimatedStyle(
+    () => ({ marginBottom: keyboardDown.value ? 0 : Math.max(-height.value - inset - bottom, 0) }),
+    [bottom, inset],
+  );
   return <Reanimated.View style={[style, { paddingBottom: bottom }, margin]} {...props} />;
+}
+
+/**
+ * Whether Android itself has said for a while that the keyboard is down. The library can keep the
+ * height of a keyboard that went without its animation, as when Erevos comes back from another app
+ * that had one open: the home screen's buttons then floated where its top had been, over the chats
+ * (on the Pixel, 4.0.0-rc.2). Android's own word comes at once, as the keyboard starts to go, so
+ * the screen still follows the library while it moves, and is put down only once it is still. Were
+ * Android's word ever late, the screen put down is laid out anew, React Native looks at the
+ * keyboard again with that layout, and its keyboardDidShow lifts the screen back.
+ */
+const keyboardDown = makeMutable(false);
+const SETTLE_MS = 600;
+let watching = false;
+let settling: ReturnType<typeof setTimeout> | undefined;
+
+function settle() {
+  clearTimeout(settling);
+  settling = setTimeout(() => {
+    if (!Keyboard.isVisible()) keyboardDown.value = true;
+  }, SETTLE_MS);
+}
+
+function watchKeyboard() {
+  if (watching) return;
+  watching = true;
+  Keyboard.addListener('keyboardDidShow', () => {
+    clearTimeout(settling);
+    keyboardDown.value = false;
+  });
+  Keyboard.addListener('keyboardDidHide', settle);
+  AppState.addEventListener('change', (state) => {
+    if (state === 'active') settle();
+  });
 }
 
 /**
