@@ -656,9 +656,10 @@ internal object SmsStore {
         val sent = PendingIntent.getBroadcast(app, index, Intent(action).setPackage(app.packageName), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT)
         manager.sendDataMessage(address, null, INVITE_PORT, bytes, sent, null)
       }
-    } catch (error: Exception) {
+    } catch (_: Exception) {
+      // Told once, as not sent: thrown as well, the app's promise would be settled twice, once
+      // rejected here and once more by `finish`.
       main.post { finish(false) }
-      throw error
     }
   }
 
