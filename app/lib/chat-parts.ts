@@ -69,9 +69,14 @@ export function checkedIntro(value: unknown): IntroSignal | null {
  * of the sender's own messages (`edit`), that they are typing to us now (`typing`), or an invite to
  * their relay, which a phone with a relay sends by itself to a contact with none (`ri`, app/chat.tsx).
  * An introduction's ask goes with words, which an Erevos from before shows as they are; its other
- * steps go with none (`intro`, lib/intros.ts).
+ * steps go with none (`intro`, lib/intros.ts). A piece of a backup password, given to keep or
+ * given back, goes with words that say so and never hold it (`piece`, lib/pieces-kept.ts): the
+ * piece is not kept with the message on either phone.
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal; piece?: string };
+
+/** A backup piece's text (lib/backup-pieces.ts), as it is carried. */
+export const isPieceText = (v: unknown): v is string => typeof v === 'string' && /^erevos-piece:[A-Za-z0-9_-]{447}$/.test(v);
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
 export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview'> & { forwarded?: boolean };
@@ -123,6 +128,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(value.typing === true ? { typing: true as const } : {}),
     ...(invite ? { ri: { r: invite.relayUrl, c: invite.code } } : {}),
     ...(intro ? { intro } : {}),
+    ...(isPieceText(value.piece) ? { piece: value.piece } : {}),
   };
 }
 
@@ -133,9 +139,9 @@ export function contentOf({ sticker, place, poll, preview, forwarded }: Content)
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro } = carriedOf(carried);
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro, piece } = carriedOf(carried);
   const asks = intro?.s === 'ask';
-  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}) };
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}), ...(piece ? { piece } : {}) };
   return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}) };
 }
 

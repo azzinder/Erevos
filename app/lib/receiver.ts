@@ -12,6 +12,7 @@ import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
 import { keepOffer, offerOf } from './relay-offer';
 import { takeIntro, type IntroSend } from './intros';
+import { keepPieceFrom } from './pieces-kept';
 import {
   canReadManyAt,
   canWaitAt,
@@ -111,6 +112,12 @@ const waits = new Set<AbortController>();
 let hurry: (() => void) | null = null;
 
 const shownListeners = new Set<(shown: boolean) => void>();
+
+/** Ends the wait at the relay and looks at once: something new waits to go (app/backup-pieces.tsx). */
+export function lookSoon(): void {
+  endWaits();
+  hurry?.();
+}
 
 /** Says whether the app shows on the screen (AppState 'active'). Shown again, it looks at once. */
 export function setAppShown(shown: boolean): void {
@@ -715,6 +722,8 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
     await takeIntro(e2e, identity, received.more.intro, received.request, send, place?.queue.senderHex ?? '', place?.here ?? { relay: '', relayKey: '' }).catch(() => undefined);
     changed = true;
   }
+  // A piece of a contact's backup password, to keep for them, or one of ours given back (lib/pieces-kept.ts).
+  if (received.more.piece && !twice) await keepPieceFrom(e2e, identity, received.more.piece, received.request).catch(() => null);
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;

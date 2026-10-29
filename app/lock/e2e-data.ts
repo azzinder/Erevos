@@ -1,3 +1,4 @@
+import { isPieceText } from '../lib/chat-parts';
 import { isRelayAddress } from '../lib/relay';
 import { MAX_PARTS } from '../lib/voice';
 import { checkedLook, type Look } from '../theme/look';
@@ -297,6 +298,46 @@ function checkedIntroKept(value: unknown): IntroKept | null {
   return { i: v.i, from: v.from, n: cleanName(v.n), ...(v.g === true ? { g: true as const } : {}), at: v.at, st: v.st as 'asked' | 'yes' | 'no' | 'done' };
 }
 
+/**
+ * Pieces of backup passwords (lib/backup-pieces.ts): `held`, pieces contacts gave this chat to
+ * keep for them (`from`), until they ask for them back; `given`, the splits this chat made of its
+ * own password, by their set id, k of n, and the contacts given one; `back`, pieces of its own
+ * given back; `out`, pieces that wait to go with our message of this tag, in a chat (lock/history.ts),
+ * deleted once it went. `at`: when each came or was made (ms). MAX_PIECES of each at most.
+ */
+export type PiecesKept = {
+  out?: { tag: string; p: string }[];
+  held?: { from: string; p: string; at: number }[];
+  given?: { set: string; k: number; n: number; to: string[]; at: number }[];
+  back?: { p: string; at: number }[];
+};
+
+export const MAX_PIECES = 32;
+const isSplitCount = (v: unknown, most: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 2 && v <= most;
+
+function checkedPieces(value: unknown): PiecesKept | null {
+  const v = (value ?? {}) as Record<string, unknown>;
+  const list = (items: unknown) => (Array.isArray(items) ? items : []).map((item) => (item ?? {}) as Record<string, unknown>);
+  const held = list(v.held)
+    .filter((h) => isIdentity(h.from) && isPieceText(h.p) && isTime(h.at))
+    .map((h) => ({ from: h.from as string, p: h.p as string, at: h.at as number }))
+    .slice(-MAX_PIECES);
+  const given = list(v.given)
+    .filter((g) => isText(g.set) && /^[0-9a-f]{16}$/.test(g.set) && isSplitCount(g.k, 16) && isSplitCount(g.n, 16) && (g.k as number) <= (g.n as number) && Array.isArray(g.to) && g.to.every(isIdentity) && isTime(g.at))
+    .map((g) => ({ set: g.set as string, k: g.k as number, n: g.n as number, to: (g.to as string[]).slice(0, 16), at: g.at as number }))
+    .slice(-MAX_PIECES);
+  const back = list(v.back)
+    .filter((b) => isPieceText(b.p) && isTime(b.at))
+    .map((b) => ({ p: b.p as string, at: b.at as number }))
+    .slice(-MAX_PIECES);
+  const out = list(v.out)
+    .filter((o) => isTag(o.tag) && isPieceText(o.p))
+    .map((o) => ({ tag: o.tag as string, p: o.p as string }))
+    .slice(-MAX_PIECES);
+  if (!held.length && !given.length && !back.length && !out.length) return null;
+  return { ...(out.length ? { out } : {}), ...(held.length ? { held } : {}), ...(given.length ? { given } : {}), ...(back.length ? { back } : {}) };
+}
+
 /** The most kept to drop, far more than wait to go at once; past it the oldest goes first. */
 export const MAX_UNDROPPED = 256;
 
@@ -496,6 +537,8 @@ export type E2EData = {
   invitedAs?: string;
   /** Introductions made here, or asked of this chat (lib/intros.ts). Missing when none. */
   intros?: IntroKept[];
+  /** Pieces of backup passwords, kept for contacts or given to them (lib/backup-pieces.ts). Missing when none. */
+  pieces?: PiecesKept;
   /** Until when what came for this chat on the Nostr relays was read (seconds, kept now and then):
    *  what is asked of them next starts somewhat over an hour before it (lib/nostr.ts). Missing
    *  until they were read. */
@@ -795,6 +838,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
     ...(Array.isArray(v.intros) ? { intros: v.intros.map(checkedIntroKept).filter((i): i is IntroKept => i !== null).slice(-MAX_INTROS) } : {}),
+    ...(checkedPieces(v.pieces) ? { pieces: checkedPieces(v.pieces)! } : {}),
     ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),
     ...(checkedNostrKey(v.nostrLink) ? { nostrLink: checkedNostrKey(v.nostrLink)! } : {}),
     ...(Array.isArray(v.ready) && v.ready.length > 0 ? { ready: v.ready.map(checkedReady).filter((r): r is Ready => r !== null).slice(-MAX_READY) } : {}),

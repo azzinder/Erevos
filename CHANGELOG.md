@@ -14,6 +14,23 @@ On main, not released yet:
 
 ### For you
 
+- **Backup pieces with friends**: **Settings** → **Data and devices** → **Backup pieces** (`app/backup-pieces.tsx`)
+  splits the backups' password, and the WebDAV server's address, user and app password when one is set, with Shamir's
+  secret sharing over GF(256) (`lib/shamir.ts`, written here, no new dependency) into 2 of 3, 2 of 4, 3 of 4 or 3 of 5
+  pieces (`lib/backup-pieces.ts`). The secret split is always 320 bytes, padded with random bytes and ended with 16
+  bytes of its own SHA-256, inside the split, so no piece gives anything to test a guessed password against; a piece
+  is its version, k, x, a random 8-byte set id drawn anew for each split, its share and a 4-byte hash of the piece,
+  which catches one mistyped. With automatic backups on, the password typed is checked against their key first
+  (`lock/backup.ts` `isBackupPassword`). Each piece goes to a contact chosen beside words that never hold it (`piece`,
+  `lib/chat-parts.ts`), as a waiting message of their chat (`lib/pieces-kept.ts`, `lib/waiting.ts`); until it went the
+  piece waits apart (`E2EData.pieces.out`), then is deleted, so the giver's phone keeps only the set id, k, n and to
+  whom. The friend's Erevos keeps it apart from the chat (`pieces.held`), never from a message request, and shows it
+  as a QR code, copies it, or gives it back in the chat; pieces of one's own split come back to `pieces.back`. Put
+  together from codes scanned or pasted, any k that fit give the password, and **Restore from that server** lists the
+  backups there (`checks/backup-pieces.check.ts`: GF(256) against bitwise multiplication, every k-subset of every
+  split, k - 1 refused, uniform share values for every secret, forged and mixed pieces, the full trip through three
+  chats with the real core).
+
 - **Introduce two contacts to each other**: in a contact's chat details, **Introduce to a contact** and **Ask both**
   (`lib/intros.ts`). The phone that introduces (R) asks each of the two in its own chat with them, inside the
   end-to-end encryption, with words an older Erevos shows as they are (`intro` step `ask`, `lib/chat-parts.ts`), each

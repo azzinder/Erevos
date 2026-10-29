@@ -1,4 +1,4 @@
-import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
@@ -1748,6 +1748,27 @@ export class E2E {
       const { intros: _intros, ...rest } = this.data;
       const kept = next.slice(-MAX_INTROS);
       await this.save(kept.length > 0 ? { ...rest, intros: kept } : rest);
+      return out;
+    });
+  }
+
+  /** Pieces of backup passwords kept here for contacts, or given to them (lib/pieces-kept.ts). */
+  pieces(): PiecesKept {
+    return this.data.pieces ?? {};
+  }
+
+  /** Changes the pieces kept, by what `change` makes of them, in the chat's turn. */
+  changePieces<T>(change: (now: PiecesKept) => { next: PiecesKept; out: T }): Promise<T> {
+    return this.run(async () => {
+      const { next, out } = change(this.pieces());
+      const { pieces: _pieces, ...rest } = this.data;
+      const kept: PiecesKept = {
+        ...(next.out?.length ? { out: next.out.slice(-MAX_PIECES) } : {}),
+        ...(next.held?.length ? { held: next.held.slice(-MAX_PIECES) } : {}),
+        ...(next.given?.length ? { given: next.given.slice(-MAX_PIECES) } : {}),
+        ...(next.back?.length ? { back: next.back.slice(-MAX_PIECES) } : {}),
+      };
+      await this.save(Object.keys(kept).length > 0 ? { ...rest, pieces: kept } : rest);
       return out;
     });
   }

@@ -26,6 +26,7 @@ import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type Fil
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
 import { answerIntro, introduce, introsAsked, introsMade, takeIntro, type IntroSend } from '../lib/intros';
+import { keepPieceFrom } from '../lib/pieces-kept';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { watchHiddenAway } from '../lib/hidden-away';
 import { isPicking } from '../lib/picking';
@@ -2209,6 +2210,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         })
         .catch((error) => setNote(errorText(error)));
     }
+    // A piece of their backup password, to keep for them, or one of ours given back (lib/pieces-kept.ts).
+    if (received.more.piece && !twice) void keepPieceFrom(e2e, received.identity, received.more.piece, received.request).catch(() => null);
     // They type to us now, or wrote: then they no longer do.
     if (received.more.typing) setTyping((now) => ({ ...now, [peer]: Date.now() + TYPING_SHOWS }));
     else if (received.text || received.voice || received.file) setTyping(({ [peer]: _done, ...others }) => others);

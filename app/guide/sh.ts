@@ -2370,6 +2370,36 @@ uređaji** → **Rezervne kopije**.
 - **Rezervna kopija iz novijeg Erevosa:** Erevos 0.1.8 i noviji je također otvaraju i vraćaju sve što od nje poznaju;
   prije toga kažu da dio ostaje izvan. Prvo ažurirajte Erevos da biste vratili sve.
 
+## Dijelovi rezervne kopije kod prijatelja {#backup-pieces}
+
+Lozinka vaših rezervnih kopija može otići prijateljima u dijelovima, pod **Postavke** → **Podaci i uređaji** →
+**Dijelovi rezervne kopije**: odaberite **2 od 3**, **2 od 4**, **3 od 4** ili **3 od 5**, zatim isto toliko kontakata,
+i dodirnite **Dajte dijelove**. S uključenim automatskim rezervnim kopijama Erevos provjerava je li lozinka koju
+upisujete njihova. Sa serverom pod **I na server** dijelovi mogu sadržavati i njegovu adresu, korisničko ime i lozinku,
+tako da se s njima mogu pronaći i otvoriti rezervne kopije tamo. Svaki kontakt dobiva poruku koja kaže što je to, a
+njegov Erevos čuva dio odvojeno od razgovora, pod **Dijelovi koje čuvate za prijatelje**.
+
+1. **Da je vratite:** zamolite dovoljno njih za njihove dijelove. Svaki dodirne **Prikaži kod** pored vašeg, a vi
+   dodirnete **Skeniraj kod** pod **Sastavite svoje dijelove**; ili oni dodirnu **Kopiraj** i pošalju vam tekst na
+   drugi način, a vi ga zalijepite i dodirnete **Dodaj**; ili, dok vaš telefon još ima račun, dodirnu **Vrati ga u
+   vašem razgovoru**. Zatim dodirnite **Sastavi**: Erevos pokazuje lozinku, a sa serverom u dijelovima **Vrati s tog
+   servera** navodi rezervne kopije tamo.
+2. **Nova lozinka:** čim vaše rezervne kopije dobiju novu lozinku, ranije dani dijelovi više ne vrijede: dajte nove.
+
+- **Što dio pokazuje:** ništa. Manje dijelova nego što treba ne govori ništa o lozinci, koliko god računalne snage se
+  uloži: s njima je svaka lozinka jednako vjerojatna kao bilo koja druga. Svaki dio ima istu veličinu, kakva god da je
+  lozinka, i ništa u njemu ne imenuje vas ni ostale prijatelje.
+- **Na vašem telefonu:** poruka ostaje u razgovoru, ali njen dio ne: kad ode, ništa na vašem telefonu ne čuva
+  dijelove, samo kome su otišli. Tko otvori neki vaš prostor saznaje kome ste dali dijelove, ne i lozinku. Dijelovi
+  idu samo kontaktima prostora, ne u skrivene razgovore.
+- **Što ne može spriječiti:** dovoljno prijatelja zajedno može otvoriti vaše rezervne kopije ako dobiju i datoteku:
+  odaberite ljude koji se ne poznaju svi međusobno. Netko se može predstaviti kao vi, s novog broja ili novog računa,
+  da dobije dijelove: prijatelj treba vratiti dio samo vama uživo, ili u razgovoru koji već ima s vama. Prijatelj
+  čiji je Erevos stariji od ove verzije vidi poruku, ali ne čuva dio.
+
+**Zašto:** rezervna kopija sigurna je koliko i njena lozinka, a jaka lozinka lako se izgubi. Podijeljena ovako
+(Shamirovo dijeljenje tajne), nijedan prijatelj sam, ni nijedan relay, ne drži ništa što je otvara.
+
 ## Uvezeni razgovori {#import}
 
 Vaši stari razgovori iz Telegrama i WhatsAppa mogu doći u Erevos, za čitanje, sa svojim fotografijama, videozapisima,

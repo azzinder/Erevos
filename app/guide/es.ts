@@ -2452,6 +2452,37 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
 - **Una copia de un Erevos más nuevo:** Erevos 0.1.8 y posteriores también la abren, y restauran todo lo que conocen de
   ella; antes de eso, dicen que una parte se queda fuera. Actualiza Erevos primero para restaurarla entera.
 
+## Piezas de copias con amigos {#backup-pieces}
+
+La contraseña de tus copias de seguridad puede ir a amigos en piezas, en **Ajustes** → **Datos y dispositivos** →
+**Piezas de copias**: elige **2 de 3**, **2 de 4**, **3 de 4** o **3 de 5**, luego otros tantos contactos, y toca
+**Dar las piezas**. Con las copias automáticas activadas, Erevos comprueba que la contraseña que escribes es la suya.
+Con un servidor en **También a un servidor**, las piezas pueden guardar también su dirección, usuario y contraseña,
+para que con ellas se puedan encontrar y abrir las copias que hay allí. Cada contacto recibe un mensaje que dice qué
+es, y su Erevos guarda la pieza aparte del chat, en **Piezas que guardas para amigos**.
+
+1. **Para recuperarla:** pide sus piezas a suficientes de ellos. Cada uno toca **Mostrar el código** junto a la tuya,
+   y tú tocas **Escanear un código** en **Juntar tus piezas**; o tocan **Copiar** y te mandan el texto por otra vía, y
+   tú lo pegas y tocas **Añadir**; o, mientras tu teléfono aún tenga la cuenta, tocan **Devolverla en vuestro chat**.
+   Luego toca **Juntar**: Erevos muestra la contraseña y, con un servidor en las piezas, **Restaurar desde ese
+   servidor** lista las copias de allí.
+2. **Una contraseña nueva:** en cuanto tus copias tienen una contraseña nueva, las piezas dadas antes ya no sirven: da
+   otras nuevas.
+
+- **Qué muestra una pieza:** nada. Menos piezas de las necesarias no dicen nada de la contraseña, por mucha potencia
+  de cálculo que se use: con ellas, cualquier contraseña es tan probable como otra. Todas las piezas tienen el mismo
+  tamaño, sea cual sea la contraseña, y nada en ellas te nombra ni a ti ni a los demás amigos.
+- **En tu teléfono:** el mensaje se queda en el chat, pero su pieza no: una vez enviada, nada en tu teléfono guarda
+  las piezas, solo a quién fueron. Quien abra uno de tus espacios sabe a quién diste piezas, no la contraseña. Las
+  piezas van solo a contactos del espacio, no a chats ocultos.
+- **Lo que no puede impedir:** suficientes amigos juntos pueden abrir tus copias si también consiguen el archivo:
+  elige personas que no se conozcan todas entre sí. Alguien puede hacerse pasar por ti, desde un número o una cuenta
+  nuevos, para conseguir las piezas: un amigo debería devolver una solo a ti en persona, o en el chat que ya tiene
+  contigo. Un amigo con un Erevos anterior a esta versión ve el mensaje pero no guarda ninguna pieza.
+
+**Por qué:** una copia de seguridad es tan segura como su contraseña, y una contraseña fuerte se pierde con facilidad.
+Repartida así (el reparto de secretos de Shamir), ningún amigo por sí solo, ni ningún relay, tiene nada que la abra.
+
 ## Chats importados {#import}
 
 Tus chats antiguos de Telegram y WhatsApp pueden entrar en Erevos, para leerlos, con sus fotos, vídeos, mensajes de voz

@@ -1,4 +1,4 @@
-import { hardBackupKey, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
+import { hardBackupKey, isBackupPassword, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
 
 import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
 import { writeBackup } from './backup-place';
@@ -145,4 +145,15 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
     running = null;
   });
   return running;
+}
+
+/**
+ * Whether `password` is automatic backups' own: the key it gives, with their salt and cost, is
+ * the one kept. Null when there are no automatic backups to compare with.
+ */
+export async function isAutoBackupPassword(password: string): Promise<boolean | null> {
+  const auto = await loadAutoBackup();
+  if (!auto) return null;
+  const hard = auto.hard && { salt: fromBase64(auto.hard.salt), m: auto.hard.m, t: auto.hard.t };
+  return isBackupPassword(password, { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard });
 }

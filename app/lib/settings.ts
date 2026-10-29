@@ -176,6 +176,7 @@ export const SETTINGS: SettingsGroup[] = [
     icon: 'stack',
     items: [
       { id: 'backups', title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
+      { id: 'backup-pieces', title: mark('Backup pieces'), detail: mark('Your backup password in pieces with friends, and the pieces you keep for them'), href: '/backup-pieces' },
       { id: 'devices', title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
       { id: 'imported', title: mark('Imported chats'), detail: mark('Telegram, WhatsApp and Viber exports'), href: '/imported' },
     ],

@@ -39,6 +39,7 @@ import {
   type AutoBackup,
 } from '../lib/backup-folder';
 import { backsUpSms, canBackUpSms, phoneSmsForBackup, setBacksUpSms, smsCounts, SMS_PICTURES_MB } from '../lib/backup-sms';
+import { takeHandedServer } from '../lib/backup-pieces';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
@@ -114,6 +115,9 @@ export default function Backups() {
     loadAutoBackup().then(setAuto);
     void loadCloudBackup().then(setCloud);
     void backsUpSms().then(setSmsToo);
+    // The server backup pieces gave back (app/backup-pieces.tsx): its backups listed at once.
+    const handed = takeHandedServer();
+    if (handed) void listServer(handed);
   }, []);
   // Whether backups to the server go through Tor changes as Tor becomes ready.
   const [, setTorTick] = useState(0);

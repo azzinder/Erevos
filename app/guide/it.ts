@@ -2480,6 +2480,37 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
 - **Un backup da un Erevos più recente:** Erevos 0.1.8 e successivi lo aprono comunque, e ne ripristinano tutto quello
   che conoscono; quelli precedenti dicono che una parte resta fuori. Aggiorna prima Erevos per ripristinarlo tutto.
 
+## Pezzi del backup presso amici {#backup-pieces}
+
+La password dei tuoi backup può andare agli amici in pezzi, in **Impostazioni** → **Dati e dispositivi** → **Pezzi
+del backup**: scegli **2 su 3**, **2 su 4**, **3 su 4** o **3 su 5**, poi altrettanti contatti, e tocca **Dai i
+pezzi**. Con i backup automatici attivi, Erevos verifica che la password che scrivi sia la loro. Con un server in
+**Anche su un server**, i pezzi possono contenere anche indirizzo, nome utente e password del server, così con essi si
+possono trovare e aprire i backup che sono lì. Ogni contatto riceve un messaggio che dice di cosa si tratta, e il suo
+Erevos conserva il pezzo a parte dalla chat, in **Pezzi che tieni per gli amici**.
+
+1. **Per riaverla:** chiedi i loro pezzi a un numero sufficiente di amici. Ognuno tocca **Mostra il codice** accanto
+   al tuo, e tu tocchi **Scansiona un codice** in **Rimetti insieme i tuoi pezzi**; oppure toccano **Copia** e ti
+   mandano il testo in un altro modo, e tu lo incolli e tocchi **Aggiungi**; oppure, finché il tuo telefono ha ancora
+   l’account, toccano **Restituiscilo nella vostra chat**. Poi tocca **Rimetti insieme**: Erevos mostra la password e,
+   con un server nei pezzi, **Ripristina da quel server** elenca i backup che sono lì.
+2. **Una nuova password:** appena i tuoi backup hanno una nuova password, i pezzi dati prima non servono più: danne
+   di nuovi.
+
+- **Cosa mostra un pezzo:** nulla. Meno pezzi di quelli necessari non dicono nulla della password, per quanta
+  potenza di calcolo ci si metta: con essi, ogni password è probabile quanto un’altra. Ogni pezzo ha la stessa
+  dimensione, qualunque sia la password, e niente al suo interno nomina te o gli altri amici.
+- **Sul tuo telefono:** il messaggio resta nella chat, ma il suo pezzo no: una volta partito, niente sul tuo telefono
+  conserva i pezzi, solo a chi sono andati. Chi apre uno dei tuoi spazi scopre a chi hai dato i pezzi, non la
+  password. I pezzi vanno solo ai contatti dello spazio, non alle chat nascoste.
+- **Cosa non può impedire:** abbastanza amici insieme possono aprire i tuoi backup se ottengono anche il file:
+  scegli persone che non si conoscano tutte tra loro. Qualcuno può fingersi te, da un numero o un account nuovo, per
+  avere i pezzi: un amico dovrebbe restituirne uno solo a te di persona, o nella chat che ha già con te. Un amico con
+  un Erevos più vecchio di questa versione vede il messaggio ma non conserva alcun pezzo.
+
+**Perché:** un backup è sicuro quanto la sua password, e una password forte si perde facilmente. Divisa così (la
+condivisione di segreti di Shamir), nessun amico da solo, e nessun relay, tiene qualcosa che la apra.
+
 ## Chat importate {#import}
 
 Le tue vecchie chat da Telegram e WhatsApp possono entrare in Erevos, da leggere, con le loro foto, video, messaggi

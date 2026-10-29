@@ -2589,6 +2589,41 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   qu’ils connaissent ; avant cela, ils disent qu’une partie reste dehors. Mets d’abord Erevos à jour pour tout
   restaurer.
 
+## Morceaux de sauvegarde chez des amis {#backup-pieces}
+
+Le mot de passe de vos sauvegardes peut aller à des amis en morceaux, dans **Réglages** → **Données et appareils** →
+**Morceaux de sauvegarde** : choisissez **2 sur 3**, **2 sur 4**, **3 sur 4** ou **3 sur 5**, puis autant de contacts,
+et touchez **Donner les morceaux**. Avec les sauvegardes automatiques activées, Erevos vérifie que le mot de passe que
+vous tapez est bien le leur. Avec un serveur dans **Aussi vers un serveur**, les morceaux peuvent contenir aussi son
+adresse, son nom d’utilisateur et son mot de passe, pour qu’on puisse y trouver et ouvrir les sauvegardes avec eux.
+Chaque contact reçoit un message qui dit ce que c’est, et son Erevos garde le morceau à part de la conversation, dans
+**Morceaux que vous gardez pour des amis**.
+
+1. **Pour le récupérer :** demandez leurs morceaux à assez d’entre eux. Chacun touche **Afficher le code** à côté du
+   vôtre, et vous touchez **Scanner un code** dans **Rassembler vos morceaux** ; ou ils touchent **Copier** et vous
+   envoient le texte autrement, et vous le collez puis touchez **Ajouter** ; ou, tant que votre téléphone a encore le
+   compte, ils touchent **Le rendre dans votre conversation**. Touchez ensuite **Rassembler** : Erevos affiche le mot
+   de passe et, avec un serveur dans les morceaux, **Restaurer depuis ce serveur** liste les sauvegardes qui s’y
+   trouvent.
+2. **Un nouveau mot de passe :** dès que vos sauvegardes ont un nouveau mot de passe, les morceaux donnés avant ne
+   servent plus : donnez-en de nouveaux.
+
+- **Ce que montre un morceau :** rien. Moins de morceaux que nécessaire ne disent rien du mot de passe, quelle que
+  soit la puissance de calcul employée : avec eux, chaque mot de passe est aussi probable qu’un autre. Chaque morceau
+  a la même taille, quel que soit le mot de passe, et rien dedans ne vous nomme, ni les autres amis.
+- **Sur votre téléphone :** le message reste dans la conversation, mais pas son morceau : une fois parti, rien sur
+  votre téléphone ne garde les morceaux, seulement à qui ils sont allés. Qui ouvre l’un de vos espaces apprend à qui
+  vous avez donné des morceaux, pas le mot de passe. Les morceaux ne vont qu’aux contacts de l’espace, pas aux
+  discussions cachées.
+- **Ce que cela ne peut empêcher :** assez d’amis ensemble peuvent ouvrir vos sauvegardes s’ils obtiennent aussi le
+  fichier : choisissez des personnes qui ne se connaissent pas toutes. Quelqu’un peut se faire passer pour vous, depuis
+  un nouveau numéro ou un nouveau compte, pour obtenir les morceaux : un ami ne devrait rendre le sien qu’à vous en
+  personne, ou dans la conversation qu’il a déjà avec vous. Un ami dont l’Erevos est plus ancien que cette version voit
+  le message mais ne garde aucun morceau.
+
+**Pourquoi :** une sauvegarde n’est pas plus sûre que son mot de passe, et un mot de passe fort se perd facilement.
+Partagé ainsi (le partage de secret de Shamir), aucun ami seul, ni aucun relay, ne détient de quoi l’ouvrir.
+
 ## Discussions importées {#import}
 
 Tes anciennes discussions de Telegram et de WhatsApp peuvent entrer dans Erevos, pour être lues, avec leurs photos,

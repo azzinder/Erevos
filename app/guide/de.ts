@@ -2623,6 +2623,38 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   was sie kennen; ältere sagen, dass ein Teil davon draußen bleibt. Aktualisiere zuerst Erevos, um alles
   wiederherzustellen.
 
+## Backup-Teile bei Freunden {#backup-pieces}
+
+Das Passwort deiner Backups kann in Teilen an Freunde gehen, unter **Einstellungen** → **Daten und Geräte** →
+**Backup-Teile**: Wähle **2 von 3**, **2 von 4**, **3 von 4** oder **3 von 5**, dann ebenso viele Kontakte, und tippe
+auf **Teile geben**. Mit automatischen Backups prüft Erevos, dass das Passwort, das du tippst, ihres ist. Mit einem
+Server unter **Auch auf einen Server** können die Teile auch dessen Adresse, Benutzernamen und Passwort enthalten,
+sodass sich die Backups dort mit ihnen finden und öffnen lassen. Jeder Kontakt bekommt eine Nachricht, die sagt, was
+es ist, und sein Erevos bewahrt das Teil getrennt vom Chat auf, unter **Teile, die du für Freunde aufbewahrst**.
+
+1. **Um es zurückzubekommen:** Bitte genug von ihnen um ihre Teile. Jeder tippt neben deinem auf **Code zeigen**, und
+   du tippst unter **Deine Teile zusammensetzen** auf **Code scannen**; oder sie tippen auf **Kopieren** und schicken
+   dir den Text auf anderem Weg, und du fügst ihn ein und tippst auf **Hinzufügen**; oder, solange dein Telefon das
+   Konto noch hat, tippen sie auf **Im Chat zurückgeben**. Dann tippe auf **Zusammensetzen**: Erevos zeigt das
+   Passwort, und mit einem Server in den Teilen listet **Von diesem Server wiederherstellen** die Backups dort auf.
+2. **Ein neues Passwort:** Sobald deine Backups ein neues Passwort haben, sind die früher gegebenen Teile nutzlos: Gib
+   neue.
+
+- **Was ein Teil zeigt:** nichts. Weniger Teile als nötig sagen nichts über das Passwort, wie viel Rechenkraft man
+  auch einsetzt: Mit ihnen ist jedes Passwort so wahrscheinlich wie jedes andere. Jedes Teil hat dieselbe Größe,
+  welches Passwort es auch ist, und nichts darin nennt dich oder die anderen Freunde.
+- **Auf deinem Telefon:** Die Nachricht bleibt im Chat, ihr Teil aber nicht: Sobald es weg ist, bewahrt nichts auf
+  deinem Telefon die Teile auf, nur an wen sie gingen. Wer einen deiner Räume öffnet, erfährt, wem du Teile gegeben
+  hast, nicht das Passwort. Teile gehen nur an Kontakte des Raums, nicht an versteckte Chats.
+- **Was es nicht verhindern kann:** Genug Freunde zusammen können deine Backups öffnen, wenn sie auch die Datei
+  bekommen: Wähle Menschen, die sich nicht alle kennen. Jemand kann sich als du ausgeben, mit einer neuen Nummer oder
+  einem neuen Konto, um an die Teile zu kommen: Ein Freund sollte ein Teil nur dir persönlich zurückgeben, oder in dem
+  Chat, den er schon mit dir hat. Ein Freund, dessen Erevos älter als diese Version ist, sieht die Nachricht, bewahrt
+  aber kein Teil auf.
+
+**Warum:** Ein Backup ist nur so sicher wie sein Passwort, und ein starkes Passwort geht leicht verloren. So geteilt
+(Shamirs Geheimnisteilung) hält kein einzelner Freund und kein Relay etwas, das es öffnet.
+
 ## Importierte Chats {#import}
 
 Deine alten Chats aus Telegram und WhatsApp können in Erevos kommen, zum Lesen, mit ihren Fotos, Videos,

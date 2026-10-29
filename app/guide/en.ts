@@ -2257,6 +2257,36 @@ again with a password of its own. It is under **Settings** → **Data and device
 - **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
   that, they say some of it stays out. Update Erevos first to restore all of it.
 
+## Backup pieces with friends {#backup-pieces}
+
+The password of your backups can go to friends in pieces, under **Settings** → **Data and devices** → **Backup
+pieces**: choose **2 of 3**, **2 of 4**, **3 of 4** or **3 of 5**, then as many contacts, and tap **Give the
+pieces**. With automatic backups on, Erevos checks that the password you type is theirs. With a server under **To a
+server too**, the pieces can hold its address, user name and password as well, so the backups there can be found and
+opened with them. Each contact gets a message that says what it is, and their Erevos keeps the piece apart from the
+chat, under **Pieces you keep for friends**.
+
+1. **To get it back:** ask enough of them for their pieces. Each taps **Show the code** beside yours, and you tap
+   **Scan a code** under **Put your pieces together**; or they tap **Copy** and send you the text another way, and you
+   paste it and tap **Add**; or, while your phone still has the account, they tap **Give it back in your chat**. Then
+   tap **Put together**: Erevos shows the password, and, with a server in the pieces, **Restore from that server**
+   lists the backups there.
+2. **A new password:** once your backups have a new password, the pieces given before are of no use: give new ones.
+
+- **What a piece shows:** nothing. Fewer pieces than needed say nothing of the password, however much computing is
+  put to them: with them, every password is as likely as any other. Every piece has the same size, whatever the
+  password, and nothing in it names you or the other friends.
+- **On your phone:** the message stays in the chat, but its piece does not: once it went, nothing on your phone keeps
+  the pieces, only to whom they went. Whoever opens one of your spaces learns whom you gave pieces to, not the
+  password. Pieces go to the space's contacts only, not to hidden chats.
+- **What it cannot stop:** enough friends together can open your backups if they also get the file: choose people
+  who do not all know each other. Someone may pretend to be you, from a new number or a new account, to get the
+  pieces: a friend should give one back only to you in person, or in the chat they already have with you. A friend
+  whose Erevos is older than this version sees the message but keeps no piece.
+
+**Why:** a backup is only as safe as its password, and a strong password is easy to lose. Split this way (Shamir's
+secret sharing), no single friend, and no relay, holds anything that opens it.
+
 ## Imported chats {#import}
 
 Your old chats from Telegram and WhatsApp can come into Erevos, to read, with their photos, videos, voice messages and

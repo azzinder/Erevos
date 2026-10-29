@@ -4,6 +4,7 @@ import { loadClip } from '../lock/voice-clips';
 import { refSource, uploadFile } from './attachments';
 import { offerOnNostr } from './nostr-send-files';
 import { contentOf, withoutPreview } from './chat-parts';
+import { pieceToGo, pieceWent } from './pieces-kept';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForSlowWayError } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
@@ -135,6 +136,7 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     try {
       const { lasts, bare } = await sendOne(e2e, place, identity, message);
       tries.delete(tag);
+      await pieceWent(e2e, tag).catch(() => undefined);
       if (await history.sent(peer, tag, lasts, { bare })) went.push({ peer, tag, lasts, ...(bare ? { bare: true as const } : {}) });
     } catch {
       const count = (tried?.count ?? 0) + 1;
@@ -389,7 +391,8 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [file.packet];
     worthCarrying = false;
   } else {
-    const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: contentOf(message) });
+    // A backup piece waits beside its message, never in it (lib/pieces-kept.ts).
+    const text = await e2e.seal(identity, message.text, place.senderHex, { ...options, quiet: message.quiet, more: { ...contentOf(message), ...pieceToGo(e2e, message.tag) } });
     sealed = text;
     packets = [text.packet];
   }

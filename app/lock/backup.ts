@@ -140,6 +140,13 @@ export async function backupKey(password: string, salt = randomBytes(SALT), iter
   return { key: hard ? await hardBackupKey(k, hard) : k, salt, iter, hard };
 }
 
+/** Whether `password` gives the backup key `kept`, with its salt and cost (automatic backups', lib/backup-folder.ts). */
+export async function isBackupPassword(password: string, kept: BackupKey): Promise<boolean> {
+  const pbkdf2 = await deriveKey(password, kept.salt, kept.iter);
+  const key = kept.hard ? await hardBackupKey(pbkdf2, kept.hard) : pbkdf2;
+  return sameBytes(key, kept.key);
+}
+
 async function collect(): Promise<Entry[]> {
   const entries: Entry[] = [];
   for (const name of KEYS) {

@@ -2436,6 +2436,37 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
 - **Um backup de um Erevos mais novo:** o Erevos 0.1.8 e posteriores também o abrem, e restauram tudo o que conhecem
   dele; antes disso, dizem que parte dele fica de fora. Atualize o Erevos primeiro para restaurar tudo.
 
+## Partes do backup com amigos {#backup-pieces}
+
+A senha dos seus backups pode ir para amigos em partes, em **Configurações** → **Dados e dispositivos** → **Partes do
+backup**: escolha **2 de 3**, **2 de 4**, **3 de 4** ou **3 de 5**, depois o mesmo número de contatos, e toque em
+**Dar as partes**. Com os backups automáticos ligados, o Erevos confere se a senha que você digita é a deles. Com um
+servidor em **Também para um servidor**, as partes podem guardar também o endereço, o nome de usuário e a senha dele,
+para que com elas os backups de lá possam ser encontrados e abertos. Cada contato recebe uma mensagem que diz o que é,
+e o Erevos dele guarda a parte separada da conversa, em **Partes que você guarda para amigos**.
+
+1. **Para recuperá-la:** peça as partes a um número suficiente deles. Cada um toca em **Mostrar o código** ao lado da
+   sua, e você toca em **Escanear um código** em **Juntar suas partes**; ou tocam em **Copiar** e mandam o texto para
+   você de outro jeito, e você cola e toca em **Adicionar**; ou, enquanto seu celular ainda tiver a conta, tocam em
+   **Devolver na conversa**. Depois toque em **Juntar**: o Erevos mostra a senha e, com um servidor nas partes,
+   **Restaurar desse servidor** lista os backups de lá.
+2. **Uma senha nova:** assim que seus backups tiverem uma senha nova, as partes dadas antes deixam de servir: dê
+   novas.
+
+- **O que uma parte mostra:** nada. Menos partes do que as necessárias não dizem nada da senha, por mais poder de
+  computação que se use: com elas, qualquer senha é tão provável quanto outra. Toda parte tem o mesmo tamanho, seja
+  qual for a senha, e nada nela nomeia você ou os outros amigos.
+- **No seu celular:** a mensagem fica na conversa, mas a parte dela não: depois de enviada, nada no seu celular
+  guarda as partes, só para quem foram. Quem abrir um dos seus espaços fica sabendo para quem você deu partes, não a
+  senha. As partes vão só para contatos do espaço, não para conversas ocultas.
+- **O que isso não impede:** amigos suficientes juntos podem abrir seus backups se também conseguirem o arquivo:
+  escolha pessoas que não se conheçam todas entre si. Alguém pode fingir ser você, de um número ou conta novos, para
+  conseguir as partes: um amigo deve devolver a parte só para você pessoalmente, ou na conversa que já tem com você. Um
+  amigo com um Erevos mais antigo que esta versão vê a mensagem mas não guarda nenhuma parte.
+
+**Por quê:** um backup é tão seguro quanto a senha dele, e uma senha forte se perde com facilidade. Dividida assim (o
+compartilhamento de segredos de Shamir), nenhum amigo sozinho, e nenhum relay, tem algo que o abra.
+
 ## Conversas importadas {#import}
 
 As suas conversas antigas do Telegram e do WhatsApp podem vir para o Erevos, para leitura, com as fotos, vídeos,
