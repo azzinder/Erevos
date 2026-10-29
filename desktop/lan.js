@@ -28,6 +28,9 @@ const STILL_HERE = Buffer.from('EVL1', 'latin1');
 const DIAL_ANYWAY_AFTER = 6000;
 const HELLO_WITHIN = 5000;
 const MAX_LINKS = 16;
+// Others heard at once: anyone on the network can say any nonce from any address, so a flood of
+// them is not let grow without end, nor dialed.
+const MAX_HEARD = 64;
 const MAX_FRAME = 16 * 1024 + 64;
 const ANNOUNCE = /^EVL1 ([0-9a-f]{16}) ([0-9]{1,5})$/;
 const HELLO = /^EVL1 ([0-9a-f]{16})$/;
@@ -148,11 +151,12 @@ class Lan {
     if (!match || !this.running) return;
     const [, nonce, port] = match;
     if (nonce === this.nonce) return;
+    if (!this.heard.has(nonce) && this.heard.size >= MAX_HEARD) return;
     const now = Date.now();
     const heard = this.heard.get(nonce) ?? { first: now };
     heard.at = now;
     this.heard.set(nonce, heard);
-    if (this.linkTo(nonce) || this.dialing.has(nonce) || this.links.size >= MAX_LINKS) return;
+    if (this.linkTo(nonce) || this.dialing.has(nonce) || this.links.size + this.dialing.size >= MAX_LINKS) return;
     if (this.nonce < nonce || now - heard.first > DIAL_ANYWAY_AFTER) this.dial(nonce, address, Number(port));
   }
 

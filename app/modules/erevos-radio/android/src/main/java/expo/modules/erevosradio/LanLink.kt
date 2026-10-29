@@ -275,10 +275,13 @@ class LanLink(
     val theirs = match.groupValues[1]
     val port = match.groupValues[2].toIntOrNull() ?: return
     if (!running || theirs == nonce || port !in 1..65535) return
+    // Anyone on the network can say any nonce from any address: a flood of them is not let grow
+    // without end, nor dialed.
+    if (!heard.containsKey(theirs) && heard.size >= MAX_HEARD) return
     val now = System.currentTimeMillis()
     val seen = heard.getOrPut(theirs) { Heard(now) }
     seen.at = now
-    if (linkTo(theirs) != null || links.size >= MAX_LINKS) return
+    if (linkTo(theirs) != null || links.size + dialing.size >= MAX_LINKS) return
     if (nonce < theirs || now - seen.first > DIAL_ANYWAY_AFTER_MS) {
       if (dialing.add(theirs)) io?.execute { dial(theirs, address, port) }
     }
@@ -369,6 +372,7 @@ class LanLink(
     private const val DIAL_ANYWAY_AFTER_MS = 6_000L
     private const val HELLO_WITHIN_MS = 5_000
     private const val MAX_LINKS = 16
+    private const val MAX_HEARD = 64
     private val STILL_HERE = "EVL1".toByteArray(Charsets.ISO_8859_1)
     private val ANNOUNCE = Regex("EVL1 ([0-9a-f]{16}) ([0-9]{1,5})")
     private val HELLO = Regex("EVL1 ([0-9a-f]{16})")

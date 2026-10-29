@@ -17,6 +17,10 @@ const qint64 GoneAfter = 15000;
 const qint64 DialAnywayAfter = 6000;
 const qint64 HelloWithin = 5000;
 const int MaxLinks = 16;
+// Others heard at once, and connections not yet greeted: anyone on the network can say any nonce
+// from any address, so a flood of them is not let grow without end, nor dialed.
+const int MaxHeard = 64;
+const int MaxPending = 2 * MaxLinks;
 const quint32 MaxFrame = 16 * 1024 + 64;
 const QByteArray StillHere("EVL1");
 
@@ -166,11 +170,12 @@ void LanLink::announced(const QByteArray &text, const QHostAddress &from)
     const QString nonce = match.captured(1);
     const int port = match.captured(2).toInt();
     if (nonce == m_nonce || port <= 0 || port > 65535) return;
+    if (!m_heard.contains(nonce) && m_heard.size() >= MaxHeard) return;
     const qint64 at = now();
     QPair<qint64, qint64> heard = m_heard.value(nonce, qMakePair(at, at));
     heard.second = at;
     m_heard.insert(nonce, heard);
-    if (linkTo(nonce) || m_dialing.contains(nonce) || m_links.size() >= MaxLinks) return;
+    if (linkTo(nonce) || m_dialing.contains(nonce) || m_links.size() + m_dialing.size() >= MaxLinks || m_conns.size() >= MaxLinks + MaxPending) return;
     // An address said as IPv6 for IPv4 (::ffff:a.b.c.d) is dialed as IPv4.
     bool v4 = false;
     const quint32 ip = from.toIPv4Address(&v4);
@@ -201,7 +206,7 @@ void LanLink::dial(const QString &nonce, const QHostAddress &address, quint16 po
 void LanLink::accept()
 {
     while (QTcpSocket *socket = m_server.nextPendingConnection()) {
-        if (m_links.size() >= MaxLinks) {
+        if (m_links.size() >= MaxLinks || m_conns.size() >= MaxLinks + MaxPending) {
             socket->abort();
             socket->deleteLater();
             continue;
