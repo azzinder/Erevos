@@ -667,6 +667,15 @@ na ekranu.
   zvuka. Relay od prije ovoga ne čuva ništa za kasnije: tada poruka čeka na ovom telefonu i ide u svoje vrijeme dok
   Erevos radi, i u pozadini dok je **U pozadini** postavljeno na **Primaj i zvoni** (ispod), ili kad se Erevos sljedeći
   put otvori.
+- **Sigurnosna poruka:** upišite je, dodirnite **+**, a zatim **Sigurnosna poruka**, i izaberite koliko dugo: 6 ili 12
+  sati, 1, 2 ili 3 dana, ili sedmicu. Odmah ide na relay, kao poruka poslana za kasnije, a relay je sam šalje u to
+  vrijeme. Svaki put kad otvorite Erevos, nakon njegove lozinke, pomjera se ponovo za toliko, pa ide samo ako na
+  vrijeme ne otvorite Erevos: ako je telefon izgubljen, oduzet, pokvaren ili bez interneta, ili vam se nešto dogodilo.
+  Erevos koji radi u pozadini je ne pomjera, kao ni njegov ekran lozinke. U razgovoru je označena sa **Sigurnosna
+  poruka** i vremenom kad bi otišla; obrišite je da biste je zaustavili. Napišite je tako da kaže šta jeste: vašem
+  kontaktu stiže kao obična poruka. Ako se relay ne može dosegnuti kad otvorite Erevos, zadržava svoje vrijeme.
+  **Zašto:** poruci koju drži relay ne treba ništa s ovog telefona da bi otišla, pa je niko ko uzme telefon ne može
+  zaustaviti, osim otvaranjem Erevosa njegovom lozinkom.
 - **Slanje bez zvuka:** zadržite prst na strelici za slanje i izaberite **Bez zvuka**: telefon te osobe prikazuje
   obavijest bez zvuka i vibracije. Erevos od prije ovoga to ne zna i oglašava se kao i obično, kao i Erevos kao
   web-aplikacija, čija obavijest dolazi iz preglednika. Isto tako i obavijest zatvorenog mjesta skrivenih razgovora s
@@ -850,6 +859,22 @@ Zadržite prst na poruci za njen meni: reakcije na vrhu, a zatim ono što s njom
 - **Obriši:** na ovom telefonu ili na oba, kao iznad.
 
 Reakcije, odgovori, prikvačene poruke i izmjene putuju unutar šifriranja, kao i poruke.
+
+### Kako riječi izgledaju
+
+Znakovi upisani oko riječi mijenjaju kako se prikazuju, u razgovorima i grupama, kao u WhatsAppu i Signalu:
+\`*podebljano*\`, \`_kurziv_\`, \`~precrtano~\`, riječ među obrnutim apostrofima kao kôd (tri obrnuta apostrofa oko
+redova za blok koda) i \`||riječi||\`, skrivene iza sive trake dok ih ne dodirnete, na ekranu, u redu početnog ekrana i
+u citatu (tamo kao ▒▒▒).
+
+- **Samo oko riječi:** znak vrijedi kad počinje riječ i kad je završava, pa \`2*3*4\`, \`snake_case\` i web adrese
+  ostaju kakvi jesu. Podebljano, kurziv i precrtano ostaju u jednom redu.
+- **Drugi vide znakove:** raniji Erevos i druge aplikacije prikazuju riječi s njihovim znakovima, kako su upisane.
+- **Skrivena fotografija:** pod **+**, **Skrivena fotografija** šalje fotografiju koja se u razgovoru prikazuje
+  zamućeno, u razgovorima s kontaktima i u grupama, dok je ne dodirnete, i tada se sama otvara. Raniji Erevos je
+  prikazuje kao svaku fotografiju.
+
+**Zašto:** znak upisan u riječi putuje u njima, unutar šifriranja, bez ičega pored njih po čemu bi se razlikovao.
 
 ### Poruke koje nestaju
 
@@ -1185,6 +1210,10 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
   razgovoru** pretražuje poruke grupe, a **Izvezi razgovor** ih ispisuje, a **Mediji, linkovi i fajlovi** navodi fotografije, videe, glasovne poruke, muziku, fajlove i linkove grupe, svaku vrstu posebno, kao u razgovoru s kontaktom (vidi gore), svaki s skokom na svoju poruku; **Poruke sa zvjezdicom** i pretraga
   početnog ekrana obuhvataju i grupe. Član čiji je Erevos od prije ove verzije vidi riječi, emoji naljepnice,
   koordinate lokacije i pitanje ankete, a ništa od reakcija, prikvačenih poruka, izmjena i brisanja.
+- **Imenovanje člana:** upišite **@** u polje za poruku i članovi čija imena počinju onim što slijedi prikažu se iznad
+  njega: dodirnite jednog da unesete cijelo njegovo ime. Član imenovan tako dobije obavijest o poruci čak i ako je
+  utišao grupu. Računaju se samo cijela imena, pa **@Ana** ne imenuje Anu Mariju. Raniji Erevos prikazuje samo riječi i
+  obavještava kako kažu postavke grupe.
 - **Još ne:** oznake, kucanje i poruke koje nestaju u grupama, te grupe preko telefona u blizini.
 
 ## Javne grupe {#public-groups}
@@ -2425,7 +2454,7 @@ njegov Erevos čuva dio odvojeno od razgovora, pod **Dijelovi koje čuvate za pr
 ## Gumb za paniku {#panic}
 
 Kad ste u opasnosti, Erevos se može odmah obrisati, u **Postavke** → **Privatnost i sigurnost** → **Gumb za paniku**:
-dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu i u web aplikaciji.
+dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web aplikaciji, na računalu i na Sailfish OS-u.
 
 - **Što se briše:** svaki prostor s njegovim skrivenim razgovorima, s njihovim kontaktima, porukama, fotografijama,
   datotekama i ključevima; zaključavanje i njegove lozinke; Matrix, XMPP i Nostr računi i tokeni relaya; postavke i
@@ -2439,10 +2468,17 @@ dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu i u web ap
    Dodirnite **Recite da**.
 2. **Samo ta aplikacija:** samo aplikacija kojoj ste rekli da može obrisati Erevos, i to samo dok je **Aplikacija za
    paniku smije obrisati Erevos** uključeno. Erevos provjerava ime aplikacije i njezin potpis: druga aplikacija, ili
-   isto ime koje je netko drugi ponovno instalirao, ne može. **Prestani vjerovati** to završava.
+   isto ime koje je netko drugi ponovno instalirao, ne može. Ažuriranje aplikacije koje prelazi na novi ključ na način
+   koji Android dopušta (rotacija ključa) i dalje je pouzdano. **Prestani vjerovati** to završava.
+4. **Kad je Erevos odbio:** ako je pouzdana aplikacija tražila brisanje dok je prekidač bio isključen, ili potpisana
+   drugim ključem, ovaj zaslon to kaže crveno, s danom i satom. Kad je aplikacija potpisana drugim ključem, **Vjeruj
+   aplikaciji … ovakvoj kakva je sada** joj ponovno vjeruje: recite da samo ako ste je sami ažurirali.
 3. **Nakon brisanja:** zaboravlja se i aplikacija za paniku: recite joj ponovno da kad opet postavite Erevos.
 
-- **Na računalu:** ondje se Erevos ne može sam obrisati: umjesto toga obrišite njegove podatke s računala.
+- **Na računalu i na Sailfish OS-u:** nema aplikacije za paniku, samo **Obriši sve sada**, uz **I automatske rezervne
+  kopije u** njihovu mapu ako to odaberete. Na računalu se Erevos zatim ponovno pokreće kao tek instaliran; na Sailfish
+  OS-u se zatvara. Stavka privjeska za Erevos ostaje na računalu, ali ono što je zapečaćivala je nestalo, pa ne otvara
+  ništa.
 - **Što ne može sakriti:** na telefonu se i bez lozinke i dalje vidi da je Erevos instaliran i da ga aplikacija za
   paniku smije obrisati, ali ne i što je u njemu bilo.
 
@@ -2793,9 +2829,9 @@ zapečaćene na isti način.
 4. Postavite relay i dodajte kontakte kao na telefonu, pogledajte [Razgovor preko relaya](#relay).
 
 - **Šta radi samo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa i SMS. Ista Wi-Fi mreža i ovdje radi, kao na
-  računaru: pogledajte [Razgovor s telefonom u blizini](#nearby). Zaštitni zid (firewall) telefona možda mora
-  propuštati port 47905 (UDP i TCP). Ostalo je isto: prostori i druga
-  lozinka, skriveni razgovori, glasovne poruke, uvezeni razgovori i rezervne kopije.
+  računaru: pogledajte [Razgovor s telefonom u blizini](#nearby). Zaštitni zid Sailfish OS-a već propušta njegov port,
+  47905: samo zaštitni zid koji ste sami pooštrili treba pravilo za njega. Ostalo je isto: prostori i druga lozinka,
+  skriveni razgovori, glasovne poruke, uvezeni razgovori i rezervne kopije.
 - **Gdje čuva stvari:** u \`~/.local/share/erevos\` na telefonu, zapečaćene kao na telefonu. Sailfish nema privjesak
   za ključeve za aplikacije, pa se spremište ključeva tamo čuva onakvo kakvo jeste, čitljivo vašem korisniku, a time i
   svakoj aplikaciji koja radi kao vi: zaključavanje lozinkom je ono što ga zapečaćuje.

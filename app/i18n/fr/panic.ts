@@ -29,4 +29,12 @@ export const panic: Record<string, string> = {
   "Panic button": "Bouton de panique",
   "Wipe Erevos at once, from here or from a panic app": "Effacer Erevos d’un coup, d’ici ou depuis une app de panique",
   "Erevos cannot wipe itself here.": "Ici, Erevos ne peut pas s’effacer lui-même.",
+  "Trust {app} as it is now": "Faire confiance à {app} tel qu'il est maintenant",
+  "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "{app} est maintenant signé avec une autre clé, donc Erevos ne le laisse pas effacer. Dis oui seulement si tu l'as mis à jour toi-même depuis l'endroit où tu l'as eu ; une autre app sous son nom pourrait être celle qui demande.",
+  "Trust it": "Faire confiance",
+  "{app} is not installed.": "{app} n'est pas installé.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.": "Le {when}, {app} a demandé d'effacer Erevos, et Erevos a refusé : l'app n'est plus signée comme quand tu lui as fait confiance.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "Le {when}, {app} a demandé d'effacer Erevos, et Erevos a refusé : l'interrupteur ci-dessous était éteint.",
+  "Got it": "Compris",
+  "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "{app} est installé mais signé avec une autre clé, il ne peut donc pas effacer Erevos. Si tu l'as mis à jour toi-même, fais-lui de nouveau confiance tel qu'il est maintenant.",
 };

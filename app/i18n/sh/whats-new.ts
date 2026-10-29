@@ -8,6 +8,18 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
+    "**Podebljano, kurziv, kôd i skrivene riječi**: u razgovorima i grupama riječi među * postaju podebljane, među _ kurzivne, među ~ precrtane, među ` kôd, a među || skrivene iza sive trake dok ih ne dodirnete. Vidi [Razgovor preko releja](#relay).",
+  "**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay).":
+    "**Skrivena fotografija**: pod + u razgovoru ili grupi, fotografija koja se prikazuje zamućeno dok je ne dodirnete. Vidi [Razgovor preko releja](#relay).",
+  "**Safety message**: under + in a chat, words to a contact that the relay sends by itself if you do not open Erevos for 6 hours to a week; each time you open it, they move on again. See [Chat through a relay](#relay).":
+    "**Sigurnosna poruka**: pod + u razgovoru, riječi kontaktu koje relay sam šalje ako ne otvorite Erevos od 6 sati do sedmicu dana; svaki put kad ga otvorite, ponovo se pomjeraju. Vidi [Razgovor preko releja](#relay).",
+  "**Name a member in a group with @**: type @ and pick a member; they are told of the message even if they muted the group. See [Group chats](#groups).":
+    "**Imenujte člana u grupi sa @**: upišite @ i odaberite člana; dobije obavijest o poruci čak i ako je utišao grupu. Vidi [Grupni razgovori](#groups).",
+  "**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic).":
+    "**Gumb za paniku na računalu i na Sailfish OS-u**: Postavke → Privatnost i sigurnost → Gumb za paniku sada briše Erevos i ondje, s njegovim automatskim rezervnim kopijama ako to odaberete; na računalu se zatim pokreće kao nov. Pogledajte [Gumb za paniku](#panic).",
+  "**The panic button says when it refused**: when your panic app asked to wipe Erevos while the switch was off, or signed with another key, the panic screen now says so, with the time. An app that moves to a new key the way Android allows stays trusted; otherwise you can trust it again as it is now. See [Panic button](#panic).":
+    "**Gumb za paniku kaže kad je odbio**: kad je vaša aplikacija za paniku tražila brisanje Erevosa dok je prekidač bio isključen, ili potpisana drugim ključem, zaslon gumba za paniku to sada kaže, s vremenom. Aplikacija koja prelazi na novi ključ na način koji Android dopušta ostaje pouzdana; inače joj možete ponovno vjerovati ovakvoj kakva je sada. Pogledajte [Gumb za paniku](#panic).",
   "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
     "**Dugmad na početnom ekranu ostaju u jednom redu**: kad je tu i dugme Nostr, Matrix ili XMPP, **Imena** su išla u poseban red i dugmad su se pomjerala. Sada ostaju u jednom redu koji možete pomjerati u stranu, a izabrano dugme je uvijek na vidiku.",
   "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":

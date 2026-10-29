@@ -79,6 +79,7 @@ import { canForward, forwardedTo, forwardToGroup, takeForward, voiceCopy, type F
 import { isSharedPhoto, readShared, takeShared } from '../lib/share-in';
 import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
+import { SAFETY_HOURS, safetyDue } from '../lib/safety';
 import { ask, choose } from '../lib/alert';
 import { contactLink, contactLinkName, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
@@ -327,6 +328,7 @@ const scheduled = (message: Message) => message.mine && (message.mark === WAITIN
 function caption(message: Message): string {
   const parts: string[] = message.starred ? ['★'] : [];
   if (message.sending) parts.push(t('Sending…'));
+  else if (scheduled(message) && message.safety) parts.push(t('Safety message · goes {when} unless you open Erevos', { when: laterLabel(message.at) }));
   else if (scheduled(message)) parts.push(t('Scheduled · {when}', { when: laterLabel(message.at) }));
   else if (message.mine && message.tag && !isCallLine(message.text)) parts.push(message.mark === WAITING ? t('Waiting') : MARKS[message.mark]);
   if (message.until) parts.push(t('Disappears {when}', { when: disappearsAt(message.until) }));
@@ -851,6 +853,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // The panel under the message bar ("+"): what to send and how it goes, and choosing when it goes.
   const [attaching, setAttaching] = useState(false);
   const [choosingLater, setChoosingLater] = useState(false);
+  // The panel's page for a safety message (lib/safety.ts): how many hours.
+  const [choosingSafety, setChoosingSafety] = useState(false);
   const [stickering, setStickering] = useState(false);
   // A message to forward, while its chat is picked, and the space's groups it can go to.
   const [forwarding, setForwarding] = useState<Message | null>(null);
@@ -3233,7 +3237,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // (lib/waiting.ts, holdLater), so it goes though this phone is off by then. While no relay can
   // take it, it waits here, and goes to the relay with the first look that reaches one (in hidden
   // chats, theirs). Says whether it is kept.
-  async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef; lasts?: number }): Promise<boolean> {
+  async function schedule(peer: string, at: number, what: { text?: string; voice?: VoiceRef; file?: FileRef; lasts?: number }, safety = 0): Promise<boolean> {
     if (!e2e) {
       setNote(notOpen());
       return false;
@@ -3244,16 +3248,34 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const lasts = once || timerOf(peer);
     const when = laterLabel(at);
     const parts = answering(peer);
-    const heldNote = t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
-    addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at, parts);
+    const heldNote = safety
+      ? t('Safety message kept. It goes on {when}, unless you open Erevos before then: each time you do, it moves on to {time} from then. Delete it here to stop it.', { when, time: timerLabel(safety * 3600) })
+      : t('Scheduled for {when}. The relay sends it then, even if this phone is off. Until then you can delete it here.', { when });
+    addMessage(peer, text, true, tag, lasts, voice, file, WAITING, at, safety ? { ...parts, safety } : parts);
     setReplying(null);
     const went = await sendWaitingNow.current(true);
     setNote(
       went.some((w) => w.peer === peer && w.tag === tag && w.held)
         ? heldNote
-        : t('Scheduled for {when}. It goes to the relay once one can be reached, and from there at that time, even if this phone is off then. Until then you can delete it here.', { when }),
+        : safety
+          ? t('Safety message kept here. It is not safe yet: it goes to the relay once one can be reached. Until then it cannot go without this phone.')
+          : t('Scheduled for {when}. It goes to the relay once one can be reached, and from there at that time, even if this phone is off then. Until then you can delete it here.', { when }),
     );
     return true;
+  }
+
+  // Keeps the words typed as a safety message (lib/safety.ts): they go `hours` from now, unless
+  // Erevos is opened before, which puts them off as many hours again.
+  async function sendSafety(hours: number) {
+    const text = draft.text().trim();
+    setChoosingSafety(false);
+    setAttaching(false);
+    if (!selected?.startsWith(CONTACT_PREFIX)) return;
+    if (!text) {
+      setNote(t('Type the safety message first, then choose when it goes.'));
+      return;
+    }
+    if (await schedule(selected, safetyDue(hours), { text }, hours)) draft.set('');
   }
 
   // The time picked for the next photo, file or voice message, taken once: null when none was, or
@@ -3331,7 +3353,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         list.map((m) => {
           const sent = went.find((w) => w.peer === m.peer && w.tag === m.tag);
           if (!sent) return m;
-          const gone: Message = { ...m, mark: 0, lasts: sent.lasts, held: sent.held, heldFor: sent.heldFor, quiet: false };
+          const gone: Message = { ...m, mark: 0, lasts: sent.lasts, held: sent.held, heldFor: sent.heldFor, quiet: false, ...(sent.at ? { at: sent.at } : {}) };
           if (sent.bare) delete gone.preview;
           return gone;
         }),
@@ -3929,7 +3951,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     savePhotoQuality(next).catch((error) => setNote(errorText(error)));
   }
 
-  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; sticker?: true; close?: () => void };
+  type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; sticker?: true; hidden?: true; close?: () => void };
 
   // Sends a photo or file to the contact picked, or to `to` when it is `forwarded` there: its chunks
   // to our relay, then, end-to-end encrypted, where they are and their key. Kept here as it went.
@@ -3969,7 +3991,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       mime: picked.mime,
       kind,
       ...(picked.w && picked.h ? { w: picked.w, h: picked.h } : {}),
-      ...(picked.sticker ? { sticker: true as const } : {}),
+      ...(picked.sticker ? { sticker: true as const } : picked.hidden ? { hidden: true as const } : {}),
     };
     // Picked to go later (laterFor): kept here, and handed to the relay for then.
     const later = forwarded ? null : takeLaterFor();
@@ -4094,11 +4116,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     then();
   }
 
-  function sendPhoto(from: 'photos' | 'camera') {
+  // A photo from the gallery or the camera; `hidden`, blurred till tapped.
+  function sendPhoto(from: 'photos' | 'camera', hidden = false) {
     afterSheet(() =>
       void sendAttachment('photo', async () => {
         const photo = await pickPhoto(from, quality);
-        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h };
+        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden ? { hidden: true as const } : {}) };
       }),
     );
   }
@@ -5193,6 +5216,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const tiles: ComposerTile[] = [{ key: 'photo', title: t('Photo'), icon: 'photo', onPress: () => sendPhoto('photos') }];
   if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
   tiles.push(
+    { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
     { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
     { key: 'sticker', title: t('Sticker'), icon: 'sticker', onPress: () => afterSheet(() => setStickering(true)) },
   );
@@ -5224,6 +5248,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           icon: 'later',
           value: laterFor !== null ? laterLabel(laterFor) : undefined,
           onPress: () => setChoosingLater(true),
+        },
+        {
+          key: 'safety',
+          title: t('Safety message'),
+          description: t('Goes only if you do not open Erevos in time'),
+          icon: 'later',
+          onPress: () => setChoosingSafety(true),
         },
       ]
     : [];
@@ -6731,7 +6762,27 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   ways={ways}
                   foot={t('A file goes as it is, up to 100 MB, with whatever it says inside. The relay keeps it, encrypted, until {name} takes it, 14 days at most.', { name: selectedName })}
                   page={
-                    choosingLater
+                    choosingSafety
+                      ? {
+                          title: t('Safety message'),
+                          onBack: () => setChoosingSafety(false),
+                          children: (
+                            <>
+                              <Text variant="caption" tone="muted">
+                                {t('What you typed goes to {name} only if you do not open Erevos for:', { name: selectedName })}
+                              </Text>
+                              <Row wrap>
+                                {SAFETY_HOURS.map((hours) => (
+                                  <Chip key={hours} label={timerLabel(hours * 3600)} onPress={() => void sendSafety(hours)} />
+                                ))}
+                              </Row>
+                              <Text variant="caption" tone="muted">
+                                {t('The relay keeps it and sends it then by itself, even if this phone is lost, off or taken. Each time you open Erevos, past its password, it moves on that long again. Erevos running in the background does not move it. Delete it in the chat to stop it.')}
+                              </Text>
+                            </>
+                          ),
+                        }
+                      : choosingLater
                       ? {
                           title: t('Send later'),
                           onBack: () => setChoosingLater(false),
@@ -6754,7 +6805,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               panelOpen={attaching && shown}
               onPanel={(open) => {
                 setAttaching(open);
-                if (!open) setChoosingLater(false);
+                if (!open) {
+                  setChoosingLater(false);
+                  setChoosingSafety(false);
+                }
               }}
             />
           </View>

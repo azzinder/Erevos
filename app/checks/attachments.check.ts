@@ -93,6 +93,15 @@ test('an offer is read only when it holds together', () => {
   assert.equal(readOffer('nothing'), null);
 });
 
+test('a photo hidden till tapped stays so, and only a photo can be', () => {
+  const hidden = readOffer({ ...OFFER, hidden: true });
+  assert.equal(hidden?.hidden, true);
+  assert.ok(isFileRef(offerRef(hidden!)));
+  assert.equal(readOffer({ ...OFFER, hidden: 'yes' })?.hidden, undefined);
+  assert.equal(readOffer({ ...OFFER, kind: 'file', mime: 'application/pdf', name: 'a.pdf', hidden: true })?.hidden, undefined, 'a file is never hidden');
+  assert.ok(!isFileRef({ ...offerRef(OFFER), kind: 'file', hidden: true }));
+});
+
 test('file names lose folders and what cannot be in a name', () => {
   assert.equal(cleanFileName('C:\\Users\\me\\plan.pdf'), 'plan.pdf');
   assert.equal(cleanFileName('a\u0000b<c>.txt'), 'abc.txt');

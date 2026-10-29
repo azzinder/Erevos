@@ -1,6 +1,7 @@
 import { shownLine } from './call-lines';
 import { t } from './i18n';
 import { stickerOf } from './stickers';
+import { plainWords } from './text-style';
 import { voiceDuration } from './voice';
 
 // A message in one line, in the app's language: its words, or what it is when it has none. For the
@@ -27,5 +28,5 @@ export function messageLine(message: LineOf): string {
   }
   if (message.place) return t('Location');
   if (message.poll) return t('Poll: {question}', { question: message.poll.q });
-  return shownLine(message.text).split('\n')[0].trim();
+  return plainWords(shownLine(message.text)).split('\n')[0].trim();
 }

@@ -29,4 +29,12 @@ export const panic: Record<string, string> = {
   "Panic button": "Gumb za paniku",
   "Wipe Erevos at once, from here or from a panic app": "Odmah obrišite Erevos, odavde ili iz aplikacije za paniku",
   "Erevos cannot wipe itself here.": "Ovdje se Erevos ne može sam obrisati.",
+  "Trust {app} as it is now": "Vjeruj aplikaciji {app} ovakvoj kakva je sada",
+  "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "{app} je sada potpisana drugim ključem, pa je Erevos ne pušta da briše. Reci da samo ako si je sam ažurirao odande odakle si je dobio; možda pita neka druga aplikacija pod njenim imenom.",
+  "Trust it": "Vjeruj",
+  "{app} is not installed.": "{app} nije instalirana.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.": "{when} je {app} tražila da obriše Erevos, a Erevos je odbio: aplikacija više nije potpisana kao kad si joj povjerovao.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "{when} je {app} tražila da obriše Erevos, a Erevos je odbio: prekidač ispod je bio isključen.",
+  "Got it": "U redu",
+  "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "{app} je instalirana, ali potpisana drugim ključem, pa ne može obrisati Erevos. Ako si je sam ažurirao, ponovo joj vjeruj ovakvoj kakva je sada.",
 };

@@ -18,7 +18,7 @@ import { LinkedText } from './linked-text';
 import { usePublicGroup } from './public-group';
 import { PhoneSign, ShortcutTile, VideoSign } from './shortcut-tile';
 import { ThreadArrows, useThreadAway } from './thread-arrows';
-import { Button, Card, Field, Input, Row, Sheet, Text, TextButton } from './ui';
+import { Button, Card, Chip, Field, Input, Row, Sheet, Text, TextButton } from './ui';
 import { choose, confirm } from '../lib/alert';
 import { screenOfGroup, showOnScreen } from '../lib/background';
 import { forwardedTo } from '../lib/forward';
@@ -30,6 +30,7 @@ import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
+import { namesFor, typingMention, withMention } from '../lib/mentions';
 import { takeShared } from '../lib/share-in';
 import { plural, t } from '../lib/i18n';
 import { appShown, onAppShown } from '../lib/receiver';
@@ -129,6 +130,25 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const shown = gated ? NONE : messages;
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
   const parts = useGroupMessages({ id, info, messages: shown, name, onNote: setNote, scroll, at, draft });
+  // The @word being typed (lib/mentions.ts), and the members, but this phone, to name with it.
+  const [typedName, setTypedName] = useState<string | null>(null);
+  const [others, setOthers] = useState<string[]>([]);
+  const naming = typedName !== null;
+  useEffect(() => {
+    if (!naming) return;
+    let active = true;
+    void groupsAt
+      .groups()
+      .then((groups) => groups.members(id))
+      .then((list) => {
+        if (active) setOthers(list.flatMap((m) => (m.about && !m.me ? [m.about.id] : [])));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [naming, id, groupsAt]);
+  const nameable = typedName === null ? [] : namesFor(typedName, others.map((identity) => ({ identity, name: name(identity) })));
   // Photos, files and voice messages: the panel under the bar, the microphone, sheets, and their place in the bubbles.
   const media = useGroupMedia(id, shown, setNote, parts.attachMore);
 
@@ -523,9 +543,24 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
           {media.said}
         </Text>
       ) : null}
+      {out || nameable.length === 0 ? null : (
+        <ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false} contentContainerStyle={styles.names}>
+          {nameable.map((member) => (
+            <Chip
+              key={member.identity}
+              label={`@${member.name}`}
+              onPress={() => {
+                draft.set((typed) => withMention(typed, member.name));
+                setTypedName(null);
+              }}
+            />
+          ))}
+        </ScrollView>
+      )}
       {out ? null : (
         <DraftComposer
           draft={draft}
+          onChangeText={(text) => setTypedName(typingMention(text))}
           placeholder={t('Message {name}', { name: info.name })}
           maxLength={MAX_GROUP_TEXT}
           onSend={() => void send()}
@@ -1088,5 +1123,10 @@ const makeStyles = (colors: Colors) =>
     },
     noteText: {
       paddingHorizontal: space.lg,
+    },
+    names: {
+      gap: space.xs,
+      paddingHorizontal: space.md,
+      paddingVertical: space.xs,
     },
   });

@@ -14,8 +14,42 @@ On main, not released yet:
 
 ### For you
 
+- **Bold, italic, code and hidden words**: marks typed around words, as in WhatsApp and Signal (`*bold*`, `_italic_`,
+  `~struck~`, backticks for code, three for a block, `||hidden||`), show so in chats and groups (`lib/text-style.ts`,
+  `components/linked-text.tsx`). A mark counts only where it starts and ends a word, never inside a web address or
+  code; hidden words show a grey bar until tapped, each part apart, and are ▒▒▒ in the home screen's line, a quote
+  and the search's lines (`plainWords`). Nothing travels beside the words: an Erevos from before shows the marks.
+  See [Chat through a relay](#relay).
+- **Hidden photo**: **+** → **Hidden photo** sends a photo marked `hidden` in what it says of itself
+  (`lock/attachment-files.ts`, like a sticker's mark, kept only on a photo that is not a sticker); it shows blurred,
+  with **Hidden photo · tap to see it**, until opened on its own (`components/attachment.tsx`). In contacts' chats,
+  groups and through Nostr; forwarded, it stays hidden. An Erevos from before shows it as any photo.
+- **Safety message**: under **+** in a contact's chat (hidden chats too), words that go only if the owner does not
+  open Erevos for 6 or 12 hours, 1, 2 or 3 days or a week (`lib/safety.ts`). It is held by the relay as a message sent
+  for later (`LATER`, no relay change); while Erevos shows past its password (`ownerLooks`, never in the background
+  nor behind the password screen) it is held anew, at most every half hour, to go that long from then, and the one held
+  before is taken back (`rearmSafety` in `lib/waiting.ts`, kept as `z` in `lock/history.ts`). Same tag, so should both
+  ever go, the contact keeps it once. See [Chat through a relay](#relay).
+- **Name a member in a group with @**: typing **@** offers the members whose names start so, above the message box;
+  the message carries who was named, by identity (`named`, at most 32, `lib/mentions.ts`), and a member named is told
+  of it even in a group they muted (`messageCame`'s `named`, for the open space's groups and hidden places'). Only
+  whole names count. An Erevos from before ignores the field. See [Group chats](#groups).
+- **The panic button on a computer and on Sailfish OS**: **Settings** → **Privacy and security** → **Panic button**
+  wipes Erevos there too. The shell does it (`/__wipe`, `desktop/main.js` and `sailfish/src/shellserver.cpp`, behind
+  the page's token as every shell path): the keystore, the sealed files, the page's own storage and the rest of the
+  data folder, and, when chosen on the screen, the backups Erevos named in their folder. The computer then starts again
+  as new; Sailfish OS closes, and its helper stops waiting at the relay. See [Panic button](#panic).
+
 ### Under the hood
 
+- **The panic button says when it refused**: a wipe asked by the trusted panic app while the switch was off, or by the
+  app signed with another key, was refused with no trace (review of 2026-10-29). The time is now kept (`refused` in
+  `Panic.kt`), and the panic screen says it in red, with **Got it**. An app moved to a new key by APK key rotation
+  stays trusted (`hasSigningCertificate` finds the old key in its signing history); one signed otherwise can be
+  trusted again as it is now, after a warning. See [Panic button](#panic).
+- **Sailfish OS's firewall**: it already lets ports 1024–65535 in, so the same Wi-Fi's port 47905 needs no rule; the
+  guide no longer says it may, and `sailfish/README.md` has the rule for a firewall made stricter by hand.
+- **The release key's certificate SHA-256 in the README**, to check a downloaded APK with.
 - **The home screen's chips stay on one line**: once a **Nostr** chip joined **All messages**, **SMS**, **Erevos**,
   **Matrix** and **XMPP** (on the Pixel, 4.0.0-rc.2), **Names** went to a line of its own and the chips moved as they
   came and went. They are now one line that slides to the side (`strip`, a horizontal `ScrollView` in

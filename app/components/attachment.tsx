@@ -53,6 +53,16 @@ export function Attachment({ file, uri, state, ink }: { file: FileRef; uri?: str
   if (file.kind === 'photo') {
     const width = 240;
     const height = Math.round(Math.min(320, Math.max(120, file.w && file.h ? (width * file.h) / file.w : 180)));
+    // Hidden till tapped: blurred, and whole only once opened on its own.
+    if (uri && file.hidden)
+      return (
+        <View style={{ width, height, borderRadius: radius.md, overflow: 'hidden' }}>
+          <Image source={{ uri }} style={{ width, height }} resizeMode="cover" resizeMethod="resize" blurRadius={40} accessibilityLabel={t('Hidden photo · tap to see it')} />
+          <View style={{ ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+            <Text style={{ color: '#FFFFFF', fontWeight: '600', textAlign: 'center', padding: space.sm }}>{t('Hidden photo · tap to see it')}</Text>
+          </View>
+        </View>
+      );
     return uri ? (
       <Image source={{ uri }} style={{ width, height, borderRadius: radius.md }} resizeMode="cover" resizeMethod="resize" accessibilityLabel={t('Photo')} />
     ) : (

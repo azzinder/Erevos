@@ -136,6 +136,16 @@ class ErevosDeviceModule : Module() {
       Panic.forget(app)
     }
 
+    Function("renewPanicApp") {
+      val app = context?.applicationContext ?: return@Function false
+      Panic.renew(app)
+    }
+
+    Function("seenPanicRefused") {
+      val app = context?.applicationContext ?: return@Function Unit
+      Panic.seenRefused(app)
+    }
+
     Function("wipeNow") {
       val app = context?.applicationContext ?: return@Function false
       Panic.wipe(app)

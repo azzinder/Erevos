@@ -134,12 +134,14 @@ const unseenCount = () => count.total();
  * its own sounds with it, or with none (lib/chat-notices.ts); in hidden chats only muting counts,
  * as a sound of their own would tell which chat it is. The chat screen tells of what it opens
  * itself. `tag` is the message's, so that it no longer counts once it is deleted (messageGone).
+ * A group's message that names this phone with @ (`named`, lib/mentions.ts) tells in a muted
+ * group too.
  */
-export function messageCame(quiet = false, where = '', chat = where, times = 1, tag?: string): void {
+export function messageCame(quiet = false, where = '', chat = where, times = 1, tag?: string, named = false): void {
   if (!telling) return;
   const pocket = where.startsWith('hidden:') ? Number(where.slice('hidden:'.length)) : undefined;
   const notify = chatNotify(chat, pocket);
-  if (mutedNow(notify)) return;
+  if (mutedNow(notify) && !named) return;
   const sound = pocket === undefined ? notify?.sound : undefined;
   const silent = quiet || sound === '';
   if (where && where === onScreen && appShown()) {
@@ -417,8 +419,8 @@ export function startBackground(): () => void {
     }),
     // Their groups' too (lib/place-groups.ts).
     // Only as their contacts' messages do: while Erevos shows, or the place says so with it away.
-    onPlaceGroupMessage((space, pocket, group) => {
-      if (placeGroupTells(space, pocket, appShown(), receivesPocket(space, pocket))) messageCame(false, screenOfHidden(pocket), screenOfGroup(group));
+    onPlaceGroupMessage((space, pocket, group, named) => {
+      if (placeGroupTells(space, pocket, appShown(), receivesPocket(space, pocket))) messageCame(false, screenOfHidden(pocket), screenOfGroup(group), 1, undefined, named);
     }),
     onPlaceRing(onRing),
     // Their own accounts on Matrix, XMPP and Nostr (lib/place-networks.ts), as their contacts' messages and calls do.
@@ -520,7 +522,7 @@ export function startBackground(): () => void {
       if (isNews(received)) messageCameAt(showsAt(received.due), received.quiet, screenOfChat(received.identity), undefined, received.tag);
       if (received.erase) void messageGone(screenOfChat(received.identity), 'all' in received.erase ? null : received.erase.tag, true).catch(() => undefined);
     }),
-    onSpaceGroupMessage((group) => messageCame(false, screenOfGroup(group))),
+    onSpaceGroupMessage((group, named) => messageCame(false, screenOfGroup(group), screenOfGroup(group), 1, undefined, named)),
     // The space's chats on other networks: as its own chats, read here or on another device of the account.
     onNetworkMessage((where, times) => messageCame(false, where, where, times)),
     onNetworkRead((where) => void heldToUnread(where).catch(() => undefined)),

@@ -630,6 +630,15 @@ at the relay, or at once when they are nearby. A message counts as read once its
   stays without sound. A relay from before this keeps nothing for later: then the message waits on this phone and
   goes at its time while Erevos runs, in the background too while **In the background** is on **Receive and ring**
   (below), or when Erevos next opens.
+- **Safety message:** type it, tap **+** and then **Safety message**, and choose how long: 6 or 12 hours, 1, 2 or 3
+  days, or a week. It goes to the relay at once, as one sent for later, and the relay sends it by itself at that time.
+  Each time you open Erevos, past its password, it moves on that long again, so it goes only if you do not open Erevos
+  in time: if the phone is lost, taken, broken or kept from the internet, or something happened to you. Erevos running
+  in the background does not move it, nor does its password screen. In the chat it is marked **Safety message** with
+  the time it would go; delete it to stop it. Write it so that it says what it is: to your contact it comes as an
+  ordinary message. If the relay cannot be reached when you open Erevos, it keeps its time.
+  **Why:** a message held by the relay needs nothing from this phone to go, so no one who takes the phone can stop it,
+  except by opening Erevos with its password.
 - **Send without sound:** hold the send arrow down and choose **Without sound**: their phone shows the notice without
   a sound or vibration. An Erevos from before it does not know this and sounds as usual, and so does Erevos as a web
   app, whose notice comes from the browser. So does the notice of a place of hidden chats that is closed, with **Say
@@ -804,6 +813,21 @@ Press and hold a message for its menu: the reactions at the top, then what you c
 - **Delete:** on this phone, or on both, as above.
 
 Reactions, replies, pins and edits travel inside the encryption, like the messages.
+
+### How words look
+
+Marks typed around words change how they show, in chats and groups, as in WhatsApp and Signal: \`*bold*\`,
+\`_italic_\`, \`~struck through~\`, a word between backticks as code (three backticks around lines for a block of
+code), and \`||words||\` hidden behind a grey bar until tapped, on the screen, in the home screen's line and in a
+quote (there as ▒▒▒).
+
+- **Only around words:** a mark counts when it starts a word and ends one, so \`2*3*4\`, \`snake_case\` and web
+  addresses stay as they are. Bold, italic and struck through stay on one line.
+- **Others see the marks:** an Erevos from before, and other apps, show the words with their marks, as typed.
+- **Hidden photo:** under **+**, **Hidden photo** sends a photo that shows blurred in the chat, in contacts' chats and
+  groups, until it is tapped and opens on its own. An Erevos from before shows it as any photo.
+
+**Why:** a mark typed in the words travels in them, inside the encryption, with nothing beside them to tell apart.
 
 ### Disappearing messages
 
@@ -1127,6 +1151,10 @@ out members.
   writes them out, and **Media, links and files** lists the group's photos, videos, voice messages, music, files and links, each kind apart, as in a contact's chat (see above), each going to its message; **Starred messages** and the home screen's search take in the groups too. A member whose Erevos is
   from before this version sees the words, a sticker's emoji, a place's coordinates and a poll's question, and
   nothing of reactions, pins, edits and deleting.
+- **Naming a member:** type **@** in the message box, and the members whose names start with what follows show above
+  it: tap one to put in their whole name. A member named so is told of the message even if they muted the group. Only
+  whole names count, so **@Anna** does not name Anna Maria. An Erevos from before shows the words only, and tells as
+  the group's settings say.
 - **Not yet:** marks, typing and disappearing messages in groups, and groups over a nearby phone.
 
 ## Public groups {#public-groups}
@@ -2312,7 +2340,7 @@ secret sharing), no single friend, and no relay, holds anything that opens it.
 ## Panic button {#panic}
 
 When you are in danger, Erevos can wipe itself at once, under **Settings** → **Privacy and security** → **Panic
-button**: tap **Wipe everything now** and say **Wipe**. On Android and in the web app.
+button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web app, on a computer and on Sailfish OS.
 
 - **What goes:** every space and its hidden chats, with their contacts, messages, photos, files and keys; the lock and
   its passwords; the Matrix, XMPP and Nostr accounts and the relay tokens; the settings and password of automatic
@@ -2325,10 +2353,16 @@ button**: tap **Wipe everything now** and say **Wipe**. On Android and in the we
    one, choose Erevos in it: Erevos opens this screen, after its password, and asks. Tap **Say yes**.
 2. **Only that app:** only the app you said yes to can wipe Erevos, and only while **A panic app may wipe Erevos** is
    on. Erevos checks the app's name and its signature: another app, or the same name installed again by someone else,
-   cannot. **Stop trusting** ends it.
+   cannot. An update of the app that moves to a new key the way Android allows (key rotation) is still trusted.
+   **Stop trusting** ends it.
+4. **When Erevos refused:** if the trusted app asked to wipe while the switch was off, or signed with another key,
+   this screen says so in red, with the day and the time. When the app is signed with another key, **Trust … as it is
+   now** trusts it again: say yes only if you updated it yourself.
 3. **After a wipe:** the panic app is forgotten too: say yes to it again once you set Erevos up again.
 
-- **On a computer:** Erevos cannot wipe itself there: delete its data from the computer instead.
+- **On a computer and on Sailfish OS:** there is no panic app, only **Wipe everything now**, with **Also the automatic
+  backups in** their folder if you choose it. On a computer Erevos then starts again as if just installed; on Sailfish
+  OS it closes. The keyring's item for Erevos stays on a computer, but what it sealed is gone, so it opens nothing.
 - **What it cannot hide:** on the phone, without the password, one can still see that Erevos is installed, and that a
   panic app may wipe it, though not what was in it.
 
@@ -2667,8 +2701,8 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
 - **What only Android does:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa and SMS. The same Wi-Fi works here too, as on
-  a computer: see [Chat with a nearby phone](#nearby). The phone's firewall may need to let port 47905 in (UDP and
-  TCP). The rest is the same: spaces and
+  a computer: see [Chat with a nearby phone](#nearby). Sailfish OS's firewall already lets its port, 47905, in: only
+  a firewall you made stricter yourself needs a rule for it. The rest is the same: spaces and
   the second password, hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
   keyring for apps, so the keystore is kept there as it is, readable by your user, and so by any app that runs as

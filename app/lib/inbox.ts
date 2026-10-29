@@ -16,6 +16,7 @@ import { bare, nameOf, type XmppState } from './xmpp';
 import { sameNumber } from './sms-invite';
 import { voiceDuration } from './voice';
 import { shownLine } from './call-lines';
+import { plainWords } from './text-style';
 import { t, mark } from './i18n';
 
 /** A contact as the list has it: `locked`, with a PIN of its own (lock/chat-pin.ts), and its own
@@ -148,7 +149,7 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
   if (message?.voice) return t('Voice message, {time}', { time: voiceDuration(message.voice.ms) });
   if (message?.file?.sticker) return t('Sticker');
   if (message?.file) return message.file.kind === 'photo' ? t('Photo') : t('File: {name}', { name: message.file.name });
-  return shownLine(message?.text ?? '');
+  return plainWords(shownLine(message?.text ?? ''));
 }
 
 /** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or one other network's. */

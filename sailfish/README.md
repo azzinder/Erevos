@@ -24,8 +24,16 @@ window. The code is installed with the package; nothing is fetched from a server
   `desktop/lan.js` and Android's `LanLink.kt` (UDP broadcasts `EVL1 <nonce> <port>` on port 47905, a
   new nonce each start, then TCP frames of text already end-to-end encrypted). The page turns it on
   and off, sends and hears on `/__lan`, as in the desktop app (`app/lib/radio.ts`), while a space
-  is open and **Find Erevos on the same Wi-Fi** is on. If the phone's firewall drops what comes in,
-  port 47905 (UDP and TCP) must be let in.
+  is open and **Find Erevos on the same Wi-Fi** is on. Sailfish OS's own firewall (ConnMan) lets
+  ports 1024–65535 in, UDP and TCP, so 47905 needs nothing
+  ([Sailfish OS: Firewall](https://docs.sailfishos.org/Support/Help_Articles/Firewall/)). The RPM
+  adds no rule of its own: a phone whose firewall was made stricter by hand lets it in on Wi-Fi only
+  with a file `/etc/connman/firewall.d/50-erevos-firewall.conf`, then `systemctl reload connman`:
+
+  ```
+  [wifi]
+  IPv4.INPUT.RULES = -p udp -m udp --dport 47905 -j ACCEPT; -p tcp -m tcp --dport 47905 -j ACCEPT
+  ```
 
 What it does not do: Bluetooth, Wi-Fi Aware, Wi-Fi Direct and SMS (Android only). Sailfish has no keyring for apps, so
 the keystore is kept as it is: the password lock seals it.

@@ -56,11 +56,11 @@ let opened: { of: object; groups: Promise<PublicGroups> } | null = null;
 let shown: PublicGroups | null = null;
 
 const callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
-const messageListeners = new Set<(group: string) => void>();
+const messageListeners = new Set<(group: string, named?: boolean) => void>();
 const goneListeners = new Set<(group: string) => void>();
 
-/** Calls `listener` with the group each time a member's message comes in one of the open space's groups. Returns how to stop. */
-export function onSpaceGroupMessage(listener: (group: string) => void): () => void {
+/** Calls `listener` with the group each time a member's message comes in one of the open space's groups, and whether it names this phone with @. Returns how to stop. */
+export function onSpaceGroupMessage(listener: (group: string, named?: boolean) => void): () => void {
   messageListeners.add(listener);
   return () => {
     messageListeners.delete(listener);
@@ -140,7 +140,7 @@ export function spaceGroups(): Promise<PublicGroups> {
         chats: spaceChats,
       });
       made.onCall((group, from, signal) => callListeners.forEach((listener) => listener(group, from, signal)));
-      made.onMessage((group) => messageListeners.forEach((listener) => listener(group)));
+      made.onMessage((group, named) => messageListeners.forEach((listener) => listener(group, named)));
       made.onGone((group) => goneListeners.forEach((listener) => listener(group)));
       if (opened?.of === current) shown = made;
       // A contact deleted here lets go of the asks for its contact link at once (lib/groups.ts contactRemoved).

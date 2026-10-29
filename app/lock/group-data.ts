@@ -32,8 +32,9 @@ export type GroupMessage = { at: number; from: string; text: string; tag: string
 
 /** What a message is or carries beyond its words or its file, as its sender sent it (lib/group-parts.ts):
  *  the tag of the message it answers, a sticker, a place, a poll, a link's preview, or that it was
- *  forwarded. A sticker's, a place's or a poll's words are its text, for an Erevos from before. */
-export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true };
+ *  forwarded, and the members its words name with @ (`named`, lib/mentions.ts). A sticker's, a place's or a
+ *  poll's words are its text, for an Erevos from before. */
+export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; named?: string[] };
 
 /** What was done to a message since: each member's reaction and vote, by identity ('' for this
  *  phone's), when it was pinned for everyone, when its sender last edited its words, and, on this

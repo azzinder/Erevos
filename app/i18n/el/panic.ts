@@ -29,4 +29,12 @@ export const panic: Record<string, string> = {
   "Panic button": "Κουμπί πανικού",
   "Wipe Erevos at once, from here or from a panic app": "Σβήσε το Erevos αμέσως, από εδώ ή από εφαρμογή πανικού",
   "Erevos cannot wipe itself here.": "Εδώ το Erevos δεν μπορεί να σβηστεί μόνο του.",
+  "Trust {app} as it is now": "Εμπιστοσύνη στο {app} όπως είναι τώρα",
+  "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "Το {app} υπογράφεται τώρα με άλλο κλειδί, γι' αυτό το Erevos δεν το αφήνει να σβήσει. Πες ναι μόνο αν το ενημέρωσες εσύ από εκεί που το πήρες· μπορεί να ρωτά άλλη εφαρμογή με το όνομά του.",
+  "Trust it": "Εμπιστοσύνη",
+  "{app} is not installed.": "Το {app} δεν είναι εγκατεστημένο.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.": "Στις {when} το {app} ζήτησε να σβήσει το Erevos, και το Erevos αρνήθηκε: η εφαρμογή δεν υπογράφεται πια όπως όταν την εμπιστεύτηκες.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "Στις {when} το {app} ζήτησε να σβήσει το Erevos, και το Erevos αρνήθηκε: ο διακόπτης παρακάτω ήταν κλειστός.",
+  "Got it": "Εντάξει",
+  "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "Το {app} είναι εγκατεστημένο αλλά υπογράφεται με άλλο κλειδί, άρα δεν μπορεί να σβήσει το Erevos. Αν το ενημέρωσες εσύ, εμπιστέψου το ξανά όπως είναι τώρα.",
 };

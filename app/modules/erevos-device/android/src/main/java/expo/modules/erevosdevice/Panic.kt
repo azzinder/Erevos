@@ -34,8 +34,9 @@ import java.security.MessageDigest
  * The settings are kept apart from everything else, in SharedPreferences PREFS, as they have to be
  * read with no space open: whether a panic app may wipe (`on`), which one (its package and the
  * SHA-256 of its signing certificate, so another app installed later under its name is not
- * trusted), and the one that asked last to be it, until the owner says yes or no. They say that
- * the owner set a panic app, and which; nothing more.
+ * trusted), the one that asked last to be it, until the owner says yes or no, and when the
+ * trusted app last asked to wipe and was refused (signed otherwise, or the switch off). They say
+ * that the owner set a panic app, and which; nothing more.
  */
 internal object Panic {
   private const val TAG = "ErevosDevice"
@@ -47,6 +48,7 @@ internal object Panic {
   private const val PENDING_CERT = "pending-cert"
   private const val BACKUPS = "backups"
   private const val FOLDER = "folder"
+  private const val REFUSED = "refused"
   // The names Erevos gives backups (lock/backup.ts BACKUP_PREFIX).
   private const val BACKUP_PREFIX = "erevos-backup-"
 
@@ -78,13 +80,51 @@ internal object Panic {
     pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
   }.getOrDefault(pkg)
 
-  /** Whether `caller`, as Android names the app that started PanicActivity, is the panic app trusted to wipe. */
+  /**
+   * Whether `pkg` is still signed as it was when the owner said yes. The same certificates, or,
+   * from Android 9, a key the app moved to by APK key rotation: Android then keeps the old key in
+   * the app's signing history, proved by the old key itself, and hasSigningCertificate finds it
+   * there. A different app installed under the same name has neither.
+   */
+  private fun signedAsTrusted(context: Context, pkg: String, cert: String): Boolean {
+    val now = certOf(context, pkg) ?: return false
+    if (now == cert) return true
+    if (Build.VERSION.SDK_INT < 28) return false
+    return runCatching {
+      val pm = context.packageManager
+      cert.split(",").all { pm.hasSigningCertificate(pkg, unhex(it), PackageManager.CERT_INPUT_SHA256) }
+    }.getOrDefault(false)
+  }
+
+  private fun unhex(text: String): ByteArray = ByteArray(text.length / 2) { text.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
+
+  /**
+   * Whether `caller`, as Android names the app that started PanicActivity, is the panic app trusted
+   * to wipe. When it is the trusted app but signed otherwise, or the switch is off, the time is
+   * kept, so the panic screen can say it once the owner opens it; nothing else shows it.
+   */
   fun trusted(context: Context, caller: String): Boolean {
     val prefs = prefs(context)
-    if (!prefs.getBoolean(ON, false)) return false
     val trigger = prefs.getString(TRIGGER, null) ?: return false
     val cert = prefs.getString(CERT, null) ?: return false
-    return caller == trigger && certOf(context, caller) == cert
+    if (caller != trigger) return false
+    val ok = prefs.getBoolean(ON, false) && signedAsTrusted(context, caller, cert)
+    if (!ok) prefs.edit().putLong(REFUSED, System.currentTimeMillis()).apply()
+    return ok
+  }
+
+  /** The owner trusts the panic app as it is signed now, after the panic screen said it changed. False when it is not installed. */
+  fun renew(context: Context): Boolean {
+    val prefs = prefs(context)
+    val trigger = prefs.getString(TRIGGER, null) ?: return false
+    val cert = certOf(context, trigger) ?: return false
+    prefs.edit().putString(CERT, cert).remove(REFUSED).apply()
+    return true
+  }
+
+  /** The owner read that a wipe was refused. */
+  fun seenRefused(context: Context) {
+    prefs(context).edit().remove(REFUSED).apply()
   }
 
   /** A panic app asked to be the one (PanicKit's CONNECT): kept until the owner answers in Erevos. */
@@ -98,7 +138,7 @@ internal object Panic {
     val prefs = prefs(context)
     val cert = prefs.getString(PENDING_CERT, null)
     if (prefs.getString(PENDING, null) != pkg || cert == null || certOf(context, pkg) != cert) return false
-    prefs.edit().putString(TRIGGER, pkg).putString(CERT, cert).remove(PENDING).remove(PENDING_CERT).apply()
+    prefs.edit().putString(TRIGGER, pkg).putString(CERT, cert).remove(PENDING).remove(PENDING_CERT).remove(REFUSED).apply()
     return true
   }
 
@@ -110,7 +150,7 @@ internal object Panic {
   fun trigger(context: Context): String? = prefs(context).getString(TRIGGER, null)
 
   fun forget(context: Context) {
-    prefs(context).edit().remove(TRIGGER).remove(CERT).apply()
+    prefs(context).edit().remove(TRIGGER).remove(CERT).remove(REFUSED).apply()
   }
 
   /** Whether a panic app may wipe, and whether automatic backups in `folder` go too. */
@@ -128,7 +168,9 @@ internal object Panic {
       "backups" to prefs.getBoolean(BACKUPS, false),
       "trigger" to trigger,
       "triggerLabel" to if (trigger.isEmpty()) "" else labelOf(context, trigger),
-      "triggerThere" to (trigger.isNotEmpty() && certOf(context, trigger) == prefs.getString(CERT, null)),
+      "triggerThere" to (trigger.isNotEmpty() && signedAsTrusted(context, trigger, prefs.getString(CERT, null).orEmpty())),
+      "triggerInstalled" to (trigger.isNotEmpty() && certOf(context, trigger) != null),
+      "refused" to prefs.getLong(REFUSED, 0L).toDouble(),
       "pending" to pending,
       "pendingLabel" to if (pending.isEmpty()) "" else labelOf(context, pending),
     )

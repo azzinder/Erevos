@@ -12,6 +12,7 @@ import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
 import { nostrReady } from './nostr';
 import { carriedFor, contactTarget, sendSealed, sentMark, type SpaceChats } from './space-chats';
 import { t } from './i18n';
+import { needsRearm, ownerLooks, safetyDue } from './safety';
 
 type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 
@@ -86,7 +87,7 @@ export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: str
  * sent for later, the relay that holds it till its time. `bare`: it went over LoRa without its
  * link's preview.
  */
-export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; heldFor?: string; bare?: true };
+export type Went = { peer: string; tag: string; lasts: number; held?: HeldAt; heldFor?: string; bare?: true; at?: number };
 
 // Failed tries so far, by tag, and when the next may be.
 const tries = new Map<string, { count: number; next: number }>();
@@ -112,6 +113,7 @@ async function sendAll({ e2e, history }: Chats, place: SendPlace, now: number): 
   const went: Went[] = [];
   if (place.relayUp && place.sends) {
     went.push(...(await holdAgain({ e2e, history }, place, now)));
+    if (ownerLooks()) went.push(...(await rearmSafety({ e2e, history }, place, now)));
     await dropHeld(e2e, place.sends, now);
   }
   const stuck = new Set<string>();
@@ -307,6 +309,52 @@ async function holdAll({ e2e, history }: Chats, place: SendPlace, now: number): 
     again.push({ peer, tag, lasts: made.lasts, held: made.held, heldFor: made.heldFor });
   }
   return again;
+}
+
+/**
+ * Our safety messages (lib/safety.ts), as the owner looks at Erevos: each is held anew to go its
+ * hours from `now`, and the one held before is taken back. One that cannot be held anew now keeps
+ * its time, and is tried again with the next look. Returns those held anew, with their new time.
+ */
+export async function rearmSafety({ e2e, history }: Chats, place: SendPlace, now = Date.now()): Promise<Went[]> {
+  const again: Went[] = [];
+  for (const message of history.heldLater(now)) {
+    const { peer, tag, held, safety } = message;
+    if (!held || !safety || !peer.startsWith(CONTACT_PREFIX) || !needsRearm(message.at, safety, now) || rearming.has(tag)) continue;
+    rearming.add(tag);
+    try {
+      const went = await rearmOne(e2e, history, place, message, held, safety, now);
+      if (went) again.push(went);
+    } finally {
+      rearming.delete(tag);
+    }
+  }
+  return again;
+}
+
+// The safety messages being held anew now, by tag: two looks at once never both hold one.
+const rearming = new Set<string>();
+
+async function rearmOne(e2e: E2E, history: History, place: SendPlace, message: Message, held: HeldAt, safety: number, now: number): Promise<Went | null> {
+  const { peer, tag } = message;
+  const identity = peer.slice(CONTACT_PREFIX.length);
+  if (!e2e.record(identity)) return null;
+  const at = safetyDue(safety, now);
+  let made: Awaited<ReturnType<typeof holdLater>>;
+  try {
+    made = await holdLater(e2e, place, identity, { ...message, at });
+  } catch {
+    // It keeps its time: the next look tries again.
+    return null;
+  }
+  const ofIt = (h: HeldAt, due: number): Undropped => ({ id: h.id, relay: h.relay, at: due });
+  // Deleted meanwhile, no longer one, or held anew by another look: the one just held goes no more.
+  if (!(await history.rearmed(peer, tag, at, made.held, made.heldFor, held.id).catch(() => false))) {
+    await letGo(e2e, place.sends, [ofIt(made.held, at)]);
+    return null;
+  }
+  await letGo(e2e, place.sends, [ofIt(held, message.at)]);
+  return { peer, tag, lasts: made.lasts, held: made.held, heldFor: made.heldFor, at };
 }
 
 // Takes back each of `held` from the relay of `sends` that holds it. One that relay cannot be asked

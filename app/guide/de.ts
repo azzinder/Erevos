@@ -729,6 +729,17 @@ Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm 
   Eine Nachricht ohne Ton bleibt ohne Ton. Ein Relay von vor dieser Funktion hebt nichts für später auf: Dann wartet
   die Nachricht auf diesem Telefon und geht zu ihrer Zeit, solange Erevos läuft, auch im Hintergrund, solange
   **Im Hintergrund** auf **Empfangen und klingeln** steht (siehe unten), oder wenn Erevos das nächste Mal öffnet.
+- **Sicherheitsnachricht:** tippe sie, tippe auf **+** und dann auf **Sicherheitsnachricht**, und wähle, wie lange: 6
+  oder 12 Stunden, 1, 2 oder 3 Tage oder eine Woche. Sie geht sofort an das Relay, wie eine auf später gesendete, und
+  das Relay sendet sie zu dieser Zeit von selbst. Jedes Mal, wenn du Erevos öffnest, nach dem Passwort, wird sie
+  wieder um diese Zeit verschoben, sie geht also nur, wenn du Erevos nicht rechtzeitig öffnest: wenn das Telefon
+  verloren, weggenommen, kaputt oder vom Internet abgeschnitten ist oder dir etwas zugestoßen ist. Erevos im
+  Hintergrund verschiebt sie nicht, ebenso wenig sein Passwortbildschirm. Im Chat ist sie als **Sicherheitsnachricht**
+  mit der Zeit markiert, zu der sie gehen würde; lösche sie, um sie zu stoppen. Schreibe sie so, dass sie sagt, was
+  sie ist: Bei deinem Kontakt kommt sie als gewöhnliche Nachricht an. Ist das Relay beim Öffnen von Erevos nicht
+  erreichbar, behält sie ihre Zeit.
+  **Warum:** Eine Nachricht, die das Relay hält, braucht nichts von diesem Telefon, um zu gehen; wer das Telefon an
+  sich nimmt, kann sie also nicht stoppen, außer indem er Erevos mit dem Passwort öffnet.
 - **Ohne Ton senden:** Halte den Sendepfeil gedrückt und wähle **Ohne Ton**: Das andere Telefon zeigt die
   Benachrichtigung ohne Ton oder Vibration. Ein Erevos von vor dieser Funktion kennt das nicht und meldet sich wie
   gewohnt, und ebenso Erevos als Web-App, dessen Benachrichtigung vom Browser kommt. Ebenso die Benachrichtigung eines
@@ -933,6 +944,24 @@ Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: die Reaktionen oben, da
 - **Löschen:** auf diesem Telefon oder auf beiden, wie oben.
 
 Reaktionen, Antworten, Anheftungen und Bearbeitungen reisen innerhalb der Verschlüsselung, wie die Nachrichten.
+
+### Wie Worte aussehen
+
+Zeichen, die um Worte getippt werden, ändern, wie sie erscheinen, in Chats und Gruppen, wie bei WhatsApp und Signal:
+\`*fett*\`, \`_kursiv_\`, \`~durchgestrichen~\`, ein Wort zwischen Backticks als Code (drei Backticks um Zeilen für einen
+Codeblock) und \`||Worte||\`, versteckt hinter einem grauen Balken, bis du tippst, auf dem Bildschirm, in der Zeile des
+Startbildschirms und in einem Zitat (dort als ▒▒▒).
+
+- **Nur um Worte:** Ein Zeichen zählt, wenn es ein Wort beginnt und eines beendet, daher bleiben \`2*3*4\`,
+  \`snake_case\` und Webadressen, wie sie sind. Fett, kursiv und durchgestrichen bleiben in einer Zeile.
+- **Andere sehen die Zeichen:** Ein Erevos von vorher und andere Apps zeigen die Worte mit ihren Zeichen, wie
+  getippt.
+- **Verstecktes Foto:** unter **+** sendet **Verstecktes Foto** ein Foto, das im Chat verschwommen erscheint, in den
+  Chats mit Kontakten und in Gruppen, bis du es antippst; dann öffnet es sich von selbst. Ein Erevos von vorher zeigt es
+  wie jedes Foto.
+
+**Warum:** Ein in die Worte getipptes Zeichen reist in ihnen, innerhalb der Verschlüsselung, ohne dass daneben etwas
+mitgeschickt wird, das sich unterscheiden ließe.
 
 ### Verschwindende Nachrichten
 
@@ -1314,6 +1343,10 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
   schreibt sie heraus, und **Medien, Links und Dateien** listet die Fotos, Videos, Sprachnachrichten, Musik, Dateien und Links der Gruppe auf, jede Art für sich, wie im Chat eines Kontakts (siehe oben), jedes mit Sprung zu seiner Nachricht; **Markierte Nachrichten** und die Suche des Startbildschirms schließen die Gruppen mit ein. Ein
   Mitglied, dessen Erevos von vor dieser Version ist, sieht die Worte, das Emoji eines Stickers, die Koordinaten eines
   Orts und die Frage einer Umfrage, und nichts von Reaktionen, Anheftungen, Bearbeitungen und Löschen.
+- **Ein Mitglied nennen:** Tippe **@** ins Nachrichtenfeld, und die Mitglieder, deren Namen mit dem Folgenden beginnen,
+  erscheinen darüber: Tippe auf eines, um den ganzen Namen einzusetzen. Ein so genanntes Mitglied erfährt von der
+  Nachricht, auch wenn es die Gruppe stummgeschaltet hat. Nur ganze Namen zählen, daher nennt **@Anna** nicht Anna
+  Maria. Ein Erevos von vorher zeigt nur die Worte und meldet, wie es die Einstellungen der Gruppe sagen.
 - **Noch nicht:** Zeichen, Tippen und verschwindende Nachrichten in Gruppen, und Gruppen über ein Telefon in der Nähe.
 
 ## Öffentliche Gruppen {#public-groups}
@@ -2682,7 +2715,8 @@ es ist, und sein Erevos bewahrt das Teil getrennt vom Chat auf, unter **Teile, d
 ## Panikknopf {#panic}
 
 Wenn du in Gefahr bist, kann Erevos sich sofort löschen, unter **Einstellungen** → **Datenschutz und Sicherheit** →
-**Panikknopf**: Tippe auf **Jetzt alles löschen** und bestätige mit **Löschen**. Auf Android und in der Web-App.
+**Panikknopf**: Tippe auf **Jetzt alles löschen** und bestätige mit **Löschen**. Auf Android, in der Web-App, auf einem
+Computer und auf Sailfish OS.
 
 - **Was gelöscht wird:** jeder Raum mit seinen versteckten Chats, mit ihren Kontakten, Nachrichten, Fotos, Dateien und
   Schlüsseln; die Sperre und ihre Passwörter; die Matrix-, XMPP- und Nostr-Konten und die Relay-Tokens; Einstellungen
@@ -2697,10 +2731,18 @@ Wenn du in Gefahr bist, kann Erevos sich sofort löschen, unter **Einstellungen*
    **Zustimmen**.
 2. **Nur diese App:** Nur die App, der du zugestimmt hast, kann Erevos löschen, und nur solange **Eine Panik-App darf
    Erevos löschen** eingeschaltet ist. Erevos prüft den Namen der App und ihre Signatur: Eine andere App, oder derselbe
-   Name von jemand anderem neu installiert, kann es nicht. **Nicht mehr vertrauen** beendet es.
+   Name von jemand anderem neu installiert, kann es nicht. Ein Update der App, das auf einen neuen Schlüssel wechselt,
+   wie Android es erlaubt (Schlüsselrotation), bleibt vertrauenswürdig. **Nicht mehr vertrauen** beendet es.
+4. **Wenn Erevos abgelehnt hat:** Wenn die vertrauenswürdige App das Löschen verlangt hat, während der Schalter aus war
+   oder sie mit einem anderen Schlüssel signiert war, sagt diese Seite es in Rot, mit Tag und Uhrzeit. Ist die App mit
+   einem anderen Schlüssel signiert, vertraut **… so vertrauen, wie es jetzt ist** ihr erneut: Stimme nur zu, wenn du
+   sie selbst aktualisiert hast.
 3. **Nach dem Löschen:** Auch die Panik-App ist vergessen: Stimme ihr erneut zu, wenn du Erevos wieder einrichtest.
 
-- **Auf einem Computer:** Dort kann Erevos sich nicht selbst löschen: Lösche seine Daten stattdessen auf dem Computer.
+- **Auf einem Computer und auf Sailfish OS:** Es gibt keine Panik-App, nur **Jetzt alles löschen**, mit **Auch die
+  automatischen Backups in** ihrem Ordner, wenn du es wählst. Auf einem Computer startet Erevos danach wie frisch
+  installiert; auf Sailfish OS schließt es sich. Der Eintrag für Erevos im Schlüsselbund bleibt auf einem Computer, aber
+  was er versiegelt hat, ist weg, er öffnet also nichts.
 - **Was es nicht verbergen kann:** Auf dem Telefon sieht man auch ohne Passwort, dass Erevos installiert ist und dass
   eine Panik-App es löschen darf, aber nicht, was darin war.
 
@@ -3083,9 +3125,9 @@ Nachrichten und Einstellungen auf dieselbe Weise versiegelt auf.
 4. Stelle das Relay ein und füge Kontakte hinzu wie auf dem Telefon, siehe [Chat über ein Relay](#relay).
 
 - **Was nur Android kann:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa und SMS. Im selben WLAN geht es auch hier, wie
-  auf einem Computer: siehe [Chat mit einem Telefon in der Nähe](#nearby). Die Firewall des Telefons muss vielleicht
-  Port 47905 hereinlassen (UDP und TCP). Der Rest ist gleich:
-  Bereiche und das zweite Passwort, versteckte Chats, Sprachnachrichten, importierte Chats und Backups.
+  auf einem Computer: siehe [Chat mit einem Telefon in der Nähe](#nearby). Die Firewall von Sailfish OS lässt ihren Port
+  47905 schon herein: Nur eine Firewall, die du selbst strenger gemacht hast, braucht eine Regel dafür. Der Rest ist
+  gleich: Bereiche und das zweite Passwort, versteckte Chats, Sprachnachrichten, importierte Chats und Backups.
 - **Wo es Dinge aufbewahrt:** in \`~/.local/share/erevos\` auf dem Telefon, versiegelt wie auf dem Telefon. Sailfish
   hat keinen Schlüsselbund für Apps, also wird der Schlüsselspeicher dort so aufbewahrt, wie er ist, lesbar für deinen
   Benutzer und damit für jede App, die als du läuft: Die Passwortsperre ist es, die ihn versiegelt.

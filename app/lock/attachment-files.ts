@@ -9,12 +9,16 @@ import { deleteFile, readBytes, writeBytes } from '../lib/files';
 //
 // A photo can be a sticker made from a photo (lib/own-stickers.ts): small, and marked so in what it
 // says of itself, which travels with it. An Erevos from before reads a file's fields one by one and
-// leaves the mark out, so to it the sticker is a photo like any other.
+// leaves the mark out, so to it the sticker is a photo like any other. So is a photo hidden till
+// tapped (`hidden`), which an Erevos from before shows as it is.
 
 export type FileKind = 'photo' | 'file';
 
-/** What a file is: its name, type and size, for a photo how wide and high it is, and whether it is a sticker. */
-export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true };
+/**
+ * What a file is: its name, type and size, for a photo how wide and high it is, whether it is a
+ * sticker, and whether it is hidden till tapped (`hidden`: blurred in the chat, whole once opened).
+ */
+export type FileMeta = { name: string; mime: string; kind: FileKind; size: number; w?: number; h?: number; sticker?: true; hidden?: true };
 
 /** The largest photo that goes as a sticker. */
 export const MAX_STICKER = 100 * 1000;
@@ -111,7 +115,8 @@ export function isFileMeta(value: unknown): value is FileMeta {
     whole(v.size, Number.MAX_SAFE_INTEGER) &&
     (v.w === undefined || whole(v.w, 100_000)) &&
     (v.h === undefined || whole(v.h, 100_000)) &&
-    (v.sticker === undefined || (v.sticker === true && fitsSticker(v as FileMeta)))
+    (v.sticker === undefined || (v.sticker === true && fitsSticker(v as FileMeta))) &&
+    (v.hidden === undefined || (v.hidden === true && v.kind === 'photo' && !v.sticker))
   );
 }
 

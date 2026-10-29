@@ -39,12 +39,12 @@ const opened = new Map<string, Opened>();
 const at = (space: number, pocket: number) => `${space}.${pocket}`;
 const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
 
-const messageListeners = new Set<(space: number, pocket: number, group: string) => void>();
+const messageListeners = new Set<(space: number, pocket: number, group: string, named?: boolean) => void>();
 type CallTaker = (group: string, from: string, signal: GroupCallSignal) => void;
 const callTakers = new Map<string, CallTaker>();
 
-/** Calls `listener` with the place and the group each time a member's message comes in a hidden place's group. Returns how to stop. */
-export function onPlaceGroupMessage(listener: (space: number, pocket: number, group: string) => void): () => void {
+/** Calls `listener` with the place and the group each time a member's message comes in a hidden place's group, and whether it names this phone with @. Returns how to stop. */
+export function onPlaceGroupMessage(listener: (space: number, pocket: number, group: string, named?: boolean) => void): () => void {
   messageListeners.add(listener);
   return () => {
     messageListeners.delete(listener);
@@ -86,7 +86,7 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
         if (take) take(group, from, signal);
         else if (signal.kind === 'start') void place.line(group, `${CALL_LINE}Missed ${signal.video ? 'group video call' : 'group call'}`).catch(() => undefined);
       });
-      place.onMessage((group) => messageListeners.forEach((listener) => listener(space, pocket, group)));
+      place.onMessage((group, named) => messageListeners.forEach((listener) => listener(space, pocket, group, named)));
       return place;
     })();
     made = opening;

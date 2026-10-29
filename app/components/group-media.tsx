@@ -32,7 +32,7 @@ const SAID_SHOWN = 8000;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
-type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; close?: () => void };
+type Picked = { name: string; mime: string; source: Source; w?: number; h?: number; hidden?: true; close?: () => void };
 
 /**
  * The media of group `id`, whose messages are `messages`. `onError` shows what went wrong. Gives
@@ -165,7 +165,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     if (!picked) return;
     try {
       const size = picked.w && picked.h ? { w: picked.w, h: picked.h } : {};
-      await send(kind, picked.source, { name: picked.name, mime: picked.mime, kind, ...size });
+      await send(kind, picked.source, { name: picked.name, mime: picked.mime, kind, ...size, ...(picked.hidden ? { hidden: true as const } : {}) });
     } finally {
       picked.close?.();
     }
@@ -177,11 +177,12 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
     then();
   }
 
-  function sendPhoto(from: 'photos' | 'camera') {
+  // A photo from the gallery or the camera; `hidden`, blurred till tapped.
+  function sendPhoto(from: 'photos' | 'camera', hidden = false) {
     afterSheet(() =>
       void sendPicked('photo', async () => {
         const photo = await pickPhoto(from, quality);
-        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h };
+        return photo && { name: photo.name, mime: photo.mime, source: bytesSource(photo.bytes), w: photo.w, h: photo.h, ...(hidden ? { hidden: true as const } : {}) };
       }),
     );
   }
@@ -314,7 +315,11 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   // send but now, so no rows under them.
   const tiles: ComposerTile[] = [{ key: 'photo', title: t('Photo'), icon: 'photo', onPress: () => sendPhoto('photos') }];
   if (CAN_TAKE_PHOTOS) tiles.push({ key: 'camera', title: t('Camera'), icon: 'camera', onPress: () => sendPhoto('camera') });
-  tiles.push({ key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile }, ...(more?.(afterSheet) ?? []));
+  tiles.push(
+    { key: 'hidden-photo', title: t('Hidden photo'), icon: 'photo', onPress: () => sendPhoto('photos', true) },
+    { key: 'file', title: t('File'), icon: 'file', onPress: sendPickedFile },
+    ...(more?.(afterSheet) ?? []),
+  );
   const panel: ReactNode = (
     <ComposerPanel
       tiles={tiles}

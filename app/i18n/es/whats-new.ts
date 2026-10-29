@@ -8,6 +8,18 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
+    "**Negrita, cursiva, código y palabras ocultas**: en chats y grupos, las palabras entre * se ponen en negrita, entre _ en cursiva, entre ~ tachadas, entre ` como código, y entre || ocultas tras una barra gris hasta que las toques. Mira [Chatear por un relay](#relay).",
+  "**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay).":
+    "**Foto oculta**: bajo + en un chat o un grupo, una foto que se ve borrosa hasta que la tocas. Mira [Chatear por un relay](#relay).",
+  "**Safety message**: under + in a chat, words to a contact that the relay sends by itself if you do not open Erevos for 6 hours to a week; each time you open it, they move on again. See [Chat through a relay](#relay).":
+    "**Mensaje de seguridad**: bajo + en un chat, palabras para un contacto que el relay envía por sí solo si no abres Erevos durante entre 6 horas y una semana; cada vez que lo abres, se retrasan de nuevo. Mira [Chatear por un relay](#relay).",
+  "**Name a member in a group with @**: type @ and pick a member; they are told of the message even if they muted the group. See [Group chats](#groups).":
+    "**Nombra a un miembro en un grupo con @**: escribe @ y elige a un miembro; se entera del mensaje aunque haya silenciado el grupo. Mira [Chats de grupo](#groups).",
+  "**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic).":
+    "**El botón de pánico en un ordenador y en Sailfish OS**: Ajustes → Privacidad y seguridad → Botón de pánico ahora también borra Erevos allí, con sus copias automáticas si lo eliges; en un ordenador luego vuelve a abrirse como nuevo. Ver [Botón de pánico](#panic).",
+  "**The panic button says when it refused**: when your panic app asked to wipe Erevos while the switch was off, or signed with another key, the panic screen now says so, with the time. An app that moves to a new key the way Android allows stays trusted; otherwise you can trust it again as it is now. See [Panic button](#panic).":
+    "**El botón de pánico dice cuándo se negó**: cuando tu app de pánico pidió borrar Erevos con el interruptor apagado, o firmada con otra clave, la pantalla del botón de pánico ahora lo dice, con la hora. Una app que pasa a una clave nueva de la forma que Android permite sigue siendo de confianza; si no, puedes volver a confiar en ella tal como está ahora. Ver [Botón de pánico](#panic).",
   "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
     "**Los chips de la pantalla de inicio se quedan en una sola línea**: si había además un chip de Nostr, Matrix o XMPP, **Nombres** pasaba a una línea propia y los chips se movían. Ahora se quedan en una sola línea que se desliza hacia un lado, y el elegido siempre se ve.",
   "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":

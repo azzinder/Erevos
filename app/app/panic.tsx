@@ -5,7 +5,7 @@ import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components
 import { confirm } from '../lib/alert';
 import { folderLabel, loadAutoBackup, type AutoBackup } from '../lib/backup-folder';
 import { t } from '../lib/i18n';
-import { allowPanicApp, CAN_PANIC_APP, CAN_WIPE, forgetPanicApp, panicState, refusePanicApp, setPanic, wipeNow, type PanicState } from '../lib/panic';
+import { allowPanicApp, CAN_PANIC_APP, CAN_WIPE, forgetPanicApp, panicState, refusePanicApp, renewPanicApp, seenPanicRefused, setPanic, wipeNow, WIPE_BACKUPS_HERE, type PanicState } from '../lib/panic';
 import { useTheme } from '../theme/context';
 
 // The panic button (Settings → Privacy and security → Panic button, lib/panic.ts): wipe everything
@@ -14,6 +14,12 @@ import { useTheme } from '../theme/context';
 // yes or no; it is trusted only then, and only while the switch is on.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
+const two = (n: number) => String(n).padStart(2, '0');
+// When a refused wipe was: day/month/year hour:minute.
+const whenText = (at: number) => {
+  const d = new Date(at);
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${two(d.getHours())}:${two(d.getMinutes())}`;
+};
 
 export default function Panic() {
   const { colors } = useTheme();
@@ -21,6 +27,8 @@ export default function Panic() {
   const [auto, setAuto] = useState<AutoBackup | null>(null);
   const [note, setNote] = useState<{ text: string; bad: boolean } | null>(null);
   const [wiping, setWiping] = useState(false);
+  // On a computer or Sailfish OS, whether the automatic backups go too (no panic app there).
+  const [backupsHere, setBackupsHere] = useState(false);
 
   const reload = () => setState(panicState());
   useEffect(() => {
@@ -68,12 +76,28 @@ export default function Panic() {
     reload();
   }
 
+  // The trusted app is installed but signed with a key Erevos cannot tie to the one trusted: an
+  // update signed anew, or another app under its name. Only the owner can tell which.
+  async function renew() {
+    if (!state?.trigger) return;
+    if (!(await confirm(t('Trust {app} as it is now', { app: state.triggerLabel }), t('{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.', { app: state.triggerLabel }), t('Trust it')))) return;
+    if (renewPanicApp()) say(t('{app} can now wipe Erevos.', { app: state.triggerLabel }));
+    else say(t('{app} is not installed.', { app: state.triggerLabel }), true);
+    reload();
+  }
+
+  function seenRefused() {
+    seenPanicRefused();
+    reload();
+  }
+
   async function wipe() {
-    const backups = state?.backups && folder ? ` ${t('The automatic backups in {folder} go too.', { folder: folderLabel(folder) })}` : '';
+    const withBackups = !!folder && (WIPE_BACKUPS_HERE ? backupsHere : !!state?.backups);
+    const backups = withBackups ? ` ${t('The automatic backups in {folder} go too.', { folder: folderLabel(folder) })}` : '';
     if (!(await confirm(t('Wipe everything'), t('Everything Erevos keeps here goes now, for good: every space and its hidden chats, contacts, messages and keys. Erevos then starts as if just installed. This cannot be undone.') + backups, t('Wipe')))) return;
     setWiping(true);
     try {
-      await wipeNow();
+      await wipeNow(WIPE_BACKUPS_HERE && withBackups ? folder : '');
     } catch (error) {
       setWiping(false);
       say(errorText(error), true);
@@ -93,9 +117,16 @@ export default function Panic() {
       <SectionTitle title={t('Wipe now')} />
       <Card>
         {CAN_WIPE ? (
-          <Row wrap>
-            <Button title={wiping ? t('One moment…') : t('Wipe everything now')} kind="danger" compact onPress={() => void wipe()} disabled={wiping} />
-          </Row>
+          <>
+            {WIPE_BACKUPS_HERE && folder ? (
+              <Row wrap>
+                <Chip label={t('Also the automatic backups in {folder}', { folder: folderLabel(folder) })} selected={backupsHere} onPress={() => setBackupsHere(!backupsHere)} />
+              </Row>
+            ) : null}
+            <Row wrap>
+              <Button title={wiping ? t('One moment…') : t('Wipe everything now')} kind="danger" compact onPress={() => void wipe()} disabled={wiping} />
+            </Row>
+          </>
         ) : (
           <Text tone="muted">{t('Here Erevos cannot wipe itself: delete its data from the computer instead.')}</Text>
         )}
@@ -124,6 +155,28 @@ export default function Panic() {
             ) : state.pending ? null : (
               <Text tone="muted">{t('No panic app yet.')}</Text>
             )}
+            {state.trigger && state.refused ? (
+              <>
+                <Text variant="label" color={colors.danger}>
+                  {state.on && !state.triggerThere
+                    ? t('On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.', { when: whenText(state.refused), app: state.triggerLabel })
+                    : t('On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.', { when: whenText(state.refused), app: state.triggerLabel })}
+                </Text>
+                <Row wrap>
+                  <Button title={t('Got it')} kind="secondary" compact onPress={seenRefused} />
+                </Row>
+              </>
+            ) : null}
+            {state.trigger && !state.triggerThere && state.triggerInstalled ? (
+              <>
+                <Text variant="caption" tone="muted" style={hint}>
+                  {t('{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.', { app: state.triggerLabel })}
+                </Text>
+                <Row wrap>
+                  <Button title={t('Trust {app} as it is now', { app: state.triggerLabel })} compact onPress={() => void renew()} />
+                </Row>
+              </>
+            ) : null}
             <Row wrap>
               <Chip label={t('A panic app may wipe Erevos')} selected={state.on} onPress={toggle} />
               {folder ? <Chip label={t('Also the automatic backups in {folder}', { folder: folderLabel(folder) })} selected={state.backups} onPress={toggleBackups} /> : null}

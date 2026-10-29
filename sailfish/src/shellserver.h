@@ -33,6 +33,9 @@ class WatchLink;
 //   /__lan            Erevos on the same Wi-Fi (lanlink.h), as on a computer: PUT ?on=1 or 0
 //                     starts or stops it, POST ?link=… sends the body on a link, GET ?after=…
 //                     gives what happened since, waiting a while for something (app/lib/radio.ts)
+//   /__wipe           the panic button (app/lib/panic.ts): POST deletes everything the app keeps
+//                     (its folder, with the WebView's own, and its cache), with ?backups=1 the
+//                     backups in Documents/Erevos too, stops the helper, and closes Erevos
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -69,6 +72,7 @@ private:
     void latest(QTcpSocket *socket);
     void watch(QTcpSocket *socket, const Request &request);
     void lan(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
+    void wipe(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
     void lanEvent(const QByteArray &kind, const QString &link, const QByteArray &text = QByteArray());
     void lanAnswer(QTcpSocket *socket, qint64 after);
 

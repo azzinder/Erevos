@@ -29,4 +29,12 @@ export const panic: Record<string, string> = {
   "Panic button": "Botón de pánico",
   "Wipe Erevos at once, from here or from a panic app": "Borra Erevos al instante, desde aquí o desde una app de pánico",
   "Erevos cannot wipe itself here.": "Aquí Erevos no puede borrarse solo.",
+  "Trust {app} as it is now": "Confiar en {app} tal como está ahora",
+  "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "{app} está firmada ahora con otra clave, así que Erevos no la deja borrar. Di que sí solo si la actualizaste tú desde donde la conseguiste; podría estar pidiéndolo otra app con su nombre.",
+  "Trust it": "Confiar",
+  "{app} is not installed.": "{app} no está instalada.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the app is no longer signed as when you trusted it.": "El {when} {app} pidió borrar Erevos, y Erevos se negó: la app ya no está firmada como cuando confiaste en ella.",
+  "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "El {when} {app} pidió borrar Erevos, y Erevos se negó: el interruptor de abajo estaba apagado.",
+  "Got it": "Entendido",
+  "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "{app} está instalada pero firmada con otra clave, así que no puede borrar Erevos. Si la actualizaste tú, vuelve a confiar en ella tal como está ahora.",
 };

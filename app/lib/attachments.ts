@@ -141,8 +141,8 @@ export function readOffer(value: unknown): FileOffer | null {
   };
   if (!isFileMeta(meta) || meta.size > MAX_FILE) return null;
   if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !/^(?:[0-9a-f]{48})+$/.test(v.ids)) return null;
-  // A sticker made from a photo, when it is small enough to be one; otherwise a photo.
-  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : {};
+  // A sticker made from a photo, when it is small enough to be one; otherwise a photo, maybe hidden till tapped.
+  const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : v.hidden === true && meta.kind === 'photo' ? { hidden: true as const } : {};
   if (v.via === 'nostr') {
     // Pieces in wraps: as many as the photo takes, each 32 KB, the last less.
     if (v.relay !== 'nostr' || meta.size > NOSTR_PHOTO_MOST || v.chunk !== NOSTR_PIECE || v.ids.length !== Math.max(1, Math.ceil(meta.size / room(NOSTR_PIECE))) * ID_HEX) return null;
@@ -160,10 +160,12 @@ export function readOffer(value: unknown): FileOffer | null {
   return { ...meta, ...sticker, relay: v.relay, ids: v.ids, key: v.key, chunk: v.chunk };
 }
 
-// What a file to send says of itself, cleaned: a sticker only while it is small enough to be one.
-function shaped({ sticker, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
+// What a file to send says of itself, cleaned: a sticker only while it is small enough to be one,
+// hidden only when a photo and not a sticker.
+function shaped({ sticker, hidden, ...meta }: Omit<FileMeta, 'size'>, size: number): FileMeta {
   const clean: FileMeta = { ...meta, name: cleanFileName(meta.name), mime: cleanMime(meta.mime), size };
-  return sticker && fitsSticker(clean) ? { ...clean, sticker } : clean;
+  if (sticker && fitsSticker(clean)) return { ...clean, sticker };
+  return hidden && clean.kind === 'photo' ? { ...clean, hidden } : clean;
 }
 
 /** Where a file that came is, until it is taken: its chunks are still on the relay. */
@@ -360,8 +362,8 @@ export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array
 // own storage) or from a file server, and keeps it here as a file that went through the relay would be.
 async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null): Promise<FileRef> {
   const key = fromHex(ref.key);
-  const { name, mime, kind, w, h, sticker } = ref;
-  const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}) };
+  const { name, mime, kind, w, h, sticker, hidden } = ref;
+  const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden } : {}) };
   if (from.via === 'nostr') {
     const came = await piecesCame(place, from.ids);
     const have = came.filter(Boolean).length;

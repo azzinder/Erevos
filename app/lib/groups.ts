@@ -264,7 +264,7 @@ export class Groups {
   private queue: Promise<unknown> = Promise.resolve();
   private readonly listeners = new Set<() => void>();
   private readonly callListeners = new Set<(group: string, from: string, signal: GroupCallSignal) => void>();
-  private readonly messageListeners = new Set<(group: string) => void>();
+  private readonly messageListeners = new Set<(group: string, named?: boolean) => void>();
   private readonly goneListeners = new Set<(group: string) => void>();
   private link: GroupLink | null = null;
 
@@ -290,8 +290,8 @@ export class Groups {
     };
   }
 
-  /** Calls `listener` with the group each time a member's message comes in one. Returns how to stop. */
-  onMessage(listener: (group: string) => void): () => void {
+  /** Calls `listener` with the group each time a member's message comes in one, and whether it names this phone with @ (lib/mentions.ts). Returns how to stop. */
+  onMessage(listener: (group: string, named?: boolean) => void): () => void {
     this.messageListeners.add(listener);
     return () => {
       this.messageListeners.delete(listener);
@@ -1333,7 +1333,8 @@ export class Groups {
       } else {
         const parts = groupPartsOf(said, true);
         await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag, ...parts }]) }));
-        this.messageListeners.forEach((listener) => listener(id));
+        const named = !!parts.named?.includes((await this.me()).id);
+        this.messageListeners.forEach((listener) => listener(id, named));
       }
       this.changed();
     } else if (opened.kind === 'later') {

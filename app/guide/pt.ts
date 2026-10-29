@@ -673,6 +673,16 @@ conversa dela aparece na tela.
   então. Uma mensagem sem som continua sem som. Um relay de antes disso não guarda nada para depois: então a mensagem
   espera neste celular e vai no horário dela enquanto o Erevos roda, também em segundo plano enquanto **Em segundo
   plano** está em **Receber e tocar** (abaixo), ou quando o Erevos abrir de novo.
+- **Mensagem de segurança:** digite-a, toque em **+** e depois em **Mensagem de segurança**, e escolha por quanto
+  tempo: 6 ou 12 horas, 1, 2 ou 3 dias, ou uma semana. Ela vai para o relay na hora, como uma enviada para mais tarde,
+  e o relay a envia sozinho nesse horário. Cada vez que você abre o Erevos, depois da senha, ela é adiada de novo por
+  esse mesmo tempo, então só sai se você não abrir o Erevos a tempo: se o celular for perdido, levado, quebrar ou
+  ficar sem internet, ou se algo acontecer com você. O Erevos rodando em segundo plano não a adia, nem a tela de senha
+  dele. Na conversa ela aparece marcada como **Mensagem de segurança** com o horário em que sairia; apague-a para
+  pará-la. Escreva-a de modo que diga o que é: para o seu contato ela chega como uma mensagem comum. Se o relay não
+  puder ser alcançado quando você abrir o Erevos, ela mantém o horário.
+  **Por quê:** uma mensagem guardada pelo relay não precisa de nada deste celular para sair, então quem levar o
+  celular não consegue pará-la, a não ser abrindo o Erevos com a senha.
 - **Enviar sem som:** segure a seta de enviar e escolha **Sem som**: o celular da pessoa mostra o aviso sem som nem
   vibração. Um Erevos de antes disso não conhece isso e toca como sempre, e o Erevos como app web também, cujo aviso
   vem do navegador. O mesmo vale para o aviso de uma posição de conversas ocultas que está fechada, com **Avisar
@@ -865,6 +875,21 @@ Toque e segure uma mensagem para abrir o menu dela: as reações no topo, depois
 - **Apagar:** neste celular, ou nos dois, como acima.
 
 As reações, respostas, mensagens fixadas e edições viajam dentro da criptografia, como as mensagens.
+
+### Como as palavras aparecem
+
+As marcas digitadas em volta das palavras mudam como elas aparecem, em conversas e grupos, como no WhatsApp e no Signal:
+\`*negrito*\`, \`_itálico_\`, \`~riscado~\`, uma palavra entre crases como código (três crases em volta de linhas para
+um bloco de código) e \`||palavras||\`, escondidas atrás de uma barra cinza até você tocar, na tela, na linha da tela
+inicial e numa citação (ali como ▒▒▒).
+
+- **Só em volta de palavras:** uma marca vale quando começa uma palavra e termina uma, então \`2*3*4\`,
+  \`snake_case\` e endereços da web ficam como estão. Negrito, itálico e riscado ficam numa linha só.
+- **Os outros veem as marcas:** um Erevos de antes e outros apps mostram as palavras com as marcas, como digitadas.
+- **Foto escondida:** em **+**, **Foto escondida** envia uma foto que aparece borrada na conversa, nas conversas com
+  contatos e nos grupos, até você tocar nela, e aí ela abre sozinha. Um Erevos de antes a mostra como qualquer foto.
+
+**Por quê:** uma marca digitada nas palavras viaja nelas, dentro da criptografia, sem nada ao lado que a distinga.
 
 ### Mensagens temporárias
 
@@ -1214,6 +1239,10 @@ ou remove membros.
   arquivo, e **Mídia, links e arquivos** lista as fotos, vídeos, mensagens de voz, músicas, arquivos e links do grupo, cada tipo à parte, como na conversa de um contato (veja acima), cada um indo até a sua mensagem; **Mensagens favoritas** e a busca da tela inicial também incluem os grupos. Um membro cujo Erevos é de
   antes desta versão vê as palavras, o emoji de uma figurinha, as coordenadas de um lugar e a pergunta de uma enquete,
   e nada das reações, mensagens fixadas, edições e exclusões.
+- **Citar um membro:** digite **@** no campo da mensagem e os membros cujos nomes começam com o que vem depois
+  aparecem acima: toque em um para pôr o nome inteiro. Um membro citado assim é avisado da mensagem mesmo que tenha
+  silenciado o grupo. Só valem nomes inteiros, então **@Ana** não cita Ana Maria. Um Erevos de antes mostra só as
+  palavras e avisa como dizem as configurações do grupo.
 - **Ainda não:** marcas, digitando e mensagens temporárias nos grupos, e grupos por um celular por perto.
 
 ## Grupos públicos {#public-groups}
@@ -2493,7 +2522,8 @@ compartilhamento de segredos de Shamir), nenhum amigo sozinho, e nenhum relay, t
 ## Botão de pânico {#panic}
 
 Quando você está em perigo, o Erevos pode se apagar na hora, em **Configurações** → **Privacidade e segurança** →
-**Botão de pânico**: toque em **Apagar tudo agora** e confirme com **Apagar**. No Android e no app web.
+**Botão de pânico**: toque em **Apagar tudo agora** e confirme com **Apagar**. No Android, no app web, num computador e
+no Sailfish OS.
 
 - **O que é apagado:** cada espaço com suas conversas ocultas, com seus contatos, mensagens, fotos, arquivos e chaves;
   o bloqueio e suas senhas; as contas de Matrix, XMPP e Nostr e os tokens do relay; as configurações e a senha dos
@@ -2508,11 +2538,18 @@ Quando você está em perigo, o Erevos pode se apagar na hora, em **Configuraç�
    **Dizer sim**.
 2. **Só esse app:** só o app a que você disse sim pode apagar o Erevos, e só enquanto **Um app de pânico pode apagar o
    Erevos** estiver ligado. O Erevos confere o nome do app e a assinatura dele: outro app, ou o mesmo nome instalado de
-   novo por outra pessoa, não consegue. **Parar de confiar** encerra isso.
+   novo por outra pessoa, não consegue. Uma atualização do app que passa a uma chave nova do jeito que o Android permite
+   (rotação de chave) continua de confiança. **Parar de confiar** encerra isso.
+4. **Quando o Erevos recusou:** se o app de confiança pediu para apagar com o interruptor desligado, ou assinado com
+   outra chave, esta tela avisa em vermelho, com o dia e a hora. Quando o app está assinado com outra chave, **Confiar
+   em … como está agora** volta a confiar nele: diga sim só se você mesmo o atualizou.
 3. **Depois de apagar:** o app de pânico também é esquecido: diga sim a ele de novo quando configurar o Erevos outra
    vez.
 
-- **Num computador:** lá o Erevos não consegue se apagar sozinho: apague os dados dele pelo computador.
+- **Num computador e no Sailfish OS:** não há app de pânico, só **Apagar tudo agora**, com **Também os backups
+  automáticos em** a pasta deles, se você escolher. Num computador, o Erevos depois começa de novo como recém-instalado;
+  no Sailfish OS, ele se fecha. O item do chaveiro para o Erevos fica num computador, mas o que ele selava sumiu, então
+  não abre nada.
 - **O que ele não pode esconder:** no telefone, sem a senha, ainda dá para ver que o Erevos está instalado e que um
   app de pânico pode apagá-lo, mas não o que havia nele.
 
@@ -2875,10 +2912,10 @@ mensagens e as configurações dele selados do mesmo jeito.
    senha**). Veja abaixo por que ele importa aqui.
 4. Defina o relay e adicione contatos como no celular, veja [Conversar por um relay](#relay).
 
-- **O que só o Android faz:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa e SMS. A mesma rede Wi-Fi funciona aqui
-  também, como num computador: veja [Conversar com um celular por perto](#nearby). O firewall do celular talvez
-  precise deixar entrar a porta 47905 (UDP e TCP). O resto é igual: espaços e a
-  segunda senha, conversas ocultas, mensagens de voz, conversas importadas e backups.
+- **O que só o Android faz:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa e SMS. A mesma rede Wi-Fi funciona aqui também,
+  como num computador: veja [Conversar com um celular por perto](#nearby). O firewall do Sailfish OS já deixa entrar a
+  porta dele, a 47905: só um firewall que você mesmo deixou mais rígido precisa de uma regra para ela. O resto é igual:
+  espaços e a segunda senha, conversas ocultas, mensagens de voz, conversas importadas e backups.
 - **Onde ele guarda as coisas:** em \`~/.local/share/erevos\` no celular, selado como no celular. O Sailfish não tem
   chaveiro para apps, então o keystore fica guardado ali como está, legível pelo seu usuário, e portanto por qualquer
   app que rode como você: é o bloqueio com senha que o sela.

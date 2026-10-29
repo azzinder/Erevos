@@ -14,6 +14,7 @@ import { memberName, type GroupInfo } from '../lib/groups';
 import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
+import { mentionsIn } from '../lib/mentions';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, type Findable } from '../lib/message-search';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
@@ -292,8 +293,11 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       setEditing(null);
       return;
     }
-    const carried = parts ?? { ...(replying ? { re: replying.tag } : {}), ...(await previewOf(text)) };
-    await (await groupsAt.groups()).send(id, text, groupsAt.transport, carried);
+    const groups = await groupsAt.groups();
+    // The members named with @ and their whole name (lib/mentions.ts): told in a muted group too.
+    const named = parts ? [] : mentionsIn(text, (await groups.members(id).catch(() => [])).flatMap((m) => (m.about && !m.me ? [{ identity: m.about.id, name: name(m.about.id) }] : [])));
+    const carried = parts ?? { ...(replying ? { re: replying.tag } : {}), ...(await previewOf(text)), ...(named.length > 0 ? { named } : {}) };
+    await groups.send(id, text, groupsAt.transport, carried);
     stays.current = false;
     if (!parts) setReplying(null);
   }

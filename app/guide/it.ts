@@ -679,6 +679,16 @@ chat appare sullo schermo.
   Un messaggio senza suono resta senza suono. Un relay di prima di questa funzione non conserva niente per dopo: allora
   il messaggio aspetta su questo telefono e parte alla sua ora mentre Erevos è in funzione, anche in background mentre
   **In background** è su **Ricevi e squilla** (più sotto), o alla prossima apertura di Erevos.
+- **Messaggio di sicurezza:** scrivilo, tocca **+** e poi **Messaggio di sicurezza**, e scegli per quanto tempo: 6 o
+  12 ore, 1, 2 o 3 giorni, o una settimana. Va subito al relay, come uno inviato per più tardi, e il relay lo invia da
+  solo a quell’ora. Ogni volta che apri Erevos, dopo la sua password, slitta di nuovo di altrettanto, quindi parte
+  solo se non apri Erevos in tempo: se il telefono viene perso, sottratto, si rompe o resta senza internet, o se ti è
+  successo qualcosa. Erevos in background non lo sposta, e nemmeno la sua schermata della password. Nella chat è
+  segnato **Messaggio di sicurezza** con l’ora a cui partirebbe; eliminalo per fermarlo. Scrivilo in modo che dica
+  cos’è: al tuo contatto arriva come un messaggio qualunque. Se il relay non è raggiungibile quando apri Erevos,
+  mantiene la sua ora.
+  **Perché:** un messaggio tenuto dal relay non ha bisogno di niente di questo telefono per partire, quindi chi prende
+  il telefono non può fermarlo, se non aprendo Erevos con la sua password.
 - **Invia senza suono:** tieni premuta la freccia di invio e scegli **Senza suono**: il suo telefono mostra la
   notifica senza suono né vibrazione. Un Erevos di prima non lo sa e suona come al solito, e così Erevos come web app,
   la cui notifica arriva dal browser. Così anche la notifica di un posto di chat nascoste chiuso, con **Avvisa quando
@@ -870,6 +880,22 @@ Tieni premuto un messaggio per il suo menu: le reazioni in alto, poi quello che 
 - **Elimina:** su questo telefono, o su entrambi, come sopra.
 
 Reazioni, risposte, messaggi fissati e modifiche viaggiano dentro la crittografia, come i messaggi.
+
+### Come appaiono le parole
+
+I segni scritti attorno alle parole cambiano come appaiono, nelle chat e nei gruppi, come in WhatsApp e Signal:
+\`*grassetto*\`, \`_corsivo_\`, \`~barrato~\`, una parola tra apici inversi come codice (tre apici inversi attorno a
+righe per un blocco di codice) e \`||parole||\`, nascoste dietro una barra grigia finché non le tocchi, sullo schermo,
+nella riga della schermata principale e in una citazione (lì come ▒▒▒).
+
+- **Solo attorno a parole:** un segno conta quando inizia una parola e ne finisce una, quindi \`2*3*4\`,
+  \`snake_case\` e gli indirizzi web restano come sono. Grassetto, corsivo e barrato restano su una riga.
+- **Gli altri vedono i segni:** un Erevos di prima e altre app mostrano le parole con i loro segni, come scritti.
+- **Foto nascosta:** sotto **+**, **Foto nascosta** invia una foto che in chat appare sfocata, nelle chat con i contatti
+  e nei gruppi, finché non la tocchi, e poi si apre da sola. Un Erevos di prima la mostra come una foto qualsiasi.
+
+**Perché:** un segno scritto nelle parole viaggia in esse, dentro la crittografia, senza niente accanto che lo
+distingua.
 
 ### Messaggi effimeri
 
@@ -1238,6 +1264,10 @@ solo l’admin aggiunge o rimuove membri.
   li scrive su file, e **Media, link e file** elenca le foto, i video, i messaggi vocali, la musica, i file e i link del gruppo, ogni tipo a parte, come nella chat di un contatto (vedi sopra), ciascuno con il salto al suo messaggio; anche **Messaggi importanti** e la ricerca della schermata principale includono i gruppi. Un
   membro il cui Erevos è di prima di questa versione vede le parole, l’emoji di uno sticker, le coordinate di un luogo
   e la domanda di un sondaggio, e niente di reazioni, messaggi fissati, modifiche ed eliminazioni.
+- **Nominare un membro:** scrivi **@** nel campo del messaggio e i membri i cui nomi iniziano con ciò che segue
+  compaiono sopra: tocca uno per inserire il suo nome intero. Un membro nominato così viene avvisato del messaggio
+  anche se ha silenziato il gruppo. Contano solo i nomi interi, quindi **@Anna** non nomina Anna Maria. Un Erevos di
+  prima mostra solo le parole e avvisa come dicono le impostazioni del gruppo.
 - **Non ancora:** segni, scrittura in corso e messaggi effimeri nei gruppi, e gruppi tramite un telefono vicino.
 
 ## Gruppi pubblici {#public-groups}
@@ -2535,8 +2565,9 @@ condivisione di segreti di Shamir), nessun amico da solo, e nessun relay, tiene 
 
 ## Pulsante di panico {#panic}
 
-Quando sei in pericolo, Erevos può cancellarsi all’istante, in **Impostazioni** → **Privacy e sicurezza** →
-**Pulsante di panico**: tocca **Cancella tutto ora** e conferma con **Cancella**. Su Android e nell’app web.
+Quando sei in pericolo, Erevos può cancellarsi all’istante, in **Impostazioni** → **Privacy e sicurezza** → **Pulsante
+di panico**: tocca **Cancella tutto ora** e conferma con **Cancella**. Su Android, nell’app web, su un computer e su
+Sailfish OS.
 
 - **Cosa va via:** ogni spazio con le sue chat nascoste, con i loro contatti, messaggi, foto, file e chiavi; il blocco
   e le sue password; gli account Matrix, XMPP e Nostr e i token del relay; le impostazioni e la password dei backup
@@ -2550,10 +2581,17 @@ Quando sei in pericolo, Erevos può cancellarsi all’istante, in **Impostazioni
    **Di’ di sì**.
 2. **Solo quell’app:** solo l’app a cui hai detto di sì può cancellare Erevos, e solo finché **Un’app di panico può
    cancellare Erevos** è attivo. Erevos controlla il nome dell’app e la sua firma: un’altra app, o lo stesso nome
-   reinstallato da qualcun altro, non può. **Non fidarti più** lo termina.
+   reinstallato da qualcun altro, non può. Un aggiornamento dell’app che passa a una nuova chiave nel modo che Android
+   permette (rotazione della chiave) resta fidato. **Non fidarti più** lo termina.
+4. **Quando Erevos ha rifiutato:** se l’app fidata ha chiesto di cancellare con l’interruttore spento, o firmata con
+   un’altra chiave, questa schermata lo dice in rosso, con il giorno e l’ora. Quando l’app è firmata con un’altra
+   chiave, **Fidati di … così com'è ora** la rende di nuovo fidata: di’ di sì solo se l’hai aggiornata tu.
 3. **Dopo la cancellazione:** anche l’app di panico viene dimenticata: dille di nuovo di sì quando riconfiguri Erevos.
 
-- **Su un computer:** lì Erevos non può cancellarsi da solo: elimina invece i suoi dati dal computer.
+- **Su un computer e su Sailfish OS:** non c’è un’app di panico, solo **Cancella tutto ora**, con **Anche i backup
+  automatici in** la loro cartella se lo scegli. Su un computer Erevos poi riparte come appena installato; su Sailfish
+  OS si chiude. La voce del portachiavi per Erevos resta su un computer, ma ciò che sigillava non c’è più, quindi non
+  apre niente.
 - **Cosa non può nascondere:** sul telefono, senza la password, si vede ancora che Erevos è installato e che un’app di
   panico può cancellarlo, ma non cosa conteneva.
 
@@ -2922,9 +2960,9 @@ stesso modo.
 4. Imposta il relay e aggiungi i contatti come sul telefono, vedi [Chat tramite un relay](#relay).
 
 - **Quello che fa solo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa e gli SMS. La stessa rete Wi-Fi funziona
-  anche qui, come su un computer: vedi [Chat con un telefono vicino](#nearby). Può darsi che il firewall del telefono
-  debba lasciar entrare la porta 47905 (UDP e TCP). Il resto è
-  uguale: spazi e seconda password, chat nascoste, messaggi vocali, chat importate e backup.
+  anche qui, come su un computer: vedi [Chat con un telefono vicino](#nearby). Il firewall di Sailfish OS lascia già
+  entrare la sua porta, la 47905: solo un firewall che hai reso più severo tu ha bisogno di una regola per essa. Il
+  resto è uguale: spazi e seconda password, chat nascoste, messaggi vocali, chat importate e backup.
 - **Dove conserva le cose:** in \`~/.local/share/erevos\` sul telefono, sigillate come sul telefono. Sailfish non ha un
   portachiavi per le app, quindi l’archivio di chiavi è conservato lì così com’è, leggibile dal tuo utente, e quindi
   da qualsiasi app che gira come te: è il blocco con password che lo sigilla.

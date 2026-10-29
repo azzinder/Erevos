@@ -85,8 +85,8 @@ export async function voiceCopy({ voice, file, ms }: Pick<Forwardable, 'voice' |
 
 /** A photo or file kept here, to go as a new one: its bytes as they are read, and what it says of itself (a sticker stays one). */
 export function fileCopy(file: FileRef): { source: Source; meta: Omit<FileMeta, 'size'> } {
-  const { name, mime, kind, w, h, sticker } = file;
-  return { source: refSource(file), meta: { name, mime, kind, ...(w && h ? { w, h } : {}), ...(sticker ? { sticker } : {}) } };
+  const { name, mime, kind, w, h, sticker, hidden } = file;
+  return { source: refSource(file), meta: { name, mime, kind, ...(w && h ? { w, h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden } : {}) } };
 }
 
 /**

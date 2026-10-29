@@ -2,6 +2,7 @@ import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWord
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
+import { isSafetyHours } from '../lib/safety';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { PAGE, PAGE_PREFIX, sealedFile, sealedSize, type Holder } from './sealed-file';
@@ -75,7 +76,7 @@ export type Kept = [
  * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
  * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr.
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number };
 
 /** The way a message went or came, as the phone knew it (lib/nearby.ts Delivery): this phone only. */
 export type Route = 'relay' | 'nearby' | 'spread' | 'carried' | 'lora' | 'sms';
@@ -137,12 +138,14 @@ export type Parts = {
   route?: Route;
   /** When its sender last edited its words (milliseconds, this phone's clock). */
   edited?: number;
+  /** Ours, a safety message (lib/safety.ts): it goes this many hours after Erevos was last opened, held by the relay till then. */
+  safety?: number;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -159,6 +162,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(nostr ? { t: 1 as const } : {}),
     ...(route ? { v: route } : {}),
     ...(edited ? { e: edited } : {}),
+    ...(safety ? { z: safety } : {}),
   };
 }
 
@@ -179,6 +183,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.t ? { nostr: true } : {}),
     ...(more?.v ? { route: more.v } : {}),
     ...(more?.e ? { edited: more.e } : {}),
+    ...(more?.z ? { safety: more.z } : {}),
   };
 }
 
@@ -215,7 +220,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -241,6 +246,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(v.t === 1 ? { t: 1 as const } : {}),
     ...(isRoute(v.v) ? { v: v.v } : {}),
     ...(count(v.e) ? { e: count(v.e) } : {}),
+    ...(mine && isSafetyHours(v.z) ? { z: v.z } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -517,6 +523,17 @@ export class History {
     const changed = list.map((m) => (m[3] === tag ? pack({ ...unpack(m), mark: 0, lasts, held, heldFor, quiet: false, ...(bare ? { preview: undefined } : {}) }) : m));
     await this.save({ chats: { ...this.data.chats, [peer]: changed } });
     return true;
+  }
+
+  /**
+   * Our safety message is held anew to go at `at` (lib/safety.ts), by `held` now, for the contact's
+   * queue `heldFor`, in place of the one held as `was`. False if it is gone, is no longer one, or
+   * was held anew meanwhile by another look: then the caller takes its own back.
+   */
+  rearmed(peer: string, tag: string, at: number, held: HeldAt, heldFor: string, was: string): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    if (!kept || !kept[9]?.z || kept[9]?.h !== was) return Promise.resolve(false);
+    return this.change(peer, tag, { at, held, heldFor });
   }
 
   /** Ours held for later is held anew (lib/waiting.ts, holdAgain): by `held` now, for the contact's queue `heldFor`. False if it is gone. */

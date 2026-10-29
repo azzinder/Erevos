@@ -5,8 +5,23 @@ export type DeviceEvents = {
   onPlace: (event: { lat?: number; lon?: number; acc?: number; age?: number; error?: 'timeout' }) => void;
 };
 
-/** The panic button's settings (Panic.kt): `trigger` and `pending` are packages, '' for none. */
-export type PanicState = { on: boolean; backups: boolean; trigger: string; triggerLabel: string; triggerThere: boolean; pending: string; pendingLabel: string };
+/**
+ * The panic button's settings (Panic.kt): `trigger` and `pending` are packages, '' for none.
+ * `triggerThere`: the trusted app is installed and signed as when trusted (or moved to a new key by
+ * APK key rotation); `triggerInstalled`: installed at all. `refused`: when the trusted app last
+ * asked to wipe and was refused (ms, 0 for never); missing in a build before it.
+ */
+export type PanicState = {
+  on: boolean;
+  backups: boolean;
+  trigger: string;
+  triggerLabel: string;
+  triggerThere: boolean;
+  triggerInstalled?: boolean;
+  refused?: number;
+  pending: string;
+  pendingLabel: string;
+};
 
 /** This Erevos given nearby (NearbyApk.kt): where, the package's SHA-256, size and version, and its certificates' SHA-256s, joined with commas. */
 export type GivingApp = { addresses: string[]; port: number; token: string; sha256: string; size: number; version: string; cert: string; until: number };
@@ -40,6 +55,10 @@ type Device = {
   refusePanicApp?(): void;
   /** Trusts no panic app any more. */
   forgetPanicApp?(): void;
+  /** Trusts the trusted panic app again as it is signed now. False when it is not installed. */
+  renewPanicApp?(): boolean;
+  /** The owner saw that a wipe was refused. */
+  seenPanicRefused?(): void;
   /** Wipes everything Erevos keeps; Android then stops Erevos. */
   wipeNow?(): boolean;
   /** Starts giving this Erevos's APK to a phone nearby (NearbyApk.kt), its page in these words. Missing in a build before it. */

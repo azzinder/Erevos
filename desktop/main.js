@@ -30,6 +30,12 @@
  *                              running when it is closed, PUT ?keep=1 or 0 sets it, PUT ?show=1
  *                              brings it back (a call, a tapped notice), POST gives the words of
  *                              the tray's menu in the app's language
+ *   /__wipe?backups=&folder=   the panic button (app/lib/panic.ts): POST deletes everything the
+ *                              app keeps (secrets.json, files/, the page's own storage, the rest
+ *                              of its data folder), with backups=1 the backups Erevos named in
+ *                              `folder` too, when it was chosen for them; then Erevos starts again
+ *                              as if just installed. The Keychain or keyring item stays: its key
+ *                              alone opens nothing, as what it sealed is gone.
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos, on Windows %APPDATA%\Erevos). The page is also told, in its
  * address, which package it runs from (#erevos-system=…), so Check for updates names the file to take.
@@ -545,6 +551,68 @@ async function windowRequest(request, url) {
   return new Response('', { status: 405 });
 }
 
+/**
+ * The panic button: everything Erevos keeps on this computer goes, then it starts again as new.
+ * What the app sealed goes first (secrets.json, files/), then the page's own storage, then
+ * whatever else is in its data folder; a file Chromium holds open goes as Erevos quits.
+ */
+async function wipe(request, url) {
+  if (request.method !== 'POST') return new Response('', { status: 405 });
+  lan?.stop();
+  lan = null;
+  const where = url.searchParams.get('folder');
+  if (url.searchParams.get('backups') === '1' && where && chosenFolders().includes(where)) {
+    try {
+      for (const name of fs.readdirSync(where)) if (BACKUP.test(name)) fs.rmSync(path.join(where, name), { force: true });
+    } catch {
+      // The folder is gone, or out of reach: nothing of Erevos's to delete there.
+    }
+  }
+  const root = app.getPath('userData');
+  const rest = () => {
+    let left = 0;
+    for (const name of ['secrets.json', 'files', 'folders.json', 'window.json']) {
+      try {
+        fs.rmSync(path.join(root, name), { recursive: true, force: true });
+      } catch {
+        left += 1;
+      }
+    }
+    return left;
+  };
+  const left = rest();
+  try {
+    await session.defaultSession.clearStorageData();
+    await session.defaultSession.clearCache();
+  } catch {
+    // Its folder goes below all the same.
+  }
+  const everything = () => {
+    let names = [];
+    try {
+      names = fs.readdirSync(root);
+    } catch {
+      return;
+    }
+    for (const name of names) {
+      try {
+        fs.rmSync(path.join(root, name), { recursive: true, force: true });
+      } catch {
+        // Held open by Chromium on Windows: it goes once Erevos has quit (below).
+      }
+    }
+  };
+  everything();
+  // Started again, and, before that, the folder emptied once more as Erevos quits.
+  setTimeout(() => {
+    quitting = true;
+    app.once('will-quit', everything);
+    app.relaunch();
+    app.quit();
+  }, 300);
+  return left ? new Response("Some of Erevos's files could not be deleted.", { status: 500 }) : new Response(null, { status: 204 });
+}
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.host === 'element-call') return serveCall(url.pathname);
@@ -562,6 +630,7 @@ function handle(request) {
     if (url.pathname === '/__latest') return latest();
     if (url.pathname === '/__webdav') return webdav(request, url);
     if (url.pathname === '/__window') return windowRequest(request, url);
+    if (url.pathname === '/__wipe') return wipe(request, url);
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);

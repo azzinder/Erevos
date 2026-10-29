@@ -462,6 +462,14 @@ release goes out without an APK. Android installs a release only over an app sig
 key, so a phone with a build from a computer (signed with the debug key) has to uninstall it first:
 make a backup before.
 
+The release key's certificate (`CN=Erevos, O=LPHL, C=GR`) has this SHA-256, the same in every release
+APK; check a download with `apksigner verify --print-certs erevos-android.apk`, or on the phone with
+an app such as AppVerifier:
+
+```
+49:F0:D9:BE:60:09:2F:02:CF:27:C5:24:67:52:55:01:93:A6:7B:81:21:29:BF:53:41:79:53:B7:C8:79:8E:69
+```
+
 Each release also goes to the public repository `azzinder/erevos-releases` when the Actions secret
 `RELEASES_TOKEN` (a token that may write releases there) is set, with a `version.json` that
 **Updates → Check for updates** in the app reads. The app never asks GitHub by itself. On Android

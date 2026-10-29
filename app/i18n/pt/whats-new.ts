@@ -8,6 +8,18 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
+    "**Negrito, itálico, código e palavras escondidas**: em conversas e grupos, palavras entre * ficam em negrito, entre _ em itálico, entre ~ riscadas, entre ` como código, e entre || escondidas atrás de uma barra cinza até você tocar. Veja [Conversar por um relay](#relay).",
+  "**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay).":
+    "**Foto escondida**: em + numa conversa ou num grupo, uma foto que aparece borrada até você tocar nela. Veja [Conversar por um relay](#relay).",
+  "**Safety message**: under + in a chat, words to a contact that the relay sends by itself if you do not open Erevos for 6 hours to a week; each time you open it, they move on again. See [Chat through a relay](#relay).":
+    "**Mensagem de segurança**: em + numa conversa, palavras para um contato que o relay envia sozinho se você não abrir o Erevos por um período de 6 horas a uma semana; cada vez que você o abre, elas são adiadas de novo. Veja [Conversar por um relay](#relay).",
+  "**Name a member in a group with @**: type @ and pick a member; they are told of the message even if they muted the group. See [Group chats](#groups).":
+    "**Cite um membro num grupo com @**: digite @ e escolha um membro; ele é avisado da mensagem mesmo que tenha silenciado o grupo. Veja [Conversas em grupo](#groups).",
+  "**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic).":
+    "**O botão de pânico num computador e no Sailfish OS**: Configurações → Privacidade e segurança → Botão de pânico agora apaga o Erevos também lá, com os backups automáticos dele se você escolher; num computador ele depois começa como novo. Veja [Botão de pânico](#panic).",
+  "**The panic button says when it refused**: when your panic app asked to wipe Erevos while the switch was off, or signed with another key, the panic screen now says so, with the time. An app that moves to a new key the way Android allows stays trusted; otherwise you can trust it again as it is now. See [Panic button](#panic).":
+    "**O botão de pânico diz quando recusou**: quando seu app de pânico pediu para apagar o Erevos com o interruptor desligado, ou assinado com outra chave, a tela do botão de pânico agora avisa, com a hora. Um app que passa a uma chave nova do jeito que o Android permite continua de confiança; senão você pode confiar nele de novo como está agora. Veja [Botão de pânico](#panic).",
   "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
     "**Os chips da tela inicial ficam em uma linha só**: com um chip de Nostr, Matrix ou XMPP a mais, **Nomes** ia para uma linha própria e os chips mudavam de lugar. Agora ficam em uma linha só que desliza para o lado, e o escolhido está sempre à vista.",
   "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":

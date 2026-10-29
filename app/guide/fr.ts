@@ -717,6 +717,16 @@ discussion s’affiche à l’écran.
   cela ne garde rien pour plus tard : le message attend alors sur ce téléphone et part à son heure tant qu’Erevos
   tourne, en arrière-plan aussi tant que **En arrière-plan** est sur **Recevoir et sonner** (ci-dessous), ou à la
   prochaine ouverture d’Erevos.
+- **Message de sécurité :** écris-le, appuie sur **+** puis sur **Message de sécurité**, et choisis combien de temps :
+  6 ou 12 heures, 1, 2 ou 3 jours, ou une semaine. Il part aussitôt vers le relais, comme un message envoyé pour plus
+  tard, et le relais l’envoie tout seul à cette heure. Chaque fois que tu ouvres Erevos, après son mot de passe, il
+  est repoussé d’autant, donc il ne part que si tu n’ouvres pas Erevos à temps : si le téléphone est perdu, pris,
+  cassé ou coupé d’internet, ou s’il t’est arrivé quelque chose. Erevos qui tourne en arrière-plan ne le repousse pas,
+  ni son écran de mot de passe. Dans la discussion, il est marqué **Message de sécurité** avec l’heure à laquelle il
+  partirait ; supprime-le pour l’arrêter. Écris-le de façon qu’il dise ce qu’il est : chez ton contact, il arrive
+  comme un message ordinaire. Si le relais est injoignable quand tu ouvres Erevos, il garde son heure.
+  **Pourquoi :** un message gardé par le relais n’a besoin de rien de ce téléphone pour partir, donc personne qui
+  prend le téléphone ne peut l’arrêter, sauf en ouvrant Erevos avec son mot de passe.
 - **Envoyer sans son :** maintiens la flèche d’envoi et choisis **Sans son** : son téléphone affiche la notification
   sans son ni vibration. Un Erevos d’avant cela ne le sait pas et sonne comme d’habitude, tout comme Erevos en app web,
   dont la notification vient du navigateur. De même pour la notification d’un emplacement de discussions masquées fermé,
@@ -918,6 +928,24 @@ Appuie longuement sur un message pour ouvrir son menu : les réactions en haut, 
 - **Supprimer :** sur ce téléphone, ou sur les deux, comme ci-dessus.
 
 Les réactions, réponses, épingles et modifications voyagent à l’intérieur du chiffrement, comme les messages.
+
+### Comment les mots s’affichent
+
+Les marques tapées autour des mots changent leur aspect, dans les discussions et les groupes, comme dans WhatsApp et
+Signal : \`*gras*\`, \`_italique_\`, \`~barré~\`, un mot entre accents graves comme code (trois accents graves autour de
+lignes pour un bloc de code) et \`||mots||\`, cachés derrière une barre grise jusqu’à ce que vous touchiez, sur l’écran,
+dans la ligne de l’écran d’accueil et dans une citation (là sous la forme ▒▒▒).
+
+- **Seulement autour de mots :** une marque compte quand elle commence un mot et en termine un, donc \`2*3*4\`,
+  \`snake_case\` et les adresses web restent tels quels. Le gras, l’italique et le barré restent sur une ligne.
+- **Les autres voient les marques :** un Erevos d’avant et d’autres apps montrent les mots avec leurs marques, tels
+  que tapés.
+- **Photo cachée :** sous **+**, **Photo cachée** envoie une photo qui apparaît floue dans la discussion, dans les
+  discussions avec les contacts et dans les groupes, jusqu’à ce qu’on la touche, et elle s’ouvre alors toute seule. Un
+  Erevos d’avant la montre comme n’importe quelle photo.
+
+**Pourquoi :** une marque tapée dans les mots voyage avec eux, à l’intérieur du chiffrement, sans rien à côté qui la
+distingue.
 
 ### Messages éphémères
 
@@ -1287,6 +1315,10 @@ l’admin, et seul l’admin ajoute ou retire des membres.
   fichier, et **Médias, liens et fichiers** liste les photos, vidéos, messages vocaux, musiques, fichiers et liens du groupe, chaque sorte à part, comme dans la discussion d’un contact (voir plus haut), chacun menant à son message ; **Messages avec étoile** et la recherche de l’écran d’accueil incluent aussi les groupes. Un membre dont
   l’Erevos est d’avant cette version voit les mots, l’emoji d’un sticker, les coordonnées d’un lieu et la question d’un
   sondage, et rien des réactions, épingles, modifications et suppressions.
+- **Nommer un membre :** tapez **@** dans le champ du message, et les membres dont le nom commence par ce qui suit
+  s’affichent au-dessus : touchez-en un pour mettre son nom entier. Un membre nommé ainsi est averti du message même
+  s’il a mis le groupe en sourdine. Seuls les noms entiers comptent, donc **@Anna** ne nomme pas Anna Maria. Un Erevos
+  d’avant montre seulement les mots, et avertit comme le disent les réglages du groupe.
 - **Pas encore :** les marques, la saisie et les messages éphémères dans les groupes, et les groupes par un téléphone à
   proximité.
 
@@ -2651,7 +2683,8 @@ Partagé ainsi (le partage de secret de Shamir), aucun ami seul, ni aucun relay,
 ## Bouton de panique {#panic}
 
 Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglages** → **Confidentialité et sécurité** →
-**Bouton de panique** : touchez **Tout effacer maintenant** et dites **Effacer**. Sur Android et dans l’app web.
+**Bouton de panique** : touchez **Tout effacer maintenant** et dites **Effacer**. Sur Android, dans l’app web, sur un
+ordinateur et sur Sailfish OS.
 
 - **Ce qui part :** chaque espace avec ses discussions cachées, leurs contacts, messages, photos, fichiers et clés ; le
   verrou et ses mots de passe ; les comptes Matrix, XMPP et Nostr et les jetons du relay ; les réglages et le mot de
@@ -2666,11 +2699,19 @@ Quand vous êtes en danger, Erevos peut s’effacer d’un coup, dans **Réglage
    demande. Touchez **Dire oui**.
 2. **Seulement cette app :** seule l’app à laquelle vous avez dit oui peut effacer Erevos, et seulement tant que **Une
    app de panique peut effacer Erevos** est activé. Erevos vérifie le nom de l’app et sa signature : une autre app, ou
-   le même nom réinstallé par quelqu’un d’autre, ne le peut pas. **Ne plus faire confiance** y met fin.
+   le même nom réinstallé par quelqu’un d’autre, ne le peut pas. Une mise à jour de l’app qui passe à une nouvelle clé
+   comme Android le permet (rotation de clé) reste de confiance. **Ne plus faire confiance** y met fin.
+4. **Quand Erevos a refusé :** si l’app de confiance a demandé d’effacer alors que l’interrupteur était coupé, ou signée
+   d’une autre clé, cet écran le dit en rouge, avec le jour et l’heure. Quand l’app est signée d’une autre clé, **Faire
+   confiance à … tel qu’il est maintenant** lui fait de nouveau confiance : dites oui seulement si vous l’avez mise à
+   jour vous-même.
 3. **Après l’effacement :** l’app de panique est oubliée aussi : redites-lui oui quand vous configurez Erevos à
    nouveau.
 
-- **Sur un ordinateur :** Erevos ne peut pas s’y effacer lui-même : supprimez plutôt ses données depuis l’ordinateur.
+- **Sur un ordinateur et sur Sailfish OS :** il n’y a pas d’app de panique, seulement **Tout effacer maintenant**, avec
+  **Aussi les sauvegardes automatiques de** leur dossier si vous le choisissez. Sur un ordinateur, Erevos redémarre
+  ensuite comme fraîchement installé ; sur Sailfish OS, il se ferme. L’élément du trousseau pour Erevos reste sur un
+  ordinateur, mais ce qu’il scellait a disparu, il n’ouvre donc plus rien.
 - **Ce qu’il ne peut cacher :** sur le téléphone, sans le mot de passe, on voit encore qu’Erevos est installé et
   qu’une app de panique peut l’effacer, mais pas ce qu’il contenait.
 
@@ -3055,10 +3096,10 @@ messages et ses réglages scellés de la même façon.
    second mot de passe**). Voir plus bas pourquoi c’est important ici.
 4. Configure le relais et ajoute des contacts comme sur le téléphone, voir [Discuter par un relais](#relay).
 
-- **Ce que seul Android fait :** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa et les SMS. Le même Wi-Fi marche ici
-  aussi, comme sur un ordinateur : voir [Discuter avec un téléphone à proximité](#nearby). Le pare-feu du téléphone
-  peut devoir laisser entrer le port 47905 (UDP et TCP). Le reste est
-  pareil : les espaces et le second mot de passe, les discussions masquées, les messages vocaux, les discussions
+- **Ce que seul Android fait :** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa et les SMS. Le même Wi-Fi marche ici aussi,
+  comme sur un ordinateur : voir [Discuter avec un téléphone à proximité](#nearby). Le pare-feu de Sailfish OS laisse
+  déjà entrer son port, le 47905 : seul un pare-feu que vous avez durci vous-même demande une règle pour lui. Le reste
+  est pareil : les espaces et le second mot de passe, les discussions masquées, les messages vocaux, les discussions
   importées et les sauvegardes.
 - **Où il garde les choses :** dans \`~/.local/share/erevos\` sur le téléphone, scellé comme sur le téléphone. Sailfish
   n’a pas de trousseau pour les applis, donc le magasin de clés y est gardé tel quel, lisible par ton utilisateur, et

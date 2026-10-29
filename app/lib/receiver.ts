@@ -40,6 +40,7 @@ import { contactTarget, relayFor, sendSealed, spaceChats, type SpaceChats } from
 import { lookAtSpare, spareBackup } from './spare';
 import { flushGroups, takeGroupPacket, takeGroupSignal } from './space-groups';
 import { nextDue, sendWaiting, type SendPlace } from './waiting';
+import { setShownCheck } from './safety';
 import { keepPush } from './web-push';
 import { cameUnread, onContactsCame } from './contact-queues';
 import { onNetworkChange } from './network-change';
@@ -120,6 +121,9 @@ export function lookSoon(): void {
   endWaits();
   hurry?.();
 }
+
+// A safety message is put off only while the owner looks (lib/safety.ts).
+setShownCheck(() => shows);
 
 /** Says whether the app shows on the screen (AppState 'active'). Shown again, it looks at once. */
 export function setAppShown(shown: boolean): void {

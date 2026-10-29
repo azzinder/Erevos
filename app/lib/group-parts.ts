@@ -1,6 +1,7 @@
 import type { GroupMessage, GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag } from '../lock/history';
 import { carriedOf, checkedChoices, checkedEdit, editableWords, previewAfterEdit } from './chat-parts';
+import { isMentions } from './mentions';
 
 // What a group's messages do beyond words and files (lib/groups.ts carries them), as in a chat with
 // a contact (lib/chat-parts.ts): a message can answer another, be a sticker, a place or a poll,
@@ -20,8 +21,8 @@ export type Marked =
 
 /**
  * What a member's message carries beyond itself, from its fields as they came, each checked or
- * left out: with words (`words`), a sticker, a place, a poll or a preview; with either, the
- * message it answers and that it was forwarded.
+ * left out: with words (`words`), a sticker, a place, a poll, a preview or the members named; with
+ * either, the message it answers and that it was forwarded.
  */
 export function groupPartsOf(value: Record<string, unknown>, words: boolean): GroupParts {
   const { sticker, place, poll, preview } = words ? carriedOf(value) : {};
@@ -32,6 +33,7 @@ export function groupPartsOf(value: Record<string, unknown>, words: boolean): Gr
     ...(poll ? { poll } : {}),
     ...(preview ? { preview } : {}),
     ...(value.forwarded === true ? { forwarded: true as const } : {}),
+    ...(words && isMentions(value.named) ? { named: value.named } : {}),
   };
 }
 

@@ -126,7 +126,7 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
       { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden' },
-      { id: 'panic', title: mark('Panic button'), detail: mark('Wipe Erevos at once, from here or from a panic app'), href: '/panic', when: (place) => !place.web || place.webApp },
+      { id: 'panic', title: mark('Panic button'), detail: mark('Wipe Erevos at once, from here or from a panic app'), href: '/panic' },
       { id: 'screenshots', title: mark('Screenshots'), detail: mark('Let screenshots and screen recordings of Erevos, or keep them out'), href: '/security?part=screen', when: phone },
       { id: 'web-app', title: mark('This web app'), detail: mark('The signed release it runs, and its updates'), href: '/security?part=web', when: (place) => place.webApp },
     ],

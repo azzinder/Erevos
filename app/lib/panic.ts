@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 import { device, type PanicState } from '../modules/erevos-device';
 import { t } from './i18n';
-import { SHELL } from './shell';
+import { SHELL, shellFetch } from './shell';
 import { webWipe } from './web-store';
 
 export type { PanicState };
@@ -21,14 +21,19 @@ export type { PanicState };
 // In the web app, the browser's whole Erevos database goes, with the key that sealed its secrets,
 // and its Web Push subscription; the page then starts as new.
 //
-// Not in the desktop app or on Sailfish OS yet: there the data is in the computer's keyring and
-// folders, which the app's page cannot clear by itself.
+// On a computer and on Sailfish OS the app's shell does it (desktop/main.js, sailfish/src/
+// shellserver.cpp, /__wipe): its keystore, its sealed files, the page's own storage and the rest
+// of its data folder, and, when chosen, the automatic backups in their folder; then Erevos starts
+// again as new on a computer, and closes on Sailfish OS. A panic app exists only on Android.
 
 /** Whether a panic app can be set: Android, in a build with the panic button. */
 export const CAN_PANIC_APP = Platform.OS === 'android' && !!device?.panicState;
 
 /** Whether this device can wipe Erevos from its Settings. */
-export const CAN_WIPE = CAN_PANIC_APP || (Platform.OS === 'web' && !SHELL);
+export const CAN_WIPE = CAN_PANIC_APP || Platform.OS === 'web';
+
+/** Whether the wipe here can take the automatic backups along, chosen on the panic screen itself (a computer, Sailfish OS). */
+export const WIPE_BACKUPS_HERE = !!SHELL;
 
 /** The panic settings, or null where there are none (not Android, or a build before them). */
 export function panicState(): PanicState | null {
@@ -53,16 +58,36 @@ export function forgetPanicApp(): void {
   device?.forgetPanicApp?.();
 }
 
+/** Trusts the trusted panic app as it is signed now, after it changed key. False when it is gone. */
+export function renewPanicApp(): boolean {
+  return device?.renewPanicApp?.() ?? false;
+}
+
+/** The owner saw that the trusted panic app's wipe was refused. */
+export function seenPanicRefused(): void {
+  device?.seenPanicRefused?.();
+}
+
 /** Automatic backups went to another folder, or stopped (''): a wipe that deletes them looks there. */
 export function panicFolderChanged(folder: string): void {
   const state = panicState();
   if (state?.backups) setPanic(state.on, !!folder, folder);
 }
 
-/** Wipes everything Erevos keeps on this device, now. On Android, Android then stops Erevos. */
-export async function wipeNow(): Promise<void> {
+/**
+ * Wipes everything Erevos keeps on this device, now. On Android, Android then stops Erevos. On a
+ * computer or Sailfish OS, `backupsIn` is the automatic backups' folder when they go too.
+ */
+export async function wipeNow(backupsIn = ''): Promise<void> {
   if (CAN_PANIC_APP && device?.wipeNow?.()) return;
-  if (Platform.OS !== 'web' || SHELL) throw new Error(t('Erevos cannot wipe itself here.'));
+  if (Platform.OS !== 'web') throw new Error(t('Erevos cannot wipe itself here.'));
+  if (SHELL) {
+    // The page's own database too, should the shell's folder not hold it.
+    await webWipe().catch(() => undefined);
+    const query = new URLSearchParams({ backups: backupsIn ? '1' : '0', folder: backupsIn });
+    await shellFetch(`/__wipe?${query.toString()}`, { method: 'POST' });
+    return;
+  }
   await stopWebPush();
   await webWipe();
   globalThis.location?.replace?.('/');
