@@ -17,6 +17,7 @@ import android.os.Looper
 import android.os.PersistableBundle
 import android.os.SystemClock
 import android.view.WindowManager
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -139,6 +140,47 @@ class ErevosDeviceModule : Module() {
       val app = context?.applicationContext ?: return@Function false
       Panic.wipe(app)
       true
+    }
+
+    // Erevos to a phone nearby with no internet (NearbyApk.kt): giving this one over the Wi-Fi or
+    // hotspot, and, in Updates, taking one. Each runs on a thread of its own, as reading the
+    // package and the download take long and would hold every other module's calls.
+    AsyncFunction("giveAppStart") { words: Map<String, String>, promise: Promise ->
+      val app = context?.applicationContext ?: return@AsyncFunction promise.resolve(mapOf("error" to "network"))
+      Thread {
+        try {
+          promise.resolve(NearbyApk.start(app, words))
+        } catch (e: Exception) {
+          promise.reject("ERR_GIVE_APP", e.message ?: "", e)
+        }
+      }.start()
+    }
+
+    Function("giveAppStop") {
+      NearbyApk.stop()
+    }
+
+    Function("giveAppState") {
+      NearbyApk.state()
+    }
+
+    AsyncFunction("takeNearbyApp") { host: String, port: Int, token: String, sha256: String, promise: Promise ->
+      val app = context?.applicationContext ?: return@AsyncFunction promise.resolve(mapOf("error" to "network"))
+      Thread {
+        try {
+          promise.resolve(NearbyApk.receive(app, host, port, token, sha256))
+        } catch (e: Exception) {
+          promise.reject("ERR_TAKE_APP", e.message ?: "", e)
+        }
+      }.start()
+    }
+
+    Function("nearbyAppProgress") {
+      NearbyApk.progress()
+    }
+
+    Function("cancelNearbyApp") {
+      NearbyApk.cancelReceiving()
     }
 
     // Starts looking for where the phone is, once: what it finds comes as onPlace. Says "" when it

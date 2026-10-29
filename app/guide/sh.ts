@@ -2869,6 +2869,37 @@ svakog iznenađenja.
 - **Izdanje kojem nedostaje vaš sistem** to kaže u svojim napomenama: ta izgradnja nije uspjela, pa uzmite prethodno
   izdanje.
 
+## Erevos obližnjem telefonu {#give-app}
+
+Bez interneta, Android telefon s Erevosom može ga dati telefonu pored sebe, pod **Postavke** → **Općenito** → **Daj
+Erevos obližnjem telefonu** (i u **Ažuriranja**). Oba telefona moraju biti na istoj Wi-Fi mreži, ili drugi na
+hotspotu ovoga: prvo uključite hotspot u postavkama Androida.
+
+1. **Na telefonu koji daje:** dodirnite **Pokreni**. Pojavljuje se QR kod, s veličinom paketa, a ispod adrese koje
+   umjesto toga možete upisati u preglednik.
+2. **Na telefonu bez Erevosa:** skenirajte kod njegovom kamerom. Njegov preglednik otvara stranicu, s telefona koji
+   daje, s **Preuzmi Erevos**: preuzmite ga i otvorite datoteku, i Android ga instalira. Prvi put Android traži da
+   dopustite instaliranje aplikacija iz tog preglednika. Stranica prikazuje SHA-256 paketa i njegova certifikata:
+   moraju biti oni koje telefon koji daje prikazuje pod **Za usporedbu**.
+3. **Na telefonu sa starijim Erevosom:** radije otvorite **Postavke** → **Općenito** → **Ažuriranja** → **S
+   obližnjeg telefona** i fotografirajte kod. Erevos preuzima paket i otvara Androidov instalacijski program samo ako
+   je njegov SHA-256 onaj iz koda, ako je to Erevos, potpisan istim certifikatom kao Erevos ondje, i noviji.
+
+- **Koliko dugo:** telefon koji daje poslužuje ga dok se vidi njegov zaslon, najviše deset minuta, a ranije staje sa
+  **Zaustavi**. Odgovara samo na nasumičnoj adresi koju nitko ne pogađa, samo telefonima na svojoj mreži, i ničim
+  osim paketom i njegovom stranicom: nijedan razgovor, kontakt ni postavka ne ide s njim.
+- **Što ne može provjeriti umjesto vas:** preglednik samo preuzima. Telefon s izmijenjenim Erevosom prikazao bi svoj
+  certifikat, pa čim imate internet usporedite certifikat s onim na web stranici ili stranici izdanja Erevosa. Sam
+  Erevos, u **Ažuriranja**, odbija paket potpisan drukčije.
+- **Ne iz trgovine:** Erevos instaliran u dijelovima, kako neke trgovine instaliraju, ne može se dati u cijelosti i to
+  kaže. Erevos iz F-Droida potpisuje F-Droid: može otići na telefon bez Erevosa, ili preko F-Droidovog Erevosa kroz
+  preglednik, ali Erevos sa stranice izdanja odbija ga u **Ažuriranja**, kao što bi i Android. F-Droidov Erevos ne
+  prima ništa u **Ažuriranja**: ažurira ga F-Droid.
+- Samo na Androidu. Svatko na istoj mreži tko vidi kod može također preuzeti Erevos; ondje nema ničeg drugog za uzeti.
+
+**Zašto:** gdje je internet prekinut, ili nadziran, ili telefon uopće ne dolazi do web stranice, Erevos i dalje može ići
+iz ruke u ruku, a telefon koji ga prima može provjeriti da je pravi.
+
 ## Ekrani za testiranje {#tests}
 
 Dva ekrana pod **Postavke** → **Za testiranje** služe za testiranje veza, korak po korak.

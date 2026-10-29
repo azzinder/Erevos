@@ -55,6 +55,7 @@ export const SETTINGS: SettingsGroup[] = [
       // Its detail is the language chosen, by its own name.
       { id: 'language', title: mark('Language'), detail: '', language: true },
       { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
+      { id: 'give-app', title: mark('Give Erevos to a phone nearby'), detail: mark('Over Wi-Fi or a hotspot, with no internet'), href: '/give-app', when: phone },
       // What each version changed, by its number (lib/whats-new.ts).
       { id: 'whats-new', title: mark("What's new"), detail: mark('What each version changed'), href: '/whats-new' },
       // The guide's first section, its end: who makes Erevos, where, for whom, why and who pays.

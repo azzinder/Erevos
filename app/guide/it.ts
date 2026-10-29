@@ -3001,6 +3001,38 @@ file per ogni sistema. Lì restano le cinque più recenti.
 - **Una versione a cui manca il tuo sistema** lo dice nelle sue note: quella build non è riuscita, quindi prendi la
   versione precedente.
 
+## Erevos a un telefono vicino {#give-app}
+
+Senza internet, un telefono Android con Erevos può darlo a un telefono accanto, in **Impostazioni** → **Generali** →
+**Dai Erevos a un telefono vicino** (anche in **Aggiornamenti**). I due telefoni devono essere sulla stessa Wi-Fi, o
+l’altro sull’hotspot di questo: attiva prima l’hotspot nelle impostazioni di Android.
+
+1. **Sul telefono che lo dà:** tocca **Avvia**. Compare un codice QR, con la dimensione del pacchetto, e sotto gli
+   indirizzi da scrivere invece in un browser.
+2. **Su un telefono senza Erevos:** inquadra il codice con la sua fotocamera. Il suo browser apre una pagina, servita
+   dal telefono che lo dà, con **Scarica Erevos**: scaricalo e apri il file, e Android lo installa. La prima volta,
+   Android chiede di consentire l’installazione di app da quel browser. La pagina mostra lo SHA-256 del pacchetto e
+   quello del suo certificato: devono essere quelli che il telefono che lo dà mostra in **Da confrontare**.
+3. **Su un telefono con un Erevos più vecchio:** apri invece **Impostazioni** → **Generali** → **Aggiornamenti** →
+   **Da un telefono vicino** e fotografa il codice. Erevos scarica il pacchetto e apre il programma di installazione
+   di Android solo se il suo SHA-256 è quello del codice, se è Erevos, firmato con lo stesso certificato dell’Erevos
+   lì, e più recente.
+
+- **Per quanto:** il telefono che lo dà lo serve finché si vede la sua schermata, dieci minuti al massimo, e si ferma
+  prima con **Ferma**. Risponde solo a un indirizzo casuale che nessuno indovina, solo ai telefoni della sua rete, e
+  con nient’altro che il pacchetto e la sua pagina: nessuna chat, contatto o impostazione va con esso.
+- **Cosa non può controllare per te:** il browser scarica soltanto. Un telefono con un Erevos modificato mostrerebbe
+  il proprio certificato, quindi appena hai internet confronta il certificato con quello del sito o della pagina delle
+  versioni di Erevos. Erevos stesso, in **Aggiornamenti**, rifiuta un pacchetto firmato diversamente.
+- **Non da uno store:** un Erevos installato in parti, come fanno alcuni store, non può essere dato per intero e lo
+  dice. L’Erevos di F-Droid è firmato da F-Droid: può andare a un telefono senza Erevos, o sopra l’Erevos di F-Droid
+  tramite il browser, ma un Erevos dalla pagina delle versioni lo rifiuta in **Aggiornamenti**, come farebbe Android.
+  L’Erevos di F-Droid non prende nulla in **Aggiornamenti**: lo aggiorna F-Droid.
+- Solo su Android. Chiunque sulla stessa rete veda il codice può scaricare anche lui Erevos; non c’è altro da prendere.
+
+**Perché:** dove internet è tagliato, o sorvegliato, o un telefono non raggiunge nemmeno il sito, Erevos può comunque
+passare di mano in mano, e il telefono che lo riceve può controllare che sia quello vero.
+
 ## Le schermate di test {#tests}
 
 Due schermate in **Impostazioni** → **Per i test** servono a provare i collegamenti, passo per passo.

@@ -8,6 +8,9 @@ export type DeviceEvents = {
 /** The panic button's settings (Panic.kt): `trigger` and `pending` are packages, '' for none. */
 export type PanicState = { on: boolean; backups: boolean; trigger: string; triggerLabel: string; triggerThere: boolean; pending: string; pendingLabel: string };
 
+/** This Erevos given nearby (NearbyApk.kt): where, the package's SHA-256, size and version, and its certificates' SHA-256s, joined with commas. */
+export type GivingApp = { addresses: string[]; port: number; token: string; sha256: string; size: number; version: string; cert: string; until: number };
+
 type Device = {
   /** Puts the text on the phone's clipboard, marked sensitive. False when it could not. */
   copyText(text: string): boolean;
@@ -39,6 +42,18 @@ type Device = {
   forgetPanicApp?(): void;
   /** Wipes everything Erevos keeps; Android then stops Erevos. */
   wipeNow?(): boolean;
+  /** Starts giving this Erevos's APK to a phone nearby (NearbyApk.kt), its page in these words. Missing in a build before it. */
+  giveAppStart?(words: Record<string, string>): Promise<GivingApp | { error: 'split' | 'network' | 'unsigned' }>;
+  /** Stops giving it. */
+  giveAppStop?(): void;
+  /** Whether it is still given, and how many phones took it whole. */
+  giveAppState?(): { on: boolean; given: number };
+  /** Takes the APK a phone nearby gives into cache/updates/nearby.apk, and checks it. */
+  takeNearbyApp?(host: string, port: number, token: string, sha256: string): Promise<{ version: string; build: number } | { error: string }>;
+  /** How much of it came, in bytes. */
+  nearbyAppProgress?(): { received: number; total: number };
+  /** Stops taking it. */
+  cancelNearbyApp?(): void;
   addListener<Name extends keyof DeviceEvents>(name: Name, listener: DeviceEvents[Name]): EventSubscription;
 };
 

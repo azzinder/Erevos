@@ -2740,6 +2740,37 @@ files \`sha256sum -c --ignore-missing SHA256SUMS\` must say **OK** for each.
   read. Restore a backup made with that older version instead.
 - **A release that lacks your system** says so in its notes: that build failed, so take the release before.
 
+## Erevos to a phone nearby {#give-app}
+
+With no internet, an Android phone with Erevos can give it to a phone next to it, under **Settings** → **General** →
+**Give Erevos to a phone nearby** (also in **Updates**). Both phones must be on the same Wi-Fi, or the other one on
+this phone's hotspot: turn the hotspot on in Android's settings first.
+
+1. **On the phone that gives:** tap **Start**. A QR code shows, with the package's size, and below it the addresses
+   to type in a browser instead.
+2. **On a phone without Erevos:** scan the code with its camera. Its browser opens a page, from the giving phone, with
+   **Download Erevos**: download it and open the file, and Android installs it. The first time, Android asks to allow
+   installing apps from that browser. The page shows the package's SHA-256 and its certificate's: they must be the
+   ones the giving phone shows under **To compare**.
+3. **On a phone with an older Erevos:** open **Settings** → **General** → **Updates** → **From a phone nearby**
+   instead and photograph the code. Erevos downloads the package and opens Android's installer only when its SHA-256
+   is the one in the code, it is Erevos, signed with the same certificate as the Erevos there, and newer.
+
+- **How long:** the giving phone serves it while its screen shows, ten minutes at most, and stops sooner on **Stop**.
+  It serves only under a random address no one can guess, only to phones on its own network, and nothing but the
+  package and its page: no chat, contact or setting goes with it.
+- **What it cannot check for you:** the browser only downloads. A phone with a changed Erevos would show its own
+  certificate, so once you have internet compare the certificate with the one on Erevos's website or releases page.
+  Erevos itself, in **Updates**, refuses a package signed otherwise.
+- **Not from a store:** an Erevos installed in parts, as some stores install apps, cannot be given whole and says so.
+  Erevos from F-Droid is signed by F-Droid: it can go to a phone without Erevos, or over F-Droid's Erevos through the
+  browser, but an Erevos from the releases page refuses it in **Updates**, as Android would. F-Droid's Erevos takes
+  nothing in **Updates**: F-Droid updates it.
+- Android only. Anyone on the same network who sees the code can download Erevos too; nothing else is there to take.
+
+**Why:** where the internet is cut, or watched, or a phone may not reach the website at all, Erevos can still go from
+hand to hand, and the phone that takes it can check it is the real one.
+
 ## The test screens {#tests}
 
 Two screens under **Settings** → **For testing** are there to test the connections, step by step.

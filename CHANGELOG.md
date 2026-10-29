@@ -44,6 +44,19 @@ On main, not released yet:
   the certificates hashed when it was trusted, wipe; any other request does nothing and is told nothing
   (`checks/panic.check.ts`). Not on the desktop app or Sailfish OS.
 
+- **Erevos to a phone nearby, with no internet**: **Settings** → **General** → **Give Erevos to a phone nearby**
+  (`app/give-app.tsx`, `lib/give-app.ts`) serves the APK Android installed (`applicationInfo.sourceDir`; refused when
+  installed as split APKs) from a small HTTP server on the phone (`ApkServer.kt`, `NearbyApk.kt`): IPv4 only, a random
+  128-bit path, only to peers inside the subnet of a Wi-Fi, hotspot or USB tethering interface (never mobile data),
+  four at a time, GET and HEAD only, stopped after ten minutes, 30 refused requests, **Stop** or leaving the screen.
+  Its page has no script (`default-src 'none'`) and shows the package's SHA-256 and its signing certificates'. The QR
+  code holds `http://<address>:<port>/<token>/#sha256=<hex>` (`lib/nearby-link.ts`), so any camera opens the page,
+  while the hash, after `#`, never goes over the network. An Erevos with **Updates** takes it under **From a phone
+  nearby**: over a raw socket (Android's HTTP clients refuse cleartext), only from a private IPv4 address, at most
+  400 MB, kept only when its SHA-256 is the code's, `getPackageArchiveInfo` names this package, its signing
+  certificates are this Erevos's and its version code is higher; then Android's installer opens as for an update
+  (`checks/give-app.check.ts`).
+
 - **Introduce two contacts to each other**: in a contact's chat details, **Introduce to a contact** and **Ask both**
   (`lib/intros.ts`). The phone that introduces (R) asks each of the two in its own chat with them, inside the
   end-to-end encryption, with words an older Erevos shows as they are (`intro` step `ask`, `lib/chat-parts.ts`), each

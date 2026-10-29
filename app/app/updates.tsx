@@ -7,7 +7,10 @@ import { Button, Card, Page, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { FDROID } from '../lib/distribution';
+import { CAN_GIVE, CAN_TAKE, takeFromNearby } from '../lib/give-app';
 import { canInstall, clearDownloads, downloadAndInstall } from '../lib/install-update';
+import { readNearbyLink } from '../lib/nearby-link';
+import { readQrPhoto } from '../lib/read-qr';
 import { SHELL, shellFetch, shellSystem } from '../lib/shell';
 import { loadNotice, noticeSeen, onNotice, setNoticeOn } from '../lib/release-notice';
 import { fetchStatement, signingOf } from '../lib/update-signature';
@@ -66,6 +69,37 @@ export default function UpdatesScreen() {
     try {
       await downloadAndInstall(release, (received, total) => setProgress({ received, total }), controller.signal);
       setNote(t('Android shows its installer: tap Install. Erevos closes and opens as the new version, with everything kept.'));
+    } catch (error) {
+      if (!controller.signal.aborted) setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      abort.current = null;
+      setProgress(null);
+    }
+  }
+
+  // Erevos from a phone nearby with no internet (lib/give-app.ts): its QR code names the package's
+  // SHA-256, and Erevos installs it only when it is Erevos signed as this one is, and newer.
+  async function fromNearby() {
+    setNote('');
+    let text: string | null;
+    try {
+      text = await readQrPhoto('camera');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+      return;
+    }
+    if (text === null) return;
+    const link = readNearbyLink(text);
+    if (!link) {
+      setNote(t('That is not the code of a phone giving Erevos.'));
+      return;
+    }
+    const controller = new AbortController();
+    abort.current = controller;
+    setProgress({ received: 0, total: 0 });
+    try {
+      const version = await takeFromNearby(link, (received, total) => setProgress({ received, total }), controller.signal);
+      setNote(t('Erevos {version} came whole and is signed as this one is. Android shows its installer: tap Install. Erevos closes and opens as the new version, with everything kept.', { version }));
     } catch (error) {
       if (!controller.signal.aborted) setNote(error instanceof Error ? error.message : String(error));
     } finally {
@@ -215,7 +249,10 @@ export default function UpdatesScreen() {
               <Button title={t('Cancel')} kind="secondary" onPress={() => abort.current?.abort()} />
             </View>
           ) : (
-            <Button title={t('Check for updates')} onPress={() => void check()} loading={checking} />
+            <>
+              <Button title={t('Check for updates')} onPress={() => void check()} loading={checking} />
+              {CAN_TAKE ? <Button title={t('From a phone nearby')} kind="secondary" onPress={() => void fromNearby()} /> : null}
+            </>
           )}
           {note ? <Text tone="muted">{note}</Text> : null}
         </Card>
@@ -228,6 +265,7 @@ export default function UpdatesScreen() {
           <Text tone="muted">{t('This web app updates itself: a new signed version is taken the next time Erevos opens.')}</Text>
         </Card>
       )}
+      {CAN_GIVE ? <Button title={t('Give Erevos to a phone nearby')} kind="secondary" onPress={() => router.push('/give-app')} /> : null}
       <Button title={t('How updating works')} kind="secondary" onPress={() => router.push({ pathname: '/guide/[id]', params: { id: 'updates' } })} />
     </Page>
   );
