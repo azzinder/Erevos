@@ -67,4 +67,5 @@ export const cloudBackup: Record<string, string> = {
     "Chaque sauvegarde automatique peut aussi aller dans un dossier sur un serveur de ton choix, comme ton Nextcloud, par WebDAV. Le serveur reçoit des octets aléatoires sous un nom aléatoire : il ne peut ni les ouvrir ni savoir qu’ils sont d’Erevos. Il voit quand même ton compte, ton adresse, quand une arrive et à peu près sa taille. Rien ne part tant que tu n’en ajoutes pas un.",
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "Dans un navigateur, cela ne marche qu’avec un serveur réglé pour laisser entrer l’app web (CORS), ce que Nextcloud n’est pas de base. L’app de bureau et Android n’en ont pas besoin.",
+  "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Une sauvegarde de plus de {size} Mo ne vient pas d’un serveur. Télécharge-la depuis le serveur et appuie sur Restaurer une sauvegarde.",
 };

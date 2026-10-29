@@ -514,6 +514,22 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Downloads stop at 100 MB**: an answer over plain HTTPS was taken whole into memory (`response.arrayBuffer()`), and
+  a contact picks the address of a Nostr file (Blossom) or an XMPP file, so a server answering without end could crash
+  the app. `lib/net-http.ts` now reads every answer as a stream (`readCapped`, `fetchCapped`) and stops it, aborting
+  the request, as soon as it passes `HTTP_MOST` (100 MB) or the caller's own cap: before reading anything when
+  `Content-Length` says more, and as the bytes come when it says nothing (chunked) or says less than comes. Callers
+  with a cap of their own pass it: Nostr files `NOSTR_BLOB_MOST` (`NOSTR_FILE_MOST`, 20 MB, and 64 KB), XMPP files
+  `XMPP_FILE_MOST` and 16 bytes, NIP-05 lookups and XMPP's host-meta and DNS-over-HTTPS 1 MB. Matrix (`lib/matrix.ts`)
+  and link previews (`lib/make-preview.ts`, 2 MB) read the same way. GETs on Android go through `expo/fetch`
+  (`lib/net-fetch.native.ts`), which streams; React Native's own fetch, left for PUT, POST and PROPFIND to servers the
+  owner chose, has no stream, so for those only `Content-Length` is weighed before the whole answer. Through Tor the
+  core's 64 MB cap stays, and the answer is weighed against the caller's cap after. A backup restored from a server
+  now comes up to 100 MB, not 200 MB (`CLOUD_RESTORE_MOST`), with an error that names the limit, and one the server
+  lists as larger is not downloaded; a backup file opened by hand still goes up to 200 MB. The desktop shell's
+  `/__webdav` reads the server's answer the same way, 100 MB at most, and answers 413 past it (`desktop/main.js`).
+  Checked against a local server sending more than the cap with and without `Content-Length`
+  (`checks/net-http.check.ts`).
 - **BLE beacons that change** (Android): the 4-byte nonce a phone advertises for others nearby to find it, which
   decides which of two phones dials, was drawn once per run of the app (`kotlin.random.Random`) and so followed the
   phone from place to place across Android's own address changes. It now comes from `SecureRandom` and changes every

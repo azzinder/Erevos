@@ -415,7 +415,7 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     assert.ok(listed[0].when > listed[1].when);
     const fetched = await fetchFromCloud(server, listed[0].name, 200 * 1024 * 1024);
     assert.deepEqual(fetched, newest);
-    await assert.rejects(fetchFromCloud(server, listed[0].name, 10), /not an Erevos backup/);
+    await assert.rejects(fetchFromCloud(server, listed[0].name, 10), /does not come from a server/);
     await assert.rejects(fetchFromCloud(server, '../elsewhere', 1e9), /not an Erevos backup/);
     await assert.rejects(listCloud({ ...server, password: 'wrong' }), /did not take/);
 
@@ -543,5 +543,10 @@ test("the desktop app's shell sends only WebDAV's requests for backups, over htt
   assert.match(webdav, /target\.protocol !== 'https:'/);
   assert.match(webdav, /credentials: 'omit', redirect: 'error'/);
   assert.doesNotMatch(webdav, /console\./);
+  // The server's answer is read as it comes, 100 MB at most, as the app's downloads (lib/net-http.ts).
+  assert.match(shell, /const WEBDAV_MOST = 100 \* 1024 \* 1024;/);
+  assert.match(webdav, /readCapped\(answer, WEBDAV_MOST/);
+  assert.match(webdav, /status: 413/);
+  assert.doesNotMatch(webdav, /arrayBuffer\(\)\);\n\s*if \(said/);
   assert.match(shell, /url\.pathname === '\/__webdav'\) return webdav\(request, url\)/);
 });

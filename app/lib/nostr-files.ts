@@ -190,9 +190,13 @@ export async function uploadBlob(
   throw new Error(t('No file server took the file ({said}).', { said: said.join('; ') }));
 }
 
-/** Fetches a file's encrypted bytes from where the message says, NOSTR_FILE_MOST at most… and a little. */
+/** The most a file's encrypted bytes may be when fetched: NOSTR_FILE_MOST and a little, for the
+ *  tag AES-GCM adds and for other apps' rounding. A server that sends more is stopped. */
+export const NOSTR_BLOB_MOST = NOSTR_FILE_MOST + 64 * 1024;
+
+/** Fetches a file's encrypted bytes from where the message says, NOSTR_BLOB_MOST at most. */
 export async function downloadBlob(url: string): Promise<Uint8Array> {
-  const answer = await http('GET', url, {});
+  const answer = await http('GET', url, {}, undefined, NOSTR_BLOB_MOST);
   if (answer.status < 200 || answer.status >= 300) throw new Error(t('The file could not be fetched ({status}).', { status: String(answer.status) }));
   return answer.bytes;
 }

@@ -2,8 +2,10 @@ import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { MAX_PREVIEW_IMAGE, type Preview } from './chat-parts';
-import { toBase64 } from './crypto';
+import { toBase64, utf8Decode } from './crypto';
 import { MAX_PAGE, pageInfo } from './link-preview';
+import { readCapped } from './net-http';
+import { streamingFetch } from './net-fetch';
 
 // Making a link's preview on the sender's phone, as it sends (lib/link-preview.ts): the page is
 // fetched from this phone, straight, so the site sees this phone's internet address and when, as
@@ -25,7 +27,8 @@ const PICTURES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 // The answer at `url` when it is of one of `types` and not too large, or null.
 async function get(url: string, signal: AbortSignal, types: string[]): Promise<{ response: Response; type: string } | null> {
-  const response = await fetch(url, { signal, credentials: 'omit', headers: { Accept: types.join(', ') } });
+  // Through the fetch that streams, so a page larger than MOST is stopped as it comes (readCapped).
+  const response = await streamingFetch(url, { signal, credentials: 'omit', headers: { Accept: types.join(', ') } });
   const type = (response.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
   const size = Number(response.headers.get('content-length') ?? 0);
   if (!response.ok || !types.includes(type) || size > MOST) return null;
@@ -36,8 +39,8 @@ async function get(url: string, signal: AbortSignal, types: string[]): Promise<{
 async function picture(src: string, signal: AbortSignal): Promise<string | undefined> {
   const got = await get(src, signal, PICTURES);
   if (!got) return undefined;
-  const bytes = new Uint8Array(await got.response.arrayBuffer());
-  if (bytes.length === 0 || bytes.length > MOST) return undefined;
+  const bytes = await readCapped(got.response, MOST);
+  if (bytes.length === 0) return undefined;
   const image = await ImageManipulator.manipulate(`data:${got.type};base64,${toBase64(bytes)}`).resize({ width: WIDE }).renderAsync();
   const saved = await image.saveAsync({ compress: 0.5, format: SaveFormat.JPEG, base64: true });
   const file = new File(saved.uri);
@@ -52,7 +55,7 @@ export async function makePreview(url: string): Promise<Preview | null> {
   try {
     const page = await get(url, stop.signal, PAGES);
     if (!page) return null;
-    const info = pageInfo((await page.response.text()).slice(0, MAX_PAGE), url);
+    const info = pageInfo(utf8Decode(await readCapped(page.response, MOST)).slice(0, MAX_PAGE), url);
     if (!info) return null;
     const image = info.picture ? await picture(info.picture, stop.signal).catch(() => undefined) : undefined;
     return { url, title: info.title, text: info.text, ...(image ? { image } : {}) };

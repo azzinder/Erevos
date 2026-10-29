@@ -2433,7 +2433,8 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   Tor, da lì non ne parte nessuno. Nella web app la password del server è conservata nel browser, sigillata con una
   chiave che il browser non dà fuori. **Ripristina da un server** scarica quello che scegli allo stesso modo, tramite
   Tor come dice lo spazio, e lì non scrive nulla; una password scritta per questo serve solo a quel ripristino e non
-  viene conservata. Tramite Tor un backup di più di 64 MB non arriva: allora scaricalo dal server e tocca **Ripristina
+  viene conservata. Tramite Tor un backup di più di 64 MB non arriva, e direttamente nessuno di più di 100 MB, il massimo che
+  Erevos accetta in un download: allora scaricalo dal server e tocca **Ripristina
   un backup**. Un Erevos precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google
   lega il file al tuo nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I

@@ -2391,8 +2391,8 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   fábrica. Nenhum dos dois tem Tor para isso: enquanto um espaço envia **Tudo** pelo Tor, nenhum vai de lá. No web app
   a senha do servidor fica guardada no navegador, selada com uma chave que o navegador não entrega. **Restaurar de um
   servidor** baixa o que você escolher do mesmo jeito, pelo Tor como diz o espaço, e não escreve nada lá; uma senha
-  digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega:
-  então baixe-o do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
+  digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega,
+  e direto nenhum maior que 100 MB, o máximo que o Erevos aceita num download: então baixe-o do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
   assim. O Google Drive ficou de fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos
   apps do Google e de um login no Google no celular.
 - **Conversas que continuaram depois do backup:** restaurar devolve as chaves de cada conversa como estavam então. As

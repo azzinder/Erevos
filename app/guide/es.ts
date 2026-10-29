@@ -2406,7 +2406,8 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   desde ahí. En la web app la contraseña del servidor se guarda en el navegador, sellada con una clave que el
   navegador no entrega. **Restaurar desde un servidor** descarga la que elijas del mismo modo, por Tor según diga el
   espacio, y no escribe nada allí; una contraseña escrita para ello se usa solo para esa restauración y no se guarda.
-  Por Tor no llega una copia de más de 64 MB: entonces descárgala del servidor y toca **Restaurar una copia de
+  Por Tor no llega una copia de más de 64 MB, y directamente ninguna de más de 100 MB, lo máximo que Erevos
+  acepta en una descarga: entonces descárgala del servidor y toca **Restaurar una copia de
   seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive queda fuera a propósito: Google
   ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban

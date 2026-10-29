@@ -16,4 +16,5 @@ export const media: Record<string, string> = {
   'Not on this phone yet: tap to go to it in the chat.': 'Još nije na ovom telefonu: dodirni da odeš do toga u četu.',
   'Marked days have something: tap one to go to it.': 'Označeni dani imaju nešto: dodirni jedan da odeš tamo.',
   'No date': 'Bez datuma',
+  "The answer was larger than {size} MB, the most Erevos takes, so it was stopped.": "Odgovor je bio veći od {size} MB, koliko Erevos najviše prima, pa je zaustavljen.",
 };

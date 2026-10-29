@@ -9,12 +9,14 @@ import {
   cloudLabel,
   cloudServer,
   cloudThroughTor,
+  CLOUD_RESTORE_MOST,
   fetchFromCloud,
   listCloud,
   loadCloudBackup,
   sendToCloud,
   startCloudBackup,
   stopCloudBackup,
+  tooLargeText,
   type CloudBackup,
   type CloudFile,
   type CloudServer,
@@ -60,7 +62,8 @@ import { useTheme } from '../theme/context';
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
 type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | { kind: 'cloud' } | null;
 
-// A backup larger than this is not one Erevos made: every space's chats are far smaller.
+// A backup file larger than this is not one Erevos made: every space's chats are far smaller. One
+// from a server comes up to 100 MB only (CLOUD_RESTORE_MOST), as any download (lib/net-http.ts).
 const MAX_BYTES = 200 * 1024 * 1024;
 
 const CHOICES = [
@@ -267,10 +270,15 @@ export default function Backups() {
 
   async function openFromServer(file: CloudFile) {
     if (!listed) return;
+    // The server said how large it is: one too large is not downloaded only to be stopped.
+    if (file.size > CLOUD_RESTORE_MOST) {
+      say(tooLargeText(CLOUD_RESTORE_MOST), true);
+      return;
+    }
     say('');
     setBusy(true);
     try {
-      const bytes = await fetchFromCloud(listed.server, file.name, MAX_BYTES);
+      const bytes = await fetchFromCloud(listed.server, file.name, CLOUD_RESTORE_MOST);
       setListed(null);
       setAsking({ kind: 'open', bytes, name: fileText(file) });
     } catch (error) {

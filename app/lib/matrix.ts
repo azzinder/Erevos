@@ -29,6 +29,7 @@ import type { MatrixBackup } from './matrix-backup';
 import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
+import { fetchCapped, HTTP_MOST, HttpTooLargeError } from './net-http';
 import { throughTor, torFor } from './relay';
 
 /** The olm and megolm algorithms, as Matrix names them. */
@@ -170,6 +171,8 @@ export type MatrixRequest = {
   contentType?: string;
   /** Answer the bytes as they are (a download). */
   raw?: boolean;
+  /** The most bytes the answer may have, HTTP_MOST unless less (lib/net-http.ts). */
+  most?: number;
 };
 export type MatrixHttp = (request: MatrixRequest) => Promise<MatrixAnswer>;
 
@@ -187,13 +190,16 @@ const jsonOf = (text: string): Json => {
   }
 };
 
-// Straight to the homeserver, over HTTPS.
+const mostOf = (asked: MatrixRequest) => Math.min(asked.most ?? HTTP_MOST, HTTP_MOST);
+
+// Straight to the homeserver, over HTTPS; the answer read as it comes and stopped once it is too
+// large (lib/net-http.ts), not taken whole.
 async function straight(asked: MatrixRequest): Promise<MatrixAnswer> {
   const { method, url, body, bytes, raw } = asked;
   const sent = bytes ? (bytes as unknown as BodyInit) : body === undefined ? undefined : JSON.stringify(body);
-  const response = await fetch(url, { method, headers: headersOf(asked), body: sent });
-  if (raw && response.ok) return { status: response.status, json: {}, bytes: new Uint8Array(await response.arrayBuffer()) };
-  return { status: response.status, json: jsonOf(await response.text()) };
+  const { response, bytes: said } = await fetchCapped(url, { method, headers: headersOf(asked), body: sent }, mostOf(asked));
+  if (raw && response.ok) return { status: response.status, json: {}, bytes: said };
+  return { status: response.status, json: jsonOf(utf8Decode(said)) };
 }
 
 // Through the core's Tor (crates/erevos-tor http), on circuits kept for this homeserver.
@@ -203,6 +209,7 @@ async function viaTor(asked: MatrixRequest): Promise<MatrixAnswer> {
   const answer = await torHttp(JSON.stringify({ method, url, headers: headersOf(asked) }), sent);
   const status = (answer[0] << 8) | answer[1];
   const rest = answer.slice(2);
+  if (rest.length > mostOf(asked)) throw new HttpTooLargeError(mostOf(asked));
   if (raw && status >= 200 && status < 300) return { status, json: {}, bytes: rest };
   return { status, json: jsonOf(utf8Decode(rest)) };
 }
@@ -222,7 +229,7 @@ export const defaultMatrixHttp: MatrixHttp = async (asked) => {
   try {
     return await viaTor(asked);
   } catch (error) {
-    if (throughTor()) throw error;
+    if (throughTor() || error instanceof HttpTooLargeError) throw error;
     return straight(asked);
   }
 };

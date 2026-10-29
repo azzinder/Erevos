@@ -68,4 +68,5 @@ export const cloudBackup: Record<string, string> = {
     "Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, τη διεύθυνσή σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.",
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "Σε έναν browser αυτό δουλεύει μόνο με server ρυθμισμένο να αφήνει το web app να μπει (CORS), όπως δεν είναι το Nextcloud από μόνο του. Η εφαρμογή υπολογιστή και το Android δεν χρειάζονται τίποτα τέτοιο.",
+  "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Ένα αντίγραφο μεγαλύτερο από {size} MB δεν έρχεται από server. Κατέβασέ το από τον server και πάτα Επαναφορά αντιγράφου.",
 };

@@ -1,6 +1,7 @@
 import { canNostr, canTorHttp, nostrCore, torHttp } from './core';
 import { utf8Decode } from './crypto';
 import { t } from './i18n';
+import { fetchCapped } from './net-http';
 import { throughTor, torFor } from './relay';
 
 // How Erevos reaches Nostr relays for the chats with other Nostr apps (lib/nostr-dm.ts,
@@ -388,6 +389,9 @@ export function isEvent(value: unknown): value is NostrEvent {
   );
 }
 
+// The most a domain's nostr.json may be: names and relays, a few kilobytes as domains keep them.
+const NIP05_MOST = 1024 * 1024;
+
 /** A NIP-05 name's key and the relays it names, as its domain's /.well-known/nostr.json says:
  *  through Tor as relays are, straight otherwise. */
 export async function lookUpNip05(name: string): Promise<{ public: string; relays: string[] } | null> {
@@ -399,13 +403,14 @@ export async function lookUpNip05(name: string): Promise<{ public: string; relay
   if (canTorHttp() && torFor(false)) {
     const answer = await torHttp(JSON.stringify({ method: 'GET', url, headers: { Accept: 'application/json' } }), new Uint8Array(0));
     const status = (answer[0] << 8) | answer[1];
-    if (status !== 200) return null;
+    if (status !== 200 || answer.length - 2 > NIP05_MOST) return null;
     text = utf8Decode(answer.slice(2));
   } else {
     if (throughTor()) throw new Error(t('Tor is not ready.'));
-    const response = await fetch(url, { headers: { Accept: 'application/json' } });
+    // Read as it comes, and stopped once it is too large (lib/net-http.ts): a domain answers what it likes.
+    const { response, bytes } = await fetchCapped(url, { headers: { Accept: 'application/json' } }, NIP05_MOST);
     if (!response.ok) return null;
-    text = await response.text();
+    text = utf8Decode(bytes);
   }
   let json: { names?: Record<string, unknown>; relays?: Record<string, unknown> };
   try {

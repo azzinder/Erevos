@@ -16,4 +16,5 @@ export const media: Record<string, string> = {
   'Not on this phone yet: tap to go to it in the chat.': 'Ainda não está neste telefone: toque para ir até ele na conversa.',
   'Marked days have something: tap one to go to it.': 'Os dias marcados têm algo: toque em um para ir até lá.',
   'No date': 'Sem data',
+  "The answer was larger than {size} MB, the most Erevos takes, so it was stopped.": "A resposta passou de {size} MB, o máximo que o Erevos aceita, então foi interrompida.",
 };

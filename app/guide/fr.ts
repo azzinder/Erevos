@@ -2537,7 +2537,8 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   Dans l’app web, le mot de passe du serveur est gardé dans le navigateur, scellé avec une clé que le navigateur ne
   donne pas. **Restaurer depuis un serveur** télécharge celle que tu choisis de la même façon, par Tor comme le dit
   l’espace, et n’écrit rien là-bas ; un mot de passe tapé pour cela ne sert qu’à cette restauration et n’est pas
-  gardé. Par Tor, une sauvegarde de plus de 64 Mo ne vient pas : télécharge-la alors depuis le serveur et appuie sur
+  gardé. Par Tor, une sauvegarde de plus de 64 Mo ne vient pas, et en direct aucune de plus de 100 Mo, le maximum
+  qu’Erevos accepte pour un téléchargement : télécharge-la alors depuis le serveur et appuie sur
   **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
   laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
   connexion Google sur le téléphone.

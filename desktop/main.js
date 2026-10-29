@@ -23,8 +23,9 @@
  *                              servers do not answer a page's own requests (CORS). Only https,
  *                              only PROPFIND, PUT, GET and DELETE, only the headers Authorization,
  *                              Depth and Content-Type, no cookies, no redirects; answers 200 with
- *                              the server's status in X-Erevos-Status and its body, 502 when it
- *                              cannot be reached. Nothing of it is logged.
+ *                              the server's status in X-Erevos-Status and its body, 413 when that
+ *                              body is larger than 100 MB (read as it comes and stopped there),
+ *                              502 when it cannot be reached. Nothing of it is logged.
  *   /__window                  the window (app/lib/desktop.ts): GET says whether Erevos keeps
  *                              running when it is closed, PUT ?keep=1 or 0 sets it, PUT ?show=1
  *                              brings it back (a call, a tapped notice), POST gives the words of
@@ -395,10 +396,37 @@ async function latest() {
   }
 }
 
-// What /__webdav sends on, and how much it takes back: a backup, which the app takes up to 200 MB.
+// What /__webdav sends on, and how much it takes back: a backup, which the app takes from a server
+// up to 100 MB, as any download (app/lib/net-http.ts HTTP_MOST).
 const WEBDAV_METHODS = new Set(['PROPFIND', 'PUT', 'GET', 'DELETE']);
 const WEBDAV_HEADERS = ['authorization', 'depth', 'content-type'];
-const WEBDAV_MOST = 256 * 1024 * 1024;
+const WEBDAV_MOST = 100 * 1024 * 1024;
+
+/** The body of `answer`, `most` bytes at most, read as it comes: null as soon as it is larger
+ *  (by the length it says, or by what came), and the rest is not fetched. */
+async function readCapped(answer, most, stop) {
+  const said = Number(answer.headers.get('content-length') ?? '');
+  if (Number.isFinite(said) && said > most) {
+    stop();
+    return null;
+  }
+  if (!answer.body) return Buffer.alloc(0);
+  const reader = answer.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    got += value.length;
+    if (got > most) {
+      void reader.cancel().catch(() => undefined);
+      stop();
+      return null;
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks, got);
+}
 
 /** One request to a WebDAV server, for backups (app/lib/backup-cloud.ts); see /__webdav above. */
 async function webdav(request, url) {
@@ -420,9 +448,10 @@ async function webdav(request, url) {
   }
   const body = method === 'PUT' || method === 'PROPFIND' ? Buffer.from(await request.arrayBuffer()) : undefined;
   try {
-    const answer = await net.fetch(target.href, { method, headers, body, credentials: 'omit', redirect: 'error', cache: 'no-store' });
-    const said = Buffer.from(await answer.arrayBuffer());
-    if (said.length > WEBDAV_MOST) return new Response('the answer is too large', { status: 502 });
+    const stop = new AbortController();
+    const answer = await net.fetch(target.href, { method, headers, body, credentials: 'omit', redirect: 'error', cache: 'no-store', signal: stop.signal });
+    const said = await readCapped(answer, WEBDAV_MOST, () => stop.abort());
+    if (!said) return new Response('the answer is too large', { status: 413 });
     return new Response(said, { status: 200, headers: { 'X-Erevos-Status': String(answer.status) } });
   } catch (error) {
     // Chromium's own words (net::ERR_…), which hold no password: the request's headers are not in them.

@@ -66,4 +66,5 @@ export const cloudBackup: Record<string, string> = {
     "Svaka automatska rezervna kopija može ići i u folder na serveru koji izaberete, kao vaš Nextcloud, preko WebDAV-a. Server dobija nasumične bajtove pod nasumičnim imenom: ne može ih otvoriti niti znati da su Erevosovi. Ipak vidi vaš nalog, vašu adresu, kad jedna stigne i otprilike koliko je velika. Ništa ne ide dok ne dodate server.",
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "U pregledniku ovo radi samo sa serverom podešenim da pusti web aplikaciju (CORS), što Nextcloud sam po sebi nije. Aplikacija za računar i Android ne trebaju ništa od toga.",
+  "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Rezervna kopija veća od {size} MB ne stiže sa servera. Preuzmite je sa servera i dodirnite Vrati rezervnu kopiju.",
 };

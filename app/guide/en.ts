@@ -2217,8 +2217,8 @@ again with a password of its own. It is under **Settings** → **Data and device
   **Everything** through Tor, none goes from there. In the web app the server's password is kept in the browser,
   sealed with a key the browser does not give out. **Restore from a server** downloads the one you choose the same
   way, through Tor as the space says, and writes nothing there; a password typed for it is used for that restore only
-  and not kept. Through Tor a backup larger than 64 MB does not come: then download it from the server and tap
-  **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
+  and not kept. Through Tor a backup larger than 64 MB does not come, and straight none larger than 100 MB, the most
+  Erevos takes in any download: then download it from the server and tap **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
   purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new

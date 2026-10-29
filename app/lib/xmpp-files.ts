@@ -1,7 +1,7 @@
 import { fromBase64, randomBytes, toBase64, toHex } from './crypto';
 import { t } from './i18n';
 import { mimeOfName } from './matrix-media';
-import { netHttp, type Http } from './net-http';
+import { HttpTooLargeError, netHttp, type Http } from './net-http';
 import { omemoCall } from './xmpp-omemo';
 import { child, children, el, textOf, type XmlElement } from './xmpp-xml';
 
@@ -171,7 +171,11 @@ export async function uploadXmppFile(connection: XmppAsk, service: XmppUpload, p
 
 /** Fetches a file a message names and opens it: throws when it cannot be had, or does not open. */
 export async function downloadXmppFile(file: XmppFile): Promise<Uint8Array> {
-  const answer = await http('GET', file.url, {});
+  // A server that sends more than that is stopped (lib/net-http.ts).
+  const answer = await http('GET', file.url, {}, undefined, XMPP_FILE_MOST + 16).catch((error: unknown) => {
+    if (error instanceof HttpTooLargeError) throw new Error(t('This file is larger than Erevos opens.'));
+    throw error;
+  });
   if (answer.status < 200 || answer.status >= 300) throw new Error(t('The file could not be fetched ({status}).', { status: String(answer.status) }));
   if (answer.bytes.length > XMPP_FILE_MOST + 16) throw new Error(t('This file is larger than Erevos opens.'));
   if (!file.fragment) return answer.bytes;

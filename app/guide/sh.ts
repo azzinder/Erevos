@@ -2325,7 +2325,8 @@ uređaji** → **Rezervne kopije**.
   **Sve** preko Tora, odatle ne ide nijedna. U web aplikaciji lozinka servera čuva se u pregledniku, zapečaćena
   ključem koji preglednik ne daje van. **Vrati sa servera** preuzima onu koju izaberete na isti način, preko Tora kako
   kaže prostor, i tamo ništa ne piše; lozinka upisana za to koristi se samo za to vraćanje i ne čuva se. Preko Tora
-  rezervna kopija veća od 64 MB ne stiže: tada je preuzmite sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
+  rezervna kopija veća od 64 MB ne stiže, a direktno nijedna veća od 100 MB, koliko Erevos najviše prima pri
+  preuzimanju: tada je preuzmite sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
   stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
   ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke

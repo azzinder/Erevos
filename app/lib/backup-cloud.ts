@@ -2,7 +2,7 @@ import { canTorHttp } from './core';
 import { randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { cloudRequest } from './backup-http';
-import type { HttpMethod } from './net-http';
+import { HTTP_MOST, HttpTooLargeError, type HttpMethod } from './net-http';
 import { throughTor, torFor, waitForTor } from './relay';
 import { secureDelete, secureGet, secureSet } from './secure';
 
@@ -59,7 +59,16 @@ const CLOUD = 'erevos.backup-cloud';
 export type CloudAnswer = { status: number; bytes: Uint8Array };
 
 /** How a request goes to the server. The checks put a server of their own here. */
-export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<CloudAnswer>;
+export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number) => Promise<CloudAnswer>;
+
+/** The largest backup that comes back from a server: what any download takes (lib/net-http.ts),
+ *  100 MB. A larger one is downloaded from the server by hand and opened as a file. */
+export const CLOUD_RESTORE_MOST = HTTP_MOST;
+
+/** Why a backup did not come from the server: it is larger than `most`. */
+export function tooLargeText(most: number): string {
+  return t('A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.', { size: String(Math.floor(most / (1024 * 1024))) });
+}
 
 const viaNet: CloudHttp = cloudRequest;
 
@@ -116,13 +125,14 @@ function statusText(status: number): string | null {
   return t('The server answered {status}.', { status });
 }
 
-async function ask(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array): Promise<CloudAnswer> {
+async function ask(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number): Promise<CloudAnswer> {
   // Erevos sends nothing straight while the open space sends everything through Tor.
   if (throughTor() && !canTorHttp()) throw new CloudError(t('This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.'));
   if (canTorHttp()) await waitForTor(torWaitMs);
   try {
-    return await http(method, url, headers, body);
+    return await http(method, url, headers, body, most);
   } catch (error) {
+    if (error instanceof HttpTooLargeError) throw new CloudError(tooLargeText(error.most));
     throw new CloudError(
       t('Could not reach the server. {error}', {
         error: error instanceof Error ? error.message : String(error),
@@ -279,12 +289,14 @@ export function backupsListed(xml: string): CloudFile[] {
   return files.sort((a, b) => b.when - a.when);
 }
 
-/** Downloads the backup `name` from the server, at most `most` bytes. Throws CloudError with why not. */
-export async function fetchFromCloud(server: CloudServer, name: string, most: number): Promise<Uint8Array> {
+/** Downloads the backup `name` from the server, at most `most` bytes (CLOUD_RESTORE_MOST at most):
+ *  a larger answer is stopped as it comes. Throws CloudError with why not. */
+export async function fetchFromCloud(server: CloudServer, name: string, most: number = CLOUD_RESTORE_MOST): Promise<Uint8Array> {
   if (!NAME.test(name)) throw new CloudError(t('That file is not an Erevos backup.'));
-  const answer = await ask('GET', server.url + name, authorization(server));
+  const cap = Math.min(most, CLOUD_RESTORE_MOST);
+  const answer = await ask('GET', server.url + name, authorization(server), undefined, cap);
   const said = statusText(answer.status);
   if (said) throw new CloudError(said);
-  if (answer.bytes.length > most) throw new CloudError(t('That file is not an Erevos backup.'));
+  if (answer.bytes.length > cap) throw new CloudError(tooLargeText(cap));
   return answer.bytes;
 }

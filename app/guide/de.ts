@@ -2570,7 +2570,8 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   geht von dort keines. In der Web-App wird das Passwort des Servers im Browser aufbewahrt, versiegelt mit einem
   Schlüssel, den der Browser nicht herausgibt. **Von einem Server wiederherstellen** lädt das gewählte auf demselben
   Weg herunter, über Tor, wie der Bereich sagt, und schreibt dort nichts; ein dafür eingegebenes Passwort dient nur
-  dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt ein Backup über 64 MB nicht: Dann lade es vom
+  dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt ein Backup über 64 MB nicht, und direkt keines über 100 MB, das Höchste, das Erevos bei
+  einem Download annimmt: Dann lade es vom
   Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos vor dieser Version öffnet ein solches Backup
   nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
   Google und eine Google-Anmeldung auf dem Telefon.

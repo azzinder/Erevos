@@ -1,6 +1,7 @@
 import { canNet, canTorHttp, net, torHttp } from './core';
 import { utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
+import { fetchCapped, HttpTooLargeError } from './net-http';
 import { throughTor, torFor } from './relay';
 import { el, parseXml, render, textOf, XmlStream, type StreamEvent } from './xmpp-xml';
 
@@ -134,6 +135,8 @@ export function websocketLink(url: string, make: (url: string, protocols: string
 
 // ---- finding the server ----
 
+const HTTP_GET_MOST = 1024 * 1024;
+
 /** A GET over HTTPS, through Tor when the space's Tor way says so (as lib/matrix.ts does). */
 async function httpGet(url: string, headers: Record<string, string>): Promise<{ status: number; text: string }> {
   const tor = canTorHttp() && torFor(false);
@@ -141,13 +144,16 @@ async function httpGet(url: string, headers: Record<string, string>): Promise<{ 
   if (tor) {
     try {
       const answer = await torHttp(JSON.stringify({ method: 'GET', url, headers }), new Uint8Array(0));
+      if (answer.length - 2 > HTTP_GET_MOST) throw new HttpTooLargeError(HTTP_GET_MOST);
       return { status: (answer[0] << 8) | answer[1], text: utf8Decode(answer.subarray(2)) };
     } catch (error) {
-      if (throughTor()) throw error;
+      if (throughTor() || error instanceof HttpTooLargeError) throw error;
     }
   }
-  const response = await fetch(url, { headers });
-  return { status: response.status, text: await response.text() };
+  // Read as it comes, and stopped once it is too large (lib/net-http.ts): small answers, a domain's
+  // host-meta or a resolver's records, so 1 MB at most.
+  const { response, bytes } = await fetchCapped(url, { headers }, HTTP_GET_MOST);
+  return { status: response.status, text: utf8Decode(bytes) };
 }
 
 type Srv = { priority: number; weight: number; port: number; target: string; tls: 'direct' | 'starttls' };
