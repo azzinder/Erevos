@@ -211,6 +211,12 @@ class ErevosCallModule : Module() {
       null
     }
 
+    // Battery mode Sleep: the service lets the phone sleep, and an alarm wakes it to look.
+    Function("setSleepy") { on: Boolean ->
+      context?.let { ReceiveService.setSleepy(it, on) }
+      null
+    }
+
     Function("stopReceiving") {
       keepTimers(false)
       context?.let { ReceiveService.stop(it) }

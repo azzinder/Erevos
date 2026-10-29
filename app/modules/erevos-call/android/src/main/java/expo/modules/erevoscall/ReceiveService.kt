@@ -49,6 +49,23 @@ class ReceiveService : Service() {
     } else {
       startForeground(Notices.RECEIVING_ID, notice)
     }
+    instance = this
+    holdPower()
+    // Started again by Android if it closes Erevos, only to say so (above): the keys are in the
+    // app's memory only, so a service started again alone could open nothing.
+    return START_STICKY
+  }
+
+  // Awake all the while, or, in the battery mode Sleep, only for a look at the relay each minute
+  // (SleepWake): the processor sleeps between, and the alarm wakes it.
+  private fun holdPower() {
+    if (sleepy) {
+      awake?.let { if (it.isHeld) it.release() }
+      awake = null
+      SleepWake.arm(this)
+      return
+    }
+    SleepWake.cancel(this)
     if (awake == null) {
       val power = getSystemService(Context.POWER_SERVICE) as PowerManager
       awake = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "erevos:receiving").also {
@@ -56,18 +73,27 @@ class ReceiveService : Service() {
         it.acquire()
       }
     }
-    // Started again by Android if it closes Erevos, only to say so (above): the keys are in the
-    // app's memory only, so a service started again alone could open nothing.
-    return START_STICKY
   }
 
   override fun onDestroy() {
     awake?.let { if (it.isHeld) it.release() }
     awake = null
+    SleepWake.cancel(this)
+    if (instance === this) instance = null
     super.onDestroy()
   }
 
   companion object {
+    // Whether the phone may sleep between looks (battery mode Sleep), as the app last said.
+    @Volatile private var sleepy = false
+    @Volatile private var instance: ReceiveService? = null
+
+    fun setSleepy(context: Context, on: Boolean) {
+      sleepy = on
+      instance?.holdPower()
+      if (instance == null && !on) SleepWake.cancel(context)
+    }
+
     fun start(context: Context) {
       val intent = Intent(context, ReceiveService::class.java)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)

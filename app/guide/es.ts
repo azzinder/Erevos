@@ -1025,7 +1025,7 @@ que un SMS normal. Los chats ocultos y los ordenadores no la tienen.
   ocultos). Ajústalo en **Ajustes** → **Notificaciones** → **En segundo plano**: **Recibir y sonar** (por defecto) o
   **Solo mientras Erevos está a la vista**, y **Avisar de mensajes nuevos** (por defecto) o **Sin aviso**, que vale
   también mientras Erevos está a la vista. Ahí también, si Android los pide, **Seguir funcionando con ahorro de
-  batería** y **Mostrar llamadas sobre la pantalla de bloqueo**.
+  batería** y **Mostrar llamadas sobre la pantalla de bloqueo**. Debajo, **Solo lo que se desperdicia** (la opción por defecto), **Y los teléfonos cercanos** y **Y el sueño** deciden cuánta batería ahorra en segundo plano: la segunda apaga también las radios para teléfonos cercanos mientras Erevos está en segundo plano, la tercera deja dormir también al teléfono, así que Erevos mira el relay una vez por minuto y un mensaje o una llamada puede llegar uno o dos minutos tarde.
 - **El número en el icono:** con **Avisar de mensajes nuevos** activado, cuando sales de Erevos con mensajes sin leer
   en los chats y grupos del espacio abierto, el aviso se queda, sin sonido, y dice cuántos son, con los que avise
   después; se va mientras Erevos está a la vista, y vuelve al salir, hasta que los hayas leído. No cuenta los mensajes

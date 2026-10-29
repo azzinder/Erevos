@@ -951,7 +951,7 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   came, or ring with no name, if you let them (see Hidden chats). Set it under **Settings** → **Notifications** → **In the background**:
   **Receive and ring** (the default) or **Only while Erevos shows**, and **Say a message came** (the default) or **No
   notice**, which goes for while Erevos shows too. There too, if Android asks for them, **Keep running on battery** and **Show calls over the lock
-  screen**.
+  screen**. Below them, **Only the waste** (the default), **And nearby phones** and **And sleep** choose how much battery it spares in the background: the second also turns off the radios for phones nearby while Erevos is in the background, the third also lets the phone sleep, so Erevos looks at the relay about once a minute, and a message or a call can be a minute or two late.
 - **The number on the icon:** with **Say a message came** on, when you leave Erevos with messages not read in the open
   space's chats and groups, the notice stays, without sound, and says how many, with those it tells of after; it goes
   while Erevos shows, and comes back as you leave it, until you have read them. Messages in a muted chat are not

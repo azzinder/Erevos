@@ -354,4 +354,10 @@ export const settings: Record<string, string> = {
   'Move down': 'Mover para baixo',
   'This is how it will look:': 'Vai ficar assim:',
   'First order': 'Ordem inicial',
+  'Only the waste': 'Só o desperdício',
+  'And nearby phones': 'E os celulares por perto',
+  'And sleep': 'E o sono',
+  'Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.': 'O Erevos poupa bateria só onde nada se perde: espera no seu relay por todas as suas filas ao mesmo tempo, não pergunta de novo depois de uma espera vazia e deixa mais quietas as ligações com celulares por perto.',
+  'Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.': 'Além disso, enquanto o Erevos está em segundo plano, os rádios para celulares por perto (Bluetooth, Wi-Fi Aware, Wi-Fi Direct e o mesmo Wi-Fi) ficam desligados: um celular por perto só alcança você enquanto o Erevos aparece. Pelo seu relay tudo chega como antes.',
+  'And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.': 'E o celular pode dormir enquanto o Erevos está em segundo plano: o Erevos olha o seu relay cerca de uma vez por minuto, então uma mensagem ou uma chamada pode chegar um ou dois minutos atrasada, e mais ainda onde o Android segura os apps que dormem, a menos que Continuar rodando com economia de bateria esteja permitido. Os rádios para celulares por perto ficam desligados, como na escolha anterior.',
 };

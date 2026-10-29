@@ -1024,7 +1024,7 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   mensagem, ou tocam sem nome, se você permitir (veja Conversas ocultas). Defina isso em **Configurações** →
   **Notificações** → **Em segundo plano**: **Receber e tocar** (o padrão) ou **Só com o Erevos na tela**, e **Avisar
   quando chega mensagem** (o padrão) ou **Sem aviso**, que vale também para quando o Erevos está na tela. Ali também,
-  se o Android pedir, **Continuar rodando com economia de bateria** e **Mostrar chamadas sobre a tela de bloqueio**.
+  se o Android pedir, **Continuar rodando com economia de bateria** e **Mostrar chamadas sobre a tela de bloqueio**. Abaixo, **Só o desperdício** (o padrão), **E os celulares por perto** e **E o sono** definem quanta bateria ele poupa em segundo plano: a segunda desliga também os rádios para celulares por perto enquanto o Erevos está em segundo plano, a terceira deixa também o celular dormir, de modo que o Erevos olha o relay cerca de uma vez por minuto e uma mensagem ou uma chamada pode chegar um ou dois minutos atrasada.
 - **O número no ícone:** com **Avisar quando chega mensagem** ligado, quando você sai do Erevos com mensagens não
   lidas nas conversas e grupos do espaço aberto, a notificação fica, sem som, e diz quantas são, com as que avisar
   depois; ela some enquanto o Erevos está na tela, e volta quando você sai dele, até você lê-las. Não conta as

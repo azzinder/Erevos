@@ -1111,7 +1111,7 @@ Versteckte Chats und Computer haben das nicht.
   **Einstellungen** → **Benachrichtigungen** → **Im Hintergrund** ein: **Empfangen und klingeln** (die Voreinstellung)
   oder **Nur, solange Erevos sichtbar ist**, und **Neue Nachrichten melden** (die Voreinstellung) oder
   **Keine Benachrichtigung**, was auch gilt, solange Erevos sichtbar ist. Dort auch, wenn Android danach fragt,
-  **Trotz Akku-Sparen weiterlaufen** und **Anrufe über dem Sperrbildschirm zeigen**.
+  **Trotz Akku-Sparen weiterlaufen** und **Anrufe über dem Sperrbildschirm zeigen**. Darunter legen **Nur die Verschwendung** (Standard), **Und Telefone in der Nähe** und **Und Schlaf** fest, wie viel Akku es im Hintergrund spart: Die zweite schaltet auch die Funkverbindungen zu Telefonen in der Nähe aus, solange Erevos im Hintergrund ist, die dritte lässt auch das Telefon schlafen, sodass Erevos etwa einmal pro Minute am Relay nachschaut und eine Nachricht oder ein Anruf ein bis zwei Minuten zu spät kommen kann.
 - **Die Zahl auf dem Symbol:** Mit **Neue Nachrichten melden** bleibt die Meldung, wenn du Erevos mit ungelesenen
   Nachrichten in den Chats und Gruppen des offenen Bereichs verlässt, ohne Ton stehen und sagt, wie viele es sind, mit
   denen, die sie danach meldet; sie geht, solange Erevos sichtbar ist, und kommt wieder, wenn du es verlässt, bis du

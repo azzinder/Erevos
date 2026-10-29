@@ -1041,7 +1041,7 @@ computer non ce l’hanno.
   **Ricevi e squilla** (l’impostazione predefinita) o **Solo mentre Erevos è visibile**, e **Avvisa dei nuovi messaggi**
   (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì, se Android li
   chiede, **Continua anche col risparmio batteria** e **Mostra le chiamate sulla schermata di
-  blocco**.
+  blocco**. Sotto, **Solo lo spreco** (predefinito), **E i telefoni vicini** e **E il sonno** stabiliscono quanta batteria risparmia in secondo piano: la seconda spegne anche le radio per i telefoni vicini finché Erevos è in secondo piano, la terza lascia dormire anche il telefono, così Erevos guarda il relay circa una volta al minuto e un messaggio o una chiamata può arrivare con uno o due minuti di ritardo.
 - **Il numero sull’icona:** con **Avvisa dei nuovi messaggi** attivo, quando esci da Erevos con messaggi non letti
   nelle chat e nei gruppi dello spazio aperto, la notifica resta, senza suono, e dice quanti sono, con quelli che
   segnala dopo; se ne va mentre Erevos è visibile, e torna quando lo lasci, finché non li hai letti. Non conta i

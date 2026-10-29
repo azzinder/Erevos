@@ -1,6 +1,7 @@
 import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-native';
 
 import { mutedNow } from '../lock/chat-notify';
+import { loadBatteryMode, onBatteryMode, type BatteryMode } from './battery-mode';
 import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { onSmsEvent, smsShowOnScreen } from '../modules/erevos-sms';
@@ -472,8 +473,11 @@ export function startBackground(): () => void {
     }
     await askNotices();
     if (stopped || running) return;
+    const mode = await loadBatteryMode();
+    if (stopped || running) return;
     try {
       callAudio!.startReceiving!();
+      sleepy(mode);
       running = true;
       closedReceiving = false;
       tellHidden(notices);
@@ -484,6 +488,17 @@ export function startBackground(): () => void {
       refused = true;
     }
   };
+  // The battery mode Sleep lets the phone sleep between looks at the relay (ReceiveService.kt).
+  const sleepy = (mode: BatteryMode) => {
+    try {
+      callAudio?.setSleepy?.(mode === 'sleep');
+    } catch {
+      // A build from before it: the phone stays awake.
+    }
+  };
+  const stopBattery = onBatteryMode((mode) => {
+    if (running) sleepy(mode);
+  });
   void follow();
   changes.add(follow);
   // The open space's messages that came before their time and wait for it, from before Erevos
@@ -558,6 +573,7 @@ export function startBackground(): () => void {
     contactsChanged();
     if (door) void keepDoor(door.space, door.key, true).catch(() => undefined);
     changes.delete(follow);
+    stopBattery();
     told.forEach((stopTelling) => stopTelling());
     places.forEach((stopPlace) => stopPlace());
     shown();

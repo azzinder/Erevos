@@ -354,4 +354,10 @@ export const settings: Record<string, string> = {
   'Move down': 'Κάτω',
   'This is how it will look:': 'Έτσι θα φαίνεται:',
   'First order': 'Αρχική σειρά',
+  'Only the waste': 'Μόνο η σπατάλη',
+  'And nearby phones': 'Και τα κοντινά',
+  'And sleep': 'Και ύπνος',
+  'Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.': 'Το Erevos γλιτώνει μπαταρία μόνο εκεί που δεν χάνεται τίποτα: περιμένει στο relay σου για όλες τις ουρές του ταυτόχρονα, δεν ρωτά ξανά μετά από άδεια αναμονή, και κρατά πιο ήσυχους τους συνδέσμους με κοντινά τηλέφωνα.',
+  'Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.': 'Επιπλέον, όσο το Erevos είναι στο παρασκήνιο, τα ραδιόφωνα για κοντινά τηλέφωνα (Bluetooth, Wi-Fi Aware, Wi-Fi Direct και το ίδιο Wi-Fi) είναι κλειστά: ένα κοντινό τηλέφωνο σε φτάνει μόνο όσο το Erevos φαίνεται. Μέσω του relay σου όλα έρχονται όπως πριν.',
+  'And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.': 'Και το τηλέφωνο μπορεί να κοιμάται όσο το Erevos είναι στο παρασκήνιο: το Erevos κοιτάζει το relay σου περίπου μία φορά το λεπτό, οπότε ένα μήνυμα ή μια κλήση μπορεί να αργήσει ένα-δύο λεπτά, και περισσότερο όπου το Android συγκρατεί τις εφαρμογές που κοιμούνται, εκτός αν επιτρέπεται το Να τρέχει με τη μπαταρία. Τα ραδιόφωνα για κοντινά τηλέφωνα είναι κλειστά, όπως με την προηγούμενη επιλογή.',
 };

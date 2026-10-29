@@ -1002,7 +1002,7 @@ Skriveni razgovori i računari to nemaju.
   im to dozvolite (pogledajte Skriveni razgovori). To se podešava u **Postavke** → **Obavijesti** →
   **U pozadini**: **Primaj i zvoni** (zadano) ili **Samo dok je Erevos na ekranu**, te **Javi da je stigla poruka**
   (zadano) ili **Bez obavijesti**, što važi i dok je Erevos na ekranu. Tamo su i, ako ih Android traži, **Izuzmi iz
-  uštede baterije** i **Prikazuj pozive preko zaključanog ekrana**.
+  uštede baterije** i **Prikazuj pozive preko zaključanog ekrana**. Ispod, **Samo rasipanje** (zadano), **I telefoni u blizini** i **I san** određuju koliko baterije štedi u pozadini: drugi isključuje i radije za telefone u blizini dok je Erevos u pozadini, treći dopušta i telefonu da spava, pa Erevos gleda relay otprilike jednom u minuti, a poruka ili poziv mogu kasniti minutu-dvije.
 - **Broj na ikoni:** uz uključeno **Javi da je stigla poruka**, kad napustite Erevos s nepročitanim porukama u
   razgovorima i grupama otvorenog prostora, obavijest ostaje, bez zvuka, i kaže koliko ih je, s onima koje javi
   poslije; nestaje dok je Erevos na ekranu, i vraća se kad ga napustite, dok ih ne pročitate. Ne broji poruke utišanog

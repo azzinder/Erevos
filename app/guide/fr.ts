@@ -1085,7 +1085,7 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   tu le leur permets (voir Discussions masquées). Règle-le dans **Réglages** → **Notifications** → **En arrière-plan** :
   **Recevoir et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les nouveaux messages**
   (par défaut) ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi, si Android les
-  demande, **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**.
+  demande, **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**. En dessous, **Seulement le gaspillage** (par défaut), **Et les téléphones proches** et **Et le sommeil** règlent combien de batterie il économise en arrière-plan : le deuxième éteint aussi les radios pour téléphones proches tant qu’Erevos est en arrière-plan, le troisième laisse aussi dormir le téléphone, si bien qu’Erevos regarde le relais environ une fois par minute et qu’un message ou un appel peut avoir une ou deux minutes de retard.
 - **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des messages
   non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit combien, avec ceux
   qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes, jusqu’à ce que tu les

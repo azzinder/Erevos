@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **More battery saved in the background, if you choose** (Android): under **Settings** → **Notifications** →
+  **In the background**, **Only the waste** stays the default. **And nearby phones** also turns off the radios for
+  phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) while Erevos is in the background, so a
+  phone nearby reaches you only while Erevos shows. **And sleep** also lets the phone sleep: Erevos holds no wake lock
+  and looks at your relay about once a minute, so a message or a call can be a minute or two late.
 - **Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they
   read on Nostr, a voice message goes through Nostr like a text, in as many wraps as it takes. A photo up to 3 MB goes
   in pieces of 32 KB, each in a wrap, sent before the message that offers it; the other phone keeps them until all

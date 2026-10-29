@@ -28,5 +28,7 @@
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="Keeps a private messenger with no push service connected to the user's own relay and to phones nearby, so calls ring and messages arrive while it is in the background." />
     </service>
+    <!-- The alarm of the battery mode Sleep: a short look at the relay about once a minute. -->
+    <receiver android:name="expo.modules.erevoscall.SleepWake" android:exported="false" />
   </application>
 </manifest>

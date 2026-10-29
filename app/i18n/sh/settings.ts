@@ -354,4 +354,10 @@ export const settings: Record<string, string> = {
   'Move down': 'Dolje',
   'This is how it will look:': 'Ovako će izgledati:',
   'First order': 'Početni redoslijed',
+  'Only the waste': 'Samo rasipanje',
+  'And nearby phones': 'I telefoni u blizini',
+  'And sleep': 'I san',
+  'Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.': 'Erevos štedi bateriju samo tamo gdje se ništa ne gubi: čeka na vašem relayu sve svoje redove odjednom, ne pita ponovo nakon praznog čekanja i drži mirnijim veze s telefonima u blizini.',
+  'Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.': 'Osim toga, dok je Erevos u pozadini, radiji za telefone u blizini (Bluetooth, Wi-Fi Aware, Wi-Fi Direct i isti Wi-Fi) su isključeni: telefon u blizini do vas dolazi samo dok se Erevos vidi. Preko vašeg relaya sve stiže kao prije.',
+  'And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.': 'I telefon smije spavati dok je Erevos u pozadini: Erevos gleda vaš relay otprilike jednom u minuti, pa poruka ili poziv mogu kasniti minutu-dvije, a duže gdje Android zadržava aplikacije koje spavaju, osim ako je dopušteno Izuzmi iz uštede baterije. Radiji za telefone u blizini su isključeni, kao kod prethodnog izbora.',
 };

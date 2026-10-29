@@ -18,6 +18,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**More battery saved in the background, if you choose**: under Settings → Notifications → In the background, Only the waste stays the default; And nearby phones also turns off the radios for phones nearby while Erevos is in the background; And sleep also lets the phone sleep, so Erevos looks at your relay about once a minute and a message or a call can be a minute or two late. Android only. See [Chat through a relay](#relay)."),
     mark("**Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they read on Nostr, a voice message goes through Nostr like a text, a photo up to 3 MB in pieces, and a larger photo, a video or another file, up to 20 MB, to an encrypted file server (Blossom), all through Tor. See [Through Nostr](#nostr)."),
     mark("**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move."),
     mark("**Erevos's icon keeps the number of messages not read, on Android**: leaving Erevos with messages not read, a notice without sound keeps how many until you read them, and the launcher shows it on the icon, as a number or a dot. Settings → Notifications → Number on the icon turns it off. See [Chat through a relay](#relay)."),

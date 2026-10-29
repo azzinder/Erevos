@@ -354,4 +354,10 @@ export const settings: Record<string, string> = {
   'Move down': 'Nach unten',
   'This is how it will look:': 'So wird es aussehen:',
   'First order': 'Ursprüngliche Reihenfolge',
+  'Only the waste': 'Nur die Verschwendung',
+  'And nearby phones': 'Und Telefone in der Nähe',
+  'And sleep': 'Und Schlaf',
+  'Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.': 'Erevos spart Akku nur dort, wo nichts verloren geht: Es wartet an deinem Relay auf alle seine Warteschlangen zugleich, fragt nach einem leeren Warten nicht erneut und hält die Verbindungen zu Telefonen in der Nähe ruhiger.',
+  'Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.': 'Außerdem sind, solange Erevos im Hintergrund ist, die Funkverbindungen zu Telefonen in der Nähe (Bluetooth, Wi-Fi Aware, Wi-Fi Direct und dasselbe WLAN) aus: Ein Telefon in der Nähe erreicht dich nur, solange Erevos zu sehen ist. Über dein Relay kommt alles wie bisher.',
+  'And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.': 'Und das Telefon darf schlafen, solange Erevos im Hintergrund ist: Erevos schaut etwa einmal pro Minute an deinem Relay nach, daher kann eine Nachricht oder ein Anruf ein bis zwei Minuten zu spät kommen, und später, wo Android schlafende Apps zurückhält, sofern Trotz Akku-Sparen weiterlaufen nicht erlaubt ist. Die Funkverbindungen zu Telefonen in der Nähe sind aus, wie bei der vorigen Wahl.',
 };

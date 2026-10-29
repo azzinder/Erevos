@@ -7,6 +7,7 @@ import { IntegrityCard } from '../components/integrity-card';
 import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
+import { loadBatteryMode, saveBatteryMode, type BatteryMode } from '../lib/battery-mode';
 import { doorIsOpen, setDoorOpen } from '../lib/closed-notices';
 import { DESKTOP } from '../lib/desktop';
 import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
@@ -326,8 +327,10 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   const [door, setDoor] = useState<boolean | null>(null);
   const [doorSaid, setDoorSaid] = useState('');
   const [allowed, setAllowed] = useState(backgroundState);
+  const [battery, setBattery] = useState<BatteryMode>('normal');
 
   useEffect(() => {
+    loadBatteryMode().then(setBattery);
     loadRingInBackground().then(setOn);
     loadMessageNotices().then(setNotices);
     doorIsOpen().then(setDoor, () => setDoor(false));
@@ -341,6 +344,11 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   function choose(next: boolean) {
     setOn(next);
     void saveRingInBackground(next).then(() => setAllowed(backgroundState()));
+  }
+
+  function chooseBattery(next: BatteryMode) {
+    setBattery(next);
+    void saveBatteryMode(next);
   }
 
   function chooseNotices(next: boolean) {
@@ -368,6 +376,22 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
         <Chip label={t('Say a message came')} selected={notices} onPress={() => chooseNotices(true)} />
         <Chip label={t('No notice')} selected={!notices} onPress={() => chooseNotices(false)} />
       </Row>
+      {on && canRingInBackground ? (
+        <>
+          <Row wrap>
+            <Chip label={t('Only the waste')} selected={battery === 'normal'} onPress={() => chooseBattery('normal')} />
+            <Chip label={t('And nearby phones')} selected={battery === 'nearby'} onPress={() => chooseBattery('nearby')} />
+            <Chip label={t('And sleep')} selected={battery === 'sleep'} onPress={() => chooseBattery('sleep')} />
+          </Row>
+          <Text variant="caption" tone="muted" style={hint}>
+            {battery === 'normal'
+              ? t('Erevos spares the battery only where nothing is lost: it waits at your relay for all its queues at once, asks nothing again after an empty wait, and keeps the links to phones nearby quieter.')
+              : battery === 'nearby'
+                ? t('Also, while Erevos is in the background, the radios for phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) are off: a phone nearby reaches you only while Erevos shows. Through your relay all comes as before.')
+                : t('And the phone may sleep while Erevos is in the background: Erevos looks at your relay about once a minute, so a message or a call can be a minute or two late, and later where Android holds back sleeping apps, unless Keep running on battery is allowed. The radios for phones nearby are off, as with the one before.')}
+          </Text>
+        </>
+      ) : null}
       {on && notices && door !== null ? (
         <>
           <Row wrap>

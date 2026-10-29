@@ -1,6 +1,7 @@
 import { AppState } from 'react-native';
 
 import { currentSpace } from '../lock/keys';
+import { loadBatteryMode, onBatteryMode } from './battery-mode';
 import { othersCarried, ownCarried } from './carried-store';
 import { nearby } from './nearby';
 import { HAS_LINKS, onLinkEvent, SAMSUNG, sendLink, setAwareLinks, setDirectLinks, setLanLinks, setLinksQuiet, startLinks, stopLinks } from './radio';
@@ -16,7 +17,7 @@ import { secureGet, secureSet } from './secure';
 // rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them. What the phone
 // carries for relays stays when Erevos closes (lib/carried-store.ts): what it carries for others
 // from when the first space opens, and the open space's own while it is. While Erevos is in the
-// background the links are kept quieter, to spare the battery (setLinksQuiet).
+// background the links are kept quieter, to spare the battery (setLinksQuiet), and with a battery mode that asks for it, off (lib/battery-mode.ts).
 
 // Whether this phone carries messages from phones nearby to their relays, whether it looks for
 // Erevos on the same Wi-Fi, whether it makes one with Wi-Fi Direct, and whether it looks with
@@ -48,15 +49,35 @@ export function startNearbyLinks(): () => void {
   // A contact heard nearby, or a LoRa radio linked: what waits for them may go now (lib/waiting.ts).
   const stopWatching = nearby.onChange(nearbyChanged);
   setLinksQuiet(AppState.currentState !== 'active');
-  const quiet = AppState.addEventListener('change', (state) => setLinksQuiet(state !== 'active'));
-  void nearbySettings().then(({ carrying, lan, direct, aware }) => {
+  // With the battery mode Also nearby (or more), the radios are off while Erevos is in the
+  // background (lib/battery-mode.ts), and start again as it shows.
+  let paused = false;
+  const follow = async () => {
+    const want = (await loadBatteryMode()) !== 'normal' && AppState.currentState !== 'active';
+    if (!active || want === paused) return;
+    paused = want;
+    if (want) {
+      stopLinks();
+      return;
+    }
+    const { lan, direct, aware } = await nearbySettings();
+    if (active && !paused) startLinks({ lan, direct, aware });
+  };
+  const quiet = AppState.addEventListener('change', (state) => {
+    setLinksQuiet(state !== 'active');
+    void follow();
+  });
+  const stopBattery = onBatteryMode(() => void follow());
+  void nearbySettings().then(async ({ carrying, lan, direct, aware }) => {
     if (!active) return;
     nearby.setCarrying(carrying);
     if (!othersKept) {
       othersKept = true;
       void nearby.keepOthersIn(othersCarried());
     }
-    startLinks({ lan, direct, aware });
+    // Opened in the background (a call, say) with the radios to be off: they stay off.
+    paused = (await loadBatteryMode()) !== 'normal' && AppState.currentState !== 'active';
+    if (active && !paused) startLinks({ lan, direct, aware });
   });
   // What came nearby for this space while another was open.
   void (async () => {
@@ -67,6 +88,7 @@ export function startNearbyLinks(): () => void {
     subscriptions.forEach((subscription) => subscription.remove());
     stopWatching();
     quiet.remove();
+    stopBattery();
     setLinksQuiet(false);
     stopNearby();
     stopLinks();
