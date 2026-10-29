@@ -440,10 +440,15 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
     if (found !== undefined) place = { ...place, here: { ...place.here, relayKey: found ? toBase64Url(found) : '' }, keyAsked: true };
   }
   state.place = place;
+  // Its chat screen opening holds the place and waits for this look to end (holdPlace): each step
+  // that may go through Tor is the last one then, and the screen sends what waits itself.
   if (stop()) return;
   await sendPending(chats, place.sends);
+  if (stop()) return;
   await sendKeys(chats, place, state.near);
+  if (stop()) return;
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
+  if (stop()) return;
   run.mover ??= placeMover(run, chats, own);
   const mover = run.mover;
   const here = place;

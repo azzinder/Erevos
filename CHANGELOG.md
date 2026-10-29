@@ -673,6 +673,10 @@ On main, not released yet:
   they made to another server, while Android, which has no page policy, was not held back. It now allows HTTPS too, so
   Matrix sign-in, XMPP server discovery and file sharing (HTTP upload), and Nostr files (Blossom) and name lookups
   (NIP-05) work in the web app and on the computer.
+- **Hidden chats show at once**: as the PIN opens them, the chat screen shows the place's chats and contacts at
+  once, only to read, while a look of its receiver under way ends (`holdPlace`), as the space's own chat does; that
+  look also ends between its sends (`lookPlace` checks `stop` after `sendPending`, `sendKeys` and `sendCopies`), which
+  may each go through Tor. Before, the list stayed empty until the whole look had ended.
 
 ## 3.4.2 (2026-10-27)
 

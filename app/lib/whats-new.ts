@@ -107,6 +107,7 @@ export const NEXT: Changes = {
     mark("**The web app and the computer reach Matrix, XMPP and Nostr servers over HTTPS**: their page policy allowed only WebSocket connections, so Matrix sign-in, XMPP server discovery and file sharing, and Nostr files and name lookups failed there. They work now. See [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)."),
     mark("**Bluetooth that cannot be followed**: the random number your phone sends out over Bluetooth for phones nearby to find it changed only when Erevos started again; it now changes every nine to twelve minutes, so someone listening cannot follow your phone from place to place by it. Older Erevos phones still find yours. See [Chat with a nearby phone](#nearby)."),
     mark("**Downloads stop at 100 MB**: a file, a backup from a server or any other download is read as it comes and stopped as soon as it passes 100 MB, or less where the network's files are smaller, such as 20 MB for Nostr files, so a file server a contact names can no longer fill the phone's memory with an answer without end. A backup on a server comes back up to 100 MB; download a larger one and open it with Restore a backup. See [Backups](#backup)."),
+    mark("**Hidden chats show at once**: as the PIN opens them, their chats and contacts show at once, to read, while what they were receiving in the background ends; before, that could hold them back a long while, as it may go through Tor. See [Hidden chats](#hidden)."),
   ],
 };
 

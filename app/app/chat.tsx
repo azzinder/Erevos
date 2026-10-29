@@ -1564,10 +1564,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         }
         const toShown = (m: Kept): Message => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ });
         // The space's messages and contacts show at once, only to read, while a look at the relay
-        // under way ends (held); what it brought is in them after.
+        // under way ends (held); what it brought is in them after. So do hidden chats', while a look
+        // of the place's receiver ends (placeHeld): it may be sending through Tor, which can take long.
         let early: { kept: Kept[]; ids: Set<number> } | null = null;
-        if (held) {
-          const open = await spaceChats().catch(() => null);
+        if (held || placeHeld) {
+          const open = await (hiddenKey ? placeChats(space, pocket, hiddenKey) : spaceChats()).catch(() => null);
           if (!active) return;
           if (open) {
             const kept = open.history.messages();
