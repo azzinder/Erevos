@@ -1679,6 +1679,8 @@ Element: Keine Brücke sitzt dazwischen.
   eigenen Nachrichten ändern, und eine geänderte trägt **Bearbeitet**. **Löschen** nimmt eine Nachricht von dir für alle
   im Chat zurück, wenn du es bestätigst; es lässt sich nicht rückgängig machen, und der Chat behält eine Zeile, die
   sagt, dass sie gelöscht wurde.
+- **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
+  sagt es nie von dir, denn sonst erführe der Matrix-Server jedes Mal, wenn du schreibst.
 - **Frühere Nachrichten:** Ein Chat mit mehr Verlauf auf dem Matrix-Server zeigt oben **Frühere Nachrichten laden**;
   jedes Tippen holt weitere, und der Chat bleibt dort, wo du gelesen hast. Eine Nachricht, deren Schlüssel noch nicht
   kam, erscheint gesperrt.
@@ -1764,6 +1766,17 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   zeigt. Ein Gerät hat in beiden einen Schlüssel, auf zwei Arten geschrieben.
 - **Markierungen:** ein Haken beim Senden, zwei, wenn ihre App sie hat, drei, wenn sie gelesen wurde, wie in Erevos'
   eigenen Chats, bei Apps, die diese Markierungen senden.
+- **Antworten, ändern, reagieren, löschen:** halte eine Nachricht gedrückt für ihr Menü: **Antworten** beantwortet
+  sie, **Bearbeiten** ändert den Text einer von dir, **Löschen** nimmt eine von dir für alle im Chat zurück, und die
+  Emoji reagieren darauf; ein Tippen auf eine Reaktion unter einer Nachricht reagiert genauso oder nimmt deine zurück.
+  Das klappt mit Apps, die dasselbe können, wie Conversations, Dino, Gajim, Monal und Kaidan es tun; andere Apps
+  zeigen eine Antwort mit einem Zitat dessen, worauf sie antwortet, und eine Änderung als neue Nachricht. Der Text
+  einer Antwort und einer Änderung ist verschlüsselt wie der Chat, aber welche Nachricht eine Antwort, Änderung,
+  Reaktion oder Löschung betrifft, und das Emoji einer Reaktion, gehen so, wie diese Apps sie senden, unverschlüsselt,
+  sodass die XMPP-Server sie sehen. In einer Gruppe kann eine Nachricht beantwortet, mit einer Reaktion versehen oder
+  gelöscht werden, sobald die Gruppe sie zurückgegeben hat.
+- **Schreiben:** wenn die App der anderen Person meldet, dass sie schreibt, erscheint **schreibt…** unter dem Chat.
+  Erevos meldet das nie von dir, denn das würde dem XMPP-Server jedes Mal sagen, wenn du schreibst.
 - **Nachrichten von vorher:** Was kam, während Erevos geschlossen war, wird beim Verbinden aus dem Archiv des Servers
   geholt, wenn er eines führt. Eine Nachricht von vor der Anmeldung dieses Geräts oder nicht für es bestimmt erscheint
   gesperrt.

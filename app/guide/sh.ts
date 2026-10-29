@@ -1520,6 +1520,8 @@ između.
   razgovoru: Matrix server vidi koja je poruka dobila koju reakciju i od koga. Samo vi možete mijenjati svoje poruke, a
   izmijenjena piše **Uređeno**. **Obriši** povlači vašu poruku za sve u razgovoru, kad potvrdite; ne može se poništiti,
   a razgovor zadržava red koji kaže da je obrisana.
+- **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to nikad ne kaže
+  za vas, jer bi tako Matrix server znao svaki put kad pišete.
 - **Ranije poruke:** razgovor s više historije na Matrix serveru gore prikazuje **Učitaj ranije poruke**; svaki dodir
   donosi još, a razgovor ostaje tamo gdje ste čitali. Poruka čiji ključ još nije stigao prikazuje se zaključana.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
@@ -1595,6 +1597,15 @@ aplikacije: nikakav most nije između.
   Jedan uređaj ima jedan ključ u oba, napisan na dva načina.
 - **Oznake:** jedna kvačica pri slanju, dvije kad ga njihova aplikacija ima, tri kad pročitaju, kao u Erevosovim
   vlastitim razgovorima, za aplikacije koje šalju te oznake.
+- **Odgovori, uredi, reaguj, obriši:** zadržite prst na poruci za njen meni: **Odgovori** odgovara na nju, **Uredi**
+  mijenja riječi vaše poruke, **Obriši** povlači vašu poruku za sve u razgovoru, a emotikoni reaguju na nju; dodir na
+  reakciju ispod poruke reaguje isto, ili povlači vašu. Rade s aplikacijama koje rade isto, kao što rade
+  Conversations, Dino, Gajim, Monal i Kaidan; druge aplikacije prikazuju odgovor s citatom onoga na što odgovara, a
+  izmjenu kao novu poruku. Riječi odgovora i izmjene šifrovane su kao razgovor, ali na koju poruku se odnosi odgovor,
+  izmjena, reakcija ili brisanje, i emotikon reakcije, idu onako kako ih te aplikacije šalju, nešifrovano, pa ih XMPP
+  serveri vide. U grupi se na poruku može odgovoriti, reagovati ili je obrisati kad je grupa vrati.
+- **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to nikad ne
+  javlja o vama, jer bi to svaki put kad pišete rekao XMPP serveru.
 - **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
   je server čuva. Poruka poslana prije nego što se ovaj uređaj prijavio, ili nije bila za njega, prikazuje se
   zaključana.

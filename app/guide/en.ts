@@ -1450,6 +1450,8 @@ between.
   Matrix server sees which message got which reaction, and from whom. Only you can change your own messages, and a
   changed one says **Edited**. **Delete** takes a message of yours back for everyone in the chat, once you confirm; it
   cannot be undone, and the chat keeps a line saying it was deleted.
+- **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos never
+  says it of you, as that would tell the Matrix server each time you write.
 - **Earlier messages:** a chat with more history on the Matrix server shows **Load earlier messages** at its top; each
   tap fetches more, and the chat stays where you were reading. A message whose key has not come yet shows as locked.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
@@ -1525,6 +1527,15 @@ bridge sits in between.
   ways.
 - **Marks:** one tick when sent, two when their app has it, three when they read it, as in Erevos's own chats, for apps
   that send these marks.
+- **Reply, change, react, delete:** hold a message for its menu: **Reply** answers it, **Edit** changes the words of one
+  of yours, **Delete** takes one of yours back for everyone in the chat, and the emoji react to it; tapping a reaction
+  under a message reacts the same, or takes yours back. They work with apps that do the same, as Conversations, Dino,
+  Gajim, Monal and Kaidan do; other apps show a reply with a quote of what it answers, and a change as a new message.
+  The words of a reply and of a change are encrypted as the chat is, but which message a reply, change, reaction or
+  deletion is about, and a reaction's emoji, go as those apps send them, not encrypted, so the XMPP servers see them. In
+  a group, a message can be answered, reacted to or deleted once the group has passed it back.
+- **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos never says
+  it of you, as that would tell the XMPP server each time you write.
 - **Messages from before:** what came while Erevos was closed is fetched from the server's archive when it connects, if
   the server keeps one. A message sent before this device signed in, or not meant for it, shows as locked.
 - **Photos and files:** **Photo** and **File**, under a chat's message box, send one of up to 50 MB, or less if your

@@ -1648,6 +1648,8 @@ Element : aucun pont ne se met entre les deux.
   messages, et un message modifié affiche **Modifié**. **Supprimer** retire un message de toi pour tout le monde dans la
   discussion, une fois que tu confirmes ; on ne peut pas l’annuler, et la discussion garde une ligne disant qu’il a été
   supprimé.
+- **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
+  **écrit…**. Erevos ne le dit jamais de toi : le serveur Matrix saurait alors chaque fois que tu écris.
 - **Messages précédents :** une discussion qui a plus d’historique sur le serveur Matrix affiche **Charger les messages
   précédents** en haut ; chaque appui en rapporte d’autres, et la discussion reste là où tu lisais. Un message dont la
   clé n’est pas encore arrivée s’affiche verrouillé.
@@ -1733,6 +1735,17 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   montre. Un appareil a une seule clé dans les deux, écrite de deux façons.
 - **Marques :** un trait à l’envoi, deux quand son app l’a, trois quand il est lu, comme dans les discussions propres
   d’Erevos, pour les apps qui envoient ces marques.
+- **Répondre, modifier, réagir, supprimer :** un appui long sur un message ouvre son menu : **Répondre** y répond,
+  **Modifier** change les mots d’un des tiens, **Supprimer** retire un des tiens pour tout le monde dans la
+  discussion, et les emoji y réagissent ; toucher une réaction sous un message réagit de même, ou retire la tienne.
+  Cela marche avec les apps qui font pareil, comme Conversations, Dino, Gajim, Monal et Kaidan ; les autres apps
+  montrent une réponse avec une citation de ce qu’elle répond, et une modification comme un nouveau message. Les mots
+  d’une réponse et d’une modification sont chiffrés comme la discussion, mais le message que concerne une réponse, une
+  modification, une réaction ou une suppression, et l’emoji d’une réaction, partent comme ces apps les envoient, non
+  chiffrés, si bien que les serveurs XMPP les voient. Dans un groupe, un message peut être répondu, recevoir une
+  réaction ou être supprimé une fois que le groupe l’a renvoyé.
+- **Écriture :** quand l’app de l’autre personne dit qu’elle écrit, **écrit…** s’affiche sous la discussion. Erevos ne
+  le dit jamais de toi, car cela dirait au serveur XMPP chaque fois que tu écris.
 - **Messages d’avant :** ce qui est arrivé pendant qu’Erevos était fermé est récupéré dans l’archive du serveur à la
   connexion, si le serveur en tient une. Un message envoyé avant la connexion de cet appareil, ou qui ne lui était pas
   destiné, s’affiche verrouillé.

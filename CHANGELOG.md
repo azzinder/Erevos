@@ -37,6 +37,17 @@ On main, not released yet:
   the message carries who was named, by identity (`named`, at most 32, `lib/mentions.ts`), and a member named is told
   of it even in a group they muted (`messageCame`'s `named`, for the open space's groups and hidden places'). Only
   whole names count. An Erevos from before ignores the field. See [Group chats](#groups).
+- **Reply, change, react and delete in XMPP chats**: holding a message in an XMPP chat or group opens the same menu
+  as in a Matrix chat (`app/xmpp-chat.tsx`): **Reply** (XEP-0461, with the quote other apps show, XEP-0428), **Edit**
+  (XEP-0308), **Delete** for everyone (XEP-0424, the older fastened form read too) and reactions (XEP-0444), sent and
+  read as Conversations, Dino, Gajim, Monal and Kaidan do (`lib/xmpp-actions.ts`). The words of a reply and of a change
+  go encrypted as the chat is; which message each is about, and a reaction's emoji, go as those apps send them, not
+  encrypted. Only a message's writer may change or take it back (in a group, by their address when the room says it,
+  else by their name there); in a group, a reaction, a reply and a deletion name the message by the room's id
+  (XEP-0359, kept as `sid`). **typing…** shows while the other person's app says they write (XEP-0085); Erevos never
+  sends it. See [XMPP](#xmpp).
+- **See who is writing in a Matrix chat**: `m.typing` from the sync's `ephemeral` part shows **typing…** under the
+  chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). Erevos never sends it. See [Matrix](#matrix).
 - **The panic button on a computer and on Sailfish OS**: **Settings** → **Privacy and security** → **Panic button**
   wipes Erevos there too. The shell does it (`/__wipe`, `desktop/main.js` and `sailfish/src/shellserver.cpp`, behind
   the page's token as every shell path): the keystore, the sealed files, the page's own storage and the rest of the

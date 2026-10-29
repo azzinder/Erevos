@@ -22,6 +22,8 @@ export const NEXT: Changes = {
     mark("**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay)."),
     mark("**Safety message**: under + in a chat, words to a contact that the relay sends by itself if you do not open Erevos for 6 hours to a week; each time you open it, they move on again. See [Chat through a relay](#relay)."),
     mark("**Name a member in a group with @**: type @ and pick a member; they are told of the message even if they muted the group. See [Group chats](#groups)."),
+    mark("**Reply, change, react and delete in XMPP chats**: hold a message in an XMPP chat or group to answer it, change your words, delete it for everyone or react with an emoji, as Conversations, Dino, Gajim, Monal and Kaidan do; and **typing…** shows while the other person writes. See [XMPP](#xmpp)."),
+    mark("**See who is writing in a Matrix chat**: **typing…** shows under a Matrix chat while someone writes in it, as the Matrix server says. Erevos never says it of you. See [Matrix](#matrix)."),
     mark("**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic)."),
   ],
   underTheHood: [

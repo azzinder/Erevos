@@ -47,6 +47,8 @@ export class Homeserver {
   readonly readUpTo = new Map<string, number>();
   /** How many events of a room a sync gives at most; the rest are older, fetched with /messages. */
   timelineLimit = Infinity;
+  /** Who writes in each room now (m.typing), said in every sync to those in it. */
+  typing = new Map<string, string[]>();
   private seq = 0;
   private made = 0;
 
@@ -390,6 +392,11 @@ export class Homeserver {
         const state = [...before, ...cut].map((l) => l.event);
         const timeline = { events, limited: given.length < all.length, prev_batch: `b${given[0].seq - 1}` };
         join[id] = { state: { events: state }, timeline, unread_notifications: { notification_count: this.unread(user, id) } };
+      }
+      const writing = this.typing.get(id);
+      if (now === 'join' && writing) join[id] = { ...(join[id] ?? {}), ephemeral: { events: [{ type: 'm.typing', content: { user_ids: writing } }] } };
+      if (now === 'join') {
+        // Nothing more.
       } else if (now === 'invite' && events.length) {
         invite[id] = { invite_state: { events: this.log.filter((l) => l.room === id && l.event.state_key !== undefined).map((l) => l.event) } };
       }

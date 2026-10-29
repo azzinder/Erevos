@@ -12,11 +12,15 @@ import { PlaceLives, type PlaceKey } from './place-lives';
 import {
   addCallLine,
   addXmppContact,
+  changeXmppText,
   declineXmppRequest,
   forgetXmppChat,
   lookUpDevices,
   markXmppRead,
   prepareXmppFile,
+  reactXmpp,
+  replyXmppText,
+  retractXmpp,
   publishOmemo,
   renewDevice,
   sendKeepAlive,
@@ -369,6 +373,38 @@ export function xmppSend(jid: string, text: string): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
     await sendXmppText(it.state, online(it), jid, text);
+  });
+}
+
+/** Answers the message `to` of a chat with `text`. */
+export function xmppReply(jid: string, text: string, to: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await replyXmppText(it.state, online(it), jid, text, to);
+  });
+}
+
+/** Gives a message of ours new words. */
+export function xmppChange(jid: string, id: string, text: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await changeXmppText(it.state, online(it), jid, id, text);
+  });
+}
+
+/** Reacts to a message with `emoji`, or takes our reaction back. */
+export function xmppReact(jid: string, id: string, emoji: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await reactXmpp(it.state, online(it), jid, id, emoji);
+  });
+}
+
+/** Takes a message of ours back, for everyone in the chat. */
+export function xmppDelete(jid: string, id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await retractXmpp(it.state, online(it), jid, id);
   });
 }
 

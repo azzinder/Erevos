@@ -107,7 +107,7 @@ export function Missing() {
 
 // The reactions to a message, each emoji once with how many chose it; ours stands out, and
 // tapping one reacts the same, or takes ours back.
-function ReactionChips({ reactions, me, mine, onReact }: { reactions: Record<string, string[]>; me: string; mine: boolean; onReact: (emoji: string) => void }) {
+export function ReactionChips({ reactions, me, mine, onReact }: { reactions: Record<string, string[]>; me: string; mine: boolean; onReact: (emoji: string) => void }) {
   const colors = useColors();
   const chosen = Object.entries(reactions).filter(([, who]) => who.length > 0);
   if (chosen.length === 0) return null;

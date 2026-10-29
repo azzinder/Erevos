@@ -463,6 +463,30 @@ restored account becomes a new device, keeps its chats and its identity, the old
 lists, and messages go both ways. `app/checks/backup.check.ts` checks that the file and its pages
 come back and that those of the phone it is restored on go. Not yet on a phone.
 
+## Replies, changes, reactions and deleting
+
+`lib/xmpp-actions.ts`, used by `lib/xmpp.ts` and the menu of `app/xmpp-chat.tsx`:
+
+- **Reply** (XEP-0461): `<reply to id>` and the quote other apps show, with `<fallback for='urn:xmpp:reply:0'>`
+  naming its characters (XEP-0428), so a reply that comes is shown without it. Without a usable range, leading `>`
+  lines are left out.
+- **Edit** (XEP-0308): `<replace id>` with the new words, encrypted as the chat is; a change whose message is not here
+  shows as a message of its own.
+- **Delete for everyone** (XEP-0424 `urn:xmpp:message-retract:1`, and the older one inside `urn:xmpp:fasten:0`, read
+  only): with the fallback body the XEP gives, for apps that cannot.
+- **Reactions** (XEP-0444): each person's whole choice replaces theirs from before, at most 20 a message.
+- One-to-one, all name a message by its writer's id. In a group, a reaction, a reply and a deletion name it by the
+  room's id (XEP-0359 `stanza-id`, kept as `sid`, filled in for our own messages when the room passes them back);
+  a change by its writer's id, as XEP-0308 says.
+- Only a message's writer may change or delete it: one-to-one, the same side; in a group, the same address when the
+  room says it (not anonymous), else the same name there.
+- The words of a reply and of a change are encrypted as the chat is. Which message each is about, and a reaction's
+  emoji, are not, as Conversations, Dino and Gajim send them: the servers see them, and a server could make up a
+  deletion or a reaction, as it could hold back a message. Encrypting them (inside OMEMO 2's SCE) would leave them
+  unread by the apps people use.
+- **Writing** (XEP-0085): `composing` from the other person shows **typing…** for 30 seconds or until they stop;
+  Erevos never sends chat states, which would tell the server each time one writes.
+
 ## Not yet
 
 - Moving a call to another device, and a call with one person that Dino makes into a group call
@@ -471,3 +495,6 @@ come back and that those of the phone it is restored on go. Not yet on a phone.
 - OMEMO 2 with Kaidan on a phone: so far only against python-twomemo and the server played in the
   checks.
 - Photos and files against a real upload service: so far only the one played in the checks.
+- Replies, changes, reactions and deleting against Conversations, Dino and Gajim on a phone: so far only against
+  the server played in the checks (`checks/xmpp-actions.check.ts`).
+- Moderators deleting others' messages in a group (XEP-0425).

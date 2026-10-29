@@ -1,15 +1,20 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
+
+import { Missing, ReactionChips } from '../components/matrix-message';
+import { MessageMenu, type MenuAction } from '../components/message-menu';
+import { Quote } from '../components/message-parts';
 
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
-import { ask } from '../lib/alert';
+import { ask, confirm } from '../lib/alert';
 import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
+import { CAN_COPY, copyText } from '../lib/clipboard';
 import { currentGroupCall } from '../lib/group-call';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { t } from '../lib/i18n';
@@ -18,7 +23,8 @@ import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
-import { isXmppId, nameOf, xmppDevices, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { isXmppId, nameOf, onXmppTyping, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
 import { XMPP_FILE_MOST } from '../lib/xmpp-files';
 import { groupPeople, type XmppRoom } from '../lib/xmpp-muc';
@@ -28,12 +34,16 @@ import {
   onXmppChange,
   runXmpp,
   xmppAddToGroup,
+  xmppChange,
+  xmppDelete,
   xmppFile,
   xmppForgetChat,
   xmppLeaveGroup,
   xmppLookUpKeys,
   xmppNow,
   xmppRead,
+  xmppReact,
+  xmppReply,
   xmppSend,
   xmppSendFile,
   xmppSetNotify,
@@ -63,8 +73,27 @@ import { useColors } from '../theme/context';
 // on in it can be joined, by its tile and by the line under its address; a channel has none.
 // Below a private group are its members, each with their keys and a note when they have none, and
 // for its admin Add people; Leave the group leaves it on the account's other apps too.
+//
+// A message held down opens its menu (components/message-menu.tsx), as in a Matrix chat: react to
+// it, answer it, copy it, and for one of ours change its words or delete it for everyone
+// (lib/xmpp-actions.ts). An answer shows the message it is to above its words; a message changed
+// says so, and one taken back is only marked as such. The reactions are under it, tapped to react
+// the same or take ours back. While the other person writes, their app may say so, and it shows;
+// Erevos never says it of us.
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
+
+/** A message in one line, for its menu, the strip over the field and the quote of an answer. */
+function lineOf(message: XmppMessage): string {
+  if (message.deleted) return t('Message deleted');
+  if (message.locked) return t('Locked message');
+  if (message.file) return message.file.name;
+  return shownLine(message.text).trim().split('\n')[0] || t('Message');
+}
+
+// Whether it has a menu: not one taken back, a call's line, or one still going or that did not go.
+const menuable = (message: XmppMessage) => !message.deleted && !message.call && message.state !== 'sending' && message.state !== 'failed';
+const copyable = (message: XmppMessage) => CAN_COPY && !!message.text && !message.file && !message.locked && !message.call && !message.deleted;
 
 export default function XmppChatScreen() {
   const router = useRouter();
@@ -75,12 +104,30 @@ export default function XmppChatScreen() {
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   // What could not be sent with OMEMO, a text or a file, kept while the person decides about writing without it.
-  const [unsent, setUnsent] = useState<{ text: string } | { file: XmppOutgoingFile } | null>(null);
+  const [unsent, setUnsent] = useState<{ text: string; to?: string } | { file: XmppOutgoingFile } | null>(null);
   const [sending, setSending] = useState(false);
+  // The message the next one answers or gives new words, and the one whose menu is open, by their IDs.
+  const [replyId, setReplyId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
+  const [, setTyped] = useState(0);
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
   const [, setCalls] = useState(0);
 
   useEffect(() => onGroupCallChange(() => setCalls((n) => n + 1)), []);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const off = onXmppTyping(() => {
+      setTyped((n) => n + 1);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setTyped((n) => n + 1), TYPING_SHOWS + 100);
+    });
+    return () => {
+      off();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     runXmpp();
@@ -113,15 +160,15 @@ export default function XmppChatScreen() {
 
   const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
 
-  async function send(text: string) {
+  async function send(text: string, to?: string) {
     if (!jid) return;
     setNote('');
     try {
-      await xmppSend(jid, text);
+      await (to ? xmppReply(jid, text, to) : xmppSend(jid, text));
     } catch (error) {
       // Their apps have no OMEMO: the text waits for the person to say whether to write without it,
       // which the card below explains.
-      if (error instanceof NoOmemoError) setUnsent({ text });
+      if (error instanceof NoOmemoError) setUnsent({ text, ...(to ? { to } : {}) });
       else fail(error);
     }
   }
@@ -159,12 +206,90 @@ export default function XmppChatScreen() {
       return picked ? { ...picked, mime: mimeOfName(picked.name) } : null;
     });
 
+  const byId = new Map((chat?.messages ?? []).map((message) => [message.id, message]));
+  // One that is gone or taken back meanwhile is none: what is typed then goes as a new message.
+  const replying = replyId ? byId.get(replyId) : undefined;
+  const answered = replying && !replying.deleted ? replying : undefined;
+  const editing = editId ? byId.get(editId) : undefined;
+  const changed = editing && !editing.deleted && editing.mine ? editing : undefined;
+  const menuMessage = menuFor ? byId.get(menuFor) : undefined;
+  const me = state.jid;
+  const writerOf = (message: XmppMessage) => (message.mine ? t('You') : chat?.room ? message.by || jid : nameOf(state, jid));
+
+  const stopEditing = () => {
+    setEditId(null);
+    setDraft('');
+  };
+
+  // What is typed goes as a new message, as an answer to the one chosen, or as the new words of the
+  // one being changed.
   function submit() {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || !jid) return;
+    if (changed) {
+      setNote('');
+      xmppChange(jid, changed.id, text).then(stopEditing, fail);
+      return;
+    }
     setDraft('');
-    void send(text);
+    setReplyId(null);
+    void send(text, answered?.id);
   }
+
+  const react = (id: string, emoji: string) => {
+    if (jid) xmppReact(jid, id, emoji).catch(fail);
+  };
+
+  async function copy(text: string) {
+    setNote((await copyText(text)) ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'));
+  }
+
+  // Takes a message of ours back, for everyone in the chat, once asked.
+  async function remove(message: XmppMessage) {
+    if (!jid) return;
+    if (!(await confirm(t('Delete message'), t('Delete this message for everyone in the chat? It cannot be brought back.'), t('Delete')))) return;
+    try {
+      await xmppDelete(jid, message.id);
+    } catch (error) {
+      setNote(t('Not deleted. {reason}', { reason: error instanceof Error ? error.message : String(error) }));
+    }
+  }
+
+  // What can be done with a message, held down. In a group, reacting, answering and deleting wait
+  // for the room's ID of it; changing and deleting are for our own, and changing for words only.
+  function actionsOf(message: XmppMessage): MenuAction[] {
+    const actions: MenuAction[] = [];
+    const named = !chat?.room || !!message.sid;
+    if (named) {
+      actions.push({
+        title: t('Reply'),
+        onPress: () => {
+          if (editId) stopEditing();
+          setReplyId(message.id);
+        },
+      });
+    }
+    if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
+    if (message.mine && !message.file && !message.locked) {
+      actions.push({
+        title: t('Edit'),
+        onPress: () => {
+          setReplyId(null);
+          setEditId(message.id);
+          setDraft(message.text);
+        },
+      });
+    }
+    if (message.mine && named) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
+    return actions;
+  }
+
+  // The message an answer is to, as the answer quotes it: null when it is not here.
+  const answeredBy = (message: XmppMessage): Answer | null | undefined => {
+    if (!message.replyTo) return undefined;
+    const to = byId.get(message.replyTo);
+    return to ? { name: writerOf(to), line: lineOf(to) } : null;
+  };
 
   async function call(video: boolean) {
     if (!jid) return;
@@ -281,8 +406,21 @@ export default function XmppChatScreen() {
       {room?.subject ? <Text selectable>{room.subject}</Text> : null}
 
       {(chat?.messages ?? []).map((message) => (
-        <Bubble key={message.id} message={message} group={!!room} />
+        <Bubble
+          key={message.id}
+          message={message}
+          group={!!room}
+          me={me}
+          answered={answeredBy(message)}
+          onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
+          onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
+        />
       ))}
+      {!room && xmppTyping(jid) ? (
+        <Text variant="caption" tone="muted">
+          {name} · {t('typing…')}
+        </Text>
+      ) : null}
 
       {unsent !== null ? (
         <Card>
@@ -300,7 +438,7 @@ export default function XmppChatScreen() {
                 setUnsent(null);
                 setNote('');
                 xmppSetPlain(jid, true)
-                  .then(() => ('text' in held ? send(held.text) : sendFile(held.file)))
+                  .then(() => ('text' in held ? send(held.text, held.to) : sendFile(held.file)))
                   .catch(fail);
               }}
             />
@@ -318,13 +456,15 @@ export default function XmppChatScreen() {
         </Card>
       ) : null}
 
+      {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onClose={() => setReplyId(null)} /> : null}
+      {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Row>
-        <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
-        <Button title={t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
+        <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={changed ? t('Edit message') : t('Message')} />
+        <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
       <Row>
-        <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => void sendPhoto()} />
-        <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null} onPress={() => void sendAnyFile()} />
+        <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
+        <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
         {sending ? <Text tone="muted">{t('Sending…')}</Text> : null}
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
@@ -383,6 +523,14 @@ export default function XmppChatScreen() {
           }
         />
       )}
+      <MessageMenu
+        visible={!!menuMessage && menuable(menuMessage) && shown}
+        onClose={() => setMenuFor(null)}
+        line={menuMessage ? lineOf(menuMessage) : ''}
+        reaction={menuMessage?.reacted?.[me]?.[0]}
+        onReact={menuMessage && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
+        actions={menuMessage ? actionsOf(menuMessage) : []}
+      />
     </Page>
   );
 }
@@ -500,7 +648,21 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
   );
 }
 
-function Bubble({ message, group }: { message: XmppMessage; group: boolean }) {
+/** The message an answer is to, as the answer quotes it. */
+type Answer = { name: string; line: string };
+
+function Bubble({ message, group, me, answered, onReact, onMenu }: {
+  message: XmppMessage;
+  group: boolean;
+  /** The account's address, to see which reactions are ours. */
+  me: string;
+  /** The message it answers, or null when that is not here. */
+  answered?: Answer | null;
+  /** A reaction under it was tapped: reacts the same, or takes ours back. Not given when it cannot be reacted to yet. */
+  onReact?: (emoji: string) => void;
+  /** Held down: its menu. */
+  onMenu?: () => void;
+}) {
   const colors = useColors();
   const mine = message.mine;
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -520,34 +682,48 @@ function Bubble({ message, group }: { message: XmppMessage; group: boolean }) {
       ? t('Sending…')
       : message.state === 'failed'
         ? t('Not sent.')
-        : `${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`;
+        : [`${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
+  const reactions = reactionsShown(message);
   return (
-    <View
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '85%',
-        padding: space.sm + 2,
-        borderRadius: radius.md,
-        backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt,
-        gap: 2,
-      }}
-    >
-      {group && !mine && message.by ? (
-        <Text variant="caption" tone="muted" numberOfLines={1}>
-          {message.by}
+    <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', gap: 4 }}>
+      <Pressable
+        onLongPress={onMenu}
+        disabled={!onMenu}
+        // One with buttons in it (Save) stays apart from them for a screen reader.
+        accessible={!message.file}
+        accessibilityHint={onMenu ? t('Hold for more') : undefined}
+        style={{
+          alignSelf: mine ? 'flex-end' : 'flex-start',
+          padding: space.sm + 2,
+          borderRadius: radius.md,
+          backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt,
+          gap: 2,
+        }}
+      >
+        {group && !mine && message.by ? (
+          <Text variant="caption" tone="muted" numberOfLines={1}>
+            {message.by}
+          </Text>
+        ) : null}
+        {message.replyTo ? answered ? <Quote name={answered.name} line={answered.line} /> : <Missing /> : null}
+        {message.deleted ? (
+          <Text tone="muted" style={{ fontStyle: 'italic' }}>
+            {t('Message deleted')}
+          </Text>
+        ) : message.locked ? (
+          <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
+        ) : message.file ? (
+          <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} />
+        ) : (
+          // Not selectable when it has a menu: holding the words opens it, which can copy them.
+          <Text selectable={!onMenu}>{message.text}</Text>
+        )}
+        <Text variant="caption" tone="faint">
+          {status}
+          {!message.encrypted && !message.locked && !message.deleted ? ` · ${t('not encrypted')}` : ''}
         </Text>
-      ) : null}
-      {message.locked ? (
-        <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
-      ) : message.file ? (
-        <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} />
-      ) : (
-        <Text selectable>{message.text}</Text>
-      )}
-      <Text variant="caption" tone="faint">
-        {status}
-        {!message.encrypted && !message.locked ? ` · ${t('not encrypted')}` : ''}
-      </Text>
+      </Pressable>
+      {reactions ? <ReactionChips reactions={reactions} me={me} mine={mine} onReact={(emoji) => onReact?.(emoji)} /> : null}
     </View>
   );
 }

@@ -624,10 +624,43 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     if (await takeEvent(state, id, event, false)) seen = true;
   }
   keepLatest(room);
+  // Who writes in it now, as the homeserver says (m.typing): kept here only.
+  for (const event of ((data.ephemeral as Json | undefined)?.events as Json[] | undefined) ?? []) {
+    if (event.type !== 'm.typing') continue;
+    const ids = (event.content as Json | undefined)?.user_ids;
+    setTyping(state, id, Array.isArray(ids) ? ids.filter((u): u is string => typeof u === 'string' && u !== state.userId).slice(0, 20) : []);
+  }
   const unread = (data.unread_notifications as Json | undefined)?.notification_count;
   if (typeof unread === 'number') room.unread = unread;
   if (!room.name) room.name = nameFromMembers(state, room);
   return seen;
+}
+
+// Who writes in each room now, by account and room, and since when the homeserver said it. Erevos
+// shows it and never says it of us: that would tell the homeserver each time one writes.
+const typingIn = new Map<string, { who: string[]; at: number }>();
+const typingListeners = new Set<() => void>();
+/** How long what the homeserver last said of who writes is trusted, when nothing new came. */
+export const MATRIX_TYPING_SHOWS = 60_000;
+
+function setTyping(state: MatrixState, roomId: string, who: string[]): void {
+  const key = `${state.userId} ${roomId}`;
+  const was = typingIn.get(key)?.who ?? [];
+  if (who.length) typingIn.set(key, { who, at: Date.now() });
+  else typingIn.delete(key);
+  if (was.join() !== who.join()) typingListeners.forEach((listener) => listener());
+}
+
+/** Who writes in a room now, other than us, as the homeserver last said. */
+export function matrixTyping(state: MatrixState, roomId: string, now = Date.now()): string[] {
+  const it = typingIn.get(`${state.userId} ${roomId}`);
+  return it && now - it.at < MATRIX_TYPING_SHOWS ? it.who : [];
+}
+
+/** Told each time who writes in a room changes. */
+export function onMatrixTyping(listener: () => void): () => void {
+  typingListeners.add(listener);
+  return () => typingListeners.delete(listener);
 }
 
 function nameFromMembers(state: MatrixState, room: MatrixRoom): string {

@@ -18,7 +18,7 @@ import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
-import type { MatrixMessage } from '../lib/matrix';
+import { MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, type MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import {
@@ -62,7 +62,8 @@ import { useColors } from '../theme/context';
 // is only marked as such. The reactions are under it, tapped to react the same or take ours back.
 // A room with older messages on the homeserver offers them at the top, and the thread stays where
 // it was when they come. The microphone beside the field records a voice message while it is held
-// (components/matrix-voice.tsx), which the others play with Play.
+// (components/matrix-voice.tsx), which the others play with Play. Who writes in it now, as the
+// homeserver says, shows under the thread; Erevos never says it of us.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -92,6 +93,8 @@ export default function MatrixChatScreen() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [earlier, setEarlier] = useState(false);
+  // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
+  const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
   // older messages come in above (`keepAt`: how tall it was, with how many messages), and where the
   // thread and each message in it begin, to scroll to one.
@@ -100,6 +103,19 @@ export default function MatrixChatScreen() {
   const keepAt = useRef<{ height: number; count: number } | null>(null);
   const threadAt = useRef(0);
   const placed = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const off = onMatrixTyping(() => {
+      setTyped((n) => n + 1);
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setTyped((n) => n + 1), MATRIX_TYPING_SHOWS + 100);
+    });
+    return () => {
+      off();
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     runMatrix();
@@ -158,6 +174,7 @@ export default function MatrixChatScreen() {
   // A chat with one person can check their devices by emoji; the latest check in it shows.
   const other = room.direct ? Object.keys(room.members).find((who) => who !== me) : undefined;
   const check = matrixVerifications(where).find((v) => v.roomId === roomId);
+  const writing = matrixTyping(state, roomId);
 
   const stopEditing = () => setEditId(null);
 
@@ -361,6 +378,11 @@ export default function MatrixChatScreen() {
           />
         ))}
       </View>
+      {writing.length ? (
+        <Text variant="caption" tone="muted" numberOfLines={1}>
+          {writing.map((who) => room.members[who]?.name || who).join(', ')} · {t('typing…')}
+        </Text>
+      ) : null}
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} onSend={send} />

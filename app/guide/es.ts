@@ -1568,6 +1568,8 @@ ningún puente se pone en medio.
   de quién. Solo tú puedes cambiar tus propios mensajes, y uno cambiado dice **Editado**. **Eliminar** retira un mensaje
   tuyo para todos en el chat, una vez que lo confirmas; no se puede deshacer, y el chat conserva una línea que dice que
   se eliminó.
+- **Escribiendo:** quien está escribiendo ahora en el chat, según dice el servidor de Matrix, aparece debajo con
+  **escribiendo…**. Erevos nunca lo dice de ti, porque así el servidor de Matrix sabría cada vez que escribes.
 - **Mensajes anteriores:** un chat con más historial en el servidor de Matrix muestra arriba **Cargar mensajes
   anteriores**; cada toque trae más, y el chat se queda donde estabas leyendo. Un mensaje cuya clave aún no llegó sale
   bloqueado.
@@ -1649,6 +1651,16 @@ como esas apps: ningún puente se pone en medio.
   Un dispositivo tiene una sola clave en ambas, escrita de dos maneras.
 - **Marcas:** una marca al enviar, dos cuando su app lo tiene, tres cuando lo leen, como en los chats propios de
   Erevos, con las apps que envían estas marcas.
+- **Responder, cambiar, reaccionar, eliminar:** mantén pulsado un mensaje para ver su menú: **Responder** lo responde,
+  **Editar** cambia las palabras de uno tuyo, **Eliminar** retira uno tuyo para todos en el chat, y los emoji
+  reaccionan a él; tocar una reacción bajo un mensaje reacciona igual, o retira la tuya. Funcionan con apps que hacen
+  lo mismo, como Conversations, Dino, Gajim, Monal y Kaidan; otras apps muestran una respuesta con una cita de lo que
+  responde, y un cambio como un mensaje nuevo. Las palabras de una respuesta y de un cambio van cifradas como el chat,
+  pero a qué mensaje se refiere una respuesta, cambio, reacción o eliminación, y el emoji de una reacción, van como
+  los envían esas apps, sin cifrar, así que los servidores XMPP los ven. En un grupo, un mensaje se puede responder,
+  reaccionar o eliminar una vez que el grupo lo ha devuelto.
+- **Escribiendo:** cuando la app de la otra persona avisa de que está escribiendo, **escribiendo…** aparece bajo el
+  chat. Erevos nunca lo dice de ti, porque le diría al servidor XMPP cada vez que escribes.
 - **Mensajes de antes:** lo que llegó mientras Erevos estaba cerrado se trae del archivo del servidor al conectar, si el
   servidor lo guarda. Un mensaje enviado antes de que este dispositivo iniciara sesión, o no pensado para él, sale
   bloqueado.

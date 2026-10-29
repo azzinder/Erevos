@@ -101,4 +101,8 @@ export const xmpp: Record<string, string> = {
   "Group calls are only in private groups.": "Gruppenanrufe gibt es nur in privaten Gruppen.",
   "This call is full.": "Dieser Anruf ist voll.",
   "Could not get into the call.": "Dem Anruf konnte nicht beigetreten werden.",
+  "This message cannot be answered yet. Try again in a moment.": "Auf diese Nachricht kann noch nicht geantwortet werden. Versuche es gleich noch einmal.",
+  "This message is not here any more.": "Diese Nachricht ist nicht mehr hier.",
+  "Only your own words can be changed.": "Nur deine eigenen Worte können geändert werden.",
+  "Only your own messages can be deleted for everyone.": "Nur deine eigenen Nachrichten können für alle gelöscht werden.",
 };

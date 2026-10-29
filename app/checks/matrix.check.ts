@@ -29,6 +29,7 @@ import {
   isMatrixId,
   loadEarlier,
   matrixThroughTor,
+  matrixTyping,
   joinRoom,
   roomList,
   sendChange,
@@ -267,6 +268,22 @@ test('reactions, answers, changes and messages taken back go both ways; older me
   } finally {
     server.timelineLimit = Infinity;
   }
+});
+
+test('who writes in a room shows as the homeserver says, never ourselves', { skip: !coreReady }, async () => {
+  const alice = kept(await signIn(HS, 'alice', PASSWORD));
+  const bob = kept(await signIn(HS, 'bob', PASSWORD));
+  const room = await startChat(alice, bob.userId);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  server.typing.set(room.id, [bob.userId, alice.userId]);
+  await sync(alice, 0);
+  assert.deepEqual(matrixTyping(alice, room.id), [bob.userId]);
+  assert.deepEqual(matrixTyping(alice, room.id, Date.now() + 120_000), []);
+  server.typing.set(room.id, []);
+  await sync(alice, 0);
+  assert.deepEqual(matrixTyping(alice, room.id), []);
+  server.typing.delete(room.id);
 });
 
 test("a call's events reach the calls, opened: in the room, in its state, and to one device", { skip: !coreReady }, async () => {

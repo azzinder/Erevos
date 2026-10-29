@@ -101,4 +101,8 @@ export const xmpp: Record<string, string> = {
   "Group calls are only in private groups.": "Οι ομαδικές κλήσεις γίνονται μόνο σε ιδιωτικές ομάδες.",
   "This call is full.": "Αυτή η κλήση είναι γεμάτη.",
   "Could not get into the call.": "Η είσοδος στην κλήση δεν έγινε.",
+  "This message cannot be answered yet. Try again in a moment.": "Σε αυτό το μήνυμα δεν μπορείς να απαντήσεις ακόμα. Δοκίμασε ξανά σε λίγο.",
+  "This message is not here any more.": "Αυτό το μήνυμα δεν είναι πια εδώ.",
+  "Only your own words can be changed.": "Μόνο τα δικά σου λόγια αλλάζουν.",
+  "Only your own messages can be deleted for everyone.": "Μόνο τα δικά σου μηνύματα σβήνονται για όλους.",
 };

@@ -4,6 +4,27 @@ import type { ChatNotify } from '../lock/chat-notify';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
+import {
+  nameFor,
+  NS_CORRECT,
+  NS_FALLBACK,
+  NS_REACTIONS,
+  NS_RETRACT,
+  react,
+  reactionsOf,
+  replaceOf,
+  replyOf,
+  replyParts,
+  retract,
+  RETRACT_BODY,
+  retractOf,
+  targetOf,
+  toggled,
+  typingOf,
+  withoutQuote,
+  wroteIt,
+  type Writer,
+} from './xmpp-actions';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
 import { enterRooms, groupPeople, mentions, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
 import {
@@ -122,6 +143,18 @@ export type XmppMessage = {
   file?: XmppFile;
   /** In a group: the name of whoever wrote it there. */
   by?: string;
+  /** In a group: the address of whoever wrote it, when the room says it. */
+  who?: string;
+  /** In a group: the id the room gave it (XEP-0359), which reactions, answers and takings back there name. */
+  sid?: string;
+  /** The message it answers (XEP-0461), by its id here, or as it was named when that is not here. */
+  replyTo?: string;
+  /** When its writer changed its words after it went (XEP-0308). */
+  edited?: number;
+  /** Taken back by its writer (XEP-0424): its words are gone. */
+  deleted?: true;
+  /** Reactions to it (XEP-0444): each one's emoji, by their address (ours by the account's), or by `/name` in a group that does not say it. */
+  reacted?: Record<string, string[]>;
 };
 
 export type XmppChat = {
@@ -712,6 +745,65 @@ function addMessage(chat: XmppChat, message: XmppMessage): void {
   chat.lastAt = Math.max(chat.lastAt, message.at);
 }
 
+/**
+ * A reaction or a taking back (lib/xmpp-actions.ts), from `by` (who reacts) written by `writer`
+ * (who may take back only their own): put on the message it names, in a chat already here. Says
+ * whether the stanza was one, so nothing else is made of it.
+ */
+function takeAction(state: XmppState, message: XmlElement, jid: string, group: boolean, writer: Writer, by: string, taken: Taken): boolean {
+  const chat = state.chats[jid];
+  const reactions = reactionsOf(message);
+  if (reactions) {
+    const target = chat ? targetOf(chat.messages, reactions.id, group) : undefined;
+    if (target && react(target, by, reactions.emojis)) taken.chats.push(jid);
+    return true;
+  }
+  const gone = retractOf(message);
+  if (gone) {
+    const target = chat ? targetOf(chat.messages, gone, group) : undefined;
+    if (target && wroteIt(target, writer, group) && retract(target)) taken.chats.push(jid);
+    return true;
+  }
+  return false;
+}
+
+/** New words for a message here of the same writer (XEP-0308): put in it. Says whether it was one. */
+function takeChange(chat: XmppChat, message: XmlElement, text: string, at: number, group: boolean, writer: Writer): boolean {
+  const replaced = replaceOf(message);
+  const target = replaced ? targetOf(chat.messages, replaced, group) : undefined;
+  if (!target || target.deleted || target.file || target.locked || !wroteIt(target, writer, group) || fileOfText(text)) return false;
+  if (target.text !== text) {
+    target.text = text;
+    target.edited = at;
+  }
+  return true;
+}
+
+// Who is writing now, by chat, and when they said it: kept here only.
+const typingAt = new Map<string, number>();
+const typingListeners = new Set<() => void>();
+/** How long one shows as writing after they said it, unless they say they stopped. */
+export const TYPING_SHOWS = 30_000;
+
+function setTyping(jid: string, typing: boolean): void {
+  const was = typingAt.has(jid);
+  if (typing) typingAt.set(jid, Date.now());
+  else typingAt.delete(jid);
+  if (was !== typing || typing) typingListeners.forEach((listener) => listener());
+}
+
+/** Whether the person of a chat is writing now, as their app says. */
+export function xmppTyping(jid: string, now = Date.now()): boolean {
+  const at = typingAt.get(jid);
+  return at !== undefined && now - at < TYPING_SHOWS;
+}
+
+/** Told each time someone starts or stops writing. */
+export function onXmppTyping(listener: () => void): () => void {
+  typingListeners.add(listener);
+  return () => typingListeners.delete(listener);
+}
+
 async function takeMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; archiveId?: string; live: boolean }, taken: Taken): Promise<void> {
   const type = message.attrs.type ?? 'normal';
   if (type === 'groupchat' || type === 'headline') return;
@@ -792,6 +884,12 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     }
   }
 
+  // A reaction, or a message taken back: about a message already here, never a message of its own.
+  if (takeAction(state, message, peer, false, { mine }, mine ? state.jid : peer, taken)) return;
+  // Whether they are writing: shown a while (xmppTyping), never kept.
+  const typing = mine ? null : typingOf(message);
+  if (typing !== null) setTyping(peer, typing);
+
   const encrypted = encryptedOf(state, message);
   const body = textOf(child(message, 'body')).trim();
   // A file sent as it is names its link out of band too (XEP-0066); an encrypted one only in its text.
@@ -821,6 +919,15 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   }
   const chat = chatOf(state, peer);
   if ((originId || id) && chat.messages.some((m) => m.id === (originId || id) && m.mine === mine)) return;
+  const answers = replyOf(message);
+  if (answers && !locked) text = withoutQuote(message, text);
+  if (!mine) setTyping(peer, false);
+  // New words for a message of the same writer: it changes, and nothing new comes. One whose
+  // message is not here shows as a message of its own.
+  if (!locked && takeChange(chat, message, text, how.at, false, { mine })) {
+    taken.chats.push(peer);
+    return;
+  }
   const markable = !mine && child(message, 'markable', NS.markers) ? (message.attrs.from ?? from) : undefined;
   const file = locked ? null : fileOfText(text, oob);
   addMessage(chat, {
@@ -833,6 +940,7 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     state: mine ? 'sent' : undefined,
     markable,
     ...(file ? { file } : {}),
+    ...(answers ? { replyTo: targetOf(chat.messages, answers, false)?.id ?? answers } : {}),
   });
   if (!mine) chat.unread += 1;
   else chat.unread = 0;
@@ -874,7 +982,7 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     return;
   }
   // The room's own words (as "this room is now archived") have no one who wrote them.
-  if (!nick || (!encrypted && !body)) return;
+  if (!nick) return;
   const stanzaId = children(message, 'stanza-id', NS.sid).find((s) => bare(s.attrs.by ?? '') === jid)?.attrs.id || how.archiveId;
   const ownId = child(message, 'origin-id', NS.sid)?.attrs.id || message.attrs.id || '';
   // One sent from here, back from the room.
@@ -884,6 +992,11 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
   for (const key of keys) remember(state, key);
   if (sentHere) {
     if (sentHere.state === 'sending') sentHere.state = 'sent';
+    // The room's id for it, which reactions and answers to it name.
+    if (stanzaId && !sentHere.sid) {
+      sentHere.sid = stanzaId;
+      taken.chats.push(jid);
+    }
     return;
   }
   if (seen) return;
@@ -891,6 +1004,9 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
   const real = room.occupants[nick] || bare(item?.attrs.jid ?? '');
   const writer = real.includes('@') ? real : '';
   const mine = writer ? writer === state.jid : nick === room.nick;
+  const said: Writer = { mine, ...(writer ? { who: writer } : {}), nick };
+  if (takeAction(state, message, jid, true, said, mine ? state.jid : writer || `/${nick}`, taken)) return;
+  if (!encrypted && !body) return;
   if (encrypted && !child(encrypted, 'payload', encrypted.ns)) {
     const sender = mine ? state.jid : writer || (await senderOf(state, connection, room, encrypted));
     if (sender && !mine) await openOmemo(state, connection, sender, encrypted, taken, how.live, jid);
@@ -907,6 +1023,12 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
       text = '';
     } else text = opened;
   }
+  const answers = replyOf(message);
+  if (answers && !locked) text = withoutQuote(message, text);
+  if (!locked && takeChange(chat, message, text, how.at, true, said)) {
+    taken.chats.push(jid);
+    return;
+  }
   const oob = encrypted ? undefined : textOf(child(child(message, 'x', NS_OOB), 'url')).trim() || undefined;
   const file = locked ? null : fileOfText(text, oob);
   addMessage(chat, {
@@ -918,7 +1040,10 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     locked: locked || undefined,
     state: mine ? 'sent' : undefined,
     by: nick.slice(0, 100),
+    ...(writer ? { who: writer } : {}),
+    ...(stanzaId ? { sid: stanzaId } : {}),
     ...(file ? { file } : {}),
+    ...(answers ? { replyTo: targetOf(chat.messages, answers, true)?.id ?? answers } : {}),
   });
   if (mine) chat.unread = 0;
   else if (how.at > (room.readTo ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
@@ -1308,21 +1433,40 @@ export function plainIn(chat: XmppChat): boolean {
   return Boolean(chat.plain) || (chat.room !== undefined && !chat.room.private);
 }
 
-async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile): Promise<XmppMessage> {
+/** What a message sent is besides its words: an answer to one here, or new words for one of ours. */
+type Sending = { reply?: XmppMessage; replace?: XmppMessage };
+
+async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile, how: Sending = {}): Promise<XmppMessage> {
   const chat = chatOf(state, peer);
   const room = chat.room;
   if (room && !room.joined) throw new XmppError(room.problem || t('Not in this group yet: joining it.'));
   const plain = plainIn(chat);
   const id = newId();
   const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !plain, state: 'sending', ...(file ? { file } : {}), ...(room ? { by: room.nick } : {}) };
-  // A group has no receipts nor read marks: the room passes the message back once it has it.
+  // An answer goes with the quote other apps show (lib/xmpp-actions.ts), and says what it answers.
+  const answered = how.reply;
+  const answerId = answered ? nameFor(answered, !!room) : undefined;
+  if (answered && !answerId) throw new XmppError(t('This message cannot be answered yet. Try again in a moment.'));
+  const answerTo = !answered ? '' : room ? (answered.mine ? `${peer}/${room.nick}` : answered.by ? `${peer}/${answered.by}` : '') : answered.mine ? state.jid : peer;
+  const answer = answered && answerId ? replyParts(answerTo, answerId, answered.file ? answered.file.name : answered.text) : null;
+  if (answered) message.replyTo = answered.id;
+  const words = answer ? answer.quote + text : text;
+  // A group has no receipts nor read marks: the room passes the message back once it has it. A
+  // change asks for neither.
   const type = room ? 'groupchat' : 'chat';
-  const extras = [room ? null : el('request', { xmlns: NS.receipts }), room ? null : el('markable', { xmlns: NS.markers }), el('origin-id', { xmlns: NS.sid, id })];
+  const replace = how.replace;
+  const extras = [
+    room || replace ? null : el('request', { xmlns: NS.receipts }),
+    room || replace ? null : el('markable', { xmlns: NS.markers }),
+    el('origin-id', { xmlns: NS.sid, id }),
+    replace ? el('replace', { xmlns: NS_CORRECT, id: replace.id }) : null,
+    ...(answer?.elements ?? []),
+  ];
   let stanza: XmlElement;
   if (plain) {
-    stanza = el('message', { to: peer, type, id }, el('body', {}, text), file && !file.fragment ? oobOf(file) : null, ...extras);
+    stanza = el('message', { to: peer, type, id }, el('body', {}, words), file && !file.fragment ? oobOf(file) : null, ...extras);
   } else {
-    const encrypted = await encryptFor(state, connection, peopleOf(state, peer), peer, text);
+    const encrypted = await encryptFor(state, connection, peopleOf(state, peer), peer, words);
     stanza = el(
       'message',
       { to: peer, type, id },
@@ -1333,9 +1477,16 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
       ...extras,
     );
   }
+  remember(state, `${state.jid}|${id}`);
+  // New words go into the message they change, once the server has them.
+  if (replace) {
+    await connection.send(stanza);
+    replace.text = text;
+    replace.edited = message.at;
+    return replace;
+  }
   addMessage(chat, message);
   chat.unread = 0;
-  remember(state, `${state.jid}|${id}`);
   try {
     await connection.send(stanza);
     if (!room) message.state = 'sent';
@@ -1344,6 +1495,71 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
     throw error;
   }
   return message;
+}
+
+/** The message of a chat `id` names, here: a reaction, an answer or a taking back needs one. */
+function messageIn(state: XmppState, peer: string, id: string): XmppMessage {
+  const found = state.chats[peer]?.messages.find((m) => m.id === id);
+  if (!found || found.deleted || found.call) throw new XmppError(t('This message is not here any more.'));
+  return found;
+}
+
+/** Answers a message of the chat with `text`, encrypted as the chat is. */
+export async function replyXmppText(state: XmppState, connection: XmppConnection, peer: string, text: string, to: string): Promise<XmppMessage> {
+  return sendBody(state, connection, peer, text, undefined, { reply: messageIn(state, peer, to) });
+}
+
+/** Gives a message of ours new words, encrypted as the chat is (XEP-0308). */
+export async function changeXmppText(state: XmppState, connection: XmppConnection, peer: string, id: string, text: string): Promise<void> {
+  const target = messageIn(state, peer, id);
+  if (!target.mine || target.file || target.locked || target.state === 'sending' || target.state === 'failed') throw new XmppError(t('Only your own words can be changed.'));
+  if (target.text === text) return;
+  await sendBody(state, connection, peer, text, undefined, { replace: target });
+}
+
+/** Reacts to a message with `emoji`, or takes our reaction back when it is ours already (XEP-0444). */
+export async function reactXmpp(state: XmppState, connection: XmppConnection, peer: string, id: string, emoji: string): Promise<void> {
+  const chat = state.chats[peer];
+  const target = messageIn(state, peer, id);
+  const name = nameFor(target, !!chat?.room);
+  if (!name) throw new XmppError(t('This message cannot be answered yet. Try again in a moment.'));
+  if (chat?.room && !chat.room.joined) throw new XmppError(chat.room.problem || t('Not in this group yet: joining it.'));
+  const ours = toggled(target.reacted?.[state.jid] ?? [], emoji);
+  await connection.send(
+    el(
+      'message',
+      { to: peer, type: chat?.room ? 'groupchat' : 'chat', id: newId() },
+      el('reactions', { xmlns: NS_REACTIONS, id: name }, ...ours.map((e) => el('reaction', {}, e))),
+      el('store', { xmlns: NS.hints }),
+    ),
+  );
+  react(target, state.jid, ours);
+}
+
+/** Takes a message of ours back, for everyone in the chat (XEP-0424): their apps that can, remove it. */
+export async function retractXmpp(state: XmppState, connection: XmppConnection, peer: string, id: string): Promise<void> {
+  const chat = state.chats[peer];
+  const target = messageIn(state, peer, id);
+  if (!target.mine) throw new XmppError(t('Only your own messages can be deleted for everyone.'));
+  if (target.state === 'sending' || target.state === 'failed') {
+    // It never went: it only leaves this chat.
+    if (chat) chat.messages = chat.messages.filter((m) => m !== target);
+    return;
+  }
+  const name = nameFor(target, !!chat?.room);
+  if (!name) throw new XmppError(t('This message cannot be answered yet. Try again in a moment.'));
+  if (chat?.room && !chat.room.joined) throw new XmppError(chat.room.problem || t('Not in this group yet: joining it.'));
+  await connection.send(
+    el(
+      'message',
+      { to: peer, type: chat?.room ? 'groupchat' : 'chat', id: newId() },
+      el('retract', { xmlns: NS_RETRACT, id: name }),
+      el('fallback', { xmlns: NS_FALLBACK, for: NS_RETRACT }),
+      el('body', {}, RETRACT_BODY),
+      el('store', { xmlns: NS.hints }),
+    ),
+  );
+  retract(target);
 }
 
 /** Marks a chat as read here, and tells them, when their last message asked (XEP-0333). */

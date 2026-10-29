@@ -101,4 +101,8 @@ export const xmpp: Record<string, string> = {
   "Group calls are only in private groups.": "Grupni pozivi postoje samo u privatnim grupama.",
   "This call is full.": "Ovaj poziv je pun.",
   "Could not get into the call.": "Nije bilo moguće ući u poziv.",
+  "This message cannot be answered yet. Try again in a moment.": "Na ovu poruku se još ne može odgovoriti. Pokušaj ponovo za trenutak.",
+  "This message is not here any more.": "Ova poruka više nije ovdje.",
+  "Only your own words can be changed.": "Mogu se promijeniti samo tvoje riječi.",
+  "Only your own messages can be deleted for everyone.": "Samo tvoje poruke mogu se obrisati za sve.",
 };
