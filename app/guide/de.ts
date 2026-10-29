@@ -339,6 +339,12 @@ ankommt, wird in den Chats des offenen Bereichs probiert und für die anderen ei
 nie auf das Telefon geschrieben. Versteckte Chats nutzen sie noch nicht: Das kommt erst noch (siehe
 [Was heute geschützt ist](#privacy)).
 
+**Bluetooth, dem man nicht folgen kann:** Was dein Telefon über Bluetooth aussendet, damit andere es finden, sagt nur,
+dass ein Telefon mit Erevos in der Nähe ist, mit einer Zufallszahl, die sich alle neun bis zwölf Minuten ändert, und
+ab Android 8 von einer Adresse, die sich mit ihr ändert. Wer erst an einem Ort und dann an einem anderen mithört, kann
+so nicht erkennen, dass es dasselbe Telefon ist, zumindest nicht an Erevos. Bestehende Verbindungen bleiben bestehen.
+Telefone mit einem älteren Erevos finden deins, und deins sie, wie bisher.
+
 ## Über LoRa-Funk {#lora}
 
 Mit einem Meshtastic-LoRa-Funkgerät, das per Bluetooth mit dem Telefon verbunden ist, erreicht Erevos ein Erevos mit

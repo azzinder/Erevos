@@ -338,6 +338,12 @@ ce qui arrive est essayé dans les discussions de l’espace ouvert, et gardé u
 écrit sur le téléphone. Les discussions masquées ne les utilisent pas encore : c’est encore à venir (voir [Ce qui est
 protégé aujourd’hui](#privacy)).
 
+**Un Bluetooth qu’on ne peut pas suivre :** ce que votre téléphone émet en Bluetooth pour que d’autres le trouvent dit
+seulement qu’un téléphone avec Erevos est proche, avec un nombre aléatoire qui change toutes les neuf à douze minutes,
+et sous Android 8 et plus depuis une adresse qui change avec lui. Quelqu’un qui écoute à un endroit puis à un autre ne
+peut donc pas savoir que c’est le même téléphone, du moins par Erevos. Les liaisons établies le restent. Les téléphones
+avec un Erevos plus ancien trouvent le vôtre, et le vôtre les trouve, comme avant.
+
 ## Par une radio LoRa {#lora}
 
 Avec une radio LoRa Meshtastic connectée au téléphone par Bluetooth, Erevos joint un autre Erevos qui a une radio sur le

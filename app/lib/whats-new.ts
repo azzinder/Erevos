@@ -98,6 +98,7 @@ export const NEXT: Changes = {
     mark('**Test versions before a release**: Erevos reads a version such as 4.0.0-rc.1, a test version that comes before 4.0.0, when it looks for updates, tells of a new version and shows what is new. See [Updates](#updates).'),
     mark('**A call to a slow phone rings in full**: the caller now waits up to a minute and a quarter for the other phone to say it rings, and then 45 seconds from then, so a call that reached it late no longer rings there only to stop at once; and the phone called reads a call before anything it has to send, and waits for calls again at once after its network changes. See [Chat through a relay](#relay).'),
     mark("**The web app and the computer reach Matrix, XMPP and Nostr servers over HTTPS**: their page policy allowed only WebSocket connections, so Matrix sign-in, XMPP server discovery and file sharing, and Nostr files and name lookups failed there. They work now. See [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)."),
+    mark("**Bluetooth that cannot be followed**: the random number your phone sends out over Bluetooth for phones nearby to find it changed only when Erevos started again; it now changes every nine to twelve minutes, so someone listening cannot follow your phone from place to place by it. Older Erevos phones still find yours. See [Chat with a nearby phone](#nearby)."),
   ],
 };
 

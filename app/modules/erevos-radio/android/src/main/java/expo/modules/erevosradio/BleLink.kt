@@ -20,12 +20,16 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.random.Random
+import java.security.SecureRandom
 
 /**
  * Data over BLE GATT, for phones without Wi-Fi Aware. Each pair of phones opens one
  * connection. The phone with the lower random nonce dials and writes to RX; the other
- * accepts and sends TX notifications. Frames keep the 4-byte length layout of Framing,
+ * accepts and sends TX notifications. The nonce changes every few minutes (ROTATE_MS, give or
+ * take ROTATE_JITTER_MS), and the beacon starts again with it, so what the phone advertises
+ * cannot be followed from one place to the next: on Android 8 and later a new advertisement
+ * also has a new random address. Links up stay up. A phone from before keeps one nonce for as
+ * long as it runs, and reads this one's as it always did: it is where it was, four bytes. Frames keep the 4-byte length layout of Framing,
  * cut into chunks that fit the negotiated MTU. Only one write or notification is in
  * flight per link. All state lives on the main looper.
  */
@@ -50,7 +54,21 @@ class BleLink(
   }
 
   private val main = Handler(Looper.getMainLooper())
-  private val ownNonce = Random.nextInt()
+  private var ownNonce = freshNonce()
+  private val rotate = object : Runnable {
+    override fun run() {
+      ownNonce = freshNonce()
+      // Who was seen before under an address that changed since is forgotten, not kept for ever.
+      val now = System.currentTimeMillis()
+      lastPresence.entries.removeAll { now - it.value > FORGET_MS }
+      lastDialAt.entries.removeAll { now - it.value > FORGET_MS }
+      beacon?.let {
+        it.stop()
+        it.start(ownNonce, quiet)
+      }
+      main.postDelayed(this, nextRotation())
+    }
+  }
 
   // Read from any thread (send), changed only on the main looper.
   private val pipes = ConcurrentHashMap<String, Pipe>()
@@ -122,6 +140,7 @@ class BleLink(
   }
 
   private fun stopOnMain() {
+    main.removeCallbacks(rotate)
     beacon?.stop()
     beacon = null
     pipes.values.toList().forEach { drop(it) }
@@ -168,6 +187,8 @@ class BleLink(
       onScan = { device, nonce -> main.post { onScanned(device, nonce) } },
       onLog = { text -> main.post { onLog(text) } },
     ).also { it.start(ownNonce, quiet) }
+    main.removeCallbacks(rotate)
+    main.postDelayed(rotate, nextRotation())
   }
 
   private fun onScanned(device: BluetoothDevice, nonce: Int?) {
@@ -461,5 +482,15 @@ class BleLink(
     private const val MAX_VALUE = 512
     private const val PRESENCE_INTERVAL_MS = 10_000L
     private const val DIAL_INTERVAL_MS = 5_000L
+    // How often the nonce, and with it the advertisement, changes: about as often as Android
+    // changes the random address it advertises from, at a time no one can guess.
+    private const val ROTATE_MS = 9 * 60_000L
+    private const val ROTATE_JITTER_MS = 3 * 60_000L
+    private const val FORGET_MS = 30 * 60_000L
+    private val random = SecureRandom()
+
+    private fun freshNonce(): Int = random.nextInt()
+
+    private fun nextRotation(): Long = ROTATE_MS + (random.nextDouble() * ROTATE_JITTER_MS).toLong()
   }
 }

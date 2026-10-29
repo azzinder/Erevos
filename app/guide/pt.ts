@@ -316,6 +316,12 @@ seu contato. Uma mensagem de voz, em pedaços maiores, espera por isso.
 nas conversas do espaço que está aberto, e guardado por um tempo na memória para os outros, nunca gravado no celular.
 As conversas ocultas ainda não as usam: isso ainda está por vir (veja [O que está protegido hoje](#privacy)).
 
+**Bluetooth que não dá para seguir:** o que seu celular emite por Bluetooth para os outros o acharem diz só que perto
+há um celular com Erevos, com um número aleatório que muda a cada nove a doze minutos, e no Android 8 e depois a partir
+de um endereço que muda junto. Assim, quem escuta num lugar e depois em outro não consegue saber que é o mesmo celular,
+pelo menos pelo Erevos. As conexões abertas continuam abertas. Celulares com um Erevos mais antigo acham o seu, e o seu
+acha eles, como antes.
+
 ## Por um rádio LoRa {#lora}
 
 Com um rádio LoRa Meshtastic conectado ao celular por Bluetooth, o Erevos chega a outro Erevos com um rádio na mesma

@@ -21,9 +21,10 @@ import java.util.UUID
 
 /**
  * Advertises the Erevos service UUID and reports phones that advertise it. The scan
- * response carries a random nonce chosen for each start, and so does the advertisement
- * itself, as manufacturer data under the id kept for tests. BleLink uses it so only one
- * phone of a pair dials. The nonce is a short-lived pseudo-identifier, not an identity.
+ * response carries a random nonce, and so does the advertisement itself, as manufacturer
+ * data under the id kept for tests. BleLink uses it so only one phone of a pair dials, and
+ * starts the beacon again with a new one every few minutes. The nonce is a short-lived
+ * pseudo-identifier, not an identity. The UUID says only that a phone with Erevos is near.
  *
  * `quiet`, while Erevos is in the background: it advertises and scans at low power, and
  * scans only for the Erevos UUID, as Android stops scans with no filter while the screen

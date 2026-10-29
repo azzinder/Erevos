@@ -321,6 +321,12 @@ contatto. Un messaggio vocale, in pezzi più grandi, aspetta questo momento.
 che arriva viene provato nelle chat dello spazio aperto, e conservato per un po’ in memoria per gli altri, mai scritto
 sul telefono. Le chat nascoste non li usano ancora: arriverà più avanti (vedi [Che cosa è protetto oggi](#privacy)).
 
+**Bluetooth che non si può seguire:** ciò che il tuo telefono trasmette via Bluetooth perché altri lo trovino dice
+solo che vicino c’è un telefono con Erevos, con un numero casuale che cambia ogni nove-dodici minuti, e da Android 8 in
+poi da un indirizzo che cambia con esso. Così chi ascolta in un posto e poi in un altro non può capire che è lo stesso
+telefono, almeno da Erevos. I collegamenti aperti restano aperti. I telefoni con un Erevos più vecchio trovano il tuo,
+e il tuo loro, come prima.
+
 ## Con una radio LoRa {#lora}
 
 Con una radio LoRa Meshtastic collegata al telefono via Bluetooth, Erevos raggiunge un altro Erevos con una radio sulla

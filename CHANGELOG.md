@@ -426,6 +426,16 @@ On main, not released yet:
 
 ### Under the hood
 
+- **BLE beacons that change** (Android): the 4-byte nonce a phone advertises for others nearby to find it, which
+  decides which of two phones dials, was drawn once per run of the app (`kotlin.random.Random`) and so followed the
+  phone from place to place across Android's own address changes. It now comes from `SecureRandom` and changes every
+  9 to 12 minutes (`BleLink.kt` `ROTATE_MS`, `ROTATE_JITTER_MS`), the beacon starting again with it, which on Android
+  8 and later also gives a new random advertising address; links that are up stay up, and addresses not seen for 30
+  minutes are forgotten. It stays four bytes in the same service data and under the same test company id with the
+  same service UUID, so phones with an older Erevos (one nonce per run) and new ones still find each other and still
+  agree on who dials; just after a change, a pair may wait for the next scan, or open a second link that the nearby
+  layer drops as it does any copy. The service UUID still says a phone with Erevos is near
+  (`checks/ble-beacon.check.ts` reads the Kotlin; it compiles against Android's API, not run on a phone yet).
 - **A relay restart no longer brings a false notice**: a relay that restarted forgot what had come into each queue
   since its phone last found it empty, so a hidden chat or a closed space with messages waiting, already told of,
   said **New message** for them once more. Stopped as `systemctl stop` or `restart` stop it, the relay now keeps that

@@ -317,6 +317,12 @@ isprobava se u razgovorima prostora koji je otvoren, a za ostale se neko vrijeme
 upisuje na telefon. Skriveni razgovori ih još ne koriste: to tek dolazi (pogledajte [Šta je danas
 zaštićeno](#privacy)).
 
+**Bluetooth koji se ne može pratiti:** ono što vaš telefon šalje preko Bluetootha da bi ga drugi našli kaže samo da
+je u blizini telefon s Erevosom, sa slučajnim brojem koji se mijenja svakih devet do dvanaest minuta, a na Androidu 8
+i novijem s adrese koja se mijenja s njim. Tako neko ko sluša na jednom mjestu pa na drugom ne može znati da je to isti
+telefon, barem ne po Erevosu. Otvorene veze ostaju otvorene. Telefoni sa starijim Erevosom nalaze vaš, a vaš njih, kao
+i prije.
+
 ## Preko LoRa radija {#lora}
 
 S Meshtastic LoRa radiom povezanim s telefonom preko Bluetootha, Erevos dopire do Erevosa s radiom na istoj mesh

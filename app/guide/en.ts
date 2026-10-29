@@ -299,6 +299,12 @@ pieces, waits for that.
 the chats of the space that is open, and kept a while in memory for the others, never written to the phone. Hidden
 chats do not use them yet: that is still to come (see [What is protected today](#privacy)).
 
+**Bluetooth that cannot be followed:** what your phone sends out over Bluetooth for others to find it says only
+that a phone with Erevos is near, with a random number that changes every nine to twelve minutes, and on Android 8
+and later from an address that changes with it. So someone listening in one place and then in another cannot tell
+that it is the same phone, from Erevos at least. Links that are up stay up. Phones with an older Erevos find yours,
+and yours them, as before.
+
 ## Over a LoRa radio {#lora}
 
 With a Meshtastic LoRa radio linked to the phone by Bluetooth, Erevos reaches Erevos with a radio on the same mesh,
