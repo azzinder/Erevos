@@ -11,6 +11,7 @@ import { nearby } from './nearby';
 import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, sendNostrAgain, sendNostrBackups } from './nostr-chats';
 import { keepOffer, offerOf } from './relay-offer';
+import { takeIntro, type IntroSend } from './intros';
 import {
   canReadManyAt,
   canWaitAt,
@@ -661,7 +662,9 @@ export function cameBefore({ history, voiceParts }: SpaceChats, received: Receiv
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
 // One that came already, from their account and again from one of their endpoints, or through the
 // phone and again directly (docs/multi-device.md), is kept once, and said to have come once.
-async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State, nostr = false, route?: Route): Promise<boolean> {
+async function keep(chats: SpaceChats, received: Received, state: State, nostr = false, route?: Route): Promise<boolean> {
+  const { e2e, history, voiceParts } = chats;
+  const { receipts, answers } = state;
   if (received.kind === 'refused') return false;
   const peer = `${CONTACT_PREFIX}${received.identity}`;
   const { identity, tag, timer } = received;
@@ -705,6 +708,13 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   // An invite to their relay: kept for the chat, which takes it by itself when it opens (lib/relay-offer.ts).
   const offer = twice ? null : offerOf(received);
   if (offer) await keepOffer(offer).catch(() => undefined);
+  // A step of an introduction (lib/intros.ts): kept, answered by what follows, the contact it gives added.
+  if (received.more.intro && !twice) {
+    const place = state.place;
+    const send = (m: IntroSend) => tell(chats, place, m.to, { more: m.more });
+    await takeIntro(e2e, identity, received.more.intro, received.request, send, place?.queue.senderHex ?? '', place?.here ?? { relay: '', relayKey: '' }).catch(() => undefined);
+    changed = true;
+  }
   if (received.erase && 'all' in received.erase) {
     await history.clear(peer);
     changed = true;

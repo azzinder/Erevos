@@ -258,6 +258,45 @@ export type Invited = { hi: string; name: string; until: number };
 /** The most invites waiting at once: the oldest goes first. */
 export const MAX_INVITED = 20;
 
+/**
+ * An introduction (lib/intros.ts), as kept. Made here (`by`): the two contacts asked (`a` is told
+ * where to write, `b` gives the link), whether each said yes (`ya`, `yb`) and `b`'s link and secret
+ * until they go to `a`; `end` once it went, or one said no. Asked here (`from`, who asks): the
+ * name of whom it is to (`n`), whether this chat gives the link (`g`), and what this chat said:
+ * 'asked' (nothing yet), 'yes', 'no' or 'done' (the contact added, or the link given and taken).
+ * `at`: when it was made or came (ms). Kept INTRO_LASTS, MAX_INTROS at most.
+ */
+export type IntroKept =
+  | { i: string; by: true; a: string; b: string; at: number; ya?: true; yb?: true; l?: string; h?: string; end?: 'went' | 'no' }
+  | { i: string; from: string; n: string; g?: true; at: number; st: 'asked' | 'yes' | 'no' | 'done' };
+
+export const MAX_INTROS = 32;
+export const INTRO_LASTS = 7 * 24 * 60 * 60_000;
+const INTRO_STATES = ['asked', 'yes', 'no', 'done'];
+const isIdentity = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
+
+function checkedIntroKept(value: unknown): IntroKept | null {
+  const v = (value ?? {}) as Record<string, unknown>;
+  if (typeof v.i !== 'string' || !/^[0-9a-f]{32}$/.test(v.i) || !isTime(v.at)) return null;
+  if (v.by === true) {
+    if (!isIdentity(v.a) || !isIdentity(v.b) || v.a === v.b) return null;
+    return {
+      i: v.i,
+      by: true,
+      a: v.a,
+      b: v.b,
+      at: v.at,
+      ...(v.ya === true ? { ya: true as const } : {}),
+      ...(v.yb === true ? { yb: true as const } : {}),
+      ...(isText(v.l) && v.l.length <= 4096 ? { l: v.l } : {}),
+      ...(isText(v.h) && /^[0-9a-f]{32}$/.test(v.h) ? { h: v.h } : {}),
+      ...(v.end === 'went' || v.end === 'no' ? { end: v.end } : {}),
+    };
+  }
+  if (!isIdentity(v.from) || !isText(v.n) || typeof v.st !== 'string' || !INTRO_STATES.includes(v.st)) return null;
+  return { i: v.i, from: v.from, n: cleanName(v.n), ...(v.g === true ? { g: true as const } : {}), at: v.at, st: v.st as 'asked' | 'yes' | 'no' | 'done' };
+}
+
 /** The most kept to drop, far more than wait to go at once; past it the oldest goes first. */
 export const MAX_UNDROPPED = 256;
 
@@ -455,6 +494,8 @@ export type E2EData = {
   invited?: Invited[];
   /** The name this phone gave itself in its last invite, offered again for the next. */
   invitedAs?: string;
+  /** Introductions made here, or asked of this chat (lib/intros.ts). Missing when none. */
+  intros?: IntroKept[];
   /** Until when what came for this chat on the Nostr relays was read (seconds, kept now and then):
    *  what is asked of them next starts somewhat over an hour before it (lib/nostr.ts). Missing
    *  until they were read. */
@@ -753,6 +794,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
+    ...(Array.isArray(v.intros) ? { intros: v.intros.map(checkedIntroKept).filter((i): i is IntroKept => i !== null).slice(-MAX_INTROS) } : {}),
     ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),
     ...(checkedNostrKey(v.nostrLink) ? { nostrLink: checkedNostrKey(v.nostrLink)! } : {}),
     ...(Array.isArray(v.ready) && v.ready.length > 0 ? { ready: v.ready.map(checkedReady).filter((r): r is Ready => r !== null).slice(-MAX_READY) } : {}),

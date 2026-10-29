@@ -14,6 +14,17 @@ On main, not released yet:
 
 ### For you
 
+- **Introduce two contacts to each other**: in a contact's chat details, **Introduce to a contact** and **Ask both**
+  (`lib/intros.ts`). The phone that introduces (R) asks each of the two in its own chat with them, inside the
+  end-to-end encryption, with words an older Erevos shows as they are (`intro` step `ask`, `lib/chat-parts.ts`), each
+  seeing the name R gave the other. Each answers **Say yes** or **Say no**. The second one's yes carries its contact
+  link and a new invite secret (`lib/welcome.ts`, kept 7 days under the name R gave the first); R checks the link is
+  that contact's own key, and only once both said yes passes it to the first (`go`), keeping nothing of it after.
+  The first adds it with the secret, so the second's phone takes them at once instead of as a message request. R
+  learns nothing of the first and, of the second, only the link it chose to give; neither learns whether the other
+  said no. Steps for an introduction this phone did not make or say yes to, from someone else, from a message request,
+  or again, do nothing; R could still pass off another key, so the new contact's safety number is checked as any
+  (`checks/intros.check.ts`, with the real core). Kept with the chats (`E2EData.intros`), a week at most.
 - **A list of home relays in the contact link**: **Settings** → **Relay and networks** → **Home relay** takes up to
   three, each with a queue of its own (`SpaceData.spare.more`, `lib/spare.ts` `setSpareRelays`, `homeRelays`); each
   is looked at, and this phone's own sends go through the first one ready when its relay is down. The contact link

@@ -1,4 +1,4 @@
-import { againAfter, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
@@ -1733,6 +1733,22 @@ export class E2E {
       const result = checkVerifyCode(text, contact.ownIdentity || this.identityHex(), identity);
       if (result === 'match') await this.save(this.withContact({ ...contact, verified: now }));
       return result;
+    });
+  }
+
+  /** The introductions made here or asked of this chat (lib/intros.ts), those still kept. */
+  intros(now = Date.now()): IntroKept[] {
+    return (this.data.intros ?? []).filter((i) => now - i.at < INTRO_LASTS);
+  }
+
+  /** Changes the introductions kept, by what `change` makes of them, in the chat's turn: what it returns is kept. */
+  changeIntros<T>(change: (now: IntroKept[]) => Promise<{ next: IntroKept[]; out: T }> | { next: IntroKept[]; out: T }): Promise<T> {
+    return this.run(async () => {
+      const { next, out } = await change(this.intros());
+      const { intros: _intros, ...rest } = this.data;
+      const kept = next.slice(-MAX_INTROS);
+      await this.save(kept.length > 0 ? { ...rest, intros: kept } : rest);
+      return out;
     });
   }
 

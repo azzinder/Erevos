@@ -611,6 +611,19 @@ mesmo viu, e nada é enviado. Se disser que não bate, pode haver alguém no mei
 **Por quê:** o código tem só um hash das duas chaves, numa ordem que distingue os dois celulares, então uma foto da
 sua própria tela não confere nada, e uma foto do código não diz quem vocês são a quem não tem as duas chaves.
 
+### Apresentar dois contatos
+
+Nos detalhes da conversa de um contato, **Apresentar a um contato** deixa você escolher outro dos seus contatos e
+**Perguntar aos dois**. Cada um é perguntado na sua conversa com ele, por uma mensagem que cita o outro com o nome que
+você deu; os dois precisam de um nome. Cada um responde **Dizer sim** ou **Dizer não** nessa conversa. Só se os dois
+disserem sim eles viram contatos: aquele de cuja conversa você fez a apresentação escreve primeiro, e o celular do
+outro o aceita na hora, com o nome que você deu. Se um disser não, nada acontece, e o outro não fica sabendo. Uma
+apresentação espera uma semana.
+
+**Por quê:** tudo vai dentro da criptografia das suas conversas com cada um, então nenhum relay vê quem é apresentado
+a quem. Você só repassa o link de contato que o segundo escolheu dar, depois de dizer sim. Como quem apresenta poderia
+fazer passar outra pessoa, compare o número de segurança com o novo contato como com qualquer outro.
+
 ### Enviada, chegou e lida
 
 Abaixo de cada uma das suas mensagens para um contato, **✓** diz que o relay ou um celular por perto a pegou, **✓✓**

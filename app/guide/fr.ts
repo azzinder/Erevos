@@ -651,6 +651,20 @@ peut-être entre vous : ne faites pas confiance à cette discussion.
 photo de votre propre écran ne vérifie donc rien, et une photo du code ne dit pas qui vous êtes à quelqu’un qui n’a
 pas déjà les deux clés.
 
+### Présenter deux contacts
+
+Dans les détails de la discussion d’un contact, **Présenter à un contact** vous laisse choisir un autre de vos contacts
+et **Demander aux deux**. Chacun est sollicité dans votre discussion avec lui, par un message qui nomme l’autre comme
+vous l’avez nommé ; les deux doivent avoir un nom. Chacun répond **Dire oui** ou **Dire non** dans cette discussion. Ils
+ne deviennent contacts que si les deux disent oui : celui depuis la discussion duquel vous avez fait la présentation
+écrit en premier, et le téléphone de l’autre l’accepte aussitôt, nommé comme vous l’avez nommé. Si l’un dit non, rien ne
+se passe, et l’autre n’en est pas informé. Une présentation attend une semaine.
+
+**Pourquoi :** tout passe dans le chiffrement de vos discussions avec chacun, si bien qu’aucun relais ne voit qui est
+présenté à qui. Vous ne transmettez que le lien de contact que le second a choisi de donner, après avoir dit oui. Comme
+celui qui présente pourrait faire passer quelqu’un d’autre, comparez le numéro de sécurité avec le nouveau contact comme
+avec tout autre.
+
 ### Envoyé, arrivé et lu
 
 Sous chacun de tes messages à un contact, **✓** dit que le relais ou un téléphone à proximité l’a pris, **✓✓** qu’il est

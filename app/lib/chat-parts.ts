@@ -29,6 +29,37 @@ export type Edit = { tag: string; text: string };
 export type RelayOffer = { r: string; c: string };
 
 /**
+ * A step of an introduction (lib/intros.ts), by its id (`i`): 'ask', with words, asks whether to
+ * meet `n` (the name the one who asks gives them), and `g` that this side would give its link;
+ * 'yes' and 'no' answer it, a 'yes' of the side that gives with its contact link (`l`) and a
+ * secret (`h`, lib/welcome.ts); 'go' gives the other side that link and secret.
+ */
+export type IntroSignal = { i: string; s: 'ask' | 'yes' | 'no' | 'go'; n?: string; g?: true; l?: string; h?: string };
+
+const MAX_INTRO_LINK = 4096;
+const MAX_INTRO_NAME = 64;
+
+/** An introduction's step as it came, or null when it is not of its shape. */
+export function checkedIntro(value: unknown): IntroSignal | null {
+  const v = value as Record<string, unknown> | null;
+  if (!v || typeof v !== 'object' || typeof v.i !== 'string' || !/^[0-9a-f]{32}$/.test(v.i)) return null;
+  const s = v.s;
+  if (s !== 'ask' && s !== 'yes' && s !== 'no' && s !== 'go') return null;
+  const name = s === 'ask' ? plainText(v.n, MAX_INTRO_NAME) : null;
+  if (s === 'ask' && !name) return null;
+  const link = typeof v.l === 'string' && v.l.length <= MAX_INTRO_LINK && /^erevos:\/\/contact\?[\x21-\x7e]+$/.test(v.l) ? v.l : '';
+  const hi = typeof v.h === 'string' && /^[0-9a-f]{32}$/.test(v.h) ? v.h : '';
+  if (s === 'go' && (!link || !hi)) return null;
+  return {
+    i: v.i,
+    s,
+    ...(name ? { n: name } : {}),
+    ...(s === 'ask' && v.g === true ? { g: true as const } : {}),
+    ...((s === 'yes' || s === 'go') && link && hi ? { l: link, h: hi } : {}),
+  };
+}
+
+/**
  * What a contact's message carries beyond what lib/e2e.ts says itself, each in a field of its own
  * that an Erevos from before leaves alone. With words, which say it to an Erevos from before and
  * show nowhere in this one: a sticker, whose words are its emoji (lib/stickers.ts), a place, whose
@@ -37,8 +68,10 @@ export type RelayOffer = { r: string; c: string };
  * it was forwarded from another chat (`forwarded`). With no words: a pin, a vote, new words for one
  * of the sender's own messages (`edit`), that they are typing to us now (`typing`), or an invite to
  * their relay, which a phone with a relay sends by itself to a contact with none (`ri`, app/chat.tsx).
+ * An introduction's ask goes with words, which an Erevos from before shows as they are; its other
+ * steps go with none (`intro`, lib/intros.ts).
  */
-export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer };
+export type Carried = { sticker?: string; place?: Place; poll?: Poll; preview?: Preview; forwarded?: true; pin?: Pin; vote?: Vote; edit?: Edit; typing?: true; ri?: RelayOffer; intro?: IntroSignal };
 
 /** What of a message's parts is carried with its words, as lock/history.ts keeps them, to seal it again (lib/waiting.ts). */
 export type Content = Pick<Carried, 'sticker' | 'place' | 'poll' | 'preview'> & { forwarded?: boolean };
@@ -77,6 +110,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
   const chose = checkedChoices(vote?.chose);
   const ri = value.ri as { r?: unknown; c?: unknown } | null | undefined;
   const invite = ri && typeof ri === 'object' ? checkInvite(ri.r, ri.c) : null;
+  const intro = checkedIntro(value.intro);
   return {
     ...(isStickerName(value.sticker) ? { sticker: value.sticker } : {}),
     ...(place ? { place } : {}),
@@ -88,6 +122,7 @@ export function carriedOf(value: Record<string, unknown>): Carried {
     ...(value.forwarded === true ? { forwarded: true as const } : {}),
     ...(value.typing === true ? { typing: true as const } : {}),
     ...(invite ? { ri: { r: invite.relayUrl, c: invite.code } } : {}),
+    ...(intro ? { intro } : {}),
   };
 }
 
@@ -98,9 +133,10 @@ export function contentOf({ sticker, place, poll, preview, forwarded }: Content)
 
 /** What a message may carry, as sealed: with words (`words`), what goes with them; with none, a signal only. */
 export function toCarry(carried: Carried, words: boolean): Carried {
-  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri } = carriedOf(carried);
-  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
-  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}) };
+  const { sticker, place, poll, preview, forwarded, pin, vote, edit, typing, ri, intro } = carriedOf(carried);
+  const asks = intro?.s === 'ask';
+  if (words) return { ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}), ...(asks ? { intro } : {}) };
+  return { ...(pin ? { pin } : {}), ...(vote ? { vote } : {}), ...(edit ? { edit } : {}), ...(typing ? { typing } : {}), ...(ri ? { ri } : {}), ...(intro && !asks ? { intro } : {}) };
 }
 
 /** Whether what a message carries is the user's own doing, as words are: it accepts a request and says the phone is open. */

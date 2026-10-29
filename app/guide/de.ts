@@ -665,6 +665,19 @@ Vertraue diesem Chat nicht.
 unterscheidet. Ein Foto deines eigenen Bildschirms prüft also nichts, und ein Foto des Codes verrät niemandem ohne
 beide Schlüssel, wer ihr seid.
 
+### Zwei Kontakte einander vorstellen
+
+In den Chatdetails eines Kontakts kannst du mit **Einem Kontakt vorstellen** einen anderen deiner Kontakte wählen und
+**Beide fragen**. Jeder wird in deinem Chat mit ihm gefragt, mit einer Nachricht, die den anderen so nennt, wie du ihn
+genannt hast; beide brauchen einen Namen. Jeder antwortet in diesem Chat mit **Zustimmen** oder **Ablehnen**. Nur wenn
+beide zustimmen, werden sie Kontakte: Der, aus dessen Chat du sie vorgestellt hast, schreibt zuerst, und das Telefon
+des anderen nimmt ihn sofort an, so benannt, wie du ihn benannt hast. Lehnt einer ab, passiert nichts, und der andere
+erfährt es nicht. Eine Vorstellung wartet eine Woche.
+
+**Warum:** Alles davon geht innerhalb der Verschlüsselung deiner Chats mit beiden, sodass kein Relay sieht, wer wem
+vorgestellt wird. Du gibst nur den Kontaktlink weiter, den der Zweite nach seiner Zustimmung geben wollte. Da, wer
+vorstellt, jemand anderen unterschieben könnte, vergleiche mit dem neuen Kontakt die Sicherheitsnummer wie bei jedem.
+
 ### Gesendet, angekommen und gelesen
 
 Unter jeder deiner Nachrichten an einen Kontakt sagt **✓**, dass das Relay oder ein Telefon in der Nähe sie angenommen

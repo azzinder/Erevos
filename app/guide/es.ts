@@ -612,6 +612,19 @@ con el tuyo. Cuando coincide, la fila dice **Comprobado en persona**. Cada telé
 una foto de tu propia pantalla no comprueba nada, y una foto del código no dice quiénes sois a quien no tenga ya las
 dos claves.
 
+### Presentar a dos contactos
+
+En los detalles del chat de un contacto, **Presentar a un contacto** te deja elegir a otro de tus contactos y **Preguntar
+a los dos**. A cada uno se le pregunta en tu chat con él, con un mensaje que nombra al otro como tú lo nombraste; los
+dos necesitan un nombre. Cada uno responde **Decir que sí** o **Decir que no** en ese chat. Solo si los dos dicen que sí
+se hacen contactos: aquel desde cuyo chat hiciste la presentación escribe primero, y el teléfono del otro lo acepta al
+instante, con el nombre que tú le diste. Si uno dice que no, no pasa nada, y al otro no se le dice. Una presentación
+espera una semana.
+
+**Por qué:** todo va dentro del cifrado de tus chats con cada uno, así que ningún relay ve a quién se presenta a quién.
+Solo pasas el enlace de contacto que el segundo eligió dar, después de decir que sí. Como quien presenta podría hacer
+pasar a otra persona, compara el número de seguridad con el nuevo contacto como con cualquier otro.
+
 ### Enviado, llegado y leído
 
 Bajo cada uno de tus mensajes a un contacto, **✓** dice que el relay o un teléfono cercano lo recogió, **✓✓** que llegó

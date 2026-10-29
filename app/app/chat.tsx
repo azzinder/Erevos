@@ -25,6 +25,7 @@ import { canRingInBackground, loadMessageNotices, loadRingInBackground, messageC
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { readQrPhoto } from '../lib/read-qr';
+import { answerIntro, introduce, introsAsked, introsMade, takeIntro, type IntroSend } from '../lib/intros';
 import { pickSource, TooLargeError } from '../lib/pick-file';
 import { watchHiddenAway } from '../lib/hidden-away';
 import { isPicking } from '../lib/picking';
@@ -39,6 +40,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { ChatPinGate } from '../components/chat-pin-gate';
 import { canNotifyChats, ChatNotifySheet, notifyValue } from '../components/chat-notify-sheet';
 import { QrCode } from '../components/QrCode';
+import { ContactPicker } from '../components/contact-picker';
 import { RelayInvites } from '../components/relay-invites';
 import { RelaySignIn } from '../components/relay-signin';
 import { WelcomeInvite } from '../components/welcome-invite';
@@ -707,6 +709,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [welcoming, setWelcoming] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
   // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
+  // Introductions (lib/intros.ts): changes as one is made, answered or comes. `introducing`: the
+  // contact chosen to introduce the open chat's contact to, while choosing.
+  const [introTick, setIntroTick] = useState(0);
+  const [introducing, setIntroducing] = useState<string | null>(null);
+  const [introNote, setIntroNote] = useState('');
   const [safety, setSafety] = useState<{ peer: string; number: string; devices: number; code: string; verified: number; note: string } | null>(null);
   // The contact being named, and the name typed so far.
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -2187,6 +2194,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const offer = hiddenKey || twice ? null : offerOf(received);
     if (offer && !offer.request) void takeOffer(offer, offer.from);
     else if (offer) void keepOffer(offer).catch(() => undefined);
+    // A step of an introduction (lib/intros.ts): kept, answered by what follows, the contact it gives added.
+    if (received.more.intro && !twice) {
+      const chats = e2e;
+      const send = (m: IntroSend) => sendToContact(relayTarget(), m.to, '', { more: m.more }, true).then(() => undefined);
+      void takeIntro(chats, received.identity, received.more.intro, received.request, send, ownQueue?.senderHex ?? '', here())
+        .then((came) => {
+          setIntroTick((n) => n + 1);
+          if (came?.kind === 'add') {
+            setContacts(chats.contacts());
+            setNote(t('{name} is now a contact, introduced by {by}. Compare the safety number with theirs.', { name: came.name, by: label(peer, chats.contacts()) }));
+          }
+        })
+        .catch((error) => setNote(errorText(error)));
+    }
     // They type to us now, or wrote: then they no longer do.
     if (received.more.typing) setTyping((now) => ({ ...now, [peer]: Date.now() + TYPING_SHOWS }));
     else if (received.text || received.voice || received.file) setTyping(({ [peer]: _done, ...others }) => others);
@@ -3300,6 +3321,39 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       );
     } catch (error) {
       say(error instanceof NoCameraError ? error.message : errorText(error));
+    }
+  }
+
+  // Introduces the open chat's contact to another one (lib/intros.ts): asks each of the two, in
+  // their own chat, with words they see; nothing more happens unless both say yes.
+  async function startIntro(peer: string, other: string) {
+    if (!e2e) return;
+    setIntroNote('');
+    const target = relayTarget();
+    try {
+      const sends = await introduce(e2e, peer.slice(CONTACT_PREFIX.length), other);
+      for (const m of sends) {
+        const { tag, timer, way } = await sendToContact(target, m.to, m.text, { more: m.more });
+        addMessage(`${CONTACT_PREFIX}${m.to}`, m.text, true, tag, timer, undefined, undefined, 0, Date.now(), wayParts(way));
+      }
+      setIntroducing(null);
+      setIntroTick((n) => n + 1);
+      setIntroNote(t('Asked both. If both say yes, they become contacts.'));
+    } catch (error) {
+      setIntroNote(notSent(error));
+    }
+  }
+
+  // Answers an introduction this chat's contact asked of this phone.
+  async function answer(peer: string, i: string, yes: boolean) {
+    if (!e2e) return;
+    try {
+      const m = await answerIntro(e2e, peer.slice(CONTACT_PREFIX.length), i, yes, ownLink ?? '');
+      await sendToContact(relayTarget(), m.to, '', { more: m.more }, true);
+      setIntroTick((n) => n + 1);
+      setNote(yes ? t('Said yes. If the other says yes too, you become contacts.') : t('Said no. The other one is not told.'));
+    } catch (error) {
+      setNote(errorText(error));
     }
   }
 
@@ -5592,6 +5646,46 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             ) : null}
                           </View>
                         ) : null}
+                        <View style={styles.rule} />
+                        <DetailRow
+                          title={t('Introduce to a contact')}
+                          open={introducing !== null}
+                          onPress={() => {
+                            setIntroducing((now) => (now === null ? '' : null));
+                            setIntroNote('');
+                          }}
+                        />
+                        {introducing !== null ? (
+                          <View style={styles.rowMore}>
+                            <Text variant="caption" tone="muted">
+                              {t('Choose whom to introduce them to. Each is asked in your chat with them, and sees the name you gave the other; they become contacts only if both say yes. Neither learns whether the other said no.')}
+                            </Text>
+                            <ContactPicker
+                              contacts={contacts
+                                .filter((c) => !c.request && `${CONTACT_PREFIX}${c.identity}` !== selectedContact)
+                                .map((c) => ({ identity: c.identity, name: c.name }))}
+                              chosen={new Set(introducing ? [introducing] : [])}
+                              onToggle={(identity) => setIntroducing((now) => (now === identity ? '' : identity))}
+                            />
+                            {introducing ? <Button title={t('Ask both')} compact onPress={() => void startIntro(selectedContact, introducing)} /> : null}
+                          </View>
+                        ) : null}
+                        {e2e && introTick >= 0
+                          ? introsMade(e2e, selectedContact.slice(CONTACT_PREFIX.length)).map((made) => (
+                              <Text key={made.i} variant="caption" tone="muted" style={styles.rowMore}>
+                                {made.end === 'went'
+                                  ? t('{a} and {b}: both said yes.', { a: label(`${CONTACT_PREFIX}${made.a}`, contacts), b: label(`${CONTACT_PREFIX}${made.b}`, contacts) })
+                                  : made.end === 'no'
+                                    ? t('{a} and {b}: one said no.', { a: label(`${CONTACT_PREFIX}${made.a}`, contacts), b: label(`${CONTACT_PREFIX}${made.b}`, contacts) })
+                                    : t('{a} and {b}: waiting for their answers.', { a: label(`${CONTACT_PREFIX}${made.a}`, contacts), b: label(`${CONTACT_PREFIX}${made.b}`, contacts) })}
+                              </Text>
+                            ))
+                          : null}
+                        {introNote ? (
+                          <Text variant="caption" tone="muted" style={styles.rowMore}>
+                            {introNote}
+                          </Text>
+                        ) : null}
                         {!hiddenKey ? (
                           <>
                             <View style={styles.rule} />
@@ -6240,6 +6334,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             </Row>
           </View>
         ) : null}
+        {selectedContact && e2e && introTick >= 0 && !contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact)
+          ? introsAsked(e2e, selectedContact.slice(CONTACT_PREFIX.length)).map((ask) => (
+              <View key={ask.i} style={styles.panel}>
+                <Text>{t('{by} would like you to meet {name}', { by: label(selectedContact, contacts), name: ask.name })}</Text>
+                <Text variant="caption" tone="muted">
+                  {t('If you both say yes, you become contacts, and {name} is named as {by} named them. If you say no, {name} is not told.', { by: label(selectedContact, contacts), name: ask.name })}
+                </Text>
+                <Row wrap>
+                  <TextButton title={t('Say yes')} onPress={() => void answer(selectedContact, ask.i, true)} />
+                  <TextButton title={t('Say no')} onPress={() => void answer(selectedContact, ask.i, false)} />
+                </Row>
+              </View>
+            ))
+          : null}
         {searching !== null ? (
           <Row style={styles.searchBar}>
             <Input

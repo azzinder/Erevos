@@ -606,6 +606,18 @@ se ne šalje. Ako kaže da se ne podudara, možda je neko između: ne vjerujte t
 **Zašto:** kod sadrži samo hash vaša dva ključa, redom koji razlikuje dva telefona, pa fotografija vašeg vlastitog
 ekrana ne provjerava ništa, a fotografija koda ne govori ko ste nikome ko već nema oba ključa.
 
+### Upoznavanje dva kontakta
+
+U detaljima razgovora s kontaktom, **Upoznajte s kontaktom** vam daje da izaberete još jedan svoj kontakt i **Pitajte
+oboje**. Svako se pita u vašem razgovoru s njim, porukom koja drugoga naziva imenom koje ste mu dali; oboje trebaju ime.
+Svako odgovara **Recite da** ili **Recite ne** u tom razgovoru. Samo ako oboje kažu da, postaju kontakti: onaj iz čijeg
+ste razgovora napravili upoznavanje piše prvi, a telefon drugoga ga odmah prihvata, s imenom koje ste mu dali. Ako jedno
+kaže ne, ništa se ne događa, a drugo to ne saznaje. Upoznavanje čeka sedmicu.
+
+**Zašto:** sve ide unutar šifriranja vaših razgovora sa svakim od njih, pa nijedan relay ne vidi ko se s kim upoznaje.
+Vi prenosite samo link za kontakt koji je drugi izabrao da da, nakon što je rekao da. Pošto onaj ko upoznaje može
+podmetnuti nekog drugog, uporedite sigurnosni broj s novim kontaktom kao s bilo kojim drugim.
+
 ### Poslano, stiglo i pročitano
 
 Ispod svake vaše poruke kontaktu, **✓** kaže da ju je preuzeo relay ili telefon u blizini, **✓✓** da je stigla na

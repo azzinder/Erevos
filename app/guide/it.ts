@@ -618,6 +618,19 @@ non fidarti di quella chat.
 una foto del tuo schermo non verifica nulla, e una foto del codice non dice chi siete a chi non ha già entrambe le
 chiavi.
 
+### Presentare due contatti
+
+Nei dettagli della chat di un contatto, **Presenta a un contatto** ti fa scegliere un altro dei tuoi contatti e
+**Chiedi a entrambi**. Ognuno viene chiesto nella tua chat con lui, con un messaggio che nomina l’altro come lo hai
+nominato tu; entrambi devono avere un nome. Ognuno risponde **Di’ di sì** o **Di’ di no** in quella chat. Diventano
+contatti solo se entrambi dicono di sì: quello dalla cui chat hai fatto la presentazione scrive per primo, e il telefono
+dell’altro lo accetta subito, con il nome che gli hai dato tu. Se uno dice di no, non succede nulla, e all’altro non
+viene detto. Una presentazione aspetta una settimana.
+
+**Perché:** tutto passa dentro la crittografia delle tue chat con ciascuno, quindi nessun relay vede chi viene
+presentato a chi. Tu passi solo il link di contatto che il secondo ha scelto di dare, dopo aver detto di sì. Poiché chi
+presenta potrebbe spacciare qualcun altro, confronta il codice di sicurezza con il nuovo contatto come con ogni altro.
+
 ### Inviato, arrivato e letto
 
 Sotto ognuno dei tuoi messaggi a un contatto, **✓** dice che il relay o un telefono vicino l’ha preso, **✓✓** che è

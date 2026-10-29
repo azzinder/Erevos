@@ -574,6 +574,18 @@ sent. If it says it does not match, someone may be in between: do not trust that
 **Why:** the code holds only a hash of your two keys, in an order that tells the two phones apart, so a photo of your
 own screen checks nothing, and a photo of the code says nothing of who you are to someone without both keys.
 
+### Introducing two contacts
+
+In a contact's chat details, **Introduce to a contact** lets you choose another of your contacts and **Ask both**.
+Each is asked in your chat with them, by a message that names the other as you named them; both need a name. Each
+answers **Say yes** or **Say no** in that chat. Only if both say yes do they become contacts: the one whose chat you
+introduced from writes first, and the other's phone takes them at once, named as you named them. If one says no,
+nothing happens, and the other is not told. An introduction waits a week.
+
+**Why:** everything of it goes inside the encryption of your chats with each of them, so no relay sees who is
+introduced to whom. You pass on only the contact link the second one chose to give, after saying yes. As whoever
+introduces could pass someone else off, compare the safety number with the new contact as with any other.
+
 ### Sent, came and read
 
 Under each of your messages to a contact, **✓** says the relay or a phone nearby took it, **✓✓** that it came to
