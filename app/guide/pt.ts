@@ -310,11 +310,15 @@ então os pacotes curtos vão para todos eles, cada um os testa, e a partir do p
 seu contato. Uma mensagem de voz, em pedaços maiores, espera por isso.
 
 > Uma mensagem de perto só abre no espaço que tem esse contato. Uma para outro espaço deste celular espera na memória,
-> seis horas no máximo, até esse espaço abrir. As conversas ocultas nunca usam a conexão por perto.
+> seis horas no máximo, até esse espaço abrir. Uma para conversas ocultas só abre
+> enquanto elas estão abertas, ou recebem fechadas, e até lá espera do mesmo jeito.
 
 **Por quê:** as conexões por perto pertencem ao celular, não a um espaço, e nada nelas nomeia um: o que chega é testado
 nas conversas do espaço que está aberto, e guardado por um tempo na memória para os outros, nunca gravado no celular.
-As conversas ocultas ainda não as usam: isso ainda está por vir (veja [O que está protegido hoje](#privacy)).
+As conversas ocultas também as usam, mas o que elas ouvem é delas: a conexão em que um contato oculto foi ouvido fica
+separada da do espaço, só na memória e só enquanto essas conversas ocultas estão abertas ou recebem fechadas, então o
+espaço nunca fica sabendo que um contato delas está por perto; e no ar as mensagens delas parecem as do espaço. Elas
+nunca levam mensagens de outros, nunca são levadas por outros, e nunca vão por LoRa nem por SMS.
 
 **Bluetooth que não dá para seguir:** o que seu celular emite por Bluetooth para os outros o acharem diz só que perto
 há um celular com Erevos, com um número aleatório que muda a cada nove a doze minutos, e no Android 8 e depois a partir
@@ -2209,8 +2213,10 @@ as posições retiradas guardam.
    dela, toque em **Voltar para minhas conversas** e em **Mover**. Ela vai com as mensagens, o nome, a imagem, a
    aparência e as conversas importadas dela, e o celular da pessoa é avisado de onde escrever.
 
-- **Só relay ou Nostr:** as conversas ocultas têm a própria fila no relay e as próprias chaves, e nunca usam a
-  conexão por perto. Sem relay, o link de contato delas diz onde elas leem no Nostr, com uma chave só daquela
+- **Relay, Nostr e celulares por perto:** as conversas ocultas têm a própria fila no relay e as próprias chaves.
+  Enquanto estão abertas, ou recebem fechadas, também chegam ao celular de um contato por perto, como suas outras
+  conversas (veja [Conversar com um celular por perto](#nearby)), mas outros celulares nunca as levam, e elas nunca vão
+  por LoRa nem por SMS. Sem relay, o link de contato delas diz onde elas leem no Nostr, com uma chave só daquela
   posição, e os textos vão para lá, como de um celular sem relay; fotos, mensagens de voz, chamadas e grupos precisam
   de um relay. Enquanto elas estão fechadas, as mensagens delas esperam no relay, ou no Nostr por dois dias, a menos
   que **Receber quando fechadas** esteja ativado.
@@ -2845,7 +2851,7 @@ mensagens e as configurações dele selados do mesmo jeito.
    senha**). Veja abaixo por que ele importa aqui.
 4. Defina o relay e adicione contatos como no celular, veja [Conversar por um relay](#relay).
 
-- **O que só o Android faz:** a conexão por perto (Bluetooth e Wi-Fi Aware), LoRa e SMS. O resto é igual: espaços e a
+- **O que só o Android faz:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa e SMS. A mesma rede Wi-Fi funciona aqui também, como num computador: veja [Conversar com um celular por perto](#nearby). O resto é igual: espaços e a
   segunda senha, conversas ocultas, mensagens de voz, conversas importadas e backups.
 - **Onde ele guarda as coisas:** em \`~/.local/share/erevos\` no celular, selado como no celular. O Sailfish não tem
   chaveiro para apps, então o keystore fica guardado ali como está, legível pelo seu usuário, e portanto por qualquer
@@ -2859,7 +2865,7 @@ mensagens e as configurações dele selados do mesmo jeito.
   de reiniciar o celular ele volta a esperar só quando o Erevos abre o espaço. Como o resto do Erevos aqui, vai
   direto, sem Tor. Cada espera acorda o celular mais ou menos uma vez por minuto, como no Android.
 - **Testado até agora** no motor de navegador do Sailfish (Gecko 91) num computador, conversando com um navegador por
-  um relay. Ainda não num celular com Sailfish.
+  um relay. A mesma rede Wi-Fi foi testada contra a do computador, num computador. Ainda não num celular com Sailfish.
 
 ## Atualizações {#updates}
 
@@ -3017,7 +3023,7 @@ O Erevos diz claramente o que protege e o que ainda não protege.
 | **Chamadas telefônicas** | Chamadas telefônicas comuns: a operadora as leva e pode ouvi-las, como em todo app de telefone. O Android guarda o histórico de chamadas, não selado pelo Erevos, como para todo app de telefone; o Erevos o lê, e os favoritos, para mostrá-los, apaga dele só as chamadas que você apaga, e não guarda cópia. O chip escolhido para cada número é selado no espaço; as respostas rápidas, e o que está bloqueado (só prefixos, IDs de grupo e horários, os mesmos para todo espaço), ficam guardados no celular, sem selo. | |
 | **Conversas importadas** | Seladas no espaço para o qual foram trazidas, as fotos e os arquivos delas também, cada um nos seus pedaços, como um arquivo de uma conversa. O tamanho do arquivo, e quantos pedaços há, dizem mais ou menos quanto foi importado, não de onde. | As fotos e os arquivos do Viber, e arquivos acima de 1 GB. |
 | **Histórico de mensagens** | Guardado no celular, selado no espaço dele, sem limite, em páginas do mesmo tamanho misturadas para todos os espaços. Só o quanto tudo ocupa aparece, não a que espaço pertence. Apagar dos dois celulares, e as mensagens temporárias, dependem do Erevos do outro celular. | |
-| **Mensagens por perto** | Abertas só no espaço que tem o contato. Uma para outro espaço espera na memória, seis horas no máximo, até esse espaço abrir. As conversas ocultas nunca usam a conexão por perto. | Conversas ocultas por perto. |
+| **Mensagens por perto** | Abertas só no espaço que tem o contato. Uma para outro espaço espera na memória, seis horas no máximo, até esse espaço abrir. Uma para conversas ocultas só abre enquanto elas estão abertas, ou recebem fechadas, e o espaço nunca fica sabendo que um contato delas está por perto. | |
 | **Mensagens de voz** | Criptografadas de ponta a ponta pelo relay ou por perto, em pedaços: o relay, ou quem escuta por perto, consegue saber mais ou menos quanto cada uma dura. Cada som é selado num arquivo próprio; quantos arquivos há, e os tamanhos deles, mostram mais ou menos quantas estão guardadas, não em que espaço. Fora do selo no cache só enquanto toca. | Arquivos de som todos de um mesmo tamanho. |
 | **Fotos e arquivos** | Criptografados de ponta a ponta, pelo armazenamento de arquivos do relay, em pedaços de um mesmo tamanho: o relay vê quantos e quando, e assim mais ou menos o tamanho. O seu relay vê o seu endereço, como nas mensagens; o contato os pega pelo próprio relay dele. As fotos perdem o lugar, o celular e a hora, a menos que sejam enviadas como arquivo; um arquivo mantém o que diz por dentro. Selados no celular nos seus pedaços, mostrados a partir da memória. As cópias salvas ficam fora do Erevos. Ainda não nos backups. | Backups que os incluam. |
 | **Num computador** | Selado como no celular, na pasta própria do app. O keystore dele é selado com o chaveiro do sistema (no Windows, a chave da sua conta); num sistema Linux sem um, o Erevos não guarda nada a menos que seja iniciado com \`--plain-secrets\`, e então o guarda como está. | |

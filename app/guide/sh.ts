@@ -310,12 +310,16 @@ svima, svaki ih isproba, a od prvog koji ga otvori ta veza je veza vašeg kontak
 dijelovima, čeka na to.
 
 > Poruka iz blizine otvara se samo u prostoru koji ima taj kontakt. Poruka za neki drugi prostor ovog telefona čeka u
-> memoriji, najviše šest sati, dok se taj prostor ne otvori. Skriveni razgovori nikad ne koriste vezu u blizini.
+> memoriji, najviše šest sati, dok se taj prostor ne otvori. Poruka za skrivene razgovore otvara
+> se samo dok su otvoreni, ili primaju i zatvoreni, a do tada isto čeka.
 
 **Zašto:** veze u blizini pripadaju telefonu, a ne prostoru, i ništa na njima ne imenuje prostor: ono što stigne
 isprobava se u razgovorima prostora koji je otvoren, a za ostale se neko vrijeme čuva u memoriji, nikad se ne
-upisuje na telefon. Skriveni razgovori ih još ne koriste: to tek dolazi (pogledajte [Šta je danas
-zaštićeno](#privacy)).
+upisuje na telefon. Skriveni razgovori ih koriste
+i sami, ali ono što čuju je njihovo: veza na kojoj se čuo skriveni kontakt čuva se odvojeno od veze prostora, samo u
+memoriji i samo dok su ti skriveni razgovori otvoreni ili primaju i zatvoreni, pa prostor nikad ne sazna da je neki
+njihov kontakt u blizini; a u eteru njihove poruke izgledaju kao poruke prostora. Nikad ne nose tuđe poruke, njihove
+nikad ne nose drugi, i nikad ne idu preko LoRa ni SMS-om.
 
 **Bluetooth koji se ne može pratiti:** ono što vaš telefon šalje preko Bluetootha da bi ga drugi našli kaže samo da
 je u blizini telefon s Erevosom, sa slučajnim brojem koji se mijenja svakih devet do dvanaest minuta, a na Androidu 8
@@ -2151,8 +2155,9 @@ sadrže uklonjena mjesta.
    dodirnite **Vrati u moje razgovore** i **Premjesti**. Ide sa svojim porukama, imenom, slikom, izgledom i uvezenim
    razgovorima, a njegovom telefonu se javlja kamo da piše.
 
-- **Samo relay ili Nostr:** skriveni razgovori imaju vlastiti red na relayu i vlastite ključeve, i nikad ne koriste
-  vezu u blizini. Bez relaya, njihov link za kontakt kaže gdje čitaju na Nostru, s ključem samo tog mjesta, a
+- **Relay, Nostr i telefoni u blizini:** skriveni razgovori imaju vlastiti red na relayu i vlastite ključeve. Dok su
+  otvoreni, ili primaju i zatvoreni, stižu i do telefona kontakta u blizini, kao vaši ostali razgovori (pogledajte
+  [Razgovor s telefonom u blizini](#nearby)), ali ih drugi telefoni nikad ne nose, i nikad ne idu preko LoRa ni SMS-om. Bez relaya, njihov link za kontakt kaže gdje čitaju na Nostru, s ključem samo tog mjesta, a
   tekstovi idu tamo, kao s telefona bez relaya; za fotografije, glasovne poruke, pozive i grupe potreban je relay. Dok
   su zatvoreni, njihove poruke čekaju na relayu, ili na Nostru dva dana, osim ako je uključeno **Primanje dok su
   zatvoreni**.
@@ -2762,7 +2767,7 @@ zapečaćene na isti način.
    lozinka**). Pogledajte ispod zašto je ovdje važno.
 4. Postavite relay i dodajte kontakte kao na telefonu, pogledajte [Razgovor preko relaya](#relay).
 
-- **Šta radi samo Android:** veza u blizini (Bluetooth i Wi-Fi Aware), LoRa i SMS. Ostalo je isto: prostori i druga
+- **Šta radi samo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa i SMS. Ista Wi-Fi mreža i ovdje radi, kao na računaru: pogledajte [Razgovor s telefonom u blizini](#nearby). Ostalo je isto: prostori i druga
   lozinka, skriveni razgovori, glasovne poruke, uvezeni razgovori i rezervne kopije.
 - **Gdje čuva stvari:** u \`~/.local/share/erevos\` na telefonu, zapečaćene kao na telefonu. Sailfish nema privjesak
   za ključeve za aplikacije, pa se spremište ključeva tamo čuva onakvo kakvo jeste, čitljivo vašem korisniku, a time i
@@ -2775,8 +2780,8 @@ zapečaćene na isti način.
   razgovori tada ne kažu ništa. Zaključavanje prostora ga zaustavlja, a nakon ponovnog pokretanja telefona ponovo čeka
   tek kad Erevos otvori prostor. Kao i ostatak Erevosa ovdje, ide direktno, bez Tora. Svako čekanje budi telefon
   otprilike jednom u minuti, kao na Androidu.
-- **Dosad testirano** na Sailfishovom pregledniku (Gecko 91) na računaru, uz razgovor s preglednikom preko relaya. Još
-  ne na Sailfish telefonu.
+- **Dosad testirano** na Sailfishovom pregledniku (Gecko 91) na računaru, uz razgovor s preglednikom preko relaya. Ista Wi-Fi
+  mreža provjerena je naspram one na računaru, na računaru. Još ne na Sailfish telefonu.
 
 ## Ažuriranja {#updates}
 
@@ -2937,7 +2942,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Telefonski pozivi** | Obični telefonski pozivi: prenosi ih telefonska kompanija i može ih prisluškivati, kao i kod svake aplikacije za telefon. Android čuva historiju poziva, a Erevos je ne zapečaćuje, kao i za svaku aplikaciju za telefon; Erevos je čita, kao i favorite, da bi ih prikazao, iz nje briše samo pozive koje vi obrišete, i ne čuva nikakvu kopiju. SIM kartica izabrana za svaki broj zapečaćena je u prostoru; brzi odgovori i ono što je blokirano (samo prefiksi, identifikatori grupa i vremena, isto za svaki prostor) čuvaju se na telefonu, nezapečaćeni. | |
 | **Uvezeni razgovori** | Zapečaćeni u prostoru u koji su uneseni, kao i njihove fotografije i datoteke, svaka u svojim dijelovima kao i datoteka razgovora. Veličina datoteke, i broj dijelova, otprilike govore koliko je uvezeno, ali ne i gdje. | Viberove fotografije i datoteke, i datoteke veće od 1 GB. |
 | **Historija poruka** | Čuva se na telefonu, zapečaćena u svom prostoru, bez ograničenja, u stranicama iste veličine pomiješanim za sve prostore. Vidi se samo koliko sve zajedno zauzima, a ne kojem prostoru pripada. Brisanje na oba telefona i poruke koje nestaju oslanjaju se na Erevos drugog telefona. | |
-| **Poruke u blizini** | Otvaraju se samo u prostoru koji ima taj kontakt. Poruka za drugi prostor čeka u memoriji, najviše šest sati, dok se taj prostor ne otvori. Skriveni razgovori nikad ne koriste vezu u blizini. | Skriveni razgovori u blizini. |
+| **Poruke u blizini** | Otvaraju se samo u prostoru koji ima taj kontakt. Poruka za drugi prostor čeka u memoriji, najviše šest sati, dok se taj prostor ne otvori. Poruka za skrivene razgovore otvara se samo dok su otvoreni, ili primaju i zatvoreni, a prostor nikad ne sazna da je neki njihov kontakt u blizini. | |
 | **Glasovne poruke** | Šifrirane s kraja na kraj preko relaya ili u blizini, u dijelovima: relay, ili onaj ko prisluškuje u blizini, može otprilike saznati koliko je svaka duga. Svaki zvuk zapečaćen je u vlastitoj datoteci; broj datoteka i njihove veličine otprilike pokazuju koliko ih se čuva, ali ne i u kojem prostoru. Otpečaćen u kešu samo dok se pušta. | Zvučne datoteke sve iste veličine. |
 | **Fotografije i datoteke** | Šifrirane s kraja na kraj, preko pohrane datoteka relaya, u dijelovima iste veličine: relay vidi koliko ih je i kada, dakle otprilike koliko su velike. Vaš relay vidi vašu adresu, kao i kod poruka; kontakt ih preuzima preko vlastitog relaya. Fotografije gube lokaciju, telefon i vrijeme, osim ako su poslane kao datoteka; datoteka zadržava ono što govori u sebi. Zapečaćene na telefonu u svojim dijelovima, prikazane iz memorije. Sačuvane kopije su izvan Erevosa. Još nisu u rezervnim kopijama. | Rezervne kopije koje ih sadrže. |
 | **Na računaru** | Zapečaćeno kao na telefonu, u vlastitom folderu aplikacije. Njeno spremište ključeva zapečaćeno je privjeskom za ključeve sistema (na Windowsu ključem vašeg naloga); na Linux sistemu bez njega Erevos ne čuva ništa osim ako nije pokrenut sa \`--plain-secrets\`, a tada ga čuva onakvo kakvo jeste. | |

@@ -14,7 +14,7 @@ import { secureGet, secureSet } from './secure';
 // group screens too, and while Erevos is in the background, and what waits for a contact goes
 // once their phone is near. The links belong to the phone, not to
 // a space: what comes on them opens only in the chats of the space open (lib/receiver.ts), and the
-// rest is kept a while for the others (lib/nearby.ts). Hidden chats never use them. What the phone
+// rest is tried in the open hidden chats, or kept a while for the others (lib/place-nearby.ts). What the phone
 // carries for relays stays when Erevos closes (lib/carried-store.ts): what it carries for others
 // from when the first space opens, and the open space's own while it is. While Erevos is in the
 // background the links are kept quieter, to spare the battery (setLinksQuiet), and with a battery mode that asks for it, off (lib/battery-mode.ts).

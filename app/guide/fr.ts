@@ -330,13 +330,17 @@ partir du premier qui s’ouvre, cette liaison est celle de ton contact. Un mess
 cela.
 
 > Un message venu d’à proximité ne s’ouvre que dans l’espace qui a ce contact. Un message pour un autre espace de ce
-> téléphone attend en mémoire, six heures au plus, que cet espace s’ouvre. Les discussions masquées n’utilisent jamais
-> la liaison à proximité.
+> téléphone attend en mémoire, six heures au plus, que cet espace s’ouvre. Un message pour des discussions
+> masquées ne s’ouvre que tant qu’elles sont ouvertes, ou reçoivent fermées, et attend de même jusque-là.
 
 **Pourquoi :** les liaisons à proximité appartiennent au téléphone, pas à un espace, et rien sur elles n’en nomme un :
 ce qui arrive est essayé dans les discussions de l’espace ouvert, et gardé un moment en mémoire pour les autres, jamais
-écrit sur le téléphone. Les discussions masquées ne les utilisent pas encore : c’est encore à venir (voir [Ce qui est
-protégé aujourd’hui](#privacy)).
+écrit sur le téléphone. Les discussions masquées les
+utilisent aussi, mais ce qu’elles entendent leur est propre : la liaison où un contact masqué a été entendu est gardée à
+part de celle de l’espace, en mémoire seulement et seulement tant que ces discussions masquées sont ouvertes ou
+reçoivent fermées, si bien que l’espace n’apprend jamais qu’un de leurs contacts est à proximité ; et dans l’air leurs
+messages ressemblent à ceux de l’espace. Elles ne portent jamais les messages des autres, ne sont jamais portées, et ne
+passent jamais par LoRa ni par SMS.
 
 **Un Bluetooth qu’on ne peut pas suivre :** ce que votre téléphone émet en Bluetooth pour que d’autres le trouvent dit
 seulement qu’un téléphone avec Erevos est proche, avec un nombre aléatoire qui change toutes les neuf à douze minutes,
@@ -2339,8 +2343,10 @@ supprimerait ce que contiennent les emplacements retirés.
    appuie sur **Remettre dans mes discussions** et **Déplacer**. Elle part avec ses messages, son nom, son image, son
    apparence et ses discussions importées, et son téléphone est informé d’où écrire.
 
-- **Relais ou Nostr seulement :** les discussions masquées ont leur propre file d’attente sur le relais et leurs propres
-  clés, et n’utilisent jamais la liaison à proximité. Sans relais, leur lien de contact dit où elles lisent sur Nostr,
+- **Relais, Nostr et téléphones à proximité :** les discussions masquées ont leur propre file d’attente sur le relais et
+  leurs propres clés. Tant qu’elles sont ouvertes, ou reçoivent fermées, elles atteignent aussi le téléphone d’un contact
+  à proximité, comme tes autres discussions (voir [Discuter avec un téléphone à proximité](#nearby)), mais d’autres
+  téléphones ne les portent jamais, et elles ne passent jamais par LoRa ni par SMS. Sans relais, leur lien de contact dit où elles lisent sur Nostr,
   avec une clé de cet emplacement seul, et les textes y vont, comme depuis un téléphone sans relais ; les photos,
   messages vocaux, appels et groupes ont besoin d’un relais. Tant qu’elles sont fermées, leurs messages attendent sur le
   relais, ou sur Nostr pendant deux jours, sauf si **Recevoir une fois fermées** est activé.
@@ -3023,7 +3029,7 @@ messages et ses réglages scellés de la même façon.
    second mot de passe**). Voir plus bas pourquoi c’est important ici.
 4. Configure le relais et ajoute des contacts comme sur le téléphone, voir [Discuter par un relais](#relay).
 
-- **Ce que seul Android fait :** la liaison à proximité (Bluetooth et Wi-Fi Aware), LoRa et les SMS. Le reste est
+- **Ce que seul Android fait :** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa et les SMS. Le même Wi-Fi marche ici aussi, comme sur un ordinateur : voir [Discuter avec un téléphone à proximité](#nearby). Le reste est
   pareil : les espaces et le second mot de passe, les discussions masquées, les messages vocaux, les discussions
   importées et les sauvegardes.
 - **Où il garde les choses :** dans \`~/.local/share/erevos\` sur le téléphone, scellé comme sur le téléphone. Sailfish
@@ -3039,7 +3045,8 @@ messages et ses réglages scellés de la même façon.
   l’espace. Comme le reste d’Erevos ici, il passe en direct, sans Tor. Chaque attente réveille le téléphone environ
   une fois par minute, comme sur Android.
 - **Testé jusqu’ici** sur le moteur de navigateur de Sailfish (Gecko 91) sur un ordinateur, en discutant avec un
-  navigateur par un relais. Pas encore sur un téléphone Sailfish.
+  navigateur par un relais. Le même Wi-Fi a été vérifié face à celui de l’ordinateur, sur un ordinateur. Pas encore sur
+  un téléphone Sailfish.
 
 ## Mises à jour {#updates}
 
@@ -3210,7 +3217,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Appels téléphoniques** | Des appels téléphoniques ordinaires : l’opérateur téléphonique les achemine et peut écouter, comme avec toute appli de téléphone. Android garde l’historique des appels, non scellé par Erevos, comme pour toute appli de téléphone ; Erevos le lit, ainsi que les favoris, pour les afficher, n’en supprime que les appels que tu supprimes, et n’en garde aucune copie. La SIM choisie pour chaque numéro est scellée dans l’espace ; les réponses rapides, et ce qui est bloqué (préfixes, identifiants de groupe et horaires seulement, les mêmes pour tous les espaces), sont gardés sur le téléphone, non scellés. | |
 | **Discussions importées** | Scellées dans l’espace où elles ont été amenées, leurs photos et fichiers aussi, chacun en morceaux comme l’est le fichier d’une discussion. La taille du fichier, et le nombre de morceaux, disent à peu près combien a été importé, pas où. | Les photos et fichiers de Viber, et les fichiers de plus de 1 Go. |
 | **Historique des messages** | Gardé sur le téléphone, scellé dans son espace, sans limite, dans des pages de même taille mêlées pour tous les espaces. Seule la place que tout cela prend se voit, pas l’espace auquel il appartient. La suppression sur les deux téléphones, et les messages éphémères, reposent sur l’Erevos de l’autre téléphone. | |
-| **Messages à proximité** | Ouverts seulement dans l’espace qui a le contact. Un message pour un autre espace attend en mémoire, six heures au plus, jusqu’à ce que cet espace s’ouvre. Les discussions masquées n’utilisent jamais la liaison à proximité. | Les discussions masquées à proximité. |
+| **Messages à proximité** | Ouverts seulement dans l’espace qui a le contact. Un message pour un autre espace attend en mémoire, six heures au plus, jusqu’à ce que cet espace s’ouvre. Un message pour des discussions masquées ne s’ouvre que tant qu’elles sont ouvertes, ou reçoivent fermées, et l’espace n’apprend jamais qu’un de leurs contacts est à proximité. | |
 | **Messages vocaux** | Chiffrés de bout en bout par le relais ou à proximité, en morceaux : le relais, ou qui écoute à proximité, peut savoir à peu près la durée de chacun. Chaque son est scellé dans un fichier à lui ; le nombre de fichiers, et leurs tailles, montrent à peu près combien il y en a de gardés, pas dans quel espace. Déscellé dans le cache seulement pendant sa lecture. | Des fichiers sonores tous de la même taille. |
 | **Photos et fichiers** | Chiffrés de bout en bout, par le stockage de fichiers du relais, en morceaux d’une même taille : le relais voit combien et quand, donc à peu près quelle taille. Ton relais voit ton adresse, comme pour les messages ; le contact les prend par son propre relais. Les photos perdent leur lieu, leur téléphone et leur heure, sauf si elles sont envoyées comme fichier ; un fichier garde ce qu’il dit à l’intérieur. Scellés sur le téléphone dans leurs morceaux, affichés depuis la mémoire. Les copies enregistrées sont hors d’Erevos. Pas encore dans les sauvegardes. | Des sauvegardes qui les contiennent. |
 | **Sur un ordinateur** | Scellé comme sur le téléphone, dans le dossier propre de l’appli. Son magasin de clés est scellé avec le trousseau du système (sous Windows, la clé de ton compte) ; sur un système Linux sans trousseau, Erevos ne garde rien à moins d’être lancé avec \`--plain-secrets\`, et le garde alors tel quel. | |

@@ -293,11 +293,15 @@ all of them, each tries them, and from the first that opens, that link is your c
 pieces, waits for that.
 
 > A message from nearby opens only in the space that has that contact. One for another space of this phone waits in
-> memory, six hours at most, until that space opens. Hidden chats never use the nearby link.
+> memory, six hours at most, until that space opens. One for hidden chats opens only while they are open, or
+> receive while closed, and waits so until then.
 
 **Why:** the nearby links belong to the phone, not to a space, and nothing on them names one: what comes is tried in
 the chats of the space that is open, and kept a while in memory for the others, never written to the phone. Hidden
-chats do not use them yet: that is still to come (see [What is protected today](#privacy)).
+chats use them too, but what they hear is their own: the link a hidden contact was heard on is kept apart from the
+space's, in memory only while those hidden chats are open or receive while closed, so the space never learns that one
+of their contacts is near; and on the air their messages look like the space's. They never carry for others, are never
+carried, and never go over LoRa or by SMS.
 
 **Bluetooth that cannot be followed:** what your phone sends out over Bluetooth for others to find it says only
 that a phone with Erevos is near, with a random number that changes every nine to twelve minutes, and on Android 8
@@ -2051,7 +2055,9 @@ what the places taken away hold.
    my chats** and **Move**. It goes with its messages, name, picture, look and imported chats, and its phone is told
    where to write.
 
-- **Relay or Nostr only:** hidden chats have their own relay queue and their own keys, and never use the nearby link.
+- **Relay, Nostr and phones nearby:** hidden chats have their own relay queue and their own keys. While they are open,
+  or receive while closed, they also reach a contact's phone nearby, as your other chats do (see [Chat with a nearby
+  phone](#nearby)), but other phones never carry them, and they never go over LoRa or by SMS.
   With no relay, their contact link says where they read on Nostr, with a key of that place alone, and texts go there,
   as from a phone with no relay; photos, voice messages, calls and groups need a relay. While they are closed, their
   messages wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
@@ -2637,7 +2643,7 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
    below why it matters here.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
-- **What only Android does:** the nearby link (Bluetooth and Wi-Fi Aware), LoRa and SMS. The rest is the same: spaces and
+- **What only Android does:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa and SMS. The same Wi-Fi works here too, as on a computer: see [Chat with a nearby phone](#nearby). The rest is the same: spaces and
   the second password, hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
   keyring for apps, so the keystore is kept there as it is, readable by your user, and so by any app that runs as
@@ -2651,7 +2657,7 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
   space. Like the rest of Erevos here it goes straight, without Tor. Each wait wakes the phone about once a minute, as
   on Android.
 - **Tested so far** on Sailfish's browser engine (Gecko 91) on a computer, chatting with a browser through a relay.
-  Not yet on a Sailfish phone.
+  The same Wi-Fi was checked against the computer's, on a computer. Not yet on a Sailfish phone.
 
 ## Updates {#updates}
 
@@ -2807,7 +2813,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Phone calls** | Plain phone calls: the phone company carries them and can listen, as with every phone app. Android keeps the call history, not sealed by Erevos, as for every phone app; Erevos reads it, and the favourites, to show them, deletes from it only the calls you delete, and keeps no copy. The SIM chosen for each number is sealed in the space; the quick replies, and what is blocked (prefixes, group ids and times only, the same for every space), are kept on the phone, not sealed. | |
 | **Imported chats** | Sealed in the space they were brought into, their photos and files too, each in its pieces as a chat's file is. The file's size, and how many pieces there are, tell roughly how much was imported, not where. | Viber's photos and files, and files over 1 GB. |
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
-| **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. Hidden chats never use the nearby link. | Hidden chats nearby. |
+| **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. One for hidden chats opens only while they are open, or receive while closed, and the space never learns that one of their contacts is near. | |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
 | **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); on a Linux system without one, Erevos keeps nothing unless started with \`--plain-secrets\`, and then keeps it as it is. | |

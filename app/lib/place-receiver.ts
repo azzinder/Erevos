@@ -15,6 +15,7 @@ import { hiddenRinging, setHiddenRinging } from './hidden-ring';
 import { nostrKeysChanged, nostrReady, readNostr } from './nostr';
 import { nostrReaderOf, sendNostrAgain } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
+import { openHeldIn, openPlaceNearby, placeNear } from './place-nearby';
 import { placeGroupsAt } from './place-groups';
 import { QueueMove, tookOf, type Took } from './queue-move';
 import {
@@ -50,6 +51,9 @@ import { sendWaiting } from './waiting';
 // is kept as missed. What comes for it on Nostr (lib/nostr.ts) is read too, as the space's
 // receiver reads the space's. While the place's chat screen is open, the screen takes its messages
 // itself and holds this (holdPlace). None of it shows anywhere until the PIN opens the place.
+// What came from phones nearby and opened in none of the space's chats is tried here too
+// (lib/place-nearby.ts), and what was kept so, as the place starts to receive; where its contacts
+// were heard is its own (NearHeard), and what it says back goes to them there.
 
 const EVERY = 3000;
 // Messages taken in one look, at most.
@@ -77,6 +81,8 @@ type Run = {
   nostrTurn: Promise<void>;
   // No relay queue at the last look: what is said back goes through Nostr.
   relayless: boolean;
+  // Where its contacts were heard nearby, while it receives, and how to stop taking what comes there.
+  release: () => void;
 };
 
 type Held = { received: Extract<Received, { kind: 'message' }>; timer: ReturnType<typeof setTimeout> | null };
@@ -237,6 +243,7 @@ export function startPlaceReceiver(every?: number): () => void {
 
 function stopRun(run: Run) {
   run.stopped = true;
+  run.release();
   if (run.timer) clearTimeout(run.timer);
   run.timer = null;
   run.mover?.stop();
@@ -282,6 +289,36 @@ async function openNostrPlace(run: Run, bytes: Uint8Array): Promise<void> {
   if (run.state.place || run.relayless) await sendReceipts(chats, run.state.place, run.state);
 }
 
+// What came from a phone nearby (`link`), or was kept so (null), and opened in none of the space's
+// chats, tried in a closed place, as what comes to its queue: false when it is none of its, or its
+// chat screen holds it and takes them itself. A group's message comes through the relay only.
+function openNearbyPlace(run: Run, link: string | null, packet: Uint8Array): Promise<boolean> {
+  const next = run.nostrTurn.then(async () => {
+    if (run.stopped || (holds.get(run.pocket) ?? 0) > 0 || !hasCore() || isGroupPacket(packet)) return false;
+    const chats = run.chats ?? (await placeChats(run.space, run.pocket, run.key));
+    if (run.stopped) return false;
+    let received: Received;
+    try {
+      received = await chats.e2e.receive(packet);
+    } catch {
+      return false;
+    }
+    if (received.kind === 'refused' && received.reason === 'unknown') return false;
+    if (received.kind === 'message' && link) run.state.near?.heardOn(received.identity, link);
+    const came = cameBefore(chats, received);
+    await keepWith(chats, received, run.state, false, link ? 'nearby' : undefined);
+    if (came) await heard(run, chats, came);
+    if (came?.group) await placeGroupsAt(run.space, run.pocket, run.key).signal(came.identity, came.group, came.request).catch(() => undefined);
+    if (run.state.place || run.relayless) await sendReceipts(chats, run.state.place, run.state);
+    return true;
+  });
+  run.nostrTurn = next.then(
+    () => undefined,
+    () => undefined,
+  );
+  return next.catch(() => false);
+}
+
 function startRun(space: number, pocket: number, key: Uint8Array, every?: number): Run {
   const run: Run = {
     space,
@@ -299,8 +336,22 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
     unlisten: null,
     nostrTurn: Promise.resolve(),
     relayless: false,
+    release: () => undefined,
   };
   const held = () => (holds.get(pocket) ?? 0) > 0;
+  // What comes nearby for it, and where its contacts were heard, while it receives: a contact heard
+  // anew may have what waits for them now.
+  const near = placeNear(space, pocket);
+  run.state.near = near.heard;
+  const stopHeard = near.heard.onChange(() => run.wake());
+  const open = (link: string | null, packet: Uint8Array) => openNearbyPlace(run, link, packet);
+  const stopOpening = openPlaceNearby(space, pocket, open);
+  run.release = () => {
+    stopOpening();
+    stopHeard();
+    run.state.near = undefined;
+    near.release();
+  };
   const next = () => {
     if (run.stopped) return;
     run.timer = setTimeout(tick, run.again ? 0 : (every ?? (appShown() ? EVERY : awayPace(run.state.waited, run.state.failures))));
@@ -327,6 +378,7 @@ function startRun(space: number, pocket: number, key: Uint8Array, every?: number
   };
   next();
   listen(run);
+  void openHeldIn(open);
   return run;
 }
 
@@ -357,7 +409,7 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
 }
 
 // One look at a place's queue, as the receiver's at the space's (lib/receiver.ts lookOnce), with
-// what hidden chats have: groups of their own, no phones nearby, no SMS. What comes on Nostr is read apart.
+// what hidden chats have: groups of their own, phones nearby only as lib/place-nearby.ts says, no SMS. What comes on Nostr is read apart.
 // With no relay queue, what goes through Nostr goes, as the receiver's nostrLook does.
 async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   if (!hasCore()) return;
@@ -390,7 +442,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   state.place = place;
   if (stop()) return;
   await sendPending(chats, place.sends);
-  await sendKeys(chats, place);
+  await sendKeys(chats, place, state.near);
   await sendCopies(chats.e2e, place.sends).catch(() => 0);
   run.mover ??= placeMover(run, chats, own);
   const mover = run.mover;
@@ -443,7 +495,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
       .look({ own, found, take: (bytes, kind) => take(bytes, kind), tell: (identity) => tell(chats, here, identity, {}), shows: appShown(), stop, empty: state.waited === 'empty' ? others : [] })
       .catch(() => null);
     // What waited to go, now that the relay answers (lib/waiting.ts).
-    await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true, hidden: true }).catch(() => []);
+    await sendWaiting(chats, { sends: here.sends, own, senderHex: here.queue.senderHex, here: here.here, ownKey: here.here.relayKey, relayUp: true, hidden: true, near: state.near }).catch(() => []);
   }
   await sendReceipts(chats, here, state);
   await sendCopies(chats.e2e, here.sends).catch(() => 0);
@@ -454,9 +506,9 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
 // ready, the place's new prekeys, what is due there again, what waited and what is to be said back.
 async function nostrLookPlace(chats: SpaceChats, state: ReceiveState): Promise<void> {
   if (!nostrReady()) return;
-  await sendKeys(chats, null);
+  await sendKeys(chats, null, state.near);
   await sendNostrAgain(chats.e2e);
-  await sendWaiting(chats, { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false, hidden: true }).catch(() => []);
+  await sendWaiting(chats, { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false, hidden: true, near: state.near }).catch(() => []);
   await sendReceipts(chats, null, state);
 }
 

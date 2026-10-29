@@ -7,7 +7,8 @@ import { takeCall } from '../lib/call-handoff';
 import { keepPrivate } from '../lib/screen-privacy';
 import { CAN_DIRECT, canLora, HAS_LINKS, HAS_RADIO, lora, SAMSUNG } from '../lib/radio';
 import { nearbySettings, setAwareKept, setCarryingKept, setDirectKept, setLanKept } from '../lib/nearby-links';
-import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery } from '../lib/nearby';
+import { nearby, SMS_LINK, TooLargeForSlowWayError, TooLargeForSmsError, type Delivery, type NearHeard } from '../lib/nearby';
+import { openHeldIn, openPlaceNearby, placeNear, unopenedNearby, type PlaceOpener } from '../lib/place-nearby';
 import { canWait, dropHeld, handOverHidden, heldAfter, heldFor, Owed, OwedError, sendWaiting, takeBack, type SendPlace, type Went } from '../lib/waiting';
 import { currentCall, soon } from '../lib/call';
 import { currentGroupCall } from '../lib/group-call';
@@ -207,8 +208,10 @@ import { t, plural, mark, locale, useLang } from '../lib/i18n';
 // Every space also has hidden chats (lock/hidden.ts), opened with their own PIN typed in the home
 // screen's search, which every space takes whether it has hidden chats or not, and a chat can move
 // into them from its details (lock/move-chat.ts). They are a
-// second chat with their own relay queue, account and contacts, over the relay only (the radio
-// link is the phone's, and only the space's own chats use it). The other chats stay open underneath and
+// second chat with their own relay queue, account and contacts, over the relay, and to a contact's
+// phone nearby once they heard it there themselves (lib/place-nearby.ts: the radio link is the
+// phone's, what comes on it opens in the space's chats first, and the space never learns where a
+// hidden contact is). The other chats stay open underneath and
 // keep receiving. Hidden chats close when the app goes to the background or this screen closes,
 // and their messages go with them.
 //
@@ -1368,7 +1371,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // The links nearby are up while the space is open, whatever screen shows (lib/nearby-links.ts).
   // What comes on them, this screen opens itself while it is open, as it shows it at once; the
-  // receiver beside the screens does meanwhile (lib/receiver.ts). Hidden chats use the relay only.
+  // receiver beside the screens does meanwhile (lib/receiver.ts). Hidden chats are offered what
+  // opened in none of the space's chats (below).
   useEffect(() => {
     if (!HAS_LINKS || hiddenKey) return;
     let active = true;
@@ -1418,7 +1422,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       return;
     }
     if (received.kind === 'refused' && received.reason === 'unknown') {
-      if (link) nearby.hold(packet);
+      // Perhaps open hidden chats', or a place's that receives (lib/place-nearby.ts); else kept.
+      if (link) await unopenedNearby(link, packet);
       return;
     }
     if (!link) nearby.dropHeld(packet);
@@ -1426,6 +1431,49 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     handle(received, nostr, link === SMS_LINK ? 'sms' : link ? 'nearby' : undefined);
     await sendReceipts(relayTarget());
   };
+
+  // Hidden chats and the phones nearby (lib/place-nearby.ts): while they are open, what came on the
+  // links and opened in none of the space's chats is tried here, and, as they open, what was kept
+  // so. Where their contacts were heard is theirs alone (nearHeard), in memory, forgotten as they
+  // close: the space never learns that one of them is near. Their groups go through the relay only.
+  const nearHeard = useRef<NearHeard | null>(null);
+  const placeNearbyCame = useRef(async (_link: string | null, _packet: Uint8Array) => false as boolean);
+  placeNearbyCame.current = async (link, packet) => {
+    if (!e2e || !hiddenKey || isGroupPacket(packet)) return false;
+    let received: Awaited<ReturnType<E2E['receive']>>;
+    try {
+      received = await e2e.receive(packet);
+    } catch {
+      return false;
+    }
+    if (received.kind === 'refused' && received.reason === 'unknown') return false;
+    if (received.kind === 'message' && link) nearHeard.current?.heardOn(received.identity, link);
+    handle(received, false, link ? 'nearby' : undefined);
+    await sendReceipts(relayTarget());
+    return true;
+  };
+  useEffect(() => {
+    if (!HAS_LINKS || !hiddenKey || !e2e) return;
+    const { space } = currentSpace();
+    const near = placeNear(space, pocket);
+    nearHeard.current = near.heard;
+    // A contact heard nearby: what waits for them may go now, on that link.
+    const stopHeard = near.heard.onChange(() => {
+      setNearbyChanged((n) => n + 1);
+      void sendWaitingNow.current(false);
+    });
+    const stopLinks = nearby.onChange(() => setNearbyChanged((n) => n + 1));
+    const open: PlaceOpener = (link, packet) => placeNearbyCame.current(link, packet);
+    const stopOpening = openPlaceNearby(space, pocket, open);
+    void openHeldIn(open);
+    return () => {
+      stopOpening();
+      stopHeard();
+      stopLinks();
+      if (nearHeard.current === near.heard) nearHeard.current = null;
+      near.release();
+    };
+  }, [e2e]);
 
   // What comes on Nostr (lib/nostr.ts): the space's from the receiver, which reads for them while
   // the space is open; a hidden place's read here, while its chats are open.
@@ -2884,7 +2932,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // the last packet saying what they carry (`mark`, lib/relay.ts), or, sealed on a linked device for
   // the account's phone, where all goes, quiet (sentMark). When neither, and they went to the phones
   // nearby, those phones may carry them to the contact's relay too (`carried`). Hidden chats go
-  // through the relay only, or Nostr with no relay between the two (lib/waiting.ts handOverHidden).
+  // through the relay, or Nostr with no relay between the two, and to the phones nearby with what
+  // they heard themselves (nearHeard), never carried (lib/waiting.ts handOverHidden).
   // Once they went, the copies for the
   // endpoints of the contact's account go too (lib/e2e.ts copiesAfter), and, with `waits`, also once
   // the relay could take them only later, as what is tried again as it is goes to those endpoints
@@ -2899,7 +2948,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     carried = false,
     waits = false,
   ): Promise<Delivery> {
-    if (hiddenKey) return handOverHidden(chats, target, identity, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets }, mark, waits);
+    if (hiddenKey) return handOverHidden(chats, target, identity, { sealed: { ...sealed, spare: sealed.spare ?? null }, packets }, mark, waits, nearHeard.current);
     // Words go through Nostr when they read there (lib/nostr-chats.ts), the relay their backup; with
     // no relay between the two, all goes there, when they read there.
     const relay =
@@ -3209,7 +3258,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Why a message could not go now: `lora`, what LoRa says of it, when LoRa was the only way.
   function waitingReason(error: unknown, peer: string, lora: string): string {
-    // Hidden chats go through the relay only, or Nostr, which says why it could not take it.
+    // Hidden chats go through the relay, or Nostr, which says why it could not take it, and to
+    // their phone when it is near.
+    if (hiddenKey && HAS_LINKS && (relayTarget() || !(error instanceof RelayUnreachableError))) {
+      const name = label(peer, contacts);
+      return relayTarget() ? t("The relay cannot be reached, and {name}'s phone is not near.", { name }) : t("There is no relay, and {name}'s phone is not near.", { name });
+    }
     if (hiddenKey) return relayTarget() ? t('The relay cannot be reached.') : error instanceof RelayUnreachableError ? error.message : t('There is no relay.');
     if (error instanceof TooLargeForSmsError) return `${t('It is too long for SMS.')} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
     if (error instanceof TooLargeForSlowWayError) return `${lora} ${relayTarget() ? t('The relay cannot be reached.') : t('There is no relay.')}`;
@@ -3241,11 +3295,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Where what waits goes from (lib/waiting.ts). `relayUp`: the relay just answered.
   function waitingPlace(relayUp: boolean): SendPlace {
-    return { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp, ...(hiddenKey ? { hidden: true } : {}) };
+    return { sends: relayTarget(), own: ownRelay(), senderHex: ownQueue?.senderHex ?? '', here: here(), ownKey: ownRelayKey, relayUp, ...(hiddenKey ? { hidden: true, near: nearHeard.current } : {}) };
   }
 
   // Sends what waits that can go now (lib/waiting.ts), and shows it as gone, or as held by the
-  // relay till its time. Says what went. In hidden chats, through the relay only, and what they owe
+  // relay till its time. Says what went. In hidden chats, through the relay, or to their phone near, and what they owe
   // a contact's phone is tried again first (Owed), shown as sent already. In both, what a relay
   // holds for later for a contact whose queue moved is held anew, and what it holds for one deleted
   // or blocked is dropped.
@@ -5086,7 +5140,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   const selectedName = selected ? label(selected, shownContacts) : '';
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
-  const selectedNearby = !!selectedIdentity && !hiddenKey && nearby.isNear(selectedIdentity);
+  const selectedNearby = !!selectedIdentity && (hiddenKey ? !!nearHeard.current?.isNear(selectedIdentity) : nearby.isNear(selectedIdentity));
   const selectedTyping = !!selected && !selectedHidden && (typing[selected] ?? 0) > Date.now();
   const subtitle = selectedContact
     ? selectedTyping

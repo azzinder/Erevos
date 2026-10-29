@@ -44,10 +44,11 @@ cryptography. Do not rely on it to protect anyone yet.
 - **Linked devices**: a computer or browser linked to the phone by QR code, up to four. The phone
   stays the account and passes messages on to them.
 - **Nearby, without internet** (Android): Bluetooth LE, Wi-Fi Aware, the same Wi-Fi or hotspot,
-  Wi-Fi Direct, and a Meshtastic LoRa radio. The desktop app has the same Wi-Fi too. A message
+  Wi-Fi Direct, and a Meshtastic LoRa radio. The desktop app and Sailfish OS have the same Wi-Fi too. A message
   that cannot go yet waits, marked in the chat, until there is a way. When the relay cannot be
   reached, other Erevos phones nearby can carry a sealed message to the contact's relay; carrying
-  for others is off unless turned on. Hidden chats never use the nearby links.
+  for others is off unless turned on. Hidden chats use them too while they are open or receive while closed,
+  never carried and never over LoRa, and the space never learns that a hidden contact is near.
 - **Tor** (Android only), per space: what you write goes through Tor by default (**Messages**),
   or everything, or nothing, with bridges (obfs4, Snowflake and others) for where Tor is blocked.
 - **Phone, SMS and contacts** (Android): Erevos can be the phone's SMS app (SMS and MMS), its
@@ -189,7 +190,7 @@ cryptography. Do not rely on it to protect anyone yet.
 - **Any browser**: the web app. Its releases are signed with an offline Ed25519 key, and its
   service worker runs only signed releases. See [pwa/README.md](pwa/README.md) for what that
   protects and what it does not.
-- **Sailfish OS**: the web build in Sailfish WebView, packaged as an RPM. Not yet tested on a phone.
+- **Sailfish OS**: the web build in Sailfish WebView, packaged as an RPM; the same Wi-Fi works. Not yet tested on a phone.
   See [sailfish/README.md](sailfish/README.md).
 
 ## Tried on phones

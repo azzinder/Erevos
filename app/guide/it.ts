@@ -314,12 +314,16 @@ suo: così i pacchetti brevi vanno a tutti, ognuno li prova, e dal primo che si 
 contatto. Un messaggio vocale, in pezzi più grandi, aspetta questo momento.
 
 > Un messaggio da vicino si apre solo nello spazio che ha quel contatto. Uno per un altro spazio di questo telefono
-> aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Le chat nascoste non usano mai il
-> collegamento da vicino.
+> aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Uno per le chat nascoste si apre
+> solo mentre sono aperte, o ricevono da chiuse, e fino ad allora aspetta allo stesso modo.
 
 **Perché:** i collegamenti da vicino appartengono al telefono, non a uno spazio, e niente in essi ne nomina uno: quello
 che arriva viene provato nelle chat dello spazio aperto, e conservato per un po’ in memoria per gli altri, mai scritto
-sul telefono. Le chat nascoste non li usano ancora: arriverà più avanti (vedi [Che cosa è protetto oggi](#privacy)).
+sul telefono. Le chat nascoste li usano
+anche loro, ma quello che sentono è loro: il collegamento su cui si è sentito un contatto nascosto è tenuto a parte da
+quello dello spazio, solo in memoria e solo mentre quelle chat nascoste sono aperte o ricevono da chiuse, così lo spazio
+non sa mai che uno dei loro contatti è vicino; e nell’aria i loro messaggi sembrano quelli dello spazio. Non portano mai
+messaggi di altri, non vengono mai portate da altri, e non passano mai via LoRa né via SMS.
 
 **Bluetooth che non si può seguire:** ciò che il tuo telefono trasmette via Bluetooth perché altri lo trovino dice
 solo che vicino c’è un telefono con Erevos, con un numero casuale che cambia ogni nove-dodici minuti, e da Android 8 in
@@ -2251,8 +2255,9 @@ cancellerebbe quello che contengono i posti tolti.
    **Riporta nelle mie chat** e **Sposta**. Va con i suoi messaggi, nome, immagine, aspetto e chat importate, e al suo
    telefono viene detto dove scrivere.
 
-- **Solo relay o Nostr:** le chat nascoste hanno una loro coda sul relay e le loro chiavi, e non usano mai il
-  collegamento da vicino. Senza relay, il loro link di contatto dice dove leggono su Nostr, con una chiave solo di quel
+- **Relay, Nostr e telefoni vicini:** le chat nascoste hanno una loro coda sul relay e le loro chiavi. Mentre sono
+  aperte, o ricevono da chiuse, raggiungono anche il telefono di un contatto vicino, come le tue altre chat (vedi [Chat
+  con un telefono vicino](#nearby)), ma altri telefoni non le portano mai, e non passano mai via LoRa né via SMS. Senza relay, il loro link di contatto dice dove leggono su Nostr, con una chiave solo di quel
   posto, e i testi vanno lì, come da un telefono senza relay; foto, messaggi vocali, chiamate e gruppi hanno bisogno di
   un relay. Mentre sono chiuse, i loro messaggi aspettano sul relay, o su Nostr per due giorni, a meno che **Ricevere
   da chiuse** non sia attivo.
@@ -2891,7 +2896,7 @@ stesso modo.
    password**). Vedi più sotto perché qui conta.
 4. Imposta il relay e aggiungi i contatti come sul telefono, vedi [Chat tramite un relay](#relay).
 
-- **Quello che fa solo Android:** il collegamento da vicino (Bluetooth e Wi-Fi Aware), LoRa e gli SMS. Il resto è
+- **Quello che fa solo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa e gli SMS. La stessa rete Wi-Fi funziona anche qui, come su un computer: vedi [Chat con un telefono vicino](#nearby). Il resto è
   uguale: spazi e seconda password, chat nascoste, messaggi vocali, chat importate e backup.
 - **Dove conserva le cose:** in \`~/.local/share/erevos\` sul telefono, sigillate come sul telefono. Sailfish non ha un
   portachiavi per le app, quindi l’archivio di chiavi è conservato lì così com’è, leggibile dal tuo utente, e quindi
@@ -2905,7 +2910,8 @@ stesso modo.
   del telefono torna ad aspettare solo quando Erevos apre lo spazio. Come il resto di Erevos qui, va diretto, senza
   Tor. Ogni attesa sveglia il telefono circa una volta al minuto, come su Android.
 - **Provato finora** sul motore del browser di Sailfish (Gecko 91) su un computer, chattando con un browser tramite un
-  relay. Non ancora su un telefono Sailfish.
+  relay. La stessa rete Wi-Fi è stata provata contro quella del computer, su un computer. Non ancora su un telefono
+  Sailfish.
 
 ## Aggiornamenti {#updates}
 
@@ -3070,7 +3076,7 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Chiamate telefoniche** | Normali chiamate telefoniche: le trasporta l’operatore telefonico, che può ascoltarle, come con ogni app Telefono. Android conserva la cronologia delle chiamate, non sigillata da Erevos, come per ogni app Telefono; Erevos la legge, insieme ai preferiti, per mostrarli, ne elimina solo le chiamate che elimini tu, e non ne conserva una copia. La SIM scelta per ogni numero è sigillata nello spazio; le risposte rapide, e quello che è bloccato (solo prefissi, id dei gruppi e orari, uguali per ogni spazio), sono conservati sul telefono, non sigillati. | |
 | **Chat importate** | Sigillate nello spazio in cui sono state portate, anche le loro foto e i loro file, ognuno nei suoi pezzi come il file di una chat. La dimensione del file, e quanti pezzi ci sono, dicono più o meno quanto è stato importato, non dove. | Foto e file di Viber, e file oltre 1 GB. |
 | **Cronologia dei messaggi** | Conservata sul telefono, sigillata nel suo spazio, senza limiti, in pagine della stessa dimensione mescolate per tutti gli spazi. Si vede solo quanto occupa tutto insieme, non a quale spazio appartiene. L’eliminazione su entrambi i telefoni, e i messaggi effimeri, dipendono dall’Erevos dell’altro telefono. | |
-| **Messaggi da vicino** | Si aprono solo nello spazio che ha il contatto. Uno per un altro spazio aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Le chat nascoste non usano mai il collegamento da vicino. | Chat nascoste da vicino. |
+| **Messaggi da vicino** | Si aprono solo nello spazio che ha il contatto. Uno per un altro spazio aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Uno per le chat nascoste si apre solo mentre sono aperte, o ricevono da chiuse, e lo spazio non sa mai che uno dei loro contatti è vicino. | |
 | **Messaggi vocali** | Crittografati end-to-end tramite il relay o da vicino, in pezzi: il relay, o chi ascolta da vicino, può capire più o meno quanto dura ognuno. Ogni suono è sigillato in un file a sé; quanti file ci sono, e le loro dimensioni, mostrano più o meno quanti ne sono conservati, non in quale spazio. Dissigillati nella cache solo durante la riproduzione. | File audio tutti della stessa dimensione. |
 | **Foto e file** | Crittografati end-to-end, tramite l’archivio di file del relay, in pezzi della stessa dimensione: il relay vede quanti e quando, quindi più o meno quanto sono grandi. Il tuo relay vede il tuo indirizzo, come per i messaggi; il contatto li prende tramite il suo relay. Le foto perdono luogo, telefono e ora, a meno che non vengano inviate come file; un file conserva quello che dice al suo interno. Sigillati sul telefono nei loro pezzi, mostrati dalla memoria. Le copie salvate sono fuori da Erevos. Non ancora nei backup. | Backup che li contengano. |
 | **Su un computer** | Sigillato come sul telefono, nella cartella dell’app. Il suo archivio di chiavi è sigillato con il portachiavi del sistema (su Windows, la chiave del tuo account); su un sistema Linux senza portachiavi, Erevos non conserva nulla a meno che non venga avviato con \`--plain-secrets\`, e allora lo conserva così com’è. | |

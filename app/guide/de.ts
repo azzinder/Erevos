@@ -331,13 +331,17 @@ der Nähe seines ist: Also gehen die kurzen Pakete an alle, jedes probiert sie, 
 diese Verbindung die deines Kontakts. Eine Sprachnachricht, in größeren Stücken, wartet darauf.
 
 > Eine Nachricht aus der Nähe öffnet sich nur in dem Bereich, der diesen Kontakt hat. Eine für einen anderen Bereich
-> dieses Telefons wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Versteckte Chats
-> nutzen die Verbindung in der Nähe nie.
+> dieses Telefons wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Eine für versteckte
+> Chats öffnet sich nur, solange sie offen sind oder geschlossen empfangen, und wartet bis dahin ebenso.
 
 **Warum:** Die Verbindungen in der Nähe gehören dem Telefon, nicht einem Bereich, und nichts darauf nennt einen: Was
 ankommt, wird in den Chats des offenen Bereichs probiert und für die anderen eine Weile im Arbeitsspeicher gehalten,
-nie auf das Telefon geschrieben. Versteckte Chats nutzen sie noch nicht: Das kommt erst noch (siehe
-[Was heute geschützt ist](#privacy)).
+nie auf das Telefon geschrieben. Versteckte Chats nutzen sie
+auch, aber was sie hören, gehört ihnen: Die Verbindung, auf der ein versteckter Kontakt gehört wurde, wird getrennt von
+der des Bereichs gehalten, nur im Arbeitsspeicher und nur, solange diese versteckten Chats offen sind oder geschlossen
+empfangen, sodass der Bereich nie erfährt, dass einer ihrer Kontakte in der Nähe ist; und in der Luft sehen ihre
+Nachrichten aus wie die des Bereichs. Sie tragen nie Nachrichten anderer, werden nie von anderen getragen und gehen nie
+über LoRa oder per SMS.
 
 **Bluetooth, dem man nicht folgen kann:** Was dein Telefon über Bluetooth aussendet, damit andere es finden, sagt nur,
 dass ein Telefon mit Erevos in der Nähe ist, mit einer Zufallszahl, die sich alle neun bis zwölf Minuten ändert, und
@@ -2376,8 +2380,10 @@ löschen, was die weggenommenen Plätze enthalten.
    **Details**, tippe auf **Zurück in meine Chats verschieben** und **Verschieben**. Er geht mit seinen Nachrichten,
    seinem Namen, Bild, Aussehen und den importierten Chats, und seinem Telefon wird gesagt, wohin es schreiben soll.
 
-- **Nur Relay oder Nostr:** Versteckte Chats haben ihre eigene Relay-Warteschlange und ihre eigenen Schlüssel und
-  nutzen nie die Verbindung in der Nähe. Ohne Relay sagt ihr Kontaktlink, wo sie auf Nostr lesen, mit einem Schlüssel
+- **Relay, Nostr und Telefone in der Nähe:** Versteckte Chats haben ihre eigene Relay-Warteschlange und ihre eigenen
+  Schlüssel. Solange sie offen sind oder geschlossen empfangen, erreichen sie auch das Telefon eines Kontakts in der
+  Nähe, wie deine anderen Chats (siehe [Chat mit einem Telefon in der Nähe](#nearby)), aber andere Telefone tragen sie
+  nie, und sie gehen nie über LoRa oder per SMS. Ohne Relay sagt ihr Kontaktlink, wo sie auf Nostr lesen, mit einem Schlüssel
   nur dieses Platzes, und Texte gehen dorthin, wie von einem Telefon ohne Relay; Fotos, Sprachnachrichten, Anrufe und
   Gruppen brauchen ein Relay. Solange sie geschlossen sind, warten ihre Nachrichten auf dem Relay, oder zwei Tage lang
   auf Nostr, außer **Empfangen, wenn geschlossen** ist an.
@@ -3050,7 +3056,7 @@ Nachrichten und Einstellungen auf dieselbe Weise versiegelt auf.
    **Sperre und zweites Passwort**). Warum sie hier wichtig ist, steht unten.
 4. Stelle das Relay ein und füge Kontakte hinzu wie auf dem Telefon, siehe [Chat über ein Relay](#relay).
 
-- **Was nur Android kann:** die Verbindung in der Nähe (Bluetooth und Wi-Fi Aware), LoRa und SMS. Der Rest ist gleich:
+- **Was nur Android kann:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa und SMS. Im selben WLAN geht es auch hier, wie auf einem Computer: siehe [Chat mit einem Telefon in der Nähe](#nearby). Der Rest ist gleich:
   Bereiche und das zweite Passwort, versteckte Chats, Sprachnachrichten, importierte Chats und Backups.
 - **Wo es Dinge aufbewahrt:** in \`~/.local/share/erevos\` auf dem Telefon, versiegelt wie auf dem Telefon. Sailfish
   hat keinen Schlüsselbund für Apps, also wird der Schlüsselspeicher dort so aufbewahrt, wie er ist, lesbar für deinen
@@ -3065,7 +3071,8 @@ Nachrichten und Einstellungen auf dieselbe Weise versiegelt auf.
   der Rest von Erevos hier geht er direkt, ohne Tor. Jedes Warten weckt das Telefon etwa einmal pro Minute, wie unter
   Android.
 - **Bisher getestet** auf der Browser-Engine von Sailfish (Gecko 91) auf einem Computer, im Chat mit einem Browser über
-  ein Relay. Noch nicht auf einem Sailfish-Telefon.
+  ein Relay. Das selbe WLAN wurde auf einem Computer gegen das des Computers geprüft. Noch nicht auf einem
+  Sailfish-Telefon.
 
 ## Updates {#updates}
 
@@ -3235,7 +3242,7 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Telefonanrufe** | Normale Telefonanrufe: Die Telefongesellschaft überträgt sie und kann mithören, wie bei jeder Telefon-App. Android führt die Anrufliste, nicht von Erevos versiegelt, wie für jede Telefon-App; Erevos liest sie, und die Favoriten, um sie zu zeigen, löscht daraus nur die Anrufe, die du löschst, und behält keine Kopie. Die für jede Nummer gewählte SIM ist im Bereich versiegelt; die Schnellantworten und was blockiert ist (nur Präfixe, Gruppen-IDs und Zeiten, für jeden Bereich gleich) werden auf dem Telefon aufbewahrt, nicht versiegelt. | |
 | **Importierte Chats** | Versiegelt in dem Bereich, in den sie geholt wurden, auch ihre Fotos und Dateien, jedes in seinen Stücken wie die Datei eines Chats. Die Größe der Datei, und wie viele Stücke es gibt, verraten ungefähr, wie viel importiert wurde, nicht wohin. | Fotos und Dateien aus Viber, und Dateien über 1 GB. |
 | **Nachrichtenverlauf** | Auf dem Telefon aufbewahrt, versiegelt in seinem Bereich, ohne Grenze, in Seiten gleicher Größe, gemischt für alle Bereiche. Nur wie viel alles zusammen belegt, ist sichtbar, nicht zu welchem Bereich es gehört. Löschen auf beiden Telefonen und verschwindende Nachrichten verlassen sich auf das Erevos des anderen Telefons. | |
-| **Nachrichten in der Nähe** | Öffnen sich nur in dem Bereich, der den Kontakt hat. Eine für einen anderen Bereich wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Versteckte Chats nutzen die Verbindung in der Nähe nie. | Versteckte Chats in der Nähe. |
+| **Nachrichten in der Nähe** | Öffnen sich nur in dem Bereich, der den Kontakt hat. Eine für einen anderen Bereich wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Eine für versteckte Chats öffnet sich nur, solange sie offen sind oder geschlossen empfangen, und der Bereich erfährt nie, dass einer ihrer Kontakte in der Nähe ist. | |
 | **Sprachnachrichten** | Ende-zu-Ende-verschlüsselt über das Relay oder in der Nähe, in Stücken: Das Relay, oder wer in der Nähe mithört, kann ungefähr erkennen, wie lang jede ist. Jeder Ton ist in einer eigenen Datei versiegelt; wie viele Dateien es gibt und wie groß sie sind, zeigt ungefähr, wie viele aufbewahrt werden, nicht in welchem Bereich. Nur während des Abspielens entsiegelt im Cache. | Tondateien alle gleich groß. |
 | **Fotos und Dateien** | Ende-zu-Ende-verschlüsselt, über den Dateispeicher des Relays, in Stücken gleicher Größe: Das Relay sieht wie viele und wann, also ungefähr wie groß. Dein Relay sieht deine Adresse, wie bei Nachrichten; der Kontakt holt sie über sein eigenes Relay. Fotos verlieren ihren Ort, ihr Telefon und ihre Zeit, außer sie werden als Datei gesendet; eine Datei behält, was sie in sich sagt. Auf dem Telefon in ihren Stücken versiegelt, aus dem Arbeitsspeicher gezeigt. Gespeicherte Kopien sind außerhalb von Erevos. Noch nicht in Backups. | Backups, die sie enthalten. |
 | **Auf einem Computer** | Versiegelt wie auf dem Telefon, im eigenen Ordner der App. Sein Schlüsselspeicher ist mit dem Schlüsselbund des Systems versiegelt (unter Windows mit dem Schlüssel deines Kontos); auf einem Linux-System ohne Schlüsselbund bewahrt Erevos nichts auf, außer es wurde mit \`--plain-secrets\` gestartet, und bewahrt ihn dann so auf, wie er ist. | |

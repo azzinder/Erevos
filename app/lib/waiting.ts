@@ -6,7 +6,7 @@ import { offerOnNostr } from './nostr-send-files';
 import { contentOf, withoutPreview } from './chat-parts';
 import { pieceToGo, pieceWent } from './pieces-kept';
 import type { E2E, Where } from './e2e';
-import { nearby, NoWayError, TooLargeForSlowWayError } from './nearby';
+import { nearby, NoWayError, TooLargeForSlowWayError, type NearHeard } from './nearby';
 import { canHoldAt, canTryLater, CannotHoldError, dropLater, fromHex, isQueueFull, RelayError, sameRelay, sendMessage, sendMessageLater, type HeldAt, type Mark, type Relay } from './relay';
 import { nostrOnlyWay, orNostr, type ForNostr } from './nostr-chats';
 import { nostrReady } from './nostr';
@@ -43,9 +43,11 @@ type Chats = Pick<SpaceChats, 'e2e' | 'history'>;
 // is kept with their removal and asked again with each look. Both go by the messages kept, not by
 // what a screen shows.
 //
-// Hidden chats go through the relay only (handOverHidden, SendPlace.hidden), never nearby or over
-// LoRa, or, with no relay between the two, through Nostr when the contact reads there, as the
-// space's chats do: what waits there goes with a look at their relay that answers, or with a look
+// Hidden chats go through the relay (handOverHidden, SendPlace.hidden), never over LoRa or by SMS,
+// nor carried by phones nearby, or, with no relay between the two, through Nostr when the contact
+// reads there, as the space's chats do. To a contact heard nearby by the place itself (SendPlace.near,
+// lib/place-nearby.ts) they go on that link too, and otherwise to the phones linked nearby, as the
+// space's do (lib/nearby.ts deliver): what waits there goes with a look at their relay that answers, or with a look
 // at Nostr, while they are open or, when they receive while closed, with the place's
 // (lib/place-receiver.ts). But what the relay could not
 // take for a contact's account as their queue is full goes to the endpoints of their account all
@@ -74,9 +76,10 @@ export function canWait(error: unknown): boolean {
  * Where the space's messages go from, as the chat screen or the receiver knows it: the relay that
  * sends (null without one), our own relay, for photos and files (null without one), our queue's
  * sender id, where contacts reach us, our relay's key (base64url, or empty), and whether the relay
- * answered just now. `hidden`: hidden chats', which go through the relay only.
+ * answered just now. `hidden`: hidden chats', which go through the relay, never carried nor over
+ * LoRa or SMS; `near`: where their contacts were heard nearby (lib/place-nearby.ts).
  */
-export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean; hidden?: boolean };
+export type SendPlace = { sends: Relay | null; own: Relay | null; senderHex: string; here: Where; ownKey: string; relayUp: boolean; hidden?: boolean; near?: NearHeard | null };
 
 /**
  * A message that waited and went: its chat, its tag, how long it lasts once read (seconds), and,
@@ -340,7 +343,7 @@ function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): 
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
   // Photos, files and voice messages go through Nostr too, as the contact's phone puts them together.
-  if (place.hidden) return (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || throughNostr(e2e, place, identity, queue);
+  if (place.hidden) return (!message.file && !!place.near?.isNear(identity)) || (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || throughNostr(e2e, place, identity, queue);
   if (message.file) return (!!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue))) || throughNostr(e2e, place, identity, queue);
   return (
     nearby.isNear(identity) ||
@@ -397,7 +400,7 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     packets = [text.packet];
   }
   if (place.hidden) {
-    await handOverHidden(e2e, place.sends, identity, { sealed, packets }, 'message', false);
+    await handOverHidden(e2e, place.sends, identity, { sealed, packets }, 'message', false, place.near ?? null);
     return { lasts: sealed.timer, bare: false };
   }
   const sends = place.sends;
@@ -444,9 +447,34 @@ export type Resealed = { sealed: { sender: string; relay: string; relayKey: stri
  * With `waits` (it is to go again as it is, with its tag), those go though the relay said their
  * queue is full, and when there were any, it throws OwedError. Otherwise it throws what failed: one
  * with the relay out of reach, say, is not sent, and copies nothing, as hidden chats keep nothing
- * waiting.
+ * waiting. With `near` (the place's, lib/place-nearby.ts), the phones nearby take them too, as the
+ * space's chats hand theirs (lib/nearby.ts offer): to the contact's link alone when the place heard
+ * them there, which is then enough, the relay's copy unwaited; otherwise the small ones to every
+ * phone linked, in case theirs is one, and the relay is still waited for, failing as it fails, so
+ * what waits goes again (their phone shows it once, by its tag). Only with neither relay nor Nostr
+ * between the two does that copy stand in. Nothing is carried, nor goes over LoRa or by SMS.
  */
-export async function handOverHidden(e2e: E2E, target: Relay | null, identity: string, { sealed, packets }: Resealed, mark: Mark, waits: boolean): Promise<'relay' | 'nostr'> {
+export async function handOverHidden(
+  e2e: E2E,
+  target: Relay | null,
+  identity: string,
+  { sealed, packets }: Resealed,
+  mark: Mark,
+  waits: boolean,
+  near: NearHeard | null = null,
+): Promise<'relay' | 'nostr' | 'nearby' | 'spread'> {
+  if (near) {
+    const all = sealed.first ? [sealed.first, ...packets] : packets;
+    const way = nearby.offer(identity, all, near);
+    const viaRelay = target && sealed.sender ? () => sendSealed(target, sealed, packets, sentMark(sealed, mark), () => e2e.firstSent(identity)) : null;
+    if (way === 'direct') {
+      // They have it from the link; the relay's copy is only in case it dropped.
+      viaRelay?.().catch(() => undefined);
+      return e2e.copiesAfter(sealed.copies, Promise.resolve('nearby' as const), waits && 'full');
+    }
+    // No relay nor Nostr between the two: the copy to the phones nearby is all there is.
+    if (way === 'spread' && !viaRelay && !nostrOnlyWay(e2e, identity, sealed, packets)) return e2e.copiesAfter(sealed.copies, Promise.resolve('spread' as const), waits && 'full');
+  }
   if (!target || !sealed.sender) {
     const nostr = nostrOnlyWay(e2e, identity, sealed, packets);
     if (!nostr) throw new Error(t('Type the relay address in Relay first.'));

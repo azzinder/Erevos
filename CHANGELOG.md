@@ -14,6 +14,27 @@ On main, not released yet:
 
 ### For you
 
+- **Hidden chats with phones nearby**: hidden chats used only their relay or Nostr; now, while a place is open, or
+  receives while closed, its chats also reach a contact's phone over the same links as the space's (Bluetooth, Wi-Fi
+  Aware, Wi-Fi Direct, the same Wi-Fi). What comes on the links opens in the space's chats first, as before; what opens
+  in none of them is tried in the open space's places that are open or receive (`lib/place-nearby.ts`
+  `unopenedNearby`, from `lib/receiver.ts`, the space's chat screen, the hidden chat screen and
+  `lib/place-receiver.ts`), and what none takes is kept in memory unopened, as for another space, until such a place
+  opens (`openHeldIn`). Where a place heard its contacts is its own (`lib/nearby.ts` `NearHeard`, `placeNear`), in
+  memory only while its chat screen or its receiver holds it, never in the space's `heard`, so nothing the space shows
+  or sends says that a hidden contact is near. A place's packets go as the space's do (`Nearby.offer`, and `deliver`
+  with the place's `NearHeard` for what its receiver says back): on the contact's link when the place heard them there,
+  the relay's copy then unwaited; otherwise the small ones to every phone linked, and the relay is still waited for, so
+  what waits goes again and shows once by its tag (`lib/waiting.ts` `handOverHidden`, `SendPlace.near`). Never carried,
+  never over LoRa or by SMS, nothing new advertised and nothing written: the links' nonces stay as they were. Groups of
+  hidden chats still go through the relay only, and calls in hidden chats are set up as before
+  (`checks/place-nearby.check.ts`).
+- **The same Wi-Fi on Sailfish OS**: the Sailfish shell links with Erevos phones and computers on the same Wi-Fi or a
+  hotspot (`sailfish/src/lanlink.cpp`, the protocol of `desktop/lan.js` and `LanLink.kt`, with a new nonce each start),
+  and answers `/__lan` as the desktop shell does, so the page's `lib/radio.ts` drives it the same way (`HAS_LINKS` on
+  Sailfish OS too). Checked on a computer with Qt 5 against `desktop/lan.js` over real UDP broadcasts and TCP
+  (`sailfish/lan-check/run.sh`); not yet on a phone, and the phone's firewall may need port 47905 open.
+
 - **Backup pieces with friends**: **Settings** → **Data and devices** → **Backup pieces** (`app/backup-pieces.tsx`)
   splits the backups' password, and the WebDAV server's address, user and app password when one is set, with Shamir's
   secret sharing over GF(256) (`lib/shamir.ts`, written here, no new dependency) into 2 of 3, 2 of 4, 3 of 4 or 3 of 5

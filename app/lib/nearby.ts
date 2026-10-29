@@ -37,6 +37,12 @@ import { fitsSms } from './sms-packets';
 // owner turned it on (lib/sms-way.ts), a text or a delete goes in data SMS (lib/sms-packets.ts),
 // the same encrypted packets. It costs what SMS cost, and the phone company sees who wrote to whom
 // and when, so it is off unless turned on.
+//
+// Hidden chats (lib/place-nearby.ts) use the same links, their packets the same as the space's,
+// spread and sent as the space's are, so nothing on the air tells them apart. But what they hear is
+// their own (NearHeard): the link each of their contacts was heard on is kept apart from the
+// space's, in memory only while the place is open or receives, so the space never learns that a
+// hidden contact is near, nor sends anything of theirs. They never carry, nor use LoRa or SMS.
 
 /**
  * How a message went: to the contact's phone nearby, through the relay, or to the phones nearby,
@@ -217,6 +223,52 @@ export class TooLargeForSmsError extends TooLargeForSlowWayError {
   }
 }
 
+/**
+ * The links one hidden place's contacts were heard on, apart from the space's (Nearby.heardOn): in
+ * memory only, while the place is open or receives (lib/place-nearby.ts), then forgotten.
+ */
+export class NearHeard {
+  private readonly heard = new Map<string, string>();
+  private readonly listeners = new Set<() => void>();
+  private readonly links: Pick<Nearby, 'isUp'>;
+
+  constructor(links: Pick<Nearby, 'isUp'>) {
+    this.links = links;
+  }
+
+  /** The link a contact was heard on, while it is up, or null. */
+  linkOf(identity: string): string | null {
+    const link = this.heard.get(identity);
+    return link && !isSlow(link) && this.links.isUp(link) ? link : null;
+  }
+
+  /** Whether a contact was heard on a link that is still up. */
+  isNear(identity: string): boolean {
+    return this.linkOf(identity) !== null;
+  }
+
+  /** A contact's packet came on this link: what goes to them goes there from now on. */
+  heardOn(identity: string, link: string): void {
+    if (isSlow(link) || this.heard.get(identity) === link) return;
+    this.heard.set(identity, link);
+    this.listeners.forEach((listener) => listener());
+  }
+
+  /** Calls `listener` when a contact is heard on a new link. Returns how to stop. */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /** Forgets them all, as the place closes. */
+  clear(): void {
+    this.heard.clear();
+    this.listeners.clear();
+  }
+}
+
 /** The phone's radio links, and what goes over them. The app has one (`nearby`). */
 export class Nearby {
   private send: RadioSend = () => false;
@@ -297,6 +349,11 @@ export class Nearby {
     return [...this.links].some(isSlow);
   }
 
+  /** Whether this link is up. */
+  isUp(link: string): boolean {
+    return this.links.has(link);
+  }
+
   /** Whether a contact was heard on a link that is still up, and not a slow one. */
   isNear(identity: string): boolean {
     const link = this.heard.get(identity);
@@ -336,18 +393,27 @@ export class Nearby {
 
   // Sends packets over the links, the slow ones or the others: on the contact's link when they were
   // heard on one, otherwise, when they are small, on every link. Says which, or null when none took them.
-  private toLinks(identity: string, packets: Uint8Array[], slow: boolean): 'direct' | 'spread' | null {
+  private toLinks(identity: string, packets: Uint8Array[], slow: boolean, heard: NearHeard | null = null): 'direct' | 'spread' | null {
     if (slow && packets.reduce((sum, packet) => sum + packet.length, 0) > MAX_SLOW) return null;
     const frames = packets.map((packet) => framesOf(packet));
     if (frames.some((f) => f === null)) return null;
     const all = frames as string[][];
     const links = [...this.links].filter((link) => isSlow(link) === slow);
-    const link = this.heard.get(identity);
+    const link = heard ? heard.linkOf(identity) : this.heard.get(identity);
     if (link && links.includes(link) && this.sendOn(link, all)) return 'direct';
     if (packets.some((packet) => packet.length > MAX_SPREAD)) return null;
     let reached = 0;
     for (const other of links) if (this.sendOn(other, all)) reached++;
     return reached > 0 ? 'spread' : null;
+  }
+
+  /**
+   * Sends a hidden place's packets for a contact on the links now, as `deliver` does before the
+   * relay: to the link the place heard them on (`heard`), or, when they are small, to every phone
+   * linked. Says which, or null when none took them. Nothing is carried, nor goes over LoRa.
+   */
+  offer(identity: string, packets: Uint8Array[], heard: NearHeard): 'direct' | 'spread' | null {
+    return this.toLinks(identity, packets, false, heard);
   }
 
   /**
@@ -362,6 +428,8 @@ export class Nearby {
    * the relay's error if the relay was tried. With `slow`, when nothing took them, SMS takes them
    * last, if it is on for the contact (`smsWay`) and they are small enough; too large, it throws
    * TooLargeForSmsError, and if the SMS did not go, what it would have thrown without SMS.
+   * `heard`: a hidden place's (NearHeard), whose contact this is: then where they were heard is
+   * looked up there, never in the space's, and nothing is carried, nor goes over LoRa or by SMS.
    */
   async deliver(
     identity: string,
@@ -369,8 +437,13 @@ export class Nearby {
     relay: (() => Promise<'nostr' | void>) | null,
     carry: (() => Promise<Carried[]>) | null = null,
     slow = false,
+    heard: NearHeard | null = null,
   ): Promise<Delivery> {
-    const way = this.toLinks(identity, packets, false);
+    if (heard) {
+      carry = null;
+      slow = false;
+    }
+    const way = this.toLinks(identity, packets, false, heard);
     if (way === 'direct') {
       relay?.().catch(() => {
         // They have it from the radio; the relay's copy was only in case the link dropped.
