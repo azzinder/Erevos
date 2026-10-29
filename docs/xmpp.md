@@ -353,7 +353,8 @@ Voice and video calls in a private group, as Dino makes them, so they work with 
   room tells the group service who is in the call and when.
 - **Hidden places:** a hidden place's own account has its group calls apart, as its calls
   (`xmppPlaceGroupCalls`): they ring while its hidden chats are open, with the phone's ringtone, and
-  as they close the call ends and the place's calls are forgotten.
+  as they close the call ends and the place's calls are forgotten. While they are closed and receive,
+  one that comes is kept as missed in its group (`closedInvite`).
 
 `app/checks/xmpp-muji.check.ts` plays Dino stanza by stanza through the checks' server, which keeps
 what each one says in its presence in a room and drops a room that is not kept once it is empty: a
@@ -403,8 +404,11 @@ only while Erevos shows it.
 Each place of hidden chats can sign in to an XMPP account of its own, apart from the space's, that
 nothing outside its hidden chats shows.
 
-- `app/lib/place-networks.ts` opens the place's account (`openXmppPlace`) as its hidden chats open
-  and closes it (`closeXmppPlace`) as they close, so it connects only while they are open and a
+- `app/lib/place-networks.ts` runs the place's account (`followXmppPlaces`, each place's in
+  `app/lib/place-lives.ts`) while its hidden chats are open, and while they are closed too if they
+  receive while closed (`receivingPlaces` in `app/lib/place-receiver.ts`): then it stays connected
+  whenever the space is open, as the place's relay queue is read, and its server sees it connected
+  from the phone's address beside the space's account. Otherwise it disconnects as they close, and a
   closed place receives nothing. Its sign-in and keys are kept encrypted with the place's key, in the
   place's own value of `erevos-xmpp`: the holders `hidden` and `hidden1` to `hidden3` of
   `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
@@ -414,14 +418,23 @@ nothing outside its hidden chats shows.
   open takes the param on (`whereParams`). The hidden chats' list (`app/app/chat.tsx`) has **XMPP**
   under it, and lists the place's chats (`xmppInboxRows`), which open with `hidden=1`
   (`components/chat-row.tsx`).
-- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list,
-  and no notification settings.
+- While its hidden chats are closed and receive (**Receive while closed**), a message to it makes the
+  notice say "New message", as for the place's other chats (`hearing` with the place, then
+  `onPlaceNetworkMessage` in `app/lib/network-notices.ts`, which `app/lib/background.ts` hears, on
+  Android only); while they are open, it sounds as theirs do. Nothing else of it tells outside them:
+  no number on Erevos's icon or the home list, and no notification settings.
 - Its calls are its own, a place of calls apart from the space's (`xmppPlaceCalls` in
   `app/lib/xmpp-calls.ts`, each call's session marked `place`): the tiles of its chats call from its
-  account, and a call to it rings while the hidden chats are open (the only time it is connected), with
-  the phone's ringtone and named as its contacts name the caller. The hidden chats stay open through the
-  call (`app/app/chat.tsx`), and a call still on as they close ends (`watch` in `XmppCallsSpace`).
-  Checked in `app/checks/xmpp-calls.check.ts`.
+  account, and a call to it while the hidden chats are open rings with the phone's ringtone, named as
+  its contacts name the caller. The hidden chats stay open through the call (`app/app/chat.tsx`), and a
+  call still on as they close ends (`watch` in `XmppCallsSpace`). While they are closed and receive, a
+  call from one of its contacts is held (`hold`, `XmppCallsSpace.closed`): nothing is said back, the
+  phone rings "Incoming call" with no name (`placeNetworkRang`, the hidden ring screen), and once the
+  PIN opens the place within the minute it rings there (`promote`), answered at once when the PIN was
+  typed on the ring screen (`takeHeldXmppCall`, `components/call-host.tsx`). One taken back, ended,
+  answered on another device or not opened in time is kept as missed, or as its device said. A group
+  call that comes then is kept as missed (`closedInvite` in `app/lib/xmpp-muji.ts`), as the place's own
+  groups' are. Checked in `app/checks/xmpp-calls.check.ts` and `app/checks/xmpp-muji.check.ts`.
 - `app/checks/place-networks.check.ts` checks the stores against the server played in the checks,
   with the real core; not yet on a phone.
 

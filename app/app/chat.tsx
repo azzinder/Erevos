@@ -6035,6 +6035,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     ? t('Closed, these hidden chats receive as your other chats do: their contacts see at once that a message came, a notice says only "New message", a call rings with no name, answered with the PIN, and a reminder of their Chat with myself says only "Reminder". For it, their key is kept encrypted with the space, so whoever opens the space and copies what the phone keeps could open them too; the PIN still keeps them out of sight.')
                     : t('Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.')}
                 </Text>
+                <Text variant="caption" tone="muted">
+                  {receiving
+                    ? t('Their own Matrix, XMPP and Nostr accounts stay connected too: what comes there says only "New message", and a call rings with no name.')
+                    : t('Their own Matrix, XMPP and Nostr accounts connect only while they are open.')}
+                </Text>
                 {canRingInBackground && !receiving ? (
                   <>
                     <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />

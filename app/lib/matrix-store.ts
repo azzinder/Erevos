@@ -2,7 +2,7 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { currentSpace } from '../lock/keys';
 import { lastRestore } from '../lock/restored';
-import { hiddenHolder, type Holder } from '../lock/sealed-file';
+import type { Holder } from '../lock/sealed-file';
 import { canMatrix } from './core';
 import { t } from './i18n';
 import {
@@ -44,6 +44,7 @@ import { keepMatrixPush, startMatrixPush, stopMatrixPush } from './matrix-push';
 import { addNetwork, hearing } from './network-notices';
 import type { MatrixCallsAccount } from './matrix-calls';
 import { actingWhere, type NetworkWhere } from './network-place';
+import { PlaceLives, type PlaceKey } from './place-lives';
 
 // The open space's Matrix account as the screens use it (app/matrix.tsx, app/matrix-chat.tsx):
 // loaded from its sealed value (lock/matrix-data.ts), synced with its homeserver while it runs,
@@ -52,9 +53,11 @@ import { actingWhere, type NetworkWhere } from './network-place';
 //
 // It runs once something asks for it (runMatrix), and goes on until the space closes or another
 // opens: then it stops and lets go of the account. A hidden place's own account runs beside it
-// while its hidden chats are open (openMatrixPlace, lib/place-networks.ts): their screens show it
-// and act on it (lib/network-place.ts); it tells nothing outside them, and has no push. Its calls
-// ring and are made while they are open (lib/matrix-calls.ts).
+// while its hidden chats are open, and while they are closed too if they receive while closed
+// (followMatrixPlaces, lib/place-networks.ts): the open one's screens show it and act on it
+// (lib/network-place.ts); what comes to one tells only of its place (lib/network-notices.ts), and
+// none has push. Its calls are made while its hidden chats are open, and ring then, or with no
+// name while they are closed and receive (lib/matrix-calls.ts).
 
 type Live = {
   /** The space's account, or a hidden place's. */
@@ -78,8 +81,8 @@ type Live = {
 };
 
 let live: Live | null = null;
-// The open hidden place's own account, while its hidden chats are open.
-let place: Live | null = null;
+// The hidden places' own accounts that run: the open hidden chats', and those receiving while closed.
+const places = new PlaceLives<Live>(start, end);
 const listeners = new Set<() => void>();
 
 /** Told each time the account, its rooms or their messages change. */
@@ -93,13 +96,13 @@ onVerificationChange(told);
 
 /** The open space's account as it is now, or the open hidden place's: null while it loads, or when there is none. */
 export function matrixNow(where: NetworkWhere = 'space'): { loaded: boolean; state: MatrixState | null; problem: string } {
-  const it = where === 'place' ? place : live;
+  const it = where === 'place' ? places.shown() : live;
   return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '' };
 }
 
 /** The account the screen on top acts on. */
 function acting(): Live | null {
-  return actingWhere() === 'place' ? place : live;
+  return actingWhere() === 'place' ? places.shown() : live;
 }
 
 /** How many messages are not read in the open space's Matrix rooms, invites counted as one each. */
@@ -162,8 +165,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
       try {
         return await change();
       } finally {
-        // A hidden place's messages tell nothing outside its hidden chats.
-        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), quiet);
+        // A hidden place's tell only of its place (hearing).
+        if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
       }
     });
   it.queue = run;
@@ -290,27 +293,33 @@ export function runMatrix(): void {
   live = start('space', space.space, space.key);
 }
 
-/** Loads a hidden place's own account, as its hidden chats open, and syncs it while they stay open. */
-export function openMatrixPlace(space: number, pocket: number, key: Uint8Array): void {
-  if (!canMatrix()) return;
-  const holder = hiddenHolder(pocket);
-  if (place && place.space === space && place.holder === holder && !place.stopped) return;
-  closeMatrixPlace();
-  place = start(holder, space, key);
+/**
+ * Runs the own accounts of the hidden places of `space` in `wanted`, each loaded once and synced
+ * while it stays wanted, and lets go of the others; `shown` is the pocket of the open hidden chats.
+ */
+export function followMatrixPlaces(space: number, wanted: PlaceKey[], shown: number | null): void {
+  const was = places.shown();
+  if (!places.follow(space, canMatrix() ? wanted : [], shown)) return;
+  // What was fetched for the open hidden chats goes as they close.
+  if (was && !places.isShown(was)) fetched.clear();
+  told();
 }
 
-/** Stops a hidden place's account and lets go of it, as its hidden chats close. */
-export function closeMatrixPlace(): void {
-  if (!place) return;
-  place.stopped = true;
-  if (place.state) forgetVerifications(place.state);
-  place = null;
+/** Stops every hidden place's account and lets go of them. */
+export function closeMatrixPlaces(): void {
+  if (!places.stopAll()) return;
   fetched.clear();
   told();
 }
 
-function start(holder: Holder, space: number, key: Uint8Array): Live {
-  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard: hearing(), pushChecked: false };
+function end(it: Live): void {
+  it.stopped = true;
+  if (it.state) forgetVerifications(it.state);
+}
+
+function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
+  const heard = hearing(pocket === undefined ? undefined : { space, pocket });
+  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard, pushChecked: false };
   loadMatrix(space, key, holder)
     .then(async (loaded) => {
       let state = loaded;
@@ -342,7 +351,7 @@ function start(holder: Holder, space: number, key: Uint8Array): Live {
 
 /** Stops syncing and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopMatrix(): void {
-  closeMatrixPlace();
+  closeMatrixPlaces();
   if (!live) return;
   live.stopped = true;
   if (live.state) forgetVerifications(live.state);
@@ -367,10 +376,25 @@ function callAccount(of: () => Live | null): MatrixCallsAccount {
   };
 }
 
-/** The open space's account for its calls, and its open hidden place's while their chats are open. */
-export const matrixCallAccount: MatrixCallsAccount & { place: MatrixCallsAccount; watch(listener: () => void): () => void } = {
+/** Of the account `state` is, when it is a closed hidden place's that receives (lib/place-receiver.ts):
+ *  its space and pocket, and the account, for the calls that ring it. */
+function closedPlace(state: MatrixState): { space: number; pocket: number; account: MatrixCallsAccount } | null {
+  const found = places.closed((it) => it.state === state);
+  if (!found) return null;
+  const { it, pocket } = found;
+  return { space: it.space, pocket, account: callAccount(() => (it.stopped ? null : it)) };
+}
+
+/** The open space's account for its calls, its open hidden place's while their chats are open, and
+ *  those of its closed places that receive. */
+export const matrixCallAccount: MatrixCallsAccount & {
+  place: MatrixCallsAccount;
+  closed: typeof closedPlace;
+  watch(listener: () => void): () => void;
+} = {
   ...callAccount(() => live),
-  place: callAccount(() => (place && !place.stopped ? place : null)),
+  place: callAccount(() => places.shown()),
+  closed: closedPlace,
   watch: onMatrixChange,
 };
 
@@ -527,7 +551,7 @@ export async function matrixFile(file: MatrixFile): Promise<Uint8Array> {
 
 /** The open space's checks by emoji (lib/matrix-verify.ts), or the open hidden place's: asked, going on, or just ended. */
 export function matrixVerifications(where: NetworkWhere = 'space'): Verification[] {
-  const it = where === 'place' ? place : live;
+  const it = where === 'place' ? places.shown() : live;
   return it?.state ? verifications(it.state) : [];
 }
 

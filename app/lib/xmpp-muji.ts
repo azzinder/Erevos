@@ -31,7 +31,8 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // relay, else the XMPP server's (XEP-0215), and only through it, as a call with one person does.
 //
 // A hidden place's own account calls the same way while its hidden chats are open, as a place of
-// its own (xmppPlaceGroupCalls); its calls end, and are forgotten, as they close.
+// its own (xmppPlaceGroupCalls); its calls end, and are forgotten, as they close. While they are
+// closed and receive, a group call that comes is kept as missed, as their own groups' are.
 
 const MUJI = NS.muji;
 const INVITES = NS.callInvites;
@@ -67,6 +68,8 @@ export type MujiSpace = {
   mayRing(state: XmppState, jid: string): boolean;
   /** Whether the hidden place's hidden chats are open. */
   placeOpen(): boolean;
+  /** The chats' call lines of the closed hidden place whose account `state` is, while it receives; null for none. */
+  closed?(state: XmppState): { line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void> } | null;
   /** Calls the listener as the accounts change (a place's opened or closed). Returns how to stop. */
   watch?(listener: () => void): () => void;
 };
@@ -329,11 +332,14 @@ function answerMessage(m: Muji, name: 'accept' | 'reject' | 'retract' | 'left'):
 }
 
 function onInvite(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean }): void {
-  const place = space?.placeOf(state);
-  if (!space || place === null || place === undefined) return;
   const node = children(message).find((c) => c.ns === INVITES) ?? children(message).find((c) => c.ns === LEGACY);
   const id = node?.attrs.id;
-  if (!node || !id) return;
+  if (!space || !node || !id) return;
+  const place = space.placeOf(state);
+  if (place === null) {
+    closedInvite(state, connection, message, node, how.at);
+    return;
+  }
   const from = message.attrs.from ?? '';
   const groupchat = message.attrs.type === 'groupchat';
   let sender = bare(from);
@@ -389,6 +395,25 @@ function onInvite(state: XmppState, connection: XmppConnection, message: XmlElem
       // `left`, `finish`: who is in the call is what its room says.
       return;
   }
+}
+
+// A call to a group of a closed hidden place's account: kept as missed in the group, as one the
+// place's own groups have while closed (lib/place-groups.ts).
+function closedInvite(state: XmppState, connection: XmppConnection, message: XmlElement, node: XmlElement, at: number): void {
+  const closed = space?.closed?.(state);
+  const room = bare(child(node, 'muji', MUJI)?.attrs.room ?? '');
+  if (!closed || (node.name !== 'invite' && node.name !== 'propose') || !isXmppId(room)) return;
+  const from = message.attrs.from ?? '';
+  const group = bare(from);
+  if (message.attrs.type === 'groupchat') {
+    const known = roomOf(state, from);
+    const nick = from.slice(from.indexOf('/') + 1);
+    // Ours, back from the group.
+    if (!known || nick === known.nick || known.occupants[nick] === state.jid) return;
+  } else if (from === connection.fullJid || group === state.jid) {
+    return;
+  }
+  void closed.line(group, false, `${CALL_LINE}Missed ${node.attrs.video === 'true' ? 'group video call' : 'group call'}`, `call-${node.attrs.id}`, at).catch(() => undefined);
 }
 
 // ---- its room ----

@@ -87,12 +87,40 @@ export function unreadChange(before: ReadonlyMap<string, number>, after: Readonl
   return { came, read };
 }
 
+// A hidden place's own accounts (lib/place-networks.ts) tell only their place, and only to
+// lib/background.ts, which says "New message" of it with no name, as for the place's other chats;
+// a call to one closed rings with no name, as theirs do.
+const placeListeners = new Set<(space: number, pocket: number, where: string, times: number) => void>();
+const ringListeners = new Set<(space: number, pocket: number) => void>();
+
+/** Calls `listener` as `times` messages come in the chat `where` of a hidden place's own account, open or receiving while closed. Returns how to stop. */
+export function onPlaceNetworkMessage(listener: (space: number, pocket: number, where: string, times: number) => void): () => void {
+  placeListeners.add(listener);
+  return () => {
+    placeListeners.delete(listener);
+  };
+}
+
+/** Calls `listener` as a call comes to a closed hidden place's own account, to ring it with no name. Returns how to stop. */
+export function onPlaceNetworkRing(listener: (space: number, pocket: number) => void): () => void {
+  ringListeners.add(listener);
+  return () => {
+    ringListeners.delete(listener);
+  };
+}
+
+/** A call came to the own account of the closed hidden place in `pocket` of `space`. */
+export function placeNetworkRang(space: number, pocket: number): void {
+  ringListeners.forEach((listener) => listener(space, pocket));
+}
+
 /**
  * What one store last said its chats had not read. `hear` tells of what changed since; a `quiet`
  * one only takes the count as it is, as when an account is signed in to and fetches what came
- * before. Until the first, nothing is told.
+ * before. Until the first, nothing is told. A hidden place's (`place`) tells only of what came, and
+ * only as that place's.
  */
-export function hearing(): { hear(now: ReadonlyMap<string, number>, quiet?: boolean): void } {
+export function hearing(place?: { space: number; pocket: number }): { hear(now: ReadonlyMap<string, number>, quiet?: boolean): void } {
   let heard: ReadonlyMap<string, number> | null = null;
   return {
     hear(now, quiet = false) {
@@ -100,6 +128,10 @@ export function hearing(): { hear(now: ReadonlyMap<string, number>, quiet?: bool
       heard = new Map(now);
       if (!before || quiet) return;
       const { came, read } = unreadChange(before, now);
+      if (place) {
+        for (const [where, times] of came) placeListeners.forEach((listener) => listener(place.space, place.pocket, where, times));
+        return;
+      }
       for (const [where, times] of came) cameListeners.forEach((listener) => listener(where, times));
       if (read.length) readListeners.forEach((listener) => listener(read));
     },

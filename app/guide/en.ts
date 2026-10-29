@@ -1517,7 +1517,8 @@ bridge sits in between.
   calls, through this space's call relay or the XMPP server's TURN server, eight people at most. As in a call with one
   person, the call is encrypted (DTLS-SRTP), but the fingerprints of its keys, and the invitations, go through the XMPP
   servers as they are, and the group service sees who is in the call and when. A hidden chats' own XMPP account calls in
-  its groups the same way, while the hidden chats are open.
+  its groups the same way, while the hidden chats are open; while they are closed, with **Receive while closed** on, a
+  call that comes in one of its groups shows as missed.
 - **Not anonymous:** the XMPP server sees your account, your contacts, who talks with whom and when, and, without Tor,
   from where. The other person's server sees the same of its chats with you.
 - **Through Tor:** on Android, XMPP follows this space's choice under **Settings** → **Relay and networks** → **Tor**:
@@ -2054,17 +2055,18 @@ what the places taken away hold.
   With no relay, their contact link says where they read on Nostr, with a key of that place alone, and texts go there,
   as from a phone with no relay; photos, voice messages, calls and groups need a relay. While they are closed, their
   messages wait on the relay, or on Nostr for two days, unless **Receive while closed** is on.
-- **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do
-  while the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a
-  message came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the
-  ringing screen, tap the small sign, type the PIN and tap **Connect** to answer), and a reminder of their Chat with
-  myself shows a notice that says only **Reminder**. What comes to them through Nostr is read then too. A call that
-  ended before you opened them, or rang too long, shows as missed. Nothing of them shows anywhere until the PIN opens
-  them. A new place starts with it on; places set before stay as they were until you turn it on. For it, the place's
-  key is kept encrypted with the space, among a random key for each other place, so opening the space does not show
-  which places receive, or are set. But whoever opens the space and copies what the phone keeps could open that place
-  too, with no PIN: the PIN then keeps them out of sight of whoever holds the phone, not of a forensic tool. Off,
-  their key is only behind the PIN, and their messages wait on the relay until you open them. Backups keep the switch.
+- **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do while
+  the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a message
+  came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the ringing
+  screen, tap the small sign, type the PIN and tap **Connect** to answer), and a reminder of their Chat with myself
+  shows a notice that says only **Reminder**. What comes to them through Nostr is read then too, and their own Matrix,
+  XMPP and Nostr accounts stay connected (see below). A call that ended before you opened them, or rang too long, shows
+  as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts with it on; places set before
+  stay as they were until you turn it on. For it, the place's key is kept encrypted with the space, among a random key
+  for each other place, so opening the space does not show which places receive, or are set. But whoever opens the space
+  and copies what the phone keeps could open that place too, with no PIN: the PIN then keeps them out of sight of
+  whoever holds the phone, not of a forensic tool. Off, their key is only behind the PIN, and their messages wait on the
+  relay until you open them. Backups keep the switch.
 - **They close by themselves** once Erevos was in the background for more than 30 seconds, as a chat's own PIN
   locks again, but not during a call, nor while you pick a photo or a file for them or take a photo.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos
@@ -2087,10 +2089,13 @@ what the places taken away hold.
   chats' own, apart from the space's: a Matrix account and an XMPP account to sign in to, and a Nostr key. The sign-ins
   and the key are kept encrypted with the hidden chats' key, and nothing of them shows outside the hidden chats: their
   chats are in the hidden chats' list only, and add nothing to the number on Erevos's icon or to the home list. The
-  accounts connect only while the hidden chats are open, so while they are closed nothing comes and no notice shows,
-  even with **Receive while closed** on. Their chats call as the space's do, from the hidden chats' own account; a call
-  to it rings only while the hidden chats are open, with the phone's ringtone, and they stay open until it ends. A
-  Matrix account of theirs has no **Say a message came**.
+  accounts connect while the hidden chats are open, and while they are closed too if **Receive while closed** is on,
+  as the hidden chats themselves receive: then a message there shows a notice that says only "New message", and on
+  Android a Matrix or XMPP call rings with "Incoming call" and no name, answered with the PIN as their other calls are;
+  one not answered in time shows as missed, and so does an XMPP group call that comes while they are closed. With it
+  off, the accounts connect only while the hidden chats are open, and nothing comes while they are closed. Their chats
+  call as the space's do, from the hidden chats' own account; a call to it while the hidden chats are open rings with
+  the phone's ringtone, and they stay open until it ends. A Matrix account of theirs has no **Say a message came**.
 - **Link previews** have a switch of their own in a hidden chat's details, for all the chats of that place, off unless
   you turn it on (see **Link previews** under [Chat through a relay](#relay)).
 - **Say when a message comes** (Android): at the top of a place while **Receive while closed** is off. Turned on,

@@ -121,6 +121,11 @@ export function receivesPocket(space: number, pocket: number): boolean {
   return openSpace === space && runs.has(pocket);
 }
 
+/** The open space's hidden chats that receive while closed, as last read, with their keys: their own accounts on other networks run too (lib/place-networks.ts). */
+export function receivingPlaces(): { space: number; pocket: number; key: Uint8Array }[] {
+  return openSpace === null ? [] : [...runs.values()].filter((run) => run.space === openSpace).map(({ space, pocket, key }) => ({ space, pocket, key }));
+}
+
 // The space whose receiver started and has not yet read which places receive: until then no one
 // knows which pockets tell of what came themselves (lib/hidden-notices.ts waits for it).
 let reading: number | null = null;

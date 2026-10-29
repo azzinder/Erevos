@@ -9,7 +9,7 @@ import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
-import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask, confirm } from '../lib/alert';
@@ -113,7 +113,7 @@ export default function MatrixChatScreen() {
   const counted = useRef(count);
   counted.current = count;
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(roomId && where === 'space' ? `matrix:${roomId}` : undefined);
+  const shown = useNetworkChatShown(!roomId ? undefined : where === 'space' ? `matrix:${roomId}` : hiddenOnScreen());
   useEffect(() => {
     if (shown && roomId && room?.unread) matrixRead(roomId).catch(() => undefined);
   }, [shown, roomId, count, room?.unread]);

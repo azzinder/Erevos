@@ -211,9 +211,11 @@ Android; a muted one is left out. Its messages are marked read only while Erevos
 Each place of hidden chats can have a Nostr key of its own, apart from the space's, that nothing
 outside its hidden chats shows.
 
-- `app/lib/place-networks.ts` opens the place's key (`openNostrDmPlace`) as its hidden chats open and
-  closes it (`closeNostrDmPlace`) as they close, so it reads its relays only while they are open and a
-  closed place receives nothing. The key and its chats are kept encrypted with the place's key, in the
+- `app/lib/place-networks.ts` runs the place's key (`followNostrDmPlaces`, each place's in
+  `app/lib/place-lives.ts`) while its hidden chats are open, and while they are closed too if they
+  receive while closed (`receivingPlaces` in `app/lib/place-receiver.ts`): then it reads its relays
+  whenever the space is open, as the place's relay queue is read. Otherwise it stops as they close, and
+  a closed place receives nothing. The key and its chats are kept encrypted with the place's key, in the
   place's own value of `erevos-nostr-dm`: the holders `hidden` and `hidden1` to `hidden3` of
   `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
   Its connections are its own, so no relay sees both keys on one.
@@ -222,8 +224,11 @@ outside its hidden chats shows.
   is the hidden chats' own, and while they are on top what is done goes to it; the chat they open takes
   the param on (`whereParams`). The hidden chats' list (`app/app/chat.tsx`) has **Nostr** under it, and
   lists the place's chats (`nostrInboxRows`), which open with `hidden=1` (`components/chat-row.tsx`).
-- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list,
-  and no notification settings.
+- While its hidden chats are closed and receive (**Receive while closed**), a message to it makes the
+  notice say "New message", as for the place's other chats (`hearing` with the place, then
+  `onPlaceNetworkMessage` in `app/lib/network-notices.ts`, which `app/lib/background.ts` hears, on
+  Android only); while they are open, it sounds as theirs do. Nothing else of it tells outside them:
+  no number on Erevos's icon or the home list, and no notification settings.
 - `app/checks/place-networks.check.ts` checks the stores against the relay played in the checks, with
   the real core; not yet on a phone.
 

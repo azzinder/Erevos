@@ -18,7 +18,7 @@ import { startHiddenRinging } from './hidden-ring-notices';
 import { iconNumberOn } from './icon-number';
 import { networkChanged } from './network-change';
 import { laterTheirs, showsAt } from './later';
-import { onNetworkMessage, onNetworkRead } from './network-notices';
+import { onNetworkMessage, onNetworkRead, onPlaceNetworkMessage, onPlaceNetworkRing } from './network-notices';
 import { NoticeCount, onReadElsewhere } from './notice-count';
 import { onPlaceGroupMessage } from './place-groups';
 import { isPicking } from './picking';
@@ -421,6 +421,11 @@ export function startBackground(): () => void {
       if (placeGroupTells(space, pocket, appShown(), receivesPocket(space, pocket))) messageCame(false, screenOfHidden(pocket), screenOfGroup(group));
     }),
     onPlaceRing(onRing),
+    // Their own accounts on Matrix, XMPP and Nostr (lib/place-networks.ts), as their contacts' messages and calls do.
+    onPlaceNetworkMessage((space, pocket, where, times) => {
+      if (placeGroupTells(space, pocket, appShown(), receivesPocket(space, pocket))) messageCame(false, screenOfHidden(pocket), where, times);
+    }),
+    onPlaceNetworkRing(onRing),
   ];
   // Answered, turned down, or timed out: the ringtone and notice stop (the call, if answered, took
   // over the sound itself). Turned down or unanswered, Erevos no longer shows over the lock screen,

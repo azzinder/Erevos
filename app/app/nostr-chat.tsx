@@ -8,7 +8,7 @@ import { Missing, type Answered } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
-import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -109,7 +109,7 @@ export default function NostrChatScreen() {
   const chat = key && state ? state.chats[key] : undefined;
   const count = chat?.messages.length ?? 0;
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(key && where === 'space' ? `nostr:${key}` : undefined);
+  const shown = useNetworkChatShown(!key ? undefined : where === 'space' ? `nostr:${key}` : hiddenOnScreen());
   useEffect(() => {
     if (shown && key && chat?.unread) nostrDmRead(key).catch(() => undefined);
   }, [shown, key, count, chat?.unread]);

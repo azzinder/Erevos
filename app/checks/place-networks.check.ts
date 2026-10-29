@@ -2,8 +2,9 @@
 // core built to WebAssembly: as its hidden chats open, the place's own account loads beside the
 // space's and runs, apart from it. Its screens act on it (lib/network-place.ts) and the space's
 // screens on the space's; each is kept sealed with its own key in its own value; what comes to the
-// place tells nothing outside its hidden chats (no notice, no count on the icon or the home list);
-// and as the hidden chats close, it stops and is let go of.
+// place tells nothing outside its hidden chats (no notice that names it, no count on the icon or the
+// home list); and as the hidden chats close, it stops and is let go of, unless they receive while
+// closed: then it stays connected, and what comes tells only of its place.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -19,15 +20,15 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { setOpenHiddenPlace, type OpenHiddenPlace } from '../lib/hidden-contacts';
 import { defaultMatrixHttp, sendText, setMatrixHttp, signIn, startChat, sync } from '../lib/matrix';
-import { matrixNow, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
-import { networkUnreadAt, onNetworkMessage } from '../lib/network-notices';
+import { followMatrixPlaces, matrixJoin, matrixNow, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
+import { networkUnreadAt, onNetworkMessage, onPlaceNetworkMessage } from '../lib/network-notices';
 import { actingWhere, showWhere } from '../lib/network-place';
 import { DEFAULT_INBOX, LOOKUP_RELAYS, npubOf } from '../lib/nostr-dm';
 import { setNostrOpen } from '../lib/nostr-dm-net';
 import { nostrDmMake, nostrDmNow, nostrDmSend, nostrDmSetInbox, nostrDmStart, nostrDmUnread, runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { sendXmppText } from '../lib/xmpp';
-import { runXmpp, setXmppConnect, stopXmpp, xmppNow, xmppSend, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
+import { followXmppPlaces, runXmpp, setXmppConnect, stopXmpp, xmppNow, xmppSend, xmppSignIn, xmppUnread } from '../lib/xmpp-store';
 import { Homeserver, HS, PASSWORD as MATRIX_PASSWORD } from './matrix-server';
 import { FakeRelay } from './nostr-relay';
 import { DOMAIN, PASSWORD, person, Server, settle } from './xmpp-server';
@@ -268,5 +269,105 @@ test('Nostr: a hidden place has its own key, apart from the space’s, telling n
     stopNostrDm();
     setNostrOpen(null);
     setCurrentSpace(null);
+  }
+});
+
+test('XMPP: a place that receives while closed keeps its account connected, and what comes tells only of its place', { skip: !coreReady }, async () => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const spaceKey = randomBytes(32);
+  const placeKey = randomBytes(32);
+  const came: [string, number][] = [];
+  const placeCame: [number, number, string, number][] = [];
+  const stopCame = onNetworkMessage((where, times) => came.push([where, times]));
+  const stopPlaceCame = onPlaceNetworkMessage((space, pocket, where, times) => placeCame.push([space, pocket, where, times]));
+  setXmppConnect(server.connect);
+  setCurrentSpace(9, spaceKey);
+  const cat = () => [...server.bound.keys()].some((full) => full.startsWith(`cat@${DOMAIN}/`));
+  try {
+    runXmpp();
+    // Its hidden chats open (lib/place-networks.ts says so), and it signs in.
+    followXmppPlaces(9, [{ pocket: 1, key: placeKey }], 1);
+    await until(() => xmppNow('place').loaded, 'the place’s account to load');
+    await inPlace(() => xmppSignIn(`cat@${DOMAIN}`, PASSWORD));
+    await until(() => xmppNow('place').online && !!xmppNow('place').state?.omemo.published, 'the place’s account online');
+    const state = xmppNow('place').state;
+
+    // They close, and receive: nothing of it shows, but it stays connected.
+    followXmppPlaces(9, [{ pocket: 1, key: placeKey }], null);
+    assert.equal(xmppNow('place').state, null);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.ok(cat(), 'the place’s account still connected');
+    await sendXmppText(ann.state, ann.connection, `cat@${DOMAIN}`, 'όσο είναι κλειστό');
+    await until(() => placeCame.length === 1, 'the place’s notice');
+    assert.deepEqual(placeCame, [[9, 1, `xmpp:ann@${DOMAIN}`, 1]]);
+    assert.deepEqual(came, []);
+    assert.equal(xmppUnread(), 0);
+    assert.equal(networkUnreadAt().size, 0);
+
+    // Open again: the same account, with what came.
+    followXmppPlaces(9, [{ pocket: 1, key: placeKey }], 1);
+    assert.equal(xmppNow('place').state, state);
+    assert.deepEqual(xmppNow('place').state?.chats[`ann@${DOMAIN}`]?.messages.map((m) => m.text), ['όσο είναι κλειστό']);
+
+    // No longer receiving, and closed: it goes.
+    followXmppPlaces(9, [], null);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.ok(!cat(), 'the place’s account disconnected');
+  } finally {
+    followXmppPlaces(9, [], null);
+    stopCame();
+    stopPlaceCame();
+    stopXmpp();
+    setXmppConnect(undefined);
+    setCurrentSpace(null);
+    ann.connection.close();
+  }
+});
+
+test('Matrix: a place that receives while closed keeps syncing, and what comes tells only of its place', { skip: !coreReady }, async () => {
+  const server = new Homeserver();
+  setMatrixHttp(async (request) => {
+    if (request.url.includes('/sync?timeout=30000')) await new Promise((resolve) => setTimeout(resolve, 20));
+    return server.answer(request);
+  });
+  const cleo = await signIn(HS, 'cleo', MATRIX_PASSWORD);
+  await sync(cleo, 0);
+  const placeKey = randomBytes(32);
+  const came: [string, number][] = [];
+  const placeCame: [number, number, string, number][] = [];
+  const stopCame = onNetworkMessage((where, times) => came.push([where, times]));
+  const stopPlaceCame = onPlaceNetworkMessage((space, pocket, where, times) => placeCame.push([space, pocket, where, times]));
+  setCurrentSpace(6, randomBytes(32));
+  try {
+    runMatrix();
+    followMatrixPlaces(6, [{ pocket: 2, key: placeKey }], 2);
+    await until(() => matrixNow('place').loaded, 'the place’s account to load');
+    await inPlace(() => matrixSignIn('eve', MATRIX_PASSWORD, HS));
+    const room = await startChat(cleo, '@eve:example.org');
+    await until(() => !!matrixNow('place').state?.rooms[room.id], 'the place’s invitation');
+    await inPlace(() => matrixJoin(room.id));
+    await until(() => !matrixNow('place').state?.rooms[room.id]?.invitedBy, 'the place in the room');
+    const state = matrixNow('place').state;
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    placeCame.length = 0;
+
+    followMatrixPlaces(6, [{ pocket: 2, key: placeKey }], null);
+    assert.equal(matrixNow('place').state, null);
+    await sendText(cleo, room.id, 'όσο είναι κλειστό');
+    await until(() => placeCame.length > 0, 'the place’s notice');
+    assert.deepEqual(placeCame, [[6, 2, `matrix:${room.id}`, 1]]);
+    assert.deepEqual(came, []);
+    assert.equal(matrixUnread(), 0);
+
+    followMatrixPlaces(6, [{ pocket: 2, key: placeKey }], 2);
+    assert.equal(matrixNow('place').state, state);
+  } finally {
+    followMatrixPlaces(6, [], null);
+    stopCame();
+    stopPlaceCame();
+    stopMatrix();
+    setCurrentSpace(null);
+    setMatrixHttp(defaultMatrixHttp);
   }
 });

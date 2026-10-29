@@ -1,7 +1,8 @@
 import { useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import { showOnScreen } from '../lib/background';
+import { screenOfHidden, showOnScreen } from '../lib/background';
+import { openHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { appShown, onAppShown } from '../lib/receiver';
 import type { ChatNotify } from '../lock/chat-notify';
@@ -13,8 +14,8 @@ import { Button } from './ui';
 // comes in it only sounds (lib/background.ts), and its own notifications are set from it.
 
 /**
- * While the chat `where` (its home row: `matrix:`, `xmpp:` or `nostr:` and who) is the screen in
- * front, what comes in it only sounds. Says whether it shows now, with Erevos on the screen: only
+ * While the chat `where` (its home row: `matrix:`, `xmpp:` or `nostr:` and who; for a hidden place's,
+ * where its hidden chats show) is the screen in front, what comes in it only sounds. Says whether it shows now, with Erevos on the screen: only
  * then are its messages read, so that what comes while Erevos is away still tells of itself.
  */
 export function useNetworkChatShown(where: string | undefined): boolean {
@@ -26,6 +27,13 @@ export function useNetworkChatShown(where: string | undefined): boolean {
   }, []);
   useEffect(() => (where && focused ? showOnScreen(where) : undefined), [where, focused]);
   return focused && shown;
+}
+
+/** Where the open hidden chats show, for a chat of their place's own account (lib/place-networks.ts):
+ *  what comes in any of their chats only sounds while it shows. */
+export function hiddenOnScreen(): string | undefined {
+  const open = openHiddenPlace();
+  return open ? screenOfHidden(open.pocket) : undefined;
 }
 
 /** The chat's Notifications button, with what it is set to, and its sheet: on Android only, as for the space's chats. */

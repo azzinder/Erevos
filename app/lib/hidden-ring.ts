@@ -5,7 +5,8 @@ import { useEffect, useState } from 'react';
 // down, or times out. The ring screen (components/hidden-ring-screen.tsx) shows it: "Incoming call"
 // with no name, a discreet sign that opens a PIN field, and the right PIN opens the place and
 // answers (app/chat.tsx). Held in memory only. We cannot say which pocket, or who, until the PIN
-// opens the place — the call offer waits on the place's message queue meanwhile.
+// opens the place — the call offer waits on the place's message queue meanwhile, or, for a call to
+// the place's own Matrix or XMPP account, with that account (lib/matrix-calls.ts, lib/xmpp-calls.ts).
 
 /** A hidden call ringing now: which space and pocket, and when it began. */
 export type HiddenRinging = { space: number; pocket: number; at: number };

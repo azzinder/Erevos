@@ -347,14 +347,20 @@ On main, not released yet:
   **Matrix**, **XMPP** and **Nostr** open the same screens as the space's (`app/matrix.tsx`, `app/xmpp.tsx`,
   `app/nostr-chats.tsx` and their chats) for an account of that place alone: a Matrix and an XMPP sign-in and a Nostr
   key, each kept encrypted with the place's key in the place's own value of the network's file (the holders `hidden` and
-  `hidden1` to `hidden3` of `lock/sealed-file.ts`), apart from the space's, which never sees them. They connect only
-  while the hidden chats are open and are let go of as they close (`lib/place-networks.ts`), so nothing comes and no
-  notice shows while they are closed. Their chats are rows of the hidden chats' list and nowhere else: no notice, no
-  number on Erevos's icon, nothing on the home list, and no notification settings; and, for Matrix, no notice while
-  closed. Their Matrix and XMPP chats call as the space's do, from the place's account (`MatrixCall.place` in
-  `lib/matrix-calls.ts`, `xmppPlaceCalls` in `lib/xmpp-calls.ts`): a call to it rings only while the hidden chats are
-  open, with the phone's ringtone, they stay open through the call, and one still on as they close ends (checked in
-  `app/checks/matrix-calls.check.ts` and `app/checks/xmpp-calls.check.ts`). A screen opened from the hidden chats says so under its title and shows the place's
+  `hidden1` to `hidden3` of `lock/sealed-file.ts`), apart from the space's, which never sees them. They connect while
+  the hidden chats are open, and, as the hidden chats themselves do, while they are closed too if **Receive while
+  closed** is on (`lib/place-networks.ts` follows `receivingPlaces` of `lib/place-receiver.ts`; each store runs one
+  account per place, `lib/place-lives.ts`): then a message there makes the notice say only "New message"
+  (`onPlaceNetworkMessage`), and on Android a Matrix or XMPP call rings "Incoming call" with no name and waits for the
+  PIN, which on the ring screen answers it (`placeNetworkRang`; `hold`/`promote` in `lib/xmpp-calls.ts` and
+  `lib/matrix-calls.ts`); one not opened in time, or ended, is kept as missed, and an XMPP group call that comes then
+  is kept as missed. With it off, they are let go of as the hidden chats close, and nothing comes while they are
+  closed. Their chats are rows of the hidden chats' list and nowhere else: no number on Erevos's icon, nothing on the
+  home list, and no notification settings; and, for Matrix, no notice while the space is closed. Their Matrix and
+  XMPP chats call as the space's do, from the place's account (`MatrixCall.place` in `lib/matrix-calls.ts`,
+  `xmppPlaceCalls` in `lib/xmpp-calls.ts`): a call to it while the hidden chats are open rings with the phone's
+  ringtone, they stay open through the call, and one still on as they close ends (checked in
+  `app/checks/matrix-calls.check.ts`, `app/checks/xmpp-calls.check.ts` and `app/checks/xmpp-muji.check.ts`). A screen opened from the hidden chats says so under its title and shows the place's
   account while it is on top (`lib/network-place.ts`); the user guide, What's new and `docs/` say it. The stores are
   checked with `app/checks/place-networks.check.ts`, against the servers played in the checks and with the real core;
   not yet on a phone.

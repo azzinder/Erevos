@@ -1585,7 +1585,9 @@ aplikacije: nikakav most nije između.
   drugim, kao u Erevosovim vlastitim grupnim pozivima, preko relaya za pozive ovog prostora ili TURN servera XMPP
   servera, najviše osam osoba. Kao u pozivu s jednom osobom, poziv je šifrovan (DTLS-SRTP), ali otisci njegovih
   ključeva, i pozivnice, idu preko XMPP servera takvi kakvi jesu, a servis za grupe vidi ko je u pozivu i kada. Vlastiti
-  XMPP račun skrivenih razgovora zove u svojim grupama na isti način, dok su skriveni razgovori otvoreni.
+  XMPP račun skrivenih razgovora zove u svojim grupama na isti način, dok su skriveni razgovori otvoreni; dok su
+  zatvoreni, uz uključeno **Primanje dok su zatvoreni**, poziv koji stigne u jednoj od njegovih grupa prikazuje se kao
+  propušten.
 - **Nije anonimno:** XMPP server vidi vaš račun, vaše kontakte, ko s kim razgovara i kada, i, bez Tora, odakle. Server
   druge osobe vidi isto o svojim razgovorima s vama.
 - **Preko Tora:** na Androidu, XMPP slijedi izbor ovog prostora pod **Postavke** → **Relay i mreže** → **Tor**: s
@@ -2159,14 +2161,14 @@ sadrže uklonjena mjesta.
   pozadini: njihovi kontakti odmah vide da je poruka stigla, obavijest kaže samo „New message“, na Androidu poziv zvoni
   s „Incoming call“ i bez imena (na ekranu koji zvoni dodirnite mali znak, upišite PIN i dodirnite **Poveži** da se
   javite), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
-  stigne preko Nostra tada se također čita. Poziv koji se završio prije nego što ste ih otvorili, ili je predugo
-  zvonio, prikazuje se kao propušten. Ništa od njih se nigdje ne prikazuje dok ih PIN ne otvori. Novo mjesto počinje s
-  ovim uključenim; mjesta postavljena ranije ostaju kakva su bila dok to ne uključite. Za to se ključ mjesta čuva
-  šifriran s prostorom, među nasumičnim ključem za svako drugo mjesto, pa otvaranje prostora ne pokazuje koja mjesta
-  primaju, ni koja su postavljena. Ali onaj ko otvori prostor i kopira ono što telefon čuva mogao bi otvoriti i to
-  mjesto, bez PIN-a: PIN ih tada skriva od pogleda onoga ko drži telefon, ali ne i od forenzičkog alata. Kad je
-  isključen, njihov ključ je samo iza PIN-a, a njihove poruke čekaju na relayu dok ih ne otvorite. Rezervne kopije
-  zadržavaju prekidač.
+  stigne preko Nostra tada se također čita, a njihovi vlastiti Matrix, XMPP i Nostr računi ostaju povezani (pogledajte
+  dolje). Poziv koji se završio prije nego što ste ih otvorili, ili je predugo zvonio, prikazuje se kao propušten. Ništa
+  od njih se nigdje ne prikazuje dok ih PIN ne otvori. Novo mjesto počinje s ovim uključenim; mjesta postavljena ranije
+  ostaju kakva su bila dok to ne uključite. Za to se ključ mjesta čuva šifriran s prostorom, među nasumičnim ključem za
+  svako drugo mjesto, pa otvaranje prostora ne pokazuje koja mjesta primaju, ni koja su postavljena. Ali onaj ko otvori
+  prostor i kopira ono što telefon čuva mogao bi otvoriti i to mjesto, bez PIN-a: PIN ih tada skriva od pogleda onoga ko
+  drži telefon, ali ne i od forenzičkog alata. Kad je isključen, njihov ključ je samo iza PIN-a, a njihove poruke čekaju
+  na relayu dok ih ne otvorite. Rezervne kopije zadržavaju prekidač.
 - **Zatvaraju se sami** kad je Erevos bio u pozadini više od 30 sekundi, kao što se vlastiti PIN razgovora ponovo
   zaključava, ali ne tokom poziva, ni dok za njih birate fotografiju ili datoteku ili snimate fotografiju.
 - **Dok su otvoreni,** poruka koja stigne pušta zvuk za nove poruke, kao u vašim ostalim razgovorima. S Erevosom u
@@ -2190,10 +2192,14 @@ sadrže uklonjena mjesta.
   račune skrivenih razgovora, odvojene od računa prostora: Matrix račun i XMPP račun za prijavu, te Nostr ključ. Prijave
   i ključ čuvaju se šifrovani ključem skrivenih razgovora, i ništa od toga ne vidi se izvan skrivenih razgovora: njihovi
   razgovori su samo u popisu skrivenih razgovora i ne dodaju ništa broju na ikoni Erevosa ni popisu na početnom ekranu.
-  Računi se povezuju samo dok su skriveni razgovori otvoreni, pa dok su zatvoreni ništa ne stiže i nijedna obavijest se
-  ne prikazuje, čak ni uz uključeno **Primanje dok su zatvoreni**. Njihovi razgovori zovu kao razgovori prostora, s
-  vlastitog računa skrivenih razgovora; poziv na njega zvoni samo dok su skriveni razgovori otvoreni, zvukom zvona
-  telefona, i oni ostaju otvoreni dok ne završi. Njihov Matrix račun nema **Javi da je stigla poruka**.
+  Računi se povezuju dok su skriveni razgovori otvoreni, a i dok su zatvoreni ako je **Primanje dok su zatvoreni**
+  uključeno, kao što primaju sami skriveni razgovori: tada poruka tamo prikazuje obavijest koja kaže samo „New message“,
+  a na Androidu Matrix ili XMPP poziv zvoni s „Incoming call“ i bez imena i javlja se PIN-om kao i njihovi ostali
+  pozivi; poziv na koji se ne odgovori na vrijeme prikazuje se kao propušten, a tako i XMPP grupni poziv koji stigne dok
+  su zatvoreni. Kad je isključeno, računi se povezuju samo dok su skriveni razgovori otvoreni, a dok su zatvoreni ništa
+  ne stiže. Njihovi razgovori zovu kao razgovori prostora, s vlastitog računa skrivenih razgovora; poziv na njega, dok
+  su skriveni razgovori otvoreni, zvoni zvukom zvona telefona, i oni ostaju otvoreni dok ne završi. Njihov Matrix račun
+  nema **Javi da je stigla poruka**.
 - **Pregledi linkova** imaju vlastiti prekidač u detaljima skrivenog razgovora, za sve razgovore tog mjesta,
   isključen dok ga ne uključite (pogledajte **Pregledi linkova** pod [Razgovor preko relaya](#relay)).
 - **Javi kad stigne poruka** (Android): na vrhu mjesta dok je **Primanje dok su zatvoreni** isključeno. Kad je

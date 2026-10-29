@@ -1,13 +1,15 @@
 import { callNow, currentCall, OFFER_FRESH_MS, type Call, type Rtc } from './call';
 import type { CallEnd, CallSignal } from './call-signal';
 import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './calls';
+import { hiddenRinging, setHiddenRinging } from './hidden-ring';
 import { t } from './i18n';
 import { candidatesOf, GROUPING, ICE, JINGLE, jingleToSdp, otherSetup, RTP, sdpToJingle, setupOf, type Role } from './jingle-sdp';
+import { placeNetworkRang } from './network-notices';
 import type { CallRelay } from './relay';
 import { spaceCalls } from './space-calls';
 import { bare, nameOf, NS, setCallHook, type XmppConnection, type XmppState } from './xmpp';
 import { watchXmppGroupCalls } from './xmpp-muji';
-import { onXmppChange, xmppCallLine, xmppLink, xmppNow, xmppPlaceAccount } from './xmpp-store';
+import { onXmppChange, xmppCallLine, xmppClosedPlace, xmppLink, xmppNow, xmppPlaceAccount } from './xmpp-store';
 import { child, children, el, type XmlElement } from './xmpp-xml';
 
 // One-to-one calls with people on XMPP (docs/xmpp.md), as Conversations, Monal and Dino make them:
@@ -30,8 +32,10 @@ import { child, children, el, type XmlElement } from './xmpp-xml';
 // learns no address of this phone; with neither, it goes straight and they learn it.
 //
 // A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
-// hidden chats are open, and only then, as a place of calls of its own (xmppPlaceCalls): they stay
-// open through its call (app/chat.tsx), and it ends as they close.
+// hidden chats are open, as a place of calls of its own (xmppPlaceCalls): they stay open through
+// its call (app/chat.tsx), and it ends as they close. While they are closed, if they receive while
+// closed, a call to it rings with no name (lib/background.ts) and waits for the PIN to open them
+// (held): then it rings in them as their other calls do, and the PIN on the ring screen answers it.
 //
 // Group calls, as Dino makes them, are lib/xmpp-muji.ts's: what comes for them is handed over here.
 
@@ -73,6 +77,8 @@ type Session = {
   asked: XmlElement[] | null;
   /** Of the open hidden place's own account, not the space's. */
   place?: true;
+  /** Their addresses that came before the call was there to take them (transport-info). */
+  early?: { candidate: string; sdpMid: string }[];
 };
 
 const noneYet = { initiate: null, waiting: null, theirs: [], bundled: false, adding: null, asked: null } as const;
@@ -88,18 +94,35 @@ export type XmppCallsAccount = {
   line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void>;
 };
 
-/** What the calls need of the open space: its XMPP account, the open hidden place's own, and its
- *  own call relay. The checks give their own. */
+/** A hidden place's own account, while its hidden chats are closed and receive: which place, and
+ *  its chats' call lines. */
+export type XmppClosedPlace = {
+  space: number;
+  pocket: number;
+  line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void>;
+};
+
+/** What the calls need of the open space: its XMPP account, the open hidden place's own, those of
+ *  its closed places that receive, and its own call relay. The checks give their own. */
 export type XmppCallsSpace = XmppCallsAccount & {
   /** The call relay beside the space's relay, or null. */
   callRelay(): Promise<CallRelay | null>;
   /** The open hidden place's own account, and whether its hidden chats are open (connected or not). */
-  place?: XmppCallsAccount & { open(): boolean };
+  place?: XmppCallsAccount & { open(): boolean; now(): XmppState | null };
+  /** The closed hidden place whose account `state` is, while it receives; null for none. */
+  closed?(state: XmppState): XmppClosedPlace | null;
   /** Calls the listener as the accounts change (a place's opened or closed). Returns how to stop. */
   watch?(listener: () => void): () => void;
 };
 
-const theSpace: XmppCallsSpace = { link: xmppLink, line: xmppCallLine, callRelay: () => spaceCalls.callRelay(), place: xmppPlaceAccount, watch: onXmppChange };
+const theSpace: XmppCallsSpace = {
+  link: xmppLink,
+  line: xmppCallLine,
+  callRelay: () => spaceCalls.callRelay(),
+  place: xmppPlaceAccount,
+  closed: xmppClosedPlace,
+  watch: onXmppChange,
+};
 
 const sessions = new Map<string, Session>();
 let rtcNow: Rtc | null = null;
@@ -354,8 +377,10 @@ function ring(state: XmppState, s: Session, at: number): void {
   const stamp = callNow() - (Date.now() - at);
   void callSignal(callsFor(s.place), `${XMPP_PREFIX}${s.jid}`, { id: s.id, kind: 'offer', video: s.video, sdp: '', at: stamp }, false, rtc)
     .then(() => {
+      const call = calling(s.id);
       // Not rung here (missed, or busy with another call): lib/calls.ts said so, and kept its line.
-      if (!calling(s.id)) sessions.delete(s.id);
+      if (!call) sessions.delete(s.id);
+      else if (s.early?.length) call.addCandidates(s.early.splice(0));
     })
     .catch(() => missed());
 }
@@ -363,7 +388,7 @@ function ring(state: XmppState, s: Session, at: number): void {
 function onMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void {
   // The space's account's calls, or the open hidden place's: each hears its own.
   const place = placeOf(state);
-  if (place === null) return;
+  if (place === null) return onClosedMessage(state, message, how);
   const account = accountOf(place);
   const what = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === JMI);
   const id = what?.attrs.id;
@@ -443,7 +468,11 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
   const refuse = (condition: string, extra?: XmlElement) =>
     connection.send(el('iq', { type: 'error', id: iq.attrs.id, to: from }, el('error', { type: 'cancel' }, el(condition, { xmlns: NS.stanzas }), extra ?? null)));
   const place = placeOf(state);
-  if (place === null) return refuse('service-unavailable');
+  if (place === null) {
+    const closed = space.closed?.(state);
+    if (!closed) return refuse('service-unavailable');
+    return onClosedIq(closed, state, jingle, from, reply, refuse);
+  }
   const s = sessionOf(sid, place);
   if (action === 'session-initiate') {
     if (s) {
@@ -514,10 +543,13 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
       await reply();
       s.adding?.done(null);
       return;
-    case 'transport-info':
+    case 'transport-info': {
       await reply();
-      calling(sid)?.addCandidates(candidatesOf(jingle));
+      const call = calling(sid);
+      if (call) call.addCandidates(candidatesOf(jingle));
+      else (s.early ??= []).push(...candidatesOf(jingle));
       return;
+    }
     case 'session-info':
       await reply();
       if (s.outgoing && child(jingle, 'ringing', RTP_INFO)) calling(sid)?.receive({ id: sid, kind: 'ringing' });
@@ -535,6 +567,113 @@ async function onIq(state: XmppState, connection: XmppConnection, iq: XmlElement
   }
 }
 
+// ---- a closed hidden place's ----
+
+/** A call to a closed hidden place's own account, waiting for the PIN to open the place. */
+type Held = { s: Session; state: XmppState; closed: XmppClosedPlace; at: number; timer: ReturnType<typeof setTimeout> | null };
+
+const held = new Map<string, Held>();
+// The held calls that rang in their place once it opened, for the PIN on the ring screen to answer.
+const opened = new Set<string>();
+
+/** Whether the call `id` waited, closed, for its hidden place to open: the PIN on the ring screen answers it (components/call-host.tsx). Asking forgets it. */
+export function takeHeldXmppCall(id: string): boolean {
+  return opened.delete(id);
+}
+
+// It rings with no name, from a contact of the account, while it is fresh (`live`, not from the
+// archive, and not yet a minute old); else it is kept as missed.
+function hold(closed: XmppClosedPlace, state: XmppState, s: Session, at: number, live = true): void {
+  if (held.has(s.id)) return;
+  if (!rtcNow || !live || !mayRing(state, s.jid) || Date.now() - at >= OFFER_FRESH_MS) {
+    void closed.line(s.jid, false, `${CALL_LINE}Missed ${kindOf(s.video)}`, `call-${s.id}`, at).catch(() => undefined);
+    return;
+  }
+  const h: Held = { s, state, closed, at, timer: null };
+  held.set(s.id, h);
+  h.timer = setTimeout(() => letGo(h, `Missed ${kindOf(s.video)}`), at + OFFER_FRESH_MS - Date.now());
+  placeNetworkRang(closed.space, closed.pocket);
+}
+
+// No longer held: kept with `text` as its line, unless null; its place's ring stops with its last call.
+function letGo(h: Held, text: string | null, mine = false): void {
+  if (held.get(h.s.id) !== h) return;
+  held.delete(h.s.id);
+  if (h.timer) clearTimeout(h.timer);
+  if (text) void h.closed.line(h.s.jid, mine, `${CALL_LINE}${text}`, `call-${h.s.id}`, h.at).catch(() => undefined);
+  const { space: where, pocket } = h.closed;
+  const ringing = hiddenRinging();
+  if (ringing?.space === where && ringing.pocket === pocket && ![...held.values()].some((o) => o.closed.space === where && o.closed.pocket === pocket)) setHiddenRinging(null);
+}
+
+// Its place opened, its account the open one's now: what still rings rings there.
+function promote(): void {
+  const now = space.place?.now();
+  if (!now) return;
+  for (const h of [...held.values()]) {
+    if (h.state !== now) continue;
+    held.delete(h.s.id);
+    if (h.timer) clearTimeout(h.timer);
+    opened.add(h.s.id);
+    ring(now, { ...h.s, place: true }, h.at);
+  }
+}
+
+const capital = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1);
+
+function onClosedMessage(state: XmppState, message: XmlElement, how: { at: number; live: boolean; mine: boolean }): void {
+  const closed = space.closed?.(state);
+  const what = message.children.find((c): c is XmlElement => typeof c !== 'string' && c.ns === JMI);
+  const id = what?.attrs.id;
+  if (!closed || !what || !id || message.attrs.type === 'error') return;
+  const h = held.get(id);
+  const from = message.attrs.from ?? '';
+  if (how.mine) {
+    // Answered, or turned down, on another device of the account.
+    if (h && (what.name === 'accept' || what.name === 'proceed')) letGo(h, `${capital(kindOf(h.s.video))}, answered on another device`, true);
+    else if (h && what.name === 'reject') letGo(h, `${capital(kindOf(h.s.video))}, turned down`, true);
+    return;
+  }
+  const jid = bare(from);
+  if (what.name === 'propose') {
+    const video = children(what, 'description').some((d) => d.attrs.media === 'video');
+    const s: Session = { ...noneYet, theirs: [], id, jid, full: from, outgoing: false, video, offer: '', rung: true, started: false };
+    hold(closed, state, s, how.at, how.live);
+    return;
+  }
+  // Taken back, or ended, by the caller before the place opened.
+  if (h && h.s.jid === jid && (what.name === 'retract' || what.name === 'finish')) letGo(h, `Missed ${kindOf(h.s.video)}`);
+}
+
+// A call without a ring first, as older apps make, held as one with; and what comes for one held.
+async function onClosedIq(
+  closed: XmppClosedPlace,
+  state: XmppState,
+  jingle: XmlElement,
+  from: string,
+  reply: () => Promise<void>,
+  refuse: (condition: string, extra?: XmlElement) => Promise<void>,
+): Promise<void> {
+  const sid = jingle.attrs.sid ?? '';
+  const h = held.get(sid);
+  if (jingle.attrs.action === 'session-initiate') {
+    if (h) return refuse('bad-request');
+    try {
+      jingleToSdp(jingle, 'initiator', sid);
+    } catch {
+      return refuse('feature-not-implemented');
+    }
+    await reply();
+    const video = children(jingle, 'content').some((c) => children(c, 'description').some((d) => d.attrs.media === 'video'));
+    hold(closed, state, { ...noneYet, theirs: [], id: sid, jid: bare(from), full: from, outgoing: false, video, offer: '', rung: false, started: true, initiate: jingle }, Date.now());
+    return;
+  }
+  if (!h || h.s.full !== from) return refuse('item-not-found', el('unknown-session', { xmlns: ERRORS }));
+  await reply();
+  if (jingle.attrs.action === 'transport-info') (h.s.early ??= []).push(...candidatesOf(jingle));
+  else if (jingle.attrs.action === 'session-terminate') letGo(h, `Missed ${kindOf(h.s.video)}`);
+}
+
 /** Takes XMPP calls in, with `rtc`, while the space is open (components/call-host.tsx). Returns how to stop. */
 export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () => void {
   rtcNow = rtc;
@@ -546,6 +685,7 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
     placeOf,
     mayRing,
     placeOpen: () => !!given.place?.open(),
+    closed: (state) => given.closed?.(state) ?? null,
     watch: given.watch,
   });
   setCallHook({
@@ -557,8 +697,10 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
     invite: groups.invite,
     presence: groups.presence,
   });
-  // A hidden place's call ends as its hidden chats close: its account goes with them.
+  // A hidden place's call ends as its hidden chats close: its account goes with them. One held
+  // for a closed place rings there as it opens.
   const stopWatch = given.watch?.(() => {
+    promote();
     const shown = shownCall();
     if (shown?.place !== xmppPlaceCalls || given.place?.open()) return;
     if (shown.call.state === 'incoming') shown.call.decline();
@@ -568,6 +710,8 @@ export function watchXmppCalls(rtc: Rtc, given: XmppCallsSpace = theSpace): () =
     stopWatch?.();
     groups.stop();
     setCallHook(null);
+    for (const h of [...held.values()]) letGo(h, null);
+    opened.clear();
     rtcNow = null;
     space = theSpace;
     sessions.clear();

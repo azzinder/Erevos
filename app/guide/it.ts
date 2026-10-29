@@ -1665,7 +1665,8 @@ app: nessun ponte sta nel mezzo.
   massimo. Come in una chiamata con una persona, la chiamata è cifrata (DTLS-SRTP), ma le impronte delle sue chiavi, e
   gli inviti, passano per i server XMPP così come sono, e il servizio dei gruppi vede chi è nella chiamata e quando.
   L’account XMPP proprio delle chat nascoste chiama nei suoi gruppi allo stesso modo, finché le chat nascoste sono
-  aperte.
+  aperte; da chiuse, con **Ricevere da chiuse** attivo, una chiamata che arriva in uno dei suoi gruppi appare come
+  persa.
 - **Non anonimo:** il server XMPP vede il tuo account, i tuoi contatti, chi parla con chi e quando, e, senza Tor, da
   dove. Il server dell’altra persona vede lo stesso delle sue chat con te.
 - **Tramite Tor:** su Android, XMPP segue la scelta di questo spazio in **Impostazioni** → **Relay e reti** → **Tor**:
@@ -2260,15 +2261,15 @@ cancellerebbe quello che contengono i posti tolti.
   vedono subito che un messaggio è arrivato, una notifica dice solo «New message», su Android una chiamata squilla con
   «Incoming call» e senza nome (sulla schermata dello squillo, tocca il piccolo segno, scrivi il PIN e tocca
   **Connetti** per rispondere), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
-  **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr. Una chiamata che è finita prima che le
-  aprissi, o ha squillato troppo a lungo, appare come persa. Niente di loro appare da nessuna parte finché il PIN non le
-  apre. Un nuovo posto parte con questo attivo; i posti impostati prima restano com’erano finché non lo attivi. Per
-  questo, la chiave del posto è conservata crittografata con lo spazio, tra una chiave casuale per ogni altro posto,
-  così aprire lo spazio non mostra quali posti ricevono, o sono impostati. Ma chi apre lo spazio e copia quello che il
-  telefono conserva potrebbe aprire anche quel posto, senza PIN: il PIN allora le tiene nascoste a chi ha in mano il
-  telefono, non a uno strumento forense. Se è disattivato,
-  la loro chiave è solo dietro il PIN, e i loro messaggi aspettano sul relay finché non le apri. I backup conservano
-  l’interruttore.
+  **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr, e i loro account Matrix, XMPP e Nostr
+  restano collegati (vedi sotto). Una chiamata che è finita prima che le aprissi, o ha squillato troppo a lungo, appare
+  come persa. Niente di loro appare da nessuna parte finché il PIN non le apre. Un nuovo posto parte con questo attivo;
+  i posti impostati prima restano com’erano finché non lo attivi. Per questo, la chiave del posto è conservata
+  crittografata con lo spazio, tra una chiave casuale per ogni altro posto, così aprire lo spazio non mostra quali posti
+  ricevono, o sono impostati. Ma chi apre lo spazio e copia quello che il telefono conserva potrebbe aprire anche quel
+  posto, senza PIN: il PIN allora le tiene nascoste a chi ha in mano il telefono, non a uno strumento forense. Se è
+  disattivato, la loro chiave è solo dietro il PIN, e i loro messaggi aspettano sul relay finché non le apri. I backup
+  conservano l’interruttore.
 - **Si chiudono da sole** appena Erevos è stato in background per più di 30 secondi, come si riblocca il PIN di una
   chat, ma non durante una chiamata, né mentre scegli una foto o un file per loro o scatti una foto.
 - **Mentre sono aperte,** un messaggio che arriva fa sentire il suono dei nuovi messaggi, come nelle tue altre chat.
@@ -2292,11 +2293,15 @@ cancellerebbe quello che contengono i posti tolti.
   nascoste, a parte quelli dello spazio: un account Matrix e uno XMPP a cui accedere, e una chiave Nostr. Gli accessi e
   la chiave sono tenuti cifrati con la chiave delle chat nascoste, e niente di essi si vede fuori dalle chat nascoste:
   le loro chat stanno solo nell’elenco delle chat nascoste, e non aggiungono nulla al numero sull’icona di Erevos né
-  all’elenco della schermata principale. Gli account si collegano solo mentre le chat nascoste sono aperte, quindi da
-  chiuse non arriva niente e non compare nessun avviso, anche con **Ricevere da chiuse** attivo. Le loro chat chiamano
-  come quelle dello spazio, dall’account proprio delle chat nascoste; una chiamata a esso squilla solo mentre le chat
-  nascoste sono aperte, con la suoneria del telefono, e restano aperte finché non finisce. Un loro account Matrix non ha
-  **Avvisa dei nuovi messaggi**.
+  all’elenco della schermata principale. Gli account si collegano mentre le chat nascoste sono aperte, e anche da chiuse
+  se **Ricevere da chiuse** è attivo, come ricevono le chat nascoste stesse: allora un messaggio lì mostra una notifica
+  che dice solo «New message», e su Android una chiamata Matrix o XMPP squilla con «Incoming call» e senza nome, e si
+  risponde con il PIN come per le loro altre chiamate; una a cui non si risponde in tempo appare come persa, e così
+  anche una chiamata di gruppo XMPP che arriva mentre sono chiuse. Se è disattivato, gli account si collegano solo
+  mentre le chat nascoste sono aperte, e da chiuse non arriva niente. Le loro chat chiamano come quelle dello spazio,
+  dall’account proprio delle chat nascoste; una chiamata a esso, mentre le chat nascoste sono aperte, squilla con la
+  suoneria del telefono, e restano aperte finché non finisce. Un loro account Matrix non ha **Avvisa dei nuovi
+  messaggi**.
 - **Le anteprime dei link** hanno un loro interruttore nei dettagli di una chat nascosta, per tutte le chat di quel
   posto, disattivato finché non lo attivi (vedi **Anteprime dei link** in [Chat tramite un relay](#relay)).
 - **Avvisa quando arriva un messaggio** (Android): in cima a un posto mentre **Ricevere da chiuse** è disattivato. Se

@@ -1,10 +1,12 @@
 import { currentCall } from './call';
 import { CALL_LINE, callClock } from './calls';
 import { currentGroupCall } from './group-call';
+import { hiddenRinging, setHiddenRinging } from './hidden-ring';
 import { lang, t } from './i18n';
 import { randomBytes, toHex } from './crypto';
 import { addMatrixCallLine, sendEvent, setCallHandler, setRoomTap, type CallEvent, type Json, type MatrixState } from './matrix';
 import { CALL_MEMBER, hostWidget, type WidgetHost, type WidgetMessage, type WidgetNews } from './matrix-widget';
+import { placeNetworkRang } from './network-notices';
 
 // Calls with people on Matrix, as Element X makes them (docs/matrix.md): with Element Call, Element's
 // own call app, which Erevos carries inside it (modules/erevos-webcall) and shows in a window of its
@@ -21,9 +23,10 @@ import { CALL_MEMBER, hostWidget, type WidgetHost, type WidgetMessage, type Widg
 // The older Matrix calls (m.call.*, one to one, as FluffyChat makes them) do not ring here.
 //
 // A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
-// hidden chats are open, and only then: its account runs only then, and they stay open through
-// its call (app/chat.tsx). Its call rings with the phone's ringtone, as the hidden chats' do, and
-// ends as they close.
+// hidden chats are open, and they stay open through its call (app/chat.tsx). Its call rings with
+// the phone's ringtone, as the hidden chats' do, and ends as they close. While they are closed, if
+// they receive while closed, a ring to it rings with no name (lib/background.ts) and waits for the
+// PIN to open them (held): then it rings in them, and the PIN on the ring screen answers it.
 
 /** Where Element Call shows: its window on Android, a frame on the web. The checks give their own. */
 export type CallWindow = {
@@ -44,11 +47,16 @@ export type MatrixCallsAccount = {
   read<T>(use: (state: MatrixState) => Promise<T>): Promise<T>;
 };
 
-/** What the calls need of the open space: its Matrix account, the open hidden place's own, and
- *  where Element Call's page is. */
+/** A hidden place's own account while its hidden chats are closed and receive: which place, and the account. */
+export type MatrixClosedPlace = { space: number; pocket: number; account: MatrixCallsAccount };
+
+/** What the calls need of the open space: its Matrix account, the open hidden place's own, those
+ *  of its closed places that receive, and where Element Call's page is. */
 export type MatrixCallsSpace = MatrixCallsAccount & {
   /** The open hidden place's own account, whose `now` is null while none is open. */
   place?: MatrixCallsAccount;
+  /** The closed hidden place whose account `state` is, while it receives; null for none. */
+  closed?(state: MatrixState): MatrixClosedPlace | null;
   /** Calls the listener as the accounts change (one signed in or out, a place's opened or closed). Returns how to stop. */
   watch?(listener: () => void): () => void;
   /** Element Call's page, and the address its host says it is at (the Widget API's parentUrl). */
@@ -80,6 +88,8 @@ export type MatrixCall = {
   end?: 'declined' | 'elsewhere' | 'missed' | 'busy';
   /** A call of the open hidden place's own account, not the space's. */
   place?: true;
+  /** It rang with no name while that place was closed, and rings now that its PIN opened it. */
+  held?: true;
 };
 
 /** The rings of a call: the one MatrixRTC sends now, and the older one sent beside it. */
@@ -214,12 +224,12 @@ export function matrixCallLine(call: MatrixCall, now = Date.now()): string {
   return `Missed ${kind.toLowerCase()}`;
 }
 
-function line(call: MatrixCall, state?: MatrixState): void {
+function line(call: MatrixCall, state?: MatrixState, account = accountOf(call)): void {
   const text = `${CALL_LINE}${matrixCallLine(call)}`;
   const mine = call.outgoing || call.end === 'declined' || call.end === 'elsewhere';
   // Inside a change already (a sync's), or a change of its own.
   if (state) addMatrixCallLine(state, call.roomId, mine, text, call.id);
-  else void accountOf(call)?.change(async (s) => addMatrixCallLine(s, call.roomId, mine, text, call.id)).catch(() => undefined);
+  else void account?.change(async (s) => addMatrixCallLine(s, call.roomId, mine, text, call.id)).catch(() => undefined);
 }
 
 function finish(call: MatrixCall, state?: MatrixState): void {
@@ -253,7 +263,7 @@ function busy(): boolean {
 async function onCallEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
   // The space's account, or the open hidden place's: each hears only its own calls.
   const place = placeOf(state);
-  if (place === null) return false;
+  if (place === null) return onClosedEvent(state, event);
   const ours = (call: MatrixCall) => !!call.place === place;
   if (event.encrypted !== undefined) {
     if (shown && ours(shown)) host?.toDevice({ type: event.type, sender: event.sender, content: event.content }, event.encrypted);
@@ -325,6 +335,96 @@ async function onCallEvent(state: MatrixState, event: CallEvent): Promise<boolea
     }
   }
   return false;
+}
+
+// ---- a closed hidden place's ----
+
+/** A ring to a closed hidden place's own account, waiting for the PIN to open the place. */
+type Held = { call: MatrixCall; state: MatrixState; closed: MatrixClosedPlace; until: number; timer: ReturnType<typeof setTimeout> | null };
+
+const held = new Map<string, Held>();
+
+// No longer held: kept as `end` says in its chat, unless null; its place's ring stops with its last call.
+function letGo(h: Held, end: MatrixCall['end'] | null, state?: MatrixState): void {
+  if (held.get(h.call.id) !== h) return;
+  held.delete(h.call.id);
+  if (h.timer) clearTimeout(h.timer);
+  if (end !== null) {
+    h.call.state = 'ended';
+    h.call.end = end;
+    line(h.call, state, h.closed.account);
+  }
+  const { space: where, pocket } = h.closed;
+  const ringing = hiddenRinging();
+  if (ringing?.space === where && ringing.pocket === pocket && ![...held.values()].some((o) => o.closed.space === where && o.closed.pocket === pocket)) setHiddenRinging(null);
+}
+
+// A closed place's ring, held while it rings; and what ends it before the place opens.
+async function onClosedEvent(state: MatrixState, event: CallEvent): Promise<boolean> {
+  const closed = space?.closed?.(state);
+  if (!closed || event.encrypted !== undefined || !event.roomId) return false;
+  const now = Date.now();
+  const me = state.userId;
+  const h = [...held.values()].find((o) => o.state === state && o.call.roomId === event.roomId);
+  if (RINGS.has(event.type)) {
+    const ring = ringOf(event, me, now);
+    if (!ring || !event.eventId || h) return false;
+    const rung: MatrixCall = { id: event.eventId, roomId: event.roomId, video: ring.video, outgoing: false, state: 'incoming', from: event.sender, ring: event.eventId };
+    if (ring.until <= now) {
+      if ((event.age ?? now - event.ts) >= LINE_AGE_MOST_MS || state.rooms[event.roomId]?.messages.some((m) => m.id === event.eventId)) return false;
+      rung.state = 'ended';
+      line(rung, state);
+      return true;
+    }
+    const next: Held = { call: rung, state, closed, until: ring.until, timer: null };
+    held.set(rung.id, next);
+    next.timer = setTimeout(() => letGo(next, 'missed'), ring.until - now);
+    placeNetworkRang(closed.space, closed.pocket);
+    return true;
+  }
+  if (!h) return false;
+  const relates = (event.content['m.relates_to'] as Json | undefined)?.event_id;
+  // Turned down on another device of ours.
+  if (DECLINES.has(event.type) && event.sender === me && relates === h.call.ring) {
+    letGo(h, 'declined', state);
+    return true;
+  }
+  if (event.type === CALL_MEMBER) {
+    const gone = memberGone(event.content, event.ts, now);
+    // The caller left before the place opened, or another of our devices answered.
+    if (event.sender === h.call.from && gone) letGo(h, 'missed', state);
+    else if (event.sender === me && !gone && event.content.device_id !== state.deviceId) letGo(h, 'elsewhere', state);
+    else return false;
+    return true;
+  }
+  return false;
+}
+
+// Its place opened, its account the open one's now: what still rings rings there.
+function promote(): void {
+  const now = space?.place?.now();
+  if (!now) return;
+  for (const h of [...held.values()]) {
+    if (h.state !== now) continue;
+    held.delete(h.call.id);
+    if (h.timer) clearTimeout(h.timer);
+    const call: MatrixCall = { ...h.call, place: true, held: true };
+    const left = h.until - Date.now();
+    if (left <= 0 || busy()) {
+      call.state = 'ended';
+      call.end = left <= 0 ? 'missed' : 'busy';
+      line(call);
+      continue;
+    }
+    shown = call;
+    ringEnds = setTimeout(() => {
+      if (shown === call && call.state === 'incoming') {
+        call.end = 'missed';
+        finish(call);
+      }
+    }, left);
+    changed();
+  }
 }
 
 function open(call: MatrixCall, intent: string): void {
@@ -438,8 +538,10 @@ export function watchMatrixCalls(shownIn: CallWindow, given: MatrixCallsSpace): 
   callWindow = shownIn;
   space = given;
   setCallHandler(onCallEvent);
-  // A hidden place's call ends as its hidden chats close: its account goes with them.
+  // A hidden place's call ends as its hidden chats close: its account goes with them. One held for
+  // a closed place rings there as it opens.
   const stopWatch = given.watch?.(() => {
+    promote();
     if (shown?.place && shown.state !== 'ended' && !given.place?.now()) {
       if (shown.state === 'incoming') shown.end = 'missed';
       finish(shown);
@@ -447,6 +549,7 @@ export function watchMatrixCalls(shownIn: CallWindow, given: MatrixCallsSpace): 
   });
   return () => {
     stopWatch?.();
+    for (const h of [...held.values()]) letGo(h, null);
     if (shown) {
       if (shown.state === 'incoming') shown.end = 'missed';
       finish(shown);

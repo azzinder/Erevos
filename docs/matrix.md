@@ -221,9 +221,12 @@ no space open, or Erevos stopped by Android, nothing is told, as for the space's
 Each place of hidden chats can sign in to a Matrix account of its own, apart from the space's, that
 nothing outside its hidden chats shows.
 
-- `app/lib/place-networks.ts` opens the place's account (`openMatrixPlace`) as its hidden chats open
-  and closes it (`closeMatrixPlace`) as they close, so it syncs only while they are open and a
-  closed place receives nothing. Its sign-in and keys are kept sealed with the place's key, in the
+- `app/lib/place-networks.ts` runs the place's account (`followMatrixPlaces`, each place's in
+  `app/lib/place-lives.ts`) while its hidden chats are open, and while they are closed too if they
+  receive while closed (`receivingPlaces` in `app/lib/place-receiver.ts`): then it syncs whenever the
+  space is open, as the place's relay queue is read, and its homeserver sees it sync from the phone's
+  address beside the space's account. Otherwise it stops as they close, and a closed place receives
+  nothing. Its sign-in and keys are kept sealed with the place's key, in the
   place's own value of `erevos-matrix`: the holders `hidden` and `hidden1` to `hidden3` of
   `app/lock/sealed-file.ts` (`hiddenHolder(pocket)`), beside the space's `space`, which never sees them.
 - `app/lib/network-place.ts`: `app/matrix.tsx` and `app/matrix-chat.tsx` read a `hidden=1` route
@@ -232,14 +235,22 @@ nothing outside its hidden chats shows.
   that account; the screens they open take the param on (`whereParams`). The hidden chats' list
   (`app/app/chat.tsx`) has **Matrix** under it, and lists the place's rooms (`matrixInboxRows`), which
   open with `hidden=1` (`components/chat-row.tsx`).
-- It tells nothing outside its hidden chats: no notice, no number on Erevos's icon or the home list, no
-  notification settings, and no closed-space notice (`matrixSetPush` refuses a place, and its section
-  is not on the screen).
+- While its hidden chats are closed and receive (**Receive while closed**), a message to it makes the
+  notice say "New message", as for the place's other chats (`hearing` with the place, then
+  `onPlaceNetworkMessage` in `app/lib/network-notices.ts`, which `app/lib/background.ts` hears, on
+  Android only); while they are open, it sounds as theirs do. Nothing else of it tells outside them:
+  no number on Erevos's icon or the home list, no notification settings, and no closed-space notice
+  (`matrixSetPush` refuses a place, and its section is not on the screen).
 - Its calls are its own (`MatrixCall.place` and `MatrixCallsSpace.place` in `app/lib/matrix-calls.ts`):
-  the buttons of its chats open Element Call as that account, a ring to it rings while the hidden chats
-  are open, with the phone's ringtone, and Element Call hears only its account's sync (the room tap
+  the buttons of its chats open Element Call as that account, a ring to it while the hidden chats are
+  open rings with the phone's ringtone, and Element Call hears only its account's sync (the room tap
   says which account an event came to). The hidden chats stay open through the call (`app/app/chat.tsx`),
-  and a call still on as they close ends. Checked in `app/checks/matrix-calls.check.ts`.
+  and a call still on as they close ends. While they are closed and receive, a ring to it is held
+  (`MatrixCallsSpace.closed`): the phone rings "Incoming call" with no name (`placeNetworkRang`, the
+  hidden ring screen), and once the PIN opens the place while it still rings, it rings there
+  (`promote`, `MatrixCall.held`), answered at once when the PIN was typed on the ring screen
+  (`components/call-host.tsx`). One the caller left, turned down or answered on another device, or not
+  opened in time, is kept as missed, or as its device said. Checked in `app/checks/matrix-calls.check.ts`.
 - `app/checks/place-networks.check.ts` checks the stores against the homeserver played in the checks,
   with the real core; not yet on a phone.
 

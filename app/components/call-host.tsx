@@ -17,7 +17,7 @@ import { sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
-import { watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
+import { takeHeldXmppCall, watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
 import { xmppGroupCalls } from '../lib/xmpp-muji';
 import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
@@ -143,7 +143,31 @@ export function CallHost() {
   const knownGroup = useRef<GroupCall | null>(null);
   const [names, setNames] = useState<{ group: string; contacts: { identity: string; name: string }[] }>({ group: '', contacts: [] });
 
-  useEffect(() => onMatrixCallChange(() => setShown((n) => n + 1)), []);
+  // A hidden place's Matrix call that rang with no name while it was closed, and rings in it now
+  // that the PIN on the ring screen opened it (lib/matrix-calls.ts): answered at once, as below.
+  const heldMatrix = useRef<MatrixCall | null>(null);
+  useEffect(
+    () =>
+      onMatrixCallChange(() => {
+        const matrix = shownMatrixCall();
+        if (matrix?.state === 'incoming' && matrix.held && heldMatrix.current !== matrix) {
+          heldMatrix.current = matrix;
+          if (takeHiddenAnswer()) {
+            callAudio?.stopRinging?.();
+            void callPermissions(matrix.video).then((granted) => {
+              if (!granted) return declineMatrixCall(matrix);
+              try {
+                answerMatrixCall(matrix);
+              } catch {
+                declineMatrixCall(matrix);
+              }
+            });
+          }
+        }
+        setShown((n) => n + 1);
+      }),
+    [],
+  );
 
   useEffect(() => {
     const groupChanged = () => {
@@ -168,8 +192,10 @@ export function CallHost() {
         setSpeaker(call.video);
         if (shown?.place === spaceCalls) void learnSpaceNames().then(() => setShown((n) => n + 1), () => undefined);
         // A hidden call just opened by its PIN on the ring screen (lib/hidden-ring.ts): the owner
-        // already chose to answer it, so it is answered at once. Never a call of the space's, nor of XMPP.
-        if (call.state === 'incoming' && shown?.place !== spaceCalls && shown?.place !== xmppCalls && shown?.place !== xmppPlaceCalls && takeHiddenAnswer()) {
+        // already chose to answer it, so it is answered at once. Never a call of the space's; of a
+        // hidden place's XMPP account, only one that rang while the place was closed (lib/xmpp-calls.ts).
+        const hidden = shown?.place === xmppPlaceCalls ? takeHeldXmppCall(call.id) : shown?.place !== spaceCalls && shown?.place !== xmppCalls;
+        if (call.state === 'incoming' && hidden && takeHiddenAnswer()) {
           callAudio?.stopRinging?.();
           void callPermissions(call.video).then((granted) => (granted ? (setSpeaker(call.video), callAudio?.start(call.video), call.answer()) : call.decline()));
         }

@@ -13,6 +13,7 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
+import { hiddenRinging, setHiddenRinging } from '../lib/hidden-ring';
 import { joinRoom, sendEvent, sendStateEvent, setCallHandler, setMatrixHttp, setRoomTap, signIn, startChat, sync, type CallEvent, type MatrixState } from '../lib/matrix';
 import {
   answerMatrixCall,
@@ -29,6 +30,7 @@ import {
   type CallWindow,
 } from '../lib/matrix-calls';
 import { allowedCapability, CALL_MEMBER, HOST_VERSIONS, hostWidget, type WidgetAccount, type WidgetHost, type WidgetMessage, type WidgetNews } from '../lib/matrix-widget';
+import { onPlaceNetworkRing } from '../lib/network-notices';
 import { Homeserver, HS, PASSWORD, type Json } from './matrix-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -645,5 +647,82 @@ test("a hidden place's own account rings and calls as itself, and its call ends 
     assert.ok(carol.rooms[carolRoom].messages.some((m) => m.call && m.text.includes('Video call')));
   } finally {
     stop();
+  }
+});
+
+test("a ring to a closed hidden place's own account that receives rings with no name, and rings in it once the PIN opens it", { skip: !coreReady }, async () => {
+  await twoPeople();
+  const carol = await signIn(HS, 'carol', PASSWORD);
+  const carolRoom = (await startChat(alice, carol.userId)).id;
+  await sync(carol, 0);
+  await joinRoom(carol, carolRoom);
+  await sync(carol, 0);
+  await sync(alice, 0);
+  // The place's hidden chats are closed, and receive: carol's account syncs all the same.
+  let open = false;
+  const watching = new Set<() => void>();
+  const rang: [number, number][] = [];
+  const stopRang = onPlaceNetworkRing((space, pocket) => rang.push([space, pocket]));
+  const carolAccount = { now: () => carol, ...accountOf(() => carol) };
+  const w = window_();
+  const stop = watchMatrixCalls(w.shownIn, {
+    now: () => bob,
+    ...accountOf(() => bob),
+    place: { now: () => (open ? carol : null), ...accountOf(() => carol) },
+    closed: (state) => (!open && state === carol ? { space: 3, pocket: 1, account: carolAccount } : null),
+    watch: (listener) => {
+      watching.add(listener);
+      return () => watching.delete(listener);
+    },
+    page: 'https://x/index.html',
+    parentUrl: 'https://x/index.html',
+  });
+  const lines = () => carol.rooms[carolRoom].messages.filter((m) => m.call).map((m) => [m.sender === carol.userId ? 'mine' : 'theirs', m.text.replace(/^📞 /, '')]);
+  try {
+    // Alice rings: nothing shows; the place rings with no name.
+    const mention = { 'm.mentions': { user_ids: [carol.userId], room: false } };
+    await sendEvent(alice, carolRoom, 'org.matrix.msc4075.rtc.notification', { ...ring(false), ...mention });
+    await sync(carol, 0);
+    assert.equal(shownMatrixCall(), null);
+    assert.deepEqual(rang, [[3, 1]]);
+    // She leaves the call before the PIN: missed, and the ring stops.
+    setHiddenRinging({ space: 3, pocket: 1, at: Date.now() });
+    await sendStateEvent(alice, carolRoom, CALL_MEMBER, `_${alice.userId}_${alice.deviceId}_m.call`, {});
+    await sync(carol, 0);
+    assert.equal(hiddenRinging(), null);
+    assert.deepEqual(lines(), [['theirs', 'Missed voice call']]);
+
+    // Again, with video: the PIN opens the place, and it rings there, as the place's.
+    await sendEvent(alice, carolRoom, 'org.matrix.msc4075.rtc.notification', { ...ring(true), ...mention });
+    await sync(carol, 0);
+    assert.equal(shownMatrixCall(), null);
+    assert.equal(rang.length, 2);
+    open = true;
+    watching.forEach((listener) => listener());
+    const call = shownMatrixCall()!;
+    assert.deepEqual([call.state, call.place, call.held, call.video, call.roomId], ['incoming', true, true, true, carolRoom]);
+    declineMatrixCall(call);
+    assert.equal(shownMatrixCall(), null);
+    await until(() => lines().length === 2, 'its line');
+
+    // One not answered before the place opens is missed.
+    open = false;
+    watching.forEach((listener) => listener());
+    await sendEvent(alice, carolRoom, 'org.matrix.msc4075.rtc.notification', { ...ring(false, 300), ...mention });
+    await sync(carol, 0);
+    assert.equal(rang.length, 3);
+    await until(() => lines().length === 3, 'the missed line');
+    open = true;
+    watching.forEach((listener) => listener());
+    assert.equal(shownMatrixCall(), null);
+    assert.deepEqual(lines(), [
+      ['theirs', 'Missed voice call'],
+      ['mine', 'Video call, turned down'],
+      ['theirs', 'Missed voice call'],
+    ]);
+    assert.equal(w.opened.length, 0);
+  } finally {
+    stop();
+    stopRang();
   }
 });

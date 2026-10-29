@@ -1725,7 +1725,8 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   Comme dans un appel avec une personne, l’appel est chiffré (DTLS-SRTP), mais les empreintes de ses clés, et les
   invitations, passent par les serveurs XMPP telles quelles, et le service de groupes voit qui est dans l’appel et
   quand. Le compte XMPP propre aux discussions masquées appelle dans ses groupes de la même façon, tant que les
-  discussions masquées sont ouvertes.
+  discussions masquées sont ouvertes ; fermées, avec **Recevoir une fois fermées** activé, un appel qui arrive dans l’un
+  de ses groupes s’affiche comme manqué.
 - **Pas anonyme :** le serveur XMPP voit ton compte, tes contacts, qui parle avec qui et quand, et, sans Tor, d’où. Le
   serveur de l’autre personne voit la même chose de ses discussions avec toi.
 - **Par Tor :** sur Android, XMPP suit le choix de cet espace sous **Réglages** → **Relais et réseaux** → **Tor** : avec
@@ -2348,15 +2349,16 @@ supprimerait ce que contiennent les emplacements retirés.
   arrière-plan : leurs contacts voient aussitôt qu’un message est arrivé, une notification dit seulement « Nouveau
   message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de sonnerie, appuie sur le petit
   signe, tape le code PIN et appuie sur **Connecter** pour répondre), et un rappel de leur Discussion avec moi-même
-  affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi. Un appel
-  terminé avant que tu les ouvres, ou qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche
-  nulle part tant que le code PIN ne les ouvre pas. Un nouvel emplacement commence avec cet interrupteur activé ; les
-  emplacements définis avant restent comme ils étaient jusqu’à ce que tu l’actives. Pour cela, la clé de l’emplacement
-  est gardée chiffrée avec l’espace, parmi une clé aléatoire pour chaque autre emplacement, si bien qu’ouvrir l’espace
-  ne montre pas quels emplacements reçoivent, ni lesquels sont définis. Mais celui qui ouvre l’espace et copie ce que
-  garde le téléphone pourrait aussi ouvrir cet emplacement, sans code PIN : le code PIN les cache alors aux yeux de qui
-  tient le téléphone, pas d’un outil d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs
-  messages attendent sur le relais jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
+  affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi, et leurs
+  comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas). Un appel terminé avant que tu les ouvres, ou
+  qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche nulle part tant que le code PIN ne les
+  ouvre pas. Un nouvel emplacement commence avec cet interrupteur activé ; les emplacements définis avant restent comme
+  ils étaient jusqu’à ce que tu l’actives. Pour cela, la clé de l’emplacement est gardée chiffrée avec l’espace, parmi
+  une clé aléatoire pour chaque autre emplacement, si bien qu’ouvrir l’espace ne montre pas quels emplacements
+  reçoivent, ni lesquels sont définis. Mais celui qui ouvre l’espace et copie ce que garde le téléphone pourrait aussi
+  ouvrir cet emplacement, sans code PIN : le code PIN les cache alors aux yeux de qui tient le téléphone, pas d’un outil
+  d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs messages attendent sur le relais
+  jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
 - **Elles se ferment toutes seules** dès qu’Erevos a été en arrière-plan plus de 30 secondes, comme se reverrouille le
   code PIN propre d’une discussion, mais pas pendant un appel, ni pendant que tu choisis une photo ou un fichier pour
   elles ou que tu prends une photo.
@@ -2382,10 +2384,14 @@ supprimerait ce que contiennent les emplacements retirés.
   à part de ceux de l’espace : un compte Matrix et un compte XMPP où se connecter, et une clé Nostr. Les connexions et
   la clé sont gardées chiffrées avec la clé des discussions masquées, et rien d’elles ne se voit en dehors des
   discussions masquées : leurs discussions ne sont que dans la liste des discussions masquées, et n’ajoutent rien au
-  numéro sur l’icône d’Erevos ni à la liste de l’accueil. Les comptes ne se connectent que tant que les discussions
-  masquées sont ouvertes, donc fermées, rien n’arrive et aucune notification ne s’affiche, même avec **Recevoir une fois
-  fermées** activé. Leurs discussions appellent comme celles de l’espace, depuis le compte propre aux discussions
-  masquées ; un appel vers lui ne sonne que tant que les discussions masquées sont ouvertes, avec la sonnerie du
+  numéro sur l’icône d’Erevos ni à la liste de l’accueil. Les comptes se connectent tant que les discussions masquées
+  sont ouvertes, et aussi fermées si **Recevoir une fois fermées** est activé, comme les discussions masquées
+  elles-mêmes reçoivent : alors un message y affiche une notification qui dit seulement « Nouveau message », et sur
+  Android un appel Matrix ou XMPP sonne avec « Appel entrant » et sans nom, et se prend avec le code PIN comme leurs
+  autres appels ; un appel non pris à temps s’affiche comme manqué, et de même un appel de groupe XMPP qui arrive
+  pendant qu’elles sont fermées. Désactivé, les comptes ne se connectent que tant que les discussions masquées sont
+  ouvertes, et fermées, rien n’arrive. Leurs discussions appellent comme celles de l’espace, depuis le compte propre aux
+  discussions masquées ; un appel vers lui, tant que les discussions masquées sont ouvertes, sonne avec la sonnerie du
   téléphone, et elles restent ouvertes jusqu’à sa fin. Un compte Matrix à elles n’a pas **Signaler les nouveaux
   messages**.
 - **Aperçus des liens** a son propre interrupteur dans les détails d’une discussion masquée, pour toutes les discussions

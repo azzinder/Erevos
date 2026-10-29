@@ -1642,7 +1642,8 @@ como esas apps: ningún puente se pone en medio.
   servidor de XMPP, con ocho personas como máximo. Como en una llamada con una persona, la llamada está cifrada
   (DTLS-SRTP), pero las huellas de sus claves, y las invitaciones, pasan por los servidores de XMPP tal cual, y el
   servicio de grupos ve quién está en la llamada y cuándo. La cuenta de XMPP propia de los chats ocultos llama en sus
-  grupos de la misma manera, mientras los chats ocultos están abiertos.
+  grupos de la misma manera, mientras los chats ocultos están abiertos; mientras están cerrados, con **Recibir estando
+  cerrados** activado, una llamada que llega en uno de sus grupos aparece como perdida.
 - **No anónimo:** el servidor de XMPP ve tu cuenta, tus contactos, quién habla con quién y cuándo, y, sin Tor, desde
   dónde. El servidor de la otra persona ve lo mismo de sus chats contigo.
 - **Por Tor:** en Android, XMPP sigue la elección de este espacio en **Ajustes** → **Relay y redes** → **Tor**: con
@@ -2230,14 +2231,15 @@ lo que contienen los lugares que se quitaran.
   contactos ven al instante que llegó un mensaje, un aviso solo dice «New message», en Android una llamada suena con
   «Incoming call» y sin nombre (en la pantalla de llamada entrante, toca el pequeño símbolo, escribe el PIN y toca
   **Conectar** para responder), y un recordatorio de su Chat conmigo muestra un aviso que solo dice **Reminder**. Lo que
-  les llega por Nostr también se lee entonces. Una llamada que terminó antes de que los abrieras, o que sonó demasiado,
-  aparece como perdida. Nada de ellos aparece en ningún sitio hasta que el PIN los abre. Un lugar nuevo empieza con
-  esto activado; los lugares configurados antes se quedan como estaban hasta que lo actives. Para ello, la clave del
-  lugar se guarda cifrada con el espacio, entre una clave aleatoria para cada uno de los otros lugares, así que abrir el
-  espacio no muestra qué lugares reciben, ni cuáles están configurados. Pero quien abra el espacio y copie lo que guarda
-  el teléfono también podría abrir ese lugar, sin PIN: el PIN los mantiene entonces fuera de la vista de quien tenga el
-  teléfono, no de una herramienta forense. Desactivado, su clave solo está tras el PIN, y sus mensajes esperan en el
-  relay hasta que los abras. Las copias de seguridad conservan el interruptor.
+  les llega por Nostr también se lee entonces, y sus propias cuentas de Matrix, XMPP y Nostr siguen conectadas (ver
+  abajo). Una llamada que terminó antes de que los abrieras, o que sonó demasiado, aparece como perdida. Nada de ellos
+  aparece en ningún sitio hasta que el PIN los abre. Un lugar nuevo empieza con esto activado; los lugares configurados
+  antes se quedan como estaban hasta que lo actives. Para ello, la clave del lugar se guarda cifrada con el espacio,
+  entre una clave aleatoria para cada uno de los otros lugares, así que abrir el espacio no muestra qué lugares reciben,
+  ni cuáles están configurados. Pero quien abra el espacio y copie lo que guarda el teléfono también podría abrir ese
+  lugar, sin PIN: el PIN los mantiene entonces fuera de la vista de quien tenga el teléfono, no de una herramienta
+  forense. Desactivado, su clave solo está tras el PIN, y sus mensajes esperan en el relay hasta que los abras. Las
+  copias de seguridad conservan el interruptor.
 - **Se cierran solos** en cuanto Erevos ha estado en segundo plano más de 30 segundos, como se vuelve a bloquear el PIN
   propio de un chat, pero no durante una llamada, ni mientras eliges una foto o un archivo para ellos o haces una foto.
 - **Mientras están abiertos,** un mensaje que llega reproduce el sonido de mensajes nuevos, como en tus otros chats.
@@ -2261,10 +2263,14 @@ lo que contienen los lugares que se quitaran.
   ocultos, aparte de las del espacio: una cuenta de Matrix y otra de XMPP en las que iniciar sesión, y una clave de
   Nostr. Las sesiones y la clave se guardan cifradas con la clave de los chats ocultos, y nada de ellas se ve fuera de
   los chats ocultos: sus chats están solo en la lista de los chats ocultos, y no suman al número del icono de Erevos ni
-  a la lista de inicio. Las cuentas se conectan solo mientras los chats ocultos están abiertos, así que mientras están
-  cerrados no llega nada y no sale ningún aviso, ni siquiera con **Recibir estando cerrados** activado. Sus chats llaman
-  como los del espacio, desde la cuenta propia de los chats ocultos; una llamada a ella suena solo mientras los chats
-  ocultos están abiertos, con el tono del teléfono, y siguen abiertos hasta que termina. Una cuenta de Matrix suya no
+  a la lista de inicio. Las cuentas se conectan mientras los chats ocultos están abiertos, y también mientras están
+  cerrados si **Recibir estando cerrados** está activado, como reciben los propios chats ocultos: entonces un mensaje
+  ahí muestra un aviso que solo dice «New message», y en Android una llamada de Matrix o de XMPP suena con «Incoming
+  call» y sin nombre, y se responde con el PIN como sus otras llamadas; una que no se responde a tiempo aparece como
+  perdida, y también una llamada de grupo de XMPP que llega mientras están cerrados. Desactivado, las cuentas se
+  conectan solo mientras los chats ocultos están abiertos, y mientras están cerrados no llega nada. Sus chats llaman
+  como los del espacio, desde la cuenta propia de los chats ocultos; una llamada a ella, mientras los chats ocultos
+  están abiertos, suena con el tono del teléfono, y siguen abiertos hasta que termina. Una cuenta de Matrix suya no
   tiene **Avisar de mensajes nuevos**.
 - **Las vistas previas de enlaces** tienen un interruptor propio en los detalles de un chat oculto, para todos los chats
   de ese lugar, desactivado salvo que lo actives (ver **Vistas previas de enlaces** en

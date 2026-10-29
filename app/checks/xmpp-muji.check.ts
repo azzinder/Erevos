@@ -149,9 +149,13 @@ function spaceOf(ann: Device, place?: { device: Device; open: () => boolean; wat
       ? {
           place: {
             open: place.open,
+            now: () => (place.open() ? place.device.state : null),
             link: () => (place.open() ? { state: place.device.state, connection: place.device.connection } : null),
             line: async (jid, mine, text, id, at) => addCallLine(place.device.state, jid, mine, text, id, at),
           },
+          // Closed, it receives.
+          closed: (state: XmppState) =>
+            !place.open() && state === place.device.state ? { space: 4, pocket: 1, line: async (jid, mine, text, id, at) => addCallLine(place.device.state, jid, mine, text, id, at) } : null,
           watch: (listener: () => void) => {
             place.watching.add(listener);
             return () => place.watching.delete(listener);
@@ -547,7 +551,7 @@ test('turned down, it can be joined while its room is there; once its room is go
   }
 });
 
-test("a hidden place's own account's call rings as the place's, and ends as its hidden chats close", { skip: !coreReady }, async () => {
+test("a hidden place's own account's call rings as the place's, ends as its hidden chats close, and is missed while they are", { skip: !coreReady }, async () => {
   const server = new Server();
   // Ann's account is the open hidden place's here, in a group with Bob; Eve's is the space's.
   const { ann: place, bob, group } = await groupOf(server);
@@ -569,6 +573,16 @@ test("a hidden place's own account's call rings as the place's, and ends as its 
     closeGroupCall(shown.call);
     assert.equal(xmppGroupCallsKnown(), 0);
     assert.deepEqual(lines(place, group), [['call-p1', false, '📞 Group call, turned down']]);
+
+    // Closed, it receives: a call that comes now is kept as missed, as the place's own groups' are.
+    await dinoStarts(bob, `p1ace002@${MUC}`, [ANN], 'p2', true, group);
+    await run([eve, place], [bob]);
+    assert.equal(shownGroupCall(), null);
+    assert.equal(xmppGroupCallsKnown(), 0);
+    assert.deepEqual(lines(place, group), [
+      ['call-p1', false, '📞 Group call, turned down'],
+      ['call-p2', false, '📞 Missed group video call'],
+    ]);
     assert.deepEqual(lines(eve, group), []);
   } finally {
     stop();

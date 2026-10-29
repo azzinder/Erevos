@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
@@ -92,7 +92,7 @@ export default function XmppChatScreen() {
   const chat = jid && state ? state.chats[jid] : undefined;
   const count = chat?.messages.length ?? 0;
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
-  const shown = useNetworkChatShown(jid && where === 'space' ? `xmpp:${jid}` : undefined);
+  const shown = useNetworkChatShown(!jid ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen());
   useEffect(() => {
     if (shown && jid && chat?.unread) xmppRead(jid).catch(() => undefined);
   }, [shown, jid, count, chat?.unread]);

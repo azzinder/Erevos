@@ -1,6 +1,6 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
-import { hiddenHolder, type Holder } from '../lock/sealed-file';
+import type { Holder } from '../lock/sealed-file';
 import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { canXmpp } from './core';
@@ -8,6 +8,7 @@ import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
+import { PlaceLives, type PlaceKey } from './place-lives';
 import {
   addCallLine,
   addXmppContact,
@@ -41,8 +42,9 @@ import type { connectXmpp, XmppServer } from './xmpp-net';
 //
 // It runs once something asks for it (runXmpp), and goes on until the space closes or another
 // opens: then it disconnects and lets go of the account. A hidden place's own account runs beside
-// it while its hidden chats are open (openXmppPlace, lib/place-networks.ts): their screens show it
-// and act on it (lib/network-place.ts); it tells nothing outside them.
+// it while its hidden chats are open, and while they are closed too if they receive while closed
+// (followXmppPlaces, lib/place-networks.ts): the open one's screens show it and act on it
+// (lib/network-place.ts); what comes to one tells only of its place (lib/network-notices.ts).
 
 type Live = {
   /** The space's account, or a hidden place's. */
@@ -65,8 +67,8 @@ type Live = {
 };
 
 let live: Live | null = null;
-// The open hidden place's own account, while its hidden chats are open.
-let place: Live | null = null;
+// The hidden places' own accounts that run: the open hidden chats', and those receiving while closed.
+const places = new PlaceLives<Live>(start, end);
 let connect: typeof connectXmpp | undefined;
 const listeners = new Set<() => void>();
 
@@ -85,13 +87,13 @@ export function setXmppConnect(next: typeof connectXmpp | undefined): void {
 
 /** The open space's account as it is now, or the open hidden place's: null while it loads, or when there is none. */
 export function xmppNow(where: NetworkWhere = 'space'): { loaded: boolean; state: XmppState | null; problem: string; online: boolean } {
-  const it = where === 'place' ? place : live;
+  const it = where === 'place' ? places.shown() : live;
   return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', online: Boolean(it?.connection?.isOpen) };
 }
 
 /** The account the screen on top acts on. */
 function acting(): Live | null {
-  return actingWhere() === 'place' ? place : live;
+  return actingWhere() === 'place' ? places.shown() : live;
 }
 
 /** How many messages are not read in the open space's XMPP chats and groups, contact requests and invitations counted as one each. */
@@ -152,8 +154,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>, quiet = false): Pr
       try {
         return await change();
       } finally {
-        // A hidden place's messages tell nothing outside its hidden chats.
-        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), hush);
+        // A hidden place's tell only of its place (hearing).
+        if (!it.stopped) it.heard.hear(unreadAt(it.state), hush);
       }
     });
   it.queue = run;
@@ -250,27 +252,33 @@ export function runXmpp(): void {
   live = start('space', space.space, space.key);
 }
 
-/** Loads a hidden place's own account, as its hidden chats open, and connects it while they stay open. */
-export function openXmppPlace(space: number, pocket: number, key: Uint8Array): void {
-  if (!canXmpp()) return;
-  const holder = hiddenHolder(pocket);
-  if (place && place.space === space && place.holder === holder && !place.stopped) return;
-  closeXmppPlace();
-  place = start(holder, space, key);
+/**
+ * Runs the own accounts of the hidden places of `space` in `wanted`, each loaded once and connected
+ * while it stays wanted, and lets go of the others; `shown` is the pocket of the open hidden chats.
+ */
+export function followXmppPlaces(space: number, wanted: PlaceKey[], shown: number | null): void {
+  const was = places.shown();
+  if (!places.follow(space, canXmpp() ? wanted : [], shown)) return;
+  // What was fetched for the open hidden chats goes as they close.
+  if (was && !places.isShown(was)) fetched.clear();
+  told();
 }
 
-/** Disconnects a hidden place's account and lets go of it, as its hidden chats close. */
-export function closeXmppPlace(): void {
-  if (!place) return;
-  place.stopped = true;
-  place.connection?.close();
-  place = null;
+/** Disconnects every hidden place's account and lets go of them. */
+export function closeXmppPlaces(): void {
+  if (!places.stopAll()) return;
   fetched.clear();
   told();
 }
 
-function start(holder: Holder, space: number, key: Uint8Array): Live {
-  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard: hearing(), fresh: false };
+function end(it: Live): void {
+  it.stopped = true;
+  it.connection?.close();
+}
+
+function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
+  const heard = hearing(pocket === undefined ? undefined : { space, pocket });
+  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard, fresh: false };
   loadXmpp(space, key, holder)
     .then(async (state) => {
       // Restored from a backup since it was last here: it goes on as a new device of the account.
@@ -297,7 +305,7 @@ function start(holder: Holder, space: number, key: Uint8Array): Live {
 /** Disconnects and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopXmpp(): void {
   fetched.clear();
-  closeXmppPlace();
+  closeXmppPlaces();
   if (!live) return;
   live.stopped = true;
   live.connection?.close();
@@ -441,7 +449,7 @@ function callLineOf(it: Live | null, jid: string, mine: boolean, text: string, i
   });
 }
 
-const openPlace = () => (place && !place.stopped ? place : null);
+const openPlace = () => places.shown();
 
 /** The open space's account and its connection, while it is connected: for calls (lib/xmpp-calls.ts). */
 export const xmppLink = () => linkOf(live);
@@ -450,12 +458,22 @@ export const xmppLink = () => linkOf(live);
 export const xmppCallLine = (jid: string, mine: boolean, text: string, id: string, at = Date.now()) => callLineOf(live, jid, mine, text, id, at);
 
 /** The open hidden place's own account, for its calls while its hidden chats are open: whether they
- *  are, its connection while it is connected, and its chats' call lines. */
+ *  are, the account and its connection while it is connected, and its chats' call lines. */
 export const xmppPlaceAccount = {
   open: () => !!openPlace(),
+  now: () => openPlace()?.state ?? null,
   link: () => linkOf(openPlace()),
   line: (jid: string, mine: boolean, text: string, id: string, at = Date.now()) => callLineOf(openPlace(), jid, mine, text, id, at),
 };
+
+/** Of the account `state` is, when it is a closed hidden place's that receives (lib/place-receiver.ts):
+ *  its space and pocket, and its chats' call lines, for the calls that come to it. */
+export function xmppClosedPlace(state: XmppState): { space: number; pocket: number; line(jid: string, mine: boolean, text: string, id: string, at?: number): Promise<void> } | null {
+  const found = places.closed((it) => it.state === state);
+  if (!found) return null;
+  const { it, pocket } = found;
+  return { space: it.space, pocket, line: (jid, mine, text, id, at = Date.now()) => callLineOf(it, jid, mine, text, id, at) };
+}
 
 export function xmppForgetChat(jid: string): Promise<void> {
   const it = need();

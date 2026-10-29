@@ -6,6 +6,10 @@ export const hiddenKeep: Record<string, string> = {
     'Fechadas, estas conversas ocultas recebem como as suas outras conversas: os seus contatos veem logo que uma mensagem chegou, um aviso diz apenas «New message», uma chamada toca sem nome e é atendida com o PIN, e um lembrete da Conversa comigo delas diz só “Lembrete”. Para isso, a chave delas fica guardada cifrada com o espaço, então quem abrir o espaço e copiar o que o telefone guarda poderia abri-las também; o PIN continua a mantê-las fora de vista.',
   'Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.':
     'Fechadas, nada lê estas conversas ocultas: a chave delas está só atrás do PIN, e as suas mensagens esperam no relay até você abri-las.',
+  'Their own Matrix, XMPP and Nostr accounts stay connected too: what comes there says only "New message", and a call rings with no name.':
+    'As contas Matrix, XMPP e Nostr próprias delas também continuam conectadas: o que chega ali diz apenas «New message», e uma chamada toca sem nome.',
+  'Their own Matrix, XMPP and Nostr accounts connect only while they are open.':
+    'As contas Matrix, XMPP e Nostr próprias delas se conectam só enquanto estas conversas ocultas estão abertas.',
   // What waits in hidden chats, through their relay only (lib/waiting.ts).
   "Waiting. {reason} It goes by itself once the relay can take it.": "Aguardando. {reason} Ela sai sozinha assim que o relay puder recebê-la.",
   "The voice message waits, and goes by itself once the relay can take it.": "A mensagem de voz aguarda, e sai sozinha assim que o relay puder recebê-la.",

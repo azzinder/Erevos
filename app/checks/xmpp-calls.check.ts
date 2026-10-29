@@ -18,9 +18,11 @@ import { after, before, test } from 'node:test';
 import type { ConnectionConfig, Rtc } from '../lib/call';
 import { closeCall, shownCall } from '../lib/calls';
 import { setCore, type Core } from '../lib/core';
+import { hiddenRinging, setHiddenRinging } from '../lib/hidden-ring';
+import { onPlaceNetworkRing } from '../lib/network-notices';
 import { ICE, JINGLE, jingleToSdp, RTP, sdpToJingle } from '../lib/jingle-sdp';
 import { addCallLine, addXmppContact, NS, takeStanza, XmppError, type Taken, type XmppConnection, type XmppState } from '../lib/xmpp';
-import { startXmppCall, watchXmppCalls, xmppCallSessions, xmppPlaceCalls, type XmppCallsSpace } from '../lib/xmpp-calls';
+import { startXmppCall, takeHeldXmppCall, watchXmppCalls, xmppCallSessions, xmppPlaceCalls, type XmppCallsSpace } from '../lib/xmpp-calls';
 import { child, children, el, type XmlElement } from '../lib/xmpp-xml';
 import { FakeConnection, FakeStream, FakeTrack } from './fake-rtc';
 import { DOMAIN, person, Server, settle } from './xmpp-server';
@@ -571,7 +573,7 @@ test("a hidden place's own account rings and calls as itself, and its call ends 
   const watching = new Set<() => void>();
   const stop = watchXmppCalls(rtc, {
     ...spaceOf(ann),
-    place: { ...spaceOf(cat), open: () => open },
+    place: { ...spaceOf(cat), open: () => open, now: () => (open ? cat.state : null) },
     watch: (listener) => {
       watching.add(listener);
       return () => watching.delete(listener);
@@ -621,6 +623,95 @@ test("a hidden place's own account rings and calls as itself, and its call ends 
     assert.equal(xmppCallSessions(), 0);
   } finally {
     stop();
+    for (const device of [ann, bob, cat]) device.connection.close();
+  }
+});
+
+test("a call to a closed hidden place's own account that receives rings with no name, and rings in it once the PIN opens it", { skip: !coreReady }, async () => {
+  const server = new Server();
+  const { ann, bob } = await pair(server);
+  const CAT = `cat@${DOMAIN}`;
+  const cat = await person(server, 'cat');
+  await addXmppContact(cat.state, cat.connection, BOB, 'Bob of the place');
+  await settle([cat, bob]);
+  await addXmppContact(bob.state, bob.connection, CAT);
+  await settle([cat, bob]);
+  const { rtc } = sdpRtc();
+  // The place's hidden chats are closed, and receive: its account is connected all the same.
+  let open = false;
+  const watching = new Set<() => void>();
+  const rang: [number, number][] = [];
+  const stopRang = onPlaceNetworkRing((space, pocket) => rang.push([space, pocket]));
+  const stop = watchXmppCalls(rtc, {
+    ...spaceOf(ann),
+    place: { ...spaceOf(cat), open: () => open, link: () => (open ? spaceOf(cat).link() : null), now: () => (open ? cat.state : null) },
+    closed: (state) => (!open && state === cat.state ? { space: 5, pocket: 2, line: async (jid, mine, text, id, at) => addCallLine(cat.state, jid, mine, text, id, at) } : null),
+    watch: (listener) => {
+      watching.add(listener);
+      return () => watching.delete(listener);
+    },
+  });
+  const both = async () => {
+    await run(ann, [bob]);
+    await run(cat, [bob]);
+  };
+  try {
+    // Bob calls: nothing shows, nothing tells Bob it rings; the place rings with no name.
+    await bob.connection.send(jmi(CAT, 'propose', 'p2', el('description', { xmlns: RTP, media: 'audio' })));
+    await both();
+    assert.equal(shownCall(), null);
+    assert.deepEqual(rang, [[5, 2]]);
+    assert.equal(bob.got.filter((s) => s.name === 'message' && child(s, 'ringing', JMI)).length, 0);
+    assert.equal(xmppCallSessions(), 0);
+    // He takes it back before the PIN: it is missed, and the ring stops.
+    setHiddenRinging({ space: 5, pocket: 2, at: Date.now() });
+    await bob.connection.send(jmi(CAT, 'retract', 'p2', reason('cancel')));
+    await both();
+    assert.equal(hiddenRinging(), null);
+    assert.deepEqual(calls(cat, BOB), [['call-p2', false, '📞 Missed voice call']]);
+
+    // Again, with video: the PIN opens the place, and it rings there, as the place's call.
+    await bob.connection.send(jmi(CAT, 'propose', 'p3', el('description', { xmlns: RTP, media: 'audio' }), el('description', { xmlns: RTP, media: 'video' })));
+    await both();
+    assert.equal(shownCall(), null);
+    assert.equal(rang.length, 2);
+    open = true;
+    watching.forEach((listener) => listener());
+    await both();
+    const shown = shownCall()!;
+    assert.equal(shown.place, xmppPlaceCalls);
+    assert.deepEqual([shown.call.id, shown.call.peer, shown.call.state, shown.call.video], ['p3', `xmpp:${BOB}`, 'incoming', true]);
+    assert.equal(cameJmi(bob, 'ringing').attrs.from, cat.connection.fullJid);
+    // The PIN on the ring screen answers it: this one, once.
+    assert.equal(takeHeldXmppCall('p3'), true);
+    assert.equal(takeHeldXmppCall('p3'), false);
+    shown.call.decline();
+    await both();
+    assert.equal(cameJmi(bob, 'reject').attrs.from, cat.connection.fullJid);
+    closeCall(shown.call);
+
+    // Answered on another of the place's devices while closed: no ring left, the line says so.
+    open = false;
+    watching.forEach((listener) => listener());
+    await bob.connection.send(jmi(CAT, 'propose', 'p4', el('description', { xmlns: RTP, media: 'audio' })));
+    await both();
+    assert.equal(rang.length, 3);
+    const other = await person(server, 'cat');
+    await other.connection.send(el('message', { to: bob.connection.fullJid, type: 'chat' }, el('proceed', { xmlns: JMI, id: 'p4' })));
+    await other.connection.send(el('message', { to: CAT, type: 'chat' }, el('accept', { xmlns: JMI, id: 'p4' })));
+    await both();
+    assert.equal(shownCall(), null);
+    assert.deepEqual(calls(cat, BOB), [
+      ['call-p2', false, '📞 Missed voice call'],
+      ['call-p3', false, '📞 Video call, turned down'],
+      ['call-p4', true, '📞 Voice call, answered on another device'],
+    ]);
+    assert.deepEqual(calls(ann, BOB), []);
+    assert.equal(xmppCallSessions(), 0);
+    other.connection.close();
+  } finally {
+    stop();
+    stopRang();
     for (const device of [ann, bob, cat]) device.connection.close();
   }
 });

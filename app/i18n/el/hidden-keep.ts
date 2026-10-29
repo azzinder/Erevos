@@ -6,6 +6,10 @@ export const hiddenKeep: Record<string, string> = {
     'Κλειστές, αυτές οι κρυφές συνομιλίες λαμβάνουν όπως οι άλλες συνομιλίες σου: οι επαφές τους βλέπουν αμέσως ότι ένα μήνυμα έφτασε, μια ειδοποίηση λέει μόνο «Νέο μήνυμα», μια κλήση χτυπά χωρίς όνομα και απαντιέται με το PIN, και μια υπενθύμιση της Συνομιλίας με τον εαυτό μου λέει μόνο «Υπενθύμιση». Γι’ αυτό το κλειδί τους φυλάγεται κρυπτογραφημένο μαζί με τον χώρο, οπότε όποιος ανοίξει τον χώρο και αντιγράψει ό,τι κρατά το τηλέφωνο θα μπορούσε να τις ανοίξει κι αυτός· το PIN εξακολουθεί να τις κρατά κρυμμένες.',
   'Closed, nothing reads these hidden chats: their key is only behind the PIN, and their messages wait on the relay until you open them.':
     'Κλειστές, τίποτα δεν διαβάζει αυτές τις κρυφές συνομιλίες: το κλειδί τους είναι μόνο πίσω από το PIN, και τα μηνύματά τους περιμένουν στο relay μέχρι να τις ανοίξεις.',
+  'Their own Matrix, XMPP and Nostr accounts stay connected too: what comes there says only "New message", and a call rings with no name.':
+    'Οι δικοί τους λογαριασμοί Matrix, XMPP και Nostr μένουν κι αυτοί συνδεδεμένοι: ό,τι έρχεται εκεί λέει μόνο «Νέο μήνυμα», και μια κλήση χτυπά χωρίς όνομα.',
+  'Their own Matrix, XMPP and Nostr accounts connect only while they are open.':
+    'Οι δικοί τους λογαριασμοί Matrix, XMPP και Nostr συνδέονται μόνο όσο αυτές είναι ανοιχτές.',
   // What waits in hidden chats, through their relay only (lib/waiting.ts).
   "Waiting. {reason} It goes by itself once the relay can take it.": "Σε αναμονή. {reason} Φεύγει μόνο του μόλις το πάρει το relay.",
   "The voice message waits, and goes by itself once the relay can take it.": "Το φωνητικό μήνυμα περιμένει, και φεύγει μόνο του μόλις το πάρει το relay.",

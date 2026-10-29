@@ -1631,7 +1631,8 @@ esses apps: nenhuma ponte fica no meio.
   deste espaço ou pelo servidor TURN do servidor XMPP, no máximo oito pessoas. Como numa chamada com uma pessoa, a
   chamada é criptografada (DTLS-SRTP), mas as impressões digitais das suas chaves, e os convites, passam pelos
   servidores XMPP como estão, e o serviço de grupos vê quem está na chamada e quando. A conta XMPP própria das conversas
-  ocultas liga nos grupos dela do mesmo jeito, enquanto as conversas ocultas estão abertas.
+  ocultas liga nos grupos dela do mesmo jeito, enquanto as conversas ocultas estão abertas; enquanto estão fechadas, com
+  **Receber quando fechadas** ativado, uma chamada que chega num dos grupos dela aparece como perdida.
 - **Não anônimo:** o servidor XMPP vê sua conta, seus contatos, quem fala com quem e quando, e, sem Tor, de onde. O
   servidor da outra pessoa vê o mesmo das conversas dele com você.
 - **Pelo Tor:** no Android, o XMPP segue a escolha deste espaço em **Configurações** → **Relay e redes** → **Tor**: com
@@ -2217,15 +2218,15 @@ as posições retiradas guardam.
   como as suas outras conversas enquanto o espaço está aberto, seja qual for a tela e com o Erevos em segundo plano:
   os contatos delas veem na hora que uma mensagem chegou, um aviso diz só "New message", no Android uma chamada toca
   com "Incoming call" e sem nome (na tela da chamada, toque no pequeno sinal, digite o PIN e toque em **Conectar**
-  para atender), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas
-  pelo Nostr também é lido então. Uma chamada que terminou antes de você abri-las, ou que tocou tempo demais, aparece
-  como perdida. Nada delas aparece em lugar nenhum até o PIN abri-las. Uma posição nova começa com isso ativado; as
-  posições definidas antes ficam como estavam até você ativar. Para isso, a chave da posição fica guardada
-  criptografada com o espaço, entre uma chave aleatória para cada outra posição, para que abrir o espaço não mostre
-  quais posições recebem, ou estão definidas. Mas quem abrir o espaço e copiar o que o celular guarda poderia abrir
-  essa posição também, sem PIN: o PIN então as mantém fora da vista de quem estiver com o celular, não de uma
-  ferramenta forense. Desativado, a chave delas fica só atrás do PIN, e as mensagens delas esperam no relay até você
-  abri-las. Os backups guardam o interruptor.
+  para atender), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas pelo
+  Nostr também é lido então, e as contas Matrix, XMPP e Nostr próprias delas continuam conectadas (veja abaixo). Uma
+  chamada que terminou antes de você abri-las, ou que tocou tempo demais, aparece como perdida. Nada delas aparece em
+  lugar nenhum até o PIN abri-las. Uma posição nova começa com isso ativado; as posições definidas antes ficam como
+  estavam até você ativar. Para isso, a chave da posição fica guardada criptografada com o espaço, entre uma chave
+  aleatória para cada outra posição, para que abrir o espaço não mostre quais posições recebem, ou estão definidas. Mas
+  quem abrir o espaço e copiar o que o celular guarda poderia abrir essa posição também, sem PIN: o PIN então as mantém
+  fora da vista de quem estiver com o celular, não de uma ferramenta forense. Desativado, a chave delas fica só atrás do
+  PIN, e as mensagens delas esperam no relay até você abri-las. Os backups guardam o interruptor.
 - **Elas fecham sozinhas** depois que o Erevos fica em segundo plano por mais de 30 segundos, como o PIN próprio de
   uma conversa bloqueia de novo, mas não durante uma chamada, nem enquanto você escolhe uma foto ou um arquivo para
   elas ou tira uma foto.
@@ -2250,11 +2251,14 @@ as posições retiradas guardam.
   ocultas, separadas das do espaço: uma conta Matrix e uma XMPP para entrar, e uma chave Nostr. As sessões e a chave
   ficam guardadas criptografadas com a chave das conversas ocultas, e nada delas aparece fora das conversas ocultas: as
   conversas delas ficam só na lista das conversas ocultas, e não somam ao número no ícone do Erevos nem à lista da tela
-  inicial. As contas se conectam só enquanto as conversas ocultas estão abertas, então, fechadas, nada chega e nenhum
-  aviso aparece, nem com **Receber quando fechadas** ativado. As conversas delas ligam como as do espaço, pela conta
-  própria das conversas ocultas; uma chamada para ela toca só enquanto as conversas ocultas estão abertas, com o toque
-  do telefone, e elas ficam abertas até a chamada acabar. Uma conta Matrix delas não tem **Avisar quando chega
-  mensagem**.
+  inicial. As contas se conectam enquanto as conversas ocultas estão abertas, e também enquanto estão fechadas se
+  **Receber quando fechadas** estiver ativado, como as próprias conversas ocultas recebem: então uma mensagem ali mostra
+  um aviso que diz só "New message", e no Android uma chamada Matrix ou XMPP toca com "Incoming call" e sem nome, e é
+  atendida com o PIN como as outras chamadas delas; uma não atendida a tempo aparece como perdida, e também uma chamada
+  de grupo XMPP que chega enquanto elas estão fechadas. Desativado, as contas se conectam só enquanto as conversas
+  ocultas estão abertas, e, fechadas, nada chega. As conversas delas ligam como as do espaço, pela conta própria das
+  conversas ocultas; uma chamada para ela, enquanto as conversas ocultas estão abertas, toca com o toque do telefone, e
+  elas ficam abertas até a chamada acabar. Uma conta Matrix delas não tem **Avisar quando chega mensagem**.
 - **As prévias de links** têm um interruptor próprio nos detalhes de uma conversa oculta, para todas as conversas
   daquela posição, desativado a menos que você o ative (veja **Prévias de links** em
   [Conversar por um relay](#relay)).

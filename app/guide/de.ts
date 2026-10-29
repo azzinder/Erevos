@@ -1756,7 +1756,8 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Wie in einem Anruf mit einer Person ist der Anruf verschlüsselt (DTLS-SRTP), aber die Fingerabdrücke seiner Schlüssel
   und die Einladungen gehen so, wie sie sind, über die XMPP-Server, und der Gruppendienst sieht, wer im Anruf ist und
   wann. Das eigene XMPP-Konto der versteckten Chats ruft in seinen Gruppen genauso an, solange die versteckten Chats
-  offen sind.
+  offen sind; solange sie geschlossen sind, erscheint bei eingeschaltetem **Empfangen, wenn geschlossen** ein Anruf, der
+  in einer seiner Gruppen kommt, als verpasst.
 - **Nicht anonym:** Der XMPP-Server sieht dein Konto, deine Kontakte, wer mit wem spricht und wann, und ohne Tor auch,
   von wo. Der Server der anderen Person sieht dasselbe von seinen Chats mit dir.
 - **Über Tor:** Auf Android folgt XMPP der Wahl dieses Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**:
@@ -2385,15 +2386,16 @@ löschen, was die weggenommenen Plätze enthalten.
   Hintergrund: Ihre Kontakte sehen sofort, dass eine Nachricht ankam, eine Benachrichtigung sagt nur „New message“,
   auf Android klingelt ein Anruf mit „Incoming call“ und ohne Namen (tippe auf dem Klingelbildschirm auf das kleine
   Zeichen, gib die PIN ein und tippe auf **Verbinden**, um anzunehmen), und eine Erinnerung aus ihrem „Chat mit mir
-  selbst“ zeigt eine Benachrichtigung, die nur **Reminder** sagt. Was über Nostr zu ihnen kommt, wird dann auch
-  gelesen. Ein Anruf, der endete, bevor du sie geöffnet hast, oder zu lange klingelte, erscheint als verpasst. Nichts
-  von ihnen erscheint irgendwo, bis die PIN sie öffnet. Ein neuer Platz beginnt mit eingeschaltetem Schalter; vorher
-  angelegte Plätze bleiben, wie sie waren, bis du ihn einschaltest. Dafür wird der Schlüssel des Platzes verschlüsselt
-  mit dem Bereich aufbewahrt, zwischen einem Zufallsschlüssel für jeden anderen Platz, sodass das Öffnen des Bereichs
-  nicht zeigt, welche Plätze empfangen oder angelegt sind. Aber wer den Bereich öffnet und kopiert, was das Telefon
-  aufbewahrt, könnte auch diesen Platz öffnen, ohne PIN: Die PIN hält sie dann vor den Blicken dessen verborgen, der das
-  Telefon in der Hand hat, nicht vor einem forensischen Werkzeug. Ausgeschaltet ist ihr Schlüssel nur hinter der PIN,
-  und ihre Nachrichten warten auf dem Relay, bis du sie öffnest. Backups behalten den Schalter.
+  selbst“ zeigt eine Benachrichtigung, die nur **Reminder** sagt. Was über Nostr zu ihnen kommt, wird dann auch gelesen,
+  und ihre eigenen Matrix-, XMPP- und Nostr-Konten bleiben verbunden (siehe unten). Ein Anruf, der endete, bevor du sie
+  geöffnet hast, oder zu lange klingelte, erscheint als verpasst. Nichts von ihnen erscheint irgendwo, bis die PIN sie
+  öffnet. Ein neuer Platz beginnt mit eingeschaltetem Schalter; vorher angelegte Plätze bleiben, wie sie waren, bis du
+  ihn einschaltest. Dafür wird der Schlüssel des Platzes verschlüsselt mit dem Bereich aufbewahrt, zwischen einem
+  Zufallsschlüssel für jeden anderen Platz, sodass das Öffnen des Bereichs nicht zeigt, welche Plätze empfangen oder
+  angelegt sind. Aber wer den Bereich öffnet und kopiert, was das Telefon aufbewahrt, könnte auch diesen Platz öffnen,
+  ohne PIN: Die PIN hält sie dann vor den Blicken dessen verborgen, der das Telefon in der Hand hat, nicht vor einem
+  forensischen Werkzeug. Ausgeschaltet ist ihr Schlüssel nur hinter der PIN, und ihre Nachrichten warten auf dem Relay,
+  bis du sie öffnest. Backups behalten den Schalter.
 - **Sie schließen sich von selbst,** sobald Erevos mehr als 30 Sekunden im Hintergrund war, so wie sich die eigene PIN
   eines Chats wieder sperrt, aber nicht während eines Anrufs und nicht, während du ein Foto oder eine Datei für sie
   wählst oder ein Foto aufnimmst.
@@ -2420,11 +2422,15 @@ löschen, was die weggenommenen Plätze enthalten.
   und ein Nostr-Schlüssel. Die Anmeldungen und der Schlüssel werden mit dem Schlüssel der versteckten Chats
   verschlüsselt aufbewahrt, und nichts davon zeigt sich außerhalb der versteckten Chats: Ihre Chats stehen nur in der
   Liste der versteckten Chats und zählen weder in der Zahl auf dem Symbol von Erevos noch in der Startliste mit. Die
-  Konten verbinden sich nur, solange die versteckten Chats offen sind; sind sie geschlossen, kommt nichts an und keine
-  Benachrichtigung erscheint, auch mit **Empfangen, wenn geschlossen**. Ihre Chats rufen an wie die des Bereichs, vom
-  eigenen Konto der versteckten Chats; ein Anruf an dieses klingelt nur, solange die versteckten Chats offen sind, mit
-  dem Klingelton des Telefons, und sie bleiben offen, bis er endet. Ein Matrix-Konto von ihnen hat kein **Neue
-  Nachrichten melden**.
+  Konten verbinden sich, solange die versteckten Chats offen sind, und auch, solange sie geschlossen sind, wenn
+  **Empfangen, wenn geschlossen** eingeschaltet ist, wie die versteckten Chats selbst empfangen: Dann zeigt eine
+  Nachricht dort eine Benachrichtigung, die nur „New message“ sagt, und auf Android klingelt ein Matrix- oder XMPP-Anruf
+  mit „Incoming call“ und ohne Namen und wird mit der PIN angenommen wie ihre anderen Anrufe; einer, der nicht
+  rechtzeitig angenommen wird, erscheint als verpasst, ebenso ein XMPP-Gruppenanruf, der kommt, während sie geschlossen
+  sind. Ausgeschaltet verbinden sich die Konten nur, solange die versteckten Chats offen sind, und solange sie
+  geschlossen sind, kommt nichts an. Ihre Chats rufen an wie die des Bereichs, vom eigenen Konto der versteckten Chats;
+  ein Anruf an dieses, während die versteckten Chats offen sind, klingelt mit dem Klingelton des Telefons, und sie
+  bleiben offen, bis er endet. Ein Matrix-Konto von ihnen hat kein **Neue Nachrichten melden**.
 - **Linkvorschauen** haben einen eigenen Schalter in den Details eines versteckten Chats, für alle Chats dieses
   Platzes, aus, solange du ihn nicht einschaltest (siehe **Linkvorschauen** unter [Chat über ein Relay](#relay)).
 - **Melden, wenn eine Nachricht kommt** (Android): oben auf einem Platz, solange **Empfangen, wenn geschlossen** aus

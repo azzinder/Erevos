@@ -1,12 +1,13 @@
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
-import { hiddenHolder, type Holder } from '../lock/sealed-file';
+import type { Holder } from '../lock/sealed-file';
 import { canNostrChat } from './core';
 import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
+import { PlaceLives, type PlaceKey } from './place-lives';
 import {
   addMessage,
   authEvent,
@@ -45,9 +46,10 @@ import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFi
 // members' relays, a wrap for each; photos and files go to a Blossom server first
 // (lib/nostr-files.ts).
 //
-// A hidden place's own key runs beside the space's while its hidden chats are open (openNostrDmPlace,
-// lib/place-networks.ts): their screens show it and act on it (lib/network-place.ts); it tells
-// nothing outside them, and its connections are its own, so no relay sees both keys on one.
+// A hidden place's own key runs beside the space's while its hidden chats are open, and while they
+// are closed too if they receive while closed (followNostrDmPlaces, lib/place-networks.ts): the
+// open one's screens show it and act on it (lib/network-place.ts); what comes to one tells only of
+// its place (lib/network-notices.ts), and its connections are its own, so no relay sees two keys on one.
 
 type Live = {
   /** The space's account, or a hidden place's. */
@@ -76,8 +78,8 @@ type Live = {
 };
 
 let live: Live | null = null;
-// The open hidden place's own key, while its hidden chats are open.
-let place: Live | null = null;
+// The hidden places' own keys that run: the open hidden chats', and those receiving while closed.
+const places = new PlaceLives<Live>(start, end);
 const listeners = new Set<() => void>();
 
 /** Told each time the account or its chats change. */
@@ -93,14 +95,14 @@ const seconds = (now = Date.now()) => Math.floor(now / 1000);
 
 /** The open space's account as it is now, or the open hidden place's, how many of its inbox relays it reads, and whether through Tor. */
 export function nostrDmNow(where: NetworkWhere = 'space'): { loaded: boolean; state: NostrDmState | null; problem: string; reading: number; tor: boolean } {
-  const it = where === 'place' ? place : live;
+  const it = where === 'place' ? places.shown() : live;
   const readers = [...(it?.reading.values() ?? [])].filter((relay) => relay.open);
   return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', reading: readers.length, tor: readers.length > 0 && readers.every((relay) => relay.tor) };
 }
 
 /** The account the screen on top acts on. */
 function acting(): Live | null {
-  return actingWhere() === 'place' ? place : live;
+  return actingWhere() === 'place' ? places.shown() : live;
 }
 
 /** How many messages are not read in the open space's Nostr chats. */
@@ -154,8 +156,8 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
       try {
         return await change();
       } finally {
-        // A hidden place's messages tell nothing outside its hidden chats.
-        if (!it.stopped && it.holder === 'space') it.heard.hear(unreadAt(it.state), quiet);
+        // A hidden place's tell only of its place (hearing).
+        if (!it.stopped) it.heard.hear(unreadAt(it.state), quiet);
       }
     });
   it.queue = run;
@@ -349,25 +351,26 @@ export function runNostrDm(): void {
   live = start('space', space.space, space.key);
 }
 
-/** Loads a hidden place's own key, as its hidden chats open, and reads its inbox while they stay open. */
-export function openNostrDmPlace(space: number, pocket: number, key: Uint8Array): void {
-  if (!canNostrChat()) return;
-  const holder = hiddenHolder(pocket);
-  if (place && place.space === space && place.holder === holder && !place.stopped) return;
-  closeNostrDmPlace();
-  place = start(holder, space, key);
+/**
+ * Runs the own keys of the hidden places of `space` in `wanted`, each loaded once and its inbox read
+ * while it stays wanted, and lets go of the others; `shown` is the pocket of the open hidden chats.
+ */
+export function followNostrDmPlaces(space: number, wanted: PlaceKey[], shown: number | null): void {
+  const was = places.shown();
+  if (!places.follow(space, canNostrChat() ? wanted : [], shown)) return;
+  // What was fetched for the open hidden chats goes as they close.
+  if (was && !places.isShown(was)) fetched.clear();
+  told();
 }
 
-/** Stops reading a hidden place's key and lets go of it, as its hidden chats close. */
-export function closeNostrDmPlace(): void {
-  if (!place) return;
-  end(place);
-  place = null;
+/** Stops reading every hidden place's key and lets go of them. */
+export function closeNostrDmPlaces(): void {
+  if (!places.stopAll()) return;
   fetched.clear();
   told();
 }
 
-function start(holder: Holder, space: number, key: Uint8Array): Live {
+function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
   const it: Live = {
     holder,
     space,
@@ -383,7 +386,7 @@ function start(holder: Holder, space: number, key: Uint8Array): Live {
     telling: false,
     tellAgain: false,
     listedAt: 0,
-    heard: hearing(),
+    heard: hearing(pocket === undefined ? undefined : { space, pocket }),
     out: new Map(),
   };
   loadNostrDm(space, key, holder)
@@ -414,7 +417,7 @@ function end(it: Live): void {
 
 /** Stops reading and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopNostrDm(): void {
-  closeNostrDmPlace();
+  closeNostrDmPlaces();
   if (!live) return;
   end(live);
   live = null;
