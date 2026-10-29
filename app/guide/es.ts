@@ -1661,6 +1661,9 @@ como esas apps: ningún puente se pone en medio.
   reaccionar o eliminar una vez que el grupo lo ha devuelto.
 - **Escribiendo:** cuando la app de la otra persona avisa de que está escribiendo, **escribiendo…** aparece bajo el
   chat. Erevos nunca lo dice de ti, porque le diría al servidor XMPP cada vez que escribes.
+- **Bloquear:** **Bloquear**, al final de un chat, impide que los mensajes, llamadas y solicitudes de esa persona lleguen
+  a tu cuenta XMPP, en cualquiera de sus apps, como lo hace el servidor XMPP (XEP-0191); no se le avisa.
+  **Desbloquear** la deja pasar de nuevo. Quien fue bloqueado en otra app de la cuenta también lo está aquí.
 - **Mensajes de antes:** lo que llegó mientras Erevos estaba cerrado se trae del archivo del servidor al conectar, si el
   servidor lo guarda. Un mensaje enviado antes de que este dispositivo iniciara sesión, o no pensado para él, sale
   bloqueado.

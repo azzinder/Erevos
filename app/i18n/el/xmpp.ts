@@ -105,4 +105,8 @@ export const xmpp: Record<string, string> = {
   "This message is not here any more.": "Αυτό το μήνυμα δεν είναι πια εδώ.",
   "Only your own words can be changed.": "Μόνο τα δικά σου λόγια αλλάζουν.",
   "Only your own messages can be deleted for everyone.": "Μόνο τα δικά σου μηνύματα σβήνονται για όλους.",
+  "Blocked: nothing of theirs reaches your XMPP account, in any of its apps.": "Αποκλεισμένος: τίποτα δικό του δεν φτάνει στον λογαριασμό σου XMPP, σε καμία από τις εφαρμογές του.",
+  "Block {name}?": "Αποκλεισμός του {name};",
+  "Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.": "Τα μηνύματα, οι κλήσεις και τα αιτήματά του δεν φτάνουν πια στον λογαριασμό σου XMPP, σε καμία από τις εφαρμογές του. Δεν ενημερώνεται.",
+  "Your XMPP server cannot block anyone.": "Ο server σου XMPP δεν μπορεί να αποκλείσει κανέναν.",
 };

@@ -24,6 +24,7 @@ export const NEXT: Changes = {
     mark("**Name a member in a group with @**: type @ and pick a member; they are told of the message even if they muted the group. See [Group chats](#groups)."),
     mark("**Reply, change, react and delete in XMPP chats**: hold a message in an XMPP chat or group to answer it, change your words, delete it for everyone or react with an emoji, as Conversations, Dino, Gajim, Monal and Kaidan do; and **typing…** shows while the other person writes. See [XMPP](#xmpp)."),
     mark("**See who is writing in a Matrix chat**: **typing…** shows under a Matrix chat while someone writes in it, as the Matrix server says. Erevos never says it of you. See [Matrix](#matrix)."),
+    mark("**Block someone on XMPP**: Block, at the bottom of an XMPP chat, keeps that person's messages, calls and requests from every app of your XMPP account; Unblock lets them through again. See [XMPP](#xmpp)."),
     mark("**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic)."),
   ],
   underTheHood: [

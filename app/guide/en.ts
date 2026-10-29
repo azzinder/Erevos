@@ -1536,6 +1536,9 @@ bridge sits in between.
   a group, a message can be answered, reacted to or deleted once the group has passed it back.
 - **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos never says
   it of you, as that would tell the XMPP server each time you write.
+- **Blocking:** **Block**, at the bottom of a chat, stops that person's messages, calls and requests from reaching your
+  XMPP account, in any of its apps, as the XMPP server does it (XEP-0191); they are not told. **Unblock** lets them
+  through again. Someone blocked in another app of the account is blocked here too.
 - **Messages from before:** what came while Erevos was closed is fetched from the server's archive when it connects, if
   the server keeps one. A message sent before this device signed in, or not meant for it, shows as locked.
 - **Photos and files:** **Photo** and **File**, under a chat's message box, send one of up to 50 MB, or less if your

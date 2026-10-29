@@ -113,6 +113,7 @@ export const NS = {
   caps: 'http://jabber.org/protocol/caps',
   pubsubEvent: 'http://jabber.org/protocol/pubsub#event',
   bookmarks: 'urn:xmpp:bookmarks:1',
+  blocking: 'urn:xmpp:blocking',
 } as const;
 
 /** How many messages each chat keeps. */
@@ -205,6 +206,8 @@ export type XmppState = {
   muc?: XmppMuc;
   /** The restore of a backup this account last went past (lib/xmpp-store.ts, renewDevice): '' for none. */
   restored?: string;
+  /** Addresses the account blocks (XEP-0191), as its server last said: nothing of theirs reaches it. */
+  blocked?: string[];
 };
 
 export class XmppError extends Error {
@@ -488,6 +491,9 @@ export async function startSession(state: XmppState, connection: XmppConnection)
   const roster = await connection.iq('get', undefined, el('query', { xmlns: NS.roster }));
   takeRoster(state, child(roster, 'query', NS.roster), true);
   await connection.iq('set', undefined, el('enable', { xmlns: NS.carbons })).catch(() => undefined);
+  // Whom the account blocks, as its other apps may have changed it; a server without blocking keeps none.
+  const blocklist = await connection.iq('get', undefined, el('blocklist', { xmlns: NS.blocking })).catch(() => null);
+  if (blocklist) takeBlocked(state, child(blocklist, 'blocklist', NS.blocking), 'block', true);
   await publishOmemo(state, connection).catch(() => undefined);
   await connection.send(el('presence', {}, el('c', { xmlns: NS.caps, hash: 'sha-1', node: CAPS_NODE, ver: capsVer() })));
   await fetchArchive(state, connection);
@@ -842,6 +848,8 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
   }
   const peer = mine ? to : from;
   if (!peer.includes('@') || peer === state.jid) return;
+  // From someone blocked, as the archive may still give it: nothing.
+  if (!mine && isBlocked(state, peer)) return;
   const id = message.attrs.id ?? '';
   const originId = child(message, 'origin-id', NS.sid)?.attrs.id;
   if (how.archiveId) state.archived = how.archiveId;
@@ -1182,6 +1190,41 @@ function takeDeviceList(state: XmppState, jid: string, ids: number[], two = fals
   for (const id of ids) (person.devices[String(id)] ??= { listed: true }).listed = true;
 }
 
+/** The most addresses kept as blocked. */
+const MOST_BLOCKED = 1000;
+
+/** A block list, or a block or unblock of some addresses (an unblock of none is of all), as the server says them. */
+function takeBlocked(state: XmppState, list: XmlElement | undefined, how: 'block' | 'unblock', whole: boolean): void {
+  const named = children(list, 'item', NS.blocking)
+    .map((item) => bare(item.attrs.jid ?? '').toLowerCase())
+    .filter(Boolean);
+  let blocked = whole ? [] : [...(state.blocked ?? [])];
+  if (how === 'block') blocked.push(...named.filter((jid) => !blocked.includes(jid)));
+  else blocked = named.length ? blocked.filter((jid) => !named.includes(jid)) : [];
+  blocked = blocked.slice(-MOST_BLOCKED);
+  if (blocked.length) state.blocked = blocked;
+  else delete state.blocked;
+  // One blocked asks nothing any more.
+  state.requests = state.requests.filter((jid) => !blocked.includes(jid));
+}
+
+/** Whether the account blocks `jid` (an address, or a whole server by its name). */
+export function isBlocked(state: XmppState, jid: string): boolean {
+  const who = bare(jid).toLowerCase();
+  return !!state.blocked?.some((b) => b === who || b === domainOf(who));
+}
+
+/** Blocks someone, or lets them through again (XEP-0191): their messages, calls and requests no longer reach any app of the account. */
+export async function blockXmpp(state: XmppState, connection: XmppConnection, jid: string, block: boolean): Promise<void> {
+  const who = bare(jid).toLowerCase();
+  if (!who.includes('@') || who === state.jid) throw new XmppError(t('Write an XMPP address, such as name@example.org.'));
+  const item = el(block ? 'block' : 'unblock', { xmlns: NS.blocking }, el('item', { xmlns: NS.blocking, jid: who }));
+  await connection.iq('set', undefined, item).catch((error: unknown) => {
+    throw error instanceof XmppError && error.condition === 'service-unavailable' ? new XmppError(t('Your XMPP server cannot block anyone.')) : error;
+  });
+  takeBlocked(state, item, block ? 'block' : 'unblock', false);
+}
+
 function takeRoster(state: XmppState, query: XmlElement | undefined, whole: boolean): void {
   if (whole) state.roster = {};
   for (const item of children(query, 'item', NS.roster)) {
@@ -1201,6 +1244,7 @@ async function takePresence(state: XmppState, connection: XmppConnection, presen
   const from = bare(presence.attrs.from ?? '');
   if (!from.includes('@') || from === state.jid) return;
   if (presence.attrs.type === 'subscribe') {
+    if (isBlocked(state, from)) return;
     // Someone we added ourselves may see us at once; others ask first.
     const contact = state.roster[from];
     if (contact && (contact.asked || contact.subscription === 'to' || contact.subscription === 'both')) {
@@ -1223,6 +1267,12 @@ async function answerIq(state: XmppState, connection: XmppConnection, iq: XmlEle
     return reply();
   }
   if (type === 'get' && query?.name === 'ping' && query.ns === NS.ping) return reply();
+  // Someone blocked or unblocked in another app of the account: from our own server only.
+  if (type === 'set' && query?.ns === NS.blocking && (query.name === 'block' || query.name === 'unblock') && (!from || bare(from) === state.jid)) {
+    takeBlocked(state, query, query.name, false);
+    taken.chats.push('');
+    return reply();
+  }
   if (type === 'set' && query?.name === 'jingle' && query.ns === NS.jingle && callHook) return callHook.iq(state, connection, iq);
   if (type === 'get' && query?.name === 'query' && query.ns === NS.discoInfo) {
     return reply(

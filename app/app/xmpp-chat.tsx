@@ -23,7 +23,7 @@ import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
-import { isXmppId, nameOf, onXmppTyping, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { isBlocked, isXmppId, nameOf, onXmppTyping, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
 import { reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
 import { XMPP_FILE_MOST } from '../lib/xmpp-files';
@@ -34,6 +34,7 @@ import {
   onXmppChange,
   runXmpp,
   xmppAddToGroup,
+  xmppBlock,
   xmppChange,
   xmppDelete,
   xmppFile,
@@ -335,6 +336,7 @@ export default function XmppChatScreen() {
   const channel = !!room && !room.private;
   const plain = !!chat?.plain;
   const devices = xmppDevices(state, jid);
+  const blocked = isBlocked(state, jid);
   // A private group we are in has call tiles, and one going on in it can be joined.
   const groupCalls = !!(room?.private && room.joined);
   const going = groupCalls ? groupCallGoingOn(jid) : null;
@@ -486,6 +488,25 @@ export default function XmppChatScreen() {
         </>
       ) : null}
 
+      {room ? null : blocked ? (
+        <>
+          <Text variant="caption" tone="muted">
+            {t('Blocked: nothing of theirs reaches your XMPP account, in any of its apps.')}
+          </Text>
+          <Button title={t('Unblock')} kind="secondary" onPress={() => void xmppBlock(jid, false).catch(fail)} />
+        </>
+      ) : (
+        <Button
+          title={t('Block')}
+          kind="secondary"
+          onPress={() =>
+            ask(t('Block {name}?', { name }), t('Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.'), [
+              { text: t('Cancel'), style: 'cancel' },
+              { text: t('Block'), style: 'destructive', onPress: () => void xmppBlock(jid, true).catch(fail) },
+            ])
+          }
+        />
+      )}
       {room ? (
         <Button
           title={t('Leave the group')}

@@ -12,6 +12,7 @@ import { PlaceLives, type PlaceKey } from './place-lives';
 import {
   addCallLine,
   addXmppContact,
+  blockXmpp,
   changeXmppText,
   declineXmppRequest,
   forgetXmppChat,
@@ -373,6 +374,14 @@ export function xmppSend(jid: string, text: string): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
     await sendXmppText(it.state, online(it), jid, text);
+  });
+}
+
+/** Blocks someone, or lets them through again, on every app of the account. */
+export function xmppBlock(jid: string, block: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await blockXmpp(it.state, online(it), jid, block);
   });
 }
 

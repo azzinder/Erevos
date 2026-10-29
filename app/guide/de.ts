@@ -1777,6 +1777,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   gelöscht werden, sobald die Gruppe sie zurückgegeben hat.
 - **Schreiben:** wenn die App der anderen Person meldet, dass sie schreibt, erscheint **schreibt…** unter dem Chat.
   Erevos meldet das nie von dir, denn das würde dem XMPP-Server jedes Mal sagen, wenn du schreibst.
+- **Blockieren:** **Blockieren**, unten in einem Chat, hält Nachrichten, Anrufe und Anfragen dieser Person von deinem
+  XMPP-Konto fern, in jeder seiner Apps, wie es der XMPP-Server tut (XEP-0191); sie erfährt es nicht. **Blockierung
+  aufheben** lässt sie wieder durch. Wer in einer anderen App des Kontos blockiert wurde, ist auch hier blockiert.
 - **Nachrichten von vorher:** Was kam, während Erevos geschlossen war, wird beim Verbinden aus dem Archiv des Servers
   geholt, wenn er eines führt. Eine Nachricht von vor der Anmeldung dieses Geräts oder nicht für es bestimmt erscheint
   gesperrt.

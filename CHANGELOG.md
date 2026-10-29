@@ -48,6 +48,10 @@ On main, not released yet:
   sends it. See [XMPP](#xmpp).
 - **See who is writing in a Matrix chat**: `m.typing` from the sync's `ephemeral` part shows **typing…** under the
   chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). Erevos never sends it. See [Matrix](#matrix).
+- **Block someone on XMPP**: **Block** / **Unblock** at the bottom of an XMPP chat, through the server (XEP-0191,
+  `blockXmpp` in `lib/xmpp.ts`), so every app of the account is spared; the block list is read at each sign-in and
+  follows the server's pushes from the account's other apps; what the archive still holds of someone blocked, and their
+  requests, are dropped here too. See [XMPP](#xmpp).
 - **The panic button on a computer and on Sailfish OS**: **Settings** → **Privacy and security** → **Panic button**
   wipes Erevos there too. The shell does it (`/__wipe`, `desktop/main.js` and `sailfish/src/shellserver.cpp`, behind
   the page's token as every shell path): the keystore, the sealed files, the page's own storage and the rest of the

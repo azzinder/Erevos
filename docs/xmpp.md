@@ -487,6 +487,14 @@ come back and that those of the phone it is restored on go. Not yet on a phone.
 - **Writing** (XEP-0085): `composing` from the other person shows **typing…** for 30 seconds or until they stop;
   Erevos never sends chat states, which would tell the server each time one writes.
 
+## Blocking
+
+XEP-0191 on the account's server: `blockXmpp` blocks or unblocks one address; the block list is fetched at each
+sign-in and the server's pushes (from the account's other apps) are taken, from our own server only. Messages from
+someone blocked that the archive still gives, and their contact requests, are dropped here too. A server without
+blocking says so on the screen. Blocking works on whole addresses, and a whole server blocked in another app is
+honoured too.
+
 ## Not yet
 
 - Moving a call to another device, and a call with one person that Dino makes into a group call

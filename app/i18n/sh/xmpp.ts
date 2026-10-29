@@ -105,4 +105,8 @@ export const xmpp: Record<string, string> = {
   "This message is not here any more.": "Ova poruka više nije ovdje.",
   "Only your own words can be changed.": "Mogu se promijeniti samo tvoje riječi.",
   "Only your own messages can be deleted for everyone.": "Samo tvoje poruke mogu se obrisati za sve.",
+  "Blocked: nothing of theirs reaches your XMPP account, in any of its apps.": "Blokirano: ništa od te osobe ne stiže na vaš XMPP račun, ni u jednoj njegovoj aplikaciji.",
+  "Block {name}?": "Blokirati {name}?",
+  "Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.": "Njene poruke, pozivi i zahtjevi više ne stižu na vaš XMPP račun, ni u jednoj njegovoj aplikaciji. Ona za to ne saznaje.",
+  "Your XMPP server cannot block anyone.": "Vaš XMPP server ne može nikoga blokirati.",
 };

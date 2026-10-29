@@ -105,4 +105,8 @@ export const xmpp: Record<string, string> = {
   "This message is not here any more.": "Ce message n’est plus là.",
   "Only your own words can be changed.": "Seuls tes propres mots peuvent être modifiés.",
   "Only your own messages can be deleted for everyone.": "Seuls tes propres messages peuvent être supprimés pour tout le monde.",
+  "Blocked: nothing of theirs reaches your XMPP account, in any of its apps.": "Bloqué : rien de sa part n’atteint ton compte XMPP, dans aucune de ses applis.",
+  "Block {name}?": "Bloquer {name} ?",
+  "Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.": "Ses messages, appels et demandes n’atteignent plus ton compte XMPP, dans aucune de ses applis. Cette personne n’est pas prévenue.",
+  "Your XMPP server cannot block anyone.": "Ton serveur XMPP ne peut bloquer personne.",
 };

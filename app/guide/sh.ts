@@ -1606,6 +1606,9 @@ aplikacije: nikakav most nije između.
   serveri vide. U grupi se na poruku može odgovoriti, reagovati ili je obrisati kad je grupa vrati.
 - **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to nikad ne
   javlja o vama, jer bi to svaki put kad pišete rekao XMPP serveru.
+- **Blokiranje:** **Blokiraj**, na dnu razgovora, sprečava da poruke, pozivi i zahtjevi te osobe stignu na vaš XMPP
+  račun, u bilo kojoj njegovoj aplikaciji, kako to radi XMPP server (XEP-0191); ona za to ne saznaje. **Odblokiraj**
+  je ponovo propušta. Ko je blokiran u drugoj aplikaciji računa, blokiran je i ovdje.
 - **Poruke od prije:** ono što je stiglo dok je Erevos bio zatvoren preuzima se iz arhive servera pri povezivanju, ako
   je server čuva. Poruka poslana prije nego što se ovaj uređaj prijavio, ili nije bila za njega, prikazuje se
   zaključana.

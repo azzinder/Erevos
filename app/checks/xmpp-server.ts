@@ -102,7 +102,12 @@ export class Server {
     return [...this.bound.entries()].filter(([full]) => full.startsWith(`${jid}/`)).map(([, link]) => link);
   }
 
+  /** Whom each account blocks (XEP-0191): nothing of theirs is delivered to it. */
+  blocked = new Map<string, Set<string>>();
+
   deliver(to: string, stanza: XmlElement): void {
+    const from = bareOf(stanza.attrs.from ?? '');
+    if (from && this.blocked.get(bareOf(to))?.has(from)) return;
     const target = this.bound.get(to);
     if (target) target.push(stanza);
     else for (const link of this.resources(to)) link.push(stanza);
@@ -458,6 +463,20 @@ export class Link implements XmppLink {
       this.full = `${this.jid}/${textOf(child(query, 'resource')) || 'x'}`;
       server.bound.set(this.full, this);
       return reply(el('bind', { xmlns: 'urn:ietf:params:xml:ns:xmpp-bind' }, el('jid', {}, this.full)));
+    }
+    if (query.ns === 'urn:xmpp:blocking') {
+      const list = server.blocked.get(this.jid) ?? new Set<string>();
+      server.blocked.set(this.jid, list);
+      const item = (jid: string) => el('item', { jid });
+      if (iq.attrs.type === 'get') return reply(el('blocklist', { xmlns: 'urn:xmpp:blocking' }, ...[...list].map(item)));
+      const named = children(query, 'item').map((i) => i.attrs.jid ?? '');
+      if (query.name === 'block') named.forEach((jid) => list.add(jid));
+      else if (named.length) named.forEach((jid) => list.delete(jid));
+      else list.clear();
+      reply();
+      // Told to the account's other devices, as servers do.
+      for (const link of server.resources(this.jid)) if (link !== this) link.push(el('iq', { type: 'set', id: server.id(), xmlns: 'jabber:client' }, el(query.name, { xmlns: 'urn:xmpp:blocking' }, ...named.map(item))));
+      return;
     }
     if (query.ns === 'jabber:iq:roster') {
       if (iq.attrs.type === 'get') return reply(el('query', { xmlns: 'jabber:iq:roster' }, ...[...server.roster(this.jid).values()].map(itemElement)));

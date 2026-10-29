@@ -3,7 +3,8 @@
 // answer, a change of words, reactions and a taking back, one-to-one with OMEMO (the server never
 // seeing the words, a second device of the writer following) and in a channel, where they name a
 // message by the room's id; only the writer may change or take back a message; the quote other
-// apps put before an answer is left out; whether someone writes shows a while, and is never sent.
+// apps put before an answer is left out; whether someone writes shows a while, and is never sent;
+// someone blocked reaches no app of the account, and is let through again.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -12,7 +13,7 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { addXmppContact, changeXmppText, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
+import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
 import { NS_FALLBACK, NS_REPLY, reactionsShown, react, replyParts, retract, targetOf, toggled, withoutQuote, wroteIt } from '../lib/xmpp-actions';
 import { joinXmppGroup } from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
@@ -196,4 +197,41 @@ test('in a channel, reactions, answers and takings back name a message by the ro
   await settle(people);
   assert.equal(ben.state.chats[lounge].messages.find((m) => m.sid === sid)?.deleted, true);
   assert.equal(ann.state.chats[lounge].messages.find((m) => m.id === hello.id)?.deleted, true);
+});
+
+test('someone blocked reaches no app of the account, and is let through again', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const ann2 = await person(server, 'ann');
+  const people: Person[] = [ann, ben, ann2];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  const toAnn = `ann@${DOMAIN}`;
+  const toBen = `ben@${DOMAIN}`;
+  // Ben asks to add Ann; she blocks him: his request goes, on her other device too.
+  await addXmppContact(ben.state, ben.connection, toAnn);
+  await settle(people);
+  assert.deepEqual(ann.state.requests, [toBen]);
+  await blockXmpp(ann.state, ann.connection, toBen, true);
+  await settle(people);
+  assert.equal(isBlocked(ann.state, toBen), true);
+  assert.equal(isBlocked(ann2.state, toBen), true);
+  assert.deepEqual(ann.state.requests, []);
+  ben.state.chats[toAnn] = { jid: toAnn, messages: [], unread: 0, lastAt: 0, plain: true };
+  await sendXmppText(ben.state, ben.connection, toAnn, 'are you there?');
+  await settle(people);
+  assert.equal(ann.state.chats[toBen], undefined);
+  assert.equal(ann2.state.chats[toBen], undefined);
+  // A new device of hers learns it from the server.
+  const ann3 = await person(server, 'ann');
+  people.push(ann3);
+  assert.equal(isBlocked(ann3.state, toBen), true);
+  // Let through again: what he writes comes.
+  await blockXmpp(ann2.state, ann2.connection, toBen, false);
+  await settle(people);
+  assert.equal(isBlocked(ann.state, toBen), false);
+  await sendXmppText(ben.state, ben.connection, toAnn, 'now?');
+  await settle(people);
+  const now = ann.state.chats[toBen] as XmppState['chats'][string] | undefined;
+  assert.deepEqual(now?.messages.map((m) => m.text), ['now?']);
 });
