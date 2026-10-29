@@ -169,7 +169,7 @@ import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } 
 import { onPiece } from '../lib/nostr-pieces';
 import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
-import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
+import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats, type SpaceChats } from '../lib/space-chats';
 import { placeChats } from '../lib/place-chats';
 import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
@@ -842,6 +842,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [loaded, setLoaded] = useState(false);
   const nextId = useRef(1);
   const history = useRef<History | null>(null);
+  // The chats whose messages show at once while the chat opens, only to read (held): what is read
+  // then is marked read in their history at once, the one the home screen counts from.
+  const openingChats = useRef<SpaceChats | null>(null);
   // The panel under the message bar ("+"): what to send and how it goes, and choosing when it goes.
   const [attaching, setAttaching] = useState(false);
   const [choosingLater, setChoosingLater] = useState(false);
@@ -959,12 +962,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   function receipt(peer: string, kind: 'got' | 'read', tags: string[]) {
     if (tags.length === 0) return;
-    const contact = e2e?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer);
+    // While the chat opens, the same contacts, of the chats that show at once.
+    const chats = e2e ?? openingChats.current?.e2e ?? null;
+    const contact = chats?.contacts().find((c) => `${CONTACT_PREFIX}${c.identity}` === peer);
     // A message request hears nothing back, not even that its message came, until accepted.
     if (contact?.request) return;
     // A chat that appears offline holds it until it next writes to them.
     if (contact?.hide) {
-      e2e!.hold(contact.identity, kind, tags).catch(() => {
+      chats!.hold(contact.identity, kind, tags).catch(() => {
         // Not kept: their phone is never told.
       });
       return;
@@ -1575,8 +1580,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             const kept = open.history.messages();
             const firsts = kept.filter((m) => !m.until || m.until > Date.now()).map(toShown);
             early = { kept, ids: new Set(firsts.map((m) => m.id)) };
-            setMessages((list) => [...firsts, ...list]);
+            openingChats.current = open;
+            // The contacts first, so a chat locked with its PIN is never marked read before it asks.
             setContacts(open.e2e.contacts());
+            setMessages((list) => [...firsts, ...list]);
           }
         }
         await held;
@@ -1806,14 +1813,18 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [hiddenKey]);
 
   // A contact's messages are read once their chat shows on the screen: their phone is told with
-  // the next look at the relay, and the disappearing ones start their time. Not while the chat
-  // opens (e2e not there yet), when the messages show only to read: the history that keeps the
-  // mark is not open yet, and read only on the screen, the home screen would count them still.
+  // the next look at the relay, and the disappearing ones start their time. So too while the chat
+  // opens (e2e not there yet), when the messages show only to read as a look at the relay under
+  // way ends, which through Tor can take tens of seconds: they are marked in the history they
+  // came from (openingChats), which the home screen counts from, even if the chat is left before
+  // it opens. Their phone is told with the chat's first look, once open; left before, it is not.
   useEffect(() => {
-    if (!shown || gated || !appActive || !e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
-    if (!messages.some((m) => m.peer === selected && !m.mine && m.mark < 2)) return;
+    if (!shown || gated || !appActive || !(e2e || openingChats.current) || !selected?.startsWith(CONTACT_PREFIX)) return;
+    const unread = messages.filter((m) => m.peer === selected && !m.mine && m.mark < 2);
+    if (unread.length === 0) return;
     const peer = selected;
-    markMessages(peer, false, 2)
+    // While it opens, only those that show: the look under way may keep more in the history meanwhile.
+    markMessages(peer, false, 2, e2e ? null : unread.map((m) => m.tag))
       .then((tags) => receipt(peer, 'read', tags))
       .catch(() => {
         // Read here, but their phone is not told.
@@ -2360,7 +2371,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return { ...m, mark, ...(mark === 2 && !m.until && m.lasts ? { until: now + m.lasts * 1000, lasts: 0 } : {}) };
       }),
     );
-    return history.current?.mark(peer, mine, mark, now, tags) ?? Promise.resolve([]);
+    return (history.current ?? openingChats.current?.history)?.mark(peer, mine, mark, now, tags) ?? Promise.resolve([]);
   }
 
   // Deleted here, what hidden chats still owe the contact's phone of it never goes.

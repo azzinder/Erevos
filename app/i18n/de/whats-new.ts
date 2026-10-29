@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**A chat read as it opens stays read**: messages read while their chat was still opening, as Erevos ended a look at the relay, showed as unread on the home screen once you went back. Now they are marked read as soon as they show.":
+    "**Ein beim Öffnen gelesener Chat bleibt gelesen**: Nachrichten, die du gelesen hast, während sich ihr Chat noch öffnete, weil Erevos gerade beim Relay nachsah, standen auf dem Startbildschirm als ungelesen, sobald du zurückgingst. Jetzt gelten sie als gelesen, sobald sie zu sehen sind.",
   "**An update's download that stalls is tried again**: when the connection brings nothing for a while, Erevos starts the download again by itself, three times in all, and then says so in its own words. See [Updates](#updates).":
     "**Ein Update-Download, der hängen bleibt, wird neu versucht**: Bringt die Verbindung eine Weile nichts, beginnt Erevos den Download von selbst neu, insgesamt dreimal, und sagt es danach mit eigenen Worten. Siehe [Updates](#updates).",
   // 4.0.0-rc.1

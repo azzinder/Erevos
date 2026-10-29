@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A chat read as it opens stays read**: a chat opened right after its message came, from its notice or the home
+  screen, shows its messages at once, only to read, while the look at the relay that brought them ends, which through
+  Tor can take tens of seconds. Read then and left before the chat had opened, they still counted as unread on the
+  home screen, as they were marked read only once it had. Now they are marked read as they show, in the history the
+  home screen counts from (`openingChats` in `app/chat.tsx`); their phone hears that they were read with the chat's
+  first look once it is open, and not if it is left before.
 - **An update's download that stalls is tried again**: on Android, when the connection brings nothing for a while as
   the new version's APK downloads (`SocketTimeoutException`, a reset connection), Erevos starts the download again by
   itself, from the start, three times in all (`DOWNLOAD_TRIES`, `stalled` in `lib/updates.ts`), and then says so in
