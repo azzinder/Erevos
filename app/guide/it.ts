@@ -200,9 +200,11 @@ dispositivi, quindi nessun relay le trasporta mai.
   indietro. Da sinistra esce una freccia rotonda; lascia quando è completa, o fai un colpo rapido, e sei tornato
   indietro. Se lasci prima, resti dove sei. In una chat fa quello che fa la sua freccia indietro: torna all’elenco delle
   chat, o esce dalle chat nascoste, chiudendole. Nei **Dettagli** di una chat li chiude.
-- **Schede:** scorri verso sinistra o verso destra per andare alla scheda accanto, come quando tocchi la sua etichetta:
-  **Tutti**, **SMS** ed **Erevos** nella schermata principale, **Tastierino**, **Recenti** e **Preferiti** in
-  **Telefono**, i filtri in **Contatti**, e le serie di sticker.
+- **Schede:** scorri verso sinistra o verso destra per andare alla scheda accanto, come quando tocchi la sua
+  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli per
+  cui hai chat o un account), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e
+  le serie di sticker. Nella schermata principale i chip restano su una sola riga: quando non ci stanno tutti, fai
+  scorrere la riga di lato per vedere gli altri; quello scelto è sempre in vista.
 - In una schermata con schede, uno scorrimento cambia solo la scheda, anche sulle righe del suo elenco, e oltre la
   prima o l’ultima scheda non fa nulla: torna indietro con la freccia indietro. Una conversazione SMS si archivia o si
   elimina tenendola premuta.

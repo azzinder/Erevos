@@ -200,8 +200,10 @@ las lleva nunca.
   sueltas antes, te quedas. En un chat hace lo que hace su flecha de volver: vuelve a la lista de chats, o sale de los
   chats ocultos, cerrándolos. En los **Detalles** de un chat, los cierra.
 - **Pestañas:** desliza hacia la izquierda o la derecha para ir a la pestaña de al lado, como al tocar su chip:
-  **Todos**, **SMS** y **Erevos** en la pantalla de inicio, **Teclado**, **Recientes** y **Favoritos** en **Teléfono**,
-  los filtros en **Contactos**, y los grupos de stickers.
+  **Todos**, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** en la pantalla de inicio (aquellos para los que
+  tienes chats o una cuenta), **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en
+  **Contactos**, y los grupos de stickers. En la pantalla de inicio los chips se quedan en una sola línea: cuando no
+  caben todos, desliza la línea hacia un lado para ver los demás; el elegido siempre se ve.
 - En una pantalla con pestañas, deslizar solo cambia de pestaña, también sobre las filas de su lista, y más allá de la
   primera o la última pestaña no hace nada: vuelve ahí con la flecha de volver. Una conversación SMS se archiva o se
   elimina manteniéndola pulsada.

@@ -8,6 +8,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
+    "**Les puces de l’écran d’accueil restent sur une seule ligne** : avec en plus une puce Nostr, Matrix ou XMPP, **Noms** passait sur une ligne à part et les puces bougeaient. Maintenant elles restent sur une seule ligne qui glisse sur le côté, et celle que tu as choisie reste toujours en vue.",
+  "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":
+    "**Les écrans redescendent quand le clavier est parti** : en revenant d’une autre appli dont le clavier était ouvert, les boutons de l’écran d’accueil (ou le champ d’une discussion) pouvaient rester en haut, là où était le clavier, jusqu’à ce qu’un clavier s'ouvre de nouveau. Maintenant ils redescendent en moins d’une seconde.",
   // 4.0.0-rc.2
   "**See what you type in a password or a PIN**: every field for a password, a PIN or a token has an eye at its end: tap it to see what you type, and again to hide it. It is hidden again the next time. See [Password lock](#lock).":
     "**Vois ce que tu tapes dans un mot de passe ou un PIN** : chaque champ pour un mot de passe, un PIN ou un jeton a un œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. La fois suivante, il est de nouveau masqué. Voir [Verrou par mot de passe](#lock).",

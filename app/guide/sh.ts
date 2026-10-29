@@ -198,8 +198,10 @@ nikad ne prenosi.
   radi ono što radi njegova strelica nazad: nazad na popis razgovora, ili izlaz iz skrivenih razgovora, koji se
   zatvaraju. U **Detalji** razgovora ih zatvara.
 - **Kartice:** prevucite ulijevo ili udesno da pređete na susjednu karticu, kao kad dodirnete njeno dugme: **Sve
-  poruke**, **SMS** i **Erevos** na početnom ekranu, **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**,
-  filteri u ekranu **Kontakti** i kompleti naljepnica.
+  poruke**, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** na početnom ekranu (one za koje imate razgovore ili
+  račun), **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti
+  naljepnica. Na početnom ekranu dugmad ostaju u jednom redu: kad ne stanu sva, prevucite red u stranu da vidite
+  ostala; izabrano dugme uvijek ostaje na vidiku.
 - Na ekranu s karticama prevlačenje samo mijenja karticu, i na redovima njenog popisa, a iza prve ili posljednje
   kartice ne radi ništa: tamo se vratite strelicom nazad. SMS razgovor se arhivira ili briše zadržavanjem prsta na
   njemu.

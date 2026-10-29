@@ -211,8 +211,10 @@ Notizen gehen an niemanden, nicht einmal an deine anderen Geräte, also trägt k
   los, bleibst du. In einem Chat macht es, was sein Zurück-Pfeil macht: zurück zur Liste der Chats, oder aus den
   versteckten Chats heraus, wobei sie geschlossen werden. In den **Details** eines Chats schließt es sie.
 - **Tabs:** Wische nach links oder rechts, um zum benachbarten Tab zu gehen, wie ein Tippen auf seinen Chip: **Alle**,
-  **SMS** und **Erevos** auf dem Startbildschirm, **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die
-  Filter in **Kontakte** und die Sticker-Sätze.
+  **SMS**, **Erevos**, **Matrix**, **XMPP** und **Nostr** auf dem Startbildschirm (die, für die du Chats oder ein
+  Konto hast), **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die
+  Sticker-Sätze. Auf dem Startbildschirm bleiben die Chips in einer Zeile: Passen nicht alle hinein, schiebe die Zeile
+  zur Seite, um die übrigen zu sehen; der gewählte bleibt immer sichtbar.
 - Auf einem Bildschirm mit Tabs wechselt ein Wischen nur den Tab, auch auf den Zeilen seiner Liste, und über den
   ersten oder letzten Tab hinaus tut es nichts: Geh dorthin mit dem Zurück-Pfeil zurück. Eine SMS-Unterhaltung wird
   archiviert oder gelöscht, indem du sie gedrückt hältst.

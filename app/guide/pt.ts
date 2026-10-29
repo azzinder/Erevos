@@ -199,8 +199,10 @@ nenhum relay as carrega.
   fica. Numa conversa, faz o mesmo que a seta de voltar dela: volta para a lista de conversas, ou sai das conversas
   ocultas, fechando-as. Nos **Detalhes** de uma conversa, fecha-os.
 - **Abas:** deslize para a esquerda ou para a direita para ir à aba ao lado, como ao tocar no chip dela: **Todos**,
-  **SMS** e **Erevos** na tela inicial, **Teclado**, **Recentes** e **Favoritos** no **Telefone**, os filtros em
-  **Contatos**, e os conjuntos de figurinhas.
+  **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** na tela inicial (aqueles para os quais você tem conversas ou
+  uma conta), **Teclado**, **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de
+  figurinhas. Na tela inicial os chips ficam em uma linha só: quando não cabem todos, deslize a linha para o lado para
+  ver os demais; o escolhido sempre aparece.
 - Numa tela com abas, deslizar só muda a aba, também sobre as linhas da lista dela, e antes da primeira ou depois da
   última aba não faz nada: volte dali com a seta de voltar. Uma conversa de SMS é arquivada ou apagada segurando-a.
 

@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatRow, MyselfRow } from '../components/chat-row';
@@ -421,6 +421,18 @@ export default function Home() {
   const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr);
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
+  // The chips' line: where each tab's chip sits in it, and how far it is scrolled.
+  const strip = useRef<ScrollView>(null);
+  const chipAt = useRef(new Map<InboxShow, { x: number; width: number }>());
+  const stripAt = useRef({ x: 0, width: 0 });
+  useEffect(() => {
+    const chip = chipAt.current.get(show);
+    const { x, width } = stripAt.current;
+    if (!chip || !width) return;
+    const edge = space.lg;
+    if (chip.x - edge < x) strip.current?.scrollTo({ x: Math.max(chip.x - edge, 0), animated: true });
+    else if (chip.x + chip.width + edge > x + width) strip.current?.scrollTo({ x: chip.x + chip.width + edge - width, animated: true });
+  }, [show]);
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
 
@@ -500,17 +512,29 @@ export default function Home() {
           {relayText}
         </Text>
       </Pressable>
+      {/* One line that scrolls to the side, so a chip that comes or goes moves none of the others to a
+          line of their own; the chosen one is scrolled into sight. */}
       {mixed || hasSmsRows ? (
-        <Row wrap>
-          {mixed ? (
-            <>
-              {tabs.map((tab) => (
-                <Chip key={tab} label={SHOW_LABELS[tab]()} selected={show === tab} onPress={() => setShow(tab)} />
-              ))}
-            </>
-          ) : null}
+        <ScrollView
+          ref={strip}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          style={styles.strip}
+          contentContainerStyle={styles.stripLine}
+          onLayout={(event) => (stripAt.current.width = event.nativeEvent.layout.width)}
+          onScroll={(event) => (stripAt.current.x = event.nativeEvent.contentOffset.x)}
+          scrollEventThrottle={32}
+        >
+          {mixed
+            ? tabs.map((tab) => (
+                <View key={tab} onLayout={(event) => chipAt.current.set(tab, event.nativeEvent.layout)}>
+                  <Chip label={SHOW_LABELS[tab]()} selected={show === tab} onPress={() => setShow(tab)} />
+                </View>
+              ))
+            : null}
           {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
-        </Row>
+        </ScrollView>
       ) : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (
         <Row wrap>
@@ -793,6 +817,17 @@ const makeStyles = (colors: Colors) =>
     },
     pressed: {
       backgroundColor: colors.surfacePressed,
+    },
+    // The chips' line reaches the list's sides, and scrolls under them.
+    strip: {
+      marginHorizontal: -space.lg,
+      flexGrow: 0,
+    },
+    stripLine: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      paddingHorizontal: space.lg,
     },
     search: {
       flexDirection: 'row',

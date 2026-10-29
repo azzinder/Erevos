@@ -186,9 +186,11 @@ is in. And the notes go to no one, not even your other devices, so no relay ever
   the left; let go once it is whole, or flick, and you are back. Let go sooner and you stay. In a chat it does what
   its back arrow does: back to the list of chats, or out of hidden chats, closing them. In a chat's **Details** it
   closes them.
-- **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**
-  and **Erevos** on the home screen, **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in
-  **Contacts**, and the sets of stickers.
+- **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**,
+  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those you have chats or an account for),
+  **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On
+  the home screen the chips stay on one line: when they do not all fit, slide the line to the side for the rest; the
+  chosen one always shows.
 - On a screen with tabs, a swipe only changes the tab, on the rows of its list too, and past the first or the last
   tab it does nothing: go back there with the back arrow. An SMS conversation is archived or deleted by holding it
   down.

@@ -16,6 +16,19 @@ On main, not released yet:
 
 ### Under the hood
 
+- **The home screen's chips stay on one line**: once a **Nostr** chip joined **All messages**, **SMS**, **Erevos**,
+  **Matrix** and **XMPP** (on the Pixel, 4.0.0-rc.2), **Names** went to a line of its own and the chips moved as they
+  came and went. They are now one line that slides to the side (`strip`, a horizontal `ScrollView` in
+  `app/index.tsx`, reaching the list's sides), and the chosen tab's chip is scrolled into sight when it is tapped or
+  swiped to. See [Getting started](#start).
+- **Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home
+  screen's buttons floated where the keyboard had been, over the chats (on the Pixel, 4.0.0-rc.2), until a keyboard
+  opened again: the keyboard library kept the height of a keyboard that went without its animation, even after the
+  1.21.14 resync. `KeyboardPaddedView` (`components/keyboard.tsx`, home, chats, SMS, contacts, groups, Chat with
+  myself) now also hears Android itself: once React Native's `Keyboard` has said for 0.6 s that it is down (after
+  `keyboardDidHide`, or as Erevos comes back), the screen ends at the bottom, and follows the library again as soon as
+  the keyboard moves. Android's word comes as the keyboard starts to go, so the screen still moves down with it.
+
 ## 4.0.0-rc.2 (2026-10-29)
 
 ### For you

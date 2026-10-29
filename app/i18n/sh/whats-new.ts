@@ -8,6 +8,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
+    "**Dugmad na početnom ekranu ostaju u jednom redu**: kad je tu i dugme Nostr, Matrix ili XMPP, **Imena** su išla u poseban red i dugmad su se pomjerala. Sada ostaju u jednom redu koji možete pomjerati u stranu, a izabrano dugme je uvijek na vidiku.",
+  "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":
+    "**Ekrani se spuštaju kad tastatura nestane**: pri povratku iz druge aplikacije s otvorenom tastaturom, dugmad početnog ekrana (ili polje razgovora) mogla su ostati gore, gdje je bila tastatura, dok se tastatura ponovo ne otvori. Sada se spuste u roku od jedne sekunde.",
   // 4.0.0-rc.2
   "**See what you type in a password or a PIN**: every field for a password, a PIN or a token has an eye at its end: tap it to see what you type, and again to hide it. It is hidden again the next time. See [Password lock](#lock).":
     "**Vidite šta kucate u lozinci ili PIN-u**: svako polje za lozinku, PIN ili token ima oko na kraju: dodirnite ga da vidite šta kucate, i ponovo da se sakrije. Sljedeći put je opet skriveno. Pogledajte [Zaključavanje lozinkom](#lock).",

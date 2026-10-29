@@ -213,8 +213,11 @@ appareils, donc aucun relais ne les transporte jamais.
   la liste des discussions, ou sortie des discussions masquées, en les fermant. Dans les **Détails** d’une discussion,
   il les ferme.
 - **Onglets :** balaie vers la gauche ou la droite pour aller à l’onglet d’à côté, comme en appuyant sur sa puce :
-  **Tous**, **SMS** et **Erevos** sur l’écran d’accueil, **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les
-  filtres dans **Contacts**, et les séries de stickers.
+  **Tous**, **SMS**, **Erevos**, **Matrix**, **XMPP** et **Nostr** sur l’écran d’accueil (ceux pour lesquels tu as des
+  discussions ou un compte), **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans
+  **Contacts**, et les séries de stickers. Sur l’écran d’accueil, les puces restent sur une seule ligne : quand elles
+  ne tiennent pas toutes, fais glisser la ligne sur le côté pour voir les autres ; celle qui est choisie reste
+  toujours visible.
 - Sur un écran avec des onglets, un balayage ne fait que changer d’onglet, sur les lignes de sa liste aussi, et au-delà
   du premier ou du dernier onglet il ne fait rien : reviens-y avec la flèche de retour. Une conversation SMS s’archive
   ou se supprime par un appui long.

@@ -8,6 +8,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**The home screen's chips stay on one line**: with a Nostr, Matrix or XMPP chip as well, **Names** went to a line of its own and the chips moved. Now they stay on one line that slides to the side, and the chosen one is always in sight.":
+    "**Los chips de la pantalla de inicio se quedan en una sola línea**: si había además un chip de Nostr, Matrix o XMPP, **Nombres** pasaba a una línea propia y los chips se movían. Ahora se quedan en una sola línea que se desliza hacia un lado, y el elegido siempre se ve.",
+  "**Screens come down when the keyboard is gone**: back from another app that had its keyboard open, the home screen's buttons (or a chat's field) could stay up where the keyboard had been, until a keyboard opened again. Now they come down within a second.":
+    "**Las pantallas bajan cuando se va el teclado**: al volver de otra app con el teclado abierto, los botones de la pantalla de inicio (o el campo de un chat) podían quedarse arriba, donde había estado el teclado, hasta que se abría otra vez un teclado. Ahora bajan en menos de un segundo.",
   // 4.0.0-rc.2
   "**See what you type in a password or a PIN**: every field for a password, a PIN or a token has an eye at its end: tap it to see what you type, and again to hide it. It is hidden again the next time. See [Password lock](#lock).":
     "**Ve lo que escribes en una contraseña o un PIN**: cada campo para una contraseña, un PIN o un token tiene un ojo al final: tócalo para ver lo que escribes, y otra vez para ocultarlo. La próxima vez vuelve a estar oculto. Consulta [Bloqueo con contraseña](#lock).",
