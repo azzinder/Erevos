@@ -1360,8 +1360,7 @@ preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
 - **Samo preko Tora:** kad je Tor postavljen na **Ništa**, ili dok se Tor pokreće, tekstovi idu preko vašeg relaya.
 - **Relayi:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju relayi na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
-- **Šta ostaje na vašem relayu:** slike, datoteke, glasovne poruke, pozivi, reakcije i oznake da je poruka stigla ili
-  pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru.
+- **Šta ostaje na vašem relayu:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg relaya kad je jedan između vas; bez relaya između vas idu i preko Nostra (pogledajte Bez ikakvog relaya).
 - **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko
   Nostra** kad ju je preuzeo neki Nostr relay. Poruka koja ništa ne kaže išla je preko vašeg relaya, ili u blizini.
   I napomena ispod poruka kaže **Poslano preko Nostra**. Dva telefona jedan pored drugog prvo predaju jedan drugom
@@ -1374,8 +1373,7 @@ preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
 
 **Zašto:** Nostr relayi su javni, pa Erevos do njih dolazi samo preko Tora, i oni nikad ne saznaju gdje je vaš
 telefon. Tamo idu samo tekstovi: tekst ima vaš relay kao rezervu, ako ne stigne, dok oznake da je poruka stigla ili
-pročitana ne bi imale nikakvu, a poruci poslanoj za kasnije potreban je vaš relay da je čuva do njenog vremena. Slike i
-glasovne poruke preko Nostra tek dolaze.
+pročitana ne bi imale nikakvu, a poruci poslanoj za kasnije potreban je vaš relay da je čuva do njenog vremena. Bez relaya između vas, tamo idu i slike, datoteke i glasovne poruke (pogledajte Bez ikakvog relaya).
 
 > Ako telefon vašeg kontakta u roku od pet minuta ne javi da je tekst stigao, on ide i preko vašeg relaya, a kontakt
 > ga vidi jednom. Kad ga nijedan Nostr relay ne preuzme, odmah ide preko vašeg relaya.
@@ -1396,9 +1394,7 @@ Nostru, i to je dovoljno za razgovor.
   **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda piše vam preko Nostra, preko
   Tora, i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR kod, na isti
   način.
-- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra.
-  Za fotografije, glasovne poruke, datoteke, pozive i grupe potreban je relay, ili drugi telefon u blizini. Skriveni
-  razgovori i tako rade, samo preko Nostra (pogledajte [Skriveni razgovori](#hidden)).
+- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora: poslužitelj čuva samo ono što ne može pročitati. Za pozive i grupe potreban je relay, ili drugi telefon u blizini. Skriveni razgovori i tako rade, samo preko Nostra (pogledajte [Skriveni razgovori](#hidden)).
 - **Kad ne stigne:** Nostr relayi čuvaju tekst dva dana. Dok telefon vašeg kontakta ne javi da je stigao, Erevos mu ga
   ponovo daje jednom dnevno, dvije sedmice.
 - **Relay sam od sebe:** kad vaš kontakt ima relay koji mu dozvoljava da poziva, njegov Erevos sam šalje vašem

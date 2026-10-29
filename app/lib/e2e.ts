@@ -22,7 +22,7 @@ import { deletePhoto } from '../lock/avatar-photos';
 import { lastRestore } from '../lock/restored';
 import { CONTACT_GROUP } from './contact-queues';
 import { GRACE, takesPlace, tellDue, toldOnce } from './moves';
-import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_MOST, nostrKeysChanged, nostrPacked, nostrRelays } from './nostr';
+import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_KEEP_MOST, nostrKeysChanged, nostrRelays, nostrWraps } from './nostr';
 import { t } from './i18n';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
@@ -1290,6 +1290,11 @@ export class E2E {
     });
   }
 
+  /** Where a contact reads on Nostr, when they do (readsOnNostr): to put a photo's pieces and the like there. */
+  nostrPlace(identity: string): NostrTo | null {
+    return this.readsOnNostr(identity) ? (this.find(identity)?.nostrTo ?? null) : null;
+  }
+
   /** Whether a contact reads on Nostr, as they or their link said, and this chat does too: what has no relay between the two goes there (lib/nostr-chats.ts nostrOnlyWay). */
   readsOnNostr(identity: string): boolean {
     return !!this.find(identity)?.nostrTo && !!nostrRelays() && !this.data.own;
@@ -1850,11 +1855,22 @@ export class E2E {
       // relay holds, nor from a linked device, nor what it seals for the account's phone to pass on.
       // With no relay between the two, as this chat has no queue (`from`) or they said none, all of
       // it goes there, the first packet with it (lib/nostr-chats.ts nostrOnlyWay).
-      const only = !from || !sender;
-      const fits = only ? nostrPacked([...(first ? [first] : []), packet]) <= NOSTR_MOST : !!text && !due && !first && packet.length <= NOSTR_MOST;
-      const nostr = fits && !through && !this.data.own && nostrRelays() ? (contact.nostrTo ?? null) : null;
+      const nostr = this.nostrWay(contact, from, sender, first, [packet], through, !!text, due);
       return { sender, relay, relayKey, spare, first, packet, tag, timer: once || timer, copies, through, nostr };
     });
+  }
+
+  // Where sealed packets go through Nostr, when they do (lib/nostr-chats.ts): the contact reads
+  // there and this chat does too, nothing is held for the relay (a first packet it has still to take,
+  // what is sent for later), and it is not from a linked device or for the account's phone to pass
+  // on. With no relay between the two, as this chat has no queue (`from`) or they said none, all of
+  // it goes there, the first packet with it. `words`: whether these are texts, which go there
+  // even when a relay is between; photos and voice messages go too, as the contact's phone puts
+  // them together.
+  private nostrWay(contact: Contact, from: string, sender: string, first: Uint8Array | null, packets: Uint8Array[], through: boolean, words: boolean, due: number): NostrTo | null {
+    const only = !from || !sender;
+    const fits = only ? nostrWraps(packets, first) !== null : words && !due && !first && nostrWraps(packets) !== null;
+    return fits && !through && !this.data.own && nostrRelays() ? (contact.nostrTo ?? null) : null;
   }
 
   /**
@@ -1868,7 +1884,7 @@ export class E2E {
     ms: number,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, talk = false, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; talk?: boolean; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number; copies: number; through: boolean }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packets: Uint8Array[]; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -1894,7 +1910,8 @@ export class E2E {
         more: forwarded ? { forwarded: true as const } : {},
       }));
       const { packets, sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, messages, true);
-      return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through };
+      const nostr = this.nostrWay(contact, from, sender, first, packets, through, true, due);
+      return { sender, relay, relayKey, spare, first, packets, tag, timer: lasts || timer, copies, through, nostr };
     });
   }
 
@@ -1907,7 +1924,7 @@ export class E2E {
     offer: FileOffer,
     from: string,
     { lasts = 0, at = { relay: '', relayKey: '' }, tag: given, due = 0, re = '', forwarded = false }: { lasts?: number; at?: Where; tag?: string; due?: number; re?: string; forwarded?: boolean } = {},
-  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean }> {
+  ): Promise<{ sender: string; relay: string; relayKey: string; spare: Spare | null; first: Uint8Array | null; packet: Uint8Array; tag: string; timer: number; copies: number; through: boolean; nostr: NostrTo | null }> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || contact.conversations.length === 0) throw new Error(t('No conversation with this contact.'));
@@ -1916,7 +1933,9 @@ export class E2E {
       const { timer, timerAt } = contact;
       const message = { from, ...at, text: '', tag, erase: null, timer, timerAt, lasts, got: [], read: [], voice: null, file: offer, ...SAYS_NOTHING, call: null, group: null, due, re: isTag(re) ? re : '', more: forwarded ? { forwarded: true as const } : {} };
       const { packets: [packet], sender, relay, relayKey, spare, first, copies, through } = await this.sealFor(contact, [message], true);
-      return { sender, relay, relayKey, spare, first, packet, tag, timer: lasts || timer, copies, through };
+      // Pieces of a file that go through Nostr tell where they are in the same way (lib/nostr-files-own.ts).
+      const nostr = this.nostrWay(contact, from, sender, first, [packet], through, offer.via !== undefined, due);
+      return { sender, relay, relayKey, spare, first, packet, tag, timer: lasts || timer, copies, through, nostr };
     });
   }
 
@@ -2552,16 +2571,18 @@ export class E2E {
   }
 
   /**
-   * Keeps a text that went to a contact through Nostr (its `tag` and `packet`), to go through the
+   * Keeps a text that went to a contact through Nostr (its `tag` and `wraps`), to go through the
    * relay as well should their phone not say it came within NOSTR_BACKUP_MS (`nostrBackupsDue`):
    * quiet there when a bell went with it already (`quiet`).
    */
-  nostrKeep(identity: string, tag: string, packet: Uint8Array, quiet: boolean, now = Date.now()): Promise<void> {
+  nostrKeep(identity: string, tag: string, wraps: Uint8Array[], quiet: boolean, now = Date.now()): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || !isTag(tag)) return;
+      // A voice message is many wraps: kept only while it stays small, or it would swell the space.
+      if (wraps.reduce((sum, wrap) => sum + wrap.length, 0) > NOSTR_KEEP_MOST) return;
       const kept = (contact.nostrBackup ?? []).filter((b) => b.t !== tag && now - b.at < NOSTR_BACKUP_LASTS);
-      const backup = [...kept, { t: tag, at: now, p: toBase64(packet), ...(quiet ? { q: true as const } : {}) }].slice(-MAX_NOSTR_BACKUP);
+      const backup = [...kept, ...wraps.map((wrap) => ({ t: tag, at: now, p: toBase64(wrap), ...(quiet ? { q: true as const } : {}) }))].slice(-MAX_NOSTR_BACKUP);
       await this.save(this.withContact({ ...contact, nostrBackup: backup }));
     });
   }
@@ -2571,12 +2592,13 @@ export class E2E {
    * the wrap's packets as they went (`packed`), to go there again while their phone does not say it
    * came (`nostrAgainDue`), as a Nostr relay keeps it two days only.
    */
-  nostrKeepOnly(identity: string, tag: string, packed: Uint8Array, now = Date.now()): Promise<void> {
+  nostrKeepOnly(identity: string, tag: string, wraps: Uint8Array[], now = Date.now()): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);
       if (!contact || !isTag(tag)) return;
+      if (wraps.reduce((sum, wrap) => sum + wrap.length, 0) > NOSTR_KEEP_MOST) return;
       const kept = (contact.nostrBackup ?? []).filter((b) => b.t !== tag && now - b.at < NOSTR_BACKUP_LASTS);
-      const backup = [...kept, { t: tag, at: now, p: toBase64(packed), n: 1 }].slice(-MAX_NOSTR_BACKUP);
+      const backup = [...kept, ...wraps.map((wrap) => ({ t: tag, at: now, p: toBase64(wrap), n: 1 }))].slice(-MAX_NOSTR_BACKUP);
       await this.save(this.withContact({ ...contact, nostrBackup: backup }));
     });
   }

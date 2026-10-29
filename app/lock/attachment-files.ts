@@ -29,7 +29,18 @@ export function fitsSticker({ kind, mime, size }: Pick<FileMeta, 'kind' | 'mime'
  * how many there are. `from` is where to take them while they are still only on the relay: its
  * address and the chunks' ids there, hex, one after another.
  */
-export type FileRef = FileMeta & { id: string; key: string; chunk: number; count: number; from?: { relay: string; ids: string } };
+export type FileRef = FileMeta & { id: string; key: string; chunk: number; count: number; from?: FileFrom };
+
+/**
+ * Where a file waits until taken. On a relay: its address and the chunks' ids there, hex, one
+ * after another. Through Nostr (`via`): `relay` is 'nostr' and the ids are those of its pieces,
+ * which come in wraps (lib/nostr-pieces.ts); or 'blossom', where it is one encrypted blob on the
+ * file server at `url`, whose hash is `x` (the one id is its first 24 bytes).
+ */
+export type FileFrom = { relay: string; ids: string; via?: 'nostr' | 'blossom'; url?: string; x?: string };
+
+/** How big a piece is that goes in a Nostr wrap, sealed (a wrap carries 48 KB at most). */
+export const NOSTR_PIECE = 32 * 1024;
 
 export const PREFIX = 'erevos-file-';
 const ID = /^[0-9a-f]{32}$/;
@@ -107,10 +118,13 @@ export function isFileMeta(value: unknown): value is FileMeta {
 export function isFileRef(value: unknown): value is FileRef {
   const v = value as Partial<FileRef> | null;
   if (!v || !isFileMeta(value) || typeof v.id !== 'string' || !ID.test(v.id) || typeof v.key !== 'string' || !KEY.test(v.key)) return false;
-  if (!CHUNK_SIZES.includes(v.chunk as number) || !whole(v.count, 1000) || v.count === 0) return false;
+  if (!(CHUNK_SIZES.includes(v.chunk as number) || v.chunk === NOSTR_PIECE) || !whole(v.count, 1000) || v.count === 0) return false;
   if (v.from === undefined) return true;
-  const from = v.from as Partial<NonNullable<FileRef['from']>> | null;
-  return typeof from?.relay === 'string' && typeof from.ids === 'string' && IDS.test(from.ids) && from.ids.length === 48 * v.count;
+  const from = v.from as Partial<FileFrom> | null;
+  if (typeof from?.relay !== 'string' || typeof from.ids !== 'string' || !IDS.test(from.ids) || from.ids.length !== 48 * v.count) return false;
+  if (from.via === undefined) return true;
+  if (from.via === 'nostr') return from.relay === 'nostr' && v.chunk === NOSTR_PIECE;
+  return from.via === 'blossom' && from.relay === 'blossom' && typeof from.url === 'string' && /^https:\/\/\S+$/.test(from.url) && from.url.length <= 2048 && typeof from.x === 'string' && KEY.test(from.x) && from.ids === from.x.slice(0, 48);
 }
 
 export const newFileId = () => toHex(randomBytes(16));

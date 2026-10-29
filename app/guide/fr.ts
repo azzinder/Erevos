@@ -1473,9 +1473,7 @@ via Tor, au lieu de passer par ton relais. Chaque espace a son propre choix, et 
 - **Les relais :** relay.damus.io, nos.lol et relay.primal.net tant que tu ne les changes pas ; tu peux ajouter les
   tiens, cinq au plus. Tes contacts apprennent les relais sur lesquels tu lis, et t’y écrivent ; un relais qui prend un
   texte suffit.
-- **Ce qui reste sur ton relais :** les images, fichiers, messages vocaux, appels, réactions, et les marques qu’un
-  message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas
-  sur Nostr.
+- **Ce qui reste sur ton relais :** les appels, réactions, et les marques qu’un message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas sur Nostr. Les images, fichiers et messages vocaux passent par ton relais quand il y en a un entre vous ; sans relais entre vous, ils passent aussi par Nostr (voir Sans aucun relais).
 - **Par où il est passé :** appuie longuement sur un message : son menu dit **Envoyé par Nostr** ou **Arrivé par Nostr**
   quand un relais Nostr l’a pris. Un message qui ne dit rien est passé par ton relais, ou à proximité. La note sous les
   messages dit aussi **Envoyé par Nostr**. Deux téléphones côte à côte se donnent d’abord les textes à proximité : pour
@@ -1490,7 +1488,7 @@ via Tor, au lieu de passer par ton relais. Chaque espace a son propre choix, et 
 **Pourquoi :** les relais Nostr sont publics, donc Erevos ne les joint que via Tor, et ils n’apprennent jamais où est
 ton téléphone. Seuls les textes y vont : un texte a ton relais comme secours, s’il n’arrivait pas, alors que les marques
 qu’un message est arrivé ou a été lu n’en auraient aucun, et un message envoyé pour plus tard a besoin de ton relais
-pour le garder jusqu’à son heure. Les images et messages vocaux par Nostr sont encore à venir.
+pour le garder jusqu’à son heure. Sans relais entre vous, les images, fichiers et messages vocaux y vont aussi (voir Sans aucun relais).
 
 > Si le téléphone de ton contact ne dit pas dans les cinq minutes qu’un texte est arrivé, celui-ci passe aussi par ton
 > relais, et ton contact le voit une fois. Quand aucun relais Nostr ne le prend, il passe aussitôt par ton relais.
@@ -1511,10 +1509,7 @@ code QR disent où il lit sur Nostr, et cela suffit pour parler.
   QR** ou **Partager mon lien de contact**, et donne-le à quelqu’un qui utilise Erevos. Celui qui l’ajoute t’écrit par
   Nostr, via Tor, et apparaît comme une demande de message, que tu acceptes. Tu peux aussi ajouter son lien ou son code
   QR, de la même façon.
-- **Ce qui passe :** les textes, stickers, réactions, modifications, et les marques qu’un message est arrivé ou a été
-  lu, tout par Nostr. Les photos, messages vocaux, fichiers, appels et groupes ont besoin d’un relais, ou de l’autre
-  téléphone à proximité. Les discussions masquées fonctionnent ainsi aussi, par Nostr seulement (voir [Discussions
-  masquées](#hidden)).
+- **Ce qui passe :** les textes, stickers, réactions, modifications, et les marques qu’un message est arrivé ou a été lu, tout par Nostr ; et les photos, fichiers et messages vocaux. Un message vocal passe en wraps comme un texte. Une photo jusqu’à 3 Mo passe en morceaux de 32 Ko, un wrap chacun, envoyés avant le message qui la propose ; l’autre téléphone les garde jusqu’à ce que tous soient arrivés, quatre jours au plus. Une photo plus grande, une vidéo ou tout autre fichier, jusqu’à 20 Mo, passe en un seul blob, chiffré sur le téléphone, vers un serveur de fichiers Blossom (blossom.primal.net, blossom.band ou nostr.download), via Tor : le serveur ne garde que ce qu’il ne peut pas lire. Les appels et les groupes ont besoin d’un relais, ou de l’autre téléphone à proximité. Les discussions masquées fonctionnent ainsi aussi, par Nostr seulement (voir [Discussions masquées](#hidden)).
 - **Quand il n’arrive pas :** les relais Nostr gardent un texte deux jours. Tant que le téléphone de ton contact n’a pas
   dit qu’il est arrivé, Erevos le lui redonne une fois par jour, pendant deux semaines.
 - **Un relais tout seul :** quand ton contact a un relais qui lui permet d’inviter, son Erevos envoie tout seul au tien

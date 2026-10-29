@@ -319,4 +319,6 @@ export const whatsNew: Record<string, string> = {
     "**Δύο νέα σετ αυτοκόλλητων με 24 διαθέσεις**: ο **Tux**, ο πιγκουίνος του Linux όπως είναι σχεδιασμένος, και το **Αϊκίντο**, ένας αϊκιντόκα με κεικόγκι και φαρδύ χακάμα, που επίσης υποκλίνεται, κάθεται σε σέιζα και κάνει κυβίστηση.",
   "**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move.":
     "**Νέο σετ αυτοκόλλητων, ο Τάκης**: μια καρικατούρα με σκούρο κοστούμι και μωβ γραβάτα με βουλίτσες, σε 24 διαθέσεις που κινούνται.",
+  "**Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they read on Nostr, a voice message goes through Nostr like a text, a photo up to 3 MB in pieces, and a larger photo, a video or another file, up to 20 MB, to an encrypted file server (Blossom), all through Tor. See [Through Nostr](#nostr).":
+    "**Φωτογραφίες, αρχεία και φωνητικά μηνύματα χωρίς relay**: όταν δεν υπάρχει relay ανάμεσα σε σένα και την επαφή σου και εκείνη διαβάζει στο Nostr, ένα φωνητικό μήνυμα πηγαίνει μέσω Nostr όπως ένα κείμενο, μια φωτογραφία έως 3 MB σε κομμάτια, και μια μεγαλύτερη φωτογραφία, ένα βίντεο ή άλλο αρχείο, έως 20 MB, σε έναν κρυπτογραφημένο server αρχείων (Blossom), όλα μέσω Tor. Δες [Μέσω Nostr](#nostr).",
 };

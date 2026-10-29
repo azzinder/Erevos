@@ -20,7 +20,7 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, readFile, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
+import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
 import { canRingInBackground, loadMessageNotices, loadRingInBackground, messageCameAt, messageGone, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
@@ -160,6 +160,8 @@ import {
 } from '../lib/relay';
 import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrReady, readNostr } from '../lib/nostr';
+import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
+import { onPiece } from '../lib/nostr-pieces';
 import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats } from '../lib/space-chats';
@@ -1102,7 +1104,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 })
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
             : onNostr
-              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay between you, texts, stickers and reactions go through Nostr, over Tor; photos, voice messages and calls need a relay or their phone nearby.')
+              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay between you, texts, stickers, reactions, photos, files and voice messages go through Nostr, over Tor; calls need a relay or their phone nearby.')
               : lent
                 ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
                 : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
@@ -3632,7 +3634,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const takingNow = useRef(new Set<string>());
 
   // Takes a photo or file that came, from the relay it is on through ours, and keeps it here.
-  async function take(own: Relay, peer: string, tag: string, ref: FileRef) {
+  async function take(own: Relay | null, peer: string, tag: string, ref: FileRef) {
     const key = `${peer}|${tag}`;
     if (takingNow.current.has(key) || !ref.from) return;
     takingNow.current.add(key);
@@ -3646,6 +3648,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);
       setTaking(({ [key]: _done, ...rest }) => rest);
     } catch (error) {
+      if (error instanceof PiecesMissingError) {
+        // Its pieces are still coming through Nostr: taken as the last one comes.
+        tried.current.delete(key);
+        setTaking((now) => ({ ...now, [key]: `${Math.floor((error.have / error.count) * 100)}%` }));
+        return;
+      }
       setTaking((now) => ({ ...now, [key]: error instanceof FileGoneError ? 'gone' : 'failed' }));
       setNote(ref.kind === 'photo' ? t('A photo did not come. {error}', { error: errorText(error) }) : t('A file did not come. {error}', { error: errorText(error) }));
     } finally {
@@ -3655,14 +3663,21 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // Photos and files up to AUTO_TAKE still on the relay are taken as soon as they come, or when the
   // chat opens: theirs, and on a linked device the copies of what the phone sent (lib/devices.ts).
+  // Pieces of photos come through Nostr in wraps of their own: whenever one came, the photos still
+  // missing some are looked at again.
+  const [pieceTick, setPieceTick] = useState(0);
+  useEffect(() => onPiece(() => setPieceTick((n) => n + 1)), []);
+
   useEffect(() => {
     const own = ownRelay();
-    if (!loaded || !own) return;
+    if (!loaded) return;
     for (const m of messages) {
       if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
+      // Only a file on a relay needs ours.
+      if (!own && onRelay(m.file.from)) continue;
       void take(own, m.peer, m.tag, m.file);
     }
-  }, [loaded, relayUrl, relayToken, messages]);
+  }, [loaded, relayUrl, relayToken, messages, pieceTick]);
 
   // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
   // messages brought over or written on another of them, marks raised there, messages deleted there.
@@ -3722,7 +3737,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const peer = to;
     const target = relayTarget();
     const own = ownRelay();
-    if (!peer || !target || !own) {
+    // With no relay between the two, a photo goes in pieces through Nostr and any other file to a
+    // file server, when the contact reads on Nostr (lib/nostr-send-files.ts).
+    const toNostr = peer && e2e && (!target || !own || !ownQueue?.senderHex || !e2e.queueOf(peer.slice(CONTACT_PREFIX.length))?.sender) ? e2e.nostrPlace(peer.slice(CONTACT_PREFIX.length)) : null;
+    if (!peer || ((!target || !own) && !toNostr)) {
       setNote(t('Photos and files go to contacts through the relay. Type its address in Relay, and pick a contact.'));
       return;
     }
@@ -3785,12 +3803,24 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       if (picked.source.size > MAX_FILE) throw new TooLargeError();
       setNote(picked.sticker ? t('Sending the sticker…') : what === 'photo' ? t('Sending the photo…') : t('Sending the file…'));
-      const sent = await sendFile(own, picked.source, meta, (done, count) => {
+      const progress = (done: number, count: number) => {
         if (count > 1) {
           const percent = Math.floor((done / count) * 100);
           setNote(what === 'photo' ? t('Sending the photo, {percent}%', { percent }) : t('Sending the file, {percent}%', { percent }));
         }
-      });
+      };
+      let sent: { ref: FileRef; offer: FileOffer };
+      if (toNostr) {
+        if (!nostrReady()) throw new RelayUnreachableError(t('Tor is not ready.'));
+        if (!goesInPieces(meta, picked.source.size) && picked.source.size > NOSTR_FILE_LIMIT) throw new NostrFileTooLargeError();
+        const ref = await keepFile(picked.source, meta);
+        try {
+          sent = { ref, offer: await offerOnNostr(refSource(ref), meta, toNostr, progress) };
+        } catch (failed) {
+          await deleteChunks(ref.id, ref.count).catch(() => undefined);
+          throw failed;
+        }
+      } else sent = await sendFile(own!, picked.source, meta, progress);
       kept = sent.ref;
       offer = sent.offer;
       const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
@@ -3803,10 +3833,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setContacts(e2e.contacts());
       setNote(
         picked.sticker
-          ? t('Sticker sent through the relay, end-to-end encrypted.')
+          ? toNostr ? t('Sticker sent through Nostr, end-to-end encrypted.') : t('Sticker sent through the relay, end-to-end encrypted.')
           : kind === 'photo'
-            ? t('Photo sent through the relay, end-to-end encrypted.')
-            : t('File sent through the relay, end-to-end encrypted.'),
+            ? toNostr ? t('Photo sent through Nostr, end-to-end encrypted.') : t('Photo sent through the relay, end-to-end encrypted.')
+            : toNostr ? t('File sent through Nostr, end-to-end encrypted.') : t('File sent through the relay, end-to-end encrypted.'),
       );
     } catch (error) {
       if (error instanceof OwedError && kept && offer) {
@@ -3826,9 +3856,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       // It waits, kept here only, and goes to the relay later (lib/waiting.ts).
-      const reason = nearby.hasSlow() && !hiddenKey
-        ? t('Photos and files go through the relay, which cannot be reached, and LoRa takes only text.')
-        : t('Photos and files go through the relay, which cannot be reached.');
+      const reason = toNostr
+        ? t('Photos and files go through Nostr, which cannot be reached.')
+        : nearby.hasSlow() && !hiddenKey
+          ? t('Photos and files go through the relay, which cannot be reached, and LoRa takes only text.')
+          : t('Photos and files go through the relay, which cannot be reached.');
       if (!(await askToWait(what, reason))) {
         setNote(t('Not sent.'));
         return;
@@ -3842,7 +3874,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         });
         addMessage(peer, '', true, newTag(), lasts || timerOf(peer), undefined, ref, WAITING, Date.now(), parts);
         setReplying(null);
-        const waits = what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.');
+        const waits = toNostr
+          ? what === 'photo' ? t('The photo waits, and goes by itself once Nostr can take it.') : t('The file waits, and goes by itself once Nostr can take it.')
+          : what === 'photo' ? t('The photo waits, and goes by itself once the relay can take it.') : t('The file waits, and goes by itself once the relay can take it.');
         setNote(hiddenKey ? withClosedNote(waits) : waits);
       } catch (failed) {
         setNote(t('Not sent, and it could not wait. {error}', { error: errorText(failed) }));
@@ -3886,7 +3920,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!file) return;
     if (file.from) {
       const own = ownRelay();
-      if (own) void take(own, message.peer, message.tag, file);
+      if (own || !onRelay(file.from)) void take(own, message.peer, message.tag, file);
       else setNote(t('Type the relay address in Relay first.'));
       return;
     }

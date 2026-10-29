@@ -20,7 +20,7 @@
 
 import type { E2E } from './e2e';
 import type { NostrTo } from '../lock/e2e-data';
-import { NOSTR_MOST, nostrReady, packNostr, publishNostr, type NostrReader } from './nostr';
+import { nostrReady, nostrWraps, publishNostr, unpackNostr, type NostrReader } from './nostr';
 import { fromHex, RelayUnreachableError, sendMessage, type Relay } from './relay';
 import { contactTarget, sendSealed } from './space-chats';
 import { t } from './i18n';
@@ -45,21 +45,22 @@ export type ForNostr = { tag?: string; nostr?: NostrTo | null };
 export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: ForNostr, packets: Uint8Array[], relay: () => Promise<void>): () => Promise<'nostr' | void> {
   const to = sealed.nostr;
   const tag = sealed.tag ?? '';
-  if (!to || !own || !tag || packets.length !== 1) return relay;
-  const [packet] = packets;
+  const wraps = nostrWraps(packets);
+  if (!to || !own || !tag || !wraps) return relay;
   return async () => {
     if (!nostrReady()) return relay();
     try {
-      await publishNostr(to, packet);
+      for (const wrap of wraps) await publishNostr(to, wrap);
     } catch {
       return relay();
     }
     wentListeners.forEach((listener) => listener(identity, tag));
-    const rang = to.b === true && (await ringBell(e2e, own, identity, packet.length).then(
+    const length = wraps.reduce((sum, wrap) => sum + wrap.length, 0);
+    const rang = to.b === true && (await ringBell(e2e, own, identity, length).then(
       () => true,
       () => false,
     ));
-    await e2e.nostrKeep(identity, tag, packet, rang).catch(() => undefined);
+    await e2e.nostrKeep(identity, tag, wraps, rang).catch(() => undefined);
     return 'nostr';
   };
 }
@@ -74,19 +75,19 @@ export function orNostr(e2e: E2E, own: Relay | null, identity: string, sealed: F
 export function nostrOnlyWay(e2e: E2E, identity: string, sealed: ForNostr & { first: Uint8Array | null }, packets: Uint8Array[]): (() => Promise<'nostr'>) | null {
   const to = sealed.nostr;
   if (!to) return null;
-  const packed = packNostr(sealed.first ? [sealed.first, ...packets] : packets);
-  if (packed.length > NOSTR_MOST) return null;
+  const wraps = nostrWraps(packets, sealed.first);
+  if (!wraps) return null;
   return async () => {
     if (!nostrReady()) throw new RelayUnreachableError(t('Tor is not ready.'));
     try {
-      await publishNostr(to, packed);
+      for (const wrap of wraps) await publishNostr(to, wrap);
     } catch (error) {
       throw new RelayUnreachableError(t('No Nostr relay took it: {reason}', { reason: error instanceof Error ? error.message : String(error) }));
     }
     const tag = sealed.tag ?? '';
     if (tag) {
       wentListeners.forEach((listener) => listener(identity, tag));
-      await e2e.nostrKeepOnly(identity, tag, packed).catch(() => undefined);
+      await e2e.nostrKeepOnly(identity, tag, wraps).catch(() => undefined);
     }
     return 'nostr';
   };
@@ -95,9 +96,17 @@ export function nostrOnlyWay(e2e: E2E, identity: string, sealed: ForNostr & { fi
 /** Sends to Nostr again what went to contacts there only and was not said to have come (lib/e2e.ts nostrAgainDue), each to where they read now. What cannot go now goes with the next look. */
 export async function sendNostrAgain(e2e: E2E, now = Date.now()): Promise<void> {
   if (!nostrReady()) return;
+  // The wraps of one message go together, and count once.
+  const due = new Map<string, { identity: string; tag: string; to: NostrTo; wraps: Uint8Array[] }>();
   for (const { identity, tag, packed, to } of e2e.nostrAgainDue(now)) {
+    const key = `${identity}|${tag}`;
+    const there = due.get(key);
+    if (there) there.wraps.push(packed);
+    else due.set(key, { identity, tag, to, wraps: [packed] });
+  }
+  for (const { identity, tag, to, wraps } of due.values()) {
     try {
-      await publishNostr(to, packed);
+      for (const wrap of wraps) await publishNostr(to, wrap);
       await e2e.nostrWentAgain(identity, tag, now);
     } catch {
       // Tried again with the next look.
@@ -119,10 +128,18 @@ async function ringBell(e2e: E2E, own: Relay, identity: string, length: number):
  * take now goes with the next look.
  */
 export async function sendNostrBackups(e2e: E2E, own: Relay, now = Date.now()): Promise<void> {
+  // The wraps of one message go together.
+  const due = new Map<string, { identity: string; tag: string; packets: Uint8Array[]; quiet: boolean }>();
   for (const { identity, tag, packet, quiet } of e2e.nostrBackupsDue(now)) {
+    const key = `${identity}|${tag}`;
+    const there = due.get(key);
+    if (there) there.packets.push(...unpackNostr(packet));
+    else due.set(key, { identity, tag, packets: unpackNostr(packet), quiet });
+  }
+  for (const { identity, tag, packets, quiet } of due.values()) {
     const queue = e2e.queueOf(identity);
     try {
-      if (queue?.sender) await sendSealed(own, { ...queue, first: null }, [packet], quiet ? 'quiet' : 'message', async () => undefined);
+      if (queue?.sender) await sendSealed(own, { ...queue, first: null }, packets, quiet ? 'quiet' : 'message', async () => undefined);
       await e2e.nostrBackupSent(identity, tag);
     } catch {
       // Tried again with the next look.

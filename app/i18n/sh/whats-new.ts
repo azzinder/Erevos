@@ -320,4 +320,6 @@ export const whatsNew: Record<string, string> = {
     "**Dva nova kompleta naljepnica s 24 raspoloženja**: **Tux**, Linuxov pingvin kakav je nacrtan, i **Aikido**, aikidoka u keikogiju i širokoj hakami, koji se i klanja, sjedi u seizi i kotrlja se.",
   "**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move.":
     "**Novi komplet naljepnica, Takis**: karikatura u tamnom odijelu i ljubičastoj kravati s točkicama, u 24 raspoloženja koja se miču.",
+  "**Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they read on Nostr, a voice message goes through Nostr like a text, a photo up to 3 MB in pieces, and a larger photo, a video or another file, up to 20 MB, to an encrypted file server (Blossom), all through Tor. See [Through Nostr](#nostr).":
+    "**Fotografije, datoteke i glasovne poruke bez relaya**: kad između vas i vašeg kontakta nema relaya, a on čita na Nostru, glasovna poruka ide preko Nostra kao tekst, fotografija do 3 MB u komadima, a veća fotografija, video ili druga datoteka, do 20 MB, na šifrirani poslužitelj datoteka (Blossom), sve preko Tora. Pogledajte [Preko Nostra](#nostr).",
 };

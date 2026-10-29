@@ -28,6 +28,12 @@ import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { NOSTR_AGAIN_MOST, NOSTR_AGAIN_MS, NOSTR_BACKUP_MS, nostrKeysChanged, nostrOf, nostrPacked, nostrReady, nostrRelays, nostrStates, packNostr, readNostr, setNostr, unpackNostr } from '../lib/nostr';
 import { nostrOnlyWay, nostrReaderOf, orNostr, sendNostrAgain, sendNostrBackups } from '../lib/nostr-chats';
 import { MOST_NOSTR } from '../lib/contact-code';
+import { bytesSource, FileDamagedError, FileTooLargeError, offerRef, PiecesMissingError, readFile, readOffer, takeFile } from '../lib/attachments';
+import { sha256Bytes } from '../lib/crypto';
+import { setNostrHttp } from '../lib/nostr-files';
+import { dropPieces, piecesCame } from '../lib/nostr-pieces';
+import { offerOnNostr } from '../lib/nostr-send-files';
+import { isFileRef } from '../lock/attachment-files';
 import { offerOf } from '../lib/relay-offer';
 import { createQueue, NO_NEWS, receiveMessage, setThroughTor, setTorReady, waitForNews, type Relay } from '../lib/relay';
 import { forgetPlaceChats, placeChats } from '../lib/place-chats';
@@ -274,6 +280,15 @@ const message = (r: Received) => {
 };
 
 /** A chat with a queue for its contacts to write to: on the relay at `url`, or a made-up one. */
+// Until every piece with these ids has come.
+async function allCame(ids: string): Promise<void> {
+  for (let n = 0; n < 100; n++) {
+    if ((await piecesCame(ids)).every(Boolean)) return;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  assert.fail('the pieces did not come');
+}
+
 async function chat(holder: 'space' | 'hidden', space: number, url = '') {
   const e2e = await E2E.open(holder, space, randomBytes(32));
   const ids = url ? await createQueue({ url }) : { recipientId: randomBytes(24), senderId: randomBytes(24) };
@@ -681,6 +696,102 @@ t('with no relay between the two, the first message and texts go through Nostr, 
     assert.equal(offerOf(message(await bob.e2e.receive((await alice.e2e.seal(toBob, '', '', { more: { ri: { r: 'ws://relay.example.org', c: code64 } } })).packet))), null, 'in the clear across the internet: none');
   } finally {
     stop();
+  }
+});
+
+t('with no relay between the two, a voice message goes in wraps, a photo in pieces before its message, and a larger file to a file server', async () => {
+  setNostr([ONE]);
+  const bob = await chat('space', 1);
+  const alice = await chat('space', 0);
+  const bobsLink = (await bob.e2e.linkNostr())!;
+  const code = parseContact(contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(bob.e2e.bundle), nostr: bobsLink }))!;
+  const { identity: toBob } = await alice.e2e.addContact(code, '');
+  const came: Extract<Received, { kind: 'message' }>[] = [];
+  const stop = readNostr(
+    nostrReaderOf(
+      () => bob.e2e,
+      async (packet) => {
+        const received = await bob.e2e.receive(packet);
+        if (received.kind === 'message') came.push(received);
+      },
+    ),
+  );
+  // A file server: what is put on it by its hash.
+  const server = new Map<string, Uint8Array>();
+  setNostrHttp(async (method, url, _headers, body) => {
+    if (method === 'PUT') {
+      const hash = toHex(sha256Bytes(body!));
+      server.set(hash, body!);
+      return { status: 200, bytes: utf8Encode(JSON.stringify({ url: `https://files.example.org/${hash}`, sha256: hash })) };
+    }
+    const kept = server.get(url.split('/').pop()!);
+    return kept ? { status: 200, bytes: kept } : { status: 404, bytes: new Uint8Array() };
+  });
+  try {
+    const hello = await alice.e2e.seal(toBob, '', '', {});
+    await nostrOnlyWay(alice.e2e, toBob, hello, [hello.packet])!();
+    await until(() => came.length === 2);
+    await bob.e2e.acceptRequest(came[0].identity);
+    const place = alice.e2e.nostrPlace(toBob)!;
+    assert.ok(place);
+
+    // A voice message: its parts, three or four to a wrap, none to the relay.
+    const sound = randomBytes(34_000);
+    const voice = await alice.e2e.sealVoice(toBob, sound, 8000, '', {});
+    assert.ok(voice.packets.length >= 4);
+    assert.ok(voice.nostr, 'voice messages go through Nostr');
+    const before = came.length;
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, voice, voice.packets)!(), 'nostr');
+    await until(() => came.filter((m) => m.voice).length === voice.packets.length);
+    assert.ok(came.length - before === voice.packets.length);
+    assert.ok(relays.keptAt(ONE).length >= 2, 'in more than one wrap, as they do not all fit');
+
+    // A photo: pieces first, each in a wrap, then the message that offers it.
+    const photo = randomBytes(100_000);
+    const meta = { name: 'a.jpg', mime: 'image/jpeg', kind: 'photo' as const };
+    const offer = await offerOnNostr(bytesSource(photo), meta, place);
+    assert.equal(offer.via, 'nostr');
+    assert.equal(offer.ids.length / 48, 4);
+    assert.deepEqual(readOffer(offer), offer, 'a message carries it as it is');
+    const sealed = await alice.e2e.sealFile(toBob, offer, '', {});
+    assert.ok(sealed.nostr);
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, sealed, [sealed.packet])!(), 'nostr');
+    await until(() => came.some((m) => m.file));
+    const ref = offerRef(readOffer(came.find((m) => m.file)!.file)!);
+    assert.ok(isFileRef(ref));
+    await allCame(ref.from!.ids);
+    const taken = await takeFile(null, ref);
+    assert.deepEqual(await readFile(taken), photo, 'the photo, whole');
+    assert.deepEqual(await piecesCame(ref.from!.ids), [false, false, false, false], 'its pieces are dropped once taken');
+    assert.ok(isFileRef(taken) && !taken.from);
+
+    // A piece that is missing: nothing is taken, and it says how many came.
+    const lacking = await offerOnNostr(bytesSource(randomBytes(70_000)), meta, place);
+    const lackingRef = offerRef(lacking);
+    await allCame(lackingRef.from!.ids);
+    const ids = lacking.ids;
+    await dropPieces(ids.slice(48, 96));
+    await assert.rejects(takeFile(null, lackingRef), PiecesMissingError);
+
+    // A larger photo, and a file, go to a file server as one blob; the server holds only noise.
+    const video = randomBytes(300_000);
+    const filed = await offerOnNostr(bytesSource(video), { name: 'v.mp4', mime: 'video/mp4', kind: 'file' }, place);
+    assert.equal(filed.via, 'blossom');
+    assert.equal(server.size, 1);
+    assert.ok(![...server.values()][0].some((_, at, all) => at + 8 < all.length && Buffer.from(all.slice(at, at + 8)).equals(Buffer.from(video.slice(0, 8)))), 'encrypted');
+    assert.deepEqual(readOffer(filed), filed);
+    const blobRef = offerRef(filed);
+    assert.ok(isFileRef(blobRef));
+    assert.deepEqual(await readFile(await takeFile(null, blobRef)), video);
+    // A blob changed on the server is not taken.
+    const [hash] = [...server.keys()];
+    server.set(hash, new Uint8Array(server.get(hash)!).fill(1));
+    await assert.rejects(takeFile(null, offerRef(filed)), FileDamagedError);
+    // One too large for a server says so.
+    await assert.rejects(offerOnNostr({ size: 21_000_000, read: async () => new Uint8Array() }, { name: 'big', mime: 'application/zip', kind: 'file' }, place), FileTooLargeError);
+  } finally {
+    stop();
+    setNostrHttp(null);
   }
 });
 

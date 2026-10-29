@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they
+  read on Nostr, a voice message goes through Nostr like a text, in as many wraps as it takes. A photo up to 3 MB goes
+  in pieces of 32 KB, each in a wrap, sent before the message that offers it; the other phone keeps them until all
+  have come, four days at most. A larger photo, a video or any other file, up to 20 MB, goes as one blob, encrypted on
+  the phone, to a Blossom file server through Tor, which keeps only what it cannot read. Calls and groups still need
+  a relay. Before, only texts went so.
 - **A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods
   that move, as Tux and the aikidoka do.
 - **Erevos's icon keeps the number of messages not read** (Android): the notice for messages went as soon as Erevos

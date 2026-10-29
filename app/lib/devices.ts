@@ -336,10 +336,12 @@ function voiceOf(v: unknown): VoicePart | null {
 function offerOf(ref: FileRef): FileOffer | null {
   if (!ref.from) return null;
   const { id: _id, count: _count, from, ...shared } = ref;
-  return readOffer({ ...shared, relay: from.relay, ids: from.ids });
+  // The pieces of a photo that came in Nostr wraps are on this phone only; a file on a file server is for any of them to take.
+  if (from.via === 'nostr') return null;
+  return readOffer({ ...shared, relay: from.relay, ids: from.ids, ...(from.via ? { via: from.via, url: from.url, x: from.x } : {}) });
 }
 
-const fromOf = (offer: FileOffer): FileFrom => ({ relay: offer.relay, ids: offer.ids });
+const fromOf = (offer: FileOffer): FileFrom => ({ relay: offer.relay, ids: offer.ids, ...(offer.via ? { via: offer.via, ...(offer.url ? { url: offer.url } : {}), ...(offer.x ? { x: offer.x } : {}) } : {}) });
 const isTimed = (field: string): field is (typeof TIMED)[number] => (TIMED as readonly string[]).includes(field);
 const contactsOf = (contacts: ((c: Contact[]) => Contact[]) | null) => (contacts ? { contacts } : {});
 const removedOf = (removed: Record<string, number>) => ({ removed: Object.keys(removed).length > 0 ? removed : undefined });

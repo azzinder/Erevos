@@ -11,7 +11,8 @@
 // which addresses put and took them. Self-contained on purpose, so it can run under plain Node for
 // checks.
 
-import { decryptBytes, encryptBytes, fromHex, randomBytes, toHex } from './crypto';
+import { decryptBytes, encryptBytes, fromHex, randomBytes, sha256Bytes, toHex } from './crypto';
+import { gcm } from '@noble/ciphers/aes.js';
 import { deleteChunk, getChunk, isLentToken, putChunk, RelaySession, relayPath, sameRelay, type Relay } from './relay';
 import {
   CHUNK_SIZES,
@@ -23,9 +24,13 @@ import {
   newFileId,
   readChunk,
   saveChunk,
+  NOSTR_PIECE,
+  type FileFrom as FromRef,
   type FileMeta,
   type FileRef,
 } from '../lock/attachment-files';
+import { dropPieces, piecesCame, readPiece } from './nostr-pieces';
+import { downloadBlob, NOSTR_FILE_MOST } from './nostr-files';
 import { t } from './i18n';
 
 /** The largest file that can be sent. */
@@ -35,7 +40,7 @@ export const MAX_FILE = 100 * 1000 * 1000;
 export const AUTO_TAKE = 16 * 1000 * 1000;
 
 /** Where a file that came waits on the relay until taken: the relay, and its chunks' ids (hex, one after another). */
-export type FileFrom = NonNullable<FileRef['from']>;
+export type FileFrom = FromRef;
 
 /**
  * What the account's other devices (lib/devices.ts) need of the files taken here: whether a file
@@ -55,6 +60,8 @@ export function watchTakenFiles(watch: TakenFiles | null): void {
 const SEALING = 12 + 16;
 const HEAD = 8;
 const ID_HEX = 48;
+// What a blob's offer says of its chunk, which it has none: the largest size, as a file kept here would be.
+export const BLOB_CHUNK = CHUNK_SIZES[CHUNK_SIZES.length - 1];
 
 /** How much of a file fits in a chunk of `chunk` bytes. */
 export const room = (chunk: number) => chunk - SEALING - HEAD;
@@ -67,7 +74,10 @@ export function chunkPlan(size: number): { chunk: number; count: number } {
 }
 
 /** What a message carries for a file: where its chunks are, their ids (hex, one after another) and the key. */
-export type FileOffer = FileMeta & { relay: string; ids: string; key: string; chunk: number };
+export type FileOffer = FileMeta & { relay: string; ids: string; key: string; chunk: number; via?: 'nostr' | 'blossom'; url?: string; x?: string };
+
+/** The largest photo that goes in pieces through Nostr; larger ones, and files, go to a file server. */
+export const NOSTR_PHOTO_MOST = 3 * 1000 * 1000;
 
 export class FileTooLargeError extends Error {
   constructor() {
@@ -129,12 +139,24 @@ export function readOffer(value: unknown): FileOffer | null {
     ...(v.w !== undefined ? { w: v.w } : {}),
     ...(v.h !== undefined ? { h: v.h } : {}),
   };
-  if (!isFileMeta(meta) || meta.size > MAX_FILE || !isRelayAddress(v.relay)) return null;
+  if (!isFileMeta(meta) || meta.size > MAX_FILE) return null;
   if (typeof v.key !== 'string' || !/^[0-9a-f]{64}$/.test(v.key) || typeof v.ids !== 'string' || !/^(?:[0-9a-f]{48})+$/.test(v.ids)) return null;
-  const plan = chunkPlan(meta.size);
-  if (v.chunk !== plan.chunk || v.ids.length !== plan.count * ID_HEX) return null;
   // A sticker made from a photo, when it is small enough to be one; otherwise a photo.
   const sticker = v.sticker === true && fitsSticker(meta) ? { sticker: true as const } : {};
+  if (v.via === 'nostr') {
+    // Pieces in wraps: as many as the photo takes, each 32 KB, the last less.
+    if (v.relay !== 'nostr' || meta.size > NOSTR_PHOTO_MOST || v.chunk !== NOSTR_PIECE || v.ids.length !== Math.max(1, Math.ceil(meta.size / room(NOSTR_PIECE))) * ID_HEX) return null;
+    return { ...meta, ...sticker, relay: 'nostr', ids: v.ids, key: v.key, chunk: NOSTR_PIECE, via: 'nostr' };
+  }
+  if (v.via === 'blossom') {
+    // One blob on a file server: its address and hash.
+    if (v.relay !== 'blossom' || meta.size > NOSTR_FILE_MOST || typeof v.url !== 'string' || !/^https:\/\/\S+$/.test(v.url) || v.url.length > 2048) return null;
+    if (typeof v.x !== 'string' || !/^[0-9a-f]{64}$/.test(v.x) || v.ids !== v.x.slice(0, ID_HEX) || v.chunk !== BLOB_CHUNK) return null;
+    return { ...meta, ...sticker, relay: 'blossom', ids: v.ids, key: v.key, chunk: BLOB_CHUNK, via: 'blossom', url: v.url, x: v.x };
+  }
+  if (v.via !== undefined || !isRelayAddress(v.relay)) return null;
+  const plan = chunkPlan(meta.size);
+  if (v.chunk !== plan.chunk || v.ids.length !== plan.count * ID_HEX) return null;
   return { ...meta, ...sticker, relay: v.relay, ids: v.ids, key: v.key, chunk: v.chunk };
 }
 
@@ -145,9 +167,12 @@ function shaped({ sticker, ...meta }: Omit<FileMeta, 'size'>, size: number): Fil
 }
 
 /** Where a file that came is, until it is taken: its chunks are still on the relay. */
-export function offerRef({ relay, ids, key, chunk, ...meta }: FileOffer): FileRef {
-  return { ...meta, id: newFileId(), key, chunk, count: ids.length / ID_HEX, from: { relay, ids } };
+export function offerRef({ relay, ids, key, chunk, via, url, x, ...meta }: FileOffer): FileRef {
+  return { ...meta, id: newFileId(), key, chunk, count: ids.length / ID_HEX, from: { relay, ids, ...(via ? { via } : {}), ...(url ? { url } : {}), ...(x ? { x } : {}) } };
 }
+
+/** Whether a file that came waits on a relay's file store (and needs our relay to be taken), not in Nostr wraps or on a file server. */
+export const onRelay = (from: FileFrom): boolean => from.via === undefined;
 
 /** Where to read a file to send from: how big it is, and its bytes from `at`, `length` of them. */
 export type Source = { size: number; read(at: number, length: number): Promise<Uint8Array> };
@@ -277,9 +302,11 @@ function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
  * until it did. Returns where it is now kept. If any chunk is missing or was changed, nothing is
  * kept.
  */
-export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, leave?: boolean): Promise<FileRef> {
+export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
+  if (!onRelay(from)) return takeSent(ref, from, progress);
+  if (!own) throw new FileMissingError();
   const watch = leave === undefined ? takenFiles : null;
   const left = leave ?? watch?.leave(from) ?? false;
   const { at, via } = fileWay(own, from.relay);
@@ -308,8 +335,71 @@ export async function takeFile(own: Relay, ref: FileRef, progress?: Progress, le
   return taken;
 }
 
+/** The photo's pieces have not all come through Nostr yet: `have` of `count`. They are taken when they have. */
+export class PiecesMissingError extends Error {
+  readonly have: number;
+  readonly count: number;
+
+  constructor(have: number, count: number) {
+    super(t('{have} of {count} pieces of the photo have come.', { have, count }));
+    this.have = have;
+    this.count = count;
+  }
+}
+
+// The nonce a file on a file server is sealed with: its key is made for it alone, so one nonce is enough.
+const BLOB_NONCE = new Uint8Array(12);
+
+/** A file's bytes sealed to put on a file server: the blob, and its hash (hex). */
+export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array; x: string } {
+  const blob = gcm(key, BLOB_NONCE).encrypt(bytes);
+  return { blob, x: toHex(sha256Bytes(blob)) };
+}
+
+// Takes a file that came in Nostr wraps (pieces kept by lib/nostr-pieces.ts) or from a file server,
+// and keeps it here as a file that went through the relay would be.
+async function takeSent(ref: FileRef, from: FileFrom, progress?: Progress): Promise<FileRef> {
+  const { from: _from, ...taken } = ref;
+  const key = fromHex(ref.key);
+  if (from.via === 'nostr') {
+    const came = await piecesCame(from.ids);
+    const have = came.filter(Boolean).length;
+    if (have < ref.count) throw new PiecesMissingError(have, ref.count);
+    let size = 0;
+    try {
+      for (let n = 0; n < ref.count; n++) {
+        const sealed = await readPiece(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX));
+        if (!sealed) throw new PiecesMissingError(n, ref.count);
+        size += openChunk(key, n, sealed, ref.chunk).length;
+        await saveChunk(ref.id, n, sealed);
+        progress?.(n + 1, ref.count);
+      }
+      if (size !== ref.size) throw new FileDamagedError();
+    } catch (error) {
+      await deleteChunks(ref.id, ref.count).catch(() => undefined);
+      throw error;
+    }
+    await dropPieces(from.ids).catch(() => undefined);
+    return taken;
+  }
+  if (!from.url || !from.x) throw new FileMissingError();
+  const blob = await downloadBlob(from.url);
+  if (toHex(sha256Bytes(blob)) !== from.x) throw new FileDamagedError();
+  let bytes: Uint8Array;
+  try {
+    bytes = gcm(key, BLOB_NONCE).decrypt(blob);
+  } catch {
+    throw new FileDamagedError();
+  }
+  if (bytes.length !== ref.size) throw new FileDamagedError();
+  // Kept here in chunks, under a key of its own, as any file that came.
+  const { name, mime, kind, size: _size, w, h, sticker } = ref;
+  return keepFile(bytesSource(bytes), { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}) }, progress);
+}
+
 /** Deletes from the relay, through ours (`own`), a file left there once taken. One it cannot delete expires there. */
 export async function dropFile(own: Relay, from: FileFrom): Promise<void> {
+  if (!onRelay(from)) return;
   const { at, via } = fileWay(own, from.relay);
   const session = await RelaySession.open(at, true);
   try {

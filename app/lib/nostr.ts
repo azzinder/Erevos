@@ -24,10 +24,14 @@ import type { NostrSetting } from '../lock/space-data';
 import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
+import { isPiece, keepPiece } from './nostr-pieces';
 import { onTorReady, torFor } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
 export const NOSTR_BACKUP_MS = 5 * 60_000;
+
+/** The most bytes of wraps kept of one message to go again, or through the relay as well: a longer one (a voice message) is not kept. */
+export const NOSTR_KEEP_MOST = 96 * 1024;
 
 /** The largest packet a wrap carries (crates/erevos-nostr MAX_BYTES). */
 export const NOSTR_MOST = 49_151;
@@ -74,6 +78,28 @@ export function unpackNostr(bytes: Uint8Array): Uint8Array[] {
     at += 4 + length;
   }
   return packets;
+}
+
+/**
+ * The wraps these packets go in, in order: as many in each as fit (NOSTR_MOST), with `first`, the
+ * conversation's first packet, leading each when there is one. Null when a packet cannot fit in a
+ * wrap, with `first` or without.
+ */
+export function nostrWraps(packets: Uint8Array[], first: Uint8Array | null = null): Uint8Array[] | null {
+  if (packets.length === 0) return null;
+  const wraps: Uint8Array[] = [];
+  let group: Uint8Array[] = [];
+  const lead = first ? [first] : [];
+  for (const packet of packets) {
+    if (group.length > 0 && nostrPacked([...lead, ...group, packet]) > NOSTR_MOST) {
+      wraps.push(packNostr([...lead, ...group]));
+      group = [];
+    }
+    if (nostrPacked([...lead, ...group, packet]) > NOSTR_MOST) return null;
+    group.push(packet);
+  }
+  wraps.push(packNostr([...lead, ...group]));
+  return wraps;
 }
 
 // How far a wrap's time may be set back (crates/erevos-nostr WRAP_BACKDATE), and how long a relay
@@ -386,7 +412,13 @@ async function takeWrap(event: unknown): Promise<void> {
       return;
     }
     // Its id (32 bytes) and time (8) first, then what it carried: one packet, or several in order.
-    for (const packet of unpackNostr(opened.slice(40))) await reader.take(packet).catch(() => undefined);
+    const carried = opened.slice(40);
+    // A piece of a photo (lib/nostr-pieces.ts) is kept as it came, for the message that offers the photo.
+    if (isPiece(carried)) {
+      await keepPiece(carried).catch(() => undefined);
+      return;
+    }
+    for (const packet of unpackNostr(carried)) await reader.take(packet).catch(() => undefined);
     return;
   }
 }

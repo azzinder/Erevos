@@ -1394,8 +1394,7 @@ vez de pelo seu relay. Cada espaço tem a sua própria escolha, e os seus própr
 - **Os relays:** relay.damus.io, nos.lol e relay.primal.net a menos que você os mude; você pode acrescentar os seus,
   cinco no máximo. Os seus contatos ficam sabendo dos relays em que você lê, e escrevem para você ali; basta que um
   aceite um texto.
-- **O que fica no seu relay:** imagens, arquivos, mensagens de voz, chamadas, reações, e as marcas de que uma mensagem
-  chegou ou foi lida; e o que você escreve para contatos num iPhone ou num computador, que não leem no Nostr.
+- **O que fica no seu relay:** chamadas, reações, e as marcas de que uma mensagem chegou ou foi lida; e o que você escreve para contatos num iPhone ou num computador, que não leem no Nostr. Imagens, arquivos e mensagens de voz vão pelo seu relay quando há um entre vocês; sem relay entre vocês, vão também pelo Nostr (veja Sem nenhum relay).
 - **Por onde foi:** segure uma mensagem: o menu dela diz **Foi pelo Nostr** ou **Veio pelo Nostr** quando um relay
   Nostr a pegou. Uma que não diz nada foi pelo seu relay, ou por perto. A nota abaixo das mensagens também diz
   **Enviada pelo Nostr**. Dois celulares lado a lado trocam textos por perto primeiro: para testar o Nostr, desligue o
@@ -1409,7 +1408,7 @@ vez de pelo seu relay. Cada espaço tem a sua própria escolha, e os seus própr
 **Por quê:** os relays Nostr são públicos, então o Erevos só os acessa pelo Tor, e eles nunca ficam sabendo onde está
 o seu celular. Só os textos vão para lá: um texto tem o seu relay como reserva, caso não chegue, enquanto as marcas de
 que uma mensagem chegou ou foi lida não teriam nenhuma, e uma mensagem enviada para mais tarde precisa do seu relay
-para guardá-la até o horário dela. Imagens e mensagens de voz pelo Nostr ainda estão por vir.
+para guardá-la até o horário dela. Sem relay entre vocês, imagens, arquivos e mensagens de voz vão para lá também (veja Sem nenhum relay).
 
 > Se o celular do seu contato não disser em cinco minutos que um texto chegou, ele também passa pelo seu relay, e o
 > contato o vê uma vez. Quando nenhum relay Nostr o aceita, ele passa pelo seu relay na hora.
@@ -1430,9 +1429,7 @@ ele lê no Nostr, e isso basta para conversar.
   **Compartilhar meu link de contato**, e dê para alguém que usa o Erevos. Quem o adiciona escreve para você pelo
   Nostr, via Tor, e aparece como solicitação de mensagem, que você aceita. Você também pode adicionar o link ou o
   código QR da pessoa, do mesmo jeito.
-- **O que vai:** textos, figurinhas, reações, edições, e as marcas de que uma mensagem chegou ou foi lida, tudo pelo
-  Nostr. Fotos, mensagens de voz, arquivos, chamadas e grupos precisam de um relay, ou do outro celular por perto. As
-  conversas ocultas também funcionam assim, só pelo Nostr (veja [Conversas ocultas](#hidden)).
+- **O que vai:** textos, figurinhas, reações, edições, e as marcas de que uma mensagem chegou ou foi lida, tudo pelo Nostr; e fotos, arquivos e mensagens de voz. Uma mensagem de voz vai em wraps como um texto. Uma foto de até 3 MB vai em pedaços de 32 KB, um wrap cada, enviados antes da mensagem que a oferece; o outro celular os guarda até chegarem todos, quatro dias no máximo. Uma foto maior, um vídeo ou qualquer outro arquivo, de até 20 MB, vai como um só blob, cifrado no celular, para um servidor de arquivos Blossom (blossom.primal.net, blossom.band ou nostr.download), pelo Tor: o servidor guarda só o que não consegue ler. Chamadas e grupos precisam de um relay, ou do outro celular por perto. As conversas ocultas também funcionam assim, só pelo Nostr (veja [Conversas ocultas](#hidden)).
 - **Quando não chega:** os relays Nostr guardam um texto por dois dias. Até o celular do seu contato dizer que ele
   chegou, o Erevos o entrega de novo uma vez por dia, por duas semanas.
 - **Um relay sozinho:** quando o seu contato tem um relay que o deixa convidar, o Erevos dele envia ao seu um convite

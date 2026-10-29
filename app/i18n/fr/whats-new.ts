@@ -319,4 +319,6 @@ export const whatsNew: Record<string, string> = {
     "**Deux nouvelles séries d'autocollants de 24 humeurs** : **Tux**, le manchot de Linux tel qu'il est dessiné, et **Aïkido**, un aïkidoka en keikogi et large hakama, qui salue aussi, s'assoit en seiza et fait une roulade.",
   "**A new sticker set, Takis**: a caricature in a dark suit and a purple tie with dots, in 24 moods that move.":
     "**Une nouvelle série d'autocollants, Takis** : une caricature en costume sombre et cravate violette à pois, en 24 humeurs qui bougent.",
+  "**Photos, files and voice messages with no relay**: when there is no relay between you and your contact and they read on Nostr, a voice message goes through Nostr like a text, a photo up to 3 MB in pieces, and a larger photo, a video or another file, up to 20 MB, to an encrypted file server (Blossom), all through Tor. See [Through Nostr](#nostr).":
+    "**Photos, fichiers et messages vocaux sans relais** : quand il n’y a pas de relais entre toi et ton contact et qu’il lit sur Nostr, un message vocal passe par Nostr comme un texte, une photo jusqu’à 3 Mo en morceaux, et une photo plus grande, une vidéo ou un autre fichier, jusqu’à 20 Mo, vers un serveur de fichiers chiffré (Blossom), le tout via Tor. Voir [Par Nostr](#nostr).",
 };

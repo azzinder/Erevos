@@ -1506,9 +1506,7 @@ Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte übe
 - **Die Relays:** relay.damus.io, nos.lol und relay.primal.net, sofern du sie nicht änderst; du kannst eigene
   hinzufügen, höchstens fünf. Deine Kontakte erfahren die Relays, auf denen du liest, und schreiben dir dort; eines,
   das einen Text annimmt, genügt.
-- **Was auf deinem Relay bleibt:** Bilder, Dateien, Sprachnachrichten, Anrufe, Reaktionen und die Zeichen, dass eine
-  Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht
-  auf Nostr lesen.
+- **Was auf deinem Relay bleibt:** Anrufe, Reaktionen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht auf Nostr lesen. Bilder, Dateien und Sprachnachrichten gehen über dein Relay, wenn eines zwischen euch ist; ohne Relay zwischen euch gehen sie auch über Nostr (siehe Ganz ohne Relay).
 - **Welchen Weg sie ging:** Halte eine Nachricht gedrückt: Ihr Menü sagt **Über Nostr gesendet** oder
   **Über Nostr gekommen**, wenn ein Nostr-Relay sie angenommen hat. Eine, die nichts sagt, ging über dein Relay oder in
   der Nähe. Der Hinweis unter den Nachrichten sagt auch **Gesendet: über Nostr**. Zwei Telefone nebeneinander geben
@@ -1524,7 +1522,7 @@ Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte übe
 **Warum:** Die Nostr-Relays sind öffentlich, also erreicht Erevos sie nur über Tor, und sie erfahren nie, wo dein
 Telefon ist. Nur Texte gehen dorthin: Ein Text hat dein Relay als Reserve, falls er nicht ankommt, während die Zeichen,
 dass eine Nachricht ankam oder gelesen wurde, keine hätten, und eine für später gesendete Nachricht dein Relay braucht,
-das sie bis zu ihrer Zeit aufbewahrt. Bilder und Sprachnachrichten über Nostr kommen erst noch.
+das sie bis zu ihrer Zeit aufbewahrt. Ohne Relay zwischen euch gehen auch Bilder, Dateien und Sprachnachrichten dorthin (siehe Ganz ohne Relay).
 
 > Sollte das Telefon deines Kontakts nicht innerhalb von fünf Minuten sagen, dass ein Text ankam, geht er auch über
 > dein Relay, und dein Kontakt sieht ihn einmal. Wenn kein Nostr-Relay ihn annimmt, geht er sofort über dein Relay.
@@ -1545,9 +1543,7 @@ wo es auf Nostr liest, und das genügt, um zu reden.
   **Meinen Kontaktlink teilen**, und gib ihn jemandem, der Erevos nutzt. Wer ihn hinzufügt, schreibt dir über Nostr,
   über Tor, und erscheint als Nachrichtenanfrage, die du annimmst. Du kannst auch seinen Link oder QR-Code hinzufügen,
   auf dieselbe Weise.
-- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen
-  wurde, alles über Nostr. Fotos, Sprachnachrichten, Dateien, Anrufe und Gruppen brauchen ein Relay oder das andere
-  Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr (siehe [Versteckte Chats](#hidden)).
+- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde, alles über Nostr; und Fotos, Dateien und Sprachnachrichten. Eine Sprachnachricht geht in Wraps wie ein Text. Ein Foto bis 3 MB geht in Stücken von 32 KB, je ein Wrap, die vor der Nachricht gesendet werden, die es anbietet; das andere Telefon behält sie, bis alle da sind, höchstens vier Tage. Ein größeres Foto, ein Video oder jede andere Datei, bis 20 MB, geht als ein Blob, auf dem Telefon verschlüsselt, an einen Blossom-Dateiserver (blossom.primal.net, blossom.band oder nostr.download), über Tor: Der Server behält nur, was er nicht lesen kann. Anrufe und Gruppen brauchen ein Relay oder das andere Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr (siehe [Versteckte Chats](#hidden)).
 - **Wenn er nicht ankommt:** Die Nostr-Relays bewahren einen Text zwei Tage auf. Bis das Telefon deines Kontakts sagt,
   dass er ankam, gibt Erevos ihn ihm einmal am Tag erneut, zwei Wochen lang.
 - **Ein Relay von selbst:** Wenn dein Kontakt ein Relay hat, das ihn einladen lässt, sendet sein Erevos deinem von

@@ -1,7 +1,8 @@
 import type { Spare, Undropped } from '../lock/e2e-data';
 import type { History, Message } from '../lock/history';
 import { loadClip } from '../lock/voice-clips';
-import { uploadFile } from './attachments';
+import { refSource, uploadFile } from './attachments';
+import { offerOnNostr } from './nostr-send-files';
 import { contentOf, withoutPreview } from './chat-parts';
 import type { E2E, Where } from './e2e';
 import { nearby, NoWayError, TooLargeForLoraError } from './nearby';
@@ -335,9 +336,10 @@ export async function heldAfter({ e2e, history }: Chats, identity: string, kept:
 function canGo(e2e: E2E, place: SendPlace, identity: string, message: Message): boolean {
   const queue = e2e.queueOf(identity);
   if (!queue) return false;
-  if (place.hidden) return (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || (!message.voice && !message.file && throughNostr(e2e, place, identity, queue));
-  if (message.file) return !!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue));
-  return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && (nearby.hasSlow() || throughNostr(e2e, place, identity, queue)));
+  // Photos, files and voice messages go through Nostr too, as the contact's phone puts them together.
+  if (place.hidden) return (place.relayUp && (!message.file || !!place.own) && throughRelay(place, queue)) || throughNostr(e2e, place, identity, queue);
+  if (message.file) return (!!place.own && place.relayUp && (nearby.isNear(identity) || throughRelay(place, queue))) || throughNostr(e2e, place, identity, queue);
+  return nearby.isNear(identity) || (place.relayUp && throughRelay(place, queue)) || (!message.voice && nearby.hasSlow()) || throughNostr(e2e, place, identity, queue);
 }
 
 // Whether Nostr is the way to them now: no relay between the two, they read there, and Tor is ready (lib/nostr-chats.ts nostrOnlyWay).
@@ -371,8 +373,11 @@ async function sendOne(e2e: E2E, place: SendPlace, identity: string, message: Me
     sealed = voice;
     packets = voice.packets;
   } else if (message.file) {
-    // On the relay again with each try; what a try left there that did not go expires there.
-    const offer = await uploadFile(place.own!, message.file);
+    // On the relay again with each try; what a try left there that did not go expires there. With
+    // no relay between the two: in Nostr wraps, or on a file server (lib/nostr-send-files.ts).
+    const queue = e2e.queueOf(identity);
+    const toNostr = !place.own || !queue?.sender || !place.senderHex || !place.sends ? e2e.nostrPlace(identity) : null;
+    const offer = toNostr ? await offerOnNostr(refSource(message.file), message.file, toNostr) : await uploadFile(place.own!, message.file);
     const file = await e2e.sealFile(identity, offer, place.senderHex, options);
     sealed = file;
     packets = [file.packet];
