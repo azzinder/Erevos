@@ -2227,7 +2227,9 @@ uređaji** → **Rezervne kopije**.
    najnovije; **Prestani slati** to zaustavlja, a one koje su tamo ostaju.
 4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
    a zatim stavlja rezervnu kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija
-   napravljena, s lozinkama koje su se tada koristile.
+   napravljena, s lozinkama koje su se tada koristile. **Vrati sa servera** gleda u folder u koji idu automatske
+   rezervne kopije, ili u onaj koji navedete s korisničkim imenom i lozinkom, i prikazuje rezervne kopije koje su
+   tamo, najnovije prve: izaberite jednu, upišite njenu lozinku, i vraća se na isti način.
 
 - **Čuvajte lozinku rezervne kopije:** bez nje ništa ne otvara rezervnu kopiju, i niko je ne može vratiti. Bez
   zaključavanja lozinkom, lozinka rezervne kopije je sve što je štiti. Ko ima datoteku može na njoj isprobavati lozinke
@@ -2242,9 +2244,11 @@ uređaji** → **Rezervne kopije**.
   prostora pod **Postavke** → **Relay i mreže** → **Tor**, kao i Matrix: sa **Sve** samo preko Tora, pa server ne vidi
   adresu telefona; s **Poruke** preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; s
   **Ništa** direktno, i server vidi adresu telefona. Kopija prvo čeka do dvije minute da se Tor pokrene, a **I na
-  server** kaže kojim putem ide sada. Da biste je vratili, preuzmite najnoviju sa servera i dodirnite **Vrati rezervnu
-  kopiju**; Erevos stariji od ove verzije je ne otvara. Google Drive je namjerno izostavljen: Google vezuje datoteku
-  za vaše ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
+  server** kaže kojim putem ide sada. **Vrati sa servera** preuzima onu koju izaberete na isti način, preko Tora kako
+  kaže prostor, i tamo ništa ne piše; lozinka upisana za to koristi se samo za to vraćanje i ne čuva se. Preko Tora
+  rezervna kopija veća od 64 MB ne stiže: tada je preuzmite sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
+  stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
+  ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke
   koje su stigle nakon kopije i već su pročitane nisu u njoj, a razgovor koji se nastavio može prestati otvarati nove
   poruke. Tada zamolite kontakt ponovo za njegov link za kontakt. Prije nego što vraćeni razgovor ponovo piše, njegovi

@@ -2330,8 +2330,10 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
    dai l’indirizzo della cartella, un nome utente e, meglio, una password per app solo per Erevos, poi tocca
    **Connetti**. Il server tiene i 3 più recenti; **Smetti di inviare** lo ferma, e quelli che ci sono restano.
 4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
-   volta, poi mette il backup al posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è stato
-   fatto, con le password di allora.
+   volta, poi mette il backup al posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è
+   stato fatto, con le password di allora. **Ripristina da un server** guarda nella cartella in cui vanno i backup
+   automatici, o in una che indichi con nome utente e password, e mostra i backup che ci sono, i più recenti per
+   primi: scegline uno, scrivi la sua password, e viene ripristinato allo stesso modo.
 
 - **Conserva la password del backup:** niente apre un backup senza di essa, e nessuno può recuperarla. Senza un blocco
   con password, la password del backup è tutto ciò che lo protegge. Chi ha il file può provarci sopra password alla
@@ -2347,9 +2349,11 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   tramite Tor, così il server non vede l’indirizzo del telefono; con **Messaggi** tramite Tor appena Tor è pronto, e
   direttamente mentre Tor parte o quando fallisce; con **Niente** direttamente, e il server vede l’indirizzo del
   telefono. Un backup aspetta prima fino a due minuti che Tor parta, e **Anche su un server** dice da dove passa ora.
-  Per ripristinarne uno, scarica il più recente dal server e tocca **Ripristina un backup**; un Erevos precedente a
-  questa versione non lo apre. Google Drive è escluso apposta: Google lega il file al tuo nome, ed Erevos avrebbe
-  bisogno delle app di Google e di un accesso a Google sul telefono.
+  **Ripristina da un server** scarica quello che scegli allo stesso modo, tramite Tor come dice lo spazio, e lì non
+  scrive nulla; una password scritta per questo serve solo a quel ripristino e non viene conservata. Tramite Tor un
+  backup di più di 64 MB non arriva: allora scaricalo dal server e tocca **Ripristina un backup**. Un Erevos
+  precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google lega il file al tuo
+  nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
   messaggi arrivati dopo il backup e già letti non ci sono, e una chat che è proseguita potrebbe non aprire più i nuovi
   messaggi. Allora chiedi di nuovo al contatto il suo link di contatto. Prima che una chat ripristinata scriva di nuovo,

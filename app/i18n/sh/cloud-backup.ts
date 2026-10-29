@@ -36,4 +36,14 @@ export const cloudBackup: Record<string, string> = {
     "Preko Tora: server ne vidi vašu adresu.",
   "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
     "Trenutno ne preko Tora: server vidi vašu adresu. Tor je u Postavke → Relay i mreže → Tor.",
+  "There is no Erevos backup in that folder.":
+    "U tom folderu nema Erevos rezervne kopije.",
+  "Restore from a server":
+    "Vrati sa servera",
+  "The folder on your server that automatic backups went to. The password is used for this restore only and not kept.":
+    "Folder na vašem serveru u koji su išle automatske rezervne kopije. Lozinka se koristi samo za ovo vraćanje i ne čuva se.",
+  "Look there":
+    "Potraži tamo",
+  "Backups on {server}, newest first. Choose one, then type its password.":
+    "Rezervne kopije na {server}, najnovije prve. Izaberite jednu, pa upišite njenu lozinku.",
 };

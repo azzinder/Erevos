@@ -17,6 +17,9 @@ export const CAN_AUTO_BACKUP = true;
 /** Whether automatic backups can go to a server too (lib/backup-cloud.ts): on the phone, yes. */
 export const CAN_CLOUD_BACKUP = true;
 
+/** Whether a backup can be restored from such a server: on the phone, yes. */
+export const CAN_CLOUD_RESTORE = true;
+
 /** A folder picked by the owner, or null if they went back. */
 export async function pickFolder(): Promise<string | null> {
   try {

@@ -6,7 +6,7 @@ import { phoneSmsForBackup } from './backup-sms';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
-export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, folderLabel, pickFolder, writeBackup } from './backup-place';
+export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, folderLabel, pickFolder, writeBackup } from './backup-place';
 
 // Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
 // phone with Android's folder picker, on a computer in the desktop app.

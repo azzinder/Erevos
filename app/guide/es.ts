@@ -2303,7 +2303,9 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
    allí se quedan.
 4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
    una vez más, y luego pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo
-   la copia, con las contraseñas de entonces.
+   la copia, con las contraseñas de entonces. **Restaurar desde un servidor** mira en la carpeta a la que van las
+   copias automáticas, o en una que des con su usuario y contraseña, y muestra las copias que hay allí, las más
+   recientes primero: elige una, escribe su contraseña y se restaura igual.
 
 - **Guarda la contraseña de la copia:** nada abre una copia sin ella, y nadie puede recuperarla. Sin bloqueo con
   contraseña, la contraseña de la copia es lo único que la protege. Quien tenga el archivo puede probar contraseñas en
@@ -2318,10 +2320,12 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   espacio en **Ajustes** → **Relay y redes** → **Tor**, como Matrix: con **Todo** solo por Tor, así que el servidor no
   ve la dirección del teléfono; con **Mensajes** por Tor en cuanto Tor está listo, y directo mientras Tor arranca o
   cuando falla; con **Nada** directo, y el servidor ve la dirección del teléfono. Una copia espera primero hasta dos
-  minutos a que arranque Tor, y **También a un servidor** dice por dónde va ahora. Para restaurar una, descarga la más
-  reciente del servidor y toca **Restaurar una copia de seguridad**; un Erevos anterior a esta versión no la abre.
-  Google Drive queda fuera a propósito: Google ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y
-  una sesión de Google en el teléfono.
+  minutos a que arranque Tor, y **También a un servidor** dice por dónde va ahora. **Restaurar desde un servidor**
+  descarga la que elijas del mismo modo, por Tor según diga el espacio, y no escribe nada allí; una contraseña escrita
+  para ello se usa solo para esa restauración y no se guarda. Por Tor no llega una copia de más de 64 MB: entonces
+  descárgala del servidor y toca **Restaurar una copia de seguridad**. Un Erevos anterior a esta versión no abre una
+  copia así. Google Drive queda fuera a propósito: Google ata el archivo a tu nombre, y Erevos necesitaría las apps de
+  Google y una sesión de Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban
   entonces. Los mensajes que llegaron después de la copia y ya se leyeron no están en ella, y un chat que siguió puede
   dejar de abrir mensajes nuevos. Entonces pide al contacto su enlace de contacto otra vez. Antes de que un chat

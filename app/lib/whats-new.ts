@@ -18,6 +18,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Restore a backup straight from your server**: Restore from a server, under Backups, lists the backups on your server, newest first, and opens the one you choose with its password, with no download by hand, on a new phone too. See [Backups](#backup)."),
     mark("**Backups to your server through Tor**: on Android, automatic backups sent to your own server now follow the space's choice under Settings → Relay and networks → Tor, as Matrix does, so with Tor the server no longer sees where you are. To a server too says when they go through Tor. See [Backups](#backup)."),
     mark("**Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages, music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or plays; held, each goes to its message. See [Group chats](#groups)."),
     mark("**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr)."),

@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Restore a backup straight from your server**: under **Settings** → **Data and devices** → **Backups**,
+  **Restore from a server** lists the backups in the folder automatic backups go to, or in one you give with its user
+  name and password (on a new phone), newest first; the one chosen is downloaded, through Tor as the space says, and
+  opened with its password as a file is. Only names Erevos gives are shown, nothing is written on the server, and a
+  password typed for it is not kept. Before, it had to be downloaded by hand and chosen under **Restore a backup**.
+  Through Tor a backup over 64 MB does not come.
 - **Backups to your own server through Tor** (Android): automatic backups sent to a WebDAV server now go as the
   space's choice under **Settings** → **Relay and networks** → **Tor** says, as Matrix does: with Everything only
   through Tor, with Messages through Tor once it is ready and straight while it starts or when it fails, with Nothing

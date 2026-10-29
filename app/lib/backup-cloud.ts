@@ -1,5 +1,5 @@
 import { canTorHttp } from './core';
-import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
+import { randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
 import { t } from './i18n';
 import { netHttp, type HttpMethod } from './net-http';
 import { throughTor, torFor, waitForTor } from './relay';
@@ -22,8 +22,21 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // ready, straight when it is not or fails; with Nothing straight. Just after a space opens Tor is
 // still starting, so a backup first waits for it a while (TOR_WAIT_MS).
 //
+// A backup there can be put back from the server itself (listCloud, fetchFromCloud): the folder is
+// listed, only the names Erevos gives are shown, newest first, and the one chosen is downloaded
+// and opened with its password as a file is, on the phone. Nothing is written on the server for it.
+//
 // The settings are kept in the keystore entry CLOUD, outside every space and out of backups, as
 // automatic backups' own are, with the names of the backups sent, oldest first.
+
+/** A folder on a server, with the user name and password for it. */
+export type CloudServer = { url: string; user: string; password: string };
+
+/** A backup on the server: its name, its size in bytes and when it came, milliseconds, 0 if the server does not say. */
+export type CloudFile = { name: string; size: number; when: number };
+
+// The names Erevos gives backups on a server.
+const NAME = /^[0-9a-f]{16}$/;
 
 /** Where backups go on a server. `last` milliseconds, 0 if none went yet. */
 export type CloudBackup = {
@@ -83,7 +96,7 @@ export function cloudFolder(address: string): string {
   return text.endsWith('/') ? text : `${text}/`;
 }
 
-function authorization(cloud: Pick<CloudBackup, 'user' | 'password'>): Record<string, string> {
+function authorization(cloud: Pick<CloudServer, 'user' | 'password'>): Record<string, string> {
   return {
     Authorization: `Basic ${toBase64(utf8Encode(`${cloud.user}:${cloud.password}`))}`,
   };
@@ -121,7 +134,7 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
       url: value.url,
       user: value.user,
       password: value.password,
-      names: Array.isArray(value.names) ? value.names.filter((name): name is string => typeof name === 'string' && /^[0-9a-f]{16}$/.test(name)) : [],
+      names: Array.isArray(value.names) ? value.names.filter((name): name is string => typeof name === 'string' && NAME.test(name)) : [],
       last: typeof value.last === 'number' ? value.last : 0,
       error: typeof value.error === 'string' ? value.error : '',
     };
@@ -209,4 +222,64 @@ export function cloudLabel(cloud: Pick<CloudBackup, 'url'>): string {
   } catch {
     return cloud.url;
   }
+}
+
+/** A folder on a server as the owner typed it, to restore from. Throws CloudError when the address is not one. */
+export function cloudServer(address: string, user: string, password: string): CloudServer {
+  return { url: cloudFolder(address), user: user.trim(), password };
+}
+
+// What WebDAV is asked of each file in the folder.
+const LISTING =
+  '<?xml version="1.0" encoding="utf-8"?><d:propfind xmlns:d="DAV:"><d:prop><d:getlastmodified/><d:getcontentlength/></d:prop></d:propfind>';
+
+/** The backups in the server's folder, newest first. Throws CloudError with why not. */
+export async function listCloud(server: CloudServer): Promise<CloudFile[]> {
+  const answer = await ask(
+    'PROPFIND',
+    server.url,
+    { ...authorization(server), Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' },
+    utf8Encode(LISTING),
+  );
+  const said = statusText(answer.status);
+  if (said) throw new CloudError(said);
+  return backupsListed(utf8Decode(answer.bytes));
+}
+
+// One element's text in a piece of WebDAV's XML, whatever prefix its namespace has.
+function element(xml: string, name: string): string | null {
+  const found = new RegExp(`<(?:[\\w.-]+:)?${name}\\b[^>]*>([\\s\\S]*?)</(?:[\\w.-]+:)?${name}\\s*>`, 'i').exec(xml);
+  return found ? found[1].trim() : null;
+}
+
+/** The backups a WebDAV listing (a PROPFIND's multistatus) names, newest first: only names Erevos gives. */
+export function backupsListed(xml: string): CloudFile[] {
+  const files: CloudFile[] = [];
+  for (const [response] of xml.matchAll(/<(?:[\w.-]+:)?response\b[\s\S]*?<\/(?:[\w.-]+:)?response\s*>/gi)) {
+    const href = element(response, 'href');
+    if (!href) continue;
+    let name: string;
+    try {
+      name = decodeURIComponent(href.replace(/\/+$/, '').split('/').pop() ?? '');
+    } catch {
+      continue;
+    }
+    if (!NAME.test(name)) continue;
+    files.push({
+      name,
+      size: Number(element(response, 'getcontentlength')) || 0,
+      when: Date.parse(element(response, 'getlastmodified') ?? '') || 0,
+    });
+  }
+  return files.sort((a, b) => b.when - a.when);
+}
+
+/** Downloads the backup `name` from the server, at most `most` bytes. Throws CloudError with why not. */
+export async function fetchFromCloud(server: CloudServer, name: string, most: number): Promise<Uint8Array> {
+  if (!NAME.test(name)) throw new CloudError(t('That file is not an Erevos backup.'));
+  const answer = await ask('GET', server.url + name, authorization(server));
+  const said = statusText(answer.status);
+  if (said) throw new CloudError(said);
+  if (answer.bytes.length > most) throw new CloudError(t('That file is not an Erevos backup.'));
+  return answer.bytes;
 }

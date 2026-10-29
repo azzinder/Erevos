@@ -2290,8 +2290,10 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
    Erevos, e toque em **Conectar**. O servidor guarda os 3 mais recentes; **Parar de enviar** interrompe, e os que
    estão lá ficam.
 4. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
-   uma vez, depois põe o backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito, com
-   as senhas usadas então.
+   uma vez, depois põe o backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito,
+   com as senhas usadas então. **Restaurar de um servidor** procura na pasta para onde vão os backups automáticos, ou
+   numa que você indicar com usuário e senha, e mostra os backups que estão lá, os mais recentes primeiro: escolha um,
+   digite a senha dele, e ele é restaurado do mesmo jeito.
 
 - **Guarde a senha do backup:** nada abre um backup sem ela, e ninguém pode recuperá-la. Sem bloqueio com senha, a
   senha do backup é tudo o que o protege. Quem tem o arquivo pode testar senhas nele tão rápido quanto o computador
@@ -2306,8 +2308,10 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   **Configurações** → **Relay e redes** → **Tor**, como o Matrix: com **Tudo** só pelo Tor, então o servidor não vê o
   endereço do celular; com **Mensagens** pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou
   quando falha; com **Nada** direto, e o servidor vê o endereço do celular. Um backup espera primeiro até dois minutos
-  o Tor iniciar, e **Também para um servidor** diz por onde vai agora. Para restaurar um, baixe o mais recente do
-  servidor e toque em **Restaurar um backup**; um Erevos anterior a esta versão não o abre. O Google Drive ficou de
+  o Tor iniciar, e **Também para um servidor** diz por onde vai agora. **Restaurar de um servidor** baixa o que você
+  escolher do mesmo jeito, pelo Tor como diz o espaço, e não escreve nada lá; uma senha digitada para isso serve só
+  para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega: então baixe-o do servidor e
+  toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup assim. O Google Drive ficou de
   fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos apps do Google e de um login no
   Google no celular.
 - **Conversas que continuaram depois do backup:** restaurar devolve as chaves de cada conversa como estavam então. As

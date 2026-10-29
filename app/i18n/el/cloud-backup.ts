@@ -38,4 +38,14 @@ export const cloudBackup: Record<string, string> = {
     "Μέσω Tor: ο server δεν βλέπει τη διεύθυνσή σου.",
   "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
     "Όχι μέσω Tor τώρα: ο server βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Relay και δίκτυα → Tor.",
+  "There is no Erevos backup in that folder.":
+    "Δεν υπάρχει αντίγραφο του Erevos σε αυτόν τον φάκελο.",
+  "Restore from a server":
+    "Επαναφορά από server",
+  "The folder on your server that automatic backups went to. The password is used for this restore only and not kept.":
+    "Ο φάκελος στον server σου όπου πήγαιναν τα αυτόματα αντίγραφα. Ο κωδικός χρησιμοποιείται μόνο για αυτή την επαναφορά και δεν κρατιέται.",
+  "Look there":
+    "Αναζήτηση εκεί",
+  "Backups on {server}, newest first. Choose one, then type its password.":
+    "Αντίγραφα στο {server}, τα νεότερα πρώτα. Διάλεξε ένα και μετά γράψε τον κωδικό του.",
 };

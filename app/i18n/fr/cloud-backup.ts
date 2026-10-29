@@ -37,4 +37,14 @@ export const cloudBackup: Record<string, string> = {
     "Par Tor : le serveur ne voit pas ton adresse.",
   "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
     "Pas par Tor en ce moment : le serveur voit ton adresse. Tor se trouve dans Réglages → Relais et réseaux → Tor.",
+  "There is no Erevos backup in that folder.":
+    "Il n’y a aucune sauvegarde Erevos dans ce dossier.",
+  "Restore from a server":
+    "Restaurer depuis un serveur",
+  "The folder on your server that automatic backups went to. The password is used for this restore only and not kept.":
+    "Le dossier de ton serveur où allaient les sauvegardes automatiques. Le mot de passe sert seulement à cette restauration et n’est pas gardé.",
+  "Look there":
+    "Chercher là",
+  "Backups on {server}, newest first. Choose one, then type its password.":
+    "Sauvegardes sur {server}, les plus récentes d’abord. Choisis-en une, puis tape son mot de passe.",
 };

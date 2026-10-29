@@ -20,6 +20,9 @@ export const CAN_AUTO_BACKUP = SHELL !== null;
  *  reaches no server that does not let it, as WebDAV servers do not. */
 export const CAN_CLOUD_BACKUP = false;
 
+/** Whether a backup can be restored from such a server: not yet, for the same reason. */
+export const CAN_CLOUD_RESTORE = false;
+
 // The one "folder" of a plain browser.
 const HANDED = 'browser';
 

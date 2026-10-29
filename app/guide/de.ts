@@ -2466,7 +2466,9 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
    senden** beendet es, und die dort bleiben.
 4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
    noch einmal, setzt dann das Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das
-   Backup gemacht wurde, mit den damals genutzten Passwörtern.
+   Backup gemacht wurde, mit den damals genutzten Passwörtern. **Von einem Server wiederherstellen** sieht im Ordner
+   nach, in den automatische Backups gehen, oder in einem, den du mit Benutzername und Passwort angibst, und zeigt die
+   Backups dort, die neuesten zuerst: Wähle eines, gib sein Passwort ein, und es wird genauso wiederhergestellt.
 
 - **Bewahre das Passwort des Backups auf:** Nichts öffnet ein Backup ohne es, und niemand kann es wiederherstellen.
   Ohne Passwortsperre ist das Passwort des Backups alles, was es schützt. Wer die Datei hat, kann Passwörter daran so
@@ -2482,10 +2484,12 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   sagt, wie bei Matrix: mit **Alles** nur über Tor, sodass der Server die Adresse des Telefons nicht sieht; mit
   **Nachrichten** über Tor, sobald Tor bereit ist, und direkt, solange Tor startet oder wenn es scheitert; mit
   **Nichts** direkt, und der Server sieht die Adresse des Telefons. Ein Backup wartet zuerst bis zu zwei Minuten, bis
-  Tor gestartet ist, und **Auch auf einen Server** sagt, welchen Weg es gerade nimmt. Zum Wiederherstellen lade das
-  neueste vom Server herunter und tippe auf **Backup wiederherstellen**; ein Erevos vor dieser Version öffnet es
-  nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
-  Google und eine Google-Anmeldung auf dem Telefon.
+  Tor gestartet ist, und **Auch auf einen Server** sagt, welchen Weg es gerade nimmt. **Von einem Server
+  wiederherstellen** lädt das gewählte auf demselben Weg herunter, über Tor, wie der Bereich sagt, und schreibt dort
+  nichts; ein dafür eingegebenes Passwort dient nur dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt
+  ein Backup über 64 MB nicht: Dann lade es vom Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos
+  vor dieser Version öffnet ein solches Backup nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit
+  deinem Namen, und Erevos bräuchte die Apps von Google und eine Google-Anmeldung auf dem Telefon.
 - **Chats, die nach dem Backup weitergingen:** Das Wiederherstellen setzt die Schlüssel jeder Unterhaltung so zurück,
   wie sie damals waren. Nachrichten, die nach dem Backup kamen und schon gelesen waren, sind nicht darin, und ein Chat,
   der weiterging, kann aufhören, neue Nachrichten zu öffnen. Bitte den Kontakt dann erneut um seinen Kontaktlink. Bevor

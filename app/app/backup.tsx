@@ -5,13 +5,26 @@ import { MIN_BACKUP_PASSWORD, PasswordSheet } from '../components/PasswordSheet'
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
-import { cloudLabel, cloudThroughTor, loadCloudBackup, startCloudBackup, stopCloudBackup, type CloudBackup } from '../lib/backup-cloud';
+import {
+  cloudLabel,
+  cloudServer,
+  cloudThroughTor,
+  fetchFromCloud,
+  listCloud,
+  loadCloudBackup,
+  startCloudBackup,
+  stopCloudBackup,
+  type CloudBackup,
+  type CloudFile,
+  type CloudServer,
+} from '../lib/backup-cloud';
 import { canTor } from '../lib/core';
 import { onTorReady } from '../lib/relay';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
   CAN_CLOUD_BACKUP,
+  CAN_CLOUD_RESTORE,
   changeAutoBackup,
   folderLabel,
   KEEP,
@@ -37,7 +50,8 @@ import { useTheme } from '../theme/context';
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
 // here says how many there are. On Android a backup can hold the phone's SMS and MMS too
 // (lib/backup-sms.ts), put back into the phone's SMS when it is restored. On Android, automatic
-// backups can go to a server too (lib/backup-cloud.ts), once the owner gives one.
+// backups can go to a server too (lib/backup-cloud.ts), once the owner gives one, and a backup there
+// can be restored from the server itself.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
 type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | null;
@@ -83,9 +97,12 @@ export default function Backups() {
   const picking = useRef(false);
   // Whether backups hold the phone's SMS and MMS.
   const [smsToo, setSmsToo] = useState(false);
-  // The server automatic backups go to as well, and what is typed to add one.
+  // The server automatic backups go to as well, and what is typed to add one or to restore from one.
   const [cloud, setCloud] = useState<CloudBackup | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<'add' | 'restore' | null>(null);
+  const adding = form === 'add';
+  // The backups on a server to restore from, newest first, once listed.
+  const [listed, setListed] = useState<{ server: CloudServer; files: CloudFile[] } | null>(null);
   const [address, setAddress] = useState('');
   const [user, setUser] = useState('');
   const [secret, setSecret] = useState('');
@@ -179,7 +196,7 @@ export default function Backups() {
     setBusy(true);
     try {
       setCloud(await startCloudBackup(address, user.trim(), secret));
-      setAdding(false);
+      setForm(null);
       setSecret('');
     } catch (error) {
       say(errorText(error), true);
@@ -211,6 +228,62 @@ export default function Backups() {
       picking.current = false;
     }
   }
+
+  // Lists the backups on the server automatic backups go to, or on the one typed in.
+  async function listServer(server: CloudServer | null) {
+    say('');
+    setBusy(true);
+    try {
+      const chosen = server ?? cloudServer(address, user, secret);
+      const files = await listCloud(chosen);
+      setForm(null);
+      setSecret('');
+      if (!files.length) {
+        setListed(null);
+        say(t('There is no Erevos backup in that folder.'), true);
+      } else setListed({ server: chosen, files });
+    } catch (error) {
+      say(errorText(error), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function restoreFromServer() {
+    if (cloud) void listServer(cloud);
+    else setForm('restore');
+  }
+
+  async function openFromServer(file: CloudFile) {
+    if (!listed) return;
+    say('');
+    setBusy(true);
+    try {
+      const bytes = await fetchFromCloud(listed.server, file.name, MAX_BYTES);
+      setListed(null);
+      setAsking({ kind: 'open', bytes, name: fileText(file) });
+    } catch (error) {
+      say(errorText(error), true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // The fields of a server: its folder's address, user name and password.
+  const serverFields = (
+    <>
+      <Field label={t('Folder address (WebDAV)')} hint={t('In Nextcloud: Files → Files settings → WebDAV gives the start; add a folder you made for backups, like …/remote.php/dav/files/NAME/Backups')}>
+        <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
+      </Field>
+      <Field label={t('User name')}>
+        <Input value={user} onChangeText={setUser} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('User name')} />
+      </Field>
+      <Field label={t('Password')} hint={t("Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.")}>
+        <Input value={secret} onChangeText={setSecret} secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('Password')} />
+      </Field>
+    </>
+  );
+  const serverReady = !!address.trim() && !!user.trim() && !!secret;
 
   async function toggleSms() {
     await setBacksUpSms(!smsToo);
@@ -399,18 +472,10 @@ export default function Backups() {
               </>
             ) : adding ? (
               <>
-                <Field label={t('Folder address (WebDAV)')} hint={t('In Nextcloud: Files → Files settings → WebDAV gives the start; add a folder you made for backups, like …/remote.php/dav/files/NAME/Backups')}>
-                  <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
-                </Field>
-                <Field label={t('User name')}>
-                  <Input value={user} onChangeText={setUser} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('User name')} />
-                </Field>
-                <Field label={t('Password')} hint={t("Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.")}>
-                  <Input value={secret} onChangeText={setSecret} secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('Password')} />
-                </Field>
+                {serverFields}
                 <Row wrap>
-                  <Button title={busy ? t('One moment…') : t('Connect')} compact loading={busy} onPress={() => void addServer()} disabled={busy || !address.trim() || !user.trim() || !secret} />
-                  <Button title={t('Cancel')} kind="secondary" compact onPress={() => setAdding(false)} disabled={busy} />
+                  <Button title={busy ? t('One moment…') : t('Connect')} compact loading={busy} onPress={() => void addServer()} disabled={busy || !serverReady} />
+                  <Button title={t('Cancel')} kind="secondary" compact onPress={() => setForm(null)} disabled={busy} />
                 </Row>
               </>
             ) : (
@@ -421,7 +486,7 @@ export default function Backups() {
                   )}
                 </Text>
                 <Row wrap>
-                  <Button title={t('Add a server')} kind="secondary" compact onPress={() => setAdding(true)} disabled={busy} />
+                  <Button title={t('Add a server')} kind="secondary" compact onPress={() => setForm('add')} disabled={busy} />
                 </Row>
               </>
             )}
@@ -436,7 +501,33 @@ export default function Backups() {
         </Text>
         <Row wrap>
           <Button title={t('Restore a backup')} kind="secondary" compact onPress={pickBackup} disabled={busy} />
+          {CAN_CLOUD_RESTORE ? <Button title={t('Restore from a server')} kind="secondary" compact onPress={restoreFromServer} disabled={busy || form === 'restore'} /> : null}
         </Row>
+        {form === 'restore' ? (
+          <>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('The folder on your server that automatic backups went to. The password is used for this restore only and not kept.')}
+            </Text>
+            {serverFields}
+            <Row wrap>
+              <Button title={busy ? t('One moment…') : t('Look there')} compact loading={busy} onPress={() => void listServer(null)} disabled={busy || !serverReady} />
+              <Button title={t('Cancel')} kind="secondary" compact onPress={() => setForm(null)} disabled={busy} />
+            </Row>
+          </>
+        ) : null}
+        {listed ? (
+          <>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('Backups on {server}, newest first. Choose one, then type its password.', { server: cloudLabel(listed.server) })}
+            </Text>
+            <Row wrap>
+              {listed.files.slice(0, SHOWN).map((file) => (
+                <Button key={file.name} title={fileText(file)} kind="secondary" compact onPress={() => void openFromServer(file)} disabled={busy} />
+              ))}
+              <Button title={t('Cancel')} kind="secondary" compact onPress={() => setListed(null)} disabled={busy} />
+            </Row>
+          </>
+        ) : null}
       </Card>
 
       {note ? (
@@ -463,6 +554,15 @@ const hint = { fontSize: 14, lineHeight: 20 };
 
 function sizeText(bytes: number): string {
   return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// How many of the backups on a server are offered to restore: it keeps the newest few anyway.
+const SHOWN = 10;
+
+// A backup on a server, as the list shows it: when it came and how big it is.
+function fileText(file: CloudFile): string {
+  const when = file.when ? new Date(file.when).toLocaleString(locale(), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : t('No date');
+  return `${when} · ${sizeText(file.size)}`;
 }
 
 function whenText(ms: number): string {

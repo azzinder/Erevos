@@ -2121,7 +2121,9 @@ again with a password of its own. It is under **Settings** → **Data and device
    newest; **Stop sending** stops it, and those there stay.
 4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
    backup in place of everything on the phone, and opens as it was when the backup was made, with the passwords used
-   then.
+   then. **Restore from a server** looks in the folder automatic backups go to, or in one you give with its user name
+   and password, and lists the backups there, newest first: choose one, type its password, and it is restored the same
+   way.
 
 - **Keep the backup's password:** nothing opens a backup without it, and no one can recover it. Without a password
   lock, the backup's password is all that protects it. Whoever has the file can try passwords on it as fast as their
@@ -2135,9 +2137,12 @@ again with a password of its own. It is under **Settings** → **Data and device
   and networks** → **Tor** says, as Matrix does: with **Everything** only through Tor, so the server does not see the
   phone's address; with **Messages** through Tor once Tor is ready, and straight while Tor starts or when it fails;
   with **Nothing** straight, and the server sees the phone's address. A backup first waits up to two minutes for Tor
-  to start, and **To a server too** says which way it goes now. To restore one, download the newest from the server
-  and tap **Restore a backup**; an Erevos from before this version does not open it. Google Drive is left out on
-  purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
+  to start, and **To a server too** says which way it goes now. **Restore from a server** downloads the one you choose
+  the same way, through Tor as the space says, and writes nothing there; a password typed for it is used for that
+  restore only and not kept. Through Tor a backup larger than 64 MB does not come: then download it from the server
+  and tap **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left
+  out on purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the
+  phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new
   messages. Then ask the contact for their contact link again. Before a restored chat writes again, its conversations

@@ -7,7 +7,21 @@ import { test } from 'node:test';
 import { encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
 import { SmsLink } from '../lib/sms-link';
 import { backupKey, backupName, backupPhoneSms, hardBackupKey, makeBackup, newBackupHard, NotABackupError, openBackup, padme, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
-import { cloudFolder, CloudError, cloudThroughTor, loadCloudBackup, sendToCloud, setCloudHttp, setCloudTorWait, startCloudBackup, stopCloudBackup } from '../lib/backup-cloud';
+import {
+  backupsListed,
+  cloudFolder,
+  CloudError,
+  cloudServer,
+  cloudThroughTor,
+  fetchFromCloud,
+  listCloud,
+  loadCloudBackup,
+  sendToCloud,
+  setCloudHttp,
+  setCloudTorWait,
+  startCloudBackup,
+  stopCloudBackup,
+} from '../lib/backup-cloud';
 import { setCore, type Core } from '../lib/core';
 import { setThroughTor, setTorReady } from '../lib/relay';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
@@ -338,6 +352,19 @@ function davServer(there: Map<string, Uint8Array>, password: () => string, asked
     if (headers.Authorization !== `Basic ${Buffer.from(`me:${password()}`).toString('base64')}`) return said(401);
     if (!url.startsWith('https://cloud.example/dav/Backups/')) return said(404);
     const name = url.slice('https://cloud.example/dav/Backups/'.length);
+    if (method === 'PROPFIND' && headers.Depth === '1') {
+      // As Nextcloud answers: the folder itself, a file of the owner's, and the backups, in the order they came.
+      const entry = (href: string, size: number, at: number) =>
+        `<d:response><d:href>${href}</d:href><d:propstat><d:prop><d:getlastmodified>${new Date(Date.UTC(2026, 9, 1, 12, at)).toUTCString()}</d:getlastmodified><d:getcontentlength>${size}</d:getcontentlength></d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>`;
+      const xml = [
+        '<?xml version="1.0"?><d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">',
+        entry('/dav/Backups/', 0, 0),
+        entry('/dav/Backups/notes.txt', 12, 1),
+        ...[...there].map(([name, bytes], i) => entry(`/dav/Backups/${name}`, bytes.length, 2 + i)),
+        '</d:multistatus>',
+      ].join('');
+      return said(207, new TextEncoder().encode(xml));
+    }
     if (method === 'PROPFIND') return said(207);
     if (method === 'PUT') return there.set(name, body!), said(201);
     if (method === 'DELETE') return said(there.delete(name) ? 204 : 404);
@@ -373,6 +400,22 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     const newest = there.get(cloud.names[2])!;
     assert.equal((await openBackup(newest, 'backup-pass')).unknown, 0);
 
+    // Restored from the server itself, with the folder and password typed again: only Erevos's
+    // names, newest first, and the one chosen comes back whole.
+    const server = cloudServer('https://cloud.example/dav/Backups', ' me ', 'app-pass');
+    const listed = await listCloud(server);
+    assert.deepEqual(
+      listed.map((file) => file.name),
+      [...cloud.names].reverse(),
+    );
+    assert.equal(listed[0].size, newest.length);
+    assert.ok(listed[0].when > listed[1].when);
+    const fetched = await fetchFromCloud(server, listed[0].name, 200 * 1024 * 1024);
+    assert.deepEqual(fetched, newest);
+    await assert.rejects(fetchFromCloud(server, listed[0].name, 10), /not an Erevos backup/);
+    await assert.rejects(fetchFromCloud(server, '../elsewhere', 1e9), /not an Erevos backup/);
+    await assert.rejects(listCloud({ ...server, password: 'wrong' }), /did not take/);
+
     // The server's own words for what went wrong, kept to show, and tried again next time.
     password = 'taken-back';
     const failed = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 5);
@@ -392,6 +435,25 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     await stopCloudBackup();
   }
   assert.equal(await loadCloudBackup(), null);
+});
+
+test('reads the backups out of WebDAV listings, whatever the prefix of their namespace', () => {
+  const xml = `<?xml version="1.0"?>
+    <D:multistatus xmlns:D="DAV:">
+      <D:response><D:href>https://host/dav/B/</D:href></D:response>
+      <D:response>
+        <D:href>/dav/B/0123456789abcdef</D:href>
+        <D:propstat><D:prop><D:getcontentlength>4096</D:getcontentlength><D:getlastmodified>Wed, 28 Oct 2026 10:00:00 GMT</D:getlastmodified></D:prop></D:propstat>
+      </D:response>
+      <D:response><D:href>/dav/B/fedcba9876543210</D:href><D:propstat><D:prop><D:getlastmodified>Thu, 29 Oct 2026 10:00:00 GMT</D:getlastmodified></D:prop></D:propstat></D:response>
+      <D:response><D:href>/dav/B/0123456789ABCDEF</D:href></D:response>
+      <D:response><D:href>/dav/B/%zz</D:href></D:response>
+    </D:multistatus>`;
+  assert.deepEqual(backupsListed(xml), [
+    { name: 'fedcba9876543210', size: 0, when: Date.UTC(2026, 9, 29, 10) },
+    { name: '0123456789abcdef', size: 4096, when: Date.UTC(2026, 9, 28, 10) },
+  ]);
+  assert.deepEqual(backupsListed('<response><href>/x/0123456789abcdef</href></response>'), [{ name: '0123456789abcdef', size: 0, when: 0 }]);
 });
 
 t("sends backups to a server through Tor as the space's Tor way says, waiting for Tor a while", async () => {
