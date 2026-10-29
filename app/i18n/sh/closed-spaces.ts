@@ -3,6 +3,13 @@
 export const closedSpaces: Record<string, string> = {
   'Went through Nostr.': 'Poslano preko Nostra.',
   'Came through Nostr.': 'Stiglo preko Nostra.',
+  'Went through the relay.': 'Poslano preko relaya.',
+  'Came through the relay.': 'Stiglo preko relaya.',
+  'Went to their phone nearby.': 'Poslano na njihov obližnji telefon.',
+  'Came from a phone nearby.': 'Stiglo s obližnjeg telefona.',
+  'Went over LoRa.': 'Poslano preko LoRa.',
+  'Went to the phones nearby, which carry it to their relay.': 'Poslano na obližnje telefone, koji ga nose do njihovog relaya.',
+  'Went to the phones nearby, in case theirs is one of them.': 'Poslano na obližnje telefone, za slučaj da je njihov jedan od njih.',
   '{what} through Nostr, end-to-end encrypted.': '{what} preko Nostra, šifrirano s kraja na kraj.',
   'Took the last text {seconds} s after it was sent, at {time}.': 'Primio je zadnji tekst {seconds} s nakon slanja, u {time}.',
   'Did not take the last text, at {time}. {why}': 'Nije primio zadnji tekst, u {time}. {why}',

@@ -1,4 +1,4 @@
-import { newTag, type Message } from '../lock/history';
+import { newTag, type Message, type Route } from '../lock/history';
 import type { QueueKind, QueuesData } from '../lock/queues-data';
 import { loadCurrentSpaceData, type Queue } from '../lock/space-data';
 import { saveClip } from '../lock/voice-clips';
@@ -452,7 +452,7 @@ async function openHere(link: string | null, packet: Uint8Array, nostr = false):
   if (!link) nearby.dropHeld(packet);
   if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
   const came = cameBefore(chats, received);
-  const changed = await keep(chats, received, nearbyState, nostr);
+  const changed = await keep(chats, received, nearbyState, nostr, link ? 'nearby' : undefined);
   if (came) {
     messageListeners.forEach((listener) => listener(came));
     if (came.group) await takeGroupSignal(came.identity, came.group, came.request).catch(() => undefined);
@@ -509,7 +509,7 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
         received = { ...received, request: false };
       }
       const came = cameBefore(chats, received);
-      changed = (await keep(chats, received, state)) || changed;
+      changed = (await keep(chats, received, state, false, 'relay')) || changed;
       if (came) messageListeners.forEach((listener) => listener(came));
       if (received.kind === 'message' && received.group) await takeGroupSignal(received.identity, received.group, received.request).catch(() => undefined);
       return tookOf(received);
@@ -661,7 +661,7 @@ export function cameBefore({ history, voiceParts }: SpaceChats, received: Receiv
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
 // One that came already, from their account and again from one of their endpoints, or through the
 // phone and again directly (docs/multi-device.md), is kept once, and said to have come once.
-async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State, nostr = false): Promise<boolean> {
+async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received, { receipts, answers }: State, nostr = false, route?: Route): Promise<boolean> {
   if (received.kind === 'refused') return false;
   const peer = `${CONTACT_PREFIX}${received.identity}`;
   const { identity, tag, timer } = received;
@@ -675,7 +675,7 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
   const add = async (message: Partial<Message>) => {
     if (twice) return;
     // One sent without sound that waits for its time keeps it, for its notice then (lib/background.ts).
-    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.quiet && shows > at ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}), ...message });
+    await history.add({ peer, text: '', mine: false, at: shows, tag: tag || newTag(), lasts: timer, ...(received.quiet && shows > at ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : route ? { route } : {}), ...message });
     // A message request hears nothing back, not even that its message came, until accepted.
     if (tag && !received.request) {
       if (hidden) await e2e.hold(identity, 'got', [tag]);
@@ -716,8 +716,8 @@ async function keep({ e2e, history, voiceParts }: SpaceChats, received: Received
 }
 
 /** Keeps what one message brought as the receiver does, in chats with their own run of looks (`state`): a hidden place's; `nostr` when it came there. Says whether anything changed. */
-export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState, nostr = false): Promise<boolean> {
-  return keep(chats, received, state, nostr);
+export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState, nostr = false, route?: Route): Promise<boolean> {
+  return keep(chats, received, state, nostr, route);
 }
 
 /** Keeps what one message brought as the receiver does, with what is to be said back (`receipts`), as the checks do. */

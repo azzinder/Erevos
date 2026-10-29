@@ -1426,7 +1426,7 @@ Tor, invece che dal tuo relay. Ogni spazio ha la sua scelta, e i suoi relay Nost
   testo.
 - **Che cosa resta sul tuo relay:** chiamate, reazioni, e i segni che un messaggio è arrivato o è stato letto; e quello che scrivi ai contatti su iPhone o su computer, che non leggono su Nostr. Immagini, file e messaggi vocali passano dal tuo relay quando ce n’è uno tra voi; senza relay tra voi passano anche da Nostr (vedi Senza alcun relay).
 - **Da che parte è passato:** tieni premuto un messaggio: il suo menu dice **Inviato tramite Nostr** o **Arrivato
-  tramite Nostr** quando l’ha preso un relay Nostr. Uno che non dice nulla è passato dal tuo relay, o da vicino. Anche
+  tramite Nostr** quando l’ha preso un relay Nostr. D’ora in poi dice anche **Inviato tramite il relay**, **Arrivato tramite il relay**, **Inviato al suo telefono vicino**, **Arrivato da un telefono vicino** o **Inviato tramite LoRa**; un messaggio precedente non dice nulla. Anche
   la nota sotto i messaggi dice **Inviato
   tramite Nostr**. Due telefoni uno accanto all’altro si danno i testi prima da vicino: per provare Nostr, disattiva il
   Bluetooth e **Trova Erevos sulla stessa rete Wi-Fi** su entrambi.

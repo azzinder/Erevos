@@ -3,6 +3,13 @@
 export const closedSpaces: Record<string, string> = {
   'Went through Nostr.': 'Über Nostr gesendet.',
   'Came through Nostr.': 'Über Nostr gekommen.',
+  'Went through the relay.': 'Über das Relay gesendet.',
+  'Came through the relay.': 'Über das Relay gekommen.',
+  'Went to their phone nearby.': 'An ihr Telefon in der Nähe gesendet.',
+  'Came from a phone nearby.': 'Von einem Telefon in der Nähe gekommen.',
+  'Went over LoRa.': 'Über LoRa gesendet.',
+  'Went to the phones nearby, which carry it to their relay.': 'An die Telefone in der Nähe gesendet, die es zu ihrem Relay bringen.',
+  'Went to the phones nearby, in case theirs is one of them.': 'An die Telefone in der Nähe gesendet, falls ihres eins davon ist.',
   '{what} through Nostr, end-to-end encrypted.': '{what}: über Nostr, Ende-zu-Ende-verschlüsselt.',
   'Took the last text {seconds} s after it was sent, at {time}.': 'Hat den letzten Text {seconds} s nach dem Senden angenommen, um {time}.',
   'Did not take the last text, at {time}. {why}': 'Hat den letzten Text nicht angenommen, um {time}. {why}',

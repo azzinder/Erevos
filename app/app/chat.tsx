@@ -126,7 +126,7 @@ import { setOpenHiddenPlace, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { giveLinkedName } from '../lib/linked-name';
 import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/sealed-contacts';
 import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
-import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts } from '../lock/history';
+import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
@@ -1414,7 +1414,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     if (!link) nearby.dropHeld(packet);
     if (received.kind === 'message' && link) nearby.heardOn(received.identity, link);
-    handle(received, nostr);
+    handle(received, nostr, link ? 'nearby' : undefined);
     await sendReceipts(relayTarget());
   };
 
@@ -1878,7 +1878,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // Someone whose SMS invite was answered here: a contact at once, not a message request.
         const inviter = !hiddenKey && received.kind === 'message' && received.added ? await linkInviter(e2e, received.identity).catch(() => null) : null;
         if (inviter && received.kind === 'message') received = { ...received, request: false };
-        handle(received);
+        handle(received, false, 'relay');
         if (inviter && active) {
           setNote(
             inviter.number
@@ -2109,7 +2109,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [e2e, loaded]);
 
   // What one message from the relay, or from a phone nearby, brings.
-  function handle(received: Awaited<ReturnType<E2E['receive']>>, nostr = false) {
+  function handle(received: Awaited<ReturnType<E2E['receive']>>, nostr = false, route?: Route) {
     if (!e2e) return;
     if (received.kind === 'refused') {
       if (received.reason === 'plain') setNote(t('A message that was not end-to-end encrypted came, and was not shown.'));
@@ -2144,7 +2144,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
     // What else it is: an answer to one of the chat's messages, a sticker.
     // One sent without sound that waits for its time keeps it, for its notice then (lib/background.ts).
-    const parts: { quiet?: boolean } & Parts = { ...(received.quiet && shows > Date.now() ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : {}) };
+    const parts: { quiet?: boolean } & Parts = { ...(received.quiet && shows > Date.now() ? { quiet: true } : {}), ...(received.re ? { re: received.re } : {}), ...contentOf(received.more), ...(nostr ? { nostr: true } : route ? { route } : {}) };
     // Put together while the history does not hold it, from what came before too, and kept once
     // whole, as the receiver does (lib/receiver.ts).
     if (received.voice && !(received.tag && history.current?.has(peer, received.tag))) {
@@ -2977,6 +2977,22 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // What the note under the messages says once something went (`what`: Sent, Voice message sent…).
+  // What a message keeps of the way it went (lock/history.ts Parts).
+  function wayParts(way: Delivery): Pick<Parts, 'nostr' | 'route'> {
+    return way === 'nostr' ? { nostr: true } : { route: way };
+  }
+
+  // Where a message's menu says it went or came, when this phone knows.
+  function wayLine(m: Message): string | undefined {
+    if (m.nostr) return m.mine ? t('Went through Nostr.') : t('Came through Nostr.');
+    if (m.route === 'relay') return m.mine ? t('Went through the relay.') : t('Came through the relay.');
+    if (m.route === 'nearby') return m.mine ? t('Went to their phone nearby.') : t('Came from a phone nearby.');
+    if (m.route === 'lora') return t('Went over LoRa.');
+    if (m.route === 'carried') return t('Went to the phones nearby, which carry it to their relay.');
+    if (m.route === 'spread') return t('Went to the phones nearby, in case theirs is one of them.');
+    return undefined;
+  }
+
   function sentNote(way: Delivery, what: string, name: string): string {
     if (way === 'nearby') return t('{what} nearby, end-to-end encrypted.', { what });
     if (way === 'relay') return t('{what} through the relay, end-to-end encrypted.', { what });
@@ -3066,7 +3082,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return sendToContact(null, identity, text, { ...extra, more: withoutPreview(carried) }, true);
       });
       shown();
-      addMessage(to, text, true, tag, timer, undefined, undefined, 0, Date.now(), bare ? { ...answer, ...withoutPreview(carried) } : parts);
+      addMessage(to, text, true, tag, timer, undefined, undefined, 0, Date.now(), { ...(bare ? { ...answer, ...withoutPreview(carried) } : parts), ...wayParts(way) });
       const sent = sentNote(way, quiet ? t('Sent without sound') : t('Sent'), label(to, contacts));
       const said = timer ? t('{sent} It disappears from both phones {time} after it is read.', { sent, time: timerLabel(timer) }) : sent;
       setNote(bare ? `${said} ${t('It went without the link’s preview, which is too much for LoRa.')}` : said);
@@ -3532,7 +3548,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const sealed = await e2e.sealVoice(identity, audio, ms, ownQueue?.senderHex ?? '', { lasts, at: here(), talk, re: parts.re, forwarded, tag: sealedAs });
       // In hidden chats, owed to their phone should it take it only later; a walkie-talkie message is for now only.
       const way = await handOver(e2e, relayTarget(), identity, sealed, sealed.packets, 'message', true, !!hiddenKey && !talk);
-      addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), parts);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, await saveClip(audio, ms), undefined, 0, Date.now(), { ...parts, ...wayParts(way) });
       setReplying(null);
       // Writing to a message request accepts it.
       setContacts(e2e.contacts());
@@ -6415,7 +6431,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           visible={menuFor !== null && shown}
           onClose={() => setMenuFor(null)}
           line={menuFor ? messageLine(menuFor) : ''}
-          way={menuFor?.nostr ? (menuFor.mine ? t('Went through Nostr.') : t('Came through Nostr.')) : undefined}
+          way={menuFor ? wayLine(menuFor) : undefined}
           reaction={menuFor?.myReaction}
           onReact={menuFor && theyHave(menuFor) ? (emoji) => void react(menuFor, emoji) : undefined}
           actions={menuFor ? menuActions(menuFor) : []}

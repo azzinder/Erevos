@@ -1508,8 +1508,7 @@ Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte übe
   das einen Text annimmt, genügt.
 - **Was auf deinem Relay bleibt:** Anrufe, Reaktionen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde; und was du Kontakten auf einem iPhone oder einem Computer schreibst, die nicht auf Nostr lesen. Bilder, Dateien und Sprachnachrichten gehen über dein Relay, wenn eines zwischen euch ist; ohne Relay zwischen euch gehen sie auch über Nostr (siehe Ganz ohne Relay).
 - **Welchen Weg sie ging:** Halte eine Nachricht gedrückt: Ihr Menü sagt **Über Nostr gesendet** oder
-  **Über Nostr gekommen**, wenn ein Nostr-Relay sie angenommen hat. Eine, die nichts sagt, ging über dein Relay oder in
-  der Nähe. Der Hinweis unter den Nachrichten sagt auch **Gesendet: über Nostr**. Zwei Telefone nebeneinander geben
+  **Über Nostr gekommen**, wenn ein Nostr-Relay sie angenommen hat. Von jetzt an sagt es auch **Über das Relay gesendet**, **Über das Relay gekommen**, **An ihr Telefon in der Nähe gesendet**, **Von einem Telefon in der Nähe gekommen** oder **Über LoRa gesendet**; eine ältere Nachricht sagt nichts. Der Hinweis unter den Nachrichten sagt auch **Gesendet: über Nostr**. Zwei Telefone nebeneinander geben
   sich Texte zuerst in der Nähe: Um Nostr auszuprobieren, schalte auf beiden Bluetooth und
   **Erevos im selben WLAN finden** aus.
 - **Was die Relays zuletzt taten:** Der Bildschirm **Nostr** zeigt für jedes Relay, ob es den letzten Text, den es

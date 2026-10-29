@@ -398,7 +398,7 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
     try {
       const received = await chats.e2e.receive(bytes, kind === 'own' ? { onOwn: here.queue.senderHex } : { old: kind !== undefined });
       const came = cameBefore(chats, received);
-      await keepWith(chats, received, state);
+      await keepWith(chats, received, state, false, 'relay');
       if (came) await heard(run, chats, came);
       if (received.kind === 'message' && received.group) await groups.signal(received.identity, received.group, received.request).catch(() => undefined);
       return tookOf(received);

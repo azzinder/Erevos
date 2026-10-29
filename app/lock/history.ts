@@ -73,9 +73,14 @@ export type Kept = [
  * text asks it), with `a`, the options we chose, and `b`, theirs; `w`, the preview of the link in
  * its words, as its sender made it; `d` 1 when it was forwarded from another chat; `t` 1 when it
  * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
- * last edited (this phone's clock).
+ * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr.
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route };
+
+/** The way a message went or came, as the phone knew it (lib/nearby.ts Delivery): this phone only. */
+export type Route = 'relay' | 'nearby' | 'spread' | 'carried' | 'lora';
+const ROUTES: readonly string[] = ['relay', 'nearby', 'spread', 'carried', 'lora'];
+export const isRoute = (v: unknown): v is Route => typeof v === 'string' && ROUTES.includes(v);
 
 /** Each chat's messages, oldest first. */
 export type HistoryData = { chats: Record<string, Kept[]> };
@@ -128,6 +133,8 @@ export type Parts = {
   forwarded?: boolean;
   /** Came or went through Nostr (lib/nostr-chats.ts), whether through the relay too or not: on this phone only. */
   nostr?: boolean;
+  /** The way it went or came, besides Nostr: shown in its menu, on this phone only. */
+  route?: Route;
   /** When its sender last edited its words (milliseconds, this phone's clock). */
   edited?: number;
 };
@@ -135,7 +142,7 @@ export type Parts = {
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, edited }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -150,6 +157,7 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(preview ? { w: preview } : {}),
     ...(forwarded ? { d: 1 as const } : {}),
     ...(nostr ? { t: 1 as const } : {}),
+    ...(route ? { v: route } : {}),
     ...(edited ? { e: edited } : {}),
   };
 }
@@ -169,6 +177,7 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.w ? { preview: more.w } : {}),
     ...(more?.d ? { forwarded: true } : {}),
     ...(more?.t ? { nostr: true } : {}),
+    ...(more?.v ? { route: more.v } : {}),
     ...(more?.e ? { edited: more.e } : {}),
   };
 }
@@ -206,7 +215,7 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
@@ -230,6 +239,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(preview ? { w: preview } : {}),
     ...(v.d === 1 ? { d: 1 as const } : {}),
     ...(v.t === 1 ? { t: 1 as const } : {}),
+    ...(isRoute(v.v) ? { v: v.v } : {}),
     ...(count(v.e) ? { e: count(v.e) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;

@@ -1298,7 +1298,7 @@ through your relay. Each space has its own choice, and its own Nostr relays.
   most. Your contacts are told the relays you read on, and write to you there; one that takes a text is enough.
 - **What stays on your relay:** calls, reactions, and the marks that a message came or was read; and what you write to contacts on an iPhone or a computer, which do not read on Nostr. Pictures, files and voice messages go through your relay when one is between you; with no relay between you they go through Nostr too (see With no relay at all).
 - **Which way it went:** hold a message: its menu says **Went through Nostr** or **Came through Nostr** when a Nostr
-  relay took it. One that says nothing went through your relay, or nearby. The note under the messages says **Sent
+  relay took it. From now on it also says **Went through the relay**, **Came through the relay**, **Went to their phone nearby**, **Came from a phone nearby** or **Went over LoRa**; a message from before says nothing. The note under the messages says **Sent
   through Nostr** too. Two phones side by side give each other texts nearby first: to try Nostr, turn off Bluetooth and
   **Find Erevos on the same Wi-Fi** on both.
 - **What the relays did last:** the **Nostr** screen shows, for each relay, whether it took the last text it was given

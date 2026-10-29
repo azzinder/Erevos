@@ -237,6 +237,25 @@ t('keeps that a message came or went through Nostr, on this phone', async () => 
   assert.equal((await History.open('space', 1, key)).messages()[0].nostr, undefined);
 });
 
+t('keeps the way a message went or came, and drops one of an unknown way', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: 'contact:aa', text: 'one', mine: true, at: 1, tag: newTag(), route: 'relay' });
+  await history.add({ peer: 'contact:aa', text: 'two', mine: false, at: 2, tag: newTag(), route: 'nearby' });
+  await history.add({ peer: 'contact:aa', text: 'three', mine: true, at: 3, tag: newTag() });
+  assert.deepEqual(
+    (await History.open('space', 0, key)).messages().map((m) => [m.text, m.route]),
+    [
+      ['one', 'relay'],
+      ['two', 'nearby'],
+      ['three', undefined],
+    ],
+  );
+  const raw = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await raw.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { v: 'bluetooth' }]] } });
+  assert.equal((await History.open('space', 1, key)).messages()[0].route, undefined);
+});
+
 t('keeps the sticker or the place a message is, and drops one of the wrong shape', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

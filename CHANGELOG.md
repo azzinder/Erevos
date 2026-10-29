@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- **Every message says which way it went**: hold a message and its menu says whether it went or came through the relay,
+  through Nostr, to a phone nearby or over LoRa. Messages from before say nothing.
 - **More battery saved in the background, if you choose** (Android): under **Settings** → **Notifications** →
   **In the background**, **Only the waste** stays the default. **And nearby phones** also turns off the radios for
   phones nearby (Bluetooth, Wi-Fi Aware, Wi-Fi Direct and the same Wi-Fi) while Erevos is in the background, so a

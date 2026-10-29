@@ -1362,7 +1362,7 @@ preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
   Vašim kontaktima se javljaju relayi na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
 - **Šta ostaje na vašem relayu:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg relaya kad je jedan između vas; bez relaya između vas idu i preko Nostra (pogledajte Bez ikakvog relaya).
 - **Kojim je putem išla:** zadržite prst na poruci: njen meni kaže **Poslano preko Nostra** ili **Stiglo preko
-  Nostra** kad ju je preuzeo neki Nostr relay. Poruka koja ništa ne kaže išla je preko vašeg relaya, ili u blizini.
+  Nostra** kad ju je preuzeo neki Nostr relay. Od sada kaže i **Poslano preko relaya**, **Stiglo preko relaya**, **Poslano na njihov obližnji telefon**, **Stiglo s obližnjeg telefona** ili **Poslano preko LoRa**; starija poruka ne kaže ništa.
   I napomena ispod poruka kaže **Poslano preko Nostra**. Dva telefona jedan pored drugog prvo predaju jedan drugom
   tekstove u blizini: da isprobate Nostr, isključite Bluetooth i **Pronađi Erevos na istoj Wi-Fi mreži** na oba.
 - **Što su relayi zadnje učinili:** ekran **Nostr** za svaki relay pokazuje je li preuzeo posljednji tekst koji je

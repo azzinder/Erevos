@@ -1396,7 +1396,7 @@ vez de pelo seu relay. Cada espaço tem a sua própria escolha, e os seus própr
   aceite um texto.
 - **O que fica no seu relay:** chamadas, reações, e as marcas de que uma mensagem chegou ou foi lida; e o que você escreve para contatos num iPhone ou num computador, que não leem no Nostr. Imagens, arquivos e mensagens de voz vão pelo seu relay quando há um entre vocês; sem relay entre vocês, vão também pelo Nostr (veja Sem nenhum relay).
 - **Por onde foi:** segure uma mensagem: o menu dela diz **Foi pelo Nostr** ou **Veio pelo Nostr** quando um relay
-  Nostr a pegou. Uma que não diz nada foi pelo seu relay, ou por perto. A nota abaixo das mensagens também diz
+  Nostr a pegou. De agora em diante ela também diz **Foi pelo relay**, **Veio pelo relay**, **Foi para o telefone dele por perto**, **Veio de um telefone por perto** ou **Foi por LoRa**; uma mensagem de antes não diz nada. A nota abaixo das mensagens também diz
   **Enviada pelo Nostr**. Dois celulares lado a lado trocam textos por perto primeiro: para testar o Nostr, desligue o
   Bluetooth e **Encontrar Erevos na mesma rede Wi-Fi** nos dois.
 - **O que os relays fizeram por último:** a tela **Nostr** mostra, para cada relay, se ele aceitou o último texto que

@@ -3,6 +3,13 @@
 export const closedSpaces: Record<string, string> = {
   'Went through Nostr.': 'Πήγε μέσω Nostr.',
   'Came through Nostr.': 'Ήρθε μέσω Nostr.',
+  'Went through the relay.': 'Πήγε μέσω του relay.',
+  'Came through the relay.': 'Ήρθε μέσω του relay.',
+  'Went to their phone nearby.': 'Πήγε στο κοντινό τηλέφωνό τους.',
+  'Came from a phone nearby.': 'Ήρθε από κοντινό τηλέφωνο.',
+  'Went over LoRa.': 'Πήγε μέσω LoRa.',
+  'Went to the phones nearby, which carry it to their relay.': 'Πήγε στα κοντινά τηλέφωνα, που το πηγαίνουν στο relay τους.',
+  'Went to the phones nearby, in case theirs is one of them.': 'Πήγε στα κοντινά τηλέφωνα, μήπως είναι ένα από αυτά το δικό τους.',
   '{what} through Nostr, end-to-end encrypted.': '{what} μέσω Nostr, κρυπτογραφημένο από άκρη σε άκρη.',
   'Took the last text {seconds} s after it was sent, at {time}.': 'Πήρε το τελευταίο κείμενο {seconds} δευτ. μετά την αποστολή, στις {time}.',
   'Did not take the last text, at {time}. {why}': 'Δεν πήρε το τελευταίο κείμενο, στις {time}. {why}',

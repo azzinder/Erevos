@@ -1475,7 +1475,7 @@ via Tor, au lieu de passer par ton relais. Chaque espace a son propre choix, et 
   texte suffit.
 - **Ce qui reste sur ton relais :** les appels, réactions, et les marques qu’un message est arrivé ou a été lu ; et ce que tu écris à des contacts sur un iPhone ou un ordinateur, qui ne lisent pas sur Nostr. Les images, fichiers et messages vocaux passent par ton relais quand il y en a un entre vous ; sans relais entre vous, ils passent aussi par Nostr (voir Sans aucun relais).
 - **Par où il est passé :** appuie longuement sur un message : son menu dit **Envoyé par Nostr** ou **Arrivé par Nostr**
-  quand un relais Nostr l’a pris. Un message qui ne dit rien est passé par ton relais, ou à proximité. La note sous les
+  quand un relais Nostr l’a pris. Désormais il dit aussi **Envoyé par le relais**, **Arrivé par le relais**, **Envoyé à son téléphone proche**, **Arrivé d’un téléphone proche** ou **Envoyé par LoRa** ; un message plus ancien ne dit rien. La note sous les
   messages dit aussi **Envoyé par Nostr**. Deux téléphones côte à côte se donnent d’abord les textes à proximité : pour
   essayer Nostr, désactive le Bluetooth et **Trouver Erevos sur le même Wi-Fi** sur les deux.
 - **Ce que les relais ont fait en dernier :** l’écran **Nostr** montre, pour chaque relais, s’il a pris le dernier texte

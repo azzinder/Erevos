@@ -1405,7 +1405,7 @@ de por tu relay. Cada espacio tiene su propia elección, y sus propios relays de
   mucho. A tus contactos se les dicen los relays en los que lees, y te escriben ahí; basta con uno que acepte un texto.
 - **Lo que se queda en tu relay:** llamadas, reacciones, y las marcas de que un mensaje llegó o se leyó; y lo que escribes a contactos en un iPhone o un ordenador, que no leen en Nostr. Las imágenes, los archivos y los mensajes de voz van por tu relay cuando hay uno entre vosotros; sin relay entre vosotros van también por Nostr (ver Sin ningún relay).
 - **Por dónde fue:** mantén pulsado un mensaje: su menú dice **Enviado por Nostr** o **Llegó por Nostr** cuando un relay
-  de Nostr lo aceptó. Uno que no dice nada fue por tu relay, o de cerca. La nota bajo los mensajes también dice
+  de Nostr lo aceptó. Desde ahora también dice **Enviado por el relay**, **Llegó por el relay**, **Enviado a su teléfono cercano**, **Llegó de un teléfono cercano** o **Enviado por LoRa**; un mensaje anterior no dice nada. La nota bajo los mensajes también dice
   **Enviado por Nostr**. Dos teléfonos uno al lado del otro se dan los textos de cerca primero: para probar Nostr,
   desactiva Bluetooth y **Buscar Erevos en la misma Wi-Fi** en los dos.
 - **Lo último que hicieron los relays:** la pantalla de **Nostr** muestra, para cada relay, si aceptó el último texto
