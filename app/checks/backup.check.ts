@@ -7,8 +7,9 @@ import { test } from 'node:test';
 import { encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
 import { SmsLink } from '../lib/sms-link';
 import { backupKey, backupName, backupPhoneSms, hardBackupKey, makeBackup, newBackupHard, NotABackupError, openBackup, padme, restoreBackup, WrongBackupPasswordError } from '../lock/backup';
-import { cloudFolder, CloudError, loadCloudBackup, sendToCloud, setCloudHttp, startCloudBackup, stopCloudBackup } from '../lib/backup-cloud';
-import { setThroughTor } from '../lib/relay';
+import { cloudFolder, CloudError, cloudThroughTor, loadCloudBackup, sendToCloud, setCloudHttp, setCloudTorWait, startCloudBackup, stopCloudBackup } from '../lib/backup-cloud';
+import { setCore, type Core } from '../lib/core';
+import { setThroughTor, setTorReady } from '../lib/relay';
 import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
@@ -30,7 +31,7 @@ import { blobs, files } from './files-memory';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
 
-useWasmCore();
+const wasmCore = useWasmCore();
 // Argon2id at a small cost, so the many unlocks here run quick; its full cost has its own check.
 setHardCost({ m: 64, t: 1 });
 
@@ -329,20 +330,28 @@ test('Padmé sizes add at most 12%, and grow with what they hold', () => {
   }
 });
 
-t('sends automatic backups to a WebDAV folder under random names, keeps the newest there, and sends none while a space sends Everything through Tor', async () => {
+// A WebDAV folder at https://cloud.example/dav/Backups/, for user `me` with the password `password()`.
+function davServer(there: Map<string, Uint8Array>, password: () => string, asked: string[] = []) {
+  return (method: string, url: string, headers: Record<string, string>, body?: Uint8Array): { status: number; bytes: Uint8Array } => {
+    const said = (status: number, bytes: Uint8Array = new Uint8Array(0)) => ({ status, bytes });
+    asked.push(`${method} ${url}`);
+    if (headers.Authorization !== `Basic ${Buffer.from(`me:${password()}`).toString('base64')}`) return said(401);
+    if (!url.startsWith('https://cloud.example/dav/Backups/')) return said(404);
+    const name = url.slice('https://cloud.example/dav/Backups/'.length);
+    if (method === 'PROPFIND') return said(207);
+    if (method === 'PUT') return there.set(name, body!), said(201);
+    if (method === 'DELETE') return said(there.delete(name) ? 204 : 404);
+    if (method === 'GET') return there.has(name) ? said(200, there.get(name)) : said(404);
+    return said(405);
+  };
+}
+
+t('sends automatic backups to a WebDAV folder under random names, keeps the newest there, and sends none while a space sends Everything through Tor and has no Tor for it', async () => {
   const asked: string[] = [];
   const there = new Map<string, Uint8Array>();
   let password = 'app-pass';
-  setCloudHttp(async (method, url, headers, body) => {
-    asked.push(`${method} ${url}`);
-    if (headers.Authorization !== `Basic ${Buffer.from(`me:${password}`).toString('base64')}`) return 401;
-    if (!url.startsWith('https://cloud.example/dav/Backups/')) return 404;
-    const name = url.slice('https://cloud.example/dav/Backups/'.length);
-    if (method === 'PROPFIND') return 207;
-    if (method === 'PUT') return there.set(name, body!), 201;
-    if (method === 'DELETE') return there.delete(name) ? 204 : 404;
-    return 405;
-  });
+  const server = davServer(there, () => password, asked);
+  setCloudHttp(async (method, url, headers, body) => server(method, url, headers, body));
   try {
     assert.equal(cloudFolder(' https://cloud.example/dav/Backups '), 'https://cloud.example/dav/Backups/');
     assert.throws(() => cloudFolder('http://cloud.example/dav'), CloudError);
@@ -370,7 +379,7 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     assert.match(failed.error, /did not take/);
     assert.equal(failed.last, 4);
 
-    // A space that sends Everything through Tor sends nothing straight to a server.
+    // A space that sends Everything through Tor sends nothing straight to a server, in a build without Tor.
     password = 'app-pass';
     asked.length = 0;
     setThroughTor('all');
@@ -383,4 +392,68 @@ t('sends automatic backups to a WebDAV folder under random names, keeps the newe
     await stopCloudBackup();
   }
   assert.equal(await loadCloudBackup(), null);
+});
+
+t("sends backups to a server through Tor as the space's Tor way says, waiting for Tor a while", async () => {
+  const there = new Map<string, Uint8Array>();
+  const server = davServer(there, () => 'app-pass');
+  const heads: { method: string; url: string; headers: Record<string, string> }[] = [];
+  setCore({
+    torRequest: async () => new Uint8Array(0),
+    torHttp: async (head: string, body: Uint8Array) => {
+      const asked = JSON.parse(head) as { method: string; url: string; headers: Record<string, string> };
+      heads.push(asked);
+      const { status, bytes } = server(asked.method, asked.url, asked.headers, body);
+      return new Uint8Array([status >> 8, status & 0xff, ...bytes]);
+    },
+  } as unknown as Core);
+  const straight: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    straight.push(String(url));
+    return new Response(null, { status: 201 });
+  }) as typeof fetch;
+  setCloudTorWait(50);
+  try {
+    // Everything: through Tor, even while it is not ready yet (after the wait).
+    setThroughTor('all');
+    assert.ok(cloudThroughTor());
+    let cloud = await startCloudBackup('https://cloud.example/dav/Backups', 'me', 'app-pass');
+    await phone();
+    const key = await backupKey('backup-pass');
+    cloud = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 1);
+    assert.equal(cloud.error, '');
+    assert.equal(there.size, 1);
+    assert.deepEqual(
+      heads.map((head) => head.method),
+      ['PROPFIND', 'PUT'],
+    );
+    assert.deepEqual(straight, []);
+
+    // Messages: straight while Tor is not ready, through Tor once it is, and a backup waits for it.
+    setThroughTor('messages');
+    assert.equal(cloudThroughTor(), false);
+    cloud = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 2);
+    assert.equal(straight.length, 1);
+    setCloudTorWait(5_000);
+    setTimeout(() => setTorReady(true), 20);
+    cloud = await sendToCloud(cloud, await makeBackup(key, null, true), 3, 3);
+    assert.equal(cloud.error, '');
+    assert.equal(straight.length, 1);
+    assert.equal(heads.at(-1)?.method, 'PUT');
+    assert.ok(cloudThroughTor());
+
+    // Nothing: straight.
+    setThroughTor('off');
+    assert.equal(cloudThroughTor(), false);
+    await sendToCloud(cloud, await makeBackup(key, null, true), 9, 4);
+    assert.equal(straight.length, 2);
+  } finally {
+    globalThis.fetch = realFetch;
+    setTorReady(false);
+    setThroughTor('off');
+    setCloudTorWait(120_000);
+    setCore(wasmCore);
+    await stopCloudBackup();
+  }
 });

@@ -322,6 +322,23 @@ export function onTorReady(listener: () => void): () => void {
   };
 }
 
+/**
+ * Waits up to `ms` for Tor to be ready while the space sends anything through it, as a backup to a
+ * server does (lib/backup-cloud.ts): just after a space opens, Tor is still starting.
+ */
+export function waitForTor(ms: number): Promise<void> {
+  if (torWay === 'off' || torReady) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      stop();
+      clearTimeout(timer);
+      resolve();
+    };
+    const stop = onTorReady(done);
+    const timer = setTimeout(done, ms);
+  });
+}
+
 /** Whether every relay request goes through Tor, files too (the way 'all'). */
 export function throughTor(): boolean {
   return torWay === 'all';

@@ -19,8 +19,6 @@ export const cloudBackup: Record<string, string> = {
   'User name': 'Benutzername',
   "Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.":
     'Am besten ein App-Passwort nur für Erevos, aus den Sicherheitseinstellungen des Servers: Du kannst es dort zurücknehmen, ohne dein eigenes zu ändern.',
-  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
-    'Jedes automatische Backup kann auch in einen Ordner auf einem Server deiner Wahl gehen, etwa deiner Nextcloud, über WebDAV. Der Server bekommt zufällige Bytes unter einem zufälligen Namen: Er kann sie nicht öffnen und nicht erkennen, dass sie von Erevos sind. Er sieht aber dein Konto, deine Adresse, wann eines kommt und ungefähr wie groß es ist. Nichts geht los, bis du einen hinzufügst.',
   'Add a server': 'Server hinzufügen',
   'That is not a folder address. It starts with https://': 'Das ist keine Ordneradresse. Sie beginnt mit https://',
   'The address has to start with https://, so the password and backups go encrypted.': 'Die Adresse muss mit https:// beginnen, damit Passwort und Backups verschlüsselt gehen.',
@@ -30,6 +28,12 @@ export const cloudBackup: Record<string, string> = {
   'The server has no room left for it.': 'Der Server hat keinen Platz mehr dafür.',
   'The server answered {status}.': 'Der Server antwortete {status}.',
   'Could not reach the server. {error}': 'Der Server war nicht erreichbar. {error}',
-  'This space sends Everything through Tor, and backups to a server do not go through Tor yet, so none was sent.':
-    'Dieser Bereich sendet Alles über Tor, und Backups auf einen Server gehen noch nicht über Tor, also wurde keines gesendet.',
+  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.":
+    "Jedes automatische Backup kann auch in einen Ordner auf einem Server deiner Wahl gehen, etwa deiner Nextcloud, über WebDAV. Der Server bekommt zufällige Bytes unter einem zufälligen Namen: Er kann sie nicht öffnen und nicht erkennen, dass sie von Erevos sind. Er sieht aber dein Konto, wann eines kommt und ungefähr wie groß es ist, und deine Adresse, außer das Backup geht über Tor, wie die Tor-Einstellung des Bereichs sagt. Nichts geht los, bis du einen hinzufügst.",
+  "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
+    "Dieser Bereich sendet Alles über Tor, und Tor kann hier keinen Server erreichen, also ging nichts dorthin.",
+  "Through Tor: the server does not see your address.":
+    "Über Tor: Der Server sieht deine Adresse nicht.",
+  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
+    "Gerade nicht über Tor: Der Server sieht deine Adresse. Tor findest du unter Einstellungen → Relay und Netze → Tor.",
 };

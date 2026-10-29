@@ -20,8 +20,6 @@ export const cloudBackup: Record<string, string> = {
   'User name': 'Όνομα χρήστη',
   "Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.":
     'Καλύτερα ένας κωδικός εφαρμογής μόνο για το Erevos, από τις ρυθμίσεις ασφαλείας του server: τον παίρνεις πίσω από εκεί χωρίς να αλλάξεις τον δικό σου.',
-  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
-    'Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, τη διεύθυνσή σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.',
   'Add a server': 'Προσθήκη server',
   'That is not a folder address. It starts with https://': 'Αυτό δεν είναι διεύθυνση φακέλου. Αρχίζει με https://',
   'The address has to start with https://, so the password and backups go encrypted.':
@@ -32,6 +30,12 @@ export const cloudBackup: Record<string, string> = {
   'The server has no room left for it.': 'Ο server δεν έχει άλλο χώρο γι’ αυτό.',
   'The server answered {status}.': 'Ο server απάντησε {status}.',
   'Could not reach the server. {error}': 'Δεν βρέθηκε ο server. {error}',
-  'This space sends Everything through Tor, and backups to a server do not go through Tor yet, so none was sent.':
-    'Αυτός ο χώρος στέλνει τα Όλα μέσω Tor, και τα αντίγραφα σε server δεν πηγαίνουν ακόμα μέσω Tor, οπότε δεν στάλθηκε κανένα.',
+  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.":
+    "Κάθε αυτόματο αντίγραφο μπορεί να πηγαίνει και σε έναν φάκελο σε server που διαλέγεις εσύ, όπως το Nextcloud σου, μέσω WebDAV. Ο server παίρνει τυχαία bytes με τυχαίο όνομα: δεν μπορεί να τα ανοίξει ούτε να καταλάβει ότι είναι του Erevos. Βλέπει όμως τον λογαριασμό σου, πότε έρχεται ένα και περίπου πόσο μεγάλο είναι, και τη διεύθυνσή σου, εκτός αν το αντίγραφο πηγαίνει μέσω Tor, όπως λέει η ρύθμιση Tor του χώρου. Τίποτα δεν στέλνεται μέχρι να προσθέσεις server.",
+  "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
+    "Αυτός ο χώρος στέλνει τα Όλα μέσω Tor, και το Tor εδώ δεν μπορεί να φτάσει σε server, οπότε δεν πήγε τίποτα.",
+  "Through Tor: the server does not see your address.":
+    "Μέσω Tor: ο server δεν βλέπει τη διεύθυνσή σου.",
+  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
+    "Όχι μέσω Tor τώρα: ο server βλέπει τη διεύθυνσή σου. Το Tor είναι στις Ρυθμίσεις → Relay και δίκτυα → Tor.",
 };

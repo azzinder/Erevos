@@ -1,6 +1,8 @@
+import { canTorHttp } from './core';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { t } from './i18n';
-import { throughTor } from './relay';
+import { netHttp, type HttpMethod } from './net-http';
+import { throughTor, torFor, waitForTor } from './relay';
 import { secureDelete, secureGet, secureSet } from './secure';
 
 // Automatic backups (lib/backup-folder.ts) sent to a server too, when the owner wants it: a folder
@@ -11,9 +13,14 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // What the server gets is a bare backup (lock/backup.ts): random bytes to look at, of one of
 // Padmé's sizes, sealed with the backup's password, which never leaves the phone. Its name is
 // random too, so neither the file nor its name says it is Erevos's, and the server keeps the KEEP
-// newest, as the folder does. The server still sees the account, the phone's address, when one
-// comes and roughly how big it is. Backups go to it straight, not through Tor (Erevos has no Tor
-// for a server of this kind yet): so a space set to send Everything through Tor sends none.
+// newest, as the folder does. The server still sees the account, when one comes and roughly how
+// big it is, and the phone's address unless the backup goes through Tor.
+//
+// On Android backups go as the open space's Tor way says (Settings → Relay and networks → Tor),
+// through lib/net-http.ts, as Matrix's and the other networks' files do: with Everything only
+// through Tor, and none when Tor cannot reach the server; with Messages through Tor while it is
+// ready, straight when it is not or fails; with Nothing straight. Just after a space opens Tor is
+// still starting, so a backup first waits for it a while (TOR_WAIT_MS).
 //
 // The settings are kept in the keystore entry CLOUD, outside every space and out of backups, as
 // automatic backups' own are, with the names of the backups sent, oldest first.
@@ -30,25 +37,33 @@ export type CloudBackup = {
 
 const CLOUD = 'erevos.backup-cloud';
 
-/** Answers of the server: its status, as `fetch` gives. The checks put a server of their own here. */
-export type CloudHttp = (method: string, url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<number>;
+/** A server's answer: its status and what it said. */
+export type CloudAnswer = { status: number; bytes: Uint8Array };
 
-const viaFetch: CloudHttp = async (method, url, headers, body) => {
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body as unknown as BodyInit | undefined,
-  });
-  // Read to the end, so the connection is let go.
-  await response.text().catch(() => '');
-  return response.status;
-};
+/** How a request goes to the server. The checks put a server of their own here. */
+export type CloudHttp = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<CloudAnswer>;
 
-let http = viaFetch;
+const viaNet: CloudHttp = (method, url, headers, body) => netHttp(method, url, headers, body);
 
-/** For the checks: a server of their own, or fetch again with null. */
+let http = viaNet;
+
+/** For the checks: a server of their own, or the usual way again with null. */
 export function setCloudHttp(next: CloudHttp | null): void {
-  http = next ?? viaFetch;
+  http = next ?? viaNet;
+}
+
+// How long a backup waits for Tor to start, milliseconds, before it goes as the Tor way says
+// without it: one made as a space opens comes before Tor is ready.
+let torWaitMs = 120_000;
+
+/** For the checks: how long to wait for Tor. */
+export function setCloudTorWait(ms: number): void {
+  torWaitMs = ms;
+}
+
+/** Whether backups to a server go through Tor now, as the open space's Tor way and Tor's state say. */
+export function cloudThroughTor(): boolean {
+  return canTorHttp() && torFor(false);
 }
 
 export class CloudError extends Error {}
@@ -83,7 +98,10 @@ function statusText(status: number): string | null {
   return t('The server answered {status}.', { status });
 }
 
-async function ask(method: string, url: string, headers: Record<string, string>, body?: Uint8Array): Promise<number> {
+async function ask(method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array): Promise<CloudAnswer> {
+  // Erevos sends nothing straight while the open space sends everything through Tor.
+  if (throughTor() && !canTorHttp()) throw new CloudError(t('This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.'));
+  if (canTorHttp()) await waitForTor(torWaitMs);
   try {
     return await http(method, url, headers, body);
   } catch (error) {
@@ -93,11 +111,6 @@ async function ask(method: string, url: string, headers: Record<string, string>,
       }),
     );
   }
-}
-
-// Erevos sends nothing straight while the open space sends everything through Tor.
-function notThroughTor() {
-  if (throughTor()) throw new CloudError(t('This space sends Everything through Tor, and backups to a server do not go through Tor yet, so none was sent.'));
 }
 
 export async function loadCloudBackup(): Promise<CloudBackup | null> {
@@ -122,13 +135,14 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
  * the folder is there and takes the user name and password. Throws CloudError with why not.
  */
 export async function startCloudBackup(address: string, user: string, password: string): Promise<CloudBackup> {
-  notThroughTor();
   const url = cloudFolder(address);
   const said = statusText(
-    await ask('PROPFIND', url, {
-      ...authorization({ user, password }),
-      Depth: '0',
-    }),
+    (
+      await ask('PROPFIND', url, {
+        ...authorization({ user, password }),
+        Depth: '0',
+      })
+    ).status,
   );
   if (said) throw new CloudError(said);
   const before = await loadCloudBackup();
@@ -158,16 +172,18 @@ export async function stopCloudBackup(): Promise<void> {
 export async function sendToCloud(cloud: CloudBackup, bytes: Uint8Array, keep: number, now = Date.now()): Promise<CloudBackup> {
   let next: CloudBackup;
   try {
-    notThroughTor();
     const name = toHex(randomBytes(8));
-    const said = statusText(await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes));
+    const said = statusText((await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes)).status);
     if (said) throw new CloudError(said);
     const names = [...cloud.names, name];
     const old = names.slice(0, Math.max(0, names.length - keep));
     const left: string[] = [];
     for (const gone of old) {
       // One already gone is gone; one the server would not delete is tried again next time.
-      const status = await ask('DELETE', cloud.url + gone, authorization(cloud)).catch(() => 0);
+      const status = await ask('DELETE', cloud.url + gone, authorization(cloud)).then(
+        (answer) => answer.status,
+        () => 0,
+      );
       if (status !== 404 && statusText(status)) left.push(gone);
     }
     next = {

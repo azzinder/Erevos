@@ -19,8 +19,6 @@ export const cloudBackup: Record<string, string> = {
   'User name': 'Korisničko ime',
   "Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.":
     'Najbolje lozinka aplikacije samo za Erevos, iz sigurnosnih postavki servera: tamo je možete povući bez mijenjanja svoje.',
-  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.":
-    'Svaka automatska rezervna kopija može ići i u folder na serveru koji izaberete, kao vaš Nextcloud, preko WebDAV-a. Server dobija nasumične bajtove pod nasumičnim imenom: ne može ih otvoriti niti znati da su Erevosovi. Ipak vidi vaš nalog, vašu adresu, kad jedna stigne i otprilike koliko je velika. Ništa ne ide dok ne dodate server.',
   'Add a server': 'Dodaj server',
   'That is not a folder address. It starts with https://': 'To nije adresa foldera. Počinje sa https://',
   'The address has to start with https://, so the password and backups go encrypted.': 'Adresa mora počinjati sa https://, da lozinka i rezervne kopije idu šifrovane.',
@@ -30,6 +28,12 @@ export const cloudBackup: Record<string, string> = {
   'The server has no room left for it.': 'Server nema više mjesta za nju.',
   'The server answered {status}.': 'Server je odgovorio {status}.',
   'Could not reach the server. {error}': 'Server nije dostupan. {error}',
-  'This space sends Everything through Tor, and backups to a server do not go through Tor yet, so none was sent.':
-    'Ovaj prostor šalje Sve preko Tora, a rezervne kopije na server još ne idu preko Tora, pa nijedna nije poslana.',
+  "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.":
+    "Svaka automatska rezervna kopija može ići i u folder na serveru koji izaberete, kao vaš Nextcloud, preko WebDAV-a. Server dobija nasumične bajtove pod nasumičnim imenom: ne može ih otvoriti niti znati da su Erevosovi. Ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika, i vašu adresu, osim ako kopija ide preko Tora, kako kaže Tor postavka prostora. Ništa ne ide dok ne dodate server.",
+  "This space sends Everything through Tor, and Tor here cannot reach a server, so nothing went to it.":
+    "Ovaj prostor šalje Sve preko Tora, a Tor ovdje ne može doći do servera, pa ništa nije otišlo.",
+  "Through Tor: the server does not see your address.":
+    "Preko Tora: server ne vidi vašu adresu.",
+  "Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.":
+    "Trenutno ne preko Tora: server vidi vašu adresu. Tor je u Postavke → Relay i mreže → Tor.",
 };

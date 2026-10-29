@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Backups to your own server through Tor** (Android): automatic backups sent to a WebDAV server now go as the
+  space's choice under **Settings** → **Relay and networks** → **Tor** says, as Matrix does: with Everything only
+  through Tor, with Messages through Tor once it is ready and straight while it starts or when it fails, with Nothing
+  straight. Before, a space sending Everything through Tor sent none. A backup made as Erevos opens first waits up to
+  two minutes for Tor, and **To a server too** says whether the server sees the phone's address now.
 - **Media, links and files in groups too**: in a group's details, a list of its photos, videos, voice messages,
   music, files and links, each kind apart under its months, with a calendar, as in a contact's chat. A tap opens or
   plays; held, each goes to its message.
@@ -333,9 +338,9 @@ On main, not released yet:
   sealed with the backup's password, which never leaves the phone; it has no Erevos header, its few header numbers are
   masked, it is padded inside the seal to a Padmé size, and it goes under a random name, so the file looks like random
   bytes and says neither that it is Erevos's nor exactly how much it holds. The server keeps the 3 newest. It still
-  sees the account, the phone's address, when one comes and roughly how big it is. Not through Tor yet: while a space
-  sends Everything through Tor, none goes. Restore by downloading one and choosing it under **Restore a backup**;
-  Erevos from before this version does not open such a file. Google Drive is left out on purpose.
+  sees the account, when one comes and roughly how big it is, and, without Tor, the phone's address. Restore by
+  downloading one and choosing it under **Restore a backup**; Erevos from before this version does not open such a
+  file. Google Drive is left out on purpose.
 
 - **Erevos on a computer keeps running with its window closed**: closing its window quit it, so nothing came, and no
   call rang, until it was opened again, and while it ran nothing told of a message outside its window. It now stays in

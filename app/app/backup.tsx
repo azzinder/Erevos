@@ -5,7 +5,9 @@ import { MIN_BACKUP_PASSWORD, PasswordSheet } from '../components/PasswordSheet'
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
-import { cloudLabel, loadCloudBackup, startCloudBackup, stopCloudBackup, type CloudBackup } from '../lib/backup-cloud';
+import { cloudLabel, cloudThroughTor, loadCloudBackup, startCloudBackup, stopCloudBackup, type CloudBackup } from '../lib/backup-cloud';
+import { canTor } from '../lib/core';
+import { onTorReady } from '../lib/relay';
 import {
   CAN_AUTO_BACKUP,
   CAN_BACK_UP,
@@ -93,6 +95,9 @@ export default function Backups() {
     void loadCloudBackup().then(setCloud);
     void backsUpSms().then(setSmsToo);
   }, []);
+  // Whether backups to the server go through Tor changes as Tor becomes ready.
+  const [, setTorTick] = useState(0);
+  useEffect(() => onTorReady(() => setTorTick((n) => n + 1)), []);
 
   if (!CAN_BACK_UP) {
     return (
@@ -376,6 +381,13 @@ export default function Backups() {
                   {cloud.last ? t('Last one sent {when}.', { when: whenText(cloud.last) }) : t('None sent yet.')}{' '}
                   {t('Each automatic backup goes there too, and the server keeps the {n} newest.', { n: KEEP })}
                 </Text>
+                {canTor() ? (
+                  <Text variant="caption" tone="muted" style={hint}>
+                    {cloudThroughTor()
+                      ? t('Through Tor: the server does not see your address.')
+                      : t('Not through Tor now: the server sees your address. Tor is under Settings → Relay and networks → Tor.')}
+                  </Text>
+                ) : null}
                 {cloud.error ? (
                   <Text variant="caption" color={colors.danger} style={hint}>
                     {t('The last one did not go: {error} Erevos tries again next time it opens.', { error: cloud.error })}
@@ -405,7 +417,7 @@ export default function Backups() {
               <>
                 <Text variant="caption" tone="muted" style={hint}>
                   {t(
-                    "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, your address, when one comes and roughly how big it is. Nothing goes until you add one.",
+                    "Each automatic backup can also go to a folder on a server you choose, such as your Nextcloud, over WebDAV. The server gets random bytes under a random name: it cannot open them or tell they are Erevos's. It still sees your account, when one comes and roughly how big it is, and your address unless the backup goes through Tor, as the space's Tor setting says. Nothing goes until you add one.",
                   )}
                 </Text>
                 <Row wrap>

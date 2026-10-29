@@ -2,12 +2,13 @@ import { canTorHttp, torHttp } from './core';
 import { t } from './i18n';
 import { throughTor, torFor } from './relay';
 
-// HTTPS for the other networks' files (lib/nostr-files.ts, lib/xmpp-files.ts) and the relay's Matrix
-// push gateway (lib/matrix-push.ts): through Tor as the space's Tor way says, as their chats go.
+// HTTPS for the other networks' files (lib/nostr-files.ts, lib/xmpp-files.ts), the relay's Matrix
+// push gateway (lib/matrix-push.ts) and backups to a server (lib/backup-cloud.ts): through Tor as
+// the space's Tor way says, as their chats go.
 // With Messages, straight while Tor is not ready or when it fails; with Everything, only through
 // Tor. In the web app and on a computer, straight.
 
-export type HttpMethod = 'GET' | 'PUT' | 'POST';
+export type HttpMethod = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PROPFIND';
 export type HttpAnswer = { status: number; bytes: Uint8Array; reason?: string };
 export type Http = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array) => Promise<HttpAnswer>;
 
