@@ -155,7 +155,8 @@ A Matrix call opens Element Call (Element's call app, AGPL-3.0, from the npm pac
 - **The server.** The second address needs its own DNS name and certificate, served with the
   headers of `deploy/web/install.sh` (which makes both Caddy sites); the app's address answers 404
   for `/element-call/`, and `deploy.sh` checks that it does. `release.mjs verify` checks the files
-  of both addresses. A release is made for its two addresses: `publish.sh` and `deploy.sh` refuse
+  of both addresses; a second address that gives no release yet (not set up) only gets a warning,
+  as Matrix calls cannot start from it. A release is made for its two addresses: `publish.sh` and `deploy.sh` refuse
   one made for others, and `release.sh` makes one for yours (`--origin`, `--call-origin`).
 
 What remains:

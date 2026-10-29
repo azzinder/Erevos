@@ -14,7 +14,9 @@
 //       Checks a release, in a folder or as a server serves it: the signature, every file's hash,
 //       and that the service worker carries the key. From a server, Element Call's files
 //       (/element-call/) are read from the release's second origin (`origins.call`), which must
-//       give the same release.json, release.sig and service worker. Anyone can run it.
+//       give the same release.json, release.sig and service worker; one that gives no release at
+//       all (not set up yet) is only warned of, as Matrix calls cannot start from it. Anyone can
+//       run it.
 //
 // The passphrase can also come from EREVOS_RELEASE_PASSPHRASE (for tests; on your own computer,
 // typing it is better).
@@ -122,14 +124,22 @@ async function verifyRelease(from, keyFile = PUBLIC) {
   const release = JSON.parse(body);
   const wrong = [];
   // Element Call's origin, where its frame comes from: its worker checks the same release there.
-  const call = /^https?:\/\//.test(from) && release.origins ? release.origins.call : from;
+  // A server not set up for it yet gives no release there: the app is still served as signed, and
+  // Element Call cannot start from an address that gives nothing, so that is told, not failed.
+  let call = /^https?:\/\//.test(from) && release.origins ? release.origins.call : from;
   if (call !== from) {
-    for (const name of ['release.json', 'release.sig', 'sw.js']) {
-      const there = await read(call, name).catch(() => null);
-      if (!there || !there.equals(await read(from, name))) wrong.push(`${call}/${name} (not the same as ${from}'s)`);
+    if (!(await read(call, 'release.json').catch(() => null))) {
+      console.error(`WARNING: ${call} gives no release, so Matrix calls in the web app cannot start yet: serve it as deploy/web/install.sh does (pwa/README.md, Matrix calls). Element Call's files were not checked.`);
+      call = null;
+    } else {
+      for (const name of ['release.json', 'release.sig', 'sw.js']) {
+        const there = await read(call, name).catch(() => null);
+        if (!there || !there.equals(await read(from, name))) wrong.push(`${call}/${name} (not the same as ${from}'s)`);
+      }
     }
   }
   for (const [name, hash] of Object.entries(release.files)) {
+    if (call === null && name.startsWith('/element-call/')) continue;
     const bytes = await read(name.startsWith('/element-call/') ? call : from, name.slice(1));
     if (createHash('sha256').update(bytes).digest('hex') !== hash) wrong.push(name);
     if (name === '/sw.js' && !bytes.toString().includes(`'${raw.toString('base64')}'`)) wrong.push('/sw.js (another key)');
