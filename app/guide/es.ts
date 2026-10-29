@@ -1552,6 +1552,8 @@ ningún puente se pone en medio.
   escribas, cada uno invitado a unirse, como lo crea Element; todos en él ven quiénes son los demás. **Unirse a un
   grupo** entra en uno por su dirección, como #name:matrix.org. Un grupo público puede no estar cifrado, y entonces su
   pantalla lo dice. En un grupo, **Invitar** invita a otra persona, si el grupo te deja.
+  Al escribir **@** en un grupo aparecen sus miembros; un mensaje nombra a quienes se escriben enteros, y sus apps se lo
+  avisan.
 - **Cifrado:** los mensajes van cifrados de extremo a extremo con el cifrado propio de Matrix (Olm y Megolm, a través
   de vodozemac). Un chat sin cifrar lo dice.
 - **No anónimo:** el servidor de Matrix ve tu cuenta, quién habla con quién y cuándo, y, sin Tor, desde dónde. En un

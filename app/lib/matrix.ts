@@ -1140,8 +1140,14 @@ export async function sendToDevicePlain(state: MatrixState, type: string, to: Re
 }
 
 /** Sends `text` to a room, encrypted when the room is. Answers the message as it now shows. */
-export function sendText(state: MatrixState, roomId: string, text: string): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text });
+export function sendText(state: MatrixState, roomId: string, text: string, mentions: string[] = []): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...mentionsOf(mentions) });
+}
+
+/** Who a message names (m.mentions), so their apps tell them of it, as Element does; inside the encryption in an encrypted room. */
+function mentionsOf(userIds: string[]): Json {
+  const named = [...new Set(userIds.filter(isMatrixId))].slice(0, 32);
+  return named.length ? { 'm.mentions': { user_ids: named } } : {};
 }
 
 /** Sends a message's content to a room, encrypted when the room is. */
@@ -1161,8 +1167,8 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
 }
 
 /** Answers the message `replyTo` with `text`. */
-export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } } });
+export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string, mentions: string[] = []): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } }, ...mentionsOf(mentions) });
 }
 
 /** Reacts to a message with `key`, an emoji; once only. */

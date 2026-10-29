@@ -1662,6 +1662,8 @@ Element: Keine Brücke sitzt dazwischen.
   **Einer Gruppe beitreten** tritt einer Gruppe über ihre Adresse bei, etwa #name:matrix.org. Eine öffentliche Gruppe
   ist vielleicht nicht verschlüsselt, und ihr Bildschirm sagt es dann. In einer Gruppe lädt **Einladen** jemand anderen
   ein, wenn die Gruppe es dir erlaubt.
+  Wer in einer Gruppe **@** tippt, bekommt ihre Mitglieder angeboten; eine Nachricht nennt die ganz Geschriebenen, und
+  deren Apps sagen es ihnen.
 - **Verschlüsselung:** Nachrichten sind Ende-zu-Ende-verschlüsselt, mit Matrix' eigener Verschlüsselung (Olm und
   Megolm, über vodozemac). Ein nicht verschlüsselter Chat sagt es.
 - **Nicht anonym:** Der Matrix-Server sieht dein Konto, wer mit wem spricht und wann, und ohne Tor auch, von wo. In

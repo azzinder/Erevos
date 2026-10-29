@@ -1541,6 +1541,8 @@ fica no meio.
   escrever, cada um convidado a entrar, como o Element cria um; todos nele veem quem são os outros. **Entrar num
   grupo** entra em um pelo endereço, como #name:matrix.org. Um grupo público pode não ser criptografado, e então a
   tela dele diz isso. Num grupo, **Convidar** convida outra pessoa, se o grupo deixar.
+  Ao digitar **@** num grupo aparecem os membros; uma mensagem cita quem foi escrito por inteiro, e os apps dessas
+  pessoas avisam.
 - **Criptografia:** as mensagens são criptografadas de ponta a ponta com a criptografia do próprio Matrix (Olm e
   Megolm, pelo vodozemac). Uma conversa sem criptografia avisa.
 - **Não anônimo:** o servidor Matrix vê sua conta, quem fala com quem e quando, e, sem Tor, de onde. Numa conversa com

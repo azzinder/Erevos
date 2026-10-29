@@ -1505,6 +1505,8 @@ između.
   pozvan da uđe, kako je pravi Element; svi u njoj vide ko su ostali. **Pridruži se grupi** ulazi u grupu po njenoj adresi,
   kao #name:matrix.org. Javna grupa možda nije šifrovana, i tada to kaže njen ekran. U grupi, **Pozovi** poziva nekog
   drugog, ako vam grupa to dozvoljava.
+  Kad u grupi otkucate **@**, nude se njeni članovi; poruka imenuje one napisane cijele, i njihove aplikacije im to
+  jave.
 - **Šifrovanje:** poruke su šifrovane s kraja na kraj Matrixovim vlastitim šifrovanjem (Olm i Megolm, kroz
   vodozemac). Razgovor koji nije šifrovan to kaže.
 - **Nije anonimno:** Matrix server vidi vaš račun, ko s kim razgovara i kada, i, bez Tora, odakle. U razgovoru s

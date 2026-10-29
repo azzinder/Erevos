@@ -57,8 +57,9 @@ On main, not released yet:
   Conversations sends one, and plays with **Play**. See [XMPP](#xmpp).
 - **Matrix groups from Erevos**: **New group** on the Matrix screen (`createGroup` in `lib/matrix.ts`: `private_chat`,
   its name, Megolm from the start, the IDs written invited, at most 50), **Join a group** by `#alias:server` or room
-  ID, and **Invite** in a group's chat (`inviteToRoom`; the homeserver refuses it for one who may not). See
-  [Matrix](#matrix).
+  ID, and **Invite** in a group's chat (`inviteToRoom`; the homeserver refuses it for one who may not). Typing **@** in
+  a group offers its members (`lib/mentions.ts`), and a message names those written whole in `m.mentions`, inside the
+  encryption, so Element and others tell them. See [Matrix](#matrix).
 - **The panic button on a computer and on Sailfish OS**: **Settings** → **Privacy and security** → **Panic button**
   wipes Erevos there too. The shell does it (`/__wipe`, `desktop/main.js` and `sailfish/src/shellserver.cpp`, behind
   the page's token as every shell path): the keystore, the sealed files, the page's own storage and the rest of the

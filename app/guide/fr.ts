@@ -1630,6 +1630,8 @@ Element : aucun pont ne se met entre les deux.
   écris, chacun invité à le rejoindre, comme Element en crée un ; chacun y voit qui sont les autres. **Rejoindre un
   groupe** en rejoint un par son adresse, comme #name:matrix.org. Un groupe public peut ne pas être chiffré, et son
   écran le dit alors. Dans un groupe, **Inviter** invite quelqu’un d’autre, si le groupe te le permet.
+  Taper **@** dans un groupe propose ses membres ; un message nomme ceux écrits en entier, et leurs applis les
+  préviennent.
 - **Chiffrement :** les messages sont chiffrés de bout en bout avec le chiffrement propre à Matrix (Olm et Megolm, par
   vodozemac). Une discussion non chiffrée le dit.
 - **Pas anonyme :** le serveur Matrix voit ton compte, qui parle avec qui et quand, et, sans Tor, d’où. Dans une

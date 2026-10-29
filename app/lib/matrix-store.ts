@@ -440,18 +440,18 @@ export async function matrixSignOut(): Promise<void> {
   if (it.holder === 'space') await followDoor(it.space, it.key).catch(() => undefined);
 }
 
-export function matrixSend(roomId: string, text: string): Promise<void> {
+export function matrixSend(roomId: string, text: string, mentions: string[] = []): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
-    await sendText(it.state, roomId, text);
+    await sendText(it.state, roomId, text, mentions);
   });
 }
 
 /** Answers a message of the room with `text`. */
-export function matrixReply(roomId: string, text: string, replyTo: string): Promise<void> {
+export function matrixReply(roomId: string, text: string, replyTo: string, mentions: string[] = []): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
-    await sendReply(it.state, roomId, text, replyTo);
+    await sendReply(it.state, roomId, text, replyTo, mentions);
   });
 }
 

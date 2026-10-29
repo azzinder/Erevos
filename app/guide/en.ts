@@ -1435,6 +1435,7 @@ between.
   each asked to join, as Element makes one; everyone in it sees who the others are. **Join a group** joins one by its
   address, such as #name:matrix.org. A public group may not be encrypted, and its screen then says so. In a group,
   **Invite** asks someone else to join, if the group lets you.
+  Typing **@** in a group offers its members; a message names those written whole, so their apps tell them of it.
 - **Encryption:** messages are end-to-end encrypted with Matrix's own encryption (Olm and Megolm, through vodozemac).
   A chat that is not encrypted says so.
 - **Not anonymous:** the Matrix server sees your account, who talks with whom and when, and, without Tor, from where.
