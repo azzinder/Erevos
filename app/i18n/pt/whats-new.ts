@@ -327,4 +327,6 @@ export const whatsNew: Record<string, string> = {
     "**Um contato apagado não volta mais por um pedido antigo**: num grupo, um membro cujo link de contato você pediu, ou que pediu o seu, e que depois você apagou como contato antes de o Erevos olhar o relay de novo, podia ser adicionado outra vez por esse pedido antigo. Agora apagá-lo larga o pedido na hora. Veja [Conversas em grupo](#groups).",
   "**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr).":
     "**Cada mensagem diz por onde foi**: segure uma mensagem e o menu dela diz se foi ou veio pelo relay, pelo Nostr, por um telefone por perto ou por LoRa. As mensagens de antes não dizem nada. Veja [Pelo Nostr](#nostr).",
+  "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
+    "**O filtro de spam lê as palavras como elas aparecem**: um SMS de golpe que troca uma letra por uma parecida de outro alfabeto, ou esconde numa palavra uma marca que não se vê, já não o engana. Veja [SMS](#sms).",
 };

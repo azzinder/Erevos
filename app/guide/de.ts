@@ -1920,6 +1920,7 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
   kommt, da sie erscheint, bevor Erevos geöffnet wird. Jede Unterhaltung in **Spam**, im Ordner und oben in der
   Unterhaltung, sagt, warum sie dort ist: Die Nummer ist blockiert, du hast sie markiert, deine Regel nennt den
   Absender, eine Nummer aus dem Ausland, dein Wort oder ein Link und welche Worte.
+- **Ähnlich aussehende Buchstaben:** Eine Betrugs-SMS, die einen Buchstaben gegen einen gleich aussehenden eines anderen Alphabets tauscht, etwa ein kyrillisches а in einem lateinischen Wort, oder ein unsichtbares Zeichen in ein Wort steckt, kommt nicht am Filter vorbei: Er liest die Wörter, wie sie aussehen. Wer sendet, wird nie so verglichen, denn ein Absender, der einem erlaubten ähnlich sieht, ist nicht dieser Absender.
 - **Regeln zu Absendern:** Unter **Spamfilter** nimmt **Absender** den Namen eines Absenders, wie Läden und Banken ihn
   senden (Buchstaben, ohne Akzente oder Groß- und Kleinschreibung), oder eine Nummer, wobei \`*\` für alles steht:
   \`+4470*\` ist jede Nummer, die so beginnt, \`1234*\` jede Kurzwahl, die so beginnt, und mit bekannter Landesvorwahl

@@ -57,6 +57,26 @@ export function plainText(text: string): string {
   return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+// Letters of other scripts that look like Latin ones, and marks that show nothing: a scammer swaps them
+// into words to get past a filter ("pаypal" with a Cyrillic а, "gift\u200bcard").
+const INVISIBLE = /[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0]/g;
+const LOOKS_LIKE: Record<string, string> = {
+  а: 'a', с: 'c', е: 'e', о: 'o', р: 'p', х: 'x', у: 'y', к: 'k', м: 'm', н: 'h', т: 't', і: 'i', ї: 'i', ј: 'j', ѕ: 's', ԁ: 'd', ӏ: 'l', һ: 'h', ԛ: 'q', ԝ: 'w',
+  ο: 'o', α: 'a', ν: 'v', ρ: 'p', υ: 'u', ι: 'i', κ: 'k', χ: 'x', τ: 't', γ: 'y', ω: 'w', η: 'n',
+};
+
+/**
+ * Words as the spam filter compares them (spamWords): plainText, and besides, no marks that show
+ * nothing, full-width and other styled letters as plain ones, and Cyrillic and Greek letters that
+ * look like Latin ones as those. Applied to the text and to every rule alike, so a Greek rule still
+ * finds Greek words. Never used to tell who sent an SMS: a sender that looks like an allowed one is
+ * not that sender.
+ */
+export function lookAlike(text: string): string {
+  const folded = text.normalize('NFKD').replace(INVISIBLE, '');
+  return plainText(folded).replace(/[^\x00-\x7f]/g, (c) => LOOKS_LIKE[c] ?? c);
+}
+
 const hasLink = (text: string) => splitLinks(text).some((part) => part.url);
 
 /**
@@ -79,12 +99,12 @@ export type SpamReason =
  * link with words that try to fool, or any link when `links` is on. Null when it does not.
  */
 export function spamWords(text: string, words: string[], links: boolean, number: boolean): SpamReason | null {
-  const plain = plainText(text);
-  const word = words.find((w) => plainText(w) && plain.includes(plainText(w)));
+  const plain = lookAlike(text);
+  const word = words.find((w) => lookAlike(w) && plain.includes(lookAlike(w)));
   if (word) return { kind: 'word', word };
   if (!number || !hasLink(text)) return null;
   if (links) return { kind: 'link' };
-  const phrase = SPAM_PHRASES.find((p) => plain.includes(p));
+  const phrase = SPAM_PHRASES.find((p) => plain.includes(lookAlike(p)));
   return phrase ? { kind: 'phrase', phrase } : null;
 }
 

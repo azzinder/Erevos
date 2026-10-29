@@ -1796,6 +1796,7 @@ Erevos no muestra nada.
   aviso sigue diciendo «New message» cuando llega spam, ya que se muestra antes de abrir Erevos. Cada conversación en
   **Spam**, en la carpeta y arriba de la conversación, dice por qué está ahí: el número está bloqueado, lo marcaste, tu
   regla nombra al remitente, un número del extranjero, tu palabra, o un enlace y qué palabras.
+- **Letras que se parecen:** un SMS de estafa que cambia una letra por otra de otro alfabeto que se ve igual, como una а cirílica en una palabra latina, o esconde dentro de una palabra una marca que no se ve, no pasa el filtro: lee las palabras como se ven. Quién envía nunca se compara así, porque un remitente parecido a uno permitido no es ese remitente.
 - **Reglas sobre quién envía:** en **Filtro de spam**, **Remitentes** acepta el nombre de un remitente, como los que
   envían las tiendas y los bancos (letras, sin distinguir tildes ni mayúsculas), o un número, donde \`*\` vale por
   cualquier cosa: \`+4470*\` es cualquier número que empiece así, \`1234*\` cualquier código corto que lo haga, y con tu

@@ -1817,6 +1817,7 @@ nulla.
   aperto. Ogni conversazione in **Spam**, nella cartella e in cima alla conversazione, dice perché è lì: il numero è
   bloccato, l’hai segnato tu, una tua regola nomina il mittente, un numero dall’estero, una tua parola, o un link e
   quali parole.
+- **Lettere che si somigliano:** un SMS truffa che cambia una lettera con una di un altro alfabeto che sembra uguale, come una а cirillica in una parola latina, o nasconde in una parola un segno che non si vede, non supera il filtro: legge le parole come appaiono. Chi invia non si confronta mai così, perché un mittente che somiglia a uno consentito non è quel mittente.
 - **Regole su chi invia:** in **Filtro antispam**, **Mittenti** accetta il nome di un mittente, come quelli che usano
   negozi e banche (lettere, senza accenti né maiuscole), o un numero, dove \`*\` sta per qualsiasi cosa: \`+4470*\` è
   ogni numero che inizia così, \`1234*\` ogni numero breve che inizia così, e con il prefisso del tuo paese noto,

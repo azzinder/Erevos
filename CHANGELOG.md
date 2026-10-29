@@ -362,6 +362,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- **The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet
+  (a Cyrillic а in a Latin word), full-width or styled letters, or a mark that shows nothing inside a word, no longer
+  gets past it. Who sends is never compared so.
 - **A contact you delete no longer comes back from an old ask**: in a group, a member you asked for their contact
   link, or who asked for yours, and whom you then deleted as a contact before Erevos looked at the relay again, could
   be added again by that old ask. Deleting them now lets go of it at once.

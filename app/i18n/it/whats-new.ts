@@ -327,4 +327,6 @@ export const whatsNew: Record<string, string> = {
     "**Un contatto eliminato non torna più da una vecchia richiesta**: in un gruppo, un membro di cui avevi chiesto il link di contatto, o che aveva chiesto il tuo, e che poi eliminavi come contatto prima che Erevos guardasse di nuovo il relay, poteva essere aggiunto di nuovo da quella vecchia richiesta. Ora eliminarlo la lascia subito. Vedi [Chat di gruppo](#groups).",
   "**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr).":
     "**Ogni messaggio dice da che parte è passato**: tieni premuto un messaggio e il suo menu dice se è andato o arrivato tramite il relay, tramite Nostr, da un telefono vicino o tramite LoRa. I messaggi di prima non dicono nulla. Vedi [Tramite Nostr](#nostr).",
+  "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
+    "**Il filtro dello spam legge le parole come appaiono**: un SMS truffa che cambia una lettera con una simile di un altro alfabeto, o nasconde in una parola un segno che non si vede, non lo inganna più. Vedi [SMS](#sms).",
 };

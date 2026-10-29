@@ -24,6 +24,7 @@ import {
   guessHome,
   isAbroad,
   isSpam,
+  lookAlike,
   looksLikeSpam,
   plainText,
   senderMatches,
@@ -73,6 +74,22 @@ test('the filter catches a link with words that try to fool, from an unknown pho
   // The owner's words count from any sender, without accents or case.
   assert.equal(looksLikeSpam('ΠΡΟΣΦΟΡΆ μόνο σήμερα', ['προσφορα'], false, false), true);
   assert.equal(plainText('  Κέρδισες   ΈΝΑ δώρο '), 'κερδισες ενα δωρο');
+});
+
+test('look-alike letters and marks that show nothing do not get past the filter', () => {
+  // A Cyrillic а and о in "your parcel", a zero-width space in "customs fee".
+  assert.equal(looksLikeSpam('Your p\u0430rc\u0435l is held, pay the cust\u043em\u200bs fee https://p.example/x', [], false, true), true);
+  // Full-width and styled letters.
+  assert.equal(looksLikeSpam('ｇｉｆｔ ｃａｒｄ https://p.example/x', [], false, true), true);
+  // Greek rules still find Greek words, and Latin look-alikes of Greek letters in them.
+  assert.equal(looksLikeSpam('Κέρδισες δώρο https://p.example/x', [], false, true), true);
+  assert.equal(looksLikeSpam('K\u03b5ρδισες δωρο https://p.example/x', [], false, true), true);
+  assert.equal(looksLikeSpam('kepδisec doρo https://p.example/x', [], false, true), false);
+  // The owner's words too, with a look-alike in the text.
+  assert.equal(looksLikeSpam('Fr\u0435e entry', ['free'], false, false), true);
+  assert.equal(lookAlike('p\u0430yp\u0430l'), 'paypal');
+  // Who sends is never compared so: a look-alike of an allowed sender is not that sender.
+  assert.equal(senderMatches('p\u0430ypal', 'paypal'), false);
 });
 
 test('spam is a blocked number, a marked one, or one the filter caught; never a contact, one answered or a group', () => {

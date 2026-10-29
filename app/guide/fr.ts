@@ -1888,6 +1888,7 @@ téléphone sans Erevos n’affiche rien.
   elle s’affiche avant qu’Erevos soit ouvert. Chaque conversation dans **Spam**, dans le dossier et en haut de la
   conversation, dit pourquoi elle est là : le numéro est bloqué, tu l’as marqué, ta règle nomme l’expéditeur, un numéro
   de l’étranger, ton mot, ou un lien et quels mots.
+- **Lettres qui se ressemblent :** un SMS d’arnaque qui remplace une lettre par une autre d’un autre alphabet qui lui ressemble, comme un а cyrillique dans un mot latin, ou cache dans un mot une marque qu’on ne voit pas, ne passe pas le filtre : il lit les mots comme ils se voient. L’expéditeur n’est jamais comparé ainsi, car un expéditeur qui ressemble à un expéditeur autorisé n’est pas celui-ci.
 - **Règles sur qui envoie :** sous **Filtre anti-spam**, **Expéditeurs** accepte un nom d’expéditeur, comme en envoient
   les magasins et les banques (des lettres, sans accents ni majuscules), ou un numéro, où \`*\` remplace n’importe
   quoi : \`+4470*\` désigne tout numéro qui commence ainsi, \`1234*\` tout numéro court qui commence ainsi, et, une fois

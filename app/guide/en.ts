@@ -1659,6 +1659,7 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
   spam comes, as it shows before Erevos is opened. Each conversation in **Spam**, in the folder and at the top of the
   conversation, says why it is there: the number is blocked, you marked it, your rule names the sender, a number from
   abroad, your word, or a link and which words.
+- **Look-alike letters:** a scam text that swaps a letter for one of another alphabet that looks the same, as a Cyrillic а in a Latin word, or hides a mark that shows nothing inside a word, does not get past the filter: it reads the words as they look. Who sends is never compared so, as a look-alike of an allowed sender is not that sender.
 - **Rules on who sends:** under **Spam filter**, **Senders** takes a sender's name, as shops and banks send (letters,
   without accents or case), or a number, where \`*\` stands for anything: \`+4470*\` is every number that starts so,
   \`1234*\` every short code that does, and with your country code known, \`69*\` is every number \`+3069...\` too.

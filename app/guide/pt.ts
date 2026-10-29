@@ -1784,6 +1784,7 @@ mostra nada.
   ainda diz "New message" quando chega spam, pois aparece antes de o Erevos ser aberto. Cada conversa no **Spam**, na
   pasta e no topo da conversa, diz por que está ali: o número está bloqueado, você o marcou, a sua regra nomeia o
   remetente, um número do exterior, a sua palavra, ou um link e quais palavras.
+- **Letras parecidas:** um SMS de golpe que troca uma letra por outra de outro alfabeto que parece igual, como um а cirílico numa palavra latina, ou esconde numa palavra uma marca que não se vê, não passa pelo filtro: ele lê as palavras como elas aparecem. Quem envia nunca é comparado assim, pois um remetente parecido com um permitido não é esse remetente.
 - **Regras sobre quem envia:** em **Filtro de spam**, **Remetentes** aceita o nome de um remetente, como as lojas e os
   bancos enviam (letras, sem acentos nem maiúsculas), ou um número, onde \`*\` vale por qualquer coisa: \`+4470*\` é
   todo número que começa assim, \`1234*\` todo código curto que começa assim, e com o código do seu país conhecido,

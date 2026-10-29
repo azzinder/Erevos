@@ -328,4 +328,6 @@ export const whatsNew: Record<string, string> = {
     "**Obrisan kontakt se više ne vraća starim zahtjevom**: u grupi je član čiji ste kontakt-link tražili, ili koji je tražio vaš, a kojeg ste zatim obrisali kao kontakt prije nego što je Erevos opet pogledao relay, mogao biti ponovo dodan tim starim zahtjevom. Sada ga brisanje odmah ispušta. Pogledajte [Grupni razgovori](#groups).",
   "**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr).":
     "**Svaka poruka kaže kojim je putem išla**: zadržite prst na poruci i njen meni kaže je li otišla ili stigla preko relaya, preko Nostra, preko obližnjeg telefona ili preko LoRa. Starije poruke ne kažu ništa. Pogledajte [Preko Nostra](#nostr).",
+  "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
+    "**Filter za spam čita riječi kako izgledaju**: prevarantska SMS poruka koja zamijeni slovo sličnim slovom iz drugog pisma, ili u riječ sakrije znak koji se ne vidi, više ga ne zavarava. Pogledajte [SMS](#sms).",
 };

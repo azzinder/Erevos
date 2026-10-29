@@ -1733,6 +1733,7 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
   spam, jer se prikazuje prije nego što se Erevos otvori. Svaki razgovor u **Spam**, u folderu i na vrhu razgovora,
   kaže zašto je tamo: broj je blokiran, vi ste ga označili, vaše pravilo navodi pošiljaoca, broj iz inostranstva, vaša
   riječ, ili link i koje riječi.
+- **Slova koja liče:** prevarantska SMS poruka koja zamijeni slovo drugim slovom iz drugog pisma koje izgleda isto, poput ćirilične а u latiničnoj riječi, ili u riječ sakrije znak koji se ne vidi, ne prolazi filter: čita riječi kako izgledaju. Pošiljalac se nikad ne uspoređuje tako, jer pošiljalac koji liči na dopuštenog nije taj pošiljalac.
 - **Pravila o pošiljaocima:** pod **Filter spama**, **Pošiljaoci** prima ime pošiljaoca, kakva šalju trgovine i banke
   (slova, bez dijakritičkih znakova i bez razlike velikih i malih), ili broj, gdje \`*\` znači bilo šta:
   \`+4470*\` je svaki broj koji tako počinje, \`1234*\` svaki kratki broj koji tako počinje, a s poznatim pozivnim

@@ -327,4 +327,6 @@ export const whatsNew: Record<string, string> = {
     "**Μια επαφή που διαγράφεις δεν ξαναγυρίζει από παλιό αίτημα**: σε μια ομάδα, ένα μέλος που ζήτησες τον σύνδεσμο επαφής του, ή που ζήτησε τον δικό σου, και που μετά διέγραψες ως επαφή πριν το Erevos ξανακοιτάξει το relay, μπορούσε να προστεθεί ξανά από εκείνο το παλιό αίτημα. Τώρα η διαγραφή το αφήνει αμέσως. Δες [Ομαδικές συνομιλίες](#groups).",
   "**Every message says which way it went**: hold a message and its menu says whether it went or came through the relay, through Nostr, to a phone nearby or over LoRa. Messages from before say nothing. See [Through Nostr](#nostr).":
     "**Κάθε μήνυμα λέει από πού πέρασε**: κράτα πατημένο ένα μήνυμα και το μενού του λέει αν πήγε ή ήρθε μέσω του relay, μέσω Nostr, από κοντινό τηλέφωνο ή μέσω LoRa. Τα μηνύματα από πριν δεν λένε τίποτα. Δες [Μέσω Nostr](#nostr).",
+  "**The spam filter reads words as they look**: a scam text that swaps a letter for a look-alike of another alphabet, or hides a mark that shows nothing inside a word, no longer gets past it. See [SMS](#sms).":
+    "**Το φίλτρο ανεπιθύμητων διαβάζει τις λέξεις όπως φαίνονται**: ένα μήνυμα απάτης που αλλάζει ένα γράμμα με ένα όμοιο άλλου αλφαβήτου, ή κρύβει μέσα σε μια λέξη ένα σημάδι που δεν φαίνεται, δεν το ξεγελά πια. Δες [SMS](#sms).",
 };
