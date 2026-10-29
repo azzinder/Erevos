@@ -220,13 +220,13 @@ nikad ne prenosi.
 
 | Grupa | Šta sadrži |
 | --- | --- |
-| **Općenito** | **Jezik**, **Ažuriranja** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, i [Ažuriranja](#updates). |
+| **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
-| **Obavijesti** | **U pozadini** (Android): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone). |
-| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second) i [Skriveni razgovori](#hidden). |
+| **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
+| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (Android i web-aplikacija), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
-| **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
-| **Podaci i uređaji** | **Rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
+| **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
+| **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
 | **Za testiranje** | **Test relaya** i **Test radija** (Android). Pogledajte [Ekrani za testiranje](#tests). |
 
 ### Jezik
@@ -611,7 +611,11 @@ povezala ili odvojila uređaj, pitajte je.
 Jedan pored drugog, možete provjeriti i kodovima umjesto čitanja cifara: ispod broja svaki telefon prikazuje QR kod.
 Dodirnite **Fotografirajte njihov kod** i fotografirajte kod na telefonu te osobe, a zatim neka ona učini isto s vašim.
 Kad se podudara, red kaže **Provjereno uživo**. Svaki telefon označava drugi samo po onome što je sam vidio, i ništa
-se ne šalje. Ako kaže da se ne podudara, možda je neko između: ne vjerujte tom razgovoru.
+se ne šalje. Ako kaže da se ne podudara, možda je neko između: ne vjerujte tom razgovoru. **Odaberite fotografiju
+njihovog koda** umjesto toga provjerava fotografiju njihovog koda koju već imate. Oznaka **Provjereno uživo**, s
+datumom, ostaje dok ne dodirnete **Uklonite oznaku**. Ostaje na ovom telefonu, ide s razgovorom kad ulazi u skrivene
+razgovore ili izlazi iz njih, i ne prenosi se na vaše povezane uređaje. Kod iz novijeg Erevosa to kaže: ažurirajte
+Erevos, pa fotografirajte ponovo.
 
 **Zašto:** kod sadrži samo hash vaša dva ključa, redom koji razlikuje dva telefona, pa fotografija vašeg vlastitog
 ekrana ne provjerava ništa, a fotografija koda ne govori ko ste nikome ko već nema oba ključa.
@@ -1503,7 +1507,9 @@ između.
   servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog uređaja; Matrix server bez njega ne može
   zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam poziv
   nikad ne ide preko Tora. Element Call ne dopire ni do jednog trackera. Stariji Matrix pozivi udvoje, kakve pravi
-  FluffyChat, ovdje ne zvone. Sailfish OS nema Matrix pozive.
+  FluffyChat, ovdje ne zvone. Dok je Matrix poziv u toku ili zvoni, drugi poziv, Erevosov vlastiti ili na XMPP-u, ne
+  zvoni i prikazuje se kao propušten, i obrnuto. Na Androidu, Nazad ili napuštanje Erevosa smanjuje prozor poziva
+  iznad drugih aplikacija (slika u slici). Sailfish OS nema Matrix pozive.
 - **U web-aplikaciji i na računaru:** preglednik ili računar jednom pita za kameru i mikrofon; na računaru samo prozor
   poziva može koristiti kameru. Kuda ide zvuk i koji se mikrofon koristi, odlučuje računar ili preglednik. U
   web-aplikaciji Element Call dolazi s druge, vlastite adrese, erevos-call.lphl.nekten.eu, a na računaru iz odvojenog
@@ -2592,6 +2598,8 @@ ne leži nezapečaćeno iznenada.
   izlazite iz njega preko menija te ikone (na Macu, preko njegovog menija). Gdje radna površina ne prikazuje sistemsku
   traku, kao GNOME bez proširenja za to, ponovno pokretanje Erevosa vraća prozor. Kad iz njega izađete, ne prima ništa:
   poruke čekaju na relayu, a poziv se prikazuje kao propušteni poziv kad se otvori.
+- **Pozivi** zvone dok se Erevos vidi, vlastitim zvonom: dva kratka svake 3 sekunde, dok se poziv ne primi ili ne
+  završi.
 - **Dosad testirano** na Linuxu. Verzije za Mac i Windows grade se i otvaraju na GitHubovim računarima, još ne od
   strane neke osobe.
 
@@ -2737,8 +2745,14 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
   **Obavijesti** → **Broj na ikoni** to isključuje. Obavijesti rade preko push servisa Applea, Googlea (Chrome, kao i
   Edge na Androidu, Brave i Opera), Mozille (Firefox) i Microsofta (Edge na Windowsu): preglednik koji koristi neki
   drugi ne može ih uključiti, osim ako onaj ko vodi vaš relay dozvoli njegov push servis. Prostori na različitim
-  relayima dijele obavijesti preglednika: dobija ih samo onaj koji je posljednji otvoren. Zahtjev za razgovor od nekoga
-  novog, preko vašeg linka za kontakt, možda će se prikazati tek kad se Erevos otvori.
+  relayima dijele obavijesti preglednika: dobija ih samo onaj koji je posljednji otvoren. Zahtjev za razgovor od
+  nekoga novog, preko vašeg linka za kontakt, možda će se prikazati tek kad se Erevos otvori. Broj na ikoni prikazuje
+  se i na Macu uz Safarijevo „Dodaj u Dock“, i u web-aplikaciji instaliranoj iz Chromea ili Edgea na Windowsu, macOS-u
+  ili ChromeOS-u. Nikakav natpis **Nova poruka** ne prikazuje se preko Erevosa dok je otvoren na ekranu. Ekran
+  **Obavijesti dok je Erevos zatvoren** kaže kad preglednik ili telefon ne dopuštaju obavijesti i, nakon što ih
+  isključite, kad vaš relay još nije mogao biti obaviješten i možda još šalje poneku: Erevos mu to kaže čim ga može
+  dohvatiti. Kad preglednik promijeni svoju push adresu, ili je push servis odbaci, Erevos sam daje vašem relayu novu
+  kad se vrati na ekran.
 - **Dozvole:** u Erevosu, **Postavke** → **Općenito** → **Dozvole** prikazuje šta preglednik dozvoljava Erevosu: radi
   li s početnog ekrana, obavijesti dok je zatvoren (potrebne kad ih je ovaj prostor uključio), mikrofon za pozive,
   kameru za videopozive i čuva li preglednik Erevosove podatke trajno. Bez toga Safari može obrisati podatke kad na
@@ -2768,13 +2782,18 @@ zapečaćene na isti način.
    lozinka**). Pogledajte ispod zašto je ovdje važno.
 4. Postavite relay i dodajte kontakte kao na telefonu, pogledajte [Razgovor preko relaya](#relay).
 
-- **Šta radi samo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa i SMS. Ista Wi-Fi mreža i ovdje radi, kao na računaru: pogledajte [Razgovor s telefonom u blizini](#nearby). Ostalo je isto: prostori i druga
+- **Šta radi samo Android:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa i SMS. Ista Wi-Fi mreža i ovdje radi, kao na
+  računaru: pogledajte [Razgovor s telefonom u blizini](#nearby). Zaštitni zid (firewall) telefona možda mora
+  propuštati port 47905 (UDP i TCP). Ostalo je isto: prostori i druga
   lozinka, skriveni razgovori, glasovne poruke, uvezeni razgovori i rezervne kopije.
 - **Gdje čuva stvari:** u \`~/.local/share/erevos\` na telefonu, zapečaćene kao na telefonu. Sailfish nema privjesak
   za ključeve za aplikacije, pa se spremište ključeva tamo čuva onakvo kakvo jeste, čitljivo vašem korisniku, a time i
   svakoj aplikaciji koja radi kao vi: zaključavanje lozinkom je ono što ga zapečaćuje.
 - **Rezervne kopije** idu u \`Documents/Erevos\` na telefonu, ručno ili svaki dan; kopirajte ih odatle na memorijsku
   karticu ili drugi uređaj. **Sačuvaj** stavlja fotografiju ili datoteku u Preuzimanja.
+- **Pozivi** zvone dok se Erevos vidi, vlastitim zvonom: dva kratka svake 3 sekunde, a telefon vibrira gdje može, dok
+  se poziv ne primi ili ne završi. Poziv koji stigne prije nego što ste dotakli Erevos otkad se otvorio može se
+  prikazati bez zvuka.
 - **Dok je zatvoren:** s otvorenim prostorom, mali pomoćnik Erevosa čeka na relayu dok Erevos nije na ekranu ili je
   zatvoren, i ne uzima ništa. Obavještenje kaže samo koliko je poruka stiglo, nikad od koga ni šta, a poziv zvoni
   melodijom telefona, kako je profil postavlja, najviše 45 sekundi; dodir na bilo koje od njih otvara Erevos. Skriveni
@@ -2952,7 +2971,7 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
 | **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |
 | **Widget i Telefon (Android)** | Widget, kad se doda, prikazuje koliko ima propuštenih poziva, nepročitanih SMS poruka i novih poruka, nikad od koga ni šta. Telefon se otvara bez lozinke samo ako to dozvolite: tada svako ko drži otključan telefon vidi pozive i favorite koje Android čuva, samo s imenima iz kontakata telefona. | |
-| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko relaya za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez relaya za pozive, samo na istoj Wi-Fi mreži, svaki telefon vidi adresu drugog. Relayi vide kada poziv počinje zvoniti. | Zvonjenje na računaru i u web-aplikaciji dok su zatvoreni. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
+| **Pozivi** | Šifrirani s kraja na kraj (DTLS-SRTP, čiji se ključ šalje u šifriranom razgovoru). Preko relaya za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi obje, kada i koliko dugo, i koliko prolazi. Bez relaya za pozive, samo na istoj Wi-Fi mreži, svaki telefon vidi adresu drugog. Relayi vide kada poziv počinje zvoniti. | Zvonjenje u web-aplikaciji dok je zatvorena. Pozivi preko Bluetootha (walkie-talkie tamo radi). |
 | **Grupni razgovori** | Šifrirani s kraja na kraj pomoću MLS-a (RFC 9420); uklonjeni članovi nakon toga ništa ne čitaju. Kopija svakog člana zapečaćena je zasebno, pa relayi ne mogu saznati ko je u grupi; svaki relay ipak vidi da poruka stiže u red. Članovi vide ključeve i adrese relaya jedni drugih. Fotografije, datoteke i glasovne poruke idu preko pohrane datoteka relaya pošiljaoca, kao i kontaktu, i ostaju tamo 14 dana. Nije nezavisno provjereno. | |
 | **Grupni pozivi** | Glasovni i video, šifrirani s kraja na kraj između svaka dva telefona u pozivu (DTLS-SRTP, čiji se ključevi šalju u šifriranju grupe). Preko relaya za pozive nijedan telefon ne vidi IP adresu drugog; server na kojem on radi vidi adresu svakog telefona, kada i koliko dugo, i koliko prolazi. Svaki član, u pozivu ili ne, saznaje ko je u njemu. Relayi vide kada poziv počinje. | Video s više od četiri osobe, preko servera; više od osam osoba. |
 | **Javne grupe** | Kao grupni razgovori, a svako ko ima link može zatražiti ulazak i čitati od trenutka kad ga puste. Zahtjevi stižu na relay vlasnika zapečaćeni za telefon vlasnika: relay vidi koliko ih je i kada, ali ne i od koga. Članovi vide izabrana imena jedni drugih, ključeve napravljene samo za tu grupu, adrese relaya i identifikatore pošiljaoca redova. Nije nezavisno provjereno. | |

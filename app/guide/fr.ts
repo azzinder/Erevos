@@ -235,13 +235,13 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 
 | Groupe | Ce qu’il contient |
 | --- | --- |
-| **Général** | **Langue**, **Mises à jour** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, et [Mises à jour](#updates). |
+| **Général** | **Langue**, **Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, [Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
-| **Notifications** | **En arrière-plan** (Android) : recevoir et sonner quand Erevos est fermé, et la notification des messages. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone). |
-| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second) et [Discussions masquées](#hidden). |
+| **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
+| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (Android et l’app web), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
-| **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
-| **Données et appareils** | **Sauvegardes**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Appareils associés](#devices) et [Discussions importées](#import). |
+| **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
+| **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
 | **Pour les tests** | **Test du relais** et **Test radio** (Android). Voir [Les écrans de test](#tests). |
 
 ### Langue
@@ -655,7 +655,11 @@ Côte à côte, vous pouvez vérifier avec des codes au lieu de lire les chiffre
 montre un code QR. Touchez **Photographier son code** et photographiez le code de son téléphone, puis laissez-le faire
 de même avec le vôtre. Quand ça correspond, la ligne indique **Vérifié en personne**. Chaque téléphone marque l’autre
 seulement d’après ce qu’il a vu lui-même, et rien n’est envoyé. S’il dit que ça ne correspond pas, quelqu’un est
-peut-être entre vous : ne faites pas confiance à cette discussion.
+peut-être entre vous : ne faites pas confiance à cette discussion. **Choisir une photo de son code** vérifie à la
+place une photo de son code que vous avez déjà. La marque **Vérifié en personne**, avec le jour, reste jusqu’à ce que
+vous touchiez **Retirer la marque**. Elle reste sur ce téléphone, suit la discussion quand elle entre dans les
+discussions masquées ou en sort, et n’est pas transmise à vos appareils associés. Un code d’un Erevos plus récent le
+dit : mettez Erevos à jour, puis refaites la photo.
 
 **Pourquoi :** le code ne contient qu’un hash de vos deux clés, dans un ordre qui distingue les deux téléphones : une
 photo de votre propre écran ne vérifie donc rien, et une photo du code ne dit pas qui vous êtes à quelqu’un qui n’a
@@ -1631,8 +1635,10 @@ Element : aucun pont ne se met entre les deux.
   l’appel ont, et passent par le serveur média (LiveKit) que ton serveur Matrix indique, qui voit l’adresse de cet
   appareil ; un serveur Matrix sans serveur média ne peut pas appeler. Ce qu’Element Call dit au serveur Matrix passe
   par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même ne passe jamais par Tor. Element Call
-  n’atteint aucun traceur. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici. Sailfish OS
-  n’a pas d’appels Matrix.
+  n’atteint aucun traceur. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici. Tant qu’un
+  appel Matrix est en cours ou sonne, un autre appel, d’Erevos ou sur XMPP, ne sonne pas et s’affiche comme manqué, et
+  inversement. Sur Android, Retour ou quitter Erevos rend la fenêtre de l’appel petite, par-dessus d’autres apps
+  (image dans l’image). Sailfish OS n’a pas d’appels Matrix.
 - **Dans l’app web et sur un ordinateur :** le navigateur ou l’ordinateur demande une seule fois la caméra et le
   microphone ; sur un ordinateur, seule la fenêtre de l’appel peut utiliser la caméra. Où va le son, et quel microphone
   sert, c’est l’ordinateur ou le navigateur qui le décide. Dans l’app web, Element Call vient d’une seconde adresse à
@@ -2834,6 +2840,8 @@ reste non scellé par surprise.
   menu de cette icône (sur un Mac, depuis son menu). Là où le bureau n’affiche pas de zone de notification, comme GNOME
   sans extension pour cela, relancer Erevos fait revenir la fenêtre. Une fois quitté, il ne reçoit rien : les messages
   attendent sur le relais, et un appel s’affiche comme appel manqué dès qu’il s’ouvre.
+- Les **appels** sonnent tant qu’Erevos est à l’écran, avec une sonnerie à lui : deux courtes toutes les 3 secondes,
+  jusqu’à ce que l’appel soit décroché ou se termine.
 - **Testé jusqu’ici** sous Linux. Les versions Mac et Windows sont compilées et ouvertes sur les ordinateurs de GitHub,
   pas encore par une personne.
 
@@ -2997,7 +3005,13 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
   sur Windows) : un navigateur qui en utilise un autre ne peut pas les activer, sauf si la personne qui gère ton relais
   autorise son service push. Les espaces sur des relais différents partagent les notifications du navigateur : seul
   celui ouvert en dernier les reçoit. Une demande de message de quelqu’un de nouveau, par ton lien de contact, peut ne
-  s’afficher qu’à l’ouverture d’Erevos.
+  s’afficher qu’à l’ouverture d’Erevos. Le nombre sur l’icône s’affiche aussi sur un Mac avec « Ajouter au Dock » de
+  Safari, et dans l’app web installée depuis Chrome ou Edge sous Windows, macOS ou ChromeOS. Aucune bannière **Nouveau
+  message** ne s’affiche par-dessus Erevos tant qu’il est ouvert à l’écran. L’écran **Notifications quand l’app est
+  fermée** dit quand le navigateur ou le téléphone ne les autorise pas et, après que tu les as désactivées, quand ton
+  relais n’a pas encore pu être prévenu et peut encore en envoyer : Erevos le lui dit dès qu’il peut l’atteindre.
+  Quand le navigateur change d’adresse push, ou que son service push la laisse tomber, Erevos donne tout seul la
+  nouvelle à ton relais quand il revient à l’écran.
 - **Autorisations :** dans Erevos, **Réglages** → **Général** → **Autorisations** montre ce que le navigateur permet à
   Erevos : s’il fonctionne depuis l’écran d’accueil, les notifications quand l’app est fermée (nécessaires une fois que
   cet espace les a activées), le micro pour les appels, l’appareil photo pour les appels vidéo, et si le navigateur
@@ -3030,7 +3044,9 @@ messages et ses réglages scellés de la même façon.
    second mot de passe**). Voir plus bas pourquoi c’est important ici.
 4. Configure le relais et ajoute des contacts comme sur le téléphone, voir [Discuter par un relais](#relay).
 
-- **Ce que seul Android fait :** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa et les SMS. Le même Wi-Fi marche ici aussi, comme sur un ordinateur : voir [Discuter avec un téléphone à proximité](#nearby). Le reste est
+- **Ce que seul Android fait :** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa et les SMS. Le même Wi-Fi marche ici
+  aussi, comme sur un ordinateur : voir [Discuter avec un téléphone à proximité](#nearby). Le pare-feu du téléphone
+  peut devoir laisser entrer le port 47905 (UDP et TCP). Le reste est
   pareil : les espaces et le second mot de passe, les discussions masquées, les messages vocaux, les discussions
   importées et les sauvegardes.
 - **Où il garde les choses :** dans \`~/.local/share/erevos\` sur le téléphone, scellé comme sur le téléphone. Sailfish
@@ -3038,6 +3054,9 @@ messages et ses réglages scellés de la même façon.
   donc par toute appli qui tourne en ton nom : c’est le verrou par mot de passe qui le scelle.
 - Les **sauvegardes** vont dans \`Documents/Erevos\` sur le téléphone, à la main ou chaque jour ; copie-les de là sur
   une carte mémoire ou un autre appareil. **Enregistrer** met une photo ou un fichier dans Téléchargements.
+- Les **appels** sonnent tant qu’Erevos est à l’écran, avec une sonnerie à lui : deux courtes toutes les 3 secondes,
+  et le téléphone vibre là où il le peut, jusqu’à ce que l’appel soit décroché ou se termine. Un appel qui arrive avant
+  que tu aies touché Erevos depuis son ouverture peut s’afficher sans son.
 - **Pendant qu’il est fermé :** avec un espace ouvert, un petit assistant d’Erevos attend sur le relais tant qu’Erevos
   n’est pas à l’écran ou est fermé, et ne prend rien. Une notification dit seulement combien de messages sont arrivés,
   jamais de qui ni quoi, et un appel sonne avec la sonnerie du téléphone, comme son profil la règle, 45 secondes au
@@ -3227,7 +3246,7 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Empreinte digitale ou visage (Android)** | Désactivé sauf si tu l’actives. N’ouvre que l’espace du premier mot de passe : sa clé est scellée dans l’Android Keystore, utilisable seulement juste après une vérification forte de l’empreinte ou du visage, et abandonnée quand ils changent. Quelqu’un qui te retient peut utiliser ton doigt. | |
 | **Notifications (Android)** | En arrière-plan : « Erevos – Ready for calls and messages » (pas sur l’écran de verrouillage), « Incoming call » ou « Incoming video call » – « Open Erevos to answer », et « New message » ou combien sont arrivés ; quand Android ou le mot de passe l’arrête, « Closed by Android » ou « Locked » – « Open it to receive calls and messages again » ; un rappel, « Reminder » ou combien ; une nouvelle version, « Erevos X is out ». Jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |
 | **Widget et Téléphone (Android)** | Le widget, une fois ajouté, montre combien il y a d’appels manqués, de SMS non lus et de nouveaux messages, jamais qui ni quoi. Le Téléphone s’ouvre sans le mot de passe seulement si tu le permets : alors quiconque tient le téléphone déverrouillé voit les appels et les favoris qu’Android garde, avec les noms des contacts du téléphone seulement. | |
-| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le relais d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans relais d’appel, sur le même Wi-Fi seulement, chaque téléphone voit l’adresse de l’autre. Les relais voient quand un appel commence à sonner. | La sonnerie sur un ordinateur et dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
+| **Appels** | Chiffrés de bout en bout (DTLS-SRTP, sa clé envoyée dans la discussion chiffrée). Par le relais d’appel, aucun des deux téléphones ne voit l’adresse IP de l’autre ; le serveur qui le fait tourner voit les deux, quand et combien de temps, et combien passe. Sans relais d’appel, sur le même Wi-Fi seulement, chaque téléphone voit l’adresse de l’autre. Les relais voient quand un appel commence à sonner. | La sonnerie dans l’app web fermée. Les appels par Bluetooth (le talkie-walkie y fonctionne). |
 | **Discussions de groupe** | Chiffrées de bout en bout avec MLS (RFC 9420) ; les membres retirés ne lisent plus rien ensuite. La copie de chaque membre est scellée à part, donc les relais ne peuvent pas savoir qui est dans un groupe ; chaque relais voit quand même un message atteindre une file d’attente. Les membres voient les clés et les adresses de relais les uns des autres. Les photos, fichiers et messages vocaux passent par le stockage de fichiers du relais de l’expéditeur, comme vers un contact, et y restent 14 jours. Pas audité. | |
 | **Appels de groupe** | Voix et vidéo, chiffrées de bout en bout entre chaque paire de téléphones de l’appel (DTLS-SRTP, ses clés envoyées dans le chiffrement du groupe). Par le relais d’appel, aucun téléphone ne voit l’adresse IP d’un autre ; le serveur qui le fait tourner voit celle de chaque téléphone, quand et combien de temps, et combien passe. Chaque membre, dans l’appel ou non, apprend qui y est. Les relais voient quand un appel commence. | La vidéo à plus de quatre personnes, par un serveur ; plus de huit personnes. |
 | **Groupes publics** | Comme les discussions de groupe, et quiconque a le lien peut demander à rejoindre et lire à partir du moment où il est admis. Les demandes arrivent au relais du propriétaire scellées pour le téléphone du propriétaire : le relais voit combien et quand, pas de qui. Les membres voient les noms choisis, les clés faites pour ce seul groupe, les adresses de relais et les identifiants d’expéditeur de file d’attente les uns des autres. Pas audité. | |

@@ -209,13 +209,13 @@ phone's own settings do. In the other languages it is named in that language and
 
 | Group | What is in it |
 | --- | --- |
-| **General** | **Language**, **Updates** and **Permissions** (Android and the web app). See Language below, and [Updates](#updates). |
+| **General** | **Language**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
-| **Notifications** | **In the background** (Android): receiving and ringing while Erevos is closed, and the notice for messages. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone). |
-| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second) and [Hidden chats](#hidden). |
+| **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
+| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (Android and the web app), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). |
 | **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** and **Nostr chats**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora), [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats). |
-| **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
-| **Data and devices** | **Backups**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Linked devices](#devices) and [Imported chats](#import). |
+| **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
+| **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
 | **For testing** | **Relay test** and **Radio test** (Android). See [The test screens](#tests). |
 
 ### Language
@@ -579,7 +579,10 @@ last changed: your messages go to each place in it too, so if they did not link 
 Side by side, you can check with codes instead of reading the digits: under the number each phone shows a QR code.
 Tap **Take a photo of their code** and photograph the code on their phone, then let them do the same with yours. When
 it matches, the row says **Checked in person**. Each phone marks the other only by what it saw itself, and nothing is
-sent. If it says it does not match, someone may be in between: do not trust that chat.
+sent. If it says it does not match, someone may be in between: do not trust that chat. **Choose a photo of their
+code** checks a photo of it you already have instead. The mark **Checked in person**, with the day, stays until you
+tap **Take the mark off**. It stays on this phone, goes with the chat into or out of hidden chats, and is not passed
+on to your linked devices. A code from a newer Erevos says so: update Erevos, then take the photo again.
 
 **Why:** the code holds only a hash of your two keys, in an order that tells the two phones apart, so a photo of your
 own screen checks nothing, and a photo of the code says nothing of who you are to someone without both keys.
@@ -1435,7 +1438,9 @@ between.
   (LiveKit) your Matrix server names, which sees this device's address; a Matrix server without one cannot call. What
   Element Call says to the Matrix server goes through Erevos, and through Tor as the rest of Matrix does, but the call
   itself never goes through Tor. Element Call reaches no tracker. Older one-to-one Matrix calls, as FluffyChat makes
-  them, do not ring here. Sailfish OS has no Matrix calls.
+  them, do not ring here. While a Matrix call is on or ringing, another call, Erevos's own or on XMPP, does not ring
+  and shows as missed, and the other way round. On Android, Back or leaving Erevos makes the call window small over
+  other apps (picture in picture). Sailfish OS has no Matrix calls.
 - **In the web app and on a computer:** the browser or the computer asks once for the camera and the microphone; on a
   computer, only the call window can use the camera. Where the sound goes, and which microphone, are the computer's or
   the browser's own to choose. In the web app, Element Call comes from a second address of its own,
@@ -2473,6 +2478,8 @@ there unless you choose it with \`--plain-secrets\`: no password slot lies there
   again, and quit it from that icon's menu (on a Mac, from its menu). Where the desktop shows no tray, as GNOME without
   an extension for it, starting Erevos again brings the window back. Quit, it receives nothing: messages wait on the
   relay, and a call shows as a missed call once it opens.
+- **Calls** ring while Erevos shows, with a ring of its own: two short rings every 3 seconds, until the call is
+  answered or ends.
 - **Tested so far** on Linux. The Mac and Windows versions are built and opened on GitHub's computers, not yet by a
   person.
 
@@ -2614,7 +2621,13 @@ send changed code. Erevos does not take that code on trust:
   service, Google's (Chrome, and Edge on Android, Brave and Opera), Mozilla's (Firefox) and Microsoft's (Edge on
   Windows): a browser that uses another cannot turn them on, unless whoever runs your relay allows its push service.
   Spaces on different relays share the browser's notifications: only the one opened last gets them. A message
-  request from someone new, through your contact link, may show only once Erevos opens.
+  request from someone new, through your contact link, may show only once Erevos opens. The number on the icon shows
+  also on a Mac with Safari's Add to Dock, and in the web app installed from Chrome or Edge on Windows, macOS or
+  ChromeOS. No **New message** banner shows over Erevos while it is open on the screen. The **Notifications while
+  closed** screen says when the browser or the phone does not allow them and, after you turn them off, when your relay
+  could not be told yet and may still send one: Erevos tells it as soon as it can reach it. When the browser changes
+  its push address, or its push service drops it, Erevos gives your relay the new one by itself as it comes back on
+  the screen.
 - **Permissions:** in Erevos, **Settings** → **General** → **Permissions** shows what the browser lets Erevos do:
   whether it runs from the home screen, notifications while closed (needed once this space turned them on), the
   microphone for calls, the camera for video calls, and whether the browser keeps Erevos's data for good. Without
@@ -2643,13 +2656,18 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
    below why it matters here.
 4. Set the relay and add contacts as on the phone, see [Chat through a relay](#relay).
 
-- **What only Android does:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa and SMS. The same Wi-Fi works here too, as on a computer: see [Chat with a nearby phone](#nearby). The rest is the same: spaces and
+- **What only Android does:** Bluetooth, Wi-Fi Aware, Wi-Fi Direct, LoRa and SMS. The same Wi-Fi works here too, as on
+  a computer: see [Chat with a nearby phone](#nearby). The phone's firewall may need to let port 47905 in (UDP and
+  TCP). The rest is the same: spaces and
   the second password, hidden chats, voice messages, imported chats and backups.
 - **Where it keeps things:** in \`~/.local/share/erevos\` on the phone, sealed as on the phone. Sailfish has no
   keyring for apps, so the keystore is kept there as it is, readable by your user, and so by any app that runs as
   you: the password lock is what seals it.
 - **Backups** go to \`Documents/Erevos\` on the phone, by hand or every day; copy them from there to a memory card or
   another device. **Save** puts a photo or file in Downloads.
+- **Calls** ring while Erevos shows, with a ring of its own: two short rings every 3 seconds, and the phone vibrates
+  where it can, until the call is answered or ends. A call that comes before you have touched Erevos since it opened may
+  show without sound.
 - **While it is closed:** with a space open, a small helper of Erevos waits at the relay while Erevos is out of sight
   or closed, and takes nothing. A notice says only how many messages came, never who or what, and a call rings with
   the phone's ringtone, as its profile sets it, for 45 seconds at most; a tap on either opens Erevos. Hidden chats say
@@ -2822,7 +2840,7 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |
 | **Widget and Phone (Android)** | The widget, once added, shows how many missed calls, unread SMS and new messages there are, never who or what. The Phone opens without the password only if you let it: then anyone holding the unlocked phone sees the calls and favourites Android keeps, with the names of the phone's contacts only. | |
-| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. The relays see when a call starts ringing. | Ringing on a computer and in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
+| **Calls** | End-to-end encrypted (DTLS-SRTP, its key sent in the encrypted chat). Through the call relay, neither phone sees the other's IP address; the server running it sees both, when and how long, and how much passes. Without a call relay, on the same Wi-Fi only, each phone sees the other's address. The relays see when a call starts ringing. | Ringing in the web app while closed. Calls over Bluetooth (the walkie-talkie works there). |
 | **Group chats** | End-to-end encrypted with MLS (RFC 9420); members taken out read nothing after. Each member's copy is sealed apart, so relays cannot tell who is in a group; each relay still sees a message reach a queue. Members see each other's keys and relay addresses. Photos, files and voice messages go through the sender's relay's file store, as to a contact, and stay there 14 days. Not audited. | |
 | **Group calls** | Voice and video, end-to-end encrypted between each two phones in the call (DTLS-SRTP, its keys sent in the group's encryption). Through the call relay, no phone sees another's IP address; the server running it sees each phone's, when and how long, and how much passes. Every member, in the call or not, learns who is in it. The relays see when one starts. | Video with more than four people, through a server; more than eight people. |
 | **Public groups** | As group chats, and anyone with the link can ask to join and read from when let in. Requests come to the owner's relay sealed for the owner's phone: the relay sees how many and when, not from whom. Members see each other's chosen names, keys made for that group alone, relay addresses and queue sender ids. Not audited. | |
