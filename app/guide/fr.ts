@@ -2228,6 +2228,9 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
   montre plus les noms de ses contacts. Son mot de passe le rouvre ; le mot de passe d’un autre espace le ferme d’abord,
   sans rien en garder en mémoire.
 
+- **Voir ce que tu tapes :** chaque champ pour un mot de passe, un PIN ou un jeton, ici et partout dans Erevos, a un
+  œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. Il est masqué de nouveau chaque fois
+  que le champ réapparaît, et sur Android le clavier est prié de ne pas l’apprendre.
 - **Mots de passe erronés :** après 5 essais erronés, chaque essai suivant te fait attendre, 30 secondes au début et
   deux fois plus longtemps à chaque fois, jusqu’à une heure. Le compte survit à un redémarrage.
 - **Ce qui est scellé :** les contacts de chaque espace, les clés de ses conversations, ses messages, ses réglages de

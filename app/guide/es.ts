@@ -2124,6 +2124,9 @@ opciones: **Sin bloqueo** y **Contraseña**.
   los nombres de sus contactos. Su contraseña lo vuelve a abrir; la contraseña de otro espacio lo cierra antes, sin
   dejar nada de él en memoria.
 
+- **Ver lo que escribes:** cada campo para una contraseña, un PIN o un token, aquí y en todo Erevos, tiene un ojo al
+  final: tócalo para ver lo que escribes, y otra vez para ocultarlo. Vuelve a ocultarse cada vez que el campo aparece
+  de nuevo, y en Android se le pide al teclado que no lo aprenda.
 - **Contraseñas incorrectas:** tras 5 intentos fallidos, cada intento más te hace esperar, 30 segundos al principio y el
   doble cada vez, hasta una hora. El contador sobrevive a un reinicio.
 - **Lo que está sellado:** los contactos de cada espacio, las claves de sus conversaciones, sus mensajes, sus ajustes

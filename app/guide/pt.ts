@@ -2110,6 +2110,9 @@ duas opções: **Sem bloqueio** e **Senha**.
   contatos dele. A senha dele o abre de novo; a senha de outro espaço o fecha antes, sem nada dele guardado na
   memória.
 
+- **Ver o que você digita:** cada campo de senha, PIN ou token, aqui e em todo o Erevos, tem um olho no fim: toque
+  nele para ver o que você digita, e de novo para esconder. Ele volta a ficar escondido cada vez que o campo aparece
+  de novo, e no Android o teclado é instruído a não aprendê-lo.
 - **Senhas erradas:** depois de 5 tentativas erradas, cada nova faz você esperar, 30 segundos no início e o dobro a
   cada vez, até uma hora. A contagem sobrevive a um reinício.
 - **O que é selado:** os contatos de cada espaço, as chaves das conversas dele, as mensagens, as configurações do

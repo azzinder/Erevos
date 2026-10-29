@@ -2148,6 +2148,9 @@ due scelte: **Nessun blocco** e **Password**.
   mostra più i nomi dei suoi contatti. La sua password lo riapre; la password di un altro spazio prima lo chiude, senza
   che ne resti nulla in memoria.
 
+- **Vedere ciò che scrivi:** ogni campo per una password, un PIN o un token, qui e ovunque in Erevos, ha un occhio in
+  fondo: toccalo per vedere ciò che scrivi, e di nuovo per nasconderlo. Torna nascosto ogni volta che il campo si
+  mostra di nuovo, e su Android alla tastiera viene chiesto di non impararlo.
 - **Password sbagliate:** dopo 5 tentativi sbagliati, ognuno dei successivi ti fa aspettare, all’inizio 30 secondi e
   ogni volta il doppio, fino a un’ora. Il conteggio sopravvive a un riavvio.
 - **Che cosa è sigillato:** i contatti di ogni spazio, le chiavi delle sue conversazioni, i suoi messaggi, le sue

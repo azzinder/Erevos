@@ -190,6 +190,8 @@ export const parts: Record<string, string> = {
   'The download was cut short.': 'O download foi interrompido.',
   'The download stopped each time it was tried, as the connection brought nothing for a while. Nothing was installed: try again later, or on another network.':
     'O download parou em cada tentativa, porque a conexão não trazia nada durante algum tempo. Nada foi instalado: tente de novo mais tarde ou em outra rede.',
+  'Show what is typed': 'Mostrar o que você digita',
+  'Hide what is typed': 'Ocultar o que você digita',
   'The downloaded package is not the one the release published. Nothing was installed.':
     'O pacote baixado não é o que a versão publicou. Nada foi instalado.',
   'This version installs from the download page.': 'Esta versão é instalada pela página de download.',

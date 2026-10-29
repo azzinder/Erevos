@@ -1956,6 +1956,9 @@ choices: **No lock** and **Password**.
   screens close, hidden chats too, and the call screen no longer shows its contacts' names. Its password opens it
   again; another space's password closes it first, with nothing of it kept in memory.
 
+- **Seeing what you type:** every field for a password, a PIN or a token, here and anywhere in Erevos, has an eye at
+  its end: tap it to see what you type, and again to hide it. It is hidden again each time the field shows anew, and
+  on Android the keyboard is told not to learn it.
 - **Wrong passwords:** after 5 wrong tries, each further one makes you wait, 30 seconds at first and twice as long
   each time, up to an hour. The count survives a restart.
 - **What is sealed:** each space's contacts, the keys of its conversations, its messages, its relay settings and its

@@ -260,6 +260,18 @@ export function CloseIcon({ color, size = 20 }: Props) {
   );
 }
 
+/** An eye: what is typed shows; `crossed`, it is hidden again. */
+export function EyeIcon({ color, size = 22, crossed = false }: Props & { crossed?: boolean }) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2, y: 6, w: 20, h: 12 }), { borderRadius: 10 * k, borderWidth: 2 * k, borderColor: color }]} />
+      <Dot k={k} color={color} x={8.5} y={8.5} d={7} />
+      {crossed ? <View style={[box(k, { x: 1, y: 10.9, w: 22, h: 2.2 }), { borderRadius: 1.1 * k, backgroundColor: color, transform: [{ rotate: '-45deg' }] }]} /> : null}
+    </Grid>
+  );
+}
+
 /** A camera on its side, its lens a wedge: a video call. */
 export function VideoIcon({ color, size = 24 }: Props) {
   const k = size / 24;

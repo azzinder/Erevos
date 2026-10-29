@@ -2266,6 +2266,9 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   Anrufbildschirm zeigt die Namen seiner Kontakte nicht mehr. Sein Passwort öffnet ihn wieder; das Passwort eines
   anderen Bereichs schließt ihn zuerst, ohne dass etwas von ihm im Arbeitsspeicher bleibt.
 
+- **Sehen, was du tippst:** Jedes Feld für ein Passwort, eine PIN oder ein Token, hier und überall in Erevos, hat am
+  Ende ein Auge: Tippe darauf, um zu sehen, was du eingibst, und noch einmal, um es zu verbergen. Es ist jedes Mal
+  wieder verborgen, wenn das Feld neu erscheint, und auf Android wird die Tastatur gebeten, es sich nicht zu merken.
 - **Falsche Passwörter:** Nach 5 falschen Versuchen lässt dich jeder weitere warten, anfangs 30 Sekunden und jedes Mal
   doppelt so lange, bis zu einer Stunde. Die Zählung übersteht einen Neustart.
 - **Was versiegelt ist:** Die Kontakte jedes Bereichs, die Schlüssel seiner Unterhaltungen, seine Nachrichten, seine

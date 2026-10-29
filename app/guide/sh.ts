@@ -2053,6 +2053,9 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
   njegovih kontakata. Njegova lozinka ga ponovo otvara; lozinka drugog prostora ga prvo zatvara, ne zadržavajući ništa
   od njega u memoriji.
 
+- **Vidjeti šta kucate:** svako polje za lozinku, PIN ili token, ovdje i svuda u Erevosu, ima oko na kraju: dodirnite
+  ga da vidite šta kucate, i ponovo da se sakrije. Ponovo je skriveno svaki put kad se polje iznova pojavi, a na
+  Androidu se od tastature traži da to ne pamti.
 - **Pogrešne lozinke:** nakon 5 pogrešnih pokušaja, svaki sljedeći vas tjera da čekate, prvo 30 sekundi, a svaki put
   dvaput duže, do jednog sata. Broj pokušaja ostaje i nakon ponovnog pokretanja.
 - **Šta je zapečaćeno:** kontakti svakog prostora, ključevi njegovih razgovora, njegove poruke, postavke relaya i

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -23,6 +23,7 @@ import { useColors } from '../theme/context';
 import { t } from '../lib/i18n';
 
 import { useGlassBlur, useGlassLift } from './glass';
+import { EyeIcon } from './icons';
 import { KeyboardAvoidingView, KeyboardAwareScrollView } from './keyboard';
 
 // The app's building blocks in the colours and shapes of the open look, as in LPHL FASOULI
@@ -336,32 +337,69 @@ export function Field({ label, hint, children }: { label?: string; hint?: string
 
 /** A text field. In a row beside a button, give it `style={{ flex: 1 }}`. A secret one (a
  *  password, PIN or token) is never offered to the phone's password manager: one that kept two
- *  passwords for Erevos would show there is a second space, and one kept the PIN of hidden chats. */
+ *  passwords for Erevos would show there is a second space, and one kept the PIN of hidden chats.
+ *  It has an eye beside what is typed, which shows it, and hides it again: hidden each time the
+ *  field shows anew. Shown, the keyboard still learns nothing of it, as far as the phone lets. */
 export function Input({ style, ...props }: TextInputProps) {
   const colors = useColors();
+  const [visible, setVisible] = useState(false);
+  const secret = !!props.secureTextEntry;
+  const look: StyleProp<TextStyle> = [
+    {
+      minHeight: 50,
+      paddingVertical: 12,
+      paddingHorizontal: space.md,
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      borderColor: shape.ink?.fieldLine ?? colors.border,
+      color: colors.text,
+      fontSize: 16,
+    },
+    fontStyle('400'),
+    webNoOutline,
+  ];
+  if (!secret) return <TextInput placeholderTextColor={colors.textFaint} {...props} style={[look, style]} />;
+  // Where the field sits (flex, margins, width) goes to the row that holds it and its eye; how it looks stays with it.
+  const { place, rest } = splitPlace(StyleSheet.flatten(style) ?? {});
   return (
-    <TextInput
-      placeholderTextColor={colors.textFaint}
-      importantForAutofill={props.secureTextEntry ? 'no' : undefined}
-      {...props}
-      style={[
-        {
-          minHeight: 50,
-          paddingVertical: 12,
-          paddingHorizontal: space.md,
-          backgroundColor: colors.surfaceAlt,
-          borderRadius: radius.md,
-          borderWidth: 1,
-          borderColor: shape.ink?.fieldLine ?? colors.border,
-          color: colors.text,
-          fontSize: 16,
-        },
-        fontStyle('400'),
-        webNoOutline,
-        style,
-      ]}
-    />
+    <View style={[{ justifyContent: 'center' }, place]}>
+      <TextInput
+        placeholderTextColor={colors.textFaint}
+        importantForAutofill="no"
+        {...props}
+        secureTextEntry={!visible}
+        autoCorrect={false}
+        spellCheck={false}
+        // Android's keyboards offer no words and keep none for a field of this kind.
+        {...(visible && Platform.OS === 'android' && !props.keyboardType ? { keyboardType: 'visible-password' as const } : {})}
+        style={[look, rest, { paddingRight: 52 }]}
+      />
+      <Pressable
+        onPress={() => setVisible((was) => !was)}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={visible ? t('Hide what is typed') : t('Show what is typed')}
+        style={{ position: 'absolute', right: 6, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}
+      >
+        <EyeIcon color={colors.textFaint} crossed={visible} />
+      </Pressable>
+    </View>
   );
+}
+
+// The keys of a style that say where a view sits, not how it looks.
+const PLACE_KEYS = new Set([
+  'flex', 'flexGrow', 'flexShrink', 'flexBasis', 'alignSelf', 'width', 'minWidth', 'maxWidth',
+  'margin', 'marginTop', 'marginBottom', 'marginLeft', 'marginRight', 'marginHorizontal', 'marginVertical', 'marginStart', 'marginEnd',
+  'position', 'top', 'bottom', 'left', 'right', 'zIndex',
+]);
+
+function splitPlace(style: TextStyle): { place: ViewStyle; rest: TextStyle } {
+  const place: Record<string, unknown> = {};
+  const rest: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(style)) (PLACE_KEYS.has(key) ? place : rest)[key] = value;
+  return { place: place as ViewStyle, rest: rest as TextStyle };
 }
 
 /** A section's kicker, above its card. */
