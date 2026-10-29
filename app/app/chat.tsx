@@ -3051,7 +3051,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }
 
-  // What the note under the messages says once something went (`what`: Sent, Voice message sent…).
   // What a message keeps of the way it went (lock/history.ts Parts).
   function wayParts(way: Delivery): Pick<Parts, 'nostr' | 'route'> {
     return way === 'nostr' ? { nostr: true } : { route: way };
@@ -3069,6 +3068,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return undefined;
   }
 
+  // What the note under the messages says once something went (`what`: Sent, Voice message sent…).
   function sentNote(way: Delivery, what: string, name: string): string {
     if (way === 'nearby') return t('{what} nearby, end-to-end encrypted.', { what });
     if (way === 'relay') return t('{what} through the relay, end-to-end encrypted.', { what });
@@ -4009,8 +4009,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       offer = sent.offer;
       const sealed = await e2e.sealFile(identity, sent.offer, ownQueue?.senderHex ?? '', { lasts, at: here(), re: parts.re, forwarded, tag: sealedAs });
       // In hidden chats, owed to their phone should it take it only later.
-      await handOver(e2e, target, identity, sealed, [sealed.packet], 'message', false, !!hiddenKey);
-      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), parts);
+      const way = await handOver(e2e, target, identity, sealed, [sealed.packet], 'message', false, !!hiddenKey);
+      addMessage(peer, '', true, sealed.tag, sealed.timer, undefined, sent.ref, 0, Date.now(), { ...parts, ...wayParts(way) });
       setReplying(null);
       kept = null;
       // Writing to a message request accepts it.
