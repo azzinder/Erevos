@@ -101,6 +101,8 @@ class ErevosSmsModule : Module() {
     AsyncFunction("messages") { address: String, limit: Int -> SmsStore.messages(context(), address, limit) }
     AsyncFunction("markRead") { address: String -> SmsStore.markRead(context(), address) }
     Function("showOnScreen") { numbers: List<String> -> SmsStore.showOnScreen(numbers) }
+    // Spam's filter on or off: with it on, spam by the built-in rule comes with no notice (BuiltInSpam.kt).
+    Function("setSpamFilter") { on: Boolean -> SmsStore.setSpamFilter(context(), on) }
     AsyncFunction("send") { address: String, text: String, sim: Int -> SmsStore.send(context(), address, text, sim).toDouble() }
     AsyncFunction("sendMms") { address: String, text: String, data: ByteArray, type: String, sim: Int ->
       MmsStore.send(context(), address, text, if (data.isEmpty()) null else data, type, sim).toDouble()

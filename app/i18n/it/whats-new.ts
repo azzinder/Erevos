@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  "**Spam SMS come quietly**: on Android, an SMS that the spam filter's own words catch, a link with words that try to fool from a number that is no contact and that you never answered, still goes to Spam but no longer shows a notice or makes a sound. Spam by your own words and rules still shows one, as they stay encrypted in the space; with the Spam filter off, every SMS does. See [SMS](#sms).":
+    "**Gli SMS di spam arrivano in silenzio**: su Android, un SMS che le parole proprie del filtro antispam colgono, un link con parole che cercano di ingannare da un numero che non è un contatto e a cui non hai mai risposto, va ancora in Spam ma non mostra più una notifica né suona. Lo spam per le tue parole e regole ne mostra ancora una, perché restano cifrate nello spazio; con il Filtro antispam spento, ogni SMS la mostra. Vedi [SMS](#sms).",
   '**What\'s new in two parts**: each version says first what changes for you, then what changed under the hood: fixes, speed, battery and security inside. See [Updates](#updates).':
     '**Le novità in due parti**: ogni versione dice prima cosa cambia per te, poi cosa è cambiato sotto il cofano: correzioni, velocità, batteria e sicurezza all’interno. Vedi [Aggiornamenti](#updates).',
   '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':

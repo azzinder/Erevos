@@ -1729,8 +1729,8 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
 - **Spam:** filter koji radi samo na telefonu, po pravilima, i ništa nikud ne šalje. SMS s broja koji nije kontakt i
   kojem nikad niste odgovorili ide u **Spam** kad ima link s riječima koje pokušavaju prevariti, kao zadržani paket
   ili nagrada, ili jednu od riječi koje dodate pod **Postavke** → **Telefon i SMS** → **SMS** → **Filter spama**.
-  **Označi kao spam** i **Nije spam** zauvijek odlučuju za neki broj. Obavijest i dalje kaže „New message“ kad stigne
-  spam, jer se prikazuje prije nego što se Erevos otvori. Svaki razgovor u **Spam**, u folderu i na vrhu razgovora,
+  **Označi kao spam** i **Nije spam** zauvijek odlučuju za neki broj. SMS koji uhvate vlastite riječi filtera (link s riječima koje pokušavaju prevariti, s telefonskog broja koji nije ni u jednom kontaktu telefona i kojem nikad niste odgovorili) stiže bez obavijesti i bez zvuka, jer telefon zna i te riječi; svaki drugi spam, po vašim riječima, vašim pravilima ili iz inostranstva, i dalje pokazuje „New message“, jer ta obavijest dolazi prije nego što se Erevos otvori, a ostatak filtera ostaje šifriran u prostoru. Broj koji ste označili kao **Nije spam** ili ga puštate da prođe također stiže tiho kad šalje takve riječi, osim ako je u kontaktima telefona. Kad je **Filter spama** isključen, svaki SMS ima svoju obavijest: telefon čuva samo je li filter uključen, kako kaže prostor otvoren posljednji.
+  Svaki razgovor u **Spam**, u folderu i na vrhu razgovora,
   kaže zašto je tamo: broj je blokiran, vi ste ga označili, vaše pravilo navodi pošiljaoca, broj iz inostranstva, vaša
   riječ, ili link i koje riječi.
 - **Slova koja liče:** prevarantska SMS poruka koja zamijeni slovo drugim slovom iz drugog pisma koje izgleda isto, poput ćirilične а u latiničnoj riječi, ili u riječ sakrije znak koji se ne vidi, ne prolazi filter: čita riječi kako izgledaju. Pošiljalac se nikad ne uspoređuje tako, jer pošiljalac koji liči na dopuštenog nije taj pošiljalac.

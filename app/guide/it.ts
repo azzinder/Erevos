@@ -1813,8 +1813,8 @@ nulla.
   un numero che non è un contatto e a cui non hai mai risposto va in **Spam** quando ha un link con parole che cercano
   di ingannare, come un pacco in giacenza o un premio, o una delle parole che aggiungi in **Impostazioni** →
   **Telefono e SMS** → **SMS** → **Filtro antispam**. **Segna come spam** e **Non è spam** decidono per sempre per un
-  numero. Una notifica dice comunque «New message» quando arriva dello spam, perché appare prima che Erevos venga
-  aperto. Ogni conversazione in **Spam**, nella cartella e in cima alla conversazione, dice perché è lì: il numero è
+  numero. Un SMS che le parole proprie del filtro colgono (un link con parole che cercano di ingannare, da un numero di telefono che non è in nessun contatto del telefono e a cui non hai mai risposto) arriva senza notifica e senza suono, perché il telefono conosce anche quelle parole; ogni altro spam, per le tue parole, le tue regole o dall’estero, mostra ancora «New message», perché quella notifica arriva prima che Erevos venga aperto e il resto del filtro resta cifrato nello spazio. Un numero che hai segnato come **Non è spam** o che lasci passare arriva anch’esso in silenzio quando manda parole così, a meno che non sia nei contatti del telefono. Con il **Filtro antispam** spento, ogni SMS ha la sua notifica: il telefono tiene solo se il filtro è acceso, come dice l’ultimo spazio aperto.
+  Ogni conversazione in **Spam**, nella cartella e in cima alla conversazione, dice perché è lì: il numero è
   bloccato, l’hai segnato tu, una tua regola nomina il mittente, un numero dall’estero, una tua parola, o un link e
   quali parole.
 - **Lettere che si somigliano:** un SMS truffa che cambia una lettera con una di un altro alfabeto che sembra uguale, come una а cirillica in una parola latina, o nasconde in una parola un segno che non si vede, non supera il filtro: legge le parole come appaiono. Chi invia non si confronta mai così, perché un mittente che somiglia a uno consentito non è quel mittente.

@@ -1793,7 +1793,8 @@ Erevos no muestra nada.
   que no es un contacto y al que nunca respondiste va a **Spam** cuando tiene un enlace con palabras que intentan
   engañar, como un paquete retenido o un premio, o una de las palabras que añades en **Ajustes** → **Teléfono y SMS** →
   **SMS** → **Filtro de spam**. **Marcar como spam** y **No es spam** deciden para un número de una vez por todas. Un
-  aviso sigue diciendo «New message» cuando llega spam, ya que se muestra antes de abrir Erevos. Cada conversación en
+  SMS que atrapan las propias palabras del filtro (un enlace con palabras que intentan engañar, de un número de teléfono que no está en ningún contacto del teléfono y al que nunca respondiste) llega sin aviso y sin sonido, ya que el teléfono también conoce esas palabras; cualquier otro spam, por tus palabras, tus reglas o del extranjero, sigue mostrando «New message», ya que ese aviso llega antes de abrir Erevos y el resto del filtro queda cifrado en el espacio. Un número que marcaste como **No es spam** o que dejas pasar también llega en silencio cuando envía esas palabras, salvo que esté en los contactos del teléfono. Con el **Filtro de spam** apagado, cada SMS tiene su aviso: el teléfono guarda solo si el filtro está encendido, según el último espacio abierto.
+  Cada conversación en
   **Spam**, en la carpeta y arriba de la conversación, dice por qué está ahí: el número está bloqueado, lo marcaste, tu
   regla nombra al remitente, un número del extranjero, tu palabra, o un enlace y qué palabras.
 - **Letras que se parecen:** un SMS de estafa que cambia una letra por otra de otro alfabeto que se ve igual, como una а cirílica en una palabra latina, o esconde dentro de una palabra una marca que no se ve, no pasa el filtro: lee las palabras como se ven. Quién envía nunca se compara así, porque un remitente parecido a uno permitido no es ese remitente.

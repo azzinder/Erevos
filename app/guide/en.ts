@@ -1655,8 +1655,8 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **Spam:** a filter that works on the phone alone, by rules, and sends nothing anywhere. An SMS from a number that is
   no contact and that you never answered goes to **Spam** when it has a link with words that try to fool, like a
   parcel held or a prize, or one of the words you add under **Settings** → **Phone and SMS** → **SMS** → **Spam
-  filter**. **Mark as spam** and **Not spam** decide for a number for good. A notice still says "New message" when
-  spam comes, as it shows before Erevos is opened. Each conversation in **Spam**, in the folder and at the top of the
+  filter**. **Mark as spam** and **Not spam** decide for a number for good. An SMS that the filter's own words catch (a link with words that try to fool, from a phone number that is in none of the phone's contacts and that you never answered) comes with no notice and no sound, as the phone knows those words too; any other spam, by your words, your rules or from abroad, still shows "New message", as that notice comes before Erevos is opened and the rest of the filter stays encrypted in the space. A number you marked **Not spam** or let through comes quietly too when it sends such words, unless it is in the phone's contacts. With the **Spam filter** off, every SMS has its notice: the phone keeps only whether the filter is on, as the space opened last says.
+  Each conversation in **Spam**, in the folder and at the top of the
   conversation, says why it is there: the number is blocked, you marked it, your rule names the sender, a number from
   abroad, your word, or a link and which words.
 - **Look-alike letters:** a scam text that swaps a letter for one of another alphabet that looks the same, as a Cyrillic а in a Latin word, or hides a mark that shows nothing inside a word, does not get past the filter: it reads the words as they look. Who sends is never compared so, as a look-alike of an allowed sender is not that sender.

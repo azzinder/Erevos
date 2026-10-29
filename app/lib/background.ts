@@ -196,8 +196,9 @@ if (Platform.OS === 'android') {
     // A build from before it: the waits run out on their own.
   }
   onAppShown(tellSmsShown);
-  onSmsEvent('onSms', ({ shown }) => {
-    if (shown && appShown()) chime();
+  // Spam that Spam's built-in rule caught (SmsStore.kt) plays nothing, on the screen too.
+  onSmsEvent('onSms', ({ shown, spam }) => {
+    if (shown && !spam && appShown()) chime();
   });
 }
 

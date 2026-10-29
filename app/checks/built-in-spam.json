@@ -1,0 +1,30 @@
+{
+  "about": "SMS and whether Spam's built-in rule alone catches them (no owner rules, sender no contact, never answered), for lib/sms-folders.ts (checks/sms-folders.check.ts) and BuiltInSpam.kt in modules/erevos-sms alike. fold: what lookAlike makes of a text.",
+  "cases": [
+    { "from": "+306900000001", "text": "Το δέμα σας κρατείται στο τελωνείο. Πληρώστε εδώ: https://parcel-gr.example/pay", "spam": true },
+    { "from": "+306900000001", "text": "Your parcel is held, pay the customs fee: https://parcel.example/x", "spam": true },
+    { "from": "+306900000001", "text": "Your pаrcеl is held, pay the custоm​s fee https://p.example/x", "spam": true },
+    { "from": "+306900000001", "text": "ｇｉｆｔ ｃａｒｄ https://p.example/x", "spam": true },
+    { "from": "+306900000001", "text": "Κέρδισες δώρο https://p.example/x", "spam": true },
+    { "from": "+306900000001", "text": "Kερδισες δωρο https://p.example/x", "spam": true },
+    { "from": "+306900000001", "text": "CONGRATULATIONS! www.prize.example", "spam": true },
+    { "from": "6900000001", "text": "Tax refund waiting HTTPS://refund.example", "spam": true },
+    { "from": "+306900000001", "text": "kepδisec doρo https://p.example/x", "spam": false },
+    { "from": "+306900000001", "text": "Το δέμα σας έφτασε στο κατάστημα.", "spam": false },
+    { "from": "+306900000001", "text": "Δες τις φωτό https://photos.example/a", "spam": false },
+    { "from": "+306900000001", "text": "Your parcel is at www.", "spam": false },
+    { "from": "+306900000001", "text": "Your parcel: xhttps://p.example/x", "spam": false },
+    { "from": "+306900000001", "text": "Your parcel: αhttps://p.example/x", "spam": true },
+    { "from": "54321", "text": "Your parcel is held, pay the customs fee: https://parcel.example/x", "spam": false },
+    { "from": "MyBank", "text": "Verify your account at https://bank.example", "spam": false },
+    { "from": "+306900000001,+306900000002", "text": "Your parcel is held https://parcel.example/x", "spam": false }
+  ],
+  "fold": [
+    ["pаypаl", "paypal"],
+    ["  Κέρδισες   ΈΝΑ δώρο ", "kεpδiσες εva δwpo"],
+    ["gift​card", "giftcard"],
+    ["ｇｉｆｔ ｃａｒｄ", "gift card"],
+    ["Tax Refund now", "tax refund now"],
+    ["ΣΟΦΟΣ", "σoφoς"]
+  ]
+}

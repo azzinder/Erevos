@@ -53,8 +53,10 @@ export type LaterSmsHolder = {
 export type SmsInvitePart = { from: string; data: string; at: number };
 
 export type SmsEvents = {
-  /** `shown`: its conversation shows on the screen (smsShowOnScreen), so it came with no notice. */
-  onSms: (event: { address: string; mms?: number; shown?: boolean }) => void;
+  /** `shown`: its conversation shows on the screen (smsShowOnScreen), so it came with no notice.
+   *  `spam`: Spam's built-in rule caught it (BuiltInSpam.kt), so it came with no notice and plays
+   *  nothing; the app's Spam folder (lib/sms-folders.ts) still decides where it shows. */
+  onSms: (event: { address: string; mms?: number; shown?: boolean; spam?: boolean }) => void;
   onSmsSent: (event: { id: number; ok: boolean; mms?: boolean }) => void;
   onSmsDelivered: (event: { id: number; ok: boolean }) => void;
   /** An SMS sent for later went, held by Android until its time (`id`: lock/sms-data.ts's). */
@@ -72,6 +74,7 @@ type NativeSms = {
   messages(address: string, limit: number): Promise<SmsMessage[]>;
   markRead(address: string): Promise<void>;
   showOnScreen?(numbers: string[]): void;
+  setSpamFilter?(on: boolean): void;
   /** `sim` only in a build with MMS (an older one takes two arguments). */
   send(address: string, text: string, sim?: number): Promise<number>;
   sendMms?(address: string, text: string, data: Uint8Array, type: string, sim: number): Promise<number>;
@@ -244,6 +247,16 @@ export function takeSmsInvites(): Promise<SmsInvitePart[]> {
  *  while Erevos shows. */
 export function smsShowOnScreen(numbers: string[]): void {
   native?.showOnScreen?.(numbers);
+}
+
+/** Tells the phone whether Spam's filter is on, the only thing of it kept outside the encrypted
+ *  space: with it on, an SMS Spam's built-in rule catches comes with no notice (SmsStore.kt). */
+export function smsSpamFilter(on: boolean): void {
+  try {
+    native?.setSpamFilter?.(on);
+  } catch {
+    // A build from before it: every SMS comes with a notice.
+  }
 }
 
 export function onSmsEvent<Name extends keyof SmsEvents>(name: Name, listener: SmsEvents[Name]): EventSubscription | null {

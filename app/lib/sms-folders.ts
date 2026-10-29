@@ -19,8 +19,10 @@ const DAY = 24 * 3600 * 1000;
 
 // Words of the SMS that try to fool: a parcel held, an account stopped, a prize, details to give.
 // Without accents and in small letters, as plainText makes the text. They count only with a link in
-// the same SMS, from a number that is no contact and was never answered.
-const SPAM_PHRASES = [
+// the same SMS, from a number that is no contact and was never answered. The phone reads the same
+// list to let such an SMS come with no notice (BuiltInSpam.kt in modules/erevos-sms): change both,
+// as checks/sms-folders.check.ts fails when they differ, with LOOKS_LIKE and INVISIBLE too.
+export const SPAM_PHRASES = [
   'κερδισατε',
   'κερδισες',
   'συγχαρητηρια',
@@ -59,8 +61,8 @@ export function plainText(text: string): string {
 
 // Letters of other scripts that look like Latin ones, and marks that show nothing: a scammer swaps them
 // into words to get past a filter ("pаypal" with a Cyrillic а, "gift\u200bcard").
-const INVISIBLE = /[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0]/g;
-const LOOKS_LIKE: Record<string, string> = {
+export const INVISIBLE = /[\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180b-\u180e\u200b-\u200f\u202a-\u202e\u2060-\u206f\u3164\ufe00-\ufe0f\ufeff\uffa0]/g;
+export const LOOKS_LIKE: Record<string, string> = {
   а: 'a', с: 'c', е: 'e', о: 'o', р: 'p', х: 'x', у: 'y', к: 'k', м: 'm', н: 'h', т: 't', і: 'i', ї: 'i', ј: 'j', ѕ: 's', ԁ: 'd', ӏ: 'l', һ: 'h', ԛ: 'q', ԝ: 'w',
   ο: 'o', α: 'a', ν: 'v', ρ: 'p', υ: 'u', ι: 'i', κ: 'k', χ: 'x', τ: 't', γ: 'y', ω: 'w', η: 'n',
 };

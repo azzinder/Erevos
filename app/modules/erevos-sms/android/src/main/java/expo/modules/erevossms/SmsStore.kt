@@ -386,8 +386,62 @@ internal object SmsStore {
       put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_INBOX)
       if (sim >= 0) put(Telephony.Sms.SUBSCRIPTION_ID, sim)
     }
-    context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
-    came(context, mapOf("address" to address), OneTimeCode.find(text))
+    val row = context.contentResolver.insert(Telephony.Sms.Inbox.CONTENT_URI, values)
+    // Spam by the built-in rule comes quietly: kept as any other and told to the app, but with no
+    // notice and no sound. A contact's, an answered number's and a short code's never is.
+    val spam = try {
+      spamFilter(context) && BuiltInSpam.byWords(address, text) && !isContact(context, address) && !answered(context, row, address)
+    } catch (e: Exception) {
+      false
+    }
+    came(context, mapOf("address" to address), OneTimeCode.find(text), spam)
+  }
+
+  // Spam's filter on or off, as the space opened last on this phone says (lib/sms-link.ts): the
+  // only thing of it kept outside the encrypted space, so that with the filter off spam still comes
+  // with a notice. Nothing else of the filter is ever here.
+  private const val SPAM_FILTER = "spam-filter"
+
+  fun setSpamFilter(context: Context, on: Boolean) {
+    val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    if (prefs.getBoolean(SPAM_FILTER, true) != on) prefs.edit().putBoolean(SPAM_FILTER, on).apply()
+  }
+
+  private fun spamFilter(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(SPAM_FILTER, true)
+
+  /** Whether `address` is one of the phone's contacts. Without READ_CONTACTS nobody can tell, so it
+   *  counts as one, and its SMS comes with a notice. */
+  private fun isContact(context: Context, address: String): Boolean {
+    if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) return true
+    return contacts(context, listOf(address)).isNotEmpty()
+  }
+
+  /** Whether an SMS or MMS of ours is in the conversation of the SMS just kept (`row`): the owner
+   *  answered that number. A question that fails counts as answered, so no notice is lost by mistake. */
+  private fun answered(context: Context, row: Uri?, address: String): Boolean {
+    val thread = row?.let { uri ->
+      context.contentResolver.query(uri, arrayOf(Telephony.Sms.THREAD_ID), null, null, null)?.use { c -> if (c.moveToFirst()) c.getLong(0) else null }
+    } ?: threadId(context, address) ?: return true
+    val sms = context.contentResolver.query(
+      Telephony.Sms.CONTENT_URI,
+      arrayOf("_id"),
+      "${Telephony.Sms.THREAD_ID}=? AND ${Telephony.Sms.TYPE}!=?",
+      arrayOf(thread.toString(), Telephony.Sms.MESSAGE_TYPE_INBOX.toString()),
+      null,
+    )?.use { it.count > 0 } ?: return true
+    if (sms) return true
+    return try {
+      context.contentResolver.query(
+        Telephony.Mms.CONTENT_URI,
+        arrayOf("_id"),
+        "${Telephony.Mms.THREAD_ID}=? AND ${Telephony.Mms.MESSAGE_BOX}!=?",
+        arrayOf(thread.toString(), Telephony.Mms.MESSAGE_BOX_INBOX.toString()),
+        null,
+      )?.use { it.count > 0 } ?: false
+    } catch (_: Exception) {
+      // No MMS store on this device.
+      false
+    }
   }
 
   // The numbers of the SMS conversation that shows in Erevos now, in its own screen or a contact's
@@ -401,12 +455,13 @@ internal object SmsStore {
   /** Tells the open app that something came, and shows a notice unless its conversation is on the
    *  screen, where it only sounds (`shown`, played by the app): in the background its JS side still
    *  runs, but nobody looks at it, and on another screen, the password's too, the owner does not see
-   *  it. A one-time code in what came gives the notice Copy code (OneTimeCode.kt). */
-  fun came(context: Context, body: Map<String, Any?>, code: String? = null) {
+   *  it. A one-time code in what came gives the notice Copy code (OneTimeCode.kt). Spam by the
+   *  built-in rule (`spam`, BuiltInSpam.kt) gets neither: the app is told so, and plays nothing. */
+  fun came(context: Context, body: Map<String, Any?>, code: String? = null, spam: Boolean = false) {
     val address = body["address"] as? String
     val here = address != null && onScreen() && shown.any { PhoneNumberUtils.compare(context, it, address) }
-    listener?.invoke("onSms", body + ("shown" to here))
-    if (!here) notifyNew(context, code)
+    listener?.invoke("onSms", body + ("shown" to here) + (if (spam) mapOf("spam" to true) else emptyMap()))
+    if (!here && !spam) notifyNew(context, code)
     Widget.refresh(context)
   }
 

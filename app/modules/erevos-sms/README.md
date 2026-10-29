@@ -13,7 +13,9 @@ not been compiled yet.
   provider, as every SMS app does, so another SMS app finds them later. `threads()` and
   `messages()` read it.
 - **Notifications.** A text that comes while the app is closed shows "New message", without who
-  sent it or what it says.
+  sent it or what it says. One that Spam's built-in rule catches (`BuiltInSpam.kt`: a phone number in
+  none of the contacts and never answered, a link, and words that try to fool) comes with none, while
+  `setSpamFilter()` says the filter is on.
 - **SMS invites.** Data SMS to port 16180, which messaging apps do not show. Pieces that come are
   kept in the app's preferences until `takeInvites()` takes them. The format is in
   `lib/sms-invite.ts`.

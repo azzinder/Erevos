@@ -1780,8 +1780,9 @@ mostra nada.
 - **Spam:** um filtro que funciona só no celular, por regras, e não envia nada a lugar nenhum. Um SMS de um número que
   não é contato e a que você nunca respondeu vai para o **Spam** quando tem um link com palavras que tentam enganar,
   como uma encomenda retida ou um prêmio, ou uma das palavras que você acrescenta em **Configurações** → **Telefone e
-  SMS** → **SMS** → **Filtro de spam**. **Marcar como spam** e **Não é spam** decidem de vez para um número. Um aviso
-  ainda diz "New message" quando chega spam, pois aparece antes de o Erevos ser aberto. Cada conversa no **Spam**, na
+  SMS** → **SMS** → **Filtro de spam**. **Marcar como spam** e **Não é spam** decidem de vez para um número. Um SMS
+  que as palavras do próprio filtro pegam (um link com palavras que tentam enganar, de um número de telefone que não está em nenhum contato do celular e a que você nunca respondeu) chega sem aviso e sem som, pois o celular também conhece essas palavras; qualquer outro spam, pelas suas palavras, suas regras ou do exterior, ainda mostra "New message", pois esse aviso chega antes de o Erevos ser aberto e o resto do filtro fica criptografado no espaço. Um número que você marcou como **Não é spam** ou deixa passar também chega em silêncio quando manda essas palavras, a não ser que esteja nos contatos do celular. Com o **Filtro de spam** desligado, todo SMS tem o seu aviso: o celular guarda só se o filtro está ligado, como diz o último espaço aberto.
+  Cada conversa no **Spam**, na
   pasta e no topo da conversa, diz por que está ali: o número está bloqueado, você o marcou, a sua regra nomeia o
   remetente, um número do exterior, a sua palavra, ou um link e quais palavras.
 - **Letras parecidas:** um SMS de golpe que troca uma letra por outra de outro alfabeto que parece igual, como um а cirílico numa palavra latina, ou esconde numa palavra uma marca que não se vê, não passa pelo filtro: ele lê as palavras como elas aparecem. Quem envia nunca é comparado assim, pois um remetente parecido com um permitido não é esse remetente.

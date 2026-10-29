@@ -8,7 +8,7 @@ import { fromBase64, randomBytes, toBase64 } from './crypto';
 import { fromBase64Url, toBase64Url } from './e2e';
 import { collectInvites, invitePieces, plainNumber, readInviteAnswer, sameNumber, type InvitePiece, type SmsInvite } from './sms-invite';
 import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_TRASH, MAX_WORDS, saveSmsData, smsSaves, UNDO_SECONDS, WORD, type LaterSms, type SentInvite, type SmsData } from '../lock/sms-data';
-import type { Sim } from '../modules/erevos-sms';
+import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
 
@@ -27,6 +27,7 @@ export class SmsLink {
     this.key = key;
     this.data = data;
     this.seen = seen;
+    smsSpamFilter(data.spam);
   }
 
   static async open(space: number, key: Uint8Array): Promise<SmsLink> {
@@ -40,6 +41,7 @@ export class SmsLink {
     const seen = smsSaves();
     this.data = fresh(await loadSmsData('space', this.space, this.key), Date.now());
     this.seen = seen;
+    smsSpamFilter(this.data.spam);
   }
 
   // Changes the data as it is on the phone now: the chat and the SMS screen each keep one.
@@ -174,7 +176,7 @@ export class SmsLink {
   }
 
   setSpam(on: boolean): Promise<void> {
-    return this.update((d) => ({ ...d, spam: on }));
+    return this.update((d) => ({ ...d, spam: on })).then(() => smsSpamFilter(on));
   }
 
   setSpamLinks(on: boolean): Promise<void> {

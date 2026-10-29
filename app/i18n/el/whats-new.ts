@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Spam SMS come quietly**: on Android, an SMS that the spam filter's own words catch, a link with words that try to fool from a number that is no contact and that you never answered, still goes to Spam but no longer shows a notice or makes a sound. Spam by your own words and rules still shows one, as they stay encrypted in the space; with the Spam filter off, every SMS does. See [SMS](#sms).":
+    "**Τα ανεπιθύμητα SMS έρχονται αθόρυβα**: σε Android, ένα SMS που πιάνουν τα λόγια του ίδιου του φίλτρου ανεπιθύμητων, σύνδεσμος με λόγια που πάνε να ξεγελάσουν από αριθμό που δεν είναι επαφή και στον οποίο δεν απάντησες ποτέ, πηγαίνει ακόμα στα Ανεπιθύμητα αλλά δεν δείχνει πια ειδοποίηση ούτε κάνει ήχο. Τα ανεπιθύμητα από τις δικές σου λέξεις και τους κανόνες σου δείχνουν ακόμα ειδοποίηση, γιατί αυτά μένουν κρυπτογραφημένα στον χώρο· με το Φίλτρο ανεπιθύμητων κλειστό, τη δείχνει κάθε SMS. Δες [SMS](#sms).",
   '**What\'s new in two parts**: each version says first what changes for you, then what changed under the hood: fixes, speed, battery and security inside. See [Updates](#updates).':
     '**Τι νέο υπάρχει, σε δύο μέρη**: κάθε έκδοση λέει πρώτα τι αλλάζει για σένα, και μετά τι άλλαξε κάτω από το καπό: διορθώσεις, ταχύτητα, μπαταρία και ασφάλεια στο εσωτερικό. Δες [Ενημερώσεις](#updates).',
   '**A contact\'s SMS no longer stay counted as new**: opening their chat reads all of them, the earlier ones too, not only those that show.':

@@ -1884,8 +1884,8 @@ téléphone sans Erevos n’affiche rien.
   numéro qui n’est pas un contact et auquel tu n’as jamais répondu va dans **Spam** quand il contient un lien avec des
   mots qui cherchent à tromper, comme un colis retenu ou un prix gagné, ou l’un des mots que tu ajoutes sous
   **Réglages** → **Téléphone et SMS** → **SMS** → **Filtre anti-spam**. **Marquer comme spam** et **Pas du spam**
-  décident pour un numéro pour de bon. Une notification dit quand même « Nouveau message » quand du spam arrive, car
-  elle s’affiche avant qu’Erevos soit ouvert. Chaque conversation dans **Spam**, dans le dossier et en haut de la
+  décident pour un numéro pour de bon. Un SMS que les mots propres du filtre attrapent (un lien avec des mots qui cherchent à tromper, d’un numéro de téléphone qui n’est dans aucun contact du téléphone et auquel tu n’as jamais répondu) arrive sans notification ni son, car le téléphone connaît aussi ces mots ; tout autre spam, par tes mots, tes règles ou de l’étranger, affiche encore « Nouveau message », car cette notification arrive avant qu’Erevos soit ouvert et le reste du filtre reste chiffré dans l’espace. Un numéro que tu as marqué **Pas du spam** ou que tu laisses passer arrive aussi en silence quand il envoie de tels mots, sauf s’il est dans les contacts du téléphone. Avec le **Filtre anti-spam** désactivé, chaque SMS a sa notification : le téléphone garde seulement si le filtre est activé, comme le dit le dernier espace ouvert.
+  Chaque conversation dans **Spam**, dans le dossier et en haut de la
   conversation, dit pourquoi elle est là : le numéro est bloqué, tu l’as marqué, ta règle nomme l’expéditeur, un numéro
   de l’étranger, ton mot, ou un lien et quels mots.
 - **Lettres qui se ressemblent :** un SMS d’arnaque qui remplace une lettre par une autre d’un autre alphabet qui lui ressemble, comme un а cyrillique dans un mot latin, ou cache dans un mot une marque qu’on ne voit pas, ne passe pas le filtre : il lit les mots comme ils se voient. L’expéditeur n’est jamais comparé ainsi, car un expéditeur qui ressemble à un expéditeur autorisé n’est pas celui-ci.

@@ -3,10 +3,13 @@
 // and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another
 // conversation (lib/forward.ts), the phone's SMS a backup holds (lib/backup-sms.ts), and the
 // one-time code an SMS holds, for Copy code (lib/one-time-code.ts). Spam's rules on who sends, and
-// why each SMS in Spam is there.
+// why each SMS in Spam is there. The phone's copy of Spam's built-in rule (BuiltInSpam.kt), by which
+// such spam comes with no notice, kept the same as the app's.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { smsCounts } from '../lib/backup-sms';
@@ -22,9 +25,11 @@ import {
   dueTrash,
   emptyTrash,
   guessHome,
+  INVISIBLE,
   isAbroad,
   isSpam,
   lookAlike,
+  LOOKS_LIKE,
   looksLikeSpam,
   plainText,
   senderMatches,
@@ -32,6 +37,7 @@ import {
   shownMessages,
   smsFolder,
   sortSms,
+  SPAM_PHRASES,
   spamReason,
   spamWhy,
   trashGoesAt,
@@ -90,6 +96,34 @@ test('look-alike letters and marks that show nothing do not get past the filter'
   assert.equal(lookAlike('p\u0430yp\u0430l'), 'paypal');
   // Who sends is never compared so: a look-alike of an allowed sender is not that sender.
   assert.equal(senderMatches('p\u0430ypal', 'paypal'), false);
+});
+
+// The phone's copy of the built-in rule (BuiltInSpam.kt), read as written there: its phrases, its
+// look-alike letters and its marks that show nothing must be the app's, and the SMS of
+// built-in-spam.json, which the Kotlin side is tried on too, come out as the app sorts them.
+const KOTLIN = readFileSync(join(import.meta.dirname, '../modules/erevos-sms/android/src/main/java/expo/modules/erevossms/BuiltInSpam.kt'), 'utf8');
+const SHARED = JSON.parse(readFileSync(join(import.meta.dirname, 'built-in-spam.json'), 'utf8')) as {
+  cases: { from: string; text: string; spam: boolean }[];
+  fold: [string, string][];
+};
+
+test("the phone's built-in spam rule is the app's", () => {
+  const phrases = KOTLIN.match(/val PHRASES = listOf\(([\s\S]*?)\n {2}\)/)?.[1];
+  assert.ok(phrases, 'PHRASES in BuiltInSpam.kt');
+  assert.deepEqual([...phrases.matchAll(/"([^"\\]*)"/g)].map((m) => m[1]), SPAM_PHRASES);
+  const looks = KOTLIN.match(/val LOOKS_LIKE = mapOf\(([\s\S]*?)\n {2}\)/)?.[1];
+  assert.ok(looks, 'LOOKS_LIKE in BuiltInSpam.kt');
+  assert.deepEqual(Object.fromEntries([...looks.matchAll(/'(.)' to '(.)'/g)].map((m) => [m[1], m[2]])), LOOKS_LIKE);
+  const invisible = KOTLIN.match(/val INVISIBLE = Regex\("(.*)"\)/)?.[1];
+  assert.equal(invisible?.replace(/\\\\/g, '\\'), INVISIBLE.source);
+  for (const { from, text, spam } of SHARED.cases) {
+    assert.equal(spamReason(sms(from, text, 10), data(), [], false)?.kind === 'phrase', spam, `${from}: ${text}`);
+    // Never a contact's, nor an answered number's, nor with the filter off.
+    assert.equal(spamReason(sms(from, text, 10), data(), [], true), null);
+    assert.equal(spamReason(sms(from, text, 10, { replied: true }), data(), [], false), null);
+    assert.equal(spamReason(sms(from, text, 10), data({ spam: false }), [], false), null);
+  }
+  for (const [text, folded] of SHARED.fold) assert.equal(lookAlike(text), folded, text);
 });
 
 test('spam is a blocked number, a marked one, or one the filter caught; never a contact, one answered or a group', () => {

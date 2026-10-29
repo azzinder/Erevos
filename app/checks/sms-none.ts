@@ -8,5 +8,6 @@ export const sendSms = async (): Promise<number> => {
 };
 export const laterSmsHolder = () => null;
 export const onSmsEvent = () => null;
+export const smsSpamFilter = (_on: boolean): void => undefined;
 export const smsToolsReady = () => false;
 export const exportPhoneSms = async (): Promise<Uint8Array | null> => null;

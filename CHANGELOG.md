@@ -14,6 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Spam SMS come quietly** (Android): an SMS that Spam's built-in rule catches (from a phone number that is in none
+  of the phone's contacts and was never answered, with a link and words that try to fool, read as the filter reads
+  them: look-alike letters and invisible marks folded) is kept and goes to **Spam** as before, but the phone shows no
+  notice for it and the app plays no sound (`onSms` carries `spam`). Only the built-in phrases are on the phone
+  (`BuiltInSpam.kt`, kept equal to `lib/sms-folders.ts` by `checks/sms-folders.check.ts` and
+  `checks/built-in-spam.json`); the owner's words, rules and marks stay encrypted in the space, so their spam still
+  has a notice, and a number marked **Not spam** or let through but not in the phone's contacts comes quietly too when
+  it sends such words. The only thing kept outside the space is whether the **Spam filter** is on, as the space
+  opened last says, so with it off every SMS has its notice. Contacts', answered numbers' and short codes' notices
+  are as before; without the contacts permission nothing is held back.
 - **Backups to your own server from a computer and the web app too**: in the desktop app, automatic backups can go to a
   WebDAV server as on Android, and **Restore from a server** works there too. The app's shell sends each request
   (a new path, /__webdav: https only, only PROPFIND, PUT, GET and DELETE, only the Authorization, Depth and
