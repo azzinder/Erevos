@@ -2159,8 +2159,8 @@ sadrže uklonjena mjesta.
 - **Primanje dok su zatvoreni:** prekidač na vrhu svakog mjesta. Kad je uključen, njegovi skriveni razgovori primaju
   kao i vaši ostali razgovori dok je prostor otvoren, bez obzira na to koji je ekran prikazan i s Erevosom u
   pozadini: njihovi kontakti odmah vide da je poruka stigla, obavijest kaže samo „New message“, na Androidu poziv zvoni
-  s „Incoming call“ i bez imena (na ekranu koji zvoni dodirnite mali znak, upišite PIN i dodirnite **Poveži** da se
-  javite), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
+  s „Incoming call“ i bez imena (na ekranu koji zvoni dodirnite **Javi se** ili mali znak, upišite PIN i dodirnite
+  **Poveži**), a podsjetnik iz njihovog Razgovora sa sobom prikazuje obavijest koja kaže samo **Reminder**. Ono što im
   stigne preko Nostra tada se također čita, a njihovi vlastiti Matrix, XMPP i Nostr računi ostaju povezani (pogledajte
   dolje). Poziv koji se završio prije nego što ste ih otvorili, ili je predugo zvonio, prikazuje se kao propušten. Ništa
   od njih se nigdje ne prikazuje dok ih PIN ne otvori. Novo mjesto počinje s ovim uključenim; mjesta postavljena ranije
@@ -2224,11 +2224,11 @@ sadrže uklonjena mjesta.
 - **Zvonjava poziva kad su zatvoreni** (Android): ispod **Javi kad stigne poruka**, dok je **Primanje dok su
   zatvoreni** isključeno. Kad je uključeno, dok je mjesto zatvoreno, a Erevos u pozadini ili na bilo kojem ekranu,
   poziv od jednog od njegovih kontakata tjera telefon da zvoni i prikaže „Incoming call“ bez imena, kao što to radi
-  poziv iz vaših ostalih razgovora. Na ekranu koji zvoni dodirnite mali znak, upišite PIN i dodirnite **Poveži** da se
-  javite; obično **Javi se** ga ne može povezati, a **Odbij** zaustavlja zvonjenje. Zvonjenje traje oko 45 sekundi.
-  Potrebni su **Primaj i zvoni** pod **U pozadini**, što prekidač kaže kad nije uključeno, i relay koji čeka, a
-  koristi vlastiti red na relayu za svako od 4 mjesta, pri čemu se oni koji ne zvone prave uzalud na istom relayu,
-  isto kao i obavijest o porukama iznad, pa otvaranje prostora ništa ne
+  poziv iz vaših ostalih razgovora. Na ekranu koji zvoni dodirnite **Javi se** ili mali znak, upišite PIN i dodirnite
+  **Poveži** da se javite; **Odbij** zaustavlja zvonjenje. Ko dodirne **Javi se** bez PIN-a, ne stiže dalje od polja za
+  PIN. Zvonjenje traje oko 45 sekundi. Potrebni su **Primaj i zvoni** pod **U pozadini**, što prekidač kaže kad nije
+  uključeno, i relay koji čeka, a koristi vlastiti red na relayu za svako od 4 mjesta, pri čemu se oni koji ne zvone
+  prave uzalud na istom relayu, isto kao i obavijest o porukama iznad, pa otvaranje prostora ništa ne
   odaje. Pozivalac samo zvoni na red tamo; sam poziv čeka u vlastitom redu razgovora dok ga PIN ne otvori. Kontakt
   kojeg ste obrisali i dalje može natjerati telefon da zvoni, ali poziv se nikad ne može povezati. Poziv upućen s
   povezanog računara zvoni samo dok su skriveni razgovori otvoreni. Rezervne kopije ovo ne zadržavaju: ponovo ga

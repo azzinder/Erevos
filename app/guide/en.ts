@@ -2058,7 +2058,7 @@ what the places taken away hold.
 - **Receive while closed:** a switch at the top of each place. On, its hidden chats receive as your other chats do while
   the space is open, whatever screen shows and with Erevos in the background: their contacts see at once that a message
   came, a notice says only "New message", on Android a call rings with "Incoming call" and no name (on the ringing
-  screen, tap the small sign, type the PIN and tap **Connect** to answer), and a reminder of their Chat with myself
+  screen, tap **Answer** or the small sign, type the PIN and tap **Connect**), and a reminder of their Chat with myself
   shows a notice that says only **Reminder**. What comes to them through Nostr is read then too, and their own Matrix,
   XMPP and Nostr accounts stay connected (see below). A call that ended before you opened them, or rang too long, shows
   as missed. Nothing of them shows anywhere until the PIN opens them. A new place starts with it on; places set before
@@ -2117,8 +2117,9 @@ what the places taken away hold.
   restoring.
 - **Ring calls when closed** (Android): below **Say when a message comes**, while **Receive while closed** is off.
   Turned on, while the place is closed, with Erevos in the background or on any screen, a call from one of its
-  contacts makes the phone ring and show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap the small sign,
-  type the PIN and tap **Connect** to answer; a plain **Answer** cannot connect it, and **Decline** stops the ring. The
+  contacts makes the phone ring and show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap **Answer** or the small sign,
+  type the PIN and tap **Connect** to answer; **Decline** stops the ring. Whoever taps **Answer** without the PIN gets
+  no further than the PIN field. The
   ring lasts about 45 seconds. It needs **Receive and ring** under **In the background**, which the switch says when
   it is not on, and a relay that waits, and
   uses a relay queue of its own for each of the 4 places, those not ringing made for nothing on the same relay, the

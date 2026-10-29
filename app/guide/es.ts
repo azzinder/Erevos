@@ -2229,8 +2229,8 @@ lo que contienen los lugares que se quitaran.
 - **Recibir estando cerrados:** un interruptor arriba de cada lugar. Activado, sus chats ocultos reciben como tus otros
   chats mientras el espacio está abierto, sea cual sea la pantalla que se vea y con Erevos en segundo plano: sus
   contactos ven al instante que llegó un mensaje, un aviso solo dice «New message», en Android una llamada suena con
-  «Incoming call» y sin nombre (en la pantalla de llamada entrante, toca el pequeño símbolo, escribe el PIN y toca
-  **Conectar** para responder), y un recordatorio de su Chat conmigo muestra un aviso que solo dice **Reminder**. Lo que
+  «Incoming call» y sin nombre (en la pantalla de llamada entrante, toca **Responder** o el pequeño símbolo, escribe el
+  PIN y toca **Conectar**), y un recordatorio de su Chat conmigo muestra un aviso que solo dice **Reminder**. Lo que
   les llega por Nostr también se lee entonces, y sus propias cuentas de Matrix, XMPP y Nostr siguen conectadas (ver
   abajo). Una llamada que terminó antes de que los abrieras, o que sonó demasiado, aparece como perdida. Nada de ellos
   aparece en ningún sitio hasta que el PIN los abre. Un lugar nuevo empieza con esto activado; los lugares configurados
@@ -2298,11 +2298,11 @@ lo que contienen los lugares que se quitaran.
 - **Sonar las llamadas cuando están cerrados** (Android): debajo de **Avisar cuando llega un mensaje**, mientras
   **Recibir estando cerrados** está desactivado. Activado, mientras el lugar está cerrado, con Erevos en segundo plano o
   en cualquier pantalla, una llamada de uno de sus contactos hace sonar el teléfono y mostrar «Incoming call» sin
-  nombre, como una llamada de tus otros chats. En la pantalla de llamada entrante, toca el pequeño símbolo, escribe el
-  PIN y toca **Conectar** para responder; un simple **Responder** no puede conectarla, y **Rechazar** detiene el
-  timbre. El timbre dura unos 45 segundos. Necesita **Recibir y sonar** en **En segundo plano**, cosa que el
-  interruptor dice cuando no está activado, y un relay que espere, y usa una cola en el relay propia para cada uno de
-  los 4 lugares, las que no suenan creadas para nada en el mismo relay, igual que el
+  nombre, como una llamada de tus otros chats. En la pantalla de llamada entrante, toca **Responder** o el pequeño
+  símbolo, escribe el PIN y toca **Conectar** para responder; **Rechazar** detiene el timbre. Quien toca **Responder**
+  sin el PIN no pasa del campo del PIN. El timbre dura unos 45 segundos. Necesita **Recibir y sonar** en **En segundo
+  plano**, cosa que el interruptor dice cuando no está activado, y un relay que espere, y usa una cola en el relay
+  propia para cada uno de los 4 lugares, las que no suenan creadas para nada en el mismo relay, igual que el
   aviso de mensajes de arriba, así que abrir el espacio no delata nada. Quien llama solo hace sonar una cola ahí; la
   llamada en sí espera en la cola propia del chat hasta que el PIN la abre. Un contacto que has eliminado todavía puede
   hacerlo sonar, pero la llamada nunca puede conectarse. Una llamada hecha desde un ordenador vinculado solo suena

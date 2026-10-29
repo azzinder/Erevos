@@ -17,9 +17,9 @@ import { Button, Input, Text } from './ui';
 // The screen a hidden contact's call brings up while its hidden chats are closed (lib/hidden-ring.ts).
 // It says only "Incoming call", names no one, and looks like any call with no caller shown — so
 // whoever holds the phone sees a call, nothing of the hidden chats. A small, discreet sign opens a
-// PIN field; the right PIN opens the place and answers the call that waits on its message queue
-// (app/chat.tsx). Plain Answer cannot connect — there is no call here without the PIN — so it says
-// so and ends, like an ordinary failed call. Decline stops the ring. A wrong PIN does nothing and
+// PIN field, and so does Answer, as there is no call here without the PIN (the owner who answers by
+// habit is asked for it, not turned away); the right PIN opens the place and answers the call that
+// waits on its message queue (app/chat.tsx). Decline stops the ring. A wrong PIN does nothing and
 // says nothing (searchHidden counts it apart, as the home search does), so it stays deniable.
 // Over the password screen (`locked`, app/_layout.tsx) the PIN never stands in for the password:
 // the sign steps aside, the ringtone going on, for the password; once it opens the space, the ring
@@ -47,8 +47,8 @@ export function HiddenRingHost({ locked = false }: { locked?: boolean }) {
 function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: number; onSign?: () => void }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  // 'ringing' shows the call; 'pin' the field behind the discreet sign; 'failed' after plain Answer.
-  const [mode, setMode] = useState<'ringing' | 'pin' | 'failed'>('ringing');
+  // 'ringing' shows the call; 'pin' the field behind the discreet sign and Answer.
+  const [mode, setMode] = useState<'ringing' | 'pin'>('ringing');
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const closing = useRef(false);
@@ -59,14 +59,9 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
     return () => Vibration.cancel();
   }, [mode]);
 
-  // Plain Answer cannot connect: it says so, then ends.
-  useEffect(() => {
-    if (mode !== 'failed') return;
-    const timer = setTimeout(() => setHiddenRinging(null), 2000);
-    return () => clearTimeout(timer);
-  }, [mode]);
-
   const decline = () => setHiddenRinging(null);
+  // The sign and Answer both ask for the PIN, or over the password screen step aside for the password.
+  const askPin = () => (onSign ? onSign() : setMode('pin'));
 
   async function connect() {
     if (busy || closing.current) return;
@@ -100,13 +95,13 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
           <PersonIcon color="rgba(255,255,255,0.32)" size={48} />
         </View>
         <Text variant="title" color="#FFFFFF" style={styles.shadow}>
-          {mode === 'failed' ? t('The call could not connect') : t('Incoming call')}
+          {t('Incoming call')}
         </Text>
         {/* The discreet sign: small and dim, by the status line. Tapping it opens the PIN field, or
             over the password screen steps aside for the password. */}
         {mode === 'ringing' ? (
           <Pressable
-            onPress={() => (onSign ? onSign() : setMode('pin'))}
+            onPress={askPin}
             accessibilityRole="button"
             accessibilityLabel={t('More')}
             hitSlop={16}
@@ -133,12 +128,8 @@ function HiddenRingScreen({ space, pocket, onSign }: { space: number; pocket: nu
         </View>
       ) : (
         <View style={[styles.buttons, { paddingBottom: insets.bottom + 28 }]}>
-          {mode === 'ringing' ? (
-            <>
-              <Round title={t('Decline')} color="#C62828" onPress={decline} />
-              <Round title={t('Answer')} color="#2E7D32" onPress={() => setMode('failed')} />
-            </>
-          ) : null}
+          <Round title={t('Decline')} color="#C62828" onPress={decline} />
+          <Round title={t('Answer')} color="#2E7D32" onPress={askPin} />
         </View>
       )}
     </View>

@@ -2384,8 +2384,8 @@ löschen, was die weggenommenen Plätze enthalten.
 - **Empfangen, wenn geschlossen:** ein Schalter oben auf jedem Platz. Eingeschaltet empfangen seine versteckten Chats
   wie deine anderen Chats, solange der Bereich offen ist, egal welcher Bildschirm zu sehen ist und mit Erevos im
   Hintergrund: Ihre Kontakte sehen sofort, dass eine Nachricht ankam, eine Benachrichtigung sagt nur „New message“,
-  auf Android klingelt ein Anruf mit „Incoming call“ und ohne Namen (tippe auf dem Klingelbildschirm auf das kleine
-  Zeichen, gib die PIN ein und tippe auf **Verbinden**, um anzunehmen), und eine Erinnerung aus ihrem „Chat mit mir
+  auf Android klingelt ein Anruf mit „Incoming call“ und ohne Namen (tippe auf dem Klingelbildschirm auf **Annehmen**
+  oder das kleine Zeichen, gib die PIN ein und tippe auf **Verbinden**), und eine Erinnerung aus ihrem „Chat mit mir
   selbst“ zeigt eine Benachrichtigung, die nur **Reminder** sagt. Was über Nostr zu ihnen kommt, wird dann auch gelesen,
   und ihre eigenen Matrix-, XMPP- und Nostr-Konten bleiben verbunden (siehe unten). Ein Anruf, der endete, bevor du sie
   geöffnet hast, oder zu lange klingelte, erscheint als verpasst. Nichts von ihnen erscheint irgendwo, bis die PIN sie
@@ -2458,11 +2458,11 @@ löschen, was die weggenommenen Plätze enthalten.
 - **Klingeln bei Anrufen, wenn geschlossen** (Android): unter **Melden, wenn eine Nachricht kommt**, solange
   **Empfangen, wenn geschlossen** aus ist. Eingeschaltet lässt ein Anruf von einem seiner Kontakte, solange der Platz
   geschlossen ist, mit Erevos im Hintergrund oder auf irgendeinem Bildschirm, das Telefon klingeln und
-  „Incoming call“ ohne Namen zeigen, wie ein Anruf aus deinen anderen Chats. Tippe auf dem Klingelbildschirm auf das
-  kleine Zeichen, gib die PIN ein und tippe auf **Verbinden**, um anzunehmen; ein einfaches **Annehmen** kann ihn nicht
-  verbinden, und **Ablehnen** beendet das Klingeln. Das Klingeln dauert etwa 45 Sekunden. Es braucht
-  **Empfangen und klingeln** unter **Im Hintergrund**, was der Schalter sagt, wenn es nicht an ist, und ein Relay, das
-  wartet, und nutzt für jeden der 4 Plätze eine
+  „Incoming call“ ohne Namen zeigen, wie ein Anruf aus deinen anderen Chats. Tippe auf dem Klingelbildschirm auf
+  **Annehmen** oder das kleine Zeichen, gib die PIN ein und tippe auf **Verbinden**, um anzunehmen; **Ablehnen** beendet
+  das Klingeln. Wer **Annehmen** ohne die PIN tippt, kommt nicht weiter als bis zum PIN-Feld. Das Klingeln dauert etwa
+  45 Sekunden. Es braucht **Empfangen und klingeln** unter **Im Hintergrund**, was der Schalter sagt, wenn es nicht an
+  ist, und ein Relay, das wartet, und nutzt für jeden der 4 Plätze eine
   eigene Relay-Warteschlange, die der nicht klingelnden zum Schein auf demselben Relay angelegt, wie bei der
   Nachrichten-Benachrichtigung oben, sodass das Öffnen des Bereichs nichts verrät. Der Anrufer lässt dort nur eine
   Warteschlange klingeln; der Anruf selbst wartet in der eigenen Warteschlange des Chats, bis die PIN ihn öffnet. Ein

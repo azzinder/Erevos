@@ -2259,8 +2259,8 @@ cancellerebbe quello che contengono i posti tolti.
 - **Ricevere da chiuse:** un interruttore in cima a ogni posto. Se è attivo, le sue chat nascoste ricevono come le tue
   altre chat mentre lo spazio è aperto, qualunque schermata sia visibile e con Erevos in background: i loro contatti
   vedono subito che un messaggio è arrivato, una notifica dice solo «New message», su Android una chiamata squilla con
-  «Incoming call» e senza nome (sulla schermata dello squillo, tocca il piccolo segno, scrivi il PIN e tocca
-  **Connetti** per rispondere), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
+  «Incoming call» e senza nome (sulla schermata dello squillo, tocca **Rispondi** o il piccolo segno, scrivi il PIN e
+  tocca **Connetti**), e un promemoria della loro Chat con me stesso mostra una notifica che dice solo
   **Reminder**. Allora viene letto anche quello che arriva loro tramite Nostr, e i loro account Matrix, XMPP e Nostr
   restano collegati (vedi sotto). Una chiamata che è finita prima che le aprissi, o ha squillato troppo a lungo, appare
   come persa. Niente di loro appare da nessuna parte finché il PIN non le apre. Un nuovo posto parte con questo attivo;
@@ -2328,15 +2328,15 @@ cancellerebbe quello che contengono i posti tolti.
 - **Fai squillare le chiamate quando sono chiuse** (Android): sotto **Avvisa quando arriva un messaggio**, mentre
   **Ricevere da chiuse** è disattivato. Se lo attivi, mentre il posto è chiuso, con Erevos in background o su qualsiasi
   schermata, una chiamata da uno dei suoi contatti fa squillare il telefono e
-  mostrare «Incoming call» senza nome, come una chiamata dalle tue altre chat. Sulla schermata dello squillo, tocca il
-  piccolo segno, scrivi il PIN e tocca **Connetti** per rispondere; un semplice **Rispondi** non può collegarla, e
-  **Rifiuta** ferma lo squillo. Lo squillo dura circa 45 secondi. Richiede **Ricevi e squilla** in **In background**,
-  cosa che l’interruttore dice quando non è attivo, e un relay che aspetta, e usa una sua coda sul relay per ciascuno
-  dei 4 posti, quelle che non squillano create per niente sullo stesso relay, come per la notifica dei messaggi qui sopra, così aprire lo spazio non rivela nulla. Chi
-  chiama fa solo squillare una coda lì; la chiamata stessa aspetta sulla coda della chat finché il PIN non la apre. Un
-  contatto che hai eliminato può ancora farlo squillare, ma la chiamata non può mai collegarsi. Una chiamata fatta da un
-  computer collegato squilla solo mentre le chat nascoste sono aperte.
-  I backup non lo conservano: riattivalo dopo il ripristino.
+  mostrare «Incoming call» senza nome, come una chiamata dalle tue altre chat. Sulla schermata dello squillo, tocca
+  **Rispondi** o il piccolo segno, scrivi il PIN e tocca **Connetti** per rispondere; **Rifiuta** ferma lo squillo. Chi
+  tocca **Rispondi** senza il PIN non va oltre il campo del PIN. Lo squillo dura circa 45 secondi. Richiede **Ricevi e
+  squilla** in **In background**, cosa che l’interruttore dice quando non è attivo, e un relay che aspetta, e usa una
+  sua coda sul relay per ciascuno dei 4 posti, quelle che non squillano create per niente sullo stesso relay, come per
+  la notifica dei messaggi qui sopra, così aprire lo spazio non rivela nulla. Chi chiama fa solo squillare una coda lì;
+  la chiamata stessa aspetta sulla coda della chat finché il PIN non la apre. Un contatto che hai eliminato può ancora
+  farlo squillare, ma la chiamata non può mai collegarsi. Una chiamata fatta da un computer collegato squilla solo
+  mentre le chat nascoste sono aperte. I backup non lo conservano: riattivalo dopo il ripristino.
 - **Un nuovo PIN per un posto** (da **Chat nascoste** in **Impostazioni**, o da **Nuove chat nascoste**) lo fa
   ripartire vuoto e sostituisce quello che conteneva. Per tenere le chat e cambiare solo il PIN, aprile e usa **Cambia
   PIN** lì. Ogni PIN deve essere diverso dagli altri e dalla password che apre Erevos.

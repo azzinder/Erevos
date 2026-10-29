@@ -2217,8 +2217,8 @@ as posições retiradas guardam.
 - **Receber quando fechadas:** um interruptor no topo de cada posição. Ativado, as conversas ocultas dela recebem
   como as suas outras conversas enquanto o espaço está aberto, seja qual for a tela e com o Erevos em segundo plano:
   os contatos delas veem na hora que uma mensagem chegou, um aviso diz só "New message", no Android uma chamada toca
-  com "Incoming call" e sem nome (na tela da chamada, toque no pequeno sinal, digite o PIN e toque em **Conectar**
-  para atender), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas pelo
+  com "Incoming call" e sem nome (na tela da chamada, toque em **Atender** ou no pequeno sinal, digite o PIN e toque em
+  **Conectar**), e um lembrete da Conversa comigo delas mostra um aviso que diz só **Reminder**. O que chega a elas pelo
   Nostr também é lido então, e as contas Matrix, XMPP e Nostr próprias delas continuam conectadas (veja abaixo). Uma
   chamada que terminou antes de você abri-las, ou que tocou tempo demais, aparece como perdida. Nada delas aparece em
   lugar nenhum até o PIN abri-las. Uma posição nova começa com isso ativado; as posições definidas antes ficam como
@@ -2285,8 +2285,9 @@ as posições retiradas guardam.
 - **Tocar as chamadas quando fechadas** (Android): abaixo de **Avisar quando chega uma mensagem**, enquanto **Receber
   quando fechadas** está desativado. Ativado, enquanto a posição está fechada, com o Erevos em segundo plano ou em
   qualquer tela, uma chamada de um dos contatos dela faz o celular tocar e mostrar "Incoming call" sem nome, como faz
-  uma chamada das suas outras conversas. Na tela da chamada, toque no pequeno sinal, digite o PIN e toque em
-  **Conectar** para atender; um simples **Atender** não consegue conectá-la, e **Recusar** para o toque. O toque dura
+  uma chamada das suas outras conversas. Na tela da chamada, toque em **Atender** ou no pequeno sinal, digite o
+  PIN e toque em **Conectar** para atender; **Recusar** para o toque. Quem toca em **Atender** sem o PIN não passa do
+  campo do PIN. O toque dura
   cerca de 45 segundos. Precisa de **Receber e tocar** em **Em segundo plano**, o que o interruptor avisa quando não
   está ativado, e de um relay que espera, e usa uma fila no relay própria para cada uma das 4 posições, as que não
   tocam criadas à toa no mesmo relay, como no aviso de mensagens acima, para que abrir o espaço não revele nada. Quem

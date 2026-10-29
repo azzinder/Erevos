@@ -2347,18 +2347,18 @@ supprimerait ce que contiennent les emplacements retirés.
 - **Recevoir une fois fermées :** un interrupteur en haut de chaque emplacement. Activé, ses discussions masquées
   reçoivent comme tes autres discussions tant que l’espace est ouvert, quel que soit l’écran affiché et avec Erevos en
   arrière-plan : leurs contacts voient aussitôt qu’un message est arrivé, une notification dit seulement « Nouveau
-  message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de sonnerie, appuie sur le petit
-  signe, tape le code PIN et appuie sur **Connecter** pour répondre), et un rappel de leur Discussion avec moi-même
-  affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi, et leurs
-  comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas). Un appel terminé avant que tu les ouvres, ou
-  qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche nulle part tant que le code PIN ne les
-  ouvre pas. Un nouvel emplacement commence avec cet interrupteur activé ; les emplacements définis avant restent comme
-  ils étaient jusqu’à ce que tu l’actives. Pour cela, la clé de l’emplacement est gardée chiffrée avec l’espace, parmi
-  une clé aléatoire pour chaque autre emplacement, si bien qu’ouvrir l’espace ne montre pas quels emplacements
-  reçoivent, ni lesquels sont définis. Mais celui qui ouvre l’espace et copie ce que garde le téléphone pourrait aussi
-  ouvrir cet emplacement, sans code PIN : le code PIN les cache alors aux yeux de qui tient le téléphone, pas d’un outil
-  d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs messages attendent sur le relais
-  jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
+  message », sur Android un appel sonne avec « Appel entrant » et sans nom (sur l’écran de sonnerie, appuie sur
+  **Répondre** ou sur le petit signe, tape le code PIN et appuie sur **Connecter**), et un rappel de leur Discussion
+  avec moi-même affiche une notification qui dit seulement **Rappel**. Ce qui leur arrive par Nostr est alors lu aussi,
+  et leurs comptes Matrix, XMPP et Nostr à elles restent connectés (voir plus bas). Un appel terminé avant que tu les
+  ouvres, ou qui a sonné trop longtemps, s’affiche comme manqué. Rien d’elles ne s’affiche nulle part tant que le code
+  PIN ne les ouvre pas. Un nouvel emplacement commence avec cet interrupteur activé ; les emplacements définis avant
+  restent comme ils étaient jusqu’à ce que tu l’actives. Pour cela, la clé de l’emplacement est gardée chiffrée avec
+  l’espace, parmi une clé aléatoire pour chaque autre emplacement, si bien qu’ouvrir l’espace ne montre pas quels
+  emplacements reçoivent, ni lesquels sont définis. Mais celui qui ouvre l’espace et copie ce que garde le téléphone
+  pourrait aussi ouvrir cet emplacement, sans code PIN : le code PIN les cache alors aux yeux de qui tient le téléphone,
+  pas d’un outil d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs messages attendent
+  sur le relais jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
 - **Elles se ferment toutes seules** dès qu’Erevos a été en arrière-plan plus de 30 secondes, comme se reverrouille le
   code PIN propre d’une discussion, mais pas pendant un appel, ni pendant que tu choisis une photo ou un fichier pour
   elles ou que tu prends une photo.
@@ -2423,16 +2423,16 @@ supprimerait ce que contiennent les emplacements retirés.
 - **Faire sonner les appels quand elles sont fermées** (Android) : sous **Prévenir quand un message arrive**, tant que
   **Recevoir une fois fermées** est désactivé. Activé, tant que l’emplacement est fermé, avec Erevos en arrière-plan ou
   sur n’importe quel écran, un appel d’un de ses contacts fait sonner le téléphone et affiche « Incoming call » sans
-  nom, comme un appel de tes autres discussions. Sur l’écran de sonnerie, appuie sur le petit signe, tape le code PIN et
-  appuie sur **Connecter** pour répondre ; un simple **Répondre** ne peut pas le connecter, et **Refuser** arrête la
-  sonnerie. La sonnerie dure environ 45 secondes. Il faut **Recevoir et sonner** sous **En arrière-plan**, ce que
-  l’interrupteur dit quand ce n’est pas activé, et un relais qui attend, et cela utilise une file d’attente sur le
-  relais pour chacun des 4 emplacements, celles qui ne sonnent pas étant créées pour rien sur le même relais, comme pour
-  la notification des messages ci-dessus, si bien qu’ouvrir l’espace ne trahit rien. L’appelant ne fait que sonner une
-  file là-bas ; l’appel lui-même attend sur la file propre de la discussion jusqu’à ce que le code PIN l’ouvre. Un
-  contact que tu as supprimé peut encore le faire sonner, mais l’appel ne peut jamais se connecter. Un appel passé
-  depuis un ordinateur associé ne sonne que tant que les discussions masquées sont ouvertes. Les sauvegardes ne le
-  gardent pas : active-le de nouveau après une restauration.
+  nom, comme un appel de tes autres discussions. Sur l’écran de sonnerie, appuie sur **Répondre** ou sur le petit signe,
+  tape le code PIN et appuie sur **Connecter** pour répondre ; **Refuser** arrête la sonnerie. Qui appuie sur
+  **Répondre** sans le code PIN ne va pas plus loin que le champ du code PIN. La sonnerie dure environ 45 secondes. Il
+  faut **Recevoir et sonner** sous **En arrière-plan**, ce que l’interrupteur dit quand ce n’est pas activé, et un
+  relais qui attend, et cela utilise une file d’attente sur le relais pour chacun des 4 emplacements, celles qui ne
+  sonnent pas étant créées pour rien sur le même relais, comme pour la notification des messages ci-dessus, si bien
+  qu’ouvrir l’espace ne trahit rien. L’appelant ne fait que sonner une file là-bas ; l’appel lui-même attend sur la file
+  propre de la discussion jusqu’à ce que le code PIN l’ouvre. Un contact que tu as supprimé peut encore le faire sonner,
+  mais l’appel ne peut jamais se connecter. Un appel passé depuis un ordinateur associé ne sonne que tant que les
+  discussions masquées sont ouvertes. Les sauvegardes ne le gardent pas : active-le de nouveau après une restauration.
 - **Un nouveau code PIN pour un emplacement** (depuis **Discussions masquées** dans **Réglages**, ou **Nouvelles
   discussions masquées**) le recommence vide et remplace ce qui s’y trouvait. Pour garder les discussions et changer
   seulement le code PIN, ouvre-les et utilise **Changer le code PIN** là. Chaque code PIN doit être différent des autres

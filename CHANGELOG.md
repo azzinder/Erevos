@@ -473,6 +473,10 @@ On main, not released yet:
   with Call Invites, XEP-0482), so they work with Dino's: each call has a room of its own, only for the group's members,
   and each phone connects straight to each other one through the call relay or the XMPP server's TURN server. A hidden
   chats' own account calls in its groups too, while they are open.
+- **Answer a hidden call with Answer**: on the hidden ring screen ("Incoming call" with no name,
+  `components/hidden-ring-screen.tsx`), **Answer** now opens the PIN field, as the small sign does, instead of
+  saying "The call could not connect" and ending: someone who answered by habit could not take the call. Whoever
+  taps it without the PIN gets no further than the PIN field.
 
 ### Under the hood
 
