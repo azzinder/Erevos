@@ -655,6 +655,16 @@ gescannt. Sobald der Kontakt ein Gerät verknüpft hat, sagt sie auch, wann sich
 geändert hat: Deine Nachrichten gehen auch an jede Stelle darin, also frag nach, wenn er da keines verknüpft oder
 getrennt hat.
 
+Nebeneinander könnt ihr auch mit Codes prüfen, statt die Ziffern zu lesen: Unter der Nummer zeigt jedes Telefon einen
+QR-Code. Tippe auf **Code des Kontakts fotografieren** und fotografiere den Code auf dem Telefon deines Kontakts, dann
+macht er dasselbe mit deinem. Passt er, steht in der Zeile **Persönlich geprüft**. Jedes Telefon markiert das andere
+nur nach dem, was es selbst gesehen hat, und nichts wird gesendet. Passt er nicht, ist vielleicht jemand dazwischen:
+Vertraue diesem Chat nicht.
+
+**Warum:** Der Code enthält nur einen Hash eurer beiden Schlüssel, in einer Reihenfolge, die die beiden Telefone
+unterscheidet. Ein Foto deines eigenen Bildschirms prüft also nichts, und ein Foto des Codes verrät niemandem ohne
+beide Schlüssel, wer ihr seid.
+
 ### Gesendet, angekommen und gelesen
 
 Unter jeder deiner Nachrichten an einen Kontakt sagt **✓**, dass das Relay oder ein Telefon in der Nähe sie angenommen

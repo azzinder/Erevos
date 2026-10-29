@@ -641,6 +641,16 @@ téléphone. Dès que ton contact a associé un appareil, il dit aussi quand la 
 dernière fois : tes messages vont aussi à chaque élément de cette liste, donc s’il n’a pas associé ou dissocié
 d’appareil à ce moment-là, demande-lui.
 
+Côte à côte, vous pouvez vérifier avec des codes au lieu de lire les chiffres : sous le numéro, chaque téléphone
+montre un code QR. Touchez **Photographier son code** et photographiez le code de son téléphone, puis laissez-le faire
+de même avec le vôtre. Quand ça correspond, la ligne indique **Vérifié en personne**. Chaque téléphone marque l’autre
+seulement d’après ce qu’il a vu lui-même, et rien n’est envoyé. S’il dit que ça ne correspond pas, quelqu’un est
+peut-être entre vous : ne faites pas confiance à cette discussion.
+
+**Pourquoi :** le code ne contient qu’un hash de vos deux clés, dans un ordre qui distingue les deux téléphones : une
+photo de votre propre écran ne vérifie donc rien, et une photo du code ne dit pas qui vous êtes à quelqu’un qui n’a
+pas déjà les deux clés.
+
 ### Envoyé, arrivé et lu
 
 Sous chacun de tes messages à un contact, **✓** dit que le relais ou un téléphone à proximité l’a pris, **✓✓** qu’il est

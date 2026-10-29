@@ -603,6 +603,14 @@ não confie nessa conversa, e adicione o link de novo, lido do próprio celular 
 um dispositivo, ele também diz quando a lista de dispositivos dela mudou pela última vez: as suas mensagens também vão
 para cada lugar dessa lista, então se ela não conectou nem desconectou um nessa época, pergunte a ela.
 
+Lado a lado, vocês podem conferir com códigos em vez de ler os dígitos: abaixo do número, cada celular mostra um
+código QR. Toque em **Tirar foto do código dela** e fotografe o código no celular da pessoa; depois deixe que ela faça
+o mesmo com o seu. Quando bate, a linha diz **Conferido pessoalmente**. Cada celular marca o outro só pelo que ele
+mesmo viu, e nada é enviado. Se disser que não bate, pode haver alguém no meio: não confie nessa conversa.
+
+**Por quê:** o código tem só um hash das duas chaves, numa ordem que distingue os dois celulares, então uma foto da
+sua própria tela não confere nada, e uma foto do código não diz quem vocês são a quem não tem as duas chaves.
+
 ### Enviada, chegou e lida
 
 Abaixo de cada uma das suas mensagens para um contato, **✓** diz que o relay ou um celular por perto a pegou, **✓✓**

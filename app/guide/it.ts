@@ -608,6 +608,16 @@ di quella chat, e aggiungi di nuovo il link, scansionato dal suo telefono. Quand
 anche quando è cambiato l’ultima volta l’elenco dei suoi dispositivi: i tuoi messaggi vanno anche a ogni voce di
 quell’elenco, quindi se in quel momento non ne ha collegato o scollegato uno, chiediglielo.
 
+Uno accanto all’altro, potete verificare con i codici invece di leggere le cifre: sotto il numero ogni telefono
+mostra un codice QR. Tocca **Fotografa il suo codice** e fotografa il codice sul suo telefono, poi lascia che faccia
+lo stesso con il tuo. Quando corrisponde, la riga dice **Verificato di persona**. Ogni telefono segna l’altro solo in
+base a ciò che ha visto lui stesso, e non viene inviato nulla. Se dice che non corrisponde, forse qualcuno è in mezzo:
+non fidarti di quella chat.
+
+**Perché:** il codice contiene solo un hash delle vostre due chiavi, in un ordine che distingue i due telefoni, quindi
+una foto del tuo schermo non verifica nulla, e una foto del codice non dice chi siete a chi non ha già entrambe le
+chiavi.
+
 ### Inviato, arrivato e letto
 
 Sotto ognuno dei tuoi messaggi a un contatto, **✓** dice che il relay o un telefono vicino l’ha preso, **✓✓** che è

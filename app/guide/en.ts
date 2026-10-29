@@ -566,6 +566,14 @@ in person or on a call: if they match, no one is in between. If they differ, do 
 link again, scanned from their own phone. Once they have linked a device, it also says when the list of their devices
 last changed: your messages go to each place in it too, so if they did not link or unlink one then, ask them.
 
+Side by side, you can check with codes instead of reading the digits: under the number each phone shows a QR code.
+Tap **Take a photo of their code** and photograph the code on their phone, then let them do the same with yours. When
+it matches, the row says **Checked in person**. Each phone marks the other only by what it saw itself, and nothing is
+sent. If it says it does not match, someone may be in between: do not trust that chat.
+
+**Why:** the code holds only a hash of your two keys, in an order that tells the two phones apart, so a photo of your
+own screen checks nothing, and a photo of the code says nothing of who you are to someone without both keys.
+
 ### Sent, came and read
 
 Under each of your messages to a contact, **✓** says the relay or a phone nearby took it, **✓✓** that it came to

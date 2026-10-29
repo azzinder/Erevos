@@ -14,6 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Check a contact in person with QR codes**: under **Safety number** in a contact's details, each phone shows a QR
+  code; **Take a photo of their code** (or **Choose a photo of their code**) checks the other phone's, and the contact
+  is marked **Checked in person** with the day, until **Take the mark off**. The code is `EREVOSV1:` and the SHA-256
+  of a label, the identity key of the phone that shows it (as the other knows it) and the one it holds for the other,
+  in that order (`lib/verify-code.ts`): a key someone in between gave either phone makes it differ, a photo of the
+  phone's own code is told apart and checks nothing, and the keys themselves are not in it. Each phone marks only what
+  it saw itself; nothing is sent, so a contact cannot claim to be checked. A later version's code (`EREVOSV2:`) is
+  said to be from a newer Erevos, never read as an older one. Not a link, so a camera app opens nothing. The mark
+  (`Contact.verified`) is kept with the contact, moves with the chat into or out of hidden chats, and is not shared
+  with linked devices (`checks/verify-code.check.ts`).
 - **Spam SMS come quietly** (Android): an SMS that Spam's built-in rule catches (from a phone number that is in none
   of the phone's contacts and was never answered, with a link and words that try to fool, read as the filter reads
   them: look-alike letters and invisible marks folded) is kept and goes to **Spam** as before, but the phone shows no

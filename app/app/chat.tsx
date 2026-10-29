@@ -707,7 +707,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [welcoming, setWelcoming] = useState(false);
   // An invite's link pasted on a phone with no relay yet.
   // With when their account's linked devices last changed (`devices`, ms), or 0 while it has none this chat knows of.
-  const [safety, setSafety] = useState<{ peer: string; number: string; devices: number } | null>(null);
+  const [safety, setSafety] = useState<{ peer: string; number: string; devices: number; code: string; verified: number; note: string } | null>(null);
   // The contact being named, and the name typed so far.
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
@@ -3259,7 +3259,56 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     try {
       const identity = peer.slice(CONTACT_PREFIX.length);
-      setSafety({ peer, number: await e2e.safetyNumber(identity), devices: e2e.devicesChanged(identity) });
+      setSafety({
+        peer,
+        number: await e2e.safetyNumber(identity),
+        devices: e2e.devicesChanged(identity),
+        code: e2e.verifyCode(identity),
+        verified: e2e.verifiedAt(identity),
+        note: '',
+      });
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
+
+  // Their phone's check code, photographed or chosen from the photos (lib/verify-code.ts): marks
+  // them checked here when it matches. Their phone marks this one by the code this one shows.
+  async function verifyFromQr(peer: string, from: 'camera' | 'photos') {
+    if (!e2e) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    const say = (note: string, verified = e2e.verifiedAt(identity)) =>
+      setSafety((now) => (now?.peer === peer ? { ...now, note, verified } : now));
+    try {
+      const text = await readQrPhoto(from);
+      if (text === null) return;
+      if (!text) {
+        say(t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
+        return;
+      }
+      const result = await e2e.checkVerify(identity, text);
+      say(
+        result === 'match'
+          ? t('It matches: no one is in between. Now let them take a photo of the code on this phone, so their phone checks you too.')
+          : result === 'own'
+            ? t('That is the code this phone shows. Take a photo of the code on their phone.')
+            : result === 'other'
+              ? t('It does not match. Someone may be in between, or it is the code of another chat. Compare the safety numbers, and ask them.')
+              : result === 'newer'
+                ? t('That code is from a newer Erevos. Update Erevos, then take the photo again.')
+                : t('That QR code is not a code to check a contact by.'),
+      );
+    } catch (error) {
+      say(error instanceof NoCameraError ? error.message : errorText(error));
+    }
+  }
+
+  async function unverify(peer: string) {
+    if (!e2e) return;
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    try {
+      await e2e.unverify(identity);
+      setSafety((now) => (now?.peer === peer ? { ...now, verified: 0, note: '' } : now));
     } catch (error) {
       setNote(errorText(error));
     }
@@ -5497,7 +5546,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                       <View style={styles.group}>
                         <DetailRow
                           title={t('Safety number')}
-                          value={t('End-to-end encrypted')}
+                          value={
+                            (safety?.peer === selectedContact ? safety.verified : (e2e?.verifiedAt(selectedContact.slice(CONTACT_PREFIX.length)) ?? 0))
+                              ? t('Checked in person')
+                              : t('End-to-end encrypted')
+                          }
                           open={safety?.peer === selectedContact}
                           onPress={() => void toggleSafety(selectedContact)}
                         />
@@ -5509,6 +5562,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                             <Text selectable variant="mono" style={styles.safety}>
                               {safety.number.split(' ').reduce((lines, group, i) => lines + (i === 0 ? '' : i % 4 === 0 ? '\n' : '  ') + group, '')}
                             </Text>
+                            <Text variant="caption" tone={safety.verified ? undefined : 'muted'}>
+                              {safety.verified
+                                ? t('Checked in person on {day}, by the code on their phone.', { day: dayText(safety.verified) })
+                                : t('Not checked in person yet.')}
+                            </Text>
+                            <Text variant="caption" tone="muted">
+                              {t('Or check it with codes, side by side: take a photo of the code on their phone, and let them take one of this. Each phone marks the other once it matches; nothing is sent.')}
+                            </Text>
+                            <QrCode text={safety.code} size={180} />
+                            <Row wrap>
+                              {CAN_TAKE_PHOTOS ? (
+                                <Button title={t('Take a photo of their code')} kind="secondary" compact onPress={() => void verifyFromQr(selectedContact, 'camera')} />
+                              ) : null}
+                              <Button title={t('Choose a photo of their code')} kind="secondary" compact onPress={() => void verifyFromQr(selectedContact, 'photos')} />
+                              {safety.verified ? (
+                                <TextButton title={t('Take the mark off')} onPress={() => void unverify(selectedContact)} />
+                              ) : null}
+                            </Row>
+                            {safety.note ? (
+                              <Text variant="caption" tone="muted">
+                                {safety.note}
+                              </Text>
+                            ) : null}
                             {safety.devices > 0 ? (
                               <Text variant="caption" tone="muted">
                                 {t('The list of their linked devices last changed on {day}. Your messages go to each place in it too, used by a device or not. If they did not link or unlink one then, ask them.', { day: dayText(safety.devices) })}

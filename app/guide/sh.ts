@@ -598,6 +598,14 @@ razgovoru i ponovo dodajte link, skeniran s telefona te osobe. Kad ta osoba pove
 njenih uređaja posljednji put promijenio: vaše poruke idu i na svako mjesto s tog popisa, pa ako ona tada nije
 povezala ili odvojila uređaj, pitajte je.
 
+Jedan pored drugog, možete provjeriti i kodovima umjesto čitanja cifara: ispod broja svaki telefon prikazuje QR kod.
+Dodirnite **Fotografirajte njihov kod** i fotografirajte kod na telefonu te osobe, a zatim neka ona učini isto s vašim.
+Kad se podudara, red kaže **Provjereno uživo**. Svaki telefon označava drugi samo po onome što je sam vidio, i ništa
+se ne šalje. Ako kaže da se ne podudara, možda je neko između: ne vjerujte tom razgovoru.
+
+**Zašto:** kod sadrži samo hash vaša dva ključa, redom koji razlikuje dva telefona, pa fotografija vašeg vlastitog
+ekrana ne provjerava ništa, a fotografija koda ne govori ko ste nikome ko već nema oba ključa.
+
 ### Poslano, stiglo i pročitano
 
 Ispod svake vaše poruke kontaktu, **✓** kaže da ju je preuzeo relay ili telefon u blizini, **✓✓** da je stigla na

@@ -603,6 +603,15 @@ en ese chat, y vuelve a añadir el enlace, escaneado de su propio teléfono. En 
 también dice cuándo cambió por última vez la lista de sus dispositivos: tus mensajes van también a cada lugar de ella,
 así que si no vinculó o desvinculó uno entonces, pregúntale.
 
+Uno junto al otro, podéis comprobarlo con códigos en lugar de leer las cifras: bajo el número cada teléfono muestra un
+código QR. Toca **Hacer una foto de su código** y fotografía el código de su teléfono; luego deja que hagan lo mismo
+con el tuyo. Cuando coincide, la fila dice **Comprobado en persona**. Cada teléfono marca al otro solo por lo que vio
+él mismo, y no se envía nada. Si dice que no coincide, puede que haya alguien en medio: no te fíes de ese chat.
+
+**Por qué:** el código solo lleva un hash de vuestras dos claves, en un orden que distingue los dos teléfonos, así que
+una foto de tu propia pantalla no comprueba nada, y una foto del código no dice quiénes sois a quien no tenga ya las
+dos claves.
+
 ### Enviado, llegado y leído
 
 Bajo cada uno de tus mensajes a un contacto, **✓** dice que el relay o un teléfono cercano lo recogió, **✓✓** que llegó

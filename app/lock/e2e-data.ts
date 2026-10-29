@@ -156,6 +156,10 @@ export type Contact = {
    *  moves that queue only while it is still the one they know. Missing in what was kept before
    *  contact queues: they know it. */
   knows?: number;
+  /** When this phone checked their key in person, by the QR code their phone showed
+   *  (lib/verify-code.ts), ms. Missing while it has not. Only this phone knows it: theirs marks
+   *  this one on its own, by the code this one shows. */
+  verified?: number;
 };
 
 /**
@@ -539,6 +543,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(checkedChatNotify(v.notify) ? { notify: checkedChatNotify(v.notify)! } : {}),
     ...(checkedMine(v.mine) ? { mine: checkedMine(v.mine)! } : {}),
     ...(isTime(v.knows) ? { knows: v.knows } : {}),
+    ...(isTime(v.verified) && v.verified > 0 ? { verified: v.verified } : {}),
   };
 }
 

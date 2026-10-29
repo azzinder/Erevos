@@ -24,6 +24,7 @@ import { CONTACT_GROUP } from './contact-queues';
 import { GRACE, takesPlace, tellDue, toldOnce } from './moves';
 import { NOSTR_AGAIN_MS, NOSTR_AGAIN_MOST, NOSTR_BACKUP_MS, NOSTR_KEEP_MOST, nostrKeysChanged, nostrRelays, nostrWraps } from './nostr';
 import { t } from './i18n';
+import { checkVerifyCode, verifyCode, type VerifyResult } from './verify-code';
 
 // End-to-end encryption for one chat: a space's, or its hidden chats'. Each has its own account,
 // so neither its contacts nor the relay can tie the two together. The account's public keys
@@ -1706,6 +1707,43 @@ export class E2E {
     return core.safetyNumber(own ? fromHex(own) : this.identity, fromHex(identity));
   }
 
+  /** The QR code this chat shows a contact, for their phone to check its key by (lib/verify-code.ts). */
+  verifyCode(identity: string): string {
+    const contact = this.find(identity);
+    if (!contact) throw new Error(t('No such contact.'));
+    return verifyCode(contact.ownIdentity || this.identityHex(), identity);
+  }
+
+  /** When this phone checked a contact's key by their QR code, ms, or 0 while it has not. */
+  verifiedAt(identity: string): number {
+    return this.find(identity)?.verified ?? 0;
+  }
+
+  /**
+   * Checks the text of a QR code their phone showed (verifyCode on their side) against the keys held
+   * here, and marks the contact checked when it matches. Nothing is sent: their phone marks this one
+   * by the code this one shows it.
+   */
+  checkVerify(identity: string, text: string, now = Date.now()): Promise<VerifyResult> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact) throw new Error(t('No such contact.'));
+      const result = checkVerifyCode(text, contact.ownIdentity || this.identityHex(), identity);
+      if (result === 'match') await this.save(this.withContact({ ...contact, verified: now }));
+      return result;
+    });
+  }
+
+  /** Takes the mark off: the contact is no longer shown as checked. */
+  unverify(identity: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (!contact?.verified) return;
+      const { verified: _verified, ...rest } = contact;
+      await this.save(this.withContact(rest));
+    });
+  }
+
   /** Throws BlockedContactError when the contact of a link is blocked here, as addContact would, before anything is made to add them: a queue, or a place lent on their relay. */
   async refuseBlocked(code: { key: string }): Promise<void> {
     if (!code.key) return;
@@ -2882,6 +2920,7 @@ export class E2E {
       // What this phone keeps for the chat stays too: its own PIN and its notifications.
       ...(known?.pin ? { pin: known.pin } : {}),
       ...(known?.notify ? { notify: known.notify } : {}),
+      ...(known?.verified ? { verified: known.verified } : {}),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
     const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);
