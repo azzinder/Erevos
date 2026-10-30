@@ -228,7 +228,7 @@ nikad ne prenosi.
 | **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
-| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (Android i web-aplikacija), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
+| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku**, **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
@@ -877,8 +877,8 @@ u citatu (tamo kao ▒▒▒).
   ostaju kakvi jesu. Podebljano, kurziv i precrtano ostaju u jednom redu.
 - **Drugi vide znakove:** raniji Erevos i druge aplikacije prikazuju riječi s njihovim znakovima, kako su upisane.
 - **Skrivena fotografija:** pod **+**, **Skrivena fotografija** šalje fotografiju koja se u razgovoru prikazuje
-  zamućeno, u razgovorima s kontaktima i u grupama, dok je ne dodirnete, i tada se sama otvara. Raniji Erevos je
-  prikazuje kao svaku fotografiju.
+  zamućeno, u razgovorima s kontaktima i u grupama, dok je ne dodirnete, i tada se sama otvara. Zamućena je i u
+  dijelu **Mediji, linkovi i fajlovi**. Raniji Erevos je prikazuje kao svaku fotografiju.
 
 **Zašto:** znak upisan u riječi putuje u njima, unutar šifriranja, bez ičega pored njih po čemu bi se razlikovao.
 
@@ -1606,7 +1606,7 @@ između.
 - **Prikvačivanje i proslijeđivanje:** **Prikvači**, u meniju poruke, prikvači je na vrh sobe za sve, ako soba
   dozvoljava; traka iznad razgovora prikazuje posljednju prikvačenu poruku, dodir ide do nje a zatim prikazuje
   sljedeću. **Otkvači** je skida. **Proslijedi** šalje kopiju u drugi razgovor ovog računa; kopija s originalom ne
-  dijeli ništa.
+  dijeli ništa. Razgovor koji nije šifrovan to kaže pored imena, jer njegov server čita kopiju poslanu tamo.
 - **Pronalaženje grupa:** **Pronađi grupu**, na Matrix ekranu, pretražuje javne sobe vašeg Matrix servera, ili drugog
   koji upišete, a on tada saznaje šta tražite. **Prostori** navode sobe u prostorima u kojima ste, da im se
   pridružite. **Pretraži poruke** traži samo među porukama sačuvanim na ovom telefonu i nikoga ne pita.
@@ -2600,8 +2600,9 @@ briše telefon.
   vezu za kontakt, redovi tvojih grupa, tvojih kontakata, tvog kućnog releja, oni za obavijesti Matrixa i XMPP-a, vrata tvojih
   javnih grupa i povezanih uređaja. Također poruke koje relej drži da ih pošalje kasnije, datoteke koje su stigle i čekaju na
   njemu te pozivnice koje si napravio/napravila a nitko ih nije upotrijebio. Skriveni razgovori koji primaju i dok su zatvoreni
-  odlaze s prostorom, ostali kad ih otvoriš dok je prostor zaustavljen. Preko Tora Erevos traži i od svakog Nostr releja da
-  zaboravi ključeve na kojima tvoji razgovori čitaju (zahtjev da nestane, NIP-62).
+  odlaze s prostorom, ostali kad ih otvoriš dok je prostor zaustavljen. Popisi na ekranu izostavljaju skrivene razgovore, da
+  nikad ne pokažu da ih ima. Preko Tora Erevos traži i od svakog Nostr releja da zaboravi ključeve na kojima tvoji razgovori
+  čitaju (zahtjev da nestane, NIP-62).
 - **Matrix, XMPP, Nostr:** s opcijom **Odjavi se i s Matrixa i XMPP-a te obriši Nostr račun napravljen ovdje** ti se računi
   ovdje odjavljuju. Sami računi ostaju na svojim serverima, koji su njihovi, a ne Erevosovi. Nostr račun donesen iz druge
   aplikacije ostaje kakav jest.

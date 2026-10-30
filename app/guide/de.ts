@@ -242,7 +242,7 @@ nicht lesen kannst.
 | **Allgemein** | **Sprache**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
-| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (Android und die Web-App), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
+| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf**, **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
 | **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android), **LoRa-Funk** (Android), **Matrix**, **XMPP** und **Nostr-Chats**. Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr), [Über LoRa-Funk](#lora), [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats). |
 | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **SMS, wenn sonst nichts geht**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
 | **Daten und Geräte** | **Backups**, **Backup-Teile**, **Verknüpfte Geräte** und **Importierte Chats**. Siehe [Backups](#backup), [Backup-Teile bei Freunden](#backup-pieces), [Verknüpfte Geräte](#devices) und [Importierte Chats](#import). |
@@ -962,8 +962,8 @@ Startbildschirms und in einem Zitat (dort als ▒▒▒).
 - **Andere sehen die Zeichen:** Ein Erevos von vorher und andere Apps zeigen die Worte mit ihren Zeichen, wie
   getippt.
 - **Verstecktes Foto:** unter **+** sendet **Verstecktes Foto** ein Foto, das im Chat verschwommen erscheint, in den
-  Chats mit Kontakten und in Gruppen, bis du es antippst; dann öffnet es sich von selbst. Ein Erevos von vorher zeigt es
-  wie jedes Foto.
+  Chats mit Kontakten und in Gruppen, bis du es antippst; dann öffnet es sich von selbst. Auch in **Medien, Links und
+  Dateien** erscheint es verschwommen. Ein Erevos von vorher zeigt es wie jedes Foto.
 
 **Warum:** Ein in die Worte getipptes Zeichen reist in ihnen, innerhalb der Verschlüsselung, ohne dass daneben etwas
 mitgeschickt wird, das sich unterscheiden ließe.
@@ -1775,7 +1775,8 @@ Element: Keine Brücke sitzt dazwischen.
 - **Anheften und Weiterleiten:** **Anheften** im Menü einer Nachricht heftet sie für alle oben im Raum an, wenn der
   Raum es dir erlaubt; eine Leiste über dem Chat zeigt die neueste angeheftete Nachricht, ein Tippen springt dorthin
   und zeigt dann die nächste. **Loslösen** nimmt sie ab. **Weiterleiten** sendet eine Kopie an einen anderen Chat
-  dieses Kontos; die Kopie teilt nichts mit dem Original.
+  dieses Kontos; die Kopie teilt nichts mit dem Original. Ein Chat, der nicht verschlüsselt ist, sagt es neben
+  seinem Namen, denn sein Server liest eine Kopie, die dorthin geht.
 - **Gruppen finden:** **Eine Gruppe finden** auf dem Matrix-Bildschirm durchsucht die öffentlichen Räume deines
   Matrix-Servers oder eines anderen, den du schreibst, der dann erfährt, wonach du suchst. **Spaces** listet die Räume
   der Spaces auf, in denen du bist, zum Beitreten. **Nachrichten durchsuchen** sucht nur in den Nachrichten auf diesem
@@ -2879,8 +2880,9 @@ nicht der [Panikknopf](#panic), der das Telefon löscht.
   die Türen deiner öffentlichen Gruppen und die deiner verknüpften Geräte. Dazu die Nachrichten, die ein Relay für dich zum
   späteren Senden hält, die Dateien, die angekommen sind und dort warten, und die Einladungen, die du gemacht hast und die
   niemand benutzt hat. Versteckte Chats, die auch geschlossen empfangen, gehen mit dem Bereich; die anderen, wenn du sie
-  öffnest, während der Bereich angehalten ist. Über Tor bittet Erevos außerdem jedes Nostr-Relay, die Schlüssel zu vergessen,
-  auf denen deine Chats lesen (eine Bitte zu verschwinden, NIP-62).
+  öffnest, während der Bereich angehalten ist. Die Listen auf dem Bildschirm lassen versteckte Chats aus, damit sie nie zeigen,
+  dass es welche gibt. Über Tor bittet Erevos außerdem jedes Nostr-Relay, die Schlüssel zu vergessen, auf denen deine Chats
+  lesen (eine Bitte zu verschwinden, NIP-62).
 - **Matrix, XMPP, Nostr:** mit **Auch von Matrix und XMPP abmelden und das hier erstellte Nostr-Konto löschen** werden diese
   Konten hier abgemeldet. Die Konten selbst bleiben auf ihren Servern, die ihnen gehören, nicht Erevos. Ein Nostr-Konto aus
   einer anderen App bleibt unberührt.

@@ -243,7 +243,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Général** | **Langue**, **Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, [Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
-| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (Android et l’app web), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
+| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique**, **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
@@ -946,8 +946,9 @@ dans la ligne de l’écran d’accueil et dans une citation (là sous la forme 
 - **Les autres voient les marques :** un Erevos d’avant et d’autres apps montrent les mots avec leurs marques, tels
   que tapés.
 - **Photo cachée :** sous **+**, **Photo cachée** envoie une photo qui apparaît floue dans la discussion, dans les
-  discussions avec les contacts et dans les groupes, jusqu’à ce qu’on la touche, et elle s’ouvre alors toute seule. Un
-  Erevos d’avant la montre comme n’importe quelle photo.
+  discussions avec les contacts et dans les groupes, jusqu’à ce qu’on la touche, et elle s’ouvre alors toute seule.
+  Dans **Médias, liens et fichiers**, elle apparaît floue aussi. Un Erevos d’avant la montre comme n’importe quelle
+  photo.
 
 **Pourquoi :** une marque tapée dans les mots voyage avec eux, à l’intérieur du chiffrement, sans rien à côté qui la
 distingue.
@@ -1744,7 +1745,8 @@ Element : aucun pont ne se met entre les deux.
 - **Épingler et transférer :** **Épingler**, dans le menu d’un message, l’épingle en haut du salon pour tout le monde,
   si le salon te le permet ; une barre au-dessus du chat montre le dernier message épinglé, et un toucher y va puis
   montre le suivant. **Désépingler** l’enlève. **Transférer** envoie une copie à un autre chat de ce compte ; la copie
-  ne partage rien avec l’original.
+  ne partage rien avec l’original. Un chat non chiffré le dit à côté de son nom, car son serveur lit une copie envoyée
+  là.
 - **Trouver des groupes :** **Trouver un groupe**, sur l’écran Matrix, cherche parmi les salons publics de ton serveur
   Matrix, ou d’un autre que tu écris, qui apprend alors ce que tu cherches. **Espaces** liste les salons des espaces
   où tu es, pour les rejoindre. **Chercher des messages** cherche seulement dans les messages gardés sur ce téléphone,
@@ -2843,11 +2845,12 @@ n'est pas le [Bouton de panique](#panic), qui efface le téléphone.
 
 - **Ce qui part :** chaque file que cet espace a sur les relais, avec les messages qui y attendent : la vôtre, celle que nomme
   votre lien de contact, celles de vos groupes, de vos contacts, de votre relais maison, celles des notifications Matrix et XMPP,
-  les portes de vos groupes publics et celles de vos appareils liés. Aussi les messages qu'un relais garde pour les envoyer
-  plus tard, les fichiers arrivés qui y attendent, et les invitations que vous avez faites et que personne n'a utilisées. Les
+  les portes de vos groupes publics et celles de vos appareils liés. Aussi les messages qu'un relais garde pour les envoyer plus
+  tard, les fichiers arrivés qui y attendent, et les invitations que vous avez faites et que personne n'a utilisées. Les
   conversations cachées qui reçoivent même fermées partent avec l'espace ; les autres, quand vous les ouvrez alors que l'espace
-  est arrêté. Via Tor, Erevos demande aussi à chaque relais Nostr d'oublier les clés sur lesquelles vos conversations lisent
-  (une demande de disparition, NIP-62).
+  est arrêté. Les listes de l'écran laissent de côté les conversations cachées, pour ne jamais montrer qu'il y en a. Via Tor,
+  Erevos demande aussi à chaque relais Nostr d'oublier les clés sur lesquelles vos conversations lisent (une demande de
+  disparition, NIP-62).
 - **Matrix, XMPP, Nostr :** avec **Aussi me déconnecter de Matrix et XMPP, et supprimer le compte Nostr créé ici**, ces comptes
   sont déconnectés ici. Les comptes restent sur leurs serveurs, qui sont les leurs, pas ceux d'Erevos. Un compte Nostr apporté
   d'une autre appli est laissé tel quel.

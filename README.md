@@ -23,8 +23,10 @@ cryptography. Do not rely on it to protect anyone yet.
 - **Chats** with contacts added from a link or a QR code. The link holds public keys and where to
   reach you, on a relay or on Nostr, never a phone number or a name. Someone new who writes first
   waits as a request, and hears nothing back until you accept. Chats show marks for sent, came and
-  read, and when a contact is online or typing, unless a chat is set to appear offline. A chat or a
-  group can be locked with a PIN of its own, and locks again when you leave it.
+  read, and when a contact is online or typing, unless a chat is set to appear offline. Every chat,
+  those with people on Matrix, XMPP and Nostr too, opens at its last message, with round arrows to
+  its start, to where you left off and to its end. A chat or a group can be locked with a PIN of
+  its own, and locks again when you leave it.
 - **Checking and introducing contacts.** Besides comparing a safety number, two phones can scan
   each other's QR codes under **Safety number**; each marks the contact **Checked in person**, with
   the day, on its own phone only. Nothing is sent, so a contact cannot claim to be checked.
@@ -35,7 +37,8 @@ cryptography. Do not rely on it to protect anyone yet.
   chunks of one size per file, and put on the relay's file store. Only its key and where it is go
   in the chat. With no relay between two contacts they go another way (see Nostr below).
 - **Groups**, private and public (anyone with a public group's link can ask to join). A private
-  group can be made inside a hidden place too.
+  group can be made inside a hidden place too. Typing **@** names a member, who is told of the
+  message even in a group they muted.
 - **Voice and video calls** with a contact, group calls (sound for up to 8 people, pictures for up
   to 4), and a walkie-talkie in chats. Calls with people on Matrix and XMPP are below.
 - **Disappearing messages**, replies, reactions, pins, stars, polls, stickers, sending a place,
@@ -44,6 +47,14 @@ cryptography. Do not rely on it to protect anyone yet.
   **Edited**, and so do your linked devices and every member of a group. Only words can be edited,
   not stickers, places, polls, voice messages, photos, files or forwarded words. A phone with an
   older Erevos keeps the old words.
+- **How words look.** Marks typed around words show so in chats and groups: `*bold*`, `_italic_`,
+  `~struck~`, backticks for code, and `||hidden||`, a grey bar until tapped. **Hidden photo**, under
+  **+**, sends a photo that shows blurred until tapped. Nothing travels beside the words, so an
+  Erevos from before shows the marks as typed and the photo as any photo.
+- **Safety message.** Under **+** in a contact's chat: words that go only if you do not open Erevos
+  for 6 or 12 hours, 1, 2 or 3 days or a week. The relay holds them as a message sent for later and
+  sends them by itself, even if the phone is lost, off or taken; each time you open Erevos, past its
+  password, they move on again. To your contact they come as an ordinary message.
 - **Which way each message went**: hold a message and its menu says whether it went or came through
   the relay, through Nostr, to or from a phone nearby, over LoRa or by SMS. Messages from before
   say nothing.
@@ -82,7 +93,9 @@ cryptography. Do not rely on it to protect anyone yet.
   "New message"; the cost is that its key is then kept with the space, so whoever copies what the
   phone keeps could open it without the PIN.
 - **Linked devices**: a computer or browser linked to the phone by QR code, up to four. The phone
-  stays the account and passes messages on to them.
+  stays the account and passes messages on to them. On a computer, **Link to my phone** comes first,
+  with LPHL's relay and its sign-in at hand when a relay is asked for. The space's Matrix, XMPP and
+  Nostr accounts can go along, end-to-end encrypted, each signed in there as a new device of its own.
 - **Matrix, XMPP and Nostr accounts inside Erevos**, with no bridge: under **Settings** → **Relay
   and networks** a space signs in to a Matrix or an XMPP account, or makes (or brings) a Nostr key,
   and chats with people on Element, Conversations, Monal, Gajim, Dino, Damus, Amethyst and other
@@ -92,18 +105,24 @@ cryptography. Do not rely on it to protect anyone yet.
   OMEMO 0.3 and OMEMO 2 (Erevos's own code, not audited; a private XMPP group is encrypted, a
   channel is not), Nostr chats with NIP-17. All three carry text, photos and files (up to 50 MB on
   Matrix, and on XMPP when the server takes so much, 20 MB on Nostr, fetched only when you tap),
-  and XMPP and Nostr have groups; Matrix and Nostr have voice messages, reactions and replies;
-  Matrix has edits, deleting, checking a device by emoji and a Security Key. They come while the
-  space is open, not when it is closed or Android has stopped Erevos, as these servers send no
-  push; only Matrix can have a closed space say "New message", through your relay. On Android they
+  voice messages, reactions and replies, and all three have groups. Matrix also has edits, deleting,
+  threads, polls, places, link previews, pins, forwarding, favourites, finding public groups and
+  spaces, a search of the messages on the phone, new accounts, the account's devices, checking a
+  device by emoji or by QR code, a Security Key and, on Android, single sign-on. XMPP has edits,
+  deleting for everyone, blocking, new accounts, a new password, finding groups and running one,
+  places and, in chats without encryption, link previews. Matrix and XMPP show profile pictures and
+  can say when you write, off at first. They come while the space is open, not when it is closed or
+  Android has stopped Erevos, as these servers send no push to the phone; Matrix and XMPP can have a
+  closed space say "New message", through your relay, if it is set up for it. On Android they
   follow the space's Tor choice; in the web app and on a computer they go straight. Each hidden
   place can have accounts of its own, and backups hold them (a Matrix account signs in again, as a
   new device).
 - **Calls with people on Matrix and XMPP.** Matrix: voice and video with Element Call, carried
   inside Erevos and shown in a window of its own, on Android, in the web app and on a computer
   (none on Sailfish OS). Sound and picture are end-to-end encrypted and go through the media server
-  the Matrix server names, which sees the phone's address; never through Tor. Older Matrix calls, as
-  FluffyChat makes them, do not ring here. XMPP: voice and video calls as Conversations makes them,
+  the Matrix server names, which sees the phone's address; never through Tor. Older one-to-one
+  Matrix calls, as FluffyChat, Nheko and Element on a computer make them, ring here and can be made
+  from here, encrypted in encrypted rooms. XMPP: voice and video calls as Conversations makes them,
   **Add video** in a voice call, and group calls in private groups as Dino makes them, up to eight
   people. The call is encrypted (DTLS-SRTP), but the fingerprint of its key passes through the XMPP
   servers as it is, so those servers could put themselves in between; it goes through the space's
@@ -173,14 +192,25 @@ cryptography. Do not rely on it to protect anyone yet.
   it or give it back. Any k of the n pieces put together give the password back; fewer give
   nothing to test a guess against. Enough friends together can open your backups if they also get
   the file.
-- **Panic button** (Android and the web app): under **Settings** → **Privacy and security**, one
-  tap wipes everything Erevos keeps on the device: every space and hidden chat, the lock, the
-  Matrix, XMPP and Nostr accounts, the relay tokens, the settings and credentials of automatic
-  backups, and the keys in the Android Keystore; the backup files in the automatic backups' folder
-  go first when you choose. A panic app such as Ripple can ask for it (PanicKit), but only an app
-  you said yes to after the password, while **A panic app may wipe Erevos** is on. It cannot reach
-  backups you copied elsewhere or sent to a server, what the relay holds until it expires, or what
-  your contacts have. Not on the desktop app or Sailfish OS.
+- **Panic button** (Android, the web app, a computer and Sailfish OS): under **Settings** →
+  **Privacy and security**, one tap wipes everything Erevos keeps on the device: every space and
+  hidden chat, the lock, the Matrix, XMPP and Nostr accounts, the relay tokens, the settings and
+  credentials of automatic backups, and the keys in the Android Keystore; the backup files in the
+  automatic backups' folder go first when you choose. A panic app such as Ripple can ask for it
+  (PanicKit), but only an app you said yes to after the password, while **A panic app may wipe
+  Erevos** is on; a request it was refused is said on the panic screen. It cannot reach backups you
+  copied elsewhere or sent to a server, what the relay holds until it expires, or what your contacts
+  have. A panic app exists only on Android; on a computer and on Sailfish OS the app's shell does
+  the wipe: a computer then starts again as new, and Sailfish OS closes.
+- **Delete me from everywhere**: under **Settings** → **Privacy and security**, one tap deletes what
+  the servers keep for the open space and stops it; the phone keeps everything. It deletes every
+  queue the space and its hidden places keep on the relays with the messages in them, the messages
+  a relay holds for you to send later, files waiting there, and invites nobody used, and, through
+  Tor, asks the Nostr relays to forget the keys your chats read on (NIP-62); on request it also
+  signs out of Matrix and XMPP and deletes the Nostr account made here. The space reaches no relay
+  until **Start again**, which makes new queues and tells contacts quietly. It cannot reach your
+  contacts' phones, Nostr relays that do not do as asked, files sent through a file server, or
+  the Matrix and XMPP servers.
 - **Invites**: **Invite someone** makes one QR code or link for one person and 7 days. On a relay
   that invites, their phone gets access of its own and a queue there with nothing typed, and you are
   contacts at once, with no message request. On Android a contact who is not in Erevos yet can be
@@ -344,14 +374,14 @@ cryptography. Do not rely on it to protect anyone yet.
   WebAssembly, in Electron. No Bluetooth, SMS or Tor there; the same Wi-Fi works. Closing its
   window leaves it running in the system tray (on a Mac, in the Dock), unless turned off: it goes
   on waiting at the relay, rings calls with a ring of its own and says how many messages are not
-  read. Matrix calls work there; the panic button does not.
+  read. Matrix calls and the panic button work there.
 - **Any browser**: the web app. Its releases are signed with an offline Ed25519 key, and its
   service worker runs only signed releases. See [pwa/README.md](pwa/README.md) for what that
   protects and what it does not. Calls ring while it is open; the panic button and Matrix calls
   work there.
 - **Sailfish OS**: the web build in Sailfish WebView, packaged as an RPM; the same Wi-Fi works. A
-  small helper of its own tells of messages and calls while it is closed. No Matrix calls and no
-  panic button. Not yet tested on a phone. See [sailfish/README.md](sailfish/README.md).
+  small helper of its own tells of messages and calls while it is closed. No Matrix calls. Not yet
+  tested on a phone. See [sailfish/README.md](sailfish/README.md).
 
 ## Tried on phones
 
@@ -394,8 +424,8 @@ phones (a Pixel and two other Android phones) and computers:
   servers of Matrix and XMPP.
 - `crates/erevos-relay`: the relay server: queues over TCP and WebSocket, an optional bearer
   token, an optional journal on disk, a file store, two-hop forwarding, messages held for later,
-  Web Push for the web app, credentials for a call relay, lent places, and a push gateway for
-  Matrix.
+  Web Push for the web app, credentials for a call relay, lent places, a push gateway for Matrix
+  and, when named, a push app server for XMPP.
 - `deploy/relay`: scripts that run the relay on a Debian or Ubuntu server behind Caddy, with TLS
   from Let's Encrypt and a call relay (coturn). See its [README](deploy/relay/README.md).
 - `deploy/web`: scripts that sign the web app and serve it from your own server.

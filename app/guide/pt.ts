@@ -227,7 +227,7 @@ em grupos, como fazem as configurações do próprio celular. Nos outros idiomas
 | **Geral** | **Idioma**, **Atualizações**, **Dar o Erevos a um telefone próximo** (Android), **Novidades**, **Sobre o Erevos**, **Apoiar o Erevos** e **Permissões** (Android e o app web). Veja Idioma abaixo, [Atualizações](#updates) e [O Erevos para um telefone próximo](#give-app). |
 | **Aparência** | **Estilo e cores** (acabamento, vidro, estilo, tema, cores e texto em áreas coloridas, com a prévia), **Papel de parede**, **Mensagens** (o formato dos balões), **Ícones do launcher** (Android) e **Widget** (Android). Veja [Aparência](#appearance). |
 | **Notificações** | **Em segundo plano** (Android e o app de computador): receber e tocar enquanto o Erevos está fechado, e o aviso de mensagens; num computador, se o Erevos continua rodando com a janela fechada. **Notificações com o app fechado** (o app web): Web Push. **Número no ícone**: quantas mensagens não foram lidas, no ícone do Erevos. Veja [Num iPhone](#iphone) e [Num computador](#desktop). |
-| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico** (Android e o app web), **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). Veja também [Apagar-me de todos os lugares](#forget). |
+| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico**, **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). Veja também [Apagar-me de todos os lugares](#forget). |
 | **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android), **Matrix**, **XMPP** e **Conversas Nostr**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats). |
 | **Telefone e SMS** (Android) | **Telefone**, as configurações do app de telefone, as mesmas de **Telefone** → **Configurações**. **SMS**, em partes: **O Erevos como app de SMS**, **Descobrir o Erevos num número**, **SMS quando nada mais funciona**, **Nomes dos seus contatos**, **Arquivadas, Spam e Lixeira**, **Filtro de spam**, **Números bloqueados**, **Desfazer envio de SMS**, **Dois chips** (só com dois chips) e **Novo SMS**. Veja [Telefone](#phone) e [SMS](#sms). |
 | **Dados e dispositivos** | **Backups**, **Partes do backup**, **Dispositivos conectados** e **Conversas importadas**. Veja [Backups](#backup), [Partes do backup com amigos](#backup-pieces), [Dispositivos conectados](#devices) e [Conversas importadas](#import). |
@@ -892,7 +892,8 @@ inicial e numa citação (ali como ▒▒▒).
   \`snake_case\` e endereços da web ficam como estão. Negrito, itálico e riscado ficam numa linha só.
 - **Os outros veem as marcas:** um Erevos de antes e outros apps mostram as palavras com as marcas, como digitadas.
 - **Foto escondida:** em **+**, **Foto escondida** envia uma foto que aparece borrada na conversa, nas conversas com
-  contatos e nos grupos, até você tocar nela, e aí ela abre sozinha. Um Erevos de antes a mostra como qualquer foto.
+  contatos e nos grupos, até você tocar nela, e aí ela abre sozinha. Em **Mídia, links e arquivos** ela também
+  aparece borrada. Um Erevos de antes a mostra como qualquer foto.
 
 **Por quê:** uma marca digitada nas palavras viaja nelas, dentro da criptografia, sem nada ao lado que a distinga.
 
@@ -1650,7 +1651,8 @@ fica no meio.
 - **Fixar e encaminhar:** **Fixar**, no menu de uma mensagem, a fixa no alto da sala para todos, se a sala deixar; uma
   barra sobre a conversa mostra a última mensagem fixada, e um toque vai até ela e depois mostra a seguinte.
   **Desafixar** a tira. **Encaminhar** envia uma cópia para outra conversa desta conta; a cópia não compartilha nada
-  com a original.
+  com a original. Uma conversa sem criptografia diz isso ao lado do nome, pois o servidor dela lê uma cópia enviada
+  para lá.
 - **Encontrar grupos:** **Encontrar um grupo**, na tela do Matrix, busca entre as salas públicas do seu servidor
   Matrix, ou de outro que você escrever, que então fica sabendo o que você procura. **Espaços** lista as salas dos
   espaços em que você está, para entrar. **Buscar mensagens** busca só entre as mensagens guardadas neste celular, e
@@ -2678,9 +2680,10 @@ que tem; este não é o [Botão de pânico](#panic), que apaga o celular.
 - **O que some:** cada fila que este espaço tem nos relays, com as mensagens que esperam nela: a sua, a que seu link de contato
   nomeia, as dos seus grupos, as dos seus contatos, a do seu relay de casa, as dos avisos do Matrix e do XMPP, as portas dos seus
   grupos públicos e as dos seus dispositivos vinculados. Também as mensagens que um relay guarda para enviar depois, os arquivos
-  que chegaram e esperam nele, e os convites que você fez e ninguém usou. As conversas ocultas que recebem mesmo fechadas vão
-  com o espaço; as outras quando você as abrir com o espaço parado. Pelo Tor, o Erevos também pede a cada relay do Nostr que
-  esqueça as chaves em que suas conversas leem (um pedido para desaparecer, NIP-62).
+  que chegaram e esperam nele, e os convites que você fez e ninguém usou. As conversas ocultas que recebem mesmo fechadas vão com
+  o espaço; as outras quando você as abrir com o espaço parado. As listas da tela deixam de fora as conversas ocultas, para nunca
+  mostrar que existem. Pelo Tor, o Erevos também pede a cada relay do Nostr que esqueça as chaves em que suas conversas leem (um
+  pedido para desaparecer, NIP-62).
 - **Matrix, XMPP, Nostr:** com **Sair também do Matrix e do XMPP e apagar a conta Nostr criada aqui**, essas contas saem daqui.
   As contas continuam nos servidores delas, que são delas, não do Erevos. Uma conta Nostr que você trouxe de outro app fica como está.
 - **O espaço fica parado:** não recebe nem envia nada, para que nenhuma fila seja refeita logo em seguida (o Erevos refaz sozinho

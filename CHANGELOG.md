@@ -33,9 +33,10 @@ On main, not released yet:
   through Tor or in a hidden place (`lib/matrix-parts.ts`, `app/matrix-chat.tsx`, `components/matrix-message.tsx`).
   See [Matrix](#matrix).
 - **Matrix: pins, forwarding, favourites and finding**: **Pin** and **Unpin** a message (a bar over the chat goes to
-  it), **Forward** a copy to another chat, hold a chat for **Make a favourite**, **Low priority** or **Leave and
-  forget**, **Find a group** among a server's public rooms and in the spaces you are in, and **Search messages** kept on
-  the phone (`lib/matrix-rooms.ts`, `components/matrix-find.tsx`). See [Matrix](#matrix).
+  it), **Forward** a copy to another chat (a chat not encrypted says so beside its name, as its server reads the copy),
+  hold a chat for **Make a favourite**, **Low priority** or **Leave and forget**, **Find a group** among a server's
+  public rooms and in the spaces you are in, and **Search messages** kept on the phone (`lib/matrix-rooms.ts`,
+  `components/matrix-find.tsx`). See [Matrix](#matrix).
 - **Matrix: make an account and look after devices**: **Make a new account** on a server that allows it, asking, when
   the server does, for its terms, a registration token or a step on its own page; **Devices** lists, renames and
   signs out the account's other devices (`lib/matrix-account.ts`, `components/matrix-register.tsx`,
@@ -52,9 +53,10 @@ On main, not released yet:
   every queue the space and its hidden places keep on the relays with the messages in them, the messages a relay holds
   for you to send later, files waiting there, and invites nobody used, and, through Tor, asks the Nostr relays to forget
   the keys your chats read on (a request to vanish, NIP-62); on request it also signs out of Matrix and XMPP and
-  deletes the Nostr account made here. The space then reaches no relay and no Nostr relay until **Start again**, which
-  makes new queues and tells contacts quietly. Files sent through a file server and what other people keep stay. See
-  [Delete me from everywhere](#forget).
+  deletes the Nostr account made here. The screen's lists count the space's own queues only: the hidden places' are
+  cleared but counted apart and never shown, as the lists would tell that the space has hidden chats. The space then
+  reaches no relay and no Nostr relay until **Start again**, which makes new queues and tells contacts quietly. Files
+  sent through a file server and what other people keep stay. See [Delete me from everywhere](#forget).
 - **Every chat opens the same way, with the same arrows**: the Erevos chats, groups, SMS conversations and the Matrix,
   XMPP and Nostr chats all open at their last message with the message bar under it, and have the round arrows to the
   chat's start, to where you left off (the first message that was new when it opened, a double tick) and to its end
@@ -69,8 +71,9 @@ On main, not released yet:
   See [Chat through a relay](#relay).
 - **Hidden photo**: **+** → **Hidden photo** sends a photo marked `hidden` in what it says of itself
   (`lock/attachment-files.ts`, like a sticker's mark, kept only on a photo that is not a sticker); it shows blurred,
-  with **Hidden photo · tap to see it**, until opened on its own (`components/attachment.tsx`). In contacts' chats,
-  groups and through Nostr; forwarded, it stays hidden. An Erevos from before shows it as any photo.
+  with **Hidden photo · tap to see it**, until opened on its own (`components/attachment.tsx`), and in the lists of
+  **Media, links and files** (`components/chat-media.tsx`). In contacts' chats, groups and through Nostr; forwarded, it
+  stays hidden. An Erevos from before shows it as any photo.
 - **Safety message**: under **+** in a contact's chat (hidden chats too), words that go only if the owner does not
   open Erevos for 6 or 12 hours, 1, 2 or 3 days or a week (`lib/safety.ts`). It is held by the relay as a message sent
   for later (`LATER`, no relay change); while Erevos shows past its password (`ownerLooks`, never in the background
