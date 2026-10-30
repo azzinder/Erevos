@@ -115,6 +115,9 @@ abertas.
 - **Todos**, **SMS** e **Erevos**, acima das conversas assim que também há conversas de SMS, mostram todas elas, só os
   SMS (com as conversas cuja última mensagem foi um SMS) ou só as conversas do Erevos, o que veio por último de cada
   contato.
+  Cada chip, esses e os de **Matrix**, **XMPP** e **Nostr**, mostra um número pequeno depois do nome: as mensagens não
+  lidas nele (99+ acima de 99), e nada quando não há nenhuma. As conversas e os grupos **Em silêncio** não contam,
+  como no número do ícone do Erevos, e o que se digita na busca não o muda.
 - **O widget**, no Android: adicione o Erevos pelos widgets da tela inicial. Os quatro botões dele abrem **Telefone**,
   os **SMS**, as **Mensagens** do Erevos e **Contatos**, depois da senha como qualquer link (o Telefone sem ela, se você
   permitir). Sobre os três primeiros ele mostra quantas chamadas perdidas, SMS não lidos e mensagens novas há, nunca de

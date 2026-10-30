@@ -115,6 +115,9 @@ dok ih njihov PIN drži otvorenima.
 - **Sve poruke**, **SMS** i **Erevos**, iznad razgovora kad postoje i SMS razgovori, prikazuju sve, samo SMS (s
   razgovorima čija je posljednja poruka bila SMS) ili samo Erevos razgovore, od svakog kontakta ono što je posljednje
   stiglo.
+  Svako dugme, ova i ona za **Matrix**, **XMPP** i **Nostr**, iza svog imena prikazuje mali broj: nepročitane poruke u
+  njemu (99+ iznad 99), a ništa kad ih nema. Razgovori i grupe na **Utišano** ne računaju se, kao ni u broju na ikoni
+  Erevosa, a ono što se upiše u pretragu ništa ne mijenja.
 - **Widget**, na Androidu: dodajte Erevos iz widgeta svog početnog ekrana. Njegova četiri dugmeta otvaraju ekrane
   **Telefon**, **SMS**, Erevos **Poruke** i **Kontakti**, nakon lozinke kao i svaki link (Telefon i bez nje, ako to
   dozvolite). Iznad prva tri prikazuje koliko ima propuštenih poziva, nepročitanih SMS poruka i novih poruka, nikad od

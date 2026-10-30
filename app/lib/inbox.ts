@@ -170,6 +170,16 @@ export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show
   return true;
 }
 
+/**
+ * How many messages are not read in that part of the list, for its chip's number: the sum of its
+ * rows' `unread`, whatever the search says. A muted chat's or group's are left out, as the number
+ * on Erevos's icon leaves them out (lib/unread.ts); the groups are rows (groupRows) that carry
+ * their `muted`, and show under the Erevos chats and all.
+ */
+export function tabUnread(rows: Pick<InboxRow, 'unread' | 'muted' | 'sms' | 'lastSms' | 'network'>[], show: InboxShow): number {
+  return rows.reduce((sum, row) => (row.muted || !showsIn(row, show) ? sum : sum + row.unread), 0);
+}
+
 /** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's,
  *  XMPP's and Nostr's whenever the space is signed in to them, even with no chat yet. */
 export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false, nostr = false): InboxShow[] {

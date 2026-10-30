@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
+    "**Αριθμοί στα κουμπιά της αρχικής οθόνης**: κάθε κουμπί πάνω από τις συνομιλίες (Όλα, SMS, Erevos, Matrix, XMPP, Nostr) δείχνει πόσα μηνύματα δεν έχουν διαβαστεί εκεί, ως έναν μικρό αριθμό μετά το όνομά του· οι συνομιλίες και οι ομάδες σε σίγαση δεν μετρούν. Δες [Πρώτα βήματα](#start).",
   // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Έντονα, πλάγια, κώδικας και κρυφές λέξεις**: σε συνομιλίες και ομάδες, οι λέξεις ανάμεσα σε * γίνονται έντονες, ανάμεσα σε _ πλάγιες, ανάμεσα σε ~ διαγραμμένες, ανάμεσα σε ` κώδικας και ανάμεσα σε || κρύβονται πίσω από μια γκρι μπάρα μέχρι να τις πατήσεις. Δες [Συνομιλία μέσω relay](#relay).",

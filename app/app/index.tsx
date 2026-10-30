@@ -24,7 +24,7 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
@@ -529,7 +529,7 @@ export default function Home() {
           {mixed
             ? tabs.map((tab) => (
                 <View key={tab} onLayout={(event) => chipAt.current.set(tab, event.nativeEvent.layout)}>
-                  <Chip label={SHOW_LABELS[tab]()} selected={show === tab} onPress={() => setShow(tab)} />
+                  <Chip label={SHOW_LABELS[tab]()} selected={show === tab} count={tabUnread(everyRow ?? [], tab)} onPress={() => setShow(tab)} />
                 </View>
               ))
             : null}

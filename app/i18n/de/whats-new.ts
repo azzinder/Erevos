@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
+    "**Zahlen auf den Chips des Startbildschirms**: Jeder Chip über den Chats (Alle, SMS, Erevos, Matrix, XMPP, Nostr) zeigt als kleine Zahl hinter seinem Namen, wie viele Nachrichten darin ungelesen sind; stumme Chats und Gruppen zählen nicht mit. Siehe [Erste Schritte](#start).",
   // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Fett, kursiv, Code und versteckte Worte**: In Chats und Gruppen werden Worte zwischen * fett, zwischen _ kursiv, zwischen ~ durchgestrichen, zwischen ` als Code und zwischen || hinter einem grauen Balken versteckt, bis du tippst. Siehe [Chat über ein Relay](#relay).",

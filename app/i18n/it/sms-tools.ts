@@ -3,6 +3,8 @@ export const smsTools: Record<string, string> = {
   // The list and its folders (app/index.tsx, app/sms-folder.tsx, components/sms-actions.tsx).
   Names: 'Nomi',
   'All messages': 'Tutti',
+  '{n} unread message': '{n} messaggio non letto',
+  '{n} unread messages': '{n} messaggi non letti',
   'Archived · {n}': 'Archiviate · {n}',
   'Spam · {n}': 'Spam · {n}',
   'Trash · {n}': 'Cestino · {n}',

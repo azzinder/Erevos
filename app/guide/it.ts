@@ -118,6 +118,9 @@ mentre il loro PIN le tiene aperte.
 - **Tutti**, **SMS** ed **Erevos**, sopra le chat quando ci sono anche conversazioni SMS, mostrano tutte le chat, solo
   gli SMS (con le chat il cui ultimo messaggio era un SMS), o solo le chat Erevos, di ogni contatto quello che è
   arrivato per ultimo.
+  Ogni chip, questi e quelli di **Matrix**, **XMPP** e **Nostr**, mostra un piccolo numero dopo il suo nome: i
+  messaggi non letti che contiene (99+ oltre 99), e niente quando non ce ne sono. Le chat e i gruppi **In silenzio**
+  non contano, come nel numero sull’icona di Erevos, e ciò che si scrive nella ricerca non lo cambia.
 - **Il widget**, su Android: aggiungi Erevos dai widget della schermata Home. I suoi quattro pulsanti aprono
   **Telefono**, gli **SMS**, i **Messaggi** di Erevos e **Contatti**, dopo la password come qualsiasi link (il Telefono
   senza, se lo permetti). Sopra i primi tre mostra quante chiamate perse, SMS non letti e nuovi messaggi ci sono, mai

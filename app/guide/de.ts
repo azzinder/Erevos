@@ -121,6 +121,9 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
 - **Alle**, **SMS** und **Erevos**, über den Chats, sobald es auch SMS-Unterhaltungen gibt, zeigen alle, nur die SMS
   (mit den Chats, deren letzte Nachricht eine SMS war) oder nur die Erevos-Chats, bei jedem Kontakt das, was zuletzt
   kam.
+  Jeder Chip, diese und die von **Matrix**, **XMPP** und **Nostr**, zeigt hinter seinem Namen eine kleine Zahl: die
+  darin ungelesenen Nachrichten (99+ ab 99), und keine, wenn es keine gibt. Chats und Gruppen auf **Stumm** zählen
+  nicht mit, wie bei der Zahl auf Erevos’ Symbol, und was in die Suche getippt wird, ändert daran nichts.
 - **Das Widget**, auf Android: Füge Erevos aus den Widgets deines Startbildschirms hinzu. Seine vier Tasten öffnen
   **Telefon**, die **SMS**, die Erevos-**Nachrichten** und **Kontakte**, nach dem Passwort wie jeder Link (das Telefon
   ohne, wenn du es erlaubst). Über den ersten drei zeigt es, wie viele verpasste Anrufe, ungelesene SMS und neue

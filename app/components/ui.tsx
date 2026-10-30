@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 
 import { useGlassBlur, useGlassLift } from './glass';
 import { EyeIcon } from './icons';
@@ -266,7 +266,7 @@ export function TextButton({ title, onPress, hitSlop = 8 }: { title: string; onP
   );
 }
 
-export function Chip({ label, selected, onPress, disabled, mono, fit }: {
+export function Chip({ label, selected, onPress, disabled, mono, fit, count }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
@@ -276,6 +276,8 @@ export function Chip({ label, selected, onPress, disabled, mono, fit }: {
   mono?: boolean;
   /** Shares a narrow row with the others: as wide as its label allows, which shrinks to fit. */
   fit?: boolean;
+  /** Messages not read, as a small number after the label (99+ above 99); nothing when 0. */
+  count?: number;
 }) {
   const colors = useColors();
   // The chosen chip's label: the accent's small-text step, or, under Nocturne, its palest step on the wash.
@@ -286,6 +288,7 @@ export function Chip({ label, selected, onPress, disabled, mono, fit }: {
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="radio"
+      accessibilityLabel={count ? `${label}, ${plural(count, '{n} unread message', '{n} unread messages')}` : undefined}
       accessibilityState={{ selected: on, disabled }}
       style={({ pressed }) => ({
         flexDirection: 'row',
@@ -310,6 +313,13 @@ export function Chip({ label, selected, onPress, disabled, mono, fit }: {
       >
         {label}
       </Text>
+      {count ? (
+        <View style={{ minWidth: 20, height: 20, paddingHorizontal: 6, marginLeft: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary }}>
+          <Text variant="caption" color={colors.onPrimary} style={{ fontSize: 12, ...font('700') }}>
+            {count > 99 ? '99+' : count}
+          </Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }

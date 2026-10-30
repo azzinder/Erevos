@@ -124,6 +124,10 @@ que tant que leur code PIN les tient ouvertes.
 - **Tous**, **SMS** et **Erevos**, au-dessus des discussions dès qu’il y a aussi des conversations SMS, montrent tout,
   seulement les SMS (avec les discussions dont le dernier message était un SMS), ou seulement les discussions Erevos,
   pour chaque contact ce qui est arrivé en dernier.
+  Chaque puce, celles-ci et celles de **Matrix**, **XMPP** et **Nostr**, montre un petit nombre après son nom : les
+  messages non lus qu’elle contient (99+ au-delà de 99), et rien quand il n’y en a pas. Les discussions et groupes
+  **En sourdine** ne comptent pas, comme dans le nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche n’y
+  change rien.
 - **Le widget**, sur Android : ajoute Erevos depuis les widgets de ton écran d’accueil. Ses quatre boutons ouvrent
   **Téléphone**, les **SMS**, les **Messages** d’Erevos et **Contacts**, après le mot de passe comme tout lien (le
   Téléphone sans lui, si tu le permets). Au-dessus des trois premiers, il montre combien il y a d’appels manqués, de SMS

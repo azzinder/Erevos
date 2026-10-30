@@ -118,6 +118,9 @@ tiene abiertos.
 - **Todos**, **SMS** y **Erevos**, encima de los chats en cuanto hay también conversaciones SMS, muestran todo, solo los
   SMS (con los chats cuyo último mensaje fue un SMS), o solo los chats de Erevos, de cada contacto lo último que
   llegó.
+  Cada chip, estos y los de **Matrix**, **XMPP** y **Nostr**, muestra un número pequeño tras su nombre: los mensajes
+  sin leer que hay en él (99+ a partir de 99), y nada cuando no hay ninguno. Los chats y grupos en **Silenciado** no
+  cuentan, como en el número del icono de Erevos, y lo que se escribe en la búsqueda no lo cambia.
 - **El widget**, en Android: añade Erevos desde los widgets de tu pantalla de inicio. Sus cuatro botones abren
   **Teléfono**, los **SMS**, los **Mensajes** de Erevos y **Contactos**, tras la contraseña como cualquier enlace (el
   Teléfono sin ella, si lo permites). Sobre los tres primeros muestra cuántas llamadas perdidas, SMS sin leer y mensajes

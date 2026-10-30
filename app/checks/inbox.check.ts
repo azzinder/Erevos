@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildInbox, filterInbox, rowTime, shownName } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, tabUnread, type InboxRow, type InboxShow } from '../lib/inbox';
 import { randomBytes } from '../lib/crypto';
 import { kept, LAST, loadInboxCache, ROWS, saveInboxCache } from '../lock/inbox-cache';
 import { files } from './files-memory';
@@ -80,6 +80,46 @@ test('finds chats by name or last message, without minding case or Greek accents
   assert.deepEqual(filterInbox(rows, 'καλημερα').map((r) => r.identity), [C]);
   assert.deepEqual(filterInbox(rows, 'bbbb').map((r) => r.identity), [B]);
   assert.equal(filterInbox(rows, '  ').length, 3);
+});
+
+test("counts the messages not read in each part of the list for its chip, a muted chat's and group's aside", () => {
+  const row = (over: Partial<InboxRow>): InboxRow => ({ identity: 'x', name: '', last: '', mine: false, mark: 0, at: 0, unread: 0, timer: 0, imported: false, avatar: null, sms: '', lastSms: false, ...over });
+  const them = (peer: string, n: number) => Array.from({ length: n }, (_, i) => ({ peer: `contact:${peer}`, text: `m${i}`, mine: false, at: 10 + i }));
+  const rows = mergeRows(
+    buildInbox(
+      [
+        { identity: A, name: 'Άννα', timer: 0 },
+        { identity: B, name: 'Bob', timer: 0, notify: { until: 1000 } },
+        { identity: C, name: 'Zoe', timer: 0, phone: '+306900000000' },
+      ],
+      [...them(A, 2), ...them(B, 5), ...them(C, 1)],
+      [],
+      100,
+      [
+        { address: '+306900000000', text: 'hello', at: 50, mine: false, unread: 2 },
+        { address: '+306911111111', text: 'hi', at: 5, mine: false, unread: 3 },
+      ],
+    ),
+    [
+      ...groupRows(
+        [
+          { id: 'g1', name: 'Team', status: 'in', last: null, unread: 4 },
+          { id: 'g2', name: 'Noise', status: 'in', last: null, unread: 6, notify: { until: 1000 } },
+        ],
+        () => '',
+        (text) => text,
+        100,
+      ),
+      row({ identity: 'matrix:!a', network: 'matrix', unread: 7 }),
+      row({ identity: 'matrix:!b', network: 'matrix', unread: 8, muted: true }),
+      row({ identity: 'xmpp:a@b', network: 'xmpp', unread: 1 }),
+      row({ identity: 'nostr:aa', network: 'nostr', unread: 2 }),
+    ],
+  );
+  const counts = (['all', 'sms', 'erevos', 'matrix', 'xmpp', 'nostr'] as InboxShow[]).map((show) => tabUnread(rows, show));
+  // A contact whose last message is an SMS is among the SMS and the Erevos chats alike (showsIn).
+  assert.deepEqual(counts, [2 + 3 + 3 + 4 + 7 + 1 + 2, 2 + 1 + 3, 2 + 1 + 2 + 4, 7, 1, 2]);
+  assert.equal(tabUnread([], 'all'), 0);
 });
 
 test('says when a chat moved: the time today, the weekday this week, else the date', () => {

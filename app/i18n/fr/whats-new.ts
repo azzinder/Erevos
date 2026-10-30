@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
+    "**Des nombres sur les puces de l’écran d’accueil** : chaque puce au-dessus des discussions (Tous, SMS, Erevos, Matrix, XMPP, Nostr) montre combien de messages n’y sont pas lus, en un petit nombre après son nom ; les discussions et groupes en sourdine ne comptent pas. Voir [Premiers pas](#start).",
   // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Gras, italique, code et mots cachés** : dans les discussions et les groupes, les mots entre * passent en gras, entre _ en italique, entre ~ barrés, entre ` en code, et entre || cachés derrière une barre grise jusqu’à ce que vous touchiez. Voir [Discuter par un relais](#relay).",

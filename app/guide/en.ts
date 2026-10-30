@@ -110,6 +110,9 @@ same whether a space has any or not: their messages can be read only while their
 - **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
   only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
   came last.
+  Every chip, these and the **Matrix**, **XMPP** and **Nostr** ones, shows a small number after its name: the messages
+  not read in it (99+ above 99), and none when there are none. Chats and groups on **Muted** are left out of it, as
+  they are of the number on Erevos's icon, and what is typed in the search changes nothing in it.
 - **The widget**, on Android: add Erevos from your home screen's widgets. Its four buttons open **Phone**, the
   **SMS**, the Erevos **Messages** and **Contacts**, after the password like any link (the Phone without it, if you
   let it). Over the first three it shows how many missed calls, unread SMS and new messages there are, never who or
