@@ -243,7 +243,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Général** | **Langue**, **Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, [Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
-| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (Android et l’app web), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). |
+| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (Android et l’app web), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
@@ -2834,6 +2834,32 @@ ordinateur et sur Sailfish OS.
 
 **Pourquoi :** à une frontière ou lors d’une arrestation, il n’y a peut-être pas le temps d’ouvrir chaque discussion.
 Un toucher, ou le geste d’une app de panique, ne laisse rien à ouvrir.
+
+## Me supprimer partout {#forget}
+
+Quand vous voulez que disparaisse ce que les serveurs gardent de vous, dans **Réglages** → **Confidentialité et sécurité** →
+**Me supprimer partout** : touchez **Me supprimer partout** et dites oui deux fois. Votre téléphone garde tout ce qu'il a ; ce
+n'est pas le [Bouton de panique](#panic), qui efface le téléphone.
+
+- **Ce qui part :** chaque file que cet espace a sur les relais, avec les messages qui y attendent : la vôtre, celle que nomme
+  votre lien de contact, celles de vos groupes, de vos contacts, de votre relais maison, celles des notifications Matrix et XMPP,
+  les portes de vos groupes publics et celles de vos appareils liés. Aussi les messages qu'un relais garde pour les envoyer
+  plus tard, les fichiers arrivés qui y attendent, et les invitations que vous avez faites et que personne n'a utilisées. Les
+  conversations cachées qui reçoivent même fermées partent avec l'espace ; les autres, quand vous les ouvrez alors que l'espace
+  est arrêté. Via Tor, Erevos demande aussi à chaque relais Nostr d'oublier les clés sur lesquelles vos conversations lisent
+  (une demande de disparition, NIP-62).
+- **Matrix, XMPP, Nostr :** avec **Aussi me déconnecter de Matrix et XMPP, et supprimer le compte Nostr créé ici**, ces comptes
+  sont déconnectés ici. Les comptes restent sur leurs serveurs, qui sont les leurs, pas ceux d'Erevos. Un compte Nostr apporté
+  d'une autre appli est laissé tel quel.
+- **L'espace est arrêté :** il ne reçoit et n'envoie rien, pour qu'aucune file ne soit aussitôt refaite (Erevos refait seul une
+  file perdue). **Relancer** y met fin : de nouvelles files sont créées, comme lorsqu'un relais les a perdues, et vos contacts
+  sont prévenus discrètement. Donnez-leur aussi un nouveau lien de contact, car les anciens nomment des files qui n'existent plus.
+- **Ce que cela n'atteint pas :** les téléphones de vos contacts, les relais Nostr qui ne font pas ce qu'on leur demande, les
+  fichiers envoyés via un serveur de fichiers, et les serveurs Matrix et XMPP. L'écran liste ce qui a été supprimé, ce qui avait
+  déjà disparu et ce qui n'a pas pu être atteint ; **Supprimer à nouveau** essaie le reste.
+
+**Pourquoi :** un relais, même de confiance, est un endroit qui garde quelque chose de vous. C'est le seul geste qui reprend tout
+sans effacer le téléphone, pour quand vous quittez un relais ou fermez un chapitre de votre vie.
 
 ## Discussions importées {#import}
 

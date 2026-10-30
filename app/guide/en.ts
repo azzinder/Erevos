@@ -217,7 +217,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **General** | **Language**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
-| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (Android and the web app), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). |
+| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (Android and the web app), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
 | **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** and **Nostr chats**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora), [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats). |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
@@ -2472,6 +2472,31 @@ button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web a
 
 **Why:** at a border or in an arrest there may be no time to open each chat. One tap, or the gesture of a panic app,
 leaves nothing to open.
+
+## Delete me from everywhere {#forget}
+
+When you want what the servers keep for you gone, under **Settings** → **Privacy and security** → **Delete me from
+everywhere**: tap **Delete me from everywhere** and say yes twice. Your phone keeps everything it has; this is not the
+[Panic button](#panic), which wipes the phone.
+
+- **What goes:** every queue this space has on the relays, with the messages waiting in them: your own, the one your
+  contact link names, your groups', your contacts', your home relay's, the ones for Matrix and XMPP notices, the doors of
+  your public groups and those of your linked devices. Also the messages a relay holds for you to send later, the files
+  that came and wait on it, and the invites you made and nobody used. Hidden chats that receive while closed go with
+  the space; the others when you open them while the space is stopped. Through Tor, Erevos also asks every Nostr relay
+  to forget the keys your chats read on (a request to vanish, NIP-62).
+- **Matrix, XMPP, Nostr:** with **Also sign out of Matrix and XMPP, and delete the Nostr account made here**, those
+  accounts are signed out here. Their accounts stay on their servers, which are theirs, not Erevos's. A Nostr account you
+  brought from another app is left alone.
+- **The space is stopped:** it receives and sends nothing, so no queue is made again at once (Erevos makes a lost queue
+  anew by itself). **Start again** ends it: new queues are made, as after a relay lost them, and your contacts are told
+  quietly. Give them a new contact link too, as the old links name queues that are gone.
+- **What it cannot reach:** your contacts' phones, Nostr relays that do not do as asked, files you sent through a file
+  server, and the Matrix and XMPP servers. The screen lists what was deleted, what was gone already and what could not be
+  reached; **Delete again** tries the rest.
+
+**Why:** a relay, even one you trust, is a place that keeps something of you. This is the one tap that takes it all back
+without wiping the phone, for when you leave a relay, or a chapter of your life.
 
 ## Imported chats {#import}
 

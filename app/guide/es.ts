@@ -230,7 +230,7 @@ como **Ajustes · Settings**, para encontrarlo en un idioma que no sabes leer.
 | **General** | **Idioma**, **Actualizaciones**, **Dar Erevos a un teléfono cercano** (Android), **Novedades**, **Acerca de Erevos**, **Apoyar Erevos** y **Permisos** (Android y la app web). Ver Idioma más abajo, [Actualizaciones](#updates) y [Erevos a un teléfono cercano](#give-app). |
 | **Apariencia** | **Estilo y colores** (acabado, cristal, estilo, tema, colores y texto sobre zonas de color, con la vista previa), **Fondo de pantalla**, **Mensajes** (la forma de las burbujas), **Iconos del lanzador** (Android) y **Widget** (Android). Ver [Apariencia](#appearance). |
 | **Notificaciones** | **En segundo plano** (Android y la app de ordenador): recibir y sonar mientras Erevos está cerrado, y el aviso de mensajes; en un ordenador, si Erevos sigue funcionando con la ventana cerrada. **Notificaciones con la app cerrada** (la app web): Web Push. **Número en el icono**: cuántos mensajes no has leído, en el icono de Erevos. Ver [En un iPhone](#iphone) y [En un ordenador](#desktop). |
-| **Privacidad y seguridad** | **Bloqueo y segunda contraseña** (bloquear al abrir Erevos, la contraseña, la privacidad de la pantalla, huella o cara, la segunda contraseña), **Chats ocultos** (los PIN de los 4 lugares), **Botón de pánico** (Android y la app web), **Capturas de pantalla** (Android) y **Esta app web** (solo la app web). Ver [Bloqueo con contraseña](#lock), [Segunda contraseña](#second), [Chats ocultos](#hidden) y [Botón de pánico](#panic). |
+| **Privacidad y seguridad** | **Bloqueo y segunda contraseña** (bloquear al abrir Erevos, la contraseña, la privacidad de la pantalla, huella o cara, la segunda contraseña), **Chats ocultos** (los PIN de los 4 lugares), **Botón de pánico** (Android y la app web), **Capturas de pantalla** (Android) y **Esta app web** (solo la app web). Ver [Bloqueo con contraseña](#lock), [Segunda contraseña](#second), [Chats ocultos](#hidden) y [Botón de pánico](#panic). Ver también [Borrarme de todas partes](#forget). |
 | **Relay y redes** | **Relay** (abre **Chat nuevo** con **Para usuarios avanzados** abierto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** y **Chats de Nostr**. Ver [Chatear a través de un relay](#relay), [Relay de casa](#home-relay), [A través de Tor](#tor), [A través de Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) y [Chats con otras apps de Nostr](#nostr-chats). |
 | **Teléfono y SMS** (Android) | **Teléfono**, los ajustes de la app de teléfono, los mismos que **Teléfono** → **Ajustes**. **SMS**, en partes: **Erevos como app de SMS**, **Descubrir Erevos en un número**, **SMS cuando nada más funciona**, **Nombres de tus contactos**, **Archivadas, spam y papelera**, **Filtro de spam**, **Números bloqueados**, **Deshacer el envío de un SMS**, **Dos SIM** (solo con dos SIM) y **SMS nuevo**. Ver [Teléfono](#phone) y [SMS](#sms). |
 | **Datos y dispositivos** | **Copias de seguridad**, **Piezas de copias**, **Dispositivos vinculados** y **Chats importados**. Ver [Copias de seguridad](#backup), [Piezas de copias con amigos](#backup-pieces), [Dispositivos vinculados](#devices) y [Chats importados](#import). |
@@ -2686,6 +2686,31 @@ pánico**: toca **Borrarlo todo ahora** y di **Borrar**. En Android, en la app w
 
 **Por qué:** en una frontera o en una detención puede no haber tiempo para abrir cada chat. Un toque, o el gesto de una
 app de pánico, no deja nada que abrir.
+
+## Borrarme de todas partes {#forget}
+
+Cuando quieras que desaparezca lo que los servidores guardan de ti, en **Ajustes** → **Privacidad y seguridad** → **Borrarme de
+todas partes**: toca **Borrarme de todas partes** y di que sí dos veces. Tu teléfono conserva todo lo que tiene; esto no es el
+[Botón de pánico](#panic), que borra el teléfono.
+
+- **Qué desaparece:** cada cola que este espacio tiene en los relés, con los mensajes que esperan en ella: la tuya, la que nombra
+  tu enlace de contacto, las de tus grupos, las de tus contactos, la de tu relé de casa, las de los avisos de Matrix y XMPP, las
+  puertas de tus grupos públicos y las de tus dispositivos vinculados. También los mensajes que un relé guarda para enviarlos
+  más tarde, los archivos que llegaron y esperan en él, y las invitaciones que hiciste y nadie usó. Los chats ocultos que
+  reciben aun cerrados se van con el espacio; los demás, cuando los abras con el espacio detenido. Por Tor, Erevos también
+  pide a cada relé de Nostr que olvide las claves en las que leen tus chats (una petición de desaparecer, NIP-62).
+- **Matrix, XMPP, Nostr:** con **También cerrar sesión en Matrix y XMPP y borrar la cuenta de Nostr creada aquí**, esas cuentas
+  se cierran aquí. Las cuentas siguen en sus servidores, que son suyos, no de Erevos. Una cuenta de Nostr que trajiste de otra
+  aplicación se deja como está.
+- **El espacio se detiene:** no recibe ni envía nada, para que no se vuelva a crear enseguida ninguna cola (Erevos rehace por sí
+  solo una cola perdida). **Iniciar de nuevo** lo termina: se crean colas nuevas, como cuando un relé las perdió, y tus contactos
+  reciben aviso en silencio. Dales también un enlace de contacto nuevo, porque los viejos nombran colas que ya no existen.
+- **Lo que no alcanza:** los teléfonos de tus contactos, los relés de Nostr que no hacen lo pedido, los archivos que enviaste por
+  un servidor de archivos y los servidores de Matrix y XMPP. La pantalla enumera lo borrado, lo que ya no estaba y lo que no se
+  pudo alcanzar; **Borrar otra vez** intenta el resto.
+
+**Por qué:** un relé, aunque confíes en él, es un lugar que guarda algo de ti. Este es el único toque que lo recupera todo sin
+borrar el teléfono, para cuando dejas un relé o cierras un capítulo de tu vida.
 
 ## Chats importados {#import}
 

@@ -242,7 +242,7 @@ nicht lesen kannst.
 | **Allgemein** | **Sprache**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
-| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (Android und die Web-App), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). |
+| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (Android und die Web-App), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
 | **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android), **LoRa-Funk** (Android), **Matrix**, **XMPP** und **Nostr-Chats**. Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr), [Über LoRa-Funk](#lora), [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats). |
 | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **SMS, wenn sonst nichts geht**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
 | **Daten und Geräte** | **Backups**, **Backup-Teile**, **Verknüpfte Geräte** und **Importierte Chats**. Siehe [Backups](#backup), [Backup-Teile bei Freunden](#backup-pieces), [Verknüpfte Geräte](#devices) und [Importierte Chats](#import). |
@@ -2867,6 +2867,33 @@ Computer und auf Sailfish OS.
 
 **Warum:** An einer Grenze oder bei einer Festnahme bleibt vielleicht keine Zeit, jeden Chat zu öffnen. Ein Tippen,
 oder die Geste einer Panik-App, lässt nichts zum Öffnen zurück.
+
+## Von überall löschen {#forget}
+
+Wenn du willst, dass weg ist, was die Server für dich speichern, unter **Einstellungen** → **Datenschutz und Sicherheit** →
+**Von überall löschen**: tippe auf **Von überall löschen** und sage zweimal ja. Dein Telefon behält alles, was es hat; das ist
+nicht der [Panikknopf](#panic), der das Telefon löscht.
+
+- **Was verschwindet:** jede Warteschlange, die dieser Bereich auf den Relays hat, mit den wartenden Nachrichten: deine eigene,
+  die, die dein Kontaktlink nennt, die deiner Gruppen, deiner Kontakte, deines Heim-Relays, die für Matrix- und XMPP-Hinweise,
+  die Türen deiner öffentlichen Gruppen und die deiner verknüpften Geräte. Dazu die Nachrichten, die ein Relay für dich zum
+  späteren Senden hält, die Dateien, die angekommen sind und dort warten, und die Einladungen, die du gemacht hast und die
+  niemand benutzt hat. Versteckte Chats, die auch geschlossen empfangen, gehen mit dem Bereich; die anderen, wenn du sie
+  öffnest, während der Bereich angehalten ist. Über Tor bittet Erevos außerdem jedes Nostr-Relay, die Schlüssel zu vergessen,
+  auf denen deine Chats lesen (eine Bitte zu verschwinden, NIP-62).
+- **Matrix, XMPP, Nostr:** mit **Auch von Matrix und XMPP abmelden und das hier erstellte Nostr-Konto löschen** werden diese
+  Konten hier abgemeldet. Die Konten selbst bleiben auf ihren Servern, die ihnen gehören, nicht Erevos. Ein Nostr-Konto aus
+  einer anderen App bleibt unberührt.
+- **Der Bereich ist angehalten:** Er empfängt und sendet nichts, damit nicht sofort wieder eine Warteschlange entsteht (Erevos
+  legt eine verlorene Warteschlange von selbst neu an). **Wieder starten** beendet das: Neue Warteschlangen werden angelegt,
+  wie nachdem ein Relay sie verloren hat, und deine Kontakte werden leise informiert. Gib ihnen auch einen neuen Kontaktlink,
+  denn die alten nennen Warteschlangen, die es nicht mehr gibt.
+- **Was es nicht erreicht:** die Telefone deiner Kontakte, Nostr-Relays, die der Bitte nicht folgen, Dateien, die du über einen
+  Dateiserver gesendet hast, und die Matrix- und XMPP-Server. Der Bildschirm listet, was gelöscht wurde, was schon weg war und
+  was nicht erreicht wurde; **Noch einmal löschen** versucht den Rest.
+
+**Warum:** Ein Relay, auch ein vertrauenswürdiges, ist ein Ort, der etwas von dir aufbewahrt. Das ist der eine Tipp, der alles
+zurücknimmt, ohne das Telefon zu löschen, für den Fall, dass du ein Relay verlässt oder ein Kapitel deines Lebens schließt.
 
 ## Importierte Chats {#import}
 

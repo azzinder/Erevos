@@ -227,7 +227,7 @@ em grupos, como fazem as configurações do próprio celular. Nos outros idiomas
 | **Geral** | **Idioma**, **Atualizações**, **Dar o Erevos a um telefone próximo** (Android), **Novidades**, **Sobre o Erevos**, **Apoiar o Erevos** e **Permissões** (Android e o app web). Veja Idioma abaixo, [Atualizações](#updates) e [O Erevos para um telefone próximo](#give-app). |
 | **Aparência** | **Estilo e cores** (acabamento, vidro, estilo, tema, cores e texto em áreas coloridas, com a prévia), **Papel de parede**, **Mensagens** (o formato dos balões), **Ícones do launcher** (Android) e **Widget** (Android). Veja [Aparência](#appearance). |
 | **Notificações** | **Em segundo plano** (Android e o app de computador): receber e tocar enquanto o Erevos está fechado, e o aviso de mensagens; num computador, se o Erevos continua rodando com a janela fechada. **Notificações com o app fechado** (o app web): Web Push. **Número no ícone**: quantas mensagens não foram lidas, no ícone do Erevos. Veja [Num iPhone](#iphone) e [Num computador](#desktop). |
-| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico** (Android e o app web), **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). |
+| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico** (Android e o app web), **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). Veja também [Apagar-me de todos os lugares](#forget). |
 | **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android), **Matrix**, **XMPP** e **Conversas Nostr**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats). |
 | **Telefone e SMS** (Android) | **Telefone**, as configurações do app de telefone, as mesmas de **Telefone** → **Configurações**. **SMS**, em partes: **O Erevos como app de SMS**, **Descobrir o Erevos num número**, **SMS quando nada mais funciona**, **Nomes dos seus contatos**, **Arquivadas, Spam e Lixeira**, **Filtro de spam**, **Números bloqueados**, **Desfazer envio de SMS**, **Dois chips** (só com dois chips) e **Novo SMS**. Veja [Telefone](#phone) e [SMS](#sms). |
 | **Dados e dispositivos** | **Backups**, **Partes do backup**, **Dispositivos conectados** e **Conversas importadas**. Veja [Backups](#backup), [Partes do backup com amigos](#backup-pieces), [Dispositivos conectados](#devices) e [Conversas importadas](#import). |
@@ -2668,6 +2668,30 @@ no Sailfish OS.
 
 **Por quê:** numa fronteira ou numa prisão pode não haver tempo de abrir cada conversa. Um toque, ou o gesto de um app
 de pânico, não deixa nada para abrir.
+
+## Apagar-me de todos os lugares {#forget}
+
+Quando você quiser que sumam os dados que os servidores guardam sobre você, em **Configurações** → **Privacidade e segurança**
+→ **Apagar-me de todos os lugares**: toque em **Apagar-me de todos os lugares** e diga sim duas vezes. Seu celular mantém tudo o
+que tem; este não é o [Botão de pânico](#panic), que apaga o celular.
+
+- **O que some:** cada fila que este espaço tem nos relays, com as mensagens que esperam nela: a sua, a que seu link de contato
+  nomeia, as dos seus grupos, as dos seus contatos, a do seu relay de casa, as dos avisos do Matrix e do XMPP, as portas dos seus
+  grupos públicos e as dos seus dispositivos vinculados. Também as mensagens que um relay guarda para enviar depois, os arquivos
+  que chegaram e esperam nele, e os convites que você fez e ninguém usou. As conversas ocultas que recebem mesmo fechadas vão
+  com o espaço; as outras quando você as abrir com o espaço parado. Pelo Tor, o Erevos também pede a cada relay do Nostr que
+  esqueça as chaves em que suas conversas leem (um pedido para desaparecer, NIP-62).
+- **Matrix, XMPP, Nostr:** com **Sair também do Matrix e do XMPP e apagar a conta Nostr criada aqui**, essas contas saem daqui.
+  As contas continuam nos servidores delas, que são delas, não do Erevos. Uma conta Nostr que você trouxe de outro app fica como está.
+- **O espaço fica parado:** não recebe nem envia nada, para que nenhuma fila seja refeita logo em seguida (o Erevos refaz sozinho
+  uma fila perdida). **Iniciar de novo** encerra isso: filas novas são criadas, como quando um relay as perdeu, e seus contatos são
+  avisados em silêncio. Dê a eles também um novo link de contato, porque os antigos nomeiam filas que não existem mais.
+- **O que não alcança:** os celulares dos seus contatos, relays do Nostr que não fazem o que lhes é pedido, arquivos que você
+  enviou por um servidor de arquivos e os servidores Matrix e XMPP. A tela lista o que foi apagado, o que já não existia e o que
+  não foi alcançado; **Apagar de novo** tenta o resto.
+
+**Por quê:** um relay, mesmo de confiança, é um lugar que guarda algo sobre você. Este é o único toque que leva tudo de volta sem
+apagar o celular, para quando você deixa um relay ou fecha um capítulo da vida.
 
 ## Conversas importadas {#import}
 

@@ -228,7 +228,7 @@ nikad ne prenosi.
 | **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
-| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (Android i web-aplikacija), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). |
+| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (Android i web-aplikacija), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
@@ -2589,6 +2589,31 @@ dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web apl
 
 **Zašto:** na granici ili pri uhićenju možda nema vremena otvoriti svaki razgovor. Jedan dodir, ili pokret aplikacije
 za paniku, ne ostavlja ništa za otvoriti.
+
+## Obriši me odasvud {#forget}
+
+Kad želiš da nestane ono što serveri čuvaju o tebi, u **Postavke** → **Privatnost i sigurnost** → **Obriši me odasvud**:
+dodirni **Obriši me odasvud** i dvaput reci da. Tvoj telefon zadržava sve što ima; ovo nije [Gumb za paniku](#panic), koja
+briše telefon.
+
+- **Što nestaje:** svaki red koji ovaj prostor ima na relejima, s porukama koje u njemu čekaju: tvoj, onaj koji imenuje tvoju
+  vezu za kontakt, redovi tvojih grupa, tvojih kontakata, tvog kućnog releja, oni za obavijesti Matrixa i XMPP-a, vrata tvojih
+  javnih grupa i povezanih uređaja. Također poruke koje relej drži da ih pošalje kasnije, datoteke koje su stigle i čekaju na
+  njemu te pozivnice koje si napravio/napravila a nitko ih nije upotrijebio. Skriveni razgovori koji primaju i dok su zatvoreni
+  odlaze s prostorom, ostali kad ih otvoriš dok je prostor zaustavljen. Preko Tora Erevos traži i od svakog Nostr releja da
+  zaboravi ključeve na kojima tvoji razgovori čitaju (zahtjev da nestane, NIP-62).
+- **Matrix, XMPP, Nostr:** s opcijom **Odjavi se i s Matrixa i XMPP-a te obriši Nostr račun napravljen ovdje** ti se računi
+  ovdje odjavljuju. Sami računi ostaju na svojim serverima, koji su njihovi, a ne Erevosovi. Nostr račun donesen iz druge
+  aplikacije ostaje kakav jest.
+- **Prostor se zaustavlja:** ne prima i ne šalje ništa, pa se nijedan red ne pravi odmah ponovo (Erevos sam iznova napravi izgubljen
+  red). **Pokreni ponovo** to završava: prave se novi redovi, kao kad ih je relej izgubio, a kontakti se obavještavaju tiho. Daj im
+  i novu vezu za kontakt, jer stare imenuju redove kojih više nema.
+- **Do čega ne dopire:** telefona tvojih kontakata, Nostr releja koji ne rade što se traži, datoteka poslanih preko servera za
+  datoteke te Matrix i XMPP servera. Zaslon navodi što je obrisano, što je već nestalo i što nije dosegnuto; **Obriši ponovo**
+  pokušava ostalo.
+
+**Zašto:** relej, čak i onaj kojem vjeruješ, mjesto je koje čuva nešto od tebe. Ovo je jedan dodir koji sve uzima natrag bez
+brisanja telefona, za kad napuštaš relej ili zatvaraš poglavlje života.
 
 ## Uvezeni razgovori {#import}
 

@@ -38,6 +38,14 @@ On main, not released yet:
   password, deleting the account for good, groups the server lists and a search of public channels
   (XEP-0433, search.jabber.network), **Location** as a geo: link, and link previews (XEP-0511) in chats written
   without encryption (`lib/xmpp.ts`, `lib/xmpp-muc.ts`, `lib/xmpp-links.ts`, `components/xmpp-*.tsx`). See [XMPP](#xmpp).
+- **Delete me from everywhere**: Settings → Privacy and security → Delete me from everywhere deletes what the servers keep
+  for the open space and stops it, and your phone keeps everything (`app/forget-me.tsx`, `lib/forget-me.ts`). It deletes
+  every queue the space and its hidden places keep on the relays with the messages in them, the messages a relay holds
+  for you to send later, files waiting there, and invites nobody used, and, through Tor, asks the Nostr relays to forget
+  the keys your chats read on (a request to vanish, NIP-62); on request it also signs out of Matrix and XMPP and
+  deletes the Nostr account made here. The space then reaches no relay and no Nostr relay until **Start again**, which
+  makes new queues and tells contacts quietly. Files sent through a file server and what other people keep stay. See
+  [Delete me from everywhere](#forget).
 - **Every chat opens the same way, with the same arrows**: the Erevos chats, groups, SMS conversations and the Matrix,
   XMPP and Nostr chats all open at their last message with the message bar under it, and have the round arrows to the
   chat's start, to where you left off (the first message that was new when it opened, a double tick) and to its end
@@ -129,6 +137,9 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Every relay queue on one list**: `lib/server-queues.ts` gathers every queue a space or hidden place keeps, and
+  `checks/forget-me.check.ts` fails when a file makes queues and is not named there, so none is left behind by
+  Delete me from everywhere. A stopped space (`lib/relay.ts`) asks a relay for nothing but to delete.
 - **The panic button says when it refused**: a wipe asked by the trusted panic app while the switch was off, or by the
   app signed with another key, was refused with no trace (review of 2026-10-29). The time is now kept (`refused` in
   `Panic.kt`), and the panic screen says it in red, with **Got it**. An app moved to a new key by APK key rotation
