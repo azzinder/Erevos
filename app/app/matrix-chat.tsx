@@ -23,7 +23,7 @@ import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
-import { plural, t } from '../lib/i18n';
+import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
@@ -442,7 +442,7 @@ export default function MatrixChatScreen() {
     return (
       <WhoRead
         read={others.flatMap(([who, m]) => (readers[who] !== undefined ? [{ key: who, name: m.name || who, at: readers[who] }] : []))}
-        waiting={more > 0 ? [...waiting.slice(0, MOST_SHOWN), { key: '', name: plural(more, 'and {n} more', 'and {n} more') }] : waiting}
+        waiting={more > 0 ? [...waiting.slice(0, MOST_SHOWN), { key: '', name: t('and {n} more', { n: more }) }] : waiting}
         note={t('As each one’s Matrix app tells their homeserver. Matrix does not say when a message reached a phone, and an app may keep from saying it was read.')}
       />
     );

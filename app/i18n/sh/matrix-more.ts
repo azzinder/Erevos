@@ -8,7 +8,7 @@ export const matrixMore: Record<string, string> = {
   "Thread · {name}": "Nit · {name}",
   "Everyone in this chat can see it.": "Svi u ovom razgovoru mogu to vidjeti.",
   "As each one’s Matrix app tells their homeserver. Matrix does not say when a message reached a phone, and an app may keep from saying it was read.": "Onako kako Matrix aplikacija svakog člana javlja njegovom serveru. Matrix ne kaže kada je poruka stigla na telefon, a aplikacija može ne javiti da je pročitana.",
-  "and {n} more": "i još {n} | i još {n} | i još {n}",
+  "and {n} more": "i još {n}",
   "Forwarded to {name}.": "Proslijeđeno: {name}.",
   "Not a favourite any more": "Više nije omiljeno",
   "Make a favourite": "Učini omiljenim",
