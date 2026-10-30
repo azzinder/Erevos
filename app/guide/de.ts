@@ -706,6 +706,18 @@ hat, **✓✓**, dass sie auf seinem Telefon angekommen ist, und **✓✓✓**, 
 deinem, innerhalb der Verschlüsselung, wenn jedes das nächste Mal beim Relay nachsieht, oder sofort, wenn ihr in der
 Nähe seid. Eine Nachricht gilt als gelesen, sobald ihr Chat auf dem Bildschirm erscheint.
 
+In einer Gruppe, die nicht öffentlich ist, haben deine Nachrichten dieselben Markierungen, für alle anderen Mitglieder
+zusammen: **✓**, sobald sie gesendet sind, **✓✓**, sobald die Nachricht auf dem Telefon jedes Mitglieds angekommen
+ist, das in der Gruppe war, als du sie gesendet hast, und **✓✓✓**, sobald alle sie gelesen haben. Das Telefon jedes
+Mitglieds sagt es deinem, in einer stillen Gruppennachricht, die nur du bekommst, Ende-zu-Ende-verschlüsselt wie der
+Rest der Gruppe: dass die Nachricht angekommen ist, ein paar Sekunden danach (zusammen mit den anderen, die inzwischen
+angekommen sind, in einer), und dass sie gelesen wurde, sobald die Gruppe auf dem Bildschirm erscheint. Halte eine
+deiner Nachrichten gedrückt und wähle **Wer hat es gelesen**, um zu sehen, wer sie gelesen hat und wann, auf wessen
+Telefon sie angekommen ist und wann, und wer beides noch nicht getan hat, unter **Noch nicht**. Ein Mitglied, dessen
+Erevos älter ist als diese Markierungen, sagt nichts, bleibt also unter **Noch nicht**, und die Nachricht bleibt bei
+**✓**. Öffentliche Gruppen haben keine Markierungen. Ein mit diesem Telefon verknüpfter Computer zeigt dieselben
+Markierungen.
+
 - **Wird gesendet…:** In dem Moment, in dem du auf Senden drückst, vibriert das Telefon kurz, das Feld leert sich, und
   die Nachricht erscheint, als **Wird gesendet…** markiert, bis das Relay oder das andere Telefon sie annimmt. Wenn sie
   weder gehen noch warten kann, kommen ihre Worte zurück ins Feld.
@@ -1355,7 +1367,7 @@ bittet, und nur der Admin fügt Mitglieder hinzu oder nimmt sie heraus.
   erscheinen darüber: Tippe auf eines, um den ganzen Namen einzusetzen. Ein so genanntes Mitglied erfährt von der
   Nachricht, auch wenn es die Gruppe stummgeschaltet hat. Nur ganze Namen zählen, daher nennt **@Anna** nicht Anna
   Maria. Ein Erevos von vorher zeigt nur die Worte und meldet, wie es die Einstellungen der Gruppe sagen.
-- **Noch nicht:** Zeichen, Tippen und verschwindende Nachrichten in Gruppen, und Gruppen über ein Telefon in der Nähe.
+- **Noch nicht:** Tippen und verschwindende Nachrichten in Gruppen, und Gruppen über ein Telefon in der Nähe.
 
 ## Öffentliche Gruppen {#public-groups}
 
@@ -1703,6 +1715,12 @@ Element: Keine Brücke sitzt dazwischen.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
   sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
   aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
+- **Markierungen:** deine Nachrichten zeigen **✓**, sobald der Matrix-Server sie angenommen hat, und **✓✓✓**, sobald
+  alle anderen Mitglieder des Chats sie gelesen haben, so wie die Matrix-App jedes Mitglieds es ihrem Server meldet
+  (Lesebestätigungen). Matrix kennt keine Markierung für eine Nachricht, die auf einem Telefon angekommen ist, also
+  gibt es kein **✓✓**. Halte eine deiner Nachrichten gedrückt und wähle **Wer hat es gelesen**, um zu sehen, wer sie
+  gelesen hat und wann und wer nicht (die ersten 100). Eine Matrix-App lässt sich so einstellen, dass sie keine
+  Lesebestätigungen sendet: ihr Mitglied steht dann unter denen, die nicht gelesen haben.
 - **Profilbilder:** Ein Matrix-Raum, oder die Person in einem Chat mit einer Person, zeigt sein Bild in der Chatliste,
   ebenso ein XMPP-Kontakt. **Foto wählen** auf dem Matrix-Bildschirm setzt deins für deine Kontakte; **Entfernen**
   nimmt es weg. Bilder sind in keiner Matrix- oder XMPP-App verschlüsselt: der Server sieht sie, und deine Kontakte

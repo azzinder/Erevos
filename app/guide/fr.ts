@@ -695,6 +695,16 @@ arrivé sur son téléphone, et **✓✓✓** qu’il l’a lu. Son téléphone 
 prochaine fois que chacun regarde le relais, ou aussitôt quand vous êtes proches. Un message compte comme lu dès que sa
 discussion s’affiche à l’écran.
 
+Dans un groupe qui n’est pas public, tes messages ont les mêmes marques, pour tous les autres membres à la fois :
+**✓** une fois envoyé, **✓✓** quand le message est arrivé sur le téléphone de chaque membre qui était dans le groupe
+quand tu l’as envoyé, et **✓✓✓** quand tous l’ont lu. Le téléphone de chaque membre le dit au tien, dans un message de
+groupe discret que toi seul reçois, chiffré de bout en bout comme le reste du groupe : que le message est arrivé,
+quelques secondes après (avec les autres arrivés entre-temps, en un seul), et qu’il a été lu, dès que le groupe
+s’affiche à l’écran. Maintiens un de tes messages et choisis **Qui l’a lu** pour voir qui l’a lu et quand, sur le
+téléphone de qui il est arrivé et quand, et qui n’a encore fait ni l’un ni l’autre, sous **Pas encore**. Un membre
+dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous **Pas encore** et le message reste à
+**✓**. Les groupes publics n’ont pas de marques. Un ordinateur associé à ce téléphone montre les mêmes marques.
+
 - **Envoi… :** au moment où tu appuies sur Envoyer, le téléphone vibre brièvement, le champ se vide et le message
   s’affiche, marqué **Envoi…** jusqu’à ce que le relais ou son téléphone le prenne. S’il ne peut ni partir ni attendre,
   ses mots retournent dans le champ.
@@ -1329,7 +1339,7 @@ l’admin, et seul l’admin ajoute ou retire des membres.
   s’affichent au-dessus : touchez-en un pour mettre son nom entier. Un membre nommé ainsi est averti du message même
   s’il a mis le groupe en sourdine. Seuls les noms entiers comptent, donc **@Anna** ne nomme pas Anna Maria. Un Erevos
   d’avant montre seulement les mots, et avertit comme le disent les réglages du groupe.
-- **Pas encore :** les marques, la saisie et les messages éphémères dans les groupes, et les groupes par un téléphone à
+- **Pas encore :** la saisie et les messages éphémères dans les groupes, et les groupes par un téléphone à
   proximité.
 
 ## Groupes publics {#public-groups}
@@ -1673,6 +1683,11 @@ Element : aucun pont ne se met entre les deux.
 - **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
   **écrit…**. Erevos ne le dit de toi que si tu actives **Dire quand j’écris** sur l’écran Matrix ; c’est désactivé au
   départ, car cela passe par le serveur Matrix sans chiffrement, donc le serveur sait chaque fois que tu écris.
+- **Marques :** tes messages montrent **✓** quand le serveur Matrix les a pris et **✓✓✓** quand tous les autres
+  membres de la discussion les ont lus, comme l’appli Matrix de chacun le dit à son serveur (accusés de lecture).
+  Matrix n’a pas de marque pour un message arrivé sur un téléphone, donc il n’y a pas de **✓✓**. Maintiens un de tes
+  messages et choisis **Qui l’a lu** pour voir qui l’a lu et quand, et qui ne l’a pas lu (les 100 premiers). Une appli
+  Matrix peut être réglée pour n’envoyer aucun accusé de lecture : son membre apparaît alors comme n’ayant pas lu.
 - **Photos de profil :** un salon Matrix, ou la personne dans une discussion avec une personne, montre sa photo dans
   la liste des discussions, de même qu’un contact XMPP. **Choisir une photo**, sur l’écran Matrix, met la tienne pour
   tes contacts ; **Retirer** l’enlève. Les photos ne sont chiffrées dans aucune appli Matrix ou XMPP : le serveur les

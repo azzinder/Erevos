@@ -23,8 +23,32 @@ On main, not released yet:
   holding it still opens the message's menu (`components/attachment.tsx`, `components/matrix-message.tsx`,
   `components/network-file.tsx`). See [Matrix](#matrix), [XMPP](#xmpp) and
   [Chats with other Nostr apps](#nostr-chats).
+- **Who got and who read your messages in groups**: in a group that is not public, each of your messages shows **✓**
+  once sent, **✓✓** once it reached the phone of every member who was in the group when it was sent, and **✓✓✓** once
+  every one of them read it, as in a contact's chat. Each member's phone says so in a quiet, end-to-end encrypted group
+  message that only the sender gets: that the message came (a couple of seconds after, with the others that came
+  meanwhile), and that it was read (once the group is on the screen). Hold one of your messages and choose **Who read
+  it** for who read it and when, whose phone it reached and when, and who has neither yet, under **Not yet**; a member
+  whose Erevos is older says nothing and stays there, so the message stays at **✓**. Public groups have no marks, and a
+  linked computer shows the same ones (`lib/groups.ts`, `lib/group-parts.ts`, `components/group-messages.tsx`,
+  `components/who-read.tsx`, `lib/link-wire.ts`). See [Chat through a relay](#relay) and [Group chats](#groups).
+- **Who read your messages in Matrix**: your messages in a Matrix chat show **✓** once the homeserver took them and
+  **✓✓✓** once every other member read them, as each one's Matrix app tells their homeserver (read receipts,
+  `m.receipt`). Matrix has no receipt for a message that reached a phone, so there is no **✓✓**. **Who read it**, held
+  down on a message of yours, lists who read it and when, and who has not (the first 100). A Matrix app can be set to
+  send no read receipts, and its member then shows as not having read (`readersOf` and `readByAll` in `lib/matrix.ts`,
+  `app/matrix-chat.tsx`, `components/matrix-message.tsx`, `components/who-read.tsx`). See [Matrix](#matrix).
 
 ### Under the hood
+
+- **Quiet group messages for the marks**: the `seen` group message, with which a member's phone tells a sender that its
+  messages came or were read, goes only to the senders concerned and is batched (that messages came, a couple of seconds
+  after, with the others that came meanwhile; that they were read, as the group is read). Each such message skips one
+  of this phone's MLS keys for the members it does not go to, and they accept a jump of 1000 at most
+  (`crates/erevos-group`): so after 300 such messages to some members only (`APART_MOST`), the next goes to all, and no
+  member falls behind. Groups let go of when their space closes (`Groups.close`) send nothing more, so two copies never
+  seal for one group. Linked devices get who a message came to and who read it with the message's other marks
+  (`lib/link-wire.ts`). See [Group chats](#groups).
 
 ## 4.0.0-rc.3 (2026-10-30)
 

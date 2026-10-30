@@ -655,6 +655,16 @@ a su teléfono, y **✓✓✓** que lo leyó. Su teléfono se lo dice al tuyo, d
 consulta el relay, o al instante cuando están cerca. Un mensaje cuenta como leído en cuanto su chat se ve en la
 pantalla.
 
+En un grupo que no es público, tus mensajes tienen las mismas marcas, para todos los demás miembros a la vez: **✓** al
+enviarse, **✓✓** cuando el mensaje llegó al teléfono de cada miembro que estaba en el grupo cuando lo enviaste, y
+**✓✓✓** cuando todos lo leyeron. El teléfono de cada miembro se lo dice al tuyo, en un mensaje de grupo silencioso que
+solo recibes tú, cifrado de extremo a extremo como el resto del grupo: que el mensaje llegó, unos segundos después
+(junto con los demás que llegaron entretanto, en uno solo), y que se leyó, cuando el grupo se ve en la pantalla.
+Mantén pulsado un mensaje tuyo y elige **Quién lo leyó** para ver quién lo leyó y cuándo, a qué teléfono llegó y
+cuándo, y quién no ha hecho ninguna de las dos cosas, bajo **Todavía no**. Un miembro cuyo Erevos es anterior a estas
+marcas no dice nada, así que se queda en **Todavía no** y el mensaje se queda en **✓**. Los grupos públicos no tienen
+marcas. Un ordenador vinculado a este teléfono muestra las mismas marcas.
+
 - **Enviando…:** en el momento en que pulsas Enviar, el teléfono da una vibración corta, el campo se vacía y el mensaje
   aparece, marcado como **Enviando…** hasta que el relay o su teléfono lo recogen. Si no puede salir y no puede esperar,
   sus palabras vuelven al campo.
@@ -1258,7 +1268,7 @@ añade o saca miembros.
   sigue aparecen encima: toca uno para poner su nombre entero. Un miembro nombrado así se entera del mensaje aunque
   haya silenciado el grupo. Solo cuentan los nombres enteros, así que **@Ana** no nombra a Ana María. Un Erevos de antes
   muestra solo las palabras y avisa como dicen los ajustes del grupo.
-- **Todavía no:** marcas, escribiendo y mensajes temporales en los grupos, y grupos a través de un teléfono cercano.
+- **Todavía no:** escribiendo y mensajes temporales en los grupos, y grupos a través de un teléfono cercano.
 
 ## Grupos públicos {#public-groups}
 
@@ -1594,6 +1604,11 @@ ningún puente se pone en medio.
   **escribiendo…**. Erevos lo dice de ti solo si activas **Avisar cuando escribo** en la pantalla de Matrix; al
   principio está desactivado, ya que pasa por el servidor de Matrix sin cifrar, así que el servidor sabe cada vez que
   escribes.
+- **Marcas:** tus mensajes muestran **✓** cuando el servidor de Matrix los recogió y **✓✓✓** cuando todos los demás
+  miembros del chat los leyeron, según lo dice a su servidor la app de Matrix de cada uno (confirmaciones de lectura).
+  Matrix no tiene marca para un mensaje que llegó a un teléfono, así que no hay **✓✓**. Mantén pulsado un mensaje tuyo
+  y elige **Quién lo leyó** para ver quién lo leyó y cuándo, y quién no (los primeros 100). Una app de Matrix puede
+  estar ajustada para no enviar confirmaciones de lectura: su miembro aparece entonces como que no ha leído.
 - **Fotos de perfil:** una sala de Matrix, o la persona en un chat con una persona, muestra su foto en la lista de
   chats, y lo mismo un contacto de XMPP. **Elegir una foto**, en la pantalla de Matrix, pone la tuya para tus
   contactos; **Quitar** la quita. Las fotos no están cifradas en ninguna app de Matrix ni XMPP: el servidor las ve, y

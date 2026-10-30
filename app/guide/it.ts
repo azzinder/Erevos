@@ -658,6 +658,16 @@ arrivato al suo telefono, e **✓✓✓** che l’ha letto. Il suo telefono lo d
 prossima volta che ognuno controlla il relay, o subito quando siete vicini. Un messaggio conta come letto appena la sua
 chat appare sullo schermo.
 
+In un gruppo che non è pubblico, i tuoi messaggi hanno gli stessi segni, per tutti gli altri membri insieme: **✓** una
+volta inviati, **✓✓** quando il messaggio è arrivato al telefono di ogni membro che era nel gruppo quando l’hai
+inviato, e **✓✓✓** quando tutti l’hanno letto. Il telefono di ogni membro lo dice al tuo, in un messaggio di gruppo
+silenzioso che ricevi solo tu, cifrato end-to-end come il resto del gruppo: che il messaggio è arrivato, un paio di
+secondi dopo (insieme agli altri arrivati nel frattempo, in uno solo), e che è stato letto, appena il gruppo appare
+sullo schermo. Tieni premuto un tuo messaggio e scegli **Chi l’ha letto** per vedere chi l’ha letto e quando, al
+telefono di chi è arrivato e quando, e chi non ha ancora fatto né l’una né l’altra cosa, sotto **Non ancora**. Un
+membro il cui Erevos è più vecchio di questi segni non dice nulla, quindi resta sotto **Non ancora** e il messaggio
+resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a questo telefono mostra gli stessi segni.
+
 - **Invio…:** nel momento in cui premi Invia, il telefono fa una breve vibrazione, il campo si svuota e il messaggio
   appare, segnato **Invio…** finché il relay o il suo telefono non lo prende. Se non può partire e non può aspettare,
   le sue parole tornano nel campo.
@@ -1276,7 +1286,7 @@ solo l’admin aggiunge o rimuove membri.
   compaiono sopra: tocca uno per inserire il suo nome intero. Un membro nominato così viene avvisato del messaggio
   anche se ha silenziato il gruppo. Contano solo i nomi interi, quindi **@Anna** non nomina Anna Maria. Un Erevos di
   prima mostra solo le parole e avvisa come dicono le impostazioni del gruppo.
-- **Non ancora:** segni, scrittura in corso e messaggi effimeri nei gruppi, e gruppi tramite un telefono vicino.
+- **Non ancora:** scrittura in corso e messaggi effimeri nei gruppi, e gruppi tramite un telefono vicino.
 
 ## Gruppi pubblici {#public-groups}
 
@@ -1612,6 +1622,11 @@ sta nel mezzo.
 - **Sta scrivendo:** chi sta scrivendo ora nella chat, come dice il server Matrix, compare sotto con **sta
   scrivendo…**. Erevos lo dice di te solo se attivi **Dire quando scrivo** nella schermata Matrix; all’inizio è
   spento, perché passa dal server Matrix senza cifratura, quindi il server sa ogni volta che scrivi.
+- **Segni:** i tuoi messaggi mostrano **✓** quando il server Matrix li ha presi e **✓✓✓** quando tutti gli altri
+  membri della chat li hanno letti, come l’app Matrix di ognuno lo dice al suo server (conferme di lettura). Matrix
+  non ha un segno per un messaggio arrivato a un telefono, quindi non c’è **✓✓**. Tieni premuto un tuo messaggio e
+  scegli **Chi l’ha letto** per vedere chi l’ha letto e quando, e chi no (i primi 100). Un’app Matrix può essere
+  impostata per non inviare conferme di lettura: il suo membro risulta allora tra chi non ha letto.
 - **Foto del profilo:** una stanza Matrix, o la persona in una chat con una persona, mostra la sua foto nell’elenco
   delle chat, e così un contatto XMPP. **Scegli una foto**, nella schermata Matrix, imposta la tua per i tuoi
   contatti; **Rimuovi** la toglie. Le foto non sono cifrate in nessuna app Matrix o XMPP: il server le vede, e i tuoi

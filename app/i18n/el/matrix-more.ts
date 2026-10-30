@@ -7,6 +7,8 @@ export const matrixMore: Record<string, string> = {
   "End poll": "Λήξη δημοσκόπησης",
   "Thread · {name}": "Νήμα · {name}",
   "Everyone in this chat can see it.": "Όλοι σε αυτή τη συνομιλία μπορούν να το δουν.",
+  "As each one’s Matrix app tells their homeserver. Matrix does not say when a message reached a phone, and an app may keep from saying it was read.": "Όπως το λέει η εφαρμογή Matrix του καθενός στον server του. Το Matrix δεν λέει πότε ένα μήνυμα έφτασε σε τηλέφωνο, και μια εφαρμογή μπορεί να μη λέει ότι το διάβασαν.",
+  "and {n} more": "και {n} ακόμη",
   "Forwarded to {name}.": "Προωθήθηκε στο {name}.",
   "Not a favourite any more": "Όχι πια αγαπημένο",
   "Make a favourite": "Κάνε το αγαπημένο",

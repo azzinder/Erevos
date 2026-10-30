@@ -647,6 +647,15 @@ telefon te osobe, a **✓✓✓** da ju je pročitala. Njen telefon to javlja va
 svaki od njih pogleda relay, ili odmah kad su u blizini. Poruka se računa kao pročitana čim se njen razgovor prikaže
 na ekranu.
 
+U grupi koja nije javna vaše poruke imaju iste oznake, za sve ostale članove zajedno: **✓** kad je poslana, **✓✓** kad
+je poruka stigla na telefon svakog člana koji je bio u grupi kad ste je poslali, a **✓✓✓** kad su je svi pročitali.
+Telefon svakog člana to javlja vašem, u tihoj grupnoj poruci koju dobijate samo vi, šifriranoj s kraja na kraj kao i
+ostatak grupe: da je poruka stigla, nekoliko sekundi poslije (zajedno s ostalima koje su stigle u međuvremenu, u
+jednoj), i da je pročitana, čim se grupa prikaže na ekranu. Zadržite prst na svojoj poruci i izaberite **Ko je
+pročitao** da vidite ko ju je pročitao i kada, na čiji je telefon stigla i kada, i ko još nije učinio ni jedno ni
+drugo, pod **Još ne**. Član čiji je Erevos stariji od ovih oznaka ne javlja ništa, pa ostaje pod **Još ne**, a poruka
+ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom prikazuje iste oznake.
+
 - **Šalje se…:** u trenutku kad pritisnete Pošalji, telefon kratko zavibrira, polje se isprazni i poruka se prikaže,
   označena sa **Šalje se…** dok je ne preuzme relay ili telefon te osobe. Ako ne može otići i ne može čekati, njene
   riječi se vraćaju u polje.
@@ -1223,7 +1232,7 @@ redu: svaki telefon ih preuzima od tog jednog. Zato član izlazi tako što zamol
   njega: dodirnite jednog da unesete cijelo njegovo ime. Član imenovan tako dobije obavijest o poruci čak i ako je
   utišao grupu. Računaju se samo cijela imena, pa **@Ana** ne imenuje Anu Mariju. Raniji Erevos prikazuje samo riječi i
   obavještava kako kažu postavke grupe.
-- **Još ne:** oznake, kucanje i poruke koje nestaju u grupama, te grupe preko telefona u blizini.
+- **Još ne:** kucanje i poruke koje nestaju u grupama, te grupe preko telefona u blizini.
 
 ## Javne grupe {#public-groups}
 
@@ -1544,6 +1553,11 @@ između.
 - **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
   ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
   pa server saznaje svaki put kad pišete.
+- **Oznake:** vaše poruke prikazuju **✓** kad ih je preuzeo Matrix server, a **✓✓✓** kad su ih pročitali svi ostali
+  članovi razgovora, kako to Matrix aplikacija svakog od njih javlja njegovom serveru (potvrde o čitanju). Matrix nema
+  oznaku za poruku koja je stigla na telefon, pa nema ni **✓✓**. Zadržite prst na svojoj poruci i izaberite **Ko je
+  pročitao** da vidite ko ju je pročitao i kada, i ko nije (prvih 100). Matrix aplikacija može biti podešena da ne
+  šalje potvrde o čitanju: njen član se tada prikazuje kao da nije pročitao.
 - **Profilne slike:** Matrix soba, ili osoba u razgovoru s jednom osobom, prikazuje svoju sliku na popisu razgovora, a
   tako i XMPP kontakt. **Odaberi fotografiju**, na ekranu Matrix, postavlja vašu za vaše kontakte; **Ukloni** je
   uklanja. Slike nisu šifrirane ni u jednoj Matrix ili XMPP aplikaciji: server ih vidi, a vaši kontakti vide vašu.

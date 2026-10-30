@@ -652,6 +652,16 @@ que ela chegou ao celular da pessoa, e **✓✓✓** que a pessoa a leu. O celul
 na próxima vez que cada um olhar o relay, ou na hora quando estão perto. Uma mensagem conta como lida assim que a
 conversa dela aparece na tela.
 
+Em um grupo que não é público, as suas mensagens têm as mesmas marcas, para todos os outros membros juntos: **✓**
+depois de enviada, **✓✓** quando a mensagem chegou ao celular de cada membro que estava no grupo quando você a enviou,
+e **✓✓✓** quando todos a leram. O celular de cada membro avisa o seu, numa mensagem de grupo silenciosa que só você
+recebe, criptografada de ponta a ponta como o resto do grupo: que a mensagem chegou, alguns segundos depois (junto com
+as outras que chegaram nesse meio-tempo, numa só), e que foi lida, assim que o grupo aparece na tela. Segure uma
+mensagem sua e escolha **Quem leu** para ver quem a leu e quando, em que celular ela chegou e quando, e quem ainda não
+fez nem uma coisa nem outra, em **Ainda não**. Um membro cujo Erevos é mais antigo que estas marcas não avisa nada,
+então fica em **Ainda não** e a mensagem fica em **✓**. Os grupos públicos não têm marcas. Um computador conectado a
+este celular mostra as mesmas marcas.
+
 - **Enviando…:** no momento em que você toca em Enviar, o celular dá uma vibração curta, o campo se esvazia e a
   mensagem aparece, marcada **Enviando…** até o relay ou o celular da pessoa pegá-la. Se ela não puder ir nem puder
   esperar, as palavras dela voltam para o campo.
@@ -1252,7 +1262,7 @@ ou remove membros.
   aparecem acima: toque em um para pôr o nome inteiro. Um membro citado assim é avisado da mensagem mesmo que tenha
   silenciado o grupo. Só valem nomes inteiros, então **@Ana** não cita Ana Maria. Um Erevos de antes mostra só as
   palavras e avisa como dizem as configurações do grupo.
-- **Ainda não:** marcas, digitando e mensagens temporárias nos grupos, e grupos por um celular por perto.
+- **Ainda não:** digitando e mensagens temporárias nos grupos, e grupos por um celular por perto.
 
 ## Grupos públicos {#public-groups}
 
@@ -1581,6 +1591,11 @@ fica no meio.
   Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do Matrix; no início fica
   desligado, pois passa pelo servidor Matrix sem criptografia, então o servidor fica sabendo cada vez que você
   escreve.
+- **Marcas:** as suas mensagens mostram **✓** quando o servidor Matrix as recebeu e **✓✓✓** quando todos os outros
+  membros da conversa as leram, como o app Matrix de cada um avisa o servidor dele (confirmações de leitura). O Matrix
+  não tem marca para uma mensagem que chegou a um celular, então não existe **✓✓**. Segure uma mensagem sua e escolha
+  **Quem leu** para ver quem a leu e quando, e quem não leu (os primeiros 100). Um app Matrix pode ser configurado
+  para não enviar confirmações de leitura: o membro dele aparece então como quem não leu.
 - **Fotos de perfil:** uma sala do Matrix, ou a pessoa numa conversa com uma pessoa, mostra a foto na lista de
   conversas, e o mesmo vale para um contato do XMPP. **Escolher uma foto**, na tela do Matrix, põe a sua para seus
   contatos; **Remover** a tira. As fotos não são criptografadas em nenhum app Matrix ou XMPP: o servidor as vê, e seus

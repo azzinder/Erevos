@@ -613,6 +613,15 @@ Under each of your messages to a contact, **✓** says the relay or a phone near
 their phone, and **✓✓✓** that they read it. Their phone tells yours, inside the encryption, the next time each looks
 at the relay, or at once when they are nearby. A message counts as read once its chat shows on the screen.
 
+In a group that is not public, your messages have the same marks, for all the other members together: **✓** once sent,
+**✓✓** once the message reached the phone of every member who was in the group when you sent it, and **✓✓✓** once
+every one of them read it. Each member's phone tells yours, in a quiet group message that only you get, end-to-end
+encrypted like the rest of the group: that the message came, a couple of seconds after it did (with the others that
+came meanwhile, in one), and that it was read, once the group is on the screen. Hold a message of yours down and
+choose **Who read it** to see who read it and when, whose phone it reached and when, and who has neither yet, under
+**Not yet**. A member whose Erevos is older than these marks tells nothing, so they stay under **Not yet** and the
+message stays at **✓**. Public groups have no marks. A computer linked to this phone shows the same marks.
+
 - **Sending…:** the moment you press Send, the phone gives a short buzz, the field empties and the message shows,
   marked **Sending…** until the relay or their phone takes it. If it cannot go and cannot wait, its words go back in
   the field.
@@ -1164,7 +1173,7 @@ out members.
   it: tap one to put in their whole name. A member named so is told of the message even if they muted the group. Only
   whole names count, so **@Anna** does not name Anna Maria. An Erevos from before shows the words only, and tells as
   the group's settings say.
-- **Not yet:** marks, typing and disappearing messages in groups, and groups over a nearby phone.
+- **Not yet:** typing and disappearing messages in groups, and groups over a nearby phone.
 
 ## Public groups {#public-groups}
 
@@ -1473,6 +1482,11 @@ between.
 - **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
   it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
   the Matrix server not encrypted, so the server learns each time you write.
+- **Marks:** your messages show **✓** once the Matrix server took them and **✓✓✓** once every other member of the chat
+  read them, as each one's Matrix app tells their server (read receipts). Matrix has no mark for a message that
+  reached a phone, so there is no **✓✓**. Hold a message of yours down and choose **Who read it** to see who read it
+  and when, and who has not (the first 100). A Matrix app can be set to send no read receipts: its member then shows
+  as not having read.
 - **Profile pictures:** a Matrix room, or the person in a chat with one person, shows their picture in the chat list,
   and so does an XMPP contact. **Choose a photo**, on the Matrix screen, sets yours for your contacts; **Remove**
   takes it away. Pictures are not encrypted in any Matrix or XMPP app: the server sees them, and your contacts see

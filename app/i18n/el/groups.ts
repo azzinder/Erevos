@@ -5,4 +5,12 @@ export const groups: Record<string, string> = {
     'Ένα αρχείο πηγαίνει όπως είναι, έως 100 MB, με ό,τι γράφει μέσα του. Το relay το κρατά κρυπτογραφημένο 14 ημέρες, για να το πάρει κάθε μέλος.',
   'Tap to play': 'Πάτα για αναπαραγωγή',
   'Tap to open': 'Πάτα για άνοιγμα',
+  // Who got and who read one of ours (components/group-messages.tsx, components/who-read.tsx); Who read it is in Matrix chats too.
+  'Who read it': 'Ποιος το διάβασε',
+  'Each member’s phone tells you, end-to-end encrypted. A member whose Erevos is older than these marks tells nothing, and stays under Not yet.':
+    'Το τηλέφωνο κάθε μέλους σε ενημερώνει, κρυπτογραφημένα από άκρη σε άκρη. Ένα μέλος με παλιότερο Erevos από αυτά τα σημάδια δεν λέει τίποτα και μένει στο Όχι ακόμα.',
+  'No one else was there when you sent it.': 'Δεν ήταν κανείς άλλος εκεί όταν το έστειλες.',
+  'Read ✓✓✓': 'Διάβασαν ✓✓✓',
+  'Reached their phone ✓✓': 'Έφτασε στο τηλέφωνό τους ✓✓',
+  'Not yet': 'Όχι ακόμα',
 };

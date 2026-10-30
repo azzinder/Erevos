@@ -20,8 +20,12 @@ export const NEXT: Changes = {
   forYou: [
     mark("**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start)."),
     mark("**Open a photo full screen in Matrix, XMPP and Nostr chats**: tap a photo shown in a Matrix, XMPP or Nostr chat to see it on the whole screen, with zoom, turning with the phone and Save, as in a chat with a contact. See [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats)."),
+    mark("**Who got and who read your messages in groups**: in a group that is not public, your messages show ✓, then ✓✓ once they reached the phone of every member, and ✓✓✓ once every one read them. Hold one and choose **Who read it** to see who read it and when, whose phone it reached and when, and who has neither yet. A member whose Erevos is older says nothing. A linked computer shows the same marks. See [Chat through a relay](#relay) and [Group chats](#groups)."),
+    mark("**Who read your messages in Matrix**: your messages in a Matrix chat show ✓ once the Matrix server took them and ✓✓✓ once every other member read them, as their Matrix apps tell their servers; **Who read it**, on a message held down, lists who read it and when, and who has not. Matrix has no mark for a message that reached a phone, so there is no ✓✓. See [Matrix](#matrix)."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Quiet group messages for the marks**: the group message that says a message came or was read goes only to the senders concerned, and batched; after 300 such messages to some members only, the next goes to all, so no member falls behind in the phone's MLS keys (they accept a jump of 1000 at most). Groups let go of as their space closes send nothing more. See [Group chats](#groups)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [
