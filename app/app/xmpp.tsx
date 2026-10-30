@@ -418,7 +418,9 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
           ? last.file.type.startsWith('image/')
             ? t('Photo')
             : t('File: {name}', { name: last.file.name })
-          : last.text;
+          : /^geo:\S+$/i.test(last.text.trim())
+            ? `📍 ${t('Location')}`
+            : last.text;
   return (
     <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={nameOf(state, chat.jid)}>
       <Card>

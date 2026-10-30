@@ -7,7 +7,8 @@ import { KeyboardAwareScrollView } from '../components/keyboard';
 import { Missing, ReactionChips } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Quote } from '../components/message-parts';
+import { PlaceCard, PreviewCard, Quote } from '../components/message-parts';
+import { PlaceSheet } from '../components/place-sheet';
 
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
@@ -20,6 +21,12 @@ import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { CAN_COPY, copyText } from '../lib/clipboard';
+import type { Place } from '../lib/chat-parts';
+import { firstLink, fitPreview } from '../lib/link-preview';
+import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
+import { geoUri, placeOfGeo } from '../lib/matrix-parts';
+import { throughTor } from '../lib/relay';
+import { loadCurrentSpaceData } from '../lock/space-data';
 import { currentGroupCall } from '../lib/group-call';
 import { voiceNamed } from '../lib/group-media';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
@@ -29,7 +36,7 @@ import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
-import { isBlocked, isXmppId, nameOf, onXmppTyping, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
 import { reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
 import { XMPP_FILE_MOST } from '../lib/xmpp-files';
@@ -92,6 +99,14 @@ import { useColors } from '../theme/context';
 // says so, and one taken back is only marked as such. The reactions are under it, tapped to react
 // the same or take ours back. While the other person writes, their app may say so, and it shows;
 // we are said to write only when the account says so, never in a group (components/say-typing.tsx).
+//
+// A place goes as a geo: link in the words, as Conversations sends one, and one that comes so shows
+// as a place, with Open in maps on a phone. A link's preview (XEP-0511) goes beside words only in
+// a chat written without encryption, and only when this phone makes previews (as for contacts);
+// one that comes so shows under the words.
+
+/** The place a message is, when its words are only a geo: link, as Conversations sends one. */
+const placeIn = (message: XmppMessage) => (/^geo:\S+$/i.test(message.text.trim()) ? placeOfGeo(message.text.trim()) : null);
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
@@ -100,6 +115,7 @@ function lineOf(message: XmppMessage): string {
   if (message.deleted) return t('Message deleted');
   if (message.locked) return t('Locked message');
   if (message.file) return message.file.name;
+  if (placeIn(message)) return `📍 ${t('Location')}`;
   return shownLine(message.text).trim().split('\n')[0] || t('Message');
 }
 
@@ -133,6 +149,13 @@ export default function XmppChatScreen() {
   const sayTyping = useSayTyping(!!now.state?.sayTyping && !!jid && !now.state.chats[jid]?.room, (typing) => jid && xmppTyped(jid, typing));
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
   const [, setCalls] = useState(0);
+  const [placing, setPlacing] = useState(false);
+  // Whether this phone makes the preview of a link it sends (the space's setting).
+  const [previews, setPreviews] = useState(false);
+  useEffect(() => {
+    if (where !== 'space') return;
+    loadCurrentSpaceData().then((data) => setPreviews(data.previews), () => setPreviews(false));
+  }, [where]);
 
   useEffect(() => onGroupCallChange(() => setCalls((n) => n + 1)), []);
   useEffect(() => {
@@ -187,11 +210,22 @@ export default function XmppChatScreen() {
 
   const fail = (error: unknown) => setNote(error instanceof Error ? error.message : String(error));
 
+  // The preview of the first link in words typed: only in a chat without encryption (the preview
+  // would tell the servers what the link is), when this phone makes them, never through Tor.
+  async function previewOf(text: string) {
+    const link = previews && where === 'space' && CAN_PREVIEW && !throughTor() && chat && plainIn(chat) ? firstLink(text) : null;
+    if (!link) return null;
+    setNote(t('Making the link’s preview…'));
+    const made = await makePreview(link);
+    setNote('');
+    return made ? fitPreview(text, made) : null;
+  }
+
   async function send(text: string, to?: string) {
     if (!jid) return;
     setNote('');
     try {
-      await (to ? xmppReply(jid, text, to) : xmppSend(jid, text));
+      await (to ? xmppReply(jid, text, to) : xmppSend(jid, text, to ? null : await previewOf(text)));
     } catch (error) {
       // Their apps have no OMEMO: the text waits for the person to say whether to write without it,
       // which the card below explains.
@@ -264,6 +298,11 @@ export default function XmppChatScreen() {
     setReplyId(null);
     sayTyping.sent();
     void send(text, answered?.id);
+  }
+
+  function sendPlace(place: Place) {
+    setPlacing(false);
+    void send(geoUri(place));
   }
 
   const react = (id: string, emoji: string) => {
@@ -521,12 +560,14 @@ export default function XmppChatScreen() {
           <>
             <Button title={t('Photo')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendPhoto()} />
             <Button title={t('File')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => void sendAnyFile()} />
+            <Button title={t('Location')} kind="secondary" compact disabled={sending || unsent !== null || !!changed} onPress={() => setPlacing(true)} />
             {sending ? <Text tone="muted">{t('Sending…')}</Text> : <View style={{ flex: 1 }} />}
           </>
         )}
         <MicButton voice={voice} disabled={sending || unsent !== null || !!changed} />
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
+      <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={channel ? t('Everyone in this group can see it, and the servers.') : t('Everyone in this chat can see it.')} />
       {channel ? (
         <Text variant="caption" tone="muted">
           {t('A channel tells only of messages that name you.')}
@@ -888,7 +929,10 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
           <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} />
         ) : (
           // Not selectable when it has a menu: holding the words opens it, which can copy them.
-          <Text selectable={!onMenu}>{message.text}</Text>
+          <>
+            {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu}>{message.text}</Text>}
+            {message.preview ? <PreviewCard preview={message.preview} /> : null}
+          </>
         )}
         <Text variant="caption" tone="faint">
           {status}
