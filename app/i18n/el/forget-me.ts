@@ -3,7 +3,6 @@ export const forgetMe: Record<string, string> = {
   "Delete me from everywhere": "Σβήσε με από παντού",
   "Delete what the servers keep for this space, and stop it": "Σβήσε ό,τι κρατούν οι servers για αυτόν τον χώρο και σταμάτησέ τον",
   "This space is stopped: it reaches no relay until you start it again.": "Αυτός ο χώρος είναι σταματημένος: δεν φτάνει σε κανένα relay μέχρι να τον ξεκινήσεις ξανά.",
-  "Go on": "Συνέχεια",
   "What the servers keep for this space is deleted for good, and the space stops receiving. Your phone keeps its chats. This cannot be undone.": "Ό,τι κρατούν οι servers για αυτόν τον χώρο σβήνεται οριστικά και ο χώρος σταματά να λαμβάνει. Το τηλέφωνό σου κρατά τις συνομιλίες του. Δεν αναιρείται.",
   "Are you sure?": "Είσαι σίγουρος/η;",
   "Last question: your contacts will not reach you until you start this space again and give them a new contact link.": "Τελευταία ερώτηση: οι επαφές σου δεν θα σε βρίσκουν μέχρι να ξεκινήσεις ξανά αυτόν τον χώρο και να τους δώσεις νέο σύνδεσμο επαφής.",

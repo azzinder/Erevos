@@ -3,7 +3,6 @@ export const forgetMe: Record<string, string> = {
   "Delete me from everywhere": "Borrarme de todas partes",
   "Delete what the servers keep for this space, and stop it": "Borrar lo que los servidores guardan de este espacio y detenerlo",
   "This space is stopped: it reaches no relay until you start it again.": "Este espacio está detenido: no llega a ningún relé hasta que lo inicies de nuevo.",
-  "Go on": "Continuar",
   "What the servers keep for this space is deleted for good, and the space stops receiving. Your phone keeps its chats. This cannot be undone.": "Lo que los servidores guardan de este espacio se borra para siempre y el espacio deja de recibir. Tu teléfono conserva sus chats. No se puede deshacer.",
   "Are you sure?": "¿Seguro?",
   "Last question: your contacts will not reach you until you start this space again and give them a new contact link.": "Última pregunta: tus contactos no podrán localizarte hasta que inicies de nuevo este espacio y les des un enlace de contacto nuevo.",
