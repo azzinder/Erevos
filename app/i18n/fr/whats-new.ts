@@ -8,6 +8,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Gras, italique, code et mots cachés** : dans les discussions et les groupes, les mots entre * passent en gras, entre _ en italique, entre ~ barrés, entre ` en code, et entre || cachés derrière une barre grise jusqu’à ce que vous touchiez. Voir [Discuter par un relais](#relay).",
   "**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay).":

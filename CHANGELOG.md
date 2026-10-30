@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.3 (2026-10-30)
+
+### For you
+
 - **Linking a computer is clearer**: on a computer or in a browser, **Linked devices** starts with **Link to my
   phone**; when it asks for a relay, LPHL's is filled in and **Sign in with LPHL** sits under the token, so the
   computer gets a token of its own and none has to be copied from the phone; a line says the QR code shows once **Link

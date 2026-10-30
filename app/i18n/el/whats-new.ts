@@ -8,6 +8,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Έντονα, πλάγια, κώδικας και κρυφές λέξεις**: σε συνομιλίες και ομάδες, οι λέξεις ανάμεσα σε * γίνονται έντονες, ανάμεσα σε _ πλάγιες, ανάμεσα σε ~ διαγραμμένες, ανάμεσα σε ` κώδικας και ανάμεσα σε || κρύβονται πίσω από μια γκρι μπάρα μέχρι να τις πατήσεις. Δες [Συνομιλία μέσω relay](#relay).",
   "**Hidden photo**: under + in a chat or a group, a photo that shows blurred until it is tapped. See [Chat through a relay](#relay).":
