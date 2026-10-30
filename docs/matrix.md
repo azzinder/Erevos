@@ -326,7 +326,7 @@ phone it is restored on go. Not yet on a phone.
 - Calls on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
 - MatrixRTC's sticky membership (MSC4354, Element Call's "Matrix 2.0" mode): Element Call is not given sticky events.
-- Group calls with the older `m.call.*` (only rooms of two), and threads of voice messages' own screen.
+- Group calls with the older `m.call.*`: only rooms of two.
 - Everything on this page's threads, polls, places, pins, rooms, accounts and older calls against a real homeserver and
   Element, FluffyChat and Nheko on a phone: so far only against the server played in the checks
   (`checks/matrix-more.check.ts`, `checks/matrix-voip.check.ts`).
