@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.4 (2026-10-30)
+
+### For you
+
 - **Numbers on the home chips**: each chip above the chats (**All messages**, **SMS**, **Erevos**, **Matrix**,
   **XMPP**, **Nostr**) shows how many messages are not read in it, as a small number after its name (99+ above 99,
   nothing when there are none). Muted chats and groups are left out, as they are of the number on the icon, and so is

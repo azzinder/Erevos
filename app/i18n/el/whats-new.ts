@@ -8,6 +8,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Αριθμοί στα κουμπιά της αρχικής οθόνης**: κάθε κουμπί πάνω από τις συνομιλίες (Όλα, SMS, Erevos, Matrix, XMPP, Nostr) δείχνει πόσα μηνύματα δεν έχουν διαβαστεί εκεί, ως έναν μικρό αριθμό μετά το όνομά του· οι συνομιλίες και οι ομάδες σε σίγαση δεν μετρούν. Δες [Πρώτα βήματα](#start).",
   "**Open a photo full screen in Matrix, XMPP and Nostr chats**: tap a photo shown in a Matrix, XMPP or Nostr chat to see it on the whole screen, with zoom, turning with the phone and Save, as in a chat with a contact. See [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats).":
