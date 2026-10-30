@@ -67,7 +67,7 @@ export function usePreKey(own: { preKeys: PreKey[]; used?: UsedPreKey[] }, id: n
 export type OmemoDevice = {
   identity?: string;
   session?: unknown;
-  /** Its identity key changed: shown in the chat, and the device is used again only once seen. */
+  /** Its identity key changed since it was first seen: said beside its key in the chat's devices, to compare. */
   changed?: boolean;
   /** Its bundle could not be had: tried again later. */
   failedAt?: number;
