@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Share } from 'react-native';
 
@@ -6,9 +6,10 @@ import { QrCode } from '../components/QrCode';
 import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
-import { onLinked, spaceLinks, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { onLinked, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
 import { mark, t } from '../lib/i18n';
 import { checkLinkCode, linkCodeLink } from '../lib/link-code';
+import { matrixWaiting } from '../lib/linked-accounts';
 import { createQueue, toHex } from '../lib/relay';
 import { ownToken } from '../lib/relay-signin';
 import { SHELL } from '../lib/shell';
@@ -21,7 +22,10 @@ import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data
 // code to compare, what of the history goes, and Link; then the devices linked, each with Unlink.
 // Nothing goes anywhere until Link is tapped on the phone, and the chats only once They match is
 // tapped on the computer. On a computer or in a browser Link to my phone comes first, with LPHL's
-// relay filled in and its sign-in under the token, so a token never has to be copied over.
+// relay filled in and its sign-in under the token, so a token never has to be copied over. The
+// space's Matrix, XMPP and Nostr accounts go with the link when chosen, or later with Send the
+// accounts (lib/linked-accounts.ts); the linked device says which it has from the phone, and asks
+// for the Matrix sign-in when the homeserver gave no token for it.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 const DAY = 24 * 3600 * 1000;
@@ -54,6 +58,7 @@ function whenText(ms: number): string {
 }
 
 export default function Devices() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ key?: string; id?: string; relay?: string; rk?: string; s?: string; name?: string }>();
   const [links, setLinks] = useState<Links | null>(null);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
@@ -72,14 +77,18 @@ export default function Devices() {
   const [asked, setAsked] = useState<{ name: string; code: string } | null>(null);
   const [period, setPeriod] = useState<Period>('all');
   const [files, setFiles] = useState(true);
+  const [accounts, setAccounts] = useState(true);
   const [again, setAgain] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // On a linked device: the accounts from the phone.
+  const [here, setHere] = useState<AccountsHere | null>(null);
 
   const refresh = (l: Links) => {
     setDevices(l.devices());
     setRole(l.role());
     setAnswer(l.answerCode());
     setCopied(l.copied());
+    setHere(l.accountsHere());
   };
 
   useEffect(() => {
@@ -196,7 +205,7 @@ export default function Devices() {
   const link = () =>
     run(async () => {
       if (!links || !asked) return;
-      await links.link({ since: sinceOf(period), files }, t('Phone'));
+      await links.link({ since: sinceOf(period), files, accounts }, t('Phone'));
       setAsked(null);
       setPasted('');
       setNote(t('Now the computer shows a code too. If it is {code}, tap They match there.', { code: asked.code }));
@@ -207,7 +216,7 @@ export default function Devices() {
     ask(
       own ? t('Unlink this device') : t('Unlink {name}', { name: device.name }),
       own
-        ? t("The account's chats leave this device, messages and all. The phone keeps them.")
+        ? t("The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.")
         : t('Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.'),
       [
         { text: t('Cancel'), style: 'cancel' },
@@ -234,6 +243,27 @@ export default function Devices() {
       setNote(t('The messages go to it now. What it has already is not kept twice.'));
     });
 
+  // On the phone: the space's Matrix, XMPP and Nostr accounts to a device linked already.
+  function sendAccounts(device: DeviceInfo) {
+    ask(
+      t('Send the accounts to {name}', { name: device.name }),
+      t("This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them."),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Send'),
+          onPress: () =>
+            void run(async () => {
+              if (!links) return;
+              const sent = await links.giveAccounts(device.id);
+              const names = sent.map((n) => (n === 'matrix' ? 'Matrix' : n === 'xmpp' ? 'XMPP' : 'Nostr')).join(', ');
+              setNote(sent.length > 0 ? t('Sent to {name}: {accounts}.', { name: device.name, accounts: names }) : t('Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.'));
+            }),
+        },
+      ],
+    );
+  }
+
   const choosing = (
     <>
       <Field label={t('Messages to bring over')}>
@@ -245,6 +275,7 @@ export default function Devices() {
       </Field>
       <Row wrap>
         <Chip label={t('Photos and files too')} selected={files} onPress={() => setFiles(!files)} />
+        {!again ? <Chip label={t('Matrix, XMPP and Nostr accounts too')} selected={accounts} onPress={() => setAccounts(!accounts)} /> : null}
       </Row>
     </>
   );
@@ -321,6 +352,34 @@ export default function Devices() {
 
   if (role === 'linked') {
     const phone = devices[0];
+    const waiting = matrixWaiting(here?.left);
+    const fromPhone = here ? (
+      <Card>
+        <Text variant="heading">{t('Accounts from the phone')}</Text>
+        {here.brought.matrix ? <Text tone="muted">{t('Matrix: {id}, signed in here as a new device.', { id: here.brought.matrix.userId })}</Text> : null}
+        {waiting ? (
+          <>
+            <Text>
+              {t('Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.', { id: waiting.userId })}
+            </Text>
+            <Button title={t('Sign in to Matrix')} kind="secondary" onPress={() => router.push({ pathname: '/matrix', params: { user: waiting.userId } })} />
+          </>
+        ) : null}
+        {here.brought.xmpp ? <Text tone="muted">{t('XMPP: {id}, signed in here as a new device.', { id: here.brought.xmpp })}</Text> : null}
+        {here.brought.nostr ? <Text tone="muted">{t('Nostr: the key of the Nostr chats is here too.')}</Text> : null}
+        {here.left.xmpp || here.left.nostr || (here.left.matrix && !waiting) ? (
+          <Text tone="muted">{t('Not brought over yet: {accounts}. Tried again each time this space opens.', { accounts: [here.left.matrix && !waiting ? 'Matrix' : '', here.left.xmpp ? 'XMPP' : '', here.left.nostr ? 'Nostr' : ''].filter(Boolean).join(', ') })}</Text>
+        ) : null}
+        {here.problems.map((problem) => (
+          <Text key={problem} variant="caption" tone="faint">
+            {problem}
+          </Text>
+        ))}
+        <Text variant="caption" tone="faint">
+          {t('Once this device is unlinked, it signs out of the accounts it brought over.')}
+        </Text>
+      </Card>
+    ) : null;
     return (
       <Page>
         <Text variant="title">{t('Linked devices')}</Text>
@@ -334,6 +393,7 @@ export default function Devices() {
           </Text>
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}
         </Card>
+        {fromPhone}
         {note ? <Text tone="muted">{note}</Text> : null}
       </Page>
     );
@@ -384,6 +444,7 @@ export default function Devices() {
               ) : (
                 <Row wrap>
                   {device.linked ? <Button title={t('Bring over messages again')} kind="secondary" compact disabled={busy} onPress={() => setAgain(device.id)} /> : null}
+                  {device.linked ? <Button title={t('Send the accounts')} kind="secondary" compact disabled={busy} onPress={() => sendAccounts(device)} /> : null}
                   <Button title={t('Unlink')} kind="danger" compact disabled={busy} onPress={() => unlink(device)} />
                 </Row>
               )}

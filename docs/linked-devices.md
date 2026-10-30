@@ -268,6 +268,34 @@ chat looks, pictures from signs, appearing offline, accepting or refusing a requ
 either side, they reach the other. A photo picture stays on the device it was chosen on. The
 computer shows the account's own contact link and QR code, so people add the account from there too.
 
+### Matrix, XMPP and Nostr accounts
+
+The space's own accounts on other networks go to a linked device when **Matrix, XMPP and Nostr
+accounts too** was chosen as it was linked, or later with **Send the accounts** on the phone
+(`accounts`, `lib/linked-accounts.ts`). They go in the link, end-to-end encrypted as the rest, and
+only the space's: a hidden place's accounts never go. The device signs in to each as a new device,
+never a copy of the phone's, whose keys would then be used twice:
+
+- **XMPP**: the address, its password and its server when given by hand. The device signs in as a
+  new resource, with an OMEMO device of its own.
+- **Nostr chats**: the key itself (Nostr has no devices), with the relays it reads on, its name and
+  its file servers. The phone told those already, so the device tells them again only a week later,
+  or once changed there.
+- **Matrix**: the homeserver and the user, with the account's cross-signing keys and its key
+  backup's key when the phone has them. When the homeserver gives the phone a one-use login token
+  for a new device without asking for the password again (spec 1.7, `login/get_token`), which few
+  do, the device signs in with it; otherwise it asks to be signed in to by hand, once, with the
+  Matrix ID filled in. Either way it then takes the keys, each only if it makes the keys the
+  homeserver has, as a Security Key would open them: other people's apps trust it as the account's
+  own, with no Security Key or check by emoji, and it opens the messages from before that the
+  backup holds.
+
+A device that has an account of that network already keeps it; only the Matrix keys go to one
+signed in as the same user. What could not be brought yet (offline, say) is kept sealed with the
+device's links and tried again each time the space opens; sent again, the newer takes its place.
+Once unlinked, the device signs out of what it brought, as that device only, or forgets the Nostr
+key, as its chats go. A device from before leaves `accounts` alone.
+
 ### History
 
 The phone chooses what of the history goes: all of it, the last month, the last week or none, and
@@ -288,7 +316,7 @@ was read on that device or when another said it was read.
 On the phone, **Unlink** forgets the device's link at once: nothing more goes to it, and what it
 sends is not opened. That is how a lost device is cut off: it keeps what it had, behind its own lock,
 but gets nothing new. If it is still on, it is told, and forgets the account's chats and its
-endpoint. On the computer, **Unlink this device** does the same from that side. Either way the phone
+endpoint, and signs out of the accounts it brought from the phone. On the computer, **Unlink this device** does the same from that side. Either way the phone
 signs a list without it, a new filling key taking its place.
 
 ### Hidden chats and second passwords
@@ -424,6 +452,8 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
 - `lock/devices-data.ts`: each space's links, sealed with the space's key.
 - `lib/devices.ts`: linking, the link conversations, passing messages on, copying contacts and
   history.
+- `lib/linked-accounts.ts`: the space's Matrix, XMPP and Nostr accounts given by the phone and
+  brought on the device (`matrixTake`, `xmppTake`, `nostrDmTake` in their stores).
 - `lib/e2e.ts`: a linked device's chat seals for its primary, and the primary's tells its devices
   what it opened and sealed (`Link`).
 - `lib/attachments.ts`: a photo or file taken stays on the relay while another device is still to take

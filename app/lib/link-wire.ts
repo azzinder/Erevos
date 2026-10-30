@@ -1,4 +1,4 @@
-import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isRelay, isRelayKey, isTimer, MAX_BLOCKED, type Avatar, type Blocked, type Contact, type Spare } from '../lock/e2e-data';
+import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isNostrRelay, isRelay, isRelayKey, isTimer, MAX_BLOCKED, MAX_NOSTR_RELAYS, type Avatar, type Blocked, type Contact, type Spare } from '../lock/e2e-data';
 import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
@@ -18,8 +18,9 @@ import { cleanGroupName, isGroupId } from './group-signal';
 // opened (`in`), one it sealed for a contact (`out`), a pack of the history on the relay's file store
 // (`history`), that a call was answered or turned down on another device (`call`), what changed in
 // the groups (`groups`), what changed in messages told already (`changed`), the account's device
-// list (`list`, lib/device-list.ts, with where each of the devices it names reads), where it is now
-// (`here`) and that it unlinked the device (`bye`). From a linked device: that the codes match
+// list (`list`, lib/device-list.ts, with where each of the devices it names reads), the space's
+// Matrix, XMPP and Nostr accounts (`accounts`, lib/linked-accounts.ts), where it is now (`here`)
+// and that it unlinked the device (`bye`). From a linked device: that the codes match
 // (`ready`), its own endpoint (`endpoint`), a message for a contact (`send`), a contact to add
 // (`add`), a change to a contact (`set`), what to do in a group (`group`), the photos and files it
 // took (`took`), where it is (`here`) and that it unlinked itself (`bye`). Between two linked
@@ -87,9 +88,39 @@ export type Envelope =
   | { k: 'list'; list: DeviceList; ak: string; real?: string[]; routes?: Record<string, Place> }
   | { k: 'way'; c: string; dv?: number; list?: DeviceList }
   | { k: 'came'; c: string; got: string[] }
+  | ({ k: 'accounts' } & GivenAccounts)
   | { k: 'here' }
   | { k: 'move' }
   | { k: 'bye' };
+
+/**
+ * The space's own accounts on other networks, as the phone gives them to a device of its own
+ * (lib/linked-accounts.ts): never a hidden place's, which no device is linked to.
+ */
+export type GivenAccounts = { matrix?: GivenMatrix; xmpp?: GivenXmpp; nostr?: GivenNostr };
+
+/**
+ * A Matrix account: its homeserver and user; a one-use login token for a new device, when the
+ * homeserver gave the phone one (`token`); and the account's cross-signing keys and its key
+ * backup's key, when the phone has them, which the device takes once it is signed in as that user,
+ * so other people's apps trust it as the account's own and it opens the messages from before. A
+ * Matrix device is never copied: the device signs in as a new one. Kept on the device while it
+ * waits to be signed in to by hand, which it was not before the account came (`waited`).
+ */
+export type GivenMatrix = {
+  homeserver: string;
+  userId: string;
+  token?: string;
+  keys?: { master: string; selfSigning: string; userSigning: string };
+  backup?: string;
+  waited?: true;
+};
+
+/** An XMPP account: its bare JID, its password, and its server when given by hand (lib/xmpp-net.ts XmppServer). The device signs in as a new resource, with an OMEMO device of its own. */
+export type GivenXmpp = { jid: string; password: string; server?: { host: string; port: number; tls: 'direct' | 'starttls' } | { websocket: string } };
+
+/** The space's Nostr key for chats with other Nostr apps (lib/nostr-dm.ts): its secret, hex, the relays it reads on, the name it shows, and its file servers. */
+export type GivenNostr = { secret: string; inbox: string[]; name?: string; files?: string[] };
 
 /** A contact a device removed by Delete contact (1) or Block contact (2), not from the address book
  *  only: the phone deletes or blocks them too, and moves its queues (lib/queue-move.ts). */
@@ -264,6 +295,58 @@ export function mirrorOf(synced: Synced, kept: Contact | undefined, primary: Pla
   };
 }
 
+// A secret as Matrix apps write one: base64, padded or not.
+const isMatrixSecret = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9+/_-]{20,128}={0,2}$/.test(v);
+const isPrintable = (v: unknown, most: number): v is string => isText(v) && v.length > 0 && v.length <= most && !/[\s\x00-\x1f]/.test(v);
+
+function checkedMatrix(value: unknown, kept: boolean): GivenMatrix | null {
+  if (!isObject(value)) return null;
+  const v = value;
+  if (!isText(v.homeserver) || v.homeserver.length > 512 || !/^https:\/\/[^\s/?#]+(\/[^\s?#]*)?$/i.test(v.homeserver)) return null;
+  if (!isText(v.userId) || v.userId.length > 255 || !/^@[^:\s]+:[^\s]+$/.test(v.userId)) return null;
+  const k = isObject(v.keys) ? v.keys : null;
+  const keys = k && isMatrixSecret(k.master) && isMatrixSecret(k.selfSigning) && isMatrixSecret(k.userSigning) ? { master: k.master, selfSigning: k.selfSigning, userSigning: k.userSigning } : null;
+  return {
+    homeserver: v.homeserver.replace(/\/+$/, ''),
+    userId: v.userId,
+    ...(isPrintable(v.token, 1024) ? { token: v.token } : {}),
+    ...(keys ? { keys } : {}),
+    ...(isMatrixSecret(v.backup) ? { backup: v.backup } : {}),
+    ...(kept && v.waited === true ? { waited: true as const } : {}),
+  };
+}
+
+function checkedXmpp(value: unknown): GivenXmpp | null {
+  if (!isObject(value)) return null;
+  const v = value;
+  if (!isText(v.jid) || v.jid.length > 1024 || !/^[^\s@/]+@[^\s@/]+$/.test(v.jid) || !isText(v.password) || !v.password || v.password.length > 1024) return null;
+  const s = isObject(v.server) ? v.server : null;
+  const server: GivenXmpp['server'] | null =
+    s && isText(s.websocket) && s.websocket.length <= 512 && /^wss:\/\/\S+$/i.test(s.websocket)
+      ? { websocket: s.websocket }
+      : s && isText(s.host) && s.host.length <= 253 && /^[a-z0-9.-]+$/i.test(s.host) && Number.isInteger(s.port) && (s.port as number) > 0 && (s.port as number) < 65536 && (s.tls === 'direct' || s.tls === 'starttls')
+        ? { host: s.host, port: s.port as number, tls: s.tls as 'direct' | 'starttls' }
+        : null;
+  return { jid: v.jid, password: v.password, ...(server ? { server } : {}) };
+}
+
+function checkedNostr(value: unknown): GivenNostr | null {
+  if (!isObject(value) || !isHex(value.secret, 64)) return null;
+  const v = value;
+  const inbox = Array.isArray(v.inbox) ? [...new Set(v.inbox.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) : [];
+  const files = Array.isArray(v.files) ? v.files.filter((f): f is string => isText(f) && f.length <= 256 && /^https:\/\/[^\s/?#]+(\/\S*)?$/i.test(f)).slice(0, 5) : null;
+  return { secret: value.secret as string, inbox, ...(isText(v.name) ? { name: v.name.slice(0, 100) } : {}), ...(files && files.length > 0 ? { files } : {}) };
+}
+
+/** The accounts given, as said or as a device keeps them (`kept`), checked: what is not one of them is left out. */
+export function checkedGiven(value: unknown, kept = false): GivenAccounts {
+  const v = isObject(value) ? value : {};
+  const matrix = checkedMatrix(v.matrix, kept);
+  const xmpp = checkedXmpp(v.xmpp);
+  const nostr = checkedNostr(v.nostr);
+  return { ...(matrix ? { matrix } : {}), ...(xmpp ? { xmpp } : {}), ...(nostr ? { nostr } : {}) };
+}
+
 function checkedEnvelope(v: Json): Envelope | null {
   switch (v.k) {
     case 'hello':
@@ -352,6 +435,8 @@ function checkedEnvelope(v: Json): Envelope | null {
       const got = Array.isArray(v.got) ? v.got.filter(isTag).slice(0, MAX_CAME) : [];
       return isHex(v.c, 64) && got.length > 0 ? { k: 'came', c: v.c, got } : null;
     }
+    case 'accounts':
+      return { k: 'accounts', ...checkedGiven(v) };
     case 'here':
     case 'move':
     case 'bye':

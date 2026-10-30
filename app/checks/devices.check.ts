@@ -8,6 +8,8 @@
 // and the devices it names reaching each other: sealed, and with the phone off still seeing what
 // the others write, read and change, started again a day after a first packet lost; a backup put
 // back elsewhere meeting no one, and versions from before reached through the phone as they were.
+// The space's Matrix, XMPP and Nostr accounts going to a device linked with them, brought there as
+// far as it can, the rest again as the space opens, and let go of once it is unlinked.
 // Then contacts given the list: writing to each endpoint alike, each with keys of its own that a
 // device finds them by, a device taking their messages and answering them with the phone off, and with the phone's queue full what they try again, once, its
 // conversation with them going on; each kept once however many come between, what came and was read
@@ -38,7 +40,7 @@ import { acceptConversation, accountBundle, accountIdentity, newAccount, open as
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
-import { Links, type HistoryChoice } from '../lib/devices';
+import { handAccounts, Links, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -49,6 +51,7 @@ import {
   changedFields,
   changedGroups,
   changeEnvelopes,
+  checkedGiven,
   encodeEnvelope,
   encodeOne,
   groupEnvelopes,
@@ -73,6 +76,7 @@ import {
   withoutPlace,
   writePack,
   type Envelope,
+  type GivenAccounts,
   type GroupEntry,
   type GroupMirror,
   type Synced,
@@ -86,7 +90,7 @@ import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { handOverHidden, Owed, OwedError } from '../lib/waiting';
 import { newFileId, type FileRef } from '../lock/attachment-files';
-import { loadDevicesData, saveDevicesData, type DevicesData } from '../lock/devices-data';
+import { loadDevicesData, saveDevicesData, type Brought, type DevicesData } from '../lock/devices-data';
 import { loadE2EData, saveE2EData, WAY_AGAIN, type E2EData } from '../lock/e2e-data';
 import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { History } from '../lock/history';
@@ -554,6 +558,113 @@ test('a linked computer\'s own backup, restored: read, not written in, said once
   assert.equal(copy.links.copied(), false);
 
   for (const p of [pixel, dell, copy]) p.links.close();
+});
+
+test('the accounts a device is given: only what each is, as said and as kept', () => {
+  const keys = { master: 'A'.repeat(43), selfSigning: 'B'.repeat(43), userSigning: 'C'.repeat(43) };
+  const said = {
+    matrix: { homeserver: 'https://matrix.example.org/', userId: '@nek:example.org', token: 'syt_one', keys, backup: 'D'.repeat(43), waited: true },
+    xmpp: { jid: 'nek@example.org', password: 'two words', server: { host: 'xmpp.example.org', port: 5222, tls: 'starttls' } },
+    nostr: { secret: 'ab'.repeat(32), inbox: ['wss://relay.example.org', 'http://not.one', 'wss://relay.example.org'], name: 'Nek', files: ['https://blossom.example.org', 'ftp://no'] },
+  };
+  // What only a device keeps (`waited`) is not taken from the phone.
+  assert.deepEqual(checkedGiven(said), {
+    matrix: { homeserver: 'https://matrix.example.org', userId: '@nek:example.org', token: 'syt_one', keys, backup: 'D'.repeat(43) },
+    xmpp: said.xmpp,
+    nostr: { secret: 'ab'.repeat(32), inbox: ['wss://relay.example.org'], name: 'Nek', files: ['https://blossom.example.org'] },
+  });
+  assert.equal(checkedGiven(said, true).matrix?.waited, true);
+  // A homeserver not over HTTPS, an address with no domain, a key too short: none of them go; keys
+  // that are not all there go without them.
+  assert.deepEqual(
+    checkedGiven({
+      matrix: { homeserver: 'http://matrix.example.org', userId: '@nek:example.org' },
+      xmpp: { jid: 'nek', password: 'x' },
+      nostr: { secret: 'ab'.repeat(31) },
+    }),
+    {},
+  );
+  assert.deepEqual(checkedGiven({ matrix: { homeserver: 'https://m.example.org', userId: '@a:example.org', keys: { master: 'A'.repeat(43) }, token: 'two words' }, xmpp: { jid: 'a@example.org', password: 'x', server: { host: 'x', port: 0, tls: 'starttls' } } }), {
+    matrix: { homeserver: 'https://m.example.org', userId: '@a:example.org' },
+    xmpp: { jid: 'a@example.org', password: 'x' },
+  });
+  // It goes in one envelope, as any other.
+  const [packet] = encodeEnvelope({ k: 'accounts', ...checkedGiven(said) }, null);
+  const back = new Parts().take('x', packet);
+  assert.equal(back?.k, 'accounts');
+  assert.deepEqual(back?.k === 'accounts' ? back.xmpp : null, said.xmpp);
+});
+
+test('the space\'s Matrix, XMPP and Nostr accounts go to a device linked with them, are brought there as far as it can, and go once it is unlinked', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { phone, take, linkUp, reopen } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const lap = await phone(2);
+  const keys = { master: 'A'.repeat(43), selfSigning: 'B'.repeat(43), userSigning: 'C'.repeat(43) };
+  const given: GivenAccounts = {
+    matrix: { homeserver: 'https://matrix.example.org', userId: '@nek:example.org', keys, backup: 'D'.repeat(43) },
+    xmpp: { jid: 'nek@example.org', password: 'two words', server: { websocket: 'wss://xmpp.example.org/ws' } },
+    nostr: { secret: 'ab'.repeat(32), inbox: ['wss://relay.example.org'], name: 'Nek' },
+  };
+  const took: { space: number; given: GivenAccounts }[] = [];
+  const gone: { space: number; brought: Brought }[] = [];
+  // The Matrix account waits for its sign-in on the computer; XMPP and Nostr come at once.
+  let signedIn = false;
+  handAccounts({
+    give: async (space) => (space === 0 ? given : {}),
+    take: async (space, _key, said) => {
+      took.push({ space, given: said });
+      if (signedIn) return { left: {}, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' } }, problems: [] };
+      return { left: { matrix: { ...said.matrix!, waited: true } }, brought: { xmpp: said.xmpp!.jid, nostr: 'cd'.repeat(32) }, problems: ['Matrix: waits'] };
+    },
+    letGo: async (space, _key, brought) => {
+      gone.push({ space, brought });
+    },
+  });
+  try {
+    // Linked without them: none go.
+    await linkUp(pixel, lap, { since: null, files: false });
+    // Linked with them: they go once the codes match, and the computer brings them.
+    await linkUp(pixel, dell, { since: null, files: false, accounts: true });
+    await until(async () => {
+      await pixel.links.settled();
+      await take(dell);
+      return took.length > 0;
+    });
+    await take(lap);
+    assert.deepEqual(took, [{ space: 1, given }]);
+    assert.deepEqual(dell.links.accountsHere(), { left: { matrix: { ...given.matrix, waited: true } }, brought: { xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) }, problems: ['Matrix: waits'] });
+    assert.equal(lap.links.accountsHere(), null);
+    // What is still to bring is kept, and tried again as the space opens: once signed in to Matrix there, its keys go.
+    signedIn = true;
+    await reopen(dell);
+    assert.deepEqual(took[1], { space: 1, given: { matrix: { ...given.matrix, waited: true } } });
+    assert.deepEqual(dell.links.accountsHere(), { left: {}, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' }, xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) }, problems: [] });
+
+    // Sent again from the phone, to that device only.
+    // Both were named DELL as they showed their codes: the computer was linked second.
+    const dellId = pixel.links.devices()[1].id;
+    assert.deepEqual(await pixel.links.giveAccounts(dellId), ['matrix', 'xmpp', 'nostr']);
+    assert.deepEqual(await pixel.links.giveAccounts('00'.repeat(32)), []);
+    // Only the phone gives them.
+    assert.deepEqual(await dell.links.giveAccounts(dellId), []);
+    await until(async () => {
+      await take(dell);
+      return took.length === 3;
+    });
+    await take(lap);
+    assert.equal(took.length, 3);
+
+    // Unlinked: the computer lets go of what it brought, and keeps nothing of it.
+    await dell.links.unlink();
+    await dell.links.settled();
+    assert.deepEqual(gone, [{ space: 1, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' }, xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) } }]);
+    assert.equal(dell.links.accountsHere(), null);
+    const kept = await loadDevicesData(1, dell.key);
+    assert.deepEqual([kept.given, kept.brought], [undefined, undefined]);
+  } finally {
+    handAccounts(null);
+  }
 });
 
 test('photos, files and voice messages go through the phone both ways, and deleting goes to both phones', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {

@@ -41,7 +41,8 @@ export const devices: Record<string, string> = {
   'Now the computer shows a code too. If it is {code}, tap They match there.': 'Τώρα δείχνει κωδικό και ο υπολογιστής. Αν είναι ο {code}, πάτα εκεί «Ταιριάζουν».',
   'Unlink this device': 'Αποσύνδεση αυτής της συσκευής',
   'Unlink {name}': 'Αποσύνδεση: {name}',
-  "The account's chats leave this device, messages and all. The phone keeps them.": 'Οι συνομιλίες του λογαριασμού φεύγουν από αυτή τη συσκευή, μαζί με τα μηνύματα. Το τηλέφωνο τις κρατά.',
+  "The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.":
+    'Οι συνομιλίες του λογαριασμού φεύγουν από αυτή τη συσκευή, μαζί με τα μηνύματα, και το ίδιο οι λογαριασμοί που έφερε από το τηλέφωνο. Το τηλέφωνο τα κρατά.',
   'Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.':
     'Δεν πηγαίνει τίποτα άλλο σε αυτήν, και ό,τι στέλνει δεν γίνεται δεκτό. Ό,τι έχει μένει σε αυτήν, πίσω από το δικό της κλείδωμα.',
   'Unlinked.': 'Αποσυνδέθηκε.',
@@ -92,4 +93,23 @@ export const devices: Record<string, string> = {
   'Name of this device': 'Όνομα αυτής της συσκευής',
   'Tap Link to my phone, and a QR code for the phone shows here.':
     'Πάτα «Σύνδεση με το τηλέφωνό μου» και εδώ εμφανίζεται ένας κωδικός QR για το τηλέφωνο.',
+  'Send the accounts to {name}': 'Αποστολή των λογαριασμών στη συσκευή {name}',
+  "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Οι λογαριασμοί Matrix, XMPP και Nostr αυτού του χώρου πηγαίνουν σε αυτήν, κρυπτογραφημένοι από άκρη σε άκρη, και αυτή συνδέεται σε καθέναν από αυτούς ως νέα συσκευή. Μόλις αποσυνδεθεί, βγαίνει από αυτούς.',
+  'Sent to {name}: {accounts}.': 'Στάλθηκαν στη συσκευή {name}: {accounts}.',
+  'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
+    'Δεν στάλθηκε τίποτα: αυτός ο χώρος δεν έχει λογαριασμό Matrix, XMPP ή Nostr, ή περιμένουν ήδη πάρα πολλά για εκείνη τη συσκευή.',
+  'Matrix, XMPP and Nostr accounts too': 'Και λογαριασμοί Matrix, XMPP και Nostr',
+  'Accounts from the phone': 'Λογαριασμοί από το τηλέφωνο',
+  'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, συνδέθηκε εδώ ως νέα συσκευή.',
+  'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':
+    'Matrix: συνδέσου εδώ μία φορά στο {id}, με τον κωδικό του. Τα κλειδιά του έρχονται από το τηλέφωνο, οπότε δεν χρειάζεται Κλειδί Ασφαλείας ούτε έλεγχος με emoji.',
+  'Sign in to Matrix': 'Σύνδεση στο Matrix',
+  'XMPP: {id}, signed in here as a new device.': 'XMPP: {id}, συνδέθηκε εδώ ως νέα συσκευή.',
+  'Nostr: the key of the Nostr chats is here too.': 'Nostr: το κλειδί των συνομιλιών Nostr είναι κι εδώ.',
+  'Not brought over yet: {accounts}. Tried again each time this space opens.':
+    'Δεν έχουν έρθει ακόμα: {accounts}. Δοκιμάζεται ξανά κάθε φορά που ανοίγει αυτός ο χώρος.',
+  'Once this device is unlinked, it signs out of the accounts it brought over.':
+    'Μόλις αποσυνδεθεί αυτή η συσκευή, βγαίνει από τους λογαριασμούς που έφερε από το τηλέφωνο.',
+  'Send the accounts': 'Στείλε τους λογαριασμούς',
 };

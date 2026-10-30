@@ -2680,8 +2680,8 @@ To link a computer:
 2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
    computer, paste it on the phone under **Code from the computer**, and tap **Next**.
 3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes
-   (**All of it**, **The last month**, **The last week** or **None**) and whether **Photos and files too**, then tap
-   **Link**.
+   (**All of it**, **The last month**, **The last week** or **None**), whether **Photos and files too** and whether
+   **Matrix, XMPP and Nostr accounts too**, then tap **Link**.
 4. The computer shows a code too. If it is the phone's, tap **They match**. If not, tap **They differ**: someone else
    may have read its QR code, and nothing went to them.
 
@@ -2731,6 +2731,16 @@ The chats then come to the computer, and after them the messages chosen.
   links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
   and stars; what the computer has already is not kept twice.
+- **Matrix, XMPP and Nostr**: with **Matrix, XMPP and Nostr accounts too** (on at first), the computer signs in to
+  this space's Matrix and XMPP accounts and takes the key of its Nostr chats, each as a new device of its own: the
+  phone keeps its own. For a computer linked already, tap **Send the accounts** under it on the phone. XMPP and Nostr
+  come by themselves. A Matrix server seldom lets the phone sign a new device in: then **Linked devices** on the
+  computer says so, and **Sign in to Matrix** there opens Matrix with the ID filled in, for its password, once. The
+  account's keys come from the phone, so no Security Key or check by emoji is needed, and the messages from before
+  open from its key backup. A computer that has an account of its own on one of them keeps it, and what could not come
+  yet (offline, say) is tried again each time it opens. Unlinked, the computer signs out of the accounts it brought
+  over. Those of hidden chats never go. Each device signs in as itself, never with a copy of the phone's keys, which
+  would then be used twice and break the encryption; so either can be signed out alone, from the account's devices.
 - **Unlink**, on the phone, cuts a device off at once: nothing more goes to it, and nothing it sends is taken.
   Contacts on this version are told the next time the phone reaches the relay: they stop writing to it, and take
   nothing more from it. That is how to cut off a lost computer. If it is on, it is told, and the account's chats leave

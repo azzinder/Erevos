@@ -2889,8 +2889,8 @@ Para conectar um computador:
 2. No celular, escaneie o código com a câmera: o Erevos abre em **Dispositivos conectados** com ele. Ou copie o código
    no computador, cole-o no celular em **Código do computador** e toque em **Avançar**.
 3. O celular mostra o nome do computador e um código de quatro grupos de cinco dígitos. Escolha o que do histórico vai
-   (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos também**, depois
-   toque em **Conectar**.
+   (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos também** e **Contas
+   Matrix, XMPP e Nostr também**, depois toque em **Conectar**.
 4. O computador também mostra um código. Se for o do celular, toque em **São iguais**. Se não, toque em **São
    diferentes**: outra pessoa pode ter lido o código QR dele, e nada foi para ela.
 
@@ -2944,6 +2944,17 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   só conecta de dentro dele, a dispositivos próprios.
 - **Trazer as mensagens de novo**, no celular, envia de novo um período do histórico, com as reações, fixações, votos
   e estrelas dele; o que o computador já tem não é guardado duas vezes.
+- **Matrix, XMPP e Nostr**: com **Contas Matrix, XMPP e Nostr também** (ligado no início), o computador entra nas contas
+  Matrix e XMPP deste espaço e leva a chave das conversas Nostr dele, cada uma como um novo dispositivo próprio: o
+  celular fica com o seu. Para um computador já conectado, toque em **Enviar as contas** embaixo dele no celular. XMPP e
+  Nostr chegam sozinhos. Um servidor Matrix raramente deixa o celular fazer entrar um novo dispositivo: então
+  **Dispositivos conectados** no computador avisa, e **Entrar no Matrix** ali abre o Matrix com o ID já preenchido, para
+  a senha dela, uma vez só. As chaves da conta vêm do celular, então não é preciso chave de segurança nem verificar por
+  emoji, e as mensagens de antes abrem pelo backup de chaves dela. Um computador que já tem uma conta própria em uma
+  delas a mantém, e o que ainda não pôde chegar (por estar offline, por exemplo) é tentado de novo toda vez que ele
+  abre. Depois de desconectado, o computador sai das contas que trouxe. As das conversas ocultas nunca vão. Cada
+  dispositivo entra como ele mesmo, nunca com uma cópia das chaves do celular, que seria usada duas vezes e quebraria a
+  criptografia; assim cada um pode ser desconectado sozinho, a partir dos dispositivos da conta.
 - **Desvincular**, no celular, desconecta um dispositivo na hora: nada mais vai para ele, e nada que ele envia é
   aceito. Os contatos nesta versão ficam sabendo na próxima vez que o celular alcança o relay: param de escrever para
   ele, e não aceitam mais nada dele. É assim que se desconecta um computador perdido. Se ele estiver ligado, ele é

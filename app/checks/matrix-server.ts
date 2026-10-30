@@ -124,6 +124,8 @@ export class Homeserver {
   loginTokens = new Map<string, string>();
   /** Takes cross-signing keys the first time without asking again (spec 1.11, MSC3967). */
   firstKeysFree = false;
+  /** Gives a signed-in device a login token for a new one without asking for the password again (spec 1.7, get_token); Synapse asks by default. */
+  givesLoginTokens = false;
 
   /** Profile pictures, by user. */
   avatars = new Map<string, string>();
@@ -219,6 +221,12 @@ export class Homeserver {
     if (!who) return { status: 401, json: { errcode: 'M_UNKNOWN_TOKEN', error: 'Unknown token' } };
     const { user, device } = who;
     const room = (part: string) => decodeURIComponent(part);
+    if (url.pathname === '/_matrix/client/v1/login/get_token' && request.method === 'POST') {
+      if (!this.givesLoginTokens) return { status: 401, json: { session: 'gt1', flows: [{ stages: ['m.login.password'] }], params: {} } };
+      const token = `glt${++this.made}`;
+      this.loginTokens.set(token, user);
+      return { status: 200, json: { login_token: token, expires_in_ms: 120_000 } };
+    }
     let m: RegExpMatchArray | null;
     if (path === '/keys/upload') {
       if (body.device_keys) {

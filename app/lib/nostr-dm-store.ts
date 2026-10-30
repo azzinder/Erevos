@@ -13,6 +13,7 @@ import {
   authEvent,
   chatOf,
   forgetChat,
+  INBOX_MOST,
   inboxEvent,
   inboxFilter,
   inboxOf,
@@ -460,9 +461,48 @@ export async function nostrDmBring(nsec: string): Promise<void> {
   await begin(it, await newNostrDm(written.secret));
 }
 
+// The space's own account, never a hidden place's, loaded, for what Linked devices brings or lets
+// go of (lib/linked-accounts.ts): null when `space` is not the open one, or this build has no Nostr chats.
+async function spaceAccount(space: number): Promise<Live | null> {
+  runNostrDm();
+  for (let waited = 0; live && !live.loaded && !live.stopped && waited < 20_000; waited += 200) await new Promise((resolve) => setTimeout(resolve, 200));
+  return live && live.loaded && !live.stopped && live.holder === 'space' && live.space === space ? live : null;
+}
+
+/**
+ * Gives the space `space` the Nostr key its phone gave it (lib/linked-accounts.ts), with the relays
+ * it reads on, its name and file servers, when it has none: answers whether it did, had that key
+ * already, or has another; null when `space` is not open.
+ */
+export async function nostrDmTake(space: number, given: { secret: string; inbox: string[]; name?: string; files?: string[] }): Promise<'brought' | 'had' | 'other' | null> {
+  const it = await spaceAccount(space);
+  if (!it) return null;
+  const now = () => (it.state ? (it.state.secret === given.secret ? 'had' : 'other') : null);
+  if (it.state) return now();
+  const state = await newNostrDm(given.secret);
+  if (given.inbox.length > 0) state.inbox = given.inbox.slice(0, INBOX_MOST);
+  if (given.name !== undefined) state.name = given.name;
+  if (given.files?.length) state.files = given.files.slice(0, 5);
+  // The phone told where the key reads, and its name: told again from here once that is a week
+  // old, or changed here.
+  state.told = seconds();
+  if (it.state || it.stopped) return it.stopped ? null : now();
+  await begin(it, state);
+  return 'brought';
+}
+
+/** Lets the space `space` forget the Nostr key it brought from its phone (`publicKey`, hex), once unlinked from it, if it still has it. */
+export async function nostrDmLetGo(space: number, publicKey: string): Promise<void> {
+  const it = await spaceAccount(space);
+  if (it?.state?.public === publicKey) await forgetOf(it);
+}
+
 /** Forgets the space's key and its chats here. */
 export async function nostrDmForget(): Promise<void> {
-  const it: Live = need();
+  await forgetOf(need());
+}
+
+async function forgetOf(it: Live): Promise<void> {
   await changeAccount(it, async () => {
     it.state = null;
     it.inboxAt += 1;

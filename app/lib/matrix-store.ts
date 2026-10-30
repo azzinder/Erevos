@@ -44,12 +44,13 @@ import {
   type MatrixRoom,
   type MatrixState,
 } from './matrix';
-import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, unlockRecovery, type Unlocked } from './matrix-backup';
+import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, takeGiven, unlockRecovery, type Unlocked } from './matrix-backup';
 import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } from './matrix-media';
 import { listDevices, register, renameDevice, signOutDevices, type AccountDevice, type AuthAsk } from './matrix-account';
 import { pollShown, previewContent } from './matrix-parts';
 import { leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
 import type { Place, Poll, Preview } from './chat-parts';
+import type { GivenMatrix } from './link-wire';
 import {
   acceptVerification,
   cancelVerification,
@@ -507,9 +508,74 @@ export async function matrixSsoFinish(mark: string, token: string): Promise<void
   }
 }
 
+// The space's own account, never a hidden place's, loaded, for what Linked devices brings or lets
+// go of (lib/linked-accounts.ts): null when `space` is not the open one, or this build has no Matrix.
+async function spaceAccount(space: number): Promise<Live | null> {
+  runMatrix();
+  for (let waited = 0; live && !live.loaded && !live.stopped && waited < 20_000; waited += 200) await new Promise((resolve) => setTimeout(resolve, 200));
+  return live && live.loaded && !live.stopped && live.holder === 'space' && live.space === space ? live : null;
+}
+
+/** What became of a Matrix account the phone gave (matrixTake). */
+export type MatrixTaken = { state: 'closed' | 'wait' | 'other' } | { state: 'done'; deviceId: string; signedIn: boolean; problem?: string };
+
+/**
+ * Brings the space `space` the Matrix account its phone gave it (lib/linked-accounts.ts): signs in
+ * as a new device with the login token, when it came with one and the space has no account; then,
+ * once the space's account is that user, takes the keys the phone gave, which it was not given
+ * before. Answers `wait` while the space has no account to take them for, as one signed in to here
+ * by hand later; `other` when it has another; `closed` when `space` is not open.
+ */
+export async function matrixTake(space: number, given: GivenMatrix): Promise<MatrixTaken> {
+  const it = await spaceAccount(space);
+  if (!it) return { state: 'closed' };
+  let signedIn = false;
+  if (!it.state && given.token) {
+    let state: MatrixState;
+    try {
+      state = await signInWithToken(given.homeserver, given.token);
+    } catch {
+      // A token too old, or one the homeserver did not take: signed in to by hand.
+      return { state: 'wait' };
+    }
+    state.restored = await lastRestore();
+    await changeAccount(it, async () => {
+      if (it.state || state.userId !== given.userId) return;
+      it.state = state;
+      it.problem = '';
+      signedIn = true;
+    });
+    if (!signedIn) await signOut(state).catch(() => undefined);
+    else {
+      await saveMatrix(it.space, it.key, state, it.holder);
+      void loop(it);
+    }
+  }
+  if (!it.state) return { state: 'wait' };
+  if (it.state.userId !== given.userId) return { state: 'other' };
+  const deviceId = it.state.deviceId;
+  try {
+    await changeAccount(it, async () => {
+      if (it.state?.userId === given.userId) await takeGiven(it.state, given.keys, given.backup, it.asked);
+    });
+  } catch (error) {
+    return { state: 'done', deviceId, signedIn, problem: reason(error) };
+  }
+  return { state: 'done', deviceId, signedIn };
+}
+
+/** Signs the space `space` out of the Matrix device it brought from its phone, once unlinked from it, if it is still signed in as that one. */
+export async function matrixLetGo(space: number, device: { userId: string; deviceId: string }): Promise<void> {
+  const it = await spaceAccount(space);
+  if (it?.state?.userId === device.userId && it.state.deviceId === device.deviceId) await signOutOf(it);
+}
+
 /** Signs out, and forgets the account in this space. */
 export async function matrixSignOut(): Promise<void> {
-  const it: Live = need();
+  await signOutOf(need());
+}
+
+async function signOutOf(it: Live): Promise<void> {
   if (it.state) {
     forgetVerifications(it.state);
     // Its pusher goes with the device; its queue at the relay is deleted here.

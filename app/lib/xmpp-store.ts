@@ -420,17 +420,59 @@ function online(it: Live): XmppConnection {
 export async function xmppSignIn(jid: string, password: string, server = ''): Promise<void> {
   const it = acting();
   if (!it || it.stopped) throw new Error(t('There is no XMPP account in this space.'));
-  const given = serverOf(server);
+  await signInWith(it, jid, password, serverOf(server));
+}
+
+// Signs `it` in, as a new resource with an OMEMO device of its own. Answers whether it kept the
+// account: not when one was signed in to meanwhile, which stays.
+async function signInWith(it: Live, jid: string, password: string, given: XmppServer | undefined): Promise<boolean> {
   const { state, connection } = await signInXmpp(jid, password, given, connect);
-  connection.close();
   state.restored = await lastRestore();
+  let kept = false;
   await changeAccount(it, async () => {
+    if (it.state) return;
     it.state = state;
     it.problem = '';
     it.fresh = true;
+    kept = true;
   });
+  if (!kept) {
+    // Its OMEMO device was said already: unsaid, as signing out does.
+    await signOutXmpp(state, connection).catch(() => connection.close());
+    return false;
+  }
+  connection.close();
   await saveXmpp(it.space, it.key, state, it.holder);
   void loop(it);
+  return true;
+}
+
+// The space's own account, never a hidden place's, loaded, for what Linked devices brings or lets
+// go of (lib/linked-accounts.ts): null when `space` is not the open one, or this build has no XMPP.
+async function spaceAccount(space: number): Promise<Live | null> {
+  runXmpp();
+  for (let waited = 0; live && !live.loaded && !live.stopped && waited < 20_000; waited += 200) await new Promise((resolve) => setTimeout(resolve, 200));
+  return live && live.loaded && !live.stopped && live.holder === 'space' && live.space === space ? live : null;
+}
+
+/**
+ * Signs the space `space` in to the XMPP account its phone gave it (lib/linked-accounts.ts), when it
+ * has none: answers whether it did, had that account already, or has another; null when `space` is
+ * not open. Throws when it could not sign in, to be tried again.
+ */
+export async function xmppTake(space: number, jid: string, password: string, server?: XmppServer): Promise<'brought' | 'had' | 'other' | null> {
+  const it = await spaceAccount(space);
+  if (!it) return null;
+  if (it.state) return it.state.jid === jid ? 'had' : 'other';
+  if (await signInWith(it, jid, password, server)) return 'brought';
+  // One signed in to here meanwhile.
+  return (it.state as XmppState | null)?.jid === jid ? 'had' : 'other';
+}
+
+/** Signs the space `space` out of the XMPP account it brought from its phone (`jid`), once unlinked from it, if it still has it. */
+export async function xmppLetGo(space: number, jid: string): Promise<void> {
+  const it = await spaceAccount(space);
+  if (it?.state?.jid === jid) await signOutOf(it);
 }
 
 /** host, host:port or a wss:// address, as written on the sign-in screen. */
@@ -446,7 +488,10 @@ export function serverOf(text: string): XmppServer | undefined {
 
 /** Signs out, and forgets the account in this space. */
 export async function xmppSignOut(): Promise<void> {
-  const it: Live = need();
+  await signOutOf(need());
+}
+
+async function signOutOf(it: Live): Promise<void> {
   const state = it.state;
   const connection = it.connection;
   // Its queue at the relay goes, and the server pushes there no more.

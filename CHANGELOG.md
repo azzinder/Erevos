@@ -18,6 +18,15 @@ On main, not released yet:
   phone**; when it asks for a relay, LPHL's is filled in and **Sign in with LPHL** sits under the token, so the
   computer gets a token of its own and none has to be copied from the phone; a line says the QR code shows once **Link
   to my phone** is tapped (`app/devices.tsx`). See [Linked devices](#devices).
+- **Matrix, XMPP and Nostr on a linked computer**: **Matrix, XMPP and Nostr accounts too**, when linking, and **Send
+  the accounts**, for a computer linked already, give it this space's accounts through the link, end-to-end encrypted.
+  It signs in to XMPP as a new resource with an OMEMO device of its own and takes the Nostr chats' key with its relays;
+  for Matrix it signs in with a one-use login token when the homeserver gives the phone one (`login/get_token`),
+  otherwise it asks for the password once, then takes the account's cross-signing keys and key backup from the phone,
+  so it is trusted without a Security Key and opens the messages from before. A computer keeps an account it has
+  already, tries again what it could not bring each time it opens, and signs out of what it brought once unlinked;
+  hidden places' accounts never go (`lib/linked-accounts.ts`, `lib/devices.ts`, `lib/link-wire.ts`). See [Linked
+  devices](#devices).
 - **Matrix: threads, polls, places and link previews**: **Reply in thread** in a message's menu opens the thread on a
   screen of its own, and a message with answers counts them; **Poll** (voted in its bubble, ended by its maker) and
   **Location** sit under the message box; the first link in a message goes with a preview when previews are on, never

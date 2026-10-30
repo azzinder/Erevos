@@ -177,6 +177,19 @@ export async function unlockRecovery(state: MatrixState, words: string): Promise
   return { crossSigning, backup, opened };
 }
 
+/**
+ * Takes the cross-signing keys and the key backup's key the phone gave a device of its own
+ * (lib/linked-accounts.ts), as a Security Key opens them: each only when it makes the keys the
+ * homeserver has, and only what this device has not got yet. Then this device is signed, and the
+ * locked messages the backup holds keys for open (`asked`, as restoreLocked keeps it).
+ */
+export async function takeGiven(state: MatrixState, keys: { master: string; selfSigning: string; userSigning: string } | undefined, backup: string | undefined, asked?: Set<string>): Promise<Unlocked> {
+  const crossSigning = !!state.crossSigning || (!!keys && (await takeCrossSigning(state, keys.master, keys.selfSigning, keys.userSigning)));
+  const backedUp = !!state.backup || (!!backup && (await takeBackup(state, backup)));
+  const opened = backedUp ? await restoreLocked(state, asked) : 0;
+  return { crossSigning, backup: backedUp, opened };
+}
+
 // The cross-signing secrets, taken only when they make the keys the homeserver has for the
 // account; then this device is signed with the self-signing key.
 async function takeCrossSigning(state: MatrixState, master: string | null, selfSigning: string | null, userSigning: string | null): Promise<boolean> {

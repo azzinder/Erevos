@@ -2907,8 +2907,8 @@ Para vincular un ordenador:
 2. En el teléfono, escanea el código con la cámara: Erevos se abre en **Dispositivos vinculados** con él. O copia el
    código en el ordenador, pégalo en el teléfono en **Código del ordenador**, y toca **Siguiente**.
 3. El teléfono muestra el nombre del ordenador y un código de cuatro grupos de cinco dígitos. Elige qué parte del
-   historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**) y si **También fotos y archivos**,
-   y luego toca **Vincular**.
+   historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**), si **También fotos y archivos** y
+   si **También cuentas de Matrix, XMPP y Nostr**, y luego toca **Vincular**.
 4. El ordenador también muestra un código. Si es el del teléfono, toca **Coinciden**. Si no, toca **No coinciden**:
    puede que otra persona leyera su código QR, y no le llegó nada.
 
@@ -2965,6 +2965,18 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   abre una segunda contraseña solo se vincula desde dentro, a dispositivos propios.
 - **Volver a traer los mensajes**, en el teléfono, vuelve a enviar un periodo del historial, con sus reacciones,
   mensajes fijados, votos y estrellas; lo que el ordenador ya tiene no se guarda dos veces.
+- **Matrix, XMPP y Nostr**: con **También cuentas de Matrix, XMPP y Nostr** (activado al principio), el ordenador inicia
+  sesión en las cuentas de Matrix y XMPP de este espacio y toma la clave de sus chats de Nostr, cada una como un
+  dispositivo nuevo propio: el teléfono conserva el suyo. Para un ordenador ya vinculado, toca **Enviar las cuentas**
+  bajo él en el teléfono. XMPP y Nostr llegan solos. Un servidor de Matrix rara vez deja que el teléfono abra sesión
+  para un dispositivo nuevo: entonces lo dice **Dispositivos vinculados** en el ordenador, y **Iniciar sesión en
+  Matrix** abre allí Matrix con el ID ya escrito, para su contraseña, una sola vez. Las claves de la cuenta vienen del
+  teléfono, así que no hace falta clave de seguridad ni comprobar con emojis, y los mensajes de antes se abren desde su
+  copia de claves. Un ordenador que ya tiene una cuenta propia en una de ellas la conserva, y lo que no pudo llegar aún
+  (por falta de conexión, por ejemplo) se vuelve a intentar cada vez que se abre. Al desvincularlo, el ordenador cierra
+  sesión en las cuentas que trajo. Las de los chats ocultos nunca pasan. Cada dispositivo inicia sesión como él mismo,
+  nunca con una copia de las claves del teléfono, que se usarían dos veces y romperían el cifrado; así cualquiera de los
+  dos puede cerrarse solo, desde los dispositivos de la cuenta.
 - **Desvincular**, en el teléfono, corta un dispositivo al instante: no le llega nada más, y no se acepta nada de lo
   que envíe. A los contactos con esta versión se les dice la próxima vez que el teléfono contacta con el relay: dejan de
   escribirle, y no aceptan nada más de él. Así se corta un ordenador perdido. Si está encendido, se le dice, y los chats

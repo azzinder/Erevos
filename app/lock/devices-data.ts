@@ -1,6 +1,6 @@
 import { readOffer, type FileOffer } from '../lib/attachments';
 import { isGroupId } from '../lib/group-signal';
-import { checkedPlace, checkedSeat, checkedSynced, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
+import { checkedGiven, checkedPlace, checkedSeat, checkedSynced, type GivenAccounts, type GroupSeat, type Place, type Synced } from '../lib/link-wire';
 import { checkedErased, checkedRemoved, checkedSiblings, type Siblings } from '../lib/siblings';
 
 import { isRelayKey, type Endpoint } from './e2e-data';
@@ -55,6 +55,8 @@ export type Peer = {
   history: Job | null;
   files: boolean;
   behind: number;
+  /** On the primary, while it is being linked: whether the space's Matrix, XMPP and Nostr accounts go to it once the codes match (lib/linked-accounts.ts). */
+  accounts?: true;
   /** On the primary: what it was last told of each group, by id. */
   groups: Record<string, Told>;
   /** The linked device's own endpoint (docs/multi-device.md), as said in this link: its identity,
@@ -79,6 +81,13 @@ export type Peer = {
  * to, this phone (`phone`): where it is (as FileRef's `from`), and when it was left.
  */
 export type Left = { relay: string; ids: string; at: number; phone: boolean; devices: string[] };
+
+/**
+ * On a linked device: the accounts it brought of those the phone gave (lib/linked-accounts.ts),
+ * which it lets go of once unlinked: a Matrix device, an XMPP account and a Nostr key, as
+ * `@user:server` and its device, a bare JID, and the key's public half, hex.
+ */
+export type Brought = { matrix?: { userId: string; deviceId: string }; xmpp?: string; nostr?: string };
 
 /** A device being linked: the key its code shows (its secret, base64), the code's secret, its name, and when it was made. */
 export type Offer = { account: string; secret: string; name: string; made: number };
@@ -118,6 +127,9 @@ export type DevicesData = {
   resign?: number;
   resignedAt?: number;
   moving?: number;
+  /** On a linked device: what of the accounts the phone gave it is still to bring, and what it brought (lib/linked-accounts.ts). */
+  given?: GivenAccounts;
+  brought?: Brought;
   /** Set in every file saved since packets said what they carry: in one from before (0.1.16), what
    *  waited for a device was kept with no marks, and goes with none (lib/relay.ts, Mark). */
   marked?: true;
@@ -208,7 +220,21 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(isRelayKey(v.key) ? { key: v.key } : {}),
     ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
     ...(checkedWays(v.ways) ? { ways: checkedWays(v.ways)! } : {}),
+    ...(v.accounts === true ? { accounts: true as const } : {}),
   };
+}
+
+function checkedBrought(value: unknown): Brought | null {
+  if (!value || typeof value !== 'object') return null;
+  const v = value as Partial<Record<keyof Brought, unknown>>;
+  const m = (v.matrix ?? null) as { userId?: unknown; deviceId?: unknown } | null;
+  const matrix = m && typeof m === 'object' && isText(m.userId) && m.userId.length <= 255 && isText(m.deviceId) && m.deviceId.length <= 255 ? { userId: m.userId, deviceId: m.deviceId } : null;
+  const brought: Brought = {
+    ...(matrix ? { matrix } : {}),
+    ...(isText(v.xmpp) && v.xmpp.length <= 1024 ? { xmpp: v.xmpp } : {}),
+    ...(isHex(v.nostr, 64) ? { nostr: v.nostr } : {}),
+  };
+  return Object.keys(brought).length > 0 ? brought : null;
 }
 
 function checkedWays(value: unknown): Record<string, string> | null {
@@ -232,6 +258,8 @@ function checked(value: unknown): DevicesData {
     }
   }
   const siblings = checkedSiblings(v.siblings);
+  const given = checkedGiven(v.given, true);
+  const brought = checkedBrought(v.brought);
   const removed = checkedRemoved(v.removed);
   const erased = checkedErased(v.erased);
   const members: Record<string, GroupSeat[]> = {};
@@ -258,6 +286,8 @@ function checked(value: unknown): DevicesData {
     ...(isTime(v.resign) && v.resign > 0 ? { resign: v.resign } : {}),
     ...(isTime(v.resignedAt) && v.resignedAt > 0 ? { resignedAt: v.resignedAt } : {}),
     ...(isTime(v.moving) && v.moving > 0 ? { moving: v.moving } : {}),
+    ...(Object.keys(given).length > 0 ? { given } : {}),
+    ...(brought ? { brought } : {}),
     marked: true,
   };
 }

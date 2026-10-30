@@ -2928,9 +2928,9 @@ Per collegare un computer:
    nome al dispositivo e tocca **Collega al mio telefono**: solo allora mostra un codice QR.
 2. Sul telefono, scansiona il codice con la fotocamera: Erevos si apre su **Dispositivi collegati** con quel codice.
    Oppure copia il codice sul computer, incollalo sul telefono sotto **Codice dal computer**, e tocca **Avanti**.
-3. Il telefono mostra il nome del computer e un codice di quattro gruppi di cinque cifre. Scegli quanta cronologia
-   passa (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**) e se **Anche foto e file**, poi tocca
-   **Collega**.
+3. Il telefono mostra il nome del computer e un codice di quattro gruppi di cinque cifre. Scegli quanta cronologia passa
+   (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**), se **Anche foto e file** e se **Anche account
+   Matrix, XMPP e Nostr**, poi tocca **Collega**.
 4. Anche il computer mostra un codice. Se è quello del telefono, tocca **Coincidono**. Se no, tocca **Sono diversi**:
    qualcun altro potrebbe aver letto il suo codice QR, e non gli è arrivato nulla.
 
@@ -2989,6 +2989,18 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 - **Trasferisci di nuovo i messaggi**, sul telefono, invia di nuovo un periodo della cronologia, con le sue reazioni,
   i messaggi fissati, i voti e quelli segnati come importanti; quello che il computer ha già non viene conservato due
   volte.
+- **Matrix, XMPP e Nostr**: con **Anche account Matrix, XMPP e Nostr** (attivo all’inizio), il computer accede agli
+  account Matrix e XMPP di questo spazio e prende la chiave delle sue chat Nostr, ciascuno come nuovo dispositivo a sé:
+  il telefono tiene il suo. Per un computer già collegato, tocca **Invia gli account** sotto di esso sul telefono. XMPP
+  e Nostr arrivano da soli. Un server Matrix di rado lascia che il telefono faccia accedere un nuovo dispositivo: allora
+  lo dice **Dispositivi collegati** sul computer, e **Accedi a Matrix** lì apre Matrix con l’ID già inserito, per la sua
+  password, una volta sola. Le chiavi dell’account arrivano dal telefono, quindi non servono né la chiave di sicurezza
+  né la verifica con le emoji, e i messaggi di prima si aprono dal suo backup delle chiavi. Un computer che ha già un
+  account suo su uno di essi lo tiene, e quello che non è potuto arrivare ancora (perché era offline, per esempio) viene
+  ritentato ogni volta che si apre. Una volta scollegato, il computer esce dagli account che ha trasferito. Quelli delle
+  chat nascoste non partono mai. Ogni dispositivo accede come se stesso, mai con una copia delle chiavi del telefono,
+  che verrebbe usata due volte e romperebbe la crittografia; così ciascuno può uscire da solo, dai dispositivi
+  dell’account.
 - **Scollega**, sul telefono, esclude subito un dispositivo: non gli arriva più nulla, e niente di quello che invia
   viene preso. Ai contatti con questa versione viene detto la prossima volta che il telefono raggiunge il relay:
   smettono di scrivergli, e non prendono più nulla da lui. È così che si esclude un computer perso. Se è acceso, gli

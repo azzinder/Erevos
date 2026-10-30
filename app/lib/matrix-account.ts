@@ -10,7 +10,7 @@
 // account is then made on the homeserver's website, and signed in to here.
 
 import { t } from './i18n';
-import { answeredJson, callAnswer, call, enc, MatrixError, newDevice, type Json, type MatrixAnswer, type MatrixState } from './matrix';
+import { answeredJson, callAnswer, call, enc, MatrixError, newDevice, request, type Json, type MatrixAnswer, type MatrixState } from './matrix';
 
 /** A step the homeserver asks for before it does what was asked. */
 export type AuthAsk = {
@@ -172,4 +172,19 @@ export async function signOutDevices(state: MatrixState, ids: string[], auth?: J
   if ('ask' in done) return done;
   for (const id of others) delete state.devices[state.userId]?.[id];
   return { done: true };
+}
+
+/**
+ * A one-use login token for a new device of the account (spec 1.7, m.login.token), for a device of
+ * this phone's own (lib/linked-accounts.ts), so it signs in with no password: only when the
+ * homeserver gives one without asking for the password again, as few do. Null otherwise.
+ */
+export async function loginToken(state: Pick<MatrixState, 'homeserver' | 'accessToken'>): Promise<string | null> {
+  try {
+    const answer = await request(state, { method: 'POST', url: `${state.homeserver}/_matrix/client/v1/login/get_token`, body: {} });
+    const token = answer.json.login_token;
+    return typeof token === 'string' && token.length > 0 && token.length <= 1024 && !/\s/.test(token) ? token : null;
+  } catch {
+    return null;
+  }
 }

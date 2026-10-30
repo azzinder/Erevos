@@ -3099,8 +3099,8 @@ So verknüpfst du einen Computer:
 2. Scanne den Code auf dem Telefon mit der Kamera: Erevos öffnet sich damit bei **Verknüpfte Geräte**. Oder kopiere
    den Code auf dem Computer, füge ihn auf dem Telefon unter **Code vom Computer** ein und tippe auf **Weiter**.
 3. Das Telefon zeigt den Namen des Computers und einen Code aus vier Gruppen von fünf Ziffern. Wähle, was vom Verlauf
-   übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**) und ob
-   **Auch Fotos und Dateien**, und tippe dann auf **Verknüpfen**.
+   übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**), ob **Auch Fotos und Dateien**
+   und ob **Auch Matrix-, XMPP- und Nostr-Konten**, und tippe dann auf **Verknüpfen**.
 4. Der Computer zeigt auch einen Code. Wenn es der des Telefons ist, tippe auf **Stimmen überein**. Wenn nicht, tippe
    auf **Stimmen nicht überein**: Jemand anderes hat vielleicht seinen QR-Code gelesen, und nichts ist an ihn gegangen.
 
@@ -3159,6 +3159,18 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   verknüpft nur von innen, mit eigenen Geräten.
 - **Nachrichten erneut übertragen**, auf dem Telefon, sendet einen Zeitraum des Verlaufs erneut, mit seinen Reaktionen,
   Anheftungen, Stimmen und Sternen; was der Computer schon hat, wird nicht doppelt aufbewahrt.
+- **Matrix, XMPP und Nostr**: Mit **Auch Matrix-, XMPP- und Nostr-Konten** (zunächst an) meldet sich der Computer bei
+  den Matrix- und XMPP-Konten dieses Bereichs an und übernimmt den Schlüssel seiner Nostr-Chats, jeweils als neues Gerät
+  mit eigenen Schlüsseln: Das Telefon behält seine. Bei einem Computer, der schon verknüpft ist, tippe auf dem Telefon
+  unter ihm auf **Konten senden**. XMPP und Nostr kommen von selbst. Ein Matrix-Server lässt das Telefon nur selten ein
+  neues Gerät anmelden: Dann sagt es **Verknüpfte Geräte** auf dem Computer, und **Bei Matrix anmelden** öffnet dort
+  Matrix mit eingetragener ID, für das Passwort, einmal. Die Schlüssel des Kontos kommen vom Telefon, also ist weder ein
+  Sicherheitsschlüssel noch eine Prüfung per Emoji nötig, und die Nachrichten von früher öffnen sich aus seiner
+  Schlüsselsicherung. Ein Computer, der auf einem davon schon ein eigenes Konto hat, behält es, und was noch nicht
+  kommen konnte (etwa weil er offline war), wird bei jedem Öffnen erneut versucht. Getrennt, meldet sich der Computer
+  von den Konten ab, die er übernommen hat. Die der versteckten Chats gehen nie mit. Jedes Gerät meldet sich als es
+  selbst an, nie mit einer Kopie der Schlüssel des Telefons, die dann doppelt benutzt würde und die Verschlüsselung
+  kaputtmachen würde; so lässt sich jedes allein abmelden, bei den Geräten des Kontos.
 - **Trennen**, auf dem Telefon, sperrt ein Gerät sofort aus: Nichts geht mehr an es, und nichts, was es sendet, wird
   angenommen. Kontakte mit dieser Version erfahren es, wenn das Telefon das nächste Mal das Relay erreicht: Sie hören
   auf, an es zu schreiben, und nehmen nichts mehr von ihm an. So sperrst du einen verlorenen Computer aus. Ist er an,

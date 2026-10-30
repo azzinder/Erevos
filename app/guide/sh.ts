@@ -2804,8 +2804,8 @@ Da povežete računar:
 2. Na telefonu skenirajte kod kamerom: Erevos se otvara na **Povezani uređaji** s njim. Ili kopirajte kod na
    računaru, zalijepite ga na telefonu pod **Kod s računara** i dodirnite **Dalje**.
 3. Telefon prikazuje ime računara i kod od četiri grupe po pet cifara. Izaberite koji dio historije ide (**Sve**,
-   **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**) i da li **I fotografije i datoteke**, a zatim
-   dodirnite **Poveži**.
+   **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**), da li **I fotografije i datoteke** i da li **I računi
+   Matrix, XMPP i Nostr**, a zatim dodirnite **Poveži**.
 4. I računar prikazuje kod. Ako je isti kao na telefonu, dodirnite **Podudaraju se**. Ako nije, dodirnite **Razlikuju
    se**: neko drugi je možda pročitao njegov QR kod, a njemu ništa nije otišlo.
 
@@ -2856,6 +2856,16 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   povezuje se samo iznutra, s vlastitim uređajima.
 - **Ponovo prenesi poruke**, na telefonu, ponovo šalje dio historije, s njegovim reakcijama, prikvačenim porukama,
   glasovima i zvjezdicama; ono što računar već ima ne čuva se dvaput.
+- **Matrix, XMPP i Nostr**: s **I računi Matrix, XMPP i Nostr** (isprva uključeno) računar se prijavljuje na Matrix i
+  XMPP račune ovog prostora i uzima ključ njegovih Nostr razgovora, svaki kao novi uređaj za sebe: telefon zadržava
+  svoj. Za računar koji je već povezan dodirnite na telefonu **Pošalji račune** ispod njega. XMPP i Nostr stižu sami.
+  Matrix server rijetko dopušta da telefon prijavi novi uređaj: tada to kaže **Povezani uređaji** na računaru, a
+  **Prijavite se na Matrix** tamo otvara Matrix s upisanim ID-om, jednom, za lozinku. Ključevi računa dolaze s telefona,
+  pa nisu potrebni ni sigurnosni ključ ni provjera emojijima, a ranije poruke se otvaraju iz njegove rezervne kopije
+  ključeva. Računar koji već ima vlastiti račun na nekoj od tih mreža zadržava ga, a ono što još nije moglo stići (na
+  primjer jer nije bilo veze) pokušava se ponovo svaki put kad se otvori. Kad se odvoji, računar se odjavljuje s računa
+  koje je prenio. Oni skrivenih razgovora nikad ne idu. Svaki uređaj se prijavljuje kao on sam, nikad s kopijom ključeva
+  telefona, koja bi se tada koristila dvaput i pokvarila šifriranje; tako se svaki može odjaviti sam, s uređaja računa.
 - **Odvoji**, na telefonu, odmah isključuje uređaj: ništa mu više ne ide, i ništa što pošalje ne prima se. Kontaktima
   s ovom verzijom to se javlja sljedeći put kad telefon dođe do relaya: prestaju mu pisati i više ništa od njega ne
   primaju. Tako se isključuje izgubljeni računar. Ako je uključen, to mu se javlja, a razgovori naloga ga napuštaju. Na

@@ -57,10 +57,11 @@ import { useColors } from '../theme/context';
 
 export default function MatrixScreen() {
   const router = useRouter();
-  const { hidden } = useLocalSearchParams<{ hidden?: string }>();
+  // `user`: the account the phone gave this linked device, to sign in to (app/devices.tsx).
+  const { hidden, user } = useLocalSearchParams<{ hidden?: string; user?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const [now, setNow] = useState(matrixNow(where));
-  const [who, setWho] = useState('');
+  const [who, setWho] = useState(() => (user && isMatrixId(user) ? user : ''));
   const [password, setPassword] = useState('');
   const [server, setServer] = useState('');
   const [busy, setBusy] = useState(false);

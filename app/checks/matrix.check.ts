@@ -63,7 +63,8 @@ import {
 } from '../lib/matrix';
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, fetchPicture, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile, uploadPicture } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
-import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
+import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, takeGiven, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
+import { loginToken } from '../lib/matrix-account';
 import { qrBytes, readMatrixQr } from '../lib/matrix-qr';
 import { acceptVerification, confirmScanned, confirmVerification, isVerified, requestVerification, scanCode, verifications, verifyByEmoji } from '../lib/matrix-verify';
 import { matrixNow, matrixRead, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
@@ -784,6 +785,43 @@ test('a Security Key set up on one device opens the cross-signing keys and earli
   // The new device signed itself with the account's self-signing key, so Element trusts it.
   assert.equal(Object.keys(server.deviceKeys.get(frank.userId)!.get(frank2.deviceId)!.signatures[frank.userId]).length, 2);
   await assert.rejects(setUpRecovery(frank2), /already has a Security Key/);
+});
+
+test('a computer linked to the phone signs in with a login token when the homeserver gives one, and takes the keys the phone gave', { skip: !coreReady }, async () => {
+  const otto = await signIn(HS, '@otto:example.org', PASSWORD);
+  const pia = await signIn(HS, '@pia:example.org', PASSWORD);
+  await setUpRecovery(otto);
+  const room = await startChat(otto, pia.userId);
+  await sync(pia, 0);
+  await joinRoom(pia, room.id);
+  await sync(pia, 0);
+  await sync(otto, 0);
+  await sendText(otto, room.id, 'before the computer');
+  assert.equal(await backUpKeys(otto), 1);
+
+  // As most homeservers do, this one asks for the password again before it gives a token: none then.
+  assert.equal(await loginToken(otto), null);
+  server.givesLoginTokens = true;
+  const token = await loginToken(otto);
+  server.givesLoginTokens = false;
+  assert.ok(token);
+  const computer = await signInWithToken(HS, token!);
+  assert.equal(computer.userId, otto.userId);
+  assert.notEqual(computer.deviceId, otto.deviceId);
+  // Good once.
+  await assert.rejects(signInWithToken(HS, token!));
+  await sync(computer, 0);
+  assert.ok(computer.rooms[room.id].messages.some((m) => m.locked));
+
+  // Keys that are not the account's are not taken.
+  assert.deepEqual(await takeGiven(computer, pia.crossSigning, undefined), { crossSigning: false, backup: false, opened: 0 });
+  assert.equal(computer.crossSigning, undefined);
+  // The account's: the computer signs itself, as with a Security Key, and opens what came before.
+  assert.deepEqual(await takeGiven(computer, otto.crossSigning, otto.backup!.secret), { crossSigning: true, backup: true, opened: 1 });
+  assert.equal(computer.rooms[room.id].messages.find((m) => m.text === 'before the computer')?.sender, otto.userId);
+  assert.equal(Object.keys(server.deviceKeys.get(otto.userId)!.get(computer.deviceId)!.signatures[otto.userId]).length, 2);
+  // Taken already: nothing more is asked.
+  assert.deepEqual(await takeGiven(computer, otto.crossSigning, otto.backup!.secret), { crossSigning: true, backup: true, opened: 0 });
 });
 
 async function until(done: () => boolean, what: string, ms = 5000): Promise<void> {

@@ -3068,8 +3068,8 @@ Pour associer un ordinateur :
    bien copie le code sur l’ordinateur, colle-le sur le téléphone sous **Code de l’ordinateur**, et appuie sur
    **Suivant**.
 3. Le téléphone affiche le nom de l’ordinateur et un code de quatre groupes de cinq chiffres. Choisis ce qui part de
-   l’historique (**Tout**, **Le dernier mois**, **La dernière semaine** ou **Aucun**) et si **Les photos et fichiers
-   aussi**, puis appuie sur **Associer**.
+   l’historique (**Tout**, **Le dernier mois**, **La dernière semaine** ou **Aucun**), si **Les photos et fichiers
+   aussi** et si **Les comptes Matrix, XMPP et Nostr aussi**, puis appuie sur **Associer**.
 4. L’ordinateur affiche aussi un code. Si c’est celui du téléphone, appuie sur **Ils correspondent**. Sinon, appuie sur
    **Ils sont différents** : quelqu’un d’autre a peut-être lu son code QR, et rien ne lui est parvenu.
 
@@ -3128,6 +3128,18 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   lui.
 - **Transférer de nouveau les messages**, sur le téléphone, renvoie une période de l’historique, avec ses réactions,
   épingles, votes et étoiles ; ce que l’ordinateur a déjà n’est pas gardé deux fois.
+- **Matrix, XMPP et Nostr** : avec **Les comptes Matrix, XMPP et Nostr aussi** (activé au départ), l’ordinateur se
+  connecte aux comptes Matrix et XMPP de cet espace et prend la clé de ses discussions Nostr, chacun comme un nouvel
+  appareil à lui : le téléphone garde le sien. Pour un ordinateur déjà associé, appuie sur **Envoyer les comptes** sous
+  lui, sur le téléphone. XMPP et Nostr arrivent d’eux-mêmes. Un serveur Matrix laisse rarement le téléphone connecter un
+  nouvel appareil : l’écran **Appareils associés** de l’ordinateur le dit alors, et **Se connecter à Matrix** y ouvre
+  Matrix avec l’identifiant déjà rempli, pour son mot de passe, une seule fois. Les clés du compte viennent du
+  téléphone, donc ni clé de sécurité ni vérification par emoji ne sont nécessaires, et les messages d’avant s’ouvrent
+  depuis sa sauvegarde des clés. Un ordinateur qui a déjà un compte à lui sur l’un d’eux le garde, et ce qui n’a pas pu
+  arriver (faute de connexion, par exemple) est réessayé à chaque ouverture. Une fois dissocié, l’ordinateur se
+  déconnecte des comptes qu’il a reçus. Ceux des discussions masquées ne partent jamais. Chaque appareil se connecte en
+  son propre nom, jamais avec une copie des clés du téléphone, qui serviraient alors deux fois et casseraient le
+  chiffrement ; ainsi chacun peut être déconnecté seul, depuis les appareils du compte.
 - **Dissocier**, sur le téléphone, coupe un appareil sur-le-champ : plus rien ne lui est envoyé, et rien de ce qu’il
   envoie n’est pris. Les contacts sur cette version sont prévenus la prochaine fois que le téléphone joint le relais :
   ils cessent de lui écrire, et ne prennent plus rien de lui. C’est ainsi qu’on coupe un ordinateur perdu. S’il est

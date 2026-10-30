@@ -1,5 +1,5 @@
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
-import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
+import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
 import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
@@ -74,6 +74,7 @@ import {
   type ChatChange,
   type Deleted,
   type Envelope,
+  type GivenAccounts,
   type GroupAsk,
   type GroupChange,
   type GroupEntry,
@@ -208,10 +209,17 @@ import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './wai
 // quiet, as it goes to the account's own queue (lib/space-chats.ts, sentMark); what it writes to a
 // contact itself goes to them marked as the phone's own would.
 //
+// The phone gives a device the space's own Matrix, XMPP and Nostr accounts too, once the codes
+// match when that was chosen, or when asked again later (`accounts`). lib/linked-accounts.ts gives
+// and brings them, and registers itself here (handAccounts), so this file need not know the
+// networks: the device signs in as a new device of each, never a copy of the phone's, and lets go
+// of what it brought once unlinked, as it lets go of the chats.
+//
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
 // brings (`act`: the history, sealing for contacts, the relay's file store), which waits for both.
-// A call's signals are work of their own (`ring`), which cannot wait behind the history.
+// A call's signals are work of their own (`ring`), which cannot wait behind the history; so are
+// the accounts given or brought (`aside`), which messages cannot wait behind.
 
 /** The most devices one account links: as many as its device list names. */
 export const MAX_DEVICES = MAX_LISTED;
@@ -257,8 +265,32 @@ export type DeviceInfo = { id: string; name: string; since: number; heard: numbe
 /** What the links changed in the history: messages deleted, of a chat (`peer`) or one of its messages (`tag`). */
 export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 
-/** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not. */
-export type HistoryChoice = { since: number | null; files: boolean };
+/** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not; and whether the space's Matrix, XMPP and Nostr accounts go too. */
+export type HistoryChoice = { since: number | null; files: boolean; accounts?: boolean };
+
+/**
+ * What gives and brings the space's accounts on other networks (lib/linked-accounts.ts): on the
+ * primary, those it has, to give a device; on a linked device, brings those the phone gave, as far
+ * as it can now, answering what is still to bring, what it brought and what went wrong; and once
+ * unlinked, lets go of those it brought.
+ */
+export type AccountsHand = {
+  give(space: number, key: Uint8Array): Promise<GivenAccounts>;
+  take(space: number, key: Uint8Array, given: GivenAccounts): Promise<{ left: GivenAccounts; brought: Brought; problems: string[] }>;
+  letGo(space: number, key: Uint8Array, brought: Brought): Promise<void>;
+};
+
+let hand: AccountsHand | null = null;
+
+/** Has `next` give and bring the accounts (lib/linked-accounts.ts sets it once). */
+export function handAccounts(next: AccountsHand | null): void {
+  hand = next;
+}
+
+/** On a linked device: the accounts the phone gave that it still waits to bring, those it brought, and what went wrong last. */
+export type AccountsHere = { left: GivenAccounts; brought: Brought; problems: string[] };
+
+const isEmpty = (o: object | undefined) => !o || Object.keys(o).length === 0;
 
 // Where this side reads, and whether the relay's key is known (`keyed`): asked of it and answered,
 // none or one. Not known, the place's key says none, which may not be so.
@@ -378,6 +410,11 @@ export class Links implements Link, TakenFiles {
   private rings: Promise<unknown> = Promise.resolve();
   private stopCalls: (() => void) | null = null;
   private stopMoves: (() => void) | null = null;
+  // The accounts given or brought (lib/linked-accounts.ts), one after another, apart from other
+  // work: a sign-in or a key backup's keys may take long, and messages cannot wait for them. On a
+  // linked device, what went wrong last bringing them.
+  private accounts: Promise<unknown> = Promise.resolve();
+  private accountsProblems: string[] = [];
   // On a linked device: the contacts deleted (1) or blocked (2) here, until the phone is told.
   private readonly deletions = new Map<string, Deleted>();
   // The space's groups, and which of them go to the devices; on the primary, whether telling them is
@@ -434,6 +471,8 @@ export class Links implements Link, TakenFiles {
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     links.act(() => links.listsAtOpen());
+    // What the phone gave that was not brought yet: tried again each time the space opens.
+    if (links.data.given) void links.aside(() => links.bringGiven());
     return links;
   }
 
@@ -472,12 +511,21 @@ export class Links implements Link, TakenFiles {
       .catch(() => undefined);
   }
 
+  // The accounts given or brought, one after another, apart from other work.
+  private aside(call: () => Promise<unknown>): Promise<unknown> {
+    this.accounts = this.accounts
+      .catch(() => undefined)
+      .then(call)
+      .catch(() => undefined);
+    return this.accounts;
+  }
+
   /** Waits for the work under way, as the checks do. */
   async settled(): Promise<void> {
     for (let i = 0; i < 20; i++) {
-      const [turn, acts, rings, flushing] = [this.turn, this.acts, this.rings, this.flushing];
-      await Promise.all([turn.catch(() => undefined), acts, rings, flushing?.catch(() => undefined)]);
-      if (turn === this.turn && acts === this.acts && rings === this.rings && flushing === this.flushing) return;
+      const [turn, acts, rings, accounts, flushing] = [this.turn, this.acts, this.rings, this.accounts, this.flushing];
+      await Promise.all([turn.catch(() => undefined), acts, rings, accounts, flushing?.catch(() => undefined)]);
+      if (turn === this.turn && acts === this.acts && rings === this.rings && accounts === this.accounts && flushing === this.flushing) return;
     }
   }
 
@@ -906,6 +954,14 @@ export class Links implements Link, TakenFiles {
       case 'blocked':
         // Who is blocked on the phone, kept here in the chat's turn: their link asks to unblock here too.
         return { kind: 'taken', blocked: said.list, ...(place ? { contacts: place } : {}) };
+      case 'accounts': {
+        // In place of what the phone gave before and was not brought yet.
+        const given: GivenAccounts = { ...(said.matrix ? { matrix: said.matrix } : {}), ...(said.xmpp ? { xmpp: said.xmpp } : {}), ...(said.nostr ? { nostr: said.nostr } : {}) };
+        await this.save({ ...this.data, given: isEmpty(given) ? undefined : given });
+        void this.aside(() => this.bringGiven());
+        announce();
+        break;
+      }
       case 'bye':
         this.act(() => this.forget());
         break;
@@ -1226,6 +1282,7 @@ export class Links implements Link, TakenFiles {
   // and the work after brings it the history chosen, up to now.
   private async ready(peer: Peer, name: string): Promise<void> {
     const now = Date.now();
+    const { accounts, ...linking } = peer;
     await this.sendChanges(
       this.chats.e2e.contacts().map((c) => syncedOf(this.chats.e2e.record(c.identity)!)),
       peer.id,
@@ -1234,7 +1291,7 @@ export class Links implements Link, TakenFiles {
     const linked = await this.groupsTo(
       await this.seal(
         await this.seal(
-          { ...peer, linked: true, heard: now, name: cleanDeviceName(name) || peer.name, history: peer.history && { ...peer.history, upTo: now } },
+          { ...linking, linked: true, heard: now, name: cleanDeviceName(name) || peer.name, history: peer.history && { ...peer.history, upTo: now } },
           { k: 'contacts', all: true, list: this.contactsNow(), gone: [], link },
         ),
         { k: 'blocked', list: [...this.chats.e2e.blocked()] },
@@ -1243,6 +1300,8 @@ export class Links implements Link, TakenFiles {
     await this.save({ ...this.data, devices: this.data.devices.map((d) => (d.id === peer.id ? linked : d)), link });
     // The contacts go now, with no history to wait for.
     void this.flush().catch(() => undefined);
+    // The accounts, if chosen, apart from the history, which may be long to go.
+    if (accounts) void this.aside(() => this.giveAccounts(peer.id));
     this.act(() => this.bringHistory(peer.id));
     announce();
   }
@@ -1360,6 +1419,7 @@ export class Links implements Link, TakenFiles {
       behind: 0,
       groups: {},
       key,
+      ...(history.accounts ? { accounts: true as const } : {}),
     };
     await this.run(async () => {
       await this.save({ ...this.data, devices: [...this.data.devices.filter((d) => d.id !== peer.id), peer] });
@@ -1379,9 +1439,53 @@ export class Links implements Link, TakenFiles {
   }
 
   /**
+   * On the primary: gives the linked device `id` the space's Matrix, XMPP and Nostr accounts
+   * (lib/linked-accounts.ts). Answers which networks went: none when the space has none of them,
+   * or the device is not linked, or has too much waiting for it already.
+   */
+  async giveAccounts(id: string): Promise<(keyof GivenAccounts)[]> {
+    if (!hand || this.data.primary) return [];
+    const given = await hand.give(this.space, this.key);
+    if (isEmpty(given)) return [];
+    const told = await this.say({ k: 'accounts', ...given }, id);
+    return told.includes(id) ? (Object.keys(given) as (keyof GivenAccounts)[]) : [];
+  }
+
+  /** On a linked device: brings what it can now of the accounts the phone gave, after the work under way. */
+  async bringAccounts(): Promise<void> {
+    await this.aside(() => this.bringGiven());
+  }
+
+  /** On a linked device: the accounts the phone gave, still to bring and brought; null on the primary, or before any came. */
+  accountsHere(): AccountsHere | null {
+    const { given, brought, primary } = this.data;
+    if (!primary || (!given && !brought)) return null;
+    return { left: given ?? {}, brought: brought ?? {}, problems: this.accountsProblems };
+  }
+
+  // On a linked device, in the work after: brings what it can of the accounts the phone gave, and
+  // keeps what is still to bring, unless the phone gave others meanwhile. Unlinked meanwhile, it
+  // lets go of what it brought.
+  private async bringGiven(): Promise<void> {
+    const given = this.data.given;
+    if (!hand || !given || !this.data.primary || this.closed) return;
+    const { left, brought, problems } = await hand.take(this.space, this.key, given);
+    this.accountsProblems = problems;
+    const unlinked = await this.run(async () => {
+      if (!this.data.primary) return true;
+      const next = this.data.given === given ? left : this.data.given;
+      const all = { ...this.data.brought, ...brought };
+      await this.save({ ...this.data, given: isEmpty(next) ? undefined : next, brought: isEmpty(all) ? undefined : all });
+      return false;
+    });
+    if (unlinked && !isEmpty(brought)) await hand.letGo(this.space, this.key, brought).catch(() => undefined);
+    announce();
+  }
+
+  /**
    * Unlinks a device (on the primary, by its id) or this one (on a linked device): nothing more goes
    * to it, nor is anything opened from it. It is told, if the relay takes it now. On a linked device
-   * the account's chats go from here.
+   * the account's chats go from here, and the accounts it brought from the phone.
    */
   async unlink(id = ''): Promise<boolean> {
     const peer = this.data.primary ?? this.data.devices.find((d) => d.id === id);
@@ -1417,13 +1521,17 @@ export class Links implements Link, TakenFiles {
   }
 
   // On a linked device, unlinked: the account's chats go, contacts, messages and groups, and its
-  // endpoint, with its conversations with the account's other devices. The link goes first, so the
-  // contacts going is not said to the phone.
+  // endpoint, with its conversations with the account's other devices, and the accounts it brought
+  // from the phone. The link goes first, so the contacts going is not said to the phone.
   private async forget(): Promise<void> {
     const { e2e } = this.chats;
-    await this.run(async () => {
-      await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined });
+    const brought = await this.run(async () => {
+      const was = this.data.brought;
+      await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined, given: undefined, brought: undefined });
+      return was;
     });
+    // The accounts brought from the phone go with the chats.
+    if (brought && hand) await hand.letGo(this.space, this.key, brought).catch(() => undefined);
     await e2e.dropEndpoint().catch(() => undefined);
     await e2e.forgetBlocked().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);

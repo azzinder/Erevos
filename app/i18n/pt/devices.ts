@@ -44,8 +44,8 @@ export const devices: Record<string, string> = {
     'Agora o computador também mostra um código. Se for {code}, toque em “São iguais” lá.',
   'Unlink this device': 'Desconectar este dispositivo',
   'Unlink {name}': 'Desconectar {name}',
-  "The account's chats leave this device, messages and all. The phone keeps them.":
-    'As conversas da conta saem deste dispositivo, com mensagens e tudo. O celular continua com elas.',
+  "The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.":
+    'As conversas da conta saem deste dispositivo, com mensagens e tudo, e as contas que ele trouxe do celular também. O celular continua com elas.',
   'Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.':
     'Nada mais vai para ele, e nada do que ele enviar é aceito. O que ele tem fica nele, atrás do próprio bloqueio.',
   'Unlinked.': 'Desconectado.',
@@ -98,4 +98,23 @@ export const devices: Record<string, string> = {
     'O celular responde numa fila deste dispositivo num relay: o que o celular usa, ou qualquer outro. Se o relay pedir um token, entre quando ele oferecer essa opção, ou digite um.',
   'Name of this device': 'Nome deste dispositivo',
   'Tap Link to my phone, and a QR code for the phone shows here.': 'Toque em “Conectar ao meu celular”, e um código QR para o celular aparece aqui.',
+  'Send the accounts to {name}': 'Enviar as contas para {name}',
+  "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'As contas Matrix, XMPP e Nostr deste espaço vão para ele, criptografadas de ponta a ponta, e ele entra em cada uma como um novo dispositivo. Depois de desconectado, ele sai delas.',
+  'Sent to {name}: {accounts}.': 'Enviado para {name}: {accounts}.',
+  'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
+    'Nada foi enviado: este espaço não tem conta Matrix, XMPP nem Nostr, ou já há coisa demais esperando por esse dispositivo.',
+  'Matrix, XMPP and Nostr accounts too': 'Contas Matrix, XMPP e Nostr também',
+  'Accounts from the phone': 'Contas do celular',
+  'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, conectado aqui como um novo dispositivo.',
+  'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':
+    'Matrix: entre aqui uma vez em {id}, com a senha da conta. As chaves dela vêm do celular, então não é preciso chave de segurança nem verificar por emoji.',
+  'Sign in to Matrix': 'Entrar no Matrix',
+  'XMPP: {id}, signed in here as a new device.': 'XMPP: {id}, conectado aqui como um novo dispositivo.',
+  'Nostr: the key of the Nostr chats is here too.': 'Nostr: a chave das conversas Nostr também está aqui.',
+  'Not brought over yet: {accounts}. Tried again each time this space opens.':
+    'Ainda não trazidos: {accounts}. Nova tentativa toda vez que este espaço abre.',
+  'Once this device is unlinked, it signs out of the accounts it brought over.':
+    'Depois que este dispositivo for desconectado, ele sai das contas que trouxe do celular.',
+  'Send the accounts': 'Enviar as contas',
 };

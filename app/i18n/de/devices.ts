@@ -42,7 +42,8 @@ export const devices: Record<string, string> = {
   'Now the computer shows a code too. If it is {code}, tap They match there.': 'Jetzt zeigt auch der Computer einen Code. Wenn es {code} ist, tippe dort auf „Stimmen überein“.',
   'Unlink this device': 'Dieses Gerät trennen',
   'Unlink {name}': '{name} trennen',
-  "The account's chats leave this device, messages and all. The phone keeps them.": 'Die Chats des Kontos verschwinden von diesem Gerät, samt Nachrichten. Das Telefon behält sie.',
+  "The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.":
+    'Die Chats des Kontos verschwinden von diesem Gerät, samt Nachrichten, und ebenso die Konten, die es vom Telefon übernommen hat. Das Telefon behält sie.',
   'Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.':
     'Es geht nichts mehr dorthin, und nichts, was es sendet, wird angenommen. Was es hat, bleibt darauf, hinter seiner eigenen Sperre.',
   'Unlinked.': 'Getrennt.',
@@ -93,4 +94,23 @@ export const devices: Record<string, string> = {
   'Name of this device': 'Name dieses Geräts',
   'Tap Link to my phone, and a QR code for the phone shows here.':
     'Tippe auf „Mit meinem Telefon verknüpfen“, und ein QR-Code für das Telefon erscheint hier.',
+  'Send the accounts to {name}': 'Konten an {name} senden',
+  "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Die Matrix-, XMPP- und Nostr-Konten dieses Bereichs gehen Ende-zu-Ende-verschlüsselt dorthin, und es meldet sich bei jedem als neues Gerät an. Sobald es getrennt wird, meldet es sich von ihnen ab.',
+  'Sent to {name}: {accounts}.': 'An {name} gesendet: {accounts}.',
+  'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
+    'Es wurde nichts gesendet: Dieser Bereich hat kein Matrix-, XMPP- oder Nostr-Konto, oder für dieses Gerät wartet schon zu viel.',
+  'Matrix, XMPP and Nostr accounts too': 'Auch Matrix-, XMPP- und Nostr-Konten',
+  'Accounts from the phone': 'Konten vom Telefon',
+  'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, hier als neues Gerät angemeldet.',
+  'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':
+    'Matrix: Melde dich hier einmal mit dem Passwort bei {id} an. Die Schlüssel kommen vom Telefon, also ist weder ein Sicherheitsschlüssel noch eine Prüfung per Emoji nötig.',
+  'Sign in to Matrix': 'Bei Matrix anmelden',
+  'XMPP: {id}, signed in here as a new device.': 'XMPP: {id}, hier als neues Gerät angemeldet.',
+  'Nostr: the key of the Nostr chats is here too.': 'Nostr: Der Schlüssel der Nostr-Chats ist auch hier.',
+  'Not brought over yet: {accounts}. Tried again each time this space opens.':
+    'Noch nicht übertragen: {accounts}. Wird bei jedem Öffnen dieses Bereichs erneut versucht.',
+  'Once this device is unlinked, it signs out of the accounts it brought over.':
+    'Sobald dieses Gerät getrennt wird, meldet es sich von den Konten ab, die es vom Telefon übernommen hat.',
+  'Send the accounts': 'Konten senden',
 };

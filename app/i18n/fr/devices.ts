@@ -42,7 +42,8 @@ export const devices: Record<string, string> = {
   'Now the computer shows a code too. If it is {code}, tap They match there.': 'Maintenant, l’ordinateur affiche lui aussi un code. Si c’est {code}, appuie là-bas sur « Ils correspondent ».',
   'Unlink this device': 'Dissocier cet appareil',
   'Unlink {name}': 'Dissocier {name}',
-  "The account's chats leave this device, messages and all. The phone keeps them.": 'Les discussions du compte quittent cet appareil, avec tous leurs messages. Le téléphone les garde.',
+  "The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.":
+    'Les discussions du compte quittent cet appareil, avec tous leurs messages, ainsi que les comptes qu’il a reçus du téléphone. Le téléphone les garde.',
   'Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.':
     'Plus rien ne lui est envoyé, et rien de ce qu’il envoie n’est accepté. Ce qu’il a reste sur lui, derrière son propre verrou.',
   'Unlinked.': 'Dissocié.',
@@ -93,4 +94,23 @@ export const devices: Record<string, string> = {
   'Name of this device': 'Nom de cet appareil',
   'Tap Link to my phone, and a QR code for the phone shows here.':
     'Touche « Associer à mon téléphone », et un code QR pour le téléphone s’affiche ici.',
+  'Send the accounts to {name}': 'Envoyer les comptes à {name}',
+  "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Les comptes Matrix, XMPP et Nostr de cet espace lui sont envoyés, chiffrés de bout en bout, et il se connecte à chacun comme un nouvel appareil. Une fois dissocié, il s’en déconnecte.',
+  'Sent to {name}: {accounts}.': 'Envoyé à {name} : {accounts}.',
+  'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
+    'Rien n’est parti : cet espace n’a aucun compte Matrix, XMPP ou Nostr, ou trop de choses attendent déjà pour cet appareil.',
+  'Matrix, XMPP and Nostr accounts too': 'Les comptes Matrix, XMPP et Nostr aussi',
+  'Accounts from the phone': 'Comptes du téléphone',
+  'Matrix: {id}, signed in here as a new device.': 'Matrix : {id}, connecté ici comme un nouvel appareil.',
+  'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':
+    'Matrix : connecte-toi ici une fois à {id}, avec son mot de passe. Ses clés viennent du téléphone, donc ni clé de sécurité ni vérification par emoji ne sont nécessaires.',
+  'Sign in to Matrix': 'Se connecter à Matrix',
+  'XMPP: {id}, signed in here as a new device.': 'XMPP : {id}, connecté ici comme un nouvel appareil.',
+  'Nostr: the key of the Nostr chats is here too.': 'Nostr : la clé des discussions Nostr est aussi ici.',
+  'Not brought over yet: {accounts}. Tried again each time this space opens.':
+    'Pas encore transféré : {accounts}. Nouvel essai à chaque ouverture de cet espace.',
+  'Once this device is unlinked, it signs out of the accounts it brought over.':
+    'Une fois cet appareil dissocié, il se déconnecte des comptes qu’il a reçus du téléphone.',
+  'Send the accounts': 'Envoyer les comptes',
 };

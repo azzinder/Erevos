@@ -44,8 +44,8 @@ export const devices: Record<string, string> = {
     'Sada i računar prikazuje kod. Ako je {code}, tamo dodirnite „Podudaraju se“.',
   'Unlink this device': 'Odvoji ovaj uređaj',
   'Unlink {name}': 'Odvoji uređaj {name}',
-  "The account's chats leave this device, messages and all. The phone keeps them.":
-    'Razgovori računa uklanjaju se s ovog uređaja, zajedno s porukama. Telefon ih zadržava.',
+  "The account's chats leave this device, messages and all, and so do the accounts it brought over from the phone. The phone keeps them.":
+    'Razgovori računa uklanjaju se s ovog uređaja, zajedno s porukama, a isto i računi koje je prenio s telefona. Telefon ih zadržava.',
   'Nothing more goes to it, and nothing it sends is taken. What it has stays on it, behind its own lock.':
     'Na njega više ništa ne ide, a ništa što pošalje ne prima se. Ono što ima ostaje na njemu, iza njegovog zaključavanja.',
   'Unlinked.': 'Odvojeno.',
@@ -98,4 +98,23 @@ export const devices: Record<string, string> = {
     'Telefon odgovara na redu ovog uređaja na relayu: onom koji telefon koristi ili bilo kojem drugom. Ako relay traži token, prijavite se kad to ponudi ili upišite jedan.',
   'Name of this device': 'Naziv ovog uređaja',
   'Tap Link to my phone, and a QR code for the phone shows here.': 'Dodirnite „Poveži s mojim telefonom“ i ovdje se prikazuje QR kod za telefon.',
+  'Send the accounts to {name}': 'Pošalji račune uređaju {name}',
+  "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Matrix, XMPP i Nostr računi ovog prostora idu na njega, šifrirano s kraja na kraj, a on se prijavljuje na svaki kao novi uređaj. Kad se odvoji, odjavljuje se s njih.',
+  'Sent to {name}: {accounts}.': 'Poslano uređaju {name}: {accounts}.',
+  'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
+    'Ništa nije poslano: ovaj prostor nema Matrix, XMPP ni Nostr račun, ili za taj uređaj već čeka previše.',
+  'Matrix, XMPP and Nostr accounts too': 'I računi Matrix, XMPP i Nostr',
+  'Accounts from the phone': 'Računi s telefona',
+  'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, prijavljen ovdje kao novi uređaj.',
+  'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':
+    'Matrix: prijavite se ovdje jednom na {id}, njegovom lozinkom. Njegovi ključevi dolaze s telefona, pa nisu potrebni ni sigurnosni ključ ni provjera emojijima.',
+  'Sign in to Matrix': 'Prijavite se na Matrix',
+  'XMPP: {id}, signed in here as a new device.': 'XMPP: {id}, prijavljen ovdje kao novi uređaj.',
+  'Nostr: the key of the Nostr chats is here too.': 'Nostr: ključ Nostr razgovora je i ovdje.',
+  'Not brought over yet: {accounts}. Tried again each time this space opens.':
+    'Još nije preneseno: {accounts}. Pokušava se ponovo svaki put kad se ovaj prostor otvori.',
+  'Once this device is unlinked, it signs out of the accounts it brought over.':
+    'Kad se ovaj uređaj odvoji, odjavljuje se s računa koje je prenio s telefona.',
+  'Send the accounts': 'Pošalji račune',
 };

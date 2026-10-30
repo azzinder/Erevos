@@ -52,6 +52,7 @@ import { nostrOf, setNostr } from '../lib/nostr';
 import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
+import { startLinkedAccounts } from '../lib/linked-accounts';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
@@ -589,6 +590,7 @@ function Receiver({ space }: { space: number }) {
           startMatrix(),
           startXmpp(),
           startNostrChats(),
+          startLinkedAccounts(),
           watchPlaceNetworks(),
         ];
       }),
