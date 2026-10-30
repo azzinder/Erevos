@@ -69,6 +69,8 @@ export const devices: Record<string, string> = {
   'Bringing over messages: {n} so far.': 'Έρχονται τα μηνύματα: {n} ως τώρα.',
   'Bring over': 'Φέρε τα',
   'Bring over messages again': 'Φέρε ξανά τα μηνύματα',
+  'Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.':
+    'Συνδέθηκες ως {name}: αυτή η συσκευή έχει εκεί δικό της token. Τώρα πάτα «Σύνδεση με το τηλέφωνό μου».',
   'Link a computer to this phone': 'Σύνδεση υπολογιστή με αυτό το τηλέφωνο',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'Στον υπολογιστή, άνοιξε Ρυθμίσεις → Δεδομένα και συσκευές → «Συνδεδεμένες συσκευές» → «Σύνδεση με το τηλέφωνό μου». Μετά σκάναρε τον κωδικό του με την κάμερα αυτού του τηλεφώνου, ή αντίγραψέ τον από εκεί και επικόλλησέ τον εδώ.',
@@ -85,5 +87,9 @@ export const devices: Record<string, string> = {
   'Waiting for the phone. The code works for half an hour.': 'Περιμένει το τηλέφωνο. Ο κωδικός ισχύει για μισή ώρα.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'Χρησιμοποίησέ το όταν αυτή η συσκευή είναι ο υπολογιστής: οι συνομιλίες του γίνονται του τηλεφώνου που έχει τον λογαριασμό.',
+  'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
+    'Το τηλέφωνο απαντά σε μια ουρά αυτής της συσκευής σε ένα relay: σε αυτό που χρησιμοποιεί το τηλέφωνο ή σε οποιοδήποτε άλλο. Αν το relay χρειάζεται token, συνδέσου όταν σου προσφέρει σύνδεση, ή γράψε ένα.',
   'Name of this device': 'Όνομα αυτής της συσκευής',
+  'Tap Link to my phone, and a QR code for the phone shows here.':
+    'Πάτα «Σύνδεση με το τηλέφωνό μου» και εδώ εμφανίζεται ένας κωδικός QR για το τηλέφωνο.',
 };

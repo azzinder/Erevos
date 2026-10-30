@@ -2876,8 +2876,9 @@ Para vincular un ordenador:
 
 1. En el ordenador, en un espacio sin chats propios (una instalación nueva, un espacio que abre una contraseña nueva, o
    los chats de un ordenador vinculado restaurados desde su copia), abre **Ajustes** → **Datos y dispositivos** →
-   **Dispositivos vinculados**. Rellena el relay si lo pide, ponle nombre al dispositivo, y toca **Vincular a mi
-   teléfono**. Muestra un código QR.
+   **Dispositivos vinculados**. Ahí, **Vincular a mi teléfono** aparece primero. Si pide un relay, el de LPHL ya viene
+   rellenado: toca **Iniciar sesión con LPHL** para un token propio del ordenador, o escribe otro relay y su token.
+   Ponle nombre al dispositivo y toca **Vincular a mi teléfono**: solo entonces muestra un código QR.
 2. En el teléfono, escanea el código con la cámara: Erevos se abre en **Dispositivos vinculados** con él. O copia el
    código en el ordenador, pégalo en el teléfono en **Código del ordenador**, y toca **Siguiente**.
 3. El teléfono muestra el nombre del ordenador y un código de cuatro grupos de cinco dígitos. Elige qué parte del

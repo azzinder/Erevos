@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Linking a computer is clearer**: on a computer or in a browser, **Linked devices** starts with **Link to my
+  phone**; when it asks for a relay, LPHL's is filled in and **Sign in with LPHL** sits under the token, so the
+  computer gets a token of its own and none has to be copied from the phone; a line says the QR code shows once **Link
+  to my phone** is tapped (`app/devices.tsx`). See [Linked devices](#devices).
 - **Matrix: threads, polls, places and link previews**: **Reply in thread** in a message's menu opens the thread on a
   screen of its own, and a message with answers counts them; **Poll** (voted in its bubble, ended by its maker) and
   **Location** sit under the message box; the first link in a message goes with a preview when previews are on, never

@@ -38,6 +38,7 @@ export const NEXT: Changes = {
     mark("**Matrix: pins, forwarding, favourites and finding**: **Pin** a message to the top of a room, **Forward** it to another chat, hold a chat for **Make a favourite**, **Low priority** or **Leave and forget**, **Find a group** among public rooms and spaces, and **Search messages** kept on this phone. See [Matrix](#matrix)."),
     mark("**Matrix: make an account and look after devices**: **Make a new account** on a Matrix server that allows it, and **Devices** to see them, rename one, or sign the others out. See [Matrix](#matrix)."),
     mark("**Older Matrix calls**: one-to-one calls as FluffyChat, Nheko and Element on a computer make them now ring here, and in a chat with one person the call tiles offer **Element Call** or **Older call**. See [Matrix](#matrix)."),
+    mark("**Linking a computer is clearer**: on a computer, Settings → Data and devices → Linked devices now starts with Link to my phone, with LPHL's relay filled in and Sign in with LPHL under the token, so no token has to be copied from the phone; and it says that the QR code shows once Link to my phone is tapped. See [Linked devices](#devices)."),
     mark("**XMPP: make an account, change the password, delete it, find groups**: **Make a new account** on an XMPP server that allows it, **Account** to change the password or delete the account for good, **Find a group** on your server or among public groups, **Location** as Conversations sends it, and link previews in chats written without encryption. See [XMPP](#xmpp)."),
   ],
   underTheHood: [

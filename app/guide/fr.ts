@@ -3034,8 +3034,10 @@ Pour associer un ordinateur :
 
 1. Sur l’ordinateur, dans un espace sans discussions à lui (une nouvelle installation, un espace qu’ouvre un nouveau mot
    de passe, ou les discussions d’un ordinateur associé restaurées depuis sa sauvegarde), ouvre **Réglages** → **Données
-   et appareils** → **Appareils associés**. Renseigne le relais s’il le demande, nomme l’appareil et appuie sur
-   **Associer à mon téléphone**. Il affiche un code QR.
+   et appareils** → **Appareils associés**. Là, **Associer à mon téléphone** vient en premier. S’il demande un relais,
+   celui de LPHL est déjà rempli : appuie sur **Se connecter avec LPHL** pour un jeton propre à l’ordinateur, ou tape un
+   autre relais et son jeton. Nomme l’appareil et appuie sur **Associer à mon téléphone** : alors seulement il affiche
+   un code QR.
 2. Sur le téléphone, scanne le code avec l’appareil photo : Erevos s’ouvre sur **Appareils associés** avec ce code. Ou
    bien copie le code sur l’ordinateur, colle-le sur le téléphone sous **Code de l’ordinateur**, et appuie sur
    **Suivant**.

@@ -76,6 +76,8 @@ export const devices: Record<string, string> = {
   'Bringing over messages: {n} so far.': 'Prenose se poruke: dosad {n}.',
   'Bring over': 'Prenesi',
   'Bring over messages again': 'Ponovo prenesi poruke',
+  'Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.':
+    'Prijavljeni ste kao {name}: ovaj uređaj tamo ima vlastiti token. Sada dodirnite „Poveži s mojim telefonom“.',
   'Link a computer to this phone': 'Poveži računar s ovim telefonom',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'Na računaru otvorite „Postavke → Podaci i uređaji → Povezani uređaji → Poveži s mojim telefonom“. Zatim skenirajte njegov kod kamerom ovog telefona ili ga tamo kopirajte i zalijepite ovdje.',
@@ -92,5 +94,8 @@ export const devices: Record<string, string> = {
   'Waiting for the phone. The code works for half an hour.': 'Čeka se telefon. Kod vrijedi pola sata.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'Koristite ovo kad je ovaj uređaj računar: njegovi razgovori postaju razgovori telefona na kojem je račun.',
+  'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
+    'Telefon odgovara na redu ovog uređaja na relayu: onom koji telefon koristi ili bilo kojem drugom. Ako relay traži token, prijavite se kad to ponudi ili upišite jedan.',
   'Name of this device': 'Naziv ovog uređaja',
+  'Tap Link to my phone, and a QR code for the phone shows here.': 'Dodirnite „Poveži s mojim telefonom“ i ovdje se prikazuje QR kod za telefon.',
 };

@@ -2859,8 +2859,9 @@ Para conectar um computador:
 
 1. No computador, num espaço sem conversas próprias (uma instalação nova, um espaço que uma senha nova abre, ou as
    conversas de um computador conectado restauradas do backup dele), abra **Configurações** → **Dados e
-   dispositivos** → **Dispositivos conectados**. Preencha o relay se ele pedir, dê um nome ao dispositivo e toque em
-   **Conectar ao meu celular**. Ele mostra um código QR.
+   dispositivos** → **Dispositivos conectados**. Ali, **Conectar ao meu celular** vem primeiro. Se ele pedir um relay, o
+   do LPHL já vem preenchido: toque em **Entrar com LPHL** para um token próprio do computador, ou digite outro relay e
+   o token dele. Dê um nome ao dispositivo e toque em **Conectar ao meu celular**: só então ele mostra um código QR.
 2. No celular, escaneie o código com a câmera: o Erevos abre em **Dispositivos conectados** com ele. Ou copie o código
    no computador, cole-o no celular em **Código do computador** e toque em **Avançar**.
 3. O celular mostra o nome do computador e um código de quatro grupos de cinco dígitos. Escolha o que do histórico vai

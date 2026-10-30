@@ -2773,8 +2773,9 @@ Da povežete računar:
 
 1. Na računaru, u prostoru bez vlastitih razgovora (nova instalacija, prostor koji otvara nova lozinka ili razgovori
    povezanog računara vraćeni iz njegove rezervne kopije), otvorite **Postavke** → **Podaci i uređaji** → **Povezani
-   uređaji**. Upišite relay ako ga traži, dajte ime uređaju i dodirnite **Poveži s mojim telefonom**. Prikazuje QR
-   kod.
+   uređaji**. Ondje se **Poveži s mojim telefonom** nalazi na prvom mjestu. Ako traži relay, LPHL-ov je već upisan:
+   dodirnite **Prijava preko LPHL** za vlastiti token računara, ili upišite drugi relay i njegov token. Dajte ime
+   uređaju i dodirnite **Poveži s mojim telefonom**: tek tada prikazuje QR kod.
 2. Na telefonu skenirajte kod kamerom: Erevos se otvara na **Povezani uređaji** s njim. Ili kopirajte kod na
    računaru, zalijepite ga na telefonu pod **Kod s računara** i dodirnite **Dalje**.
 3. Telefon prikazuje ime računara i kod od četiri grupe po pet cifara. Izaberite koji dio historije ide (**Sve**,

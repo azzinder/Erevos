@@ -70,6 +70,8 @@ export const devices: Record<string, string> = {
   'Bringing over messages: {n} so far.': 'Transfert des messages : {n} pour l’instant.',
   'Bring over': 'Transférer',
   'Bring over messages again': 'Transférer de nouveau les messages',
+  'Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.':
+    'Connexion faite en tant que {name} : cet appareil y a un jeton propre. Touche maintenant « Associer à mon téléphone ».',
   'Link a computer to this phone': 'Associer un ordinateur à ce téléphone',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'Sur l’ordinateur, ouvre « Réglages → Données et appareils → Appareils associés → Associer à mon téléphone ». Scanne ensuite son code avec l’appareil photo de ce téléphone, ou copie-le là-bas et colle-le ici.',
@@ -86,5 +88,9 @@ export const devices: Record<string, string> = {
   'Waiting for the phone. The code works for half an hour.': 'En attente du téléphone. Le code est valable une demi-heure.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'À utiliser quand cet appareil est l’ordinateur : ses discussions deviennent celles du téléphone qui détient le compte.',
+  'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
+    'Le téléphone répond sur une file d’attente de cet appareil sur un relais : celui qu’utilise le téléphone, ou un autre. Si le relais demande un jeton, connecte-toi quand il le propose, ou tape-en un.',
   'Name of this device': 'Nom de cet appareil',
+  'Tap Link to my phone, and a QR code for the phone shows here.':
+    'Touche « Associer à mon téléphone », et un code QR pour le téléphone s’affiche ici.',
 };

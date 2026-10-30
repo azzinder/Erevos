@@ -76,6 +76,8 @@ export const devices: Record<string, string> = {
   'Bringing over messages: {n} so far.': 'Trazendo as mensagens: {n} até agora.',
   'Bring over': 'Trazer',
   'Bring over messages again': 'Trazer as mensagens de novo',
+  'Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.':
+    'Você entrou como {name}: este dispositivo tem ali um token próprio. Agora toque em “Conectar ao meu celular”.',
   'Link a computer to this phone': 'Conectar um computador a este celular',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'No computador, abra “Configurações → Dados e dispositivos → Dispositivos conectados → Conectar ao meu celular”. Depois escaneie o código dele com a câmera deste celular, ou copie lá e cole aqui.',
@@ -92,5 +94,8 @@ export const devices: Record<string, string> = {
   'Waiting for the phone. The code works for half an hour.': 'Aguardando o celular. O código vale por meia hora.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'Use isto quando este dispositivo for o computador: as conversas dele passam a ser as do celular que tem a conta.',
+  'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
+    'O celular responde numa fila deste dispositivo num relay: o que o celular usa, ou qualquer outro. Se o relay pedir um token, entre quando ele oferecer essa opção, ou digite um.',
   'Name of this device': 'Nome deste dispositivo',
+  'Tap Link to my phone, and a QR code for the phone shows here.': 'Toque em “Conectar ao meu celular”, e um código QR para o celular aparece aqui.',
 };

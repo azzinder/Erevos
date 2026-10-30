@@ -2648,8 +2648,10 @@ have. And with the phone as the account, contacts on any older Erevos reach you 
 To link a computer:
 
 1. On the computer, in a space with no chats of its own (a new install, a space a new password opens, or a linked
-   computer's chats restored from its backup), open **Settings** → **Data and devices** → **Linked devices**. Fill in
-   the relay if it asks, name the device, and tap **Link to my phone**. It shows a QR code.
+   computer's chats restored from its backup), open **Settings** → **Data and devices** → **Linked devices**. There
+   **Link to my phone** comes first. If it asks for a relay, LPHL's is filled in: tap **Sign in with LPHL** for a token
+   of the computer's own, or type another relay and its token. Name the device and tap **Link to my phone**: only then
+   does it show a QR code.
 2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
    computer, paste it on the phone under **Code from the computer**, and tap **Next**.
 3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes

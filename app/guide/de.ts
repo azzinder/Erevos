@@ -3065,8 +3065,10 @@ So verknüpfst du einen Computer:
 
 1. Öffne auf dem Computer, in einem Bereich ohne eigene Chats (eine neue Installation, ein Bereich, den ein neues
    Passwort öffnet, oder die aus seinem Backup wiederhergestellten Chats eines verknüpften Computers),
-   **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte**. Trage das Relay ein, wenn danach gefragt wird,
-   benenne das Gerät und tippe auf **Mit meinem Telefon verknüpfen**. Es zeigt einen QR-Code.
+   **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte**. Dort steht **Mit meinem Telefon verknüpfen** an
+   erster Stelle. Wenn nach einem Relay gefragt wird, ist das von LPHL schon eingetragen: Tippe auf **Mit LPHL
+   anmelden** für ein eigenes Token des Computers, oder trage ein anderes Relay und sein Token ein. Benenne das Gerät
+   und tippe auf **Mit meinem Telefon verknüpfen**: Erst dann zeigt es einen QR-Code.
 2. Scanne den Code auf dem Telefon mit der Kamera: Erevos öffnet sich damit bei **Verknüpfte Geräte**. Oder kopiere
    den Code auf dem Computer, füge ihn auf dem Telefon unter **Code vom Computer** ein und tippe auf **Weiter**.
 3. Das Telefon zeigt den Namen des Computers und einen Code aus vier Gruppen von fünf Ziffern. Wähle, was vom Verlauf

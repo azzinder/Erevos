@@ -3,13 +3,16 @@ import { useEffect, useState } from 'react';
 import { Platform, Share } from 'react-native';
 
 import { QrCode } from '../components/QrCode';
+import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
 import { onLinked, spaceLinks, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
 import { mark, t } from '../lib/i18n';
 import { checkLinkCode, linkCodeLink } from '../lib/link-code';
 import { createQueue, toHex } from '../lib/relay';
+import { ownToken } from '../lib/relay-signin';
 import { SHELL } from '../lib/shell';
+import { START_RELAY } from '../lib/welcome';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
 // Settings → Data and devices → Linked devices (lib/devices.ts, docs/linked-devices.md). On a computer or in a browser:
@@ -17,7 +20,8 @@ import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data
 // phone: the code read (the camera opens erevos://link?... here, see app/link.tsx) or pasted, the
 // code to compare, what of the history goes, and Link; then the devices linked, each with Unlink.
 // Nothing goes anywhere until Link is tapped on the phone, and the chats only once They match is
-// tapped on the computer.
+// tapped on the computer. On a computer or in a browser Link to my phone comes first, with LPHL's
+// relay filled in and its sign-in under the token, so a token never has to be copied over.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 const DAY = 24 * 3600 * 1000;
@@ -41,6 +45,9 @@ function ownName(): string {
   if (Platform.OS === 'web') return t('Web browser');
   return t('Phone');
 }
+
+// A computer or a browser, where Link to my phone is what is usually wanted.
+const ON_COMPUTER = SHELL === 'electron' || Platform.OS === 'web';
 
 function whenText(ms: number): string {
   return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -86,7 +93,7 @@ export default function Devices() {
         stop = onLinked(() => active && refresh(l));
         const data = await loadCurrentSpaceData();
         if (!active) return;
-        setRelayUrl(data.url);
+        setRelayUrl(data.url || START_RELAY);
         setRelayToken(data.token);
         setHasQueue(!!data.ownQueue);
         const shown = await l.shownOffer().catch(() => null);
@@ -134,6 +141,19 @@ export default function Devices() {
       }
       setOffer(await links.makeOffer(name));
     });
+
+  // Signed in to the relay for a token of this device's own: kept at once with the relay, so the
+  // token is not lost when the screen is left before Link to my phone.
+  async function signedIn(token: string, who: string) {
+    const url = relayUrl.trim();
+    setRelayToken(token);
+    try {
+      await updateCurrentSpaceData({ url, token, ownToken: ownToken(url, token) });
+      setNote(t('Signed in as {name}: this device has a token of its own there. Now tap Link to my phone.', { name: who }));
+    } catch (error) {
+      setNote(errorText(error));
+    }
+  }
 
   async function copy(text: string) {
     try {
@@ -229,6 +249,76 @@ export default function Devices() {
     </>
   );
 
+  // On the phone: a computer's code, read or pasted.
+  const fromComputer = !asked ? (
+    <Card>
+      <Text variant="heading">{t('Link a computer to this phone')}</Text>
+      <Text tone="muted">
+        {t('On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
+      </Text>
+      <Field label={t('Code from the computer')}>
+        <Input value={pasted} onChangeText={setPasted} placeholder="erevos://link?…" autoCapitalize="none" autoCorrect={false} />
+      </Field>
+      <Button title={t('Next')} kind="secondary" disabled={busy || !pasted.trim()} onPress={() => void read(pasted)} />
+    </Card>
+  ) : null;
+
+  // On a computer: a relay queue of its own if it has none, then the code for the phone.
+  const toPhone = role === null && !asked ? (
+    <Card>
+      <Text variant="heading">{t('Link to my phone')}</Text>
+      {answer ? (
+        <>
+          <Text tone="muted">{t('The phone read the code. Does it show this one too?')}</Text>
+          <Text variant="mono" selectable style={{ fontSize: 20 }}>
+            {answer}
+          </Text>
+          <Button title={t('They match')} disabled={busy} onPress={() => void confirm()} />
+          <Button title={t('They differ')} kind="secondary" disabled={busy} onPress={() => void differ()} />
+        </>
+      ) : offer ? (
+        <>
+          <Text tone="muted">
+            {t('On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.')}
+          </Text>
+          <QrCode text={offer} size={240} />
+          <Button title={Platform.OS === 'web' ? t('Copy the code') : t('Share the code')} kind="secondary" onPress={() => void copy(offer)} />
+          <Text variant="caption" tone="faint">
+            {t('Waiting for the phone. The code works for half an hour.')}
+          </Text>
+        </>
+      ) : (
+        <>
+          <Text tone="muted">
+            {t('Use this when this device is the computer: its chats become those of the phone that holds the account.')}
+          </Text>
+          {copied ? <Text>{t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.')}</Text> : null}
+          {!hasQueue ? (
+            <>
+              <Field label={t('Relay address')}>
+                <Input value={relayUrl} onChangeText={setRelayUrl} placeholder="wss://relay.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
+              </Field>
+              <Field label={t('Token (optional)')}>
+                <Input value={relayToken} onChangeText={setRelayToken} placeholder={t('Token, if the relay needs one')} autoCapitalize="none" autoCorrect={false} secureTextEntry />
+              </Field>
+              <RelaySignIn url={relayUrl.trim()} token={relayToken} onToken={(token, who) => void signedIn(token, who)} onNote={setNote} />
+              <Text variant="caption" tone="muted">
+                {t('The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.')}
+              </Text>
+            </>
+          ) : null}
+          <Field label={t('Name of this device')}>
+            <Input value={name} onChangeText={setName} maxLength={40} />
+          </Field>
+          <Text variant="caption" tone="muted">
+            {t('Tap Link to my phone, and a QR code for the phone shows here.')}
+          </Text>
+          <Button title={t('Link to my phone')} disabled={busy} onPress={() => void showCode()} />
+        </>
+      )}
+    </Card>
+  ) : null;
+
   if (role === 'linked') {
     const phone = devices[0];
     return (
@@ -302,66 +392,8 @@ export default function Devices() {
         </>
       ) : null}
 
-      {!asked ? (
-        <Card>
-          <Text variant="heading">{t('Link a computer to this phone')}</Text>
-          <Text tone="muted">
-            {t('On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
-          </Text>
-          <Field label={t('Code from the computer')}>
-            <Input value={pasted} onChangeText={setPasted} placeholder="erevos://link?…" autoCapitalize="none" autoCorrect={false} />
-          </Field>
-          <Button title={t('Next')} kind="secondary" disabled={busy || !pasted.trim()} onPress={() => void read(pasted)} />
-        </Card>
-      ) : null}
-
-      {role === null && !asked ? (
-        <Card>
-          <Text variant="heading">{t('Link to my phone')}</Text>
-          {answer ? (
-            <>
-              <Text tone="muted">{t('The phone read the code. Does it show this one too?')}</Text>
-              <Text variant="mono" selectable style={{ fontSize: 20 }}>
-                {answer}
-              </Text>
-              <Button title={t('They match')} disabled={busy} onPress={() => void confirm()} />
-              <Button title={t('They differ')} kind="secondary" disabled={busy} onPress={() => void differ()} />
-            </>
-          ) : offer ? (
-            <>
-              <Text tone="muted">
-                {t('On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.')}
-              </Text>
-              <QrCode text={offer} size={240} />
-              <Button title={Platform.OS === 'web' ? t('Copy the code') : t('Share the code')} kind="secondary" onPress={() => void copy(offer)} />
-              <Text variant="caption" tone="faint">
-                {t('Waiting for the phone. The code works for half an hour.')}
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text tone="muted">
-                {t('Use this when this device is the computer: its chats become those of the phone that holds the account.')}
-              </Text>
-              {copied ? <Text>{t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.')}</Text> : null}
-              {!hasQueue ? (
-                <>
-                  <Field label={t('Relay address')}>
-                    <Input value={relayUrl} onChangeText={setRelayUrl} placeholder="wss://relay.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
-                  </Field>
-                  <Field label={t('Token (optional)')}>
-                    <Input value={relayToken} onChangeText={setRelayToken} placeholder={t('Token, if the relay needs one')} autoCapitalize="none" autoCorrect={false} secureTextEntry />
-                  </Field>
-                </>
-              ) : null}
-              <Field label={t('Name of this device')}>
-                <Input value={name} onChangeText={setName} maxLength={40} />
-              </Field>
-              <Button title={t('Link to my phone')} disabled={busy} onPress={() => void showCode()} />
-            </>
-          )}
-        </Card>
-      ) : null}
+      {ON_COMPUTER ? toPhone : fromComputer}
+      {ON_COMPUTER ? fromComputer : toPhone}
 
       {note ? <Text tone="muted">{note}</Text> : null}
     </Page>
