@@ -4,15 +4,17 @@ import { Image, Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { fileSize } from '../lib/attachments';
 import { shownLine } from '../lib/call-lines';
 import { toBase64 } from '../lib/crypto';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import type { MatrixFile, MatrixMessage } from '../lib/matrix';
+import { pollOver, pollShown } from '../lib/matrix-parts';
 import { matrixFile } from '../lib/matrix-store';
 import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 
 import { VoiceClip } from './matrix-voice';
-import { Quote } from './message-parts';
+import { PlaceCard, PreviewCard, Quote } from './message-parts';
+import { PollCard } from './poll';
 import { Button, Row, Text } from './ui';
 
 // A message in a Matrix chat (app/matrix-chat.tsx): its bubble with what it answers, its words, photo,
@@ -25,13 +27,15 @@ export function lineOf(message: MatrixMessage): string {
   if (message.deleted) return t('Message deleted');
   if (message.locked) return t('Locked message');
   if (message.file) return message.file.voice ? t('Voice message') : message.file.name;
+  if (message.poll) return `📊 ${message.poll.q}`;
+  if (message.place) return `📍 ${t('Location')}`;
   return shownLine(message.text).trim().split('\n')[0] || t('Message');
 }
 
 /** The message an answer is to, as the answer quotes it. */
 export type Answered = { name: string; line: string; onPress: () => void };
 
-export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, onLayout }: {
+export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout }: {
   message: MatrixMessage;
   /** Our Matrix ID, to see which reactions are ours. */
   me: string;
@@ -39,6 +43,14 @@ export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, o
   sender: string;
   /** The message it answers, or null when that is older than what is here. */
   answered?: Answered | null;
+  /** A member's name by their Matrix ID, for who voted. */
+  names?: (who: string) => string;
+  /** An option of its poll was tapped: chooses it, or takes the choice back. Not given once the poll is over. */
+  onVote?: (option: number) => void;
+  /** Its thread's first message: opens the thread. */
+  onThread?: () => void;
+  /** Lit a moment, as the pinned bar and an answer's quote go to it. */
+  lit?: boolean;
   /** A reaction under it was tapped: reacts the same, or takes ours back. */
   onReact: (emoji: string) => void;
   /** Held down: its menu. Not given for a message that is gone or a call's line. */
@@ -50,6 +62,8 @@ export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, o
   const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
   const side = mine ? 'flex-end' : 'flex-start';
+  const shownPoll = message.poll && !message.deleted ? pollShown(message.poll) : null;
+  const ended = message.poll ? pollOver(message.poll) : false;
   return (
     <View onLayout={onLayout} style={{ alignSelf: side, maxWidth: '85%', gap: 4 }}>
       <Pressable
@@ -58,7 +72,7 @@ export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, o
         // One with buttons in it (Play, Save) stays apart from them for a screen reader.
         accessible={!message.file}
         accessibilityHint={onMenu ? t('Hold for more') : undefined}
-        style={{ alignSelf: side, padding: space.sm + 2, borderRadius: radius.md, backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt, gap: 2 }}
+        style={{ alignSelf: side, padding: space.sm + 2, borderRadius: radius.md, backgroundColor: lit ? withAlpha(colors.primary, 0.3) : mine ? colors.primarySoft : colors.surfaceAlt, gap: 2 }}
       >
         {!mine ? (
           <Text variant="caption" tone="muted" numberOfLines={1}>
@@ -80,10 +94,36 @@ export function MatrixBubble({ message, me, sender, answered, onReact, onMenu, o
           )
         ) : message.call ? (
           <Text>{shownLine(message.text)}</Text>
+        ) : shownPoll ? (
+          <View style={{ gap: space.xs }}>
+            <PollCard
+              poll={shownPoll.poll}
+              voters={shownPoll.votes.map((vote) => ({ name: names ? names(vote.who) : vote.who, chose: vote.chose }))}
+              mine={shownPoll.votes.find((vote) => vote.who === me)?.chose ?? []}
+              onChoose={ended || message.state ? undefined : onVote}
+            />
+            {ended ? (
+              <Text variant="caption" tone="muted">
+                {t('Poll ended')}
+              </Text>
+            ) : null}
+          </View>
+        ) : message.place ? (
+          <PlaceCard place={message.place} />
         ) : (
           // Not selectable: holding the words opens the menu, which can copy them.
-          <Text>{message.text}</Text>
+          <>
+            <Text>{message.text}</Text>
+            {message.preview ? <PreviewCard preview={message.preview} /> : null}
+          </>
         )}
+        {onThread && message.threadCount ? (
+          <Pressable onPress={onThread} accessibilityRole="button" hitSlop={6}>
+            <Text variant="caption" color={colors.accentText}>
+              {plural(message.threadCount, '{n} answer in the thread', '{n} answers in the thread')}
+            </Text>
+          </Pressable>
+        ) : null}
         <Text variant="caption" tone="faint">
           {status}
         </Text>

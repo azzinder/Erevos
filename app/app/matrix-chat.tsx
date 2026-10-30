@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KeyboardAwareScrollView } from '../components/keyboard';
@@ -8,45 +8,62 @@ import { MatrixBubble, lineOf, type Answered } from '../components/matrix-messag
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
-import { Quote } from '../components/message-parts';
+import { Pinned, Quote } from '../components/message-parts';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { useNetworkThread } from '../components/network-thread';
+import { PlaceSheet } from '../components/place-sheet';
+import { PollSheet } from '../components/poll';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
-import { Button, Chip, Input, Page, Row, Text } from '../components/ui';
+import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
+import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
+import { firstLink, fitPreview } from '../lib/link-preview';
+import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
 import { isMatrixId, MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, type MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
+import { pollOver, pollShown } from '../lib/matrix-parts';
+import { canMatrixVoip, startMatrixVoip } from '../lib/matrix-voip';
 import { MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, type OutgoingFile } from '../lib/matrix-media';
 import {
   matrixChange,
   matrixDelete,
+  matrixEndPoll,
+  matrixForward,
   matrixInvite,
   matrixLeave,
   matrixLoadEarlier,
+  matrixLocation,
   matrixNow,
+  matrixPin,
+  matrixPoll,
   matrixRead,
   matrixReact,
   matrixReply,
   matrixSend,
   matrixSendFile,
+  matrixSendInThread,
   matrixSetNotify,
   matrixTyped,
   matrixVerifications,
   matrixVerify,
+  matrixVote,
   onMatrixChange,
   runMatrix,
 } from '../lib/matrix-store';
 import { isVerified } from '../lib/matrix-verify';
-import { useNetworkWhere } from '../lib/network-place';
+import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
+import { throughTor } from '../lib/relay';
+import { rtc } from '../lib/webrtc';
+import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -72,6 +89,14 @@ import { useColors } from '../theme/context';
 // (components/say-typing.tsx). In a group, typing @ offers
 // its members whose names start so (lib/mentions.ts), and a message names those written whole
 // (m.mentions), so their apps tell them of it as Element does.
+//
+// A message held down can also be pinned to the top of the room (the bar over the thread goes to it
+// when tapped), sent on to another chat, and answered in a thread (`thread` is the first message's
+// ID: the screen then shows that thread alone, and what is written goes into it). A poll is voted
+// on in its bubble and ended by its maker; a place goes once, as Element sends one. When this
+// phone makes link previews (Settings, as for contacts), the first link in words typed goes with
+// its preview, never through Tor and never in a hidden place. In a chat of two, the call buttons
+// offer Element Call or the older call FluffyChat and Nheko make (lib/matrix-voip.ts).
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -90,7 +115,7 @@ export default function MatrixChatScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { room: roomId, hidden } = useLocalSearchParams<{ room?: string; hidden?: string }>();
+  const { room: roomId, hidden, thread } = useLocalSearchParams<{ room?: string; hidden?: string; thread?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const [now, setNow] = useState(matrixNow(where));
   const [note, setNote] = useState('');
@@ -101,6 +126,14 @@ export default function MatrixChatScreen() {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [earlier, setEarlier] = useState(false);
+  // The sheets for a poll and a place, the message being sent on, whether this phone makes previews,
+  // which pinned message the bar shows, and the one lit after going to it.
+  const [polling, setPolling] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const [forwarding, setForwarding] = useState<string | null>(null);
+  const [previews, setPreviews] = useState(false);
+  const [pinShown, setPinShown] = useState(0);
+  const [lit, setLit] = useState<string | null>(null);
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
@@ -122,6 +155,17 @@ export default function MatrixChatScreen() {
   }, []);
 
   useEffect(() => {
+    if (where !== 'space') return;
+    loadCurrentSpaceData().then((data) => setPreviews(data.previews), () => setPreviews(false));
+  }, [where]);
+
+  useEffect(() => {
+    if (!lit) return;
+    const timer = setTimeout(() => setLit(null), 1600);
+    return () => clearTimeout(timer);
+  }, [lit]);
+
+  useEffect(() => {
     runMatrix();
     setNow(matrixNow(where));
     return onMatrixChange(() => setNow(matrixNow(where)));
@@ -129,13 +173,15 @@ export default function MatrixChatScreen() {
 
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
-  const count = room?.messages.length ?? 0;
+  // The room's thread holds what is not in a thread; a thread's own screen, its first message and what is in it.
+  const shownMessages = room ? room.messages.filter((m) => (thread ? m.id === thread || m.thread === thread : !m.thread)) : [];
+  const count = shownMessages.length;
   const counted = useRef(count);
   counted.current = count;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx); older messages coming in above hold it.
   const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
-    list: room?.messages ?? [],
+    list: shownMessages,
     idOf: (message) => message.id,
     mine: (message) => message.sender === state?.userId,
     unread: room?.unread ?? 0,
@@ -219,22 +265,77 @@ export default function MatrixChatScreen() {
     }
     setReplyId(null);
     const named = mentionsIn(text, nameable);
-    (answered ? matrixReply(roomId, text, answered.id, named) : matrixSend(roomId, text, named)).catch(fail);
+    const answers = answered?.id;
+    void (async () => {
+      const preview = await previewOf(text);
+      await (thread ? matrixSendInThread(roomId, thread, text, answers, named, preview) : answers ? matrixReply(roomId, text, answers, named, preview) : matrixSend(roomId, text, named, preview));
+    })().catch(fail);
     return true;
   }
 
-  async function call(video: boolean) {
+  // The preview of the first link in words typed, when this phone makes them (lib/make-preview.ts):
+  // not in a hidden place, and never while the space goes through Tor. None if it takes too long.
+  async function previewOf(text: string) {
+    const link = previews && where === 'space' && CAN_PREVIEW && !throughTor() ? firstLink(text) : null;
+    if (!link) return null;
+    setNote(t('Making the link’s preview…'));
+    const made = await makePreview(link);
+    setNote('');
+    return made ? fitPreview(text, made) : null;
+  }
+
+  async function sendPoll(poll: Poll) {
     if (!roomId) return;
+    setPolling(false);
+    matrixPoll(roomId, poll).catch(fail);
+  }
+
+  function sendPlace(place: Place) {
+    if (!roomId) return;
+    setPlacing(false);
+    matrixLocation(roomId, place, thread).catch(fail);
+  }
+
+  function vote(message: MatrixMessage, option: number) {
+    if (!roomId || !message.poll) return;
+    const mineNow = pollShown(message.poll).votes.find((v) => v.who === me)?.chose ?? [];
+    matrixVote(roomId, message.id, chooseOption(mineNow, option, message.poll.max > 1)).catch(fail);
+  }
+
+  // Goes to a message of the thread by its ID, and lights it a moment.
+  function reach(id: string) {
+    if (!byId.has(id)) {
+      setNote(t('That message is not on this phone.'));
+      return;
+    }
+    goTo(id);
+    setLit(id);
+  }
+
+  async function call(video: boolean) {
+    if (!roomId || !state) return;
     setNote('');
     if (!(await callPermissions(video))) {
       setNote(video ? t('A video call needs the camera and the microphone.') : t('A call needs the microphone.'));
       return;
     }
-    try {
-      startMatrixCall(roomId, video, where === 'place');
-    } catch (error) {
-      fail(error);
-    }
+    const place = where === 'place';
+    const older = () => startMatrixVoip(roomId, video, rtc, place).catch(fail);
+    const newer = () => {
+      try {
+        startMatrixCall(roomId, video, place);
+      } catch (error) {
+        fail(error);
+      }
+    };
+    // A chat of two can also be called as FluffyChat, Nheko and Element on a computer call: one of them may not have Element Call.
+    if (!canMatrixVoip(state, roomId)) return newer();
+    if (!canElementCall()) return void older();
+    ask(video ? t('Video call') : t('Voice call'), t('Element Call works with Element X and the apps that have it. The older call works with FluffyChat, Nheko and Element on a computer.'), [
+      { text: t('Cancel'), style: 'cancel' },
+      { text: t('Element Call'), onPress: newer },
+      { text: t('Older call'), onPress: () => void older() },
+    ]);
   }
 
   const sendPhoto = () => sendPicked(() => pickPhoto('photos', 90));
@@ -296,8 +397,17 @@ export default function MatrixChatScreen() {
         },
       });
     }
+    if (!message.state && !thread && !message.thread) {
+      actions.push({ title: t('Reply in thread'), onPress: () => router.push({ pathname: '/matrix-chat', params: { room: roomId, thread: message.id, ...whereParams(where) } }) });
+    }
     if (copyable(message)) actions.push({ title: t('Copy'), onPress: () => void copy(message.text) });
-    if (ours && !message.file && !message.locked) {
+    if (!message.state) {
+      const pinned = room?.pinned?.includes(message.id) ?? false;
+      actions.push({ title: pinned ? t('Unpin') : t('Pin'), onPress: () => roomId && void matrixPin(roomId, message.id, !pinned).catch(fail) });
+      actions.push({ title: t('Forward'), onPress: () => setForwarding(message.id) });
+    }
+    if (ours && message.poll && !pollOver(message.poll)) actions.push({ title: t('End poll'), onPress: () => roomId && void matrixEndPoll(roomId, message.id).catch(fail) });
+    if (ours && !message.file && !message.locked && !message.poll && !message.place) {
       actions.push({
         title: t('Edit'),
         onPress: () => {
@@ -314,7 +424,7 @@ export default function MatrixChatScreen() {
   const answeredBy = (message: MatrixMessage): Answered | null | undefined => {
     if (!message.replyTo) return undefined;
     const to = byId.get(message.replyTo);
-    return to ? { name: nameOf(to), line: lineOf(to), onPress: () => goTo(to.id) } : null;
+    return to ? { name: nameOf(to), line: lineOf(to), onPress: () => reach(to.id) } : null;
   };
 
   return withArrows(
@@ -343,9 +453,9 @@ export default function MatrixChatScreen() {
     >
       <Row>
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
-          {room.name}
+          {thread ? t('Thread · {name}', { name: room.name }) : room.name}
         </Text>
-        {canElementCall() && !room.invitedBy ? (
+        {(canElementCall() || canMatrixVoip(state, roomId)) && !room.invitedBy ? (
           <>
             <ShortcutTile label={t('Video call')} tint="blue" onPress={() => void call(true)}>
               <VideoSign />
@@ -371,19 +481,40 @@ export default function MatrixChatScreen() {
         ) : null
       ) : null}
       {check ? <MatrixVerifyCard check={check} name={room.members[check.userId]?.name || check.userId} /> : null}
+      {!thread && room.pinned?.length ? (
+        <Pinned
+          index={Math.min(pinShown, room.pinned.length - 1)}
+          count={room.pinned.length}
+          // The latest pinned first.
+          line={(() => {
+            const id = room.pinned[room.pinned.length - 1 - Math.min(pinShown, room.pinned.length - 1)];
+            const pinned = byId.get(id);
+            return pinned ? lineOf(pinned) : '';
+          })()}
+          onPress={() => {
+            const at = Math.min(pinShown, room.pinned!.length - 1);
+            reach(room.pinned![room.pinned!.length - 1 - at]);
+            setPinShown((at + 1) % room.pinned!.length);
+          }}
+        />
+      ) : null}
       <View style={{ gap: space.md }} {...threadProps}>
         {room.before && !room.start ? (
           <Row style={{ justifyContent: 'center' }}>
             <Button title={earlier ? t('Fetching…') : t('Load earlier messages')} kind="secondary" compact disabled={earlier} onPress={() => void loadEarlier()} />
           </Row>
         ) : null}
-        {room.messages.map((message) => (
+        {shownMessages.map((message) => (
           <MatrixBubble
             key={message.id}
             message={message}
             me={me}
             sender={room.members[message.sender]?.name || message.sender}
             answered={answeredBy(message)}
+            names={(who) => room.members[who]?.name || who}
+            onVote={(option) => vote(message, option)}
+            onThread={!thread ? () => router.push({ pathname: '/matrix-chat', params: { room: roomId, thread: message.id, ...whereParams(where) } }) : undefined}
+            lit={lit === message.id}
             onReact={(emoji) => void react(message.id, emoji)}
             onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
             onLayout={place(message.id)}
@@ -398,6 +529,12 @@ export default function MatrixChatScreen() {
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} onTyped={sayTyping.typed} onSent={sayTyping.sent} />
+      {!voice.recording && !changed ? (
+        <Row wrap>
+          {!thread ? <Button title={t('Poll')} kind="secondary" compact disabled={sending} onPress={() => setPolling(true)} /> : null}
+          <Button title={t('Location')} kind="secondary" compact disabled={sending} onPress={() => setPlacing(true)} />
+        </Row>
+      ) : null}
       <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
@@ -430,6 +567,26 @@ export default function MatrixChatScreen() {
           ])
         }
       />
+      <PollSheet visible={polling} onClose={() => setPolling(false)} onSend={(poll) => void sendPoll(poll)} />
+      <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Everyone in this chat can see it.')} />
+      <Sheet visible={forwarding !== null} onClose={() => setForwarding(null)} title={t('Forward to')}>
+        <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
+          {Object.values(state.rooms)
+            .filter((other) => !other.space && !other.invitedBy && other.id !== roomId)
+            .map((other) => (
+              <Button
+                key={other.id}
+                title={other.name}
+                kind="secondary"
+                onPress={() => {
+                  const id = forwarding;
+                  setForwarding(null);
+                  if (id) matrixForward(roomId, id, other.id).then(() => setNote(t('Forwarded to {name}.', { name: other.name })), fail);
+                }}
+              />
+            ))}
+        </ScrollView>
+      </Sheet>
       <MessageMenu
         visible={!!menuMessage && menuable(menuMessage) && shown}
         onClose={() => setMenuFor(null)}
