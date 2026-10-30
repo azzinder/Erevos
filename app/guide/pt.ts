@@ -1564,7 +1564,9 @@ fica no meio.
   **Apagar** retira uma mensagem sua para todos na conversa, depois que você confirma; não dá para desfazer, e a
   conversa mantém uma linha dizendo que ela foi apagada.
 - **Digitando:** quem está escrevendo agora no chat, como o servidor Matrix diz, aparece embaixo com **digitando…**. O
-  Erevos nunca diz isso de você, pois assim o servidor Matrix saberia cada vez que você escreve.
+  Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do Matrix; no início fica
+  desligado, pois passa pelo servidor Matrix sem criptografia, então o servidor fica sabendo cada vez que você
+  escreve.
 - **Mensagens anteriores:** uma conversa com mais histórico no servidor do Matrix mostra **Carregar mensagens
   anteriores** no alto; cada toque traz mais, e a conversa fica onde você estava lendo. Uma mensagem cuja chave ainda
   não chegou aparece bloqueada.
@@ -1654,7 +1656,9 @@ esses apps: nenhuma ponte fica no meio.
   os enviam, sem criptografia, então os servidores XMPP os veem. Em um grupo, uma mensagem pode ser respondida,
   receber uma reação ou ser apagada depois que o grupo a devolveu.
 - **Escrevendo:** quando o app da outra pessoa diz que ela está escrevendo, **digitando…** aparece sob a conversa. O
-  Erevos nunca diz isso de você, pois contaria ao servidor XMPP toda vez que você escreve.
+  Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do XMPP, e só para um contato
+  que vê sua presença, nunca num grupo; no início fica desligado, pois passa pelo servidor XMPP sem criptografia,
+  então o servidor fica sabendo cada vez que você escreve.
 - **Bloquear:** **Bloquear**, no fim de um chat, impede que as mensagens, chamadas e pedidos dessa pessoa cheguem à
   sua conta XMPP, em qualquer um dos apps dela, como o servidor XMPP faz (XEP-0191); ela não é avisada.
   **Desbloquear** a deixa passar de novo. Quem foi bloqueado em outro app da conta também fica bloqueado aqui.

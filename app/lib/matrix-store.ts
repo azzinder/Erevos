@@ -19,6 +19,7 @@ import {
   sendReaction,
   sendReply,
   sendText,
+  sendTyping,
   signIn,
   signOut,
   startChat,
@@ -438,6 +439,22 @@ export async function matrixSignOut(): Promise<void> {
   });
   await saveMatrix(it.space, it.key, null, it.holder);
   if (it.holder === 'space') await followDoor(it.space, it.key).catch(() => undefined);
+}
+
+/** Tells a room we write, or stopped, when the account says so; nothing on failure. */
+export function matrixTyped(roomId: string, typing: boolean): void {
+  const it = acting();
+  if (!it?.state?.sayTyping) return;
+  void sendTyping(it.state, roomId, typing).catch(() => undefined);
+}
+
+/** Whether the others are told when we write. */
+export function matrixSetSayTyping(on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    if (on) it.state.sayTyping = true;
+    else delete it.state.sayTyping;
+  });
 }
 
 export function matrixSend(roomId: string, text: string, mentions: string[] = []): Promise<void> {

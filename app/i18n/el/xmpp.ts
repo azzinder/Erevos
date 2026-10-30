@@ -109,4 +109,7 @@ export const xmpp: Record<string, string> = {
   "Block {name}?": "Αποκλεισμός του {name};",
   "Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.": "Τα μηνύματα, οι κλήσεις και τα αιτήματά του δεν φτάνουν πια στον λογαριασμό σου XMPP, σε καμία από τις εφαρμογές του. Δεν ενημερώνεται.",
   "Your XMPP server cannot block anyone.": "Ο server σου XMPP δεν μπορεί να αποκλείσει κανέναν.",
+  "Say when I am writing": "Να λέει όταν γράφω",
+  "The others see “typing…” while you write. It goes through the {server} server not encrypted, so the server learns each time you write.": "Οι άλλοι βλέπουν «γράφει…» όσο γράφεις. Περνά από τον server {server} χωρίς κρυπτογράφηση, οπότε ο server μαθαίνει κάθε φορά που γράφεις.",
+  "The others do not see when you write. You still see when they do, if their app says it.": "Οι άλλοι δεν βλέπουν πότε γράφεις. Εσύ βλέπεις πότε γράφουν εκείνοι, αν το λέει η εφαρμογή τους.",
 };

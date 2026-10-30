@@ -42,6 +42,7 @@ import {
   takeBackReaction,
   sendStateEvent,
   sendText,
+  sendTyping,
   sendToDeviceSealed,
   setCallHandler,
   setMatrixHttp,
@@ -323,6 +324,26 @@ test('who writes in a room shows as the homeserver says, never ourselves', { ski
   server.typing.set(room.id, []);
   await sync(alice, 0);
   assert.deepEqual(matrixTyping(alice, room.id), []);
+  server.typing.delete(room.id);
+});
+
+test('we are said to write only when the account says so', { skip: !coreReady }, async () => {
+  const alice = kept(await signIn(HS, 'alice', PASSWORD));
+  const bob = kept(await signIn(HS, 'bob', PASSWORD));
+  const room = await startChat(alice, bob.userId);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  await sync(alice, 0);
+  assert.equal(await sendTyping(alice, room.id, true), false);
+  assert.equal(server.typing.get(room.id), undefined);
+  alice.sayTyping = true;
+  assert.equal(await sendTyping(alice, room.id, true), true);
+  await sync(bob, 0);
+  assert.deepEqual(matrixTyping(bob, room.id), [alice.userId]);
+  assert.equal(await sendTyping(alice, room.id, false), true);
+  await sync(bob, 0);
+  assert.deepEqual(matrixTyping(bob, room.id), []);
+  assert.equal(await sendTyping(alice, '!nowhere:example.org', true), false);
   server.typing.delete(room.id);
 });
 

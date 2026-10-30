@@ -1595,8 +1595,9 @@ sta nel mezzo.
   ha ricevuto quale reazione, e da chi. Solo tu puoi cambiare i tuoi messaggi, e uno cambiato dice **Modificato**.
   **Elimina** ritira un tuo messaggio per tutti nella chat, dopo che confermi; non si può annullare, e la chat tiene una
   riga che dice che è stato eliminato.
-- **Sta scrivendo:** chi sta scrivendo ora nella chat, come dice il server Matrix, compare sotto con
-  **sta scrivendo…**. Erevos non lo dice mai di te: il server Matrix saprebbe così ogni volta che scrivi.
+- **Sta scrivendo:** chi sta scrivendo ora nella chat, come dice il server Matrix, compare sotto con **sta
+  scrivendo…**. Erevos lo dice di te solo se attivi **Dire quando scrivo** nella schermata Matrix; all’inizio è
+  spento, perché passa dal server Matrix senza cifratura, quindi il server sa ogni volta che scrivi.
 - **Messaggi precedenti:** una chat con più cronologia sul server Matrix mostra in alto **Carica i messaggi
   precedenti**; ogni tocco ne porta altri, e la chat resta dove stavi leggendo. Un messaggio la cui chiave non è ancora
   arrivata appare bloccato.
@@ -1688,7 +1689,9 @@ app: nessun ponte sta nel mezzo.
   reazione, vanno come le inviano quelle app, non cifrate, quindi i server XMPP le vedono. In un gruppo, un messaggio
   può ricevere risposta, reazione o essere eliminato una volta che il gruppo lo ha rimandato indietro.
 - **Scrittura:** quando l’app dell’altra persona dice che sta scrivendo, **sta scrivendo…** compare sotto la chat.
-  Erevos non lo dice mai di te, perché direbbe al server XMPP ogni volta che scrivi.
+  Erevos lo dice di te solo se attivi **Dire quando scrivo** nella schermata XMPP, e solo a un contatto che vede la
+  tua presenza, mai in un gruppo; all’inizio è spento, perché passa dal server XMPP senza cifratura, quindi il server
+  sa ogni volta che scrivi.
 - **Bloccare:** **Blocca**, in fondo a una chat, impedisce a messaggi, chiamate e richieste di quella persona di
   raggiungere il tuo account XMPP, in tutte le sue app, come fa il server XMPP (XEP-0191); non viene avvisata.
   **Sblocca** la fa passare di nuovo. Chi è stato bloccato in un’altra app dell’account è bloccato anche qui.

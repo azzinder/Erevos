@@ -6,6 +6,7 @@ import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
 import {
   nameFor,
+  NS_CHATSTATES,
   NS_CORRECT,
   NS_FALLBACK,
   NS_REACTIONS,
@@ -208,6 +209,8 @@ export type XmppState = {
   restored?: string;
   /** Addresses the account blocks (XEP-0191), as its server last said: nothing of theirs reaches it. */
   blocked?: string[];
+  /** Whether the others are told when we write (XEP-0085): off unless turned on, as the server sees it. */
+  sayTyping?: true;
 };
 
 export class XmppError extends Error {
@@ -808,6 +811,17 @@ export function xmppTyping(jid: string, now = Date.now()): boolean {
 export function onXmppTyping(listener: () => void): () => void {
   typingListeners.add(listener);
   return () => typingListeners.delete(listener);
+}
+
+/**
+ * Tells a contact we write, or stopped, when the account says so (state.sayTyping): only in a chat
+ * with one person who may see our presence, never in a group, and never kept by the server.
+ */
+export async function sendXmppTyping(state: XmppState, connection: XmppConnection, peer: string, typing: boolean): Promise<boolean> {
+  if (!state.sayTyping || state.chats[peer]?.room || state.blocked?.includes(peer)) return false;
+  if (!['both', 'from'].includes(state.roster[peer]?.subscription ?? '')) return false;
+  await connection.send(el('message', { to: peer, type: 'chat', id: newId() }, el(typing ? 'composing' : 'paused', { xmlns: NS_CHATSTATES }), el('no-store', { xmlns: NS.hints })));
+  return true;
 }
 
 async function takeMessage(state: XmppState, connection: XmppConnection, message: XmlElement, how: { at: number; archiveId?: string; live: boolean }, taken: Taken): Promise<void> {

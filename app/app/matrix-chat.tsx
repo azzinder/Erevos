@@ -10,6 +10,7 @@ import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Chip, Input, Page, Row, Text } from '../components/ui';
 import { ask, confirm } from '../lib/alert';
@@ -35,6 +36,7 @@ import {
   matrixSend,
   matrixSendFile,
   matrixSetNotify,
+  matrixTyped,
   matrixVerifications,
   matrixVerify,
   onMatrixChange,
@@ -65,7 +67,8 @@ import { useColors } from '../theme/context';
 // A room with older messages on the homeserver offers them at the top, and the thread stays where
 // it was when they come. The microphone beside the field records a voice message while it is held
 // (components/matrix-voice.tsx), which the others play with Play. Who writes in it now, as the
-// homeserver says, shows under the thread; Erevos never says it of us. In a group, typing @ offers
+// homeserver says, shows under the thread; we are said to write only when the account says so
+// (components/say-typing.tsx). In a group, typing @ offers
 // its members whose names start so (lib/mentions.ts), and a message names those written whole
 // (m.mentions), so their apps tell them of it as Element does.
 
@@ -155,6 +158,8 @@ export default function MatrixChatScreen() {
   }
 
   const voice = useVoiceCapture({ send: (audio, ms, waveform) => sendPicked(async () => voiceFile(audio, ms, waveform)), say: setNote });
+  // Tells the room we write, only when the account says so (app/matrix.tsx).
+  const sayTyping = useSayTyping(!!state?.sayTyping && !!room && !room.invitedBy, (typing) => roomId && matrixTyped(roomId, typing));
 
   if (!state || !room || !roomId) {
     return (
@@ -397,7 +402,7 @@ export default function MatrixChatScreen() {
       ) : null}
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
-      <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} />
+      <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} onTyped={sayTyping.typed} onSent={sayTyping.sent} />
       <Row>
         {voice.recording ? (
           <RecordingLine />
@@ -475,12 +480,35 @@ function InviteCard({ roomId, say }: { roomId: string; say: (text: string) => vo
 // The field and its button. What is typed is kept here, so typing draws only this and not the
 // whole thread above it. `initial` is the words of a message being changed. In a group, an @ being
 // typed offers the members whose names start so.
-function Field({ initial, editing, saving, members, onSend }: { initial: string; editing: boolean; saving: boolean; members: Nameable[]; onSend: (text: string) => boolean }) {
+function Field({
+  initial,
+  editing,
+  saving,
+  members,
+  onSend,
+  onTyped,
+  onSent,
+}: {
+  initial: string;
+  editing: boolean;
+  saving: boolean;
+  members: Nameable[];
+  onSend: (text: string) => boolean;
+  onTyped: (text: string) => void;
+  onSent: () => void;
+}) {
   const [text, setText] = useState(initial);
   const typed = text.trim();
   const go = () => {
     if (!typed || saving) return;
-    if (onSend(typed)) setText('');
+    if (onSend(typed)) {
+      setText('');
+      onSent();
+    }
+  };
+  const write = (next: string) => {
+    setText(next);
+    onTyped(next);
   };
   const naming = members.length ? typingMention(text) : null;
   const offered = naming !== null ? namesFor(naming, members) : [];
@@ -489,12 +517,12 @@ function Field({ initial, editing, saving, members, onSend }: { initial: string;
       {offered.length ? (
         <Row wrap>
           {offered.map((member) => (
-            <Chip key={member.identity} label={`@${member.name}`} onPress={() => setText(withMention(text, member.name))} />
+            <Chip key={member.identity} label={`@${member.name}`} onPress={() => write(withMention(text, member.name))} />
           ))}
         </Row>
       ) : null}
       <Row>
-        <Input style={{ flex: 1 }} value={text} onChangeText={setText} multiline placeholder={t('Message')} accessibilityLabel={editing ? t('Edit message') : t('Message')} />
+        <Input style={{ flex: 1 }} value={text} onChangeText={write} multiline placeholder={t('Message')} accessibilityLabel={editing ? t('Edit message') : t('Message')} />
         <Button title={editing ? t('Save') : t('Send')} compact disabled={!typed || saving} onPress={go} />
       </Row>
     </>

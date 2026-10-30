@@ -485,7 +485,9 @@ come back and that those of the phone it is restored on go. Not yet on a phone.
   deletion or a reaction, as it could hold back a message. Encrypting them (inside OMEMO 2's SCE) would leave them
   unread by the apps people use.
 - **Writing** (XEP-0085): `composing` from the other person shows **typing…** for 30 seconds or until they stop;
-  Erevos never sends chat states, which would tell the server each time one writes.
+  Erevos sends `composing` and `paused` (with `no-store`) only when **Say when I am writing** is on, which it is not
+  at first, as it tells the server each time one writes; only in a chat with one person who sees our presence
+  (`sendXmppTyping`), never in a group.
 
 ## Blocking
 

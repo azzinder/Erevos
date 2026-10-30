@@ -27,6 +27,7 @@ import {
   sendKeepAlive,
   sendXmppFile,
   sendXmppText,
+  sendXmppTyping,
   signInXmpp,
   signOutXmpp,
   startSession,
@@ -374,6 +375,22 @@ export function xmppSend(jid: string, text: string): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
     await sendXmppText(it.state, online(it), jid, text);
+  });
+}
+
+/** Tells a contact we write, or stopped, when the account says so; nothing while offline or on failure. */
+export function xmppTyped(jid: string, typing: boolean): void {
+  const it = acting();
+  if (!it?.state?.sayTyping || !it.connection?.isOpen) return;
+  void sendXmppTyping(it.state, it.connection, jid, typing).catch(() => undefined);
+}
+
+/** Whether the others are told when we write. */
+export function xmppSetSayTyping(on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    if (on) it.state.sayTyping = true;
+    else delete it.state.sayTyping;
   });
 }
 

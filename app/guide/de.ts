@@ -1687,7 +1687,8 @@ Element: Keine Brücke sitzt dazwischen.
   im Chat zurück, wenn du es bestätigst; es lässt sich nicht rückgängig machen, und der Chat behält eine Zeile, die
   sagt, dass sie gelöscht wurde.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
-  sagt es nie von dir, denn sonst erführe der Matrix-Server jedes Mal, wenn du schreibst.
+  sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
+  aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
 - **Frühere Nachrichten:** Ein Chat mit mehr Verlauf auf dem Matrix-Server zeigt oben **Frühere Nachrichten laden**;
   jedes Tippen holt weitere, und der Chat bleibt dort, wo du gelesen hast. Eine Nachricht, deren Schlüssel noch nicht
   kam, erscheint gesperrt.
@@ -1783,7 +1784,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   sodass die XMPP-Server sie sehen. In einer Gruppe kann eine Nachricht beantwortet, mit einer Reaktion versehen oder
   gelöscht werden, sobald die Gruppe sie zurückgegeben hat.
 - **Schreiben:** wenn die App der anderen Person meldet, dass sie schreibt, erscheint **schreibt…** unter dem Chat.
-  Erevos meldet das nie von dir, denn das würde dem XMPP-Server jedes Mal sagen, wenn du schreibst.
+  Erevos meldet es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem XMPP-Bildschirm einschaltest, und nur
+  einem Kontakt, der deine Anwesenheit sieht, nie in einer Gruppe; anfangs ist es aus, da es unverschlüsselt über den
+  XMPP-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
 - **Blockieren:** **Blockieren**, unten in einem Chat, hält Nachrichten, Anrufe und Anfragen dieser Person von deinem
   XMPP-Konto fern, in jeder seiner Apps, wie es der XMPP-Server tut (XEP-0191); sie erfährt es nicht. **Blockierung
   aufheben** lässt sie wieder durch. Wer in einer anderen App des Kontos blockiert wurde, ist auch hier blockiert.

@@ -3,8 +3,9 @@
 // answer, a change of words, reactions and a taking back, one-to-one with OMEMO (the server never
 // seeing the words, a second device of the writer following) and in a channel, where they name a
 // message by the room's id; only the writer may change or take back a message; the quote other
-// apps put before an answer is left out; whether someone writes shows a while, and is never sent;
-// someone blocked reaches no app of the account, and is let through again.
+// apps put before an answer is left out; whether someone writes shows a while, and ours is said
+// only with the switch on, to a contact; someone blocked reaches no app of the account, and is let
+// through again.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -13,7 +14,7 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
+import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, sendXmppTyping, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
 import { NS_FALLBACK, NS_REPLY, reactionsShown, react, replyParts, retract, targetOf, toggled, withoutQuote, wroteIt } from '../lib/xmpp-actions';
 import { joinXmppGroup } from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
@@ -155,6 +156,40 @@ test('whether they write shows a while, and Erevos says nothing of its own writi
   const before = server.seen.length;
   await sendXmppText(ann.state, ann.connection, `ben@${DOMAIN}`, 'x');
   assert.ok(server.seen.length > before && server.seen.slice(before).every((s) => !s.includes('chatstates')));
+});
+
+test('with the switch on, writing is said to a contact who sees our presence, never kept, never to others', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const cleo = await person(server, 'cleo');
+  const dan = await person(server, 'dan');
+  const people: Person[] = [cleo, dan];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  const toDan = `dan@${DOMAIN}`;
+  // Off at first.
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, toDan, true), false);
+  cleo.state.sayTyping = true;
+  // Not to someone who does not see our presence.
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, toDan, true), false);
+  await addXmppContact(cleo.state, cleo.connection, toDan);
+  await settle(people);
+  await addXmppContact(dan.state, dan.connection, `cleo@${DOMAIN}`);
+  await settle(people);
+  const before = server.seen.length;
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, toDan, true), true);
+  await settle(people);
+  assert.equal(xmppTyping(`cleo@${DOMAIN}`), true);
+  const said = server.seen.slice(before).filter((s) => s.includes('chatstates'));
+  assert.ok(said.length > 0 && said.every((s) => s.includes('no-store') && !s.includes('<body')));
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, toDan, false), true);
+  await settle(people);
+  assert.equal(xmppTyping(`cleo@${DOMAIN}`), false);
+  // Not to someone blocked, nor in a group.
+  cleo.state.blocked = [toDan];
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, toDan, true), false);
+  cleo.state.blocked = [];
+  cleo.state.chats['lounge@conference.example.org'] = { jid: 'lounge@conference.example.org', messages: [], unread: 0, lastAt: 0, room: {} as never };
+  cleo.state.roster['lounge@conference.example.org'] = { jid: 'lounge@conference.example.org', subscription: 'both' };
+  assert.equal(await sendXmppTyping(cleo.state, cleo.connection, 'lounge@conference.example.org', true), false);
 });
 
 test('in a channel, reactions, answers and takings back name a message by the room\'s id', { skip: !coreReady }, async (t) => {

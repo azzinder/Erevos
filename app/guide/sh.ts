@@ -1526,8 +1526,9 @@ između.
   razgovoru: Matrix server vidi koja je poruka dobila koju reakciju i od koga. Samo vi možete mijenjati svoje poruke, a
   izmijenjena piše **Uređeno**. **Obriši** povlači vašu poruku za sve u razgovoru, kad potvrdite; ne može se poništiti,
   a razgovor zadržava red koji kaže da je obrisana.
-- **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to nikad ne kaže
-  za vas, jer bi tako Matrix server znao svaki put kad pišete.
+- **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
+  ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
+  pa server saznaje svaki put kad pišete.
 - **Ranije poruke:** razgovor s više historije na Matrix serveru gore prikazuje **Učitaj ranije poruke**; svaki dodir
   donosi još, a razgovor ostaje tamo gdje ste čitali. Poruka čiji ključ još nije stigao prikazuje se zaključana.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
@@ -1610,8 +1611,9 @@ aplikacije: nikakav most nije između.
   izmjenu kao novu poruku. Riječi odgovora i izmjene šifrovane su kao razgovor, ali na koju poruku se odnosi odgovor,
   izmjena, reakcija ili brisanje, i emotikon reakcije, idu onako kako ih te aplikacije šalju, nešifrovano, pa ih XMPP
   serveri vide. U grupi se na poruku može odgovoriti, reagovati ili je obrisati kad je grupa vrati.
-- **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to nikad ne
-  javlja o vama, jer bi to svaki put kad pišete rekao XMPP serveru.
+- **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to javlja o vama
+  samo ako uključite **Reci kad pišem** na ekranu XMPP, i samo kontaktu koji vidi vašu prisutnost, nikad u grupi;
+  isprva je isključeno, jer ide preko XMPP servera nešifrirano, pa server saznaje svaki put kad pišete.
 - **Blokiranje:** **Blokiraj**, na dnu razgovora, sprečava da poruke, pozivi i zahtjevi te osobe stignu na vaš XMPP
   račun, u bilo kojoj njegovoj aplikaciji, kako to radi XMPP server (XEP-0191); ona za to ne saznaje. **Odblokiraj**
   je ponovo propušta. Ko je blokiran u drugoj aplikaciji računa, blokiran je i ovdje.

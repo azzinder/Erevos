@@ -109,4 +109,7 @@ export const xmpp: Record<string, string> = {
   "Block {name}?": "{name} blockieren?",
   "Their messages, calls and requests no longer reach your XMPP account, in any of its apps. They are not told.": "Ihre Nachrichten, Anrufe und Anfragen erreichen dein XMPP-Konto nicht mehr, in keiner seiner Apps. Sie erfährt es nicht.",
   "Your XMPP server cannot block anyone.": "Dein XMPP-Server kann niemanden blockieren.",
+  "Say when I am writing": "Sagen, wenn ich schreibe",
+  "The others see “typing…” while you write. It goes through the {server} server not encrypted, so the server learns each time you write.": "Die anderen sehen „schreibt…“, während du schreibst. Es geht unverschlüsselt über den {server}-Server, der Server erfährt also jedes Mal, wenn du schreibst.",
+  "The others do not see when you write. You still see when they do, if their app says it.": "Die anderen sehen nicht, wann du schreibst. Du siehst weiterhin, wann sie schreiben, wenn ihre App es sagt.",
 };

@@ -263,6 +263,14 @@ export class Homeserver {
       this.add(id, user, 'm.room.member', { membership: 'join' }, user);
       return { status: 200, json: { room_id: id } };
     }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/typing\/([^/]+)$/)) && request.method === 'PUT') {
+      const id = room(m[1]);
+      // Only of oneself, and only in a room one is in, as homeservers allow.
+      if (decodeURIComponent(m[2]) !== user || this.membership(id, user) !== 'join') return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+      const others = (this.typing.get(id) ?? []).filter((who) => who !== user);
+      this.typing.set(id, body.typing === true ? [...others, user] : others);
+      return { status: 200, json: {} };
+    }
     if ((m = path.match(/^\/rooms\/([^/]+)\/members$/))) {
       const id = room(m[1]);
       const latest = new Map<string, Json>();

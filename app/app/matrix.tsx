@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
+import { SayTypingSwitch } from '../components/say-typing';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { doorIsOpen } from '../lib/closed-notices';
@@ -20,6 +21,7 @@ import {
   matrixSetUpRecovery,
   matrixSignIn,
   matrixUnlock,
+  matrixSetSayTyping,
   matrixSignOut,
   matrixStartChat,
   matrixVerifications,
@@ -263,6 +265,10 @@ export default function MatrixScreen() {
         <Text variant="caption" tone="muted">
           {t('A public group may not be encrypted: its screen says so. Everyone in it, and the Matrix servers, can then read it.')}
         </Text>
+      </Card>
+
+      <Card>
+        <SayTypingSwitch on={!!state.sayTyping} server="Matrix" onChange={(on) => void run(() => matrixSetSayTyping(on))} />
       </Card>
 
       <SectionTitle title={t('Security Key')} />

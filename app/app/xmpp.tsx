@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { SayTypingSwitch } from '../components/say-typing';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
@@ -12,7 +13,7 @@ import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
 import { xmppThroughTor } from '../lib/xmpp-net';
 import { fingerprint } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
+import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -328,6 +329,10 @@ export default function XmppScreen() {
           </Card>
         </Pressable>
       ))}
+
+      <Card>
+        <SayTypingSwitch on={!!state.sayTyping} server="XMPP" onChange={(on) => void run(() => xmppSetSayTyping(on))} />
+      </Card>
 
       <SectionTitle title={t('This device')} />
       <Card>

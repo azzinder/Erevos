@@ -1655,7 +1655,8 @@ Element : aucun pont ne se met entre les deux.
   discussion, une fois que tu confirmes ; on ne peut pas l’annuler, et la discussion garde une ligne disant qu’il a été
   supprimé.
 - **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
-  **écrit…**. Erevos ne le dit jamais de toi : le serveur Matrix saurait alors chaque fois que tu écris.
+  **écrit…**. Erevos ne le dit de toi que si tu actives **Dire quand j’écris** sur l’écran Matrix ; c’est désactivé au
+  départ, car cela passe par le serveur Matrix sans chiffrement, donc le serveur sait chaque fois que tu écris.
 - **Messages précédents :** une discussion qui a plus d’historique sur le serveur Matrix affiche **Charger les messages
   précédents** en haut ; chaque appui en rapporte d’autres, et la discussion reste là où tu lisais. Un message dont la
   clé n’est pas encore arrivée s’affiche verrouillé.
@@ -1751,7 +1752,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   chiffrés, si bien que les serveurs XMPP les voient. Dans un groupe, un message peut être répondu, recevoir une
   réaction ou être supprimé une fois que le groupe l’a renvoyé.
 - **Écriture :** quand l’app de l’autre personne dit qu’elle écrit, **écrit…** s’affiche sous la discussion. Erevos ne
-  le dit jamais de toi, car cela dirait au serveur XMPP chaque fois que tu écris.
+  le dit de toi que si tu actives **Dire quand j’écris** sur l’écran XMPP, et seulement à un contact qui voit ta
+  présence, jamais dans un groupe ; c’est désactivé au départ, car cela passe par le serveur XMPP sans chiffrement,
+  donc le serveur sait chaque fois que tu écris.
 - **Bloquer :** **Bloquer**, en bas d’une discussion, empêche les messages, appels et demandes de cette personne
   d’atteindre ton compte XMPP, dans toutes ses applis, comme le fait le serveur XMPP (XEP-0191) ; elle n’est pas
   prévenue. **Débloquer** la laisse passer à nouveau. Quelqu’un bloqué dans une autre appli du compte l’est ici aussi.

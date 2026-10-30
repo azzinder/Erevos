@@ -1455,8 +1455,9 @@ between.
   Matrix server sees which message got which reaction, and from whom. Only you can change your own messages, and a
   changed one says **Edited**. **Delete** takes a message of yours back for everyone in the chat, once you confirm; it
   cannot be undone, and the chat keeps a line saying it was deleted.
-- **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos never
-  says it of you, as that would tell the Matrix server each time you write.
+- **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
+  it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
+  the Matrix server not encrypted, so the server learns each time you write.
 - **Earlier messages:** a chat with more history on the Matrix server shows **Load earlier messages** at its top; each
   tap fetches more, and the chat stays where you were reading. A message whose key has not come yet shows as locked.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
@@ -1539,8 +1540,10 @@ bridge sits in between.
   The words of a reply and of a change are encrypted as the chat is, but which message a reply, change, reaction or
   deletion is about, and a reaction's emoji, go as those apps send them, not encrypted, so the XMPP servers see them. In
   a group, a message can be answered, reacted to or deleted once the group has passed it back.
-- **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos never says
-  it of you, as that would tell the XMPP server each time you write.
+- **Writing:** when the other person's app says they are writing, **typing…** shows under the chat. Erevos says it of
+  you only if you turn on **Say when I am writing** on the XMPP screen, and only to a contact who sees your presence,
+  never in a group; it is off at first, as it goes through the XMPP server not encrypted, so the server learns each
+  time you write.
 - **Blocking:** **Block**, at the bottom of a chat, stops that person's messages, calls and requests from reaching your
   XMPP account, in any of its apps, as the XMPP server does it (XEP-0191); they are not told. **Unblock** lets them
   through again. Someone blocked in another app of the account is blocked here too.

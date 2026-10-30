@@ -157,6 +157,8 @@ export type MatrixState = {
   push?: MatrixPush;
   /** The restore of a backup this account was made after (lib/matrix-store.ts): '' for none. */
   restored?: string;
+  /** Whether the others are told when we write (m.typing): off unless turned on, as the homeserver sees it. */
+  sayTyping?: true;
 };
 
 // The homeserver's answer to one request.
@@ -637,7 +639,7 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
 }
 
 // Who writes in each room now, by account and room, and since when the homeserver said it. Erevos
-// shows it and never says it of us: that would tell the homeserver each time one writes.
+// says it of us only when the account says so (sendTyping), as the homeserver learns each time one writes.
 const typingIn = new Map<string, { who: string[]; at: number }>();
 const typingListeners = new Set<() => void>();
 /** How long what the homeserver last said of who writes is trusted, when nothing new came. */
@@ -661,6 +663,16 @@ export function matrixTyping(state: MatrixState, roomId: string, now = Date.now(
 export function onMatrixTyping(listener: () => void): () => void {
   typingListeners.add(listener);
   return () => typingListeners.delete(listener);
+}
+
+/** How long the homeserver shows us as writing after it was told, unless told we stopped. */
+export const MATRIX_TYPING_SAID = 15_000;
+
+/** Tells a room we write, or stopped, when the account says so (state.sayTyping). */
+export async function sendTyping(state: MatrixState, roomId: string, typing: boolean): Promise<boolean> {
+  if (!state.sayTyping || !state.rooms[roomId] || state.rooms[roomId].invitedBy) return false;
+  await call(state, 'PUT', `/rooms/${enc(roomId)}/typing/${enc(state.userId)}`, typing ? { typing: true, timeout: MATRIX_TYPING_SAID } : { typing: false });
+  return true;
 }
 
 function nameFromMembers(state: MatrixState, room: MatrixRoom): string {

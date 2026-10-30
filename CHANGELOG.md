@@ -44,10 +44,14 @@ On main, not released yet:
   go encrypted as the chat is; which message each is about, and a reaction's emoji, go as those apps send them, not
   encrypted. Only a message's writer may change or take it back (in a group, by their address when the room says it,
   else by their name there); in a group, a reaction, a reply and a deletion name the message by the room's id
-  (XEP-0359, kept as `sid`). **typing…** shows while the other person's app says they write (XEP-0085); Erevos never
-  sends it. See [XMPP](#xmpp).
+  (XEP-0359, kept as `sid`). **typing…** shows while the other person's app says they write (XEP-0085). See [XMPP](#xmpp).
 - **See who is writing in a Matrix chat**: `m.typing` from the sync's `ephemeral` part shows **typing…** under the
-  chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). Erevos never sends it. See [Matrix](#matrix).
+  chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). See [Matrix](#matrix).
+- **Say when I am writing** (XMPP and Matrix): a switch on each account's screen, off at first, so the others see
+  **typing…** while you write (`components/say-typing.tsx`): XEP-0085 `composing`/`paused` with `no-store`, only to a
+  contact who sees your presence and never in a group (`sendXmppTyping`), and Matrix `PUT /rooms/{id}/typing`
+  (`sendTyping`). Said at most every 10 seconds, stopped 5 seconds after the last key. It goes through the server not
+  encrypted, which the switch says. See [XMPP](#xmpp) and [Matrix](#matrix).
 - **Block someone on XMPP**: **Block** / **Unblock** at the bottom of an XMPP chat, through the server (XEP-0191,
   `blockXmpp` in `lib/xmpp.ts`), so every app of the account is spared; the block list is read at each sign-in and
   follows the server's pushes from the account's other apps; what the archive still holds of someone blocked, and their

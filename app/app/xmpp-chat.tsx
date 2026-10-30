@@ -9,6 +9,7 @@ import { Quote } from '../components/message-parts';
 
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
+import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { ask, confirm } from '../lib/alert';
@@ -51,6 +52,7 @@ import {
   xmppSendFile,
   xmppSetNotify,
   xmppSetPlain,
+  xmppTyped,
   type XmppOutgoingFile,
 } from '../lib/xmpp-store';
 import { checkedChatNotify } from '../lock/chat-notify';
@@ -82,7 +84,7 @@ import { useColors } from '../theme/context';
 // (lib/xmpp-actions.ts). An answer shows the message it is to above its words; a message changed
 // says so, and one taken back is only marked as such. The reactions are under it, tapped to react
 // the same or take ours back. While the other person writes, their app may say so, and it shows;
-// Erevos never says it of us.
+// we are said to write only when the account says so, never in a group (components/say-typing.tsx).
 
 const MARKS = { sent: '✓', received: '✓✓', read: '✓✓✓' } as const;
 
@@ -118,6 +120,8 @@ export default function XmppChatScreen() {
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
   const sendVoice = useRef<(audio: Uint8Array) => Promise<void>>(async () => undefined);
   const voice = useVoiceCapture({ send: (audio) => sendVoice.current(audio), say: setNote });
+  // Tells the contact we write, only when the account says so (app/xmpp.tsx); never in a group.
+  const sayTyping = useSayTyping(!!now.state?.sayTyping && !!jid && !now.state.chats[jid]?.room, (typing) => jid && xmppTyped(jid, typing));
   // Counts the changes of the group calls, so a call going on in the group shows as it starts and ends.
   const [, setCalls] = useState(0);
 
@@ -241,6 +245,7 @@ export default function XmppChatScreen() {
     }
     setDraft('');
     setReplyId(null);
+    sayTyping.sent();
     void send(text, answered?.id);
   }
 
@@ -468,7 +473,17 @@ export default function XmppChatScreen() {
       {answered ? <Quote name={writerOf(answered)} line={lineOf(answered)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Row>
-        <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={changed ? t('Edit message') : t('Message')} />
+        <Input
+          style={{ flex: 1 }}
+          value={draft}
+          onChangeText={(text) => {
+            setDraft(text);
+            sayTyping.typed(text);
+          }}
+          multiline
+          placeholder={t('Message')}
+          accessibilityLabel={changed ? t('Edit message') : t('Message')}
+        />
         <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
       <Row>
