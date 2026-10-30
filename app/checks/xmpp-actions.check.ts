@@ -14,7 +14,8 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, sendXmppTyping, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
+import { avatarOf, fetchXmppAvatar } from '../lib/xmpp-avatar';
+import { addXmppContact, blockXmpp, changeXmppText, isBlocked, onXmppTyping, reactXmpp, replyXmppText, retractXmpp, sendXmppText, sendXmppTyping, setXmppAvatar, xmppTyping, type XmppConnection, type XmppState } from '../lib/xmpp';
 import { NS_FALLBACK, NS_REPLY, reactionsShown, react, replyParts, retract, targetOf, toggled, withoutQuote, wroteIt } from '../lib/xmpp-actions';
 import { joinXmppGroup } from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
@@ -269,4 +270,33 @@ test('someone blocked reaches no app of the account, and is let through again', 
   await settle(people);
   const now = ann.state.chats[toBen] as XmppState['chats'][string] | undefined;
   assert.deepEqual(now?.messages.map((m) => m.text), ['now?']);
+});
+
+test('a profile picture is told to the contacts, fetched on its note and checked against its SHA-1', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const eva = await person(server, 'eva');
+  const fay = await person(server, 'fay');
+  const people: Person[] = [eva, fay];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  await addXmppContact(eva.state, eva.connection, `fay@${DOMAIN}`);
+  await settle(people);
+  await addXmppContact(fay.state, fay.connection, `eva@${DOMAIN}`);
+  await settle(people);
+  const picture = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4, 5]);
+  await setXmppAvatar(eva.state, eva.connection, { bytes: picture, type: 'image/jpeg' });
+  await settle(people);
+  const told = fay.state.avatars?.[`eva@${DOMAIN}`];
+  assert.ok(told && /^[0-9a-f]{40}$/.test(told.id) && told.type === 'image/jpeg');
+  assert.deepEqual(eva.state.avatars?.[`eva@${DOMAIN}`], told);
+  assert.deepEqual([...(await fetchXmppAvatar(fay.connection, `eva@${DOMAIN}`, told))], [...picture]);
+  // One whose bytes are not what its note names is refused.
+  await assert.rejects(fetchXmppAvatar(fay.connection, `eva@${DOMAIN}`, { id: 'a'.repeat(40), type: 'image/jpeg' }));
+  // A note with an address instead of bytes, or too large, is none here.
+  assert.equal(avatarOf(el('metadata', {}, el('info', { id: told.id, type: 'image/png', url: 'https://example.org/a.png' }))), null);
+  assert.equal(avatarOf(el('metadata', {}, el('info', { id: told.id, type: 'image/png', bytes: 9_999_999 }))), null);
+  assert.equal(avatarOf(el('metadata', {})), null);
+  // Taking it away tells them too.
+  await setXmppAvatar(eva.state, eva.connection, null);
+  await settle(people);
+  assert.equal(fay.state.avatars?.[`eva@${DOMAIN}`], undefined);
 });

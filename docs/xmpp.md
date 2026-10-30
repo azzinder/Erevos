@@ -489,6 +489,25 @@ come back and that those of the phone it is restored on go. Not yet on a phone.
   at first, as it tells the server each time one writes; only in a chat with one person who sees our presence
   (`sendXmppTyping`), never in a group.
 
+## Running a group
+
+An admin (`room.admin`, from our own presence) sets the subject with a `subject` message, takes a member out or bars
+them with an `admin` IQ (affiliation `none` or `outcast`; in a channel without a member list, role `none` by nick), and
+the owner (`room.owner`) renames the group through its settings form (`muc#roomconfig_roomname`, also kept in our
+bookmark) and makes members admins (affiliation `admin`/`member`). An admin cannot take out another admin; the server
+enforces it too. A private group's messages are written with OMEMO to `room.members`, so a member taken out stops
+receiving them from then on.
+
+## Profile pictures
+
+XEP-0084, as Conversations, Dino, Gajim, Monal and Kaidan keep them (`lib/xmpp-avatar.ts`): the picture is an item of
+`urn:xmpp:avatar:data` in the account's PEP, named by the SHA-1 of its bytes, and `urn:xmpp:avatar:metadata` says its
+type and size. Erevos asks for changes of the note (`urn:xmpp:avatar:metadata+notify` in its capabilities), keeps what
+it said in `state.avatars`, and fetches the bytes only when a picture is shown (`xmppAvatar` in `lib/xmpp-store.ts`),
+checking them against the SHA-1 and keeping them in memory only. A note with a `url` instead of bytes, or over 256 KB,
+is none. **Choose a photo** publishes the data and then the note; **Remove** publishes an empty note. Nothing is
+encrypted: the server sees the picture.
+
 ## Blocking
 
 XEP-0191 on the account's server: `blockXmpp` blocks or unblocks one address; the block list is fetched at each

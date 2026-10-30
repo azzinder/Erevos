@@ -1458,6 +1458,10 @@ between.
 - **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
   it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
   the Matrix server not encrypted, so the server learns each time you write.
+- **Profile pictures:** a Matrix room, or the person in a chat with one person, shows their picture in the chat list,
+  and so does an XMPP contact. **Choose a photo**, on the Matrix screen, sets yours for your contacts; **Remove**
+  takes it away. Pictures are not encrypted in any Matrix or XMPP app: the server sees them, and your contacts see
+  yours.
 - **Earlier messages:** a chat with more history on the Matrix server shows **Load earlier messages** at its top; each
   tap fetches more, and the chat stays where you were reading. A message whose key has not come yet shows as locked.
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send; slide left
@@ -1544,6 +1548,9 @@ bridge sits in between.
   you only if you turn on **Say when I am writing** on the XMPP screen, and only to a contact who sees your presence,
   never in a group; it is off at first, as it goes through the XMPP server not encrypted, so the server learns each
   time you write.
+- **Profile pictures:** a Matrix room, or the person in a chat with one person, shows their picture in the chat list,
+  and so does an XMPP contact. **Choose a photo**, on the XMPP screen, sets yours for your contacts; **Remove** takes
+  it away. Pictures are not encrypted in any Matrix or XMPP app: the server sees them, and your contacts see yours.
 - **Blocking:** **Block**, at the bottom of a chat, stops that person's messages, calls and requests from reaching your
   XMPP account, in any of its apps, as the XMPP server does it (XEP-0191); they are not told. **Unblock** lets them
   through again. Someone blocked in another app of the account is blocked here too.
@@ -1568,6 +1575,11 @@ bridge sits in between.
   to groups**, with **Join** and **Decline**; an invitation from anyone else is not shown. Your groups follow your
   account's other XMPP apps through its bookmarks: a group joined there is joined here, and **Leave the group** leaves it
   there too. A channel tells only of messages that name you.
+- **Running a group:** the admins of a group see **Run the group** in its screen. They set its **Subject**; its owner
+  can also **Rename** it. In a private group, each member has **Take out** (the group's messages no longer go to them,
+  and an admin can add them again) and **Bar** (they cannot join again until an admin lets them); the owner can **Make
+  admin** a member, or **Remove as admin**. In a channel, **Run the group** lists who is in it, each with **Take
+  out**. Admins cannot take out other admins; only the owner can.
 - **Calls:** the two tiles at the top of a chat call the person, by voice or with video, on the same call screen as
   Erevos's own calls, and their calls ring here the same way, while this space is open; a call from someone not in your
   contacts only shows as missed. It works with apps that call as Conversations does (Jingle, rung with XEP-0353). The

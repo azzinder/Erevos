@@ -96,7 +96,9 @@ export type MatrixRoom = {
   /** Its name, or for a chat with one person, theirs. */
   name: string;
   /** Members by their Matrix ID: 'join' or 'invite', with their display name. */
-  members: Record<string, { membership: 'join' | 'invite'; name?: string }>;
+  members: Record<string, { membership: 'join' | 'invite'; name?: string; avatar?: string }>;
+  /** Its picture (m.room.avatar), an mxc:// address; members' are theirs (avatar_url). */
+  avatar?: string;
   encrypted: boolean;
   direct: boolean;
   unread: number;
@@ -159,6 +161,8 @@ export type MatrixState = {
   restored?: string;
   /** Whether the others are told when we write (m.typing): off unless turned on, as the homeserver sees it. */
   sayTyping?: true;
+  /** Our profile picture, an mxc:// address, as last set or fetched. */
+  avatar?: string;
 };
 
 // The homeserver's answer to one request.
@@ -574,6 +578,31 @@ function roomOf(state: MatrixState, id: string): MatrixRoom {
   return state.rooms[id];
 }
 
+/** An mxc:// address as one can be, or none. */
+function mxcOf(value: unknown): string | undefined {
+  return typeof value === 'string' && /^mxc:\/\/[^/]+\/[^/?#]+$/.test(value) ? value : undefined;
+}
+
+/** A room's picture: its own, or in a chat with one person, theirs. */
+export function roomAvatar(state: MatrixState, room: MatrixRoom): string | undefined {
+  if (room.avatar) return room.avatar;
+  if (!room.direct) return undefined;
+  const others = Object.entries(room.members).filter(([who]) => who !== state.userId);
+  return others.length === 1 ? others[0][1].avatar : undefined;
+}
+
+/** Puts our profile picture on the homeserver (an mxc:// address from an upload), or takes it away with ''. */
+export async function setOwnAvatar(state: MatrixState, mxc: string): Promise<void> {
+  await call(state, 'PUT', `/profile/${enc(state.userId)}/avatar_url`, { avatar_url: mxc });
+  state.avatar = mxc || undefined;
+}
+
+/** Our profile picture as the homeserver has it now. */
+export async function fetchOwnAvatar(state: MatrixState): Promise<void> {
+  const profile = await call(state, 'GET', `/profile/${enc(state.userId)}`);
+  state.avatar = mxcOf(profile.avatar_url);
+}
+
 function takeState(room: MatrixRoom, event: Json): void {
   const content = (event.content as Json | undefined) ?? {};
   switch (event.type) {
@@ -583,10 +612,13 @@ function takeState(room: MatrixRoom, event: Json): void {
     case 'm.room.encryption':
       if (content.algorithm === MEGOLM) room.encrypted = true;
       break;
+    case 'm.room.avatar':
+      room.avatar = mxcOf(content.url);
+      break;
     case 'm.room.member': {
       const who = String(event.state_key);
       if (content.membership === 'join' || content.membership === 'invite') {
-        room.members[who] = { membership: content.membership, name: typeof content.displayname === 'string' ? content.displayname : undefined };
+        room.members[who] = { membership: content.membership, name: typeof content.displayname === 'string' ? content.displayname : undefined, avatar: mxcOf(content.avatar_url) };
         if (content.is_direct === true) room.direct = true;
       } else delete room.members[who];
       break;

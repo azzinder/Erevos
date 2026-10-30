@@ -1689,6 +1689,10 @@ Element: Keine Brücke sitzt dazwischen.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
   sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
   aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
+- **Profilbilder:** Ein Matrix-Raum, oder die Person in einem Chat mit einer Person, zeigt sein Bild in der Chatliste,
+  ebenso ein XMPP-Kontakt. **Foto wählen** auf dem Matrix-Bildschirm setzt deins für deine Kontakte; **Entfernen**
+  nimmt es weg. Bilder sind in keiner Matrix- oder XMPP-App verschlüsselt: der Server sieht sie, und deine Kontakte
+  sehen deins.
 - **Frühere Nachrichten:** Ein Chat mit mehr Verlauf auf dem Matrix-Server zeigt oben **Frühere Nachrichten laden**;
   jedes Tippen holt weitere, und der Chat bleibt dort, wo du gelesen hast. Eine Nachricht, deren Schlüssel noch nicht
   kam, erscheint gesperrt.
@@ -1787,6 +1791,10 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos meldet es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem XMPP-Bildschirm einschaltest, und nur
   einem Kontakt, der deine Anwesenheit sieht, nie in einer Gruppe; anfangs ist es aus, da es unverschlüsselt über den
   XMPP-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
+- **Profilbilder:** Ein Matrix-Raum, oder die Person in einem Chat mit einer Person, zeigt sein Bild in der Chatliste,
+  ebenso ein XMPP-Kontakt. **Foto wählen** auf dem XMPP-Bildschirm setzt deins für deine Kontakte; **Entfernen** nimmt
+  es weg. Bilder sind in keiner Matrix- oder XMPP-App verschlüsselt: der Server sieht sie, und deine Kontakte sehen
+  deins.
 - **Blockieren:** **Blockieren**, unten in einem Chat, hält Nachrichten, Anrufe und Anfragen dieser Person von deinem
   XMPP-Konto fern, in jeder seiner Apps, wie es der XMPP-Server tut (XEP-0191); sie erfährt es nicht. **Blockierung
   aufheben** lässt sie wieder durch. Wer in einer anderen App des Kontos blockiert wurde, ist auch hier blockiert.
@@ -1815,6 +1823,12 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   von jemand anderem wird nicht gezeigt. Deine Gruppen folgen den anderen XMPP-Apps deines Kontos über seine
   Lesezeichen: Eine Gruppe, der du dort beitrittst, erscheint auch hier, und **Gruppe verlassen** verlässt sie dort
   ebenfalls. Ein Kanal meldet nur Nachrichten, die deinen Namen nennen.
+- **Eine Gruppe leiten:** Die Admins einer Gruppe sehen auf ihrem Bildschirm **Die Gruppe leiten**. Sie setzen den
+  **Betreff**; der Besitzer kann sie auch **umbenennen**. In einer privaten Gruppe hat jedes Mitglied **Entfernen**
+  (die Nachrichten der Gruppe gehen nicht mehr an die Person, ein Admin kann sie wieder hinzufügen) und **Sperren**
+  (sie kann nicht wieder beitreten, bis ein Admin es erlaubt); der Besitzer kann ein Mitglied **zum Admin machen**
+  oder **als Admin entfernen**. In einem Kanal listet **Die Gruppe leiten** auf, wer drin ist, jeweils mit
+  **Entfernen**. Admins können keine anderen Admins entfernen; nur der Besitzer.
 - **Anrufe:** Die zwei Kacheln oben im Chat rufen die Person an, mit Sprache oder mit Video, auf demselben
   Anrufbildschirm wie Erevos' eigene Anrufe, und ihre Anrufe klingeln hier genauso, solange dieser Bereich offen ist;
   ein Anruf von jemandem, der nicht in deinen Kontakten ist, zeigt sich nur als verpasst. Es klappt mit Apps, die so

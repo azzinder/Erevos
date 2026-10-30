@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
+import { OwnPicture } from '../components/network-picture';
 import { SayTypingSwitch } from '../components/say-typing';
+import { pickAvatar } from '../lib/pick-avatar';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { doorIsOpen } from '../lib/closed-notices';
@@ -21,6 +23,7 @@ import {
   matrixSetUpRecovery,
   matrixSignIn,
   matrixUnlock,
+  matrixSetAvatar,
   matrixSetSayTyping,
   matrixSignOut,
   matrixStartChat,
@@ -265,6 +268,21 @@ export default function MatrixScreen() {
         <Text variant="caption" tone="muted">
           {t('A public group may not be encrypted: its screen says so. Everyone in it, and the Matrix servers, can then read it.')}
         </Text>
+      </Card>
+
+      <Card>
+        <OwnPicture
+          network="matrix"
+          of={state.avatar}
+          busy={busy}
+          onPick={() =>
+            void run(async () => {
+              const bytes = await pickAvatar('photos');
+              if (bytes) await matrixSetAvatar({ bytes, mime: 'image/jpeg' });
+            })
+          }
+          onRemove={() => void run(() => matrixSetAvatar(null))}
+        />
       </Card>
 
       <Card>

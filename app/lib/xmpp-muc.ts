@@ -44,8 +44,12 @@ export type XmppRoom = {
   /** It keeps an archive, as it says. */
   mam?: boolean;
   subject?: string;
-  /** We own or run it, so we may add people. */
+  /** We own or run it, so we may add people, take them out and set its subject. */
   admin?: boolean;
+  /** We own it, so we may also rename it and make admins. */
+  owner?: boolean;
+  /** Its admins and owners, by address, as far as the room lets us see them. */
+  admins?: string[];
   /** In it now, on this connection. */
   joined?: boolean;
   /** Why we are not in it, as the room said. */
@@ -218,6 +222,7 @@ function ownNick(state: XmppState): string {
 /** A private group's members, admins and owners, as far as the room lets us see them. */
 async function fetchMembers(connection: XmppConnection, room: XmppRoom, jid: string): Promise<void> {
   const found = new Set<string>();
+  const running = new Set<string>();
   let any = false;
   for (const affiliation of ['owner', 'admin', 'member']) {
     try {
@@ -225,13 +230,17 @@ async function fetchMembers(connection: XmppConnection, room: XmppRoom, jid: str
       for (const item of children(child(answer, 'query', NS_MUC_ADMIN), 'item')) {
         const member = bare(item.attrs.jid ?? '');
         if (member.includes('@')) found.add(member);
+        if (member.includes('@') && ['owner', 'admin'].includes(affiliation)) running.add(member);
       }
       any = true;
     } catch {
       // Not ours to see: those in it say who they are.
     }
   }
-  if (any) room.members = [...found].sort();
+  if (any) {
+    room.members = [...found].sort();
+    room.admins = [...running].sort();
+  }
 }
 
 /** What the room's archive keeps after the last message seen, or its newest page the first time. */
@@ -321,6 +330,7 @@ export async function takeRoomPresence(state: XmppState, connection: XmppConnect
     room.joined = true;
     delete room.problem;
     room.admin = ['owner', 'admin'].includes(item?.attrs.affiliation ?? '') || undefined;
+    room.owner = item?.attrs.affiliation === 'owner' || undefined;
   }
   return true;
 }
@@ -495,6 +505,72 @@ export async function addXmppGroupPeople(state: XmppState, connection: XmppConne
     await connection.send(el('message', { to: jid, id: newXmppId() }, el('x', { xmlns: NS_MUC_USER }, el('invite', { to: person }))));
   }
   if (room.private) room.members = [...new Set([...room.members, ...who])].sort();
+}
+
+function ownedRoom(state: XmppState, jid: string, owner = false): XmppRoom {
+  const room = roomOf(state, jid);
+  if (!room) throw new XmppError(t('This group is not here any more.'));
+  if (!room.joined) throw new XmppError(t('Not in this group yet: joining it.'));
+  if (owner ? !room.owner : !room.admin) throw new XmppError(owner ? t('Only the owner of this group may do that.') : t('Only the admins of this group may do that.'));
+  return room;
+}
+
+/** Sets the group's subject, the line under its name; empty takes it away. Its admins only. */
+export async function setXmppGroupSubject(state: XmppState, connection: XmppConnection, jid: string, subject: string): Promise<void> {
+  const room = ownedRoom(state, jid);
+  const text = subject.trim().slice(0, 300);
+  await connection.send(el('message', { to: jid, type: 'groupchat', id: newXmppId() }, el('subject', {}, text)));
+  room.subject = text || undefined;
+}
+
+/** Renames the group: its settings, and our bookmark of it. Its owner only. */
+export async function renameXmppGroup(state: XmppState, connection: XmppConnection, jid: string, name: string): Promise<void> {
+  const room = ownedRoom(state, jid, true);
+  const title = name.trim().slice(0, 100);
+  if (!title) throw new XmppError(t('Give the group a name.'));
+  const form = child(child(await connection.iq('get', jid, el('query', { xmlns: NS_MUC_OWNER })), 'query', NS_MUC_OWNER), 'x', NS_DATA);
+  if (!children(form, 'field').some((f) => f.attrs.var === 'muc#roomconfig_roomname')) throw new XmppError(t('This group server does not let a group be renamed.'));
+  await connection.iq(
+    'set',
+    jid,
+    el(
+      'query',
+      { xmlns: NS_MUC_OWNER },
+      el('x', { xmlns: NS_DATA, type: 'submit' }, el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, `${NS_MUC}#roomconfig`)), el('field', { var: 'muc#roomconfig_roomname' }, el('value', {}, title))),
+    ),
+  );
+  room.name = title;
+  await bookmark(connection, jid, room).catch(() => undefined);
+}
+
+/**
+ * Takes someone out of the group: out of its members (a private group's messages no longer go to
+ * them), or, with `ban`, barred from joining again. In a channel without a member list, the one in
+ * it under `nick` is put out. Its admins only; the owner stays.
+ */
+export async function removeFromXmppGroup(state: XmppState, connection: XmppConnection, jid: string, who: { address?: string; nick?: string }, ban = false): Promise<void> {
+  const room = ownedRoom(state, jid);
+  const address = who.address ? bare(who.address) : '';
+  if (address === state.jid) throw new XmppError(t('To leave the group, use Leave the group.'));
+  if (address && room.admins?.includes(address) && !room.owner) throw new XmppError(t('Only the owner of this group may do that.'));
+  if (address && (room.private || ban)) {
+    await connection.iq('set', jid, el('query', { xmlns: NS_MUC_ADMIN }, el('item', { affiliation: ban ? 'outcast' : 'none', jid: address })));
+    room.members = room.members.filter((m) => m !== address);
+    room.admins = room.admins?.filter((m) => m !== address);
+    for (const [nick, real] of Object.entries(room.occupants)) if (real === address) delete room.occupants[nick];
+  } else if (who.nick) {
+    await connection.iq('set', jid, el('query', { xmlns: NS_MUC_ADMIN }, el('item', { nick: who.nick, role: 'none' })));
+    delete room.occupants[who.nick];
+  }
+}
+
+/** Makes a member an admin of the group, or an ordinary member again. Its owner only. */
+export async function setXmppGroupAdmin(state: XmppState, connection: XmppConnection, jid: string, member: string, admin: boolean): Promise<void> {
+  const room = ownedRoom(state, jid, true);
+  const who = bare(member);
+  if (!room.members.includes(who) || who === state.jid) throw new XmppError(t('This person is not a member of the group.'));
+  await connection.iq('set', jid, el('query', { xmlns: NS_MUC_ADMIN }, el('item', { affiliation: admin ? 'admin' : 'member', jid: who })));
+  room.admins = admin ? [...new Set([...(room.admins ?? []), who])].sort() : room.admins?.filter((m) => m !== who);
 }
 
 /** Leaves the group on this connection and forgets it here. */

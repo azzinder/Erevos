@@ -1567,6 +1567,10 @@ fica no meio.
   Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do Matrix; no início fica
   desligado, pois passa pelo servidor Matrix sem criptografia, então o servidor fica sabendo cada vez que você
   escreve.
+- **Fotos de perfil:** uma sala do Matrix, ou a pessoa numa conversa com uma pessoa, mostra a foto na lista de
+  conversas, e o mesmo vale para um contato do XMPP. **Escolher uma foto**, na tela do Matrix, põe a sua para seus
+  contatos; **Remover** a tira. As fotos não são criptografadas em nenhum app Matrix ou XMPP: o servidor as vê, e seus
+  contatos veem a sua.
 - **Mensagens anteriores:** uma conversa com mais histórico no servidor do Matrix mostra **Carregar mensagens
   anteriores** no alto; cada toque traz mais, e a conversa fica onde você estava lendo. Uma mensagem cuja chave ainda
   não chegou aparece bloqueada.
@@ -1659,6 +1663,10 @@ esses apps: nenhuma ponte fica no meio.
   Erevos só diz isso de você se você ativar **Avisar quando estou escrevendo** na tela do XMPP, e só para um contato
   que vê sua presença, nunca num grupo; no início fica desligado, pois passa pelo servidor XMPP sem criptografia,
   então o servidor fica sabendo cada vez que você escreve.
+- **Fotos de perfil:** uma sala do Matrix, ou a pessoa numa conversa com uma pessoa, mostra a foto na lista de
+  conversas, e o mesmo vale para um contato do XMPP. **Escolher uma foto**, na tela do XMPP, põe a sua para seus
+  contatos; **Remover** a tira. As fotos não são criptografadas em nenhum app Matrix ou XMPP: o servidor as vê, e seus
+  contatos veem a sua.
 - **Bloquear:** **Bloquear**, no fim de um chat, impede que as mensagens, chamadas e pedidos dessa pessoa cheguem à
   sua conta XMPP, em qualquer um dos apps dela, como o servidor XMPP faz (XEP-0191); ela não é avisada.
   **Desbloquear** a deixa passar de novo. Quem foi bloqueado em outro app da conta também fica bloqueado aqui.
@@ -1685,6 +1693,11 @@ esses apps: nenhuma ponte fica no meio.
   qualquer outra pessoa não é mostrado. Seus grupos acompanham os outros apps XMPP da sua conta pelos favoritos dela: um
   grupo em que você entra lá aparece aqui também, e **Sair do grupo** sai dele lá também. Um canal avisa só das
   mensagens que citam você.
+- **Gerenciar um grupo:** os admins de um grupo veem **Gerenciar o grupo** na tela dele. Eles definem o **Assunto**; o
+  dono também pode **renomeá-lo**. Num grupo privado, cada membro tem **Remover** (as mensagens do grupo não chegam
+  mais a essa pessoa, e um admin pode adicioná-la de novo) e **Banir** (ela não pode voltar até que um admin permita);
+  o dono pode **Tornar admin** um membro ou **Remover como admin**. Num canal, **Gerenciar o grupo** lista quem está
+  dentro, cada um com **Remover**. Admins não podem remover outros admins; só o dono.
 - **Chamadas:** os dois blocos no topo da conversa ligam para a pessoa, por voz ou com vídeo, na mesma tela de chamada
   das chamadas do próprio Erevos, e as chamadas dela tocam aqui do mesmo jeito, enquanto este espaço está aberto; uma
   chamada de alguém que não está nos seus contatos aparece só como perdida. Funciona com apps que ligam como o

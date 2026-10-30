@@ -41,8 +41,11 @@ import {
   sendReply,
   takeBackReaction,
   sendStateEvent,
+  fetchOwnAvatar,
+  roomAvatar,
   sendText,
   sendTyping,
+  setOwnAvatar,
   sendToDeviceSealed,
   setCallHandler,
   setMatrixHttp,
@@ -53,7 +56,7 @@ import {
   type MatrixRequest,
   type MatrixState,
 } from '../lib/matrix';
-import { ChangedFileError, decryptFile, encryptFile, fetchFile, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile } from '../lib/matrix-media';
+import { ChangedFileError, decryptFile, encryptFile, fetchFile, fetchPicture, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile, uploadPicture } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
 import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
@@ -345,6 +348,34 @@ test('we are said to write only when the account says so', { skip: !coreReady },
   assert.deepEqual(matrixTyping(bob, room.id), []);
   assert.equal(await sendTyping(alice, '!nowhere:example.org', true), false);
   server.typing.delete(room.id);
+});
+
+test('profile pictures: ours is set and fetched, a room has one, a chat with one person shows theirs', { skip: !coreReady }, async () => {
+  const alice = kept(await signIn(HS, 'alice', PASSWORD));
+  const bob = kept(await signIn(HS, 'bob', PASSWORD));
+  const picture = Uint8Array.from([0xff, 0xd8, 0xff, 1, 2, 3]);
+  const mxc = await uploadPicture(alice, picture, 'image/jpeg');
+  await setOwnAvatar(alice, mxc);
+  assert.equal(alice.avatar, mxc);
+  alice.avatar = undefined;
+  await fetchOwnAvatar(alice);
+  assert.equal(alice.avatar, mxc);
+  assert.deepEqual([...(await fetchPicture(bob, mxc))], [...picture]);
+  await setOwnAvatar(alice, '');
+  await fetchOwnAvatar(alice);
+  assert.equal(alice.avatar, undefined);
+  const group = await createGroup(alice, 'Pictures', []);
+  assert.equal(roomAvatar(alice, alice.rooms[group.id]), undefined);
+  await sendStateEvent(alice, group.id, 'm.room.avatar', '', { url: mxc });
+  await sync(alice, 0);
+  assert.equal(roomAvatar(alice, alice.rooms[group.id]), mxc);
+  // A chat with one person shows theirs; an address that is not an mxc one is none.
+  const room = await startChat(alice, bob.userId);
+  alice.rooms[room.id].members[bob.userId] = { membership: 'join', avatar: mxc };
+  assert.equal(roomAvatar(alice, alice.rooms[room.id]), mxc);
+  await sendStateEvent(alice, group.id, 'm.room.avatar', '', { url: 'https://example.org/a.png' });
+  await sync(alice, 0);
+  assert.equal(roomAvatar(alice, alice.rooms[group.id]), undefined);
 });
 
 test("a call's events reach the calls, opened: in the room, in its state, and to one device", { skip: !coreReady }, async () => {

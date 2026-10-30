@@ -28,6 +28,7 @@ import {
   sendXmppFile,
   sendXmppText,
   sendXmppTyping,
+  setXmppAvatar,
   signInXmpp,
   signOutXmpp,
   startSession,
@@ -37,8 +38,9 @@ import {
   type Taken,
   type XmppState,
 } from './xmpp';
+import { fetchXmppAvatar } from './xmpp-avatar';
 import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
-import { addXmppGroupPeople, createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup } from './xmpp-muc';
+import { addXmppGroupPeople, createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, removeFromXmppGroup, renameXmppGroup, setXmppGroupAdmin, setXmppGroupSubject } from './xmpp-muc';
 import type { connectXmpp, XmppServer } from './xmpp-net';
 
 // The open space's XMPP account as the screens use it (app/xmpp.tsx, app/xmpp-chat.tsx): loaded
@@ -266,7 +268,10 @@ export function followXmppPlaces(space: number, wanted: PlaceKey[], shown: numbe
   const was = places.shown();
   if (!places.follow(space, canXmpp() ? wanted : [], shown)) return;
   // What was fetched for the open hidden chats goes as they close.
-  if (was && !places.isShown(was)) fetched.clear();
+  if (was && !places.isShown(was)) {
+    fetched.clear();
+    pictures.clear();
+  }
   told();
 }
 
@@ -274,6 +279,7 @@ export function followXmppPlaces(space: number, wanted: PlaceKey[], shown: numbe
 export function closeXmppPlaces(): void {
   if (!places.stopAll()) return;
   fetched.clear();
+  pictures.clear();
   told();
 }
 
@@ -311,6 +317,7 @@ function start(holder: Holder, space: number, key: Uint8Array, pocket?: number):
 /** Disconnects and lets go of the account, as its space closes, and of its hidden place's. */
 export function stopXmpp(): void {
   fetched.clear();
+  pictures.clear();
   closeXmppPlaces();
   if (!live) return;
   live.stopped = true;
@@ -383,6 +390,29 @@ export function xmppTyped(jid: string, typing: boolean): void {
   const it = acting();
   if (!it?.state?.sayTyping || !it.connection?.isOpen) return;
   void sendXmppTyping(it.state, it.connection, jid, typing).catch(() => undefined);
+}
+
+/** Puts our profile picture on the server for our contacts, or takes it away with null. */
+export function xmppSetAvatar(picture: { bytes: Uint8Array; type: string } | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await setXmppAvatar(it.state, online(it), picture);
+  });
+}
+
+// Profile pictures fetched while Erevos runs, by address and SHA-1: kept in memory only.
+const pictures = fileCache(8 * 1024 * 1024);
+
+/** Someone's profile picture (ours too), as its note last said, or null when they have none or it cannot be had now. */
+export async function xmppAvatar(jid: string, where: NetworkWhere = 'space'): Promise<Uint8Array | null> {
+  const it = where === 'place' ? places.shown() : live;
+  const avatar = it?.state?.avatars?.[jid];
+  if (!it?.state || !avatar) return null;
+  const connection = it.connection;
+  return pictures.get(`${jid} ${avatar.id}`, async () => {
+    if (!connection?.isOpen) throw new Error('offline');
+    return fetchXmppAvatar(connection, jid, avatar);
+  }).catch(() => null);
 }
 
 /** Whether the others are told when we write. */
@@ -560,6 +590,30 @@ export function xmppJoinGroup(address: string, password?: string): Promise<strin
 export function xmppDeclineInvite(room: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => declineXmppInvite(it.state, it.connection, room));
+}
+
+/** Sets a group's subject (its admins). */
+export function xmppSetSubject(room: string, subject: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => setXmppGroupSubject(it.state, online(it), room, subject));
+}
+
+/** Renames a group (its owner). */
+export function xmppRenameGroup(room: string, name: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => renameXmppGroup(it.state, online(it), room, name));
+}
+
+/** Takes someone out of a group, or bars them from it with `ban` (its admins). */
+export function xmppRemoveFromGroup(room: string, who: { address?: string; nick?: string }, ban = false): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => removeFromXmppGroup(it.state, online(it), room, who, ban));
+}
+
+/** Makes a member an admin of a group, or a plain member again (its owner). */
+export function xmppSetGroupAdmin(room: string, member: string, admin: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => setXmppGroupAdmin(it.state, online(it), room, member, admin));
 }
 
 /** Adds people to a group: members of a private one, and invited. */

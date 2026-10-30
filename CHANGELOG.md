@@ -47,6 +47,16 @@ On main, not released yet:
   (XEP-0359, kept as `sid`). **typing…** shows while the other person's app says they write (XEP-0085). See [XMPP](#xmpp).
 - **See who is writing in a Matrix chat**: `m.typing` from the sync's `ephemeral` part shows **typing…** under the
   chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). See [Matrix](#matrix).
+- **Run an XMPP group**: an admin sets the subject (a `subject` message), takes members out (affiliation `none`; in a
+  channel, role `none` by nick) or bars them (`outcast`); the owner renames the group (its settings form, and the
+  bookmark) and makes members admins (`removeFromXmppGroup`, `setXmppGroupAdmin`, `renameXmppGroup` in
+  `lib/xmpp-muc.ts`). **Run the group** and the buttons under each member show only to those who may. See [XMPP](#xmpp).
+- **Profile pictures on Matrix and XMPP**: Matrix rooms and chats with one person show their picture (`m.room.avatar`,
+  members' `avatar_url`: `roomAvatar` in `lib/matrix.ts`), XMPP contacts theirs (XEP-0084, `lib/xmpp-avatar.ts`: the
+  note's SHA-1 is checked on the bytes, one at another address or over 256 KB is none), in the chat list
+  (`components/network-picture.tsx`). **Choose a photo** / **Remove** on each account's screen set ours (Matrix
+  `/profile/{user}/avatar_url` after an upload; XMPP publishes the data and the note in our PEP). Pictures are fetched
+  as shown and kept in memory only; they are not encrypted, as in every app of those networks.
 - **Say when I am writing** (XMPP and Matrix): a switch on each account's screen, off at first, so the others see
   **typing…** while you write (`components/say-typing.tsx`): XEP-0085 `composing`/`paused` with `no-store`, only to a
   contact who sees your presence and never in a group (`sendXmppTyping`), and Matrix `PUT /rooms/{id}/typing`

@@ -529,7 +529,7 @@ export class Link implements XmppLink {
         const payload = children(child(publish, 'item'))[0];
         // OMEMO 2's bundles share one node, an item each.
         server.pep.set(itemId === 'current' ? `${this.jid} ${node}` : `${this.jid} ${node} ${itemId}`, payload);
-        if (node.endsWith('.devicelist') || node === 'urn:xmpp:omemo:2:devices') {
+        if (node.endsWith('.devicelist') || node === 'urn:xmpp:omemo:2:devices' || node === 'urn:xmpp:avatar:metadata') {
           const event = (to: string) =>
             el('message', { from: this.jid, to, xmlns: 'jabber:client' }, el('event', { xmlns: 'http://jabber.org/protocol/pubsub#event' }, el('items', { node }, el('item', { id: 'current' }, payload))));
           for (const link of server.resources(this.jid)) link.push(event(this.jid));

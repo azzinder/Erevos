@@ -20,6 +20,8 @@ import {
   sendReply,
   sendText,
   sendTyping,
+  fetchOwnAvatar,
+  setOwnAvatar,
   signIn,
   signOut,
   startChat,
@@ -31,7 +33,7 @@ import {
   type MatrixState,
 } from './matrix';
 import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, unlockRecovery, type Unlocked } from './matrix-backup';
-import { fetchFile, sendFile, type OutgoingFile } from './matrix-media';
+import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } from './matrix-media';
 import {
   acceptVerification,
   cancelVerification,
@@ -205,6 +207,9 @@ async function loop(it: Live): Promise<void> {
         if (!it.pushChecked && it.holder === 'space') {
           it.pushChecked = true;
           void keepPush(it);
+          void changeAccount(it, async () => {
+            if (it.state) await fetchOwnAvatar(it.state);
+          }).catch(() => undefined);
         }
         wait = 2000;
       } catch (error) {
@@ -312,6 +317,7 @@ export function followMatrixPlaces(space: number, wanted: PlaceKey[], shown: num
 export function closeMatrixPlaces(): void {
   if (!places.stopAll()) return;
   fetched.clear();
+  pictures.clear();
   told();
 }
 
@@ -360,6 +366,7 @@ export function stopMatrix(): void {
   if (live.state) forgetVerifications(live.state);
   live = null;
   fetched.clear();
+  pictures.clear();
   told();
 }
 
@@ -446,6 +453,33 @@ export function matrixTyped(roomId: string, typing: boolean): void {
   const it = acting();
   if (!it?.state?.sayTyping) return;
   void sendTyping(it.state, roomId, typing).catch(() => undefined);
+}
+
+/** Puts our profile picture on the homeserver, or takes it away with null. */
+export function matrixSetAvatar(picture: { bytes: Uint8Array; mime: string } | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await setOwnAvatar(it.state, picture ? await uploadPicture(it.state, picture.bytes, picture.mime) : '');
+  });
+}
+
+// Profile and room pictures fetched while Erevos runs, by address: kept in memory only.
+const pictures = new Map<string, Uint8Array>();
+
+/** The picture at an mxc:// address, or null when it cannot be had now. */
+export async function matrixPicture(mxc: string, where: NetworkWhere = 'space'): Promise<Uint8Array | null> {
+  const it = where === 'place' ? places.shown() : live;
+  if (!it?.state) return null;
+  const kept = pictures.get(mxc);
+  if (kept) return kept;
+  try {
+    const bytes = await fetchPicture(it.state, mxc);
+    if (pictures.size >= 200) pictures.delete(pictures.keys().next().value as string);
+    pictures.set(mxc, bytes);
+    return bytes;
+  } catch {
+    return null;
+  }
 }
 
 /** Whether the others are told when we write. */

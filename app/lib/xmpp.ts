@@ -26,6 +26,7 @@ import {
   wroteIt,
   type Writer,
 } from './xmpp-actions';
+import { avatarOf, NS_AVATAR_META, publishXmppAvatar, removeXmppAvatar, type XmppAvatar } from './xmpp-avatar';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
 import { enterRooms, groupPeople, mentions, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
 import {
@@ -211,6 +212,8 @@ export type XmppState = {
   blocked?: string[];
   /** Whether the others are told when we write (XEP-0085): off unless turned on, as the server sees it. */
   sayTyping?: true;
+  /** Profile pictures as their notes last said (lib/xmpp-avatar.ts), by bare address, ours too. */
+  avatars?: Record<string, XmppAvatar>;
 };
 
 export class XmppError extends Error {
@@ -479,8 +482,9 @@ const CALL_FEATURES = [
   'urn:xmpp:jingle:transports:ice-udp:1',
   'urn:xmpp:jingle:apps:dtls:0',
 ];
-// `+notify` asks for changes of the device lists and of the account's own bookmarks (its groups).
-const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, `${DEVICES2_NODE}+notify`, `${NS.bookmarks}+notify`, 'http://jabber.org/protocol/muc', ...CALL_FEATURES].sort();
+// `+notify` asks for changes of the device lists, of the account's own bookmarks (its groups), and
+// of profile pictures.
+const FEATURES = [NS.caps, NS.discoInfo, NS.receipts, NS.markers, NS.ping, `${DEVICES_NODE}+notify`, `${DEVICES2_NODE}+notify`, `${NS.bookmarks}+notify`, `${NS_AVATAR_META}+notify`, 'http://jabber.org/protocol/muc', ...CALL_FEATURES].sort();
 
 /** Entity capabilities (XEP-0115): what this app can do, as a hash its contacts' servers know. */
 export function capsVer(): string {
@@ -709,6 +713,11 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
       await takeBookmarks(state, connection, items, taken);
       return;
     }
+    if (items?.attrs.node === NS_AVATAR_META && from) {
+      const item = children(items, 'item').at(-1);
+      if (item) takeAvatar(state, bare(from), avatarOf(child(item, 'metadata', NS_AVATAR_META)));
+      return;
+    }
     if (items?.attrs.node === DEVICES_NODE && from) {
       takeDeviceList(state, bare(from), devicesOf(itemOf(stanza, 'list')));
       if (bare(from) === state.jid && !devicesOf(itemOf(stanza, 'list')).includes(state.omemo.device)) {
@@ -728,6 +737,12 @@ export async function takeStanza(state: XmppState, connection: XmppConnection, s
     return;
   }
   await takeMessage(state, connection, stanza, { at: stampOf(stanza), live: true }, taken);
+}
+
+function takeAvatar(state: XmppState, jid: string, avatar: XmppAvatar | null): void {
+  const avatars = (state.avatars ??= {});
+  if (avatar) avatars[jid] = avatar;
+  else delete avatars[jid];
 }
 
 function stampOf(element: XmlElement | undefined): number {
@@ -1237,6 +1252,15 @@ export async function blockXmpp(state: XmppState, connection: XmppConnection, ji
     throw error instanceof XmppError && error.condition === 'service-unavailable' ? new XmppError(t('Your XMPP server cannot block anyone.')) : error;
   });
   takeBlocked(state, item, block ? 'block' : 'unblock', false);
+}
+
+/** Puts our profile picture on the server for our contacts (lib/xmpp-avatar.ts), or takes it away with null. */
+export async function setXmppAvatar(state: XmppState, connection: XmppConnection, picture: { bytes: Uint8Array; type: string } | null): Promise<void> {
+  try {
+    takeAvatar(state, state.jid, picture ? await publishXmppAvatar(connection, picture.bytes, picture.type) : (await removeXmppAvatar(connection), null));
+  } catch (error) {
+    throw error instanceof XmppError && ['service-unavailable', 'feature-not-implemented'].includes(error.condition) ? new XmppError(t('Your XMPP server cannot keep a profile picture.')) : error;
+  }
 }
 
 function takeRoster(state: XmppState, query: XmlElement | undefined, whole: boolean): void {

@@ -1657,6 +1657,10 @@ Element : aucun pont ne se met entre les deux.
 - **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
   **écrit…**. Erevos ne le dit de toi que si tu actives **Dire quand j’écris** sur l’écran Matrix ; c’est désactivé au
   départ, car cela passe par le serveur Matrix sans chiffrement, donc le serveur sait chaque fois que tu écris.
+- **Photos de profil :** un salon Matrix, ou la personne dans une discussion avec une personne, montre sa photo dans
+  la liste des discussions, de même qu’un contact XMPP. **Choisir une photo**, sur l’écran Matrix, met la tienne pour
+  tes contacts ; **Retirer** l’enlève. Les photos ne sont chiffrées dans aucune appli Matrix ou XMPP : le serveur les
+  voit, et tes contacts voient la tienne.
 - **Messages précédents :** une discussion qui a plus d’historique sur le serveur Matrix affiche **Charger les messages
   précédents** en haut ; chaque appui en rapporte d’autres, et la discussion reste là où tu lisais. Un message dont la
   clé n’est pas encore arrivée s’affiche verrouillé.
@@ -1755,6 +1759,10 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   le dit de toi que si tu actives **Dire quand j’écris** sur l’écran XMPP, et seulement à un contact qui voit ta
   présence, jamais dans un groupe ; c’est désactivé au départ, car cela passe par le serveur XMPP sans chiffrement,
   donc le serveur sait chaque fois que tu écris.
+- **Photos de profil :** un salon Matrix, ou la personne dans une discussion avec une personne, montre sa photo dans
+  la liste des discussions, de même qu’un contact XMPP. **Choisir une photo**, sur l’écran XMPP, met la tienne pour
+  tes contacts ; **Retirer** l’enlève. Les photos ne sont chiffrées dans aucune appli Matrix ou XMPP : le serveur les
+  voit, et tes contacts voient la tienne.
 - **Bloquer :** **Bloquer**, en bas d’une discussion, empêche les messages, appels et demandes de cette personne
   d’atteindre ton compte XMPP, dans toutes ses applis, comme le fait le serveur XMPP (XEP-0191) ; elle n’est pas
   prévenue. **Débloquer** la laisse passer à nouveau. Quelqu’un bloqué dans une autre appli du compte l’est ici aussi.
@@ -1783,6 +1791,12 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   des groupes**, avec **Rejoindre** et **Refuser** ; l’invitation de toute autre personne n’est pas montrée. Tes groupes
   suivent les autres apps XMPP de ton compte par ses marque-pages : un groupe rejoint là-bas l’est ici aussi, et
   **Quitter le groupe** le quitte là-bas aussi. Un canal ne signale que les messages qui te nomment.
+- **Gérer un groupe :** les admins d’un groupe voient **Gérer le groupe** sur son écran. Ils mettent le **Sujet** ; le
+  propriétaire peut aussi le **renommer**. Dans un groupe privé, chaque membre a **Retirer** (les messages du groupe
+  ne lui arrivent plus, et un admin peut le rajouter) et **Bannir** (il ne peut plus revenir tant qu’un admin ne
+  l’autorise pas) ; le propriétaire peut **Nommer admin** un membre ou le **Retirer comme admin**. Dans un canal,
+  **Gérer le groupe** liste qui s’y trouve, chacun avec **Retirer**. Les admins ne peuvent pas retirer d’autres admins
+  ; seul le propriétaire le peut.
 - **Appels :** les deux tuiles en haut de la discussion appellent la personne, en voix ou en vidéo, sur le même écran
   d’appel que les appels propres d’Erevos, et ses appels sonnent ici de la même façon, tant que cet espace est ouvert ;
   un appel de quelqu’un qui n’est pas dans tes contacts s’affiche seulement comme manqué. Cela marche avec les apps qui

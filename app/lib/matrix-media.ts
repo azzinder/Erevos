@@ -72,18 +72,18 @@ async function upload(state: MatrixState, bytes: Uint8Array, mime: string, name:
 }
 
 /** The bytes at an mxc:// address, through the homeserver, signed in (Matrix 1.11), or as before for older servers. */
-async function download(state: MatrixState, mxc: string): Promise<Uint8Array> {
+async function download(state: MatrixState, mxc: string, most?: number): Promise<Uint8Array> {
   const match = /^mxc:\/\/([^/]+)\/([^/?#]+)$/.exec(mxc);
   if (!match) throw new Error(t('The file could not be fetched.'));
   const [, server, id] = match;
   const where = `${encodeURIComponent(server)}/${encodeURIComponent(id)}`;
   try {
-    const answer = await request(state, { method: 'GET', url: `${state.homeserver}/_matrix/client/v1/media/download/${where}`, raw: true });
+    const answer = await request(state, { method: 'GET', url: `${state.homeserver}/_matrix/client/v1/media/download/${where}`, raw: true, most });
     if (answer.bytes) return answer.bytes;
   } catch {
     // An older server: the media API without signing in.
   }
-  const answer = await request(state, { method: 'GET', url: `${state.homeserver}/_matrix/media/v3/download/${where}`, raw: true });
+  const answer = await request(state, { method: 'GET', url: `${state.homeserver}/_matrix/media/v3/download/${where}`, raw: true, most });
   if (!answer.bytes) throw new Error(t('The file could not be fetched.'));
   return answer.bytes;
 }
@@ -134,4 +134,17 @@ export async function fetchFile(state: MatrixState, file: MatrixFile): Promise<U
   if (file.encrypted) return decryptFile(await download(state, file.encrypted.url), file.encrypted);
   if (file.url) return download(state, file.url);
   throw new Error(t('The file could not be fetched.'));
+}
+
+/** The largest profile or room picture fetched: they are small. */
+export const PICTURE_MOST = 1024 * 1024;
+
+/** A profile or room picture at an mxc:// address. Pictures are never encrypted on Matrix, in any app. */
+export function fetchPicture(state: MatrixState, mxc: string): Promise<Uint8Array> {
+  return download(state, mxc, PICTURE_MOST);
+}
+
+/** Puts a profile picture on the homeserver: answers its mxc:// address. */
+export function uploadPicture(state: MatrixState, bytes: Uint8Array, mime: string): Promise<string> {
+  return upload(state, bytes, mime, 'avatar.jpg');
 }

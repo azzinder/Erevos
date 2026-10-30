@@ -27,6 +27,8 @@ export const NEXT: Changes = {
     mark("**Block someone on XMPP**: Block, at the bottom of an XMPP chat, keeps that person's messages, calls and requests from every app of your XMPP account; Unblock lets them through again. See [XMPP](#xmpp)."),
     mark("**Voice messages in XMPP chats**: hold the microphone under an XMPP chat's message box to record, and let go to send; it goes encrypted as the chat is, as Conversations sends one. See [XMPP](#xmpp)."),
     mark("**Matrix groups from Erevos**: New group, on the Matrix screen, makes an encrypted group with a name and the people you invite; Join a group joins one by its address; Invite, in a group, asks someone else in; typing @ in a group names a member, who is told of it. See [Matrix](#matrix)."),
+    mark("**Profile pictures on Matrix and XMPP**: contacts and Matrix rooms show their picture in the chat list, and you can set your own on the Matrix and XMPP screens (Choose a photo). Pictures are not encrypted on either network: the server sees them. See [Matrix](#matrix) and [XMPP](#xmpp)."),
+    mark("**Run an XMPP group**: a group's admins can set its subject and take people out or bar them, its owner can rename it and make admins, and in a channel the admin sees who is in it and can put them out. See [XMPP](#xmpp)."),
     mark("**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic)."),
   ],
   underTheHood: [

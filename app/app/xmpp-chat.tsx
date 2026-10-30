@@ -37,6 +37,10 @@ import {
   onXmppChange,
   runXmpp,
   xmppAddToGroup,
+  xmppRemoveFromGroup,
+  xmppRenameGroup,
+  xmppSetGroupAdmin,
+  xmppSetSubject,
   xmppBlock,
   xmppChange,
   xmppDelete,
@@ -506,6 +510,7 @@ export default function XmppChatScreen() {
       ) : null}
       {where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} /> : null}
 
+      {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
       {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
       {!room && devices.length ? (
         <>
@@ -617,6 +622,59 @@ function Keys({ devices }: { devices: Devices }) {
   );
 }
 
+// What a group's admin may do besides adding people: the subject, and for its owner the name; and
+// in a channel, the people in it now, each of whom can be put out.
+function GroupAdmin({ state, jid, room, fail }: { state: XmppState; jid: string; room: XmppRoom; fail: (error: unknown) => void }) {
+  const [subject, setSubject] = useState(room.subject ?? '');
+  const [name, setName] = useState(room.name ?? '');
+  const [busy, setBusy] = useState(false);
+  const run = (work: () => Promise<void>) => {
+    setBusy(true);
+    work().catch(fail).finally(() => setBusy(false));
+  };
+  const nicks = room.private ? [] : Object.keys(room.occupants).filter((nick) => nick !== room.nick);
+  return (
+    <>
+      <SectionTitle title={t('Run the group')} />
+      <Card>
+        <Row>
+          <Input style={{ flex: 1 }} value={subject} onChangeText={setSubject} placeholder={t('Subject')} accessibilityLabel={t('Subject')} />
+          <Button title={t('Save')} compact disabled={busy || subject.trim() === (room.subject ?? '')} onPress={() => run(() => xmppSetSubject(jid, subject))} />
+        </Row>
+        {room.owner ? (
+          <Row>
+            <Input style={{ flex: 1 }} value={name} onChangeText={setName} placeholder={t('Name of the group')} accessibilityLabel={t('Name of the group')} />
+            <Button title={t('Rename')} compact disabled={busy || !name.trim() || name.trim() === (room.name ?? '')} onPress={() => run(() => xmppRenameGroup(jid, name))} />
+          </Row>
+        ) : null}
+        {room.owner ? null : (
+          <Text variant="caption" tone="muted">
+            {t('Only its owner can rename the group.')}
+          </Text>
+        )}
+      </Card>
+      {nicks.map((nick) => (
+        <Card key={nick}>
+          <Text variant="bodyStrong" numberOfLines={1}>
+            {nick}
+          </Text>
+          <Button
+            title={t('Take out')}
+            kind="secondary"
+            compact
+            onPress={() =>
+              ask(t('Take {name} out of the group?', { name: nick }), t('They can come back in, unless you bar them.'), [
+                { text: t('Cancel'), style: 'cancel' },
+                { text: t('Take out'), style: 'destructive', onPress: () => void xmppRemoveFromGroup(jid, { nick }).catch(fail) },
+              ])
+            }
+          />
+        </Card>
+      ))}
+    </>
+  );
+}
+
 // A private group's members, each with their keys, and for its admin the contacts who can be added.
 // Someone with no device known (they have none, or the look-up as the group opened has not come
 // back yet) is marked, as the group's messages do not reach them.
@@ -662,6 +720,44 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
               </Text>
             )}
             <Keys devices={devices} />
+            {room.admin && room.joined && member !== state.jid ? (
+              <Row wrap>
+                {room.owner ? (
+                  <Button
+                    title={room.admins?.includes(member) ? t('Remove as admin') : t('Make admin')}
+                    kind="secondary"
+                    compact
+                    onPress={() => xmppSetGroupAdmin(jid, member, !room.admins?.includes(member)).catch(fail)}
+                  />
+                ) : null}
+                {room.owner || !room.admins?.includes(member) ? (
+                  <>
+                    <Button
+                      title={t('Take out')}
+                      kind="secondary"
+                      compact
+                      onPress={() =>
+                        ask(t('Take {name} out of the group?', { name: nameOf(state, member) }), t('The group’s messages no longer go to them. An admin can add them again.'), [
+                          { text: t('Cancel'), style: 'cancel' },
+                          { text: t('Take out'), style: 'destructive', onPress: () => void xmppRemoveFromGroup(jid, { address: member }).catch(fail) },
+                        ])
+                      }
+                    />
+                    <Button
+                      title={t('Bar')}
+                      kind="secondary"
+                      compact
+                      onPress={() =>
+                        ask(t('Bar {name} from the group?', { name: nameOf(state, member) }), t('They are taken out and cannot join again until an admin lets them.'), [
+                          { text: t('Cancel'), style: 'cancel' },
+                          { text: t('Bar'), style: 'destructive', onPress: () => void xmppRemoveFromGroup(jid, { address: member }, true).catch(fail) },
+                        ])
+                      }
+                    />
+                  </>
+                ) : null}
+              </Row>
+            ) : null}
           </Card>
         );
       })}

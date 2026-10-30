@@ -10,7 +10,7 @@
 
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
-import type { MatrixState } from './matrix';
+import { roomAvatar, type MatrixState } from './matrix';
 import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
 import { bare, nameOf, type XmppState } from './xmpp';
 import { sameNumber } from './sms-invite';
@@ -82,6 +82,8 @@ export type InboxRow = {
   network?: 'matrix' | 'xmpp' | 'nostr';
   /** A Matrix room we are only invited to, or an XMPP person who asked to add us. */
   invited?: boolean;
+  /** A Matrix room's picture, or its person's in a chat with one: an mxc:// address (lib/matrix.ts roomAvatar). */
+  picture?: string;
 };
 
 const PREFIX = 'contact:';
@@ -215,6 +217,7 @@ export function matrixInboxRows(state: MatrixState, now = Date.now()): InboxRow[
       sms: '',
       lastSms: false,
       network: 'matrix',
+      ...(roomAvatar(state, room) ? { picture: roomAvatar(state, room) } : {}),
       ...(mutedNow(room.notify, now) ? { muted: true } : {}),
       ...(room.invitedBy ? { invited: true } : {}),
     };

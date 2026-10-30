@@ -5,7 +5,8 @@
 // second device of the account joining by the bookmarks and reading along; what came while one
 // was away read from the group's archive, once; a member without OMEMO; a channel, written as it
 // is, whose history counts as read and that tells only of what names you; groups joined and left
-// in another app of the account; invitations only from contacts; photos in a private group.
+// in another app of the account; invitations only from contacts; photos in a private group; its
+// owner renaming it, setting its subject, making admins and taking people out or barring them.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ import { setCore, type Core } from '../lib/core';
 import { xmppInboxRows } from '../lib/inbox';
 import { addXmppContact, prepareXmppFile, sendXmppFile, sendXmppText, startSession, XmppConnection, type XmppState } from '../lib/xmpp';
 import { downloadXmppFile, setXmppHttp, uploadXmppFile } from '../lib/xmpp-files';
-import { createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, mentions } from '../lib/xmpp-muc';
+import { createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, mentions, removeFromXmppGroup, renameXmppGroup, setXmppGroupAdmin, setXmppGroupSubject } from '../lib/xmpp-muc';
 import { el } from '../lib/xmpp-xml';
 import { DOMAIN, MUC, person, Server, settle, type Room } from './xmpp-server';
 
@@ -284,4 +285,51 @@ test('photos go to a private group encrypted, and every member opens them', { sk
   assert.deepEqual([came?.file?.type, came?.by, came?.text], ['image/jpeg', 'ann', '']);
   assert.deepEqual(await downloadXmppFile(came!.file!), photo);
   assert.ok(server.seen.every((s) => !s.includes('aesgcm')));
+});
+
+test('the owner of a private group renames it, sets its subject, makes admins and takes people out; members may not', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const cat = await person(server, 'cat');
+  const people: Person[] = [ann, ben, cat];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  await befriend(people, ann, ben);
+  await befriend(people, ann, cat);
+  const room = await createXmppGroup(ann.state, ann.connection, 'Friends', [ben.state.jid, cat.state.jid]);
+  await settle(people);
+  for (const p of [ben, cat]) {
+    await joinXmppGroup(p.state, p.connection, room);
+    await settle(people);
+  }
+  const made = server.rooms.get(room) as Room;
+  const own = ann.state.chats[room].room!;
+  assert.equal(own.owner, true);
+  assert.equal(ben.state.chats[room].room!.admin, undefined);
+  // A member may do none of it.
+  await assert.rejects(setXmppGroupSubject(ben.state, ben.connection, room, 'mine'));
+  await assert.rejects(removeFromXmppGroup(ben.state, ben.connection, room, { address: cat.state.jid }));
+  await assert.rejects(renameXmppGroup(ben.state, ben.connection, room, 'Mine'));
+  // The owner renames it, and sets the subject.
+  await renameXmppGroup(ann.state, ann.connection, room, '  Old friends ');
+  assert.equal(made.name, 'Old friends');
+  assert.equal(own.name, 'Old friends');
+  await assert.rejects(renameXmppGroup(ann.state, ann.connection, room, '   '));
+  await setXmppGroupSubject(ann.state, ann.connection, room, 'Saturday at nine');
+  assert.equal(own.subject, 'Saturday at nine');
+  await setXmppGroupSubject(ann.state, ann.connection, room, '');
+  assert.equal(own.subject, undefined);
+  // Ben becomes an admin, and Ann may not be taken out by anyone; Ann cannot take herself out here.
+  await setXmppGroupAdmin(ann.state, ann.connection, room, ben.state.jid, true);
+  assert.equal(made.affiliations.get(ben.state.jid), 'admin');
+  assert.deepEqual(own.admins, [ben.state.jid]);
+  await assert.rejects(removeFromXmppGroup(ann.state, ann.connection, room, { address: ann.state.jid }));
+  await assert.rejects(setXmppGroupAdmin(ann.state, ann.connection, room, `zed@${DOMAIN}`, true));
+  // Cat is taken out of the members: the group's messages no longer go to her. Then barred.
+  await removeFromXmppGroup(ann.state, ann.connection, room, { address: cat.state.jid });
+  assert.equal(made.affiliations.has(cat.state.jid), false);
+  assert.deepEqual(groupPeople(ann.state, own), [ben.state.jid]);
+  await removeFromXmppGroup(ann.state, ann.connection, room, { address: ben.state.jid }, true);
+  assert.equal(made.affiliations.get(ben.state.jid), 'outcast');
+  assert.deepEqual(own.admins, []);
 });

@@ -1529,6 +1529,9 @@ između.
 - **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
   ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
   pa server saznaje svaki put kad pišete.
+- **Profilne slike:** Matrix soba, ili osoba u razgovoru s jednom osobom, prikazuje svoju sliku na popisu razgovora, a
+  tako i XMPP kontakt. **Odaberi fotografiju**, na ekranu Matrix, postavlja vašu za vaše kontakte; **Ukloni** je
+  uklanja. Slike nisu šifrirane ni u jednoj Matrix ili XMPP aplikaciji: server ih vidi, a vaši kontakti vide vašu.
 - **Ranije poruke:** razgovor s više historije na Matrix serveru gore prikazuje **Učitaj ranije poruke**; svaki dodir
   donosi još, a razgovor ostaje tamo gdje ste čitali. Poruka čiji ključ još nije stigao prikazuje se zaključana.
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete; prevucite
@@ -1614,6 +1617,9 @@ aplikacije: nikakav most nije između.
 - **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to javlja o vama
   samo ako uključite **Reci kad pišem** na ekranu XMPP, i samo kontaktu koji vidi vašu prisutnost, nikad u grupi;
   isprva je isključeno, jer ide preko XMPP servera nešifrirano, pa server saznaje svaki put kad pišete.
+- **Profilne slike:** Matrix soba, ili osoba u razgovoru s jednom osobom, prikazuje svoju sliku na popisu razgovora, a
+  tako i XMPP kontakt. **Odaberi fotografiju**, na ekranu XMPP, postavlja vašu za vaše kontakte; **Ukloni** je
+  uklanja. Slike nisu šifrirane ni u jednoj Matrix ili XMPP aplikaciji: server ih vidi, a vaši kontakti vide vašu.
 - **Blokiranje:** **Blokiraj**, na dnu razgovora, sprečava da poruke, pozivi i zahtjevi te osobe stignu na vaš XMPP
   račun, u bilo kojoj njegovoj aplikaciji, kako to radi XMPP server (XEP-0191); ona za to ne saznaje. **Odblokiraj**
   je ponovo propušta. Ko je blokiran u drugoj aplikaciji računa, blokiran je i ovdje.
@@ -1639,6 +1645,11 @@ aplikacije: nikakav most nije između.
   grupe**, s **Pridruži se** i **Odbij**; poziv bilo koga drugog se ne prikazuje. Vaše grupe prate ostale XMPP
   aplikacije vašeg računa preko njegovih zabilješki: grupa kojoj se tamo pridružite pridružena je i ovdje, a **Napusti
   grupu** je napušta i tamo. Kanal javlja samo za poruke koje vas spominju.
+- **Upravljanje grupom:** admini grupe vide **Upravljanje grupom** na njenom ekranu. Oni postavljaju **Temu**; vlasnik
+  je može i **preimenovati**. U privatnoj grupi svaki član ima **Ukloni** (poruke grupe više ne idu toj osobi, a admin
+  je može ponovo dodati) i **Zabrani** (ne može ući dok admin ne dopusti); vlasnik može člana **postaviti za admina**
+  ili ga **ukloniti kao admina**. U kanalu **Upravljanje grupom** navodi ko je unutra, svakoga s **Ukloni**. Admini ne
+  mogu ukloniti druge admine; samo vlasnik.
 - **Pozivi:** dvije pločice na vrhu razgovora zovu osobu, glasom ili videom, na istom ekranu poziva kao Erevosovi
   vlastiti pozivi, a njeni pozivi ovdje zvone isto tako, dok je ovaj prostor otvoren; poziv od nekoga ko nije u vašim
   kontaktima prikazuje se samo kao propušten. Radi s aplikacijama koje zovu kao Conversations (Jingle, sa zvonjenjem

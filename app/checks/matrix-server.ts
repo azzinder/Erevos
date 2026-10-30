@@ -120,6 +120,9 @@ export class Homeserver {
     }
   }
 
+  /** Profile pictures, by user. */
+  avatars = new Map<string, string>();
+
   /** Uploaded files, by their mxc:// address. */
   media = new Map<string, Uint8Array>();
 
@@ -191,6 +194,17 @@ export class Homeserver {
         }
       }
       return { status: 200, json: { failures: {} } };
+    }
+    if ((m = path.match(/^\/profile\/([^/]+)(\/avatar_url)?$/))) {
+      const owner = decodeURIComponent(m[1]);
+      if (request.method === 'PUT' && m[2]) {
+        if (owner !== user) return { status: 403, json: { errcode: 'M_FORBIDDEN' } };
+        if (body.avatar_url) this.avatars.set(owner, body.avatar_url);
+        else this.avatars.delete(owner);
+        return { status: 200, json: {} };
+      }
+      const avatar = this.avatars.get(owner);
+      return { status: 200, json: avatar ? { avatar_url: avatar } : {} };
     }
     if (path === '/keys/claim') {
       const one_time_keys: Json = {};

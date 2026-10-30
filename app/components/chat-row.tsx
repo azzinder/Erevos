@@ -12,6 +12,7 @@ import { useStyles, useTheme } from '../theme/context';
 import { BellIcon, LockIcon, PinIcon, QuietIcon, TimerIcon } from './icons';
 import { KeyFace } from './key-face';
 import { MyselfFace } from './myself-face';
+import { NetworkPicture } from './network-picture';
 import { font, Text } from './ui';
 
 const MARKS = ['✓', '✓✓', '✓✓✓'];
@@ -73,10 +74,18 @@ export function ChatRow({
       {row.sms && row.photo && !photoFailed ? (
         // The picture the phone's contacts have for the number, read from them as it shows.
         <Image source={{ uri: row.photo }} style={styles.smsFace} onError={() => setPhotoFailed(true)} accessibilityIgnoresInvertColors />
+      ) : row.network === 'matrix' || row.network === 'xmpp' ? (
+        <NetworkPicture
+          network={row.network}
+          of={row.network === 'matrix' ? row.picture : row.identity.slice('xmpp:'.length)}
+          size={52}
+          fallback={row.network === 'xmpp' ? 'xmpp' : '[m]'}
+          where={hidden ? 'place' : 'space'}
+        />
       ) : row.sms || row.network ? (
         <View style={styles.smsFace}>
           <Text variant="label" tone="muted">
-            {row.sms ? 'SMS' : row.network === 'xmpp' ? 'xmpp' : row.network === 'nostr' ? 'nostr' : '[m]'}
+            {row.sms ? 'SMS' : row.network === 'nostr' ? 'nostr' : '[m]'}
           </Text>
         </View>
       ) : (
