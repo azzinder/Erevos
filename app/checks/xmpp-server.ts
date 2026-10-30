@@ -48,6 +48,12 @@ const NS_PUSH = 'urn:xmpp:push:0';
 
 export class Server {
   readonly bound = new Map<string, Link>();
+  /** Accounts made here (XEP-0077) and those whose password changed, by bare address: their passwords. Any other name signs in with PASSWORD. */
+  readonly accounts = new Map<string, string>();
+  /** Accounts deleted: they sign in no more. */
+  readonly deleted = new Set<string>();
+  /** How it makes accounts: here with a name and a password, with a form, with a captcha too, or not at all (with its page). */
+  registration: 'plain' | 'form' | 'captcha' | 'closed' = 'plain';
   readonly rosters = new Map<string, Map<string, Item>>();
   readonly pep = new Map<string, XmlElement>();
   readonly archives = new Map<string, Archived[]>();
@@ -236,7 +242,8 @@ export class Server {
     if (!this.muc) return error('service-unavailable');
     if (to === MUC) {
       if (query?.ns === NS_INFO) return reply(el('query', { xmlns: NS_INFO }, el('identity', { category: 'conference', type: 'text', name: 'Groups' }), el('feature', { var: NS_MUC })));
-      return reply(el('query', { xmlns: NS_ITEMS }));
+      // Its rooms anyone may find: not those for members only.
+      return reply(el('query', { xmlns: NS_ITEMS }, ...[...this.rooms.values()].filter((r) => !r.membersOnly && !r.locked).map((r) => el('item', { jid: r.jid, name: r.name }))));
     }
     const room = this.rooms.get(to);
     const real = bareOf(link.full);
@@ -365,8 +372,9 @@ export class Link implements XmppLink {
     const server = this.server;
     if (stanza.name === 'auth') {
       const [, user, password] = utf8Decode(fromBase64(textOf(stanza))).split('\0');
-      if (password !== PASSWORD) return this.push(el('failure', { xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl' }, el('not-authorized')));
-      this.jid = `${user}@${DOMAIN}`;
+      const jid = `${user}@${DOMAIN}`;
+      if (server.deleted.has(jid) || password !== (server.accounts.get(jid) ?? PASSWORD)) return this.push(el('failure', { xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl' }, el('not-authorized')));
+      this.jid = jid;
       return this.push(el('success', { xmlns: 'urn:ietf:params:xml:ns:xmpp-sasl' }));
     }
     if (stanza.name === 'iq') return this.iq(stanza);
@@ -409,6 +417,51 @@ export class Link implements XmppLink {
         link.push(el('message', { from: this.jid, to: link.full, xmlns: 'jabber:client' }, el('sent', { xmlns: 'urn:xmpp:carbons:2' }, el('forwarded', { xmlns: 'urn:xmpp:forward:0' }, sent))));
       }
     }
+  }
+
+  /** In-band registration (XEP-0077): a new account before signing in, a new password or the account deleted after. */
+  private register(iq: XmlElement, query: XmlElement, reply: (...payload: XmlElement[]) => void, error: (condition: string) => void): void {
+    const server = this.server;
+    const NS_REG = 'jabber:iq:register';
+    if (this.jid) {
+      if (iq.attrs.type !== 'set') return error('bad-request');
+      if (child(query, 'remove')) {
+        server.deleted.add(this.jid);
+        reply();
+        return this.close();
+      }
+      server.accounts.set(this.jid, textOf(child(query, 'password')));
+      return reply();
+    }
+    const page = el('x', { xmlns: 'jabber:x:oob' }, el('url', {}, `https://${DOMAIN}/register`));
+    if (iq.attrs.type === 'get') {
+      if (server.registration === 'closed') return this.push(el('iq', { type: 'error', id: iq.attrs.id, xmlns: 'jabber:client' }, el('query', { xmlns: NS_REG }, page), el('error', { type: 'cancel' }, el('not-allowed', { xmlns: STANZAS }))));
+      if (server.registration === 'plain') return reply(el('query', { xmlns: NS_REG }, el('instructions', {}, 'Choose a name and a password'), el('username'), el('password')));
+      const field = (name: string, type = 'text-single') => el('field', { var: name, type }, el('required'));
+      return reply(
+        el(
+          'query',
+          { xmlns: NS_REG },
+          el(
+            'x',
+            { xmlns: 'jabber:x:data', type: 'form' },
+            el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, NS_REG)),
+            field('username'),
+            field('password', 'text-private'),
+            server.registration === 'captcha' ? field('ocr') : null,
+          ),
+          page,
+        ),
+      );
+    }
+    const form = new Map(children(child(query, 'x', 'jabber:x:data'), 'field').map((f) => [f.attrs.var, textOf(child(f, 'value'))]));
+    const name = form.get('username') ?? textOf(child(query, 'username'));
+    const password = form.get('password') ?? textOf(child(query, 'password'));
+    const jid = `${name}@${DOMAIN}`;
+    if (!name || !password) return error('not-acceptable');
+    if (server.accounts.has(jid) || server.rosters.has(jid)) return error('conflict');
+    server.accounts.set(jid, password);
+    return reply();
   }
 
   /** A page of `all`, an archive, as `query` asks (MAM): its messages, from `from` when it is a room's, then the answer. */
@@ -463,6 +516,19 @@ export class Link implements XmppLink {
       this.push(el('iq', { type: 'error', id: iq.attrs.id, xmlns: 'jabber:client' }, el('error', { type: 'cancel' }, el(condition, { xmlns: 'urn:ietf:params:xml:ns:xmpp-stanzas' }))));
     const query = iq.children.find((c): c is XmlElement => typeof c !== 'string');
     if (!query) return reply();
+    if (query.ns === 'jabber:iq:register') return this.register(iq, query, reply, error);
+    if (to === 'api@search.jabber.network') {
+      const q = textOf(child(children(child(query, 'x', 'jabber:x:data'), 'field').find((f) => f.attrs.var === 'q'), 'value')).toLowerCase();
+      const found = [...server.rooms.values()].filter((r) => !r.membersOnly && r.name.toLowerCase().includes(q));
+      return reply(
+        el(
+          'result',
+          { xmlns: 'urn:xmpp:channel-search:0:search' },
+          ...found.map((r) => el('item', { address: r.jid }, el('name', {}, r.name), el('nusers', {}, String(r.occupants.size)), el('service-type', {}, 'xep0045'))),
+          el('item', { address: `mix@mix.${DOMAIN}` }, el('name', {}, q), el('service-type', {}, 'xep0369')),
+        ),
+      );
+    }
     if (query.name === 'bind') {
       this.full = `${this.jid}/${textOf(child(query, 'resource')) || 'x'}`;
       server.bound.set(this.full, this);

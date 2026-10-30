@@ -116,6 +116,68 @@ export async function findMuc(connection: XmppConnection, domain: string, known?
   return null;
 }
 
+/** A public group as a list of groups to join shows it. */
+export type FoundChannel = { jid: string; name: string; description?: string; users?: number; joined: boolean };
+
+/** The most groups a list brings. */
+export const CHANNELS_MOST = 100;
+
+/** The groups our server's group service lists (disco#items): those it lets anyone find. */
+export async function serverChannels(state: XmppState, connection: XmppConnection): Promise<FoundChannel[]> {
+  const muc = await findMuc(connection, state.jid.slice(state.jid.indexOf('@') + 1), state.muc);
+  if (!muc) throw new XmppError(t('Your XMPP server has no groups.'));
+  state.muc = muc;
+  const items = child(await connection.iq('get', muc.jid, el('query', { xmlns: NS_ITEMS })), 'query', NS_ITEMS);
+  return children(items, 'item')
+    .filter((item) => isXmppId(item.attrs.jid ?? ''))
+    .slice(0, CHANNELS_MOST)
+    .map((item) => {
+      const jid = bare(item.attrs.jid);
+      return { jid, name: (item.attrs.name ?? '').trim().slice(0, 100) || jid, joined: !!state.chats[jid]?.room };
+    });
+}
+
+/** The public channel search that Conversations and Dino use (XEP-0433), at search.jabber.network. */
+export const CHANNEL_SEARCH = 'api@search.jabber.network';
+const NS_CHANNEL_SEARCH = 'urn:xmpp:channel-search:0:search';
+
+/**
+ * Public groups on any server whose name or description has `term` (XEP-0433), as the search
+ * service of search.jabber.network has them: it learns what was looked for, and from which server.
+ */
+export async function searchChannels(state: XmppState, connection: XmppConnection, term: string): Promise<FoundChannel[]> {
+  const looked = term.trim().slice(0, 100);
+  if (looked.length < 2) return [];
+  const field = (name: string, value: string, type?: string) => el('field', { var: name, type }, el('value', {}, value));
+  // A get with the filled form, as Conversations asks it.
+  const answer = await connection.iq(
+    'get',
+    CHANNEL_SEARCH,
+    el(
+      'search',
+      { xmlns: NS_CHANNEL_SEARCH },
+      el('x', { xmlns: NS_DATA, type: 'submit' }, field('FORM_TYPE', `${NS_CHANNEL_SEARCH}-params`, 'hidden'), field('q', looked), field('sinname', 'true'), field('sindescription', 'true')),
+      el('set', { xmlns: NS.rsm }, el('max', {}, String(CHANNELS_MOST))),
+    ),
+  );
+  const result = child(answer, 'result', NS_CHANNEL_SEARCH);
+  return children(result, 'item')
+    .filter((item) => isXmppId(item.attrs.address ?? '') && textOf(child(item, 'service-type')).trim() !== 'xep0369')
+    .slice(0, CHANNELS_MOST)
+    .map((item) => {
+      const jid = bare(item.attrs.address);
+      const users = Number(textOf(child(item, 'nusers')).trim());
+      const description = textOf(child(item, 'description')).trim().slice(0, 300);
+      return {
+        jid,
+        name: textOf(child(item, 'name')).trim().slice(0, 100) || jid,
+        ...(description ? { description } : {}),
+        ...(Number.isInteger(users) && users >= 0 ? { users } : {}),
+        joined: !!state.chats[jid]?.room,
+      };
+    });
+}
+
 export type RoomInfo = { private: boolean; mam: boolean; name?: string; password: boolean };
 
 /** What a room says of itself (XEP-0045 §6.4). Throws when there is no room at `jid`. */

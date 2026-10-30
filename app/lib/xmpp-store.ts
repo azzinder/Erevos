@@ -6,6 +6,7 @@ import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { canXmpp } from './core';
 import { fileCache, pictureCache } from './file-cache';
+import type { Preview } from './chat-parts';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
@@ -31,6 +32,9 @@ import {
   sendXmppTyping,
   setXmppAvatar,
   signInXmpp,
+  registerXmpp,
+  changeXmppPassword,
+  deleteXmppAccount,
   signOutXmpp,
   startSession,
   takeStanza,
@@ -41,7 +45,21 @@ import {
 } from './xmpp';
 import { fetchXmppAvatar } from './xmpp-avatar';
 import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
-import { addXmppGroupPeople, createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, removeFromXmppGroup, renameXmppGroup, setXmppGroupAdmin, setXmppGroupSubject } from './xmpp-muc';
+import {
+  addXmppGroupPeople,
+  createXmppGroup,
+  declineXmppInvite,
+  groupPeople,
+  joinXmppGroup,
+  leaveXmppGroup,
+  removeFromXmppGroup,
+  renameXmppGroup,
+  searchChannels,
+  serverChannels,
+  setXmppGroupAdmin,
+  setXmppGroupSubject,
+  type FoundChannel,
+} from './xmpp-muc';
 import type { connectXmpp, XmppServer } from './xmpp-net';
 import { keepXmppPush, startXmppPush, stopXmppPush } from './xmpp-push';
 
@@ -442,11 +460,64 @@ export async function xmppSignOut(): Promise<void> {
   if (it.holder === 'space' && state?.push) await followDoor(it.space, it.key).catch(() => undefined);
 }
 
-export function xmppSend(jid: string, text: string): Promise<void> {
+/** Sends words; a preview of a link in them goes only where the chat is not encrypted (lib/xmpp-links.ts). */
+export function xmppSend(jid: string, text: string, preview?: Preview | null): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
-    await sendXmppText(it.state, online(it), jid, text);
+    await sendXmppText(it.state, online(it), jid, text, preview);
   });
+}
+
+/**
+ * Makes a new account on its server (XEP-0077) and signs the space in with it, as signing in does.
+ * A server that makes none here says so, with its page when it named one (XmppRegisterError).
+ */
+export async function xmppRegister(jid: string, password: string, server = ''): Promise<void> {
+  const it = acting();
+  if (!it || it.stopped) throw new Error(t('There is no XMPP account in this space.'));
+  if (it.state) throw new Error(t('This space is signed in to XMPP already.'));
+  const { state, connection } = await registerXmpp(jid, password, serverOf(server), connect);
+  connection.close();
+  state.restored = await lastRestore();
+  await changeAccount(it, async () => {
+    it.state = state;
+    it.problem = '';
+    it.fresh = true;
+  });
+  await saveXmpp(it.space, it.key, state, it.holder);
+  void loop(it);
+}
+
+/** Gives the account a new password on its server, and keeps it for the next sign-in. */
+export function xmppChangePassword(password: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => changeXmppPassword(it.state, online(it), password));
+}
+
+/** Deletes the account on its server, then forgets it here, as signing out does. It cannot be brought back. */
+export async function xmppDeleteAccount(): Promise<void> {
+  const it: Live = need();
+  const state = it.state;
+  if (state?.push) await stopXmppPush(state.push, it.connection, (await spaceRelayOf(it.space, it.key).catch(() => null)) ?? undefined).catch(() => undefined);
+  await changeAccount(it, async () => {
+    if (state) await deleteXmppAccount(state, online(it));
+    it.connection = null;
+    it.state = null;
+  });
+  await saveXmpp(it.space, it.key, null, it.holder);
+  if (it.holder === 'space' && state?.push) await followDoor(it.space, it.key).catch(() => undefined);
+}
+
+/** The groups our server lists. */
+export function xmppServerChannels(): Promise<FoundChannel[]> {
+  const it = need();
+  return serverChannels(it.state, online(it));
+}
+
+/** Public groups on any server, from the search of search.jabber.network, which learns what was looked for. */
+export function xmppSearchChannels(term: string): Promise<FoundChannel[]> {
+  const it = need();
+  return searchChannels(it.state, online(it), term);
 }
 
 /** Tells a contact we write, or stopped, when the account says so; nothing while offline or on failure. */

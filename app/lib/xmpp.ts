@@ -2,6 +2,7 @@ import { sha1 } from '@noble/hashes/legacy.js';
 
 import type { ChatNotify } from '../lock/chat-notify';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
+import type { Preview } from './chat-parts';
 import { t } from './i18n';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
 import {
@@ -28,7 +29,7 @@ import {
 } from './xmpp-actions';
 import { avatarOf, NS_AVATAR_META, publishXmppAvatar, removeXmppAvatar, type XmppAvatar } from './xmpp-avatar';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
-import { enterRooms, groupPeople, mentions, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
+import { enterRooms, groupPeople, mentions, NS_DATA, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
 import type { XmppPushTo } from './xmpp-push';
 import {
   bundleElement,
@@ -72,6 +73,7 @@ import {
   publish2Element,
   type OwnOmemo2,
 } from './xmpp-omemo2';
+import { previewElement, previewOf } from './xmpp-links';
 import { pickMechanism, startSasl } from './xmpp-sasl';
 import { child, children, el, find, render, textOf, type XmlElement } from './xmpp-xml';
 
@@ -159,6 +161,8 @@ export type XmppMessage = {
   deleted?: true;
   /** Reactions to it (XEP-0444): each one's emoji, by their address (ours by the account's), or by `/name` in a group that does not say it. */
   reacted?: Record<string, string[]>;
+  /** The preview of a link in its words, as its sender's phone made it (lib/xmpp-links.ts); only beside words not encrypted. */
+  preview?: Preview;
 };
 
 export type XmppChat = {
@@ -470,6 +474,95 @@ export async function signInXmpp(jid: string, password: string, server?: XmppSer
     connection.close();
     throw error;
   }
+}
+
+const NS_REGISTER = 'jabber:iq:register';
+
+/** Why a new account could not be made, and, when the server named one, the page where it can be. */
+export class XmppRegisterError extends XmppError {
+  readonly page?: string;
+
+  constructor(message: string, condition: string, page?: string) {
+    super(message, condition);
+    this.page = page;
+  }
+}
+
+/**
+ * Makes a new account on its server before signing in (XEP-0077, In-Band Registration), over the
+ * same encrypted connection a sign-in has, then signs in to it as signInXmpp does. A server that
+ * asks for more than a name and a password, such as a captcha, or makes accounts only on its
+ * website, is said so, with its page when it names one.
+ */
+export async function registerXmpp(jid: string, password: string, server?: XmppServer, connect: typeof connectXmpp = connectXmpp): Promise<{ state: XmppState; connection: XmppConnection }> {
+  const account = bare(jid.trim());
+  if (!isXmppId(account)) throw new XmppError(t('Write an XMPP address, such as name@example.org.'));
+  if (password.length < 8) throw new XmppError(t('Choose a password of at least 8 characters.'));
+  const domain = domainOf(account);
+  const local = account.slice(0, account.indexOf('@'));
+  const link = await connect(domain, server);
+  try {
+    if (!link.secure) throw new XmppError(t('The XMPP server offers no safe way to sign in.'));
+    await link.open(domain);
+    await expect(link, 'features');
+    const ask = async (type: 'get' | 'set', ...payload: XmlElement[]): Promise<XmlElement> => {
+      const id = newId();
+      await link.send(render(el('iq', { xmlns: NS.client, type, id, to: domain }, el('query', { xmlns: NS_REGISTER }, ...payload))));
+      for (;;) {
+        const answer = await expect(link, 'iq');
+        if (answer.attrs.id !== id) continue;
+        if (answer.attrs.type === 'result') return answer;
+        const failed = stanzaError(answer);
+        const page = textOf(find(answer, `query|${NS_REGISTER}`, 'x|jabber:x:oob', 'url')).trim();
+        const reason =
+          failed.condition === 'conflict'
+            ? t('That name is someone\u2019s already on this server.')
+            : failed.condition === 'not-allowed' || failed.condition === 'service-unavailable' || failed.condition === 'feature-not-implemented'
+              ? t('This XMPP server makes no accounts here. Make one on its website, then sign in here.')
+              : failed.message;
+        throw new XmppRegisterError(reason, failed.condition, /^https:\/\//.test(page) ? page : undefined);
+      }
+    };
+    const form = child(await ask('get'), 'query', NS_REGISTER);
+    const page = textOf(find(form, 'x|jabber:x:oob', 'url')).trim();
+    const data = child(form, 'x', NS_DATA);
+    // What it asks for besides a name and a password, as a form (a captcha, an e-mail address), Erevos cannot give here.
+    const asked = data
+      ? children(data, 'field').filter((f) => f.attrs.type !== 'hidden' && f.attrs.type !== 'fixed' && !['username', 'password'].includes(f.attrs.var ?? '') && child(f, 'required'))
+      : children(form).filter((f) => !['username', 'password', 'instructions', 'registered', 'x'].includes(f.name));
+    if (!child(form, 'username') && !data) throw new XmppRegisterError(t('This XMPP server makes no accounts here. Make one on its website, then sign in here.'), 'not-allowed', /^https:\/\//.test(page) ? page : undefined);
+    if (asked.length) throw new XmppRegisterError(t('This XMPP server asks for more than a name and a password, such as a captcha. Make the account on its website, then sign in here.'), 'not-acceptable', /^https:\/\//.test(page) ? page : undefined);
+    if (data) {
+      const type = textOf(child(children(data, 'field').find((f) => f.attrs.var === 'FORM_TYPE'), 'value'));
+      await ask(
+        'set',
+        el(
+          'x',
+          { xmlns: NS_DATA, type: 'submit' },
+          type ? el('field', { var: 'FORM_TYPE', type: 'hidden' }, el('value', {}, type)) : null,
+          el('field', { var: 'username' }, el('value', {}, local)),
+          el('field', { var: 'password' }, el('value', {}, password)),
+        ),
+      );
+    } else await ask('set', el('username', {}, local), el('password', {}, password));
+  } finally {
+    link.close();
+  }
+  return signInXmpp(account, password, server, connect);
+}
+
+/** Gives the account a new password (XEP-0077): the server takes it at once, and the next sign-in needs it. */
+export async function changeXmppPassword(state: XmppState, connection: XmppConnection, password: string): Promise<void> {
+  if (password.length < 8) throw new XmppError(t('Choose a password of at least 8 characters.'));
+  const local = state.jid.slice(0, state.jid.indexOf('@'));
+  await connection.iq('set', domainOf(state.jid), el('query', { xmlns: NS_REGISTER }, el('username', {}, local), el('password', {}, password)));
+  state.password = password;
+}
+
+/** Deletes the account on its server (XEP-0077): its contacts, archive and groups go with it there, and it cannot be brought back. */
+export async function deleteXmppAccount(state: XmppState, connection: XmppConnection): Promise<void> {
+  await connection.iq('set', domainOf(state.jid), el('query', { xmlns: NS_REGISTER }, el('remove')));
+  connection.close();
 }
 
 // ---- after signing in ----
@@ -981,6 +1074,7 @@ async function takeMessage(state: XmppState, connection: XmppConnection, message
     markable,
     ...(file ? { file } : {}),
     ...(answers ? { replyTo: targetOf(chat.messages, answers, false)?.id ?? answers } : {}),
+    ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
   });
   if (!mine) chat.unread += 1;
   else chat.unread = 0;
@@ -1084,6 +1178,7 @@ async function takeGroupMessage(state: XmppState, connection: XmppConnection, me
     ...(stanzaId ? { sid: stanzaId } : {}),
     ...(file ? { file } : {}),
     ...(answers ? { replyTo: targetOf(chat.messages, answers, true)?.id ?? answers } : {}),
+    ...(!encrypted && !file && previewOf(message) ? { preview: previewOf(message)! } : {}),
   });
   if (mine) chat.unread = 0;
   else if (how.at > (room.readTo ?? 0) && (room.private || mentions(text, room.nick))) chat.unread += 1;
@@ -1494,8 +1589,9 @@ async function sendEmpty(state: XmppState, connection: XmppConnection, peer: str
 
 /** Sends `text` to `peer`, encrypted with OMEMO unless the chat chose otherwise. Throws
  *  NoOmemoError when their apps have no OMEMO keys and the chat has not chosen to send plain. */
-export async function sendXmppText(state: XmppState, connection: XmppConnection, peer: string, text: string): Promise<XmppMessage> {
-  return sendBody(state, connection, peer, text);
+/** Sends words; with `preview`, the preview of a link in them, which goes only in a chat without encryption. */
+export async function sendXmppText(state: XmppState, connection: XmppConnection, peer: string, text: string, preview?: Preview | null): Promise<XmppMessage> {
+  return sendBody(state, connection, peer, text, undefined, { preview });
 }
 
 /**
@@ -1525,7 +1621,7 @@ export function plainIn(chat: XmppChat): boolean {
 }
 
 /** What a message sent is besides its words: an answer to one here, or new words for one of ours. */
-type Sending = { reply?: XmppMessage; replace?: XmppMessage };
+type Sending = { reply?: XmppMessage; replace?: XmppMessage; preview?: Preview | null };
 
 async function sendBody(state: XmppState, connection: XmppConnection, peer: string, text: string, file?: XmppFile, how: Sending = {}): Promise<XmppMessage> {
   const chat = chatOf(state, peer);
@@ -1533,7 +1629,8 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
   if (room && !room.joined) throw new XmppError(room.problem || t('Not in this group yet: joining it.'));
   const plain = plainIn(chat);
   const id = newId();
-  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !plain, state: 'sending', ...(file ? { file } : {}), ...(room ? { by: room.nick } : {}) };
+  const preview = plain && !file && !how.replace && how.preview ? how.preview : null;
+  const message: XmppMessage = { id, mine: true, text: file ? '' : text, at: Date.now(), encrypted: !plain, state: 'sending', ...(file ? { file } : {}), ...(room ? { by: room.nick } : {}), ...(preview ? { preview } : {}) };
   // An answer goes with the quote other apps show (lib/xmpp-actions.ts), and says what it answers.
   const answered = how.reply;
   const answerId = answered ? nameFor(answered, !!room) : undefined;
@@ -1555,7 +1652,7 @@ async function sendBody(state: XmppState, connection: XmppConnection, peer: stri
   ];
   let stanza: XmlElement;
   if (plain) {
-    stanza = el('message', { to: peer, type, id }, el('body', {}, words), file && !file.fragment ? oobOf(file) : null, ...extras);
+    stanza = el('message', { to: peer, type, id }, el('body', {}, words), file && !file.fragment ? oobOf(file) : null, preview ? previewElement(preview) : null, ...extras);
   } else {
     const encrypted = await encryptFor(state, connection, peopleOf(state, peer), peer, words);
     stanza = el(
