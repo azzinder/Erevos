@@ -131,6 +131,38 @@ export class Homeserver {
   /** Uploaded files, by their mxc:// address. */
   media = new Map<string, Uint8Array>();
 
+  /** Rooms in the public list (/publicRooms), which anyone may join. */
+  published = new Set<string>();
+  /** Room tags (m.tag), by `${user} ${room}`. */
+  tags = new Map<string, Json>();
+  /** Rooms forgotten, by `${user} ${room}`: they no longer come in a sync. */
+  forgotten = new Set<string>();
+  /** What a new account must do first (/register): each flow's stages; the terms' document. */
+  registerFlows: string[][] = [['m.login.dummy']];
+  /** Device names, by `${user} ${device}`. */
+  deviceNames = new Map<string, string>();
+  /** Signed-out devices' tokens are gone; this says which devices were. */
+  readonly signedOut: string[] = [];
+
+  private uia(body: Json, flows: string[][], session: string, params: Json = {}): Json | null {
+    const done: string[] = [];
+    const auth = body.auth as Json | undefined;
+    if (auth && auth.session !== session) return { session, flows: flows.map((stages) => ({ stages })), params, completed: [], errcode: 'M_FORBIDDEN', error: 'Wrong session' };
+    if (auth?.type === 'm.login.password' && auth.password !== PASSWORD) return { session, flows: flows.map((stages) => ({ stages })), params, completed: this.uiaDone.get(session) ?? [], errcode: 'M_FORBIDDEN', error: 'Invalid password' };
+    if (auth?.type === 'm.login.registration_token' && auth.token !== 'letmein') return { session, flows: flows.map((stages) => ({ stages })), params, completed: this.uiaDone.get(session) ?? [], errcode: 'M_FORBIDDEN', error: 'Invalid token' };
+    done.push(...(this.uiaDone.get(session) ?? []));
+    if (auth?.type && !done.includes(String(auth.type))) done.push(String(auth.type));
+    // A step on the server's own page is taken there; the session alone comes after.
+    if (auth && !auth.type) done.push(...(this.pageDone.get(session) ?? []));
+    this.uiaDone.set(session, done);
+    if (flows.some((stages) => stages.every((stage) => done.includes(stage)))) return null;
+    return { session, flows: flows.map((stages) => ({ stages })), params, completed: done };
+  }
+
+  private uiaDone = new Map<string, string[]>();
+  /** Steps taken on the server's page (a captcha), by session, as a browser would. */
+  readonly pageDone = new Map<string, string[]>();
+
   answer(request: MatrixRequest): { status: number; json: Json; bytes?: Uint8Array } {
     const url = new URL(request.url);
     if (url.pathname === '/_matrix/media/v3/upload') {
@@ -147,6 +179,22 @@ export class Homeserver {
     this.asked.push(`${request.method} ${path}`);
     const body = (request.body ?? {}) as Json;
     if (path === '/.well-known/matrix/client') return this.wellKnown ? { status: 200, json: this.wellKnown } : { status: 404, json: {} };
+    if (path === '/register/available') {
+      const name = url.searchParams.get('username') ?? '';
+      return this.tokens.size && [...this.tokens.values()].some((t) => t.user === `@${name}:example.org`)
+        ? { status: 400, json: { errcode: 'M_USER_IN_USE', error: 'User ID already taken.' } }
+        : { status: 200, json: { available: true } };
+    }
+    if (path === '/register' && request.method === 'POST') {
+      const user = `@${body.username}:example.org`;
+      if ([...this.tokens.values()].some((t) => t.user === user)) return { status: 400, json: { errcode: 'M_USER_IN_USE', error: 'User ID already taken.' } };
+      const asked = this.uia(body, this.registerFlows, 'reg1', { 'm.login.terms': { policies: { privacy: { version: '1', en: { name: 'Privacy', url: 'https://matrix.example.org/privacy' } } } } });
+      if (asked) return { status: 401, json: asked };
+      const device = `DEV${++this.made}`;
+      const token = `tok${this.made}`;
+      this.tokens.set(token, { user, device });
+      return { status: 200, json: { user_id: user, device_id: device, access_token: token } };
+    }
     if (path === '/login' && request.method === 'GET') {
       return { status: 200, json: { flows: [{ type: 'm.login.password' }, { type: 'm.login.sso', identity_providers: [{ id: 'oidc-lphl', name: 'LPHL' }, { id: 7 }] }, { type: 'm.login.token' }] } };
     }
@@ -247,6 +295,67 @@ export class Homeserver {
       }
       return { status: 200, json: {} };
     }
+    if (path === '/publicRooms') {
+      const term = String(body.filter?.generic_search_term ?? '').toLowerCase();
+      const chunk = [...this.published]
+        .map((id) => ({
+          room_id: id,
+          name: this.stateOf(id, 'm.room.name', '')?.content.name,
+          topic: this.stateOf(id, 'm.room.topic', '')?.content.topic,
+          canonical_alias: this.stateOf(id, 'm.room.canonical_alias', '')?.content.alias,
+          num_joined_members: this.log.filter((l) => l.room === id && l.event.type === 'm.room.member' && this.membership(id, l.event.state_key) === 'join').length,
+          join_rule: 'public',
+          ...(this.stateOf(id, 'm.room.create', '')?.content.type === 'm.space' ? { room_type: 'm.space' } : {}),
+        }))
+        .filter((r) => !term || `${r.name} ${r.topic} ${r.canonical_alias}`.toLowerCase().includes(term));
+      return { status: 200, json: { chunk, total_room_count_estimate: chunk.length } };
+    }
+    if ((m = url.pathname.match(/^\/_matrix\/client\/v1\/rooms\/([^/]+)\/hierarchy$/))) {
+      const id = room(m[1]);
+      const children = this.log.filter((l) => l.room === id && l.event.type === 'm.space.child' && l.event.content.via).map((l) => l.event.state_key as string);
+      const rooms = [id, ...new Set(children)].map((r) => ({ room_id: r, name: this.stateOf(r, 'm.room.name', '')?.content.name, num_joined_members: 1, join_rule: 'public' }));
+      return { status: 200, json: { rooms } };
+    }
+    if ((m = path.match(/^\/user\/[^/]+\/rooms\/([^/]+)\/tags\/([^/]+)$/))) {
+      const key = `${user} ${room(m[1])}`;
+      const tags = { ...(this.tags.get(key) ?? {}) };
+      if (request.method === 'PUT') tags[decodeURIComponent(m[2])] = body;
+      else if (request.method === 'DELETE') delete tags[decodeURIComponent(m[2])];
+      this.tags.set(key, tags);
+      this.add(room(m[1]), user, 'erevos.check.tagged', {});
+      return { status: 200, json: {} };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/forget$/))) {
+      const id = room(m[1]);
+      if (this.membership(id, user) === 'join') return { status: 400, json: { errcode: 'M_UNKNOWN', error: 'Leave first' } };
+      this.forgotten.add(`${user} ${id}`);
+      return { status: 200, json: {} };
+    }
+    if ((m = path.match(/^\/rooms\/([^/]+)\/leave$/))) {
+      this.add(room(m[1]), user, 'm.room.member', { membership: 'leave' }, user);
+      return { status: 200, json: {} };
+    }
+    if (path === '/devices' && request.method === 'GET') {
+      const devices = [...this.tokens.values()].filter((t) => t.user === user).map((t, i) => ({ device_id: t.device, display_name: this.deviceNames.get(`${user} ${t.device}`) ?? 'Erevos', last_seen_ts: 1000 + i }));
+      return { status: 200, json: { devices } };
+    }
+    if ((m = path.match(/^\/devices\/([^/]+)$/)) && request.method === 'PUT') {
+      this.deviceNames.set(`${user} ${decodeURIComponent(m[1])}`, String(body.display_name));
+      return { status: 200, json: {} };
+    }
+    if (path === '/delete_devices') {
+      const asked = this.uia(body, [['m.login.password']], `del${user}`);
+      if (asked) return { status: 401, json: asked };
+      for (const [token, t] of [...this.tokens]) {
+        if (t.user === user && (body.devices as string[]).includes(t.device)) {
+          this.tokens.delete(token);
+          this.deviceKeys.get(user)?.delete(t.device);
+          this.signedOut.push(t.device);
+        }
+      }
+      this.uiaDone.delete(`del${user}`);
+      return { status: 200, json: {} };
+    }
     if (path === '/createRoom') {
       const id = `!r${++this.made}:example.org`;
       this.add(id, user, 'm.room.create', { creator: user }, '');
@@ -290,7 +399,7 @@ export class Homeserver {
     }
     if ((m = path.match(/^\/join\/(.+)$/))) {
       const id = room(m[1]);
-      if (this.membership(id, user) !== 'invite') return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Not invited' } };
+      if (this.membership(id, user) !== 'invite' && !this.published.has(id)) return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Not invited' } };
       this.add(id, user, 'm.room.member', { membership: 'join' }, user);
       return { status: 200, json: { room_id: id } };
     }
@@ -437,7 +546,8 @@ export class Homeserver {
         const cut = all.slice(0, all.length - given.length).filter((l) => l.event.state_key !== undefined);
         const state = [...before, ...cut].map((l) => l.event);
         const timeline = { events, limited: given.length < all.length, prev_batch: `b${given[0].seq - 1}` };
-        join[id] = { state: { events: state }, timeline, unread_notifications: { notification_count: this.unread(user, id) } };
+        const tags = this.tags.get(`${user} ${id}`);
+        join[id] = { state: { events: state }, timeline, unread_notifications: { notification_count: this.unread(user, id) }, ...(tags ? { account_data: { events: [{ type: 'm.tag', content: { tags } }] } } : {}) };
       }
       const writing = this.typing.get(id);
       if (now === 'join' && writing) join[id] = { ...(join[id] ?? {}), ephemeral: { events: [{ type: 'm.typing', content: { user_ids: writing } }] } };

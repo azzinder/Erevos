@@ -28,7 +28,27 @@ import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
 import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
+import type { Place, Poll, Preview } from './chat-parts';
 import { t } from './i18n';
+import {
+  endContent,
+  endPoll,
+  locationContent,
+  placeOfContent,
+  POLL_END,
+  POLL_RESPONSE,
+  POLL_START,
+  pollContent,
+  pollOfContent,
+  pollOver,
+  previewOfContent,
+  takeVote,
+  threadOf,
+  threadRelation,
+  voteContent,
+  votedOf,
+  type MatrixPoll,
+} from './matrix-parts';
 import { fetchCapped, HTTP_MOST, HttpTooLargeError } from './net-http';
 import { throughTor, torFor } from './relay';
 
@@ -70,6 +90,16 @@ export type MatrixMessage = {
   edited?: number;
   /** Taken back (redacted): what it said is gone. */
   deleted?: true;
+  /** A poll, with the votes on it (lib/matrix-parts.ts). */
+  poll?: MatrixPoll;
+  /** A place sent once (m.location). */
+  place?: Place;
+  /** The preview of a link in its words, as the sender's phone made it (MSC4095). */
+  preview?: Preview;
+  /** The thread it is in, by its first message's ID (m.thread): it shows there, not in the room's thread. */
+  thread?: string;
+  /** For a thread's first message, how many answers it has, as the homeserver last counted them. */
+  threadCount?: number;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -117,6 +147,15 @@ export type MatrixRoom = {
   keep?: number;
   /** Reactions and changes fetched from before ahead of the message they are for. */
   waiting?: { id: string; sender: string; ts: number; type: string; content: Json }[];
+  /** The messages pinned to its top (m.room.pinned_events), the latest last. */
+  pinned?: string[];
+  /** Its tags in our account (m.tag): one of our favourites, or of low priority. */
+  tags?: { favourite?: true; low?: true };
+  /** A space (m.space): a room that holds other rooms, not a chat. */
+  space?: true;
+  /** What it is about (m.room.topic), and the address it is known by (m.room.canonical_alias). */
+  topic?: string;
+  alias?: string;
 };
 
 /** The most messages a room keeps, however many older ones were fetched. */
@@ -168,7 +207,7 @@ export type MatrixState = {
 // The homeserver's answer to one request.
 export type MatrixAnswer = { status: number; json: Json; bytes?: Uint8Array };
 export type MatrixRequest = {
-  method: 'GET' | 'POST' | 'PUT';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   url: string;
   body?: unknown;
   token?: string;
@@ -279,6 +318,16 @@ export async function call(state: Pick<MatrixState, 'homeserver' | 'accessToken'
   return answered(await http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined }));
 }
 
+/** One request to the Client-Server API, its answer as it is, a refusal too: for asks that take more steps (lib/matrix-account.ts). */
+export async function callAnswer(state: { homeserver: string; accessToken?: string }, method: MatrixRequest['method'], path: string, body?: unknown): Promise<MatrixAnswer> {
+  return http({ method, url: `${state.homeserver}/_matrix/client/v3${path}`, body, token: state.accessToken || undefined });
+}
+
+/** Throws the homeserver's refusal, as `call` does, or answers what it said. */
+export function answeredJson(answer: MatrixAnswer): Json {
+  return answered(answer);
+}
+
 /** One request to a part of the Client-Server API still unstable, under the MSC that names it. */
 async function unstable(state: Pick<MatrixState, 'homeserver' | 'accessToken'>, feature: string, method: MatrixRequest['method'], path: string, body?: unknown): Promise<Json> {
   return answered(await http({ method, url: `${state.homeserver}/_matrix/client/unstable/${feature}${path}`, body, token: state.accessToken }));
@@ -373,7 +422,8 @@ export async function signInWithToken(homeserver: string, token: string): Promis
   return newDevice(homeserver, login, null);
 }
 
-async function newDevice(homeserver: string, login: Json, auth: Json | null): Promise<MatrixState> {
+/** The account a sign-in or a new account gave (`login`), as a new device of it with its keys published (lib/matrix-account.ts makes accounts). */
+export async function newDevice(homeserver: string, login: Json, auth: Json | null): Promise<MatrixState> {
   const { account } = await core<{ account: Json }>('account_new', {});
   const state: MatrixState = {
     homeserver,
@@ -656,6 +706,23 @@ function takeState(room: MatrixRoom, event: Json): void {
     case 'm.room.avatar':
       room.avatar = mxcOf(content.url);
       break;
+    case 'm.room.pinned_events': {
+      const pinned = Array.isArray(content.pinned) ? content.pinned.filter((id): id is string => typeof id === 'string' && id.startsWith('$')).slice(-50) : [];
+      if (pinned.length) room.pinned = pinned;
+      else delete room.pinned;
+      break;
+    }
+    case 'm.room.create':
+      if (content.type === 'm.space') room.space = true;
+      break;
+    case 'm.room.topic':
+      if (typeof content.topic === 'string' && content.topic.trim()) room.topic = content.topic.trim().slice(0, 500);
+      else delete room.topic;
+      break;
+    case 'm.room.canonical_alias':
+      if (typeof content.alias === 'string' && /^#[^:\s]+:\S+$/.test(content.alias)) room.alias = content.alias;
+      else delete room.alias;
+      break;
     case 'm.room.member': {
       const who = String(event.state_key);
       if (content.membership === 'join' || content.membership === 'invite') {
@@ -704,6 +771,14 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     if (event.type !== 'm.typing') continue;
     const ids = (event.content as Json | undefined)?.user_ids;
     setTyping(state, id, Array.isArray(ids) ? ids.filter((u): u is string => typeof u === 'string' && u !== state.userId).slice(0, 20) : []);
+  }
+  // Our tags on it (m.tag), in our account: a favourite, or of low priority.
+  for (const event of ((data.account_data as Json | undefined)?.events as Json[] | undefined) ?? []) {
+    if (event.type !== 'm.tag') continue;
+    const tags = ((event.content as Json | undefined)?.tags as Json | undefined) ?? {};
+    room.tags = { ...('m.favourite' in tags ? { favourite: true as const } : {}), ...('m.lowpriority' in tags ? { low: true as const } : {}) };
+    if (!room.tags.favourite && !room.tags.low) delete room.tags;
+    seen = true;
   }
   const unread = (data.unread_notifications as Json | undefined)?.notification_count;
   if (typeof unread === 'number') room.unread = unread;
@@ -790,7 +865,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
   const unsigned = event.unsigned as Json | undefined;
   // Taken back before it came here: it shows as such, its words gone.
   if (unsigned?.redacted_because) {
-    if (type !== 'm.room.message' && type !== 'm.room.encrypted') return false;
+    if (type !== 'm.room.message' && type !== 'm.room.encrypted' && !POLL_START.includes(type)) return false;
     return place(room, { ...base, text: '', deleted: true }, event, older);
   }
   if (type === 'm.room.redaction') return redact(room, String(event.redacts ?? content.redacts ?? ''));
@@ -802,7 +877,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
     const opened = await openMegolm(state, roomId, base.id, locked);
     if (!opened) {
       // A reaction or a change that cannot be opened has nothing to show.
-      if (relation?.rel_type === 'm.annotation' || relation?.rel_type === 'm.replace') return false;
+      if (relation?.rel_type === 'm.annotation' || relation?.rel_type === 'm.replace' || relation?.rel_type === 'm.reference') return false;
       return place(room, { ...base, text: '', locked }, event, older);
     }
     type = opened.type;
@@ -816,6 +891,12 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
     if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
   }
   const changed = await takeContent(state, roomId, base, type, content, event, older);
+  // A thread's first message comes with how many answers it has (m.relations).
+  const threaded = (unsigned?.['m.relations'] as Json | undefined)?.['m.thread'] as Json | undefined;
+  if (changed && typeof threaded?.count === 'number') {
+    const root = room.messages.find((m) => m.id === base.id);
+    if (root) root.threadCount = Math.max(0, Math.min(1e6, Math.floor(threaded.count)));
+  }
   // Fetched from before, a message comes with its latest change bundled (m.relations).
   const bundled = ((unsigned?.['m.relations'] as Json | undefined)?.['m.replace'] as Json | undefined) ?? undefined;
   if (older && changed && typeof bundled?.event_id === 'string' && typeof bundled.type === 'string') await takeEvent(state, roomId, bundled, true);
@@ -827,9 +908,31 @@ async function takeContent(state: MatrixState, roomId: string, base: { id: strin
   const room = roomOf(state, roomId);
   const relation = content['m.relates_to'] as Json | undefined;
   if (type === 'm.reaction') return react(room, base, relation) || (older && waitFor(room, base, type, content));
+  if (POLL_RESPONSE.includes(type) || POLL_END.includes(type)) return pollRelation(room, base, type, content) || (older && waitFor(room, base, type, content));
+  if (POLL_START.includes(type)) {
+    const poll = pollOfContent(content);
+    const words = poll ? '' : bodyOf(content) || String(content['org.matrix.msc1767.text'] ?? '');
+    return place(room, { ...base, text: words, ...(poll ? { poll } : {}) }, event, older);
+  }
   if (type !== 'm.room.message') return false;
   if (relation?.rel_type === 'm.replace') return change(room, base, relation, content) || (older && waitFor(room, base, type, content));
   return place(room, { ...base, ...shownOf(content) }, event, older);
+}
+
+/** A vote on a poll, or its end, which only its maker may send: on the poll it is for. */
+function pollRelation(room: MatrixRoom, base: { sender: string; ts: number }, type: string, content: Json): boolean {
+  const relation = content['m.relates_to'] as Json | undefined;
+  if (relation?.rel_type !== 'm.reference') return false;
+  const poll = room.messages.find((m) => m.id === relation.event_id && m.poll && !m.deleted)?.poll;
+  if (!poll) return false;
+  if (POLL_END.includes(type)) {
+    const maker = room.messages.find((m) => m.poll === poll)?.sender;
+    if (base.sender !== maker) return false;
+    endPoll(poll, base.ts);
+    return true;
+  }
+  const ids = votedOf(content, poll);
+  return ids !== null && takeVote(poll, base.sender, ids, base.ts);
 }
 
 /** Fetched from before, a reaction or a change comes ahead of its message: it waits for it. */
@@ -849,7 +952,13 @@ function place(room: MatrixRoom, message: MatrixMessage, event: Json, older: boo
   if (at >= 0) {
     const before = room.messages[at];
     // What came for it while it went, or before it was fetched again, stays.
-    room.messages[at] = { ...message, ...(before.reactions ? { reactions: before.reactions } : {}), ...(before.edited && !message.deleted ? { text: before.text, edited: before.edited } : {}) };
+    room.messages[at] = {
+      ...message,
+      ...(before.reactions ? { reactions: before.reactions } : {}),
+      ...(before.edited && !message.deleted ? { text: before.text, edited: before.edited } : {}),
+      ...(before.threadCount !== undefined ? { threadCount: before.threadCount } : {}),
+      ...(message.poll && before.poll ? { poll: { ...message.poll, votes: before.poll.votes, ended: before.poll.ended } } : {}),
+    };
     return true;
   }
   if (!older) {
@@ -866,7 +975,8 @@ function place(room: MatrixRoom, message: MatrixMessage, event: Json, older: boo
     for (const w of its.sort((a, b) => a.ts - b.ts)) {
       const relation = w.content['m.relates_to'] as Json;
       if (w.type === 'm.reaction') react(room, w, relation);
-      else change(room, w, relation, w.content);
+      else if (w.type === 'm.room.message') change(room, w, relation, w.content);
+      else pollRelation(room, w, w.type, w.content);
     }
   }
   return true;
@@ -895,6 +1005,8 @@ function change(room: MatrixRoom, base: { sender: string; ts: number }, relation
   const shown = shownOf(fresh);
   target.text = shown.text;
   if (shown.file) target.file = shown.file;
+  if (shown.preview) target.preview = shown.preview;
+  else delete target.preview;
   target.edited = base.ts;
   return true;
 }
@@ -916,7 +1028,7 @@ function redact(room: MatrixRoom, id: string): boolean {
   if (!target || target.deleted) return false;
   target.text = '';
   target.deleted = true;
-  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited'] as const) delete target[gone];
+  for (const gone of ['file', 'locked', 'reactions', 'replyTo', 'edited', 'poll', 'place', 'preview'] as const) delete target[gone];
   return true;
 }
 
@@ -949,6 +1061,9 @@ function isEncryptedFile(value: unknown): value is EncryptedFile {
 
 /** The message a content answers, when it answers one. */
 function replyOf(content: Json | undefined): string | undefined {
+  const relation = content?.['m.relates_to'] as Json | undefined;
+  // In a thread, the message it seems to answer is only the thread's latest, for apps without threads.
+  if (relation?.rel_type === 'm.thread' && relation.is_falling_back === true) return undefined;
   const to = ((content?.['m.relates_to'] as Json | undefined)?.['m.in_reply_to'] as Json | undefined)?.event_id;
   return typeof to === 'string' && to.startsWith('$') ? to : undefined;
 }
@@ -963,9 +1078,18 @@ function withoutQuote(body: string): string {
 }
 
 /** What a message's content shows: its words, its file when it carries one, and what it answers. */
-function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file' | 'replyTo'> {
+function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file' | 'replyTo' | 'place' | 'preview' | 'thread'> {
+  const thread = content ? threadOf(content) : null;
+  if (thread) {
+    const inside = shownOf({ ...content, 'm.relates_to': thread.answers ? { 'm.in_reply_to': { event_id: thread.answers } } : undefined });
+    return { ...inside, thread: thread.root };
+  }
   const replyTo = replyOf(content);
   if (replyTo) return { ...shownOf({ ...content, 'm.relates_to': undefined, body: withoutQuote(bodyOf(content)) }), replyTo };
+  const where = content ? placeOfContent(content) : null;
+  if (where) return { text: '', place: where };
+  const preview = content && content.msgtype === 'm.text' ? previewOfContent(content) : null;
+  if (preview) return { text: bodyOf(content), preview };
   if (content?.msgtype === 'm.key.verification.request') return { text: t('Asked to check devices by emoji.') };
   const kind = KINDS[String(content?.msgtype)];
   if (!content || !kind) return { text: bodyOf(content) };
@@ -1225,8 +1349,50 @@ export async function sendToDevicePlain(state: MatrixState, type: string, to: Re
 }
 
 /** Sends `text` to a room, encrypted when the room is. Answers the message as it now shows. */
-export function sendText(state: MatrixState, roomId: string, text: string, mentions: string[] = []): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...mentionsOf(mentions) });
+/** Sends words, naming `mentions`; `extra` goes with them, such as the preview of a link in them (lib/matrix-parts.ts). */
+export function sendText(state: MatrixState, roomId: string, text: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, ...mentionsOf(mentions), ...extra });
+}
+
+/**
+ * Sends words in the thread of `root` (m.thread), as an answer to `answers` there when given;
+ * otherwise as the thread's latest message, which an app without threads shows as an answer to it.
+ */
+export function sendInThread(state: MatrixState, roomId: string, root: string, text: string, answers?: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': threadRelation(root, latestIn(state, roomId, root), answers), ...mentionsOf(mentions), ...extra });
+}
+
+/** Sends a poll (lib/matrix-parts.ts), as Element sends one. */
+export function sendPoll(state: MatrixState, roomId: string, poll: Poll): Promise<MatrixMessage> {
+  return sendContent(state, roomId, pollContent(poll), POLL_START[0]);
+}
+
+/** Votes on the poll `target` with the answers `ids`; none takes our vote back. */
+export async function sendVote(state: MatrixState, roomId: string, target: string, ids: string[]): Promise<void> {
+  const poll = roomOf(state, roomId).messages.find((m) => m.id === target)?.poll;
+  if (!poll || pollOver(poll)) throw new Error(t('This poll has ended.'));
+  await sendEvent(state, roomId, POLL_RESPONSE[0], voteContent(target, ids));
+  takeVote(poll, state.userId, ids, Date.now());
+}
+
+/** Ends a poll of ours: no more votes count. */
+export async function sendPollEnd(state: MatrixState, roomId: string, target: string): Promise<void> {
+  const message = roomOf(state, roomId).messages.find((m) => m.id === target);
+  if (!message?.poll || message.sender !== state.userId) throw new Error(t('Only who made a poll can end it.'));
+  await sendEvent(state, roomId, POLL_END[0], endContent(target, t('The poll has ended.')));
+  // Ended when the homeserver says, by its clock, as the votes are: until then, closing.
+  if (message.poll.ended === undefined) message.poll.closing = true;
+}
+
+/** Sends where we are, once (m.location). */
+export function sendLocation(state: MatrixState, roomId: string, where: Place, thread?: string): Promise<MatrixMessage> {
+  const content = locationContent(where, t('Location'));
+  return sendContent(state, roomId, thread ? { ...content, 'm.relates_to': threadRelation(thread, latestIn(state, roomId, thread)) } : content);
+}
+
+/** The latest message in the thread of `root`, or the root itself. */
+function latestIn(state: MatrixState, roomId: string, root: string): string {
+  return roomOf(state, roomId).messages.filter((m) => !m.state && (m.thread === root || m.id === root)).at(-1)?.id ?? root;
 }
 
 /** Who a message names (m.mentions), so their apps tell them of it, as Element does; inside the encryption in an encrypted room. */
@@ -1235,14 +1401,16 @@ function mentionsOf(userIds: string[]): Json {
   return named.length ? { 'm.mentions': { user_ids: named } } : {};
 }
 
-/** Sends a message's content to a room, encrypted when the room is. */
-export async function sendContent(state: MatrixState, roomId: string, content: Json): Promise<MatrixMessage> {
+/** Sends a message's content to a room, encrypted when the room is: an m.room.message, or a poll's start. */
+export async function sendContent(state: MatrixState, roomId: string, content: Json, type = 'm.room.message'): Promise<MatrixMessage> {
   const room = roomOf(state, roomId);
   const id = txn();
-  const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), ...shownOf(content), state: 'sending' };
+  const poll = POLL_START.includes(type) ? pollOfContent(content) : null;
+  const shown = poll ? { text: '', poll } : shownOf(content);
+  const message: MatrixMessage = { id, sender: state.userId, ts: Date.now(), ...shown, state: 'sending' };
   room.messages.push(message);
   try {
-    message.id = await sendEvent(state, roomId, 'm.room.message', content, id);
+    message.id = await sendEvent(state, roomId, type, content, id);
     delete message.state;
   } catch (error) {
     message.state = 'failed';
@@ -1252,8 +1420,8 @@ export async function sendContent(state: MatrixState, roomId: string, content: J
 }
 
 /** Answers the message `replyTo` with `text`. */
-export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string, mentions: string[] = []): Promise<MatrixMessage> {
-  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } }, ...mentionsOf(mentions) });
+export function sendReply(state: MatrixState, roomId: string, text: string, replyTo: string, mentions: string[] = [], extra: Json = {}): Promise<MatrixMessage> {
+  return sendContent(state, roomId, { msgtype: 'm.text', body: text, 'm.relates_to': { 'm.in_reply_to': { event_id: replyTo } }, ...mentionsOf(mentions), ...extra });
 }
 
 /** Reacts to a message with `key`, an emoji; once only. */
@@ -1282,7 +1450,7 @@ export async function takeBackReaction(state: MatrixState, roomId: string, targe
 export async function sendChange(state: MatrixState, roomId: string, target: string, text: string): Promise<void> {
   const room = roomOf(state, roomId);
   const message = room.messages.find((m) => m.id === target);
-  if (!message || message.sender !== state.userId || message.deleted || message.state) throw new Error(t('Only a message of yours that went can be changed.'));
+  if (!message || message.sender !== state.userId || message.deleted || message.state || message.poll || message.place) throw new Error(t('Only a message of yours that went can be changed.'));
   await sendEvent(state, roomId, 'm.room.message', {
     msgtype: 'm.text',
     body: `* ${text}`,
@@ -1291,6 +1459,7 @@ export async function sendChange(state: MatrixState, roomId: string, target: str
   });
   message.text = text;
   message.edited = Date.now();
+  delete message.preview;
 }
 
 /** Takes back a message, for everyone in the room (a redaction): ours, or anyone's where we may. */

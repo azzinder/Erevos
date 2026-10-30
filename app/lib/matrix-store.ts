@@ -22,9 +22,15 @@ import {
   markRead,
   MatrixError,
   sendChange,
+  sendInThread,
+  sendLocation,
+  sendPoll,
+  sendPollEnd,
   sendReaction,
   sendReply,
   sendText,
+  sendVote,
+  type Json,
   sendTyping,
   fetchOwnAvatar,
   setOwnAvatar,
@@ -40,6 +46,10 @@ import {
 } from './matrix';
 import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, unlockRecovery, type Unlocked } from './matrix-backup';
 import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } from './matrix-media';
+import { listDevices, register, renameDevice, signOutDevices, type AccountDevice, type AuthAsk } from './matrix-account';
+import { pollShown, previewContent } from './matrix-parts';
+import { leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
+import type { Place, Poll, Preview } from './chat-parts';
 import {
   acceptVerification,
   cancelVerification,
@@ -549,19 +559,176 @@ export function matrixSetSayTyping(on: boolean): Promise<void> {
   });
 }
 
-export function matrixSend(roomId: string, text: string, mentions: string[] = []): Promise<void> {
+/** Sends words to a room, with the preview of a link in them when this phone made one. */
+export function matrixSend(roomId: string, text: string, mentions: string[] = [], preview?: Preview | null): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
-    await sendText(it.state, roomId, text, mentions);
+    await sendText(it.state, roomId, text, mentions, preview ? previewContent(preview) : {});
   });
 }
 
 /** Answers a message of the room with `text`. */
-export function matrixReply(roomId: string, text: string, replyTo: string, mentions: string[] = []): Promise<void> {
+export function matrixReply(roomId: string, text: string, replyTo: string, mentions: string[] = [], preview?: Preview | null): Promise<void> {
   const it = need();
   return changeAccount(it, async () => {
-    await sendReply(it.state, roomId, text, replyTo, mentions);
+    await sendReply(it.state, roomId, text, replyTo, mentions, preview ? previewContent(preview) : {});
   });
+}
+
+/** Sends words in the thread of `root`, as an answer to `answers` there when given. */
+export function matrixSendInThread(roomId: string, root: string, text: string, answers?: string, mentions: string[] = [], preview?: Preview | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await sendInThread(it.state, roomId, root, text, answers, mentions, preview ? previewContent(preview) : {});
+  });
+}
+
+/** Sends a poll to a room. */
+export function matrixPoll(roomId: string, poll: Poll): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await sendPoll(it.state, roomId, poll);
+  });
+}
+
+/** Votes on a poll with its answers by number; none takes our vote back. */
+export function matrixVote(roomId: string, target: string, chose: number[]): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const poll = it.state.rooms[roomId]?.messages.find((m) => m.id === target)?.poll;
+    if (!poll) return;
+    await sendVote(it.state, roomId, target, chose.map((i) => poll.answers[i]?.id).filter((id): id is string => !!id));
+  });
+}
+
+/** Ends a poll of ours. */
+export function matrixEndPoll(roomId: string, target: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => sendPollEnd(it.state, roomId, target));
+}
+
+/** Sends where we are, once, to a room or a thread of it. */
+export function matrixLocation(roomId: string, place: Place, thread?: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    await sendLocation(it.state, roomId, place, thread);
+  });
+}
+
+/** Pins a message to the room's top, or takes it down. */
+export function matrixPin(roomId: string, target: string, on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => pinMessage(it.state, roomId, target, on));
+}
+
+/** Makes a room a favourite, of low priority, or neither. */
+export function matrixTag(roomId: string, tag: 'favourite' | 'low' | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => tagRoom(it.state, roomId, tag));
+}
+
+/** Leaves a room, and the homeserver forgets it. */
+export function matrixForget(roomId: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => leaveAndForget(it.state, roomId));
+}
+
+/** The public rooms of our homeserver, or of `server`, with `term` in them. */
+export async function matrixPublicRooms(term: string, server = '', since?: string): Promise<{ rooms: FoundRoom[]; next?: string }> {
+  try {
+    return await publicRooms(need().state, term, server, since);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/** The rooms in a space. */
+export async function matrixSpaceRooms(spaceId: string, since?: string): Promise<{ rooms: FoundRoom[]; next?: string }> {
+  try {
+    return await spaceRooms(need().state, spaceId, since);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/**
+ * Sends a copy of a message to another room of the same account: its words, place or poll anew;
+ * a photo's or file's bytes fetched, opened and sent again under a key of their own, so the copy
+ * shares nothing with the message on the homeserver. Matrix has no mark for a copy: it shows as ours.
+ */
+export async function matrixForward(fromRoom: string, messageId: string, toRoom: string): Promise<void> {
+  const it = need();
+  const message = it.state.rooms[fromRoom]?.messages.find((m) => m.id === messageId);
+  if (!message || message.deleted || message.locked || message.call || !it.state.rooms[toRoom]) throw new Error(t('This message cannot be forwarded.'));
+  const file = message.file;
+  const bytes = file ? await matrixFile(file) : null;
+  await changeAccount(it, async () => {
+    if (file && bytes) {
+      await sendFile(it.state, toRoom, {
+        name: file.name,
+        mime: file.mime,
+        bytes,
+        ...(file.w && file.h ? { w: file.w, h: file.h } : {}),
+        ...(file.voice ? { voice: { durationMs: file.duration ?? 0, ...(file.waveform ? { waveform: file.waveform } : {}) } } : {}),
+      });
+    } else if (message.place) await sendLocation(it.state, toRoom, message.place);
+    else if (message.poll) await sendPoll(it.state, toRoom, pollShown(message.poll).poll);
+    else await sendText(it.state, toRoom, message.text, [], message.preview ? previewContent(message.preview) : {});
+  });
+}
+
+/** The account's devices. */
+export async function matrixDevices(): Promise<AccountDevice[]> {
+  try {
+    return await listDevices(need().state);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/** Gives a device of the account a new name. */
+export async function matrixRenameDevice(deviceId: string, name: string): Promise<void> {
+  try {
+    await renameDevice(need().state, deviceId, name);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/** Signs other devices out, or answers what the homeserver asks for first (authFor answers it). */
+export async function matrixSignOutDevices(ids: string[], auth?: Json): Promise<{ done: true } | { ask: AuthAsk }> {
+  const it = need();
+  try {
+    return await changeAccount(it, () => signOutDevices(it.state, ids, auth));
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/**
+ * Makes a new Matrix account `name` on `server` and signs the space in with it, as signing in does;
+ * or answers what the homeserver asks for first, to be answered (authFor) and tried again.
+ */
+export async function matrixRegister(server: string, name: string, password: string, auth?: Json): Promise<{ done: true; userId: string } | { ask: AuthAsk; homeserver: string }> {
+  const it = acting();
+  if (!it || it.stopped) throw new Error(t('There is no Matrix account in this space.'));
+  if (it.state) throw new Error(t('This space is signed in to Matrix already.'));
+  try {
+    const homeserver = await findHomeserver(server);
+    const made = await register(homeserver, name.trim(), password, auth);
+    if ('ask' in made) return { ask: made.ask, homeserver };
+    const state = made.state;
+    state.restored = await lastRestore();
+    await changeAccount(it, async () => {
+      it.state = state;
+      it.problem = '';
+    });
+    await saveMatrix(it.space, it.key, state, it.holder);
+    void loop(it);
+    return { done: true, userId: state.userId };
+  } catch (error) {
+    throw new Error(reason(error));
+  }
 }
 
 /** Reacts to a message with an emoji, or takes our reaction back when it is there. */
