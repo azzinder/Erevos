@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { OwnPicture } from '../components/network-picture';
 import { SayTypingSwitch } from '../components/say-typing';
@@ -8,6 +8,7 @@ import { pickAvatar } from '../lib/pick-avatar';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { shownLine } from '../lib/call-lines';
+import { doorIsOpen } from '../lib/closed-notices';
 import { canTor, canXmpp } from '../lib/core';
 import { t } from '../lib/i18n';
 import { useNetworkWhere, whereParams } from '../lib/network-place';
@@ -15,7 +16,7 @@ import { onTorReady } from '../lib/relay';
 import { isXmppId, nameOf, xmppChatList, type XmppChat, type XmppState } from '../lib/xmpp';
 import { xmppThroughTor } from '../lib/xmpp-net';
 import { fingerprint } from '../lib/xmpp-omemo';
-import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppSetAvatar, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
+import { onXmppChange, runXmpp, xmppAddContact, xmppCreateGroup, xmppDecline, xmppDeclineInvite, xmppJoinGroup, xmppNow, xmppPushOn, xmppSetAvatar, xmppSetPush, xmppSetSayTyping, xmppSignIn, xmppSignOut } from '../lib/xmpp-store';
 import { radius, space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -351,6 +352,8 @@ export default function XmppScreen() {
         <SayTypingSwitch on={!!state.sayTyping} server="XMPP" onChange={(on) => void run(() => xmppSetSayTyping(on))} />
       </Card>
 
+      {Platform.OS === 'android' && where === 'space' ? <ClosedPush busy={busy} run={run} /> : null}
+
       <SectionTitle title={t('This device')} />
       <Card>
         <Text tone="muted">{t('The OMEMO key of this device. The people you write to can compare it with what their app shows.')}</Text>
@@ -434,5 +437,44 @@ function ChatCard({ state, chat, onOpen }: { state: XmppState; chat: XmppChat; o
         ) : null}
       </Card>
     </Pressable>
+  );
+}
+
+// Whether the space tells of XMPP messages while it is closed: only while another space is open,
+// and only if it says a message came then (Settings → Notifications → In the background), as its
+// own chats do (lib/closed-notices.ts), which is said when it does not.
+function ClosedPush({ busy, run }: { busy: boolean; run: (work: () => Promise<unknown>) => Promise<void> }) {
+  const on = xmppPushOn();
+  const [door, setDoor] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    doorIsOpen().then(
+      (open) => live && setDoor(open),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
+  }, [on]);
+  return (
+    <>
+      <SectionTitle title={t('While this space is closed')} />
+      <Card>
+        <Row wrap>
+          <Chip label={t('Say a message came')} selected={on} onPress={() => !busy && !on && void run(() => xmppSetPush(true))} />
+          <Chip label={t('No notice')} selected={!on} onPress={() => !busy && on && void run(() => xmppSetPush(false))} />
+        </Row>
+        <Text variant="caption" tone="muted">
+          {on
+            ? t('While another space is open, this one says "New message" when something comes on XMPP, never what, from whom or in which chat, and a call does not ring. For it the XMPP server tells this space\'s relay of each message while no app of the account is on: the XMPP server learns the relay\'s name, and the relay when messages come.')
+            : t('Closed, this space hears nothing from XMPP: what came shows when it opens.')}
+        </Text>
+        {on && door === false ? (
+          <Text variant="caption" tone="muted">
+            {t('This space says nothing while closed for now: choose Also while another space is open under Settings → Notifications → In the background.')}
+          </Text>
+        ) : null}
+      </Card>
+    </>
   );
 }

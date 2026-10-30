@@ -134,7 +134,7 @@ fn push_keys(body: &[u8]) -> Option<(Vec<String>, bool)> {
 }
 
 /// The sender id a push key names: 24 bytes in hex.
-fn sender_of(key: &str) -> Option<QueueId> {
+pub(crate) fn sender_of(key: &str) -> Option<QueueId> {
     if key.len() != 48 {
         return None;
     }

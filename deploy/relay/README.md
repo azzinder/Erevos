@@ -564,6 +564,9 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
 | `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
 | `EREVOS_RELAY_MATRIX_PUSH` | `on` | `off` stops the relay from taking Matrix pushes (see [Matrix notices](#matrix-notices)). |
+| `EREVOS_RELAY_XMPP_PUSH` | none | The relay's DNS name, to take XMPP servers' pushes (see [XMPP notices](#xmpp-notices)); needs the two below. |
+| `EREVOS_RELAY_XMPP_PUSH_CERT`, `EREVOS_RELAY_XMPP_PUSH_KEY` | none | The certificate chain and its key for that name, in PEM, readable by the relay. |
+| `EREVOS_RELAY_XMPP_PUSH_ADDR` | `0.0.0.0:5269` | Where it listens for XMPP servers. |
 
 ## Connections
 
@@ -732,6 +735,44 @@ Then `sudo httpd -t && sudo systemctl reload httpd` (on Debian or Ubuntu,
 
 answers `{"rejected":["00"]}`, from the relay; a `403`, `404` or an empty answer is Apache's, or a
 relay from before this change.
+
+## XMPP notices
+
+As for Matrix, a space signed in to XMPP can ask, on the app's XMPP screen, to say "New message"
+while it is closed. For it the relay is the account's push app server (XEP-0357): the space makes a
+queue for this alone and asks its XMPP server to push to the relay's name, with that queue's sender
+id as the node. While no app of the account is online, the XMPP server then publishes to the node
+for each message, and the relay counts one message in that queue's news. What the publish says (a
+count, and on some servers who wrote and what) is read past and kept nowhere. A node that is no
+queue here is refused, and the XMPP server stops pushing to it.
+
+XMPP servers reach an app server as they reach each other: on port 5269 of its name, with
+STARTTLS. So the relay listens there itself, with a certificate for its name; Apache is not in
+the way. The relay takes what the other server says it is as said (nothing here is worth more than
+a node's secret) and never opens a connection of its own. Off unless `EREVOS_RELAY_XMPP_PUSH` is
+set. To turn it on (on a relay installed with `install.sh`):
+
+1. Let 5269 in: `sudo ufw allow 5269/tcp`, or the firewall in use.
+2. The relay runs as a user systemd makes for it, so it is handed the certificate by systemd
+   rather than reading it under `/etc/letsencrypt`: `sudo systemctl edit erevos-relay`, and in
+   what it opens, with the relay's name in place of `erevos.example.org`:
+
+       [Service]
+       LoadCredential=xmpp-cert:/etc/letsencrypt/live/erevos.example.org/fullchain.pem
+       LoadCredential=xmpp-key:/etc/letsencrypt/live/erevos.example.org/privkey.pem
+       Environment=EREVOS_RELAY_XMPP_PUSH=erevos.example.org
+       Environment=EREVOS_RELAY_XMPP_PUSH_CERT=/run/credentials/erevos-relay.service/xmpp-cert
+       Environment=EREVOS_RELAY_XMPP_PUSH_KEY=/run/credentials/erevos-relay.service/xmpp-key
+
+   then `sudo systemctl restart erevos-relay`. The log says `XMPP servers may push to …`.
+3. systemd hands the certificate over at each start, so a renewed one needs a restart: a certbot
+   deploy hook, `/etc/letsencrypt/renewal-hooks/deploy/erevos-xmpp.sh` (mode 755):
+
+       #!/bin/sh
+       systemctl restart erevos-relay
+
+To see it work from another machine: `openssl s_client -starttls xmpp-server -xmpphost
+erevos.example.org -connect erevos.example.org:5269` shows the certificate.
 
 ## Lending places
 

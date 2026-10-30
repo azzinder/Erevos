@@ -59,6 +59,12 @@ On main, not released yet:
   second key has to be this side's own, and what it proves is trusted only after both sides sent done. Photos are read
   as bytes (`readQrPhotoBytes`: ZXing's byte segments on Android, jsQR's `binaryData` on the web). Before, an Erevos
   that asked started the emoji at once; now it waits for the choice, unless the other app offers no code.
+- **A closed space tells of XMPP messages** (`lib/xmpp-push.ts`, `crates/erevos-relay/src/xmpp_push.rs`): the relay is
+  the account's push app server (XEP-0357). It listens on port 5269 with STARTTLS, as XMPP servers reach each other, when
+  `EREVOS_RELAY_XMPP_PUSH` names it, and counts one message in the news of the queue each publish's node names, keeping
+  nothing; a phone asks for the name with the new `XMPP_PUSH` request. The space enables the push at its server (node =
+  the queue's sender id), the door names the queue (`XMPP_PUSH_GROUP`), and it is asked of the server again at each
+  session. Hetzner and the release only on Nekten's word: see `deploy/relay/README.md` ("XMPP notices"). See [XMPP](#xmpp).
 - **Sign in to Matrix with single sign-on** (Android): `loginWays` reads the server's `/login` flows; `ssoLink` opens
   `/login/sso/redirect[/{idp}]` in the browser, which comes back to `erevos://matrix-sso` with a `loginToken`, then
   `signInWithToken` logs in with `m.login.token` (`app/matrix-sso.tsx`, `matrixSsoStart`/`matrixSsoFinish`). A

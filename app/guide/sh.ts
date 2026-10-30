@@ -1695,6 +1695,14 @@ aplikacije: nikakav most nije između.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
   ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
+- **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
+  ekranu XMPP-a pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na XMPP-u dok je otvoren drugi prostor, kao
+  što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
+  pozadini**, što je također potrebno. Nikad ne kaže šta, od koga ni u kojem razgovoru, a poziv tada ne zvoni: samo
+  ključ prostora otvara ono što je stiglo. Za to XMPP server javlja relayu ovog prostora svaku poruku dok nijedna
+  aplikacija računa nije uključena, pa XMPP server saznaje ime relaya, a relay kad stižu poruke. Isključeno dok ga ne
+  uključite; treba relay ažuriran za to, do kojeg XMPP serveri mogu doći (njegov vlasnik otvara port za njih), i XMPP
+  server koji šalje obavijesti neaktivnim aplikacijama, kao većina.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.

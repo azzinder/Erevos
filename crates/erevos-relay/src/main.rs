@@ -133,6 +133,12 @@
 //! A proxy in front must pass that path as plain HTTP. Set
 //! `EREVOS_RELAY_MATRIX_PUSH=off` to answer none. On unless set.
 //!
+//! Set `EREVOS_RELAY_XMPP_PUSH` to the relay's DNS name, with
+//! `EREVOS_RELAY_XMPP_PUSH_CERT` and `EREVOS_RELAY_XMPP_PUSH_KEY` (its
+//! certificate chain and key, PEM), to take XMPP servers' pushes too (see
+//! `xmpp_push.rs`): on port 5269, or `EREVOS_RELAY_XMPP_PUSH_ADDR`, with
+//! STARTTLS, as XMPP servers reach each other. Off unless set.
+//!
 //! Messages sent for later (see `later.rs`) are kept in the folder
 //! `EREVOS_RELAY_LATER`, or else in `<journal>.later` beside the journal,
 //! until they go. Without either, they live in memory and are lost when the
@@ -178,6 +184,7 @@ mod signin;
 mod stop;
 mod tokens;
 mod turn;
+mod xmpp_push;
 
 use std::env;
 use std::fs;
@@ -767,6 +774,42 @@ fn main() -> ExitCode {
         _ => elog!(
             "erevos-relay: no EREVOS_RELAY_PUSH_KEY set, web apps cannot ask for notifications"
         ),
+    }
+    match env::var("EREVOS_RELAY_XMPP_PUSH") {
+        Ok(domain) if !domain.is_empty() => {
+            let path = |name: &str| env::var(name).ok().filter(|p| !p.is_empty());
+            let (Some(cert), Some(key)) = (
+                path("EREVOS_RELAY_XMPP_PUSH_CERT"),
+                path("EREVOS_RELAY_XMPP_PUSH_KEY"),
+            ) else {
+                elog!("erevos-relay: EREVOS_RELAY_XMPP_PUSH needs EREVOS_RELAY_XMPP_PUSH_CERT and EREVOS_RELAY_XMPP_PUSH_KEY, its certificate chain and key in PEM");
+                return ExitCode::FAILURE;
+            };
+            let push = match xmpp_push::XmppPush::new(&domain, cert.into(), key.into()) {
+                Ok(push) => Arc::new(push),
+                Err(e) => {
+                    elog!("erevos-relay: cannot take XMPP pushes as {domain}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            };
+            let addr = path("EREVOS_RELAY_XMPP_PUSH_ADDR")
+                .unwrap_or_else(|| xmpp_push::DEFAULT_ADDR.to_string());
+            let listener = match TcpListener::bind(&addr) {
+                Ok(listener) => listener,
+                Err(e) => {
+                    elog!("erevos-relay: cannot listen for XMPP pushes on {addr}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            };
+            elog!(
+                "erevos-relay: XMPP servers may push to {} on {addr}",
+                push.domain()
+            );
+            let _ = store.xmpp_push.set(Arc::clone(&push));
+            let xmpp_store = Arc::clone(&store);
+            thread::spawn(move || xmpp_push::serve(listener, push, xmpp_store));
+        }
+        _ => elog!("erevos-relay: no EREVOS_RELAY_XMPP_PUSH set, XMPP servers cannot push"),
     }
     *store.held() = held;
     let held_store = Arc::clone(&store);

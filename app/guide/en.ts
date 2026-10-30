@@ -1625,6 +1625,14 @@ bridge sits in between.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
   chat mutes it or gives it a sound of its own; a muted chat is not counted.
+- **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the XMPP
+  screen lets this space say "New message" when something comes on XMPP while another space is open, as its own chats
+  do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**, which it
+  needs too. It never says what, from whom or in which chat, and a call does not ring then: only the space's key opens
+  what came. For it the XMPP server tells this space's relay of each message while no app of the account is on, so the
+  XMPP server learns the relay's name, and the relay when messages come. Off unless you turn it on; it needs a relay
+  updated for it, which XMPP servers can reach (its owner opens a port for them), and an XMPP server that sends notices
+  to apps that are away, as most do.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.

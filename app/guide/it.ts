@@ -1780,6 +1780,15 @@ app: nessun ponte sta nel mezzo.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
   in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
+- **Mentre questo spazio è chiuso:** su Android, **Avvisa dei nuovi messaggi**, in **Mentre questo spazio è chiuso**
+  nella schermata di XMPP, lascia che questo spazio dica «New message» quando arriva qualcosa su XMPP mentre è aperto un
+  altro spazio, come fanno le sue chat con **Anche mentre è aperto un altro spazio** in **Impostazioni** →
+  **Notifiche** → **In background**, che serve anch’esso. Non dice mai cosa, da chi o in quale chat, e una chiamata
+  allora non squilla: solo la chiave dello spazio apre ciò che è arrivato. Per questo il server XMPP avvisa il relay di
+  questo spazio di ogni messaggio finché nessuna app dell’account è attiva, così il server XMPP conosce il nome del
+  relay, e il relay quando arrivano messaggi. Spento finché non lo accendi; serve un relay aggiornato per questo, che i
+  server XMPP possano raggiungere (chi lo gestisce apre una porta per loro), e un server XMPP che mandi avvisi alle app
+  inattive, come fa la maggior parte.
 
 **Perché:** le chat di Erevos nascondono chi parla con chi; un server XMPP non può. Così le chat XMPP restano a parte e
 segnate, per le persone che altrimenti raggiungeresti solo su XMPP.

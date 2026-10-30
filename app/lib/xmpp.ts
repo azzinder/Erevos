@@ -29,6 +29,7 @@ import {
 import { avatarOf, NS_AVATAR_META, publishXmppAvatar, removeXmppAvatar, type XmppAvatar } from './xmpp-avatar';
 import { fileOfText, findUpload, NS_OOB, oobOf, textOfFile, type XmppFile, type XmppUpload } from './xmpp-files';
 import { enterRooms, groupPeople, mentions, roomOf, takeBookmarks, takeInvite, takeRoomPresence, type XmppInvite, type XmppMuc, type XmppRoom } from './xmpp-muc';
+import type { XmppPushTo } from './xmpp-push';
 import {
   bundleElement,
   bundleNode,
@@ -214,6 +215,8 @@ export type XmppState = {
   sayTyping?: true;
   /** Profile pictures as their notes last said (lib/xmpp-avatar.ts), by bare address, ours too. */
   avatars?: Record<string, XmppAvatar>;
+  /** Where the server pushes while the space is closed, once asked to (lib/xmpp-push.ts). */
+  push?: XmppPushTo;
 };
 
 export class XmppError extends Error {

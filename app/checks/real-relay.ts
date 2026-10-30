@@ -17,7 +17,7 @@ export function relayNote(what: string): void {
   if (!ready) console.log(`Skipping ${what}: build the relay first (cargo build -p erevos-relay)`);
 }
 
-function freePort(): Promise<number> {
+export function freePort(): Promise<number> {
   return new Promise((resolve) => {
     const server = createServer().listen(0, '127.0.0.1', () => {
       const { port } = server.address() as { port: number };

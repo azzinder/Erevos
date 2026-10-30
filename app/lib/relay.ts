@@ -110,6 +110,7 @@ const OWN = 28;
 const WAIT_ANY = 29;
 const NEWS_ANY = 30;
 const TIME = 31;
+const XMPP_PUSH = 32;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -1930,6 +1931,23 @@ export async function pushKey(relay: Relay): Promise<Uint8Array | null> {
   if (reply[0] === NOT_FOUND) return null;
   check(reply, 'push key');
   return reply.slice(1);
+}
+
+/** The name XMPP servers push to at the relay (XEP-0357, crates/erevos-relay xmpp_push.rs), or null
+ *  when it takes no XMPP pushes (an older relay closes the connection at an opcode it does not know,
+ *  which is the same answer). */
+export async function xmppPushName(relay: Relay): Promise<string | null> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(XMPP_PUSH));
+  } catch (error) {
+    if (error instanceof RelayUnreachableError) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'xmpp push');
+  const name = utf8Decode(reply.slice(1));
+  return /^[a-z0-9.-]{1,253}$/.test(name) ? name : null;
 }
 
 /** A browser's keys for its push address (PushSubscription.getKey): its P-256 key, 65 bytes, and

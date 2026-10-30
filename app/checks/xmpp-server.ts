@@ -44,6 +44,7 @@ const NS_BOOKMARKS = 'urn:xmpp:bookmarks:1';
 const STANZAS = 'urn:ietf:params:xml:ns:xmpp-stanzas';
 const NS_INFO = 'http://jabber.org/protocol/disco#info';
 const NS_ITEMS = 'http://jabber.org/protocol/disco#items';
+const NS_PUSH = 'urn:xmpp:push:0';
 
 export class Server {
   readonly bound = new Map<string, Link>();
@@ -72,6 +73,9 @@ export class Server {
   readonly rooms = new Map<string, Room>();
   /** Each account's bookmarks (XEP-0402), by item id. */
   readonly bookmarks = new Map<string, Map<string, XmlElement>>();
+  /** Whether it pushes to app servers (XEP-0357), and where each account asked it to. */
+  pushes = true;
+  readonly pushTo = new Map<string, { jid: string; node: string }[]>();
 
   connect = async (): Promise<XmppLink> => new Link(this);
 
@@ -550,11 +554,20 @@ export class Link implements XmppLink {
       return reply(el('pubsub', { xmlns: 'http://jabber.org/protocol/pubsub' }, el('items', { node: items.attrs.node }, el('item', { id: itemId ?? 'current' }, given))));
     }
     if (query.ns === 'urn:xmpp:mam:2') return this.page(server.archives.get(this.jid) ?? [], iq, query);
+    if (query.ns === NS_PUSH) {
+      if (!server.pushes) return error('feature-not-implemented');
+      const list = (server.pushTo.get(this.jid) ?? []).filter((p) => !(p.jid === query.attrs.jid && (!query.attrs.node || p.node === query.attrs.node)));
+      if (query.name === 'enable') list.push({ jid: query.attrs.jid ?? '', node: query.attrs.node ?? '' });
+      server.pushTo.set(this.jid, list);
+      return reply();
+    }
     if (query.ns === NS_ITEMS) {
       return reply(el('query', { xmlns: NS_ITEMS }, to === DOMAIN && server.upload ? el('item', { jid: UPLOAD }) : null, to === DOMAIN && server.muc ? el('item', { jid: MUC }) : null));
     }
     if (query.ns === NS_INFO) {
       const upload = server.upload;
+      // The account's own address says it pushes (XEP-0357), as Prosody's and ejabberd's do.
+      if (bareOf(to) === this.jid && server.pushes) return reply(el('query', { xmlns: NS_INFO }, el('feature', { var: NS_INFO }), el('feature', { var: NS_PUSH })));
       if (to !== UPLOAD || !upload) return reply(el('query', { xmlns: NS_INFO }, el('feature', { var: NS_INFO })));
       return reply(
         el(

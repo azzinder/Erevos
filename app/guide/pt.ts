@@ -1746,6 +1746,15 @@ esses apps: nenhuma ponte fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+- **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
+  fechado** na tela do XMPP, deixa este espaço dizer “Nova mensagem” quando chega algo no XMPP enquanto outro espaço
+  está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em **Configurações** →
+  **Notificações** → **Em segundo plano**, que também é preciso. Nunca diz o quê, de quem ou em qual conversa, e uma
+  chamada não toca então: só a chave do espaço abre o que chegou. Para isso o servidor XMPP avisa o relay deste espaço
+  de cada mensagem enquanto nenhum app da conta está ativo, então o servidor XMPP fica sabendo o nome do relay, e o
+  relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para isso, que os servidores
+  XMPP alcancem (quem o administra abre uma porta para eles), e de um servidor XMPP que envie avisos a apps inativos,
+  como quase todos.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
 conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.

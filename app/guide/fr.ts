@@ -1847,6 +1847,15 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
   discussion en sourdine ne compte pas.
+- **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
+  fermé** sur l’écran XMPP, laisse cet espace dire « New message » quand quelque chose arrive sur XMPP pendant qu’un
+  autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert** dans
+  **Réglages** → **Notifications** → **En arrière-plan**, qu’il faut aussi. Il ne dit jamais quoi, de qui ni dans quelle
+  discussion, et un appel ne sonne pas alors : seule la clé de l’espace ouvre ce qui est arrivé. Pour cela, le serveur
+  XMPP signale chaque message au relais de cet espace tant qu’aucune appli du compte n’est active : le serveur XMPP
+  apprend le nom du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut
+  un relais mis à jour pour cela, que les serveurs XMPP puissent joindre (son propriétaire ouvre un port pour eux), et un
+  serveur XMPP qui envoie des notifications aux applis inactives, comme la plupart.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.

@@ -5,6 +5,7 @@ import { heardOf, type Watched } from '../lock/hidden-watch';
 import { currentSpace } from '../lock/keys';
 import { spaceQueues } from '../lock/queues-data';
 import { loadSpaceData } from '../lock/space-data';
+import { loadXmpp } from '../lock/xmpp-data';
 import { bunches, contactQueuesAt, type Bunch } from './contact-queues';
 import { t } from './i18n';
 import { onNetworkChange } from './network-change';
@@ -47,6 +48,8 @@ export function doorBunches(space: number, door: Door): Bunch[] {
 
 /** The group a space's Matrix push queue (lib/matrix-push.ts) is read in, through Tor on a way of its own: no contact's group is ever so high. */
 export const MATRIX_PUSH_GROUP = 1_000_000;
+/** The group a space's XMPP push queue (lib/xmpp-push.ts) is read in, as the Matrix one: a way of its own. */
+export const XMPP_PUSH_GROUP = 1_000_001;
 
 type OwnQueue = { queue: { recipientHex: string }; url: string; token: string };
 
@@ -62,13 +65,17 @@ export async function spaceRelayOf(space: number, key: Uint8Array): Promise<Rela
   return own ? { url: own.url, token: own.token || undefined } : null;
 }
 
-/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay (`most` at most), its Matrix push queue there first, and its Tor way. Null with no queue yet. */
+/** The door of the space `space` opens with `key`: its queues as it reads on them now, its contacts' queues at its relay (`most` at most), its Matrix and XMPP push queues there first, and its Tor way. Null with no queue yet. */
 export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACTS): Promise<Door | null> {
-  const [data, queues, chats, matrix] = await Promise.all([
+  const [data, queues, chats, matrix, xmpp] = await Promise.all([
     loadSpaceData(space, key),
     spaceQueues(space, key).load(),
     loadE2EData('space', space, key).catch(() => null),
     loadMatrix(space, key).then(
+      (account) => ({ push: account?.push }),
+      () => null,
+    ),
+    loadXmpp(space, key).then(
       (account) => ({ push: account?.push }),
       () => null,
     ),
@@ -80,17 +87,18 @@ export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACT
     kept.push({ url: one.url, token: one.token, recipientHex: one.queue.recipientHex });
   }
   if (kept.length === 0) return null;
-  if (!chats || !matrix) {
+  if (!chats || !matrix || !xmpp) {
     // The chats or the Matrix account could not be read just now, as a save ran meanwhile
     // (lock/sealed-file.ts): the contacts' queues the door names stay as they are, rather than be
     // left out until the next change.
     const was = await loadDoor(space).catch(() => null);
     return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(was?.contacts ? { contacts: was.contacts } : {}) };
   }
-  // The Matrix push queue, at the same relay, first: the contacts' queues where the space reads them,
+  // The Matrix and XMPP push queues, at the same relay, first: the contacts' queues where the space reads them,
   // its own queue's relay, then: theirs now first, then those they took the place of, still read for a while.
   const contacts: { r: string; g: number }[] = [];
   if (own && matrix.push && sameRelay(matrix.push.url, own.url)) contacts.push({ r: matrix.push.recipientHex, g: MATRIX_PUSH_GROUP });
+  if (own && xmpp.push && sameRelay(xmpp.push.url, own.url)) contacts.push({ r: xmpp.push.recipientHex, g: XMPP_PUSH_GROUP });
   const mines = chats.contacts.flatMap((c) => (c.mine ? [{ identity: c.identity, mine: c.mine }] : []));
   const at = own ? contactQueuesAt(mines, own.url) : [];
   for (const q of [...at.filter((q) => !q.was), ...at.filter((q) => q.was)]) {

@@ -3,6 +3,7 @@ import { currentSpace } from '../lock/keys';
 import type { Holder } from '../lock/sealed-file';
 import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
+import { followDoor, spaceRelayOf } from './closed-notices';
 import { canXmpp } from './core';
 import { fileCache } from './file-cache';
 import { t } from './i18n';
@@ -42,6 +43,7 @@ import { fetchXmppAvatar } from './xmpp-avatar';
 import { downloadXmppFile, uploadXmppFile, type XmppFile } from './xmpp-files';
 import { addXmppGroupPeople, createXmppGroup, declineXmppInvite, groupPeople, joinXmppGroup, leaveXmppGroup, removeFromXmppGroup, renameXmppGroup, setXmppGroupAdmin, setXmppGroupSubject } from './xmpp-muc';
 import type { connectXmpp, XmppServer } from './xmpp-net';
+import { keepXmppPush, startXmppPush, stopXmppPush } from './xmpp-push';
 
 // The open space's XMPP account as the screens use it (app/xmpp.tsx, app/xmpp-chat.tsx): loaded
 // from its sealed value (lock/xmpp-data.ts), connected to its server while the space is open, and
@@ -72,6 +74,8 @@ type Live = {
   heard: ReturnType<typeof hearing>;
   /** Just signed in: what the archive keeps from before is taken in without telling of it. */
   fresh: boolean;
+  /** Whether its push while closed (lib/xmpp-push.ts) was looked at this run. */
+  pushChecked: boolean;
 };
 
 let live: Live | null = null;
@@ -208,6 +212,10 @@ async function loop(it: Live): Promise<void> {
           it.fresh = false;
         }
         connection.listen(() => void drain(it, connection));
+        if (!it.pushChecked && it.holder === 'space' && state.push) {
+          it.pushChecked = true;
+          void keepPush(it, connection);
+        }
         if (it.problem) it.problem = '';
         told();
         wait = 2000;
@@ -241,6 +249,59 @@ async function loop(it: Live): Promise<void> {
     it.running = false;
     told();
   }
+}
+
+// Once a run, once connected: the push while closed as it should be now, as the space moved to another
+// relay, or the server or the relay let go of it. What fails is tried again the next run.
+async function keepPush(it: Live, connection: XmppConnection): Promise<void> {
+  const push = it.state?.push;
+  if (!push || !it.state) return;
+  try {
+    const relay = await spaceRelayOf(it.space, it.key);
+    if (!relay || !stillOpen(it) || !it.state || it.connection !== connection) return;
+    const next = await keepXmppPush(it.state, connection, push, relay);
+    if (next === push || !stillOpen(it)) return;
+    await changeAccount(it, async () => {
+      if (it.state) it.state.push = next;
+    });
+    await saveXmpp(it.space, it.key, it.state, it.holder);
+    await followDoor(it.space, it.key);
+  } catch {
+    // Unreachable, or refused: the push stays as it was.
+  }
+}
+
+/** Whether the open space tells of XMPP messages while closed (lib/xmpp-push.ts). */
+export function xmppPushOn(): boolean {
+  return !!live?.state?.push;
+}
+
+/**
+ * Lets the open space tell of XMPP messages while closed, or no more: a queue at its relay and a
+ * push to it from the XMPP server, or neither. Its door names the queue as it changes
+ * (lib/closed-notices.ts).
+ */
+export async function xmppSetPush(on: boolean): Promise<void> {
+  const it = need();
+  if (it.holder !== 'space') throw new Error('A hidden place says nothing while closed.');
+  const was = it.state.push;
+  if (on === !!was) return;
+  const relay = await spaceRelayOf(it.space, it.key);
+  if (on) {
+    if (!relay) throw new Error(t('This space has no queue at a relay yet: it can say nothing while closed.'));
+    const push = await startXmppPush(it.state, online(it), relay);
+    await changeAccount(it, async () => {
+      if (it.state) it.state.push = push;
+    });
+  } else if (was) {
+    await stopXmppPush(was, it.connection, relay ?? undefined);
+    await changeAccount(it, async () => {
+      if (it.state) delete it.state.push;
+    });
+  }
+  // Kept at once, as the door reads it from what is kept.
+  await saveXmpp(it.space, it.key, it.state, it.holder);
+  await followDoor(it.space, it.key).catch(() => undefined);
 }
 
 /** Loads the open space's account, once, and connects it while the space stays open. */
@@ -290,7 +351,7 @@ function end(it: Live): void {
 
 function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
   const heard = hearing(pocket === undefined ? undefined : { space, pocket });
-  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard, fresh: false };
+  const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard, fresh: false, pushChecked: false };
   loadXmpp(space, key, holder)
     .then(async (state) => {
       // Restored from a backup since it was last here: it goes on as a new device of the account.
@@ -370,12 +431,15 @@ export async function xmppSignOut(): Promise<void> {
   const it: Live = need();
   const state = it.state;
   const connection = it.connection;
+  // Its queue at the relay goes, and the server pushes there no more.
+  if (state?.push) await stopXmppPush(state.push, connection, (await spaceRelayOf(it.space, it.key).catch(() => null)) ?? undefined);
   await changeAccount(it, async () => {
     if (state) await signOutXmpp(state, connection);
     it.connection = null;
     it.state = null;
   });
   await saveXmpp(it.space, it.key, null, it.holder);
+  if (it.holder === 'space' && state?.push) await followDoor(it.space, it.key).catch(() => undefined);
 }
 
 export function xmppSend(jid: string, text: string): Promise<void> {

@@ -46,6 +46,10 @@
 //!   or is not there, or when the time is up. Older relays close the
 //!   connection.
 //! - `DELETE`: recipient id.
+//! - `XMPP_PUSH`: no fields. Reply: `OK` and, to the end, the name XMPP
+//!   servers push to (see `xmpp_push.rs`): a space asks its XMPP server to
+//!   push there, with a queue's sender id in hex as the node. `NOT_FOUND` if
+//!   the relay takes no XMPP pushes. Older relays close the connection.
 //! - `TIME`: no fields. Reply: `OK` and the relay's clock, 8-byte Unix
 //!   milliseconds. A phone measures how far its own clock is off by it, so a
 //!   call stamped by one phone is judged fresh or old by the other with the
@@ -304,6 +308,7 @@ use crate::queue::{system_now, News, QueueError, QueueId, Said, Store};
 use crate::signin::{self, ClaimError, SignIn};
 use crate::tokens::{to_hex, Phone, Tokens};
 use crate::turn::Turn;
+use crate::xmpp_push::XmppPush;
 
 /// What every connection shares: the queues, the file store, the key for
 /// sealed sends if the relay has one, and the call relay if one runs beside it.
@@ -328,6 +333,9 @@ pub struct Shared {
     /// Signing in with a provider for a token of a phone's own, if the
     /// operator set one up (set once, after start).
     pub signin: std::sync::OnceLock<SignIn>,
+    /// The XMPP push app server, if the operator set one up (set once,
+    /// after start).
+    pub xmpp_push: std::sync::OnceLock<Arc<XmppPush>>,
     /// Requests held for later; `held_changed` wakes `run_held` when one
     /// comes or goes.
     pub held: Mutex<Held>,
@@ -464,6 +472,7 @@ impl Shared {
             tokens: std::sync::OnceLock::new(),
             invites: std::sync::OnceLock::new(),
             signin: std::sync::OnceLock::new(),
+            xmpp_push: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
             held_by: Mutex::default(),
@@ -526,6 +535,7 @@ pub const OWN: u8 = 28;
 pub const WAIT_ANY: u8 = 29;
 pub const NEWS_ANY: u8 = 30;
 pub const TIME: u8 = 31;
+pub const XMPP_PUSH: u8 = 32;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -1023,6 +1033,7 @@ fn respond(
                 | NEWS_ANY
                 | DELETE
                 | TIME
+                | XMPP_PUSH
                 | KEY
                 | SEALED_SEND
                 | FILE_PUT
@@ -1193,6 +1204,14 @@ fn respond(
             }
             status(deleted)
         }
+        XMPP_PUSH => match shared.xmpp_push.get() {
+            Some(push) => {
+                let mut out = vec![OK];
+                out.extend_from_slice(push.domain().as_bytes());
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
         TIME => {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)

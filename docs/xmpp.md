@@ -399,6 +399,24 @@ just after signing in (`fresh`) tells of nothing. A chat has notifications of it
 Android; a muted one is left out, and a call rings with the chat's ringtone. A chat is marked read
 only while Erevos shows it.
 
+## Notices while the space is closed
+
+On Android, **Say a message came** under **While this space is closed** on the XMPP screen
+(`ClosedPush` in `app/xmpp.tsx`; `xmppSetPush`, `xmppPushOn` and `keepPush` in `app/lib/xmpp-store.ts`)
+has the space tell of XMPP messages while another space is open, as `app/lib/matrix-push.ts` does for
+Matrix. The relay is the account's push app server (XEP-0357; `crates/erevos-relay/src/xmpp_push.rs`):
+`XMPP_PUSH` asks it for its name, the space makes a queue there of its own and sends the account's
+server `<enable xmlns='urn:xmpp:push:0' jid='<relay name>' node='<the queue's sender id in hex>'/>`
+(`app/lib/xmpp-push.ts`; no form, so the server sends what it sends anyway, and the relay reads past it). While
+no app of the account is online, the server publishes to that node for each message, over a
+server-to-server stream to port 5269 of the relay's name with STARTTLS; the relay counts one message in the
+queue's news and keeps nothing, and answers `item-not-found` for a node that is no queue, so the server stops. The
+door names the queue (`XMPP_PUSH_GROUP` in `app/lib/closed-notices.ts`) and says "New message", never which
+chat; the push is asked of the server again at each session. Checked in `app/checks/xmpp-push.check.ts` against
+the real relay and the server played in the checks, and in the relay's own tests. The relay needs a name, a
+certificate and an open port 5269 (`deploy/relay/README.md`, "XMPP notices"); not yet tried against a real XMPP
+server.
+
 ## Hidden chats
 
 Each place of hidden chats can sign in to an XMPP account of its own, apart from the space's, that
@@ -527,3 +545,4 @@ honoured too.
 - Replies, changes, reactions and deleting against Conversations, Dino and Gajim on a phone: so far only against
   the server played in the checks (`checks/xmpp-actions.check.ts`).
 - Moderators deleting others' messages in a group (XEP-0425).
+- Notices while the space is closed against a real XMPP server (Prosody, ejabberd) and a relay on the internet.
