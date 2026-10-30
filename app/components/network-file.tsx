@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Image, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { View } from 'react-native';
 
 import { fileSize } from '../lib/attachments';
 import { playVoice } from '../lib/audio';
@@ -7,11 +7,13 @@ import { toBase64 } from '../lib/crypto';
 import { t } from '../lib/i18n';
 import { saveBytes } from '../lib/save-file';
 import { radius, space } from '../theme/colors';
+import { OpenPhoto } from './attachment';
 import { Button, Row, Text } from './ui';
 
 // A photo, sound or file in a chat on XMPP or Nostr (app/xmpp-chat.tsx, app/nostr-chat.tsx):
-// fetched from its server only when asked for, then a photo shown, a sound played, and any of them
-// saved. What was fetched stays in memory while Erevos runs (lib/file-cache.ts).
+// fetched from its server only when asked for, then a photo shown (a tap opens it on the whole
+// screen, components/attachment.tsx OpenPhoto), a sound played, and any of them saved. What was
+// fetched stays in memory while Erevos runs (lib/file-cache.ts).
 
 /** The ending a sound's type is written with, for the phone's player. */
 function endingOf(type: string): string {
@@ -21,7 +23,7 @@ function endingOf(type: string): string {
   return /^[a-z0-9]{2,5}$/.test(sub) ? sub : 'm4a';
 }
 
-export function NetworkFile({ name, type, size, dim, fetch }: { name: string; type: string; size?: number; dim?: string; fetch: () => Promise<Uint8Array> }) {
+export function NetworkFile({ name, type, size, dim, fetch, onMenu }: { name: string; type: string; size?: number; dim?: string; fetch: () => Promise<Uint8Array>; onMenu?: () => void }) {
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -47,14 +49,17 @@ export function NetworkFile({ name, type, size, dim, fetch }: { name: string; ty
     }
   }
 
-  async function save() {
+  // True once it is done, saved or not; false if the owner went back (a photo shown on the whole screen then stays).
+  async function save(choose = false): Promise<boolean> {
     const got = await get();
-    if (!got) return;
+    if (!got) return false;
     try {
-      if (await saveBytes(name, type, got)) setNote(t('Saved.'));
+      if (!(await saveBytes(name, type, got, choose))) return false;
+      setNote(t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }
+    return true;
   }
 
   async function play() {
@@ -83,10 +88,11 @@ export function NetworkFile({ name, type, size, dim, fetch }: { name: string; ty
 
   const [w, h] = (dim ?? '').split('x').map(Number);
   const ratio = w && h ? w / h : 4 / 3;
+  const uri = useMemo(() => (image && bytes ? `data:${type};base64,${toBase64(bytes)}` : null), [image, type, bytes]);
   return (
     <View style={{ gap: space.xs }}>
-      {image && bytes ? (
-        <Image source={{ uri: `data:${type};base64,${toBase64(bytes)}` }} style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }} resizeMode="contain" accessibilityLabel={name} />
+      {uri && bytes ? (
+        <OpenPhoto uri={uri} name={name} size={bytes.length} w={w} h={h} style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }} onSave={save} onMenu={onMenu} />
       ) : (
         <Text numberOfLines={2}>
           {name}

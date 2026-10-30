@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, PanResponder, Platform, StyleSheet, View, type StyleProp, type TextStyle } from 'react-native';
+import { Animated, Image, Modal, PanResponder, Platform, Pressable, StyleSheet, View, type ImageStyle, type StyleProp, type TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize, readFile } from '../lib/attachments';
@@ -16,7 +16,8 @@ import { Button, Row, Text } from './ui';
 // Photos and files in a thread, a contact's (app/chat.tsx) or a group's (components/group-chat.tsx): each in
 // its bubble, and the one looked at on its own, to save. They are sent from the panel under the
 // message bar (components/composer.tsx). A photo is read into memory to show, never written out
-// unsealed, and let go of once it no longer shows.
+// unsealed, and let go of once it no longer shows. A photo in a Matrix, XMPP or Nostr chat opens in
+// the same viewer (OpenPhoto).
 
 /** Photos shown in the thread at once, the latest: each is held whole in memory while shown. The
  *  others show when tapped. A computer has the memory for all of them. */
@@ -124,13 +125,16 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
   return photos;
 }
 
+/** What FileViewer reads of a file: a photo of another network's chat is shown without a FileRef. */
+export type ViewedFile = Pick<FileRef, 'id' | 'kind' | 'name' | 'size' | 'w' | 'h'>;
+
 /**
  * A photo (`uri` once it is read) or file shown on its own, with how big it is, to save; none while
  * `file` is null. A photo fills the screen, turned as the phone is, even with its auto-rotate off:
  * two fingers or a double tap zoom in, one finger moves it while zoomed, and a tap hides or shows
  * what is around it.
  */
-export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
+export function FileViewer({ file, uri, onSave, onClose }: { file: ViewedFile | null; uri?: string; onSave: (choose: boolean) => void; onClose: () => void }) {
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const [bars, setBars] = useState(true);
@@ -195,6 +199,47 @@ export function FileViewer({ file, uri, onSave, onClose }: { file: FileRef | nul
         </View>
       ) : null}
     </Modal>
+  );
+}
+
+/**
+ * A photo of a Matrix, XMPP or Nostr chat, held in memory as a `data:` address (`uri`): tapped, it
+ * opens on the whole screen in FileViewer, to zoom, turn with the phone and save. `w` × `h` are
+ * what the network said of its size; without them they are read from the photo as it opens.
+ * `onSave` is the chat's own way of saving it: true once it is done, saved or not, which closes the
+ * photo, false if the owner went back. `onMenu`: held down, the message's menu.
+ */
+export function OpenPhoto({ uri, name, size, w, h, style, onSave, onMenu }: {
+  uri: string;
+  name: string;
+  size: number;
+  w?: number;
+  h?: number;
+  style: StyleProp<ImageStyle>;
+  onSave: (choose: boolean) => Promise<boolean>;
+  onMenu?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  // Read from the photo when the network gave no size; zeros if it could not be read.
+  const [read, setRead] = useState<Size | null>(null);
+  const known = w && h ? { width: w, height: h } : read;
+  function show() {
+    setOpen(true);
+    if (!known) Image.getSize(uri, (width, height) => setRead({ width, height }), () => setRead({ width: 0, height: 0 }));
+  }
+  return (
+    <>
+      <Pressable onPress={show} onLongPress={onMenu} accessibilityRole="button" accessibilityLabel={name} style={{ alignSelf: 'flex-start' }}>
+        <Image source={{ uri }} style={style} resizeMode="contain" />
+      </Pressable>
+      <FileViewer
+        file={open ? { id: name, kind: 'photo', name, size, w: known?.width || undefined, h: known?.height || undefined } : null}
+        // It opens once its size is known: the zoom keeps the photo to its edges.
+        uri={known ? uri : undefined}
+        onSave={(choose) => void onSave(choose).then((done) => done && setOpen(false))}
+        onClose={() => setOpen(false)}
+      />
+    </>
   );
 }
 

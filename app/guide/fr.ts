@@ -1658,6 +1658,9 @@ Element : aucun pont ne se met entre les deux.
 - **Photos et fichiers :** **Photo** et **Fichier** les envoient, jusqu’à 50 Mo, chiffrés sur le téléphone avant
   d’aller au serveur Matrix, qui ne garde ainsi que ce qu’il ne peut pas lire. Une photo reçue n’est téléchargée que si
   vous touchez **Afficher la photo** ; **Enregistrer** garde n’importe quel fichier sur le téléphone.
+  Touchez une photo affichée pour la voir sur tout l’écran, comme dans la discussion d’un contact : deux doigts ou un
+  double appui zooment, elle tourne avec le téléphone, et **Enregistrer** la garde (voir Photos et fichiers, sous
+  [Discuter par un relais](#relay)).
 - **Réactions, réponses, modifications et suppression :** appuie longuement sur un message pour ouvrir son menu :
   choisis une réaction en haut, **Répondre** pour lui répondre, **Copier** pour ses mots, et sur un message de toi
   **Modifier** ou **Supprimer**. Une réponse montre le message auquel elle répond au-dessus de ses mots, et un appui
@@ -1831,6 +1834,9 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   une discussion écrite sans chiffrement, le fichier part tel quel. Une photo, un son ou un fichier qui arrive n’est
   téléchargé que si tu touches **Afficher la photo**, **Lire** ou **Enregistrer**. Sur Android, les fichiers passent
   par Tor comme la discussion.
+  Touche une photo affichée pour la voir sur tout l’écran, comme dans la discussion d’un contact : deux doigts ou un
+  double appui zooment, elle tourne avec le téléphone, et **Enregistrer** la garde (voir Photos et fichiers, sous
+  [Discuter par un relais](#relay)).
 - **Messages vocaux :** appuie longuement sur le micro sous la zone de message pour enregistrer, et relâche pour
   envoyer, comme dans une discussion Matrix. Il part comme fichier son, chiffré comme la discussion, comme Conversations
   l’envoie.
@@ -1948,6 +1954,9 @@ discussions propres à Erevos.
   premier qui en accepte un : blossom.primal.net, blossom.band et nostr.download, sauf si tu les changes. Une photo ou
   un fichier qui arrive n’est récupéré que quand tu touches **Afficher la photo** ou **Enregistrer**, et ne s’ouvre que
   s’il est celui qui a été envoyé.
+  Touche une photo affichée pour la voir sur tout l’écran, comme dans la discussion d’un contact : deux doigts ou un
+  double appui zooment, elle tourne avec le téléphone, et **Enregistrer** la garde (voir Photos et fichiers, sous
+  [Discuter par un relais](#relay)).
 - **Réactions :** appuie longuement sur un message pour ouvrir son menu et réagir avec 👍, ❤️, 😂, 😮, 😢 ou 🙏, ou avec
   l’une de celles derrière **+** ; dessous s’affichent les réactions, la dernière de chaque personne, comme les autres
   applis Nostr les envoient (NIP-25).

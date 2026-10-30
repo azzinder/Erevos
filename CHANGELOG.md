@@ -18,6 +18,11 @@ On main, not released yet:
   **XMPP**, **Nostr**) shows how many messages are not read in it, as a small number after its name (99+ above 99,
   nothing when there are none). Muted chats and groups are left out, as they are of the number on the icon, and so is
   what is typed in the search (`app/index.tsx`, `lib/inbox.ts`, `components/ui.tsx`). See [Getting started](#start).
+- **Open a photo full screen in Matrix, XMPP and Nostr chats**: a photo shown in a Matrix, XMPP or Nostr chat opens on
+  the whole screen when tapped, with the zoom, the turning with the phone and the **Save** buttons of a contact's chat;
+  holding it still opens the message's menu (`components/attachment.tsx`, `components/matrix-message.tsx`,
+  `components/network-file.tsx`). See [Matrix](#matrix), [XMPP](#xmpp) and
+  [Chats with other Nostr apps](#nostr-chats).
 
 ### Under the hood
 

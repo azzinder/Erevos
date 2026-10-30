@@ -926,7 +926,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
         ) : message.locked ? (
           <Text tone="muted">{t('Locked: this message could not be opened on this device.')}</Text>
         ) : message.file ? (
-          <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} />
+          <NetworkFile name={message.file.name} type={message.file.type} size={message.file.size} fetch={() => xmppFile(message.file!)} onMenu={onMenu} />
         ) : (
           // Not selectable when it has a menu: holding the words opens it, which can copy them.
           <>

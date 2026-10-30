@@ -1567,6 +1567,8 @@ fica no meio.
 - **Fotos e arquivos:** **Foto** e **Arquivo** os enviam, até 50 MB, criptografados no celular antes de irem ao
   servidor Matrix, que assim guarda só o que não consegue ler. Uma foto recebida só é baixada ao tocar em
   **Mostrar foto**; **Salvar** guarda qualquer arquivo no celular.
+  Toque numa foto mostrada para vê-la na tela inteira, como na conversa de um contato: dois dedos ou um toque duplo a
+  ampliam, ela gira com o celular, e **Salvar** a guarda (veja Fotos e arquivos, em [Conversar por um relay](#relay)).
 - **Reações, respostas, alterações e apagar:** segure uma mensagem para abrir o menu dela: escolha uma reação no alto,
   **Responder** para respondê-la, **Copiar** para as palavras dela, e numa mensagem sua **Editar** ou **Apagar**. Uma
   resposta mostra a mensagem a que responde acima das palavras dela, e um toque nisso vai até a mensagem. As reações
@@ -1731,6 +1733,8 @@ esses apps: nenhuma ponte fica no meio.
   servidor guarda só o que não consegue ler; Conversations, Monal, Gajim e Dino o abrem. Numa conversa escrita sem
   criptografia o arquivo vai como está. Uma foto, um som ou um arquivo que chega só é baixado ao tocar em
   **Mostrar foto**, **Reproduzir** ou **Salvar**. No Android, os arquivos passam pelo Tor como a conversa.
+  Toque numa foto mostrada para vê-la na tela inteira, como na conversa de um contato: dois dedos ou um toque duplo a
+  ampliam, ela gira com o celular, e **Salvar** a guarda (veja Fotos e arquivos, em [Conversar por um relay](#relay)).
 - **Mensagens de voz:** segure o microfone abaixo da caixa de mensagem para gravar, e solte para enviar, como numa
   conversa do Matrix. Vai como arquivo de som, criptografado como a conversa, do jeito que o Conversations envia.
 - **Grupos:** um **grupo privado** é só para os seus membros, e cada um vê quem são os outros. Cada mensagem nele é
@@ -1840,6 +1844,8 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   arquivos vão pelo Tor como estas conversas. **Servidores de arquivos** diz para onde vão, para o primeiro que aceitar
   um: blossom.primal.net, blossom.band e nostr.download, se você não os mudar. Uma foto ou um arquivo que chega só é
   buscado quando você toca em **Mostrar foto** ou **Salvar**, e só abre se for o que foi enviado.
+  Toque numa foto mostrada para vê-la na tela inteira, como na conversa de um contato: dois dedos ou um toque duplo a
+  ampliam, ela gira com o celular, e **Salvar** a guarda (veja Fotos e arquivos, em [Conversar por um relay](#relay)).
 - **Reações:** segure uma mensagem para abrir o menu dela e reagir com 👍, ❤️, 😂, 😮, 😢 ou 🙏, ou com uma das outras atrás
   de **+**; embaixo aparecem as reações, a última de cada pessoa, como outros apps Nostr as enviam (NIP-25).
 - **Respostas:** **Responder**, no menu de uma mensagem que você segura, a responde. A mensagem aparece acima do campo

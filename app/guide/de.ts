@@ -1688,6 +1688,9 @@ Element: Keine Brücke sitzt dazwischen.
 - **Fotos und Dateien:** **Foto** und **Datei** senden sie, bis 50 MB, auf dem Telefon verschlüsselt, bevor sie zum
   Matrix-Server gehen, der so nur behält, was er nicht lesen kann. Ein erhaltenes Foto wird erst geladen, wenn du
   **Foto anzeigen** tippst; **Speichern** legt jede Datei auf dem Telefon ab.
+  Tippe auf ein gezeigtes Foto, um es wie im Chat eines Kontakts auf dem ganzen Bildschirm zu sehen: Zwei Finger oder
+  zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
+  unter [Chat über ein Relay](#relay)).
 - **Reaktionen, Antworten, Änderungen und Löschen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen: Wähle oben
   eine Reaktion, **Antworten**, um ihr zu antworten, **Kopieren** für ihren Text, und bei einer Nachricht von dir
   **Bearbeiten** oder **Löschen**. Eine Antwort zeigt über ihrem Text die Nachricht, auf die sie antwortet, und ein
@@ -1862,6 +1865,9 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Dino öffnen sie. In einem Chat ohne Verschlüsselung geht die Datei, wie sie ist. Ein Foto, ein Ton oder eine Datei,
   die ankommt, wird erst geladen, wenn du **Foto anzeigen**, **Abspielen** oder **Speichern** tippst. Auf Android
   gehen Dateien über Tor, wie der Chat.
+  Tippe auf ein gezeigtes Foto, um es wie im Chat eines Kontakts auf dem ganzen Bildschirm zu sehen: Zwei Finger oder
+  zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
+  unter [Chat über ein Relay](#relay)).
 - **Sprachnachrichten:** Halte das Mikrofon unter dem Nachrichtenfeld gedrückt, um aufzunehmen, und lass los, um zu
   senden, wie in einem Matrix-Chat. Sie geht als Tondatei, verschlüsselt wie der Chat, so wie Conversations sie sendet.
 - **Gruppen:** Eine **private Gruppe** ist nur für ihre Mitglieder, und jedes sieht, wer die anderen sind. Jede Nachricht
@@ -1979,6 +1985,9 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   sie gehen, zum ersten, der eine annimmt: blossom.primal.net, blossom.band und nostr.download, wenn du sie nicht
   änderst. Ein Foto oder eine Datei, die ankommt, wird erst geholt, wenn du **Foto anzeigen** oder **Speichern** tippst,
   und öffnet sich nur, wenn sie die gesendete ist.
+  Tippe auf ein gezeigtes Foto, um es wie im Chat eines Kontakts auf dem ganzen Bildschirm zu sehen: Zwei Finger oder
+  zweimal Tippen zoomen hinein, es dreht sich mit dem Telefon, und **Speichern** behält es (siehe Fotos und Dateien
+  unter [Chat über ein Relay](#relay)).
 - **Reaktionen:** Halte eine Nachricht gedrückt, um ihr Menü zu öffnen und mit 👍, ❤️, 😂, 😮, 😢 oder 🙏 zu reagieren, oder
   mit einer der weiteren hinter **+**; darunter stehen die Reaktionen, die letzte jeder Person, wie andere Nostr-Apps
   sie senden (NIP-25).

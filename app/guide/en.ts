@@ -1461,6 +1461,8 @@ between.
 - **Photos and files:** **Photo** and **File** send them, up to 50 MB, encrypted on the phone before they go to the
   Matrix server, so it keeps only what it cannot read. A photo you get is fetched only when you tap **Show photo**;
   **Save** keeps any file on the phone.
+  Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
+  it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Reactions, answers, changes and deleting:** hold a message to open its menu: pick a reaction at the top, **Reply**
   to answer it, **Copy** its words, and for a message of yours **Edit** or **Delete** it. An answer shows the message it
   is to above its words, and a tap on that goes to the message. Reactions show under a message; tap one to react the
@@ -1610,6 +1612,8 @@ bridge sits in between.
   cannot read; Conversations, Monal, Gajim and Dino open it. In a chat written without encryption the file goes as it
   is. A photo, sound or file that comes is fetched only when you tap **Show photo**, **Play** or **Save**. On Android,
   files go through Tor as the chat does.
+  Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
+  it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Voice messages:** press and hold the microphone under the message box to record, and let go to send, as in a
   Matrix chat. It goes as a sound file, encrypted as the chat is, as Conversations sends one, and plays with **Play**.
 - **Groups:** a **private group** is for its members only, and each of them sees who the others are. Every message in it
@@ -1713,6 +1717,8 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   servers** says where they go, the first that takes one: blossom.primal.net, blossom.band and nostr.download unless you
   change them. A photo or file that comes is fetched only when you tap **Show photo** or **Save**, and opens only if it
   is the one that was sent.
+  Tap a photo that shows to see it on the whole screen, as in a contact's chat: two fingers or a double tap zoom in,
+  it turns with the phone, and **Save** keeps it (see Photos and files, under [Chat through a relay](#relay)).
 - **Reactions:** hold a message to open its menu and react with 👍, ❤️, 😂, 😮, 😢 or 🙏, or with one of more behind **+**;
   under it show the reactions, the last one of each person, as other Nostr apps send them (NIP-25).
 - **Answers:** **Reply**, in the menu of a held message, answers it. The message shows over the message box, with a ✕ to

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Image, Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 
 import { fileSize } from '../lib/attachments';
 import { shownLine } from '../lib/call-lines';
@@ -12,6 +12,7 @@ import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 
+import { OpenPhoto } from './attachment';
 import { VoiceClip } from './matrix-voice';
 import { PlaceCard, PreviewCard, Quote } from './message-parts';
 import { PollCard } from './poll';
@@ -92,7 +93,7 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
           message.file.voice ? (
             <VoicePart file={message.file} />
           ) : (
-            <FilePart file={message.file} />
+            <FilePart file={message.file} onMenu={onMenu} />
           )
         ) : message.call ? (
           <Text>{shownLine(message.text)}</Text>
@@ -189,8 +190,9 @@ export function ReactionChips({ reactions, me, mine, onReact }: { reactions: Rec
   );
 }
 
-// A photo or file in a message: fetched only when asked for, a photo then shown, any file saved.
-function FilePart({ file }: { file: MatrixFile }) {
+// A photo or file in a message: fetched only when asked for, a photo then shown (a tap opens it on the
+// whole screen), any file saved.
+function FilePart({ file, onMenu }: { file: MatrixFile; onMenu?: () => void }) {
   const [bytes, setBytes] = useState<Uint8Array | null>(null);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -212,27 +214,25 @@ function FilePart({ file }: { file: MatrixFile }) {
     }
   }
 
-  async function save() {
+  // True once it is done, saved or not; false if the owner went back (a photo shown on the whole screen then stays).
+  async function save(choose = false): Promise<boolean> {
     const got = await get();
-    if (!got) return;
+    if (!got) return false;
     try {
-      if (await saveBytes(file.name, file.mime, got)) setNote(t('Saved.'));
+      if (!(await saveBytes(file.name, file.mime, got, choose))) return false;
+      setNote(t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     }
+    return true;
   }
 
-  const photo = file.kind === 'image' && bytes;
+  const uri = useMemo(() => (file.kind === 'image' && bytes ? `data:${file.mime.startsWith('image/') ? file.mime : 'image/jpeg'};base64,${toBase64(bytes)}` : null), [file.kind, file.mime, bytes]);
   const ratio = file.w && file.h ? file.w / file.h : 4 / 3;
   return (
     <View style={{ gap: space.xs }}>
-      {photo ? (
-        <Image
-          source={{ uri: `data:${file.mime.startsWith('image/') ? file.mime : 'image/jpeg'};base64,${toBase64(bytes)}` }}
-          style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }}
-          resizeMode="contain"
-          accessibilityLabel={file.name}
-        />
+      {uri && bytes ? (
+        <OpenPhoto uri={uri} name={file.name} size={bytes.length} w={file.w} h={file.h} style={{ width: 240, height: 240 / ratio, borderRadius: radius.sm }} onSave={save} onMenu={onMenu} />
       ) : (
         <Text numberOfLines={2}>
           {file.name}

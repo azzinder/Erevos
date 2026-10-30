@@ -382,7 +382,7 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
         isVoice(file) ? (
           <VoiceClip type={file.type} duration={file.duration} fetch={() => nostrDmFile(file)} />
         ) : (
-          <NetworkFile name={file.name ?? (file.type.startsWith('image/') ? t('Photo') : t('File'))} type={file.type} size={file.size} dim={file.dim} fetch={() => nostrDmFile(file)} />
+          <NetworkFile name={file.name ?? (file.type.startsWith('image/') ? t('Photo') : t('File'))} type={file.type} size={file.size} dim={file.dim} fetch={() => nostrDmFile(file)} onMenu={onMenu} />
         )
       ) : message.file ? (
         <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>

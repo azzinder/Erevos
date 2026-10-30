@@ -1579,6 +1579,9 @@ ningún puente se pone en medio.
 - **Fotos y archivos:** **Foto** y **Archivo** los envían, hasta 50 MB, cifrados en el teléfono antes de ir al servidor
   de Matrix, que así guarda solo lo que no puede leer. Una foto recibida se descarga solo al tocar **Mostrar foto**;
   **Guardar** deja cualquier archivo en el teléfono.
+  Toca una foto que se muestra para verla en toda la pantalla, como en el chat de un contacto: dos dedos o un doble
+  toque la amplían, gira con el teléfono, y **Guardar** la conserva (ver Fotos y archivos, en [Chatear a través de un
+  relay](#relay)).
 - **Reacciones, respuestas, cambios y eliminar:** mantén pulsado un mensaje para abrir su menú: elige una reacción
   arriba, **Responder** para responderle, **Copiar** para sus palabras, y en un mensaje tuyo **Editar** o **Eliminar**.
   Una respuesta muestra el mensaje al que responde encima de sus palabras, y un toque en eso va al mensaje. Las
@@ -1744,6 +1747,9 @@ como esas apps: ningún puente se pone en medio.
   guarda solo lo que no puede leer; Conversations, Monal, Gajim y Dino lo abren. En un chat escrito sin cifrado el
   archivo va tal cual. Una foto, un sonido o un archivo que llega se descarga solo al tocar **Mostrar foto**,
   **Reproducir** o **Guardar**. En Android, los archivos van por Tor como el chat.
+  Toca una foto que se muestra para verla en toda la pantalla, como en el chat de un contacto: dos dedos o un doble
+  toque la amplían, gira con el teléfono, y **Guardar** la conserva (ver Fotos y archivos, en [Chatear a través de un
+  relay](#relay)).
 - **Mensajes de voz:** mantén pulsado el micrófono bajo el cuadro de mensaje para grabar, y suelta para enviar, como en
   un chat de Matrix. Va como archivo de sonido, cifrado como el chat, igual que lo envía Conversations.
 - **Grupos:** un **grupo privado** es solo para sus miembros, y cada uno ve quiénes son los demás. Cada mensaje se cifra
@@ -1852,6 +1858,9 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   por Tor como estos chats. **Servidores de archivos** dice adónde van, al primero que acepte uno: blossom.primal.net,
   blossom.band y nostr.download si no los cambias. Una foto o un archivo que llega se trae solo cuando tocas **Mostrar
   foto** o **Guardar**, y se abre solo si es el que se envió.
+  Toca una foto que se muestra para verla en toda la pantalla, como en el chat de un contacto: dos dedos o un doble
+  toque la amplían, gira con el teléfono, y **Guardar** la conserva (ver Fotos y archivos, en [Chatear a través de un
+  relay](#relay)).
 - **Reacciones:** mantén pulsado un mensaje para abrir su menú y reaccionar con 👍, ❤️, 😂, 😮, 😢 o 🙏, o con una de las que
   hay tras **+**; debajo se ven las reacciones, la última de cada persona, como las envían otras apps de Nostr (NIP-25).
 - **Respuestas:** **Responder**, en el menú de un mensaje que mantienes pulsado, le responde. El mensaje aparece sobre

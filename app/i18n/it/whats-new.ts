@@ -10,6 +10,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Numeri sui chip della schermata principale**: ogni chip sopra le chat (Tutti, SMS, Erevos, Matrix, XMPP, Nostr) mostra quanti messaggi non letti ci sono, con un piccolo numero dopo il suo nome; le chat e i gruppi in silenzio non contano. Vedi [Per iniziare](#start).",
+  "**Open a photo full screen in Matrix, XMPP and Nostr chats**: tap a photo shown in a Matrix, XMPP or Nostr chat to see it on the whole screen, with zoom, turning with the phone and Save, as in a chat with a contact. See [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats).":
+    "**Foto a schermo intero nelle chat Matrix, XMPP e Nostr**: tocca una foto mostrata in una chat Matrix, XMPP o Nostr per vederla a tutto schermo, con zoom, rotazione con il telefono e Salva, come nella chat con un contatto. Vedi [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats).",
   // 4.0.0-rc.3
   "**Bold, italic, code and hidden words**: in chats and groups, words typed between * become bold, between _ italic, between ~ struck through, between ` code, and between || hidden behind a grey bar until tapped. See [Chat through a relay](#relay).":
     "**Grassetto, corsivo, codice e parole nascoste**: nelle chat e nei gruppi, le parole tra * diventano in grassetto, tra _ in corsivo, tra ~ barrate, tra ` codice, e tra || nascoste dietro una barra grigia finché non le tocchi. Vedi [Chattare tramite un relay](#relay).",

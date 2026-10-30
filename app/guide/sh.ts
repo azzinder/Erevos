@@ -1531,6 +1531,9 @@ između.
 - **Fotografije i datoteke:** **Fotografija** i **Datoteka** ih šalju, do 50 MB, šifrovane na telefonu prije nego što
   odu na Matrix server, koji tako čuva samo ono što ne može pročitati. Primljena fotografija preuzima se tek kad
   dodirnete **Prikaži fotografiju**; **Sačuvaj** čuva bilo koju datoteku na telefonu.
+  Dodirnite prikazanu fotografiju da je vidite preko cijelog ekrana, kao u razgovoru s kontaktom: dva prsta ili
+  dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
+  [Razgovor preko relaya](#relay)).
 - **Reakcije, odgovori, izmjene i brisanje:** zadržite prst na poruci da otvorite njen meni: izaberite reakciju na vrhu,
   **Odgovori** da joj odgovorite, **Kopiraj** za njene riječi, a na svojoj poruci **Uredi** ili **Obriši**. Odgovor
   iznad svojih riječi prikazuje poruku na koju odgovara, a dodir na to vodi do poruke. Reakcije se vide ispod poruke;
@@ -1680,6 +1683,9 @@ aplikacije: nikakav most nije između.
   može pročitati; Conversations, Monal, Gajim i Dino je otvaraju. U razgovoru pisanom bez šifrovanja datoteka ide
   kakva jeste. Fotografija, zvuk ili datoteka koja stigne preuzima se tek kad dodirnete **Prikaži fotografiju**,
   **Pusti** ili **Sačuvaj**. Na Androidu, datoteke idu preko Tora kao i razgovor.
+  Dodirnite prikazanu fotografiju da je vidite preko cijelog ekrana, kao u razgovoru s kontaktom: dva prsta ili
+  dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
+  [Razgovor preko relaya](#relay)).
 - **Glasovne poruke:** zadržite prst na mikrofonu ispod polja za poruku da snimate, i pustite da pošaljete, kao u
   Matrix razgovoru. Ide kao zvučna datoteka, šifrovana kao razgovor, kako je šalje Conversations.
 - **Grupe:** **privatna grupa** je samo za svoje članove, i svaki vidi ko su ostali. Svaka poruka u njoj šifrovana je
@@ -1784,6 +1790,9 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   kao i ovi razgovori. **Poslužitelji datoteka** kažu kamo idu, na prvi koji je primi: blossom.primal.net, blossom.band
   i nostr.download, ako ih ne promijenite. Fotografija ili datoteka koja stigne dohvaća se tek kad dodirnete **Prikaži
   fotografiju** ili **Sačuvaj**, i otvara se samo ako je ona koja je poslana.
+  Dodirnite prikazanu fotografiju da je vidite preko cijelog ekrana, kao u razgovoru s kontaktom: dva prsta ili
+  dvostruki dodir je uvećavaju, okreće se s telefonom, a **Sačuvaj** je čuva (pogledajte Fotografije i datoteke, pod
+  [Razgovor preko relaya](#relay)).
 - **Reakcije:** zadržite poruku da otvorite njen meni i reagirate s 👍, ❤️, 😂, 😮, 😢 ili 🙏, ili jednom od ostalih iza
   **+**; ispod se vide reakcije, posljednja od svake osobe, kako ih šalju druge Nostr aplikacije (NIP-25).
 - **Odgovori:** **Odgovori**, u meniju poruke koju zadržite, odgovara na nju. Poruka se prikazuje iznad polja za poruku,
