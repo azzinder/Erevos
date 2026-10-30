@@ -52,6 +52,7 @@ import {
   setOwnAvatar,
   sendToDeviceSealed,
   setCallHandler,
+  setLegacyCallHandler,
   setMatrixHttp,
   signIn,
   startChat,
@@ -394,10 +395,13 @@ test("a call's events reach the calls, opened: in the room, in its state, and to
   hana = kept(hana);
   ivan = kept(ivan);
   const got: CallEvent[] = [];
-  setCallHandler(async (_state, event) => {
+  const take = async (_state: MatrixState, event: CallEvent) => {
     got.push(event);
     return true;
-  });
+  };
+  // Element Call's go to the calls, the older one-to-one calls' to lib/matrix-voip.ts: both here.
+  setCallHandler(take);
+  setLegacyCallHandler(take);
   try {
     await sendEvent(hana, room.id, 'm.call.invite', { call_id: 'c1', version: '1', lifetime: 60000, offer: { type: 'offer', sdp: 'v=0 secret-offer' } });
     const member = `_${hana.userId}_${hana.deviceId}_m.call`;
@@ -424,6 +428,7 @@ test("a call's events reach the calls, opened: in the room, in its state, and to
     assert.deepEqual(ivan.rooms[room.id].messages, []);
   } finally {
     setCallHandler(null);
+    setLegacyCallHandler(null);
   }
 });
 
