@@ -3,18 +3,24 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
+import { MatrixDevices } from '../components/matrix-devices';
+import { MatrixFind } from '../components/matrix-find';
+import { lineOf } from '../components/matrix-message';
+import { MatrixRegister } from '../components/matrix-register';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { OwnPicture } from '../components/network-picture';
 import { SayTypingSwitch } from '../components/say-typing';
 import { pickAvatar } from '../lib/pick-avatar';
-import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { doorIsOpen } from '../lib/closed-notices';
 import { canMatrix, canTor } from '../lib/core';
 import { t } from '../lib/i18n';
 import { isMatrixId, matrixThroughTor, roomList, type MatrixRoom, type MatrixState } from '../lib/matrix';
+import { sortedRooms } from '../lib/matrix-rooms';
 import {
   matrixCreateGroup,
+  matrixForget,
   matrixJoin,
   matrixLeave,
   matrixNow,
@@ -30,6 +36,7 @@ import {
   matrixSetSayTyping,
   matrixSignOut,
   matrixStartChat,
+  matrixTag,
   matrixVerifications,
   matrixVerify,
   onMatrixChange,
@@ -62,6 +69,7 @@ export default function MatrixScreen() {
   const [groupName, setGroupName] = useState('');
   const [groupPeople, setGroupPeople] = useState('');
   const [address, setAddress] = useState('');
+  const [optionsFor, setOptionsFor] = useState<string | null>(null);
   const [providers, setProviders] = useState<{ homeserver: string; list: { id: string; name: string }[] } | null>(null);
 
   useEffect(() => {
@@ -195,13 +203,17 @@ export default function MatrixScreen() {
               : t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in this space only.')}
           </Text>
         </Card>
+        <MatrixRegister />
         {tor}
         {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
       </Page>
     );
   }
 
-  const rooms = roomList(state);
+  // Chats only: the spaces are in Find a group. Favourites first, those of low priority last.
+  const rooms = sortedRooms(roomList(state).filter((room) => !room.space));
+  const optionsRoom = optionsFor ? state.rooms[optionsFor] : undefined;
+  const openRoom = (id: string) => router.push({ pathname: '/matrix-chat', params: { room: id, ...whereParams(where) } });
   // Checks between this device and another of ours go to-device, without a chat.
   const check = matrixVerifications(where).find((v) => !v.roomId);
   return (
@@ -307,6 +319,8 @@ export default function MatrixScreen() {
         </Text>
       </Card>
 
+      <MatrixFind state={state} busy={busy} open={openRoom} run={run} />
+
       <Card>
         <OwnPicture
           network="matrix"
@@ -329,6 +343,9 @@ export default function MatrixScreen() {
       <SectionTitle title={t('Security Key')} />
       <RecoveryCard state={state} />
 
+      <SectionTitle title={t('Devices')} />
+      <MatrixDevices userId={state.userId} />
+
       {Platform.OS === 'android' && where === 'space' ? <ClosedPush busy={busy} run={run} /> : null}
 
       <SectionTitle title={t('Chats')} />
@@ -337,13 +354,49 @@ export default function MatrixScreen() {
         <RoomRow
           key={room.id}
           room={room}
-          onOpen={() => router.push({ pathname: '/matrix-chat', params: { room: room.id, ...whereParams(where) } })}
+          onOpen={() => openRoom(room.id)}
+          onMore={() => setOptionsFor(room.id)}
           onJoin={() => void run(() => matrixJoin(room.id))}
           onDecline={() => void run(() => matrixLeave(room.id))}
         />
       ))}
 
       {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
+
+      <Sheet visible={!!optionsRoom} onClose={() => setOptionsFor(null)} title={optionsRoom?.name}>
+        <Button
+          title={optionsRoom?.tags?.favourite ? t('Not a favourite any more') : t('Make a favourite')}
+          kind="secondary"
+          onPress={() => {
+            const id = optionsFor;
+            setOptionsFor(null);
+            if (id) void run(() => matrixTag(id, optionsRoom?.tags?.favourite ? null : 'favourite'));
+          }}
+        />
+        <Button
+          title={optionsRoom?.tags?.low ? t('Not low priority any more') : t('Low priority')}
+          kind="secondary"
+          onPress={() => {
+            const id = optionsFor;
+            setOptionsFor(null);
+            if (id) void run(() => matrixTag(id, optionsRoom?.tags?.low ? null : 'low'));
+          }}
+        />
+        <Button
+          title={t('Leave and forget')}
+          kind="secondary"
+          onPress={() => {
+            const id = optionsFor;
+            setOptionsFor(null);
+            if (id) {
+              ask(t('Leave and forget this chat?'), t('You leave it, and the Matrix server forgets it for your account, so your other Matrix apps no longer show it either.'), [
+                { text: t('Cancel'), style: 'cancel' },
+                { text: t('Leave'), style: 'destructive', onPress: () => void run(() => matrixForget(id)) },
+              ]);
+            }
+          }}
+        />
+      </Sheet>
 
       <Button
         title={t('Sign out')}
@@ -399,7 +452,7 @@ function ClosedPush({ busy, run }: { busy: boolean; run: (work: () => Promise<un
   );
 }
 
-function RoomRow({ room, onOpen, onJoin, onDecline }: { room: MatrixRoom; onOpen: () => void; onJoin: () => void; onDecline: () => void }) {
+function RoomRow({ room, onOpen, onMore, onJoin, onDecline }: { room: MatrixRoom; onOpen: () => void; onMore: () => void; onJoin: () => void; onDecline: () => void }) {
   const colors = useColors();
   const last = room.messages.at(-1);
   if (room.invitedBy) {
@@ -415,16 +468,17 @@ function RoomRow({ room, onOpen, onJoin, onDecline }: { room: MatrixRoom; onOpen
     );
   }
   return (
-    <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={room.name}>
+    <Pressable onPress={onOpen} onLongPress={onMore} accessibilityRole="button" accessibilityLabel={room.name} accessibilityHint={t('Hold for more')}>
       <Card>
         <Row>
           <View style={{ flex: 1, gap: 2 }}>
             <Text variant="bodyStrong" numberOfLines={1}>
+              {room.tags?.favourite ? '★ ' : ''}
               {room.name}
             </Text>
             {last ? (
               <Text tone="muted" numberOfLines={1}>
-                {last.locked ? t('Locked message') : last.text}
+                {last.locked ? t('Locked message') : lineOf(last)}
               </Text>
             ) : null}
           </View>
