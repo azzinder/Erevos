@@ -86,10 +86,12 @@ versteckte Chats werden nur von innen durchsucht. Ein langer Chat öffnet sich b
 frühere, darunter die aus Telegram oder WhatsApp importierten, kommen von selbst, während du nach oben scrollst
 (**Frühere Nachrichten zeigen**, über ihnen, holt sie auch); wenn du zu einer früheren springst (aus der Suche, einer
 markierten Nachricht oder der, auf die eine Nachricht antwortet), wird sie ebenfalls geholt.
-Ein wenig nach oben gescrollt, erscheinen unten rechts zwei runde Pfeile, in einem Chat, einer Gruppe und einer
-SMS-Unterhaltung gleichermaßen: Der obere geht zum Anfang des Chats, der untere zurück zu seinem Ende. Vom Anfang aus
-holt **Spätere Nachrichten zeigen**, unter dem Angezeigten, weitere; eine Nachricht schreiben oder der untere Pfeil
-führt zurück zum Ende.
+Jeder Chat öffnet sich bei seiner letzten Nachricht, mit der Nachrichtenleiste darunter: Chats mit Kontakten, Gruppen und
+SMS-Unterhaltungen ebenso wie die Chats mit Matrix, XMPP und Nostr. Ein wenig nach oben gescrollt, erscheinen unten rechts
+runde Pfeile, in jedem von ihnen: Der obere geht zum Anfang des Chats, der untere zurück zu seinem Ende. Dazwischen geht,
+wenn beim Öffnen des Chats einige Nachrichten neu waren, ein Doppelhaken zur ersten davon, dorthin, wo du aufgehört hast,
+solange diese Nachricht nicht im Bild ist. Vom Anfang aus holt **Spätere Nachrichten zeigen**, unter dem Angezeigten,
+weitere; eine Nachricht schreiben oder der untere Pfeil führt zurück zum Ende.
 
 **Warum:** Ein langer Chat öffnet sich bei seinen neuesten Nachrichten, damit er sofort aufgeht: Alles auf einmal zu
 zeichnen wäre langsam, vor allem auf älteren Telefonen. Versteckte Chats sind von der Suche des Startbildschirms

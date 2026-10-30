@@ -81,10 +81,12 @@ nesta conversa** também nos SMS que a conversa de um contato mostra; as convers
 delas. Uma conversa longa abre nas últimas 100 mensagens dela, e as anteriores, entre elas as importadas do Telegram ou
 do WhatsApp, vêm sozinhas conforme você rola para cima (**Mostrar mensagens anteriores**, acima delas, também as traz);
 ir para uma anterior (pela busca, por uma mensagem favorita ou pela mensagem que uma outra responde) também a traz.
-Com a tela rolada um pouco para cima, duas setas redondas aparecem no canto inferior direito, numa conversa, num grupo
-e numa conversa de SMS: a de cima vai para o início da conversa, a de baixo de volta para o fim. A partir do início,
-**Mostrar mensagens posteriores**, abaixo do que aparece, traz mais; escrever uma mensagem, ou a seta de baixo, volta
-ao fim.
+Cada conversa abre na sua última mensagem, com a barra de mensagem embaixo: as conversas com contatos, os grupos e as
+conversas de SMS, e também as conversas de Matrix, XMPP e Nostr. Com a tela rolada um pouco para cima, setas redondas
+aparecem no canto inferior direito, em todas elas: a de cima vai para o início da conversa, a de baixo de volta para o
+fim. Entre elas, se havia mensagens novas ao abrir a conversa, um tique duplo vai para a primeira delas, onde você
+parou, enquanto essa mensagem não estiver à vista. A partir do início, **Mostrar mensagens posteriores**, abaixo do que
+aparece, traz mais; escrever uma mensagem, ou a seta de baixo, volta ao fim.
 
 **Por quê:** uma conversa longa abre nas últimas mensagens para abrir na hora: desenhar tudo de uma vez seria lento,
 sobretudo em celulares mais antigos. As conversas ocultas ficam fora da busca da tela inicial para que a tela inicial

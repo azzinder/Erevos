@@ -387,6 +387,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     },
     /** Goes to one of the group's messages, by its tag, and lights it a moment. */
     goTo,
+    /** Where a message begins in the thread, by its tag: undefined while it is not laid out. */
+    yOf: (tag: string) => placed.current.get(tag),
     /** Whether the thread follows what comes, to its end: not once a message was gone to, until we write. */
     follows: () => !stays.current,
     /** As its arrows go: kept where it is read, at its start, or following what comes again, at its end. */

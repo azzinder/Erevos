@@ -248,6 +248,24 @@ export function EdgeIcon({ color, size = 24, up = false }: Props & { up?: boolea
   );
 }
 
+/** A double tick: what was seen, as the marks beside a message say; the arrow to where a chat was last seen. */
+export function SeenIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      {[3.5, 9.5].map((x) => (
+        <View
+          key={x}
+          style={[
+            box(k, { x, y: 5.5, w: 6, h: 11 }),
+            { borderBottomWidth: 2.4 * k, borderRightWidth: 2.4 * k, borderColor: color, borderRadius: k, transform: [{ rotate: '45deg' }] },
+          ]}
+        />
+      ))}
+    </Grid>
+  );
+}
+
 /** A cross: to close or turn off. */
 export function CloseIcon({ color, size = 20 }: Props) {
   const k = size / 24;

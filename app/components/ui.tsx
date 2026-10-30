@@ -14,6 +14,7 @@ import {
   type TextInputProps,
   type TextProps,
   type TextStyle,
+  type ViewProps,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -313,8 +314,12 @@ export function Chip({ label, selected, onPress, disabled, mono, fit }: {
   );
 }
 
-export function Row({ children, style, wrap }: { children: ReactNode; style?: StyleProp<ViewStyle>; wrap?: boolean }) {
-  return <View style={[{ flexDirection: 'row', alignItems: 'center', gap: space.sm }, wrap && { flexWrap: 'wrap' }, style]}>{children}</View>;
+export function Row({ children, style, wrap, onLayout }: { children: ReactNode; style?: StyleProp<ViewStyle>; wrap?: boolean; onLayout?: ViewProps['onLayout'] }) {
+  return (
+    <View onLayout={onLayout} style={[{ flexDirection: 'row', alignItems: 'center', gap: space.sm }, wrap && { flexWrap: 'wrap' }, style]}>
+      {children}
+    </View>
+  );
 }
 
 export function Field({ label, hint, children }: { label?: string; hint?: string; children: ReactNode }) {

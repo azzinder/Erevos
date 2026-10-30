@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState, type ElementRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
+import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Chip, Input, Page, Row, Text } from '../components/ui';
@@ -103,13 +104,9 @@ export default function MatrixChatScreen() {
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
-  // older messages come in above (`keepAt`: how tall it was, with how many messages), and where the
-  // thread and each message in it begin, to scroll to one.
-  const scroll = useRef<ElementRef<typeof KeyboardAwareScrollView>>(null);
+  // older messages come in above (`keepAt`: how tall it was, with how many messages).
   const scrolled = useRef({ y: 0, height: 0 });
   const keepAt = useRef<{ height: number; count: number } | null>(null);
-  const threadAt = useRef(0);
-  const placed = useRef<Record<string, number>>({});
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -135,6 +132,15 @@ export default function MatrixChatScreen() {
   const count = room?.messages.length ?? 0;
   const counted = useRef(count);
   counted.current = count;
+  // The thread opens at its last message, with the arrows to its start, to where it was left and to its
+  // end (components/network-thread.tsx); older messages coming in above hold it.
+  const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
+    list: room?.messages ?? [],
+    idOf: (message) => message.id,
+    mine: (message) => message.sender === state?.userId,
+    unread: room?.unread ?? 0,
+    held: () => keepAt.current !== null,
+  });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!roomId ? undefined : where === 'space' ? `matrix:${roomId}` : hiddenOnScreen());
   useEffect(() => {
@@ -259,12 +265,6 @@ export default function MatrixChatScreen() {
     }
   }
 
-  // Scrolls the thread to a message, a little below the top.
-  function goTo(id: string) {
-    const y = placed.current[id];
-    if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, threadAt.current + y - 96), animated: true });
-  }
-
   const react = (id: string, emoji: string) => matrixReact(roomId, id, emoji).catch(fail);
 
   async function copy(text: string) {
@@ -317,7 +317,7 @@ export default function MatrixChatScreen() {
     return to ? { name: nameOf(to), line: lineOf(to), onPress: () => goTo(to.id) } : null;
   };
 
-  return (
+  return withArrows(
     <KeyboardAwareScrollView
       ref={scroll}
       style={{ flex: 1, backgroundColor: colors.ground }}
@@ -325,9 +325,10 @@ export default function MatrixChatScreen() {
       contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
       keyboardShouldPersistTaps="handled"
       bottomOffset={space.xl}
-      scrollEventThrottle={100}
+      {...scrollProps}
       onScroll={(event) => {
         scrolled.current.y = event.nativeEvent.contentOffset.y;
+        scrollProps.onScroll(event);
       }}
       onContentSizeChange={(_width, height) => {
         const keep = keepAt.current;
@@ -337,6 +338,7 @@ export default function MatrixChatScreen() {
           scroll.current?.scrollTo({ y: Math.max(0, scrolled.current.y + height - keep.height), animated: false });
         }
         scrolled.current.height = height;
+        scrollProps.onContentSizeChange();
       }}
     >
       <Row>
@@ -369,12 +371,7 @@ export default function MatrixChatScreen() {
         ) : null
       ) : null}
       {check ? <MatrixVerifyCard check={check} name={room.members[check.userId]?.name || check.userId} /> : null}
-      <View
-        style={{ gap: space.md }}
-        onLayout={(event) => {
-          threadAt.current = event.nativeEvent.layout.y;
-        }}
-      >
+      <View style={{ gap: space.md }} {...threadProps}>
         {room.before && !room.start ? (
           <Row style={{ justifyContent: 'center' }}>
             <Button title={earlier ? t('Fetching…') : t('Load earlier messages')} kind="secondary" compact disabled={earlier} onPress={() => void loadEarlier()} />
@@ -389,9 +386,7 @@ export default function MatrixChatScreen() {
             answered={answeredBy(message)}
             onReact={(emoji) => void react(message.id, emoji)}
             onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
-            onLayout={(event) => {
-              placed.current[message.id] = event.nativeEvent.layout.y;
-            }}
+            onLayout={place(message.id)}
           />
         ))}
       </View>
@@ -403,7 +398,7 @@ export default function MatrixChatScreen() {
       {answered ? <Quote name={nameOf(answered)} line={lineOf(answered)} onPress={() => goTo(answered.id)} onClose={() => setReplyId(null)} /> : null}
       {changed ? <Quote name={t('Edit message')} line={lineOf(changed)} onClose={stopEditing} /> : null}
       <Field key={changed?.id ?? 'new'} initial={changed?.text ?? ''} editing={!!changed} saving={saving} members={nameable} onSend={send} onTyped={sayTyping.typed} onSent={sayTyping.sent} />
-      <Row>
+      <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
         ) : (
@@ -443,7 +438,7 @@ export default function MatrixChatScreen() {
         onReact={menuMessage && !menuMessage.state ? (emoji) => void react(menuMessage.id, emoji) : undefined}
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
-    </KeyboardAwareScrollView>
+    </KeyboardAwareScrollView>,
   );
 }
 

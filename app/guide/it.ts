@@ -84,8 +84,10 @@ interno. Una chat lunga si apre ai suoi ultimi 100 messaggi, e quelli precedenti
 o WhatsApp, arrivano da soli man mano che scorri verso l’alto (li porta anche **Mostra i messaggi precedenti**, sopra
 di loro); andare a uno precedente (dalla ricerca, da un messaggio importante o da quello a cui risponde un messaggio)
 porta anche quello.
-Se scorri un po’ verso l’alto, in basso a destra compaiono due frecce rotonde, in una chat, in un gruppo e in una
-conversazione SMS allo stesso modo: quella in alto va all’inizio della chat, quella in basso torna alla fine.
+Ogni chat si apre sul suo ultimo messaggio, con la barra dei messaggi sotto: le chat con i contatti, i gruppi e le
+conversazioni SMS, come le chat Matrix, XMPP e Nostr. Se scorri un po’ verso l’alto, in basso a destra compaiono frecce
+rotonde, in ognuna: quella in alto va all’inizio della chat, quella in basso torna alla fine. In mezzo, se all’apertura
+c’erano messaggi nuovi, una doppia spunta va al primo di essi, dove avevi lasciato, finché quel messaggio non si vede.
 Dall’inizio, **Mostra i messaggi successivi**, sotto quello che si vede, ne porta altri; scrivere un messaggio, o la
 freccia in basso, riporta alla fine.
 

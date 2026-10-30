@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Every chat opens the same way, with the same arrows**: the Erevos chats, groups, SMS conversations and the Matrix,
+  XMPP and Nostr chats all open at their last message with the message bar under it, and have the round arrows to the
+  chat's start, to where you left off (the first message that was new when it opened, a double tick) and to its end
+  (`components/thread-arrows.tsx`, `components/network-thread.tsx`, `lib/left-off.ts`). The Matrix, XMPP and Nostr
+  screens scroll their head, thread and message bar together, so they follow what comes while read at the end, and
+  hold their place while earlier messages load. See [Getting started](#start).
 - **Bold, italic, code and hidden words**: marks typed around words, as in WhatsApp and Signal (`*bold*`, `_italic_`,
   `~struck~`, backticks for code, three for a block, `||hidden||`), show so in chats and groups (`lib/text-style.ts`,
   `components/linked-text.tsx`). A mark counts only where it starts and ends a word, never inside a web address or

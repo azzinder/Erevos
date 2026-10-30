@@ -9,7 +9,7 @@ import { MoreIcon, PhotoIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LaterPicker } from '../components/later-picker';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
-import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
+import { BELOW_TOP, ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { deleteSms, erevosNumber, maySendSms, onSmsChangedElsewhere, sendSmsAgain, SmsForward } from '../components/sms-message';
 import { Button, Card, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
@@ -198,7 +198,32 @@ export default function Sms() {
   const thread = useRef<ScrollView>(null);
   // Gone to its start by its arrow, the thread keeps where it is read, until its end or a new SMS is.
   const keepsPlace = useRef(false);
-  const { away, onScroll } = useThreadAway();
+  const { away, onScroll, spot } = useThreadAway();
+  // Where each SMS begins in the thread, and where the conversation was left: the first SMS that
+  // came and was not read when it opened, taken before it is marked read.
+  const placed = useRef(new Map<string, number>());
+  const taking = useRef<{ to: string; left: Promise<string | null> } | null>(null);
+  const left = useRef<string | null>(null);
+  const markRead = useCallback(() => {
+    if (taking.current?.to !== to) {
+      left.current = null;
+      taking.current = {
+        to,
+        left: smsMessages(to).then(
+          (loaded) => {
+            const first = loaded.find((m) => !m.mine && !m.read);
+            return first && first !== loaded[0] ? smsLineId(first) : null;
+          },
+          () => null,
+        ),
+      };
+    }
+    const taken = taking.current;
+    return taken.left.then((id) => {
+      if (taking.current === taken) left.current = id;
+      return markSmsRead(to);
+    });
+  }, [to]);
 
   // Read only while this conversation shows with Erevos on the screen: an SMS that comes while it is
   // away stays unread, and its notice with it, until it comes back to it (SmsStore.kt markRead).
@@ -210,7 +235,7 @@ export default function Sms() {
         return loaded;
       })
       .catch(() => setNote(t('The SMS on this phone could not be read. Make Erevos the SMS app under Settings → Phone and SMS → SMS.')));
-    if (focusedNow.current && appShown()) markSmsRead(to).catch(() => undefined);
+    if (focusedNow.current && appShown()) markRead().catch(() => undefined);
     // What waits to go later, and the space's order, as the phone has them now.
     const sms = link.current;
     if (sms) {
@@ -222,7 +247,7 @@ export default function Sms() {
         })
         .catch(() => undefined);
     }
-  }, [to]);
+  }, [to, markRead]);
 
   // On the screen, an SMS that comes in it only sounds (lib/background.ts).
   useFocusEffect(useCallback(() => (to ? showSmsOnScreen(numbers.length > 0 ? numbers : [to]) : undefined), [to]));
@@ -231,7 +256,7 @@ export default function Sms() {
   useFocusEffect(
     useCallback(() => {
       focusedNow.current = true;
-      if (appShown()) markSmsRead(to).catch(() => undefined);
+      if (appShown()) markRead().catch(() => undefined);
       const stopShown = onAppShown((shown) => {
         if (shown && focusedNow.current) load();
       });
@@ -239,7 +264,7 @@ export default function Sms() {
         focusedNow.current = false;
         stopShown();
       };
-    }, [to, load]),
+    }, [to, load, markRead]),
   );
 
   // A number that is no contact can be added as one, even with the names not shown; looked at
@@ -360,6 +385,7 @@ export default function Sms() {
   const trashed = order ? trashOf(to, order) : null;
   const hidden = new Set(going.filter((g) => sameConversation(g.item.to, to)).map((g) => g.item.id));
   const shown = shownMessages(messages, trashed).filter((m) => !hidden.has(smsLineId(m)));
+  spot.current = () => (left.current && shown.some((m) => smsLineId(m) === left.current) ? (placed.current.get(left.current) ?? null) : undefined);
   // The one-time code of each SMS that came with one, found once for the conversation as read.
   const codes = useMemo(() => new Map(messages.filter((m) => !m.mine && m.text).map((m) => [smsLineId(m), oneTimeCode(m.text)] as const)), [messages]);
   const title = group ? groupName(numbers, names) : names[to] || to;
@@ -574,6 +600,7 @@ export default function Sms() {
               key={smsLineId(m)}
               onPress={smsFailed(m) ? () => sendAgain(m) : undefined}
               onLongPress={() => setChosen(m)}
+              onLayout={(event) => placed.current.set(smsLineId(m), event.nativeEvent.layout.y)}
               accessibilityRole={smsFailed(m) ? 'button' : undefined}
               style={[styles.bubble, m.mine ? styles.mine : styles.theirs]}
             >
@@ -637,6 +664,13 @@ export default function Sms() {
         <ThreadArrows
           start={away.start}
           end={away.end}
+          seen={away.seen}
+          onSeen={() => {
+            const y = left.current ? placed.current.get(left.current) : undefined;
+            if (y === undefined) return;
+            keepsPlace.current = true;
+            thread.current?.scrollTo({ y: Math.max(0, y - BELOW_TOP), animated: true });
+          }}
           onStart={() => {
             keepsPlace.current = true;
             thread.current?.scrollTo({ y: 0, animated: true });

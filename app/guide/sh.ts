@@ -81,9 +81,12 @@ razgovoru** i u SMS porukama koje prikazuje razgovor s kontaktom; skriveni razgo
 razgovor otvara se na svojih posljednjih 100 poruka, a ranije poruke, među njima i one uvezene iz Telegrama ili
 WhatsAppa, dolaze same dok listate prema gore (donosi ih i **Prikaži ranije poruke**, iznad njih); odlazak na neku
 raniju poruku (iz pretrage, s poruke sa zvjezdicom ili na poruku na koju neka poruka odgovara) također je donosi.
-Kad malo listate prema gore, dolje desno pojavljuju se dvije okrugle strelice, jednako u razgovoru, grupi i SMS
-razgovoru: gornja vodi na početak razgovora, a donja nazad na njegov kraj. Od početka, **Prikaži kasnije poruke**,
-ispod onoga što je prikazano, donosi još; pisanje poruke ili donja strelica vraćaju na kraj.
+Svaki razgovor se otvara na svojoj posljednjoj poruci, s trakom za poruke ispod nje: razgovori s kontaktima, grupe i SMS
+razgovori, kao i razgovori preko Matrixa, XMPP-a i Nostra. Kad malo listate prema gore, dolje desno pojavljuju se
+okrugle strelice, u svakom od njih: gornja vodi na početak razgovora, a donja nazad na njegov kraj. Između njih, ako je
+pri otvaranju razgovora bilo novih poruka, dvostruka kvačica vodi na prvu od njih, tamo gdje je stalo, dok ta poruka nije
+na ekranu. Od početka, **Prikaži kasnije poruke**, ispod onoga što je prikazano, donosi još; pisanje poruke ili donja
+strelica vraćaju na kraj.
 
 **Zašto:** dug razgovor se otvara na posljednjim porukama da bi se otvorio odmah: iscrtavanje cijelog razgovora
 odjednom bilo bi sporo, naročito na starijim telefonima. Skriveni razgovori izostavljeni su iz pretrage početnog

@@ -268,6 +268,7 @@ export const chat: Record<string, string> = {
   // The arrows over a thread, to its start and its end (components/thread-arrows.tsx).
   'To the start of the chat': 'Au début de la discussion',
   'To the end of the chat': 'À la fin de la discussion',
+  'To where you left off': 'Là où tu en étais',
   'Show earlier imported messages ({n} more)': 'Afficher les messages importés plus anciens ({n} de plus)',
   'Show earlier SMS': 'Afficher les SMS plus anciens',
   'Send as SMS': 'Envoyer par SMS',

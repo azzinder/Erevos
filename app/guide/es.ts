@@ -84,9 +84,12 @@ de un contacto; los chats ocultos solo se buscan desde dentro. Un chat largo se 
 anteriores, entre ellos los importados de Telegram o WhatsApp, llegan solos al desplazarte hacia arriba (**Mostrar
 mensajes anteriores**, encima de ellos, también los trae); ir a uno anterior (desde la búsqueda, un mensaje destacado o
 el mensaje al que responde otro) también lo trae.
-Al desplazarte un poco hacia arriba, aparecen dos flechas redondas abajo a la derecha, igual en un chat, en un grupo y en
-una conversación SMS: la de arriba va al principio del chat, la de abajo vuelve a su final. Desde el principio,
-**Mostrar mensajes posteriores**, bajo lo que se ve, trae más; escribir un mensaje, o la flecha de abajo, vuelve al final.
+Cada chat se abre en su último mensaje, con la barra de mensajes debajo: los chats con contactos, los grupos y las
+conversaciones SMS, y también los chats de Matrix, XMPP y Nostr. Al desplazarte un poco hacia arriba, aparecen flechas
+redondas abajo a la derecha, en todos ellos: la de arriba va al principio del chat, la de abajo vuelve a su final. Entre
+ellas, si al abrir el chat había mensajes nuevos, una doble marca va al primero de ellos, donde lo dejaste, mientras ese
+mensaje no se vea. Desde el principio, **Mostrar mensajes posteriores**, bajo lo que se ve, trae más; escribir un mensaje,
+o la flecha de abajo, vuelve al final.
 
 **Por qué:** un chat largo se abre en sus últimos mensajes para que se abra al instante: dibujarlo entero de una vez
 sería lento, sobre todo en teléfonos antiguos. Los chats ocultos quedan fuera de la búsqueda de la pantalla de inicio

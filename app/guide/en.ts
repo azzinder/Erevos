@@ -78,9 +78,12 @@ in what it keeps sealed, and **Search in this chat** in the SMS a contact's chat
 only from inside them. A long chat opens at its latest 100 messages, and earlier ones, those imported from Telegram or
 WhatsApp among them, come by themselves as you scroll up (**Show earlier messages**, above them, brings them too); going
 to an earlier one (from the search, a starred message or the one a message answers) brings it too.
-Scrolled up a little, two round arrows show at the lower right, in a chat, a group and an SMS conversation alike: the
-upper one goes to the chat's start, the lower one back to its end. From the start, **Show later messages**, under what
-shows, brings more; writing a message, or the lower arrow, goes back to the end.
+Every chat opens at its latest message, with the message bar under it: chats with contacts, groups and SMS
+conversations, and the Matrix, XMPP and Nostr chats alike. Scrolled up a little, round arrows show at the lower right in
+each of them: the upper one goes to the chat's start, the lower one back to its end. Between them, when some messages
+were new as you opened the chat, a double tick goes to the first of those, where you left off, for as long as that
+message is out of sight. From the start, **Show later messages**, under what shows, brings more; writing a message, or
+the lower arrow, goes back to the end.
 
 **Why:** a long chat opens at its latest messages so that it opens at once: drawing all of it at a time would be slow,
 on older phones most of all. Hidden chats are left out of the home screen's search so that the home screen looks the

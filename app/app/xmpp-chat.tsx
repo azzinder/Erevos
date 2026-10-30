@@ -1,7 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, View, type LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { KeyboardAwareScrollView } from '../components/keyboard';
 import { Missing, ReactionChips } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
@@ -9,6 +11,7 @@ import { Quote } from '../components/message-parts';
 
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
+import { useNetworkThread } from '../components/network-thread';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
@@ -106,6 +109,8 @@ const copyable = (message: XmppMessage) => CAN_COPY && !!message.text && !messag
 
 export default function XmppChatScreen() {
   const router = useRouter();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { jid: given, hidden } = useLocalSearchParams<{ jid?: string; hidden?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const jid = given?.toLowerCase();
@@ -152,6 +157,14 @@ export default function XmppChatScreen() {
   const state = now.state;
   const chat = jid && state ? state.chats[jid] : undefined;
   const count = chat?.messages.length ?? 0;
+  // The thread opens at its last message, with the arrows to its start, to where it was left and to its
+  // end (components/network-thread.tsx).
+  const { scroll, scrollProps, threadProps, endProps, place, withArrows } = useNetworkThread({
+    list: chat?.messages ?? [],
+    idOf: (message) => message.id,
+    mine: (message) => message.mine,
+    unread: chat?.unread ?? 0,
+  });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!jid ? undefined : where === 'space' ? `xmpp:${jid}` : hiddenOnScreen());
   useEffect(() => {
@@ -363,8 +376,16 @@ export default function XmppChatScreen() {
       : room
         ? t('XMPP group · encrypted with OMEMO for every member, not anonymous')
         : t('XMPP · encrypted with OMEMO, not anonymous');
-  return (
-    <Page>
+  return withArrows(
+    <KeyboardAwareScrollView
+      ref={scroll}
+      style={{ flex: 1, backgroundColor: colors.ground }}
+      // As Page (components/ui.tsx) has it.
+      contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={space.xl}
+      {...scrollProps}
+    >
       <Row>
         <Text variant="title" numberOfLines={2} style={{ flex: 1 }}>
           {name}
@@ -423,17 +444,20 @@ export default function XmppChatScreen() {
       ) : null}
       {room?.subject ? <Text selectable>{room.subject}</Text> : null}
 
-      {(chat?.messages ?? []).map((message) => (
-        <Bubble
-          key={message.id}
-          message={message}
-          group={!!room}
-          me={me}
-          answered={answeredBy(message)}
-          onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
-          onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
-        />
-      ))}
+      <View style={{ gap: space.md }} {...threadProps}>
+        {(chat?.messages ?? []).map((message) => (
+          <Bubble
+            key={message.id}
+            message={message}
+            group={!!room}
+            me={me}
+            answered={answeredBy(message)}
+            onReact={menuable(message) && (!room || message.sid) ? (emoji) => react(message.id, emoji) : undefined}
+            onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
+            onLayout={place(message.id)}
+          />
+        ))}
+      </View>
       {!room && xmppTyping(jid) ? (
         <Text variant="caption" tone="muted">
           {name} · {t('typing…')}
@@ -490,7 +514,7 @@ export default function XmppChatScreen() {
         />
         <Button title={changed ? t('Save') : t('Send')} compact disabled={!draft.trim() || unsent !== null} onPress={submit} />
       </Row>
-      <Row>
+      <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
         ) : (
@@ -586,7 +610,7 @@ export default function XmppChatScreen() {
         onReact={menuMessage && (!room || menuMessage.sid) ? (emoji) => react(menuMessage.id, emoji) : undefined}
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
-    </Page>
+    </KeyboardAwareScrollView>,
   );
 }
 
@@ -797,7 +821,7 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
 /** The message an answer is to, as the answer quotes it. */
 type Answer = { name: string; line: string };
 
-function Bubble({ message, group, me, answered, onReact, onMenu }: {
+function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
   message: XmppMessage;
   group: boolean;
   /** The account's address, to see which reactions are ours. */
@@ -808,6 +832,8 @@ function Bubble({ message, group, me, answered, onReact, onMenu }: {
   onReact?: (emoji: string) => void;
   /** Held down: its menu. */
   onMenu?: () => void;
+  /** Where it sits in the thread, to scroll to it. */
+  onLayout?: (event: LayoutChangeEvent) => void;
 }) {
   const colors = useColors();
   const mine = message.mine;
@@ -815,7 +841,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu }: {
   // A call's line: kept in English, shown in the app's language, with no marks.
   if (message.call) {
     return (
-      <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, gap: 2 }}>
+      <View onLayout={onLayout} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, borderRadius: radius.md, backgroundColor: colors.surfaceAlt, gap: 2 }}>
         <Text>{shownLine(message.text)}</Text>
         <Text variant="caption" tone="faint">
           {when}
@@ -831,7 +857,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu }: {
         : [`${when}${!group && mine && message.state ? ` ${MARKS[message.state]}` : ''}`, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
   const reactions = reactionsShown(message);
   return (
-    <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', gap: 4 }}>
+    <View onLayout={onLayout} style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', gap: 4 }}>
       <Pressable
         onLongPress={onMenu}
         disabled={!onMenu}

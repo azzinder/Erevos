@@ -30,6 +30,7 @@ import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
+import { leftOff } from '../lib/left-off';
 import { namesFor, typingMention, withMention } from '../lib/mentions';
 import { takeShared } from '../lib/share-in';
 import { plural, t } from '../lib/i18n';
@@ -114,8 +115,10 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const [mediaOpen, setMediaOpen] = useState(false);
   const [, setCalls] = useState(0);
   const scroll = useRef<ScrollView>(null);
-  // Whether the thread is away from its start and its end, for the arrows to them.
-  const { away, onScroll } = useThreadAway();
+  // Whether the thread is away from its start and its end, for the arrows to them, and from where it was left.
+  const { away, onScroll, spot } = useThreadAway();
+  // Where the group was left: the first message that was new when it opened, taken before it is read.
+  const left = useRef<string | null | undefined>(undefined);
   // A public group (app/public-group.tsx): its members by the names they chose, and its own screen for them.
   const pub = usePublicGroup(id);
   const name = (identity: string) => (pub.isPublic ? pub.name(identity) : memberName(identity, contacts));
@@ -130,6 +133,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const shown = gated ? NONE : messages;
   // Replies, reactions, pins, stickers, places, polls and the rest: the menu, sheets, and bubble parts.
   const parts = useGroupMessages({ id, info, messages: shown, name, onNote: setNote, scroll, at, draft });
+  spot.current = () => (left.current ? (parts.yOf(left.current) ?? null) : undefined);
   // The @word being typed (lib/mentions.ts), and the members, but this phone, to name with it.
   const [typedName, setTypedName] = useState<string | null>(null);
   const [others, setOthers] = useState<string[]>([]);
@@ -209,8 +213,17 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const load = useCallback(async () => {
     const groups = await groupsAt.groups();
     const listed = groups.list().find((g) => g.id === id) ?? null;
+    const loaded = groups.messages(id);
+    if (left.current === undefined && listed) {
+      left.current = leftOff(
+        loaded,
+        listed.unread,
+        (m) => m.tag,
+        (m) => !m.from || !!m.note,
+      );
+    }
     setInfo(listed);
-    setMessages(groups.messages(id));
+    setMessages(loaded);
     if (focusedNow.current && appShown() && (hidden || !listed?.locked || opened.current)) await groups.markRead(id);
   }, [id, groupsAt, hidden]);
 
@@ -524,6 +537,8 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
         <ThreadArrows
           start={away.start}
           end={away.end}
+          seen={away.seen}
+          onSeen={() => left.current && parts.goTo(left.current)}
           onStart={() => {
             parts.stay(true);
             scroll.current?.scrollTo({ y: 0, animated: true });

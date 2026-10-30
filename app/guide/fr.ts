@@ -88,10 +88,12 @@ les SMS que montre la discussion d’un contact ; les discussions masquées ne s
 discussion s’ouvre sur ses 100 derniers messages, et les plus anciens, dont ceux importés de Telegram ou WhatsApp,
 arrivent tout seuls quand tu remontes (**Afficher les messages plus anciens**, au-dessus d’eux, les amène aussi) ; aller
 à un message plus ancien (depuis la recherche, un message avec étoile ou celui auquel un message répond) l’amène aussi.
-Quand tu as un peu remonté, deux flèches rondes apparaissent en bas à droite, dans une discussion, un groupe et une
-conversation SMS de même : celle du haut va au début de la discussion, celle du bas revient à sa fin. Depuis le début,
-**Afficher les messages suivants**, sous ce qui s’affiche, en amène d’autres ; écrire un message, ou la flèche du bas,
-ramène à la fin.
+Chaque discussion s’ouvre sur son dernier message, avec la barre de message en dessous : les discussions avec des
+contacts, les groupes et les conversations SMS, comme les discussions Matrix, XMPP et Nostr. Quand tu as un peu remonté,
+des flèches rondes apparaissent en bas à droite, dans chacune : celle du haut va au début de la discussion, celle du bas
+revient à sa fin. Entre les deux, si des messages étaient nouveaux à l’ouverture, une double coche va au premier d’entre
+eux, là où tu en étais, tant que ce message n’est pas à l’écran. Depuis le début, **Afficher les messages suivants**, sous
+ce qui s’affiche, en amène d’autres ; écrire un message, ou la flèche du bas, ramène à la fin.
 
 **Pourquoi :** une longue discussion s’ouvre sur ses derniers messages pour s’ouvrir tout de suite : tout afficher d’un
 coup serait lent, surtout sur les téléphones anciens. Les discussions masquées sont exclues de la recherche de l’écran

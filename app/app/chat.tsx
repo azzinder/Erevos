@@ -878,8 +878,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const thread = useRef<ScrollView>(null);
   // Whether the thread shows its end, so it keeps to it as it grows shorter.
   const atEnd = useRef(true);
-  // Whether it is away from its start and its end, for the arrows to them.
-  const { away, onScroll: awayOnScroll } = useThreadAway();
+  // Whether it is away from its start and its end, for the arrows to them, and from where it was left.
+  const { away, onScroll: awayOnScroll, spot } = useThreadAway();
+  // Where a contact's chat was left: the first of their messages that was new when it opened, taken
+  // before they are read.
+  const left = useRef<{ peer: string | null; tag: string | null }>({ peer: null, tag: null });
+  if (left.current.peer !== selected && messages.length > 0) {
+    const first = selected?.startsWith(CONTACT_PREFIX) ? messages.find((m) => m.peer === selected && !m.mine && m.mark < 2) : undefined;
+    left.current = { peer: selected, tag: first && first !== messages.find((m) => m.peer === selected) ? first.tag : null };
+  }
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
   const barBlur = useGlassBlur();
@@ -5082,6 +5089,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     else if (firstLine > 0) setThreadShown((count) => count + THREAD_PAGE * 3);
     else setImportedShown((count) => count + IMPORTED_PAGE * 4);
   };
+  // Where it was left shows for the arrow to it: none without such a place, out of sight if it is not drawn.
+  spot.current = () => {
+    const { peer, tag } = left.current;
+    const id = peer && tag ? visible.find((m) => m.peer === peer && m.tag === tag)?.id : undefined;
+    if (id === undefined) return undefined;
+    const index = lines.findIndex((line) => line.kind !== 'sms' && line.message.id === id);
+    return index < firstLine || index >= lastLine ? null : (placed.current.get(id) ?? null);
+  };
   // To the chat's start: the first of what was imported and of the thread are drawn, from the top.
   const toStart = () => {
     growing.current = true;
@@ -6705,7 +6720,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             })}
             {later > 0 ? <TextButton title={t('Show later messages ({n} more)', { n: later })} onPress={showLater} /> : null}
           </ScrollView>
-          <ThreadArrows start={away.start || firstLine > 0 || firstImported > 0} end={away.end || later > 0} onStart={toStart} onEnd={toEnd} />
+          <ThreadArrows
+            start={away.start || firstLine > 0 || firstImported > 0}
+            end={away.end || later > 0}
+            seen={away.seen}
+            onSeen={() => left.current.peer && left.current.tag && goTo(left.current.peer, left.current.tag)}
+            onStart={toStart}
+            onEnd={toEnd}
+          />
         </View>
         {note ? <Text variant="caption" style={styles.note}>{note}</Text> : null}
         {connectShown ? (

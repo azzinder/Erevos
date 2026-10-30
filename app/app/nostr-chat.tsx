@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState, type ElementRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
+import { useNetworkThread } from '../components/network-thread';
 import { Button, Input, Page, Row, Text } from '../components/ui';
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
@@ -94,10 +95,6 @@ export default function NostrChatScreen() {
   // The message the next one answers and the one whose menu is open, by their ids.
   const [replyId, setReplyId] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  // The screen's scrolling, and where the thread and each message in it begin, to scroll to one.
-  const scroll = useRef<ElementRef<typeof KeyboardAwareScrollView>>(null);
-  const threadAt = useRef(0);
-  const placed = useRef<Record<string, number>>({});
 
   useEffect(() => {
     runNostrDm();
@@ -108,6 +105,14 @@ export default function NostrChatScreen() {
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
   const count = chat?.messages.length ?? 0;
+  // The thread opens at its last message, with the arrows to its start, to where it was left and to its
+  // end (components/network-thread.tsx).
+  const { scroll, scrollProps, threadProps, endProps, place, goTo, withArrows } = useNetworkThread({
+    list: chat?.messages ?? [],
+    idOf: (message) => message.id,
+    mine: (message) => message.mine,
+    unread: chat?.unread ?? 0,
+  });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
   const shown = useNetworkChatShown(!key ? undefined : where === 'space' ? `nostr:${key}` : hiddenOnScreen());
   useEffect(() => {
@@ -182,12 +187,6 @@ export default function NostrChatScreen() {
   const name = self ? t('Chat with myself') : nameOf(state, key) || shortNpub(npub);
   const whoOf = (message: NostrDmMessage) => (message.mine ? t('You') : message.from ? personName(state, message.from) : name);
 
-  // Scrolls the thread to a message, a little below the top.
-  function goTo(id: string) {
-    const y = placed.current[id];
-    if (y !== undefined) scroll.current?.scrollTo({ y: Math.max(0, threadAt.current + y - 96), animated: true });
-  }
-
   const react = (id: string, emoji: string) => nostrDmReact(key, id, emoji).catch(fail);
 
   async function copy(text: string) {
@@ -209,7 +208,7 @@ export default function NostrChatScreen() {
     return to ? { name: whoOf(to), line: lineOf(to), onPress: () => goTo(to.id) } : null;
   };
 
-  return (
+  return withArrows(
     <KeyboardAwareScrollView
       ref={scroll}
       style={{ flex: 1, backgroundColor: colors.ground }}
@@ -217,6 +216,7 @@ export default function NostrChatScreen() {
       contentContainerStyle={{ width: '100%', maxWidth: 760, alignSelf: 'center', padding: space.xl - 4, paddingBottom: insets.bottom + space.xl, gap: space.md }}
       keyboardShouldPersistTaps="handled"
       bottomOffset={space.xl}
+      {...scrollProps}
     >
       <Text variant="title" numberOfLines={2}>
         {name}
@@ -234,12 +234,7 @@ export default function NostrChatScreen() {
         {t('Nostr · encrypted (NIP-17), not anonymous')}
       </Text>
 
-      <View
-        style={{ gap: space.md }}
-        onLayout={(event) => {
-          threadAt.current = event.nativeEvent.layout.y;
-        }}
-      >
+      <View style={{ gap: space.md }} {...threadProps}>
         {chat.messages.map((message) => (
           <Bubble
             key={message.id}
@@ -249,9 +244,7 @@ export default function NostrChatScreen() {
             answered={answeredBy(message)}
             onRetry={() => nostrDmRetry(key, message.id).catch(fail)}
             onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
-            onLayout={(event) => {
-              placed.current[message.id] = event.nativeEvent.layout.y;
-            }}
+            onLayout={place(message.id)}
           />
         ))}
       </View>
@@ -261,7 +254,7 @@ export default function NostrChatScreen() {
         <Input style={{ flex: 1 }} value={draft} onChangeText={setDraft} multiline placeholder={t('Message')} accessibilityLabel={t('Message')} />
         <Button title={t('Send')} compact disabled={!draft.trim()} onPress={send} />
       </Row>
-      <Row>
+      <Row {...endProps}>
         {voice.recording ? (
           <RecordingLine />
         ) : (
@@ -339,7 +332,7 @@ export default function NostrChatScreen() {
         onReact={menuMessage && menuMessage.state !== 'failed' ? (emoji) => void react(menuMessage.id, emoji) : undefined}
         actions={menuMessage ? actionsOf(menuMessage) : []}
       />
-    </KeyboardAwareScrollView>
+    </KeyboardAwareScrollView>,
   );
 }
 

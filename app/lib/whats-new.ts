@@ -30,6 +30,7 @@ export const NEXT: Changes = {
     mark("**Profile pictures on Matrix and XMPP**: contacts and Matrix rooms show their picture in the chat list, and you can set your own on the Matrix and XMPP screens (Choose a photo). Pictures are not encrypted on either network: the server sees them. See [Matrix](#matrix) and [XMPP](#xmpp)."),
     mark("**Run an XMPP group**: a group's admins can set its subject and take people out or bar them, its owner can rename it and make admins, and in a channel the admin sees who is in it and can put them out. See [XMPP](#xmpp)."),
     mark("**The panic button on a computer and on Sailfish OS**: Settings → Privacy and security → Panic button now wipes Erevos there too, with its automatic backups if you choose; on a computer it then starts again as new. See [Panic button](#panic)."),
+    mark("**Every chat opens at its latest message**: chats with contacts, groups and SMS, and the Matrix, XMPP and Nostr chats, all open at the last message with the message bar under it, and have round arrows to the start, to where you left off (the first message that was new when you opened it) and to the end. See [Getting started](#start)."),
   ],
   underTheHood: [
     mark("**The panic button says when it refused**: when your panic app asked to wipe Erevos while the switch was off, or signed with another key, the panic screen now says so, with the time. An app that moves to a new key the way Android allows stays trusted; otherwise you can trust it again as it is now. See [Panic button](#panic)."),
