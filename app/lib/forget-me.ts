@@ -34,7 +34,7 @@ import { xmppSignOut } from './xmpp-store';
 //
 // 1. every queue the space keeps (lib/server-queues.ts), with what waits in each, and the push
 //    address a web app gave for it; and those of its hidden places whose key is with the space
-//    (they receive while closed) or that are open now. A hidden place opened later, while the
+//    (they receive while closed) or that are open now, never counted in what the screen says. A hidden place opened later, while the
 //    space is still stopped, has its own deleted as it opens (watchStoppedPlaces).
 // 2. our messages a relay holds for later, safety messages too, and those still held for
 //    contacts deleted or blocked here.
@@ -75,6 +75,7 @@ export type ForgetReport = {
 };
 
 const zero = (): Count => ({ done: 0, gone: 0, failed: 0 });
+const emptyReport = (): ForgetReport => ({ queues: zero(), held: zero(), files: zero(), invites: zero(), nostr: { ...zero(), skipped: null }, unreached: [] });
 
 type Place = { kept: KeptPlace; history: History | null; undropped: { id: string; relay: string; at: number }[] };
 
@@ -256,19 +257,22 @@ async function stopSpace(space: number, key: Uint8Array, data: SpaceData): Promi
 export async function forgetMe(accounts: boolean): Promise<ForgetReport> {
   const { space, key } = currentSpace();
   const at = await stopSpace(space, key, await loadSpaceData(space, key));
-  const report: ForgetReport = { queues: zero(), held: zero(), files: zero(), invites: zero(), nostr: { ...zero(), skipped: null }, unreached: [] };
+  const report = emptyReport();
   const unreached = new Set<string>();
   const pockets: { pocket: number; key: Uint8Array }[] = await keptPlaces(space, key).catch(() => []);
   const open = openHiddenPlace();
   if (open && open.space === space && !pockets.some((p) => p.pocket === open.pocket)) pockets.push({ pocket: open.pocket, key: open.key });
-  const places = [await spaceOf(space, key)];
+  await clear([await spaceOf(space, key)], report, unreached);
+  // The hidden places' are counted apart and never shown: what the report says, or a relay it
+  // names, would tell that the space has hidden chats, and where they read. One that could not be
+  // cleared whole is not marked, so it is cleared again as it opens (watchStoppedPlaces).
   for (const { pocket, key: placeKey } of pockets) {
     const place = await placeOf(space, pocket, placeKey).catch(() => null);
-    if (place) places.push(place);
+    if (!place) continue;
+    const apart = emptyReport();
+    await clear([place], apart, new Set());
+    if (apart.queues.failed === 0 && apart.held.failed === 0) await updateHiddenData(space, pocket, placeKey, { stopped: at }).catch(() => undefined);
   }
-  await clear(places, report, unreached);
-  // Each place reached is done for this stop: one opened later is cleared as it opens.
-  for (const { pocket, key: placeKey } of pockets) await updateHiddenData(space, pocket, placeKey, { stopped: at }).catch(() => undefined);
   if (accounts) await signOutAccounts(space, key, report);
   report.unreached = [...unreached];
   return report;
@@ -329,7 +333,7 @@ export function watchStoppedPlaces(): () => void {
       const at = (await loadSpaceData(space, key)).stopped;
       const place = await placeOf(space, open.pocket, open.key);
       if (!at || place.kept.data.stopped === at) return;
-      const report: ForgetReport = { queues: zero(), held: zero(), files: zero(), invites: zero(), nostr: { ...zero(), skipped: null }, unreached: [] };
+      const report = emptyReport();
       await clear([place], report, new Set());
       // Asked again when it next opens, while some could not be deleted.
       if (report.queues.failed === 0 && report.held.failed === 0) await updateHiddenData(space, open.pocket, open.key, { stopped: at });
