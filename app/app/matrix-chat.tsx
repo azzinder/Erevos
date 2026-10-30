@@ -184,7 +184,8 @@ export default function MatrixChatScreen() {
     list: shownMessages,
     idOf: (message) => message.id,
     mine: (message) => message.sender === state?.userId,
-    unread: room?.unread ?? 0,
+    // A thread's own screen has no place where it was left: the room's count is of the room.
+    unread: thread ? 0 : (room?.unread ?? 0),
     held: () => keepAt.current !== null,
   });
   // A hidden place's chat is not told apart on the screen: nothing of it reaches the space's notices.
@@ -576,7 +577,8 @@ export default function MatrixChatScreen() {
             .map((other) => (
               <Button
                 key={other.id}
-                title={other.name}
+                // A copy into a room not encrypted is read by its server: said beside its name.
+                title={other.encrypted ? other.name : `${other.name} · ${t('not encrypted')}`}
                 kind="secondary"
                 onPress={() => {
                   const id = forwarding;
