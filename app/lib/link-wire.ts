@@ -139,14 +139,15 @@ export type GroupMirror = Pick<Group, 'id' | 'name' | 'admin' | 'status' | 'aske
  */
 export type GroupEntry = { group: string; at: number; from: string; text: string; tag: string; note?: boolean; ms?: number; file?: FileOffer; parts?: GroupParts; marks?: GroupMarked };
 
-/** What was done to a group's message since it went, as the devices are told of it: each member's reaction and vote, its pin, the primary's star, and, edited, its words now and when. */
-export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 'starred' | 'edited'> & { text?: string };
+/** What was done to a group's message since it went, as the devices are told of it: each member's reaction and vote, its pin, the primary's star, and, edited, its words now and when; of the account's own, when it came to each member and when each read it. */
+export type GroupMarked = Pick<GroupMarks, 'reactions' | 'votes' | 'pinned' | 'starred' | 'edited' | 'got' | 'read'> & { text?: string };
 
 /**
  * What changed of a group's message the devices were told of, by its tag: each member's reactions
  * and votes, and its pin, as they are now (null: none any more); the primary's star; its words as
- * its sender edited them, and when (`text`, `edited`); that it is gone there; or, to the device that
- * wrote it, that the primary could not send it (`unsent`).
+ * its sender edited them, and when (`text`, `edited`); of the account's own, when it came to each
+ * member and when each read it, as they are now (`got`, `read`); that it is gone there; or, to the
+ * device that wrote it, that the primary could not send it (`unsent`).
  */
 export type GroupChange = {
   group: string;
@@ -158,6 +159,8 @@ export type GroupChange = {
   starred?: boolean;
   text?: string;
   edited?: number;
+  got?: Record<string, number> | null;
+  read?: Record<string, number> | null;
   unsent?: true;
 };
 
@@ -534,6 +537,13 @@ function byMember<T>(value: unknown, check: (v: unknown) => T | null): Record<st
 }
 
 const reactionOf = (v: unknown) => (isReactionEmoji(v) ? v : null);
+const whenOf = (v: unknown) => (isTime(v) ? v : null);
+// When each member said one of the account's own came, or was read: by member, the account not among them.
+const seenOf = (v: unknown) => {
+  const by = byMember(v, whenOf);
+  if (by) delete by[''];
+  return by && Object.keys(by).length > 0 ? by : undefined;
+};
 const voteOf = (v: unknown) => {
   const chose = checkedChoices(v);
   return chose && chose.length > 0 ? chose : null;
@@ -549,12 +559,16 @@ function checkedMarks(v: Json): GroupMarked {
   const reactions = byMember(v.reactions, reactionOf);
   const votes = byMember(v.votes, voteOf);
   const edited = editedOf(v);
+  const got = seenOf(v.got);
+  const read = seenOf(v.read);
   return {
     ...(reactions ? { reactions } : {}),
     ...(votes ? { votes } : {}),
     ...(isTime(v.pinned) && v.pinned > 0 ? { pinned: v.pinned } : {}),
     ...(v.starred === true ? { starred: true as const } : {}),
     ...(edited ?? {}),
+    ...(got ? { got } : {}),
+    ...(read ? { read } : {}),
   };
 }
 
@@ -570,6 +584,8 @@ function checkedGroupChange(value: unknown): GroupChange | null {
   if (typeof v.starred === 'boolean') change.starred = v.starred;
   const edited = editedOf(v);
   if (edited) Object.assign(change, edited);
+  if (v.got === null || isObject(v.got)) change.got = seenOf(v.got) ?? null;
+  if (v.read === null || isObject(v.read)) change.read = seenOf(v.read) ?? null;
   return Object.keys(change).length > 2 ? change : null;
 }
 
@@ -946,21 +962,25 @@ export function tellsTheirs(envelope: Envelope): boolean {
 }
 
 /** What was done to a group's message since it went, as its devices are told of it: its words with them once edited. */
-export function marksOf({ reactions, votes, pinned, starred, edited, text }: GroupMarked): GroupMarked {
+export function marksOf({ reactions, votes, pinned, starred, edited, text, got, read }: GroupMarked): GroupMarked {
   return {
     ...(reactions ? { reactions } : {}),
     ...(votes ? { votes } : {}),
     ...(pinned ? { pinned } : {}),
     ...(starred ? { starred: true as const } : {}),
     ...(edited && text ? { edited, text } : {}),
+    ...(got ? { got } : {}),
+    ...(read ? { read } : {}),
   };
 }
 
 // A message's marks as text, the same for the same marks: each member's in the order of their
-// identities; its words only once edited, so the marks of the others read as before edits.
-function marksText({ reactions, votes, pinned, starred, edited, text }: GroupMarked): string {
+// identities; its words only once edited, and who it came to and who read it only once any did, so
+// the marks of the others read as before them.
+function marksText({ reactions, votes, pinned, starred, edited, text, got, read }: GroupMarked): string {
   const sorted = (by: Record<string, unknown> | undefined) => (by ? Object.entries(by).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)) : null);
-  return JSON.stringify([sorted(reactions), sorted(votes), pinned ?? 0, starred === true, ...(edited ? [edited, text ?? ''] : [])]);
+  const seen = got || read ? [sorted(got), sorted(read)] : [];
+  return JSON.stringify([sorted(reactions), sorted(votes), pinned ?? 0, starred === true, ...(edited ? [edited, text ?? ''] : []), ...seen]);
 }
 
 /** What was done to each of a group's messages, by tag, but its notes and those with no tag. */
@@ -994,6 +1014,8 @@ export function marksChanged(group: string, before: Map<string, GroupMarked>, no
     if ((was.pinned ?? 0) !== (is.pinned ?? 0)) change.pinned = is.pinned ?? null;
     if (!!was.starred !== !!is.starred) change.starred = !!is.starred;
     if (is.edited && is.text && (is.edited !== was.edited || is.text !== was.text)) Object.assign(change, { text: is.text, edited: is.edited });
+    if (marksText({ got: was.got }) !== marksText({ got: is.got })) change.got = is.got ?? null;
+    if (marksText({ read: was.read }) !== marksText({ read: is.read })) change.read = is.read ?? null;
     if (Object.keys(change).length > 2) out.push(change);
   }
   return out;
@@ -1007,7 +1029,17 @@ export function wholeMarks(group: string, now: Map<string, GroupMarked>): { chan
   const changes: GroupChange[] = [];
   for (const [tag, m] of now) {
     if (Object.keys(m).length === 0) continue;
-    changes.push({ group, tag, reactions: m.reactions ?? null, votes: m.votes ?? null, pinned: m.pinned ?? null, ...(m.starred ? { starred: true } : {}), ...(m.edited && m.text ? { text: m.text, edited: m.edited } : {}) });
+    changes.push({
+      group,
+      tag,
+      reactions: m.reactions ?? null,
+      votes: m.votes ?? null,
+      pinned: m.pinned ?? null,
+      ...(m.starred ? { starred: true } : {}),
+      ...(m.edited && m.text ? { text: m.text, edited: m.edited } : {}),
+      ...(m.got ? { got: m.got } : {}),
+      ...(m.read ? { read: m.read } : {}),
+    });
   }
   return { changes, whole: { group, tags: [...now.keys()] } };
 }
@@ -1017,9 +1049,9 @@ export function changeEnvelopes(chats: ChatChange[], groups: GroupChange[], whol
   return batched(groups).map((batch, i) => ({ k: 'changed', chats: i === 0 ? chats : [], groups: batch, whole: i === 0 ? whole : [] }));
 }
 
-// A message without what members did to it for everyone (reactions, votes, its pin): this device's own star stays.
+// A message without what members did to it for everyone (reactions, votes, its pin, who it came to and who read it): this device's own star stays.
 function withoutMarks(m: GroupMessage): GroupMessage {
-  const { reactions: _r, votes: _v, pinned: _p, ...rest } = m;
+  const { reactions: _r, votes: _v, pinned: _p, got: _g, read: _s, ...rest } = m;
   return rest;
 }
 
@@ -1049,6 +1081,13 @@ function withChange(m: GroupMessage, change: GroupChange): GroupMessage {
     if (change.starred) next.starred = true;
     else delete next.starred;
   }
+  // Who it came to and who read it, of the account's own only.
+  for (const key of ['got', 'read'] as const) {
+    if (change[key] === undefined) continue;
+    const by = change[key];
+    if (by && !m.from) next[key] = by;
+    else delete next[key];
+  }
   // Words as its sender edited them, the primary said: words, not a sticker's, a place's or a poll's.
   if (change.edited && change.text && editableWords(m)) {
     next.edited = change.edited;
@@ -1072,6 +1111,8 @@ function withEntryMarks(m: GroupMessage, marks: GroupMarked): GroupMessage {
     pinned: marks.pinned ?? null,
     ...(marks.starred ? { starred: true } : {}),
     ...(marks.edited && marks.text ? { text: marks.text, edited: marks.edited } : {}),
+    ...(marks.got ? { got: marks.got } : {}),
+    ...(marks.read ? { read: marks.read } : {}),
   });
 }
 

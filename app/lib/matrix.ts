@@ -156,7 +156,13 @@ export type MatrixRoom = {
   /** What it is about (m.room.topic), and the address it is known by (m.room.canonical_alias). */
   topic?: string;
   alias?: string;
+  /** How far each other member read it, as the homeserver last said (m.receipt, m.read): the event
+   *  they read up to, and when. Only members it lists, the latest MOST_READERS. */
+  readBy?: Record<string, { event: string; ts: number }>;
 };
+
+/** The most members a room keeps how far they read. */
+export const MOST_READERS = 200;
 
 /** The most messages a room keeps, however many older ones were fetched. */
 export const MOST_KEPT = 2000;
@@ -669,6 +675,53 @@ export async function sync(state: MatrixState, waitMs = 30_000): Promise<boolean
   return syncApply(state, await syncFetch(state, waitMs));
 }
 
+// How far each other member of a room read it (m.receipt): what they read up to in its main thread
+// (m.read, of no thread or of 'main'), each one's latest, by when. Only those it lists as members.
+function takeReceipts(state: MatrixState, room: MatrixRoom, content: unknown): boolean {
+  if (!content || typeof content !== 'object') return false;
+  let changed = false;
+  for (const [event, kinds] of Object.entries(content as Json)) {
+    const read = (kinds as Json | undefined)?.['m.read'];
+    if (!read || typeof read !== 'object' || !event.startsWith('$')) continue;
+    for (const [user, said] of Object.entries(read as Json)) {
+      const ts = (said as Json | undefined)?.ts;
+      const thread = (said as Json | undefined)?.thread_id;
+      if (user === state.userId || !room.members[user] || typeof ts !== 'number' || !Number.isFinite(ts) || (thread !== undefined && thread !== 'main')) continue;
+      if ((room.readBy?.[user]?.ts ?? -1) >= ts) continue;
+      room.readBy = { ...room.readBy, [user]: { event, ts } };
+      changed = true;
+    }
+  }
+  const readers = Object.entries(room.readBy ?? {});
+  if (readers.length > MOST_READERS) room.readBy = Object.fromEntries(readers.sort(([, a], [, b]) => b.ts - a.ts).slice(0, MOST_READERS));
+  return changed;
+}
+
+/**
+ * Who of a room's other members read one of its messages, and when, as they last said: one who
+ * read up to it or to one after it. One whose latest read is of a message not kept here read it
+ * once they said so after it went (the homeserver takes no read back).
+ */
+export function readersOf(room: Pick<MatrixRoom, 'messages' | 'readBy'>, message: Pick<MatrixMessage, 'id' | 'ts'>, me: string): Record<string, number> {
+  const at = new Map(room.messages.map((m, i) => [m.id, i]));
+  const mine = at.get(message.id) ?? -1;
+  const readers: Record<string, number> = {};
+  for (const [user, read] of Object.entries(room.readBy ?? {})) {
+    if (user === me) continue;
+    const upTo = at.get(read.event);
+    if (upTo === undefined ? read.ts >= message.ts : mine >= 0 && upTo >= mine) readers[user] = read.ts;
+  }
+  return readers;
+}
+
+/** Whether every other member in a room read one of ours (✓✓✓), as readersOf says; false while it is alone. */
+export function readByAll(room: Pick<MatrixRoom, 'messages' | 'readBy' | 'members'>, message: Pick<MatrixMessage, 'id' | 'ts'>, me: string): boolean {
+  const others = Object.entries(room.members).filter(([user, m]) => user !== me && m.membership === 'join');
+  if (others.length === 0) return false;
+  const readers = readersOf(room, message, me);
+  return others.every(([user]) => readers[user] !== undefined);
+}
+
 function directRooms(news: Json): Set<string> | null {
   const events = ((news.account_data as Json | undefined)?.events as Json[] | undefined) ?? [];
   const direct = events.find((e) => e.type === 'm.direct');
@@ -778,8 +831,12 @@ async function takeRoom(state: MatrixState, id: string, data: Json, direct: Set<
     if (await takeEvent(state, id, event, false)) seen = true;
   }
   keepLatest(room);
-  // Who writes in it now, as the homeserver says (m.typing): kept here only.
+  // Who writes in it now, as the homeserver says (m.typing): kept here only. And how far each read.
   for (const event of ((data.ephemeral as Json | undefined)?.events as Json[] | undefined) ?? []) {
+    if (event.type === 'm.receipt') {
+      if (takeReceipts(state, room, event.content)) seen = true;
+      continue;
+    }
     if (event.type !== 'm.typing') continue;
     const ids = (event.content as Json | undefined)?.user_ids;
     setTyping(state, id, Array.isArray(ids) ? ids.filter((u): u is string => typeof u === 'string' && u !== state.userId).slice(0, 20) : []);

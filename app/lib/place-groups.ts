@@ -33,7 +33,7 @@ export type PlaceGroupsAt = GroupsAt & {
 };
 
 // `ready`: its groups once open, for what must know at once (lib/chat-notices.ts).
-type Opened = { key: Uint8Array; at: PlaceGroupsAt; ready: () => PublicGroups | null };
+type Opened = { key: Uint8Array; at: PlaceGroupsAt; ready: () => PublicGroups | null; close: () => void };
 
 const opened = new Map<string, Opened>();
 const at = (space: number, pocket: number) => `${space}.${pocket}`;
@@ -127,7 +127,9 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
       kinds: ['group'],
     },
   };
-  opened.set(at(space, pocket), { key: kept, at: placeAt, ready: () => ready });
+  // Let go of, they send nothing more, as their chats (lib/groups.ts close).
+  const close = () => void made?.then((place) => place.close(), () => undefined);
+  opened.set(at(space, pocket), { key: kept, at: placeAt, ready: () => ready, close });
   return placeAt;
 }
 
@@ -138,6 +140,8 @@ export function placeGroupsNow(space: number, pocket: number): PublicGroups | nu
 
 /** Lets go of a place's groups, or of every place's, as their chats are let go of (lib/place-chats.ts). */
 export function forgetPlaceGroups(space?: number, pocket?: number): void {
+  const gone = space === undefined || pocket === undefined ? [...opened.values()] : [opened.get(at(space, pocket))];
+  for (const was of gone) was?.close();
   if (space === undefined || pocket === undefined) opened.clear();
   else opened.delete(at(space, pocket));
 }

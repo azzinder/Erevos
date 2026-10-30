@@ -16,17 +16,18 @@ import { PollSheet } from '../components/poll';
 import { useSayTyping } from '../components/say-typing';
 import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { Button, Chip, Input, Page, Row, Sheet, Text } from '../components/ui';
+import { WhoRead } from '../components/who-read';
 import { ask, confirm } from '../lib/alert';
 import { callPermissions } from '../lib/call-permissions';
 import { choose as chooseOption, type Place, type Poll } from '../lib/chat-parts';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canElementCall } from '../lib/element-call-window';
 import { voiceNamed } from '../lib/group-media';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
-import { isMatrixId, MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, type MatrixMessage } from '../lib/matrix';
+import { isMatrixId, MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, readByAll, readersOf, type MatrixMessage } from '../lib/matrix';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { pollOver, pollShown } from '../lib/matrix-parts';
 import { canMatrixVoip, startMatrixVoip } from '../lib/matrix-voip';
@@ -97,6 +98,13 @@ import { useColors } from '../theme/context';
 // phone makes link previews (Settings, as for contacts), the first link in words typed goes with
 // its preview, never through Tor and never in a hidden place. In a chat of two, the call buttons
 // offer Element Call or the older call FluffyChat and Nheko make (lib/matrix-voip.ts).
+//
+// Ours are marked ✓ once the homeserver took them and ✓✓✓ once every other member read them, as
+// their apps say (m.receipt, lib/matrix.ts readersOf); held down, Who read it lists who did, when.
+// Matrix says nothing of what reached a phone, so there is no ✓✓.
+
+// The most members Who read it names as not having read one of ours yet.
+const MOST_SHOWN = 100;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -131,6 +139,8 @@ export default function MatrixChatScreen() {
   const [polling, setPolling] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [forwarding, setForwarding] = useState<string | null>(null);
+  // One of ours whose readers are shown, by its ID.
+  const [readersFor, setReadersFor] = useState<string | null>(null);
   const [previews, setPreviews] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [lit, setLit] = useState<string | null>(null);
@@ -417,9 +427,26 @@ export default function MatrixChatScreen() {
         },
       });
     }
+    if (ours && !message.call) actions.push({ title: t('Who read it'), onPress: () => setReadersFor(message.id) });
     if (ours) actions.push({ title: t('Delete'), danger: true, onPress: () => void remove(message) });
     return actions;
   }
+
+  // Who of the room's members read one of ours, and when, as they said; who has not, the first
+  // MOST_SHOWN of them. Matrix says nothing of what reached a phone.
+  const readersShown = (message: MatrixMessage) => {
+    const readers = readersOf(room, message, me);
+    const others = Object.entries(room.members).filter(([who, m]) => who !== me && m.membership === 'join');
+    const waiting = others.filter(([who]) => readers[who] === undefined).map(([who, m]) => ({ key: who, name: m.name || who }));
+    const more = waiting.length - MOST_SHOWN;
+    return (
+      <WhoRead
+        read={others.flatMap(([who, m]) => (readers[who] !== undefined ? [{ key: who, name: m.name || who, at: readers[who] }] : []))}
+        waiting={more > 0 ? [...waiting.slice(0, MOST_SHOWN), { key: '', name: plural(more, 'and {n} more', 'and {n} more') }] : waiting}
+        note={t('As each one’s Matrix app tells their homeserver. Matrix does not say when a message reached a phone, and an app may keep from saying it was read.')}
+      />
+    );
+  };
 
   // The message an answer is to, as the answer quotes it: null when it is older than what is here.
   const answeredBy = (message: MatrixMessage): Answered | null | undefined => {
@@ -519,6 +546,7 @@ export default function MatrixChatScreen() {
             onReact={(emoji) => void react(message.id, emoji)}
             onMenu={menuable(message) ? () => setMenuFor(message.id) : undefined}
             onLayout={place(message.id)}
+            mark={message.sender === me && !message.state && !message.call && !message.deleted ? (readByAll(room, message, me) ? '✓✓✓' : '✓') : undefined}
           />
         ))}
       </View>
@@ -570,6 +598,9 @@ export default function MatrixChatScreen() {
       />
       <PollSheet visible={polling} onClose={() => setPolling(false)} onSend={(poll) => void sendPoll(poll)} />
       <PlaceSheet visible={placing} onClose={() => setPlacing(false)} onSend={sendPlace} said={t('Everyone in this chat can see it.')} />
+      <Sheet visible={readersFor !== null} onClose={() => setReadersFor(null)} title={t('Who read it')}>
+        {readersFor && byId.get(readersFor) ? readersShown(byId.get(readersFor)!) : null}
+      </Sheet>
       <Sheet visible={forwarding !== null} onClose={() => setForwarding(null)} title={t('Forward to')}>
         <ScrollView nestedScrollEnabled style={{ maxHeight: 380 }} contentContainerStyle={{ gap: space.xs }} keyboardShouldPersistTaps="handled">
           {Object.values(state.rooms)

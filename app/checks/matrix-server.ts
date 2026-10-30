@@ -43,8 +43,9 @@ export class Homeserver {
   readonly delayed = new Map<string, { room: string; sender: string; type: string; stateKey: string; content: Json; delayMs: number; due: number }>();
   /** OpenID tokens given, and whose they are. */
   readonly openId = new Map<string, string>();
-  /** Read receipts: up to which event of the log, by `${user} ${room}`. */
+  /** Read receipts: up to which event of the log, by `${user} ${room}`, and when each was said. */
   readonly readUpTo = new Map<string, number>();
+  readonly readWhen = new Map<string, number>();
   /** How many events of a room a sync gives at most; the rest are older, fetched with /messages. */
   timelineLimit = Infinity;
   /** Who writes in each room now (m.typing), said in every sync to those in it. */
@@ -505,7 +506,11 @@ export class Homeserver {
     const receipt = path.match(/^\/rooms\/([^/]+)\/receipt\/m\.read\/([^/]+)$/);
     if (receipt) {
       const found = this.log.find((l) => l.room === decodeURIComponent(receipt[1]) && l.event.event_id === decodeURIComponent(receipt[2]));
-      if (found) this.readUpTo.set(`${user} ${found.room}`, Math.max(found.seq, this.readUpTo.get(`${user} ${found.room}`) ?? 0));
+      const key = `${user} ${found?.room}`;
+      if (found && found.seq > (this.readUpTo.get(key) ?? 0)) {
+        this.readUpTo.set(key, found.seq);
+        this.readWhen.set(key, Date.now());
+      }
       return { status: 200, json: {} };
     }
     if (path.match(/^\/rooms\/[^/]+\/receipt\//)) return { status: 200, json: {} };
@@ -539,6 +544,20 @@ export class Homeserver {
     return this.log.filter((l) => l.room === room && l.seq > from && l.event.sender !== user && l.event.state_key === undefined && ['m.room.message', 'm.room.encrypted'].includes(l.event.type)).length;
   }
 
+  // How far each member read a room (m.receipt), said in every sync to those in it: none while no one said.
+  private receipts(room: string): Json | null {
+    const content: Record<string, { 'm.read': Record<string, { ts: number }> }> = {};
+    for (const [key, seq] of this.readUpTo) {
+      const [user, id] = key.split(' ');
+      const found = id === room ? this.log.find((l) => l.room === room && l.seq === seq) : undefined;
+      if (!found) continue;
+      const event = String(found.event.event_id);
+      content[event] ??= { 'm.read': {} };
+      content[event]['m.read'][user] = { ts: this.readWhen.get(key) ?? 0 };
+    }
+    return Object.keys(content).length ? content : null;
+  }
+
   private sync(user: string, device: string, since: number): Json {
     const join: Json = {};
     const invite: Json = {};
@@ -558,7 +577,9 @@ export class Homeserver {
         join[id] = { state: { events: state }, timeline, unread_notifications: { notification_count: this.unread(user, id) }, ...(tags ? { account_data: { events: [{ type: 'm.tag', content: { tags } }] } } : {}) };
       }
       const writing = this.typing.get(id);
-      if (now === 'join' && writing) join[id] = { ...(join[id] ?? {}), ephemeral: { events: [{ type: 'm.typing', content: { user_ids: writing } }] } };
+      const receipts = this.receipts(id);
+      const ephemeral = [...(writing ? [{ type: 'm.typing', content: { user_ids: writing } }] : []), ...(receipts ? [{ type: 'm.receipt', content: receipts }] : [])];
+      if (now === 'join' && ephemeral.length) join[id] = { ...(join[id] ?? {}), ephemeral: { events: ephemeral } };
       if (now === 'join') {
         // Nothing more.
       } else if (now === 'invite' && events.length) {

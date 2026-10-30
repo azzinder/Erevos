@@ -9,7 +9,7 @@ import { choose as chooseOption, editableWords, placeWords, pollWords, stillEdit
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canForward, forwardToGroup, handForward, type Forwardable } from '../lib/forward';
 import { sendGroupFile } from '../lib/group-media';
-import { asChatMessage, type Marked } from '../lib/group-parts';
+import { asChatMessage, seenMark, type Marked } from '../lib/group-parts';
 import { memberName, type GroupInfo } from '../lib/groups';
 import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
@@ -36,6 +36,7 @@ import { PlaceSheet } from './place-sheet';
 import { PollCard, PollSheet } from './poll';
 import { PLAYS_LAST, StickerPicker, StickerView } from './stickers';
 import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
+import { WhoRead } from './who-read';
 
 // What a group's messages do beyond words and files (lib/group-parts.ts), in its thread
 // (components/group-chat.tsx), as in a contact's chat: a message held down opens its menu (react, reply,
@@ -45,6 +46,11 @@ import { Button, Input, Row, Sheet, Text, TextButton } from './ui';
 // message bar's sticker button: a sticker, built in or one of the space's made from photos (sent as
 // a photo is); under "+" too, where you are, and a poll.
 // Photos, files and voice messages themselves are components/group-media.tsx's.
+// Ours, in a group that is not public, are marked as a contact's chat marks them: ✓ sent, ✓✓ once
+// it reached the phone of every member who was in the group then, ✓✓✓ once every one read it
+// (lib/group-parts.ts seenMark); held down, Who read it lists each member, and when.
+
+const MARKS = ['✓', '✓✓', '✓✓✓'];
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
@@ -85,6 +91,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   // The message of ours the bar gives new words, while it does.
   const [editing, setEditing] = useState<GroupMessage | null>(null);
   const [forwarding, setForwarding] = useState<GroupMessage | null>(null);
+  // One of ours whose readers are shown.
+  const [readers, setReaders] = useState<GroupMessage | null>(null);
   const [targets, setTargets] = useState<Target[]>([]);
   const [stickering, setStickering] = useState(false);
   const [polling, setPolling] = useState(false);
@@ -112,6 +120,31 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   useEffect(() => {
     where.previews().then(setPreviews, () => setPreviews(false));
   }, [where]);
+
+  // Who else is in the group, by identity: null in a public group, whose members say nothing of
+  // what came and was read. Each one's latest joining, so one of ours waits only for who was there.
+  const [others, setOthers] = useState<string[] | null>(null);
+  useEffect(() => {
+    let active = true;
+    void groupsAt
+      .groups()
+      .then(async (groups) => (groups.isPublic(id) ? null : (await groups.members(id)).flatMap((m) => (m.about && !m.me ? [m.about.id] : []))))
+      .then((list) => {
+        if (active) setOthers(list);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [id, groupsAt, info]);
+  const joined = useMemo(() => {
+    const at = new Map<string, number>();
+    for (const m of messages) if (m.note && m.text.endsWith('|joined')) at.set(m.text.slice(0, m.text.indexOf('|')), m.at);
+    return at;
+  }, [messages]);
+  const meantFor = (m: GroupMessage) => (others ?? []).filter((member) => (joined.get(member) ?? 0) <= m.at);
+  // How far one of ours went, as its mark; none for a member's, or in a public group.
+  const markOf = (m: GroupMessage) => (m.from || !m.tag || m.unsent || others === null ? '' : MARKS[seenMark(m, meantFor(m))]);
 
   useFocusEffect(
     useCallback(() => {
@@ -260,6 +293,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     if (!out) actions.push({ title: m.pinned ? t('Unpin') : t('Pin'), onPress: () => void mark({ t: 'pin', tag: m.tag, on: !m.pinned }) });
     if (CAN_COPY && m.text && !m.sticker && !m.place && !m.poll) actions.push({ title: t('Copy'), onPress: () => void copy(m) });
     if (canEdit(m)) actions.push({ title: t('Edit'), onPress: () => startEditing(m) });
+    if (markOf(m)) actions.push({ title: t('Who read it'), onPress: () => setReaders(m) });
     if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;
@@ -416,7 +450,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     /** A link's preview, under the words. */
     preview: (m: GroupMessage, ink: StyleProp<TextStyle>): ReactNode => (m.preview && !m.file ? <PreviewCard preview={m.preview} ink={ink} /> : null),
     /** What goes beside a message's time: that it was forwarded or edited, its star, and, on a linked device, that the phone could not send it. */
-    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.edited ? t('Edited') : '', m.starred ? '★' : '', m.unsent ? t('Not sent by the phone') : ''].filter(Boolean).join('  ·  '),
+    caption: (m: GroupMessage): string => [m.forwarded ? t('Forwarded') : '', m.edited ? t('Edited') : '', m.starred ? '★' : '', m.unsent ? t('Not sent by the phone') : '', markOf(m)].filter(Boolean).join('  ·  '),
     /** The reactions under a bubble. */
     reactions: (m: GroupMessage): ReactNode => (
       <Reactions signs={Object.values(m.reactions ?? {})} mine={m.reactions?.['']} mineSide={!m.from} onPress={() => setMenuFor(m)} />
@@ -508,6 +542,9 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
             </>
           ) : null}
         </Sheet>
+        <Sheet visible={!!readers} onClose={() => setReaders(null)} title={t('Who read it')}>
+          {readers ? <Readers m={readers} members={meantFor(readers)} name={name} /> : null}
+        </Sheet>
         <Sheet visible={stickering} onClose={() => setStickering(false)} title={t('Send a sticker')}>
           <StickerPicker
             onPick={(sticker) => {
@@ -538,6 +575,14 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       </>
     ),
   };
+}
+
+// Each member one of ours was for: who read it and when, whose phone it reached and when, and who has neither yet.
+function Readers({ m, members, name }: { m: GroupMessage; members: string[]; name: (identity: string) => string }) {
+  const read = members.flatMap((member) => (m.read?.[member] !== undefined ? [{ key: member, name: name(member), at: m.read[member] }] : []));
+  const came = members.flatMap((member) => (m.read?.[member] === undefined && m.got?.[member] !== undefined ? [{ key: member, name: name(member), at: m.got[member] }] : []));
+  const waiting = members.filter((member) => m.read?.[member] === undefined && m.got?.[member] === undefined).map((member) => ({ key: member, name: name(member) }));
+  return <WhoRead read={read} came={came} waiting={waiting} note={t('Each member’s phone tells you, end-to-end encrypted. A member whose Erevos is older than these marks tells nothing, and stays under Not yet.')} />;
 }
 
 function Step({ sign, label, onPress }: { sign: string; label: string; onPress: () => void }) {

@@ -20,6 +20,62 @@ export type Marked =
   | { t: 'erase'; tag: string };
 
 /**
+ * What a member's phone says of messages that came to it, by their tags, to their senders only:
+ * which reached it (`got`) and which were read there (`read`). Not in public groups.
+ */
+export type Seen = { t: 'seen'; got: string[]; read: string[] };
+
+/** The most tags one `seen` says, of each kind: more go in more of them. */
+export const MAX_SEEN_TAGS = 100;
+
+/** What a member's phone says of messages that came to it, as it came, or null when it is not of that shape. */
+export function seenOf(value: Record<string, unknown>): Seen | null {
+  if (value.t !== 'seen') return null;
+  const tags = (list: unknown) => (Array.isArray(list) ? [...new Set(list.filter(isTag))].slice(0, MAX_SEEN_TAGS) : []);
+  const got = tags(value.got);
+  const read = tags(value.read);
+  return got.length > 0 || read.length > 0 ? { t: 'seen', got, read } : null;
+}
+
+/**
+ * A group's messages once the member `from` (an identity) said `seen`, at `at`: of our own only,
+ * when it reached their phone and when it was read there, each member once. A message read is one
+ * that came. Null when it changes nothing.
+ */
+export function withSeen(messages: GroupMessage[], from: string, seen: Seen, at: number): GroupMessage[] | null {
+  if (!from) return null;
+  const got = new Set(seen.got);
+  const read = new Set(seen.read);
+  let changed = false;
+  const next = messages.map((m) => {
+    if (m.note || m.from || !m.tag || (!got.has(m.tag) && !read.has(m.tag))) return m;
+    if (read.has(m.tag)) {
+      if (m.read?.[from] !== undefined) return m;
+      const { [from]: _came, ...gotBefore } = m.got ?? {};
+      const marked: GroupMessage = { ...m, read: { ...m.read, [from]: at }, got: gotBefore };
+      if (Object.keys(gotBefore).length === 0) delete marked.got;
+      changed = true;
+      return marked;
+    }
+    if (m.got?.[from] !== undefined || m.read?.[from] !== undefined) return m;
+    changed = true;
+    return { ...m, got: { ...m.got, [from]: at } };
+  });
+  return changed ? next : null;
+}
+
+/**
+ * How far one of our own messages went among `members` (the identities of those in the group when
+ * it was sent, but this phone): 0 (✓) on its way to them, 1 (✓✓) once it reached every one's
+ * phone, 2 (✓✓✓) once every one read it. With no one else in the group, 0.
+ */
+export function seenMark(m: Pick<GroupMessage, 'got' | 'read'>, members: string[]): 0 | 1 | 2 {
+  if (members.length === 0) return 0;
+  if (members.every((id) => m.read?.[id] !== undefined)) return 2;
+  return members.every((id) => m.read?.[id] !== undefined || m.got?.[id] !== undefined) ? 1 : 0;
+}
+
+/**
  * What a member's message carries beyond itself, from its fields as they came, each checked or
  * left out: with words (`words`), a sticker, a place, a poll, a preview or the members named; with
  * either, the message it answers and that it was forwarded.

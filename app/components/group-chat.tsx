@@ -224,7 +224,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
     }
     setInfo(listed);
     setMessages(loaded);
-    if (focusedNow.current && appShown() && (hidden || !listed?.locked || opened.current)) await groups.markRead(id);
+    if (focusedNow.current && appShown() && (hidden || !listed?.locked || opened.current)) await groups.markRead(id, groupsAt.transport);
   }, [id, groupsAt, hidden]);
 
   // On the screen again, what came meanwhile is read then.
@@ -241,7 +241,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
     if (kept && !(await opensChat(pin, kept))) return false;
     setUnlocked(true);
     opened.current = true;
-    await groups.markRead(id).catch(() => undefined);
+    await groups.markRead(id, groupsAt.transport).catch(() => undefined);
     return true;
   }
 
@@ -252,7 +252,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
     await groups.setPin(id, null);
     setUnlocked(true);
     opened.current = true;
-    await groups.markRead(id).catch(() => undefined);
+    await groups.markRead(id, groupsAt.transport).catch(() => undefined);
     setNote(t('The PIN of {name} is off.', { name: info?.name ?? '' }));
     return true;
   }

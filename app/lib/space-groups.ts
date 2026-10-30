@@ -172,6 +172,8 @@ useForMoves({
 
 /** Lets go of the space's groups when it closes. */
 export function forgetSpaceGroups(): void {
+  // They send nothing more (lib/groups.ts close): another copy may be opened from what they kept.
+  void opened?.groups.then((groups) => groups.close(), () => undefined);
   shown = null;
   opened = null;
 }

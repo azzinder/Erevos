@@ -50,6 +50,7 @@ import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode } from '..
 import {
   changedFields,
   changedGroups,
+  checkedGroupEntry,
   changeEnvelopes,
   checkedGiven,
   encodeEnvelope,
@@ -1079,6 +1080,44 @@ test('a group message edited on the phone reaches the computer: its words, and w
   assert.deepEqual(changedGroups([group], { groups: all.changes, whole: [all.whole] }, 100)[0].messages[0].text, 'hello');
   const told = mirrorGroups([], { list: [groupMirror(group, [])], gone: [], entries: [{ group: g, at: 2, from: alice, text: 'hello', tag: 'aabbccddeeff', marks: { text: 'hello', edited: 9 } }] });
   assert.deepEqual([told.groups[0].messages[0].text, told.groups[0].messages[0].edited], ['hello', 9]);
+});
+
+test('who our group message came to and who read it reaches the computer, of our own only', () => {
+  const g = 'ab'.repeat(16);
+  const alice = 'a1'.repeat(32);
+  const bob = 'b2'.repeat(32);
+  const messages: GroupMessage[] = [
+    { at: 2, from: '', text: 'ours', tag: 'aabbccddeeff' },
+    { at: 3, from: alice, text: 'theirs', tag: '112233445566' },
+  ];
+  const before = groupMarks(messages);
+  // Never said yet: the marks read as before.
+  assert.deepEqual(before.get('aabbccddeeff'), {});
+  const came = [{ ...messages[0], got: { [alice]: 5, [bob]: 6 } }, messages[1]];
+  const changes = marksChanged(g, before, groupMarks(came));
+  assert.deepEqual(changes, [{ group: g, tag: 'aabbccddeeff', got: { [alice]: 5, [bob]: 6 } }]);
+  const read = [{ ...messages[0], got: { [bob]: 6 }, read: { [alice]: 7 } }, messages[1]];
+  assert.deepEqual(marksChanged(g, groupMarks(came), groupMarks(read)), [{ group: g, tag: 'aabbccddeeff', got: { [bob]: 6 }, read: { [alice]: 7 } }]);
+  const parts = new Parts();
+  const [one] = changeEnvelopes([], changes, []);
+  let out: unknown = null;
+  for (const bytes of encodeEnvelope(one, null)) out = parts.take('p', bytes);
+  assert.deepEqual(out, one);
+
+  const group: Group = { id: g, name: 'G', admin: false, status: 'in', asked: [], later: [], outbox: [], readAt: 0, messages };
+  const [changed] = changedGroups([group], { groups: marksChanged(g, before, groupMarks(read)), whole: [] }, 100);
+  assert.deepEqual([changed.messages[0].got, changed.messages[0].read], [{ [bob]: 6 }, { [alice]: 7 }]);
+  // Of a member's message, nothing of it is kept.
+  const [theirs] = changedGroups([group], { groups: [{ group: g, tag: '112233445566', read: { [bob]: 7 } }], whole: [] }, 100);
+  assert.equal(theirs.messages[1].read, undefined);
+  // Said whole, and with a message told anew.
+  const all = wholeMarks(g, groupMarks(read));
+  assert.deepEqual(changedGroups([group], { groups: all.changes, whole: [all.whole] }, 100)[0].messages[0].read, { [alice]: 7 });
+  // As it travels: the account is never among them.
+  const entry = checkedGroupEntry({ group: g, at: 2, from: '', text: 'ours', tag: 'aabbccddeeff', marks: { read: { [alice]: 7, '': 8 }, got: { [bob]: 'soon' } } })!;
+  assert.deepEqual(entry.marks, { read: { [alice]: 7 } });
+  const told = mirrorGroups([], { list: [groupMirror(group, [])], gone: [], entries: [entry] });
+  assert.deepEqual(told.groups[0].messages[0].read, { [alice]: 7 });
 });
 
 test('what changes later in messages told already: only what changed, or all of it, and so on the computer', () => {

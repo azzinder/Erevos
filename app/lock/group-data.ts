@@ -40,8 +40,20 @@ export type GroupParts = { re?: string; sticker?: string; place?: Place; poll?: 
  *  phone's), when it was pinned for everyone, when its sender last edited its words, and, on this
  *  phone only, its star. Of our own photo, file or voice message, `put` is its chunks' ids on our
  *  relay, to take them off when it is deleted for everyone. On a linked device (lib/devices.ts),
- *  `unsent` marks one of ours that the phone could not send. */
-export type GroupMarks = { reactions?: Record<string, string>; votes?: Record<string, number[]>; pinned?: number; edited?: number; starred?: true; put?: string; unsent?: true };
+ *  `unsent` marks one of ours that the phone could not send. Of our own, each member's phone says
+ *  when it came (`got`) and when it was read (`read`), by identity, as this phone heard it (lib/group-parts.ts
+ *  withSeen): a member is in one of them at most. */
+export type GroupMarks = {
+  reactions?: Record<string, string>;
+  votes?: Record<string, number[]>;
+  pinned?: number;
+  edited?: number;
+  starred?: true;
+  put?: string;
+  unsent?: true;
+  got?: Record<string, number>;
+  read?: Record<string, number>;
+};
 
 /** A photo or file in a group's message: where it is, or where to take it from. With `ms`, it is
  *  a voice message's sound, and lasts that long, milliseconds. */
@@ -71,6 +83,12 @@ export type Group = {
   keysAt?: number;
   /** When this phone last asked the keeper for new keys, ms, while it waits for the welcome. */
   renewing?: number;
+  /** Until when this phone told the members whose messages it read that it read them, ms. Missing
+   *  in what was kept before it: then as `readAt`. */
+  seenAt?: number;
+  /** How many group messages this phone sent to some members only since it last sent one to all
+   *  (lib/groups.ts): the others skip as many of its keys. Missing when none. */
+  apart?: number;
   /** Members this phone asked for their contact link (lib/groups.ts `askContact`), by identity, and
    *  when: their answer is taken while the ask is fresh. Missing when none. */
   wants?: { id: string; at: number }[];
@@ -173,6 +191,20 @@ function checkedParts(v: Record<string, unknown>, mine: boolean): GroupParts & G
     ...(v.starred === true ? { starred: true as const } : {}),
     ...(mine && isText(v.put) && /^(?:[0-9a-f]{48})+$/.test(v.put) ? { put: v.put } : {}),
     ...(mine && v.unsent === true ? { unsent: true as const } : {}),
+    ...(mine ? seenBy(v.got, v.read) : {}),
+  };
+}
+
+// When each member's phone said one of ours came and was read, by identity (not this phone's), each member in one at most.
+function seenBy(got: unknown, read: unknown): Pick<GroupMarks, 'got' | 'read'> {
+  const when = (at: unknown) => (isTime(at) ? at : null);
+  const readBy = byMember(read, when);
+  if (readBy) delete readBy[''];
+  const gotBy = byMember(got, when);
+  if (gotBy) for (const who of ['', ...Object.keys(readBy ?? {})]) delete gotBy[who];
+  return {
+    ...(gotBy && Object.keys(gotBy).length > 0 ? { got: gotBy } : {}),
+    ...(readBy && Object.keys(readBy).length > 0 ? { read: readBy } : {}),
   };
 }
 
@@ -224,6 +256,8 @@ export function checkedGroup(value: unknown): Group | null {
     readAt: isTime(v.readAt) ? v.readAt : 0,
     ...(isTime(v.keysAt) ? { keysAt: v.keysAt } : {}),
     ...(isTime(v.renewing) ? { renewing: v.renewing } : {}),
+    ...(isTime(v.seenAt) ? { seenAt: v.seenAt } : {}),
+    ...(isTime(v.apart) && v.apart > 0 ? { apart: Math.floor(v.apart) } : {}),
     ...(wants.length > 0 ? { wants } : {}),
     ...(asks.length > 0 ? { asks } : {}),
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),

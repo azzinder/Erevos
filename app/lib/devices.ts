@@ -2803,7 +2803,7 @@ export class Links implements Link, TakenFiles {
       case 'forget':
         return groups.forget(id);
       case 'read':
-        await groups.markRead(id);
+        await groups.markRead(id, transport);
         readElsewhere([`group:${id}`]);
         return;
     }

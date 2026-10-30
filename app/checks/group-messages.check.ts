@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
-import { asChatMessage, groupPartsOf, markedOf, withMarked } from '../lib/group-parts';
+import { asChatMessage, groupPartsOf, markedOf, MAX_SEEN_TAGS, seenMark, seenOf, withMarked, withSeen } from '../lib/group-parts';
 import { Groups, type GroupTransport } from '../lib/groups';
 import { groupFindables, searchMessages, starredOf } from '../lib/message-search';
 import { EMPTY_GROUPS, loadGroupData, saveGroupData, type About, type GroupData, type GroupMessage } from '../lock/group-data';
@@ -110,11 +110,54 @@ test('a group keeps its messages’ parts and marks, and drops what is not of th
     edited: 6,
   };
   const odd = { at: 2, from: B, text: 'x', tag: 'ba9876543210', votes: { [B]: [0] }, reactions: { nobody: '👍', [A]: 'nice' }, put: 'ab'.repeat(24), sticker: 'Big' };
-  const ours = { at: 3, from: '', text: '', tag: 'aaaaaaaaaaaa', put: 'ab'.repeat(24) };
-  const data = { ...EMPTY_GROUPS, groups: [{ id: 'cd'.repeat(16), name: 'G', admin: true, status: 'in', asked: [], later: [], outbox: [], messages: [good, odd, ours], readAt: 0 }] };
+  const ours = { at: 3, from: '', text: '', tag: 'aaaaaaaaaaaa', put: 'ab'.repeat(24), got: { [A]: 4 }, read: { [B]: 5 } };
+  // Who it came to and who read it: of our own only, each member once (read wins), never this phone.
+  const seen = { at: 4, from: '', text: 'x', tag: 'bbbbbbbbbbbb', got: { [A]: 4, [B]: 4, '': 4, nobody: 4 }, read: { [B]: 6, [A]: 'soon' } };
+  const theirs = { at: 5, from: A, text: 'y', tag: 'cccccccccccc', got: { [B]: 4 }, read: { [B]: 5 } };
+  const data = { ...EMPTY_GROUPS, groups: [{ id: 'cd'.repeat(16), name: 'G', admin: true, status: 'in', asked: [], later: [], outbox: [], messages: [good, odd, ours, seen, theirs], readAt: 0, seenAt: 7, apart: 3 }] };
   await saveGroupData(0, key, data as unknown as GroupData);
   const [kept] = (await loadGroupData(0, key)).groups;
-  assert.deepEqual(kept.messages, [good, { at: 2, from: B, text: 'x', tag: 'ba9876543210' }, ours]);
+  assert.deepEqual(kept.messages, [
+    good,
+    { at: 2, from: B, text: 'x', tag: 'ba9876543210' },
+    ours,
+    { at: 4, from: '', text: 'x', tag: 'bbbbbbbbbbbb', got: { [A]: 4 }, read: { [B]: 6 } },
+    { at: 5, from: A, text: 'y', tag: 'cccccccccccc' },
+  ]);
+  assert.deepEqual([kept.seenAt, kept.apart], [7, 3]);
+});
+
+test('a member says which of our messages came and were read, each member once, and a read one came', () => {
+  const tag = '0123456789ab';
+  const other = 'ba9876543210';
+  assert.deepEqual(seenOf({ t: 'seen', got: [tag, tag, 'nope', 5], read: [] }), { t: 'seen', got: [tag], read: [] });
+  assert.equal(seenOf({ t: 'seen', got: [], read: ['x'] }), null, 'saying nothing is nothing');
+  assert.equal(seenOf({ t: 'seen', got: tag }), null);
+  const many = Array.from({ length: 150 }, (_, i) => (0x100000 + i).toString(16).padStart(12, '0'));
+  assert.equal(seenOf({ t: 'seen', got: many, read: many })!.got.length, MAX_SEEN_TAGS);
+
+  let messages: GroupMessage[] = [
+    { at: 1, from: '', text: 'joined', tag: '', note: true },
+    { at: 2, from: '', text: 'ours', tag },
+    { at: 3, from: A, text: 'theirs', tag: other },
+  ];
+  assert.equal(withSeen(messages, A, { t: 'seen', got: [other], read: [] }, 5), null, 'only of our own');
+  assert.equal(withSeen(messages, '', { t: 'seen', got: [tag], read: [] }, 5), null, 'never from this phone');
+  messages = withSeen(messages, A, { t: 'seen', got: [tag], read: [] }, 5)!;
+  assert.deepEqual(messages[1].got, { [A]: 5 });
+  assert.equal(withSeen(messages, A, { t: 'seen', got: [tag], read: [] }, 6), null, 'once');
+  assert.equal(seenMark(messages[1], [A, B]), 0, 'not yet at Bob’s');
+  messages = withSeen(messages, B, { t: 'seen', got: [], read: [tag] }, 7)!;
+  assert.deepEqual([messages[1].got, messages[1].read], [{ [A]: 5 }, { [B]: 7 }]);
+  assert.equal(seenMark(messages[1], [A, B]), 1, 'reached both phones');
+  messages = withSeen(messages, A, { t: 'seen', got: [], read: [tag] }, 8)!;
+  assert.deepEqual([messages[1].got, messages[1].read], [undefined, { [B]: 7, [A]: 8 }]);
+  assert.equal('got' in messages[1], false);
+  assert.equal(seenMark(messages[1], [A, B]), 2, 'read by both');
+  assert.equal(withSeen(messages, A, { t: 'seen', got: [tag], read: [] }, 9), null, 'read stays read');
+  assert.equal(seenMark(messages[1], []), 0, 'alone in the group');
+  // Who joined after it was sent is not waited for.
+  assert.equal(seenMark(messages[1], [A]), 2);
 });
 
 test('a group’s messages are found and starred as a chat’s are, a voice message by none of its words', () => {
@@ -174,6 +217,67 @@ function network() {
 }
 
 const said = (p: Phone, id: string) => p.groups.messages(id).filter((m) => !m.note);
+
+test('members’ phones tell the sender alone which of its messages came and were read', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone();
+  const bob = net.phone();
+  const carol = net.phone();
+  const id = await alice.groups.create('Friends', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const others = [bob.identity, carol.identity];
+
+  await alice.groups.send(id, 'Hi', alice.transport);
+  await net.settle();
+  const hi = () => said(alice, id).at(-1)!;
+  assert.equal(seenMark(hi(), others), 0);
+  // A while after, each phone says it came, to Alice only.
+  await bob.groups.tellGot();
+  assert.deepEqual([alice.queue.length, carol.queue.length], [1, 0]);
+  // Carol skips that one of Bob's keys, counted until Bob writes to all.
+  const apart = () => bob.groups.all().find((g) => g.id === id)!.apart;
+  assert.equal(apart(), 1);
+  await carol.groups.tellGot();
+  await net.settle();
+  assert.deepEqual(Object.keys(hi().got ?? {}).sort(), [...others].sort());
+  assert.equal(seenMark(hi(), others), 1);
+
+  // Read on Bob's phone, then on Carol's.
+  await bob.groups.markRead(id, bob.transport);
+  await net.settle();
+  assert.deepEqual([Object.keys(hi().got ?? {}), Object.keys(hi().read ?? {})], [[carol.identity], [bob.identity]]);
+  assert.equal(seenMark(hi(), others), 1);
+  await carol.groups.markRead(id, carol.transport);
+  await net.settle();
+  assert.equal(seenMark(hi(), others), 2);
+  assert.equal(hi().got, undefined);
+  // Read again, nothing goes.
+  await bob.groups.markRead(id, bob.transport);
+  assert.equal(alice.queue.length, 0);
+
+  // Read before the while is up: only that it was read goes.
+  await bob.groups.send(id, 'Yo', bob.transport);
+  assert.equal(apart(), undefined);
+  await net.settle();
+  await carol.groups.markRead(id, carol.transport);
+  await carol.groups.tellGot();
+  assert.deepEqual([bob.queue.length, alice.queue.length], [1, 0]);
+  await alice.groups.tellGot();
+  await alice.groups.markRead(id, alice.transport);
+  await net.settle();
+  const yo = said(bob, id).at(-1)!;
+  assert.deepEqual([yo.got, Object.keys(yo.read ?? {}).sort()], [undefined, [...[alice.identity, carol.identity]].sort()]);
+  // What others' phones say is kept only on the sender's.
+  assert.equal(said(carol, id).at(-1)!.read, undefined);
+  // Let go of as its space closes, nothing more goes from it.
+  await bob.groups.send(id, 'Later', bob.transport);
+  await net.settle();
+  alice.groups.close();
+  await alice.groups.tellGot();
+  await alice.groups.markRead(id, alice.transport);
+  assert.equal(bob.queue.length, 0);
+  for (const p of [alice, bob, carol]) await p.groups.tellGot();
+});
 
 test('replies, stickers, polls, reactions, votes, pins, edits and deleting go to every member', { skip: !existsSync(built) }, async () => {
   const net = network();

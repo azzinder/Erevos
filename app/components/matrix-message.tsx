@@ -35,7 +35,7 @@ export function lineOf(message: MatrixMessage): string {
 /** The message an answer is to, as the answer quotes it. */
 export type Answered = { name: string; line: string; onPress: () => void };
 
-export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout }: {
+export function MatrixBubble({ message, me, sender, answered, names, onVote, onThread, lit, onReact, onMenu, onLayout, mark }: {
   message: MatrixMessage;
   /** Our Matrix ID, to see which reactions are ours. */
   me: string;
@@ -56,11 +56,13 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   /** Held down: its menu. Not given for a message that is gone or a call's line. */
   onMenu?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
+  /** Of ours, how far it went: ✓ taken by the homeserver, ✓✓✓ read by every other member. */
+  mark?: string;
 }) {
   const colors = useColors();
   const mine = message.sender === me;
   const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : ''].filter(Boolean).join('  ·  ');
+  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', mark ?? ''].filter(Boolean).join('  ·  ');
   const side = mine ? 'flex-end' : 'flex-start';
   const shownPoll = message.poll && !message.deleted ? pollShown(message.poll) : null;
   const ended = message.poll ? pollOver(message.poll) : false;

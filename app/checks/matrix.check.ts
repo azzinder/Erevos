@@ -33,6 +33,9 @@ import {
   loadEarlier,
   matrixThroughTor,
   matrixTyping,
+  markRead as matrixMarkRead,
+  readByAll,
+  readersOf,
   joinRoom,
   roomList,
   sendChange,
@@ -335,6 +338,45 @@ test('who writes in a room shows as the homeserver says, never ourselves', { ski
   await sync(alice, 0);
   assert.deepEqual(matrixTyping(alice, room.id), []);
   server.typing.delete(room.id);
+});
+
+test('ours are read by all once every other member’s app says it read them or one after', { skip: !coreReady }, async () => {
+  let gina = kept(await signIn(HS, 'gina', PASSWORD));
+  let hal = kept(await signIn(HS, 'hal', PASSWORD));
+  let ivy = kept(await signIn(HS, 'ivy', PASSWORD));
+  const group = await createGroup(gina, 'Readers', [hal.userId, ivy.userId]);
+  for (const who of [hal, ivy]) {
+    await sync(who, 0);
+    await joinRoom(who, group.id);
+  }
+  await sync(gina, 0);
+  await sendText(gina, group.id, 'one');
+  await sendText(gina, group.id, 'two');
+  gina = kept(gina);
+  const room = () => gina.rooms[group.id];
+  const [one, two] = room().messages.slice(-2);
+  assert.equal(readByAll(room(), one, gina.userId), false);
+  // Hal reads up to the first, Ivy to the second: the first is read by all, the second by Ivy.
+  await sync(hal, 0);
+  await matrixMarkRead(hal, group.id);
+  await sync(ivy, 0);
+  await matrixMarkRead(ivy, group.id);
+  hal = kept(hal);
+  ivy = kept(ivy);
+  const halRead = server.log.find((l) => l.event.event_id === one.id)!;
+  server.readUpTo.set(`${hal.userId} ${group.id}`, halRead.seq);
+  await sync(gina, 0);
+  gina = kept(gina);
+  assert.deepEqual(Object.keys(readersOf(room(), one, gina.userId)).sort(), [hal.userId, ivy.userId].sort());
+  assert.equal(readByAll(room(), one, gina.userId), true);
+  assert.deepEqual(Object.keys(readersOf(room(), two, gina.userId)), [ivy.userId]);
+  assert.equal(readByAll(room(), two, gina.userId), false);
+  assert.equal(room().readBy?.[gina.userId], undefined, 'never ourselves');
+  // One read up to a message not kept here read ours once they said so after it went.
+  const far = { ...room(), readBy: { [hal.userId]: { event: '$gone', ts: two.ts + 1 } } };
+  assert.deepEqual(Object.keys(readersOf(far, two, gina.userId)), [hal.userId]);
+  assert.deepEqual(readersOf({ ...far, readBy: { [hal.userId]: { event: '$gone', ts: two.ts - 1 } } }, two, gina.userId), {});
+  server.readUpTo.clear();
 });
 
 test('we are said to write only when the account says so', { skip: !coreReady }, async () => {

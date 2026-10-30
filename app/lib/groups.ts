@@ -24,7 +24,7 @@ import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Enco
 import { fromBase64Url, toBase64Url } from './e2e';
 import { decodeGroupCall, type GroupCallSignal } from './group-call-signal';
 import type { GroupContacts } from './group-contacts';
-import { groupPartsOf, markedOf, withMarked, type Marked } from './group-parts';
+import { groupPartsOf, markedOf, MAX_SEEN_TAGS, seenOf, withMarked, withSeen, type Marked, type Seen } from './group-parts';
 import { cleanGroupName, isGroupId, type GroupSignal } from './group-signal';
 import { t, mark } from './i18n';
 import type { GroupAsk } from './link-wire';
@@ -78,6 +78,13 @@ import { MAX_VOICE_MS } from './voice';
 // link, is a message; a call that starts rings, counted as a call; all else (commits,
 // welcomes, new keys, reactions, pins, names, admins' steps, an answer with a contact link) is quiet. What waits in the outbox keeps its mark for when it goes.
 //
+// In a group that is not public, a member's phone tells the sender of a message that it came, a
+// while after and with the others that came meanwhile, and that it was read, once its group is on
+// the screen, in a quiet group message only those senders get (`seen`, lib/group-parts.ts): our own
+// shows ✓✓ once it reached every member's phone and ✓✓✓ once every one read it, and who did, when.
+// Each such message skips one of this phone's keys for the other members (MLS), who take a jump of
+// no more than 1000 (crates/erevos-group): after APART_MOST of them the next goes to all.
+//
 // Members who are not each other's contacts can ask for each other's contact links (`askContact`),
 // in a group message only that member gets, with this account's public keys in it: where the member
 // is reached is what it says about itself in the group, which MLS vouches for. The member's phone
@@ -112,6 +119,10 @@ export const WANT_KEPT = 60 * 24 * 3600_000;
 export const ASK_KEPT = 30 * 24 * 3600_000;
 /** The most asks for this phone's contact link waiting in a group: the rest are not kept. */
 export const MAX_ASKS = 20;
+/** How long after a member's message comes this phone tells its sender, with the others that came meanwhile. */
+export const GOT_AFTER = 2000;
+/** The most group messages this phone sends to some members only before one goes to all of them. */
+export const APART_MOST = 300;
 export { MAX_CONTACT_KEY };
 
 /** How group messages leave this phone: to a member's queue, saying what it carries (`mark`, none
@@ -166,7 +177,8 @@ type Said =
   | ({ t: 'file'; file: FileOffer; tag: string; ms?: number } & GroupParts)
   | { t: 'renew'; kp: string }
   | ContactSaid
-  | Marked;
+  | Marked
+  | Seen;
 
 type ContactSaid = { t: 'contact'; to: string; key: string; back?: true };
 
@@ -197,6 +209,8 @@ function decodeSaid(bytes: Uint8Array): Said | null {
     }
     const marked = markedOf(v);
     if (marked) return marked;
+    const seen = seenOf(v);
+    if (seen) return seen;
   } catch {
     // Not what an Erevos says.
   }
@@ -209,6 +223,12 @@ function aboutOf(bytes: Uint8Array | string): About | null {
   } catch {
     return null;
   }
+}
+
+// A group without the count of messages sent to some members only.
+function withoutApart(group: Group): Group {
+  const { apart: _, ...rest } = group;
+  return rest;
 }
 
 // A group's asks for this phone's contact link that wait for an answer: not turned down, nor too old.
@@ -267,6 +287,13 @@ export class Groups {
   private readonly messageListeners = new Set<(group: string, named?: boolean) => void>();
   private readonly goneListeners = new Set<(group: string) => void>();
   private link: GroupLink | null = null;
+  // Members' messages that came, by group, not yet told to their senders: each tag with its sender.
+  private readonly gotWaiting = new Map<string, { tags: Map<string, string>; transport: GroupTransport }>();
+  private gotTimer: ReturnType<typeof setTimeout> | null = null;
+  // How group messages last left this phone, for telling what was read where none is given.
+  private lastTransport: GroupTransport | null = null;
+  // Let go of (close): what waits to be told is told no more.
+  private closed = false;
 
   constructor(data: GroupData, store: (data: GroupData) => Promise<void>, me: () => Promise<Me>) {
     this.data = data;
@@ -462,7 +489,6 @@ export class Groups {
     return json.members.map((m) => ({ leaf: m.leaf, about: aboutOf(m.about), me: m.leaf === json.own }));
   }
 
-  /** Marks a group read up to now. */
   /** Locks a group with a PIN of its own here, as kept (lock/chat-pin.ts); null takes it off. */
   setPin(id: string, pin: ChatPin | null): Promise<void> {
     return this.run(async () => {
@@ -496,16 +522,90 @@ export class Groups {
     return this.find(id)?.notify ?? null;
   }
 
-  markRead(id: string): Promise<void> {
+  /** Marks a group read up to now, and tells the members whose messages came since that they were read here. */
+  markRead(id: string, transport?: GroupTransport): Promise<void> {
     return this.run(async () => {
       const group = this.find(id);
       if (!group) return;
       const unread = group.messages.some((m) => m.from && !m.note && m.at > group.readAt);
-      await this.save(this.withGroup({ ...group, readAt: Date.now() }));
+      // What came since this phone last told their senders it read them, each tag with its sender.
+      const since = group.seenAt ?? group.readAt;
+      const read = new Map(group.messages.filter((m) => m.from && !m.note && m.tag && m.at > since).map((m) => [m.tag, m.from]));
+      const now = Date.now();
+      await this.save(this.withGroup({ ...group, readAt: now, seenAt: now }));
       this.changed();
-      // On a linked device, read on the phone too.
-      if (unread) await this.through()?.ask(id, { t: 'read' });
+      const link = this.through();
+      // On a linked device, read on the phone too, which tells them.
+      if (link) {
+        if (unread) await link.ask(id, { t: 'read' });
+        return;
+      }
+      if (read.size === 0) return;
+      const waiting = this.gotWaiting.get(id);
+      for (const tag of read.keys()) waiting?.tags.delete(tag);
+      const by = transport ?? waiting?.transport ?? this.lastTransport;
+      if (by) await this.tellSeen(id, new Map(), read, by).catch(() => undefined);
     });
+  }
+
+  /**
+   * Lets go of the groups as their space or hidden place closes: what came and waits to be told to
+   * its senders is not told, as another copy may be opened from what is kept, and two must never
+   * seal for one group.
+   */
+  close(): void {
+    this.closed = true;
+    if (this.gotTimer) clearTimeout(this.gotTimer);
+    this.gotTimer = null;
+    this.gotWaiting.clear();
+  }
+
+  /** Tells the senders of the members' messages that came here that they came, now rather than a while after. */
+  tellGot(): Promise<void> {
+    if (this.gotTimer) clearTimeout(this.gotTimer);
+    this.gotTimer = null;
+    return this.run(async () => {
+      const waiting = [...this.gotWaiting];
+      this.gotWaiting.clear();
+      for (const [id, { tags, transport }] of waiting) await this.tellSeen(id, tags, new Map(), transport).catch(() => undefined);
+    });
+  }
+
+  // Tells the sender of a member's message, a while after, that it came here, with the others that came meanwhile.
+  private gotLater(id: string, from: string, tag: string, transport: GroupTransport) {
+    if (!tag || this.closed || !this.personal(id)) return;
+    const waiting = this.gotWaiting.get(id) ?? { tags: new Map<string, string>(), transport };
+    waiting.tags.set(tag, from);
+    waiting.transport = transport;
+    this.gotWaiting.set(id, waiting);
+    if (this.gotTimer) return;
+    this.gotTimer = setTimeout(() => void this.tellGot().catch(() => undefined), GOT_AFTER);
+  }
+
+  // Tells the members whose messages these are, each tag with its sender, which came here (`got`) and
+  // which were read here (`read`), in group messages only they get, by the one leaf each has there.
+  private async tellSeen(id: string, got: Map<string, string>, read: Map<string, string>, transport: GroupTransport) {
+    const group = this.find(id);
+    if (!group || group.status !== 'in' || this.closed || !this.personal(id) || !this.data.state) return;
+    const members = await this.membersIn(id);
+    const leaves = new Map<string, number>();
+    for (const m of members) if (!m.me && m.about) leaves.set(m.about.id, (leaves.get(m.about.id) ?? 0) + 1);
+    const reached = ([tag, sender]: [string, string]) => leaves.get(sender) === 1 && !!tag;
+    const gotTags = [...got].filter((entry) => !read.has(entry[0]) && reached(entry));
+    const readTags = [...read].filter(reached);
+    for (let i = 0; i < Math.max(gotTags.length, readTags.length) && !this.closed; i += MAX_SEEN_TAGS) {
+      const gotNow = gotTags.slice(i, i + MAX_SEEN_TAGS);
+      const readNow = readTags.slice(i, i + MAX_SEEN_TAGS);
+      const to = new Set([...gotNow, ...readNow].map(([, sender]) => sender));
+      const seen: Seen = { t: 'seen', got: gotNow.map(([tag]) => tag), read: readNow.map(([tag]) => tag) };
+      const sealed = await core.group.seal(this.kept(), fromHex(id), encodeSaid(seen));
+      const now = this.find(id)!;
+      const apart = (now.apart ?? 0) + 1;
+      // So many went to some only that this one goes to all: no member falls further behind.
+      const all = apart > APART_MOST;
+      await this.save({ ...this.withGroup(all ? withoutApart(now) : { ...now, apart }), state: toBase64(sealed.state) });
+      await this.deliver(id, all ? members : members.filter((m) => !!m.about && to.has(m.about.id)), sealed.message, transport);
+    }
   }
 
   /** Makes a group named `name` and asks each contact (by identity) to join. Returns its id. */
@@ -1119,7 +1219,8 @@ export class Groups {
   // Seals `text` for the group and sends it to every other member, saying what it carries (`mark`).
   private async broadcast(id: string, text: Uint8Array, transport: GroupTransport, mark: Mark = 'quiet') {
     const sealed = await core.group.seal(this.kept(), fromHex(id), text);
-    await this.save({ ...this.data, state: toBase64(sealed.state) });
+    const group = this.find(id);
+    await this.save({ ...(group?.apart ? this.withGroup(withoutApart(group)) : this.data), state: toBase64(sealed.state) });
     await this.deliver(id, await this.membersIn(id), sealed.message, transport, false, mark);
   }
 
@@ -1244,6 +1345,7 @@ export class Groups {
   receive(packet: Uint8Array, transport: GroupTransport): Promise<boolean> {
     return this.run(async () => {
       if (!isGroupPacket(packet) || !this.data.seal) return false;
+      this.lastTransport = transport;
       let message: Uint8Array;
       try {
         message = (await core.sealOpen(fromBase64(this.data.seal), packet.slice(2))).message;
@@ -1313,7 +1415,20 @@ export class Groups {
         const media = { file: offerRef(said.file), ...(said.ms === undefined ? {} : { ms: said.ms }) };
         const parts = groupPartsOf(said, false);
         await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: '', tag: said.tag, ...media, ...parts }]) }));
+        this.gotLater(id, from, said.tag, transport);
         this.messageListeners.forEach((listener) => listener(id));
+        this.changed();
+        return;
+      }
+      if (said.t === 'seen') {
+        // From a member still in the group, by the one leaf it has there, of our own messages.
+        if (!this.personal(id)) return;
+        const leaves = await this.leavesOf(id, from);
+        if (leaves.length !== 1 || leaves[0].leaf !== opened.sender) return;
+        const group = this.find(id)!;
+        const messages = withSeen(group.messages, from, said, Date.now());
+        if (!messages) return;
+        await this.save(this.withGroup({ ...group, messages }));
         this.changed();
         return;
       }
@@ -1333,6 +1448,7 @@ export class Groups {
       } else {
         const parts = groupPartsOf(said, true);
         await this.save(this.withGroup({ ...now, messages: this.trimmed([...now.messages, { at: Date.now(), from, text: said.text, tag: said.tag, ...parts }]) }));
+        this.gotLater(id, from, said.tag, transport);
         // Named only where the words name someone with @: a list alone tells through no mute.
         const named = said.text.includes('@') && !!parts.named?.includes((await this.me()).id);
         this.messageListeners.forEach((listener) => listener(id, named));
