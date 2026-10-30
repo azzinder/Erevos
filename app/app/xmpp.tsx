@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
 import { OwnPicture } from '../components/network-picture';
+import { XmppAccount } from '../components/xmpp-account';
+import { XmppFind } from '../components/xmpp-find';
+import { XmppRegister } from '../components/xmpp-register';
 import { SayTypingSwitch } from '../components/say-typing';
 import { pickAvatar } from '../lib/pick-avatar';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
@@ -142,6 +145,7 @@ export default function XmppScreen() {
               : t('Erevos signs in as a new device of the account, and keeps the sign-in encrypted in this space only.')}
           </Text>
         </Card>
+        <XmppRegister />
         {tor}
         {note || problem ? <Text tone="muted">{note || problem}</Text> : null}
       </Page>
@@ -313,6 +317,15 @@ export default function XmppScreen() {
         </Text>
       </Card>
 
+      <XmppFind
+        busy={busy}
+        join={(jid) =>
+          void run(async () => {
+            open(await xmppJoinGroup(jid));
+          })
+        }
+      />
+
       <SectionTitle title={t('Chats')} />
       {chats.length === 0 ? <Text tone="muted">{t('No XMPP chats yet.')}</Text> : null}
       {chats.map((chat) => (
@@ -371,6 +384,9 @@ export default function XmppScreen() {
           </>
         ) : null}
       </Card>
+
+      <SectionTitle title={t('Account')} />
+      <XmppAccount jid={state.jid} busy={busy} />
 
       {note ? <Text tone="muted">{note}</Text> : null}
 
