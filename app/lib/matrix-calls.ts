@@ -20,7 +20,7 @@ import { placeNetworkRang } from './network-notices';
 // leaves the call, or when another of our devices answers or turns it down. Turning it down tells
 // the caller (MSC4310). Answering opens Element Call into the call.
 //
-// The older Matrix calls (m.call.*, one to one, as FluffyChat makes them) do not ring here.
+// The older Matrix calls (m.call.*, one to one, as FluffyChat makes them) are lib/matrix-voip.ts's.
 //
 // A hidden place's own account (lib/place-networks.ts) calls and is called the same way while its
 // hidden chats are open, and they stay open through its call (app/chat.tsx). Its call rings with

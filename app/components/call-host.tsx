@@ -17,11 +17,12 @@ import { sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { learnSpaceNames, spaceCalls } from '../lib/space-calls';
 import { onSpaceGroupCall, spaceGroupCalls } from '../lib/space-groups';
 import { rtc } from '../lib/webrtc';
+import { watchMatrixVoip } from '../lib/matrix-voip';
 import { takeHeldXmppCall, watchXmppCalls, xmppCalls, xmppPlaceCalls, XMPP_PREFIX } from '../lib/xmpp-calls';
 import { xmppGroupCalls } from '../lib/xmpp-muji';
 import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
-import { matrixNow } from '../lib/matrix-store';
+import { matrixCallAccount, matrixNow } from '../lib/matrix-store';
 import { t } from '../lib/i18n';
 import { CallScreen } from './call-screen';
 import { GroupCallScreen } from './group-call-screen';
@@ -85,6 +86,8 @@ export function watchCalls(): () => void {
   });
   // Calls of the space's XMPP account (lib/xmpp-calls.ts), on the same screen.
   const stopXmpp = watchXmppCalls(rtc);
+  // The older one-to-one Matrix calls, as FluffyChat makes them (lib/matrix-voip.ts), on the same screen too.
+  const stopVoip = watchMatrixVoip(rtc, matrixCallAccount);
   // Calls of its Matrix account (lib/matrix-calls.ts), in Element Call's own window: they ring here
   // as the others do, and Erevos's own do not ring meanwhile.
   const element = elementCall();
@@ -127,6 +130,7 @@ export function watchCalls(): () => void {
     endGroupCall();
     // After the call's end, which still goes to the other person.
     stopXmpp();
+    stopVoip();
     audio(() => callAudio?.stopRinging?.());
     audio(() => callAudio?.stop());
     audio(() => callAudio?.showOverLock?.(false));

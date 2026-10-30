@@ -559,6 +559,8 @@ export type CallEvent = {
   senderDevice?: string;
   age?: number;
   encrypted?: boolean;
+  /** It came encrypted in the room (Megolm), not as it is. */
+  sealed?: boolean;
 };
 type CallHandler = (state: MatrixState, event: CallEvent) => Promise<boolean>;
 let callHandler: CallHandler | null = null;
@@ -578,8 +580,18 @@ export const isCallEvent = (type: unknown): type is string =>
     type === 'org.matrix.msc3401.call.member' ||
     type.startsWith('io.element.call.'));
 
+// The older one-to-one calls (m.call.*, lib/matrix-voip.ts) have a handler of their own.
+let legacyHandler: CallHandler | null = null;
+const LEGACY_CALLS = new Set(['m.call.invite', 'm.call.candidates', 'm.call.answer', 'm.call.select_answer', 'm.call.hangup', 'm.call.reject', 'm.call.negotiate']);
+
+/** Where the older one-to-one calls' events go (lib/matrix-voip.ts). */
+export function setLegacyCallHandler(next: CallHandler | null): void {
+  legacyHandler = next;
+}
+
 async function passCall(state: MatrixState, event: CallEvent): Promise<boolean> {
-  return callHandler ? callHandler(state, event).catch(() => false) : false;
+  const handler = LEGACY_CALLS.has(event.type) ? legacyHandler : callHandler;
+  return handler ? handler(state, event).catch(() => false) : false;
 }
 
 /** An event of a room as the homeserver has it (`room_id` set), opened when it came encrypted.
@@ -887,8 +899,8 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
   if (!older) {
     tap(state, roomId, { ...event, type, content }, true);
     if (isVerification(type, content)) await passVerification(state, inRoom(roomId, event, type, content));
-    // A call's events show as its line, which the calls keep (lib/matrix-calls.ts).
-    if (isCallEvent(type)) await passCall(state, callIn(roomId, event, type, content));
+    // A call's events show as its line, which the calls keep (lib/matrix-calls.ts, lib/matrix-voip.ts).
+    if (isCallEvent(type)) await passCall(state, { ...callIn(roomId, event, type, content), sealed: event.type === 'm.room.encrypted' });
   }
   const changed = await takeContent(state, roomId, base, type, content, event, older);
   // A thread's first message comes with how many answers it has (m.relations).
