@@ -1549,6 +1549,12 @@ ningún puente se pone en medio.
   nuevo de la cuenta, llamado Erevos. La sesión y las claves del dispositivo se guardan cifradas en este espacio, y
   están en las copias de seguridad: tras restaurar, el espacio inicia sesión de nuevo, como un dispositivo nuevo. Sus
   chats ocultos pueden tener una cuenta de Matrix propia, ver [Chats ocultos](#hidden).
+- **Inicio de sesión único:** en Android, cuando tu servidor de Matrix hace entrar a la gente en otro sitio (como pide
+  matrix.org en cuentas nuevas), **Iniciar sesión con inicio único (SSO)** abre el navegador en esa página, y vuelve a
+  Erevos cuando hayas entrado allí; un servidor con varios proveedores te deja elegir uno. El navegador no pasa por
+  Tor, así que esa página ve tu dirección. Como no hay contraseña que dar, Erevos crea las claves de firma cruzada de
+  la cuenta solo cuando el servidor las acepta sin volver a preguntar; si no, comprueba este dispositivo con emoji o
+  código QR desde otro tuyo, o introduce la clave de seguridad.
 - **Chats:** **Chat nuevo** empieza un chat cifrado con un ID de Matrix. Las invitaciones salen primero, con **Unirse**
   y **Rechazar**.
 - **Grupos:** **Grupo nuevo**, en la pantalla de Matrix, crea un grupo cifrado con un nombre y los ID de Matrix que
@@ -1599,6 +1605,12 @@ ningún puente se pone en medio.
   que se note, y el chat dice **Comprobado con emojis**. **Comprobar este dispositivo con otro tuyo**, en la pantalla
   de Matrix, hace lo mismo con tu propio Element, para que confíe en el dispositivo de Erevos. Element también puede
   empezar cualquiera de las dos.
+- **Comprobar con código QR:** cuando ambos lados aceptaron una comprobación y las dos apps pueden hacerlo, la tarjeta
+  muestra un código y **Fotografiar su código**. Deja que la otra app fotografíe el código que se ve aquí (en Element:
+  **Escanear**) y responde **Sí, lo dice** cuando diga que la comprobación salió bien; o fotografía el código que
+  muestra su app. **Comparar emoji en su lugar** va por el otro camino. El código lleva las claves de las dos cuentas
+  (o dispositivos) y un secreto de un solo uso, así que un código de alguien en medio no encaja. Nada se da por fiable
+  hasta que los dos lados dicen que terminaron.
 - **Clave de seguridad:** en **Clave de seguridad**, en la pantalla de Matrix, escribe la clave (o frase) de seguridad
   que creó Element: los mensajes anteriores se abren desde la copia de claves de la cuenta, las claves nuevas entran
   en ella, y tus otros dispositivos confían en este. Una cuenta sin ella puede **Crear una clave de seguridad** aquí;

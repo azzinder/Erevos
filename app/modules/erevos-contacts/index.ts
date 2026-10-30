@@ -95,6 +95,7 @@ type NativeContacts = {
   simContacts(): Promise<SimContact[]>;
   setBirthdays(on: boolean): Promise<void>;
   readQr(uri: string): Promise<string | null>;
+  readQrBytes(uri: string): Promise<string | null>;
   addListener<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription;
 };
 
@@ -210,6 +211,11 @@ export function setBirthdayReminders(on: boolean): Promise<void> {
 /** The text of the QR code in a photo (a file:// or content:// address), or null if it has none. */
 export function readQrCode(uri: string): Promise<string | null> {
   return native ? native.readQr(uri) : none();
+}
+
+/** The bytes of the QR code in a photo, base64, or null if it has none (a Matrix check's code is bytes). */
+export function readQrCodeBytes(uri: string): Promise<string | null> {
+  return native ? native.readQrBytes(uri) : none();
 }
 
 export function onContactsEvent<Name extends keyof ContactsEvents>(name: Name, listener: ContactsEvents[Name]): EventSubscription | null {

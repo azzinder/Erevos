@@ -1657,6 +1657,12 @@ Element: Keine Brücke sitzt dazwischen.
   namens Erevos. Anmeldung und Schlüssel des Geräts bleiben verschlüsselt in diesem Bereich, und sind in den Backups:
   Nach einer Wiederherstellung meldet sich der Bereich neu an, als neues Gerät. Seine versteckten Chats können ein
   eigenes Matrix-Konto haben, siehe [Versteckte Chats](#hidden).
+- **Single Sign-On:** Unter Android, wenn dein Matrix-Server Leute woanders anmeldet (wie matrix.org es bei neuen
+  Konten verlangt), öffnet **Mit Single Sign-On anmelden** den Browser auf dieser Seite, und er kommt zu Erevos
+  zurück, sobald du dich dort angemeldet hast; ein Server mit mehreren Anbietern lässt dich einen wählen. Der Browser
+  geht nicht über Tor, diese Seite sieht also deine Adresse. Da es kein Passwort zu geben gibt, erstellt Erevos die
+  Cross-Signing-Schlüssel des Kontos nur, wenn der Server sie ohne erneute Frage annimmt; sonst prüfe dieses Gerät per
+  Emoji oder QR-Code von einem anderen deiner Geräte, oder gib den Sicherheitsschlüssel ein.
 - **Chats:** **Neuer Chat** beginnt einen verschlüsselten Chat mit einer Matrix-ID. Einladungen stehen oben, mit
   **Beitreten** und **Ablehnen**.
 - **Gruppen:** **Neue Gruppe**, auf dem Matrix-Bildschirm, erstellt eine verschlüsselte Gruppe aus einem Namen und den
@@ -1710,6 +1716,12 @@ Element: Keine Brücke sitzt dazwischen.
   dazwischensitzen, und der Chat zeigt **Per Emoji geprüft**. **Dieses Gerät mit einem anderen von dir prüfen**, auf
   dem Matrix-Bildschirm, macht dasselbe mit deinem eigenen Element, damit es dem Gerät von Erevos vertraut. Element
   kann beides auch beginnen.
+- **Mit QR-Code prüfen:** Sobald beide Seiten eine Prüfung angenommen haben und beide Apps es können, zeigt die Karte
+  einen Code und **Ihren Code fotografieren**. Lass die andere App den hier gezeigten Code fotografieren (in Element:
+  **Scannen**) und antworte **Ja, sagt sie**, wenn sie sagt, dass die Prüfung geklappt hat; oder fotografiere den
+  Code, den ihre App zeigt. **Stattdessen Emoji vergleichen** geht den anderen Weg. Der Code enthält die Schlüssel der
+  beiden Konten (oder Geräte) und ein Einmal-Geheimnis, sodass ein Code von jemandem dazwischen nicht passt. Nichts
+  gilt als vertraut, bis beide Seiten fertig gemeldet haben.
 - **Sicherheitsschlüssel:** Unter **Sicherheitsschlüssel** auf dem Matrix-Bildschirm gibst du den Sicherheitsschlüssel
   (oder die Sicherheitsphrase) ein, den Element erstellt hat: Frühere Nachrichten öffnen sich aus der Schlüsselsicherung
   des Kontos, neue Schlüssel kommen hinein, und deine anderen Geräte vertrauen diesem. Ein Konto ohne kann hier

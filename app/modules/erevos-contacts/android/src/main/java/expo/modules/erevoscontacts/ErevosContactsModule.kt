@@ -127,6 +127,7 @@ class ErevosContactsModule : Module() {
     }
     AsyncFunction("ringtoneName") { uri: String -> ContactsStore.ringtoneName(context(), uri) }
     AsyncFunction("readQr") { uri: String -> QrReader.read(context(), uri) }
+    AsyncFunction("readQrBytes") { uri: String -> QrReader.readBytes(context(), uri) }
     AsyncFunction("setBirthdays") { on: Boolean -> Birthdays.setOn(context(), on) }
     AsyncFunction("simContacts") { SimContacts.all(context()) }
     AsyncFunction("groups") { ContactsStore.groups(context()) }

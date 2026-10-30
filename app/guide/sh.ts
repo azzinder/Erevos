@@ -1502,6 +1502,12 @@ između.
   Erevos. Prijava i ključevi uređaja čuvaju se šifrovani u ovom prostoru, i nalaze se u rezervnim kopijama: nakon
   vraćanja prostor se ponovo prijavljuje, kao novi uređaj. Njegovi skriveni razgovori mogu imati vlastiti Matrix račun,
   pogledajte [Skriveni razgovori](#hidden).
+- **Jedinstvena prijava:** na Androidu, kad vaš Matrix server prijavljuje ljude negdje drugdje (kao što matrix.org
+  traži za nove račune), **Prijava jedinstvenom prijavom (SSO)** otvara preglednik na toj stranici, a on se vraća u
+  Erevos kad se tamo prijavite; server s više pružatelja pušta vas da odaberete jednog. Preglednik ne ide preko Tora,
+  pa ta stranica vidi vašu adresu. Budući da nema lozinke za dati, Erevos pravi ključeve unakrsnog potpisivanja računa
+  samo kad ih server primi bez ponovnog pitanja; inače provjerite ovaj uređaj emojijima ili QR kodom s drugog svog
+  uređaja, ili unesite sigurnosni ključ.
 - **Razgovori:** **Novi razgovor** počinje šifrovani razgovor s Matrix ID-om. Pozivi se prikazuju prvi, s
   **Pridruži se** i **Odbij**.
 - **Grupe:** **Nova grupa**, na Matrix ekranu, pravi šifrovanu grupu od imena i Matrix ID-ova koje napišete, svaki
@@ -1547,6 +1553,11 @@ između.
   iste, istim redom, dodirnite **Podudaraju se** na oba telefona. Tada niko ne može neprimjetno biti u sredini, a
   razgovor piše **Provjereno emojijima**. **Provjerite ovaj uređaj drugim svojim**, na Matrix ekranu, radi isto s
   vašim Elementom, da vjeruje uređaju Erevosa. Element može pokrenuti i jedno i drugo.
+- **Provjera QR kodom:** kad su obje strane prihvatile provjeru, a obje aplikacije to mogu, kartica pokazuje kod i
+  **Fotografiši njihov kod**. Neka druga aplikacija fotografiše kod koji se vidi ovdje (u Elementu: **Skeniraj**), pa
+  odgovorite **Da, kaže** kad kaže da je provjera uspjela; ili fotografišite kod koji pokazuje njihova aplikacija.
+  **Uporedi emoji umjesto toga** ide drugim putem. Kod sadrži ključeve dva računa (ili uređaja) i jednokratnu tajnu,
+  pa kod nekoga između ne odgovara. Ništa se ne smatra pouzdanim dok obje strane ne kažu da su gotove.
 - **Sigurnosni ključ:** pod **Sigurnosni ključ** na Matrix ekranu upišite sigurnosni ključ (ili frazu) koji je
   napravio Element: ranije poruke se otvaraju iz rezervne kopije ključeva računa, novi ključevi idu u nju, a vaši
   drugi uređaji vjeruju ovom. Račun bez njega ovdje može **Napravite sigurnosni ključ**; zapišite ga, jer ga Erevos

@@ -3,12 +3,15 @@ package expo.modules.erevoscontacts
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Base64
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.LuminanceSource
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.ReaderException
+import com.google.zxing.Result
+import com.google.zxing.ResultMetadataType
 import com.google.zxing.common.GlobalHistogramBinarizer
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeReader
@@ -21,7 +24,21 @@ import com.google.zxing.qrcode.QRCodeReader
 internal object QrReader {
   private const val MOST = 1600
 
-  fun read(context: Context, address: String): String? {
+  fun read(context: Context, address: String): String? = decode(context, address)?.text
+
+  /**
+   * The bytes of a QR code in a photo, as written, base64 (a Matrix check's code is bytes, not
+   * words): its byte segments, or null when it has none or no code.
+   */
+  fun readBytes(context: Context, address: String): String? {
+    @Suppress("UNCHECKED_CAST")
+    val segments = decode(context, address)?.resultMetadata?.get(ResultMetadataType.BYTE_SEGMENTS) as? List<ByteArray> ?: return null
+    val out = java.io.ByteArrayOutputStream()
+    segments.forEach { out.write(it) }
+    return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+  }
+
+  private fun decode(context: Context, address: String): Result? {
     val uri = Uri.parse(address)
     val resolver = context.contentResolver
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -47,7 +64,7 @@ internal object QrReader {
     for (luminance in listOf(source, source.invert())) {
       for (binary in listOf(BinaryBitmap(HybridBinarizer(luminance)), BinaryBitmap(GlobalHistogramBinarizer(luminance)))) {
         try {
-          return QRCodeReader().decode(binary, hints).text
+          return QRCodeReader().decode(binary, hints)
         } catch (_: ReaderException) {
           // Tried the next way.
         }

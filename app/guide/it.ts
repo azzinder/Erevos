@@ -1568,6 +1568,12 @@ sta nel mezzo.
   dell’account, chiamato Erevos. L’accesso e le chiavi del dispositivo restano cifrati in questo spazio, e sono nei
   backup: dopo un ripristino, lo spazio accede di nuovo, come nuovo dispositivo. Le sue chat nascoste possono avere un
   account Matrix proprio, vedi [Chat nascoste](#hidden).
+- **Accesso unico:** su Android, quando il tuo server Matrix fa accedere le persone altrove (come chiede matrix.org
+  per i nuovi account), **Accedi con accesso unico (SSO)** apre il browser su quella pagina, e torna a Erevos quando
+  hai fatto l’accesso lì; un server con più fornitori ti lascia sceglierne uno. Il browser non passa da Tor, quindi
+  quella pagina vede il tuo indirizzo. Non essendoci una password da dare, Erevos crea le chiavi di firma incrociata
+  dell’account solo quando il server le accetta senza richiederla; altrimenti verifica questo dispositivo con le emoji
+  o un codice QR da un altro dei tuoi, o inserisci la chiave di sicurezza.
 - **Chat:** **Nuova chat** avvia una chat cifrata con un ID Matrix. Gli inviti compaiono per primi, con **Partecipa** e
   **Rifiuta**.
 - **Gruppi:** **Nuovo gruppo**, nella schermata di Matrix, crea un gruppo cifrato da un nome e dagli ID Matrix che
@@ -1618,6 +1624,12 @@ sta nel mezzo.
   mezzo senza essere visto, e la chat dice **Verificato con le emoji**. **Verifica questo dispositivo con un altro
   tuo**, nella schermata di Matrix, fa lo stesso con il tuo Element, perché si fidi del dispositivo di Erevos. Anche
   Element può avviare l’una o l’altra.
+- **Verifica con codice QR:** quando entrambi hanno accettato una verifica, e le due app lo sanno fare, la scheda
+  mostra un codice e **Fotografa il loro codice**. Lascia che l’altra app fotografi il codice mostrato qui (in
+  Element: **Scansiona**), poi rispondi **Sì, lo dice** quando dice che la verifica è andata bene; oppure fotografa il
+  codice che mostra la loro app. **Confronta le emoji invece** va per l’altra strada. Il codice contiene le chiavi dei
+  due account (o dispositivi) e un segreto monouso, così un codice di qualcuno in mezzo non torna. Nulla è considerato
+  fidato finché entrambi non hanno detto di aver finito.
 - **Chiave di sicurezza:** in **Chiave di sicurezza**, nella schermata di Matrix, inserisci la chiave (o frase) di
   sicurezza creata da Element: i messaggi precedenti si aprono dal backup delle chiavi dell’account, le nuove chiavi
   vi entrano, e gli altri tuoi dispositivi si fidano di questo. Un account senza può **Crea una chiave di sicurezza**

@@ -9,7 +9,7 @@
 export type Run = { dark: boolean; length: number };
 
 /** The modules of the QR code for `text`, row by row, without the quiet zone around it. */
-export function qrRows(text: string): Run[][] {
+export function qrRows(text: string | Uint8Array): Run[][] {
   const { size, dark } = qrMatrix(text);
   const rows: Run[][] = [];
   for (let row = 0; row < size; row++) {
@@ -28,14 +28,14 @@ export function qrRows(text: string): Run[][] {
 export type Level = 'L' | 'M';
 
 /**
- * The QR code for `text` (its UTF-8 bytes): `size` modules a side, `dark` row by row, 1 for a dark
+ * The QR code for `text` (its UTF-8 bytes, or the bytes given): `size` modules a side, `dark` row by row, 1 for a dark
  * module. The smallest version that holds it, with the mask that scores best; `mask` forces one.
  */
-export function qrMatrix(text: string, level?: Level, mask?: number): { size: number; dark: Uint8Array; mask: number } {
+export function qrMatrix(text: string | Uint8Array, level?: Level, mask?: number): { size: number; dark: Uint8Array; mask: number } {
   // Medium error correction, which still reads with a smudge or glare on the screen. A contact
   // link with its keys is long, and with low error correction its modules stay larger.
   const ecl = level ?? (text.length > 1000 ? 'L' : 'M');
-  const bytes = utf8(text);
+  const bytes = typeof text === 'string' ? utf8(text) : [...text];
   let version = 1;
   for (; ; version++) {
     if (version > 40) throw new Error('Too long for a QR code');
@@ -356,7 +356,7 @@ function alignment(version: number): number[] {
  * around it, as scanners expect: each module a square of whole pixels, as many as fit in `pixels`
  * (2 at least), so the picture shows sharp at its own size. `size` is its width and height.
  */
-export function qrPng(text: string, pixels: number, quiet = 4): { png: Uint8Array; size: number } {
+export function qrPng(text: string | Uint8Array, pixels: number, quiet = 4): { png: Uint8Array; size: number } {
   const { size: count, dark } = qrMatrix(text);
   const cell = Math.max(2, Math.floor(pixels / (count + quiet * 2)));
   const size = cell * (count + quiet * 2);

@@ -28,3 +28,9 @@ export function decodeQr(pixels: Uint8ClampedArray, width: number, height: numbe
   const found = jsQR(pixels, width, height, { inversionAttempts: 'attemptBoth' });
   return found ? found.data : null;
 }
+
+/** The bytes of the QR code in RGBA pixels as written (a Matrix check's code is bytes), or null when there is none. */
+export function decodeQrBytes(pixels: Uint8ClampedArray, width: number, height: number): Uint8Array | null {
+  const found = jsQR(pixels, width, height, { inversionAttempts: 'attemptBoth' });
+  return found ? Uint8Array.from(found.binaryData) : null;
+}

@@ -4,10 +4,15 @@ import { currentSpace } from '../lock/keys';
 import { lastRestore } from '../lock/restored';
 import type { Holder } from '../lock/sealed-file';
 import { canMatrix } from './core';
+import { randomBytes, sha256Bytes, toHex } from './crypto';
 import { t } from './i18n';
 import {
   deleteMessage,
   findHomeserver,
+  loginWays,
+  signInWithToken,
+  ssoLink,
+  type LoginWays,
   createGroup,
   inviteToRoom,
   joinRoom,
@@ -37,12 +42,15 @@ import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } f
 import {
   acceptVerification,
   cancelVerification,
+  confirmScanned,
   confirmVerification,
   forgetVerifications,
   onVerificationChange,
   requestVerification,
-  verifications,
+  scanCode,
   type Verification,
+  verifications,
+  verifyByEmoji,
 } from './matrix-verify';
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { keepMatrixPush, startMatrixPush, stopMatrixPush } from './matrix-push';
@@ -432,6 +440,62 @@ export async function matrixSignIn(who: string, password: string, server = ''): 
   }
 }
 
+// A sign-in with single sign-on under way: whose account it is for (the space's, or a hidden
+// place's, which may have locked and opened again meanwhile), its homeserver, and the one-use mark
+// the address back carries, so a login token that comes for another sign-in, or long after, is not
+// taken. In memory only: closing the app ends it.
+let sso: { holder: Holder; space: number; whose: string; homeserver: string; mark: string; at: number } | null = null;
+// Which key an account is sealed with, without keeping the key.
+const whoseOf = (it: Live) => toHex(sha256Bytes(it.key));
+const SSO_LASTS = 10 * 60_000;
+
+/** The ways the homeserver of `whoOrServer` lets one sign in. */
+export async function matrixLoginWays(whoOrServer: string): Promise<LoginWays & { homeserver: string }> {
+  try {
+    const homeserver = await findHomeserver(whoOrServer);
+    return { homeserver, ...(await loginWays(homeserver)) };
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
+/**
+ * Starts signing in with single sign-on: answers the page for the browser, which comes back to
+ * `back` (Erevos's own address) with a login token once the person signed in there.
+ */
+export function matrixSsoStart(homeserver: string, back: string, idp?: string): string {
+  const it = acting();
+  if (!it || it.stopped) throw new Error(t('There is no Matrix account in this space.'));
+  const mark = toHex(randomBytes(16));
+  sso = { holder: it.holder, space: it.space, whose: whoseOf(it), homeserver, mark, at: Date.now() };
+  return ssoLink(homeserver, `${back}${back.includes('?') ? '&' : '?'}sso=${mark}`, idp);
+}
+
+/** Ends a sign-in with single sign-on: the login token that came back with `mark`. */
+export async function matrixSsoFinish(mark: string, token: string): Promise<void> {
+  const under = sso;
+  const it = acting();
+  const same = !!under && !!it && !it.stopped && it.holder === under.holder && it.space === under.space && whoseOf(it) === under.whose;
+  if (!under || under.mark !== mark || Date.now() - under.at > SSO_LASTS || !same || !it) {
+    sso = null;
+    throw new Error(t('This sign-in is not the one Erevos started, or it took too long. Start it again.'));
+  }
+  sso = null;
+  if (it.state) throw new Error(t('This space is signed in to Matrix already.'));
+  try {
+    const state = await signInWithToken(under.homeserver, token);
+    state.restored = await lastRestore();
+    await changeAccount(it, async () => {
+      it.state = state;
+      it.problem = '';
+    });
+    await saveMatrix(it.space, it.key, state, it.holder);
+    void loop(it);
+  } catch (error) {
+    throw new Error(reason(error));
+  }
+}
+
 /** Signs out, and forgets the account in this space. */
 export async function matrixSignOut(): Promise<void> {
   const it: Live = need();
@@ -634,6 +698,24 @@ export function matrixVerifyAccept(id: string): Promise<void> {
 export function matrixVerifyMatch(id: string, match: boolean): Promise<void> {
   const it = need();
   return changeAccount(it, () => confirmVerification(it.state, id, match));
+}
+
+/** Compares emoji instead of a code. */
+export function matrixVerifyEmoji(id: string): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => verifyByEmoji(it.state, id));
+}
+
+/** Their code, photographed: checked, and its secret sent back. */
+export function matrixVerifyScan(id: string, bytes: Uint8Array): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => scanCode(it.state, id, bytes));
+}
+
+/** They photographed our code: their app said it went well, or not. */
+export function matrixVerifyScanned(id: string, ok: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, () => confirmScanned(it.state, id, ok));
 }
 
 export function matrixVerifyCancel(id: string): Promise<void> {

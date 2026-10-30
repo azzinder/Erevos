@@ -1,8 +1,9 @@
 import { sha256 } from '@noble/hashes/sha2.js';
 
-import { toBase64, utf8Encode } from './crypto';
+import { randomBytes, toBase64, utf8Encode } from './crypto';
 import { mark, t } from './i18n';
 import { call, core, enc, sendEvent, setVerificationHandler, signWith, txn, type Json, type MatrixState, type VerificationEvent } from './matrix';
+import { QR_SECRET_BYTES, readMatrixQr, type MatrixQr } from './matrix-qr';
 
 // Checking a Matrix device by emoji (docs/matrix.md; spec: Key verification, m.sas.v1): both
 // people see seven pictures made from a secret their two devices agreed on, and say whether they
@@ -11,6 +12,12 @@ import { call, core, enc, sendEvent, setVerificationHandler, signWith, txn, type
 // key. Element and other Matrix apps do the same, so a check can go either way between them and
 // Erevos: with another person in the chat with them (the steps go as room events), or between two
 // devices of one account (the steps go to-device, as Element's "Verify this session" does).
+//
+// A check can go by QR code instead (lib/matrix-qr.ts, m.qr_code.show.v1 / m.reciprocate.v1), as
+// Element offers it: one device shows a code of two keys and a one-use secret, the other photographs
+// it, checks that the code's second key is its own side's and so learns the first, and sends back
+// the secret; the device that showed it then asks its person whether the other app said the check
+// went well, and learns the second key. Nothing is trusted from a code until both sides said done.
 //
 // A check lives only in memory, for the minutes it takes, its one-use key with it: nothing of it
 // is kept but what it proved (MatrixState.verified). Once one proves an account's master key, or
@@ -23,6 +30,10 @@ export type VerificationPhase =
   | 'asked'
   /** Waiting for the other side (to accept, or to send its key). */
   | 'waiting'
+  /** Both are ready: show our code, photograph theirs, or compare emoji. */
+  | 'choose'
+  /** They photographed our code and sent its secret back: did their app say it went well? */
+  | 'scanned'
   /** The seven pictures are ready to compare. */
   | 'compare'
   /** We said they match; waiting for the other side's keys. */
@@ -55,9 +66,20 @@ export type Verification = {
   theirMac?: Json;
   macSent?: boolean;
   theirKeys?: { device?: string; deviceKeys?: Json; master?: string };
+  /** The ways the other side offered. */
+  theirMethods?: string[];
+  /** The code we show, once there is one. */
+  qr?: MatrixQr;
+  /** What a code proves once both sides said done: their account's master key, a device's key, or our own master key. */
+  trust?: { master?: string; device?: string; ownMaster?: string };
 };
 
 const SAS = 'm.sas.v1';
+const QR_SHOW = 'm.qr_code.show.v1';
+const QR_SCAN = 'm.qr_code.scan.v1';
+const RECIPROCATE = 'm.reciprocate.v1';
+/** The ways Erevos offers: emoji, and showing and photographing a code. */
+const METHODS = [SAS, QR_SHOW, QR_SCAN, RECIPROCATE];
 const AGREEMENT = 'curve25519-hkdf-sha256';
 const MAC_METHOD = 'hkdf-hmac-sha256.v2';
 /** A check asked longer ago than this, or not answered for as long, is dropped (as the spec asks). */
@@ -145,7 +167,7 @@ async function cancel(state: MatrixState, v: Verification, code: string): Promis
 
 /** Asks someone to check by emoji: in the chat with them (`roomId`), or, without one, another device of ours. */
 export async function requestVerification(state: MatrixState, userId: string, roomId?: string): Promise<Verification> {
-  const content = { from_device: state.deviceId, methods: [SAS] };
+  const content = { from_device: state.deviceId, methods: METHODS };
   let id: string;
   if (roomId) {
     const body = `${state.userId} asks to check your devices by emoji. Your app may not do it yet.`;
@@ -169,7 +191,119 @@ export async function acceptVerification(state: MatrixState, id: string): Promis
   v.phase = 'waiting';
   v.at = Date.now();
   told();
-  await send(state, v, 'm.key.verification.ready', { from_device: state.deviceId, methods: [SAS] });
+  await send(state, v, 'm.key.verification.ready', { from_device: state.deviceId, methods: METHODS });
+  await offerCodes(state, v);
+}
+
+// Once both are ready: when a code can go either way, the person chooses (our code shown, if we
+// can make one); otherwise the emoji, which the side that asked starts, as before.
+async function offerCodes(state: MatrixState, v: Verification): Promise<void> {
+  const theirs = v.theirMethods ?? [];
+  const byCode = theirs.includes(RECIPROCATE) && (theirs.includes(QR_SCAN) || theirs.includes(QR_SHOW));
+  if (!byCode) return;
+  v.theirKeys ??= await theirKeys(state, v);
+  if (theirs.includes(QR_SCAN)) v.qr = (await ourCode(state, v)) ?? undefined;
+  if (!v.starter) v.phase = 'choose';
+}
+
+/** Our account's master key, when this device trusts it: it holds the cross-signing keys, or a check proved it. */
+async function trustedOwnMaster(state: MatrixState): Promise<string | undefined> {
+  if (state.crossSigning) return (await core<{ public: string }>('signing_key_public', { secret: state.crossSigning.master })).public;
+  return state.verified?.[state.userId]?.master;
+}
+
+// The code we show, as the spec has it for who the other side is and what this device trusts; null
+// when we cannot make one honestly (we do not know a key it would need).
+async function ourCode(state: MatrixState, v: Verification): Promise<MatrixQr | null> {
+  const secret = b64(randomBytes(QR_SECRET_BYTES));
+  const ownMaster = await trustedOwnMaster(state);
+  if (v.userId !== state.userId) {
+    if (!ownMaster || !v.theirKeys?.master) return null;
+    return { mode: 0, id: v.id, first: ownMaster, second: v.theirKeys.master, secret };
+  }
+  if (ownMaster) return v.theirKeys?.device ? { mode: 1, id: v.id, first: ownMaster, second: v.theirKeys.device, secret } : null;
+  const device = (await core<{ ed25519: string }>('account_keys', { account: state.account })).ed25519;
+  return v.theirKeys?.master ? { mode: 2, id: v.id, first: device, second: v.theirKeys.master, secret } : null;
+}
+
+/** Compares emoji instead of a code: starts it from this side. */
+export async function verifyByEmoji(state: MatrixState, id: string): Promise<void> {
+  const v = own(state).get(id);
+  if (!v || v.phase !== 'choose' || v.starter) return;
+  if (!(v.theirMethods ?? []).includes(SAS)) throw new Error(t('Their app does not compare emoji: show or photograph a code.'));
+  v.phase = 'waiting';
+  told();
+  await sendStart(state, v);
+}
+
+/**
+ * The bytes of their code, photographed: checked against what this side knows (its own master key
+ * or device key in the code's second place), and its secret sent back. What its first key proves
+ * is trusted once they say done.
+ */
+export async function scanCode(state: MatrixState, id: string, bytes: Uint8Array): Promise<void> {
+  const v = own(state).get(id);
+  if (!v || v.phase !== 'choose' || v.starter) return;
+  const qr = readMatrixQr(bytes);
+  if (!qr) throw new Error(t('This is not the code of a Matrix check. Photograph the code their app shows for this check.'));
+  if (qr.id !== v.id) throw new Error(t('This code is for another check. Photograph the code their app shows for this check.'));
+  v.theirKeys ??= await theirKeys(state, v);
+  const ownMaster = await trustedOwnMaster(state);
+  const device = (await core<{ ed25519: string }>('account_keys', { account: state.account })).ed25519;
+  let trust: Verification['trust'];
+  if (v.userId !== state.userId) {
+    // Their master key first, ours second.
+    if (qr.mode !== 0) return cancel(state, v, 'm.key_mismatch');
+    if (!ownMaster) throw new Error(t('This device does not know your own Matrix key yet, so it cannot check their code. Compare emoji, or let them photograph yours.'));
+    if (qr.second !== ownMaster || qr.first !== v.theirKeys?.master) return cancel(state, v, 'm.key_mismatch');
+    trust = { master: qr.first };
+  } else if (qr.mode === 1) {
+    // Another device of ours that trusts our master key: the master key first, this device second.
+    if (qr.second !== device || (v.theirKeys?.master && qr.first !== v.theirKeys.master)) return cancel(state, v, 'm.key_mismatch');
+    trust = { ownMaster: qr.first };
+  } else if (qr.mode === 2) {
+    // Another device of ours that does not trust our master key yet: its own key first, the master key second.
+    if (!ownMaster) throw new Error(t('Neither device knows your own Matrix key yet. Compare emoji instead.'));
+    if (qr.second !== ownMaster || qr.first !== v.theirKeys?.device) return cancel(state, v, 'm.key_mismatch');
+    trust = { device: qr.first };
+  } else {
+    return cancel(state, v, 'm.key_mismatch');
+  }
+  v.trust = trust;
+  v.starter = 'us';
+  v.phase = 'confirmed';
+  told();
+  v.start = await send(state, v, 'm.key.verification.start', { from_device: state.deviceId, method: RECIPROCATE, secret: qr.secret });
+}
+
+/** They photographed our code: their app said the check went well, or it did not. */
+export async function confirmScanned(state: MatrixState, id: string, ok: boolean): Promise<void> {
+  const v = own(state).get(id);
+  if (!v || v.phase !== 'scanned' || !v.qr) return;
+  if (!ok) {
+    await cancel(state, v, 'm.user');
+    told();
+    return;
+  }
+  // What our code's second key was, now proved too.
+  const qr = v.qr;
+  v.trust = qr.mode === 0 ? { master: qr.second } : qr.mode === 1 ? { device: qr.second } : { ownMaster: qr.second };
+  await send(state, v, 'm.key.verification.done', {});
+  await trustCode(state, v);
+  told();
+}
+
+// What a code proved, kept and, with our cross-signing keys here, signed for other apps to see.
+async function trustCode(state: MatrixState, v: Verification): Promise<void> {
+  const trust = v.trust ?? {};
+  const proved = ((state.verified ??= {})[v.userId] ??= { devices: {} });
+  if (trust.master) proved.master = trust.master;
+  if (trust.device && v.deviceId) proved.devices[v.deviceId] = trust.device;
+  if (trust.ownMaster) ((state.verified[state.userId] ??= { devices: {} }).master = trust.ownMaster);
+  v.phase = 'done';
+  delete v.qr;
+  if (trust.master && v.theirKeys) v.theirKeys.master = trust.master;
+  await signProved(state, v, !!trust.master, !!trust.device && trust.device === v.theirKeys?.device).catch(() => undefined);
 }
 
 /** Stops a check: declined, or ended by the person. */
@@ -250,11 +384,11 @@ async function checkMac(state: MatrixState, v: Verification): Promise<void> {
 
 // With our cross-signing keys on this device: another device of ours gets our self-signing key's
 // signature, another person's master key our user-signing key's, so other apps see them checked.
-async function signProved(state: MatrixState, v: Verification, masterProved: boolean): Promise<void> {
+async function signProved(state: MatrixState, v: Verification, masterProved: boolean, deviceProved = true): Promise<void> {
   const keys = state.crossSigning;
   if (!keys) return;
   const sign = (object: Json, secret: string) => signWith(state, object, secret);
-  if (v.userId === state.userId && v.theirKeys?.deviceKeys) {
+  if (v.userId === state.userId && deviceProved && v.theirKeys?.deviceKeys) {
     await call(state, 'POST', '/keys/signatures/upload', { [state.userId]: { [v.deviceId!]: await sign(v.theirKeys.deviceKeys, keys.selfSigning) } });
   } else if (v.userId !== state.userId && masterProved && v.theirKeys?.master) {
     const answer = await call(state, 'POST', '/keys/query', { device_keys: { [v.userId]: [] } });
@@ -316,8 +450,9 @@ async function take(state: MatrixState, event: VerificationEvent): Promise<boole
     const at = event.roomId ? (event.ts ?? 0) : Number(content.timestamp ?? 0);
     if (!id || Math.abs(Date.now() - at) > TOO_OLD || own(state).has(id)) return false;
     if (event.roomId && content.to !== state.userId) return false;
-    if (!offers(content, 'methods', SAS) || typeof content.from_device !== 'string') return false;
-    own(state).set(id, { id, roomId: event.roomId, userId: sender, deviceId: content.from_device, ours: false, phase: 'asked', at: Date.now() });
+    const methods = Array.isArray(content.methods) ? (content.methods as unknown[]).filter((m): m is string => typeof m === 'string') : [];
+    if (!(methods.includes(SAS) || (methods.includes(RECIPROCATE) && methods.includes(QR_SHOW))) || typeof content.from_device !== 'string') return false;
+    own(state).set(id, { id, roomId: event.roomId, userId: sender, deviceId: content.from_device, ours: false, phase: 'asked', at: Date.now(), theirMethods: methods });
     return true;
   }
   const relates = (content['m.relates_to'] as Json | undefined)?.event_id;
@@ -334,15 +469,30 @@ async function take(state: MatrixState, event: VerificationEvent): Promise<boole
       stop(v, reasonOf(content.code));
       return true;
     case 'ready':
-      if (!v.ours || v.starter) return false;
+      if (!v.ours || v.starter || v.phase !== 'waiting') return false;
+      v.theirMethods = Array.isArray(content.methods) ? (content.methods as unknown[]).filter((m): m is string => typeof m === 'string') : [];
       v.theirKeys = await theirKeys(state, v);
-      await sendStart(state, v);
+      await offerCodes(state, v);
+      // No code either way: the emoji, if they offered it.
+      if ((v.phase as VerificationPhase) !== 'choose') {
+        if (!v.theirMethods.includes(SAS)) return cancel(state, v, 'm.unknown_method').then(() => true);
+        await sendStart(state, v);
+      }
       return true;
     case 'start': {
       // Both started at once: the side whose user (then device) sorts first goes on (as the spec says).
       if (v.starter === 'us') {
         const weFirst = state.userId < sender || (state.userId === sender && state.deviceId < String(content.from_device));
         if (weFirst) return false;
+      }
+      if (content.method === RECIPROCATE) {
+        // They photographed our code: the secret has to be the one in it.
+        if (!v.qr || v.starter || v.phase !== 'choose') return cancel(state, v, 'm.unexpected_message').then(() => true);
+        if (content.secret !== v.qr.secret) return cancel(state, v, 'm.key_mismatch').then(() => true);
+        v.starter = 'them';
+        v.start = content;
+        v.phase = 'scanned';
+        return true;
       }
       if (content.method !== SAS) return cancel(state, v, 'm.unknown_method').then(() => true);
       if (!offers(content, 'key_agreement_protocols', AGREEMENT) || !offers(content, 'hashes', 'sha256') || !offers(content, 'message_authentication_codes', MAC_METHOD)) {
@@ -395,7 +545,11 @@ async function take(state: MatrixState, event: VerificationEvent): Promise<boole
       if (v.phase === 'confirmed') await checkMac(state, v);
       return true;
     case 'done':
-      return false;
+      // They said our photograph of their code was right: what it proved holds now.
+      if (v.starter !== 'us' || v.phase !== 'confirmed' || !v.trust || v.start?.method !== RECIPROCATE) return false;
+      await send(state, v, 'm.key.verification.done', {});
+      await trustCode(state, v);
+      return true;
     default:
       return false;
   }

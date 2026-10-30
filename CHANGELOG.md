@@ -53,6 +53,17 @@ On main, not released yet:
   (XEP-0359, kept as `sid`). **typing…** shows while the other person's app says they write (XEP-0085). See [XMPP](#xmpp).
 - **See who is writing in a Matrix chat**: `m.typing` from the sync's `ephemeral` part shows **typing…** under the
   chat (`matrixTyping` in `lib/matrix.ts`, trusted a minute without news). See [Matrix](#matrix).
+- **Check a Matrix device by QR code** (`lib/matrix-qr.ts`, `lib/matrix-verify.ts`): requests and readies offer
+  `m.qr_code.show.v1`, `m.qr_code.scan.v1` and `m.reciprocate.v1` beside `m.sas.v1`; both sides then choose. The code
+  is the spec's (MATRIX, version 2, modes 0, 1 and 2), made only from keys this device trusts; a photographed code's
+  second key has to be this side's own, and what it proves is trusted only after both sides sent done. Photos are read
+  as bytes (`readQrPhotoBytes`: ZXing's byte segments on Android, jsQR's `binaryData` on the web). Before, an Erevos
+  that asked started the emoji at once; now it waits for the choice, unless the other app offers no code.
+- **Sign in to Matrix with single sign-on** (Android): `loginWays` reads the server's `/login` flows; `ssoLink` opens
+  `/login/sso/redirect[/{idp}]` in the browser, which comes back to `erevos://matrix-sso` with a `loginToken`, then
+  `signInWithToken` logs in with `m.login.token` (`app/matrix-sso.tsx`, `matrixSsoStart`/`matrixSsoFinish`). A
+  sign-in waits 10 minutes, for the same space and key only. Cross-signing keys are made only when the server takes
+  them without asking again (MSC3967). See [Matrix](#matrix).
 - **Run an XMPP group**: an admin sets the subject (a `subject` message), takes members out (affiliation `none`; in a
   channel, role `none` by nick) or bars them (`outcast`); the owner renames the group (its settings form, and the
   bookmark) and makes members admins (`removeFromXmppGroup`, `setXmppGroupAdmin`, `renameXmppGroup` in

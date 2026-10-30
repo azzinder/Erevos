@@ -23,6 +23,7 @@ import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
 import { setThroughTor } from '../lib/relay';
 import {
+  core,
   createGroup,
   defaultMatrixHttp,
   inviteToRoom,
@@ -42,6 +43,9 @@ import {
   takeBackReaction,
   sendStateEvent,
   fetchOwnAvatar,
+  loginWays,
+  signInWithToken,
+  ssoLink,
   roomAvatar,
   sendText,
   sendTyping,
@@ -59,7 +63,8 @@ import {
 import { ChangedFileError, decryptFile, encryptFile, fetchFile, fetchPicture, MATRIX_MOST, MatrixFileTooLargeError, mimeOfName, sendFile, uploadPicture } from '../lib/matrix-media';
 import { inboxParts, matrixInboxRows, showsIn } from '../lib/inbox';
 import { backUpKeys, keyOfRecovery, recoveryKeyOf, setUpRecovery, unlockRecovery, WrongRecoveryError } from '../lib/matrix-backup';
-import { acceptVerification, confirmVerification, isVerified, requestVerification, verifications } from '../lib/matrix-verify';
+import { qrBytes, readMatrixQr } from '../lib/matrix-qr';
+import { acceptVerification, confirmScanned, confirmVerification, isVerified, requestVerification, scanCode, verifications, verifyByEmoji } from '../lib/matrix-verify';
 import { matrixNow, matrixRead, matrixSignIn, matrixUnread, runMatrix, stopMatrix } from '../lib/matrix-store';
 import { onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import { waveformBars, waveformOf } from '../lib/voice';
@@ -543,7 +548,12 @@ test('two people check each other by emoji in their chat, and see the same seven
   assert.equal(theirs.phase, 'asked');
   assert.equal(bob.rooms[room.id].messages.at(-1)!.text, 'Asked to check devices by emoji.');
   await acceptVerification(bob, asked.id);
-  // ready → start → accept → key → key: each side syncs in turn.
+  // Both can show and photograph codes: the person chooses; here, the emoji.
+  await sync(alice, 0);
+  assert.deepEqual([asked.phase, theirs.phase], ['choose', 'choose']);
+  assert.ok(asked.qr && theirs.qr);
+  await verifyByEmoji(alice, asked.id);
+  // start → accept → key → key: each side syncs in turn.
   for (let i = 0; i < 3; i++) {
     await sync(alice, 0);
     await sync(bob, 0);
@@ -571,6 +581,8 @@ test('two people check each other by emoji in their chat, and see the same seven
   const again = await requestVerification(bob, alice.userId, room.id);
   await sync(alice, 0);
   await acceptVerification(alice, again.id);
+  await sync(bob, 0);
+  await verifyByEmoji(bob, again.id);
   for (let i = 0; i < 3; i++) {
     await sync(bob, 0);
     await sync(alice, 0);
@@ -593,6 +605,8 @@ test('a new device of ours is checked by emoji from one that holds our cross-sig
   const theirs = verifications(carol).find((v) => v.id === asked.id)!;
   assert.equal(theirs.deviceId, carol2.deviceId);
   await acceptVerification(carol, asked.id);
+  await sync(carol2, 0);
+  await verifyByEmoji(carol2, asked.id);
   for (let i = 0; i < 3; i++) {
     await sync(carol2, 0);
     await sync(carol, 0);
@@ -607,6 +621,121 @@ test('a new device of ours is checked by emoji from one that holds our cross-sig
   // The first device's self-signing key now signs the new one, so other apps see it checked.
   const signatures = server.deviceKeys.get(carol.userId)!.get(carol2.deviceId)!.signatures[carol.userId];
   assert.equal(Object.keys(signatures).length, 2);
+});
+
+test('two people check each other by QR code: one photographs the other\'s, the other confirms', { skip: !coreReady }, async () => {
+  const alice = await signIn(HS, '@gail:example.org', PASSWORD);
+  const bob = await signIn(HS, 'hugo', PASSWORD);
+  const room = await startChat(alice, bob.userId);
+  await sync(bob, 0);
+  await joinRoom(bob, room.id);
+  await sync(bob, 0);
+  await sync(alice, 0);
+  const asked = await requestVerification(alice, bob.userId, room.id);
+  await sync(bob, 0);
+  const theirs = verifications(bob).find((v) => v.id === asked.id)!;
+  await acceptVerification(bob, asked.id);
+  await sync(alice, 0);
+  assert.deepEqual([asked.phase, theirs.phase], ['choose', 'choose']);
+  // Mode 0: Gail's master key, then Hugo's as she knows it.
+  const shown = asked.qr!;
+  assert.equal(shown.mode, 0);
+  assert.equal(shown.id, asked.id);
+  const bytes = qrBytes(shown);
+  assert.deepEqual(readMatrixQr(bytes), shown);
+  assert.deepEqual([...bytes.subarray(0, 8)], [...new TextEncoder().encode('MATRIX'), 2, 0]);
+  // A code of another check, or one with a key changed, is refused.
+  await assert.rejects(scanCode(bob, asked.id, qrBytes({ ...shown, id: '$other' })));
+  assert.equal(theirs.phase, 'choose');
+  // Hugo photographs Gail's code and sends its secret back.
+  await scanCode(bob, asked.id, bytes);
+  assert.equal(theirs.phase, 'confirmed');
+  await sync(alice, 0);
+  assert.equal(asked.phase, 'scanned');
+  // Nothing is trusted yet on either side.
+  assert.ok(!isVerified(bob, alice.userId) && !isVerified(alice, bob.userId));
+  await confirmScanned(alice, asked.id, true);
+  assert.equal(asked.phase, 'done');
+  assert.equal(alice.verified![bob.userId].master, shown.second);
+  await sync(bob, 0);
+  assert.equal(theirs.phase, 'done');
+  assert.equal(bob.verified![alice.userId].master, shown.first);
+  // Each user-signing key signed the other's master key.
+  assert.equal(Object.keys(server.master.get(bob.userId)!.signatures[alice.userId] ?? {}).length, 1);
+  assert.equal(Object.keys(server.master.get(alice.userId)!.signatures[bob.userId] ?? {}).length, 1);
+
+  // A wrong secret stops the check; so does a code whose keys are not what the scanner knows.
+  const again = await requestVerification(alice, bob.userId, room.id);
+  await sync(bob, 0);
+  await acceptVerification(bob, again.id);
+  await sync(alice, 0);
+  const forged = { ...again.qr!, second: shown.first };
+  await scanCode(bob, again.id, qrBytes(forged));
+  assert.equal(verifications(bob).find((v) => v.id === again.id)!.phase, 'cancelled');
+});
+
+test('two devices of ours check each other by QR code, either way', { skip: !coreReady }, async () => {
+  const ida = await signIn(HS, '@ida:example.org', PASSWORD);
+  const ida2 = await signIn(HS, 'ida', PASSWORD);
+  assert.ok(ida.crossSigning && !ida2.crossSigning);
+  // The new device shows mode 2 (its own key, then the master key), and the first photographs it.
+  const asked = await requestVerification(ida2, ida.userId);
+  await sync(ida, 0);
+  const theirs = verifications(ida).find((v) => v.id === asked.id)!;
+  await acceptVerification(ida, asked.id);
+  await sync(ida2, 0);
+  assert.equal(asked.qr!.mode, 2);
+  assert.equal(theirs.qr!.mode, 1);
+  await scanCode(ida, asked.id, qrBytes(asked.qr!));
+  await sync(ida2, 0);
+  assert.equal(asked.phase, 'scanned');
+  await confirmScanned(ida2, asked.id, true);
+  await sync(ida, 0);
+  assert.deepEqual([asked.phase, theirs.phase], ['done', 'done']);
+  assert.ok(isVerified(ida, ida.userId, ida2.deviceId));
+  assert.ok(ida2.verified![ida.userId].master);
+  // The first device signed the new one with its self-signing key.
+  assert.equal(Object.keys(server.deviceKeys.get(ida.userId)!.get(ida2.deviceId)!.signatures[ida.userId]).length, 2);
+
+  // The other way: the first shows mode 1 (master key, then the new device's), the new one photographs it.
+  const ida3 = await signIn(HS, 'ida', PASSWORD);
+  const second = await requestVerification(ida, ida.userId);
+  await sync(ida3, 0);
+  await sync(ida2, 0);
+  const third = verifications(ida3).find((v) => v.id === second.id)!;
+  await acceptVerification(ida3, second.id);
+  await sync(ida, 0);
+  const firstCode = second.qr!;
+  assert.equal(firstCode.mode, 1);
+  assert.equal(firstCode.second, (await core<{ ed25519: string }>('account_keys', { account: ida3.account })).ed25519);
+  await scanCode(ida3, second.id, qrBytes(firstCode));
+  await sync(ida, 0);
+  await confirmScanned(ida, second.id, true);
+  await sync(ida3, 0);
+  assert.equal(third.phase, 'done');
+  assert.equal(ida3.verified![ida.userId].master, firstCode.first);
+  assert.ok(isVerified(ida, ida.userId, ida3.deviceId));
+});
+
+test('single sign-on: the ways are read, the browser\'s page named, and a one-use token signs a new device in', { skip: !coreReady }, async () => {
+  const ways = await loginWays(HS);
+  assert.deepEqual(ways, { password: true, sso: [{ id: 'oidc-lphl', name: 'LPHL' }] });
+  assert.equal(
+    ssoLink(HS, 'erevos://matrix-sso?sso=ab', 'oidc-lphl'),
+    `${HS}/_matrix/client/v3/login/sso/redirect/oidc-lphl?redirectUrl=erevos%3A%2F%2Fmatrix-sso%3Fsso%3Dab`,
+  );
+  // Without a password to give, cross-signing keys are made only where the server takes them freely.
+  server.loginTokens.set('lt1', '@jules:example.org');
+  const jules = await signInWithToken(HS, 'lt1');
+  assert.equal(jules.userId, '@jules:example.org');
+  assert.equal(jules.crossSigning, undefined);
+  await assert.rejects(signInWithToken(HS, 'lt1'));
+  server.firstKeysFree = true;
+  server.loginTokens.set('lt2', '@kim:example.org');
+  const kim = await signInWithToken(HS, 'lt2');
+  server.firstKeysFree = false;
+  assert.ok(kim.crossSigning);
+  assert.ok(server.master.has('@kim:example.org'));
 });
 
 test('Security Keys are written and read as Element does', () => {

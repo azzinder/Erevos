@@ -1,5 +1,5 @@
 import { t } from './i18n';
-import { decodeQr, readSizes } from './qr-decode';
+import { decodeQr, decodeQrBytes, readSizes } from './qr-decode';
 
 // A QR code read from a photo of it, as read-qr.ts, in the web app and on a computer: the photo is
 // chosen from the device's files (an iPhone offers its camera there too) and read in the browser
@@ -17,7 +17,16 @@ function choose(): Promise<globalThis.File | null> {
 }
 
 /** The QR code's text, '' when the photo has none, or null if the owner went back. */
-export async function readQrPhoto(_from: 'photos' | 'camera'): Promise<string | null> {
+export function readQrPhoto(_from: 'photos' | 'camera'): Promise<string | null> {
+  return readPhoto(decodeQr, '');
+}
+
+/** The QR code's bytes as written (a Matrix check's), empty when the photo has none, or null if the owner went back. */
+export function readQrPhotoBytes(_from: 'photos' | 'camera'): Promise<Uint8Array | null> {
+  return readPhoto(decodeQrBytes, new Uint8Array(0));
+}
+
+async function readPhoto<T>(decode: (pixels: Uint8ClampedArray, width: number, height: number) => T | null, none: T): Promise<T | null> {
   const file = await choose();
   if (!file) return null;
   let image: ImageBitmap;
@@ -37,10 +46,10 @@ export async function readQrPhoto(_from: 'photos' | 'camera'): Promise<string | 
       if (!context) break;
       context.imageSmoothingQuality = 'high';
       context.drawImage(image, 0, 0, width, height);
-      const text = decodeQr(context.getImageData(0, 0, width, height).data, width, height);
-      if (text !== null) return text;
+      const found = decode(context.getImageData(0, 0, width, height).data, width, height);
+      if (found !== null) return found;
     }
-    return '';
+    return none;
   } finally {
     image.close();
     // An iPhone keeps a canvas's memory until it is made empty.

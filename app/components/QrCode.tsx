@@ -7,7 +7,7 @@ import { t } from '../lib/i18n';
 // Dark modules on white with a quiet zone of four modules, as scanners expect, even in the
 // app's dark theme. One picture at the screen's own pixels (lib/qr.ts), so it shows sharp and is
 // light to draw even on an older phone, made once while the screen shows it.
-export function QrCode({ text, size = 260 }: { text: string; size?: number }) {
+export function QrCode({ text, size = 260 }: { text: string | Uint8Array; size?: number }) {
   const ratio = PixelRatio.get();
   const shown = useMemo(() => {
     const { png, size: pixels } = qrPng(text, Math.floor(size * ratio));

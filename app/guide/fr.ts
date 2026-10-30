@@ -1626,6 +1626,12 @@ Element : aucun pont ne se met entre les deux.
   appareil du compte, nommé Erevos. La connexion et les clés de l’appareil sont gardées chiffrées dans cet espace, et
   sont dans les sauvegardes : après une restauration, l’espace se reconnecte, comme un nouvel appareil. Ses discussions
   masquées peuvent avoir un compte Matrix à elles, voir [Discussions masquées](#hidden).
+- **Authentification unique :** sur Android, quand ton serveur Matrix fait se connecter les gens ailleurs (comme
+  matrix.org le demande pour les nouveaux comptes), **Se connecter par authentification unique (SSO)** ouvre le
+  navigateur sur cette page, et revient à Erevos une fois connecté là-bas ; un serveur avec plusieurs fournisseurs te
+  laisse en choisir un. Le navigateur ne passe pas par Tor, donc cette page voit ton adresse. Comme il n’y a pas de
+  mot de passe à donner, Erevos ne crée les clés de signature croisée du compte que si le serveur les prend sans
+  redemander ; sinon vérifie cet appareil par emoji ou QR code depuis un autre des tiens, ou entre la clé de sécurité.
 - **Discussions :** **Nouvelle discussion** lance une discussion chiffrée avec un identifiant Matrix. Les invitations
   s’affichent en premier, avec **Rejoindre** et **Refuser**.
 - **Groupes :** **Nouveau groupe**, sur l’écran Matrix, crée un groupe chiffré à partir d’un nom et des ID Matrix que tu
@@ -1678,6 +1684,12 @@ Element : aucun pont ne se met entre les deux.
   Personne ne peut alors être au milieu sans qu’on le voie, et la discussion indique **Vérifié par emoji**.
   **Vérifier cet appareil avec un autre des vôtres**, sur l’écran Matrix, fait de même avec votre propre Element, pour
   qu’il fasse confiance à l’appareil d’Erevos. Element peut aussi lancer l’une ou l’autre.
+- **Vérifier par QR code :** une fois qu’une vérification est acceptée des deux côtés, et que les deux applis le
+  peuvent, la carte montre un code et **Photographier leur code**. Laisse l’autre appli photographier le code montré
+  ici (dans Element : **Scanner**), puis réponds **Oui, elle le dit** quand elle dit que la vérification a réussi ; ou
+  photographie le code que leur appli montre. **Comparer des emoji à la place** passe par l’autre chemin. Le code
+  contient les clés des deux comptes (ou appareils) et un secret à usage unique, donc un code de quelqu’un au milieu
+  ne correspond pas. Rien n’est considéré comme sûr tant que les deux côtés n’ont pas dit terminé.
 - **Clé de sécurité :** sous **Clé de sécurité**, sur l’écran Matrix, saisissez la clé (ou phrase) de sécurité créée
   par Element : les messages précédents s’ouvrent depuis la sauvegarde des clés du compte, les nouvelles clés y vont,
   et vos autres appareils font confiance à celui-ci. Un compte sans clé peut **Créer une clé de sécurité** ici ;

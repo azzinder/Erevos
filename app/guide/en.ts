@@ -1433,6 +1433,12 @@ between.
   account, named Erevos. The sign-in and the device's keys are kept sealed in this space, and are in backups: after a
   restore, the space signs in again, as a new device. Its hidden chats can have a Matrix account of their own, see
   [Hidden chats](#hidden).
+- **Single sign-on:** on Android, when your Matrix server signs people in elsewhere (as matrix.org asks of new
+  accounts), **Sign in with single sign-on** opens the browser on that page, and it comes back to Erevos once you
+  signed in there; a server with several providers lets you pick one. The browser does not go through Tor, so that
+  page sees your address. As there is no password to give, Erevos makes the account's cross-signing keys only when the
+  server takes them without asking again; otherwise check this device by emoji or QR code from another of yours, or
+  enter the Security Key.
 - **Chats:** **New chat** starts an encrypted chat with a Matrix ID. Invites show first, with **Join** and **Decline**.
 - **Groups:** **New group**, on the Matrix screen, makes an encrypted group from a name and the Matrix IDs you write,
   each asked to join, as Element makes one; everyone in it sees who the others are. **Join a group** joins one by its
@@ -1477,6 +1483,11 @@ between.
   same, in the same order, tap **They match** on both phones. Nobody can then sit in between unseen, and the chat
   says **Checked by emoji**. **Check this device with another of yours**, on the Matrix screen, does the same with
   your own Element, so it trusts Erevos's device. Element can start either one too.
+- **Check by QR code:** once both sides accepted a check, and both apps can do it, the card shows a code and
+  **Photograph their code**. Let the other app photograph the code shown here (in Element: **Scan**), then answer
+  **Yes, it does** when it says the check went well; or photograph the code their app shows. **Compare emoji instead**
+  goes the other way. The code holds the two accounts' (or devices') keys and a one-use secret, so a code from anyone
+  in between does not fit. Nothing is trusted until both sides said done.
 - **Security Key:** under **Security Key** on the Matrix screen, enter the Security Key (or Security Phrase) Element
   made: earlier messages open from the account's key backup, new keys go into it, and your other devices trust this
   one. An account with none can **Set up a Security Key** here; write it down, as Erevos does not keep it.

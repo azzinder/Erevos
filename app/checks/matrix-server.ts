@@ -120,6 +120,11 @@ export class Homeserver {
     }
   }
 
+  /** One-use login tokens single sign-on gave, by token: whose. */
+  loginTokens = new Map<string, string>();
+  /** Takes cross-signing keys the first time without asking again (spec 1.11, MSC3967). */
+  firstKeysFree = false;
+
   /** Profile pictures, by user. */
   avatars = new Map<string, string>();
 
@@ -142,6 +147,18 @@ export class Homeserver {
     this.asked.push(`${request.method} ${path}`);
     const body = (request.body ?? {}) as Json;
     if (path === '/.well-known/matrix/client') return this.wellKnown ? { status: 200, json: this.wellKnown } : { status: 404, json: {} };
+    if (path === '/login' && request.method === 'GET') {
+      return { status: 200, json: { flows: [{ type: 'm.login.password' }, { type: 'm.login.sso', identity_providers: [{ id: 'oidc-lphl', name: 'LPHL' }, { id: 7 }] }, { type: 'm.login.token' }] } };
+    }
+    if (path === '/login' && body.type === 'm.login.token') {
+      const user = this.loginTokens.get(String(body.token));
+      this.loginTokens.delete(String(body.token));
+      if (!user) return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Invalid login token' } };
+      const device = `DEV${++this.made}`;
+      const token = `tok${this.made}`;
+      this.tokens.set(token, { user, device });
+      return { status: 200, json: { user_id: user, device_id: device, access_token: token } };
+    }
     if (path === '/login') {
       if (body.password !== PASSWORD) return { status: 403, json: { errcode: 'M_FORBIDDEN', error: 'Invalid password' } };
       const user = `@${body.identifier.user}:example.org`;
@@ -179,8 +196,8 @@ export class Homeserver {
       return { status: 200, json: { device_keys, master_keys, self_signing_keys, user_signing_keys } };
     }
     if (path === '/keys/device_signing/upload') {
-      if (!body.auth) return { status: 401, json: { session: 'uia1', flows: [{ stages: ['m.login.password'] }] } };
-      if (body.auth.password !== PASSWORD || body.auth.session !== 'uia1') return { status: 401, json: { errcode: 'M_FORBIDDEN' } };
+      if (!body.auth && !(this.firstKeysFree && !this.master.has(user))) return { status: 401, json: { session: 'uia1', flows: [{ stages: ['m.login.password'] }] } };
+      if (body.auth && (body.auth.password !== PASSWORD || body.auth.session !== 'uia1')) return { status: 401, json: { errcode: 'M_FORBIDDEN' } };
       this.master.set(user, body.master_key);
       this.selfSigning.set(user, body.self_signing_key);
       this.userSigning.set(user, body.user_signing_key);

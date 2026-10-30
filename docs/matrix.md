@@ -76,6 +76,20 @@ What stays private is what is written.
   proves is kept in `MatrixState.verified`; with the account's cross-signing keys on this device,
   the other device or the other person's master key gets signed too. The 64 pictures and their
   names are `app/lib/sas-emoji.ts` (Matrix's table, Greek added).
+- `app/lib/matrix-qr.ts` and the QR path of `app/lib/matrix-verify.ts`: checking by QR code
+  (m.qr_code.show.v1 / m.qr_code.scan.v1 / m.reciprocate.v1). Mode 0 with another person (our
+  master key, then theirs), 1 and 2 between our own devices (1 when this device trusts the master
+  key: the master key, then the other device's; 2 when it does not: this device's key, then the
+  master key). A code is shown only when this device trusts the key it vouches for. The scanner
+  checks the code's ID and that its second key is its own side's, sends the secret back in a
+  `start` with `m.reciprocate.v1`, and trusts the first key once the other side sends `done`; the
+  side that showed it trusts its second key once its person says the other app reported success.
+- Single sign-on (Android): `loginWays`, `ssoLink` and `signInWithToken` in `app/lib/matrix.ts`;
+  `matrixSsoStart`/`matrixSsoFinish` in `app/lib/matrix-store.ts` keep the pending sign-in 10
+  minutes, tied to the space and its key (a random mark in the return link), and `app/matrix-sso.tsx`
+  takes the browser's `loginToken`. Without a password, cross-signing keys are uploaded only when
+  the server asks no more (MSC3967); otherwise the device is checked from another. Not on the web
+  app: a reload in the browser would lose the pending sign-in.
 - `app/lib/matrix-backup.ts`: the Security Key (base58, as Element writes it, or a phrase through
   PBKDF2-SHA-512 in the core), secret storage (m.secret_storage.v1.aes-hmac-sha2) and key backup
   (m.megolm_backup.v1.curve25519-aes-sha2, libolm's PkEncryption: X25519 in the core, HKDF,
@@ -273,7 +287,7 @@ phone it is restored on go. Not yet on a phone.
 
 - Video thumbnails: a video, as a photo, is fetched only when tapped, so a thumbnail would show
   nothing sooner; sending one would need a frame taken from the video.
-- Checking by QR, and trust shown per device in a group.
+- Trust shown per device in a group.
 - A room's history beyond the 2000 messages it keeps.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
 - Calls on Sailfish OS.

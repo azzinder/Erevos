@@ -334,6 +334,46 @@ export async function signIn(homeserver: string, user: string, password: string)
     password,
     initial_device_display_name: 'Erevos',
   });
+  return newDevice(homeserver, login, { type: 'm.login.password', identifier, password });
+}
+
+/** The ways a homeserver lets one sign in: a password, and single sign-on with its providers. */
+export type LoginWays = { password: boolean; sso: { id: string; name: string }[] | null };
+
+export async function loginWays(homeserver: string): Promise<LoginWays> {
+  const flows = (((await call({ homeserver }, 'GET', '/login')).flows as Json[] | undefined) ?? []).filter((f) => f && typeof f === 'object');
+  const sso = flows.find((f) => f.type === 'm.login.sso');
+  const providers = Array.isArray(sso?.identity_providers) ? (sso!.identity_providers as Json[]) : [];
+  return {
+    password: flows.some((f) => f.type === 'm.login.password'),
+    sso: sso
+      ? providers
+          .filter((p) => typeof p.id === 'string' && typeof p.name === 'string')
+          .slice(0, 12)
+          .map((p) => ({ id: String(p.id), name: String(p.name).slice(0, 60) }))
+      : null,
+  };
+}
+
+/**
+ * The page the browser opens to sign in with single sign-on on `homeserver` (with provider `idp`,
+ * when it named some), which sends the browser back to `back` with a one-use login token.
+ */
+export function ssoLink(homeserver: string, back: string, idp?: string): string {
+  return `${homeserver}/_matrix/client/v3/login/sso/redirect${idp ? `/${enc(idp)}` : ''}?redirectUrl=${enc(back)}`;
+}
+
+/**
+ * Signs in with the one-use token single sign-on gave, as a new device, and publishes its keys.
+ * Cross-signing keys are made only when the server takes them without asking again (spec 1.11),
+ * as there is no password to give; otherwise a check by emoji or the Security Key does it later.
+ */
+export async function signInWithToken(homeserver: string, token: string): Promise<MatrixState> {
+  const login = await call({ homeserver }, 'POST', '/login', { type: 'm.login.token', token, initial_device_display_name: 'Erevos' });
+  return newDevice(homeserver, login, null);
+}
+
+async function newDevice(homeserver: string, login: Json, auth: Json | null): Promise<MatrixState> {
   const { account } = await core<{ account: Json }>('account_new', {});
   const state: MatrixState = {
     homeserver,
@@ -352,7 +392,7 @@ export async function signIn(homeserver: string, user: string, password: string)
   const keys = await core<{ device_keys: Json }>('device_keys', { account, user_id: state.userId, device_id: state.deviceId });
   await call(state, 'POST', '/keys/upload', { device_keys: keys.device_keys });
   await publishOneTimeKeys(state, 50, true);
-  await setUpCrossSigning(state, keys.device_keys, { type: 'm.login.password', identifier, password });
+  await setUpCrossSigning(state, keys.device_keys, auth);
   return state;
 }
 
@@ -380,7 +420,7 @@ export async function signWith(state: MatrixState, object: Json, secret?: string
   return { ...object, signatures: { [state.userId]: { [keyId]: (signed.signatures as Record<string, Json>)[state.userId][keyId] } } };
 }
 
-async function setUpCrossSigning(state: MatrixState, deviceKeys: Json, auth: Json): Promise<void> {
+async function setUpCrossSigning(state: MatrixState, deviceKeys: Json, auth: Json | null): Promise<void> {
   const own = await call(state, 'POST', '/keys/query', { device_keys: { [state.userId]: [] } });
   if ((own.master_keys as Json | undefined)?.[state.userId]) return;
   const [master, selfSigning, userSigning] = await Promise.all([0, 1, 2].map(() => core<{ secret: string; public: string }>('signing_key_new', {})));
@@ -398,6 +438,7 @@ async function setUpCrossSigning(state: MatrixState, deviceKeys: Json, auth: Jso
   // The server asks for the password again: the first try only opens a session for it.
   const first = await http({ method: 'POST', url: `${state.homeserver}/_matrix/client/v3/keys/device_signing/upload`, body, token: state.accessToken });
   if (first.status === 401) {
+    if (!auth) return;
     await call(state, 'POST', '/keys/device_signing/upload', { ...body, auth: { ...auth, session: first.json.session } });
   } else if (first.status < 200 || first.status >= 300) {
     throw new MatrixError(first.status, String(first.json.errcode ?? 'M_UNKNOWN'), String(first.json.error ?? ''));

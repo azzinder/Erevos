@@ -2,15 +2,19 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { t } from '../lib/i18n';
-import { matrixVerifyAccept, matrixVerifyCancel, matrixVerifyMatch } from '../lib/matrix-store';
+import { qrBytes } from '../lib/matrix-qr';
+import { matrixVerifyAccept, matrixVerifyCancel, matrixVerifyEmoji, matrixVerifyMatch, matrixVerifyScan, matrixVerifyScanned } from '../lib/matrix-store';
+import { readQrPhotoBytes } from '../lib/read-qr';
 import type { Verification } from '../lib/matrix-verify';
 import { sasEmoji } from '../lib/sas-emoji';
 import { space } from '../theme/colors';
 
+import { QrCode } from './QrCode';
 import { Button, Card, Row, Text } from './ui';
 
-/** One check by emoji (lib/matrix-verify.ts) as it stands: asked, waiting, the seven pictures to
- *  compare, or how it ended. `name` is the other side's, for a person. */
+/** One check (lib/matrix-verify.ts) as it stands: asked, waiting, the choice of a QR code (ours to
+ *  show, theirs to photograph) or emoji, the seven pictures to compare, or how it ended. `name` is
+ *  the other side's, for a person. */
 export function MatrixVerifyCard({ check, name }: { check: Verification; name: string }) {
   const [note, setNote] = useState('');
   const act = (work: () => Promise<unknown>) => {
@@ -20,7 +24,7 @@ export function MatrixVerifyCard({ check, name }: { check: Verification; name: s
   const cancel = <Button title={t('Cancel')} kind="secondary" compact onPress={() => act(() => matrixVerifyCancel(check.id))} />;
   return (
     <Card>
-      <Text variant="bodyStrong">{t('Check by emoji')}</Text>
+      <Text variant="bodyStrong">{check.phase === 'choose' || check.phase === 'scanned' || check.trust ? t('Check by QR code') : t('Check by emoji')}</Text>
       {check.phase === 'asked' ? (
         <>
           <Text>{check.roomId ? t('{name} asks to check devices by emoji.', { name }) : t('Another of your devices asks to check this one by emoji.')}</Text>
@@ -33,6 +37,42 @@ export function MatrixVerifyCard({ check, name }: { check: Verification; name: s
         <>
           <Text tone="muted">{t('Waiting for the other side…')}</Text>
           <Row>{cancel}</Row>
+        </>
+      ) : check.phase === 'choose' ? (
+        <>
+          {check.qr ? (
+            <>
+              <Text>{t('Let them photograph this code with their app (in Element: Scan).')}</Text>
+              <QrCode text={qrBytes(check.qr)} size={240} />
+            </>
+          ) : null}
+          {check.theirMethods?.includes('m.qr_code.show.v1') ? (
+            <Button
+              title={t('Photograph their code')}
+              kind={check.qr ? 'secondary' : 'primary'}
+              compact
+              onPress={() =>
+                act(async () => {
+                  const bytes = await readQrPhotoBytes('camera');
+                  if (bytes === null) return;
+                  if (!bytes.length) throw new Error(t('No code was found in the photo. Take it again, closer.'));
+                  await matrixVerifyScan(check.id, bytes);
+                })
+              }
+            />
+          ) : null}
+          <Row wrap>
+            {check.theirMethods?.includes('m.sas.v1') ? <Button title={t('Compare emoji instead')} kind="secondary" compact onPress={() => act(() => matrixVerifyEmoji(check.id))} /> : null}
+            {cancel}
+          </Row>
+        </>
+      ) : check.phase === 'scanned' ? (
+        <>
+          <Text>{t('They photographed your code. Does their app say the check went well?')}</Text>
+          <Row wrap>
+            <Button title={t('Yes, it does')} compact onPress={() => act(() => matrixVerifyScanned(check.id, true))} />
+            <Button title={t('No')} kind="secondary" compact onPress={() => act(() => matrixVerifyScanned(check.id, false))} />
+          </Row>
         </>
       ) : check.phase === 'compare' ? (
         <>
@@ -56,7 +96,7 @@ export function MatrixVerifyCard({ check, name }: { check: Verification; name: s
           </Row>
         </>
       ) : check.phase === 'done' ? (
-        <Text>{t('Checked by emoji: this is their real device.')}</Text>
+        <Text>{check.trust ? t('Checked by QR code: nobody sits in between.') : t('Checked by emoji: this is their real device.')}</Text>
       ) : (
         <Text tone="muted">{check.reason}</Text>
       )}

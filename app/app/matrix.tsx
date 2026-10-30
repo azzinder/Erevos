@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
@@ -21,7 +22,9 @@ import {
   matrixRecoveryInfo,
   matrixSetPush,
   matrixSetUpRecovery,
+  matrixLoginWays,
   matrixSignIn,
+  matrixSsoStart,
   matrixUnlock,
   matrixSetAvatar,
   matrixSetSayTyping,
@@ -59,6 +62,7 @@ export default function MatrixScreen() {
   const [groupName, setGroupName] = useState('');
   const [groupPeople, setGroupPeople] = useState('');
   const [address, setAddress] = useState('');
+  const [providers, setProviders] = useState<{ homeserver: string; list: { id: string; name: string }[] } | null>(null);
 
   useEffect(() => {
     runMatrix();
@@ -78,6 +82,12 @@ export default function MatrixScreen() {
         <Text tone="muted">{t('This build of Erevos has no Matrix yet. It comes with the next build of the app.')}</Text>
       </Page>
     );
+  }
+
+  // The browser opens the provider's page, and comes back to Erevos (app/matrix-sso.tsx).
+  async function openSso(homeserver: string, idp?: string) {
+    setProviders(null);
+    await Linking.openURL(matrixSsoStart(homeserver, Linking.createURL('matrix-sso'), idp));
   }
 
   async function run(work: () => Promise<unknown>) {
@@ -152,6 +162,33 @@ export default function MatrixScreen() {
               })
             }
           />
+          {Platform.OS === 'android' ? (
+            <>
+              <Button
+                title={t('Sign in with single sign-on')}
+                kind="secondary"
+                disabled={busy || !(server.trim() || isMatrixId(who))}
+                onPress={() =>
+                  void run(async () => {
+                    const ways = await matrixLoginWays(server.trim() || who);
+                    if (!ways.sso) throw new Error(t('This Matrix server has no single sign-on: sign in with your password.'));
+                    if (ways.sso.length > 1) setProviders({ homeserver: ways.homeserver, list: ways.sso });
+                    else await openSso(ways.homeserver, ways.sso[0]?.id);
+                  })
+                }
+              />
+              {providers ? (
+                <Row wrap>
+                  {providers.list.map((p) => (
+                    <Chip key={p.id} label={p.name} onPress={() => void run(() => openSso(providers.homeserver, p.id))} />
+                  ))}
+                </Row>
+              ) : null}
+              <Text variant="caption" tone="faint">
+                {t('Single sign-on opens the browser, to sign in where your Matrix server sends you (matrix.org asks this of new accounts), then comes back here. The browser does not go through Tor: that page sees your address.')}
+              </Text>
+            </>
+          ) : null}
           <Text variant="caption" tone="faint">
             {where === 'place'
               ? t('Erevos signs in as a new device named Erevos, and keeps the sign-in sealed in these hidden chats only.')

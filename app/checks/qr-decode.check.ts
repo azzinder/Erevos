@@ -1,6 +1,6 @@
 // The web app's QR reader (lib/qr-decode.ts): a contact link's QR code, as Erevos draws it
 // (lib/qr.ts), reads back from its pixels, dark on light and light on dark, and a picture with no
-// code in it reads as none.
+// code in it reads as none; a Matrix check's code reads back as its bytes.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -11,10 +11,11 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import qrcode from 'qrcode-generator';
 
 import { qrMatrix, qrPng, qrRows, type Level } from '../lib/qr';
-import { decodeQr, readSizes } from '../lib/qr-decode';
+import { qrBytes } from '../lib/matrix-qr';
+import { decodeQr, decodeQrBytes, readSizes } from '../lib/qr-decode';
 
 /** RGBA pixels of the QR code for `text`: `size` pixels a module, four modules of quiet zone. */
-function picture(text: string, size: number, invert = false): { pixels: Uint8ClampedArray; width: number; height: number } {
+function picture(text: string | Uint8Array, size: number, invert = false): { pixels: Uint8ClampedArray; width: number; height: number } {
   const rows = qrRows(text);
   const count = rows.length + 8;
   const width = count * size;
@@ -171,4 +172,12 @@ test('a photo reads small first, then near its own size, never larger nor past w
   assert.deepEqual(readSizes(600, 400), [{ width: 600, height: 400 }]);
   // A 36 MP square photo stays under an iPhone's canvas limit.
   for (const { width, height } of readSizes(6000, 6000)) assert.ok(width * height <= 16_777_216);
+});
+
+test("a Matrix check's code is bytes, not words: drawn and read back byte for byte", () => {
+  const key = (n: number) => Buffer.from(new Uint8Array(32).fill(n)).toString('base64').replace(/=+$/, '');
+  const bytes = qrBytes({ mode: 0, id: '$event:example.org', first: key(0xff), second: key(0x80), secret: key(7).slice(0, 22) });
+  // Bytes that are not UTF-8 (0xff, 0x80) come back as they were.
+  const { pixels, width, height } = picture(bytes, 4);
+  assert.deepEqual([...(decodeQrBytes(pixels, width, height) ?? [])], [...bytes]);
 });
