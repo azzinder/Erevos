@@ -394,6 +394,56 @@ export function answerWithin(bytes: Uint8Array): number {
 /** Thrown when the relay did not answer in time: the connection died on the way, or the relay is stuck. */
 const lateError = () => new RelayUnreachableError(t('the relay did not answer in time'));
 
+// A stopped space (lib/forget-me.ts, "Delete me from everywhere"): its queues were deleted on the
+// relays, and nothing may make them again, read them or send from them, or the delete is undone in
+// seconds (lib/queue-move.ts makes anew a queue the relay lost). While the open space is stopped,
+// every request fails as one to a relay that cannot be reached, so what tries again waits and
+// makes nothing, but for those that delete: a queue, a message held for later, a file, an invite
+// not used yet. A session of requests opens only while the space's servers are being cleared.
+
+/** What a stopped space asks of a relay: nothing, as a relay that cannot be reached. */
+export class SpaceStoppedError extends RelayUnreachableError {
+  constructor() {
+    super(t('This space is stopped: it reaches no relay until you start it again.'));
+  }
+}
+
+let stopped = false;
+let clearing = 0;
+
+/** The open space is stopped (`on`), or not: as it opens, and as it closes (false). */
+export function setRelayStopped(on: boolean): void {
+  stopped = on;
+}
+
+/** Whether the open space is stopped. */
+export function relayStopped(): boolean {
+  return stopped;
+}
+
+/** Runs `call` while what a stopped space keeps on the servers is deleted: sessions may open then. */
+export async function whileClearing<T>(call: () => Promise<T>): Promise<T> {
+  clearing += 1;
+  try {
+    return await call();
+  } finally {
+    clearing -= 1;
+  }
+}
+
+// What a stopped space may still ask: requests that delete. A file's through another relay only to delete it.
+function deletes(bytes: Uint8Array): boolean {
+  const op = bytes[0];
+  if (op === DELETE || op === UNLATER || op === FILE_DELETE || op === INVITES || op === UNINVITE) return true;
+  if (op !== FILE_VIA || bytes.length < 3) return false;
+  const length = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint16(1);
+  return bytes[3 + length] === FILE_DELETE;
+}
+
+function refuseStopped(bytes: Uint8Array | null): void {
+  if (stopped && !(bytes && deletes(bytes))) throw new SpaceStoppedError();
+}
+
 /** The relay at `url` could not prove the key this phone keeps for it: someone may be in between, or the relay has a new key. */
 export class RelayKeyError extends RelayUnreachableError {
   constructor(url: string) {
@@ -787,6 +837,7 @@ async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, wa
 
 async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way?: string): Promise<Uint8Array> {
   if (signal?.aborted) throw new Ended();
+  refuseStopped(bytes);
   if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
   // A space that goes through Tor, waited on while another is open: never straight.
   if (relay.torOnly && !torFor(false)) throw new RelayUnreachableError(t('Tor is not ready.'));
@@ -1738,6 +1789,7 @@ export class RelaySession {
 
   /** Opens it; `files` for the requests of files, which go through Tor only the way 'all'. */
   static async open(relay: Relay, files = false): Promise<RelaySession> {
+    if (stopped && clearing === 0) throw new SpaceStoppedError();
     const throughTor = torFor(files);
     const pin = channelPin(relay);
     if (pin) {
@@ -1758,6 +1810,11 @@ export class RelaySession {
 
   /** Sends one request after the ones before it are answered, and returns its reply. */
   call(bytes: Uint8Array): Promise<Uint8Array> {
+    try {
+      refuseStopped(bytes);
+    } catch (error) {
+      return Promise.reject(error);
+    }
     const within = answerWithin(bytes);
     // A reply that does not come in time ends the connection, and so every request after it; in a
     // channel, so does one it does not hold, as the counts of its messages no longer match.

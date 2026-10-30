@@ -9,7 +9,7 @@ import { loadXmpp } from '../lock/xmpp-data';
 import { bunches, contactQueuesAt, type Bunch } from './contact-queues';
 import { t } from './i18n';
 import { onNetworkChange } from './network-change';
-import { canReadManyAt, canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsOfAny, newsSince, NO_NEWS, sameRelay, torFor, waitForNews, type News, type Relay } from './relay';
+import { canReadManyAt, canTellNewsAt, canWaitAt, fromHex, isQueueNotFound, newsOfAny, newsSince, NO_NEWS, relayStopped, sameRelay, SpaceStoppedError, torFor, waitForNews, type News, type Relay } from './relay';
 
 // While a space is open, the other spaces that asked for it say how many messages came to them,
 // with the same notice as the open space's chats ("New message", "3 new messages"), never which
@@ -153,6 +153,7 @@ export async function doorIsOpen(): Promise<boolean> {
 export async function setDoorOpen(on: boolean): Promise<void> {
   const { space, key } = currentSpace();
   if (!on) return saveDoor(space, null);
+  if (relayStopped()) throw new SpaceStoppedError();
   const door = await doorOf(space, key);
   if (!door) throw new Error(t('This space has no queue at a relay yet: it can say nothing while closed.'));
   await saveDoor(space, door, true);

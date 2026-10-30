@@ -39,6 +39,8 @@ import { forgetPlaceChats } from '../lib/place-chats';
 import { startPlaceReceiver } from '../lib/place-receiver';
 import { startShellWatch } from '../lib/shell-watch';
 import { keepSpaceRunning, onSpaceGatedChange, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
+import { watchStoppedPlaces } from '../lib/forget-me';
+import { relayStopped, setRelayStopped } from '../lib/relay';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
@@ -142,6 +144,8 @@ export default function RootLayout() {
     async (space: number, passwordLock: boolean, key: Uint8Array) => {
       setCurrentSpace(space, key);
       const data = await loadSpaceData(space, key);
+      // A stopped space reaches no relay, nor Nostr, until it starts again (lib/forget-me.ts).
+      setRelayStopped(data.stopped > 0);
       // Tor starts in the background, through the space's bridges if it has any; until it is
       // ready, the way 'messages' sends straight, and the way 'all' waits for it.
       applyTor(data.tor, data.bridges).catch(() => undefined);
@@ -570,23 +574,24 @@ function OpenLink() {
 function Receiver({ space }: { space: number }) {
   useEffect(
     () =>
-      keepSpaceRunning(space, () => [
-        startReceiver(),
-        startPlaceReceiver(),
-        startNearbyLinks(),
-        startSmsWay(),
-        startSmsLater(),
-        startPublicDoors(),
-        watchKnownNames(),
-        startBackground(),
-        followAppShown(),
-        watchCalls(),
-        startMatrix(),
-        startXmpp(),
-        startNostrChats(),
-        watchPlaceNetworks(),
-        startShellWatch(),
-      ]),
+      keepSpaceRunning(space, () => {
+        // A stopped space (lib/forget-me.ts) waits at no relay: its queues there are gone.
+        const relays = relayStopped() ? [watchStoppedPlaces()] : [startReceiver(), startPlaceReceiver(), startPublicDoors(), startShellWatch()];
+        return [
+          ...relays,
+          startNearbyLinks(),
+          startSmsWay(),
+          startSmsLater(),
+          watchKnownNames(),
+          startBackground(),
+          followAppShown(),
+          watchCalls(),
+          startMatrix(),
+          startXmpp(),
+          startNostrChats(),
+          watchPlaceNetworks(),
+        ];
+      }),
     [space],
   );
   return null;
@@ -643,6 +648,7 @@ function closeSpace(): void {
   forgetTextInvite();
   leaveTor();
   setNostr(null);
+  setRelayStopped(false);
   stopReleases();
 }
 

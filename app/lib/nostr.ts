@@ -25,7 +25,7 @@ import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
 import { isPiece, keepPiece, type PiecePlace } from './nostr-pieces';
-import { onTorReady, torFor } from './relay';
+import { onTorReady, relayStopped, torFor } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
 export const NOSTR_BACKUP_MS = 5 * 60_000;
@@ -165,7 +165,8 @@ let relays: string[] | null = null;
 
 /** Reads on these relays from now on, and says so to contacts (lib/e2e.ts), or on none: then the connections that send close too. */
 export function setNostr(next: string[] | null): void {
-  const list = next && canNostr() ? [...new Set(next.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) : [];
+  // A stopped space (lib/forget-me.ts) reads and sends nowhere.
+  const list = next && canNostr() && !relayStopped() ? [...new Set(next.filter(isNostrRelay))].slice(0, MAX_NOSTR_RELAYS) : [];
   const now = list.length > 0 ? list : null;
   if (!now) closeSenders();
   if (now?.join(' ') === relays?.join(' ')) return;

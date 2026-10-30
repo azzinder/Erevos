@@ -79,6 +79,10 @@ export type SpaceData = {
   // address (relayHome): such a relay is never reached again without proving it. Only for the
   // relays the space uses (url, via, spare), so a hidden place's relay is never named here.
   relayKeys: Record<string, string>;
+  // When the space was stopped (ms) by "Delete me from everywhere" (lib/forget-me.ts): what the
+  // servers kept for it was deleted, and it reaches no relay until it starts again. 0 when not. A
+  // hidden place keeps its own, set once what the servers kept for it was deleted too.
+  stopped: number;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
@@ -115,6 +119,7 @@ export const EMPTY_SPACE: SpaceData = {
   lend: NO_LENDING,
   offered: NO_OFFER,
   relayKeys: {},
+  stopped: 0,
 };
 
 const BLOCK = 1024;
@@ -186,6 +191,7 @@ function checked(value: unknown): SpaceData {
     lend: checkedLending(v.lend),
     offered: checkedOffered(v.offered),
     relayKeys: checkedRelayKeys(v.relayKeys),
+    stopped: typeof v.stopped === 'number' && Number.isFinite(v.stopped) && v.stopped > 0 ? v.stopped : 0,
   };
 }
 

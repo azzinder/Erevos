@@ -8,7 +8,7 @@
 // not shown (lib/receiver.ts, setAppShown), so messages and calls say they came with a notice, and
 // the call screen has none of its names (lib/known-names.ts).
 
-let running: { space: number; stop: () => void } | null = null;
+let running: { space: number; stop: () => void; start: () => (() => void)[] } | null = null;
 let gated = false;
 const gateListeners = new Set<() => void>();
 
@@ -17,7 +17,16 @@ export function keepSpaceRunning(space: number, start: () => (() => void)[]): vo
   if (running?.space === space) return;
   stopSpaceRunning();
   const stops = start();
-  running = { space, stop: () => stops.forEach((stop) => stop()) };
+  running = { space, stop: () => stops.forEach((stop) => stop()), start };
+}
+
+/** Stops what goes on for the open space and starts it again, as its servers stop or start again (lib/forget-me.ts). */
+export function restartSpaceRunning(): void {
+  const was = running;
+  if (!was) return;
+  running = null;
+  was.stop();
+  keepSpaceRunning(was.space, was.start);
 }
 
 /** Stops what goes on for the open space, as it closes. */
