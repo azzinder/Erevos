@@ -5,7 +5,7 @@ import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { canXmpp } from './core';
-import { fileCache } from './file-cache';
+import { fileCache, pictureCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
@@ -465,7 +465,7 @@ export function xmppSetAvatar(picture: { bytes: Uint8Array; type: string } | nul
 }
 
 // Profile pictures fetched while Erevos runs, by address and SHA-1: kept in memory only.
-const pictures = fileCache(8 * 1024 * 1024);
+const pictures = pictureCache(8 * 1024 * 1024);
 
 /** Someone's profile picture (ours too), as its note last said, or null when they have none or it cannot be had now. */
 export async function xmppAvatar(jid: string, where: NetworkWhere = 'space'): Promise<Uint8Array | null> {

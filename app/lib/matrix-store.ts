@@ -5,6 +5,7 @@ import { lastRestore } from '../lock/restored';
 import type { Holder } from '../lock/sealed-file';
 import { canMatrix } from './core';
 import { randomBytes, sha256Bytes, toHex } from './crypto';
+import { pictureCache } from './file-cache';
 import { t } from './i18n';
 import {
   deleteMessage,
@@ -527,23 +528,16 @@ export function matrixSetAvatar(picture: { bytes: Uint8Array; mime: string } | n
   });
 }
 
-// Profile and room pictures fetched while Erevos runs, by address: kept in memory only.
-const pictures = new Map<string, Uint8Array>();
+// Profile and room pictures fetched while Erevos runs, by address: kept in memory only, one fetch at
+// a time for each, and one that failed not asked for again for a while (lib/file-cache.ts).
+const pictures = pictureCache(8 * 1024 * 1024);
 
 /** The picture at an mxc:// address, or null when it cannot be had now. */
 export async function matrixPicture(mxc: string, where: NetworkWhere = 'space'): Promise<Uint8Array | null> {
   const it = where === 'place' ? places.shown() : live;
-  if (!it?.state) return null;
-  const kept = pictures.get(mxc);
-  if (kept) return kept;
-  try {
-    const bytes = await fetchPicture(it.state, mxc);
-    if (pictures.size >= 200) pictures.delete(pictures.keys().next().value as string);
-    pictures.set(mxc, bytes);
-    return bytes;
-  } catch {
-    return null;
-  }
+  const state = it?.state;
+  if (!state) return null;
+  return pictures.get(mxc, () => fetchPicture(state, mxc)).catch(() => null);
 }
 
 /** Whether the others are told when we write. */

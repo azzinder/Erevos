@@ -28,3 +28,44 @@ export function fileCache(most: number): FileCache {
     clear: () => kept.clear(),
   };
 }
+
+/** How long a picture that could not be fetched is not asked for again. */
+const FAILED_FOR_MS = 10 * 60_000;
+
+/**
+ * As fileCache, for profile and room pictures, which every row of a list asks for each time it is
+ * drawn: one fetch at a time for each, however many rows ask at once, and one that failed (as a
+ * server that lets only contacts have a picture refuses it) is not asked for again for a while.
+ */
+export function pictureCache(most: number): FileCache {
+  const files = fileCache(most);
+  const going = new Map<string, Promise<Uint8Array>>();
+  const failed = new Map<string, number>();
+  return {
+    get(key, fetch) {
+      const until = failed.get(key);
+      if (until !== undefined && until > Date.now()) return Promise.reject(new Error('Not fetched'));
+      const already = going.get(key);
+      if (already) return already;
+      const now = files.get(key, fetch).then(
+        (bytes) => {
+          failed.delete(key);
+          return bytes;
+        },
+        (error: unknown) => {
+          if (failed.size >= 500) failed.clear();
+          failed.set(key, Date.now() + FAILED_FOR_MS);
+          throw error;
+        },
+      );
+      going.set(key, now);
+      void now.finally(() => going.delete(key)).catch(() => undefined);
+      return now;
+    },
+    clear: () => {
+      files.clear();
+      going.clear();
+      failed.clear();
+    },
+  };
+}
