@@ -1705,7 +1705,7 @@ Element : aucun pont ne se met entre les deux.
   l’appel ont, et passent par le serveur média (LiveKit) que ton serveur Matrix indique, qui voit l’adresse de cet
   appareil ; un serveur Matrix sans serveur média ne peut pas appeler. Ce qu’Element Call dit au serveur Matrix passe
   par Erevos, et par Tor comme le reste de Matrix, mais l’appel lui-même ne passe jamais par Tor. Element Call
-  n’atteint aucun traceur. Les anciens appels Matrix à deux, comme les fait FluffyChat, ne sonnent pas ici. Tant qu’un
+  n’atteint aucun traceur. Les anciens appels Matrix à deux, comme les fait FluffyChat, sonnent aussi ici (voir **Ancien appel**). Tant qu’un
   appel Matrix est en cours ou sonne, un autre appel, d’Erevos ou sur XMPP, ne sonne pas et s’affiche comme manqué, et
   inversement. Sur Android, Retour ou quitter Erevos rend la fenêtre de l’appel petite, par-dessus d’autres apps
   (image dans l’image). Sailfish OS n’a pas d’appels Matrix.
@@ -1730,6 +1730,41 @@ Element : aucun pont ne se met entre les deux.
   serveur Matrix signale chaque message au relais de cet espace, sans aucun de ses mots : le serveur Matrix apprend
   l’adresse du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut un
   relais mis à jour pour cela, que le serveur Matrix puisse joindre.
+- **Fils :** maintiens un message et choisis **Répondre dans le fil** pour répondre dans un fil. Un fil s’ouvre sur un
+  écran à part, et un message qui a des réponses dit combien ; touche-le pour ouvrir le fil. Les applis sans fils
+  montrent les réponses comme de simples réponses.
+- **Sondages :** **Sondage**, sous le champ de message, pose une question avec plusieurs options. Touche une option
+  dans la bulle pour la choisir, et touche encore pour la reprendre ; tout le monde voit qui a choisi quoi. Celui qui
+  a fait un sondage peut le maintenir et choisir **Terminer le sondage** : plus aucun vote ne compte ensuite.
+- **Positions :** **Position** envoie où tu es, une fois, comme le fait Element ; elle part chiffrée comme le chat, et
+  s’affiche avec **Ouvrir la carte** sur Android.
+- **Aperçus des liens :** avec les **Aperçus des liens** activés, comme pour les chats avec tes contacts, le premier
+  lien d’un message part avec un aperçu fait par ton téléphone, chiffré aussi dans un chat chiffré. Jamais par Tor, et
+  jamais dans un lieu caché.
+- **Épingler et transférer :** **Épingler**, dans le menu d’un message, l’épingle en haut du salon pour tout le monde,
+  si le salon te le permet ; une barre au-dessus du chat montre le dernier message épinglé, et un toucher y va puis
+  montre le suivant. **Désépingler** l’enlève. **Transférer** envoie une copie à un autre chat de ce compte ; la copie
+  ne partage rien avec l’original.
+- **Trouver des groupes :** **Trouver un groupe**, sur l’écran Matrix, cherche parmi les salons publics de ton serveur
+  Matrix, ou d’un autre que tu écris, qui apprend alors ce que tu cherches. **Espaces** liste les salons des espaces
+  où tu es, pour les rejoindre. **Chercher des messages** cherche seulement dans les messages gardés sur ce téléphone,
+  et ne demande à personne.
+- **Favoris :** maintiens un chat dans la liste pour **Mettre en favori** (il passe en premier), **Basse priorité**
+  (il passe en dernier) et **Quitter et oublier**, qui fait aussi oublier le chat au serveur Matrix, de sorte que tes
+  autres applis Matrix ne le montrent plus. Ils sont gardés dans ton compte, donc tes autres applis Matrix trient
+  pareil.
+- **Un nouveau compte :** sur l’écran de connexion, **Créer un nouveau compte** en crée un sur un serveur Matrix qui
+  le permet, à partir d’un serveur, d’un nom et d’un mot de passe. Si le serveur le demande, Erevos te demande
+  d’accepter ses conditions, de donner un jeton d’inscription ou de faire une étape sur la page propre du serveur,
+  comme un captcha, qui s’ouvre dans le navigateur, pas par Tor. Un serveur qui demande une adresse e-mail ne crée de
+  comptes que sur son site ; crées-en un là-bas, puis connecte-toi ici.
+- **Appareils :** **Appareils**, sur l’écran Matrix, liste les appareils du compte avec la dernière fois que chacun a
+  été vu. **Renommer** donne un nouveau nom à l’un. **Déconnecter les autres appareils** les retire du compte : ils
+  perdent leurs clés et ne peuvent plus lire ce qui arrive. Le serveur Matrix demande d’abord ton mot de passe.
+- **Anciens appels :** dans un chat avec une personne, les tuiles d’appel demandent **Element Call** ou **Ancien
+  appel**. L’ancien appel fonctionne avec FluffyChat, Nheko et Element sur ordinateur, et sonne ici quand ils
+  appellent. Ses signaux passent comme le chat, chiffrés dans un chat chiffré, par ton relais quand l’espace en a un,
+  sinon par le relais d’appels de ton serveur Matrix ; l’appel lui-même est chiffré (DTLS-SRTP).
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur Matrix ne le peut pas. Les
 discussions Matrix restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur Matrix.
@@ -1856,6 +1891,20 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   apprend le nom du relais, et le relais quand des messages arrivent. Désactivé tant que vous ne l’activez pas ; il faut
   un relais mis à jour pour cela, que les serveurs XMPP puissent joindre (son propriétaire ouvre un port pour eux), et un
   serveur XMPP qui envoie des notifications aux applis inactives, comme la plupart.
+- **Un nouveau compte :** sur l’écran de connexion, **Créer un nouveau compte** en crée un sur un serveur XMPP qui le
+  permet (XEP-0077), à partir d’une adresse et d’un mot de passe. Un serveur qui demande un captcha, ou ne crée de
+  comptes que sur son site, le dit et donne sa page s’il en a une ; crée le compte là-bas, puis connecte-toi ici.
+- **Mot de passe et suppression :** **Compte**, sur l’écran XMPP, a **Changer le mot de passe** et **Supprimer le
+  compte**, qui supprime le compte du serveur pour de bon, après deux questions, la seconde demandant l’adresse.
+  Erevos oublie ses clés ; l’adresse ne pourra peut-être pas être recréée.
+- **Trouver des groupes :** **Trouver un groupe** a **Groupes sur ton serveur**, ceux que le serveur laisse trouver à
+  tous, et **Chercher des groupes publics**, qui interroge search.jabber.network : il apprend les mots que tu cherches
+  et voit le nom de ton serveur, et ton serveur non. Un groupe public est un canal, non chiffré.
+- **Positions :** **Position** envoie où tu es comme un lien geo:, comme le fait Conversations, chiffré comme le chat
+  ; une position qui arrive ainsi s’affiche comme position, avec **Ouvrir la carte** sur Android.
+- **Aperçus des liens :** dans un chat écrit sans chiffrement, avec les **Aperçus des liens** activés, le premier lien
+  part avec son aperçu (XEP-0511), et un aperçu qui arrive ainsi s’affiche sous les mots. Un chat chiffré n’en envoie
+  aucun, car il dirait aux serveurs ce qu’est le lien.
 
 **Pourquoi :** les discussions propres à Erevos cachent qui parle avec qui ; un serveur XMPP ne le peut pas. Les
 discussions XMPP restent donc à part et marquées, pour les personnes que tu ne joindrais autrement que sur XMPP.

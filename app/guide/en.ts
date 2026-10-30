@@ -1500,8 +1500,7 @@ between.
   Sound and picture are end-to-end encrypted, with keys only those in the call have, and go through the media server
   (LiveKit) your Matrix server names, which sees this device's address; a Matrix server without one cannot call. What
   Element Call says to the Matrix server goes through Erevos, and through Tor as the rest of Matrix does, but the call
-  itself never goes through Tor. Element Call reaches no tracker. Older one-to-one Matrix calls, as FluffyChat makes
-  them, do not ring here. While a Matrix call is on or ringing, another call, Erevos's own or on XMPP, does not ring
+  itself never goes through Tor. Element Call reaches no tracker. Older one-to-one Matrix calls, as FluffyChat makes them, ring here too (see **Older calls**). While a Matrix call is on or ringing, another call, Erevos's own or on XMPP, does not ring
   and shows as missed, and the other way round. On Android, Back or leaving Erevos makes the call window small over
   other apps (picture in picture). Sailfish OS has no Matrix calls.
 - **In the web app and on a computer:** the browser or the computer asks once for the camera and the microphone; on a
@@ -1522,6 +1521,37 @@ between.
   key opens what came. For it the Matrix server tells this space's relay of each message, with no words in it, so the
   Matrix server learns the relay's address, and the relay when messages come. Off unless you turn it on; it needs a
   relay updated for it, which the Matrix server can reach.
+- **Threads:** hold a message and choose **Reply in thread** to answer it in a thread. A thread opens on a screen of
+  its own, and a message with answers says how many; tap it to open the thread. Apps without threads show the answers
+  as plain answers.
+- **Polls:** **Poll**, under the message box, asks a question with several options. Tap an option in the bubble to
+  choose it, and tap again to take it back; everyone sees who chose what. Whoever made a poll can hold it and choose
+  **End poll**: no vote counts after that.
+- **Places:** **Location** sends where you are, once, as Element does; it goes encrypted as the chat is, and shows
+  with **Open in maps** on Android.
+- **Link previews:** with **Link previews** on, as for your contacts' chats, the first link in a message goes with a
+  preview your phone made, in an encrypted chat encrypted too. Never through Tor, and never in a hidden place.
+- **Pinning and forwarding:** **Pin**, in a message's menu, pins it to the top of the room for everyone, if the room
+  lets you; a bar over the chat shows the latest pinned message, and a tap goes to it and then shows the next.
+  **Unpin** takes it down. **Forward** sends a copy to another chat of this account; the copy shares nothing with the
+  original.
+- **Finding groups:** **Find a group**, on the Matrix screen, looks through the public rooms of your Matrix server, or
+  of another one you write, which then learns what you look for. **Spaces** lists the rooms in the spaces you are in,
+  to join. **Search messages** looks only through the messages kept on this phone, and asks nobody.
+- **Favourites:** hold a chat in the list for **Make a favourite** (it goes first), **Low priority** (it goes last)
+  and **Leave and forget**, which also has the Matrix server forget it, so your other Matrix apps no longer show it.
+  They are kept in your account, so your other Matrix apps sort the same.
+- **A new account:** on the sign-in screen, **Make a new account** makes one on a Matrix server that allows it, from a
+  server, a name and a password. If the server asks, Erevos asks you to agree to its terms, to give a registration
+  token, or to take a step on the server's own page, such as a captcha, which opens in the browser, not through Tor. A
+  server that asks for an e-mail address makes accounts only on its website; make one there, then sign in here.
+- **Devices:** **Devices**, on the Matrix screen, lists the account's devices with when each was last seen. **Rename**
+  gives one a new name. **Sign out the other devices** takes them off the account: they lose their keys and can no
+  longer read what comes. The Matrix server asks for your password first.
+- **Older calls:** in a chat with one person, the call tiles ask for **Element Call** or **Older call**. The older
+  call works with FluffyChat, Nheko and Element on a computer, and rings here when they call. Its signals go as the
+  chat does, encrypted in an encrypted chat, through your relay when the space has one, else through your Matrix
+  server's call relay; the call itself is encrypted (DTLS-SRTP).
 
 **Why:** Erevos's own chats hide who talks with whom; a Matrix server cannot. So Matrix chats are kept apart and
 marked, for the people you would otherwise reach only on Matrix.
@@ -1633,6 +1663,20 @@ bridge sits in between.
   XMPP server learns the relay's name, and the relay when messages come. Off unless you turn it on; it needs a relay
   updated for it, which XMPP servers can reach (its owner opens a port for them), and an XMPP server that sends notices
   to apps that are away, as most do.
+- **A new account:** on the sign-in screen, **Make a new account** makes one on an XMPP server that allows it
+  (XEP-0077), from an address and a password. A server that asks for a captcha, or makes accounts only on its website,
+  says so and gives its page when it has one; make the account there, then sign in here.
+- **Password and deleting:** **Account**, on the XMPP screen, has **Change the password** and **Delete the account**,
+  which deletes the account from the server for good, after two questions, the second asking for the address. Erevos
+  forgets its keys; the address may not be made again.
+- **Finding groups:** **Find a group** has **Groups on your server**, those the server lets anyone find, and **Search
+  public groups**, which asks search.jabber.network: it learns the words you look for and sees your server's name, and
+  your server does not. A public group is a channel, not encrypted.
+- **Places:** **Location** sends where you are as a geo: link, as Conversations does, encrypted as the chat is; one
+  that comes so shows as a place, with **Open in maps** on Android.
+- **Link previews:** in a chat written without encryption, with **Link previews** on, the first link goes with its
+  preview (XEP-0511), and one that comes so shows under the words. An encrypted chat sends none, as it would tell the
+  servers what the link is.
 
 **Why:** Erevos's own chats hide who talks with whom; an XMPP server cannot. So XMPP chats are kept apart and marked, for
 the people you would otherwise reach only on XMPP.

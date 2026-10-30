@@ -268,6 +268,39 @@ nothing outside its hidden chats shows.
 - `app/checks/place-networks.check.ts` checks the stores against the homeserver played in the checks,
   with the real core; not yet on a phone.
 
+## Threads, polls, places, previews, pins, forwarding, rooms
+
+- Threads: `m.thread` (MSC3440). A reply in a thread carries `is_falling_back: true` with an `m.in_reply_to` for apps
+  without threads; such a message is held in `MatrixMessage.thread` (the first message's ID) and shown on the thread's
+  screen only (`app/matrix-chat.tsx`, param `thread`), the room's thread keeps the rest. A thread's first message
+  counts its answers from the server's bundled `m.relations` (`threadCount`).
+- Polls: MSC3381 (`org.matrix.msc3381.poll.start`, `.response`, `.end`) and the stable `m.poll.*` names, read both
+  ways, sent in the unstable form Element understands (`lib/matrix-parts.ts`). Votes and the end are
+  `m.reference` relations; only the poll's maker can end it, a vote counts if it is dated before the end, a spoiled
+  vote counts as none. Our own end waits for the server's echo to date it (`closing`).
+- Places: `m.location` (MSC3488), a `geo:` URI with `;u=` for how near; shown by `PlaceCard`.
+- Link previews: MSC4095 (`com.beeper.linkpreviews`), made on the phone when the space's previews switch is on, never
+  through Tor or in a hidden place, and sent without the picture. They ride inside the (encrypted) event.
+- Pins: `m.room.pinned_events` (the server refuses it for one who may not); tags `m.favourite`/`m.lowpriority` in the
+  account data; `/leave` then `/forget`; Forward sends a copy anew (a file is fetched, opened and sent under a key of
+  its own) (`lib/matrix-rooms.ts`, `lib/matrix-store.ts`).
+- Rooms: `/publicRooms` (the server's, or another's through it), `/hierarchy` for the rooms in a space; both tell the
+  homeserver what was looked for. Looking for words in messages never asks the server.
+- Accounts: `/register` with User-Interactive Authentication (`lib/matrix-account.ts`): dummy, terms, registration
+  token and password are answered in the app; reCAPTCHA and SSO go to the server's fallback page in the browser; an
+  e-mail or phone step is not taken here. `/devices` lists, renames and (with UIA) `/delete_devices`; this device is
+  never among those signed out.
+- Older calls: `lib/matrix-voip.ts`, see below.
+
+## Older one-to-one calls
+
+`m.call.invite`, `.answer`, `.select_answer`, `.candidates`, `.hangup`, `.reject`, version `"1"`, as FluffyChat,
+Nheko and Element on a computer make them, in rooms of two only. They come encrypted in an encrypted room (an
+unencrypted one there does not ring), the invite names its `invitee`, and an invite older than its lifetime shows as
+missed. Our own other device answering or rejecting ends the ring here. The call uses the space's relay's TURN
+when it has one, else the homeserver's `/voip/turnServer`; the media is DTLS-SRTP. They use the same `Call` and call
+screen as Erevos's own calls (`lib/call.ts`). `app/checks/matrix-voip.check.ts` plays Bob's app.
+
 ## Backups
 
 The account is in the backups (`app/lock/backup.ts`): the file `erevos-matrix`, the space's and each
@@ -292,6 +325,9 @@ phone it is restored on go. Not yet on a phone.
 - Notices while no space is open, or Android stopped Erevos; a closed space's notice naming the chat.
 - Calls on Sailfish OS.
 - A ring while Erevos is closed: it shows as missed when the space next syncs.
-- Older one-to-one calls (`m.call.*`), and MatrixRTC's sticky membership (MSC4354, Element Call's
-  "Matrix 2.0" mode): Element Call is not given sticky events.
+- MatrixRTC's sticky membership (MSC4354, Element Call's "Matrix 2.0" mode): Element Call is not given sticky events.
+- Group calls with the older `m.call.*` (only rooms of two), and threads of voice messages' own screen.
+- Everything on this page's threads, polls, places, pins, rooms, accounts and older calls against a real homeserver and
+  Element, FluffyChat and Nheko on a phone: so far only against the server played in the checks
+  (`checks/matrix-more.check.ts`, `checks/matrix-voip.check.ts`).
 - Element Call's background blur (its models are left out of the APK).

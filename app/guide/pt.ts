@@ -1613,7 +1613,7 @@ fica no meio.
   que só quem está na chamada tem, e passam pelo servidor de mídia (LiveKit) que o seu servidor Matrix indica, que vê o
   endereço deste dispositivo; um servidor Matrix sem um não consegue ligar. O que o Element Call diz ao servidor Matrix
   passa pelo Erevos, e pelo Tor como o resto do Matrix, mas a chamada em si nunca passa pelo Tor. O Element Call não
-  chega a nenhum rastreador. As chamadas Matrix mais antigas entre duas pessoas, como o FluffyChat faz, não tocam aqui.
+  chega a nenhum rastreador. As chamadas Matrix mais antigas entre duas pessoas, como o FluffyChat faz, tocam aqui também (veja **Chamada antiga**).
   Enquanto uma chamada Matrix está em andamento ou tocando, outra chamada, do próprio Erevos ou no XMPP, não toca e
   aparece como perdida, e vice-versa. No Android, Voltar ou sair do Erevos deixa a janela da chamada pequena sobre
   outros apps (picture in picture). O Sailfish OS não tem chamadas Matrix.
@@ -1636,6 +1636,39 @@ fica no meio.
   avisa o relay deste espaço de cada mensagem, sem nenhuma palavra dela, então o servidor Matrix fica sabendo o
   endereço do relay, e o relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para
   isso, que o servidor Matrix alcance.
+- **Tópicos:** segure uma mensagem e escolha **Responder no tópico** para responder em um tópico. Um tópico abre em
+  uma tela própria, e uma mensagem com respostas diz quantas são; toque nela para abrir o tópico. Aplicativos sem
+  tópicos mostram as respostas como respostas simples.
+- **Enquetes:** **Enquete**, sob a caixa de mensagem, faz uma pergunta com várias opções. Toque em uma opção no balão
+  para escolhê-la, e toque de novo para tirá-la; todos veem quem escolheu o quê. Quem fez uma enquete pode segurá-la e
+  escolher **Encerrar enquete**: depois disso nenhum voto conta.
+- **Localizações:** **Localização** envia onde você está, uma vez, como o Element faz; vai criptografada como a
+  conversa e aparece com **Abrir no mapa** no Android.
+- **Prévias de links:** com as **Prévias de links** ligadas, como nas conversas com seus contatos, o primeiro link de
+  uma mensagem vai com uma prévia feita pelo seu celular, criptografada também em uma conversa criptografada. Nunca
+  pelo Tor, e nunca em um lugar oculto.
+- **Fixar e encaminhar:** **Fixar**, no menu de uma mensagem, a fixa no alto da sala para todos, se a sala deixar; uma
+  barra sobre a conversa mostra a última mensagem fixada, e um toque vai até ela e depois mostra a seguinte.
+  **Desafixar** a tira. **Encaminhar** envia uma cópia para outra conversa desta conta; a cópia não compartilha nada
+  com a original.
+- **Encontrar grupos:** **Encontrar um grupo**, na tela do Matrix, busca entre as salas públicas do seu servidor
+  Matrix, ou de outro que você escrever, que então fica sabendo o que você procura. **Espaços** lista as salas dos
+  espaços em que você está, para entrar. **Buscar mensagens** busca só entre as mensagens guardadas neste celular, e
+  não pergunta a ninguém.
+- **Favoritos:** segure uma conversa na lista para **Tornar favorito** (vai primeiro), **Baixa prioridade** (vai por
+  último) e **Sair e esquecer**, que faz o servidor Matrix esquecê-la também, e seus outros aplicativos Matrix deixam
+  de mostrá-la. Ficam guardados na sua conta, então seus outros aplicativos Matrix ordenam igual.
+- **Uma conta nova:** na tela de entrada, **Criar uma conta nova** cria uma em um servidor Matrix que permita, a
+  partir de um servidor, um nome e uma senha. Se o servidor pedir, o Erevos pede que você aceite os termos dele, dê um
+  token de registro ou faça uma etapa na página própria do servidor, como um captcha, que abre no navegador, não pelo
+  Tor. Um servidor que pede um e-mail cria contas só no site dele; crie uma lá e depois entre aqui.
+- **Dispositivos:** **Dispositivos**, na tela do Matrix, lista os dispositivos da conta com a última vez em que cada
+  um foi visto. **Renomear** dá um nome novo a um. **Desconectar os outros dispositivos** os tira da conta: perdem as
+  chaves e não conseguem mais ler o que chega. O servidor Matrix pede primeiro a sua senha.
+- **Chamadas antigas:** em uma conversa com uma pessoa, os ícones de chamada perguntam **Element Call** ou **Chamada
+  antiga**. A chamada antiga funciona com o FluffyChat, o Nheko e o Element no computador, e toca aqui quando eles
+  ligam. Os sinais dela vão como a conversa, criptografados em uma conversa criptografada, pelo seu relay quando o
+  espaço tem um, senão pelo relay de chamadas do seu servidor Matrix; a chamada em si é criptografada (DTLS-SRTP).
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor Matrix não consegue. Por isso as
 conversas Matrix ficam à parte e marcadas, para as pessoas que você só alcançaria pelo Matrix.
@@ -1755,6 +1788,20 @@ esses apps: nenhuma ponte fica no meio.
   relay quando chegam mensagens. Desligado até você ligar; precisa de um relay atualizado para isso, que os servidores
   XMPP alcancem (quem o administra abre uma porta para eles), e de um servidor XMPP que envie avisos a apps inativos,
   como quase todos.
+- **Uma conta nova:** na tela de entrada, **Criar uma conta nova** cria uma em um servidor XMPP que permita
+  (XEP-0077), a partir de um endereço e uma senha. Um servidor que pede um captcha, ou cria contas só no site dele,
+  avisa e dá a página dele se tiver; crie a conta lá e depois entre aqui.
+- **Senha e exclusão:** **Conta**, na tela do XMPP, tem **Alterar a senha** e **Apagar a conta**, que apaga a conta do
+  servidor de vez, depois de duas perguntas, a segunda pedindo o endereço. O Erevos esquece as chaves dela; talvez o
+  endereço não possa ser criado de novo.
+- **Encontrar grupos:** **Encontrar um grupo** tem **Grupos no seu servidor**, os que o servidor deixa qualquer um
+  achar, e **Buscar grupos públicos**, que consulta o search.jabber.network: ele fica sabendo as palavras que você
+  procura e vê o nome do seu servidor, e o seu servidor não. Um grupo público é um canal, sem criptografia.
+- **Localizações:** **Localização** envia onde você está como um link geo:, como o Conversations faz, criptografado
+  como a conversa; uma que chega assim aparece como localização, com **Abrir no mapa** no Android.
+- **Prévias de links:** em uma conversa escrita sem criptografia, com as **Prévias de links** ligadas, o primeiro link
+  vai com a prévia dele (XEP-0511), e uma que chega assim aparece sob as palavras. Uma conversa criptografada não
+  envia nenhuma, pois diria aos servidores o que é o link.
 
 **Por quê:** as conversas do próprio Erevos escondem quem fala com quem; um servidor XMPP não consegue. Por isso as
 conversas XMPP ficam à parte e marcadas, para as pessoas que você só alcançaria pelo XMPP.

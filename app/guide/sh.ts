@@ -1571,8 +1571,7 @@ između.
   ko zove. Zvuk i slika su šifrovani s kraja na kraj, ključevima koje imaju samo oni u pozivu, i idu preko medijskog
   servera (LiveKit) koji navodi vaš Matrix server, a on vidi adresu ovog uređaja; Matrix server bez njega ne može
   zvati. Ono što Element Call kaže Matrix serveru ide preko Erevosa, i preko Tora kao ostatak Matrixa, ali sam poziv
-  nikad ne ide preko Tora. Element Call ne dopire ni do jednog trackera. Stariji Matrix pozivi udvoje, kakve pravi
-  FluffyChat, ovdje ne zvone. Dok je Matrix poziv u toku ili zvoni, drugi poziv, Erevosov vlastiti ili na XMPP-u, ne
+  nikad ne ide preko Tora. Element Call ne dopire ni do jednog trackera. Stariji Matrix pozivi udvoje, kakve pravi FluffyChat, ovdje takođe zvone (vidi **Stariji poziv**). Dok je Matrix poziv u toku ili zvoni, drugi poziv, Erevosov vlastiti ili na XMPP-u, ne
   zvoni i prikazuje se kao propušten, i obrnuto. Na Androidu, Nazad ili napuštanje Erevosa smanjuje prozor poziva
   iznad drugih aplikacija (slika u slici). Sailfish OS nema Matrix pozive.
 - **U web-aplikaciji i na računaru:** preglednik ili računar jednom pita za kameru i mikrofon; na računaru samo prozor
@@ -1593,6 +1592,38 @@ između.
   ključ prostora otvara ono što je stiglo. Za to Matrix server javlja relayu ovog prostora svaku poruku, bez ijedne
   njene riječi, pa Matrix server saznaje adresu relaya, a relay kad stižu poruke. Isključeno dok ga ne uključite;
   treba relay ažuriran za to, do kojeg Matrix server može doći.
+- **Niti:** zadržite poruku i izaberite **Odgovori u niti** da odgovorite u niti. Nit se otvara na zasebnom ekranu, a
+  poruka s odgovorima kaže koliko ih ima; dodirnite je da otvorite nit. Aplikacije bez niti prikazuju odgovore kao
+  obične odgovore.
+- **Ankete:** **Anketa**, ispod polja za poruku, postavlja pitanje s više opcija. Dodirnite opciju u oblačiću da je
+  izaberete, a ponovo da je povučete; svi vide ko je šta izabrao. Ko je napravio anketu može je zadržati i izabrati
+  **Završi anketu**: poslije toga nijedan glas ne važi.
+- **Lokacije:** **Lokacija** šalje gdje ste, jednom, kao Element; ide šifrovana kao razgovor i prikazuje se s **Otvori
+  u kartama** na Androidu.
+- **Pregledi linkova:** kad su **Pregledi linkova** uključeni, kao za razgovore s kontaktima, prvi link u poruci ide s
+  pregledom koji je napravio vaš telefon, u šifrovanom razgovoru takođe šifrovan. Nikad preko Tora, i nikad na
+  skrivenom mjestu.
+- **Prikvačivanje i proslijeđivanje:** **Prikvači**, u meniju poruke, prikvači je na vrh sobe za sve, ako soba
+  dozvoljava; traka iznad razgovora prikazuje posljednju prikvačenu poruku, dodir ide do nje a zatim prikazuje
+  sljedeću. **Otkvači** je skida. **Proslijedi** šalje kopiju u drugi razgovor ovog računa; kopija s originalom ne
+  dijeli ništa.
+- **Pronalaženje grupa:** **Pronađi grupu**, na Matrix ekranu, pretražuje javne sobe vašeg Matrix servera, ili drugog
+  koji upišete, a on tada saznaje šta tražite. **Prostori** navode sobe u prostorima u kojima ste, da im se
+  pridružite. **Pretraži poruke** traži samo među porukama sačuvanim na ovom telefonu i nikoga ne pita.
+- **Omiljeni:** zadržite razgovor na listi za **Učini omiljenim** (ide prvi), **Nizak prioritet** (ide posljednji) i
+  **Napusti i zaboravi**, što i Matrix server natjera da ga zaboravi, pa ga vaše druge Matrix aplikacije više ne
+  prikazuju. Čuvaju se u vašem računu, pa vaše druge Matrix aplikacije sortiraju isto.
+- **Novi račun:** na ekranu prijave, **Napravi novi račun** pravi ga na Matrix serveru koji to dozvoljava, iz servera,
+  imena i lozinke. Ako server traži, Erevos traži da prihvatite njegove uslove, da date token za registraciju ili da
+  uradite korak na stranici samog servera, poput captche, koja se otvara u pregledniku, ne preko Tora. Server koji
+  traži e-mail adresu pravi račune samo na svojoj web stranici; napravite ga tamo, pa se prijavite ovdje.
+- **Uređaji:** **Uređaji**, na Matrix ekranu, navode uređaje računa s vremenom kad je svaki posljednji put viđen.
+  **Preimenuj** daje jednom novo ime. **Odjavi ostale uređaje** ih skida s računa: gube ključeve i više ne mogu čitati
+  ono što stiže. Matrix server prvo traži vašu lozinku.
+- **Stariji pozivi:** u razgovoru s jednom osobom pločice za poziv pitaju **Element Call** ili **Stariji poziv**.
+  Stariji poziv radi s FluffyChatom, Nhekom i Elementom na računaru, i zvoni ovdje kad zovu. Njegovi signali idu kao
+  razgovor, šifrovani u šifrovanom razgovoru, preko vašeg releja kad ga prostor ima, inače preko releja za pozive
+  vašeg Matrix servera; sam poziv je šifrovan (DTLS-SRTP).
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; Matrix server to ne može. Zato su Matrix
 razgovori odvojeni i označeni, za ljude do kojih biste inače došli samo preko Matrixa.
@@ -1703,6 +1734,20 @@ aplikacije: nikakav most nije između.
   aplikacija računa nije uključena, pa XMPP server saznaje ime relaya, a relay kad stižu poruke. Isključeno dok ga ne
   uključite; treba relay ažuriran za to, do kojeg XMPP serveri mogu doći (njegov vlasnik otvara port za njih), i XMPP
   server koji šalje obavijesti neaktivnim aplikacijama, kao većina.
+- **Novi račun:** na ekranu prijave, **Napravi novi račun** pravi ga na XMPP serveru koji to dozvoljava (XEP-0077), iz
+  adrese i lozinke. Server koji traži captchu, ili pravi račune samo na svojoj web stranici, to kaže i daje svoju
+  stranicu ako je ima; napravite račun tamo, pa se prijavite ovdje.
+- **Lozinka i brisanje:** **Račun**, na XMPP ekranu, ima **Promijeni lozinku** i **Obriši račun**, što briše račun sa
+  servera zauvijek, poslije dva pitanja, drugo traži adresu. Erevos zaboravlja njegove ključeve; adresa se možda neće
+  moći ponovo napraviti.
+- **Pronalaženje grupa:** **Pronađi grupu** ima **Grupe na vašem serveru**, one koje server dozvoljava svima da nađu,
+  i **Pretraži javne grupe**, što pita search.jabber.network: on saznaje riječi koje tražite i vidi ime vašeg servera,
+  a vaš server ne. Javna grupa je kanal, nije šifrovana.
+- **Lokacije:** **Lokacija** šalje gdje ste kao geo: link, kao Conversations, šifrovan kao razgovor; ona koja stigne
+  tako prikazuje se kao lokacija, s **Otvori u kartama** na Androidu.
+- **Pregledi linkova:** u razgovoru pisanom bez šifrovanja, kad su **Pregledi linkova** uključeni, prvi link ide sa
+  svojim pregledom (XEP-0511), a pregled koji stigne tako prikazuje se ispod riječi. Šifrovani razgovor ne šalje
+  nijedan, jer bi serverima rekao šta je link.
 
 **Zašto:** Erevosovi vlastiti razgovori skrivaju ko s kim razgovara; XMPP server to ne može. Zato su XMPP razgovori
 odvojeni i označeni, za ljude do kojih biste inače došli samo preko XMPP-a.

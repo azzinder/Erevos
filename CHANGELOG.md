@@ -14,6 +14,26 @@ On main, not released yet:
 
 ### For you
 
+- **Matrix: threads, polls, places and link previews**: **Reply in thread** in a message's menu opens the thread on a
+  screen of its own, and a message with answers counts them; **Poll** (voted in its bubble, ended by its maker) and
+  **Location** sit under the message box; the first link in a message goes with a preview when previews are on, never
+  through Tor or in a hidden place (`lib/matrix-parts.ts`, `app/matrix-chat.tsx`, `components/matrix-message.tsx`).
+  See [Matrix](#matrix).
+- **Matrix: pins, forwarding, favourites and finding**: **Pin** and **Unpin** a message (a bar over the chat goes to
+  it), **Forward** a copy to another chat, hold a chat for **Make a favourite**, **Low priority** or **Leave and
+  forget**, **Find a group** among a server's public rooms and in the spaces you are in, and **Search messages** kept on
+  the phone (`lib/matrix-rooms.ts`, `components/matrix-find.tsx`). See [Matrix](#matrix).
+- **Matrix: make an account and look after devices**: **Make a new account** on a server that allows it, asking, when
+  the server does, for its terms, a registration token or a step on its own page; **Devices** lists, renames and
+  signs out the account's other devices (`lib/matrix-account.ts`, `components/matrix-register.tsx`,
+  `components/matrix-devices.tsx`). See [Matrix](#matrix).
+- **Older Matrix calls**: one-to-one calls as FluffyChat, Nheko and Element on a computer make them (`m.call.*`,
+  version 1) ring here and can be made from here, encrypted in encrypted rooms, on the same call screen
+  (`lib/matrix-voip.ts`). See [Matrix](#matrix).
+- **XMPP: make an account, change the password, delete it, find groups**: in-band registration (XEP-0077), a new
+  password, deleting the account for good, groups the server lists and a search of public channels
+  (XEP-0433, search.jabber.network), **Location** as a geo: link, and link previews (XEP-0511) in chats written
+  without encryption (`lib/xmpp.ts`, `lib/xmpp-muc.ts`, `lib/xmpp-links.ts`, `components/xmpp-*.tsx`). See [XMPP](#xmpp).
 - **Every chat opens the same way, with the same arrows**: the Erevos chats, groups, SMS conversations and the Matrix,
   XMPP and Nostr chats all open at their last message with the message bar under it, and have the round arrows to the
   chat's start, to where you left off (the first message that was new when it opened, a double tick) and to its end

@@ -534,6 +534,23 @@ someone blocked that the archive still gives, and their contact requests, are dr
 blocking says so on the screen. Blocking works on whole addresses, and a whole server blocked in another app is
 honoured too.
 
+## Accounts, groups to find, places, previews
+
+- A new account (`registerXmpp`, XEP-0077): the legacy `username`/`password` form or a data form, over the same
+  connection a sign-in has. A captcha, or an out-of-band page (`jabber:x:oob`), is refused with the page named
+  (`XmppRegisterError`); a taken name, a missing in-band registration and a short password (under 8) are said so.
+  `changeXmppPassword` and `deleteXmppAccount` use `jabber:iq:register` on the signed-in account; deleting closes the
+  connection and the account is forgotten here.
+- Groups: `serverChannels` lists the server's group service by `disco#items` (those it lets anyone find);
+  `searchChannels` asks `api@search.jabber.network` (XEP-0433) with a filled form, which learns the words and the
+  server's name; MIX results (`xep0369`) are left out.
+- Places: a message whose body is only a `geo:` URI, as Conversations sends one, shows as a place; sending one is that
+  body, encrypted as the chat is.
+- Link previews: XEP-0511 (`rdf:Description` with `og:` properties, `lib/xmpp-links.ts`), sent only in a chat written
+  without encryption and when the space's previews switch is on, never through Tor, without the picture; read on
+  messages from unencrypted chats only. An encrypted chat sends none.
+- `checks/xmpp-more.check.ts` checks all of these against the server played in the checks.
+
 ## Not yet
 
 - Moving a call to another device, and a call with one person that Dino makes into a group call
