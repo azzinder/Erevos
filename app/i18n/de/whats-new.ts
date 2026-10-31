@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  // 4.0.0-rc.5
   "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
     "**Neuer Chat öffnet versteckte Chats schneller**: Halte **Neuer Chat** einen Moment gedrückt, nicht mehr eine ganze Sekunde, und das Feld für eine PIN versteckter Chats öffnet sich; auf Android vibriert das Telefon dabei einmal. Siehe [Versteckte Chats](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":

@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 4.0.0-rc.5
   "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
     "**Η Νέα συνομιλία ανοίγει πιο γρήγορα τις κρυφές συνομιλίες**: κράτα πατημένη τη **Νέα συνομιλία** για μια στιγμή, όχι για ολόκληρο δευτερόλεπτο, και ανοίγει το πεδίο για το PIN των κρυφών συνομιλιών· στο Android το κινητό δονείται μία φορά όταν ανοίγει. Δες [Κρυφές συνομιλίες](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
