@@ -334,6 +334,23 @@ export async function inboxOf(key: string, events: NostrEvent[]): Promise<string
   return null;
 }
 
+/** The most people of a follow list the New chat screen shows. */
+export const MOST_FOLLOWS = 1000;
+
+/**
+ * Whom `key` follows, from the newest of these follow lists (kind 3) that is theirs and checked:
+ * their keys, each once, as the list has them, but `key` itself, MOST_FOLLOWS at most.
+ */
+export async function followsIn(key: string, events: NostrEvent[]): Promise<string[]> {
+  const lists = events.filter((e) => e.kind === 3 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);
+  for (const list of lists) {
+    if (!(await verified(list))) continue;
+    const keys = list.tags.filter((tag) => tag[0] === 'p' && typeof tag[1] === 'string' && /^[0-9a-f]{64}$/.test(tag[1])).map((tag) => tag[1]);
+    return [...new Set(keys)].filter((k) => k !== key).slice(0, MOST_FOLLOWS);
+  }
+  return [];
+}
+
 /** The name `key` gave itself, from the newest of these profiles (kind 0), checked. */
 export async function nameIn(key: string, events: NostrEvent[]): Promise<string | undefined> {
   const profiles = events.filter((e) => e.kind === 0 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);

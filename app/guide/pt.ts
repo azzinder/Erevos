@@ -1843,9 +1843,11 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 - **Sua chave Nostr:** dê o npub dela às pessoas que devem escrever para você, com **Copiar** ou **Mostrar o código
   QR**. **Seu nome**, se você der um, é público: outros apps Nostr o mostram no lugar do seu npub.
 - **Conversas:** **Nova conversa** recebe o npub da pessoa (ou nprofile), do perfil dela no app dela, ou um nome como
-  nome@example.org (NIP-05). As conversas também ficam na lista da tela inicial, cada uma marcada **Nostr**; o botão
-  **Nostr** mostra só elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que só
-  você vê.
+  nome@example.org (NIP-05). **Mostrar as pessoas que você segue**, logo abaixo, lista as pessoas que a sua chave Nostr
+  segue (a lista pública dela), com os nomes: toque numa para escrever para ela. Nada é carregado até você tocar nesse
+  botão, nem fotos de perfil. As conversas também ficam na lista da tela inicial, cada uma marcada **Nostr**; o botão
+  **Nostr** mostra só elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que
+  só você vê.
 - **Grupos:** **Novo grupo** cria um com duas ou mais das pessoas com quem você conversa, vinte no máximo, com um nome
   se quiser. Grupos Nostr não têm administradores: um grupo são as pessoas que suas mensagens nomeiam, cada mensagem vai
   para cada uma, criptografada para cada uma, e ninguém pode ser adicionado ou removido depois; um grupo com outras

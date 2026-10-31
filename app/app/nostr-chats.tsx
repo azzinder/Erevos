@@ -7,12 +7,13 @@ import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from 
 import { ask } from '../lib/alert';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { canNostrChat, canTor } from '../lib/core';
-import { t } from '../lib/i18n';
+import { plural, t } from '../lib/i18n';
 import { useNetworkWhere, whereParams, type NetworkWhere } from '../lib/network-place';
 import { INBOX_MOST, nameOf, npubOf, nsecOf, shortNpub, type NostrDmChat, type NostrDmState } from '../lib/nostr-dm';
 import { nostrChatsThroughTor } from '../lib/nostr-dm-net';
 import {
   nostrDmBring,
+  nostrDmFollows,
   nostrDmForget,
   nostrDmMake,
   nostrDmNewGroup,
@@ -23,6 +24,7 @@ import {
   nostrDmStart,
   onNostrDmChange,
   runNostrDm,
+  type NostrFollow,
 } from '../lib/nostr-dm-store';
 import { FILE_SERVERS } from '../lib/nostr-files';
 import { onTorReady } from '../lib/relay';
@@ -31,10 +33,10 @@ import { useColors } from '../theme/context';
 
 // The space's chats with other Nostr apps (lib/nostr-dm-store.ts, docs/nostr-chats.md), under
 // Settings → Relay and networks → Nostr chats: a key made here or brought from another app, then
-// the key to give others (as text and as a QR code), a new chat with an npub or a name@domain, a new
-// group of people it chats with, the chats, the name others see, the relays where messages come
-// (NIP-17's inbox), the file servers photos and files go to, the secret key to take elsewhere, and
-// forgetting it all. Each chat opens in app/nostr-chat.tsx. Every view says
+// the key to give others (as text and as a QR code), a new chat with an npub, a name@domain or one of
+// the people the key follows, a new group of people it chats with, the chats, the name others see,
+// the relays where messages come (NIP-17's inbox), the file servers photos and files go to, the secret
+// key to take elsewhere, and forgetting it all. Each chat opens in app/nostr-chat.tsx. Every view says
 // these chats are not anonymous. Opened from a hidden place's hidden chats (`hidden=1`) it is that
 // place's own key and chats (lib/network-place.ts), and says so.
 
@@ -221,6 +223,8 @@ export default function NostrChatsScreen() {
         </Text>
       </Card>
 
+      <FollowsCard busy={busy} run={run} open={open} />
+
       <GroupCard state={state} busy={busy} run={run} open={open} />
 
       <SectionTitle title={t('Chats')} />
@@ -319,6 +323,69 @@ function InboxCard({ state, busy, run, where }: { state: NostrDmState; busy: boo
         ) : null}
       </Card>
     </>
+  );
+}
+
+// The people the space's Nostr key follows (its follow list, kind 3): looked up only when asked, with
+// their names but no pictures. Tapping one starts a chat with them.
+const FOLLOWS_SHOWN = 50;
+
+function FollowsCard({ busy, run, open }: { busy: boolean; run: Run; open: (key: string) => void }) {
+  const [follows, setFollows] = useState<(NostrFollow & { npub: string })[] | null>(null);
+  const [find, setFind] = useState('');
+  const word = find.trim().toLowerCase();
+  const matches = (follows ?? []).filter((f) => !word || f.name?.toLowerCase().includes(word) || f.npub.includes(word));
+  return (
+    <Card>
+      <Row>
+        <Button title={t('Show the people you follow')} kind="secondary" compact disabled={busy} onPress={() => void run(async () => setFollows((await nostrDmFollows()).map((f) => ({ ...f, npub: npubOf(f.key) }))))} />
+      </Row>
+      {follows?.length === 0 ? <Text tone="muted">{t('No list of people you follow was found on your relays.')}</Text> : null}
+      {follows?.length ? (
+        <>
+          <Input value={find} onChangeText={setFind} autoCapitalize="none" autoCorrect={false} placeholder={t('Search the people you follow')} accessibilityLabel={t('Search the people you follow')} />
+          {matches.slice(0, FOLLOWS_SHOWN).map((f) => {
+            const name = f.name || shortNpub(f.npub);
+            return (
+              <Pressable
+                key={f.key}
+                disabled={busy}
+                onPress={() =>
+                  void run(async () => {
+                    const key = await nostrDmStart(f.npub, f.name ?? '');
+                    open(key);
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={name}
+                style={({ pressed }) => ({ paddingVertical: space.sm, opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text variant="bodyStrong" numberOfLines={1}>
+                  {name}
+                </Text>
+                {/* Anyone can take any name: the key tells two of the same name apart. */}
+                {f.name ? (
+                  <Text variant="caption" tone="faint" numberOfLines={1}>
+                    {shortNpub(f.npub)}
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+          <Text variant="caption" tone="faint">
+            {plural(matches.length, '{n} person you follow', '{n} people you follow')}
+          </Text>
+          {matches.length > FOLLOWS_SHOWN ? (
+            <Text variant="caption" tone="faint">
+              {t('Type a name to find the others.')}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
+      <Text variant="caption" tone="faint">
+        {t("Your follow list is public on Nostr, so reading it tells the relays nothing new. It goes as this space's Tor way says. No profile pictures are loaded.")}
+      </Text>
+    </Card>
   );
 }
 

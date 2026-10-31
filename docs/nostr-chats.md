@@ -136,7 +136,10 @@ as it comes.
   kind 10050 and kind 0 go to its own relays and to the relays people look them up on
   (purplepag.es, relay.damus.io, nos.lol, relay.primal.net) when they change and once a week, each
   newer than the last. Where someone reads is looked up on those, on the space's own and on the
-  relays their nprofile or NIP-05 named, and kept six hours for sending. Kept encrypted in the space
+  relays their nprofile or NIP-05 named, and kept six hours for sending. The people the space's key
+  follows (its newest signed kind 3, at most 1000) and their names (kind 0, 200 keys a look-up, two
+  look-ups at once) are looked up on the same relays only when New chat is asked to show them
+  (`nostrDmFollows`), never kept, with no profile pictures. Kept encrypted in the space
   (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), and in backups (`app/lock/backup.ts`, the
   space's and each hidden place's, with the pages their values take): restored, the key and its
   chats come back as they were, since NIP-17 keeps no ratchet that could use a key twice
@@ -155,7 +158,8 @@ as it comes.
   the chats a stranger can make, and two keys writing both ways through each other's inbox relays,
   the space's guarded one asking who reads and told only by the connection that reads; the wraps
   signed by one-time keys, times set back, nothing on the look-up relay; the space's other app
-  reading both sides; someone with no kind 10050 told so; closing and opening the space; a relay
+  reading both sides; someone with no kind 10050 told so; the people the space follows, from its
+  newest follow list, a changed one counting for nothing; closing and opening the space; a relay
   that goes away read again; a NIP-05 name; the home list's rows; a group of three made, named and
   written in by all, its reactions (one before its message), and a photo through a Blossom server
   played in the check (encrypted there, the upload signed by a one-time key, opened by the others);

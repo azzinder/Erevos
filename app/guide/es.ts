@@ -1858,7 +1858,9 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
 - **Tu clave de Nostr:** da su npub a las personas que deban escribirte, con **Copiar** o **Mostrar el código QR**.
   **Tu nombre**, si das uno, es público: otras apps de Nostr lo muestran en lugar de tu npub.
 - **Chats:** **Chat nuevo** toma su npub (o nprofile), de su perfil en su app, o un nombre como nombre@example.org
-  (NIP-05). Los chats también están en la lista de inicio, cada uno marcado **Nostr**; el botón **Nostr** muestra solo
+  (NIP-05). **Mostrar a las personas que sigues**, debajo, lista las personas que sigue tu clave de Nostr (su lista
+  pública de seguidos), con sus nombres: toca una para escribirle. No se carga nada hasta que lo tocas, ni fotos de
+  perfil. Los chats también están en la lista de inicio, cada uno marcado **Nostr**; el botón **Nostr** muestra solo
   ellos, y allí **Chat nuevo** abre esta pantalla. **Ponerle un nombre aquí** da a un chat un nombre que solo ves tú.
 - **Grupos:** **Grupo nuevo** crea uno con dos o más de las personas con quienes chateas, veinte como mucho, con un
   nombre si quieres. Los grupos de Nostr no tienen administradores: un grupo son las personas que nombran sus mensajes,

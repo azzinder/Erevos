@@ -89,4 +89,11 @@ export const nostrChats: Record<string, string> = {
   "The server changed the file.": "Poslužitelj je promijenio datoteku.",
   "No file server took the file ({said}).": "Nijedan poslužitelj datoteka nije primio datoteku ({said}).",
   "The file could not be fetched ({status}).": "Datoteka se nije mogla dohvatiti ({status}).",
+  "Show the people you follow": "Prikaži ljude koje pratite",
+  "No list of people you follow was found on your relays.": "Na vašim relayima nije pronađen popis ljudi koje pratite.",
+  "Search the people you follow": "Traži među ljudima koje pratite",
+  "{n} person you follow": "{n} osoba koju pratite",
+  "{n} people you follow": "{n} osoba koju pratite | {n} osobe koje pratite | {n} osoba koje pratite",
+  "Type a name to find the others.": "Upišite ime da biste pronašli ostale.",
+  "Your follow list is public on Nostr, so reading it tells the relays nothing new. It goes as this space's Tor way says. No profile pictures are loaded.": "Popis ljudi koje pratite javan je na Nostru, pa njegovo čitanje relayima ne govori ništa novo. Ide onako kako određuje izbor Tora za ovaj prostor. Ne učitavaju se profilne slike.",
 };

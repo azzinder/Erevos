@@ -32,6 +32,7 @@ import {
   profileEvent,
   readKey,
   shortNpub,
+  signed,
   takeWrap,
   wrapMessage,
   wrapText,
@@ -43,6 +44,7 @@ import { lookUpNip05, NostrRelay, setNostrOpen } from '../lib/nostr-dm-net';
 import { networkNotify, networkUnreadAt, onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import {
   nostrDmFile,
+  nostrDmFollows,
   nostrDmForgetChat,
   nostrDmMake,
   nostrDmNewGroup,
@@ -342,6 +344,24 @@ test('a space and someone on another app write both ways through their inbox rel
   assert.deepEqual(came, [[where, 1]]);
   stopCame();
   stopRead();
+
+  // Whom she follows, for New chat: her newest follow list that is hers, with the names they gave
+  // themselves; one that was changed after it was signed counts for nothing.
+  const dan: NostrDmState = await newNostrDm();
+  const me = nostrDmNow().state!;
+  const follows = async (tags: string[][], at: number) => signed(me, 3, tags, '', at);
+  const older = await follows([['p', dan.public]], Date.now() - 60_000);
+  const newest = await follows([['p', bob.public], ['p', 'not a key'], ['p', dan.public], ['p', me.public], ['p', bob.public], ['e', dan.public]], Date.now());
+  const forged = { ...newest, created_at: newest.created_at + 60, tags: [['p', dan.public]] };
+  for (const event of [older, newest, forged]) {
+    const r = await NostrRelay.open(index.url, null);
+    await r.publish(event);
+    r.close();
+  }
+  const authed = aliceInbox.authed.length + index.authed.length;
+  assert.deepEqual(await nostrDmFollows(), [{ key: bob.public, name: 'Bob' }, { key: dan.public }]);
+  // Asking said no one's name.
+  assert.equal(aliceInbox.authed.length + index.authed.length, authed);
 
   // A relay that goes away is read again.
   const before = aliceInbox.connections;

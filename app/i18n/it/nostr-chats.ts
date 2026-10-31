@@ -89,4 +89,11 @@ export const nostrChats: Record<string, string> = {
   "The server changed the file.": "Il server ha cambiato il file.",
   "No file server took the file ({said}).": "Nessun server di file ha accettato il file ({said}).",
   "The file could not be fetched ({status}).": "Non è stato possibile scaricare il file ({status}).",
+  "Show the people you follow": "Mostra le persone che segui",
+  "No list of people you follow was found on your relays.": "Nessuna lista delle persone che segui è stata trovata sui tuoi relay.",
+  "Search the people you follow": "Cerca tra le persone che segui",
+  "{n} person you follow": "{n} persona che segui",
+  "{n} people you follow": "{n} persone che segui",
+  "Type a name to find the others.": "Scrivi un nome per trovare gli altri.",
+  "Your follow list is public on Nostr, so reading it tells the relays nothing new. It goes as this space's Tor way says. No profile pictures are loaded.": "La lista delle persone che segui è pubblica su Nostr, quindi leggerla non dice ai relay nulla di nuovo. Passa come stabilisce la scelta Tor di questo spazio. Non viene caricata nessuna foto del profilo.",
 };

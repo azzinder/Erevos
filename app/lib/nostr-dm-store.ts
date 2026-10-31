@@ -12,6 +12,7 @@ import {
   addMessage,
   authEvent,
   chatOf,
+  followsIn,
   forgetChat,
   INBOX_MOST,
   inboxEvent,
@@ -587,6 +588,51 @@ export async function nostrDmStart(written: string, name = ''): Promise<string> 
   });
   void lookUpPerson(it, key).catch(() => undefined);
   return key;
+}
+
+/** Someone the space's Nostr key follows: their key, and the name they gave themselves if one was found. */
+export type NostrFollow = { key: string; name?: string };
+
+// How many people one look-up of names asks for, and how many such look-ups go at once.
+const NAMES_AT_ONCE = 200;
+const LOOKUPS_AT_ONCE = 2;
+
+/**
+ * Whom the space's Nostr key follows, as its follow list (kind 3) says, looked up now on the
+ * relays it reads on and the usual ones for look-ups, with the names they gave themselves (kind
+ * 0): named ones first, by name. The list is public, so asking for it and their names tells a
+ * relay nothing it could not know; it goes as the space's Tor way says, as every look-up does.
+ * Empty when none was found.
+ */
+export async function nostrDmFollows(): Promise<NostrFollow[]> {
+  const it = need();
+  const state = it.state;
+  const where = [...state.inbox, ...LOOKUP_RELAYS];
+  const keys = await followsIn(state.public, await lookUp(it, where, [{ kinds: [3], authors: [state.public], limit: 1 }]));
+  if (keys.length === 0) return [];
+  const batches: string[][] = [];
+  for (let i = 0; i < keys.length; i += NAMES_AT_ONCE) batches.push(keys.slice(i, i + NAMES_AT_ONCE));
+  const profiles: NostrEvent[] = [];
+  for (let i = 0; i < batches.length; i += LOOKUPS_AT_ONCE) {
+    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUp(it, where, [{ kinds: [0], authors: batch }])));
+    profiles.push(...found.flat());
+  }
+  const byKey = new Map<string, NostrEvent[]>();
+  for (const profile of profiles) {
+    if (profile.kind !== 0) continue;
+    const list = byKey.get(profile.pubkey);
+    if (list) list.push(profile);
+    else byKey.set(profile.pubkey, [profile]);
+  }
+  const follows = await Promise.all(
+    keys.map(async (key): Promise<NostrFollow> => {
+      // A name this space gave them comes first, as in their chat.
+      const name = (!state.chats[key]?.members && state.chats[key]?.name) || (await nameIn(key, byKey.get(key) ?? [])) || state.people[key]?.name;
+      return name ? { key, name } : { key };
+    }),
+  );
+  const named = follows.filter((f) => f.name).sort((a, b) => a.name!.localeCompare(b.name!));
+  return [...named, ...follows.filter((f) => !f.name)];
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */

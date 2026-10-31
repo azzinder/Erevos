@@ -89,4 +89,11 @@ export const nostrChats: Record<string, string> = {
   "The server changed the file.": "Ο διακομιστής άλλαξε το αρχείο.",
   "No file server took the file ({said}).": "Κανένας διακομιστής αρχείων δεν δέχτηκε το αρχείο ({said}).",
   "The file could not be fetched ({status}).": "Δεν ήταν δυνατή η λήψη του αρχείου ({status}).",
+  "Show the people you follow": "Δείξε τους ανθρώπους που ακολουθείς",
+  "No list of people you follow was found on your relays.": "Δεν βρέθηκε λίστα με τους ανθρώπους που ακολουθείς στα relays σου.",
+  "Search the people you follow": "Αναζήτηση στους ανθρώπους που ακολουθείς",
+  "{n} person you follow": "{n} άτομο που ακολουθείς",
+  "{n} people you follow": "{n} άτομα που ακολουθείς",
+  "Type a name to find the others.": "Γράψε ένα όνομα για να βρεις τους υπόλοιπους.",
+  "Your follow list is public on Nostr, so reading it tells the relays nothing new. It goes as this space's Tor way says. No profile pictures are loaded.": "Η λίστα με όσους ακολουθείς είναι δημόσια στο Nostr, οπότε η ανάγνωσή της δεν λέει τίποτα καινούργιο στα relays. Πηγαίνει όπως ορίζει η επιλογή Tor αυτού του χώρου. Δεν φορτώνονται φωτογραφίες προφίλ.",
 };

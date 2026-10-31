@@ -10,6 +10,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
     "**Chat nuevo abre antes los chats ocultos**: mantén pulsado **Chat nuevo** un momento, no un segundo entero, y se abre el campo para un PIN de chats ocultos; en Android el teléfono vibra una vez al abrirse. Consulta [Chats ocultos](#hidden).",
+  "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Personas a las que sigues en Nostr**: en los Chats de Nostr, bajo Chat nuevo, **Mostrar a las personas que sigues** lista las personas que sigue tu clave de Nostr, con sus nombres; toca una para escribirle. Consulta [Chats con otras apps de Nostr](#nostr-chats).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Números en los chips de la pantalla de inicio**: cada chip sobre los chats (Todos, SMS, Erevos, Matrix, XMPP, Nostr) muestra cuántos mensajes sin leer hay en él, con un número pequeño tras su nombre; los chats y grupos silenciados no cuentan. Mira [Primeros pasos](#start).",

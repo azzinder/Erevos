@@ -1717,8 +1717,10 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 - **Your Nostr key:** give its npub to the people who should write to you, with **Copy** or **Show QR code**. **Your
   name**, if you give one, is public: other Nostr apps show it in place of your npub.
 - **Chats:** **New chat** takes their npub (or nprofile), from their profile in their app, or a name such as
-  name@example.org (NIP-05). The chats are in the home list too, each marked **Nostr**; the **Nostr** chip shows only
-  them, and there **New chat** opens this screen. **Name them here** gives a chat a name that only you see.
+  name@example.org (NIP-05). **Show the people you follow**, under it, lists the people your Nostr key follows (its
+  public follow list), with their names: tap one to write to them. Nothing is loaded until you tap it, and no profile
+  pictures. The chats are in the home list too, each marked **Nostr**; the **Nostr** chip shows only them, and there
+  **New chat** opens this screen. **Name them here** gives a chat a name that only you see.
 - **Groups:** **New group** makes one from two or more of the people you chat with, twenty at most, with a name if you
   like. Nostr groups have no admins: a group is the people its messages name, each message goes to each of them,
   encrypted for each, and nobody can be added or taken out later; a group with other people is a new group. **Name this
