@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Les personnes que tu suis sur Nostr, trouvées là où ton autre appli les garde** : avec une clé venue d’une autre appli Nostr, **Afficher les personnes que tu suis** cherche aussi sur les relais où écrit ta clé, et le dit quand aucun relais n’a répondu. Voir [Discussions avec d’autres applis Nostr](#nostr-chats).",
+  "**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Ton nom Nostr garde le reste de ton profil** : enregistrer **Ton nom** ne change que le nom dans ton profil ; une photo ou des mots qu’une autre appli de ta clé y a mis restent. Avant, ils pouvaient être effacés. Voir [Discussions avec d’autres applis Nostr](#nostr-chats).",
   "**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second.":
     "**Les écrans redescendent quand aucun clavier n’est ouvert, dans tous les cas** : la liste et les boutons de l’écran d’accueil, ou une discussion, pouvaient encore rester en haut comme si un clavier était ouvert, après son départ. Maintenant Erevos demande à Android lui-même si un clavier est affiché, et sans clavier ils redescendent en moins d’une seconde.",
   // 4.0.0-rc.5

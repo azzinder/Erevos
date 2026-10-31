@@ -135,11 +135,16 @@ as it comes.
   other connections, kept a minute after their last use, which never answer `AUTH`. The space's
   kind 10050 and kind 0 go to its own relays and to the relays people look them up on
   (purplepag.es, relay.damus.io, nos.lol, relay.primal.net) when they change and once a week, each
-  newer than the last. Where someone reads is looked up on those, on the space's own and on the
+  newer than the last. The kind 0 is the key's newest profile on those relays with only its name
+  changed (`profileFieldsOf`), signed a second after it, so a key brought from another app keeps its
+  picture and words; none is written while no relay answers, nor over a profile that cannot be read
+  (over 64 KB, or not a JSON object). Where someone reads is looked up on those, on the space's own and on the
   relays their nprofile or NIP-05 named, and kept six hours for sending. The people the space's key
   follows (its newest signed kind 3, at most 1000) and their names (kind 0, 200 keys a look-up, two
   look-ups at once) are looked up on the same relays only when New chat is asked to show them
-  (`nostrDmFollows`), never kept, with no profile pictures. Kept encrypted in the space
+  (`nostrDmFollows`), never kept, with no profile pictures; the kind 3 also on up to 4 relays the
+  key's own NIP-65 list (kind 10002, `writesOf`) names for writing, where another app of a brought
+  key keeps it. When no relay answers at all, the screen says so rather than that there is no list. Kept encrypted in the space
   (`app/lock/nostr-dm-data.ts`, file `erevos-nostr-dm`), and in backups (`app/lock/backup.ts`, the
   space's and each hidden place's, with the pages their values take): restored, the key and its
   chats come back as they were, since NIP-17 keeps no ratchet that could use a key twice
@@ -159,7 +164,8 @@ as it comes.
   the space's guarded one asking who reads and told only by the connection that reads; the wraps
   signed by one-time keys, times set back, nothing on the look-up relay; the space's other app
   reading both sides; someone with no kind 10050 told so; the people the space follows, from its
-  newest follow list, a changed one counting for nothing; closing and opening the space; a relay
+  newest follow list, a changed one counting for nothing, and a newer one found only on a relay its
+  NIP-65 list names for writing; a new name keeping the rest of a newer profile from another app; closing and opening the space; a relay
   that goes away read again; a NIP-05 name; the home list's rows; a group of three made, named and
   written in by all, its reactions (one before its message), and a photo through a Blossom server
   played in the check (encrypted there, the upload signed by a one-time key, opened by the others);

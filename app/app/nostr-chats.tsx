@@ -336,14 +336,33 @@ const FOLLOWS_SHOWN = 50;
 
 function FollowsCard({ busy, run, open }: { busy: boolean; run: Run; open: (key: string) => void }) {
   const [follows, setFollows] = useState<(NostrFollow & { npub: string })[] | null>(null);
+  // Why the list could not be looked up (no relay answered), said here under its button.
+  const [failed, setFailed] = useState('');
   const [find, setFind] = useState('');
   const word = find.trim().toLowerCase();
   const matches = (follows ?? []).filter((f) => !word || f.name?.toLowerCase().includes(word) || f.npub.includes(word));
   return (
     <Card>
       <Row>
-        <Button title={t('Show the people you follow')} kind="secondary" compact disabled={busy} onPress={() => void run(async () => setFollows((await nostrDmFollows()).map((f) => ({ ...f, npub: npubOf(f.key) }))))} />
+        <Button
+          title={t('Show the people you follow')}
+          kind="secondary"
+          compact
+          disabled={busy}
+          onPress={() =>
+            void run(async () => {
+              setFailed('');
+              try {
+                setFollows((await nostrDmFollows()).map((f) => ({ ...f, npub: npubOf(f.key) })));
+              } catch (error) {
+                setFollows(null);
+                setFailed(error instanceof Error ? error.message : String(error));
+              }
+            })
+          }
+        />
       </Row>
+      {failed ? <Text tone="muted">{failed}</Text> : null}
       {follows?.length === 0 ? <Text tone="muted">{t('No list of people you follow was found on your relays.')}</Text> : null}
       {follows?.length ? (
         <>

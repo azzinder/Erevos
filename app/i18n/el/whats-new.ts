@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Όσους ακολουθείς στο Nostr τους βρίσκει εκεί που τους κρατά η άλλη σου εφαρμογή**: με κλειδί που έφερες από άλλη εφαρμογή Nostr, το **Δείξε τους ανθρώπους που ακολουθείς** ψάχνει και στα relays όπου γράφει το κλειδί σου, και λέει όταν δεν απάντησε κανένα relay. Δες [Συνομιλίες με άλλες εφαρμογές Nostr](#nostr-chats).",
+  "**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Το όνομά σου στο Nostr κρατά το υπόλοιπο προφίλ σου**: η αποθήκευση στο **Το όνομά σου** αλλάζει μόνο το όνομα στο προφίλ σου· μια φωτογραφία ή λόγια που έβαλε εκεί άλλη εφαρμογή του κλειδιού σου μένουν. Πριν, μπορούσαν να σβηστούν. Δες [Συνομιλίες με άλλες εφαρμογές Nostr](#nostr-chats).",
   "**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second.":
     "**Οι οθόνες κατεβαίνουν όταν δεν υπάρχει ανοιχτό πληκτρολόγιο, σε κάθε περίπτωση**: η λίστα και τα κουμπιά της αρχικής οθόνης, ή μια συνομιλία, μπορούσαν ακόμα να μείνουν ψηλά σαν να ήταν ανοιχτό πληκτρολόγιο, αφού αυτό είχε φύγει. Τώρα το Erevos ρωτά το ίδιο το Android αν φαίνεται πληκτρολόγιο, και όταν δεν φαίνεται κατεβαίνουν μέσα σε ένα δευτερόλεπτο.",
   // 4.0.0-rc.5

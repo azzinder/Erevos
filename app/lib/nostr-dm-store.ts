@@ -28,6 +28,7 @@ import {
   newGroup,
   newNostrDm,
   profileEvent,
+  profileFieldsOf,
   reactionOf,
   readersOf,
   readKey,
@@ -35,6 +36,7 @@ import {
   signedOnce,
   takeWrap,
   wrapMessage,
+  writesOf,
   type NostrDmMessage,
   type NostrDmState,
 } from './nostr-dm';
@@ -225,16 +227,21 @@ async function publish(it: Live, urls: string[], event: NostrEvent): Promise<num
 
 /** What these relays have for `filters`, together. */
 async function lookUp(it: Live, urls: string[], filters: Record<string, unknown>[], ms = 8000): Promise<NostrEvent[]> {
+  return (await lookUpAnswered(it, urls, filters, ms)).events;
+}
+
+/** As lookUp, and whether any relay answered at all: none found, or none to ask, are not the same. */
+async function lookUpAnswered(it: Live, urls: string[], filters: Record<string, unknown>[], ms = 8000): Promise<{ events: NostrEvent[]; answered: boolean }> {
   const found = await Promise.all(
     [...new Set(urls)].map(async (url) => {
       try {
         return await (await outTo(it, url)).query(filters, ms);
       } catch {
-        return [];
+        return null;
       }
     }),
   );
-  return found.flat();
+  return { events: found.flatMap((events) => events ?? []), answered: found.some((events) => events !== null) };
 }
 
 /** Says where the space reads, once its inbox changed or a week went by, and its name if it gave one. */
@@ -254,10 +261,20 @@ async function tell(it: Live): Promise<void> {
       const at = Math.max(Date.now(), (it.listedAt + 1) * 1000);
       it.listedAt = seconds(at);
       const events = [await inboxEvent(state, at)];
-      if (state.name !== undefined) events.push(await profileEvent(state, at));
+      // The name goes in the key's newest profile, which keeps what else it says (a key brought from
+      // another app keeps its picture and words there): never written while no relay answered, nor
+      // over a profile that cannot be read. It is tried again when the space next reads.
+      let whole = true;
+      if (state.name !== undefined) {
+        const mine = await lookUpAnswered(it, where, [{ kinds: [0], authors: [state.public] }]);
+        const kept = mine.answered ? await profileFieldsOf(state.public, mine.events) : null;
+        // Later than the profile it changes, or relays keep that one.
+        if (kept) events.push(await profileEvent(state, Math.max(at, (kept.at + 1) * 1000), kept.fields));
+        else whole = false;
+      }
       let took = 0;
       for (const event of events) took += await publish(it, where, event);
-      if (took > 0 && it.state === state && !it.tellAgain) {
+      if (took > 0 && whole && it.state === state && !it.tellAgain) {
         await changeAccount(it, async () => {
           state.told = seconds();
         });
@@ -611,9 +628,17 @@ const LOOKUPS_AT_ONCE = 2;
 export async function nostrDmFollows(): Promise<NostrFollow[]> {
   const it = need();
   const state = it.state;
-  const where = [...state.inbox, ...LOOKUP_RELAYS];
-  const keys = await followsIn(state.public, await lookUp(it, where, [{ kinds: [3], authors: [state.public], limit: 1 }]));
+  // The newest follow list, and where the key writes (NIP-65), on the relays the space reads and
+  // looks up on; then the list is looked for on those it writes on too, where the other apps of a
+  // key brought here keep it.
+  const where = [...new Set([...state.inbox, ...LOOKUP_RELAYS])];
+  const first = await lookUpAnswered(it, where, [{ kinds: [3, 10002], authors: [state.public] }]);
+  if (!first.answered) throw new Error(t('No relay answered. Try again in a while.'));
+  const writes = (await writesOf(state.public, first.events)).filter((url) => !where.includes(url));
+  const lists = writes.length ? [...first.events, ...(await lookUp(it, writes, [{ kinds: [3], authors: [state.public] }]))] : first.events;
+  const keys = await followsIn(state.public, lists);
   if (keys.length === 0) return [];
+  where.push(...writes);
   const batches: string[][] = [];
   for (let i = 0; i < keys.length; i += NAMES_AT_ONCE) batches.push(keys.slice(i, i + NAMES_AT_ONCE));
   const profiles: NostrEvent[] = [];

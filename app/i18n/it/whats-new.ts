@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  "**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Le persone che segui su Nostr, trovate dove le tiene la tua altra app**: con una chiave portata da un’altra app Nostr, **Mostra le persone che segui** cerca anche sui relay dove scrive la tua chiave, e lo dice quando nessun relay ha risposto. Vedi [Chat con altre app Nostr](#nostr-chats).",
+  "**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Il tuo nome Nostr tiene il resto del tuo profilo**: salvare **Il tuo nome** cambia solo il nome nel tuo profilo; una foto o delle parole che un’altra app della tua chiave ci ha messo restano. Prima potevano essere cancellate. Vedi [Chat con altre app Nostr](#nostr-chats).",
   "**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second.":
     "**Le schermate scendono quando non c’è una tastiera aperta, in ogni caso**: l’elenco e i pulsanti della schermata iniziale, o una chat, potevano ancora restare in alto come se una tastiera fosse aperta, dopo che se n’era andata. Ora Erevos chiede ad Android stesso se una tastiera è mostrata, e senza tastiera scendono entro un secondo.",
   // 4.0.0-rc.5

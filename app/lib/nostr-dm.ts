@@ -300,9 +300,49 @@ export function inboxEvent(state: NostrDmState, now = Date.now()): Promise<Nostr
   );
 }
 
-/** The space's name for others (kind 0): only a name, nothing else of it. */
-export function profileEvent(state: NostrDmState, now = Date.now()): Promise<NostrEvent> {
-  return signed(state, 0, [], JSON.stringify(state.name ? { name: state.name, display_name: state.name } : {}), now);
+/**
+ * The space's name for others (kind 0). What else the key says of itself stays as its newest profile
+ * has it (`kept`, from profileFieldsOf): its picture and words, when the key came from another Nostr
+ * app. Only the name is Erevos's.
+ */
+export function profileEvent(state: NostrDmState, now = Date.now(), kept: Record<string, unknown> = {}): Promise<NostrEvent> {
+  const said: Record<string, unknown> = { ...kept };
+  const camel = 'displayName' in said;
+  delete said.name;
+  delete said.display_name;
+  delete said.displayName;
+  if (state.name) {
+    said.name = state.name;
+    said.display_name = state.name;
+    if (camel) said.displayName = state.name;
+  }
+  return signed(state, 0, [], JSON.stringify(said), now);
+}
+
+// The longest profile read to keep its other fields: profiles are a few kilobytes.
+const PROFILE_MOST = 64 * 1024;
+
+/**
+ * What `key` says of itself, from the newest of these profiles (kind 0) that is theirs and checked
+ * (of two from the same second, the one with the lower id, as relays keep): its fields and its time
+ * in seconds; no fields and 0 when there is none; null when the newest cannot be read (too long, or
+ * not an object), which Erevos then does not write over.
+ */
+export async function profileFieldsOf(key: string, events: NostrEvent[]): Promise<{ fields: Record<string, unknown>; at: number } | null> {
+  const profiles = events
+    .filter((e) => e.kind === 0 && e.pubkey === key)
+    .sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  for (const profile of profiles) {
+    if (!(await verified(profile))) continue;
+    if (profile.content.length > PROFILE_MOST) return null;
+    try {
+      const said = JSON.parse(profile.content) as unknown;
+      return typeof said === 'object' && said !== null && !Array.isArray(said) ? { fields: said as Record<string, unknown>, at: profile.created_at } : null;
+    } catch {
+      return null;
+    }
+  }
+  return { fields: {}, at: 0 };
 }
 
 /** What a relay that keeps wraps for their reader only is told to show who reads (NIP-42). */
@@ -336,6 +376,25 @@ export async function inboxOf(key: string, events: NostrEvent[]): Promise<string
     return relays;
   }
   return null;
+}
+
+/** The most of the relays someone writes on (their NIP-65 list) that their follow list is looked for on. */
+export const WRITES_MOST = 4;
+
+/**
+ * Where `key` writes, from the newest of these relay lists (kind 10002, NIP-65) that is theirs and
+ * checked: the relays it names for writing, or for both, WRITES_MOST at most.
+ */
+export async function writesOf(key: string, events: NostrEvent[]): Promise<string[]> {
+  const lists = events.filter((e) => e.kind === 10002 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);
+  for (const list of lists) {
+    if (!(await verified(list))) continue;
+    const relays = list.tags
+      .filter((tag) => tag[0] === 'r' && isNostrRelay(tag[1]) && (tag[2] === undefined || tag[2] === '' || tag[2] === 'write'))
+      .map((tag) => tag[1].replace(/\/+$/, ''));
+    return [...new Set(relays)].slice(0, WRITES_MOST);
+  }
+  return [];
 }
 
 /** The most people of a follow list the New chat screen shows. */

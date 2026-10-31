@@ -1881,10 +1881,11 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   possono avere una chiave Nostr propria, vedi [Chat nascoste](#hidden). **Mostra la chiave segreta (nsec)** la mostra,
   per annotarla o portarla in un’altra app: chi ce l’ha legge queste chat e scrive al posto tuo.
 - **La tua chiave Nostr:** dai il suo npub alle persone che devono scriverti, con **Copia** o **Mostra il codice QR**.
-  **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub.
+  **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub. Lì cambia solo il nome: una
+  foto o delle parole che un’altra app della tua chiave ha messo nel tuo profilo restano.
 - **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
   nome@example.org (NIP-05). **Mostra le persone che segui**, qui sotto, elenca le persone che la tua chiave Nostr segue
-  (la sua lista pubblica dei seguiti), con i loro nomi: tocca una persona per scriverle. Non viene caricato nulla finché
+  (la sua lista pubblica dei seguiti, cercata anche sui relay dove scrive la tua chiave), con i loro nomi: tocca una persona per scriverle. Non viene caricato nulla finché
   non lo tocchi, e nessuna foto del profilo. Le chat sono anche nella lista della home, ognuna segnata **Nostr**; il
   pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un
   nome che vedi solo tu.

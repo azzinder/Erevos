@@ -16,6 +16,15 @@ On main, not released yet:
 
 ### Under the hood
 
+- **People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app,
+  **Show the people you follow** found no list (on the Pixel, 4.0.0-rc.5): it looked only on the space's relays and
+  the look-up ones. `nostrDmFollows` (`lib/nostr-dm-store.ts`) now also reads the key's own relay list (NIP-65, kind
+  10002, `writesOf` in `lib/nostr-dm.ts`) and looks for the follow list on up to 4 relays it writes on; when no relay
+  answers at all, it says so under the button, not that no list was found.
+- **Your Nostr name keeps the rest of your profile**: Erevos wrote its profile (kind 0) with the name alone, when the
+  name changed and once a week, over what another app of a brought key had put there (picture, banner, about). It
+  now reads the key's newest profile first (`profileFieldsOf`), changes only the name in it and signs it a second
+  later than that one; it writes no profile while no relay answers, nor over one it cannot read.
 - **Screens come down when no keyboard is open, in every case**: the home screen's list still ended a hand above
   the bottom with no keyboard open (on the Pixel, 4.0.0-rc.5): the keyboard library can keep part of a keyboard's
   height when its animation is cut off, or tell of a keyboard again when a field takes the focus with none open,

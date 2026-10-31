@@ -94,6 +94,7 @@ export const nostrChats: Record<string, string> = {
   "No file server took the file ({said}).": "Nenhum servidor de arquivos aceitou o arquivo ({said}).",
   "The file could not be fetched ({status}).": "Não foi possível buscar o arquivo ({status}).",
   "Show the people you follow": "Mostrar as pessoas que você segue",
+  "No relay answered. Try again in a while.": "Nenhum relay respondeu. Tente de novo daqui a pouco.",
   "No list of people you follow was found on your relays.": "Nenhuma lista das pessoas que você segue foi encontrada nos seus relays.",
   "Search the people you follow": "Buscar entre as pessoas que você segue",
   "{n} person you follow": "{n} pessoa que você segue",

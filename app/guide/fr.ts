@@ -1954,10 +1954,11 @@ discussions propres à Erevos.
   **Afficher la clé secrète (nsec)** l’affiche, pour la noter ou l’emporter dans une autre appli : qui l’a lit ces
   discussions et écrit en ton nom.
 - **Ta clé Nostr :** donne son npub aux personnes qui doivent t’écrire, avec **Copier** ou **Afficher le code QR**.
-  **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub.
+  **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub. Seul le nom y change :
+  une photo ou des mots qu’une autre appli de ta clé a mis dans ton profil restent.
 - **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
   comme nom@example.org (NIP-05). **Afficher les personnes que tu suis**, juste dessous, liste les personnes que suit ta
-  clé Nostr (sa liste publique de personnes suivies), avec leurs noms : touches-en une pour lui écrire. Rien n’est
+  clé Nostr (sa liste publique de personnes suivies, cherchée aussi sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Rien n’est
   chargé avant que tu appuies dessus, et aucune photo de profil. Les discussions sont aussi dans la liste de l’accueil,
   chacune marquée **Nostr** ; le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran.
   **Lui donner un nom ici** donne à une discussion un nom que toi seul vois.

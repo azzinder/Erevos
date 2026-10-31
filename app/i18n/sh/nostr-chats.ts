@@ -94,6 +94,7 @@ export const nostrChats: Record<string, string> = {
   "No file server took the file ({said}).": "Nijedan poslužitelj datoteka nije primio datoteku ({said}).",
   "The file could not be fetched ({status}).": "Datoteka se nije mogla dohvatiti ({status}).",
   "Show the people you follow": "Prikaži ljude koje pratite",
+  "No relay answered. Try again in a while.": "Nijedan relay nije odgovorio. Pokušajte ponovo malo kasnije.",
   "No list of people you follow was found on your relays.": "Na vašim relayima nije pronađen popis ljudi koje pratite.",
   "Search the people you follow": "Traži među ljudima koje pratite",
   "{n} person you follow": "{n} osoba koju pratite",

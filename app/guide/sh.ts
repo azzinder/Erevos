@@ -1791,10 +1791,11 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   skriveni razgovori mogu imati vlastiti Nostr ključ, pogledajte [Skriveni razgovori](#hidden). **Prikaži tajni ključ
   (nsec)** ga prikazuje, da ga zapišete ili prenesete u drugu aplikaciju: tko ga ima čita ove razgovore i piše kao vi.
 - **Vaš Nostr ključ:** dajte njegov npub ljudima koji vam trebaju pisati, s **Kopiraj** ili **Prikaži QR kod**. **Vaše
-  ime**, ako ga date, javno je: druge Nostr aplikacije prikazuju ga umjesto vašeg npub-a.
+  ime**, ako ga date, javno je: druge Nostr aplikacije prikazuju ga umjesto vašeg npub-a. Tamo se mijenja samo
+  ime: slika ili riječi koje je druga aplikacija vašeg ključa stavila u vaš profil ostaju.
 - **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
   kao ime@example.org (NIP-05). **Prikaži ljude koje pratite**, ispod toga, navodi ljude koje prati vaš Nostr ključ
-  (njegov javni popis praćenih), s njihovim imenima: dodirnite jednu osobu da joj napišete. Ništa se ne učitava dok ne
+  (njegov javni popis praćenih, tražen i na relayima na kojima vaš ključ piše), s njihovim imenima: dodirnite jednu osobu da joj napišete. Ništa se ne učitava dok ne
   dodirnete, a profilne slike se ne učitavaju. Razgovori su i na popisu početnog ekrana, svaki označen s **Nostr**;
   dugme **Nostr** prikazuje samo njih, a tamo **Novi razgovor** otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru
   ime koje vidite samo vi.

@@ -1845,10 +1845,11 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   ocultas dele podem ter uma chave Nostr própria, veja [Conversas ocultas](#hidden). **Mostrar a chave secreta (nsec)**
   a mostra, para anotar ou levar para outro app: quem a tiver lê estas conversas e escreve como você.
 - **Sua chave Nostr:** dê o npub dela às pessoas que devem escrever para você, com **Copiar** ou **Mostrar o código
-  QR**. **Seu nome**, se você der um, é público: outros apps Nostr o mostram no lugar do seu npub.
+  QR**. **Seu nome**, se você der um, é público: outros apps Nostr o mostram no lugar do seu npub. Lá só o nome muda: uma foto ou
+  palavras que outro app da sua chave pôs no seu perfil continuam.
 - **Conversas:** **Nova conversa** recebe o npub da pessoa (ou nprofile), do perfil dela no app dela, ou um nome como
   nome@example.org (NIP-05). **Mostrar as pessoas que você segue**, logo abaixo, lista as pessoas que a sua chave Nostr
-  segue (a lista pública dela), com os nomes: toque numa para escrever para ela. Nada é carregado até você tocar nesse
+  segue (a lista pública dela, procurada também nos relays onde a sua chave escreve), com os nomes: toque numa para escrever para ela. Nada é carregado até você tocar nesse
   botão, nem fotos de perfil. As conversas também ficam na lista da tela inicial, cada uma marcada **Nostr**; o botão
   **Nostr** mostra só elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que
   só você vê.

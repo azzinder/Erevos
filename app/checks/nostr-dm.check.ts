@@ -82,6 +82,8 @@ const relay = (url: string, options?: { guarded?: boolean; refuses?: boolean }) 
 const aliceInbox = relay('wss://inbox.alice.example', { guarded: true });
 const bobInbox = relay('wss://inbox.bob.example');
 const carolInbox = relay('wss://inbox.carol.example');
+// Where another app of Alice's key writes (her NIP-65 list), which Erevos does not read itself.
+const aliceOutbox = relay('wss://outbox.alice.example');
 // The relays names and lists are looked up on: one keeps them, the others are away.
 const index = relay(LOOKUP_RELAYS[0]);
 for (const url of LOOKUP_RELAYS.slice(1)) relay(url, { refuses: true });
@@ -366,6 +368,30 @@ test('a space and someone on another app write both ways through their inbox rel
   assert.deepEqual(await nostrDmFollows(), [{ key: bob.public, name: 'Bob' }, { key: dan.public }]);
   // Asking said no one's name.
   assert.equal(aliceInbox.authed.length + index.authed.length, authed);
+
+  // A newer follow list that only a relay she writes on keeps (her other app's, named in her
+  // NIP-65 list; one named for reading only is not asked) is found there.
+  const erin: NostrDmState = await newNostrDm();
+  const writesList = await signed(me, 10002, [['r', `${aliceOutbox.url}/`, 'write'], ['r', 'wss://read-only.alice.example', 'read']], '', Date.now());
+  const elsewhere = await signed(me, 3, [['p', erin.public]], '', Date.now() + 1000);
+  for (const [url, event] of [[index.url, writesList], [aliceOutbox.url, elsewhere]] as const) {
+    const r = await NostrRelay.open(url, null);
+    await r.publish(event);
+    r.close();
+  }
+  assert.deepEqual(await nostrDmFollows(), [{ key: erin.public }]);
+
+  // Her name changes in the newest profile of her key, which keeps what her other app put there,
+  // later than that one even when it says a time ahead of this phone's clock.
+  const otherApp = await signed(me, 0, [], JSON.stringify({ name: 'Alice', picture: 'https://example.org/alice.png', about: 'Hello', displayName: 'Al' }), Date.now() + 5000);
+  const atIndex = await NostrRelay.open(index.url, null);
+  await atIndex.publish(otherApp);
+  atIndex.close();
+  await nostrDmSetName('Alicia');
+  const said = () => JSON.parse(index.events.find((e) => e.kind === 0 && e.pubkey === me.public)!.content) as Record<string, unknown>;
+  await until(() => said().name === 'Alicia', 'her new name');
+  assert.deepEqual(said(), { picture: 'https://example.org/alice.png', about: 'Hello', name: 'Alicia', display_name: 'Alicia', displayName: 'Alicia' });
+  assert.equal(index.events.find((e) => e.kind === 0 && e.pubkey === me.public)!.created_at, otherApp.created_at + 1);
 
   // A relay that goes away is read again.
   const before = aliceInbox.connections;

@@ -94,6 +94,7 @@ export const nostrChats: Record<string, string> = {
   "No file server took the file ({said}).": "Κανένας διακομιστής αρχείων δεν δέχτηκε το αρχείο ({said}).",
   "The file could not be fetched ({status}).": "Δεν ήταν δυνατή η λήψη του αρχείου ({status}).",
   "Show the people you follow": "Δείξε τους ανθρώπους που ακολουθείς",
+  "No relay answered. Try again in a while.": "Δεν απάντησε κανένα relay. Δοκίμασε ξανά σε λίγο.",
   "No list of people you follow was found on your relays.": "Δεν βρέθηκε λίστα με τους ανθρώπους που ακολουθείς στα relays σου.",
   "Search the people you follow": "Αναζήτηση στους ανθρώπους που ακολουθείς",
   "{n} person you follow": "{n} άτομο που ακολουθείς",
