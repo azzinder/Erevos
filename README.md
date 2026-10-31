@@ -524,4 +524,4 @@ Erevos stands on the work of many other projects: Element Call for Matrix calls,
 
 ## Licence
 
-AGPL-3.0-or-later.
+AGPL-3.0-or-later. Who makes Erevos and how: [AUTHORS.md](AUTHORS.md).
