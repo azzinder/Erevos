@@ -22,14 +22,19 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [
-    mark("**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats)."),
-    mark("**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats)."),
-    mark("**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second."),
-  ],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '4.0.0-rc.6',
+    forYou: [],
+    underTheHood: [
+      mark("**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats)."),
+      mark("**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats)."),
+      mark("**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second."),
+    ],
+  },
   {
     version: '4.0.0-rc.5',
     forYou: [

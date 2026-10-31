@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  // 4.0.0-rc.6
   "**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats).":
     "**Las personas que sigues en Nostr, encontradas donde las guarda tu otra app**: con una clave traída de otra app de Nostr, **Mostrar a las personas que sigues** busca también en los relays donde escribe tu clave, y lo dice cuando ningún relay respondió. Consulta [Chats con otras apps de Nostr](#nostr-chats).",
   "**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats).":

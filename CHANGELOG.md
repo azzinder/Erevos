@@ -16,6 +16,10 @@ On main, not released yet:
 
 ### Under the hood
 
+## 4.0.0-rc.6 (2026-10-31)
+
+### Under the hood
+
 - **People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app,
   **Show the people you follow** found no list (on the Pixel, 4.0.0-rc.5): it looked only on the space's relays and
   the look-up ones. `nostrDmFollows` (`lib/nostr-dm-store.ts`) now also reads the key's own relay list (NIP-65, kind
