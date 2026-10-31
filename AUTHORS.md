@@ -16,15 +16,15 @@ responsible for:
 
 ## The role of AI tools
 
-AI tools were used extensively to help write the code and the texts, always
-at the maintainer's direction. The maintainer tests changes on real devices
+AI coding tools were used to help write parts of the code, always on the
+maintainer's instructions. Changes are tested by the maintainer on real devices
 before they go into a release. The tools help with the implementation; the
 design, the decisions and the final responsibility belong to the maintainer.
 
 ## Third parties
 
 Outside components (libraries, graphics, texts) keep their own authors and
-their own licences, as listed in [CREDITS.md](CREDITS.md).
+licences, as listed in [CREDITS.md](CREDITS.md).
 
 ## Licence
 
@@ -54,7 +54,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 Το Erevos σχεδιάζεται, κατευθύνεται και συντηρείται από τον **azzinder**. Ο ίδιος
 είναι υπεύθυνος για:
 
-- τον σχεδιασμό της εφαρμογής και του μοντέλου ασφάλειάς της·
+- το σχέδιο της εφαρμογής και της ασφάλειάς της·
 - την επιλογή των λειτουργιών και του τρόπου που δουλεύουν·
 - τη δομή του προγράμματος (αρχιτεκτονική και οργάνωση των μερών του)·
 - τις δοκιμές σε πραγματικές συσκευές και τις αναφορές για ό,τι πρέπει να
@@ -62,17 +62,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 - την απόφαση για το περιεχόμενο κάθε έκδοσης·
 - τα κείμενα, τις μεταφράσεις και τον οδηγό χρήσης.
 
-## Ο ρόλος των εργαλείων τεχνητής νοημοσύνης
+## Ρόλος των εργαλείων AI
 
-Για τη συγγραφή του κώδικα και των κειμένων χρησιμοποιήθηκαν εκτεταμένα
-εργαλεία τεχνητής νοημοσύνης, πάντα με οδηγίες του συντηρητή. Ο συντηρητής
-δοκιμάζει τις αλλαγές σε πραγματικές συσκευές πριν μπουν σε έκδοση. Τα εργαλεία βοηθούν στην υλοποίηση· ο σχεδιασμός,
+Σε τμήματα του κώδικα χρησιμοποιήθηκαν εργαλεία τεχνητής νοημοσύνης, πάντα με
+οδηγίες του συντηρητή. Οι αλλαγές δοκιμάζονται από τον ίδιο σε πραγματικές
+συσκευές πριν μπουν σε έκδοση. Τα εργαλεία βοηθούν στην υλοποίηση· ο σχεδιασμός,
 οι αποφάσεις και η τελική ευθύνη ανήκουν στον συντηρητή.
 
 ## Τρίτα μέρη
 
-Τα εξωτερικά στοιχεία (βιβλιοθήκες, γραφικά, κείμενα) διατηρούν τους δικούς τους
-δημιουργούς και τις δικές τους άδειες, όπως αναφέρονται στο [CREDITS.md](CREDITS.md).
+Τα εξωτερικά στοιχεία (βιβλιοθήκες, γραφικά, κείμενα) διατηρούν τους δημιουργούς
+και τις άδειές τους, όπως αναφέρονται στο [CREDITS.md](CREDITS.md).
 
 ## Άδεια χρήσης
 
