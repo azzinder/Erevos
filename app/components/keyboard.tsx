@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import { AppState, Keyboard, type ViewProps } from 'react-native';
 import { KeyboardController, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import Reanimated, { makeMutable, useAnimatedReaction, useAnimatedStyle } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+import { device } from '../modules/erevos-device';
 
 /**
  * The keyboard helpers, as in LPHL FASOULI (src/components/keyboard.tsx there): the native library
@@ -32,11 +34,14 @@ export { KeyboardAvoidingView, KeyboardAwareScrollView, KeyboardProvider } from 
 export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   const { height } = useReanimatedKeyboardAnimation();
   useEffect(watchKeyboard, []);
-  // The keyboard moves: whatever it was, the library's height is right again.
+  // The keyboard moves: the screen follows the library's height again, and once that height has
+  // been still a while, Android is asked whether a keyboard is there at all.
   useAnimatedReaction(
     () => height.value,
     (now, before) => {
-      if (before !== null && now !== before) keyboardDown.value = false;
+      if (before === null || now === before) return;
+      keyboardDown.value = false;
+      scheduleOnRN(settle);
     },
   );
   const margin = useAnimatedStyle(
@@ -50,21 +55,37 @@ export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: V
  * Whether Android itself has said for a while that the keyboard is down. The library can keep the
  * height of a keyboard that went without its animation, as when Erevos comes back from another app
  * that had one open: the home screen's buttons then floated where its top had been, over the chats
- * (on the Pixel, 4.0.0-rc.2). Android's own word comes at once, as the keyboard starts to go, so
- * the screen still follows the library while it moves, and is put down only once it is still. Were
- * Android's word ever late, the screen put down is laid out anew, React Native looks at the
- * keyboard again with that layout, and its keyboardDidShow lifts the screen back.
+ * (on the Pixel, 4.0.0-rc.2). It can also be left with part of a keyboard's height, when its
+ * animation was cut off, or be told of a keyboard again when a field takes the focus with none open:
+ * the home screen's list then ended a hand above the bottom (on the Pixel, 4.0.0-rc.5). So every
+ * time the library's height has been still for a while, and when the keyboard says it went or the
+ * app comes back, Android's window is asked whether a keyboard is shown (keyboardShown, in the
+ * device module), React Native's word standing in on a phone that cannot say. Not shown: the screen
+ * is put down. Android's word comes at once, as the keyboard starts to go, so the screen still
+ * follows the library while it moves, and is put down only once it is still.
  */
 const keyboardDown = makeMutable(false);
 const SETTLE_MS = 600;
 let watching = false;
 let settling: ReturnType<typeof setTimeout> | undefined;
+/** Which look at the keyboard is the latest: an answer to an older one, overtaken by a move, counts for nothing. */
+let round = 0;
 
 function settle() {
   clearTimeout(settling);
-  settling = setTimeout(() => {
-    if (!Keyboard.isVisible()) keyboardDown.value = true;
-  }, SETTLE_MS);
+  const mine = ++round;
+  settling = setTimeout(() => void putDown(mine), SETTLE_MS);
+}
+
+async function putDown(mine: number) {
+  let shown: boolean | null | undefined;
+  try {
+    shown = await device?.keyboardShown?.();
+  } catch {
+    shown = null;
+  }
+  if (mine !== round) return;
+  if (!(shown ?? Keyboard.isVisible())) keyboardDown.value = true;
 }
 
 function watchKeyboard() {
@@ -72,6 +93,7 @@ function watchKeyboard() {
   watching = true;
   Keyboard.addListener('keyboardDidShow', () => {
     clearTimeout(settling);
+    round++;
     keyboardDown.value = false;
   });
   Keyboard.addListener('keyboardDidHide', settle);

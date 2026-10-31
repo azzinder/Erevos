@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second.":
+    "**Las pantallas bajan cuando no hay teclado abierto, en todos los casos**: la lista y los botones de la pantalla de inicio, o un chat, aún podían quedarse arriba como si hubiera un teclado abierto, después de que se fuera. Ahora Erevos pregunta al propio Android si se muestra un teclado, y sin teclado bajan en menos de un segundo.",
   // 4.0.0-rc.5
   "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
     "**Chat nuevo abre antes los chats ocultos**: mantén pulsado **Chat nuevo** un momento, no un segundo entero, y se abre el campo para un PIN de chats ocultos; en Android el teléfono vibra una vez al abrirse. Consulta [Chats ocultos](#hidden).",

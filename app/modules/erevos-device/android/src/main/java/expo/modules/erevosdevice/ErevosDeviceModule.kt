@@ -20,8 +20,10 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PersistableBundle
 import android.os.SystemClock
+import android.view.WindowInsets
 import android.view.WindowManager
 import expo.modules.kotlin.Promise
+import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -75,6 +77,16 @@ class ErevosDeviceModule : Module() {
       }
       true
     }
+
+    // Whether Android shows the keyboard over Erevos's window now, read from the window's own insets
+    // on the main thread: what components/keyboard.tsx checks a keyboard height against, as the
+    // keyboard library can keep one that went with no animation. Null when no activity is showing,
+    // or on Android before 11, which cannot say.
+    AsyncFunction("keyboardShown") {
+      val activity = appContext.currentActivity ?: return@AsyncFunction null
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@AsyncFunction null
+      activity.window?.decorView?.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
+    }.runOnQueue(Queues.MAIN)
 
     // While `on`, the screen turns with the phone even with its auto-rotate off, as a photo shown on
     // its own does (components/attachment.tsx); off, it follows the phone's setting again. False when

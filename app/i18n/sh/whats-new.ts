@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second.":
+    "**Ekrani se spuštaju kad nema otvorene tastature, u svakom slučaju**: lista i dugmad početnog ekrana, ili razgovor, još su mogli ostati gore kao da je tastatura otvorena, nakon što je nestala. Sada Erevos pita sam Android da li se tastatura prikazuje, i bez nje se spuste u roku od jedne sekunde.",
   // 4.0.0-rc.5
   "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
     "**Novi razgovor brže otvara skrivene razgovore**: zadržite prst na **Novi razgovor** trenutak, ne cijelu sekundu, i otvara se polje za PIN skrivenih razgovora; na Androidu telefon jednom zavibrira kad se otvori. Pogledajte [Skriveni razgovori](#hidden).",

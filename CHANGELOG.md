@@ -16,6 +16,15 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Screens come down when no keyboard is open, in every case**: the home screen's list still ended a hand above
+  the bottom with no keyboard open (on the Pixel, 4.0.0-rc.5): the keyboard library can keep part of a keyboard's
+  height when its animation is cut off, or tell of a keyboard again when a field takes the focus with none open,
+  and the screen put down by Android's word was lifted again by that height. `KeyboardPaddedView`
+  (`components/keyboard.tsx`) now looks again 0.6 s after every change of the library's height, as well as after
+  the keyboard goes and when Erevos comes back, and asks the window itself (`keyboardShown` in
+  `modules/erevos-device`, Android 11 and later; React Native's `Keyboard` before): with no keyboard shown, the
+  screen comes down. An answer overtaken by a later move counts for nothing.
+
 ## 4.0.0-rc.5 (2026-10-31)
 
 ### For you

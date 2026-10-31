@@ -22,7 +22,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [
