@@ -10,7 +10,7 @@ export const myself: Record<string, string> = {
   'Notes, links and reminders only you see': 'Notizen, Links und Erinnerungen, die nur du siehst',
   'Write a note to yourself': 'Schreib dir eine Notiz',
   'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Schreib hier, was du behalten willst: Notizen, Links, Fotos, Dateien, Sprachnachrichten. Nur du siehst sie. Unter „+“ oder mit gedrücktem Sendepfeil kann dich eine Notiz zu einer Zeit erinnern.',
-  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'Notizen bleiben auf diesem Telefon, verschlüsselt in diesem Bereich, und gehen an niemanden. Fotos und Dateien sind nicht in Backups.',
+  'Notes stay encrypted in this space and go to no one but your own linked devices. Photos and files are not in backups.': 'Notizen bleiben verschlüsselt in diesem Bereich und gehen an niemanden außer an deine eigenen verknüpften Geräte. Fotos und Dateien sind nicht in Backups.',
   'Notes stay on this phone, encrypted in these hidden chats, and go to no one. Photos and files are not in backups.': 'Notizen bleiben auf diesem Telefon, verschlüsselt in diesen versteckten Chats, und gehen an niemanden. Fotos und Dateien sind nicht in Backups.',
   'Cannot read your notes. {error}': 'Deine Notizen können nicht gelesen werden. {error}',
   'Not kept. Files can be 100 MB at most.': 'Nicht behalten. Dateien dürfen höchstens 100 MB groß sein.',

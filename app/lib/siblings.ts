@@ -55,6 +55,10 @@ export type Sibling = {
   again?: number;
   /** Those this device started with it before, base64, newest first, while it has not answered in the one it started last: what it sealed in them while away still opens here. */
   before?: string[];
+  /** Chat with myself: whether it said it takes the notes, and the stamp they were told to it up to (as Peer's, lock/devices-data.ts). */
+  notesHeard?: true;
+  notesSaid?: true;
+  notesTold?: number;
 };
 
 /** A first packet from an endpoint the list names, but not as one met yet (the phone said nothing of where it reads), with when it came: tried again with the next list. */
@@ -154,6 +158,9 @@ function checkedSibling(value: unknown): Sibling | null {
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
     ...(isTime(v.again) && v.again > 0 ? { again: v.again } : {}),
     ...(Array.isArray(v.before) && v.before.some((c) => isBase64(c) && c !== '') ? { before: v.before.filter((c): c is string => isBase64(c) && c !== '').slice(0, MAX_BEFORE) } : {}),
+    ...(v.notesHeard === true ? { notesHeard: true as const } : {}),
+    ...(v.notesSaid === true ? { notesSaid: true as const } : {}),
+    ...(isTime(v.notesTold) && v.notesTold > 0 ? { notesTold: v.notesTold } : {}),
   };
 }
 

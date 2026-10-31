@@ -10,7 +10,7 @@ export const myself: Record<string, string> = {
   'Notes, links and reminders only you see': 'Σημειώσεις, σύνδεσμοι και υπενθυμίσεις που βλέπεις μόνο εσύ',
   'Write a note to yourself': 'Γράψε μια σημείωση στον εαυτό σου',
   'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Γράψε εδώ ό,τι θέλεις να κρατήσεις: σημειώσεις, συνδέσμους, φωτογραφίες, αρχεία, φωνητικά μηνύματα. Τα βλέπεις μόνο εσύ. Από το «+», ή κρατώντας πατημένο το βέλος αποστολής, μια σημείωση μπορεί να σου θυμίσει κάτι την ώρα που θα διαλέξεις.',
-  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'Οι σημειώσεις μένουν σε αυτό το τηλέφωνο, κρυπτογραφημένες σε αυτόν τον χώρο, και δεν πηγαίνουν σε κανέναν. Οι φωτογραφίες και τα αρχεία δεν μπαίνουν στα αντίγραφα ασφαλείας.',
+  'Notes stay encrypted in this space and go to no one but your own linked devices. Photos and files are not in backups.': 'Οι σημειώσεις μένουν κρυπτογραφημένες σε αυτόν τον χώρο και δεν πηγαίνουν σε κανέναν παρά μόνο στις δικές σου συνδεδεμένες συσκευές. Οι φωτογραφίες και τα αρχεία δεν μπαίνουν στα αντίγραφα ασφαλείας.',
   'Notes stay on this phone, encrypted in these hidden chats, and go to no one. Photos and files are not in backups.': 'Οι σημειώσεις μένουν σε αυτό το τηλέφωνο, κρυπτογραφημένες σε αυτές τις κρυφές συνομιλίες, και δεν πηγαίνουν σε κανέναν. Οι φωτογραφίες και τα αρχεία δεν μπαίνουν στα αντίγραφα ασφαλείας.',
   'Cannot read your notes. {error}': 'Δεν διαβάζονται οι σημειώσεις σου. {error}',
   'Not kept. Files can be 100 MB at most.': 'Δεν κρατήθηκε. Τα αρχεία μπορούν να είναι έως 100 MB.',

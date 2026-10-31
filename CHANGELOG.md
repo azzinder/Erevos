@@ -31,6 +31,10 @@ On main, not released yet:
 - **Start when the phone turns on**: on Android, under **Settings** → **Notifications** → **In the background**,
   Erevos can start by itself after the phone turns on, with no space open, so the spaces set to say a message came
   while closed already say "New message", never which space or what. Off unless you choose it. See [Chat through a relay](#relay).
+- **Chat with myself on your linked devices too**: a note, photo, file, voice message or reminder written on the phone
+  or a linked device goes to the others, end-to-end encrypted, and so do a reminder changed or seen and a note
+  deleted; of two changes to one note the later stays. Those written before go once, both ways. Hidden chats' notes
+  never go. See [Linked devices](#devices).
 
 ### Under the hood
 
@@ -49,6 +53,11 @@ On main, not released yet:
 - **Starting with the phone**: a receiver for `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` (`BootStart.kt` in
   `modules/erevos-call`) starts the receiving service and, in it, a task with no screen (`index.js`,
   `startBootNotices` in `lib/background.ts`) that waits on the closed spaces' doors until a space opens.
+- **Chat with myself between devices**: each change to a note is stamped after every stamp known there (`v` in
+  `lock/myself-data.ts`), a deleted note leaves its stamp, and a `notes` envelope (`lib/link-wire.ts`) carries them
+  between the phone and its linked devices, and directly between the devices (`tellNotes` in `lib/devices.ts`). A
+  device is told every note once, after it said it takes them, then what changed there since, by stamp
+  (`notesTold`). Photos and files go on the relay as a chat's do; a voice message's sound goes in the envelope.
 
 - **People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app,
   **Show the people you follow** found no list (on the Pixel, 4.0.0-rc.5): it looked only on the space's relays and

@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
+import { loadNotes, mergeNotes, notesSince, onNotesWritten, setNoteFile, stampOf as noteStamp, type Note, type NoteCame, type NotesChanges, type NotesPlace } from '../lock/myself-data';
 import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
 import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
@@ -14,8 +15,11 @@ import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import {
   bytesSource,
   dropFile,
+  FileDamagedError,
   FileGoneError,
+  FileMissingError,
   offerRef,
+  onRelay,
   readFile,
   readOffer,
   sendFile,
@@ -78,6 +82,8 @@ import {
   type ChatChange,
   type Deleted,
   type Envelope,
+  MAX_NOTE_VOICE,
+  type NoteSaid,
   type GivenAccounts,
   type GroupAsk,
   type GroupChange,
@@ -393,6 +399,33 @@ const newPacketKey = () => toBase64Url(randomBytes(32));
 // What the contacts become with two changes, one after the other.
 const both = (a: ((c: Contact[]) => Contact[]) | null, b: ((c: Contact[]) => Contact[]) | null) => (a && b ? (c: Contact[]) => b(a(c)) : (a ?? b));
 
+// Who the notes go to: a linked device, or the phone (`sibling` false), or another device reached directly.
+type NotesTarget = { id: string; sibling: boolean };
+
+// What of the notes goes in one envelope: by about how long it is (a voice message's sound, base64,
+// some 11 bytes a millisecond at most), a long voice message alone filling one; never two changes
+// with the same stamp apart, as a device is told up to a stamp.
+const NOTES_BATCH = 400_000;
+function notesBatches({ notes, gone }: NotesChanges): { notes: Note[]; gone: { id: string; v: number }[]; v: number }[] {
+  const items = [...notes.map((note) => ({ v: noteStamp(note), note })), ...gone.map((g) => ({ v: g.v, gone: g }))].sort((a, b) => a.v - b.v);
+  const batches: { notes: Note[]; gone: { id: string; v: number }[]; v: number }[] = [];
+  let batch: (typeof batches)[number] | null = null;
+  let size = 0;
+  for (const item of items) {
+    const long = 'note' in item && item.note ? 300 + item.note.text.length * 3 + (item.note.voice ? item.note.voice.ms * 11 : 0) + (item.note.file ? 600 : 0) : 60;
+    if (!batch || (size + long > NOTES_BATCH && item.v !== batch.v)) {
+      batch = { notes: [], gone: [], v: item.v };
+      batches.push(batch);
+      size = 0;
+    }
+    if ('note' in item && item.note) batch.notes.push(item.note);
+    else if ('gone' in item && item.gone) batch.gone.push(item.gone);
+    batch.v = item.v;
+    size += long;
+  }
+  return batches;
+}
+
 /** The links of one space's chat to the account's other devices. */
 export class Links implements Link, TakenFiles {
   private data: DevicesData;
@@ -414,6 +447,7 @@ export class Links implements Link, TakenFiles {
   private rings: Promise<unknown> = Promise.resolve();
   private stopCalls: (() => void) | null = null;
   private stopMoves: (() => void) | null = null;
+  private stopNotes: (() => void) | null = null;
   // The accounts given or brought (lib/linked-accounts.ts), one after another, apart from other
   // work: a sign-in or a key backup's keys may take long, and messages cannot wait for them. On a
   // linked device, what went wrong last bringing them.
@@ -448,6 +482,13 @@ export class Links implements Link, TakenFiles {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private tickTimer: ReturnType<typeof setInterval> | null = null;
   private closed = false;
+  // Chat with myself (tellNotes): the work on the notes, apart from the rest; whether some are still
+  // to be told, or a photo or file of a note that came is still to be taken; and those gone from the
+  // relay.
+  private notesWork: Promise<unknown> = Promise.resolve();
+  private notesLeft = true;
+  private noteFilesLeft = true;
+  private notesLost = new Set<string>();
   private readonly space: number;
   private readonly key: Uint8Array;
   private readonly chats: SpaceChats;
@@ -472,6 +513,7 @@ export class Links implements Link, TakenFiles {
     chats.e2e.useLink(links);
     links.stopCalls = onCallChange(() => links.callChanged());
     links.stopMoves = onSpaceMoved(async (_queue, _old, why) => links.spaceMoved(why));
+    links.stopNotes = onNotesWritten((place) => links.notesWritten(place));
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     links.act(() => links.listsAtOpen());
@@ -488,6 +530,7 @@ export class Links implements Link, TakenFiles {
     if (this.echoTimer) clearTimeout(this.echoTimer);
     this.stopCalls?.();
     this.stopMoves?.();
+    this.stopNotes?.();
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
@@ -527,9 +570,9 @@ export class Links implements Link, TakenFiles {
   /** Waits for the work under way, as the checks do. */
   async settled(): Promise<void> {
     for (let i = 0; i < 20; i++) {
-      const [turn, acts, rings, accounts, flushing] = [this.turn, this.acts, this.rings, this.accounts, this.flushing];
-      await Promise.all([turn.catch(() => undefined), acts, rings, accounts, flushing?.catch(() => undefined)]);
-      if (turn === this.turn && acts === this.acts && rings === this.rings && accounts === this.accounts && flushing === this.flushing) return;
+      const [turn, acts, rings, accounts, flushing, notes] = [this.turn, this.acts, this.rings, this.accounts, this.flushing, this.notesWork];
+      await Promise.all([turn.catch(() => undefined), acts, rings, accounts, flushing?.catch(() => undefined), notes]);
+      if (turn === this.turn && acts === this.acts && rings === this.rings && accounts === this.accounts && flushing === this.flushing && notes === this.notesWork) return;
     }
   }
 
@@ -860,6 +903,16 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.cameHere(said.c, said.got));
         this.passOn(peer, { k: 'in', c: said.c, m: { text: '', got: said.got } });
         break;
+      case 'notes': {
+        // To the devices that do not hear it directly too, the photos and files left on the relay for them.
+        const direct = new Set([peer.id, ...this.othersOf(peer).map((d) => d.id)]);
+        const others = this.linked().some((d) => !direct.has(d.id));
+        const files = said.list.some((n) => n.file);
+        await this.heardNotes({ id: peer.id, sibling: false });
+        void this.noting(() => this.notesFrom(said, said.keep === true || (others && files)));
+        this.passOn(peer, { ...said, ...(others && files ? { keep: true as const } : {}) });
+        break;
+      }
       case 'unblock':
         // Unblocked on the device, as it asked when their link was added there: so here too, before what it says next.
         this.act(() => this.chats.e2e.unblock(said.c));
@@ -950,6 +1003,10 @@ export class Links implements Link, TakenFiles {
       }
       case 'came':
         this.act(() => this.cameHere(said.c, said.got));
+        break;
+      case 'notes':
+        await this.heardNotes({ id: primary.id, sibling: false });
+        void this.noting(() => this.notesFrom(said, said.keep === true));
         break;
       case 'move':
         // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
@@ -1307,6 +1364,8 @@ export class Links implements Link, TakenFiles {
     // The accounts, if chosen, apart from the history, which may be long to go.
     if (accounts) void this.aside(() => this.giveAccounts(peer.id));
     this.act(() => this.bringHistory(peer.id));
+    // The notes of Chat with myself, once it says it takes them.
+    void this.noting(() => this.tellNotes());
     announce();
   }
 
@@ -2040,6 +2099,10 @@ export class Links implements Link, TakenFiles {
     if (said.k === 'out') this.act(() => this.ownFrom(said.c, said.m, said.mark));
     else if (said.k === 'came') this.act(() => this.cameHere(said.c, said.got));
     else if (said.k === 'set') return this.setFrom(said);
+    else if (said.k === 'notes') {
+      await this.heardNotes({ id: sibling.id, sibling: true });
+      void this.noting(() => this.notesFrom(said, said.keep === true));
+    }
     return { kind: 'taken' };
   }
 
@@ -2078,6 +2141,213 @@ export class Links implements Link, TakenFiles {
   // here.
   private erasedHere(peer: string, tag: string): boolean {
     return this.data.erased?.[peer]?.includes(tag) ?? false;
+  }
+
+  // ---- Chat with myself (lock/myself-data.ts) ----
+  //
+  // The space's notes go to the account's other devices as they change here: on the primary to each
+  // linked device, on a linked device to the phone and to each other device it reaches directly; what
+  // a device says to the phone goes on from it to the devices that do not hear that one directly
+  // (passOn). Each side first says, with nothing in it, that it takes them, once (`notesSaid`): a
+  // version from before says nothing back, and is told nothing more until, updated, it says so
+  // itself. A device heard from is
+  // told every note once, then each change made here after, by stamp (Peer.notesTold), as far as
+  // half its outbox has room; the rest with a later tick. A photo or file goes on the relay, once for
+  // all the devices told it at once, and stays there for them (`keep`) until it expires, or, for one
+  // device, until it took it; a voice message's sound goes with its note.
+
+  private notesPlace(): NotesPlace {
+    return { holder: 'space', space: this.space, key: this.key };
+  }
+
+  private noting(call: () => Promise<unknown>): Promise<unknown> {
+    this.notesWork = this.notesWork
+      .catch(() => undefined)
+      .then(() => (this.closed ? undefined : call()))
+      .catch(() => undefined);
+    return this.notesWork;
+  }
+
+  /** A change made here to a space's notes (lock/myself-data.ts): told to the account's other devices. */
+  notesWritten(place: NotesPlace): void {
+    if (this.closed || place.holder !== 'space' || place.space !== this.space || !this.role()) return;
+    void this.noting(() => this.tellNotes());
+  }
+
+  // Who the notes go to: on the primary each linked device; on a linked device the phone, and each
+  // other device it reaches directly.
+  private notesTargets(): NotesTarget[] {
+    if (!this.data.primary) return this.data.devices.filter((d) => d.linked).map((d) => ({ id: d.id, sibling: false }));
+    return [{ id: this.data.primary.id, sibling: false }, ...this.siblingList().filter((s) => s.conversation).map((s) => ({ id: s.id, sibling: true }))];
+  }
+
+  private notesTarget({ id, sibling }: NotesTarget): Peer | Sibling | undefined {
+    if (sibling) return this.siblingList().find((s) => s.id === id);
+    return this.data.primary?.id === id ? this.data.primary : this.data.devices.find((d) => d.id === id && d.linked);
+  }
+
+  private async keepTarget({ sibling }: NotesTarget, next: Peer | Sibling): Promise<void> {
+    if (sibling) await this.keepSibling(next as Sibling);
+    else await this.keepPeer(next as Peer);
+  }
+
+  // In the turn: a device said something of the notes, so it takes them. Heard of for the first
+  // time, it is told them.
+  private async heardNotes(target: NotesTarget): Promise<void> {
+    const now = this.notesTarget(target);
+    if (!now || now.notesHeard) return;
+    await this.keepTarget(target, { ...now, notesHeard: true });
+    void this.noting(() => this.tellNotes());
+  }
+
+  // Tells each device what of the notes it was not told yet; to one not heard from, says once that
+  // this side takes them.
+  private async tellNotes(): Promise<void> {
+    if (this.closed || !this.role()) return;
+    this.notesLeft = false;
+    const targets = this.notesTargets();
+    const place = this.notesPlace();
+    // The photos and files put on the relay this time, by note, each for all the devices told it now.
+    const offers = new Map<string, FileOffer | null>();
+    const keep = targets.filter((target) => this.notesTarget(target)?.notesHeard).length > 1;
+    let here: Here | null | undefined;
+    const ownRelay = async () => (here === undefined ? (here = await this.here()) : here);
+    for (const target of targets) {
+      const now = this.notesTarget(target);
+      if (!now) continue;
+      if (!now.notesHeard) {
+        if (now.notesSaid) continue;
+        await this.run(async () => {
+          const peer = this.notesTarget(target);
+          if (peer && !peer.notesSaid) await this.keepTarget(target, { ...(await this.sealFor(target, peer, { k: 'notes', list: [], gone: [] })), notesSaid: true });
+        });
+        continue;
+      }
+      let told = now.notesTold ?? 0;
+      const batches = notesBatches(await notesSince(place, told, told === 0));
+      // Nothing to tell one heard from, not yet told this side takes them too: it is said so.
+      if (batches.length === 0 && !now.notesSaid) batches.push({ notes: [], gone: [], v: told });
+      for (const batch of batches) {
+        const list: NoteSaid[] = [];
+        for (const note of batch.notes) {
+          const said = await this.noteSaid(note, offers, ownRelay);
+          if (said === 'later') {
+            this.notesLeft = true;
+            void this.flush().catch(() => undefined);
+            return;
+          }
+          if (said) list.push(said);
+        }
+        const envelope: Envelope = { k: 'notes', list, gone: batch.gone, ...(keep && list.some((n) => n.file) ? { keep: true as const } : {}) };
+        const from = told;
+        const went = await this.run(async () => {
+          const peer = this.notesTarget(target);
+          if (!peer || (peer.notesTold ?? 0) !== from || peer.outbox.length >= MAX_OUTBOX / 2) return false;
+          let sealed: Peer | Sibling;
+          try {
+            sealed = await this.sealFor(target, peer, envelope);
+          } catch {
+            // Too long to go between devices, as it should never be: passed over, so the rest still go.
+            await this.keepTarget(target, { ...peer, notesTold: batch.v });
+            return true;
+          }
+          if (sealed.outbox.length === 0 || (sealed.conversation === peer.conversation && sealed.outbox.length <= peer.outbox.length)) return false;
+          await this.keepTarget(target, { ...sealed, notesTold: batch.v, notesSaid: true });
+          return true;
+        });
+        if (!went) {
+          this.notesLeft = true;
+          break;
+        }
+        told = batch.v;
+      }
+    }
+    void this.flush().catch(() => undefined);
+  }
+
+  private sealFor(target: NotesTarget, peer: Peer | Sibling, envelope: Envelope): Promise<Peer | Sibling> {
+    return target.sibling ? this.sealSibling(peer as Sibling, envelope) : this.seal(peer as Peer, envelope);
+  }
+
+  // A note as it goes to a device: its photo or file put on the relay, once for all the devices told
+  // it now, or as where it waits there, not taken here yet; its voice message's sound with it. Null
+  // for one whose photo, file or voice message is not here (not in a backup) and has no words;
+  // 'later' while the relay cannot take it.
+  private async noteSaid(note: Note, offers: Map<string, FileOffer | null>, here: () => Promise<Here | null>): Promise<NoteSaid | null | 'later'> {
+    const said: NoteSaid = { id: note.id, at: note.at, v: noteStamp(note), text: note.text, ...(note.due !== undefined ? { due: note.due } : {}), ...(note.told ? { told: true as const } : {}) };
+    if (note.file) {
+      let offer = offers.get(note.id);
+      if (offer === undefined) {
+        if (note.file.from) offer = offerOf(note.file);
+        else {
+          const at = await here();
+          if (!at) return 'later';
+          try {
+            offer = await uploadFile(at.own, note.file);
+          } catch (error) {
+            if (!(error instanceof FileMissingError)) return 'later';
+            offer = null;
+          }
+        }
+        offers.set(note.id, offer);
+      }
+      if (offer) return { ...said, file: offer };
+    } else if (note.voice) {
+      const audio = await loadClip(note.voice).catch(() => null);
+      const data = audio ? toBase64(audio) : '';
+      if (data && data.length <= MAX_NOTE_VOICE) return { ...said, voice: { ms: note.voice.ms, data } };
+    } else return said;
+    return note.text ? said : null;
+  }
+
+  // What another device said of the notes: of each, the later change kept; a photo or file then
+  // taken from the relay, and left there with `leave`, for the other devices that take it too.
+  private async notesFrom(said: Extract<Envelope, { k: 'notes' }>, leave: boolean): Promise<void> {
+    const came = said.list.map(
+      (n): NoteCame => ({
+        note: { id: n.id, at: n.at, v: n.v, text: n.text, ...(n.due !== undefined ? { due: n.due } : {}), ...(n.told ? { told: true as const } : {}) },
+        make: async () => {
+          if (n.file) return { file: offerRef(n.file) };
+          if (!n.voice) return {};
+          try {
+            return { voice: await saveClip(fromBase64(n.voice.data), n.voice.ms) };
+          } catch {
+            return {};
+          }
+        },
+      }),
+    );
+    const { changed } = await mergeNotes(this.notesPlace(), came, said.gone);
+    if (changed.some((n) => n.file?.from)) await this.takeNoteFiles(leave);
+  }
+
+  // The photos and files of notes that came and are still on the relay: taken, and left there with
+  // `leave`, as a later try does, not knowing whether another device still takes one. One gone from
+  // the relay stays as it is (not on this phone), and is not tried again while the space is open.
+  private async takeNoteFiles(leave = true): Promise<void> {
+    this.noteFilesLeft = false;
+    const place = this.notesPlace();
+    const waiting = (await loadNotes(place)).filter((n) => !!n.file?.from && onRelay(n.file.from) && !this.notesLost.has(n.id));
+    if (waiting.length === 0) return;
+    const here = await this.here();
+    if (!here) {
+      this.noteFilesLeft = true;
+      return;
+    }
+    for (const note of waiting) {
+      if (this.closed) return;
+      const file = note.file!;
+      try {
+        const taken = await takeFile(here.own, file, undefined, leave);
+        if (!(await setNoteFile(place, note.id, file.from!.ids, taken))) await deleteChunks(taken.id, taken.count).catch(() => undefined);
+      } catch (error) {
+        if (error instanceof FileGoneError || error instanceof FileDamagedError) this.notesLost.add(note.id);
+        else {
+          this.noteFilesLeft = true;
+          return;
+        }
+      }
+    }
   }
 
   // ---- Photos and files left on the relay (lib/attachments.ts, TakenFiles) ----
@@ -2281,6 +2551,9 @@ export class Links implements Link, TakenFiles {
       }).catch(() => undefined);
     }
     if (!this.role()) return;
+    // As notes are still to be told, or a device met since was not said to that this side takes them.
+    if (this.notesLeft || this.notesTargets().some((target) => !this.notesTarget(target)?.notesSaid)) void this.noting(() => this.tellNotes());
+    if (this.noteFilesLeft) void this.noting(() => this.takeNoteFiles());
     this.flush().catch(() => undefined);
     if (this.data.primary && this.data.packs.length > 0) this.act(() => this.takePacks());
     for (const d of this.data.devices) if (d.linked && d.history) this.act(() => this.bringHistory(d.id));

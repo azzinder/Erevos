@@ -95,7 +95,8 @@ export function useShownPhotos(files: FileRef[], onError: (error: unknown) => vo
   const photosRef = useRef(photos);
   photosRef.current = photos;
   const loading = useRef(new Set<string>());
-  const shownKey = files.map((file) => file.id).join(',');
+  // A file still coming has the id it will have once here: it is read then.
+  const shownKey = files.map((file) => (file.from ? `${file.id}~` : file.id)).join(',');
   useEffect(() => {
     const wanted = new Set(files.map((file) => file.id));
     for (const ref of files) {

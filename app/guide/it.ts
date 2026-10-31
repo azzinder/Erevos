@@ -177,9 +177,10 @@ Una buona prima ora:
 ### Chat con me stesso e promemoria
 
 **Chat con me stesso** è sempre in cima alle chat, con una puntina, in ogni spazio. È una chat senza nessun altro
-dentro: scrivi a te stesso note, link, foto, file e messaggi vocali, come in qualsiasi chat. Niente di quello che
-contiene va da qualche parte: resta su questo telefono, crittografato nello spazio, e non viene passato ai tuoi
-dispositivi collegati. Un backup prende le sue note e i suoi messaggi vocali, ma non le foto e i file, come per le chat.
+dentro: scrivi a te stesso note, link, foto, file e messaggi vocali, come in qualsiasi chat. Non va a nessun altro:
+resta crittografata nello spazio, e va solo ai tuoi dispositivi collegati, crittografata end-to-end, così che ognuno
+abbia le stesse note e gli stessi promemoria (vedi [Dispositivi collegati](#devices)). Un backup prende le sue note e
+i suoi messaggi vocali, ma non le foto e i file, come per le chat.
 
 - **Un promemoria:** tocca **Ricordamelo** (la campanella arancione accanto a **Nuova chat**), scrivi di che cosa
   ricordarti, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00**, o qualsiasi giorno, ora e minuto) e
@@ -196,12 +197,13 @@ dispositivi collegati. Un backup prende le sue note e i suoi messaggi vocali, ma
 - Ogni spazio ha una sua Chat con me stesso, e così anche ogni posto di chat nascoste, in cima al loro elenco (vedi
   [Chat nascoste](#hidden)). I promemoria di un posto nascosto appaiono lì quando il suo PIN lo apre; il telefono li
   annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica. Un nuovo PIN
-  per il posto, che lo fa ripartire vuoto, o la rimozione del posto tolgono i suoi promemoria dal telefono.
+  per il posto, che lo fa ripartire vuoto, o la rimozione del posto tolgono i suoi promemoria dal telefono. Le note di
+  un posto nascosto non vanno mai a un dispositivo collegato.
 
 **Perché:** una notifica appare sullo schermo bloccato a chiunque abbia in mano il telefono, quindi quello che dice un
 promemoria resta crittografato nel suo spazio e ad Android viene detta solo la sua ora: la notifica non può dire a
-nessuno che cosa volevi ricordare, né in quale spazio si trova. E le note non vanno a nessuno, nemmeno agli altri tuoi
-dispositivi, quindi nessun relay le trasporta mai.
+nessuno che cosa volevi ricordare, né in quale spazio si trova. E le note non vanno a nessuno tranne ai tuoi
+dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le trasporta solo crittografate.
 
 ### Spostarsi con gli scorrimenti
 
@@ -3051,6 +3053,12 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 - **Le foto e i file** che arrivano restano sul relay finché sia il telefono sia il computer non li hanno presi; poi il
   telefono li elimina da lì. Uno che il computer non prende mai se ne va quando viene scollegato, o dopo 14 giorni,
   come ogni file non preso.
+- **Chat con me stesso** è uguale su ogni dispositivo: una nota, una foto, un file o un messaggio vocale scritti su
+  uno vanno agli altri, e così un promemoria impostato, cambiato o visto e una nota eliminata; di due modifiche alla
+  stessa nota, resta la più recente. Quello che è stato scritto prima del collegamento va una volta, nei due sensi,
+  appena entrambi hanno questa versione. Un promemoria si mostra su ogni dispositivo alla sua ora, e visto su uno se
+  ne va dagli altri. La foto o il file di una nota va come copia sul relay, eliminata da lì una volta presa, o, per
+  due dispositivi o più, lasciata lì finché scade (14 giorni). Le note delle chat nascoste non vanno mai.
 - **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
   che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer
   chiama tramite il telefono; la chiamata stessa va poi direttamente tra il computer e il contatto, crittografata tra

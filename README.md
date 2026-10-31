@@ -59,10 +59,10 @@ cryptography. Do not rely on it to protect anyone yet.
   the relay, through Nostr, to or from a phone nearby, over LoRa or by SMS. Messages from before
   say nothing.
 - **Chat with myself and reminders**: a chat with no one else, first in every space and in every
-  place of hidden chats, for notes, links, photos, files and voice messages. They stay on this
-  phone, encrypted in the space, and go to no one, not even to linked devices. **Remind me** sets a
-  time; on Android a notice then says only **Reminder**, never what it is about, with Erevos closed
-  and locked too.
+  place of hidden chats, for notes, links, photos, files and voice messages. They stay encrypted
+  in the space and go to no one but your own linked devices (a hidden place's go nowhere).
+  **Remind me** sets a time; on Android a notice then says only **Reminder**, never what it is
+  about, with Erevos closed and locked too.
 - **Media, links and files**: a chat's details, and a group's, list its photos, videos, voice
   messages, music, files and links, each kind apart under its months, with a calendar. Chats
   imported from other apps are in it too. A photo opens on the whole screen, with zoom.

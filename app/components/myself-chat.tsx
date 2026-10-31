@@ -362,7 +362,7 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
         onPress: () => void copyText(note.text).then((ok) => say(ok ? t('Copied. Any app that reads the clipboard can read it now.') : t('Not copied.'), !ok)),
       });
     }
-    if (note.file) actions.push({ title: t('Open'), onPress: () => setViewing(note.file!) });
+    if (note.file && !note.file.from) actions.push({ title: t('Open'), onPress: () => setViewing(note.file!) });
     if (isWaiting(note, now)) {
       actions.push({ title: t('Change the reminder'), onPress: () => setRemindFor(note) });
       actions.push({ title: t('No reminder'), onPress: () => void setReminder(note, null) });
@@ -395,7 +395,7 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
       foot={
         at
           ? t('Notes stay on this phone, encrypted in these hidden chats, and go to no one. Photos and files are not in backups.')
-          : t('Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.')
+          : t('Notes stay encrypted in this space and go to no one but your own linked devices. Photos and files are not in backups.')
       }
       page={
         choosing
@@ -487,11 +487,12 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
                 ) : null}
                 <Pressable
                   onLongPress={() => setMenuFor(note)}
-                  onPress={() => (note.voice ? void play(note) : note.file ? setViewing(note.file) : undefined)}
+                  onPress={() => (note.voice ? void play(note) : note.file && !note.file.from ? setViewing(note.file) : undefined)}
                   accessibilityHint={t('Hold for more')}
                   style={[styles.bubble, b.mine, photo && styles.photoBubble, isDue(note, now) && styles.lit]}
                 >
-                  {note.file ? <Attachment file={note.file} uri={photos[note.file.id]} ink={ink} /> : null}
+                  {/* A photo or file from another of the account's devices, while it comes from the relay (lib/devices.ts). */}
+                  {note.file ? <Attachment file={note.file} uri={photos[note.file.id]} state={note.file.from ? '…' : undefined} ink={ink} /> : null}
                   {note.voice ? (
                     <Text style={ink}>
                       {playing === note.id

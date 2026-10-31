@@ -10,7 +10,7 @@ export const myself: Record<string, string> = {
   'Notes, links and reminders only you see': 'Bilješke, linkovi i podsjetnici koje vidiš samo ti',
   'Write a note to yourself': 'Napiši sebi bilješku',
   'Write here what you want to keep: notes, links, photos, files, voice messages. Only you see them. Under "+", or holding the send arrow, a note can remind you at a time.': 'Ovdje piši ono što želiš sačuvati: bilješke, linkove, fotografije, datoteke, glasovne poruke. Vidiš ih samo ti. Pod „+“, ili držeći strelicu za slanje, bilješka te može podsjetiti u neko vrijeme.',
-  'Notes stay on this phone, encrypted in this space, and go to no one. Photos and files are not in backups.': 'Bilješke ostaju na ovom telefonu, šifrirane u ovom prostoru, i ne idu nikome. Fotografije i datoteke nisu u sigurnosnim kopijama.',
+  'Notes stay encrypted in this space and go to no one but your own linked devices. Photos and files are not in backups.': 'Bilješke ostaju šifrirane u ovom prostoru i ne idu nikome osim vašim vlastitim povezanim uređajima. Fotografije i datoteke nisu u sigurnosnim kopijama.',
   'Notes stay on this phone, encrypted in these hidden chats, and go to no one. Photos and files are not in backups.': 'Bilješke ostaju na ovom telefonu, šifrirane u ovim skrivenim razgovorima, i ne idu nikome. Fotografije i datoteke nisu u sigurnosnim kopijama.',
   'Cannot read your notes. {error}': 'Tvoje bilješke se ne mogu pročitati. {error}',
   'Not kept. Files can be 100 MB at most.': 'Nije sačuvano. Datoteke mogu imati najviše 100 MB.',

@@ -17,7 +17,7 @@ import { bytesSource, keepFile } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
 import { armPlaceReminders, deleteNote, myNotes, remindAt, seenReminders, writeNote } from '../lib/myself';
 import { setCurrentSpace } from '../lock/keys';
-import { addNote, changeNote, FILE, isDue, isWaiting, loadNotes, markTold, newNoteId, notesSummary, removeNote, type NotesPlace } from '../lock/myself-data';
+import { addNote, changeNote, FILE, isDue, isWaiting, loadNotes, markTold, mergeNotes, newNoteId, notesSince, notesSummary, onNotesCame, onNotesWritten, removeNote, setNoteFile, stampOf, type NoteCame, type NotesPlace } from '../lock/myself-data';
 import { saveClip } from '../lock/voice-clips';
 
 const place = (holder: NotesPlace['holder'] = 'space', space = 0, key = randomBytes(32)): NotesPlace => ({ holder, space, key });
@@ -147,4 +147,98 @@ test("a hidden place's reminders are told by the phone only while it receives cl
   } finally {
     setCurrentSpace(null);
   }
+});
+
+test("what goes to the account's other devices: every note once, then only what was changed here, by stamp", async () => {
+  const mine = place();
+  const written: string[] = [];
+  const stop = onNotesWritten((p) => p === mine && written.push('w'));
+  try {
+    const a = await addNote(mine, note('a', 1000));
+    const b = await addNote(mine, note('b', 2000));
+    assert.equal(written.length, 2);
+    assert.ok(stampOf(b) > stampOf(a));
+    // Every note, to a device told none yet.
+    assert.deepEqual((await notesSince(mine, 0, true)).notes.map((n) => n.text), ['a', 'b']);
+    const told = stampOf(b);
+    assert.deepEqual((await notesSince(mine, told, false)).notes, []);
+    // A reminder set, then a note deleted: each after, in that order.
+    await changeNote(mine, a.id, { due: 5000 });
+    await removeNote(mine, b.id);
+    const after = await notesSince(mine, told, false);
+    assert.deepEqual(after.notes.map((n) => [n.id, n.due]), [[a.id, 5000]]);
+    assert.deepEqual(after.gone.map((g) => g.id), [b.id]);
+    assert.ok(after.gone[0].v > stampOf(after.notes[0]));
+    // Seen: each its own stamp.
+    const c = await addNote(mine, note('c', 3000, { due: 10 }));
+    const before = stampOf(c);
+    await markTold(mine, [a.id, c.id]);
+    const seen = (await notesSince(mine, before, false)).notes;
+    assert.equal(new Set(seen.map(stampOf)).size, 2);
+  } finally {
+    stop();
+  }
+});
+
+test('notes from another device: the later change of each stays, a deleted one stays deleted, and nothing goes back to them', async () => {
+  const mine = place();
+  const written: number[] = [];
+  const came: string[][] = [];
+  const stopWritten = onNotesWritten((p) => p === mine && written.push(1));
+  const stopCame = onNotesCame((p, changed, gone) => p === mine && came.push([...changed.map((n) => n.id), ...gone.map((id) => `-${id}`)]));
+  try {
+    const kept = await addNote(mine, note('here', 1000));
+    const made: string[] = [];
+    const from = (id: string, text: string, v: number, more = {}): NoteCame => ({
+      note: { id, at: 500, text, v, ...more },
+      make: async () => {
+        made.push(id);
+        return {};
+      },
+    });
+    const other = newNoteId();
+    // A new one comes, in its place by when it was written; an older change to one kept here does not.
+    let result = await mergeNotes(mine, [from(other, 'there', 10), from(kept.id, 'old words', 1)], []);
+    assert.deepEqual(result.changed.map((n) => n.id), [other]);
+    assert.deepEqual((await loadNotes(mine)).map((n) => n.text), ['there', 'here']);
+    assert.deepEqual(made, [other]);
+    // A later change takes the words and the reminder, and makes nothing again.
+    await mergeNotes(mine, [from(other, 'there, changed', 20, { due: 9000 })], []);
+    const changed = (await loadNotes(mine)).find((n) => n.id === other)!;
+    assert.equal(changed.text, 'there, changed');
+    assert.equal(changed.due, 9000);
+    assert.equal(changed.o, undefined);
+    assert.deepEqual(made, [other]);
+    // Not changed here, so it does not go back.
+    assert.deepEqual((await notesSince(mine, stampOf(kept), false)).notes, []);
+    assert.deepEqual(written, [1]);
+    // Deleted there: gone here, and a change from before does not bring it back.
+    result = await mergeNotes(mine, [], [{ id: other, v: 30 }]);
+    assert.deepEqual(result.gone, [other]);
+    await mergeNotes(mine, [from(other, 'again', 25)], []);
+    assert.deepEqual((await loadNotes(mine)).map((n) => n.id), [kept.id]);
+    // A change here after all of them is stamped after them, whatever the clock.
+    const v = stampOf(kept);
+    await mergeNotes(mine, [from(newNoteId(), 'far ahead', v + 10_000_000)], []);
+    const next = await changeNote(mine, kept.id, { due: 1 });
+    assert.ok(stampOf(next!) > v + 10_000_000);
+    assert.deepEqual(came.length, 4);
+  } finally {
+    stopWritten();
+    stopCame();
+  }
+});
+
+test("a note's photo that came waits on the relay until taken, then is kept as the note's", async () => {
+  files.clear();
+  blobs.clear();
+  const mine = place();
+  const id = newNoteId();
+  const waiting = await keepFile(bytesSource(randomBytes(2000)), { name: 'a.jpg', mime: 'image/jpeg', kind: 'photo' });
+  const from = { relay: 'wss://relay.example.org', ids: 'ab'.repeat(24 * waiting.count) };
+  await mergeNotes(mine, [{ note: { id, at: 1, text: '', v: 5 }, make: async () => ({ file: { ...waiting, from } }) }], []);
+  const taken = await keepFile(bytesSource(randomBytes(2000)), { name: 'a.jpg', mime: 'image/jpeg', kind: 'photo' });
+  assert.equal(await setNoteFile(mine, id, 'cd'.repeat(24), taken), false);
+  assert.equal(await setNoteFile(mine, id, from.ids, taken), true);
+  assert.deepEqual((await loadNotes(mine))[0].file, taken);
 });

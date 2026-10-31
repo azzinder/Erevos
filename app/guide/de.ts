@@ -183,10 +183,10 @@ Eine gute erste Stunde:
 ### Chat mit mir selbst und Erinnerungen
 
 **Chat mit mir selbst** steht immer oben in den Chats, mit einer Nadel, in jedem Bereich. Es ist ein Chat, in dem
-sonst niemand ist: Schreib dir Notizen, Links, Fotos, Dateien und Sprachnachrichten, wie in jedem Chat. Nichts darin
-geht irgendwohin: Er bleibt auf diesem Telefon, verschlüsselt im Bereich, und wird nicht an deine verknüpften Geräte
-weitergegeben. Ein Backup nimmt seine Notizen und Sprachnachrichten mit, aber nicht seine Fotos und Dateien, wie bei
-Chats.
+sonst niemand ist: Schreib dir Notizen, Links, Fotos, Dateien und Sprachnachrichten, wie in jedem Chat. Er geht an
+niemanden sonst: Er bleibt verschlüsselt im Bereich und geht nur an deine eigenen verknüpften Geräte,
+Ende-zu-Ende-verschlüsselt, sodass jedes dieselben Notizen und Erinnerungen hat (siehe [Verknüpfte Geräte](#devices)).
+Ein Backup nimmt seine Notizen und Sprachnachrichten mit, aber nicht seine Fotos und Dateien, wie bei Chats.
 
 - **Eine Erinnerung:** Tippe auf **Erinnern** (die orange Glocke neben **Neuer Chat**), schreib, woran du erinnert
   werden willst, wähle eine Zeit (**In 1 Stunde**, **Heute Abend 20:00**, **Morgen 09:00** oder einen beliebigen Tag,
@@ -206,12 +206,14 @@ Chats.
   Liste (siehe [Versteckte Chats](#hidden)). Die Erinnerungen eines versteckten Platzes erscheinen dort, sobald seine
   PIN ihn öffnet; das Telefon meldet sie zu ihrer Zeit nur, solange **Empfangen, wenn geschlossen** für diesen Platz
   an ist, in derselben Benachrichtigung. Eine neue PIN für den Platz, die ihn leer beginnt, oder das Entfernen des
-  Platzes nimmt seine Erinnerungen vom Telefon.
+  Platzes nimmt seine Erinnerungen vom Telefon. Die Notizen eines versteckten Platzes gehen nie an ein verknüpftes
+  Gerät.
 
 **Warum:** Eine Benachrichtigung erscheint auf dem Sperrbildschirm für jeden, der das Telefon in der Hand hat, also
 bleibt der Text einer Erinnerung verschlüsselt in ihrem Bereich, und Android erfährt nur ihre Zeit: Die
 Benachrichtigung kann niemandem sagen, woran du dich erinnern wolltest, noch in welchem Bereich sie ist. Und die
-Notizen gehen an niemanden, nicht einmal an deine anderen Geräte, also trägt kein Relay sie je.
+Notizen gehen an niemanden außer an deine eigenen Geräte, Ende-zu-Ende-verschlüsselt zwischen ihnen wie deine Chats:
+Das Relay trägt sie nur verschlüsselt.
 
 ### Mit Wischgesten navigieren
 
@@ -3229,6 +3231,13 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
 - **Fotos und Dateien**, die ankommen, bleiben auf dem Relay, bis das Telefon und der Computer sie beide geholt haben;
   dann löscht das Telefon sie dort. Eines, das der Computer nie holt, verschwindet, wenn er getrennt wird, oder nach 14
   Tagen, wie jedes nicht geholte.
+- **Chat mit mir selbst** ist auf jedem Gerät gleich: Eine Notiz, ein Foto, eine Datei oder eine Sprachnachricht, auf
+  einem geschrieben, geht an die anderen, ebenso eine gesetzte, geänderte oder gesehene Erinnerung und eine gelöschte
+  Notiz; von zwei Änderungen an einer Notiz bleibt die spätere. Was vor dem Verknüpfen geschrieben wurde, geht einmal,
+  in beide Richtungen, sobald beide diese Version haben. Eine Erinnerung erscheint auf jedem Gerät zu ihrer Zeit, und
+  auf einem gesehen, verschwindet sie von den anderen. Das Foto oder die Datei einer Notiz geht als Kopie über das
+  Relay und wird dort gelöscht, sobald sie geholt wurde, oder bleibt, bei zwei Geräten oder mehr, dort, bis sie
+  abläuft (14 Tage). Die Notizen versteckter Chats gehen nie.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
   beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und

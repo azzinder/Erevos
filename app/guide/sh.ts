@@ -174,9 +174,10 @@ Dobar prvi sat:
 ### Razgovor sa sobom i podsjetnici
 
 **Razgovor sa sobom** je uvijek na vrhu razgovora, prikvačen, u svakom prostoru. To je razgovor u kojem nema nikog
-drugog: pišite sebi bilješke, linkove, fotografije, datoteke i glasovne poruke, kao u svakom razgovoru. Ništa iz njega
-nikud ne ide: ostaje na ovom telefonu, šifrirano u prostoru, i ne prenosi se na vaše povezane uređaje. Rezervna kopija
-uzima njegove bilješke i glasovne poruke, ali ne i fotografije i datoteke, kao i kod razgovora.
+drugog: pišite sebi bilješke, linkove, fotografije, datoteke i glasovne poruke, kao u svakom razgovoru. Ne ide nikome
+drugom: ostaje šifrirano u prostoru, a ide samo na vaše vlastite povezane uređaje, šifrirano s kraja na kraj, pa svaki
+ima iste bilješke i podsjetnike (pogledajte [Povezani uređaji](#devices)). Rezervna kopija uzima njegove bilješke i
+glasovne poruke, ali ne i fotografije i datoteke, kao i kod razgovora.
 
 - **Podsjetnik:** dodirnite **Podsjeti me** (narandžasto zvono pored **Novi razgovor**), napišite na šta da vas
   podsjeti, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00** ili bilo koji dan, sat i minut) i
@@ -194,12 +195,12 @@ uzima njegove bilješke i glasovne poruke, ali ne i fotografije i datoteke, kao 
   (pogledajte [Skriveni razgovori](#hidden)). Podsjetnici skrivenog mjesta prikazuju se tamo kad ga njegov PIN otvori;
   telefon ih javlja u njihovo vrijeme samo dok je za to mjesto uključeno **Primanje dok su zatvoreni**, u istoj
   obavijesti. Novi PIN za mjesto, s kojim ono počinje prazno, ili uklonjeno mjesto, skida njegove podsjetnike s
-  telefona.
+  telefona. Bilješke skrivenog mjesta nikad ne idu na povezani uređaj.
 
 **Zašto:** obavijest se na zaključanom ekranu prikazuje svakome ko drži telefon, zato ono što podsjetnik kaže ostaje
 šifrirano u njegovom prostoru, a Androidu se kaže samo njegovo vrijeme: obavijest nikome ne može reći šta ste htjeli
-zapamtiti, niti u kojem je prostoru. A bilješke ne idu nikome, čak ni vašim drugim uređajima, pa ih nijedan relay
-nikad ne prenosi.
+zapamtiti, niti u kojem je prostoru. A bilješke ne idu nikome osim vašim vlastitim uređajima, šifrirane s kraja na
+kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 
 ### Kretanje prevlačenjem
 
@@ -2919,6 +2920,12 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   obriše i ponovo doda, računar počinje ispočetka i s njegovim uređajima.
 - **Fotografije i datoteke** koje stignu ostaju na relayu dok ih ne preuzmu i telefon i računar; tada ih telefon tamo
   briše. Ona koju računar nikad ne preuzme nestaje kad se on odvoji, ili nakon 14 dana, kao i svaka nepreuzeta.
+- **Razgovor sa sobom** je isti na svakom uređaju: bilješka, fotografija, datoteka ili glasovna poruka napisana na
+  jednom ide na ostale, kao i podsjetnik koji ste postavili, promijenili ili vidjeli i bilješka koju ste obrisali; od
+  dvije promjene iste bilješke ostaje kasnija. Ono što je napisano prije povezivanja ide jednom, u oba smjera, čim oba
+  imaju ovu verziju. Podsjetnik se prikazuje na svakom uređaju u svoje vrijeme, a viđen na jednom nestaje s ostalih.
+  Fotografija ili datoteka bilješke ide kao kopija na relayu, tamo obrisana čim je preuzeta, ili, za dva uređaja ili
+  više, ostavljena tamo dok ne istekne (14 dana). Bilješke skrivenih razgovora nikad ne idu.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
   prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
   poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga

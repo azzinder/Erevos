@@ -165,9 +165,10 @@ A good first hour:
 ### Chat with myself and reminders
 
 **Chat with myself** is always at the top of the chats, with a pin, in every space. It is a chat with no one else in
-it: write notes, links, photos, files and voice messages to yourself, as in any chat. Nothing in it goes anywhere: it
-stays on this phone, encrypted in the space, and is not passed on to your linked devices. A backup takes its notes and
-voice messages, but not its photos and files, as with chats.
+it: write notes, links, photos, files and voice messages to yourself, as in any chat. It goes to no one else: it stays
+encrypted in the space, and goes only to your own linked devices, end-to-end encrypted, so each has the same notes and
+reminders (see [Linked devices](#devices)). A backup takes its notes and voice messages, but not its photos and files,
+as with chats.
 
 - **A reminder:** tap **Remind me** (the orange bell beside **New chat**), write what to remind you of, pick a time
   (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day, hour and minute) and tap **Remind me**. It goes in
@@ -184,11 +185,13 @@ voice messages, but not its photos and files, as with chats.
 - Each space has a Chat with myself of its own, and so does each place of hidden chats, at the top of their list (see
   [Hidden chats](#hidden)). A hidden place's reminders show there once its PIN opens it; the phone tells them at their
   time only while **Receive while closed** is on for that place, in the same notice. A new PIN for the place, which
-  starts it empty, or the place removed, takes its reminders off the phone.
+  starts it empty, or the place removed, takes its reminders off the phone. A hidden place's notes never go to a linked
+  device.
 
 **Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
 space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it
-is in. And the notes go to no one, not even your other devices, so no relay ever carries them.
+is in. And the notes go to no one but your own devices, end-to-end encrypted between them as your chats are: the relay
+carries them only sealed.
 
 ### Moving around with swipes
 
@@ -2789,6 +2792,12 @@ The chats then come to the computer, and after them the messages chosen.
   devices too.
 - **Photos and files** that come stay on the relay until both the phone and the computer took them; then the phone
   deletes them there. One the computer never takes goes when it is unlinked, or after 14 days, as any not taken.
+- **Chat with myself** is the same on each device: a note, photo, file or voice message written on one goes to the
+  others, and so do a reminder set, changed or seen and a note deleted; of two changes to one note, the later stays.
+  Those written before linking go once, both ways, as soon as both have this version. A reminder shows on each device
+  at its time, and seen on one it goes from the others. A note's photo or file goes as a copy on the relay, deleted
+  there once taken, or, for two devices or more, left there until it expires (14 days). Hidden chats' notes never
+  go.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
   answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
   too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone

@@ -77,6 +77,10 @@ export type Peer = {
   /** The key this side gave it for the packets it sends here, and the one it gave this side (lib/sealed-packet.ts), base64url. Missing while not said: a version from before says none, and is sealed nothing. */
   key?: string;
   sealTo?: string;
+  /** Chat with myself (lock/myself-data.ts): whether it said it takes the notes (a version from before says nothing of them), whether this side said so to it, and the stamp they were told to it up to. */
+  notesHeard?: true;
+  notesSaid?: true;
+  notesTold?: number;
 };
 
 /**
@@ -225,6 +229,9 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
     ...(checkedWays(v.ways) ? { ways: checkedWays(v.ways)! } : {}),
     ...(v.accounts === true ? { accounts: true as const } : {}),
+    ...(v.notesHeard === true ? { notesHeard: true as const } : {}),
+    ...(v.notesSaid === true ? { notesSaid: true as const } : {}),
+    ...(isTime(v.notesTold) && v.notesTold > 0 ? { notesTold: v.notesTold } : {}),
   };
 }
 

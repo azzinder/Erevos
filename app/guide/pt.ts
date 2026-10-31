@@ -175,9 +175,11 @@ Uma boa primeira hora:
 ### Conversa comigo e lembretes
 
 **Conversa comigo** fica sempre no topo das conversas, com um alfinete, em todos os espaços. É uma conversa sem mais
-ninguém: escreva notas, links, fotos, arquivos e mensagens de voz para você mesmo, como em qualquer conversa. Nada nela
-vai para lugar nenhum: fica neste celular, criptografada no espaço, e não é passada aos seus dispositivos conectados.
-Um backup leva as notas e as mensagens de voz dela, mas não as fotos e os arquivos, como nas conversas.
+ninguém: escreva notas, links, fotos, arquivos e mensagens de voz para você mesmo, como em qualquer conversa. Ela não
+vai para mais ninguém: fica criptografada no espaço, e vai só para os seus próprios dispositivos conectados,
+criptografada de ponta a ponta, para que cada um tenha as mesmas notas e os mesmos lembretes (veja [Dispositivos
+conectados](#devices)). Um backup leva as notas e as mensagens de voz dela, mas não as fotos e os arquivos, como nas
+conversas.
 
 - **Um lembrete:** toque em **Lembrar-me** (o sino laranja ao lado de **Nova conversa**), escreva do que quer ser
   lembrado, escolha um horário (**Daqui a 1 hora**, **Hoje à noite 20:00**, **Amanhã 09:00**, ou qualquer dia, hora e
@@ -194,12 +196,13 @@ Um backup leva as notas e as mensagens de voz dela, mas não as fotos e os arqui
 - Cada espaço tem a sua própria Conversa comigo, e também cada posição de conversas ocultas, no topo da lista delas
   (veja [Conversas ocultas](#hidden)). Os lembretes de uma posição oculta aparecem ali assim que o PIN dela a abre; o
   celular os avisa no horário só enquanto **Receber quando fechadas** está ativado para aquela posição, no mesmo
-  aviso. Um PIN novo para a posição, que a começa vazia, ou a posição removida, tira os lembretes dela do celular.
+  aviso. Um PIN novo para a posição, que a começa vazia, ou a posição removida, tira os lembretes dela do celular. As
+  notas de uma posição oculta nunca vão para um dispositivo conectado.
 
 **Por quê:** um aviso aparece na tela bloqueada para quem estiver com o celular, então o que um lembrete diz fica
 criptografado no espaço dele e o Android só fica sabendo o horário: o aviso não pode contar a ninguém o que você queria
-lembrar, nem em que espaço ele está. E as notas não vão para ninguém, nem para os seus outros dispositivos, então
-nenhum relay as carrega.
+lembrar, nem em que espaço ele está. E as notas não vão para ninguém além dos seus próprios dispositivos,
+criptografadas de ponta a ponta entre eles como as suas conversas: o relay só as carrega criptografadas.
 
 ### Navegar deslizando
 
@@ -3005,6 +3008,12 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   novo, o computador também recomeça com os dispositivos dele.
 - **Fotos e arquivos** que chegam ficam no relay até o celular e o computador os pegarem; então o celular os apaga de
   lá. Um que o computador nunca pega some quando ele é desconectado, ou depois de 14 dias, como qualquer um não pego.
+- **Conversa comigo** é igual em cada dispositivo: uma nota, foto, arquivo ou mensagem de voz escrita em um vai para
+  os outros, e também um lembrete definido, mudado ou visto e uma nota apagada; de duas mudanças na mesma nota, fica a
+  mais recente. O que foi escrito antes de conectar vai uma vez, nos dois sentidos, assim que os dois têm esta versão.
+  Um lembrete aparece em cada dispositivo no horário dele, e visto em um sai dos outros. A foto ou o arquivo de uma
+  nota vai como cópia no relay, apagada de lá assim que é pega, ou, para dois dispositivos ou mais, deixada lá até
+  expirar (14 dias). As notas das conversas ocultas nunca vão.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
   atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
   celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só

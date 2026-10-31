@@ -42,7 +42,7 @@ import { Call, currentCall } from '../lib/call';
 import type { CallSignal } from '../lib/call-signal';
 import { acceptConversation, accountBundle, accountIdentity, newAccount, open as openIn, seal as sealIn, setCore, startConversation, type Core } from '../lib/core';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
-import { bytesSource, FileGoneError, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
+import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
 import { handAccounts, Links, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
@@ -95,6 +95,7 @@ import type { SpaceChats } from '../lib/space-chats';
 import { VoiceAssembler } from '../lib/voice';
 import { handOverHidden, Owed, OwedError } from '../lib/waiting';
 import { newFileId, type FileRef } from '../lock/attachment-files';
+import { addNote, changeNote, loadNotes, markTold, newNoteId, removeNote, type NotesPlace } from '../lock/myself-data';
 import { loadDevicesData, saveDevicesData, type Brought, type DevicesData } from '../lock/devices-data';
 import { loadE2EData, saveE2EData, WAY_AGAIN, type E2EData } from '../lock/e2e-data';
 import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
@@ -3450,4 +3451,96 @@ test('a computer linked anew is told who is blocked on the phone', { skip: !core
   await take(dell);
   assert.equal(dell.chats.e2e.isBlocked(someone), true);
   for (const p of [pixel, dell]) p.links.close();
+});
+
+test('Chat with myself goes between the phone and a linked computer: words, reminders, photos and voice messages, both ways, and deleting', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const at = (p: Phone): NotesPlace => ({ holder: 'space', space: p.space, key: p.key });
+  const ids = async (p: Phone) => (await loadNotes(at(p))).map((n) => n.id);
+  const both = async () => {
+    for (let i = 0; i < 4; i++) {
+      await take(pixel);
+      await take(dell);
+    }
+  };
+  // Before linking: on the phone a note with a reminder, a photo and a voice message; on the computer a note.
+  const now = Date.now();
+  const words = await addNote(at(pixel), { id: newNoteId(), at: now - 4000, text: 'buy bread', due: now + 3_600_000 });
+  const photoBytes = randomBytes(50_000);
+  const photo = await addNote(at(pixel), { id: newNoteId(), at: now - 3000, text: 'the shop', file: await keepFile(bytesSource(photoBytes), { name: 'shop.jpg', mime: 'image/jpeg', kind: 'photo' }) });
+  const audio = randomBytes(20_000);
+  const voice = await addNote(at(pixel), { id: newNoteId(), at: now - 2000, text: '', voice: await saveClip(audio, 2500) });
+  const own = await addNote(at(dell), { id: newNoteId(), at: now - 1000, text: 'from the computer' });
+
+  // Once linked each says it takes them, and is told the other's.
+  await linkUp(pixel, dell);
+  await both();
+  assert.deepEqual(await ids(dell), [words.id, photo.id, voice.id, own.id]);
+  assert.deepEqual(await ids(pixel), [words.id, photo.id, voice.id, own.id]);
+  const onDell = await loadNotes(at(dell));
+  assert.equal(onDell[0].text, 'buy bread');
+  assert.equal(onDell[0].due, words.due);
+  assert.equal(onDell[1].file?.from, undefined);
+  assert.deepEqual(await readFile(onDell[1].file!), photoBytes);
+  assert.deepEqual(await loadClip(onDell[2].voice!), audio);
+
+  // A reminder moved on the computer, then seen on the phone, and a note written on the computer.
+  await changeNote(at(dell), words.id, { due: now + 7_200_000 });
+  await both();
+  assert.equal((await loadNotes(at(pixel)))[0].due, now + 7_200_000);
+  await markTold(at(pixel), [words.id]);
+  const later = await addNote(at(dell), { id: newNoteId(), at: Date.now(), text: 'later' });
+  await both();
+  assert.equal((await loadNotes(at(dell)))[0].told, true);
+  assert.deepEqual(await ids(pixel), [words.id, photo.id, voice.id, own.id, later.id]);
+
+  // Deleted on the phone: gone on the computer, with its sound; and the other way.
+  await removeNote(at(pixel), voice.id);
+  await removeNote(at(dell), own.id);
+  await both();
+  assert.deepEqual(await ids(dell), [words.id, photo.id, later.id]);
+  assert.deepEqual(await ids(pixel), [words.id, photo.id, later.id]);
+  for (const p of [pixel, dell]) p.links.close();
+});
+
+test('Chat with myself between two linked computers with the phone off: each tells the other directly, photos stay on the relay for both, and the phone takes them later', { skip: !coreReady || !relayReady, timeout: 120_000 }, async () => {
+  const { phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const lenovo = await phone(2);
+  const at = (p: Phone): NotesPlace => ({ holder: 'space', space: p.space, key: p.key });
+  await linkUp(pixel, dell);
+  await linkUp(pixel, lenovo);
+  const siblingsOf = async (p: Phone) => (await loadDevicesData(p.space, p.key)).siblings;
+  await until(async () => {
+    for (const p of [pixel, dell, lenovo]) await take(p);
+    const [a, b] = [await siblingsOf(dell), await siblingsOf(lenovo)];
+    return !!a?.list[0]?.sealTo && !!b?.list[0]?.sealTo;
+  });
+  // The phone off: a note with a photo written on one computer reaches the other directly.
+  const bytes = randomBytes(40_000);
+  const note = await addNote(at(dell), { id: newNoteId(), at: Date.now(), text: 'plan', file: await keepFile(bytesSource(bytes), { name: 'plan.jpg', mime: 'image/jpeg', kind: 'photo' }) });
+  await until(async () => {
+    await take(dell);
+    await take(lenovo);
+    const there = (await loadNotes(at(lenovo))).find((n) => n.id === note.id);
+    return !!there?.file && !there.file.from;
+  }, 20_000);
+  assert.deepEqual(await readFile((await loadNotes(at(lenovo)))[0].file!), bytes);
+  // The phone, on again, takes it too: the photo was left on the relay for it.
+  await until(async () => {
+    for (const p of [pixel, dell, lenovo]) await take(p);
+    const there = (await loadNotes(at(pixel))).find((n) => n.id === note.id);
+    return !!there?.file && !there.file.from;
+  }, 20_000);
+  assert.deepEqual(await readFile((await loadNotes(at(pixel)))[0].file!), bytes);
+  // Deleted on the other computer: gone everywhere.
+  await removeNote(at(lenovo), note.id);
+  await until(async () => {
+    for (const p of [pixel, dell, lenovo]) await take(p);
+    return (await loadNotes(at(pixel))).length === 0 && (await loadNotes(at(dell))).length === 0;
+  }, 20_000);
+  for (const p of [pixel, dell, lenovo]) p.links.close();
 });

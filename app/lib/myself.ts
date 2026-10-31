@@ -4,7 +4,7 @@
 
 import { device } from '../modules/erevos-device';
 import { currentSpace } from '../lock/keys';
-import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, removeNote, type Note, type NotesPlace } from '../lock/myself-data';
+import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, onNotesCame, removeNote, type Note, type NotesPlace } from '../lock/myself-data';
 
 // Chat with myself and its reminders (app/myself.tsx, and Remind me on the home screen): the open
 // space's notes (lock/myself-data.ts). On Android the phone itself tells a reminder at its time,
@@ -40,6 +40,19 @@ export function onNotesChanged(listener: () => void): () => void {
 function changed(): void {
   for (const listener of [...listeners]) listener();
 }
+
+// The space's notes that came from another of the account's devices (lib/devices.ts), or changed
+// there: their reminders as there, told by this phone at their time too, and out of its notice once
+// seen there; then the screens.
+onNotesCame((_place, notes, gone) => {
+  for (const note of notes) {
+    if (isWaiting(note)) device?.remind?.(note.id, note.due!);
+    else if (note.told) device?.seenReminders?.([note.id]);
+    else if (note.due === undefined) device?.forgetReminder?.(note.id);
+  }
+  for (const id of gone) device?.forgetReminder?.(id);
+  changed();
+});
 
 /** Asks the phone to tell the reminders still to come, again: after a backup was put back, or on another phone. Each is kept by its id, so asking twice is the same. */
 export function armReminders(notes: Note[], now = Date.now()): void {

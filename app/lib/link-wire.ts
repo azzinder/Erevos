@@ -93,9 +93,43 @@ export type Envelope =
   | { k: 'way'; c: string; dv?: number; list?: DeviceList }
   | { k: 'came'; c: string; got: string[] }
   | ({ k: 'accounts' } & GivenAccounts)
+  | { k: 'notes'; list: NoteSaid[]; gone: { id: string; v: number }[]; keep?: true }
   | { k: 'here' }
   | { k: 'move' }
   | { k: 'bye' };
+
+/**
+ * A note of Chat with myself as it goes to the account's other devices (lock/myself-data.ts): its
+ * words, when it was written and last changed (`v`), its reminder, and its photo or file as where it
+ * waits on the relay, or its voice message's sound, base64. With `keep` on the envelope, the photos
+ * and files stay on the relay for the other devices that take them too, until they expire there.
+ */
+export type NoteSaid = { id: string; at: number; v: number; text: string; due?: number; told?: true; file?: FileOffer; voice?: { ms: number; data: string } };
+
+/** The most notes, and deletions, one envelope says. */
+export const MAX_NOTES_SAID = 5000;
+const NOTE_ID = /^[0-9a-f]{16}$/;
+// The longest a note's words are (lock/myself-data.ts MAX_NOTE_TEXT), and a voice message's sound
+// (lib/voice.ts MAX_VOICE_MS: a minute, at most 64 kbit/s), base64.
+const NOTE_TEXT = 8000;
+export const MAX_NOTE_VOICE = 1_000_000;
+
+function checkedNoteSaid(value: unknown): NoteSaid | null {
+  if (!isObject(value)) return null;
+  const v = value;
+  if (!isText(v.id) || !NOTE_ID.test(v.id) || !isTime(v.at) || !isTime(v.v) || !isText(v.text) || v.text.length > NOTE_TEXT) return null;
+  const file = v.file !== undefined ? readOffer(v.file) : null;
+  const voice = isObject(v.voice) && isTime(v.voice.ms) && isText(v.voice.data) && v.voice.data.length <= MAX_NOTE_VOICE && /^[A-Za-z0-9+/]*={0,2}$/.test(v.voice.data) ? { ms: v.voice.ms, data: v.voice.data } : null;
+  return {
+    id: v.id,
+    at: v.at,
+    v: v.v,
+    text: v.text,
+    ...(isTime(v.due) ? { due: v.due } : {}),
+    ...(v.told === true ? { told: true as const } : {}),
+    ...(file ? { file } : voice ? { voice } : {}),
+  };
+}
 
 /**
  * The space's own accounts on other networks, as the phone gives them to a device of its own
@@ -444,6 +478,13 @@ function checkedEnvelope(v: Json): Envelope | null {
     }
     case 'accounts':
       return { k: 'accounts', ...checkedGiven(v) };
+    case 'notes': {
+      const list = Array.isArray(v.list) ? v.list.map(checkedNoteSaid).filter((n): n is NoteSaid => n !== null).slice(0, MAX_NOTES_SAID) : [];
+      const gone = Array.isArray(v.gone)
+        ? v.gone.filter((g): g is { id: string; v: number } => isObject(g) && isText(g.id) && NOTE_ID.test(g.id) && isTime(g.v)).map((g) => ({ id: g.id, v: g.v })).slice(0, MAX_NOTES_SAID)
+        : [];
+      return { k: 'notes', list, gone, ...(v.keep === true ? { keep: true as const } : {}) };
+    }
     case 'here':
     case 'move':
     case 'bye':

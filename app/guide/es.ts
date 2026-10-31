@@ -177,9 +177,10 @@ Una buena primera hora:
 ### Chat conmigo y recordatorios
 
 **Chat conmigo** está siempre arriba de los chats, con una chincheta, en cada espacio. Es un chat sin nadie más: escríbete
-notas, enlaces, fotos, archivos y mensajes de voz, como en cualquier chat. Nada de lo que hay en él va a ninguna parte: se
-queda en este teléfono, cifrado en el espacio, y no pasa a tus dispositivos vinculados. Una copia de seguridad incluye
-sus notas y mensajes de voz, pero no sus fotos ni archivos, como con los chats.
+notas, enlaces, fotos, archivos y mensajes de voz, como en cualquier chat. No va a nadie más: se queda cifrado en el
+espacio, y va solo a tus propios dispositivos vinculados, cifrado de extremo a extremo, para que cada uno tenga las
+mismas notas y los mismos recordatorios (ver [Dispositivos vinculados](#devices)). Una copia de seguridad incluye sus
+notas y mensajes de voz, pero no sus fotos ni archivos, como con los chats.
 
 - **Un recordatorio:** toca **Recordarme** (la campana naranja junto a **Chat nuevo**), escribe lo que quieres que te
   recuerde, elige una hora (**En 1 hora**, **Esta noche 20:00**, **Mañana 09:00**, o cualquier día, hora y minuto) y
@@ -196,12 +197,13 @@ sus notas y mensajes de voz, pero no sus fotos ni archivos, como con los chats.
 - Cada espacio tiene su propio Chat conmigo, y también cada lugar de chats ocultos, arriba de su lista (ver
   [Chats ocultos](#hidden)). Los recordatorios de un lugar oculto aparecen ahí en cuanto su PIN lo abre; el teléfono
   los avisa a su hora solo mientras **Recibir estando cerrados** está activado para ese lugar, con el mismo aviso. Un
-  PIN nuevo para el lugar, que lo empieza vacío, o quitar el lugar, quita sus recordatorios del teléfono.
+  PIN nuevo para el lugar, que lo empieza vacío, o quitar el lugar, quita sus recordatorios del teléfono. Las notas de
+  un lugar oculto nunca van a un dispositivo vinculado.
 
 **Por qué:** un aviso se muestra en la pantalla bloqueada a quien tenga el teléfono, así que lo que dice un recordatorio
 se queda cifrado en su espacio y a Android solo se le dice su hora: el aviso no puede contar a nadie qué querías
-recordar, ni en qué espacio está. Y las notas no van a nadie, ni siquiera a tus otros dispositivos, así que ningún relay
-las lleva nunca.
+recordar, ni en qué espacio está. Y las notas no van a nadie más que a tus propios dispositivos, cifradas de extremo a
+extremo entre ellos como tus chats: el relay solo las lleva cifradas.
 
 ### Moverse deslizando
 
@@ -3029,6 +3031,12 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
 - **Las fotos y los archivos** que llegan se quedan en el relay hasta que tanto el teléfono como el ordenador los han
   recogido; entonces el teléfono los elimina de ahí. Uno que el ordenador nunca recoge desaparece cuando se desvincula,
   o a los 14 días, como cualquiera que no se recoja.
+- **Chat conmigo** es igual en cada dispositivo: una nota, foto, archivo o mensaje de voz escrito en uno va a los
+  otros, y también un recordatorio puesto, cambiado o visto y una nota eliminada; de dos cambios en una misma nota,
+  queda el más reciente. Lo escrito antes de vincular va una vez, en los dos sentidos, en cuanto los dos tienen esta
+  versión. Un recordatorio se muestra en cada dispositivo a su hora, y visto en uno se va de los otros. La foto o el
+  archivo de una nota va como copia en el relay, eliminada de ahí en cuanto se recoge, o, con dos dispositivos o más,
+  se deja ahí hasta que caduca (14 días). Las notas de los chats ocultos nunca van.
 - **Las llamadas** suenan en el teléfono y en el ordenador. Responde en cualquiera de los dos: el otro deja de sonar, y
   dice que se respondió en otro dispositivo. Rechazar una llamada en uno la rechaza en los dos. El ordenador también
   llama a través del teléfono; la llamada en sí va entonces directamente entre el ordenador y el contacto, cifrada entre

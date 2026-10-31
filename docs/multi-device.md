@@ -368,6 +368,16 @@ devices start conversations with each other, endpoint to endpoint, from the bund
 first packet only from an id in the list it last checked, and only from one that should start.
 lib/siblings.ts holds them, as a device's **siblings**.
 
+Chat with myself (lock/myself-data.ts) goes the same ways, the space's only: a `notes` envelope
+carries notes as they are, each stamped (`v`) after every stamp its device knew, and the stamps of
+those deleted (`gone`, the last 2000); of two changes to a note the later stays, and a deletion
+stays unless a later change came. Each side first says an empty one, once each time the space
+opens, so a version from before is told nothing more; heard from, a device is told every note once,
+then what changed on this one since (`notesTold`, by stamp), as far as half its outbox has room.
+The primary passes a device's on to the devices that do not hear it directly. A note's photo or
+file goes on the relay, left there (`keep`) while two devices or more take that copy; a voice
+message's sound goes in the envelope.
+
 - A device meets its siblings as soon as it keeps a list (or the same list again with new
   routes). What is for a sibling that has not started yet waits (`held`, the last 100), and goes
   sealed once its first packet came. A first packet from an id the list names, before the phone

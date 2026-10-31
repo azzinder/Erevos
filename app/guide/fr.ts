@@ -187,9 +187,10 @@ Une bonne première heure :
 
 **Discussion avec moi-même** est toujours en haut des discussions, avec une épingle, dans chaque espace. C’est une
 discussion où il n’y a personne d’autre : écris-toi des notes, des liens, des photos, des fichiers et des messages
-vocaux, comme dans n’importe quelle discussion. Rien de ce qu’elle contient ne va nulle part : tout reste sur ce
-téléphone, chiffré dans l’espace, et n’est pas transmis à tes appareils associés. Une sauvegarde prend ses notes et ses
-messages vocaux, mais pas ses photos ni ses fichiers, comme pour les discussions.
+vocaux, comme dans n’importe quelle discussion. Elle ne va à personne d’autre : elle reste chiffrée dans l’espace, et
+ne va qu’à tes propres appareils associés, chiffrée de bout en bout, pour que chacun ait les mêmes notes et les mêmes
+rappels (voir [Appareils associés](#devices)). Une sauvegarde prend ses notes et ses messages vocaux, mais pas ses
+photos ni ses fichiers, comme pour les discussions.
 
 - **Un rappel :** appuie sur **Me rappeler** (la cloche orange à côté de **Nouvelle discussion**), écris de quoi te
   rappeler, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**, **Demain 09:00**, ou n’importe quel jour, heure et
@@ -208,12 +209,13 @@ messages vocaux, mais pas ses photos ni ses fichiers, comme pour les discussions
   leur liste (voir [Discussions masquées](#hidden)). Les rappels d’un emplacement masqué s’y affichent une fois que son
   code PIN l’ouvre ; le téléphone les signale à leur heure seulement tant que **Recevoir une fois fermées** est activé
   pour cet emplacement, dans la même notification. Un nouveau code PIN pour l’emplacement, qui le recommence vide, ou
-  l’emplacement retiré, enlève ses rappels du téléphone.
+  l’emplacement retiré, enlève ses rappels du téléphone. Les notes d’un emplacement masqué ne vont jamais à un
+  appareil associé.
 
 **Pourquoi :** une notification s’affiche sur l’écran verrouillé pour quiconque tient le téléphone, donc ce que dit un
 rappel reste chiffré dans son espace et Android n’apprend que son heure : la notification ne peut dire à personne ce que
-tu voulais te rappeler, ni dans quel espace il se trouve. Et les notes ne vont à personne, pas même à tes autres
-appareils, donc aucun relais ne les transporte jamais.
+tu voulais te rappeler, ni dans quel espace il se trouve. Et les notes ne vont à personne d’autre qu’à tes propres
+appareils, chiffrées de bout en bout entre eux comme tes discussions : le relais ne les transporte que chiffrées.
 
 ### Se déplacer par balayage
 
@@ -3199,6 +3201,13 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
 - Les **photos et fichiers** qui arrivent restent sur le relais jusqu’à ce que le téléphone et l’ordinateur les aient
   pris tous les deux ; ensuite le téléphone les y supprime. Ceux que l’ordinateur ne prend jamais partent quand il est
   dissocié, ou après 14 jours, comme tout ce qui n’est pas pris.
+- **Discussion avec moi-même** est la même sur chaque appareil : une note, une photo, un fichier ou un message vocal
+  écrit sur l’un va aux autres, de même qu’un rappel défini, changé ou vu et une note supprimée ; de deux changements
+  d’une même note, c’est le plus récent qui reste. Ce qui a été écrit avant l’association part une fois, dans les deux
+  sens, dès que les deux ont cette version. Un rappel s’affiche sur chaque appareil à son heure, et vu sur l’un il
+  disparaît des autres. La photo ou le fichier d’une note part en copie sur le relais, supprimée de là une fois prise,
+  ou, pour deux appareils ou plus, laissée là jusqu’à son expiration (14 jours). Les notes des discussions masquées ne
+  partent jamais.
 - Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
   dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
   aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,

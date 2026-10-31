@@ -31,6 +31,7 @@ export const VERSIONS: WhatsNew[] = [
     forYou: [
       mark("**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic)."),
       mark("**Calculator in place of Erevos**: on Android, under Launcher icons, a calculator that works can take the place of Erevos's icon; your code, then **=**, opens Erevos, which asks for its password as always. See [Appearance](#appearance)."),
+      mark("**Chat with myself on your linked devices too**: notes, photos, files, voice messages and reminders written on one device go to the others, as do a reminder changed or seen and a note deleted. Those from before go once, both ways. See [Linked devices](#devices)."),
       mark("**Start when the phone turns on**: on Android, under In the background, Erevos can start by itself after the phone turns on, so the spaces set to say a message came while closed already say \"New message\", never which space or what. Off unless you choose it. See [Chat through a relay](#relay)."),
     ],
     underTheHood: [
