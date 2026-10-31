@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { loadCurrentSpaceData, NO_OFFER, updateCurrentSpaceData, type Offered } from '../lock/space-data';
 import type { Received } from './e2e';
 import { isLentToken, sameRelay } from './relay';

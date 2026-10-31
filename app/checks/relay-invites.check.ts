@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Invites to a relay (lib/relay-invite.ts, lib/relay.ts, crates/erevos-relay/src/invites.rs): the
 // link in the QR code, its hand-off to the chat of the space it was opened in, and making, taking,
 // listing and taking back invites against a real relay with a file of phones' tokens, where a phone

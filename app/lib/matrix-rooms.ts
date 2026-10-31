@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Finding and keeping Matrix rooms, as Element does (lib/matrix.ts holds the account): the public
 // rooms a homeserver lists (/publicRooms), what a space holds (/hierarchy), pinning a message to a
 // room's top (m.room.pinned_events), our own tags on a room (favourite, low priority), forgetting a

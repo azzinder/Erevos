@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Checks MeshtasticLink.kt on this computer, without a phone or a radio: compiles it with the
 # Android classes (android-all from Maven Central), and runs MeshOps, the order of what goes to
 # and from the radio. Needs Java 17+ and Maven.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { device } from '../modules/erevos-device';
 import { currentSpace } from '../lock/keys';
 import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, removeNote, type Note, type NotesPlace } from '../lock/myself-data';

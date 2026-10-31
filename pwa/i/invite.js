@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos web app: the page an invite sent by text message opens, /i#<invite>. The invite is the
 // part of the link after #, which the browser never sends to the server: this page reads it on the
 // device and sends it nowhere. It shows who invites and until when, and how to take the invite in

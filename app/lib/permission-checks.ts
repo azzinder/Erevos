@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import type { BackgroundState, NoticeChannel } from '../modules/erevos-call';
 
 // What the permissions check (app/permissions.tsx, lib/permissions.ts) looks at on an Android

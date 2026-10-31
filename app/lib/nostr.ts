@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Nostr for what is written: a text to a contact who said they read on Nostr (lib/e2e.ts, `ns`)
 // goes to the Nostr relays they named, through Tor, instead of through our relay, sealed once more
 // for the key they gave this chat (a gift wrap, NIP-59, crates/erevos-nostr), signed by a key made

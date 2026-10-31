@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Encryption helpers for what the app keeps on the phone: AES-256-GCM with keys derived from a
 // password by PBKDF2-SHA256, the same as in LPHL FASOULI, and then Argon2id. Pure JavaScript (the
 // audited @noble libraries), so it runs the same on Android, iOS, web and under plain Node for

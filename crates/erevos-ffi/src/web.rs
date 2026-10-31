@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! WebAssembly entry points, with the names the Android module uses, for the
 //! app's web build and for its checks under Node. An error becomes a thrown
 //! JavaScript Error with the core's message.

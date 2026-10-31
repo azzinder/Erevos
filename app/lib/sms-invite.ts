@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // SMS invites: how two Erevos phones find each other from a phone number alone, without a server
 // that knows numbers. The first time Erevos sends a plain SMS to a number it knows no contact for,
 // it also sends an invite: a data SMS to a port (INVITE_PORT in the SMS module), which messaging

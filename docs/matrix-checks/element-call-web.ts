@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Runs a Matrix call in the web app as it is served: a release made by pwa/build.mjs and signed,
 // on one server with two addresses, as Apache serves it (deploy/web/install.sh): the app's at
 // localhost, which never gives Element Call's files, and Element Call's at 127.0.0.1, which gives

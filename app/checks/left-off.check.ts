@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Where a chat was left as it opens (lib/left-off.ts): the first of the messages that were new.
 // Run with: npm run check
 /// <reference types="node" />

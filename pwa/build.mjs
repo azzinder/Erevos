@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Makes the Erevos web app from the web build (npx expo export --platform web, with the core from
 // app/scripts/build-web-core.mjs): adds the service worker with the release key's public half,
 // the first script (boot.js), the icons and the manifest that let it be added to a home screen,

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The words the app shows: the English, as the code writes it inside t('…'), mark('…') and
 // plural(n, '…', '…'), which every language's words are keyed by, and each language's part files
 // in i18n/ (checks/i18n.check.ts, checks/languages.check.ts, scripts/i18n-missing.ts).

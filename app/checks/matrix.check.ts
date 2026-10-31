@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Matrix accounts (lib/matrix.ts) against a small homeserver played here, with the real core built
 // to WebAssembly for the keys (crates/erevos-matrix): signing in publishes the device's keys and,
 // for an account without them, cross-signing keys, asking the password again as servers do; a chat

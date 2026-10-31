@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Signing in to a relay with a provider, such as LPHL (crates/erevos-relay/src/signin.rs): the
 // claim secret this phone makes before it opens the browser, kept in memory for its space until the
 // relay hands over a token for it (lib/relay.ts, claimSignIn). Only the claim's SHA-256 goes in the

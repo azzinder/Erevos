@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { RELOCK_MS } from '../lock/chat-pin';
 
 // Hidden chats close once Erevos was in the background more than RELOCK_MS, as a chat's own PIN

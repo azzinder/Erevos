@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chat with myself (lock/myself-data.ts): each space's and each hidden place's notes apart, sealed
 // so no other key reads them; a note's reminder set, changed, taken away and seen; what the home
 // screen's row shows of them; a note deleted with its photo's chunks and its voice message; and a

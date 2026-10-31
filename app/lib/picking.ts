@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // While Erevos waits for another app it opened on purpose, to pick a photo, a file or a folder or
 // take a photo: the time away then closes no hidden chats (app/chat.tsx), so what is picked still comes
 // to them.

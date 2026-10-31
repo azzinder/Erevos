@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // React Native's plain views come from modules/erevos-views (MovableViews.kt), where a view
 // moved out of a screen that is still going away leaves it for good, instead of Erevos stopping.
 // React Native takes each view from the first package that has it, so MainApplication puts that

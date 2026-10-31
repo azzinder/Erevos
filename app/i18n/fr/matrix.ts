@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Les comptes Matrix en français (lib/matrix.ts) (i18n/fr/index.ts).
 export const matrix: Record<string, string> = {
   "This build of Erevos has no Matrix.": "Cette version d’Erevos n’a pas Matrix.",

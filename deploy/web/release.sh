@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Builds a release of the Erevos web app from this checkout and signs it with the release key:
 #
 #   deploy/web/release.sh <private key file> <out folder> [--origin https://app.example.org --call-origin https://call.example.org]

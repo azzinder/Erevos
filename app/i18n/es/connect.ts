@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Spanish of how New chat says this phone connects, and of its ways in (app/chat.tsx, components/connect-cards.tsx) (i18n/es/index.ts).
 export const connect: Record<string, string> = {
   "How you connect now": "Cómo te conectas ahora",

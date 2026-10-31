@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Greek of Chat with myself and its reminders (app/myself.tsx, lib/myself.ts, Remind me
 // on the home screen) (i18n/el/index.ts).
 export const myself: Record<string, string> = {

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What's new (lib/whats-new.ts): a version for each release of CHANGELOG.md, in its order, each
 // with words, for you and under the hood as the CHANGELOG splits them; what is not out yet shows
 // under the number of the version that runs; its links go to sections of the guide.

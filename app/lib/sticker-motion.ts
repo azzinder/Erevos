@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // How the built-in stickers move (components/stickers.tsx plays it, lib/sticker-art.ts names the
 // parts): each sticker of the sets that move once, for a few seconds, as it
 // comes into view and when it is tapped, and then it rests on its still frame. Nothing loops, so

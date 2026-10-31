@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Tor bridges need lyrebird, a program Tor starts, carried among the native libraries as
 // liblyrebird.so (modules/erevos-core/android/build.gradle). Android runs no program from the
 // app's own folders, only from the folder it unpacks the native libraries into, and unpacks them

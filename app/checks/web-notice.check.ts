@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The web app's notice while it is closed (pwa/sw.js): how many messages came since Erevos was last
 // open ("3 new messages"), as a relay that counts says in its pushes, or else "New message", or
 // "New messages" once more pushes came, or "Call" when only a call rang, in the app's language, on an

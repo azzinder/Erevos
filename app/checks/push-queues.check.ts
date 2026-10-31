@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Which queues the web app's pushes go for (lib/push-queues.ts): the space's own, its groups' and
 // public groups', and its contacts' own queues with the ones made ahead, each once, on the relay of
 // the own queue only; not the ones contacts moved away from, which with the contact queues not

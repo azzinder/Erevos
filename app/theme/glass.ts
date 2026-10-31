@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The glass look, ported from LPHL FASOULI (src/theme/look.ts there), as on the LPHL site
 // (lphl.nekten.eu) and its admin panel: flat or glass. Glass changes the material, in one of two
 // kinds: panes (the screens lie on a wallpaper under a light haze and their cards are panes of

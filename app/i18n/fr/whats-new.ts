@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The French of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/fr/index.ts).
 export const whatsNew: Record<string, string> = {
   "What's new": 'Nouveautés',
@@ -12,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     "**Nouvelle discussion ouvre plus vite les discussions masquées** : maintiens **Nouvelle discussion** un instant, plus une seconde entière, et le champ pour un code PIN de discussions masquées s’ouvre ; sur Android le téléphone vibre une fois à l’ouverture. Voir [Discussions masquées](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
     "**Les personnes que tu suis sur Nostr** : dans les Discussions Nostr, sous Nouvelle discussion, **Afficher les personnes que tu suis** liste les personnes que suit ta clé Nostr, avec leurs noms ; touches-en une pour lui écrire. Voir [Discussions avec d’autres applis Nostr](#nostr-chats).",
+  "**Who makes Erevos, and its licence**: About Erevos now names its maker, and every file of Erevos's source code says whose it is and under which licence; the AGPL-3.0 licence has three added terms (keep the maker's name, mark a changed version, give it another name). See [What Erevos is](#about).":
+    "**Qui fait Erevos, et sa licence** : À propos d’Erevos dit désormais qui le fait, et chaque fichier du code source dit à qui il appartient et sous quelle licence ; la licence AGPL-3.0 a trois conditions ajoutées (garder le nom de l’auteur, marquer une version modifiée comme modifiée, lui donner un autre nom). Vois [Ce qu’est Erevos](#about).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Des nombres sur les puces de l’écran d’accueil** : chaque puce au-dessus des discussions (Tous, SMS, Erevos, Matrix, XMPP, Nostr) montre combien de messages n’y sont pas lus, en un petit nombre après son nom ; les discussions et groupes en sourdine ne comptent pas. Voir [Premiers pas](#start).",

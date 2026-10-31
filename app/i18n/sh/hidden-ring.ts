@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Srpskohrvatski (latinica, ijekavica) za skrivene razgovore koji zvone na pozive svojih kontakata
 // dok su zatvoreni (lock/hidden-ring.ts, components/hidden-ring-screen.tsx, prekidač u app/chat.tsx)
 // (i18n/sh/index.ts).

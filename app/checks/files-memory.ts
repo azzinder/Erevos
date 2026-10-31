@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The app's files, in memory, for checks under Node (see node-hooks.mjs).
 export const files = new Map<string, string>();
 export const blobs = new Map<string, Uint8Array>();

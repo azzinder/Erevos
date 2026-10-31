@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Builds site/donate/index.html: the ways to give to Erevos as one web page, in English and
 // Greek, for anyone without the app. The ways come from app/lib/donate.ts, the same ones as in
 // Settings → General → Support Erevos, so the page and the app cannot drift apart. The page is

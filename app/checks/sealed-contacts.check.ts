@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Contacts kept only in Erevos (lib/sealed-contacts.ts, lock/contacts-data.ts): sealed in their
 // space or hidden chats, each seen only with its own key, the names they give numbers, and backups.
 // Run with: npm run check

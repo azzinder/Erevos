@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Tor way of a space (SpaceData.tor, lib/relay.ts TorWay): what of its relay requests goes
 // through the core's Tor. 'messages' unless changed: what is written and what tells contacts
 // something, but not files, and only while Tor is ready, so messages never wait for it. 'all':

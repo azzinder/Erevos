@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The French of a closed space that says a message came while another is open (app/security.tsx,
 // lib/closed-notices.ts), and of a message that came or went through Nostr (app/chat.tsx) (i18n/fr/index.ts).
 export const closedSpaces: Record<string, string> = {

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Messages that come while a space is open but no chat is (lib/receiver.ts), through a real relay
 // and the real core: kept in the space's history, the sender told they came (not a message
 // request's), and nothing taken while the chat screen holds the receiver. The same from a phone

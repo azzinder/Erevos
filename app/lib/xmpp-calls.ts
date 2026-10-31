@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { callNow, currentCall, OFFER_FRESH_MS, type Call, type Rtc } from './call';
 import type { CallEnd, CallSignal } from './call-signal';
 import { CALL_LINE, callSignal, shownCall, startCall, type CallPlace } from './calls';

@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Checks the Sailfish shell's same Wi-Fi link (src/lanlink.cpp, /__lan in src/shellserver.cpp)
 # against desktop/lan.js on this computer, without a phone: builds the shell's server with Qt 5
 # (qtbase5-dev; no Sailfish libraries), then links the two over real UDP broadcasts and TCP, as the

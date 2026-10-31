@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Installs the Erevos relay behind Caddy, which gets a TLS certificate from
 # Let's Encrypt, on a Debian or Ubuntu server. Run as root from an Erevos
 # source tree:

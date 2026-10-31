@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Client for the Erevos relay over WebSocket (ws:// or wss://). The relay holds
 // one-way queues: a sender writes with its sender id, and the recipient reads
 // with its recipient id. Each request is one binary message, and each reply is

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The German of a chat's media, links and files, and its Go to a day (components/chat-media.tsx)
 // (i18n/de/index.ts).
 export const media: Record<string, string> = {

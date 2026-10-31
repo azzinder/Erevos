@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
 <resources>
   <!-- The name of the SMS icon in the launcher (the SmsLauncher aliases of SmsOpenActivity): "SMS" in every language. -->
   <string name="erevos_sms_launcher" translatable="false">SMS</string>

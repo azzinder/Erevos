@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The SMS module (modules/erevos-sms) for checks under Node: a phone without SMS.
 export const takeSmsInvites = async (): Promise<{ from: string; data: string; at: number }[]> => [];
 export const smsStatus = () => null;

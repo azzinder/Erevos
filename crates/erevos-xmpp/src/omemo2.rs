@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! OMEMO 2: version 0.8 of XEP-0384, namespace `urn:xmpp:omemo:2`, as Kaidan,
 //! QXmpp and python-twomemo speak it. The ratchet is the one of OMEMO 0.3
 //! (lib.rs's State), with its own derivations and messages:

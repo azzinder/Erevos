@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // El español de los chats ocultos que suenan las llamadas de sus contactos mientras están cerrados
 // (lock/hidden-ring.ts, components/hidden-ring-screen.tsx, el interruptor en app/chat.tsx)
 // (i18n/es/index.ts).

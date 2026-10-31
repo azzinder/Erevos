@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Web Push: telling a browser that a message waits, so a web app that is
 //! closed (on an iPhone, always) can say so.
 //!

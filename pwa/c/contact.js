@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos web app: the page a contact link for a website opens, /c#<the link's fields>, as on a
 // contact page anyone may open (app/lib/contact-code.ts, contactPageLink). The fields are the part
 // of the link after #, which the browser never sends to the server: this page reads them on the

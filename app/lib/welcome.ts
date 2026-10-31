@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // One invite for everything: what a phone with Erevos gives someone new, as a QR code or a link,
 // so their phone joins with one tap. They then use the same relay with access of their own (an
 // invite to it, lib/relay-invite.ts, when the relay lets this phone invite), and the two are each

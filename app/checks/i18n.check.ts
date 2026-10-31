@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The app's words in Greek (lib/i18n.ts, i18n/el/): every English word the code shows has its
 // Greek, with the same {names} in it.
 // Run with: npm run check

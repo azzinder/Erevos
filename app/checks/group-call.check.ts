@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Group voice calls (lib/group-call.ts, lib/group-calls.ts): this phone in a group's call, with
 // the other members' phones played by hand, and a stand-in for WebRTC (checks/fake-rtc.ts). Which
 // member offers to which, who is in the call, what rings and what is missed. The group messages

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Introducing two contacts (lib/intros.ts) with three chats and the real Rust core: nothing comes
 // of it unless both say yes; the one who introduces passes on only the link the second gave; the
 // first adds it, and the second's phone takes them at once, named as the one who introduced them

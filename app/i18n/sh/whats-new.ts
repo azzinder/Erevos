@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Serbo-Croatian of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/sh/index.ts).
 export const whatsNew: Record<string, string> = {
   "What's new": 'Šta je novo',
@@ -12,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     "**Novi razgovor brže otvara skrivene razgovore**: zadržite prst na **Novi razgovor** trenutak, ne cijelu sekundu, i otvara se polje za PIN skrivenih razgovora; na Androidu telefon jednom zavibrira kad se otvori. Pogledajte [Skriveni razgovori](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
     "**Ljudi koje pratite na Nostru**: u Nostr razgovorima, pod Novi razgovor, **Prikaži ljude koje pratite** navodi ljude koje prati vaš Nostr ključ, s njihovim imenima; dodirnite jednu osobu da joj napišete. Pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).",
+  "**Who makes Erevos, and its licence**: About Erevos now names its maker, and every file of Erevos's source code says whose it is and under which licence; the AGPL-3.0 licence has three added terms (keep the maker's name, mark a changed version, give it another name). See [What Erevos is](#about).":
+    "**Ko pravi Erevos, i njegova licenca**: O Erevosu sada kaže ko ga pravi, a svaka datoteka izvornog koda kaže čija je i pod kojom licencom; licenca AGPL-3.0 ima tri dodatna uslova (zadržati ime autora, označiti izmijenjenu verziju kao izmijenjenu i dati joj drugo ime). Vidi [Šta je Erevos](#about).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Brojevi na dugmadima početnog ekrana**: svako dugme iznad razgovora (Sve poruke, SMS, Erevos, Matrix, XMPP, Nostr) pokazuje koliko u njemu ima nepročitanih poruka, malim brojem iza imena; utišani razgovori i grupe se ne računaju. Pogledajte [Prvi koraci](#start).",

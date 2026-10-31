@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Photos, files, stickers made from photos and voice messages in group chats (lib/group-media.ts,
 // lib/groups.ts): three phones with the real core, as in groups.check.ts, and real relays
 // (crates/erevos-relay) for the files. Skipped, with a note, without the core or the relay.

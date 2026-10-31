@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The French of photos, files and voice messages in group chats (i18n/fr/index.ts).
 export const groups: Record<string, string> = {
   'A voice message did not come. {error}': 'Un message vocal n’est pas arrivé. {error}',

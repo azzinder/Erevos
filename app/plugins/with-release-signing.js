@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Release signing. Expo's Android project signs release builds with the public debug key; this
 // makes the release build use Erevos's own key instead whenever android/app/release.keystore is
 // there (the release workflow writes it from the ANDROID_KEYSTORE_BASE64 secret, see

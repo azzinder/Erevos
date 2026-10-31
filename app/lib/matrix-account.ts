@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A Matrix account's own matters, as Element has them (lib/matrix.ts holds the account): making a
 // new account on a homeserver that lets one (/register), and the account's devices, seen, named,
 // and signed out from here.

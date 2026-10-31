@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Encrypted messages by SMS, when nothing else takes them (lib/nearby.ts, Nearby.deliver): after
 // the relay, Nostr, the phones nearby and LoRa, a text or a delete to an Erevos contact whose
 // phone number is linked goes in data SMS to Erevos's SMS port (lib/sms-packets.ts), the same

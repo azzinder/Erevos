@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Portuguese of invites by plain SMS: making one on a contact's card, and taking one (app/contact-card.tsx, app/text-invite.tsx, app/chat.tsx, lib/sms-relay.ts) (i18n/pt/index.ts).
 export const textInvite: Record<string, string> = {
   'An invite by SMS lasts two days. Ask whoever sent it for a new one.': 'Um convite por SMS dura dois dias. Peça um novo a quem o enviou.',

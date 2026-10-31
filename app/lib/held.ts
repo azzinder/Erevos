@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What waits a few seconds before it is done, to be taken back meanwhile (app/sms.tsx): an SMS
 // about to go, a message about to be deleted. Kept in memory only, never on the phone: each is done
 // at its time whatever screen shows then, and all at once with flush(), which the app calls when it

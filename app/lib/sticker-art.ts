@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // How each built-in sticker (lib/stickers.ts) is drawn: shapes on a grid of 100 by 100, which
 // components/stickers.tsx turns into plain views scaled to the size asked, so every phone draws
 // them itself and nothing is downloaded. Moons, ghosts, cats and the other faces with their moods,

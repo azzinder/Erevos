@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Signing in to a relay with a provider such as LPHL (lib/relay-signin.ts, lib/relay.ts,
 // crates/erevos-relay/src/signin.rs): the claim, kept for one space, which pages a relay may send
 // the browser to, which token is named as the phone's before, and the whole sign-in against a real

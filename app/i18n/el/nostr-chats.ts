@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Τα ελληνικά των συνομιλιών με άλλες εφαρμογές Nostr (lib/nostr-dm.ts, app/nostr-chats.tsx) (i18n/el/index.ts).
 export const nostrChats: Record<string, string> = {
   "No Nostr chats yet.": "Καμία συνομιλία Nostr ακόμα.",

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // XMPP accounts (lib/xmpp.ts) against a small XMPP server played here, with the real core built to
 // WebAssembly for OMEMO (crates/erevos-xmpp): the stream's XML read in pieces cut anywhere; SCRAM
 // as RFC 5802 and RFC 7677 write it; two people sign in, add each other, and write both ways

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { HeaderHeightContext } from 'expo-router/react-navigation';
 import { useContext, useState, type ReactNode } from 'react';
 import { Platform, StyleSheet, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';

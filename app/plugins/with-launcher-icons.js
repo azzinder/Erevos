@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos's launcher icon comes in colours the owner chooses (Appearance → Launcher icons,
 // modules/erevos-icons). Android takes an app's icons from its manifest only, so each colour is an
 // activity-alias of MainActivity, with the icon drawn in that colour (modules/erevos-icons/res),

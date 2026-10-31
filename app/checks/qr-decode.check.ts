@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The web app's QR reader (lib/qr-decode.ts): a contact link's QR code, as Erevos draws it
 // (lib/qr.ts), reads back from its pixels, dark on light and light on dark, and a picture with no
 // code in it reads as none; a Matrix check's code reads back as its bytes.

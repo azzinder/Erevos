@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! One-way queues in the style of SimpleX's SMP: each queue has a sender id
 //! and a separate recipient id, so the relay cannot link the two from what a
 //! client asks for, and senders cannot read or delete what they sent.

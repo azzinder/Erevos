@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Lists the words each language besides English and Greek does not have yet, ready to fill in:
 // by the part file each goes in, the Greek one that has it, with the Greek beside it. In the app
 // they show in English meanwhile (lib/i18n.ts). Also lists words kept in another part file than

@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Puts the app's web build, with its core in WebAssembly, into sailfish/web for the package, and
 # copies the icons into sailfish/icons. Needs what app/scripts/build-web-core.mjs needs (Rust with
 # the wasm32-unknown-unknown target and wasm-bindgen-cli 0.2.129) and Node. Then build the RPM

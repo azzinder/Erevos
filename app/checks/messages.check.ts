@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What a chat's messages can do beyond words: what they carry (lib/chat-parts.ts), their line
 // (lib/message-line.ts), finding them again (lib/message-search.ts), writing a chat out
 // (lib/chat-export.ts), what a link's preview reads from its page (lib/link-preview.ts), and a

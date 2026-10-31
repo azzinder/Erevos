@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The home screen's list of chats (app/index.tsx): one row for each of the space's contacts, with
 // the last message, how many of theirs are not read yet, and when the chat last moved, newest
 // first. Made from what the space keeps sealed: its contacts (lock/e2e-data.ts), the messages with

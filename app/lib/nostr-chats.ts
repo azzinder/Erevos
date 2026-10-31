@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Contacts' texts through Nostr (lib/nostr.ts), for the chats: how a text sealed for Nostr goes,
 // with the relay as its backup, and how what comes there is read, as from the relay.
 //

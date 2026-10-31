@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Two-hop sending, many messages on one connection, call relay credentials, waiting for a message and channels to a relay's key (lib/relay.ts) against real relays (crates/erevos-relay) and the real core
 // built to WebAssembly by checks/build-core.mjs. Skipped, with a note, when either build is
 // missing: build the relay with `cargo build -p erevos-relay`.

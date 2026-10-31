@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { keptPlaces, onKeptChange } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket } from '../lock/hidden-ring';
 import { loadWatched, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';

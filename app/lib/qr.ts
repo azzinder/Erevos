@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // QR codes, drawn as one picture (a PNG, components/QrCode.tsx), since a view for each stretch of
 // modules made thousands of views for a contact link, heavy to draw on an older phone; and as rows
 // of runs, for checks. Made here (ISO/IEC 18004, byte mode, as the QR code library made them before,

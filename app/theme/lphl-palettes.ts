@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Made for LPHL - lphl.nekten.eu - by Nekten - lphl@nekten.eu -
 // Generated from the LPHL palettes (lphl-palettes.json, design zip). Do not edit by hand.
 

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Where an address points, for what a relay may send this phone to and what an invite may name
 // (lib/relay.ts signInOffer, lib/relay-invite.ts): its host, and whether that host is this
 // computer, or one on a private network, as a relay at home is (ws://192.168.1.10:7879).

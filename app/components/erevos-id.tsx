@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { parseContact, type ContactCode } from '../lib/contact-code';
 import { t } from '../lib/i18n';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';

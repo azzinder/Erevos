@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Stickers (lib/stickers.ts, lib/sticker-art.ts, lib/sticker-motion.ts): the built-in ones, in
 // their sets, how they move and how their words fit; and those made from photos
 // (lib/own-stickers.ts, lock/sticker-data.ts): made, capped and kept per space or hidden chats,

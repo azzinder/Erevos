@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What the chats on Matrix, XMPP and Nostr tell of their messages (lib/network-notices.ts): what
 // came and what was read, after each change of an account; nothing of what an account takes in as
 // it is signed in to; a muted chat left out of the icon's number; and counted by the Android notice

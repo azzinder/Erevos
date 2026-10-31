@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Encrypted messages by SMS, the last way to a contact (lib/sms-way.ts): the same end-to-end
 // encrypted packets the relay carries (lib/e2e.ts), nothing new sealed and nothing in plain words,
 // cut into data SMS to Erevos's SMS port, which messaging apps do not show. The phone that gets

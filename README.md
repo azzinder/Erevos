@@ -524,4 +524,4 @@ Erevos stands on the work of many other projects: Element Call for Matrix calls,
 
 ## Licence
 
-AGPL-3.0-or-later. Who makes Erevos and how: [AUTHORS.md](AUTHORS.md).
+AGPL-3.0-or-later, with additional terms under its section 7: keep "Erevos, by azzinder", mark a changed version as changed, and give it another name. Who makes Erevos and how, and the terms in full: [AUTHORS.md](AUTHORS.md). Every file says whose it is and under which licence, the [REUSE](https://reuse.software) way (`reuse lint`; `npm run check` fails on a file without it).

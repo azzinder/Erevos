@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Serbo-Croatian for screens (lib/i18n.ts): home and its menu, groups, contact codes, imported chats,
 // the relay, home relay, Tor, radio and LoRa screens.
 export const screens: Record<string, string> = {

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Contacts writing to each endpoint of an account (lib/endpoints.ts, docs/multi-device.md), alone:
 // what goes to each endpoint and what only to the account, the ways a contact's list makes, the first
 // packets that wait for a list, what the account's devices are told of a contact's (lib/link-wire.ts

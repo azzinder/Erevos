@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Public groups (lib/public-groups.ts, lib/public-rules.ts, docs/public-groups.md): phones with the
 // real core built to WebAssembly by checks/build-core.mjs, as in groups.check.ts, each with its own
 // queue on one of two real relays (crates/erevos-relay), so requests to a door, welcomes and group

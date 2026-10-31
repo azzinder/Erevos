@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The contacts screens' logic (lib/contacts.ts): fields as kept, the search over every field,
 // birthdays, finding the same person kept twice and merging them, and what is asked of Android.
 // Run with: npm run check

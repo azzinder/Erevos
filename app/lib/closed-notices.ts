@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { DOOR_CONTACTS, DOOR_QUEUES, hearDoor, hearDoorAll, loadDoor, openDoors, saveDoor, type Door } from '../lock/doors';
 import { loadE2EData } from '../lock/e2e-data';
 import { loadMatrix } from '../lock/matrix-data';

@@ -1,0 +1,26 @@
+# Who owns what, and under which licence, for the files that cannot hold a notice of
+# their own (https://reuse.software). Every other file of Erevos's own says it at its top.
+# Additional terms under AGPL-3.0 section 7 apply to Erevos's own files: see AUTHORS.md.
+version = 1
+
+[[annotations]]
+path = [
+  "**/*.json", "**/*.md", "**/*.png", "**/*.svg", "**/*.sig", "**/*.pem", "**/*.pub",
+  "**/*.lock", "**/*.sum", "**/*.mod", "**/.gitignore", "**/*.desktop", "**/*.service",
+  "**/*.html", "sailfish/watch/data/*.conf",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 azzinder"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = "crates/erevos-nostr/tests/nip44.vectors.json"
+precedence = "override"
+SPDX-FileCopyrightText = "Paul Miller"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "crates/erevos-nostr/tests/nip17-*.json"
+precedence = "override"
+SPDX-FileCopyrightText = "The Nostr NIPs contributors"
+SPDX-License-Identifier = "LicenseRef-Nostr-NIPs"

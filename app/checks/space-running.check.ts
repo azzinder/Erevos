@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What goes on while a space is open (lib/space-running.ts): started once with its screens, it
 // goes on when the screens start again and behind the password screen, and stops only when the
 // space closes or another opens.

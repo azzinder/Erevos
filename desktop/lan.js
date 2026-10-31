@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /**
  * Erevos phones and computers on the same Wi-Fi or a phone's hotspot, with no internet: links the
  * app's nearby messages (app/lib/nearby.ts) go over, as over Bluetooth on a phone. The phone's

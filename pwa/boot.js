@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos web app: the first script of the page (index.html, written by pwa/build.mjs). It starts
 // the app only once the service worker (pwa/sw.js) serves it, so the app's code is always the
 // signed release's, never whatever the server sends:

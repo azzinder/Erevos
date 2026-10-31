@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isNostrRelay, isRelay, isRelayKey, isTimer, MAX_BLOCKED, MAX_NOSTR_RELAYS, type Avatar, type Blocked, type Contact, type Spare } from '../lock/e2e-data';
 import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';

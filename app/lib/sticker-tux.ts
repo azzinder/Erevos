@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-FileCopyrightText: Gil Barbara and the logos contributors (the Tux drawing, after Larry Ewing)
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: CC0-1.0
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Tux, the Linux penguin, as the logos collection draws him (github.com/gilbarbara/logos, CC0),
 // after the Tux Larry Ewing drew with The GIMP. Cut into layers so his flippers can move and a mood
 // can take the place of his eyes and beak line (lib/sticker-art.ts puts them together).

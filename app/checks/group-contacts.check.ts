@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Members of a group added as each other's contacts (lib/group-contacts.ts), with real chats
 // (lib/e2e.ts) and the real core built to WebAssembly by checks/build-core.mjs: each phone adds the
 // other from what the group says of it and the keys it gave, and their chat then goes both ways,

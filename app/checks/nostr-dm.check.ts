@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chats with other Nostr apps (lib/nostr-dm.ts, lib/nostr-dm-store.ts, docs/nostr-chats.md), with
 // the real core built to WebAssembly (crates/erevos-nostr chat) and relays played here
 // (checks/nostr-relay.ts): keys as people write them; NIP-17's own example message opens, for its

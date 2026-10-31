@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The home screen's list of chats (lib/inbox.ts) and the pictures drawn from keys (components/key-face.tsx).
 // Run with: npm run check
 /// <reference types="node" />

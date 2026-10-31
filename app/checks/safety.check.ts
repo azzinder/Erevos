@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Safety messages (lib/safety.ts, lib/waiting.ts rearmSafety, lock/history.ts): held by the relay,
 // put off only while the owner looks at Erevos, never by Erevos in the background, and kept only as
 // ours.

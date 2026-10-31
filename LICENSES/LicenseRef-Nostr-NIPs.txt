@@ -1,0 +1,7 @@
+Example events from the Nostr protocol's NIP-17 text
+(https://github.com/nostr-protocol/nips, file 17.md), copied unchanged into
+crates/erevos-nostr/tests/ so the tests can check Erevos against them.
+
+That repository states no licence of its own. The examples are part of the
+protocol's public description, used here only by the tests and not shipped in
+the app. Their authors are the contributors to the Nostr NIPs.

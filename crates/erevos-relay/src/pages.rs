@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! The few pages a browser sees while signing in (see `signin.rs`), in the
 //! languages of the app, picked by the browser's `Accept-Language`. They load
 //! nothing else, run no script, and tell the browser to keep none of them.

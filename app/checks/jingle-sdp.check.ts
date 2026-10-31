@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A call's description as XMPP apps say it (lib/jingle-sdp.ts): a WebRTC offer the way Chromium
 // writes one, with sound and picture bundled, turned to Jingle and back keeps what WebRTC needs
 // (codecs and their parameters, feedback, header extensions, sources and their groups, the key

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // expo-image-picker's manifest declares a disabled service of Google Play services
 // (com.google.android.gms.metadata.ModuleDependencies), only a hint for Play to install its
 // backported photo picker on Android 10 and older. Erevos uses no Google services, and F-Droid's

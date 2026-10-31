@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Builds the Erevos core (crates/erevos-ffi) to WebAssembly for the checks under Node, into
 // checks/.core, which git leaves out. Needs Rust's wasm32-unknown-unknown target and
 // wasm-bindgen-cli at the version erevos-ffi pins:

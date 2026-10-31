@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The computer's side of run.sh: starts the Sailfish shell's server (lan-probe), turns its same
 // Wi-Fi link on through /__lan as the page does (app/lib/radio.ts), and links it with
 // desktop/lan.js, which echoes every text back. Exits 0 when both ways carried text, UTF-8 too.

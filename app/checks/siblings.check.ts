@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The account's linked devices reaching each other directly (lib/siblings.ts, docs/multi-device.md,
 // Own devices), alone: which devices a list makes a device's others and which of two starts, what
 // is kept of them and refused, how what two devices change at once settles, and what of it goes

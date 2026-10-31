@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { el, child, children, textOf, type XmlElement } from './xmpp-xml';
 
 // A WebRTC session description (SDP) as Jingle says it, and back: how XMPP apps such as

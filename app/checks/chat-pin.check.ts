@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chats locked with a PIN of their own (lock/chat-pin.ts): the PIN kept only as Argon2id of it,
 // wrong ones counted, and the list, its kept copy, the search and linked devices showing nothing of
 // such a chat but its name. Its PIN going into hidden chats and back is in e2e.check.ts.

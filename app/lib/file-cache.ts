@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Files fetched from the other networks' servers while Erevos runs (lib/nostr-dm-store.ts,
 // lib/xmpp-store.ts), by their address, so one looked at again is not fetched again: the newest
 // few, up to `most` bytes in all. Kept in memory only, never written to the phone, and let go as

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Photos and files sent to a contact, in the style of SimpleX's XFTP. The phone encrypts the file
 // with a key of its own, in chunks of one of three sizes, every chunk of a file the same size, and
 // puts them on its relay's file store. Only where they are and the key go to the contact, inside

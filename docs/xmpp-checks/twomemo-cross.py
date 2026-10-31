@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Cross-checks erevos-xmpp's OMEMO 2 (urn:xmpp:omemo:2) against python-twomemo, both ways.
 # Usage: python twomemo-cross.py <path to omemo-call binary>
 import asyncio, base64, json, subprocess, sys

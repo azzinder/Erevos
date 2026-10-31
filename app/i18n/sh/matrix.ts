@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Matrix računi na srpskohrvatskom (lib/matrix.ts) (i18n/sh/index.ts).
 export const matrix: Record<string, string> = {
   "This build of Erevos has no Matrix.": "Ova verzija Erevosa nema Matrix.",

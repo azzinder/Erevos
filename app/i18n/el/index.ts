@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Every word of the app in Greek, keyed by its English (lib/i18n.ts). One file for each part of
 // the app, so changes to different screens do not meet in one file.
 import { app } from './app';

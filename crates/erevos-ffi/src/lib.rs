@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! The Erevos core as the apps call it: byte arrays in, byte arrays out, and
 //! nothing kept here between calls. The app keeps what comes back, sealed in
 //! its own storage, and passes it in again. So the same calls work through

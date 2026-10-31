@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The code a device shows to be linked to the phone that holds its account (lib/devices.ts): a link
 // in the shape of a contact link (lib/contact-code.ts), so the phone's own camera app opens Erevos
 // with it,

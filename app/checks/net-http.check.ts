@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Downloads read as a stream and stopped at their cap (lib/net-http.ts): a server that sends more
 // than the cap, with Content-Length or without (chunked), is stopped, and stops sending.
 // Run with: npm run check

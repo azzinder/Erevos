@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { fitsSticker, MAX_STICKER, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { addOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { FileMissingError, readFile } from './attachments';

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Serbo-Croatian of connecting an Erevos contact to one of my contacts, whose name it then takes when it
 // has none of its own (components/connect-picker.tsx, lib/linked-name.ts) (i18n/sh/index.ts).
 export const linkContact: Record<string, string> = {

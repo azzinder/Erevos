@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The German of checking contacts in person, introducing contacts and where a contact can be reached (app/chat.tsx, lib/verify-code.ts) (i18n/de/index.ts).
 export const contactTrust: Record<string, string> = {
   "Checked in person": "Persönlich geprüft",

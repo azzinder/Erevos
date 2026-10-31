@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // CREDITS.md (scripts/credits.mjs): the open-source work Erevos is built on lists exactly the
 // packages the lockfiles hold, so a change that adds, updates or drops a dependency has to run
 // `node scripts/credits.mjs` in the same change. The check reads only names and versions from files

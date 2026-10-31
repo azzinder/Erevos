@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Places lent on this relay to phones that have no relay of their own.
 //!
 //! Off unless the operator turns it on (`EREVOS_RELAY_LEND=on`, which also

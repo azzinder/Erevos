@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Spanish of "Delete me from everywhere" (app/forget-me.tsx, lib/forget-me.ts, lib/relay.ts) (i18n/es/index.ts).
 export const forgetMe: Record<string, string> = {
   "Delete me from everywhere": "Borrarme de todas partes",

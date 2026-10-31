@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Chats with other Nostr apps (NIP-17, docs/nostr-chats.md): a space's own
 //! Nostr key, shown as an npub (NIP-19), and the private messages other apps
 //! send, as 0xchat, Amethyst, Coracle or Primal do.

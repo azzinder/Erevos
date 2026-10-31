@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Spanish of photos, files and voice messages in group chats (i18n/es/index.ts).
 export const groups: Record<string, string> = {
   'A voice message did not come. {error}': 'Un mensaje de voz no llegó. {error}',

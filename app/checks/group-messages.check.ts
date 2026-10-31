@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What a group's messages do beyond words and files (lib/group-parts.ts, lib/groups.ts): replies,
 // stickers, places, polls and previews in a message's fields, and reactions, votes, pins and
 // deleting for everyone as kinds of their own, with the real core built to WebAssembly by

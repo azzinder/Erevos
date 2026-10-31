@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! JNI entry points for the Android app's ErevosCoreNative object
 //! (app/modules/erevos-core). Each one converts the byte arrays, calls the
 //! function of the same name in lib.rs, and turns an error, or a panic, into

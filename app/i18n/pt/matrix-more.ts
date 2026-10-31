@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Matrix and XMPP: threads, polls, places, finding rooms and groups, new accounts, devices (app/matrix*.tsx, app/xmpp*.tsx) in Portuguese (i18n/pt/index.ts).
 export const matrixMore: Record<string, string> = {
   "Element Call works with Element X and the apps that have it. The older call works with FluffyChat, Nheko and Element on a computer.": "O Element Call funciona com o Element X e os aplicativos que o têm. A chamada antiga funciona com o FluffyChat, o Nheko e o Element no computador.",

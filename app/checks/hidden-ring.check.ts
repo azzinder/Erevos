@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Hidden chats that ring their contacts' calls while they are closed (lock/hidden-ring.ts,
 // lib/hidden-ring-notices.ts): every space keeps one ring queue per pocket, those not ringing made
 // for nothing on the same relay, sealed and padded so a space that rings looks like one that does

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The ways to give to Erevos for its running costs (app/donate.tsx, Settings → General → Support
 // Erevos), as its maker gave them: Liberapay, PayPal, Bitcoin and Monero. Each opens outside Erevos,
 // in the browser or a wallet, only when tapped: Erevos sends nothing and never knows who gave.

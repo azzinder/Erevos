@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Naming a member in a group's message with @ and their name (components/group-chat.tsx offers
 // the names as one types @): the message then carries who was named, by identity (lib/group-parts.ts,
 // `named`), and a member named there is told of it even in a group they muted (lib/background.ts).

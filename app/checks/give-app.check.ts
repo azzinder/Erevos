@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos to a phone nearby with no internet (lib/nearby-link.ts, lib/give-app.ts, NearbyApk.kt,
 // ApkServer.kt): the QR code's link, read back only for addresses nearby and with a whole SHA-256,
 // and what the Kotlin side checks before Android's installer opens.

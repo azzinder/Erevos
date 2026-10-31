@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The link a phone giving Erevos nearby shows as a QR code (app/give-app.tsx, NearbyApk.kt): the
 // page of its small server, which any phone's camera opens in the browser, and, after #, the
 // package's SHA-256, which the browser never sends and Erevos, taking it in Updates, checks the

@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Serves the web app of a GitHub release (v2.0.0 and up, or v0.1.N before, made by
 # .github/workflows/release.yml from the same commit as the other packages) from your own server. Run it on the computer that holds the
 # release key:

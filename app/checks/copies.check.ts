@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What a chat writes to the endpoints of a contact's account (lib/e2e.ts, lib/endpoints.ts,
 // docs/multi-device.md), with the real core and the packets handed over by hand, without a relay: a
 // list that names someone else's account has it read nothing, and one that names an account the

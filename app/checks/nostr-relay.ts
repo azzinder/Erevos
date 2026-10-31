@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A small Nostr relay for the checks (checks/nostr-dm.check.ts), as far as lib/nostr-dm-net.ts uses
 // one (NIP-01): events kept and given again by filter, then live; OK for each event; EOSE; CLOSE.
 // An inbox relay can keep its wraps for their reader only, as NIP-17 asks: it then asks who reads

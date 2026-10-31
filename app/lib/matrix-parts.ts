@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What a Matrix message can be besides words and files, as Element and Element X write it, read
 // and made here (lib/matrix.ts takes them in): a poll (MSC3381, under its unstable names, which is
 // what Element sends, and its stable ones, which it reads), the votes on it and its end; a place

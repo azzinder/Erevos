@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The phone's own module (modules/erevos-device) for checks under Node: it keeps the reminders of
 // Chat with myself asked of it, by their ids, until they are forgotten, and those said to be seen.
 export const reminders = new Map<string, number>();

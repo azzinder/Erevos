@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // End-to-end encryption in the app (lib/e2e.ts) with the real Rust core, built to WebAssembly by
 // checks/build-core.mjs. Skipped, with a note, when that build is missing.
 // Run with: npm run check

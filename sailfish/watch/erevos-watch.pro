@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # erevos-watch: waits at the relay while Erevos is not in front, or closed (src/main.cpp).
 TEMPLATE = app
 TARGET = erevos-watch

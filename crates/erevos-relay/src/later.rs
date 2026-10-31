@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Requests held for later (`LATER`, see `server.rs`): a phone's message sent
 //! for later is handed to the relay with the time it should go, so it goes
 //! then though the phone is off by then. Each is a whole `SEND`, `FORWARD` or

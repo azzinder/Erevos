@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Encrypted messages by SMS when nothing else takes them (lib/sms-packets.ts, lib/sms-way.ts,
 // lib/nearby.ts): the pieces a message goes in and how they come back together, what is dropped
 // (pieces changed, put in, too old, too many), when the SMS way is used and when not, and two

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // CREDITS.md names the open-source work Erevos is built on, with its makers and licences. Its "Main
 // parts" and "Other works" are written by hand; its "Every package" is made here from the lockfiles,
 // so a change that adds or updates a dependency lists it in the same change.

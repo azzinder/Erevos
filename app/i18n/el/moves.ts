@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Greek of a relay queue that moves on a deletion, a block or junk (lib/queue-move.ts), and of
 // deleting and blocking a contact in chat details (app/chat.tsx) (i18n/el/index.ts).
 export const moves: Record<string, string> = {

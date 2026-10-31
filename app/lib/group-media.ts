@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { deleteChunks, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage, GroupParts } from '../lock/group-data';
 import { AUTO_TAKE, sendFile, takeFile, type Source } from './attachments';

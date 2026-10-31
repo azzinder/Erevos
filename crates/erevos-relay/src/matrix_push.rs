@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! A Matrix push gateway (the Push Gateway API of the Matrix spec, `POST
 //! /_matrix/push/v1/notify`), so that a space closed on a phone can say a
 //! message came on its Matrix account. The space makes a queue here and sets

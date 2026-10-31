@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Tokens of their own for each phone, beside the relay's one token.
 //!
 //! The operator keeps a file (`EREVOS_RELAY_TOKENS`) of one token's SHA-256 a

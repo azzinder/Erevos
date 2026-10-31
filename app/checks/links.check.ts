@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Web addresses in messages (lib/links.ts), and links that open Erevos (lib/open-link.ts).
 // Run with: npm run check
 import assert from 'node:assert/strict';

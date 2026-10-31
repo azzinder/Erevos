@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! A Viber chat saved by "Backup Text for Viber" (Viber itself exports no
 //! chats): one HTML file per chat, text only. Its table has a row for each
 //! day, `<div class="bubble date">2018-07-13</div>`, and then one for each

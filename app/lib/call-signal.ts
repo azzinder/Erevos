@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What two phones say to each other to set up a call, inside end-to-end encrypted messages
 // (lib/e2e.ts). A call is a WebRTC connection (lib/call.ts). The offer and the answer carry each
 // side's session description: the codecs, the addresses to try, which go through a call relay

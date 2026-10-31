@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A contact link for a website (lib/contact-code.ts, contactPageLink) and the page it opens
 // (pwa/c/): that the app takes it as the contact link it came from, with no place on a relay in it,
 // that the page reads what the app writes, and that the web app's worker gives that page, not the

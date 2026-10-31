@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { spaceGated } from './space-running';
 
 // A safety message (app/chat.tsx, Send later → Safety message): words to a contact that go only if

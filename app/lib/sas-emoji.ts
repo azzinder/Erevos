@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-FileCopyrightText: The Matrix.org Foundation (the emoji table and its English names)
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: Apache-2.0
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { lang, type Lang } from './i18n';
 
 // The 64 pictures of a check by emoji (Matrix's SAS, lib/matrix-verify.ts), in the order every

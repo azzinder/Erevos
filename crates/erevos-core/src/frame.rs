@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Framing for byte links. A frame is a 4-byte big-endian length followed by
 //! the payload. The reader takes bytes in any split, so one implementation
 //! serves a stream socket and a radio link that only carries small writes.

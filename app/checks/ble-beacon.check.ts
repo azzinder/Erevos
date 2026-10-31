@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What phones nearby see of Erevos over BLE (modules/erevos-radio, BleBeacon.kt and BleLink.kt),
 // read from the Kotlin itself, as it runs only on a phone: the nonce comes from a secure random
 // source and changes every few minutes, with the beacon started again; and it is still four bytes

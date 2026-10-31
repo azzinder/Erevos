@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The XML of XMPP (RFC 6120), as lib/xmpp.ts reads and writes it: elements with their namespace,
 // attributes and children, read as they come from a stream that never ends, or one frame at a time
 // (RFC 7395, over WebSocket). Only what XMPP uses: no DTDs, no entities beyond XML's own five and

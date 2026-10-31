@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Matrix end-to-end encryption for Erevos (docs/matrix.md): Olm between two
 //! devices and Megolm for the messages of a room, through vodozemac, the
 //! Matrix project's own Rust library. The app does the talking to the

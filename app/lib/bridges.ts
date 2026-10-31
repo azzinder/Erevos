@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Tor bridges, for where Tor is blocked (lib/tor.ts, crates/erevos-tor). Each space keeps its own
 // choice, sealed with its other settings (SpaceData.bridges): none, the bridges Tor Browser comes
 // with (obfs4, or Snowflake), or lines of one's own, from bridges.torproject.org or Tor's bot.

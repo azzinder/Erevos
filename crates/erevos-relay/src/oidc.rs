@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! The relay's calls to an OpenID Connect provider, for signing in (see
 //! `signin.rs`): what the provider says of itself (discovery, kept a day),
 //! the tokens for a code (with PKCE), a refresh, introspection, userinfo, and

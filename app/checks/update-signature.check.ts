@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // An Android update installs only with the release computer's signature (lib/update-signature.ts),
 // made by pwa/release.mjs as deploy/web/publish.sh runs it, and a new version is told at the top of
 // the chats only with it too (lib/release-notice.ts). Run with: npm run check

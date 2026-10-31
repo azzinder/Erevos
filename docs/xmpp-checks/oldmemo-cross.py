@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Cross-checks erevos-xmpp's OMEMO 0.3 against python-oldmemo, both ways.
 # Usage, from the repository: python3 -m venv /tmp/omemo && /tmp/omemo/bin/pip install oldmemo xmlschema &&
 #   cargo build -p erevos-xmpp --example omemo-call && /tmp/omemo/bin/python docs/xmpp-checks/oldmemo-cross.py target/debug/examples/omemo-call

@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0">
   <modelVersion>4.0.0</modelVersion>
   <groupId>check</groupId><artifactId>lan</artifactId><version>1</version>

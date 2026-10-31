@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { cleanFields, cleanLine, fieldsName, parseBirthday, splitName, type Entry, type Fields, type Kind } from './contacts';
 import { fromBase64, toBase64, utf8Decode, utf8Encode } from './crypto';
 

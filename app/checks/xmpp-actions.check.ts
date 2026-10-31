@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What can be done with a message in an XMPP chat (lib/xmpp-actions.ts, lib/xmpp.ts), against the
 // small server of checks/xmpp-server.ts with the real core built to WebAssembly for OMEMO: an
 // answer, a change of words, reactions and a taking back, one-to-one with OMEMO (the server never

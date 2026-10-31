@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Lets plain Node run the app's TypeScript for checks: the app's imports leave out the .ts
 // ending, and the keystore (lib/secure) and the app's files (lib/files) are swapped for ones in
 // memory. The SMS module is swapped for a phone without SMS, and the phone's own module for one

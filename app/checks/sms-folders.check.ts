@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The space's own order of its SMS (lib/sms-folders.ts, lib/sms-link.ts): pins, the Archive, the
 // Trash, Spam and its rules, drafts and the seconds to take an SMS back, all sealed in the space;
 // and what waits a few seconds to be taken back (lib/held.ts), a message passed on to another

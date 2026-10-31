@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Calls with people on XMPP (lib/xmpp-calls.ts) through the checks' XMPP server, the other side
 // played here as Conversations plays it, stanza by stanza (XEP-0353, XEP-0166, XEP-0167): a call
 // of ours rings their devices, goes to the one that answers, through the server's TURN server

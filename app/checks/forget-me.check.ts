@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // "Delete me from everywhere" (lib/forget-me.ts): the list of a space's queues it deletes
 // (lib/server-queues.ts) names every kind Erevos makes, and every file that makes a queue is named
 // in it, so a new kind of queue cannot be left on the relays unseen; each queue a space keeps is

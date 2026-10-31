@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // L’italiano dei backup su un server (lib/backup-cloud.ts, app/backup.tsx) (i18n/it/index.ts).
 export const cloudBackup: Record<string, string> = {
   'Made a backup in {folder}, but it did not go to the server. {error}': 'Backup fatto in {folder}, ma non è arrivato al server. {error}',

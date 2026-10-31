@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Shamir's secret sharing over GF(256), byte by byte: a secret split into n shares, any k of
 // which give it back, while k - 1 or fewer say nothing at all of it (every secret of its length is
 // as likely with them as any other). Used for pieces of a backup's password given to friends

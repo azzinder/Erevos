@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The aikidoka of the Aikido stickers, drawn in curves on the stickers' grid of 100 by 100: a wide
 // pleated hakama down to the mat (or spread out, sitting in seiza), a white keikogi with its thick
 // collar crossed left over right, wide sleeves, and a round head that a mood's face goes on

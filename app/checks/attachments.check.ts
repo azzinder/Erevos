@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Photos and files (lib/attachments.ts, lib/photo.ts, lock/attachment-files.ts): the chunks, the
 // offer a message carries, what a photo keeps, and sending and taking a file through real relays
 // (crates/erevos-relay), skipped with a note when the relay is not built.

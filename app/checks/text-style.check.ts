@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // How a message's words look (lib/text-style.ts, components/linked-text.tsx): marks typed around
 // words, never read inside a word, a web address or code, and what is hidden stays hidden in a line.
 // Run with: npm run check

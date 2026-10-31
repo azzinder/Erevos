@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Phone screen's calls (app/phone.tsx): Android's own call history (modules/erevos-phone),
 // read each time the screen shows it, and kept only in memory, so that it shows at once the next
 // time. What each call was, the filters, and the calls one after another with the same number

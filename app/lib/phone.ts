@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Numbers on the Phone screen (app/phone.tsx): what the keypad types, and what is called. The
 // calls themselves are Android's, made and shown by modules/erevos-phone.
 

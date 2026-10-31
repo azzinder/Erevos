@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /** The user guide in Greek. Its format: lib/guide.ts. The same sections, in the same order and shape, as the English one. */
 export const guide = `
 ## Τι είναι το Erevos {#about}
@@ -22,7 +26,7 @@ export const guide = `
 
 ### Ποιος το φτιάχνει και γιατί
 
-- **Ποιος:** το Erevos το φτιάχνει ο ίδιος που έφτιαξε το FASOULI.
+- **Ποιος:** Erevos, by azzinder: ο ίδιος που έφτιαξε το FASOULI.
 - **Πού:** δεν έχει σημασία. Σημασία έχει ότι ο relay και η εφαρμογή για τον browser τρέχουν σε δικό του server
   (lphl.nekten.eu).
 - **Για ποιους:** για όποιον θέλει να μιλά με τους δικούς του χωρίς να δίνει αριθμό τηλεφώνου, email ή λογαριασμό:

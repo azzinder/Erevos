@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Le français du nombre sur l’icône d’Erevos (lib/icon-number.ts, le choix dans
 // app/security.tsx, Réglages → Notifications) (i18n/fr/index.ts).
 export const iconNumber: Record<string, string> = {

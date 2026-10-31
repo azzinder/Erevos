@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Hidden chats that receive while they are closed (lock/hidden-keep.ts, lib/place-receiver.ts):
 // every space keeps four keys, sealed with its own, the real one only where a place's switch is on,
 // so its entry looks the same whatever hidden chats it has; a new place starts with the switch on.

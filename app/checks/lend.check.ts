@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Places lent on a relay to phones with no relay of their own (lib/relay.ts, crates/erevos-relay
 // lend.rs): the ticket in a contact link, taking a place with it, and what a lent place sends,
 // takes and is refused, against real relays with tokens and the real core built to WebAssembly

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Italian of hidden chats that receive while they are closed (lock/hidden-keep.ts,
 // lib/place-receiver.ts, the toggle at the top of an open place in app/chat.tsx) (i18n/it/index.ts).
 export const hiddenKeep: Record<string, string> = {

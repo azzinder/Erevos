@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Every word of the app in French, keyed by its English (lib/i18n.ts), one file for each part of
 // the app as in i18n/el/. A word not here yet shows in English: npm run i18n-missing fr lists them.
 import { app } from './app';

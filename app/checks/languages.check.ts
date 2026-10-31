@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The app's words in the languages besides English and Greek (lib/i18n.ts, i18n/<lang>/): each
 // keeps the {names} of the English, holds no word the app no longer shows, and has each word in
 // one part file only. A word one of them does not have yet shows in English and fails nothing

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Hidden chats and the phones nearby (lib/place-nearby.ts, lib/nearby.ts NearHeard): where a hidden
 // place's contacts were heard is its own, never the space's; its packets go on the contact's link,
 // or, small, to every phone linked, never carried, over LoRa or by SMS. What came nearby and opened

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /**
  * Where a chat was left, as it opens: the oldest of the `unread` newest messages that did not come
  * from us (`mine` says which), by its id. Null when nothing is new, and when everything is: the

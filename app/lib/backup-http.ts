@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { netHttp, type HttpAnswer, type HttpMethod } from './net-http';
 
 // How a backup reaches a server (lib/backup-cloud.ts) on the phone: through lib/net-http.ts, so

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What New chat says at the top of how this phone connects (lib/connect-reach.ts): how far it
 // reaches, in plain words, and the relay's address with what goes with it.
 // Run with: npm run check

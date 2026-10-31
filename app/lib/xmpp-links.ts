@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A link's preview in an XMPP message, as Link Metadata (XEP-0511) carries it beside the words: the
 // page's address, title and description, with no picture. Only the sender's phone makes one
 // (lib/make-preview.ts), and only in a chat without encryption: OMEMO hides the words only, so a

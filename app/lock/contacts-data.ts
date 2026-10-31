@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { cleanFields, EMPTY_FIELDS, KINDS, MAX_ENTRIES, type Entry, type Fields, type Kind } from '../lib/contacts';
 import { isPhotoRef, type PhotoRef } from './avatar-photos';
 import { sealedFile, type Holder } from './sealed-file';

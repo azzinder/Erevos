@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Runs the real Element Call (app/node_modules/@element-hq/element-call-embedded) in Chromium as
 // Erevos's Android window serves it (modules/erevos-webcall): its files from a page of their own,
 // without the ones the app leaves out, an empty config.json, the same listener put in its <head>

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A closed space that says a message came while another is open (lock/doors.ts,
 // lib/closed-notices.ts): every space has its entry, of one size whether its door is open or not
 // and however many contacts' queues it keeps, entries from before sealed again at that size, and

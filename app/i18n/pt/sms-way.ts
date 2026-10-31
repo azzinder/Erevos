@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Brazilian Portuguese of encrypted messages by SMS when nothing else works (lib/sms-way.ts, app/sms-settings.tsx, app/chat.tsx) (i18n/pt/index.ts).
 export const smsWay: Record<string, string> = {
   "Went by SMS, end-to-end encrypted.": "Foi por SMS, criptografada de ponta a ponta.",

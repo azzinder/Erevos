@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The phone's SMS with a contact's number in their Erevos chat (lib/sms-chat.ts), the way back to
 // the plain SMS conversation, the numbers no hidden invite goes to, an invite's answer from someone
 // blocked here, which adds no one, and the home screen's Erevos chats keeping a contact whose

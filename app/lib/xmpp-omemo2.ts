@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { randomBytes, toBase64 } from './crypto';
 import { omemoCall, PRE_KEYS, type KeyPair, type PreKey, type SignedPreKey, type UsedPreKey } from './xmpp-omemo';
 import { child, children, el, parseXml, render, textOf, type XmlElement } from './xmpp-xml';

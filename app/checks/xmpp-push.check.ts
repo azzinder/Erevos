@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A closed space's XMPP account says a message came (lib/xmpp-push.ts): the space makes a queue at
 // its relay and asks its server to push to the relay's name with that queue as the node; the door
 // names the queue; each push the server makes, over a server-to-server stream with STARTTLS to the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The French of the Contacts screens: the phone's contacts, their groups, merging, vCards, QR codes,
 // birthdays and contacts kept only in Erevos (app/contacts.tsx and what goes with it) (i18n/fr/index.ts).
 export const contacts: Record<string, string> = {

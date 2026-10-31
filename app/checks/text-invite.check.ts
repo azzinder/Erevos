@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Invites by plain SMS (lib/text-invite.ts): the link that goes in the SMS, read back as the page
 // opens it in the app or as it is pasted, what is not one, and its hand-over to the chat of the
 // space it was opened in; and what the inviting and the invited phone keep of it (lib/sms-link.ts).

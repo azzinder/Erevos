@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The home relay (lib/spare.ts): the contact link and messages say a backup queue beside the main
 // one, sends try it when the main relay cannot take them (lib/space-chats.ts contactTarget), and
 // the receiver takes what came there even while the main relay is down. The relay part runs with

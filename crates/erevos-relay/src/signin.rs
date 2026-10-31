@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Signing in with an OpenID Connect provider, such as LPHL's Authentik, for
 //! a token of a phone's own (see `tokens.rs`), with no token typed or passed
 //! on, and the password typed only at the provider.

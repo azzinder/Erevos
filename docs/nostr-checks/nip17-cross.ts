@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos's Nostr chats (app/lib/nostr-dm.ts, with the real core built to WebAssembly) against
 // nostr-tools, the library many Nostr apps are built on: a message Erevos wraps opens there, as the
 // reader's and as the sender's copy; one nostr-tools wraps opens here; npub, nsec and nprofile read

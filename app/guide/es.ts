@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /** The user guide in Spanish. Its format: lib/guide.ts. The same sections, in the same order and shape, as the English one. */
 export const guide = `
 ## Qué es Erevos {#about}
@@ -24,7 +28,7 @@ elegiste, ver [Idioma](#start).
 
 ### Quién lo hace, y por qué
 
-- **Quién:** Erevos lo hace la misma persona que hizo FASOULI.
+- **Quién:** Erevos, by azzinder: la misma persona que hizo FASOULI.
 - **Dónde:** no importa. Lo que importa es que el relay y la app para el navegador funcionan en el servidor propio de
   quien lo hace (lphl.nekten.eu).
 - **Para quién:** para cualquiera que quiera hablar con los suyos sin dar un número de teléfono, un email ni una

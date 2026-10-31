@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Values sealed per space and per hidden chats in one file (lock/sealed-file.ts): each the same size
 // in it whether used or not, a large one in pages of the history's size, and pages written only as
 // they change. Run with: npm run check

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Invites to a relay (crates/erevos-relay/src/invites.rs): what a phone with a token of its own
 // shows, as a QR code, for one more phone to use its relay with a token of that phone's own. The
 // code is a link,

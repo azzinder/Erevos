@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // SMS invites (lib/sms-invite.ts, lib/sms-link.ts) and SMS rows in the home screen's list
 // (lib/inbox.ts). The invite answer runs with the real core built to WebAssembly by
 // checks/build-core.mjs, and is skipped, with a note, without it.

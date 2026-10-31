@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { locale, mark } from './i18n';
 
 // When a message or an SMS sent for later should go (app/chat.tsx, app/sms.tsx), as chosen with

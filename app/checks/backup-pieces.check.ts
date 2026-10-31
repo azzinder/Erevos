@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A backup's password in pieces with friends: Shamir's secret sharing over GF(256) (lib/shamir.ts)
 // and the pieces made of it (lib/backup-pieces.ts).
 // Run with: npm run check

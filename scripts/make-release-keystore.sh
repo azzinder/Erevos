@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Makes the key that signs the Android releases, once. The release workflow
 # (.github/workflows/release.yml) reads it from the repository's Actions secrets:
 #   ANDROID_KEYSTORE_BASE64    the keystore file, base64

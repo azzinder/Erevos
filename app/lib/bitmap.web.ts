@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A picture the owner chose, as a bitmap to draw (lib/pick-photo.web.ts, lib/pick-avatar.web.ts,
 // lib/read-qr.web.ts).
 

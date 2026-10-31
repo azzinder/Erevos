@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What each send tells the relay it carries (lib/relay.ts, Mark), so a closed web app's notice can
 // say how many messages came (pwa/sw.js): through a real relay with a key for Web Push and the
 // real core, by the app's own ways of sending (lib/space-chats.ts sendSealed, markOf and sentMark,

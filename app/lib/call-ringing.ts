@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What the phone plays for the open space's calls as they change (components/call-host.tsx): a
 // call of ours starts its sound at once, theirs rings, and the sound stops and Erevos leaves the
 // lock screen once a call ends, once for each call. A ring stops only when it is the call this

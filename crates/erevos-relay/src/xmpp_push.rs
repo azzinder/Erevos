@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! An XMPP push app server (XEP-0357, Push Notifications), so that a space
 //! closed on a phone can say a message came on its XMPP account, as the Matrix
 //! push gateway does for Matrix (see `matrix_push.rs`). The space makes a queue

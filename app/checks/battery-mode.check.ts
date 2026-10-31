@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The battery mode (lib/battery-mode.ts): kept for the phone, normal until chosen, told to those who follow it.
 // Run with: npm run check
 /// <reference types="node" />

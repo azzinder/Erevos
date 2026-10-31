@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Checks LanLink.kt against desktop/lan.js on this computer, without a phone: compiles it with
 # the Android classes (android-all from Maven Central) and links it to the desktop app's side
 # over real UDP broadcasts and TCP. Needs Java 17+, Maven and Node.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A small Matrix homeserver for the checks (checks/matrix.check.ts, checks/matrix-calls.check.ts),
 // as far as lib/matrix.ts uses one: users, devices and their keys, rooms as one log of events,
 // to-device messages waiting for each device, and what each was asked; and for calls, a room's

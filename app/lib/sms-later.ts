@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // SMS sent for later (app/sms.tsx): the space keeps each sealed (lock/sms-data.ts), never in the
 // phone's SMS store, and hands it to Android (modules/erevos-sms, LaterSms.kt), which holds it until
 // its time and sends it then, with Erevos closed and the space locked too; with the phone off, once

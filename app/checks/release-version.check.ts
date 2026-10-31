@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Naming a release (.github/workflows/release.yml, its version job): 2.1.0, or a test release
 // such as 4.0.0-rc.1, always newer than the latest; and the Sailfish RPM's version of a test
 // release. The workflow's own script runs here, with a gh of this check's own that names the latest

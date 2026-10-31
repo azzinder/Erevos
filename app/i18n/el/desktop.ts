@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Τα ελληνικά του Erevos στον υπολογιστή, που μένει ανοιχτό με το παράθυρο κλειστό (lib/desktop.ts,
 // components/desktop-background.tsx, Ρυθμίσεις → Ειδοποιήσεις → Στο παρασκήνιο) (i18n/el/index.ts).
 export const desktop: Record<string, string> = {

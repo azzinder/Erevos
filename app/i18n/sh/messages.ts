@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Serbo-Croatian of what a chat's messages can do beyond words: replies, reactions, links, forwarding and the like (i18n/sh/index.ts).
 export const messages: Record<string, string> = {
   'Open this link?': 'Otvoriti ovaj link?',

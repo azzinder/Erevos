@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Le français des sauvegardes vers un serveur (lib/backup-cloud.ts, app/backup.tsx) (i18n/fr/index.ts).
 export const cloudBackup: Record<string, string> = {
   'Made a backup in {folder}, but it did not go to the server. {error}': 'Sauvegarde faite dans {folder}, mais elle n’est pas partie vers le serveur. {error}',

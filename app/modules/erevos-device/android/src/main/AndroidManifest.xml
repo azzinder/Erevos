@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <!-- Where the phone is, once, when a place is sent from a chat: asked for then, never before.
        Declared for Android 6 and later this way, so it does not clash with erevos-radio's location,

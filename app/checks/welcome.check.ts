@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // One invite for everything (lib/welcome.ts): the link that brings someone new in, with the
 // inviting phone's contact link, an invite to its relay, the secret said back and its name; read
 // back as a scanned link opens its screen, and handed to the chat of the space it was opened in.

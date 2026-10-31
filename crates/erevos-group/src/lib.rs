@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Group chats: MLS (RFC 9420) through OpenMLS. Like the rest of the core, nothing is kept here
 //! between calls: a member's state (its signing key and every group it is in) goes out as bytes
 //! after each call, the app keeps them sealed, and passes them in again.

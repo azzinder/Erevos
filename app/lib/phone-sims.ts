@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The SIM each number is called on, for one space: chosen at a call, and kept for the number,
 // sealed in the space (lock/phone-data.ts), so the next call to it goes on the same SIM. With one
 // SIM there is nothing to choose.

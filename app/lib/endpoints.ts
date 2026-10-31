@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { EARLY_LASTS, MAX_EARLY, MAX_UNVERIFIED, MAX_UNVERIFIED_EACH, UNVERIFIED_LASTS, type Early, type Route, type Unverified, type Way } from '../lock/e2e-data';
 
 // The endpoints of a contact's account (docs/multi-device.md): the devices its signed list names,

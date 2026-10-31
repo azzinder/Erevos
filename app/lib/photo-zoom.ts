@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Where a photo shown on its own (components/attachment.tsx FileViewer) is, zoomed and moved by touch:
 // kept apart from React Native, so the checks run in Node. Points are from the middle of where the
 // photo shows; a look is how far it is zoomed and moved from there.

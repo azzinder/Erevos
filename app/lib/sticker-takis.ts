@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Takis, a caricature drawn in curves on the stickers' grid of 100 by 100: a big long head with a
 // high forehead, grey-brown hair swept to one side, large ears, a long nose and a sly smile, over a
 // dark suit, a white shirt and a purple tie with dots. A mood's eyes and mouth go on his face

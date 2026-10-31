@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { useMemo } from 'react';
 import { Image, PixelRatio, StyleSheet } from 'react-native';
 import { toBase64 } from '../lib/crypto';

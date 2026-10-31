@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Group calls in XMPP private groups (lib/xmpp-muji.ts) through the checks' XMPP server, the others
 // played here as Dino plays them, stanza by stanza (MUJI, XEP-0272; Call Invites, XEP-0482): a call
 // started here makes its own room, set up as Dino's, with the group's members its owners, and is

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Telegram Desktop's "Export chat history" in machine-readable JSON
 //! (`result.json`). A single chat export has the chat at the top level; a
 //! full account export lists chats under `chats.list`.

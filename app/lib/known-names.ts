@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { loadE2EData } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { setKnownNames } from '../modules/erevos-phone';

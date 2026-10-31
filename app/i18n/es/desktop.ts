@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // El español de Erevos en el ordenador, que sigue funcionando con la ventana cerrada (lib/desktop.ts,
 // components/desktop-background.tsx, Ajustes → Notificaciones) (i18n/es/index.ts).
 export const desktop: Record<string, string> = {

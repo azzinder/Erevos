@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Phone screen's numbers (lib/phone.ts), the SIM kept for each (lib/phone-sims.ts) and the
 // call history (lib/phone-log.ts). The calls themselves are Android's, in modules/erevos-phone,
 // and can only be tried on a phone.

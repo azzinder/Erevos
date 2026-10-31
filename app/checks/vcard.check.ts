@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // vCards and MECARDs (lib/vcard.ts): reading what phones and computers write, in each version and
 // character set, and writing 3.0 that reads back the same.
 // Run with: npm run check

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Serbo-Croatian of importing a chat from inside it, and keeping it only there (app/chat.tsx,
 // components/import-flow.tsx, app/imported.tsx) (i18n/sh/index.ts).
 export const importsHere: Record<string, string> = {

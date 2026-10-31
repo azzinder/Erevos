@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Tor ways (lib/relay.ts setThroughTor, lib/tor.ts). 'all': every relay request goes to the
 // core's Tor and never to a WebSocket of the phone's own, and a build without Tor fails the request
 // rather than going around it. 'messages', the first way: those of messages go to Tor while it is

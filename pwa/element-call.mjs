@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Element Call, as its package on npm has it built (@element-hq/element-call-embedded, in
 // app/package.json), made ready for the web app (pwa/build.mjs) and the computer (desktop/main.js)
 // to show in a frame, for Matrix calls (app/lib/element-call-window.web.ts). The frame comes from an

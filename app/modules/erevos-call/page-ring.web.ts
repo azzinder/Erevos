@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A call's ring where Erevos runs in a page: the web app, the computer's app and Sailfish OS's,
 // where no module of the phone rings (index.ts). The page plays a ring of its own, made by the
 // browser (Web Audio): two short rings every 3 seconds, with the phone's vibration where the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A relay that never answers (lib/relay.ts answerWithin): a connection that died on the way says
 // nothing, so each request, alone or on a session, counts as failed once its time is up, and a look
 // waiting on it goes on. Against a WebSocket server that takes the connection and answers nothing.

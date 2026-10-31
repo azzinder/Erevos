@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Greek of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/el/index.ts).
 export const whatsNew: Record<string, string> = {
   "What's new": 'Τι νέο υπάρχει',
@@ -12,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     "**Η Νέα συνομιλία ανοίγει πιο γρήγορα τις κρυφές συνομιλίες**: κράτα πατημένη τη **Νέα συνομιλία** για μια στιγμή, όχι για ολόκληρο δευτερόλεπτο, και ανοίγει το πεδίο για το PIN των κρυφών συνομιλιών· στο Android το κινητό δονείται μία φορά όταν ανοίγει. Δες [Κρυφές συνομιλίες](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
     "**Οι άνθρωποι που ακολουθείς στο Nostr**: στις Συνομιλίες Nostr, κάτω από τη Νέα συνομιλία, το **Δείξε τους ανθρώπους που ακολουθείς** δείχνει τους ανθρώπους που ακολουθεί το κλειδί Nostr σου, με τα ονόματά τους· πάτα έναν για να του γράψεις. Δες [Συνομιλίες με άλλες εφαρμογές Nostr](#nostr-chats).",
+  "**Who makes Erevos, and its licence**: About Erevos now names its maker, and every file of Erevos's source code says whose it is and under which licence; the AGPL-3.0 licence has three added terms (keep the maker's name, mark a changed version, give it another name). See [What Erevos is](#about).":
+    "**Ποιος φτιάχνει το Erevos, και η άδειά του**: τα Σχετικά με το Erevos λένε πλέον ποιος το φτιάχνει, και κάθε αρχείο του πηγαίου κώδικα λέει σε ποιον ανήκει και με ποια άδεια· η άδεια AGPL-3.0 έχει τρεις πρόσθετους όρους (να μένει το όνομα του δημιουργού, μια αλλαγμένη εκδοχή να λέει ότι είναι αλλαγμένη και να έχει άλλο όνομα). Δες [Τι είναι το Erevos](#about).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Αριθμοί στα κουμπιά της αρχικής οθόνης**: κάθε κουμπί πάνω από τις συνομιλίες (Όλα, SMS, Erevos, Matrix, XMPP, Nostr) δείχνει πόσα μηνύματα δεν έχουν διαβαστεί εκεί, ως έναν μικρό αριθμό μετά το όνομά του· οι συνομιλίες και οι ομάδες σε σίγαση δεν μετρούν. Δες [Πρώτα βήματα](#start).",

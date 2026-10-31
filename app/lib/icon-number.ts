@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { secureGet, secureSet } from './secure';
 
 // The number on Erevos's icon: how many messages are not read. On unless turned off (Settings →

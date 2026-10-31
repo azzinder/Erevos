@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A space's relay queue moving (lib/queue-move.ts), through a real relay and the real core: Alice
 // deletes Carol, so her own queue moves and Bob is told the new one quietly, while the queue her
 // contact link names stays, and what Bob sent there before still shows; junk that fills her queue

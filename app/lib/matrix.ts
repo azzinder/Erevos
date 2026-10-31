@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A Matrix account inside Erevos (docs/matrix.md): Erevos talks to the person's homeserver itself,
 // as Element does, so chats with people on Matrix stay encrypted from end to end. No bridge reads
 // them on the way. The homeserver still sees who talks with whom and when, so these chats are not

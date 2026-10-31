@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos on the same Wi-Fi (desktop/lan.js, the protocol the phone's LanLink.kt speaks too): two
 // links on this computer find each other by UDP, link over TCP, and carry nearby messages
 // (lib/nearby.ts), sealed by the real Rust core built to WebAssembly by checks/build-core.mjs. The

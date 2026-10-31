@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! OMEMO for Erevos's XMPP accounts (docs/xmpp.md): version 0.3 of XEP-0384,
 //! namespace `eu.siacs.conversations.axolotl`, the one Conversations, Gajim,
 //! Dino, Monal and Cheogram speak. It is the Signal protocol of 2016: X3DH to

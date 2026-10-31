@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Runs the real Element Call (app/node_modules/@element-hq/element-call-embedded) in Chromium as the
 // web app and the computer would show it: in a frame of a page standing for Erevos's, its files served
 // as the Android window serves them (without the ones the app leaves out, an empty config.json), every

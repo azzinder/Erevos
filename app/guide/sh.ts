@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /** The user guide in Serbo-Croatian. Its format: lib/guide.ts. The same sections, in the same order and shape, as the English one. */
 export const guide = `
 ## Šta je Erevos {#about}
@@ -23,7 +27,7 @@ izabrali, pogledajte [Jezik](#start).
 
 ### Ko ga pravi i zašto
 
-- **Ko:** Erevos pravi ista osoba koja je napravila FASOULI.
+- **Ko:** Erevos, by azzinder: ista osoba koja je napravila FASOULI.
 - **Gdje:** nije važno. Važno je to što relay i aplikacija za preglednik rade na vlastitom serveru autora
   (lphl.nekten.eu).
 - **Za koga:** za svakoga ko želi razgovarati sa svojim ljudima bez davanja broja telefona, e-maila ili naloga:

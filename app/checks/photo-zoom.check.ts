@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A photo shown on its own zooms and moves as the fingers do (lib/photo-zoom.ts): the point between
 // two fingers stays between them, a double tap keeps the point tapped, and it never moves past its edges.
 

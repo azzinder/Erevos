@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // L'italiano delle chat nascoste che fanno squillare le chiamate dei loro contatti mentre sono
 // chiuse (lock/hidden-ring.ts, components/hidden-ring-screen.tsx, l'interruttore in app/chat.tsx)
 // (i18n/it/index.ts).

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Portuguese of a relay proving its own key (lib/relay.ts, Channels; components/relay-key-note.tsx) (i18n/pt/index.ts).
 export const relayKey: Record<string, string> = {
   "✓ Your relay proved its own key: no one in between can pass for it.": "✓ O seu relay provou a própria chave: ninguém no meio pode se passar por ele.",

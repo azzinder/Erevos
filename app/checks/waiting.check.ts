@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Messages that wait (lib/waiting.ts), with the real core and phones joined by a radio in memory,
 // and a real relay for a photo: kept in the history marked waiting, tried only when there is a
 // way for them, each contact's in order, sent with the tag they were kept with, and marked as

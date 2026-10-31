@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { t } from './i18n';
 // What Erevos keeps in a plain browser (the web app, installed on an iPhone's home screen): the
 // browser's IndexedDB, in one database. lib/files.ts keeps its files there, text or bytes, and

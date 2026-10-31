@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chats imported with their photos, videos and files (lib/imports.ts): the zip read a piece at a
 // time (lib/zip-source.ts), zip64 too, each file kept sealed as a message's file is
 // (lib/attachments.ts keepFile) and deleted with its chat (lock/archive.ts). With the real Rust

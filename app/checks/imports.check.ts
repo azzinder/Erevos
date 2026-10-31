@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chats imported from other messengers (lib/imports.ts) with the real Rust core, built to
 // WebAssembly by checks/build-core.mjs, and kept sealed (lock/archive.ts). The core's own
 // tests (crates/erevos-import) cover the export formats; these cover the way into the app.

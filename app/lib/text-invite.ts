@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Invites by plain SMS, a text any phone shows, to a number of the phone's contacts with no Erevos
 // yet: a short link to LPHL's web server, whose page offers Erevos (the APK on Android, the web app
 // on an iPhone) and then opens the invite in it. The invite is an SMS invite's (lib/sms-invite.ts)

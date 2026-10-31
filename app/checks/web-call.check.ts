@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Element Call in the web app and on the computer (lib/element-call-window.web.ts): the web app's
 // service worker (pwa/sw.js) serves on Element Call's origin only Element Call's files, signed with
 // the rest, and on the app's origin never them; each with its own policy; and Element Call's frame

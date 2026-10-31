@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! One end-to-end encrypted conversation between two people, as the apps use
 //! it. The first message carries the PQXDH handshake, and every message is a
 //! double-ratchet message over a padded plaintext. The associated data binds

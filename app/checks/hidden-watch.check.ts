@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Hidden chats that say how many messages came (lock/hidden-watch.ts, lib/hidden-notices.ts): every
 // space keeps one queue per pocket, those not asked for made for nothing on the same relay, sealed
 // and padded so a space with hidden chats looks like one without; in the background the relay is

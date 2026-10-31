@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! WhatsApp's "Export chat": a text file, one message per line, each
 //! starting with its date and time. Android writes
 //! `17/10/2026, 22:41 - Μαρία: γεια`, an iPhone `[17/10/2026, 22:41:05] Μαρία: γεια`.

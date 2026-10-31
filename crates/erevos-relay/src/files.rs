@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! The relay's file store, in the style of SimpleX's XFTP. A phone encrypts a
 //! file with a key of its own, puts it here in chunks, and gives the chunks'
 //! ids and the key to its contact inside an end-to-end message. The contact

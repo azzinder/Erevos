@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Portuguese of a chat's own notifications (lock/chat-notify.ts, components/chat-notify-sheet.tsx, app/chat.tsx, components/group-chat.tsx) (i18n/pt/index.ts).
 export const chatNotify: Record<string, string> = {
   "Muted": "Em silêncio",

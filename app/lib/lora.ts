@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { CONFIG_ONLY, MAX_PAYLOAD, PRIVATE_APP, quieted, readFromRadio, restored, toRadioAdmin, toRadioPacket, wantConfig, type Admin } from './meshtastic';
 import { framesOf, SLOW_PREFIX } from './nearby';
 import { fromBase64, randomBytes, toBase64 } from './crypto';

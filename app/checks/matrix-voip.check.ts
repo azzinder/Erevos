@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The older one-to-one Matrix calls (lib/matrix-voip.ts), as FluffyChat makes them, against the
 // small homeserver of checks/matrix-server.ts with the real core for the keys, and a stand-in for
 // WebRTC: Bob's app is played here, writing m.call.* as FluffyChat writes them. His call rings,

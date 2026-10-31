@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
 <!-- Erevos's widget (ErevosWidget.kt): four cells wide, one high; counts again every 30 minutes too,
      the most often Android allows, besides when Erevos tells it to. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"

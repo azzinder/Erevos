@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Group chats on XMPP (lib/xmpp-muc.ts, docs/xmpp.md) against the small server of
 // checks/xmpp-server.ts, with the real core built to WebAssembly for OMEMO: a private group made,
 // set up members only and not anonymous, its people invited and joining, everyone writing with

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Messages over the nearby radio link (lib/nearby.ts), with the real Rust core built to
 // WebAssembly by checks/build-core.mjs and phones joined by a radio in memory: the same sealed
 // packets as through the relay, in frames the radio carries, to a contact heard nearby or to

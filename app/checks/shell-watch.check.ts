@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What Erevos on Sailfish OS gives its helper to wait on while it is not in front (lib/shell-watch.ts,
 // sailfish/watch/src/watcher.h): each relay's queues, at most 64 to a request, the relay's key only
 // once it proved it, and the notice's words.

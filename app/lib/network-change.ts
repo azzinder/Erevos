@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The phone's network changed (Wi-Fi to mobile data, say): a wait at the relay on the network that
 // went may hang until its reply timer, a minute and a half (three through Tor), with no error, so
 // whoever waits ends it and asks again at once (lib/receiver.ts, lib/place-receiver.ts, and the

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A small XMPP server for the checks (checks/xmpp.check.ts, checks/xmpp-calls.check.ts,
 // checks/xmpp-muc.check.ts): signing in with PLAIN, binding, rosters and presence subscriptions,
 // PEP with bookmarks (XEP-0402), archives (MAM), carbons, an HTTP upload service (XEP-0363) and the

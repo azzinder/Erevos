@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The account's device list (lib/device-list.ts, docs/multi-device.md) with the real Rust core,
 // built to WebAssembly by checks/build-core.mjs: its body in its one form, signed by the account and
 // checked against its bundle, what is refused, the places no device takes filled and kept from one

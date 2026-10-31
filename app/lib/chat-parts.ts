@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What a message can carry besides its words, in a chat with a contact (lib/e2e.ts carries it,
 // lock/history.ts keeps it) and in a group (lib/groups.ts): a poll and the votes on it, a place, a
 // sticker by its name (components/stickers.tsx draws it), and the preview of a link, which only the

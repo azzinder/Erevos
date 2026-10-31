@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { MAX_READY, type Ready } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
 import { spaceQueues, type KeptQueue, type MoveReason, type OldQueue, type QueueKind, type QueuesData, type QueuesStore } from '../lock/queues-data';

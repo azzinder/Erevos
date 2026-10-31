@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Portuguese of What's new, what each version changed (lib/whats-new.ts, app/whats-new.tsx) (i18n/pt/index.ts).
 export const whatsNew: Record<string, string> = {
   "What's new": 'Novidades',
@@ -12,6 +16,8 @@ export const whatsNew: Record<string, string> = {
     "**Nova conversa abre mais depressa as conversas ocultas**: segure **Nova conversa** por um instante, não um segundo inteiro, e abre-se o campo para um PIN de conversas ocultas; no Android o telefone vibra uma vez ao abrir. Veja [Conversas ocultas](#hidden).",
   "**People you follow on Nostr**: under New chat in Nostr chats, **Show the people you follow** lists the people your Nostr key follows, with their names; tap one to write to them. See [Chats with other Nostr apps](#nostr-chats).":
     "**Pessoas que você segue no Nostr**: nas Conversas Nostr, em Nova conversa, **Mostrar as pessoas que você segue** lista as pessoas que a sua chave Nostr segue, com os nomes; toque numa para escrever para ela. Veja [Conversas com outros apps Nostr](#nostr-chats).",
+  "**Who makes Erevos, and its licence**: About Erevos now names its maker, and every file of Erevos's source code says whose it is and under which licence; the AGPL-3.0 licence has three added terms (keep the maker's name, mark a changed version, give it another name). See [What Erevos is](#about).":
+    "**Quem faz o Erevos, e sua licença**: Sobre o Erevos agora diz quem o faz, e cada arquivo do código-fonte diz de quem é e sob qual licença; a licença AGPL-3.0 tem três condições adicionais (manter o nome do autor, marcar uma versão alterada como alterada e dar-lhe outro nome). Veja [O que é o Erevos](#about).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Números nos chips da tela inicial**: cada chip acima das conversas (Todos, SMS, Erevos, Matrix, XMPP, Nostr) mostra quantas mensagens não lidas há nele, com um número pequeno depois do nome; as conversas e os grupos em silêncio não contam. Veja [Primeiros passos](#start).",

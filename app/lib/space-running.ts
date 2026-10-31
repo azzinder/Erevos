@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What goes on while a space is open, whatever screen shows (app/_layout.tsx): its messages taken,
 // its calls rung, Erevos receiving in the background. It starts with the space's screens and stops
 // when the space closes (another space opened, a backup restored), not with the screens: on Android,

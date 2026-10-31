@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { AudioQuality, createAudioPlayer, IOSOutputFormat, requestRecordingPermissionsAsync, useAudioRecorder, type RecordingOptions } from 'expo-audio';
 import { useRef } from 'react';
 

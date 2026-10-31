@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Linked devices (lib/devices.ts, docs/linked-devices.md): the code a device shows and what goes
 // between the devices, alone; then a phone and a computer of one account and a contact on a version
 // from before linking, through a real relay and the real core: linking with the codes compared, the

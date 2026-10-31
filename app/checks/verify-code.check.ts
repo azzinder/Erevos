@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Checking a contact by QR codes, in person (lib/verify-code.ts): each phone shows a code and
 // checks the other's; a key someone in between gave either phone, a phone's own code, another
 // contact's code or a later version's never marks a contact checked. With the real Rust core

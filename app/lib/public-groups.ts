@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import type { FileRef } from '../lock/attachment-files';
 import { cleanName } from '../lock/e2e-data';
 import { checkedAbout, type About, type Group, type GroupData, type GroupMessage, type GroupParts } from '../lock/group-data';

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The panic button (lib/panic.ts, app/panic.tsx, Panic.kt, PanicActivity.kt): where it shows, how
 // Android lets panic apps reach it, that only the app trusted, signed as it was, may wipe, and that
 // the web app's wipe leaves nothing in the browser's database.

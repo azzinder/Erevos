@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
 // Erevos's widget on the phone's home screen, for Android (the module's manifest): Phone, SMS,

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Linking phone numbers to Erevos contacts through SMS invites (lib/sms-invite.ts), for one space:
 // what was sent and is waiting for an answer, what came and was answered. The chat screen does the
 // relay side (answering an invite, opening an answer, accepting the first message that follows);

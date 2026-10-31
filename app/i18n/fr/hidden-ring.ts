@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Le français des discussions masquées qui font sonner les appels de leurs contacts pendant
 // qu'elles sont fermées (lock/hidden-ring.ts, components/hidden-ring-screen.tsx, l'interrupteur
 // dans app/chat.tsx) (i18n/fr/index.ts).

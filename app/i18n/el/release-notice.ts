@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Greek of the notice that a new version is out, and of Updates around it (app/updates.tsx, app/index.tsx, lib/release-notice.ts) (i18n/el/index.ts).
 export const releaseNotice: Record<string, string> = {
   "Erevos asks GitHub for updates only when you tap the button: a regular check would tell GitHub that this device has Erevos. GitHub then sees this device's internet address, nothing else, and on Android so does the web app's server, which holds the release computer's signature of the update.": "Το Erevos ρωτά το GitHub για ενημερώσεις μόνο όταν πατάς το κουμπί: ένας τακτικός έλεγχος θα έλεγε στο GitHub ότι αυτή η συσκευή έχει Erevos. Τότε το GitHub βλέπει τη διεύθυνση internet της συσκευής, τίποτα άλλο, και στο Android το ίδιο και ο server της web εφαρμογής, που κρατά την υπογραφή της ενημέρωσης από τον υπολογιστή των εκδόσεων.",

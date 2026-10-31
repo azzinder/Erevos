@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Session setup: PQXDH, the handshake Signal specifies, with X25519 and
 //! ML-KEM-768 (FIPS 203) in place of the classical-only X3DH. The result
 //! seeds the double ratchet, so a session is post-quantum from its first

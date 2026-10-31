@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Erevos web app: the service worker. It stands between the browser and the server and gives the
 // app only code that the owner of the release key signed (README.md). pwa/build.mjs writes the
 // public key in place of the mark below.

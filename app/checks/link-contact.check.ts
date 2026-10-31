@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // An Erevos contact linked to one of my contacts (lib/linked-name.ts, lib/contacts.ts,
 // lib/contact-code.ts): the name it takes from it, only while it has none of its own, the contacts
 // it can be connected to, and a contact handed to the chat, which brings its link and its name only

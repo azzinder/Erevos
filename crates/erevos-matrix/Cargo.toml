@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 [package]
 name = "erevos-matrix"
 description = "Matrix end-to-end encryption for Erevos: Olm and Megolm through vodozemac, with the state kept by the app between calls"

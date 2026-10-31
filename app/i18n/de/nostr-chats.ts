@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Chats mit anderen Nostr-Apps auf Deutsch (lib/nostr-dm.ts, app/nostr-chats.tsx) (i18n/de/index.ts).
 export const nostrChats: Record<string, string> = {
   "No Nostr chats yet.": "Noch keine Nostr-Chats.",

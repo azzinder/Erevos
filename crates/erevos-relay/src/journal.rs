@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Keeps the queue store on disk, so queues and waiting messages survive a
 //! restart. The file is an append-only journal: a header, then one record per
 //! change, written and synced before the change is applied in memory.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 /** The user guide in English. Its format: lib/guide.ts. The same sections, in the same order and shape, as the Greek one. */
 export const guide = `
 ## What Erevos is {#about}
@@ -21,7 +25,7 @@ is in every language of the app, and shows in the one you chose, see [Language](
 
 ### Who makes it, and why
 
-- **Who:** Erevos is made by the same person who made FASOULI.
+- **Who:** Erevos, by azzinder: the same person who made FASOULI.
 - **Where:** it does not matter. What matters is that the relay and the app for the browser run on the maker's own
   server (lphl.nekten.eu).
 - **For whom:** for anyone who wants to talk with their own people without giving a phone number, an email or an

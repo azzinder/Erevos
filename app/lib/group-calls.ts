@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { currentCall, offerMissed, otherCallOn, type Rtc } from './call';
 import { callClock, CALL_LINE } from './calls';
 import { GroupCall, currentGroupCall, HERE_EVERY } from './group-call';

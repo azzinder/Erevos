@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The French of editing a message sent (app/chat.tsx, components/group-messages.tsx) (i18n/fr/index.ts).
 export const edit: Record<string, string> = {
   'Edit message': 'Modifier le message',

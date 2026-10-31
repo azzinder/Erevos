@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Credentials for the call relay (a TURN server, such as coturn) that runs
 //! beside this relay. Calls go through it, so neither phone in a call learns
 //! the other's IP address. The call itself is end-to-end encrypted between

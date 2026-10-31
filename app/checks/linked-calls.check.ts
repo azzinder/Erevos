@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Calls on the account's linked devices (lib/linked-calls.ts): where the phone sends each call
 // signal, so a contact's call rings everywhere, the first to answer takes it and the others stop,
 // and a device calls through the account. Then a call stopped here because another device took it

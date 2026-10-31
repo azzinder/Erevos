@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Hidden chats close once Erevos was in the background more than RELOCK_MS (lib/hidden-away.ts):
 // by a timer while it is away, or as it comes back when the timer could not run; not during a
 // call, then once it ends; not while a photo or a file is picked for them; once each time away.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { sealedFile, type Holder } from './sealed-file';
 
 // The copies of what a space's chat, or its hidden chats, sealed for a contact that wait for the

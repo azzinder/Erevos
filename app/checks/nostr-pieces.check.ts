@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The pieces of photos that come through Nostr (lib/nostr-pieces.ts), kept by the place they came
 // for, in its own encrypted storage (lock/nostr-pieces-data.ts): a space's and each hidden place's
 // apart, nothing of them outside its key, neither their ids nor how many, their pages alike to the

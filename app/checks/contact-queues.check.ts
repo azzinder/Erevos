@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Contact queues (lib/contact-queues.ts), through a real relay and the real core: at a relay that
 // reads queues on /read, each of Alice's kept contacts is told a queue of their own, quietly, a few
 // at a time, and writes to it from then on; what they write there comes, read with no token and

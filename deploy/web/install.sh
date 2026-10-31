@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# SPDX-FileCopyrightText: 2026 azzinder
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 # Serves the Erevos web app (pwa/) behind Caddy, which gets a TLS certificate from Let's Encrypt,
 # on a Debian or Ubuntu server. Run as root, with a signed release in a folder:
 #

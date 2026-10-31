@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Links that open Erevos (erevos://...): its icons in the launcher and its widget, a tel: link
 // through the Phone (modules/erevos-phone), another app's request about a contact
 // (modules/erevos-contacts), an SMS notice, a contact code scanned with the camera. The password

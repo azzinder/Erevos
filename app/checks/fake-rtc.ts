@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A stand-in for WebRTC (lib/call.ts's Rtc) for the call checks: connections that only keep what
 // they were given, and connect when told to.
 /// <reference types="node" />

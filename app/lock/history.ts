@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';

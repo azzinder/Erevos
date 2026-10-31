@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // What XMPP accounts (lib/xmpp.ts) do besides chatting, against the small server of
 // checks/xmpp-server.ts, with the real core built to WebAssembly for OMEMO: a new account made on
 // its server (XEP-0077) with a name and a password, or a form of them, and said not to be made

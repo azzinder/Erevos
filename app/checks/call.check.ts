@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Calls (lib/call.ts): how a call goes from ringing to connected to ended, with a stand-in for
 // WebRTC, and which call signals are taken (lib/call-signal.ts). The sound and picture themselves
 // are WebRTC's, tried on phones.

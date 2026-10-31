@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Contact queues: each kept contact writes to a queue of their own on this chat's relay, named
 // to no one else, as SimpleX does, so the relay cannot tell from where messages go that two
 // contacts write to the same phone, and deleting or blocking someone deletes only their queue.

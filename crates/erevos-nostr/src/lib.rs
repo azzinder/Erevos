@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 //! Nostr for Erevos message text: a second road beside the space's own relay.
 //!
 //! What a contact writes is sealed end to end by the core already

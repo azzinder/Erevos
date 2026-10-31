@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A call to start with a contact as their chat opens, asked for by a tap in Erevos (the Call
 // buttons on a contact card), held in memory until the chat screen takes it. A route's address can
 // come from outside, from any app or web page (erevos://chat?contact=…), so it never carries a

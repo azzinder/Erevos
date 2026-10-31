@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 import { decryptBytes, deriveKey, encryptBytes, hardCost, hardKey, isHardCost, randomBytes, sameBytes, sha256Bytes, utf8Decode, utf8Encode, type HardCost } from '../lib/crypto';
 import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';

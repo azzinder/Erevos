@@ -19,6 +19,8 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Who makes Erevos, and its licence**: About Erevos now names its maker, and every file of Erevos's source code says whose it is and under which licence; the AGPL-3.0 licence has three added terms (keep the maker's name, mark a changed version, give it another name). See [What Erevos is](#about).
+
 ## 4.0.0-rc.4 (2026-10-30)
 
 ### For you

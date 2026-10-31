@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // A release's name, as the release workflow (.github/workflows/release.yml) accepts it: 2.1.0, or a
 // test release before one, 4.0.0-rc.1 (a release candidate; also -alpha.<n> and -beta.<n>), which
 // comes before 4.0.0 and after 3.x. Updates (lib/updates.ts), the notice of a new version

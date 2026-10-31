@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // The Portuguese of chats locked with a PIN of their own (lock/chat-pin.ts, components/chat-pin-gate.tsx, app/chat.tsx, app/group.tsx) (i18n/pt/index.ts).
 export const chatPin: Record<string, string> = {
   "This chat is locked with a PIN.": "Esta conversa está bloqueada com um PIN.",

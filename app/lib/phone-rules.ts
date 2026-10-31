@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Which calls the phone blocks while Erevos is the phone app (modules/erevos-phone, ScreeningService):
 // numbers in the ranges some countries reserve for telemarketing, and numbers starting with a
 // prefix the owner adds, never a number in the phone's contacts; and, for a while, the contacts

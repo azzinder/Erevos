@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
 // Group chats (lib/groups.ts) with the real core built to WebAssembly by checks/build-core.mjs:
 // three phones, each with its own state, joined by an in-memory relay that keeps each queue in
 // order but lets the queues run at their own pace. Skipped, with a note, without the core. Phones
