@@ -30,7 +30,7 @@ const files = execFileSync('git', ['ls-files', '-z'], { cwd: REPO, encoding: 'ut
 
 test('every file has an SPDX notice at its top or a path in REUSE.toml', () => {
   const without = files.filter((f) => {
-    if (f.startsWith('LICENSES/') || f === 'LICENSE' || f === 'REUSE.toml') return false;
+    if (f.startsWith('LICENSES/') || f.startsWith('.reuse/') || f === 'LICENSE' || f === 'REUSE.toml') return false;
     if (globs.some((g) => g.test(f))) return false;
     const head = readFileSync(join(REPO, f), 'utf8').split('\n').slice(0, 12).join('\n');
     return !/SPDX-License-Identifier: \S/.test(head) || !/SPDX-FileCopyrightText: \S/.test(head);
