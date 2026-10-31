@@ -2316,7 +2316,7 @@ sadrže uklonjena mjesta.
    PIN od 4 ili više znakova, dodirnite **Novi skriveni razgovori**, izaberite mjesto, a zatim **Pokreni i
    premjesti**. Zapamtite koja mjesta koristite: radi privatnosti, Erevos ne može reći koja su slobodna.
 2. Da ih otvorite, upišite PIN u **Traži razgovore** na početnom ekranu i pritisnite Enter (tipku za pretragu na
-   tastaturi). Ili zadržite prst na **Novi razgovor** jednu sekundu: otvara se polje za PIN, isto u svakom prostoru;
+   tastaturi). Ili zadržite prst na **Novi razgovor** trenutak: otvara se polje za PIN, uz kratku vibraciju na Androidu, isto u svakom prostoru;
    upišite ga i dodirnite **Otvori**. Otvara se samo mjesto s tim PIN-om. Pogrešan PIN je samo pretraga, ili samo
    zatvara polje: ništa se ne dešava.
 3. Otvaraju se s naslovom **Skriveni razgovori**, s **Kontakti** i **Promijeni PIN** na vrhu, i navode svoje razgovore

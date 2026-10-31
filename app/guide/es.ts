@@ -2400,7 +2400,7 @@ lo que contienen los lugares que se quitaran.
    ocultos nuevos**, elige un lugar, y luego **Crear y mover**. Recuerda qué lugares usas: por privacidad, Erevos no
    puede decir cuáles están libres.
 2. Para abrirlos, escribe el PIN en **Buscar chats** en la pantalla de inicio y pulsa Intro (la tecla de búsqueda del
-   teclado). O mantén pulsado **Chat nuevo** un segundo: se abre un campo para el PIN, igual en todos los espacios;
+   teclado). O mantén pulsado **Chat nuevo** un momento: se abre un campo para el PIN, con una vibración corta en Android, igual en todos los espacios;
    escríbelo y toca **Abrir**. Solo abre el lugar con ese PIN. Un PIN incorrecto es solo una búsqueda, o solo cierra el
    campo: no pasa nada.
 3. Se abren con el título **Chats ocultos**, con **Contactos** y **Cambiar PIN** arriba, y listan sus chats y grupos

@@ -2564,7 +2564,7 @@ löschen, was die weggenommenen Plätze enthalten.
    wähle einen Platz, dann **Anlegen und verschieben**. Merke dir, welche Plätze du nutzt: Zum Schutz deiner
    Privatsphäre kann Erevos nicht sagen, welche frei sind.
 2. Um sie zu öffnen, gib die PIN in **Chats durchsuchen** auf dem Startbildschirm ein und drücke Enter (die Suchtaste
-   der Tastatur). Oder halte **Neuer Chat** eine Sekunde gedrückt: Ein Feld für die PIN öffnet sich, in jedem Bereich
+   der Tastatur). Oder halte **Neuer Chat** einen Moment gedrückt: Ein Feld für die PIN öffnet sich, auf Android mit einem kurzen Vibrieren, in jedem Bereich
    gleich; gib sie ein und tippe auf **Öffnen**. Es öffnet nur den Platz mit dieser PIN. Eine falsche PIN ist nur eine
    Suche oder schließt nur das Feld: Es passiert nichts.
 3. Sie öffnen sich mit dem Titel **Versteckte Chats**, mit **Kontakte** und **PIN ändern** oben, und listen ihre Chats

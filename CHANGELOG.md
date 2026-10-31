@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- **New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).
+
 ### Under the hood
 
 ## 4.0.0-rc.4 (2026-10-30)

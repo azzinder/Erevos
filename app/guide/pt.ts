@@ -2381,7 +2381,7 @@ as posições retiradas guardam.
    digite um PIN de 4 caracteres ou mais, toque em **Novas conversas ocultas**, escolha uma posição, e depois **Criar
    e mover**. Lembre-se de quais posições você usa: por privacidade, o Erevos não consegue saber quais estão livres.
 2. Para abri-las, digite o PIN em **Buscar conversas** na tela inicial e pressione Enter (a tecla de busca do
-   teclado). Ou segure **Nova conversa** por um segundo: abre-se um campo para o PIN, o mesmo em todos os espaços;
+   teclado). Ou segure **Nova conversa** por um instante: abre-se um campo para o PIN, com uma vibração curta no Android, o mesmo em todos os espaços;
    digite-o e toque em **Abrir**. Abre só a posição com esse PIN. Um PIN errado é só uma busca, ou só fecha o campo:
    nada acontece.
 3. Elas abrem com o título **Conversas ocultas**, com **Contatos** e **Alterar PIN** no topo, e listam as conversas e

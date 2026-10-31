@@ -1,6 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams, useNavigation, type Href } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, StyleSheet, TextInput, useWindowDimensions, Vibration, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatRow, MyselfRow } from '../components/chat-row';
@@ -120,8 +120,10 @@ const trashLooked = new Set<number>();
 const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' ? show : 'all');
 const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr' };
 
-// How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds.
-const DOOR_HOLD = 1000;
+// How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds: a little
+// longer than a hold anywhere else, so an ordinary one does not open it. A short buzz says it opened.
+const DOOR_HOLD = 600;
+const DOOR_BUZZ = 40;
 
 export default function Home() {
   const styles = useStyles(makeStyles);
@@ -640,7 +642,14 @@ export default function Home() {
           // On Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one (app/xmpp.tsx);
           // on Nostr's, one with another Nostr app (app/nostr-chats.tsx).
           onPress={() => router.push(show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : '/chat?setup=1')}
-          onLongPress={() => setDoor(true)}
+          onLongPress={() => {
+            try {
+              Vibration.vibrate(DOOR_BUZZ);
+            } catch {
+              // A phone without a vibrator: nothing to feel.
+            }
+            setDoor(true);
+          }}
           delayLongPress={DOOR_HOLD}
           accessibilityRole="button"
           accessibilityLabel={t('New chat')}

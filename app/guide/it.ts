@@ -2424,7 +2424,7 @@ cancellerebbe quello che contengono i posti tolti.
    tocca **Nuove chat nascoste**, scegli un posto, poi **Crea e sposta**. Ricorda quali posti usi: per privacy, Erevos
    non può dire quali sono liberi.
 2. Per aprirle, scrivi il PIN in **Cerca nelle chat** nella schermata principale e premi Invio (il tasto di ricerca
-   della tastiera). Oppure tieni premuto **Nuova chat** per un secondo: si apre un campo per il PIN, uguale in ogni
+   della tastiera). Oppure tieni premuto **Nuova chat** per un attimo: si apre un campo per il PIN, con una breve vibrazione su Android, uguale in ogni
    spazio; scrivilo e tocca **Apri**. Apre solo il posto con quel PIN. Un PIN sbagliato è solo una ricerca, o chiude
    solo il campo: non succede nulla.
 3. Si aprono con il titolo **Chat nascoste**, con **Contatti** e **Cambia PIN** in alto, ed elencano le loro chat e i

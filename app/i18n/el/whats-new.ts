@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
+    "**Η Νέα συνομιλία ανοίγει πιο γρήγορα τις κρυφές συνομιλίες**: κράτα πατημένη τη **Νέα συνομιλία** για μια στιγμή, όχι για ολόκληρο δευτερόλεπτο, και ανοίγει το πεδίο για το PIN των κρυφών συνομιλιών· στο Android το κινητό δονείται μία φορά όταν ανοίγει. Δες [Κρυφές συνομιλίες](#hidden).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Αριθμοί στα κουμπιά της αρχικής οθόνης**: κάθε κουμπί πάνω από τις συνομιλίες (Όλα, SMS, Erevos, Matrix, XMPP, Nostr) δείχνει πόσα μηνύματα δεν έχουν διαβαστεί εκεί, ως έναν μικρό αριθμό μετά το όνομά του· οι συνομιλίες και οι ομάδες σε σίγαση δεν μετρούν. Δες [Πρώτα βήματα](#start).",

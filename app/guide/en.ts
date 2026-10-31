@@ -2211,7 +2211,7 @@ what the places taken away hold.
    **Move to hidden chats**, type a PIN of 4 characters or more, tap **New hidden chats**, pick a place, then **Start
    and move**. Remember which places you use: for privacy, Erevos cannot tell which are free.
 2. To open them, type the PIN in **Search chats** on the home screen and press Enter (the keyboard's search key). Or
-   hold **New chat** down for a second: a field for the PIN opens, the same in every space; type it and
+   hold **New chat** down for a moment: a field for the PIN opens, with a short buzz on Android, the same in every space; type it and
    tap **Open**. It opens only the place with that PIN. A wrong PIN is just a search, or only closes the field:
    nothing happens.
 3. They open titled **Hidden chats**, with **Contacts** and **Change PIN** at the top, and list their chats and groups

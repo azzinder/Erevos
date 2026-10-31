@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
+    "**Neuer Chat öffnet versteckte Chats schneller**: Halte **Neuer Chat** einen Moment gedrückt, nicht mehr eine ganze Sekunde, und das Feld für eine PIN versteckter Chats öffnet sich; auf Android vibriert das Telefon dabei einmal. Siehe [Versteckte Chats](#hidden).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Zahlen auf den Chips des Startbildschirms**: Jeder Chip über den Chats (Alle, SMS, Erevos, Matrix, XMPP, Nostr) zeigt als kleine Zahl hinter seinem Namen, wie viele Nachrichten darin ungelesen sind; stumme Chats und Gruppen zählen nicht mit. Siehe [Erste Schritte](#start).",

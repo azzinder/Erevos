@@ -2523,8 +2523,8 @@ supprimerait ce que contiennent les emplacements retirés.
    discussions masquées**, choisis un emplacement, puis **Créer et déplacer**. Retiens les emplacements que tu
    utilises : par discrétion, Erevos ne peut pas dire lesquels sont libres.
 2. Pour les ouvrir, tape le code PIN dans **Rechercher dans les discussions** sur l’écran d’accueil et appuie sur Entrée
-   (la touche de recherche du clavier). Ou maintiens **Nouvelle discussion** une seconde : un champ pour le code PIN
-   s’ouvre, le même dans chaque espace ; tape-le et appuie sur **Ouvrir**. Il n’ouvre que l’emplacement qui a ce code
+   (la touche de recherche du clavier). Ou maintiens **Nouvelle discussion** un instant : un champ pour le code PIN
+   s’ouvre, avec une courte vibration sur Android, le même dans chaque espace ; tape-le et appuie sur **Ouvrir**. Il n’ouvre que l’emplacement qui a ce code
    PIN. Un code PIN erroné n’est qu’une recherche, ou ne fait que fermer le champ : rien ne se passe.
 3. Elles s’ouvrent avec le titre **Discussions masquées**, avec **Contacts** et **Changer le code PIN** en haut, et
    listent leurs discussions et groupes comme l’écran d’accueil liste les tiens : les plus récents en premier, chacun

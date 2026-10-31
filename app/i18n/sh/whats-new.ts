@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
+    "**Novi razgovor brže otvara skrivene razgovore**: zadržite prst na **Novi razgovor** trenutak, ne cijelu sekundu, i otvara se polje za PIN skrivenih razgovora; na Androidu telefon jednom zavibrira kad se otvori. Pogledajte [Skriveni razgovori](#hidden).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Brojevi na dugmadima početnog ekrana**: svako dugme iznad razgovora (Sve poruke, SMS, Erevos, Matrix, XMPP, Nostr) pokazuje koliko u njemu ima nepročitanih poruka, malim brojem iza imena; utišani razgovori i grupe se ne računaju. Pogledajte [Prvi koraci](#start).",

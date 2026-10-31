@@ -8,6 +8,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**New chat opens hidden chats sooner**: hold **New chat** down for a moment, not a whole second, and the field for a PIN of hidden chats opens; on Android the phone buzzes once as it opens. See [Hidden chats](#hidden).":
+    "**Nouvelle discussion ouvre plus vite les discussions masquées** : maintiens **Nouvelle discussion** un instant, plus une seconde entière, et le champ pour un code PIN de discussions masquées s’ouvre ; sur Android le téléphone vibre une fois à l’ouverture. Voir [Discussions masquées](#hidden).",
   // 4.0.0-rc.4
   "**Numbers on the home chips**: each chip above the chats (All messages, SMS, Erevos, Matrix, XMPP, Nostr) shows how many messages are not read in it, as a small number after its name; muted chats and groups are not counted. See [Getting started](#start).":
     "**Des nombres sur les puces de l’écran d’accueil** : chaque puce au-dessus des discussions (Tous, SMS, Erevos, Matrix, XMPP, Nostr) montre combien de messages n’y sont pas lus, en un petit nombre après son nom ; les discussions et groupes en sourdine ne comptent pas. Voir [Premiers pas](#start).",
