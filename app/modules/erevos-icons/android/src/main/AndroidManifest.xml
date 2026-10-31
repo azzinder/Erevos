@@ -4,4 +4,33 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- A working calculator, in the phone's apps in place of Erevos's icon only when the owner
+         chooses it (CalculatorActivity.kt): its alias is off until then. A task of its own, so its
+         icon never brings Erevos to the front. -->
+    <activity
+      android:name="expo.modules.erevosicons.CalculatorActivity"
+      android:exported="false"
+      android:label="@string/erevos_calculator"
+      android:icon="@drawable/erevos_calculator"
+      android:roundIcon="@drawable/erevos_calculator"
+      android:taskAffinity="${applicationId}.calculator"
+      android:launchMode="singleTask"
+      android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+      android:theme="@android:style/Theme.Material.NoActionBar" />
+    <activity-alias
+      android:name="expo.modules.erevosicons.CalculatorIcon"
+      android:targetActivity="expo.modules.erevosicons.CalculatorActivity"
+      android:enabled="false"
+      android:exported="true"
+      android:label="@string/erevos_calculator"
+      android:icon="@drawable/erevos_calculator"
+      android:roundIcon="@drawable/erevos_calculator">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity-alias>
+  </application>
+</manifest>

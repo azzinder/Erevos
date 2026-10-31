@@ -31,7 +31,7 @@ export const panic: Record<string, string> = {
   "Also the automatic backups in {folder}": "Και τα αυτόματα αντίγραφα στο {folder}",
   "This build of Erevos cannot be wiped by a panic app. Update Erevos for it.": "Αυτή η έκδοση του Erevos δεν σβήνεται από εφαρμογή πανικού. Ενημέρωσε το Erevos γι' αυτό.",
   "Panic button": "Κουμπί πανικού",
-  "Wipe Erevos at once, from here or from a panic app": "Σβήσε το Erevos αμέσως, από εδώ ή από εφαρμογή πανικού",
+  "Wipe Erevos at once, from here, a panic app or a panic password": "Σβήσε το Erevos αμέσως, από εδώ, από εφαρμογή πανικού ή με κωδικό πανικού",
   "Erevos cannot wipe itself here.": "Εδώ το Erevos δεν μπορεί να σβηστεί μόνο του.",
   "Trust {app} as it is now": "Εμπιστοσύνη στο {app} όπως είναι τώρα",
   "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "Το {app} υπογράφεται τώρα με άλλο κλειδί, γι' αυτό το Erevos δεν το αφήνει να σβήσει. Πες ναι μόνο αν το ενημέρωσες εσύ από εκεί που το πήρες· μπορεί να ρωτά άλλη εφαρμογή με το όνομά του.",

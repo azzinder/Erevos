@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
+<!-- The calculator that may stand in place of Erevos (CalculatorActivity.kt), before Android 8: a
+     rounded orange tile with plus, minus, times and equals. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="108" android:viewportHeight="108">
+  <path android:fillColor="#F28C28" android:pathData="M20,0h68a20,20 0 0 1 20,20v68a20,20 0 0 1 -20,20h-68a20,20 0 0 1 -20,-20v-68a20,20 0 0 1 20,-20z" />
+  <group android:pivotX="54" android:pivotY="54" android:scaleX="1.5" android:scaleY="1.5">
+    <path android:fillColor="#FFFFFF" android:pathData="M32,38h16v4h-16z M38,32h4v16h-4z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M60,38h16v4h-16z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M44.243,75.071 L47.071,72.243 L35.757,60.929 L32.929,63.757 Z M47.071,63.757 L44.243,60.929 L32.929,72.243 L35.757,75.071 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M60,62h16v4h-16z M60,70h16v4h-16z" />
+  </group>
+</vector>

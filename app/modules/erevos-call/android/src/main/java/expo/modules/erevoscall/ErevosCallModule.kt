@@ -221,6 +221,16 @@ class ErevosCallModule : Module() {
       null
     }
 
+    // Whether Erevos starts by itself as the phone turns on (BootStart), and the choice.
+    Function("bootStart") {
+      context?.let { BootStart.on(it) } ?: false
+    }
+
+    Function("setBootStart") { on: Boolean ->
+      context?.let { BootStart.set(it, on) }
+      null
+    }
+
     Function("stopReceiving") {
       keepTimers(false)
       context?.let { ReceiveService.stop(it) }

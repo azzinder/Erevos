@@ -251,7 +251,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | **Général** | **Langue**, **Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, [Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
 | **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
-| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique**, **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
+| **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (avec le mot de passe de panique), **Calculatrice à la place d’Erevos** (Android, dans Apparence), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
 | **Téléphone et SMS** (Android) | **Téléphone**, les réglages de l’app Téléphone, les mêmes que **Téléphone** → **Réglages**. **SMS**, en parties : **Erevos comme app SMS**, **Trouver Erevos derrière un numéro**, **SMS quand rien d’autre ne marche**, **Noms de tes contacts**, **Archivées, spam et corbeille**, **Filtre anti-spam**, **Numéros bloqués**, **Annuler l’envoi d’un SMS**, **Deux SIM** (seulement avec deux SIM) et **Nouveau SMS**. Voir [Téléphone](#phone) et [SMS](#sms). |
 | **Données et appareils** | **Sauvegardes**, **Morceaux de sauvegarde**, **Appareils associés** et **Discussions importées**. Voir [Sauvegardes](#backup), [Morceaux de sauvegarde chez des amis](#backup-pieces), [Appareils associés](#devices) et [Discussions importées](#import). |
@@ -1217,6 +1217,19 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   d’attente, l’espace doit aussi interroger le relais sur chacune d’elles, sinon leurs messages ne diraient rien. Le
   prix à payer : son relais peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un qui examine le
   téléphone avec des outils peut trouver qu’un second espace y garde des adresses, et combien de contacts il a.
+- **Quand le téléphone s’allume :** après le démarrage du téléphone, Erevos ne tourne pas tant que tu ne l’ouvres pas.
+  Avec **Démarrer à l’allumage du téléphone** sous **Réglages** → **Notifications** → **En arrière-plan** (par défaut,
+  c’est **Attendre que je l’ouvre**), il démarre tout seul une fois le téléphone allumé, ou Erevos mis à jour, sans
+  espace ouvert : aucun espace ne peut s’ouvrir sans son mot de passe, car Erevos ne garde aucune clé sur le
+  téléphone. Alors les espaces réglés sur **Aussi quand un autre espace est ouvert** disent déjà « New message », ou
+  combien sont arrivés, jamais quel espace, ni qui ou quoi, et une notification discrète dit « Locked ». Les appels ne
+  sonnent pas, et rien d’autre n’arrive, tant que tu n’ouvres pas un espace ; les espaces qui passent par Tor ne
+  disent rien jusque-là. S’il n’y a aucun espace de ce genre, ou avec **Pas de notification**, il s’arrête aussitôt.
+  Android seulement.
+
+  **Pourquoi :** après un redémarrage, Erevos ne pouvait pas te dire que des messages attendent avant que tu ne
+  l’ouvres par hasard. Sans ton mot de passe, il ne peut toujours pas les lire, donc il n’en dit pas plus qu’un espace
+  fermé.
 - **Là où ça ne peut pas sonner :** arrêté par Android (ou par l’économie de batterie du téléphone, ou par le réglage
   propre du fabricant), après un redémarrage du téléphone jusqu’à ce que tu ouvres Erevos et l’espace une fois, dans un
   autre espace (il dit seulement qu’un message est arrivé, si tu le permets, comme ci-dessus), ou sur un ordinateur ou
@@ -2421,7 +2434,11 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
   œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. Il est masqué de nouveau chaque fois
   que le champ réapparaît, et sur Android le clavier est prié de ne pas l’apprendre.
 - **Mots de passe erronés :** après 5 essais erronés, chaque essai suivant te fait attendre, 30 secondes au début et
-  deux fois plus longtemps à chaque fois, jusqu’à une heure. Le compte survit à un redémarrage.
+  deux fois plus longtemps à chaque fois, jusqu’à une heure. Le compte survit à un redémarrage. L’attente suit
+  l’horloge propre du téléphone depuis son allumage, que personne ne peut régler, si bien qu’avancer la date et
+  l’heure n’y met pas fin ; si le téléphone est éteint puis rallumé pendant une attente, il la refait depuis son
+  début, car le temps déjà attendu ne peut pas être connu. Dans l’app web et sur un ordinateur, c’est pareil tant
+  qu’Erevos reste ouvert, et cela repart de son début quand Erevos s’ouvre de nouveau.
 - **Ce qui est scellé :** les contacts de chaque espace, les clés de ses conversations, ses messages, ses réglages de
   relais et son apparence sont gardés sur le téléphone scellés avec une clé que seul son mot de passe ouvre.
 - **La liste tout de suite :** l’écran d’accueil garde une copie scellée de ses premières lignes, si bien que la liste
@@ -2432,7 +2449,8 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
 **Pourquoi :** chaque mot de passe essayé coûte exprès du temps et beaucoup de mémoire (PBKDF2, puis Argon2id), pour que
 celui qui copie ce que garde le téléphone ne puisse pas essayer des mots de passe rapidement ; et quelqu’un qui tient le
 téléphone attend plus longtemps après chaque essai erroné. Le compte est unique pour tout le téléphone, gardé d’un
-redémarrage à l’autre, car l’écran du mot de passe vient avant l’ouverture de tout espace.
+redémarrage à l’autre, car l’écran du mot de passe vient avant l’ouverture de tout espace, et l’attente est mesurée là
+où changer l’horloge ne peut pas la raccourcir.
 
 > Il n’y a aucun moyen de récupérer un mot de passe oublié : rien n’est stocké qui pourrait ouvrir les données sans lui.
 > Seule une empreinte digitale ou le visage, tant que c’est activé, ouvre encore le premier espace (voir ci-dessous).
@@ -2872,6 +2890,35 @@ ordinateur et sur Sailfish OS.
 **Pourquoi :** à une frontière ou lors d’une arrestation, il n’y a peut-être pas le temps d’ouvrir chaque discussion.
 Un toucher, ou le geste d’une app de panique, ne laisse rien à ouvrir.
 
+### Mot de passe de panique
+
+Avec le verrou par mot de passe activé, le même écran propose un **Mot de passe de panique** : un mot de passe à part
+qui, saisi sur l’écran de verrouillage, efface Erevos comme **Tout effacer maintenant**. Sur Android, dans l’app web,
+sur un ordinateur et sur Sailfish OS.
+
+1. Touchez **Définir le mot de passe de panique**, saisissez-le deux fois (au moins 4 caractères) et touchez
+   **Enregistrer**. Il doit différer de chaque mot de passe de vos espaces : Erevos en refuse un qui ouvre un espace,
+   et le mot de passe d’aucun espace ne peut le devenir plus tard.
+2. Saisi sur l’écran de verrouillage, il affiche **Mot de passe incorrect**, comme tout mot de passe incorrect, et
+   Erevos efface tout aussitôt. Sur Android, Erevos se ferme ensuite et s’ouvre la fois suivante comme fraîchement
+   installé, et les sauvegardes automatiques de leur dossier partent aussi quand **Aussi les sauvegardes automatiques
+   de** est activé sous **Depuis une app de panique** ; ailleurs, elles restent.
+3. **Désactiver le mot de passe de panique** en refait seulement un mot de passe incorrect. Le définir de nouveau
+   remplace le précédent. Désactiver le verrou par mot de passe le désactive aussi.
+
+- **Rien ne le montre :** Erevos garde une place pour un mot de passe de panique dès son premier démarrage, au hasard
+  tant qu’aucun n’est défini et de même forme ensuite, et la vérifie avec chaque mot de passe saisi sur l’écran de
+  verrouillage, de la même façon et pendant la même durée. Ni ce que garde le téléphone ni le temps d’une vérification
+  ne montrent donc s’il y en a un de défini, et cet écran ne peut pas vous le dire non plus : si vous n’êtes pas sûr,
+  définissez-le de nouveau.
+- **Seulement sur l’écran de verrouillage :** saisi partout ailleurs où Erevos demande un mot de passe, ce n’est qu’un
+  mot de passe incorrect. Il n’est pas dans les sauvegardes : après en avoir restauré une, définissez-le de nouveau.
+  Tant que des essais incorrects font attendre l’écran de verrouillage (voir [Verrou par mot de passe](#lock)), il
+  attend aussi.
+
+**Pourquoi :** quelqu’un peut vous forcer à ouvrir Erevos. Avec un mot de passe de panique, vous pouvez sembler lui
+donner le vôtre, et ce qu’il verrait a disparu avant que l’écran ne change.
+
 ## Me supprimer partout {#forget}
 
 Quand vous voulez que disparaisse ce que les serveurs gardent de vous, dans **Réglages** → **Confidentialité et sécurité** →
@@ -3019,6 +3066,17 @@ pour que le texte se lise toujours bien, sur le verre aussi.
   La couleur est celle du téléphone, pas de chaque espace, car les icônes s’affichent avant qu’Erevos soit déverrouillé.
   Après un changement, certains lanceurs retirent l’icône de l’écran d’accueil : ajoute-la de nouveau depuis la liste
   des applis.
+- **Calculatrice à la place d’Erevos** (Android, sous **Icônes du lanceur**) : une calculatrice qui fonctionne
+  apparaît parmi les applis du téléphone à la place de l’icône d’Erevos. Appuie sur **Mettre la calculatrice à sa
+  place**, saisis deux fois un code de 4 à 12 chiffres et appuie sur **Enregistrer**. Ensuite, ouvre la calculatrice,
+  tape le code, puis **=** : Erevos s’ouvre en demandant son mot de passe comme toujours. Tout autre calcul n’est
+  qu’un calcul. **Changer le code** le change ; **Réafficher l’icône d’Erevos** ramène l’icône, dans sa couleur, et
+  oublie le code. Seule l’icône est cachée : la liste des applis d’Android, les notifications, les applis récentes et
+  les icônes Téléphone, SMS et Contacts montrent toujours Erevos. Le téléphone ne garde qu’un hash du code : c’est une
+  porte, pas la serrure.
+
+  **Pourquoi :** celui qui jette un œil au téléphone voit une calculatrice, pas une messagerie ; le mot de passe garde
+  toujours ce qu’il y a dedans.
 - **Widget** (Android) : l’ordre des quatre boutons du widget, de gauche à droite, avec le widget dessiné tel qu’il
   sera. Appuie sur ↑ ou ↓ pour déplacer un bouton ; **Ordre initial** les remet en place.
 

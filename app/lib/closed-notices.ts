@@ -163,13 +163,19 @@ export async function setDoorOpen(on: boolean): Promise<void> {
   await saveDoor(space, door, true);
 }
 
-/** Starts waiting for the closed spaces that asked for it; `tell(count, space)` says that many messages came there. Returns how to stop. */
-export function startClosedNotices(tell: (count: number, space: number) => void): () => void {
-  let open: number;
-  try {
-    open = currentSpace().space;
-  } catch {
-    return () => undefined;
+/**
+ * Starts waiting for the closed spaces that asked for it; `tell(count, space)` says that many
+ * messages came there. Returns how to stop. With `none`, no space is open (Erevos started by itself
+ * as the phone turned on, lib/background.ts startBootNotices): every space that asked is waited on.
+ */
+export function startClosedNotices(tell: (count: number, space: number) => void, none = false): () => void {
+  let open = -1;
+  if (!none) {
+    try {
+      open = currentSpace().space;
+    } catch {
+      return () => undefined;
+    }
   }
   let stopped = false;
   const heard = new Map<string, News>();

@@ -249,7 +249,7 @@ nicht lesen kannst.
 | **Allgemein** | **Sprache**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
-| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf**, **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
+| **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (mit dem Panik-Passwort), **Taschenrechner anstelle von Erevos** (Android, unter Darstellung), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
 | **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android), **LoRa-Funk** (Android), **Matrix**, **XMPP** und **Nostr-Chats**. Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr), [Über LoRa-Funk](#lora), [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats). |
 | **Telefon und SMS** (Android) | **Telefon**, die Einstellungen der Telefon-App, dieselben wie **Telefon** → **Einstellungen**. **SMS**, in Teilen: **Erevos als SMS-App**, **Erevos hinter einer Nummer finden**, **SMS, wenn sonst nichts geht**, **Namen aus deinen Kontakten**, **Archiv, Spam und Papierkorb**, **Spamfilter**, **Blockierte Nummern**, **SMS zurückholen**, **Zwei SIMs** (nur mit zwei SIMs) und **Neue SMS**. Siehe [Telefon](#phone) und [SMS](#sms). |
 | **Daten und Geräte** | **Backups**, **Backup-Teile**, **Verknüpfte Geräte** und **Importierte Chats**. Siehe [Backups](#backup), [Backup-Teile bei Freunden](#backup-pieces), [Verknüpfte Geräte](#devices) und [Importierte Chats](#import). |
@@ -1244,6 +1244,18 @@ Versteckte Chats und Computer haben das nicht.
   sagen. Der Preis ist, dass sein Relay erkennen kann, dass die beiden Bereiche auf einem Telefon sind, und jemand, der
   das Telefon mit Werkzeugen untersucht, finden kann, dass ein zweiter Bereich dort Adressen aufbewahrt, und wie viele
   Kontakte er hat.
+- **Wenn das Telefon eingeschaltet wird:** Nachdem das Telefon gestartet ist, läuft Erevos nicht, bis du es öffnest.
+  Mit **Starten, wenn das Telefon eingeschaltet wird** unter **Einstellungen** → **Benachrichtigungen** → **Im
+  Hintergrund** (die Voreinstellung ist **Warten, bis ich es öffne**) startet es von selbst, nachdem das Telefon
+  eingeschaltet oder Erevos aktualisiert wurde, ohne dass ein Bereich offen ist: Kein Bereich kann sich ohne sein
+  Passwort öffnen, da Erevos keinen Schlüssel auf dem Telefon aufbewahrt. Dann sagen die Bereiche mit **Auch, wenn ein
+  anderer Bereich offen ist** schon „New message“ oder wie viele kamen, nie welcher Bereich, auch nicht von wem oder
+  was, und eine stille Benachrichtigung sagt „Locked“. Anrufe klingeln nicht, und nichts anderes kommt, bis du einen
+  Bereich öffnest; Bereiche, die über Tor gehen, sagen bis dahin nichts. Gibt es keinen solchen Bereich, oder mit
+  **Keine Benachrichtigung**, hält es sofort an. Nur auf Android.
+
+  **Warum:** Nach einem Neustart konnte Erevos dir nicht sagen, dass Nachrichten warten, bis du es zufällig öffnetest.
+  Ohne dein Passwort kann es sie trotzdem nicht lesen, also sagt es nicht mehr, als ein geschlossener Bereich sagt.
 - **Wo es nicht klingeln kann:** von Android beendet (oder vom Energiesparen des Telefons oder von der eigenen
   Einstellung des Herstellers), nach einem Neustart des Telefons, bis du Erevos und den Bereich einmal öffnest, in
   einem anderen Bereich (er sagt nur, dass eine Nachricht kam, wenn du es erlaubst, wie oben), oder auf einem Computer
@@ -2462,7 +2474,11 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   Ende ein Auge: Tippe darauf, um zu sehen, was du eingibst, und noch einmal, um es zu verbergen. Es ist jedes Mal
   wieder verborgen, wenn das Feld neu erscheint, und auf Android wird die Tastatur gebeten, es sich nicht zu merken.
 - **Falsche Passwörter:** Nach 5 falschen Versuchen lässt dich jeder weitere warten, anfangs 30 Sekunden und jedes Mal
-  doppelt so lange, bis zu einer Stunde. Die Zählung übersteht einen Neustart.
+  doppelt so lange, bis zu einer Stunde. Die Zählung übersteht einen Neustart. Das Warten richtet sich nach der
+  eigenen Uhr des Telefons seit dem Einschalten, die niemand einstellen kann, also beendet es das Warten nicht, wenn
+  du Datum und Uhrzeit vorstellst; wird das Telefon während des Wartens aus- und wieder eingeschaltet, wartet es
+  erneut von vorn, da sich die schon gewartete Zeit nicht wissen lässt. In der Web-App und auf einem Computer läuft es
+  genauso, solange Erevos offen bleibt, und beginnt von vorn, wenn Erevos neu geöffnet wird.
 - **Was versiegelt ist:** Die Kontakte jedes Bereichs, die Schlüssel seiner Unterhaltungen, seine Nachrichten, seine
   Relay-Einstellungen und sein Aussehen werden auf dem Telefon versiegelt aufbewahrt, mit einem Schlüssel, den nur sein
   Passwort öffnet.
@@ -2474,7 +2490,8 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
 **Warum:** Jedes ausprobierte Passwort kostet absichtlich Zeit und viel Arbeitsspeicher (PBKDF2, dann Argon2id), damit,
 wer kopiert, was das Telefon aufbewahrt, nicht schnell Passwörter ausprobieren kann; und wer das Telefon in der Hand
 hat, wartet nach jedem falschen Versuch länger. Die Zählung gilt für das ganze Telefon, über Neustarts hinweg, da der
-Passwortbildschirm kommt, bevor sich irgendein Bereich öffnet.
+Passwortbildschirm kommt, bevor sich irgendein Bereich öffnet, und das Warten dort gemessen wird, wo das Verstellen
+der Uhr es nicht verkürzen kann.
 
 > Ein vergessenes Passwort lässt sich nicht wiederherstellen: Es ist nichts gespeichert, was die Daten ohne es öffnen
 > könnte. Nur ein Fingerabdruck oder Gesicht, solange eingeschaltet, öffnet den ersten Bereich noch (siehe unten).
@@ -2906,6 +2923,34 @@ Computer und auf Sailfish OS.
 **Warum:** An einer Grenze oder bei einer Festnahme bleibt vielleicht keine Zeit, jeden Chat zu öffnen. Ein Tippen,
 oder die Geste einer Panik-App, lässt nichts zum Öffnen zurück.
 
+### Panik-Passwort
+
+Bei eingeschalteter Passwortsperre bietet derselbe Bildschirm ein **Panik-Passwort**: ein eigenes Passwort, das, auf
+dem Sperrbildschirm eingegeben, Erevos löscht wie **Jetzt alles löschen**. Auf Android, in der Web-App, auf einem
+Computer und auf Sailfish OS.
+
+1. Tippe auf **Panik-Passwort festlegen**, gib es zweimal ein (mindestens 4 Zeichen) und tippe auf **Speichern**. Es
+   muss sich von jedem Passwort deiner Bereiche unterscheiden: Erevos lehnt eines ab, das einen Bereich öffnet, und
+   kein Passwort eines Bereichs kann später dazu werden.
+2. Auf dem Sperrbildschirm eingegeben, zeigt es **Falsches Passwort**, wie jedes falsche, und Erevos löscht sofort
+   alles. Auf Android schließt Erevos sich danach und öffnet beim nächsten Mal wie frisch installiert, und die
+   automatischen Backups in ihrem Ordner werden ebenfalls gelöscht, wenn **Auch die automatischen Backups in** unter
+   **Aus einer Panik-App** eingeschaltet ist; anderswo bleiben sie.
+3. **Panik-Passwort ausschalten** macht es wieder nur zu einem falschen Passwort. Legst du es erneut fest, ersetzt es
+   das vorherige. Schaltest du die Passwortsperre aus, wird es ebenfalls ausgeschaltet.
+
+- **Nichts verrät es:** Erevos hält vom ersten Start an einen Platz für ein Panik-Passwort bereit, zufällig, bis eines
+  festgelegt ist, und danach gleich geformt, und prüft ihn bei jedem auf dem Sperrbildschirm eingegebenen Passwort,
+  auf dieselbe Weise und gleich lange. Weder was das Telefon aufbewahrt noch wie lange eine Prüfung dauert, verrät
+  also, ob eines festgelegt ist, und dieser Bildschirm kann es dir auch nicht sagen: Wenn du unsicher bist, lege es
+  erneut fest.
+- **Nur auf dem Sperrbildschirm:** Überall sonst, wo Erevos nach einem Passwort fragt, ist es nur ein falsches. Es ist
+  nicht in Backups: Lege es nach dem Wiederherstellen eines Backups erneut fest. Solange falsche Versuche den
+  Sperrbildschirm warten lassen (siehe [Passwortsperre](#lock)), wartet es auch.
+
+**Warum:** Jemand kann dich zwingen, Erevos zu öffnen. Mit einem Panik-Passwort kannst du ihm scheinbar deines geben,
+und was er sehen würde, ist weg, bevor sich der Bildschirm ändert.
+
 ## Von überall löschen {#forget}
 
 Wenn du willst, dass weg ist, was die Server für dich speichern, unter **Einstellungen** → **Datenschutz und Sicherheit** →
@@ -3052,6 +3097,17 @@ Text immer gut lesbar ist, auch auf Glas.
   oder dunkel. Jedes Tippen öffnet, was sein Symbol nennt, auch wenn Erevos gerade ein anderes davon zeigte. Die Farbe
   gehört dem Telefon, nicht jedem Bereich, da die Symbole erscheinen, bevor Erevos entsperrt ist. Nach einer Änderung
   nehmen manche Launcher das Symbol vom Startbildschirm: Füge es aus der App-Liste wieder hinzu.
+- **Taschenrechner anstelle von Erevos** (Android, unter **Startbildschirm-Symbole**): Ein Taschenrechner, der
+  funktioniert, erscheint unter den Apps des Telefons statt des Symbols von Erevos. Tippe auf **Taschenrechner an
+  seine Stelle setzen**, gib einen Code aus 4 bis 12 Ziffern zweimal ein und tippe auf **Speichern**. Öffne von da an
+  den Taschenrechner, gib den Code ein, dann **=**: Erevos öffnet sich und fragt wie immer nach seinem Passwort. Jede
+  andere Rechnung ist nur eine Rechnung. **Code ändern** ändert ihn; **Symbol von Erevos wieder zeigen** bringt das
+  Symbol in seiner Farbe zurück und vergisst den Code. Nur das Symbol ist versteckt: Die App-Liste von Android, die
+  Benachrichtigungen, die letzten Apps und die Symbole Telefon, SMS und Kontakte zeigen weiterhin Erevos. Das Telefon
+  behält nur einen Hash des Codes: Er ist eine Tür, nicht das Schloss.
+
+  **Warum:** Wer einen Blick auf das Telefon wirft, sieht einen Taschenrechner, keinen Messenger; das Passwort schützt
+  weiterhin, was darin ist.
 - **Widget** (Android): die Reihenfolge der vier Tasten des Widgets, von links nach rechts, mit dem Widget so
   gezeichnet, wie es aussehen wird. Tippe auf ↑ oder ↓, um eine Taste zu verschieben; **Ursprüngliche Reihenfolge**
   stellt sie zurück.

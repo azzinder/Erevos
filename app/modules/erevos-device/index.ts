@@ -36,6 +36,8 @@ export type GivingApp = { addresses: string[]; port: number; token: string; sha2
 type Device = {
   /** Whether Android shows the keyboard over the app now (its window's insets); null with no screen showing or before Android 11. Missing in a build before it. */
   keyboardShown?(): Promise<boolean | null>;
+  /** The clock the owner cannot set: ms since the phone started, sleep included, and which start that is (lock/tries.ts). Missing in a build before it. */
+  clock?(): { up: number; boot: string };
   /** Puts the text on the phone's clipboard, marked sensitive. False when it could not. */
   copyText(text: string): boolean;
   /** Starts looking for where the phone is, once: '' when it did, else why not. Missing in a build before places. */

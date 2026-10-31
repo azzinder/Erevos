@@ -10,16 +10,19 @@ import { Button, Input, Text } from '../components/ui';
 import { useColors, useTheme } from '../theme/context';
 
 import { BiometricError, biometricOn, unlockWithBiometric } from './biometric';
-import { unlock, type LockConfig, type Unlocked } from './config';
+import { PanicPasswordError, unlock, type LockConfig, type Unlocked } from './config';
 import { LockedOutError, lockedOutMessage } from './tries';
 import { t } from '../lib/i18n';
+import { wipeNow } from '../lib/panic';
 import { biometricSealer } from '../modules/erevos-biometric';
 
 // The password screen shown before any space is opened. It looks the same whichever password is
 // typed, and the password decides which space opens. Wrong passwords are counted on the phone
 // (tries.ts): after a few, the next try must wait. It shows in the look last used (theme/look.ts).
 // Where unlocking with a fingerprint or face is on (biometric.ts), a button offers it too; it
-// opens only the first password's space, and the password field stays.
+// opens only the first password's space, and the password field stays. The panic password, when
+// one is set (config.ts), wipes Erevos as the panic button does; until Erevos stops, the screen
+// looks as after a wrong password.
 export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnlock: (space: Unlocked) => Promise<void> }) {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -66,6 +69,13 @@ export function PasswordGate({ config, onUnlock }: { config: LockConfig; onUnloc
       setError(t('Wrong password'));
       setPassword('');
     } catch (e) {
+      if (e instanceof PanicPasswordError) {
+        setError(t('Wrong password'));
+        setPassword('');
+        // On Android, Android stops Erevos; in the web app the page starts as new.
+        await wipeNow().catch(() => undefined);
+        return;
+      }
       setError(e instanceof LockedOutError ? lockedOutMessage(e.until) : e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);

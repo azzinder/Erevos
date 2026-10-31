@@ -31,7 +31,7 @@ export const panic: Record<string, string> = {
   "Also the automatic backups in {folder}": "I automatske rezervne kopije u {folder}",
   "This build of Erevos cannot be wiped by a panic app. Update Erevos for it.": "Ovu verziju Erevosa ne može obrisati aplikacija za paniku. Ažurirajte Erevos za to.",
   "Panic button": "Gumb za paniku",
-  "Wipe Erevos at once, from here or from a panic app": "Odmah obrišite Erevos, odavde ili iz aplikacije za paniku",
+  "Wipe Erevos at once, from here, a panic app or a panic password": "Odmah obrišite Erevos, odavde, iz aplikacije za paniku ili lozinkom za paniku",
   "Erevos cannot wipe itself here.": "Ovdje se Erevos ne može sam obrisati.",
   "Trust {app} as it is now": "Vjeruj aplikaciji {app} ovakvoj kakva je sada",
   "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "{app} je sada potpisana drugim ključem, pa je Erevos ne pušta da briše. Reci da samo ako si je sam ažurirao odande odakle si je dobio; možda pita neka druga aplikacija pod njenim imenom.",

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
+<!-- The calculator that may stand in place of Erevos (CalculatorActivity.kt). -->
+<resources>
+  <string name="erevos_calculator">Kalkulator</string>
+  <string name="erevos_calculator_error">Greška</string>
+</resources>

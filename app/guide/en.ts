@@ -224,7 +224,7 @@ phone's own settings do. In the other languages it is named in that language and
 | **General** | **Language**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
-| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button**, **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
+| **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
 | **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** and **Nostr chats**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora), [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats). |
 | **Phone and SMS** (Android) | **Phone**, the phone app's settings, the same as **Phone** → **Settings**. **SMS**, in parts: **Erevos as the SMS app**, **Find Erevos on a number**, **SMS when nothing else works**, **Names from your contacts**, **Archived, Spam and Trash**, **Spam filter**, **Blocked numbers**, **Taking an SMS back**, **Two SIMs** (only with two SIMs) and **New SMS**. See [Phone](#phone) and [SMS](#sms). |
 | **Data and devices** | **Backups**, **Backup pieces**, **Linked devices** and **Imported chats**. See [Backups](#backup), [Backup pieces with friends](#backup-pieces), [Linked devices](#devices) and [Imported chats](#import). |
@@ -1067,6 +1067,16 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   ask about each of those too, or their messages would say nothing. The cost is that its relay may tell that the two
   spaces are on one phone, and someone who examines the phone with tools may find that a second space keeps addresses
   there, and how many contacts it has.
+- **When the phone turns on:** after the phone starts, Erevos does not run until you open it. With **Start when the
+  phone turns on** under **Settings** → **Notifications** → **In the background** (the default is **Wait until I open
+  it**), it starts by itself after the phone turns on, or after Erevos is updated, with no space open: no space can open
+  without its password, as Erevos keeps no key on the phone. Then the spaces set to **Also while another space is open**
+  already say "New message", or how many came, never which space, nor who or what, and a quiet notice says "Locked".
+  Calls do not ring, and nothing else comes, until you open a space; spaces that go through Tor say nothing until then.
+  With no such space, or with **No notice**, it stops at once. Android only.
+
+  **Why:** after a restart Erevos could not tell you that messages wait until you happened to open it. Without your
+  password it still cannot read them, so it says no more than a closed space does.
 - **Where it cannot ring:** stopped by Android (or by the phone's battery saving, or the phone maker's own setting),
   after the phone restarts until you open Erevos and the space once, in another space (it only says a message came, if
   you let it, as above), or on a computer or in the web
@@ -2125,7 +2135,10 @@ choices: **No lock** and **Password**.
   its end: tap it to see what you type, and again to hide it. It is hidden again each time the field shows anew, and
   on Android the keyboard is told not to learn it.
 - **Wrong passwords:** after 5 wrong tries, each further one makes you wait, 30 seconds at first and twice as long
-  each time, up to an hour. The count survives a restart.
+  each time, up to an hour. The count survives a restart. The wait goes by the phone's own clock since it was turned
+  on, which no one can set, so moving the date and time forward does not end it; turned off and on during a wait, the
+  phone waits it again from its beginning, as the time already waited cannot be known. In the web app and on a
+  computer it goes the same way while Erevos stays open, and starts again from its beginning when Erevos opens anew.
 - **What is sealed:** each space's contacts, the keys of its conversations, its messages, its relay settings and its
   look are kept on the phone sealed with a key that only its password opens.
 - **The list at once:** the home screen keeps a sealed copy of its first rows, so the list shows as soon as the space
@@ -2134,7 +2147,8 @@ choices: **No lock** and **Password**.
 
 **Why:** each password tried costs time and a lot of memory on purpose (PBKDF2, then Argon2id), so that whoever copies
 what the phone keeps cannot try passwords fast; and someone holding the phone waits longer after each wrong try. The
-count is one for the whole phone, kept across restarts, as the password screen comes before any space opens.
+count is one for the whole phone, kept across restarts, as the password screen comes before any space opens, and
+the wait is measured where moving the clock cannot shorten it.
 
 > There is no way to recover a forgotten password: nothing is stored that could open the data without it. Only a
 > fingerprint or face, while it is on, still opens the first space (see below).
@@ -2504,6 +2518,30 @@ button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web a
 **Why:** at a border or in an arrest there may be no time to open each chat. One tap, or the gesture of a panic app,
 leaves nothing to open.
 
+### Panic password
+
+With the password lock on, the same screen offers a **Panic password**: a password of its own that, typed on the lock
+screen, wipes Erevos as **Wipe everything now** does. On Android, in the web app, on a computer and on Sailfish OS.
+
+1. Tap **Set the panic password**, type it twice (at least 4 characters) and tap **Save**. It must differ from every
+   password of your spaces: Erevos refuses one that opens a space, and no space's password can become it later.
+2. Typed on the lock screen, it shows **Wrong password**, as any wrong one does, and Erevos wipes everything at once. On
+   Android Erevos then closes, and opens next time as if just installed, and the automatic backups in their folder go
+   too when **Also the automatic backups in** is on under **From a panic app**; elsewhere they stay.
+3. **Turn off the panic password** makes it only a wrong password again. Setting it again replaces the one before.
+   Turning the password lock off turns it off too.
+
+- **Nothing shows it:** Erevos keeps a place for a panic password from its first start, random until one is set and
+  shaped the same after, and checks it with every password typed on the lock screen, the same way and for as long. So
+  neither what the phone keeps nor how long a check takes shows whether one is set, and this screen cannot tell you
+  either: if you are not sure, set it again.
+- **Only on the lock screen:** typed anywhere else Erevos asks for a password, it is only a wrong one. It is not in
+  backups: after restoring one, set it again. While wrong tries make the lock screen wait (see
+  [Password lock](#lock)), it waits too.
+
+**Why:** someone may make you open Erevos. With a panic password you can seem to give them yours, and what they would
+see is gone before the screen changes.
+
 ## Delete me from everywhere {#forget}
 
 When you want what the servers keep for you gone, under **Settings** → **Privacy and security** → **Delete me from
@@ -2638,6 +2676,15 @@ always reads well, on glass too.
   names, also when Erevos showed another of them. The colour is the phone's, not each space's, as the icons show
   before Erevos is unlocked. After a change some launchers take the icon off the home screen: add it again from the
   list of apps.
+- **Calculator in place of Erevos** (Android, under **Launcher icons**): a calculator that works shows among the
+  phone's apps instead of Erevos's icon. Tap **Put the calculator in its place**, type a code of 4 to 12 digits twice
+  and tap **Save**. From then on open the calculator, type the code, then **=**: Erevos opens, asking for its password
+  as always. Any other sum is only a sum. **Change the code** changes it; **Show Erevos's icon again** brings the icon
+  back, in its colour, and forgets the code. Only the icon is hidden: Android's list of apps, the notices, the recent
+  apps, and the Phone, SMS and Contacts icons still show Erevos. The phone keeps only a hash of the code: it is a door,
+  not the lock.
+
+  **Why:** whoever glances at the phone sees a calculator, not a messenger; the password still guards what is inside.
 - **Widget** (Android): the order of the widget's four buttons, from left to right, with the widget drawn as it will
   look. Tap ↑ or ↓ to move a button; **First order** puts them back.
 

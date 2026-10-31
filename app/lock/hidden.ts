@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { hardenSlot, isSlot, ITER, loadLockConfig, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
+import { hardenSlot, isSlot, ITER, loadLockConfig, preparePanicPassword, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
 import { armPlaceReminders } from '../lib/myself';
 import { keepPlace, keptPlaces, prepareKeepEntries } from './hidden-keep';
 import { prepareRingEntries } from './hidden-ring';
@@ -70,6 +70,7 @@ export async function prepareHidden(count = SLOTS): Promise<void> {
   await prepareKeepEntries(count);
   await prepareQueueEntries(count);
   await prepareTries();
+  await preparePanicPassword();
 }
 
 /** Tries `password` on every pocket of the space, all of them every time, so it takes as long whatever opens. */

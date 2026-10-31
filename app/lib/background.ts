@@ -6,12 +6,14 @@ import { AppRegistry, AppState, PermissionsAndroid, Platform } from 'react-nativ
 
 import { mutedNow } from '../lock/chat-notify';
 import { loadBatteryMode, onBatteryMode, type BatteryMode } from './battery-mode';
+import { openDoors } from '../lock/doors';
 import { currentSpace } from '../lock/keys';
 import { callAudio, type BackgroundState } from '../modules/erevos-call';
 import { onSmsEvent, smsShowOnScreen } from '../modules/erevos-sms';
 import { currentCall, RING_MS } from './call';
 import { CONTACT_PREFIX } from './calls';
 import { chatNotify } from './chat-notices';
+import { cryptoReady, setupCrypto } from './crypto-setup';
 import { followDoor, keepDoor, startClosedNotices } from './closed-notices';
 import { onContactQueuesChanged } from './contact-queues';
 import { currentGroupCall } from './group-call';
@@ -329,6 +331,79 @@ export function noticesAsked(): Promise<void> {
   return asking;
 }
 
+// Erevos started by itself as the phone turned on, or after an update (modules/erevos-call,
+// BootStart.kt), as the owner chose: no space is open, and none can be without its password, so
+// only the closed spaces that asked to say a message came while another is open are waited on
+// (lib/closed-notices.ts), with the same notice, never which space, until a space opens
+// (startBackground). With none, or the messages notice off, it stops at once. Android runs it as a
+// task with no screen (registered in index.js), which lasts as long.
+let bootStop: (() => void) | null = null;
+
+/** Whether Erevos can start by itself as the phone turns on: Android, in a build with it. */
+export const canStartAtBoot = canRingInBackground && !!callAudio?.setBootStart;
+
+/** Whether Erevos starts by itself as the phone turns on: the phone's choice, off unless chosen. */
+export function loadBootStart(): boolean {
+  try {
+    return callAudio?.bootStart?.() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+export function saveBootStart(on: boolean): void {
+  try {
+    callAudio?.setBootStart?.(on);
+  } catch {
+    // A build from before it: nothing to keep.
+  }
+}
+
+const spaceOpen = () => {
+  try {
+    currentSpace();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** The task Erevos runs as it starts by itself (index.js): ends once a space opens, or at once with nothing to wait for. */
+export function startBootNotices(): Promise<void> {
+  return new Promise<void>((done) => {
+    void (async () => {
+      if (spaceOpen() || bootStop) return done();
+      // No screen of Erevos ran yet (app/_layout.tsx does this as it loads), so the encryption and
+      // the core are set up here, and the relay connections kept from loading the WebView.
+      setupCrypto();
+      try {
+        callAudio?.noCookies?.();
+      } catch {
+        // A build from before it.
+      }
+      await cryptoReady();
+      const [notices, doors] = await Promise.all([loadMessageNotices(), openDoors(-1).catch(() => [])]);
+      if (spaceOpen()) return done();
+      if (!notices || doors.length === 0) {
+        // Nothing to say while closed: the service and its notice go.
+        try {
+          callAudio?.stopReceiving?.();
+        } catch {
+          // Gone with Erevos anyway.
+        }
+        return done();
+      }
+      telling = true;
+      const closed = startClosedNotices((count, space) => messageCame(false, screenOfSpace(space), screenOfSpace(space), count), true);
+      bootStop = () => {
+        bootStop = null;
+        closed();
+        done();
+      };
+    })().catch(() => done());
+  });
+}
+
 /**
  * Receives in the background for the open space while this phone rings in the background, and
  * follows the switch. Returns how to stop. Android lets it start only while Erevos shows, as it
@@ -336,6 +411,8 @@ export function noticesAsked(): Promise<void> {
  */
 export function startBackground(): () => void {
   if (!canRingInBackground) return () => undefined;
+  // A space opened after Erevos started by itself: it waits as ever from now on.
+  bootStop?.();
   let stopped = false;
   let running = false;
   // Android refused to start the receiving, as Erevos had already left the screen: it tries again

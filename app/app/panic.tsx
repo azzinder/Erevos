@@ -5,17 +5,21 @@
 import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 
+import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { folderLabel, loadAutoBackup, type AutoBackup } from '../lib/backup-folder';
 import { t } from '../lib/i18n';
 import { allowPanicApp, CAN_PANIC_APP, CAN_WIPE, forgetPanicApp, panicState, refusePanicApp, renewPanicApp, seenPanicRefused, setPanic, wipeNow, WIPE_BACKUPS_HERE, type PanicState } from '../lib/panic';
+import { isPasswordLocked, loadLockConfig, removePanicPassword, setPanicPassword } from '../lock/config';
 import { useTheme } from '../theme/context';
 
 // The panic button (Settings → Privacy and security → Panic button, lib/panic.ts): wipe everything
 // Erevos keeps here now, and, on Android, let a panic app the owner trusts do it (PanicKit). A
 // panic app that asks to be the one opens this screen, after the password, where the owner says
-// yes or no; it is trusted only then, and only while the switch is on.
+// yes or no; it is trusted only then, and only while the switch is on. With the password lock on,
+// a panic password can be set here (lock/config.ts): typed on the lock screen, it wipes the same.
+// Erevos keeps nothing that shows whether one is set, so this screen cannot say either.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 const two = (n: number) => String(n).padStart(2, '0');
@@ -33,10 +37,14 @@ export default function Panic() {
   const [wiping, setWiping] = useState(false);
   // On a computer or Sailfish OS, whether the automatic backups go too (no panic app there).
   const [backupsHere, setBackupsHere] = useState(false);
+  // Whether the lock screen asks for a password: only then can a panic password be typed.
+  const [locked, setLocked] = useState(false);
+  const [settingPanic, setSettingPanic] = useState(false);
 
   const reload = () => setState(panicState());
   useEffect(() => {
     void loadAutoBackup().then(setAuto);
+    void loadLockConfig().then((config) => setLocked(isPasswordLocked(config)), () => setLocked(false));
     // A panic app may ask while this screen shows (it opens Erevos again).
     const sub = AppState.addEventListener('change', (now) => {
       if (now === 'active') reload();
@@ -95,6 +103,18 @@ export default function Panic() {
     reload();
   }
 
+  async function panicPasswordSet(password: string) {
+    await setPanicPassword(password);
+    setSettingPanic(false);
+    say(t('Panic password set. Typed on the lock screen, it wipes Erevos.'));
+  }
+
+  async function panicPasswordOff() {
+    if (!(await confirm(t('Turn off the panic password'), t('Typed on the lock screen, it will then be only a wrong password.'), t('Turn off')))) return;
+    await removePanicPassword();
+    say(t('No panic password now.'));
+  }
+
   async function wipe() {
     const withBackups = !!folder && (WIPE_BACKUPS_HERE ? backupsHere : !!state?.backups);
     const backups = withBackups ? ` ${t('The automatic backups in {folder} go too.', { folder: folderLabel(folder) })}` : '';
@@ -135,6 +155,33 @@ export default function Panic() {
           <Text tone="muted">{t('Here Erevos cannot wipe itself: delete its data from the computer instead.')}</Text>
         )}
       </Card>
+
+      {CAN_WIPE && locked ? (
+        <>
+          <SectionTitle title={t('Panic password')} />
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('A password of its own that, typed on the lock screen, wipes Erevos as the button above does. The screen then looks as after a wrong password, and checking it takes as long as any other. It must differ from every password of your spaces.')}
+            </Text>
+            <Text variant="caption" tone="muted" style={hint}>
+              {t('Erevos keeps nothing that shows whether one is set, so this screen cannot say either. Setting it again replaces the one before.')}
+            </Text>
+            <Row wrap>
+              <Button title={t('Set the panic password')} compact onPress={() => setSettingPanic(true)} />
+              <Button title={t('Turn off the panic password')} kind="secondary" compact onPress={() => void panicPasswordOff()} />
+            </Row>
+          </Card>
+          <PasswordSheet
+            visible={settingPanic}
+            title={t('Panic password')}
+            repeat
+            hint={t('Typed on the lock screen, it wipes everything Erevos keeps here.')}
+            submitLabel={t('Save')}
+            onClose={() => setSettingPanic(false)}
+            onSubmit={panicPasswordSet}
+          />
+        </>
+      ) : null}
 
       {CAN_PANIC_APP && state ? (
         <>

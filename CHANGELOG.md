@@ -18,7 +18,37 @@ On main, not released yet:
 
 ## 4.0.0-rc.6 (2026-10-31)
 
+### For you
+
+- **Panic password**: with the password lock on, **Settings** → **Privacy and security** → **Panic button** →
+  **Set the panic password** sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe
+  everything now** does, while the screen shows **Wrong password**. It must open no space, nothing kept shows whether
+  one is set, and checking it takes as long as any password. See [Panic button](#panic).
+- **Calculator in place of Erevos**: on Android, under **Settings** → **Appearance** → **Launcher icons**, a
+  calculator that works can take the place of Erevos's icon among the phone's apps; your code of 4 to 12 digits, then
+  **=**, opens Erevos, which asks for its password as always. **Show Erevos's icon again** brings it back. See
+  [Appearance](#appearance).
+- **Start when the phone turns on**: on Android, under **Settings** → **Notifications** → **In the background**,
+  Erevos can start by itself after the phone turns on, with no space open, so the spaces set to say a message came
+  while closed already say "New message", never which space or what. Off unless you choose it. See [Chat through a relay](#relay).
+
 ### Under the hood
+
+- **The wait after wrong passwords goes by a clock no one can set**: `lock/tries.ts` measured it by the date and
+  time, so moving the phone's clock forward ended it. It now measures it on Android's time since the phone started
+  (`clock` in `modules/erevos-device`, `SystemClock.elapsedRealtime` with Android's count of starts), and in the web
+  app and on a computer on the page's own clock; after a restart, when the time waited cannot be known, the wait starts
+  again from its beginning. A wait kept by an older version is measured anew the same way.
+- **The panic password is checked as one more slot**: `lock/config.ts` keeps it in `erevos.lock-panic`, shaped like a
+  password slot whose key opens nothing, random from the first start until one is set, and compares every password
+  with it as with the slots (PBKDF2, then Argon2id), so the time of a check is the same set or not.
+- **Notices open Erevos itself also behind the calculator**: `MainActivity` now has Android's `INFO` category, so what
+  opens Erevos from a notice finds it while its launcher icons are off (`plugins/with-launcher-icons.js`). The
+  calculator (`CalculatorActivity` in `modules/erevos-icons`) is a task of its own and keeps only a salted SHA-256 of
+  its code.
+- **Starting with the phone**: a receiver for `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED` (`BootStart.kt` in
+  `modules/erevos-call`) starts the receiving service and, in it, a task with no screen (`index.js`,
+  `startBootNotices` in `lib/background.ts`) that waits on the closed spaces' doors until a space opens.
 
 - **People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app,
   **Show the people you follow** found no list (on the Pixel, 4.0.0-rc.5): it looked only on the space's relays and

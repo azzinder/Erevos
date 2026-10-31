@@ -31,7 +31,7 @@ export const panic: Record<string, string> = {
   "Also the automatic backups in {folder}": "Auch die automatischen Backups in {folder}",
   "This build of Erevos cannot be wiped by a panic app. Update Erevos for it.": "Diese Erevos-Version kann nicht von einer Panik-App gelöscht werden. Aktualisiere Erevos dafür.",
   "Panic button": "Panikknopf",
-  "Wipe Erevos at once, from here or from a panic app": "Erevos sofort löschen, von hier oder aus einer Panik-App",
+  "Wipe Erevos at once, from here, a panic app or a panic password": "Erevos sofort löschen, von hier, aus einer Panik-App oder mit einem Panik-Passwort",
   "Erevos cannot wipe itself here.": "Hier kann Erevos sich nicht selbst löschen.",
   "Trust {app} as it is now": "{app} so vertrauen, wie es jetzt ist",
   "{app} is now signed with another key, so Erevos does not let it wipe. Say yes only if you updated it yourself from where you got it; another app under its name could be the one asking.": "{app} ist jetzt mit einem anderen Schlüssel signiert, deshalb lässt Erevos es nicht löschen. Sag nur ja, wenn du es selbst von dort aktualisiert hast, woher du es hast; es könnte eine andere App unter seinem Namen sein, die fragt.",

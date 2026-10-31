@@ -90,8 +90,8 @@ async function phone() {
 
 t('puts everything back: the lock opens the same space, with its relay, messages, voice and stickers', async () => {
   const { key, clip, photo, sticker } = await phone();
-  // Everything but the wrong tries, which stay with the phone.
-  const before = new Map([...store].filter(([name]) => name !== 'erevos.lock-tries'));
+  // Everything but the wrong tries and the panic password's place, which stay with the phone.
+  const before = new Map([...store].filter(([name]) => name !== 'erevos.lock-tries' && name !== 'erevos.lock-panic'));
   const file = await makeBackup(await backupKey('backup-pass'));
 
   wipe();

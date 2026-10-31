@@ -234,7 +234,7 @@ em grupos, como fazem as configurações do próprio celular. Nos outros idiomas
 | **Geral** | **Idioma**, **Atualizações**, **Dar o Erevos a um telefone próximo** (Android), **Novidades**, **Sobre o Erevos**, **Apoiar o Erevos** e **Permissões** (Android e o app web). Veja Idioma abaixo, [Atualizações](#updates) e [O Erevos para um telefone próximo](#give-app). |
 | **Aparência** | **Estilo e cores** (acabamento, vidro, estilo, tema, cores e texto em áreas coloridas, com a prévia), **Papel de parede**, **Mensagens** (o formato dos balões), **Ícones do launcher** (Android) e **Widget** (Android). Veja [Aparência](#appearance). |
 | **Notificações** | **Em segundo plano** (Android e o app de computador): receber e tocar enquanto o Erevos está fechado, e o aviso de mensagens; num computador, se o Erevos continua rodando com a janela fechada. **Notificações com o app fechado** (o app web): Web Push. **Número no ícone**: quantas mensagens não foram lidas, no ícone do Erevos. Veja [Num iPhone](#iphone) e [Num computador](#desktop). |
-| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico**, **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). Veja também [Apagar-me de todos os lugares](#forget). |
+| **Privacidade e segurança** | **Bloqueio e segunda senha** (bloquear ao abrir o Erevos, a senha, a privacidade da tela, impressão digital ou rosto, a segunda senha), **Conversas ocultas** (os PINs das 4 posições), **Botão de pânico** (com a senha de pânico), **Calculadora no lugar do Erevos** (Android, em Aparência), **Capturas de tela** (Android) e **Este app web** (só no app web). Veja [Bloqueio com senha](#lock), [Segunda senha](#second), [Conversas ocultas](#hidden) e [Botão de pânico](#panic). Veja também [Apagar-me de todos os lugares](#forget). |
 | **Relay e redes** | **Relay** (abre **Nova conversa** com **Para usuários avançados** aberto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Rádio LoRa** (Android), **Matrix**, **XMPP** e **Conversas Nostr**. Veja [Conversar por um relay](#relay), [Relay de casa](#home-relay), [Pelo Tor](#tor), [Pelo Nostr](#nostr), [Por um rádio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Conversas com outros apps Nostr](#nostr-chats). |
 | **Telefone e SMS** (Android) | **Telefone**, as configurações do app de telefone, as mesmas de **Telefone** → **Configurações**. **SMS**, em partes: **O Erevos como app de SMS**, **Descobrir o Erevos num número**, **SMS quando nada mais funciona**, **Nomes dos seus contatos**, **Arquivadas, Spam e Lixeira**, **Filtro de spam**, **Números bloqueados**, **Desfazer envio de SMS**, **Dois chips** (só com dois chips) e **Novo SMS**. Veja [Telefone](#phone) e [SMS](#sms). |
 | **Dados e dispositivos** | **Backups**, **Partes do backup**, **Dispositivos conectados** e **Conversas importadas**. Veja [Backups](#backup), [Partes do backup com amigos](#backup-pieces), [Dispositivos conectados](#devices) e [Conversas importadas](#import). |
@@ -1146,6 +1146,17 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   delas, senão as mensagens deles não diriam nada. O custo é que o relay dele pode perceber que os dois espaços estão
   num mesmo celular, e alguém que examine o celular com ferramentas pode descobrir que um segundo espaço guarda
   endereços ali, e quantos contatos ele tem.
+- **Quando o celular liga:** depois que o celular inicia, o Erevos não roda até você abri-lo. Com **Iniciar quando o
+  celular ligar** em **Configurações** → **Notificações** → **Em segundo plano** (o padrão é **Esperar até eu
+  abrir**), ele inicia sozinho depois que o celular liga, ou depois que o Erevos é atualizado, sem nenhum espaço
+  aberto: nenhum espaço pode abrir sem a senha dele, pois o Erevos não guarda nenhuma chave no celular. Então os
+  espaços com **Também enquanto outro espaço está aberto** já dizem "New message", ou quantas chegaram, nunca qual
+  espaço, nem quem ou o quê, e um aviso discreto diz "Locked". As chamadas não tocam, e nada mais chega, até você
+  abrir um espaço; os espaços que passam pelo Tor não dizem nada até lá. Sem nenhum espaço assim, ou com **Sem
+  aviso**, ele para na hora. Só no Android.
+
+  **Por quê:** depois de um reinício o Erevos não podia avisar que há mensagens esperando até você por acaso abri-lo.
+  Sem a sua senha ele continua sem poder lê-las, então não diz mais do que um espaço fechado diz.
 - **Onde ele não consegue tocar:** parado pelo Android (ou pela economia de bateria do celular, ou pela configuração
   própria do fabricante do celular), depois de o celular reiniciar até você abrir o Erevos e o espaço uma vez, em outro
   espaço (ele só diz que chegou uma mensagem, se você permitir, como acima), ou num computador ou no app web enquanto
@@ -2290,7 +2301,11 @@ duas opções: **Sem bloqueio** e **Senha**.
   nele para ver o que você digita, e de novo para esconder. Ele volta a ficar escondido cada vez que o campo aparece
   de novo, e no Android o teclado é instruído a não aprendê-lo.
 - **Senhas erradas:** depois de 5 tentativas erradas, cada nova faz você esperar, 30 segundos no início e o dobro a
-  cada vez, até uma hora. A contagem sobrevive a um reinício.
+  cada vez, até uma hora. A contagem sobrevive a um reinício. A espera segue o relógio próprio do celular desde que
+  ele ligou, que ninguém pode ajustar, então adiantar a data e a hora não a encerra; se o celular for desligado e
+  ligado durante uma espera, ele a espera de novo desde o começo, pois o tempo já esperado não pode ser conhecido. No
+  app web e num computador ela funciona do mesmo jeito enquanto o Erevos continua aberto, e recomeça do começo quando
+  o Erevos abre de novo.
 - **O que é selado:** os contatos de cada espaço, as chaves das conversas dele, as mensagens, as configurações do
   relay e a aparência dele ficam no celular selados com uma chave que só a senha dele abre.
 - **A lista na hora:** a tela inicial guarda uma cópia selada das primeiras linhas dela, para que a lista apareça
@@ -2300,7 +2315,7 @@ duas opções: **Sem bloqueio** e **Senha**.
 **Por quê:** cada senha testada custa tempo e muita memória de propósito (PBKDF2, depois Argon2id), para que quem copia
 o que o celular guarda não possa testar senhas rápido; e alguém com o celular na mão espera mais depois de cada
 tentativa errada. A contagem é uma só para o celular inteiro, mantida entre reinícios, pois a tela da senha vem antes
-de qualquer espaço abrir.
+de qualquer espaço abrir, e a espera é medida onde mexer no relógio não pode encurtá-la.
 
 > Não há como recuperar uma senha esquecida: nada é guardado que possa abrir os dados sem ela. Só uma impressão
 > digital ou rosto, enquanto estiver ativada, ainda abre o primeiro espaço (veja abaixo).
@@ -2701,6 +2716,32 @@ no Sailfish OS.
 **Por quê:** numa fronteira ou numa prisão pode não haver tempo de abrir cada conversa. Um toque, ou o gesto de um app
 de pânico, não deixa nada para abrir.
 
+### Senha de pânico
+
+Com o bloqueio com senha ativado, a mesma tela oferece uma **Senha de pânico**: uma senha própria que, digitada na
+tela de bloqueio, apaga o Erevos como **Apagar tudo agora**. No Android, no app web, num computador e no Sailfish OS.
+
+1. Toque em **Definir a senha de pânico**, digite-a duas vezes (pelo menos 4 caracteres) e toque em **Salvar**. Ela
+   precisa ser diferente de todas as senhas dos seus espaços: o Erevos recusa uma que abra um espaço, e a senha de
+   nenhum espaço poderá se tornar ela depois.
+2. Digitada na tela de bloqueio, ela mostra **Senha incorreta**, como qualquer senha errada, e o Erevos apaga tudo na
+   hora. No Android, o Erevos depois se fecha e da próxima vez abre como recém-instalado, e os backups automáticos na
+   pasta deles também são apagados quando **Também os backups automáticos em** está ligado em **Por um app de
+   pânico**; em outros lugares eles ficam.
+3. **Desativar a senha de pânico** faz dela de novo só uma senha errada. Defini-la de novo substitui a anterior.
+   Desativar o bloqueio com senha também a desativa.
+
+- **Nada a mostra:** o Erevos guarda um lugar para uma senha de pânico desde a primeira vez que inicia, aleatório até
+  que uma seja definida e com a mesma forma depois, e o confere com toda senha digitada na tela de bloqueio, do mesmo
+  jeito e pelo mesmo tempo. Então nem o que o celular guarda nem o tempo de uma conferência mostram se há uma
+  definida, e esta tela também não pode dizer: se você não tem certeza, defina-a de novo.
+- **Só na tela de bloqueio:** digitada em qualquer outro lugar onde o Erevos pede uma senha, ela é só uma senha
+  errada. Ela não vai nos backups: depois de restaurar um, defina-a de novo. Enquanto tentativas erradas fazem a tela
+  de bloqueio esperar (veja [Bloqueio com senha](#lock)), ela também espera.
+
+**Por quê:** alguém pode obrigar você a abrir o Erevos. Com uma senha de pânico você pode parecer dar a sua, e o que a
+pessoa veria já sumiu antes de a tela mudar.
+
 ## Apagar-me de todos os lugares {#forget}
 
 Quando você quiser que sumam os dados que os servidores guardam sobre você, em **Configurações** → **Privacidade e segurança**
@@ -2841,6 +2882,16 @@ texto seja sempre bem legível, também sobre o vidro.
   Cada toque abre o que o ícone dele nomeia, também quando o Erevos mostrava outro deles. A cor é do celular, não de
   cada espaço, pois os ícones aparecem antes de o Erevos ser desbloqueado. Depois de uma mudança, alguns launchers
   tiram o ícone da tela inicial: adicione-o de novo pela lista de apps.
+- **Calculadora no lugar do Erevos** (Android, em **Ícones do launcher**): uma calculadora que funciona aparece entre
+  os apps do celular em vez do ícone do Erevos. Toque em **Pôr a calculadora no lugar dele**, digite duas vezes um
+  código de 4 a 12 dígitos e toque em **Salvar**. Daí em diante, abra a calculadora, digite o código e depois **=**: o
+  Erevos abre, pedindo a senha dele como sempre. Qualquer outra conta é só uma conta. **Mudar o código** o muda;
+  **Mostrar de novo o ícone do Erevos** traz o ícone de volta, na cor dele, e esquece o código. Só o ícone fica
+  escondido: a lista de apps do Android, os avisos, os apps recentes e os ícones Telefone, SMS e Contatos continuam
+  mostrando o Erevos. O celular guarda só um hash do código: é uma porta, não a fechadura.
+
+  **Por quê:** quem der uma olhada no celular vê uma calculadora, não um mensageiro; a senha continua guardando o que
+  há dentro.
 - **Widget** (Android): a ordem dos quatro botões do widget, da esquerda para a direita, com o widget desenhado como
   vai ficar. Toque em ↑ ou ↓ para mover um botão; **Ordem inicial** os põe de volta.
 

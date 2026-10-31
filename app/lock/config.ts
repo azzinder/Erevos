@@ -168,6 +168,41 @@ async function save(config: LockConfig): Promise<void> {
   await secureSet(KEY, JSON.stringify(config));
 }
 
+// The panic password (Settings → Privacy and security → Panic button): typed on the lock screen,
+// it wipes Erevos as the panic button does (lib/panic.ts, lock/gate.tsx). It is kept apart from
+// the slots, as one more entry shaped like a slot, whose key opens nothing: there from the first
+// start (preparePanicPassword), random until one is set and again once it is turned off, and
+// checked with the slots each time a password is compared with them, the same way. So neither what
+// is stored nor how long a check takes shows whether a panic password is set. It must open no
+// space, and no space's password may be it (SamePasswordError).
+const PANIC_KEY = 'erevos.lock-panic';
+
+async function loadPanicSlot(iter: number): Promise<Slot> {
+  try {
+    const raw = await secureGet(PANIC_KEY);
+    const slot = raw ? (JSON.parse(raw) as unknown) : null;
+    if (isSlot(slot) && slot.hard) return slot;
+  } catch {
+    // Made anew below.
+  }
+  const slot = unusedSlot(iter);
+  await secureSet(PANIC_KEY, JSON.stringify(slot));
+  return slot;
+}
+
+/** The panic password's entry exists from the first start, random until one is set. */
+export async function preparePanicPassword(): Promise<void> {
+  // The slots' own count of rounds, so a check of it takes as long as one of theirs.
+  await loadPanicSlot((await loadLockConfig()).iter);
+}
+
+/** Typed on the lock screen, the panic password: wipe Erevos now (lib/panic.ts wipeNow). */
+export class PanicPasswordError extends Error {
+  constructor() {
+    super('panicPassword');
+  }
+}
+
 /** Whether the app asks for a password when it opens. */
 export function isPasswordLocked(config: LockConfig): boolean {
   return config.slots.length > 0 && config.direct === null;
@@ -226,17 +261,24 @@ function openSlot(config: LockConfig, index: number, keys: SlotKeys): Uint8Array
 // match, counting: throws LockedOutError while wrong passwords have made it wait, counts a miss
 // as one more and a hit as the end of the count. Every comparison with the slots goes through
 // here, since each one would tell whether a password opens some space.
-async function countedMatch(config: LockConfig, password: string, now: number): Promise<{ index: number; keys: SlotKeys | null }> {
+// The panic password is checked with the slots, as one more (`panic`: it was the one typed).
+async function countedMatch(config: LockConfig, password: string, now: number): Promise<{ index: number; keys: SlotKeys | null; panic: boolean }> {
   await assertNotLockedOut(now);
-  const result = await match(config, password);
+  const panicSlot = await loadPanicSlot(config.iter);
+  const result = await match({ ...config, slots: [...config.slots, panicSlot] }, password);
+  const panic = result.index === config.slots.length;
   if (result.index < 0) await recordWrongPassword(now);
   else await recordRightPassword();
-  return result;
+  return panic ? { index: -1, keys: null, panic } : { ...result, panic };
 }
 
-/** Which space a password opens, with its key, or null if it opens none. Throws LockedOutError while it must wait. */
+/**
+ * Which space a password opens, with its key, or null if it opens none. Throws LockedOutError while
+ * it must wait, and PanicPasswordError for the panic password.
+ */
 export async function unlock(config: LockConfig, password: string, now = Date.now()): Promise<Unlocked | null> {
-  const { index, keys } = await countedMatch(config, password, now);
+  const { index, keys, panic } = await countedMatch(config, password, now);
+  if (panic) throw new PanicPasswordError();
   if (index < 0 || !keys) return null;
   return { space: index, key: openSlot(config, index, keys) };
 }
@@ -262,8 +304,8 @@ export async function setLockPassword(space: number, password: string, spaceKey:
   const config = await current();
   // There is always a slot after this one, for its own second password.
   const slots = padded(config.slots, config.iter, space + 2);
-  const { index } = await countedMatch({ ...config, slots }, password, now);
-  if (index >= 0 && index !== space) throw new SamePasswordError();
+  const { index, panic } = await countedMatch({ ...config, slots }, password, now);
+  if ((index >= 0 && index !== space) || panic) throw new SamePasswordError();
   slots[space] = await sealSlot(password, spaceKey, config.iter);
   await save({ slots, direct: config.direct, iter: config.iter });
 }
@@ -275,7 +317,8 @@ export async function setLockPassword(space: number, password: string, spaceKey:
 export async function lockWithPassword(space: number, password: string, spaceKey: Uint8Array, now = Date.now()): Promise<Unlocked | null> {
   const config = await current();
   if (config.slots.length > 0) {
-    const { index, keys } = await countedMatch(config, password, now);
+    const { index, keys, panic } = await countedMatch(config, password, now);
+    if (panic) throw new SamePasswordError();
     if (index >= 0 && index !== space && keys) {
       const key = openSlot(config, index, keys);
       await save({ ...config, direct: null });
@@ -305,10 +348,28 @@ export async function removeSecondPassword(space: number): Promise<void> {
 export async function removePasswordLock(space: number, spaceKey: Uint8Array): Promise<void> {
   await saveOpenKey(space, spaceKey);
   await shutDoorsPast(space).catch(() => undefined);
+  // With no lock screen, no panic password: should the lock come back, none waits in it.
+  await removePanicPassword();
   if (space === 0) {
     await save(EMPTY);
     return;
   }
   const config = await current();
   await save({ slots: config.slots.map((slot, j) => (j > space ? unusedSlot(config.iter) : slot)), direct: space, iter: config.iter });
+}
+
+/**
+ * Sets the panic password: typed on the lock screen, it wipes Erevos. It must open no space; it is
+ * compared with every slot, and counted, as any password is.
+ */
+export async function setPanicPassword(password: string, now = Date.now()): Promise<void> {
+  const config = await current();
+  const { index } = await countedMatch(config, password, now);
+  if (index >= 0) throw new SamePasswordError();
+  await secureSet(PANIC_KEY, JSON.stringify(await sealSlot(password, randomBytes(32), config.iter)));
+}
+
+/** No panic password any more: its entry random again, as before one was set. */
+export async function removePanicPassword(): Promise<void> {
+  await secureSet(PANIC_KEY, JSON.stringify(unusedSlot((await loadLockConfig()).iter)));
 }

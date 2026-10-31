@@ -39,7 +39,9 @@ class ReceiveService : Service() {
     }
     receiving = true
     Notices.clearStopped(this)
-    val notice = Notices.receiving(this)
+    // Started by itself as the phone turned on (BootStart): no space is open yet, only closed ones wait.
+    val boot = intent.getBooleanExtra(BOOT, false)
+    val notice = Notices.receiving(this, waiting = boot)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
       // Also linked to phones nearby (Bluetooth, Wi-Fi Aware, the same Wi-Fi), as Android asks a
       // service that keeps such links to say; without what that needs, only the relay's.
@@ -57,6 +59,7 @@ class ReceiveService : Service() {
     }
     instance = this
     holdPower()
+    if (boot) BootStart.startTask(this)
     // Started again by Android if it closes Erevos, only to say so (above): the keys are in the
     // app's memory only, so a service started again alone could open nothing.
     return START_STICKY
@@ -109,8 +112,16 @@ class ReceiveService : Service() {
     // alarm left from a process Android closed finds no service, and sets no next one.
     fun looks(): Boolean = sleepy && instance != null
 
+    private const val BOOT = "boot"
+
     fun start(context: Context) {
       val intent = Intent(context, ReceiveService::class.java)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
+    }
+
+    /** As the phone turned on, or Erevos was updated (BootReceiver): no space open, the app's code started in it. */
+    fun startAtBoot(context: Context) {
+      val intent = Intent(context, ReceiveService::class.java).putExtra(BOOT, true)
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
     }
 

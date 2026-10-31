@@ -15,10 +15,14 @@ import {
   isPasswordLocked,
   loadLockConfig,
   lockWithPassword,
+  PanicPasswordError,
+  preparePanicPassword,
+  removePanicPassword,
   removePasswordLock,
   removeSecondPassword,
   SamePasswordError,
   setLockPassword,
+  setPanicPassword,
   SLOTS,
   unlock,
 } from '../lock/config';
@@ -26,7 +30,7 @@ import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden,
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
 import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { POCKETS } from '../lock/sealed-file';
-import { assertNotLockedOut, FREE_TRIES, LockedOutError, SEARCH_TRIES } from '../lock/tries';
+import { assertNotLockedOut, FREE_TRIES, LockedOutError, recordRightPassword, recordWrongPassword, SEARCH_TRIES, setUptimeForChecks, type Uptime } from '../lock/tries';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
 
@@ -99,8 +103,9 @@ t('stores the same, and takes the same work, with or without a second password',
     for (const password of ['real-1111', 'decoy-2222', 'wrong']) {
       derivations = 0;
       const hard = await hardCalls(() => unlock(c, password));
-      assert.equal(derivations, SLOTS, password);
-      if (core) assert.equal(hard, SLOTS, password);
+      // Every slot, and the panic password's entry, set or not.
+      assert.equal(derivations, SLOTS + 1, password);
+      if (core) assert.equal(hard, SLOTS + 1, password);
     }
   } finally {
     subtle.deriveBits = deriveBits;
@@ -256,6 +261,94 @@ t('makes wrong passwords wait, longer each time, and a right one ends the wait',
   assert.equal((await unlock(c, 'real-1111', now + 31_000 + 63_000))?.space, 0);
 });
 
+t('the panic password wipes from the lock screen, opens nothing, and its entry looks the same set or not', async () => {
+  await preparePanicPassword();
+  const shapeOf = () => (store.get('erevos.lock-panic') ?? '').replace(/"[^"]{16,}"/g, '"…"');
+  const unset = shapeOf();
+  assert.ok(unset.length > 0, 'there from the first start');
+  await setLockPassword(0, 'real-1111', real);
+  await setLockPassword(1, 'decoy-2222', decoy);
+  // It must open no space.
+  await assert.rejects(setPanicPassword('real-1111'), SamePasswordError);
+  await assert.rejects(setPanicPassword('decoy-2222'), SamePasswordError);
+  await setPanicPassword('panic-9999');
+  assert.equal(shapeOf(), unset, 'set, it is shaped as when it was not');
+  const c = await loadLockConfig();
+  await assert.rejects(unlock(c, 'panic-9999'), PanicPasswordError);
+  assert.equal((await unlock(c, 'real-1111'))?.space, 0);
+  assert.equal((await unlock(c, 'decoy-2222'))?.space, 1);
+  assert.equal(await unlock(c, 'wrong-0000'), null);
+  // No space's password may become it.
+  await assert.rejects(setLockPassword(0, 'panic-9999', real), SamePasswordError);
+  await assert.rejects(setLockPassword(1, 'panic-9999', decoy), SamePasswordError);
+  // Turned off, it is only a wrong password.
+  await removePanicPassword();
+  assert.equal(shapeOf(), unset);
+  assert.equal(await unlock(c, 'panic-9999'), null);
+  // Turning the lock off takes it along, so a lock set again later has none waiting.
+  await setPanicPassword('panic-9999');
+  await removePasswordLock(0, real);
+  await setLockPassword(0, 'real-1111', real);
+  assert.equal(await unlock(await loadLockConfig(), 'panic-9999'), null);
+});
+
+t('the wait for wrong passwords goes by the clock the owner cannot set, and a new start of the phone starts it again', async () => {
+  let clock: Uptime = { up: 1_000_000, boot: 'count:7' };
+  setUptimeForChecks(() => clock);
+  try {
+    const now = realNow();
+    for (let i = 0; i < FREE_TRIES; i++) await recordWrongPassword(now);
+    await assert.rejects(assertNotLockedOut(now), LockedOutError);
+    // The date and time moved a day forward: the wait goes on, as the phone's own clock has not moved.
+    await assert.rejects(assertNotLockedOut(now + 24 * 3600_000), LockedOutError);
+    // And moved back: no longer either.
+    clock = { up: 1_000_000 + 29_000, boot: 'count:7' };
+    await assert.rejects(assertNotLockedOut(now - 3600_000), (e: LockedOutError) => e.until === now - 3600_000 + 1000);
+    // Once 30 s really passed, the check runs, whatever the date says.
+    clock = { up: 1_000_000 + 30_000, boot: 'count:7' };
+    await assertNotLockedOut(now - 3600_000);
+    // Over, and kept so: starting the phone again does not start it again.
+    clock = { up: 5_000, boot: 'count:8' };
+    await assertNotLockedOut(now);
+    // The next wrong one waits a minute; the phone starts again 10 s in, with the clock moved two hours forward.
+    await recordWrongPassword(now);
+    clock = { up: 15_000, boot: 'count:8' };
+    await assert.rejects(assertNotLockedOut(now + 10_000), LockedOutError);
+    clock = { up: 2_000, boot: 'count:9' };
+    // How much passed cannot be known: the whole minute again, from here.
+    await assert.rejects(assertNotLockedOut(now + 2 * 3600_000), (e: LockedOutError) => e.until === now + 2 * 3600_000 + 60_000);
+    clock = { up: 2_000 + 59_000, boot: 'count:9' };
+    await assert.rejects(assertNotLockedOut(now + 2 * 3600_000), LockedOutError);
+    clock = { up: 2_000 + 60_000, boot: 'count:9' };
+    await assertNotLockedOut(now);
+    // A clock that went back on the same start is a new start too.
+    await recordWrongPassword(now);
+    clock = { up: 1_000, boot: 'count:9' };
+    await assert.rejects(assertNotLockedOut(now), (e: LockedOutError) => e.until === now + 120_000);
+    // A right password ends the count.
+    await recordRightPassword();
+    await assertNotLockedOut(now);
+    assert.deepEqual(JSON.parse(store.get('erevos.lock-tries') ?? ''), { fails: 0, until: 0, wait: 0, up: 0, boot: '' });
+  } finally {
+    setUptimeForChecks(null);
+  }
+});
+
+t('a wait kept by a build before the clock is measured again from its beginning on it', async () => {
+  const now = realNow();
+  store.set('erevos.lock-tries', JSON.stringify({ fails: FREE_TRIES + 1, until: now + 5_000 }));
+  setUptimeForChecks(() => ({ up: 100, boot: 'count:1' }));
+  try {
+    await assert.rejects(assertNotLockedOut(now + 10_000), (e: LockedOutError) => e.until === now + 10_000 + 60_000);
+  } finally {
+    setUptimeForChecks(null);
+  }
+  // With no clock of the phone's own, the date and time, as before.
+  store.set('erevos.lock-tries', JSON.stringify({ fails: FREE_TRIES + 1, until: now + 5_000 }));
+  await assert.rejects(assertNotLockedOut(now), LockedOutError);
+  await assertNotLockedOut(now + 5_000);
+});
+
 t('a first start moves the chat settings kept before spaces into the first space, sealed', async () => {
   const older = { url: 'ws://172.22.140.150:7879', token: 't0ken', ownQueue: { recipientHex: 'a'.repeat(48), senderHex: 'b'.repeat(48) }, routes: { 'relay:x': 'c'.repeat(48) } };
   store.set('erevos.relay', JSON.stringify(older));
@@ -305,7 +398,7 @@ t('each space sees only its own data, and every entry looks alike', async () => 
   // The second space's key does not open the first one.
   assert.equal((await loadSpaceData(0, key1)).token, '');
   // The keystore entries are the same set as before the second password.
-  assert.deepEqual([...store.keys()].sort(), ['erevos.lock', 'erevos.lock-tries', 'erevos.space-keys', 'erevos.space.0', 'erevos.space.1', 'erevos.space.2', 'erevos.space.3']);
+  assert.deepEqual([...store.keys()].sort(), ['erevos.lock', 'erevos.lock-panic', 'erevos.lock-tries', 'erevos.space-keys', 'erevos.space.0', 'erevos.space.1', 'erevos.space.2', 'erevos.space.3']);
 });
 
 const opens = async (space: number, password: string) => (await openHidden(space, password))?.key ?? null;

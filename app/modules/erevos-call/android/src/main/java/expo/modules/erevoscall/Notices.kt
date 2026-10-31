@@ -167,13 +167,18 @@ object Notices {
   private fun builder(context: Context, channel: String): Notification.Builder =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(context, channel) else Notification.Builder(context)
 
-  fun receiving(context: Context): Notification {
+  // `waiting`: started by itself as the phone turned on (BootStart), with no space open, so only the
+  // closed spaces that asked for it say a message came.
+  fun receiving(context: Context, waiting: Boolean = false): Notification {
     channels(context)
     @Suppress("DEPRECATION")
     return builder(context, RECEIVING_CHANNEL)
       .setSmallIcon(R.drawable.erevos_call_notice)
       .setContentTitle("Erevos")
-      .setContentText(say(context, "Ready for calls and messages", "Έτοιμο για κλήσεις και μηνύματα"))
+      .setContentText(
+        if (waiting) say(context, "Locked: says only that messages came", "Κλειδωμένο: λέει μόνο ότι ήρθαν μηνύματα")
+        else say(context, "Ready for calls and messages", "Έτοιμο για κλήσεις και μηνύματα"),
+      )
       .setOngoing(true)
       .setShowWhen(false)
       .setPriority(Notification.PRIORITY_MIN)

@@ -16,6 +16,10 @@ export const LAUNCHER_COLORS: LauncherColor[] = ['red', 'orange', 'green', 'blue
 const native = requireOptionalNativeModule<{
   colors(): Record<string, string> | null;
   setColor(icon: string, color: string): boolean;
+  // Missing in a build before the calculator.
+  calculator?(): boolean | null;
+  setCalculator?(code: string): boolean;
+  calculatorOff?(): boolean;
 }>('ErevosIcons');
 
 /** Each icon's colour as the launcher shows it now, or null where there is no choice. */
@@ -35,6 +39,33 @@ export function launcherColors(): Record<LauncherIcon, LauncherColor> | null {
 export function setLauncherColor(icon: LauncherIcon, color: LauncherColor): boolean {
   try {
     return native?.setColor(icon, color) ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether a calculator stands in place of Erevos's icon (CalculatorActivity.kt); null where it cannot. */
+export function calculatorOn(): boolean | null {
+  try {
+    return native?.calculator?.() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** A calculator in place of Erevos's icon, opening Erevos with `code` then =; or a new code for it. */
+export function setCalculator(code: string): boolean {
+  try {
+    return native?.setCalculator?.(code) ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/** Erevos's own icon again, and no calculator. */
+export function calculatorOff(): boolean {
+  try {
+    return native?.calculatorOff?.() ?? false;
   } catch {
     return false;
   }

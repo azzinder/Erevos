@@ -28,8 +28,13 @@ export const NEXT: Changes = {
 export const VERSIONS: WhatsNew[] = [
   {
     version: '4.0.0-rc.6',
-    forYou: [],
+    forYou: [
+      mark("**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic)."),
+      mark("**Calculator in place of Erevos**: on Android, under Launcher icons, a calculator that works can take the place of Erevos's icon; your code, then **=**, opens Erevos, which asks for its password as always. See [Appearance](#appearance)."),
+      mark("**Start when the phone turns on**: on Android, under In the background, Erevos can start by itself after the phone turns on, so the spaces set to say a message came while closed already say \"New message\", never which space or what. Off unless you choose it. See [Chat through a relay](#relay)."),
+    ],
     underTheHood: [
+      mark("**Moving the clock no longer ends the wait after wrong passwords**: it goes by the phone's own time since it started, which no one can set; after a restart it starts again from its beginning. See [Password lock](#lock)."),
       mark("**People you follow on Nostr, found where your other app keeps them**: with a key brought from another Nostr app, **Show the people you follow** also looks on the relays your key writes on, and says so when no relay answered. See [Chats with other Nostr apps](#nostr-chats)."),
       mark("**Your Nostr name keeps the rest of your profile**: saving **Your name** changes only the name in your profile; a picture or words that another app of your key put there stay. Before, they could be wiped. See [Chats with other Nostr apps](#nostr-chats)."),
       mark("**Screens come down when no keyboard is open, in every case**: the home screen's list and buttons, or a chat, could still stay up as if a keyboard were open after it had gone. Now Erevos asks Android itself whether a keyboard is shown, and with none they come down within a second."),

@@ -23,8 +23,11 @@ import {
   askFullScreen,
   backgroundState,
   canRingInBackground,
+  canStartAtBoot,
+  loadBootStart,
   loadMessageNotices,
   loadRingInBackground,
+  saveBootStart,
   saveMessageNotices,
   saveRingInBackground,
 } from '../lib/background';
@@ -332,6 +335,8 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   const [doorSaid, setDoorSaid] = useState('');
   const [allowed, setAllowed] = useState(backgroundState);
   const [battery, setBattery] = useState<BatteryMode>('normal');
+  // Whether Erevos starts by itself as the phone turns on (lib/background.ts): the phone's choice.
+  const [boot, setBoot] = useState(loadBootStart);
 
   useEffect(() => {
     loadBatteryMode().then(setBattery);
@@ -358,6 +363,11 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   function chooseNotices(next: boolean) {
     setNotices(next);
     void saveMessageNotices(next).then(() => setAllowed(backgroundState()));
+  }
+
+  function chooseBoot(next: boolean) {
+    saveBootStart(next);
+    setBoot(loadBootStart());
   }
 
   function chooseDoor(next: boolean) {
@@ -407,6 +417,19 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
               (door
                 ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its contacts are, or its messages, and its relay may tell that the two spaces are on one phone. If this space goes through Tor (Messages, the default, or Everything), it is asked about only through Tor: while the open space has Tor off, or its Tor is starting or has just failed, this one says nothing, and what came is told once Tor is ready there.')
                 : t('Closed, this space receives nothing: its messages wait at its relay and come when it opens.'))}
+          </Text>
+        </>
+      ) : null}
+      {on && notices && canStartAtBoot ? (
+        <>
+          <Row wrap>
+            <Chip label={t('Start when the phone turns on')} selected={boot} onPress={() => chooseBoot(true)} />
+            <Chip label={t('Wait until I open it')} selected={!boot} onPress={() => chooseBoot(false)} />
+          </Row>
+          <Text variant="caption" tone="muted" style={hint}>
+            {boot
+              ? t('After the phone turns on, or Erevos is updated, Erevos starts by itself, with no space open: the spaces set to say a message came also while another is open already say "New message", never which space, nor who or what. Everything else waits for a password, as Erevos keeps no key on the phone. Meanwhile a quiet notice says "Locked". Spaces that go through Tor say nothing until a space is open. With no such space, it stops at once.')
+              : t('After the phone turns on, Erevos waits until you open it.')}
           </Text>
         </>
       ) : null}

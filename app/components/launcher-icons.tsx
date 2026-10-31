@@ -7,20 +7,25 @@ import { Image, Pressable, StyleSheet, View, type ImageSourcePropType } from 're
 
 import { mark, t } from '../lib/i18n';
 import {
+  calculatorOff,
+  calculatorOn,
   LAUNCHER_COLORS,
   LAUNCHER_ICONS,
   launcherColors,
+  setCalculator,
   setLauncherColor,
   type LauncherColor,
   type LauncherIcon,
 } from '../modules/erevos-icons';
 import { radius, space, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
-import { Card, SectionTitle, Text } from './ui';
+import { PasswordSheet } from './PasswordSheet';
+import { Button, Card, Row, SectionTitle, Text } from './ui';
 
 // Appearance → Launcher icons: the colour of each of Erevos's icons in the phone's apps (Erevos,
 // Phone, SMS, Contacts), each drawn in every colour to pick from. Android only, and the phone's
-// choice, not a space's (modules/erevos-icons).
+// choice, not a space's (modules/erevos-icons). Below them, a working calculator can stand in place
+// of Erevos's icon (CalculatorChoice): its code, then =, opens Erevos.
 
 const ICON_LABELS: Record<LauncherIcon, string> = { erevos: 'Erevos', phone: mark('Phone'), sms: 'SMS', contacts: mark('Contacts') };
 const COLOR_LABELS: Record<LauncherColor, string> = {
@@ -111,7 +116,70 @@ export function LauncherIcons({ titled = true }: { titled?: boolean }) {
       <Text variant="caption" tone="muted" style={styles.hint}>
         {t('After a change some launchers take the icon off the home screen: add it again from the list of apps. The change shows within a few seconds.')}
       </Text>
+      <CalculatorChoice />
     </>
+  );
+}
+
+/** The fewest and most digits of the calculator's code. */
+const CODE = /^\d{4,12}$/;
+
+// A calculator that works, among the phone's apps in place of Erevos's icon, on or off; its code
+// opens Erevos. Nothing where this build cannot.
+function CalculatorChoice() {
+  const styles = useStyles(makeStyles);
+  const [on, setOn] = useState(calculatorOn);
+  const [asking, setAsking] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  if (on === null) return null;
+
+  async function save(code: string) {
+    if (!CODE.test(code)) throw new Error(t('Use digits only, 4 to 12 of them.'));
+    if (!setCalculator(code)) throw new Error(t('The calculator could not be set. Try again.'));
+    const was = on;
+    setOn(calculatorOn());
+    setAsking(false);
+    setNote(was ? t('New code saved.') : t("Done. Within a few seconds Erevos's icon leaves the phone's apps, and the calculator takes its place: open Erevos from it from now on."));
+  }
+
+  function off() {
+    if (!calculatorOff()) return;
+    setOn(calculatorOn());
+    setNote(t("Erevos's icon is back among the phone's apps."));
+  }
+
+  return (
+    <Card>
+      <Text variant="bodyStrong">{t('Calculator in place of Erevos')}</Text>
+      <Text variant="caption" tone="muted" style={styles.hint}>
+        {t("A calculator that works shows among the phone's apps instead of Erevos's icon. Type your code in it, then =, and Erevos opens, asking for its password as always. Only the icon is hidden: Android's list of apps, the notices and the recent apps still say Erevos.")}
+      </Text>
+      {on ? <Text>{t('On: the calculator stands in place of Erevos.')}</Text> : null}
+      <Row wrap>
+        {on ? (
+          <>
+            <Button title={t('Change the code')} compact onPress={() => setAsking(true)} />
+            <Button title={t("Show Erevos's icon again")} kind="secondary" compact onPress={off} />
+          </>
+        ) : (
+          <Button title={t('Put the calculator in its place')} compact onPress={() => setAsking(true)} />
+        )}
+      </Row>
+      {note ? (
+        <Text variant="caption" tone="muted" style={styles.hint}>
+          {note}
+        </Text>
+      ) : null}
+      <PasswordSheet
+        visible={asking}
+        title={t('Calculator code')}
+        repeat
+        hint={t('Digits only, 4 to 12 of them. Type them in the calculator, then =.')}
+        submitLabel={t('Save')}
+        onClose={() => setAsking(false)}
+        onSubmit={save}
+      />
+    </Card>
   );
 }
 

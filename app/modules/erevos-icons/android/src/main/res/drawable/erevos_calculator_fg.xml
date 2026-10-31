@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
+<!-- In the 66 dp middle every launcher shape keeps. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+  <group android:pivotX="54" android:pivotY="54" android:scaleX="1.2" android:scaleY="1.2">
+    <path android:fillColor="#FFFFFF" android:pathData="M32,38h16v4h-16z M38,32h4v16h-4z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M60,38h16v4h-16z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M44.243,75.071 L47.071,72.243 L35.757,60.929 L32.929,63.757 Z M47.071,63.757 L44.243,60.929 L32.929,72.243 L35.757,75.071 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M60,62h16v4h-16z M60,70h16v4h-16z" />
+  </group>
+</vector>

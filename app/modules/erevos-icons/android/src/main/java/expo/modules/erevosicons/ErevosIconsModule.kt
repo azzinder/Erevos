@@ -15,7 +15,9 @@ import expo.modules.kotlin.modules.ModuleDefinition
 // all but one turned off: Erevos's own in the app's manifest (plugins/with-launcher-icons.js), the
 // others next to Phone's, SMS's and Contacts's activities in their modules. A colour is chosen by
 // turning its alias on and the others off. The choice is the phone's, not a space's: the icons show
-// before Erevos is unlocked.
+// before Erevos is unlocked. A working calculator can stand in place of Erevos's own icon
+// (CalculatorActivity.kt): its alias goes on and every colour of Erevos's goes off, the colour
+// kept for when Erevos's icon comes back.
 class ErevosIconsModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ErevosIcons")
@@ -31,17 +33,61 @@ class ErevosIconsModule : Module() {
     Function("setColor") { icon: String, color: String ->
       val context = context() ?: return@Function false
       if (icon !in ICONS || color !in COLORS) return@Function false
-      val packages = context.packageManager
-      packages.setComponentEnabledSetting(component(context, icon, color), PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
-      for (other in COLORS) {
-        if (other == color) continue
-        packages.setComponentEnabledSetting(component(context, icon, other), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+      // Behind the calculator Erevos's icon stays off: its colour is kept for when it comes back.
+      if (icon == "erevos" && Calculator.isOn(context)) {
+        Calculator.prefs(context).edit().putString(Calculator.EREVOS_COLOR, color).apply()
+        return@Function true
       }
+      show(context, icon, color)
+      true
+    }
+
+    // Whether the calculator stands in place of Erevos's icon. Null with no app context.
+    Function("calculator") {
+      val context = context() ?: return@Function null
+      Calculator.isOn(context)
+    }
+
+    // The calculator in place of Erevos's icon, opening Erevos with `code` then =; or a new code
+    // for it. False with no app context.
+    Function("setCalculator") { code: String ->
+      val context = context() ?: return@Function false
+      Calculator.setCode(context, code)
+      if (Calculator.isOn(context)) return@Function true
+      val color = colorOf(context, "erevos")
+      Calculator.prefs(context).edit().putString(Calculator.EREVOS_COLOR, color).apply()
+      val packages = context.packageManager
+      packages.setComponentEnabledSetting(Calculator.component(context), PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+      for (each in COLORS) {
+        packages.setComponentEnabledSetting(component(context, "erevos", each), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+      }
+      true
+    }
+
+    // Erevos's own icon again, in its colour, and no calculator, nor its code.
+    Function("calculatorOff") {
+      val context = context() ?: return@Function false
+      val color = Calculator.prefs(context).getString(Calculator.EREVOS_COLOR, null)?.takeIf { it in COLORS } ?: ICONS.getValue("erevos").first
+      show(context, "erevos", color)
+      context.packageManager.setComponentEnabledSetting(Calculator.component(context), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+      Calculator.forgetCode(context)
+      Calculator.prefs(context).edit().remove(Calculator.EREVOS_COLOR).apply()
       true
     }
   }
 
   private fun context(): Context? = appContext.reactContext ?: appContext.currentActivity
+}
+
+// Shows the icon in that colour: the new alias goes on before the old one goes off, so the launcher
+// always has one.
+private fun show(context: Context, icon: String, color: String) {
+  val packages = context.packageManager
+  packages.setComponentEnabledSetting(component(context, icon, color), PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+  for (other in COLORS) {
+    if (other == color) continue
+    packages.setComponentEnabledSetting(component(context, icon, other), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+  }
 }
 
 /** The colours, in the order Appearance shows them; "dark" is the first look, a dark tile with a red mark. */
@@ -63,8 +109,11 @@ private fun launcher(prefix: String, color: String, first: String) =
 private fun component(context: Context, icon: String, color: String) =
   ComponentName(context.packageName, ICONS.getValue(icon).name(context, color))
 
-/** The colour whose alias is on: turned on here, or on by the manifest and never changed. */
+/** The colour whose alias is on: turned on here, or on by the manifest and never changed; Erevos's behind the calculator, the one kept. */
 private fun colorOf(context: Context, icon: String): String {
+  if (icon == "erevos" && Calculator.isOn(context)) {
+    Calculator.prefs(context).getString(Calculator.EREVOS_COLOR, null)?.takeIf { it in COLORS }?.let { return it }
+  }
   val packages = context.packageManager
   val first = ICONS.getValue(icon).first
   return COLORS.firstOrNull { color ->

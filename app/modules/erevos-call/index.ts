@@ -62,6 +62,9 @@ type CallAudio = {
    *  If Android closes Erevos meanwhile, a quiet notice says so, until it receives again. */
   startReceiving?(): void;
   stopReceiving?(): void;
+  /** Whether Erevos starts by itself as the phone turns on (BootStart.kt). Missing in a build before it. */
+  bootStart?(): boolean;
+  setBootStart?(on: boolean): void;
   /** While `on`, the service holds no wake lock: an alarm wakes the phone about once a minute to look (battery mode Sleep). */
   setSleepy?(on: boolean): void;
   /** While `on`, a quiet notice says Erevos is locked and receives nothing until it is open again. */

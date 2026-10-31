@@ -88,6 +88,20 @@ class ErevosDeviceModule : Module() {
       activity.window?.decorView?.rootWindowInsets?.isVisible(WindowInsets.Type.ime())
     }.runOnQueue(Queues.MAIN)
 
+    // The phone's own clock that the owner cannot set (lock/tries.ts): how long since it started, in
+    // ms, sleep included, and which start that is, so a wait for wrong passwords ends only when that
+    // long has really passed, whatever the date and time are moved to. The start is Android's count
+    // of starts; a phone that does not keep one gives the time it started, in ten-minute steps, so
+    // moving the clock looks like a new start there, and the wait starts again from its beginning.
+    Function("clock") {
+      val up = SystemClock.elapsedRealtime()
+      val count = context?.applicationContext?.let {
+        runCatching { android.provider.Settings.Global.getInt(it.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1) }.getOrDefault(-1)
+      } ?: -1
+      val boot = if (count >= 0) "count:$count" else "time:${(System.currentTimeMillis() - up) / 600_000}"
+      mapOf("up" to up.toDouble(), "boot" to boot)
+    }
+
     // While `on`, the screen turns with the phone even with its auto-rotate off, as a photo shown on
     // its own does (components/attachment.tsx); off, it follows the phone's setting again. False when
     // no activity is showing.

@@ -235,7 +235,7 @@ nikad ne prenosi.
 | **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
-| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku**, **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
+| **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
 | **Telefon i SMS** (Android) | **Telefon**, postavke aplikacije za telefon, iste kao **Telefon** → **Postavke**. **SMS**, u dijelovima: **Erevos kao SMS aplikacija**, **Pronađi Erevos na broju**, **SMS kad ništa drugo ne radi**, **Imena iz vaših kontakata**, **Arhiva, spam i otpad**, **Filter spama**, **Blokirani brojevi**, **Povlačenje SMS-a**, **Dvije SIM kartice** (samo s dvije SIM kartice) i **Novi SMS**. Pogledajte [Telefon](#phone) i [SMS](#sms). |
 | **Podaci i uređaji** | **Rezervne kopije**, **Dijelovi rezervne kopije**, **Povezani uređaji** i **Uvezeni razgovori**. Pogledajte [Rezervne kopije](#backup), [Dijelovi rezervne kopije kod prijatelja](#backup-pieces), [Povezani uređaji](#devices) i [Uvezeni razgovori](#import). |
@@ -1121,6 +1121,16 @@ Skriveni razgovori i računari to nemaju.
   kontakt piše u svoj red, prostor mora pitati i za svaki od njih, inače njihove poruke ne bi ništa javile. Cijena je
   to što njegov relay može saznati da su ta dva prostora na jednom telefonu, a neko ko alatima pregleda telefon može
   otkriti da drugi prostor tamo čuva adrese, i koliko kontakata ima.
+- **Kad se telefon uključi:** nakon pokretanja telefona Erevos ne radi dok ga ne otvorite. S **Pokreni kad se telefon
+  uključi** pod **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Čekaj dok ga ne otvorim**) pokreće se sam
+  nakon što se telefon uključi, ili nakon ažuriranja Erevosa, bez otvorenog prostora: nijedan prostor se ne može
+  otvoriti bez svoje lozinke, jer Erevos ne čuva nijedan ključ na telefonu. Tada prostori s **I dok je otvoren drugi
+  prostor** već kažu „New message“, ili koliko ih je stiglo, nikad koji prostor, ni od koga ni što, a tiha obavijest
+  kaže „Locked“. Pozivi ne zvone, i ništa drugo ne stiže, dok ne otvorite neki prostor; prostori koji idu preko Tora
+  do tada ne kažu ništa. Ako takvog prostora nema, ili s **Bez obavijesti**, odmah se zaustavlja. Samo na Androidu.
+
+  **Zašto:** nakon ponovnog pokretanja Erevos vam nije mogao reći da poruke čekaju dok ga slučajno ne otvorite. Bez
+  vaše lozinke ih i dalje ne može pročitati, pa ne kaže ništa više od onoga što kaže zatvoren prostor.
 - **Gdje ne može zvoniti:** kad ga zaustavi Android (ili ušteda baterije telefona, ili vlastita postavka proizvođača
   telefona), nakon ponovnog pokretanja telefona dok jednom ne otvorite Erevos i prostor, u drugom prostoru (samo
   javlja da je stigla poruka, ako to dozvolite, kao iznad), ili na računaru ili u web-aplikaciji dok je zatvorena.
@@ -2226,7 +2236,11 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
   ga da vidite šta kucate, i ponovo da se sakrije. Ponovo je skriveno svaki put kad se polje iznova pojavi, a na
   Androidu se od tastature traži da to ne pamti.
 - **Pogrešne lozinke:** nakon 5 pogrešnih pokušaja, svaki sljedeći vas tjera da čekate, prvo 30 sekundi, a svaki put
-  dvaput duže, do jednog sata. Broj pokušaja ostaje i nakon ponovnog pokretanja.
+  dvaput duže, do jednog sata. Broj pokušaja ostaje i nakon ponovnog pokretanja. Čekanje se mjeri vlastitim satom
+  telefona od njegovog uključivanja, koji niko ne može postaviti, pa ga pomjeranje datuma i vremena unaprijed ne
+  prekida; ako se telefon isključi i ponovo uključi tokom čekanja, čeka ponovo od početka, jer se vrijeme koje je već
+  proteklo ne može znati. U web-aplikaciji i na računaru ide isto dok god Erevos ostaje otvoren, a počinje ponovo od
+  početka kad se Erevos opet otvori.
 - **Šta je zapečaćeno:** kontakti svakog prostora, ključevi njegovih razgovora, njegove poruke, postavke relaya i
   izgled čuvaju se na telefonu zapečaćeni ključem koji otvara samo njegova lozinka.
 - **Popis odmah:** početni ekran čuva zapečaćenu kopiju svojih prvih redova, pa se popis prikaže čim se prostor
@@ -2236,7 +2250,7 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
 **Zašto:** svaka isprobana lozinka namjerno košta vremena i mnogo memorije (PBKDF2, zatim Argon2id), kako onaj ko
 kopira ono što telefon čuva ne bi mogao brzo isprobavati lozinke; a neko ko drži telefon čeka duže nakon svakog
 pogrešnog pokušaja. Brojač je jedan za cijeli telefon, čuva se i nakon ponovnog pokretanja, jer ekran za lozinku
-dolazi prije nego što se otvori bilo koji prostor.
+dolazi prije nego što se otvori bilo koji prostor, a čekanje se mjeri tamo gdje ga pomjeranje sata ne može skratiti.
 
 > Ne postoji način da se vrati zaboravljena lozinka: ne čuva se ništa što bi moglo otvoriti podatke bez nje. Samo
 > otisak prsta ili lice, dok je uključeno, i dalje otvara prvi prostor (pogledajte ispod).
@@ -2623,6 +2637,33 @@ dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web apl
 **Zašto:** na granici ili pri uhićenju možda nema vremena otvoriti svaki razgovor. Jedan dodir, ili pokret aplikacije
 za paniku, ne ostavlja ništa za otvoriti.
 
+### Lozinka za paniku
+
+Kad je zaključavanje lozinkom uključeno, isti zaslon ima i odjeljak **Lozinka za paniku**: zasebnu lozinku koja,
+upisana na zaslonu za zaključavanje, briše Erevos kao **Obriši sve sada**. Na Androidu, u web aplikaciji, na računalu
+i na Sailfish OS-u.
+
+1. Dodirnite **Postavi lozinku za paniku**, upišite je dvaput (najmanje 4 znaka) i dodirnite **Sačuvaj**. Mora se
+   razlikovati od svake lozinke vaših prostora: Erevos odbija onu koja otvara prostor, a lozinka nijednog prostora ne
+   može to postati kasnije.
+2. Upisana na zaslonu za zaključavanje, prikazuje **Pogrešna lozinka**, kao i svaka pogrešna, a Erevos odmah briše
+   sve. Na Androidu se Erevos zatim zatvara, a sljedeći put se otvara kao tek instaliran, a brišu se i automatske
+   rezervne kopije u njihovoj mapi kad je uključeno **I automatske rezervne kopije u** pod **Iz aplikacije za
+   paniku**; drugdje ostaju.
+3. **Isključi lozinku za paniku** opet je čini samo pogrešnom lozinkom. Ponovno postavljanje zamjenjuje prethodnu.
+   Isključivanje zaključavanja lozinkom isključuje i nju.
+
+- **Ništa je ne pokazuje:** Erevos od prvog pokretanja čuva mjesto za lozinku za paniku, nasumično dok se neka ne
+  postavi i istog oblika poslije, i provjerava ga svakom lozinkom upisanom na zaslonu za zaključavanje, na isti način
+  i jednako dugo. Zato ni ono što telefon čuva ni trajanje provjere ne pokazuju je li neka postavljena, a ni ovaj
+  zaslon vam to ne može reći: ako niste sigurni, postavite je ponovo.
+- **Samo na zaslonu za zaključavanje:** upisana bilo gdje drugdje gdje Erevos traži lozinku, samo je pogrešna lozinka.
+  Nije u rezervnim kopijama: nakon vraćanja jedne, postavite je ponovo. Dok pogrešni pokušaji tjeraju zaslon za
+  zaključavanje da čeka (pogledajte [Zaključavanje lozinkom](#lock)), čeka i ona.
+
+**Zašto:** netko vas može natjerati da otvorite Erevos. S lozinkom za paniku možete izgledati kao da dajete svoju, a
+ono što bi vidio nestalo je prije nego što se zaslon promijeni.
+
 ## Obriši me odasvud {#forget}
 
 Kad želiš da nestane ono što serveri čuvaju o tebi, u **Postavke** → **Privatnost i sigurnost** → **Obriši me odasvud**:
@@ -2760,6 +2801,16 @@ tekst uvijek bio dobro čitljiv, i na staklu.
   otvara ono što njegova ikona navodi, i kad je Erevos prikazivao neku drugu od njih. Boja pripada telefonu, a ne
   svakom prostoru, jer se ikone prikazuju prije nego što se Erevos otključa. Nakon promjene neki pokretači uklanjaju
   ikonu s početnog ekrana: ponovo je dodajte s popisa aplikacija.
+- **Kalkulator umjesto Erevosa** (Android, pod **Ikone u pokretaču**): kalkulator koji radi prikazuje se među
+  aplikacijama telefona umjesto ikone Erevosa. Dodirnite **Stavi kalkulator na njegovo mjesto**, dvaput upišite kod od
+  4 do 12 cifara i dodirnite **Sačuvaj**. Od tada otvarajte kalkulator, upišite kod, pa **=**: Erevos se otvara i
+  traži svoju lozinku kao uvijek. Svaki drugi račun samo je račun. **Promijeni kod** ga mijenja; **Ponovo prikaži
+  ikonu Erevosa** vraća ikonu, u njenoj boji, i zaboravlja kod. Skrivena je samo ikona: Androidov popis aplikacija,
+  obavijesti, nedavne aplikacije te ikone Telefon, SMS i Kontakti i dalje pokazuju Erevos. Telefon čuva samo hash
+  koda: to su vrata, a ne brava.
+
+  **Zašto:** ko god baci pogled na telefon vidi kalkulator, a ne aplikaciju za poruke; lozinka i dalje čuva ono što je
+  unutra.
 - **Widget** (Android): redoslijed četiri dugmeta widgeta, slijeva nadesno, s widgetom iscrtanim onako kako će
   izgledati. Dodirnite ↑ ili ↓ da pomjerite dugme; **Početni redoslijed** ih vraća.
 

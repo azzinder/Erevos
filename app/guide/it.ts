@@ -237,7 +237,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | **Generali** | **Lingua**, **Aggiornamenti**, **Dai Erevos a un telefono vicino** (Android), **Novità**, **Informazioni su Erevos**, **Sostieni Erevos** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, [Aggiornamenti](#updates) e [Erevos a un telefono vicino](#give-app). |
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android) e **Widget** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android e l’app per computer): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi; su un computer, se Erevos continua a funzionare con la finestra chiusa. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone) e [Su un computer](#desktop). |
-| **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico**, **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
+| **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
 | **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** e **Chat Nostr**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats). |
 | **Telefono e SMS** (Android) | **Telefono**, le impostazioni dell’app Telefono, le stesse di **Telefono** → **Impostazioni**. **SMS**, in parti: **Erevos come app per gli SMS**, **Scopri Erevos dietro un numero**, **SMS quando nient’altro funziona**, **Nomi dai tuoi contatti**, **Archiviate, Spam e Cestino**, **Filtro antispam**, **Numeri bloccati**, **Annullare l’invio di un SMS**, **Due SIM** (solo con due SIM) e **Nuovo SMS**. Vedi [Telefono](#phone) e [SMS](#sms). |
 | **Dati e dispositivi** | **Backup**, **Pezzi del backup**, **Dispositivi collegati** e **Chat importate**. Vedi [Backup](#backup), [Pezzi del backup presso amici](#backup-pieces), [Dispositivi collegati](#devices) e [Chat importate](#import). |
@@ -1165,6 +1165,17 @@ computer non ce l’hanno.
   sua, lo spazio deve chiedere anche di ciascuna di esse, altrimenti i loro messaggi non direbbero nulla. Il prezzo è
   che il suo relay potrebbe capire che i due spazi sono su un unico telefono, e qualcuno che esamina il telefono con
   degli strumenti potrebbe scoprire che un secondo spazio conserva lì degli indirizzi, e quanti contatti ha.
+- **Quando il telefono si accende:** dopo l’avvio del telefono, Erevos non funziona finché non lo apri. Con **Avvia
+  all’accensione del telefono** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è
+  **Aspetta che lo apra io**), si avvia da solo dopo l’accensione del telefono, o dopo un aggiornamento di Erevos,
+  senza nessuno spazio aperto: nessuno spazio può aprirsi senza la sua password, perché Erevos non conserva nessuna
+  chiave sul telefono. Allora gli spazi con **Anche mentre è aperto un altro spazio** dicono già «New message», o
+  quanti ne sono arrivati, mai quale spazio, né chi o cosa, e una notifica silenziosa dice «Locked». Le chiamate non
+  squillano, e nient’altro arriva, finché non apri uno spazio; gli spazi che passano da Tor non dicono nulla fino ad
+  allora. Se non c’è nessuno spazio così, o con **Nessun avviso**, si ferma subito. Solo su Android.
+
+  **Perché:** dopo un riavvio Erevos non poteva dirti che dei messaggi aspettano finché non ti capitava di aprirlo.
+  Senza la tua password non può comunque leggerli, quindi non dice più di quanto dice uno spazio chiuso.
 - **Dove non può squillare:** fermato da Android (o dal risparmio batteria del telefono, o da un’impostazione del
   produttore del telefono), dopo il riavvio del telefono finché non apri Erevos e lo spazio una volta, in un altro
   spazio (dice solo che è arrivato un messaggio, se lo permetti, come sopra), o su un computer o nella web
@@ -2330,7 +2341,11 @@ due scelte: **Nessun blocco** e **Password**.
   fondo: toccalo per vedere ciò che scrivi, e di nuovo per nasconderlo. Torna nascosto ogni volta che il campo si
   mostra di nuovo, e su Android alla tastiera viene chiesto di non impararlo.
 - **Password sbagliate:** dopo 5 tentativi sbagliati, ognuno dei successivi ti fa aspettare, all’inizio 30 secondi e
-  ogni volta il doppio, fino a un’ora. Il conteggio sopravvive a un riavvio.
+  ogni volta il doppio, fino a un’ora. Il conteggio sopravvive a un riavvio. L’attesa segue l’orologio proprio del
+  telefono da quando è stato acceso, che nessuno può impostare, quindi spostare avanti la data e l’ora non la termina;
+  se il telefono viene spento e riacceso durante un’attesa, la aspetta di nuovo dall’inizio, perché il tempo già
+  atteso non si può conoscere. Nella web app e su un computer funziona allo stesso modo finché Erevos resta aperto, e
+  ricomincia dall’inizio quando Erevos si apre di nuovo.
 - **Che cosa è sigillato:** i contatti di ogni spazio, le chiavi delle sue conversazioni, i suoi messaggi, le sue
   impostazioni del relay e il suo aspetto sono conservati sul telefono sigillati con una chiave che solo la sua password
   apre.
@@ -2341,7 +2356,8 @@ due scelte: **Nessun blocco** e **Password**.
 **Perché:** ogni password provata costa di proposito tempo e molta memoria (PBKDF2, poi Argon2id), così chi copia
 quello che il telefono conserva non può provare password velocemente; e chi ha in mano il telefono aspetta di più dopo
 ogni tentativo sbagliato. Il conteggio è unico per tutto il telefono, mantenuto tra un riavvio e l’altro, perché la
-schermata della password viene prima che si apra qualsiasi spazio.
+schermata della password viene prima che si apra qualsiasi spazio, e l’attesa è misurata dove spostare l’orologio non
+può accorciarla.
 
 > Non c’è modo di recuperare una password dimenticata: non è conservato niente che possa aprire i dati senza di essa.
 > Solo un’impronta o un volto, finché è attivo, apre ancora il primo spazio (vedi più sotto).
@@ -2744,6 +2760,33 @@ Sailfish OS.
 **Perché:** a una frontiera o in un arresto può non esserci il tempo di aprire ogni chat. Un tocco, o il gesto di
 un’app di panico, non lascia niente da aprire.
 
+### Password di panico
+
+Con il blocco con password attivo, la stessa schermata offre una **Password di panico**: una password tutta sua che,
+scritta sulla schermata di blocco, cancella Erevos come fa **Cancella tutto ora**. Su Android, nella web app, su un
+computer e su Sailfish OS.
+
+1. Tocca **Imposta la password di panico**, scrivila due volte (almeno 4 caratteri) e tocca **Salva**. Deve essere
+   diversa da ogni password dei tuoi spazi: Erevos ne rifiuta una che apre uno spazio, e la password di nessuno spazio
+   potrà diventarlo più tardi.
+2. Scritta sulla schermata di blocco, mostra **Password errata**, come qualsiasi password errata, ed Erevos cancella
+   tutto subito. Su Android Erevos poi si chiude e la volta dopo si apre come appena installato, e vanno via anche i
+   backup automatici nella loro cartella quando è attivo **Anche i backup automatici in** sotto **Da un’app di
+   panico**; altrove restano.
+3. **Disattiva la password di panico** la rende di nuovo solo una password errata. Impostarla di nuovo sostituisce
+   quella di prima. Disattivare il blocco con password la disattiva anche.
+
+- **Niente la mostra:** Erevos tiene un posto per una password di panico fin dal suo primo avvio, casuale finché non
+  ne viene impostata una e della stessa forma dopo, e lo controlla con ogni password scritta sulla schermata di
+  blocco, allo stesso modo e per lo stesso tempo. Così né ciò che il telefono conserva né il tempo di un controllo
+  mostrano se ce n’è una impostata, e nemmeno questa schermata può dirtelo: se non sei sicuro, impostala di nuovo.
+- **Solo sulla schermata di blocco:** scritta in qualsiasi altro posto dove Erevos chiede una password, è solo una
+  password errata. Non è nei backup: dopo averne ripristinato uno, impostala di nuovo. Finché i tentativi sbagliati
+  fanno aspettare la schermata di blocco (vedi [Blocco con password](#lock)), aspetta anche lei.
+
+**Perché:** qualcuno può costringerti ad aprire Erevos. Con una password di panico puoi sembrare dargli la tua, e ciò
+che vedrebbe è sparito prima che la schermata cambi.
+
 ## Cancellami da ovunque {#forget}
 
 Quando vuoi che sparisca ciò che i server conservano di te, in **Impostazioni** → **Privacy e sicurezza** → **Cancellami da
@@ -2881,6 +2924,16 @@ perché il testo si legga sempre bene, anche sul vetro.
   quello che la sua icona nomina, anche quando Erevos mostrava un’altra di esse. Il colore è del telefono, non di ogni
   spazio, perché le icone appaiono prima che Erevos sia sbloccato. Dopo una modifica alcuni launcher tolgono l’icona
   dalla schermata Home: aggiungila di nuovo dall’elenco delle app.
+- **Calcolatrice al posto di Erevos** (Android, sotto **Icone del launcher**): una calcolatrice che funziona compare
+  tra le app del telefono al posto dell’icona di Erevos. Tocca **Metti la calcolatrice al suo posto**, scrivi due
+  volte un codice da 4 a 12 cifre e tocca **Salva**. Da lì in poi apri la calcolatrice, scrivi il codice, poi **=**:
+  Erevos si apre, chiedendo la sua password come sempre. Qualsiasi altro calcolo è solo un calcolo. **Cambia il
+  codice** lo cambia; **Mostra di nuovo l’icona di Erevos** riporta l’icona, nel suo colore, e dimentica il codice. È
+  nascosta solo l’icona: l’elenco delle app di Android, le notifiche, le app recenti e le icone Telefono, SMS e
+  Contatti mostrano ancora Erevos. Il telefono conserva solo un hash del codice: è una porta, non la serratura.
+
+  **Perché:** chi dà un’occhiata al telefono vede una calcolatrice, non un messenger; la password protegge comunque
+  ciò che c’è dentro.
 - **Widget** (Android): l’ordine dei quattro pulsanti del widget, da sinistra a destra, con il widget disegnato come
   apparirà. Tocca ↑ o ↓ per spostare un pulsante; **Ordine iniziale** li rimette a posto.
 
