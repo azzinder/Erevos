@@ -3418,6 +3418,10 @@ de que sirva a uma finalidade específica. A licença diz mais.
 
 ### Quem o fez
 
+O Erevos é feito com **engenharia agêntica dirigida por pessoas (human-directed agentic engineering)**: azzinder define
+o projeto, os limites, o que cada mudança deve fazer e quando está pronta; as ferramentas de IA escrevem, rodam as
+verificações e corrigem.
+
 O Erevos é projetado, dirigido e mantido por azzinder, que escolheu as funções dele e como elas funcionam, o modelo de
 segurança e a estrutura, o testa em dispositivos reais e decide o que entra em cada versão. Ferramentas de IA foram
 usadas amplamente para escrever o código e os textos, sempre por instruções e a partir do projeto de azzinder.

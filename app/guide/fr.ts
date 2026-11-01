@@ -3639,6 +3639,10 @@ ou qu’il convienne à un usage particulier. La licence en dit plus.
 
 ### Qui l’a fait
 
+Erevos est fait par **ingénierie agentique dirigée par l’humain (human-directed agentic engineering)** : azzinder fixe
+la conception, les contraintes, ce que chaque changement doit faire et quand il est terminé ; les outils d’IA écrivent,
+lancent les vérifications et corrigent.
+
 Erevos est conçu, dirigé et maintenu par azzinder, qui a choisi ses fonctions et leur façon de marcher, son modèle de
 sécurité et sa structure, le teste sur de vrais appareils et décide de ce qui entre dans chaque version. Des outils d’IA
 ont été largement utilisés pour écrire le code et les textes, toujours sur les instructions et d’après la conception

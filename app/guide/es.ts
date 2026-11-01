@@ -3452,6 +3452,10 @@ que sirva para un fin determinado. La licencia dice más.
 
 ### Quién lo hizo
 
+Erevos se hace con **ingeniería agéntica dirigida por personas (human-directed agentic engineering)**: azzinder fija el
+diseño, los límites, lo que debe hacer cada cambio y cuándo está terminado; las herramientas de IA escriben, ejecutan
+las comprobaciones y corrigen.
+
 Erevos lo diseña, dirige y mantiene azzinder, quien eligió sus funciones y cómo funcionan, su modelo de seguridad y su
 estructura, lo prueba en dispositivos reales y decide qué entra en cada versión. Se usaron ampliamente herramientas de
 IA para escribir el código y los textos, siempre por indicación y según el diseño de azzinder.

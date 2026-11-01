@@ -3474,6 +3474,10 @@ vada bene per uno scopo particolare. La licenza dice di più.
 
 ### Chi l’ha fatto
 
+Erevos è fatto con **ingegneria agentica diretta dall’uomo (human-directed agentic engineering)**: azzinder stabilisce
+il progetto, i vincoli, che cosa deve fare ogni modifica e quando è finita; gli strumenti di IA scrivono, eseguono i
+controlli e correggono.
+
 Erevos è progettato, diretto e mantenuto da azzinder, che ha scelto le sue funzioni e come funzionano, il suo modello di
 sicurezza e la sua struttura, lo prova su dispositivi reali e decide che cosa entra in ogni versione. Strumenti di IA
 sono stati usati ampiamente per scrivere il codice e i testi, sempre su istruzioni e secondo il progetto di azzinder.

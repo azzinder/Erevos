@@ -3324,6 +3324,10 @@ određenoj svrsi. Licenca kaže više.
 
 ### Ko ga je napravio
 
+Erevos nastaje **ljudski vođenim agentskim inženjerstvom (human-directed agentic engineering)**: osoba koja ga održava
+određuje zamisao, ograničenja, šta svaka promjena mora da uradi i kada je gotova; alati umjetne inteligencije pišu,
+pokreću provjere i ispravljaju.
+
 Erevos osmišljava, vodi i održava azzinder: bira njegove funkcije i način na koji rade, sigurnosni model i strukturu,
 testira ga na stvarnim uređajima i odlučuje šta ulazi u svako izdanje. Alati umjetne inteligencije korišteni su opširno
 za pisanje koda i tekstova, uvijek prema uputama i zamisli osobe koja ga održava.

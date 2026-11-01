@@ -3666,6 +3666,10 @@ verkäuflich ist oder für einen bestimmten Zweck taugt. Die Lizenz sagt mehr da
 
 ### Wer es gemacht hat
 
+Erevos entsteht durch **menschlich gesteuerte agentische Entwicklung (human-directed agentic engineering)**: azzinder
+legt den Entwurf fest, die Grenzen, was jede Änderung tun muss und wann sie fertig ist; KI-Werkzeuge schreiben, führen
+die Prüfungen aus und überarbeiten.
+
 Erevos wird von azzinder entworfen, geleitet und betreut: azzinder hat seine Funktionen und ihre Arbeitsweise, sein
 Sicherheitsmodell und seinen Aufbau bestimmt, testet es auf echten Geräten und entscheidet, was in jede Version kommt.
 KI-Werkzeuge wurden ausgiebig genutzt, um den Code und die Texte zu schreiben, immer nach den Anweisungen und dem

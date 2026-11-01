@@ -3191,6 +3191,9 @@ that it fits a particular purpose. The licence says more.
 
 ### Who made it
 
+Erevos is built by **human-directed agentic engineering**: the maintainer sets the design, the constraints, what each
+change must do and when it is done; AI tools write, run the checks and revise.
+
 Erevos is designed, directed and maintained by azzinder, who chose its features and how they work, its security model
 and its structure, tests it on real devices and decides what goes into each release. AI tools were used extensively to
 write the code and the texts, always on the maintainer's instructions and from the maintainer's design.
