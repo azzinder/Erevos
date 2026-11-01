@@ -31,6 +31,7 @@ export const VERSIONS: WhatsNew[] = [
     forYou: [
       mark("**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock)."),
       mark('**Old private messages in Nostr chats**: Erevos also reads private messages sent the older way (NIP-04), which Damus, Primal and many apps still send and keep, past and new, in the same chats. The relays see who wrote such a message to whom; Erevos itself still sends only the NIP-17 way. See [Chats with other Nostr apps](#nostr-chats).'),
+      mark("**Public posts in Nostr chats**: in a chat with one person, **Public posts** shows what they post for everyone, newest first, read only. It is looked up through Tor as the space says and not kept, and no pictures or links are opened. See [Chats with other Nostr apps](#nostr-chats)."),
     ],
     underTheHood: [],
   },

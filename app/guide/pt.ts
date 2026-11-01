@@ -1914,6 +1914,14 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   kind 10002 dele, para uma chave trazida de outro app) e relay.damus.io, nos.lol e relay.primal.net. Essas mensagens
   também são criptografadas, mas os relays veem quem escreveu para quem e quando. O próprio Erevos manda só do jeito do
   NIP-17.
+- **Publicações públicas:** numa conversa com uma pessoa, **Publicações públicas** mostra o que ela publica para todos
+  (kind 1) e as publicações de outras pessoas que ela compartilhou de novo, das mais recentes às mais antigas, de trinta
+  em trinta, com **Publicações mais antigas** para ver mais. É somente leitura: daqui não dá para responder, reagir nem
+  publicar nada. Isso é buscado quando a tela abre, nos relays usados para buscas e naqueles em que, segundo a lista de
+  relays dela (NIP-65), ela escreve, como diz a escolha do Tor deste espaço, e nada disso é guardado. Nenhuma imagem ou
+  link é aberto: eles aparecem como endereços, que podem ser copiados. Uma publicação com aviso de conteúdo mostra as
+  palavras dela depois de um toque em **Mostrar**. Uma conta que só publica para todos, como a de um projeto, não manda
+  mensagens privadas: a conversa dela fica vazia, e as publicações dela estão aqui.
 - **Marcas:** um ✓ assim que um dos relays da pessoa aceitou a mensagem. O NIP-17 não devolve nada: nem quando o app
   dela a tem, nem quando ela lê. Ler uma conversa aqui não avisa ninguém.
 - **Não anônimo:** sua chave é a mesma para todos com quem você fala, e qualquer um que tenha um npub pode escrever para

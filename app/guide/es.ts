@@ -1928,6 +1928,14 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   chats: en los relays donde llegan tus mensajes y en hasta cuatro más, los que lee la otra app de tu clave (su lista
   kind 10002, para una clave traída de otra app) y relay.damus.io, nos.lol y relay.primal.net. Estos mensajes también
   van cifrados, pero los relays ven quién escribió a quién y cuándo. El propio Erevos solo envía a la manera de NIP-17.
+- **Publicaciones públicas:** en un chat con una persona, **Publicaciones públicas** muestra lo que publica para todos
+  (kind 1) y las publicaciones de otras personas que volvió a compartir, las más recientes primero, de treinta en
+  treinta, con **Publicaciones anteriores** para ver más. Es solo de lectura: desde aquí no se puede responder,
+  reaccionar ni publicar nada. Se busca al abrirlo, en los relays que se usan para las búsquedas y en aquellos donde,
+  según su lista de relays (NIP-65), escribe, como indica la elección de Tor de este espacio, y nada de ello se guarda.
+  No se abren imágenes ni enlaces: se muestran como direcciones, que se pueden copiar. Una publicación con advertencia
+  de contenido muestra sus palabras tras tocar **Mostrar**. Una cuenta que solo publica para todos, como la de un
+  proyecto, no envía mensajes privados: su chat queda vacío y sus publicaciones están aquí.
 - **Marcas:** un ✓ en cuanto uno de sus relays aceptó el mensaje. NIP-17 no devuelve nada: ni cuándo lo tiene su app, ni
   cuándo lo leen. Leer un chat aquí no se lo dice a nadie.
 - **No anónimo:** tu clave es la misma para todos a quienes escribes, y cualquiera que tenga un npub puede escribirle.

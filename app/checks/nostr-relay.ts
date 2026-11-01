@@ -87,7 +87,14 @@ export class FakeRelay {
         return this.say(c, ['CLOSED', id, 'auth-required: we only show wraps to whom they are for']);
       }
       c.subs.set(id, filters);
-      for (const event of this.events) if (filters.some((f) => matches(event, f))) this.say(c, ['EVENT', id, event]);
+      // Each filter's newest first, as many as its limit says, each event once.
+      const sent = new Set<NostrEvent>();
+      for (const f of filters) {
+        const found = this.events.filter((event) => matches(event, f));
+        const newest = typeof f.limit === 'number' ? [...found].sort((x, y) => y.created_at - x.created_at).slice(0, f.limit) : found;
+        for (const event of newest) sent.add(event);
+      }
+      for (const event of this.events) if (sent.has(event)) this.say(c, ['EVENT', id, event]);
       return this.say(c, ['EOSE', id]);
     }
     if (type === 'CLOSE') {

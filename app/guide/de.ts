@@ -2064,6 +2064,15 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   andere App deines Schlüssels liest (ihre Liste vom kind 10002, bei einem aus einer anderen App mitgebrachten
   Schlüssel), sowie relay.damus.io, nos.lol und relay.primal.net. Auch diese Nachrichten sind verschlüsselt, aber die
   Relays sehen, wer wem wann geschrieben hat. Erevos selbst sendet nur auf die Art von NIP-17.
+- **Öffentliche Beiträge:** In einem Chat mit einer Person zeigt **Öffentliche Beiträge**, was sie für alle
+  veröffentlicht (kind 1), und die Beiträge anderer, die sie weitergeteilt hat, das Neueste zuerst, je dreißig, mit
+  **Ältere Beiträge** für mehr. Es ist nur zum Lesen: Von hier aus lässt sich nichts beantworten, mit einer Reaktion
+  versehen oder veröffentlichen. Es wird beim Öffnen abgefragt, auf den Relays, die für Abfragen dienen, und auf denen,
+  auf die sie laut ihrer Relay-Liste (NIP-65) schreibt, so, wie es die Tor-Wahl dieses Bereichs sagt, und nichts davon
+  wird gespeichert. Bilder oder Links werden nicht geöffnet, sondern als Adressen angezeigt, die sich kopieren lassen.
+  Ein Beitrag mit Inhaltswarnung zeigt seinen Text nach einem Tipp auf **Zeigen**. Ein Konto, das nur für alle
+  veröffentlicht, etwa das eines Projekts, sendet keine privaten Nachrichten: Sein Chat bleibt leer, und seine Beiträge
+  sind hier.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.

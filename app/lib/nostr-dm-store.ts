@@ -34,6 +34,8 @@ import {
   OLD_MOST,
   oldFilters,
   otherInboxes,
+  POSTS_AT_ONCE,
+  postsOf,
   profileEvent,
   profileFieldsOf,
   reactionOf,
@@ -50,6 +52,7 @@ import {
   writesOf,
   type NostrDmMessage,
   type NostrDmState,
+  type NostrPost,
 } from './nostr-dm';
 import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
 import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFile, uploadBlob, type NostrDmFile } from './nostr-files';
@@ -888,6 +891,34 @@ export async function nostrDmFollows(): Promise<{ people: NostrFollow[]; report:
   );
   const named = follows.filter((f) => f.name).sort((a, b) => a.name!.localeCompare(b.name!));
   return { people: [...named, ...follows.filter((f) => !f.name)], report };
+}
+
+// Where people write (their NIP-65 list), as looked up for their posts while Erevos runs: the next
+// page of posts asks the same relays without looking again. Never kept.
+const writesKnown = new Map<string, string[]>();
+
+/**
+ * The public posts of `key`, newest first, POSTS_AT_ONCE at most, before `before` (seconds) when
+ * given: looked up now on the relays used for look-ups, on those their chat was given, and on those
+ * their relay list (NIP-65) says they write on, as the space's Tor way says, as every look-up goes.
+ * Posts are public, so asking for them tells a relay only that someone reads them; nothing of them
+ * is kept. With them, whether any relay answered, and whether there may be older ones.
+ */
+export async function nostrDmPosts(key: string, before?: number): Promise<{ posts: NostrPost[]; answered: boolean; older: boolean }> {
+  const it = need();
+  const hints = (it.state.chats[key]?.hints ?? []).slice(0, 3);
+  const where = [...new Set([...LOOKUP_RELAYS, ...hints].map((url) => url.replace(/\/+$/, '')))];
+  const filter = { kinds: [1, 6], authors: [key], limit: POSTS_AT_ONCE, ...(before ? { until: before } : {}) };
+  const known = writesKnown.get(key);
+  const first = await lookUpEach(it, where, known ? [filter] : [filter, { kinds: [10002], authors: [key] }]);
+  const writes = known ?? (await writesOf(key, first.events));
+  // A list not found now is looked for again with the next page.
+  if (!known && writes.length) writesKnown.set(key, writes);
+  const more = writes.filter((url) => !where.includes(url));
+  const second = more.length ? await lookUpEach(it, more, [filter]) : { events: [], relays: [] };
+  const posts = await postsOf(key, [...first.events, ...second.events]);
+  const answered = [...first.relays, ...second.relays].some((relay) => relay.how === 'all');
+  return { posts, answered, older: posts.length >= POSTS_AT_ONCE };
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */

@@ -2029,6 +2029,15 @@ discussions propres à Erevos.
   que lit l’autre appli de ta clé (sa liste kind 10002, pour une clé venue d’une autre appli) et relay.damus.io,
   nos.lol et relay.primal.net. Ces messages sont chiffrés eux aussi, mais les relais voient qui a écrit à qui, et
   quand. Erevos lui-même n’envoie qu’à la manière de NIP-17.
+- **Publications publiques :** dans une discussion avec une personne, **Publications publiques** montre ce que la
+  personne publie pour tous (kind 1) et les publications d’autres personnes qu’elle a repartagées, les plus récentes
+  d’abord, trente à la fois, avec **Publications plus anciennes** pour en voir plus. C’est en lecture seule : d’ici, on
+  ne peut ni répondre, ni réagir, ni publier. C’est cherché à l’ouverture, sur les relais utilisés pour les recherches
+  et sur ceux où, selon sa liste de relais (NIP-65), elle écrit, comme le dit le choix de Tor de cet espace, et rien
+  n’en est gardé. Aucune image ni aucun lien n’est ouvert : ils s’affichent sous forme d’adresses, qui peuvent être
+  copiées. Une publication avec un avertissement de contenu montre ses mots après un appui sur **Afficher**. Un compte
+  qui ne publie que pour tous, comme celui d’un projet, n’envoie pas de messages privés : sa discussion reste vide, et
+  ses publications sont ici.
 - **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
   quand la personne le lit. Lire une discussion ici ne le dit à personne.
 - **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais

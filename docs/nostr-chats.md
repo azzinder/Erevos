@@ -183,6 +183,30 @@ node --import ./checks/register.mjs ../docs/nostr-checks/nip17-cross.ts /tmp/nt/
 
 Not yet run with a Nostr app on a phone, nor against the real Blossom servers.
 
+## Old private messages (NIP-04)
+
+Many apps still send and keep private messages the older way: a kind 4 event signed by its author,
+with a `p` tag for its reader, its content AES-256-CBC with the raw x coordinate of the two keys'
+secp256k1 Diffie-Hellman point as the key, written `<base64>?iv=<base64>`. The core opens them
+(`nip04_decrypt` in `crates/erevos-nostr`, the chat op `open_old`, which checks the signature and
+the padding) into the same shape as a NIP-17 message, marked `old`, in the same chats. They are read,
+never sent: Erevos sends only NIP-17. The reading connection asks for kind 4 to and from the key on
+the inbox relays and on up to four more (`readRelays`): two from a brought key's own relay list
+(kind 10002, looked up once, `lookForOld`) and the three big public relays. Each relay keeps its own
+`oldSent` time, so a new one reads its past once and later only what is new. The relays see who
+wrote such a message to whom, and when.
+
+## Public posts
+
+In a chat with one person, **Public posts** (`app/nostr-posts.tsx`) shows what they post for everyone:
+kind 1 notes and kind 6 shares whose shared post is inside, each checked (the share's post too), each
+once, newest first, `POSTS_AT_ONCE` (30) at a time with `until` for older ones (`postsOf` in
+`app/lib/nostr-dm.ts`, `nostrDmPosts` in the store). They are asked of the look-up relays, of up to
+three relays the chat was given, and of those their relay list (kind 10002) says they write on, which
+is remembered only while Erevos runs. Read only, as the space's Tor way says, never kept; nothing is
+fetched for them, so a picture or a link shows as its address. A content warning (NIP-36) covers a
+post's words until **Show**; an answer (an `e` tag that is not a mention, NIP-10) says so.
+
 ## Screens
 
 - `app/nostr-chats.tsx`, under Settings → Relay and networks → Nostr chats: making a key or bringing
@@ -199,7 +223,8 @@ Not yet run with a Nostr app on a phone, nor against the real Blossom servers.
   the microphone for voice messages and a voice message that came with **Play** and its length; a
   message held opens its menu (`components/message-menu.tsx`): six reactions to pick from, more behind
   **+**, **Reply** and **Copy**; the reply shows over the field with a ✕ and over the answer in the
-  thread, where a tap scrolls to the message; under a message, the reactions it has.
+  thread, where a tap scrolls to the message; under a message, the reactions it has. In a chat with one
+  person, **Public posts** opens `app/nostr-posts.tsx` (above).
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a

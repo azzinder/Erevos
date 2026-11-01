@@ -29,6 +29,10 @@ On main, not released yet:
   on the relays where your messages arrive and on up to four more: those a brought key's other app reads (its kind
   10002 list) and relay.damus.io, nos.lol and relay.primal.net. The relays see who wrote such a message to whom;
   Erevos itself still sends only the NIP-17 way.
+- **Public posts in Nostr chats**: in a chat with one person, **Public posts** shows what they post for everyone
+  (kind 1) and the posts they shared again (kind 6), newest first, thirty at a time, each checked. Read only, looked up
+  when it opens, through Tor as the space's way says, and never kept; no pictures or links are opened, and a content
+  warning covers a post until tapped. An account that only posts for everyone, such as a project's, has its posts there.
 
 ## 4.0.0-rc.8 (2026-11-01)
 

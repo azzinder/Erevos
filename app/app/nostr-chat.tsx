@@ -22,7 +22,7 @@ import { voiceNamed } from '../lib/group-media';
 import { t } from '../lib/i18n';
 import { mimeOfName } from '../lib/matrix-media';
 import { messageLine } from '../lib/message-line';
-import { useNetworkWhere } from '../lib/network-place';
+import { useNetworkWhere, whereParams } from '../lib/network-place';
 import { nameOf, npubOf, personName, shortNpub, type NostrDmMessage, type NostrDmState } from '../lib/nostr-dm';
 import {
   nostrDmFile,
@@ -63,6 +63,8 @@ import { useColors } from '../theme/context';
 // shows, what comes in it only sounds, and it can be muted or given a sound of its own
 // (components/network-chat-notify.tsx). Opened from a hidden place's hidden chats (`hidden=1`) it is
 // the chat of that place's own key (lib/network-place.ts), which has no notification settings.
+// **Public posts**, in a chat with one person, opens what they post for everyone, read only
+// (app/nostr-posts.tsx).
 
 /** A voice message among the files: a sound that says how long it lasts. */
 const isVoice = (file: NostrDmFile): file is NostrDmFile & { duration: number } => file.type.startsWith('audio/') && !!file.duration;
@@ -237,6 +239,18 @@ export default function NostrChatScreen() {
       <Text variant="caption" tone="muted">
         {t('Nostr · encrypted (NIP-17), not anonymous')}
       </Text>
+      {group || self ? null : (
+        <>
+          <Row>
+            <Button title={t('Public posts')} kind="secondary" compact onPress={() => router.push({ pathname: '/nostr-posts', params: { key, ...whereParams(where) } })} />
+          </Row>
+          {chat.messages.length === 0 ? (
+            <Text variant="caption" tone="faint">
+              {t('No private messages here yet. What they post for everyone is under Public posts.')}
+            </Text>
+          ) : null}
+        </>
+      )}
 
       <View style={{ gap: space.md }} {...threadProps}>
         {chat.messages.map((message) => (

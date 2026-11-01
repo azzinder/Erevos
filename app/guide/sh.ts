@@ -1856,6 +1856,14 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   relayima na koje stižu vaše poruke i na najviše četiri druga relaya, onima koje čita druga aplikacija vašeg ključa
   (njen popis kind 10002, za ključ donesen iz druge aplikacije) te relay.damus.io, nos.lol i relay.primal.net. I te
   poruke su šifrirane, ali relayi vide tko je kome pisao i kada. Sam Erevos šalje samo na NIP-17 način.
+- **Javne objave:** u razgovoru s jednom osobom, **Javne objave** prikazuju ono što ta osoba objavljuje za sve (kind 1)
+  i objave drugih koje je ponovo podijelila, najnovije prvo, po trideset odjednom, a **Starije objave** donose još.
+  Namijenjeno je samo čitanju: odavde se ne može odgovoriti, reagirati ni objavljivati. Traži se kad se otvori, na
+  relayima koji služe za traženje i na onima na kojima, prema njenom popisu relaya (NIP-65), piše, onako kako određuje
+  izbor Tora za ovaj prostor, i ništa se od toga ne čuva. Slike i linkovi se ne otvaraju: prikazuju se kao adrese, koje
+  se mogu kopirati. Objava s upozorenjem o sadržaju prikazuje svoje riječi nakon dodira na **Prikaži**. Račun koji
+  objavljuje samo za sve, poput računa nekog projekta, ne šalje privatne poruke: njegov razgovor ostaje prazan, a
+  njegove su objave ovdje.
 - **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
   ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
 - **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu

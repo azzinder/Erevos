@@ -38,10 +38,13 @@ import {
   npubOf,
   nsecOf,
   otherInboxes,
+  POSTS_AT_ONCE,
+  postsOf,
   profileEvent,
   readKey,
   sameRelays,
   setInbox,
+  shortMentions,
   shortNpub,
   signed,
   takeWrap,
@@ -60,6 +63,7 @@ import {
   nostrDmForgetChat,
   nostrDmMake,
   nostrDmNewGroup,
+  nostrDmPosts,
   nostrDmReact,
   nostrDmSendFile,
   nostrDmSetFileServers,
@@ -787,6 +791,88 @@ test('a key brought from another app reads where that app said, and gets what ca
     assert.ok((nostrDmNow().state?.inboxLooked ?? 0) > 0);
   } finally {
     stopCame();
+    stopNostrDm();
+    setCurrentSpace(null);
+  }
+});
+
+test("someone's public posts are read where they write, checked, newest first, a page at a time", { skip: !coreReady }, async () => {
+  // Erin posts for everyone. Her relay list (NIP-65) says where she writes, which is not where
+  // look-ups go; a few of her posts are on the relay for look-ups too.
+  const erinOutbox = relay('wss://outbox.erin.example');
+  const erin = await newNostrDm();
+  const bob = await newNostrDm();
+  const minute = 60_000;
+  const start = Date.now() - 10 * 24 * 3600_000;
+  const at = (i: number) => start + i * minute;
+  const writes = await signed(erin, 10002, [['r', erinOutbox.url, 'write'], ['r', 'wss://reads.erin.example', 'read']], '', at(0));
+  const plain = await Promise.all(Array.from({ length: 31 }, (_, i) => signed(erin, 1, [], `post ${i} nostr:${npubOf(bob.public)}`, at(i + 1))));
+  const warned = await signed(erin, 1, [['content-warning', 'spoilers']], 'the end of the film', at(40));
+  const answer = await signed(erin, 1, [['e', 'a'.repeat(64), '', 'reply']], 'an answer', at(41));
+  const mention = await signed(erin, 1, [['e', 'b'.repeat(64), '', 'mention']], 'only naming one', at(42));
+  const bobs = await signed(bob, 1, [], "Bob's post", at(5));
+  const share = await signed(erin, 6, [['e', bobs.id], ['p', bob.public]], JSON.stringify(bobs), at(43));
+  const forgedInner = await signed(erin, 6, [], JSON.stringify({ ...bobs, content: 'not what Bob said' }), at(44));
+  const forged = { ...(await signed(erin, 1, [], 'as she wrote it', at(45))), content: 'not as she wrote it' };
+  const ahead = await signed(erin, 1, [], 'from the future', Date.now() + 24 * 3600_000);
+  const notHers = await signed(bob, 1, [], 'Bob, not Erin', at(46));
+  const put: [FakeRelay, typeof writes][] = [
+    [index, writes],
+    ...plain.map((event): [FakeRelay, typeof writes] => [erinOutbox, event]),
+    [index, plain[30]],
+    [index, warned],
+    [erinOutbox, answer],
+    [erinOutbox, mention],
+    [index, share],
+    [index, forgedInner],
+    [erinOutbox, forged],
+    [erinOutbox, ahead],
+    [erinOutbox, notHers],
+  ];
+  for (const [r, event] of put) {
+    const link = await NostrRelay.open(r.url, null);
+    assert.equal((await link.publish(event)).ok, true);
+    link.close();
+  }
+
+  // As shown: checked, each once, the share with Bob's post in it, newest first.
+  const all = await postsOf(erin.public, [...erinOutbox.events, ...index.events]);
+  assert.equal(all.length, POSTS_AT_ONCE);
+  assert.deepEqual(
+    all.slice(0, 5).map((p) => [p.text, p.answer ?? false, p.warning ?? null, p.sharedFrom ?? null]),
+    [
+      ["Bob's post", false, null, bob.public],
+      ['only naming one', false, null, null],
+      ['an answer', true, null, null],
+      ['the end of the film', false, 'spoilers', null],
+      [`post 30 nostr:${npubOf(bob.public)}`, false, null, null],
+    ],
+  );
+  assert.equal(new Set(all.map((p) => p.id)).size, all.length);
+  assert.ok(all.every((p) => !p.text.includes('not') && p.text !== 'from the future'));
+  assert.match(shortMentions(all[4].text), /^post 30 npub1[02-9ac-hj-np-z]{5}…[02-9ac-hj-np-z]{4}$/);
+
+  setCurrentSpace(4, randomBytes(32));
+  try {
+    runNostrDm();
+    await until(() => nostrDmNow().loaded, 'the account to load');
+    await nostrDmMake();
+    // The first page asks where look-ups go and, as her list says, where she writes.
+    const first = await nostrDmPosts(erin.public);
+    assert.equal(first.answered, true);
+    assert.equal(first.older, true);
+    assert.equal(first.posts.length, POSTS_AT_ONCE);
+    assert.deepEqual(first.posts.map((p) => p.id), all.map((p) => p.id));
+    // The next one, before the oldest shown, has the rest.
+    const second = await nostrDmPosts(erin.public, Math.floor(first.posts[first.posts.length - 1].at / 1000) - 1);
+    assert.deepEqual(
+      second.posts.map((p) => p.text),
+      [4, 3, 2, 1, 0].map((i) => `post ${i} nostr:${npubOf(bob.public)}`),
+    );
+    assert.equal(second.older, false);
+    // Nothing of them is kept.
+    assert.ok(!JSON.stringify(nostrDmNow().state).includes('post 3'));
+  } finally {
     stopNostrDm();
     setCurrentSpace(null);
   }

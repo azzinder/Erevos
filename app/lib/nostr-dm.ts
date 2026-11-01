@@ -724,3 +724,78 @@ export async function nip65Of(key: string, events: NostrEvent[]): Promise<string
   }
   return [];
 }
+
+// Public posts (kind 1, NIP-01) and posts shared again (kind 6, NIP-18) of someone a chat is with,
+// as their chat shows them, read only: looked up when asked for, never kept, nothing fetched for
+// them (a picture is its address, as written).
+
+/** One public post, as the screen shows it. */
+export type NostrPost = {
+  /** The post's id, or the share's. */
+  id: string;
+  /** When it was posted or shared, in milliseconds. */
+  at: number;
+  /** Its words, POST_MOST characters at most. */
+  text: string;
+  /** It answers another post (it names one, NIP-10). */
+  answer?: true;
+  /** Its content warning (NIP-36): the reason given, which may be empty. */
+  warning?: string;
+  /** A post of someone else shared again: whose. */
+  sharedFrom?: string;
+};
+
+/** How many posts one look-up shows, and the most characters of one. */
+export const POSTS_AT_ONCE = 30;
+export const POST_MOST = 8000;
+
+/** A post (kind 1) as shown: its words, whether it answers another, its warning. */
+function postParts(event: NostrEvent): Pick<NostrPost, 'text' | 'answer' | 'warning'> {
+  const answer = event.tags.some((tag) => tag[0] === 'e' && typeof tag[1] === 'string' && tag[3] !== 'mention');
+  const warned = event.tags.find((tag) => tag[0] === 'content-warning');
+  return {
+    text: event.content.slice(0, POST_MOST),
+    ...(answer ? { answer: true as const } : {}),
+    ...(warned ? { warning: typeof warned[1] === 'string' ? warned[1].slice(0, 200) : '' } : {}),
+  };
+}
+
+/**
+ * The public posts of `key` among these events, newest first, POSTS_AT_ONCE at most: its posts
+ * (kind 1) and its shares (kind 6) of a post whose copy is in the share, each checked, the share's
+ * copy too, each once. One dated more than ten minutes ahead is let be, as is a share with no
+ * post in it to show.
+ */
+export async function postsOf(key: string, events: NostrEvent[], now = Date.now()): Promise<NostrPost[]> {
+  const latest = Math.floor(now / 1000) + 600;
+  const candidates = events
+    .filter((e) => e.pubkey === key && (e.kind === 1 || e.kind === 6) && e.created_at <= latest)
+    .sort((a, b) => b.created_at - a.created_at);
+  const posts: NostrPost[] = [];
+  const ids = new Set<string>();
+  for (const event of candidates) {
+    if (posts.length >= POSTS_AT_ONCE) break;
+    // A changed copy that keeps a post's id hides nothing: only a checked one counts as seen.
+    if (ids.has(event.id) || !(await verified(event))) continue;
+    if (event.kind === 1) {
+      ids.add(event.id);
+      posts.push({ id: event.id, at: event.created_at * 1000, ...postParts(event) });
+      continue;
+    }
+    let inner: unknown;
+    try {
+      inner = JSON.parse(event.content);
+    } catch {
+      continue;
+    }
+    if (!isEvent(inner) || inner.kind !== 1 || !(await verified(inner))) continue;
+    ids.add(event.id);
+    posts.push({ id: event.id, at: event.created_at * 1000, ...postParts(inner), sharedFrom: inner.pubkey });
+  }
+  return posts;
+}
+
+/** Keys and notes named in a post's words (nostr:npub1…, NIP-21), shortened to be read. */
+export function shortMentions(text: string): string {
+  return text.replace(/nostr:((?:npub|nprofile|note|nevent|naddr)1[02-9ac-hj-np-z]{20,})/g, (_, named: string) => `${named.slice(0, named.indexOf('1') + 6)}…${named.slice(-4)}`);
+}

@@ -1784,6 +1784,13 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   relays where your messages arrive and on up to four more, those your key's other app reads (its kind 10002 list, for
   a key brought from another app) and relay.damus.io, nos.lol and relay.primal.net. These are encrypted too, but the
   relays see who wrote to whom and when. Erevos itself sends only the NIP-17 way.
+- **Public posts:** in a chat with one person, **Public posts** shows what they post for everyone (kind 1) and the
+  posts of others they shared again, newest first, thirty at a time, with **Older posts** for more. It is read only:
+  nothing can be answered, reacted to or posted from here. It is looked up when it opens, on the relays used for
+  look-ups and on those their relay list (NIP-65) says they write on, as the space's Tor way says, and nothing of it is
+  kept. No pictures or links are opened: they show as their addresses, which can be copied. A post with a content
+  warning shows its words after a tap on **Show**. An account that only posts for everyone, such as a project's, sends
+  no private messages: its chat stays empty, and its posts are here.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The
