@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.7 (2026-11-01)
+
+### For you
+
 - **Licence** in Settings → General: under which licence Erevos is free software (AGPL-3.0-or-later), its three
   additional terms, that it comes with no warranty, and who made it, as AUTHORS.md says; in the guide too, in all
   its languages.
