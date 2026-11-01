@@ -37,6 +37,10 @@ on:
         description: The release's version, e.g. 2.1.0, or 4.0.0-rc.1 for a test release before 4.0.0. Empty for the one after the latest (2.0.0 → 2.0.1, 4.0.0-rc.1 → 4.0.0-rc.2).
         required: false
         default: ''
+      macos:
+        description: off leaves macOS out of this release only (release-macos.yml can add it later); empty follows the repository variable EREVOS_MACOS.
+        required: false
+        default: ''
 
 # Each job asks for what it needs: contents: write where it uses gh release.
 permissions: {}
@@ -302,10 +306,11 @@ jobs:
 
   # One app for Apple silicon and Intel (macOS 13 or newer), signed ad hoc, not by Apple (that
   # needs a paid Apple Developer ID). A Mac minute counts as ten, so none while the repository
-  # variable EREVOS_MACOS is "off"; release-macos.yml adds it to such a release later.
+  # variable EREVOS_MACOS is "off", or while a dispatch says macos: off; release-macos.yml adds it
+  # to such a release later.
   macos:
     needs: [version, linux]
-    if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' }}
+    if: ${{ !cancelled() && needs.version.outputs.build == 'true' && vars.EREVOS_MACOS != 'off' && inputs.macos != 'off' }}
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
     runs-on: macos-latest
