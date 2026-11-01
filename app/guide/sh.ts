@@ -43,11 +43,13 @@ izabrali, pogledajte [Jezik](#start).
   **Zašto:** svaki način se otvara izvan Erevosa, u pregledniku ili novčaniku, samo kada ga dodirnete, pa Erevos sam
   ništa ne šalje i nikad ne zna ko je dao. PayPal zna ko daje; Monero ne pokazuje ni ko je dao ni koliko; Bitcoin ne
   pokazuje imena, ali je javno ono što je adresa primila.
+- **Kontakt:** **Postavke** → **Općenito** → **Kontakt** dodaje autora kao kontakt, a vi mu pišete u samom Erevosu,
+  šifrirano s kraja na kraj, bez broja telefona i bez e-maila.
 
 ### Napravljeno uz otvoreni kod drugih
 
-Sam Erevos je slobodan softver, pod licencom AGPL-3.0-or-later, a izgrađen je na radu drugih s otvorenim kodom. Ovo su
-glavni dijelovi, svaki sa svojim autorima i licencom:
+Sam Erevos je slobodan softver, pod licencom AGPL-3.0-or-later, pogledajte [Licenca](#licence), a izgrađen je na radu
+drugih s otvorenim kodom. Ovo su glavni dijelovi, svaki sa svojim autorima i licencom:
 
 - **Element Call** (Element; AGPL-3.0): Matrix pozivi.
 - **Arti, lyrebird, Snowflake i WebTunnel** (The Tor Project; Arti MIT ili Apache-2.0, lyrebird BSD-2-Clause, Snowflake
@@ -3294,6 +3296,45 @@ ono što navodi tabela iznad, onoliko dugo koliko se čuvaju.
 **Drugi koji nešto vide:** hosting kompanija (Hetzner), koja vodi mašinu i njenu mrežu; LPHL-ova prijava (Authentik),
 koja vidi svaku prijavu preko LPHL-a; a za web-aplikaciju s obavijestima dok je zatvorena, push usluga preglednika
 (Apple, Google ili Mozilla), koja vidi da je obavijest stigla, nikad šta.
+
+## Licenca {#licence}
+
+**Erevos, by azzinder.** Copyright © 2026 azzinder.
+
+Erevos je slobodan softver, pod licencom GNU Affero General Public License, verzija 3 ili bilo koja novija verzija
+(AGPL-3.0-or-later): svako ga smije koristiti, proučavati, dijeliti i mijenjati. Ko god dijeli Erevos, izmijenjen ili
+ne, ili za druge preko mreže pokreće izmijenjen Erevos, mora poštovati tu licencu i podijeliti izvorni kod svoje verzije
+s onima koji je dobiju.
+
+### Dodatni uslovi
+
+Prema odjeljku 7 licence, ovi uslovi vrijede i za Erevos:
+
+- **Ime autora.** Kopije i izmijenjene verzije zadržavaju napomenu „Erevos, by azzinder“ u dijelu O Erevosu u
+  aplikaciji, [Šta je Erevos](#about).
+- **Izmijenjena verzija to kaže.** Jasno kaže da je izmijenjena i ne predstavlja se kao izvorni Erevos.
+- **Ime i logo.** Licenca ne daje pravo na ime „Erevos“ ni na njegov logo: izmijenjena verzija koja se daje drugima
+  dobija drugo ime.
+
+### Bez garancije
+
+Erevos se daje u nadi da će biti koristan, ali **bez ikakve garancije**: čak ni da se može prodati ili da odgovara
+određenoj svrsi. Licenca kaže više.
+
+### Ko ga je napravio
+
+Erevos osmišljava, vodi i održava azzinder: bira njegove funkcije i način na koji rade, sigurnosni model i strukturu,
+testira ga na stvarnim uređajima i odlučuje šta ulazi u svako izdanje. Alati umjetne inteligencije korišteni su opširno
+za pisanje koda i tekstova, uvijek prema uputama i zamisli osobe koja ga održava.
+
+Dijelovi koje su napravili drugi zadržavaju svoje autore i licence, pogledajte
+[Napravljeno uz otvoreni kod drugih](#about). Potpuni tekstovi dolaze s izvornim kodom Erevosa: \`AUTHORS.md\`,
+\`CREDITS.md\` i folder \`LICENSES\`. Sama licenca je na [gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
+
+**Zašto:** slobodna licenca štiti vas samo ako je možete pročitati. Ona kaže šta smijete raditi s Erevosom i šta vam
+duguje svako ko ga mijenja.
+
+Ovaj dio se otvara i iz **Postavke** → **Općenito** → **Licenca**.
 
 ## Šta dolazi {#coming}
 

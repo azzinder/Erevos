@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { mark } from './i18n';
+import { makerContact } from './maker';
 
 // The Settings screens (app/settings/): every setting of Erevos in groups, as the phone's own
 // settings are. A group lists its settings; a setting opens its screen, or the list of its parts,
@@ -64,6 +65,10 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'whats-new', title: mark("What's new"), detail: mark('What each version changed'), href: '/whats-new' },
       // The guide's first section, its end: who makes Erevos, where, for whom, why and who pays.
       { id: 'about', title: mark('About Erevos'), detail: mark('Who makes it, for whom and why'), href: '/guide/about' },
+      // The guide's Licence: AGPL-3.0-or-later, its additional terms, no warranty, and who made Erevos (AUTHORS.md).
+      { id: 'licence', title: mark('Licence'), detail: mark('Free software, its terms, and who made it'), href: '/guide/licence' },
+      // The maker as a contact, from the link that comes with the app (lib/maker.ts); none while there is no link.
+      { id: 'contact-maker', title: mark('Contact'), detail: mark('Write to the maker of Erevos, in Erevos'), href: '/contact-maker', when: () => makerContact() !== null },
       // The ways to give to Erevos for its running costs (lib/donate.ts).
       { id: 'donate', title: mark('Support Erevos'), detail: mark('Liberapay, PayPal, Monero or Bitcoin'), href: '/donate' },
       {

@@ -12,6 +12,7 @@ import { basename, dirname, join } from 'node:path';
 import { test } from 'node:test';
 
 import { setLang, t } from '../lib/i18n';
+import { makerContact } from '../lib/maker';
 import { groupsHere, hasParts, itemsHere, searchSettings, SETTINGS, type SettingsLeaf, type SettingsPlace } from '../lib/settings';
 
 const APP = join(import.meta.dirname, '..', 'app');
@@ -43,6 +44,17 @@ test('every setting opens a screen that exists, each part one its screen knows',
     const part = new URLSearchParams(query ?? '').get('part');
     if (part) assert.ok(partsOf(file).includes(part), `${leaf.id}: ${part} in ${path}`);
   }
+});
+
+test("the maker's contact link that comes with Erevos reads, with its keys, so Contact shows", () => {
+  const maker = makerContact();
+  assert.ok(maker, 'MAKER_LINK (lib/maker.ts) is a contact link with keys');
+  assert.match(maker.code.senderHex, /^[0-9a-f]{48}$/);
+  assert.ok(maker.name);
+  assert.ok(itemsHere(SETTINGS[0], PHONE).some((item) => item.id === 'contact-maker'));
+  // A link with no keys is no contact to write to, and then Contact does not show.
+  assert.equal(makerContact(`https://erevos-web.lphl.nekten.eu/c#id=${'a'.repeat(48)}`), null);
+  assert.equal(makerContact(''), null);
 });
 
 test('the ids are unique where they are looked up', () => {

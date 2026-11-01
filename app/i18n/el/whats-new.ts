@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Licence**: Settings → General → Licence says under which licence Erevos is free software, AGPL-3.0-or-later, its three additional terms, that it comes with no warranty, and who made it. See [Licence](#licence).":
+    "**Άδεια χρήσης**: οι Ρυθμίσεις → Γενικά → Άδεια χρήσης λένε με ποια άδεια το Erevos είναι ελεύθερο λογισμικό, AGPL-3.0-or-later, τους τρεις πρόσθετους όρους της, ότι δεν έρχεται με καμία εγγύηση, και ποιος το έφτιαξε. Δες [Άδεια χρήσης](#licence).",
+  "**Contact**: Settings → General → Contact adds the maker of Erevos as a contact, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email. See [What Erevos is](#about).":
+    "**Επικοινωνία**: οι Ρυθμίσεις → Γενικά → Επικοινωνία προσθέτουν τον δημιουργό του Erevos στις επαφές σου, για να του γράφεις μέσα στο ίδιο το Erevos, κρυπτογραφημένα από άκρη σε άκρη, χωρίς αριθμό τηλεφώνου και χωρίς email. Δες [Τι είναι το Erevos](#about).",
   "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
     "**Η αριθμομηχανή ανοίγει ξανά**: στην 4.0.0-rc.6 έκλεινε μόλις την πατούσες.",
   // 4.0.0-rc.6

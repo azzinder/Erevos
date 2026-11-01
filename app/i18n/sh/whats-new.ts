@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Licence**: Settings → General → Licence says under which licence Erevos is free software, AGPL-3.0-or-later, its three additional terms, that it comes with no warranty, and who made it. See [Licence](#licence).":
+    "**Licenca**: Postavke → Općenito → Licenca kaže pod kojom je licencom Erevos slobodan softver, AGPL-3.0-or-later, njegova tri dodatna uslova, da dolazi bez ikakve garancije i ko ga je napravio. Pogledajte [Licenca](#licence).",
+  "**Contact**: Settings → General → Contact adds the maker of Erevos as a contact, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email. See [What Erevos is](#about).":
+    "**Kontakt**: Postavke → Općenito → Kontakt dodaje autora Erevosa kao kontakt, da mu pišete u samom Erevosu, šifrirano s kraja na kraj, bez broja telefona i bez e-maila. Pogledajte [Šta je Erevos](#about).",
   "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
     "**Kalkulator se ponovo otvara**: u 4.0.0-rc.6 zatvarao se čim biste ga dodirnuli.",
   // 4.0.0-rc.6

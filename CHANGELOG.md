@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Licence** in Settings → General: under which licence Erevos is free software (AGPL-3.0-or-later), its three
+  additional terms, that it comes with no warranty, and who made it, as AUTHORS.md says; in the guide too, in all
+  its languages.
+- **Contact** in Settings → General: adds the maker of Erevos as a contact, from the contact link that comes with
+  the app, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email.
+
 ### Under the hood
 
 - The calculator in place of Erevos's icon opens again: in 4.0.0-rc.6 it closed as soon as it was tapped, because it set the colour of the phone's bars before its screen existed.

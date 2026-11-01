@@ -46,11 +46,13 @@ que tu as choisie, voir [Langue](#start).
   s’ouvre hors d’Erevos, dans le navigateur ou un portefeuille, seulement quand tu appuies dessus, si bien qu’Erevos
   lui-même n’envoie rien et ne sait jamais qui a donné. PayPal sait qui donne ; Monero ne montre ni qui a donné ni
   combien ; Bitcoin ne montre aucun nom, mais ce que l’adresse a reçu est public.
+- **Contact :** **Réglages** → **Général** → **Contact** ajoute l’auteur d’Erevos comme contact, et tu lui écris dans
+  Erevos même, avec chiffrement de bout en bout, sans numéro de téléphone ni e-mail.
 
 ### Fait avec l’open source des autres
 
-Erevos lui-même est un logiciel libre, sous la licence AGPL-3.0-or-later, et il est construit sur le travail open source
-d’autres personnes. Voici les principales parties, chacune avec ses auteurs et sa licence :
+Erevos lui-même est un logiciel libre, sous la licence AGPL-3.0-or-later, voir [Licence](#licence), et il est construit
+sur le travail open source d’autres personnes. Voici les principales parties, chacune avec ses auteurs et sa licence :
 
 - **Element Call** (Element ; AGPL-3.0) : les appels Matrix.
 - **Arti, lyrebird, Snowflake et WebTunnel** (The Tor Project ; Arti MIT ou Apache-2.0, lyrebird BSD-2-Clause, Snowflake
@@ -3607,6 +3609,48 @@ bout. Les copies contiennent ce que liste le tableau ci-dessus, aussi longtemps 
 connexion de LPHL (Authentik), qui voit chaque connexion avec LPHL ; et pour l’app web avec les notifications quand elle
 est fermée, le service push du navigateur (Apple, Google ou Mozilla), qui voit qu’une notification est arrivée, jamais
 quoi.
+
+## Licence {#licence}
+
+**Erevos, by azzinder.** Copyright © 2026 azzinder.
+
+Erevos est un logiciel libre, sous la GNU Affero General Public License, version 3 ou toute version ultérieure
+(AGPL-3.0-or-later) : chacun peut l’utiliser, l’étudier, le partager et le modifier. Quiconque partage Erevos, modifié
+ou non, ou fait tourner un Erevos modifié pour d’autres à travers un réseau, doit respecter cette licence et partager
+le code source de sa version avec ceux qui la reçoivent.
+
+### Conditions supplémentaires
+
+Selon la section 7 de la licence, ces conditions s’appliquent aussi à Erevos :
+
+- **Le nom de l’auteur.** Les copies et les versions modifiées gardent la mention « Erevos, by azzinder » dans la partie
+  À propos d’Erevos de l’app, [Ce qu’est Erevos](#about).
+- **Une version modifiée le dit.** Elle dit clairement qu’elle est modifiée, et ne se présente pas comme l’Erevos
+  d’origine.
+- **Le nom et le logo.** La licence ne donne aucun droit sur le nom « Erevos » ni sur son logo : une version modifiée
+  qui est donnée à d’autres prend un autre nom.
+
+### Aucune garantie
+
+Erevos est donné dans l’espoir qu’il sera utile, mais **sans aucune garantie** : pas même celle qu’il puisse être vendu
+ou qu’il convienne à un usage particulier. La licence en dit plus.
+
+### Qui l’a fait
+
+Erevos est conçu, dirigé et maintenu par azzinder, qui a choisi ses fonctions et leur façon de marcher, son modèle de
+sécurité et sa structure, le teste sur de vrais appareils et décide de ce qui entre dans chaque version. Des outils d’IA
+ont été largement utilisés pour écrire le code et les textes, toujours sur les instructions et d’après la conception
+d’azzinder.
+
+Les parties faites par d’autres gardent leurs propres auteurs et leurs propres licences, voir
+[Fait avec l’open source des autres](#about). Les textes complets viennent avec le code source d’Erevos :
+\`AUTHORS.md\`, \`CREDITS.md\` et le dossier \`LICENSES\`. La licence elle-même est sur
+[gnu.org](https://www.gnu.org/licenses/agpl-3.0.html).
+
+**Pourquoi :** une licence libre ne te protège que si tu peux la lire. Elle dit ce que tu peux faire avec Erevos, et ce
+que te doit quiconque le modifie.
+
+Cette partie s’ouvre aussi depuis **Réglages** → **Général** → **Licence**.
 
 ## Ce qui arrive {#coming}
 
