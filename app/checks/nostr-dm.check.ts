@@ -25,6 +25,7 @@ import { fromBase64, randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode } f
 import {
   addMessage,
   BACKDATE,
+  DEFAULT_INBOX,
   CHATS_MOST,
   chatCore,
   FOLLOWS_RELAYS,
@@ -35,8 +36,12 @@ import {
   LOOKUP_RELAYS,
   newNostrDm,
   npubOf,
+  nsecOf,
+  otherInboxes,
   profileEvent,
   readKey,
+  sameRelays,
+  setInbox,
   shortNpub,
   signed,
   takeWrap,
@@ -49,6 +54,7 @@ import { inboxParts, nostrInboxRows, showsIn } from '../lib/inbox';
 import { lookUpNip05, NostrRelay, setNostrOpen } from '../lib/nostr-dm-net';
 import { networkNotify, networkUnreadAt, onNetworkMessage, onNetworkRead } from '../lib/network-notices';
 import {
+  nostrDmBring,
   nostrDmFile,
   nostrDmFollows,
   nostrDmForgetChat,
@@ -639,6 +645,117 @@ test('a NIP-05 name gives its key and relays', { skip: !coreReady }, async () =>
     assert.equal(await lookUpNip05('not a name'), null);
   } finally {
     globalThis.fetch = real;
+  }
+});
+
+test("a key's inbox lists from other apps are found, newest first, and a new relay is read from its start", { skip: !coreReady }, async () => {
+  const me = await newNostrDm();
+  const someone = await newNostrDm();
+  assert.equal(sameRelays(['wss://a.example/', 'wss://b.example'], ['wss://b.example', 'wss://a.example']), true);
+  assert.equal(sameRelays(['wss://a.example'], ['wss://a.example', 'wss://b.example']), false);
+  me.inbox = ['wss://old.example'];
+  const older = await inboxEvent(me, Date.now() - 60_000);
+  me.inbox = ['wss://amethyst.example/', 'wss://more.example'];
+  const theirs = await inboxEvent(me, Date.now() - 30_000);
+  me.inbox = [...DEFAULT_INBOX];
+  const ours = await inboxEvent(me);
+  someone.inbox = ['wss://someone.example'];
+  const notMine = await inboxEvent(someone);
+  // A changed copy that keeps the id of a list, come first, does not hide that list.
+  const forged = { ...theirs, tags: [['relay', 'wss://evil.example']] };
+  const found = await otherInboxes(me.public, [ours, notMine, forged, older, theirs, theirs], me.inbox);
+  assert.deepEqual(
+    found.map((f) => [f.relays, f.at]),
+    [
+      [['wss://amethyst.example', 'wss://more.example'], theirs.created_at],
+      [['wss://old.example'], older.created_at],
+    ],
+  );
+  // The same relays in another order are the same inbox: what was read stays read.
+  me.caught = 100;
+  setInbox(me, [DEFAULT_INBOX[2], DEFAULT_INBOX[0], DEFAULT_INBOX[1]]);
+  assert.equal(me.caught, 100);
+  setInbox(me, ['wss://amethyst.example']);
+  assert.equal(me.caught, 0);
+});
+
+test('a key brought from another app reads where that app said, and gets what came before', { skip: !coreReady }, async () => {
+  // Dan's other app (Amethyst, say) reads his messages on a guarded relay of its own, and said so on
+  // the relays it writes on (his NIP-65 list); an even older list named another. Erevos had since
+  // said, on the relays that gather lists, that he reads on its own three, over that app's list.
+  const danInbox = relay('wss://inbox.dan.example', { guarded: true });
+  const danOlder = relay('wss://older.dan.example');
+  const danOutbox = relay('wss://outbox.dan.example');
+  const danOutbox2 = relay('wss://outbox2.dan.example');
+  const dan = await newNostrDm();
+  const bob = await newNostrDm();
+  const hour = 3600_000;
+  dan.inbox = [danOlder.url];
+  const oldest = await inboxEvent(dan, Date.now() - 48 * hour);
+  dan.inbox = [danInbox.url];
+  const theirs = await inboxEvent(dan, Date.now() - hour);
+  const writes = await signed(dan, 10002, [['r', `${danOutbox.url}/`, 'write'], ['r', danOutbox2.url]], '', Date.now() - hour);
+  dan.inbox = [...DEFAULT_INBOX];
+  const ours = await inboxEvent(dan, Date.now() - 60_000);
+  // What Bob wrote him before, days ago, kept where each of his lists named.
+  const before = await wrapText(bob, dan.public, 'from before', Date.now() - 72 * hour);
+  const further = await wrapText(bob, dan.public, 'from further back', Date.now() - 96 * hour);
+  const put = [
+    [danOutbox2, oldest],
+    [danOutbox, theirs],
+    [index, writes],
+    [index, ours],
+    [danInbox, before.theirs],
+    [danOlder, further.theirs],
+  ] as const;
+  for (const [r, event] of put) {
+    const link = await NostrRelay.open(r.url, null);
+    assert.equal((await link.publish(event)).ok, true);
+    link.close();
+  }
+  assert.ok(index.events.some((e) => e.id === ours.id) && !index.events.some((e) => e.id === theirs.id));
+
+  const came: string[] = [];
+  const stopCame = onNetworkMessage((where) => came.push(where));
+  setCurrentSpace(3, randomBytes(32));
+  try {
+    runNostrDm();
+    await until(() => nostrDmNow().loaded, 'the account to load');
+    await nostrDmBring(await nsecOf(dan));
+    // It reads where his other app reads, saying who reads there.
+    await until(() => sameRelays(nostrDmNow().state?.inbox ?? [], [danInbox.url]), "his other app's inbox", 10_000);
+    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 2, 'what came before', 10_000);
+    assert.deepEqual(
+      nostrDmNow()
+        .state!.chats[bob.public].messages.map((m) => [m.mine, m.text])
+        .sort(),
+      [
+        [false, 'from before'],
+        [false, 'from further back'],
+      ],
+    );
+    assert.ok(danInbox.authed.includes(dan.public));
+    // His newest list names that inbox again where lists are looked up: his other app reads it too.
+    await until(
+      () => index.events.some((e) => e.kind === 10050 && e.pubkey === dan.public && sameRelays(e.tags.filter((t) => t[0] === 'relay').map((t) => t[1]), [danInbox.url])),
+      'his list said again',
+    );
+    // What came before was told of as nothing new.
+    assert.deepEqual(came, []);
+    // What comes now comes too, and is told.
+    await until(() => (nostrDmNow().state?.caught ?? 0) > 0, 'his inbox read to its end');
+    const fresh = await wrapText(bob, dan.public, 'and now');
+    const link = await NostrRelay.open(danInbox.url, null);
+    assert.equal((await link.publish(fresh.theirs)).ok, true);
+    link.close();
+    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 3, 'a new message');
+    assert.deepEqual(came, [`nostr:${bob.public}`]);
+    // It looked once: the next time it reads, it does not look again.
+    assert.ok((nostrDmNow().state?.inboxLooked ?? 0) > 0);
+  } finally {
+    stopCame();
+    stopNostrDm();
+    setCurrentSpace(null);
   }
 });
 

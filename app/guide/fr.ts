@@ -2019,7 +2019,10 @@ discussions propres à Erevos.
 - **Où arrivent tes messages :** les relais auxquels les autres applis envoient tes messages : relay.damus.io, nos.lol
   et relay.primal.net si tu ne les changes pas, trois au plus. Erevos les fait connaître aux autres applis (une liste
   kind 10050) quand ils changent et une fois par semaine. Il envoie aux relais que nomme l’appli de l’autre personne ;
-  une appli qui n’en nomme aucun ne peut pas encore recevoir de message, et Erevos le dit.
+  une appli qui n’en nomme aucun ne peut pas encore recevoir de message, et Erevos le dit. Une clé venue d’une autre
+  appli lit là où cette appli a dit que tes messages arrivent (sa propre liste kind 10050), sauf si tu les as changés
+  ici, et redit cette liste, si bien que les deux applis reçoivent les mêmes messages ; elle lit ces relais depuis leur
+  début, et récupère une fois ce que les relais nommés dans d’anciennes listes de la clé gardent encore.
 - **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
   quand la personne le lit. Lire une discussion ici ne le dit à personne.
 - **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais

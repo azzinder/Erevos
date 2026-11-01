@@ -16,6 +16,7 @@ import {
   addMessage,
   authEvent,
   chatOf,
+  DEFAULT_INBOX,
   FOLLOWS_RELAYS,
   followsLook,
   forgetChat,
@@ -29,11 +30,13 @@ import {
   newGroup,
   newNostrDm,
   npubOf,
+  otherInboxes,
   profileEvent,
   profileFieldsOf,
   reactionOf,
   readersOf,
   readKey,
+  sameRelays,
   setInbox,
   shortNpub,
   signedOnce,
@@ -77,6 +80,9 @@ type Live = {
   reading: Map<string, NostrRelay>;
   /** Which inbox each reader belongs to: a new inbox stops the old ones. */
   inboxAt: number;
+  /** The inbox relays that said they sent all they keep, since the inbox was last read anew: the
+   *  space has read all only once each of them has, so one not reached yet still sends from its start. */
+  allSent: Set<string>;
   telling: boolean;
   /** The inbox or name changed while they were being told: told again after. */
   tellAgain: boolean;
@@ -159,11 +165,11 @@ function keepSoon(it: Live): void {
  * screens, and of the messages that came or were read. A key brought from another app first takes
  * what its relays still keep, until they say that was all, and tells of none of it.
  */
-function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
+function changeAccount<T>(it: Live, change: () => Promise<T>, quietly = false): Promise<T> {
   const run = it.queue
     .catch(() => undefined)
     .then(async () => {
-      const quiet = !it.state || it.state.caught === 0;
+      const quiet = quietly || !it.state || it.state.caught === 0;
       try {
         return await change();
       } finally {
@@ -321,21 +327,30 @@ async function read(it: Live, url: string, inboxAt: number): Promise<void> {
             if (it.state === state) await takeWrap(state, event);
           }),
         () => {
-          caughtUp = true;
+          // It answers: should it end later, it is asked again soon.
+          wait = 3000;
+          if (it.inboxAt !== inboxAt) return;
+          it.allSent.add(url);
+          caughtUp = state.inbox.every((relay) => it.allSent.has(relay));
+          if (!caughtUp) return;
+          // Not once the inbox changed meanwhile: the new one is read from its start.
           void changeAccount(it, async () => {
-            state.caught = Math.max(state.caught, askedAt);
+            if (it.inboxAt === inboxAt && state.inbox.includes(url)) state.caught = Math.max(state.caught, askedAt);
           });
         },
+        // The relay stopped sending (it closed the ask): it is asked again on a new connection,
+        // after a wait that grows while it keeps doing so, instead of staying open and silent.
+        () => relay.close(),
       );
-      wait = 3000;
       // While it reads: what came since counts as read too, every ten minutes.
       const ended = relay.whenEnded();
       for (;;) {
         const done = await endedWithin(ended, 600_000);
         if (done || !stillOpen(it) || it.inboxAt !== inboxAt) break;
+        caughtUp = state.inbox.every((relay) => it.allSent.has(relay));
         if (caughtUp) {
           void changeAccount(it, async () => {
-            state.caught = Math.max(state.caught, seconds() - 60);
+            if (it.inboxAt === inboxAt && state.inbox.includes(url)) state.caught = Math.max(state.caught, seconds() - 60);
           });
         }
       }
@@ -357,10 +372,78 @@ function startReading(it: Live): void {
   const state = it.state;
   if (!state) return;
   it.inboxAt += 1;
+  it.allSent = new Set();
   for (const relay of it.reading.values()) relay.close();
   it.reading.clear();
   for (const url of state.inbox) void read(it, url, it.inboxAt);
-  void tell(it).catch(() => undefined);
+  // A key brought from another app first looks where that app reads its messages, and only then
+  // says where it reads, so as not to name other relays than that app over its list.
+  if (!state.madeHere && !state.inboxLooked) void lookForInbox(it, state).catch(() => undefined);
+  else void tell(it).catch(() => undefined);
+}
+
+/** How long the lists of a brought key are waited for, through Tor, and the wraps a relay keeps. */
+const LOOK_WAIT = 15_000;
+const CATCH_UP_WAIT = 30_000;
+/** The most relays asked once for what they keep. */
+const CATCH_UP_MOST = 8;
+
+/**
+ * For a key brought from another app (Amethyst, say): where that app said its messages come (its
+ * kind 10050), looked for on the relays that gather such lists, on the key's own (NIP-65) and the
+ * inbox. An inbox Erevos chose (never changed here) becomes that app's, which then goes out again as
+ * the key's newest list, and is read from its start; what the other lists' relays and the inbox
+ * before keep is fetched once. Until a relay answers, it is tried again the next time.
+ */
+async function lookForInbox(it: Live, state: NostrDmState): Promise<void> {
+  const me = state.public;
+  const own = await lookUpAnswered(it, [...LOOKUP_RELAYS, ...FOLLOWS_RELAYS], [{ kinds: [10002], authors: [me] }], LOOK_WAIT);
+  const writes = await writesOf(me, own.events);
+  const where = [...new Set([...LOOKUP_RELAYS, ...FOLLOWS_RELAYS, ...DEFAULT_INBOX, ...state.inbox, ...writes])];
+  const found = await lookUpAnswered(it, where, [{ kinds: [10050], authors: [me] }], LOOK_WAIT);
+  if (!found.answered || it.state !== state || !stillOpen(it)) return;
+  const others = await otherInboxes(me, found.events, state.inbox);
+  const before = state.inbox;
+  const adopt = others.length > 0 && sameRelays(state.inbox, DEFAULT_INBOX) ? others[0].relays.slice(0, INBOX_MOST) : null;
+  await changeAccount(it, async () => {
+    if (it.state !== state) return;
+    state.inboxLooked = seconds();
+    if (adopt) {
+      state.inbox = adopt;
+      state.told = 0;
+      state.caught = 0;
+    }
+  });
+  if (it.state !== state || !stillOpen(it)) return;
+  if (adopt) startReading(it);
+  else void tell(it).catch(() => undefined);
+  const extra = [...new Set([...others.flatMap((other) => other.relays), ...(adopt ? before : [])])].filter((relay) => !state.inbox.includes(relay));
+  await catchUp(it, state, extra.slice(0, CATCH_UP_MOST));
+}
+
+/** Fetches once what these relays keep for the key (its wraps), saying who reads where they ask, quietly: it came before. */
+async function catchUp(it: Live, state: NostrDmState, urls: string[]): Promise<void> {
+  await Promise.all(
+    urls.map(async (url) => {
+      let relay: NostrRelay | null = null;
+      try {
+        relay = await NostrRelay.open(url, (where, challenge) => authEvent(state, where, challenge));
+        const { events } = await relay.ask([{ kinds: [1059], '#p': [state.public], limit: 1000 }], CATCH_UP_WAIT);
+        if (!events.length || it.state !== state || !stillOpen(it)) return;
+        await changeAccount(
+          it,
+          async () => {
+            for (const event of events) if (it.state === state) await takeWrap(state, event);
+          },
+          true,
+        );
+      } catch {
+        // Not reached: what it keeps stays there.
+      } finally {
+        relay?.close();
+      }
+    }),
+  );
 }
 
 /** Loads the open space's account, once, and reads its inbox while the space stays open. */
@@ -409,6 +492,7 @@ function start(holder: Holder, space: number, key: Uint8Array, pocket?: number):
     saving: null,
     reading: new Map(),
     inboxAt: 0,
+    allSent: new Set(),
     telling: false,
     tellAgain: false,
     listedAt: 0,
@@ -509,8 +593,9 @@ export async function nostrDmTake(space: number, given: { secret: string; inbox:
   if (given.name !== undefined) state.name = given.name;
   if (given.files?.length) state.files = given.files.slice(0, 5);
   // The phone told where the key reads, and its name: told again from here once that is a week
-  // old, or changed here.
+  // old, or changed here. Where its other app reads was looked for there.
   state.told = seconds();
+  state.inboxLooked = seconds();
   if (it.state || it.stopped) return it.stopped ? null : now();
   await begin(it, state);
   return 'brought';

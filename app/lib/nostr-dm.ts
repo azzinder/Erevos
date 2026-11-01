@@ -117,6 +117,9 @@ export type NostrDmState = {
   early?: { key: string; target: string; from: string; emoji: string }[];
   /** Made here (not brought from another app): its nsec is only here unless written down. */
   madeHere?: boolean;
+  /** For a key brought from another app: when Erevos looked for where that app said its messages
+   *  come (its kind 10050), to read there too (seconds). Until then, it tells no inbox of its own. */
+  inboxLooked?: number;
 };
 
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -383,6 +386,33 @@ export async function inboxOf(key: string, events: NostrEvent[]): Promise<string
   return null;
 }
 
+/** Whether two lists of relays name the same ones, in any order. */
+export function sameRelays(a: string[], b: string[]): boolean {
+  const one = new Set(a.map((r) => r.replace(/\/+$/, '')));
+  const two = new Set(b.map((r) => r.replace(/\/+$/, '')));
+  return one.size === two.size && [...one].every((r) => two.has(r));
+}
+
+/**
+ * The inboxes `key` named in these lists (kind 10050) other than `inbox`: another app's, where it
+ * reads the key's messages, or one the key had before. Newest first, each checked, each set of
+ * relays once, with its time (seconds).
+ */
+export async function otherInboxes(key: string, events: NostrEvent[], inbox: string[]): Promise<{ relays: string[]; at: number }[]> {
+  const lists = events.filter((e) => e.kind === 10050 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);
+  const found: { relays: string[]; at: number }[] = [];
+  const ids = new Set<string>();
+  for (const list of lists) {
+    // A changed copy that keeps a list's id hides nothing: only a checked one counts as seen.
+    if (ids.has(list.id) || !(await verified(list))) continue;
+    ids.add(list.id);
+    const relays = [...new Set(list.tags.filter((tag) => tag[0] === 'relay' && isNostrRelay(tag[1])).map((tag) => tag[1].replace(/\/+$/, '')))];
+    if (!relays.length || sameRelays(relays, inbox) || found.some((f) => sameRelays(f.relays, relays))) continue;
+    found.push({ relays, at: list.created_at });
+  }
+  return found;
+}
+
 /** The most of the relays someone writes on (their NIP-65 list) that their follow list is looked for on. */
 export const WRITES_MOST = 8;
 
@@ -632,6 +662,8 @@ export function setInbox(state: NostrDmState, relays: string[]): void {
   if (list.length > INBOX_MOST) throw new Error(t('Three relays at most: NIP-17 asks to keep it small.'));
   const bad = list.find((r) => !isNostrRelay(r));
   if (bad) throw new Error(t('{relay} is not a Nostr relay address (wss://…).', { relay: bad }));
+  // A relay new to it is read from the start: what it keeps already comes too.
+  if (list.some((relay) => !state.inbox.includes(relay))) state.caught = 0;
   state.inbox = list;
   state.told = 0;
 }

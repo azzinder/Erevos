@@ -1904,7 +1904,10 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 - **Onde chegam suas mensagens:** os relays para onde outros apps mandam suas mensagens: relay.damus.io, nos.lol e
   relay.primal.net se você não os mudar, no máximo três. O Erevos os informa a outros apps (uma lista kind 10050) quando
   mudam e uma vez por semana. Ele envia para os relays que o app da outra pessoa indica; um app que não indica nenhum
-  ainda não pode receber mensagem, e o Erevos avisa.
+  ainda não pode receber mensagem, e o Erevos avisa. Uma chave trazida de outro app lê onde esse app indicou que chegam
+  suas mensagens (a lista kind 10050 dele), a menos que você as tenha mudado aqui, e informa essa lista de novo, para
+  que os dois apps recebam as mesmas mensagens; ela lê esses relays desde o começo deles, e busca uma vez o que os
+  relays indicados em listas anteriores da chave ainda guardam.
 - **Marcas:** um ✓ assim que um dos relays da pessoa aceitou a mensagem. O NIP-17 não devolve nada: nem quando o app
   dela a tem, nem quando ela lê. Ler uma conversa aqui não avisa ninguém.
 - **Não anônimo:** sua chave é a mesma para todos com quem você fala, e qualquer um que tenha um npub pode escrever para

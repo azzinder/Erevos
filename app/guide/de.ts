@@ -2053,7 +2053,11 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 - **Wo deine Nachrichten ankommen:** die Relays, an die andere Apps deine Nachrichten senden: relay.damus.io, nos.lol
   und relay.primal.net, wenn du sie nicht änderst, höchstens drei. Erevos teilt sie anderen Apps mit (eine Liste vom
   kind 10050), wenn sie sich ändern, und einmal pro Woche. Es sendet an die Relays, die die App der anderen Person
-  nennt; eine App, die keine nennt, kann noch keine Nachricht bekommen, und Erevos sagt das.
+  nennt; eine App, die keine nennt, kann noch keine Nachricht bekommen, und Erevos sagt das. Ein aus einer anderen App
+  mitgebrachter Schlüssel liest dort, wo diese App angegeben hat, dass deine Nachrichten ankommen (ihre eigene Liste vom
+  kind 10050), es sei denn, du hast sie hier geändert, und teilt diese Liste erneut mit, sodass beide Apps dieselben
+  Nachrichten bekommen; er liest diese Relays von ihrem Anfang an und holt einmal ab, was die in älteren Listen des
+  Schlüssels genannten Relays noch aufbewahren.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.

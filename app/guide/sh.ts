@@ -1847,7 +1847,10 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 - **Gdje stižu vaše poruke:** relayi na koje druge aplikacije šalju vaše poruke: relay.damus.io, nos.lol i
   relay.primal.net ako ih ne promijenite, najviše tri. Erevos ih javlja drugim aplikacijama (popis kind 10050) kad se
   promijene i jednom tjedno. Šalje na relaye koje navodi aplikacija druge osobe; aplikacija koja ne navodi nijedan još ne
-  može primiti poruku, i Erevos to kaže.
+  može primiti poruku, i Erevos to kaže. Ključ donesen iz druge aplikacije čita tamo gdje je ta aplikacija rekla da
+  stižu vaše poruke (njen vlastiti popis kind 10050), osim ako ste ih ovdje promijenili, i taj popis ponovo javlja, pa
+  obje aplikacije dobivaju iste poruke; te relaye čita od njihova početka, i jednom dohvaća ono što relayi navedeni u
+  starijim popisima ključa još čuvaju.
 - **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
   ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
 - **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu

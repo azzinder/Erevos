@@ -1776,7 +1776,9 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
 - **Where your messages arrive:** the relays other apps send your messages to: relay.damus.io, nos.lol and
   relay.primal.net unless you change them, three at most. Erevos tells other apps about them (a kind 10050 list) when
   they change and once a week. It sends to the relays the other person's app names; an app that names none cannot get
-  a message yet, and Erevos says so.
+  a message yet, and Erevos says so. A key brought from another app reads where that app said your messages arrive
+  (its own kind 10050 list), unless you changed them here, and says that list again, so both apps get the same messages;
+  it reads those relays from their start, and fetches once what relays named in older lists of the key still keep.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The
