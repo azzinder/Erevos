@@ -2058,6 +2058,12 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   kind 10050), es sei denn, du hast sie hier geändert, und teilt diese Liste erneut mit, sodass beide Apps dieselben
   Nachrichten bekommen; er liest diese Relays von ihrem Anfang an und holt einmal ab, was die in älteren Listen des
   Schlüssels genannten Relays noch aufbewahren.
+- **Alte private Nachrichten:** Viele Apps senden und behalten private Nachrichten noch auf die ältere Art (NIP-04,
+  kind 4); Damus und Primal haben sie jahrelang angezeigt. Erevos liest sie auch, alte und neue, und zeigt sie in
+  denselben Chats: auf den Relays, wo deine Nachrichten ankommen, und auf bis zu vier weiteren, nämlich denen, die die
+  andere App deines Schlüssels liest (ihre Liste vom kind 10002, bei einem aus einer anderen App mitgebrachten
+  Schlüssel), sowie relay.damus.io, nos.lol und relay.primal.net. Auch diese Nachrichten sind verschlüsselt, aber die
+  Relays sehen, wer wem wann geschrieben hat. Erevos selbst sendet nur auf die Art von NIP-17.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.
@@ -2486,6 +2492,11 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   Symbol von Erevos selbst oder das orange Schloss **Alles entsperren** oben, fragt erneut nach dem Passwort und öffnet
   dann den ganzen Bereich. So lässt sich ein Code, der per SMS kam, lesen, auch wenn jemand neben dir sitzt, und das
   übrige Erevos bleibt geschlossen.
+- **Nur die Kontakte:** Ebenso fragen das Kontakte-Symbol, die Taste **Kontakte** des Widgets und die Benachrichtigung
+  über einen Geburtstag nach dem Passwort und öffnen dann nur die Kontakte: ihre Liste, die Karte eines Kontakts (ohne
+  deine Chats und Anrufe mit ihm), **Bearbeiten**, Gruppen, Duplikate, die SIM und das Importieren. **Anrufen** öffnet
+  weiterhin die Telefon-App des Telefons. Ein Chat, eine SMS, **Einstellungen** oder das orange Schloss **Alles
+  entsperren** oben fragt erneut nach dem Passwort und öffnet dann den ganzen Bereich.
 
 - **Sehen, was du tippst:** Jedes Feld für ein Passwort, eine PIN oder ein Token, hier und überall in Erevos, hat am
   Ende ein Auge: Tippe darauf, um zu sehen, was du eingibst, und noch einmal, um es zu verbergen. Es ist jedes Mal

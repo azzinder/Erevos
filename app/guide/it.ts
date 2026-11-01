@@ -1943,6 +1943,12 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   quell’app ha detto che arrivano i tuoi messaggi (la sua lista kind 10050), a meno che tu non li abbia cambiati qui, e
   fa sapere di nuovo quella lista, così le due app ricevono gli stessi messaggi; legge quei relay dal loro inizio, e
   recupera una volta ciò che i relay indicati nelle liste precedenti della chiave conservano ancora.
+- **Vecchi messaggi privati:** molte app mandano e tengono ancora i messaggi privati alla vecchia maniera (NIP-04, kind
+  4); Damus e Primal li hanno mostrati per anni. Erevos li legge anche, passati e nuovi, e li mostra nelle stesse chat:
+  sui relay dove arrivano i tuoi messaggi e su altri quattro al massimo, quelli che legge l’altra app della tua chiave
+  (la sua lista kind 10002, per una chiave portata da un’altra app) e relay.damus.io, nos.lol e relay.primal.net. Anche
+  questi messaggi sono cifrati, ma i relay vedono chi ha scritto a chi e quando. Erevos stesso manda solo alla maniera
+  di NIP-17.
 - **Segni:** un ✓ appena uno dei suoi relay ha accettato il messaggio. NIP-17 non rimanda niente: né quando la sua app
   lo ha, né quando lo legge. Leggere una chat qui non lo dice a nessuno.
 - **Non anonimo:** la tua chiave è la stessa per tutti quelli a cui scrivi, e chiunque abbia un npub può scrivergli. I
@@ -2350,6 +2356,11 @@ due scelte: **Nessun blocco** e **Password**.
   spazio si vede. Qualsiasi altra cosa, un contatto, una chat, **Impostazioni**, l’icona stessa di Erevos o il lucchetto
   arancione **Sblocca tutto** in alto, chiede di nuovo la password e poi apre tutto lo spazio. Così un codice arrivato
   per SMS si può leggere con qualcuno accanto, e il resto di Erevos resta chiuso.
+- **Solo i Contatti:** allo stesso modo, l’icona Contatti, il pulsante **Contatti** del widget e la notifica di un
+  compleanno chiedono la password, e poi aprono solo i contatti: il loro elenco, la scheda di un contatto (senza le tue
+  chat e le chiamate con lui), **Modifica**, i gruppi, i duplicati, la SIM e l’importazione. **Chiama** apre ancora il
+  tastierino del telefono. Una chat, un SMS, **Impostazioni** o il lucchetto arancione **Sblocca tutto** in alto chiede
+  di nuovo la password e poi apre tutto lo spazio.
 
 - **Vedere ciò che scrivi:** ogni campo per una password, un PIN o un token, qui e ovunque in Erevos, ha un occhio in
   fondo: toccalo per vedere ciò che scrivi, e di nuovo per nasconderlo. Torna nascosto ogni volta che il campo si

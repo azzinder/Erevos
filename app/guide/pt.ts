@@ -1908,6 +1908,12 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   suas mensagens (a lista kind 10050 dele), a menos que você as tenha mudado aqui, e informa essa lista de novo, para
   que os dois apps recebam as mesmas mensagens; ela lê esses relays desde o começo deles, e busca uma vez o que os
   relays indicados em listas anteriores da chave ainda guardam.
+- **Mensagens privadas antigas:** muitos apps ainda mandam e guardam mensagens privadas do jeito antigo (NIP-04, kind
+  4); o Damus e o Primal as mostraram por anos. O Erevos também as lê, passadas e novas, e as mostra nas mesmas
+  conversas: nos relays onde chegam suas mensagens e em até mais quatro, os que o outro app da sua chave lê (a lista
+  kind 10002 dele, para uma chave trazida de outro app) e relay.damus.io, nos.lol e relay.primal.net. Essas mensagens
+  também são criptografadas, mas os relays veem quem escreveu para quem e quando. O próprio Erevos manda só do jeito do
+  NIP-17.
 - **Marcas:** um ✓ assim que um dos relays da pessoa aceitou a mensagem. O NIP-17 não devolve nada: nem quando o app
   dela a tem, nem quando ela lê. Ler uma conversa aqui não avisa ninguém.
 - **Não anônimo:** sua chave é a mesma para todos com quem você fala, e qualquer um que tenha um npub pode escrever para
@@ -2312,6 +2318,11 @@ duas opções: **Sem bloqueio** e **Senha**.
   outra coisa, um contato, uma conversa, **Configurações**, o ícone do próprio Erevos ou o cadeado laranja **Desbloquear
   tudo** no topo, pede a senha de novo e depois abre todo o espaço. Assim um código que chegou por SMS pode ser lido com
   alguém ao lado, e o resto do Erevos continua fechado.
+- **Só os Contatos:** do mesmo jeito, o ícone de Contatos, o botão **Contatos** do widget e o aviso de um aniversário
+  pedem a senha, e depois abrem só os contatos: a lista deles, o cartão de um contato (sem suas conversas e chamadas
+  com ele), **Editar**, grupos, duplicados, o chip e a importação. **Ligar** ainda abre o discador do celular. Uma
+  conversa, um SMS, **Configurações** ou o cadeado laranja **Desbloquear tudo** no topo pede a senha de novo e depois
+  abre todo o espaço.
 
 - **Ver o que você digita:** cada campo de senha, PIN ou token, aqui e em todo o Erevos, tem um olho no fim: toque
   nele para ver o que você digita, e de novo para esconder. Ele volta a ficar escondido cada vez que o campo aparece

@@ -1923,6 +1923,11 @@ privados como pide NIP-17. No es [A través de Nostr](#nostr), que lleva los cha
   tus mensajes (su propia lista kind 10050), salvo que los hayas cambiado aquí, y vuelve a decir esa lista, así que
   ambas apps reciben los mismos mensajes; lee esos relays desde su principio, y trae una vez lo que los relays nombrados
   en listas anteriores de la clave aún guardan.
+- **Mensajes privados antiguos:** muchas apps aún envían y guardan mensajes privados a la manera antigua (NIP-04, kind
+  4); Damus y Primal los mostraron durante años. Erevos también los lee, pasados y nuevos, y los muestra en los mismos
+  chats: en los relays donde llegan tus mensajes y en hasta cuatro más, los que lee la otra app de tu clave (su lista
+  kind 10002, para una clave traída de otra app) y relay.damus.io, nos.lol y relay.primal.net. Estos mensajes también
+  van cifrados, pero los relays ven quién escribió a quién y cuándo. El propio Erevos solo envía a la manera de NIP-17.
 - **Marcas:** un ✓ en cuanto uno de sus relays aceptó el mensaje. NIP-17 no devuelve nada: ni cuándo lo tiene su app, ni
   cuándo lo leen. Leer un chat aquí no se lo dice a nadie.
 - **No anónimo:** tu clave es la misma para todos a quienes escribes, y cualquiera que tenga un npub puede escribirle.
@@ -2330,6 +2335,11 @@ opciones: **Sin bloqueo** y **Contraseña**.
   espacio se muestra. Cualquier otra cosa, un contacto, un chat, **Ajustes**, el icono propio de Erevos o el candado
   naranja **Desbloquear todo** de arriba, vuelve a pedir la contraseña y luego abre todo el espacio. Así un código que
   llegó por SMS se puede leer con alguien al lado, y el resto de Erevos sigue cerrado.
+- **Solo los Contactos:** del mismo modo, el icono de Contactos, el botón **Contactos** del widget y el aviso de un
+  cumpleaños piden la contraseña, y luego abren solo los contactos: su lista, la ficha de un contacto (sin tus chats ni
+  llamadas con él), **Editar**, los grupos, los duplicados, la SIM y la importación. **Llamar** sigue abriendo el
+  marcador del teléfono. Un chat, un SMS, **Ajustes** o el candado naranja **Desbloquear todo** de arriba vuelve a
+  pedir la contraseña y luego abre todo el espacio.
 
 - **Ver lo que escribes:** cada campo para una contraseña, un PIN o un token, aquí y en todo Erevos, tiene un ojo al
   final: tócalo para ver lo que escribes, y otra vez para ocultarlo. Vuelve a ocultarse cada vez que el campo aparece

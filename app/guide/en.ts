@@ -1779,6 +1779,11 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   a message yet, and Erevos says so. A key brought from another app reads where that app said your messages arrive
   (its own kind 10050 list), unless you changed them here, and says that list again, so both apps get the same messages;
   it reads those relays from their start, and fetches once what relays named in older lists of the key still keep.
+- **Old private messages:** many apps still send and keep private messages the older way (NIP-04, kind 4), which
+  Damus and Primal showed for years. Erevos reads them too, past and new, and shows them in the same chats: on the
+  relays where your messages arrive and on up to four more, those your key's other app reads (its kind 10002 list, for
+  a key brought from another app) and relay.damus.io, nos.lol and relay.primal.net. These are encrypted too, but the
+  relays see who wrote to whom and when. Erevos itself sends only the NIP-17 way.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The
@@ -2146,6 +2151,11 @@ choices: **No lock** and **Password**.
   else, a contact, a chat, **Settings**, Erevos's own icon or the orange padlock **Unlock everything** at the top, asks
   for the password again, and then opens all of the space. So a code that came by SMS can be read with someone beside
   you, and the rest of Erevos stays closed.
+- **Only the Contacts:** in the same way, the Contacts icon, the widget's **Contacts** button and the notice of a
+  birthday ask for the password, then open only the contacts: their list, a contact's card (without your chats and
+  calls with them), **Edit**, groups, duplicates, the SIM and importing. **Call** still opens the phone's dialer. A chat,
+  an SMS, **Settings** or the orange padlock **Unlock everything** at the top asks for the password again, and then
+  opens all of the space.
 
 - **Seeing what you type:** every field for a password, a PIN or a token, here and anywhere in Erevos, has an eye at
   its end: tap it to see what you type, and again to hide it. It is hidden again each time the field shows anew, and

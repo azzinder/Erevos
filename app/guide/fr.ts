@@ -2023,6 +2023,12 @@ discussions propres à Erevos.
   appli lit là où cette appli a dit que tes messages arrivent (sa propre liste kind 10050), sauf si tu les as changés
   ici, et redit cette liste, si bien que les deux applis reçoivent les mêmes messages ; elle lit ces relais depuis leur
   début, et récupère une fois ce que les relais nommés dans d’anciennes listes de la clé gardent encore.
+- **Anciens messages privés :** beaucoup d’applis envoient et gardent encore des messages privés à l’ancienne manière
+  (NIP-04, kind 4) ; Damus et Primal les ont montrés pendant des années. Erevos les lit aussi, passés et nouveaux, et
+  les montre dans les mêmes discussions : sur les relais où arrivent tes messages et sur quatre autres au plus, ceux
+  que lit l’autre appli de ta clé (sa liste kind 10002, pour une clé venue d’une autre appli) et relay.damus.io,
+  nos.lol et relay.primal.net. Ces messages sont chiffrés eux aussi, mais les relais voient qui a écrit à qui, et
+  quand. Erevos lui-même n’envoie qu’à la manière de NIP-17.
 - **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
   quand la personne le lit. Lire une discussion ici ne le dit à personne.
 - **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais
@@ -2445,6 +2451,11 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
   l’icône d’Erevos elle-même ou le cadenas orange **Tout déverrouiller** en haut, redemande le mot de passe, puis ouvre
   tout l’espace. Ainsi un code arrivé par SMS peut se lire avec quelqu’un à côté de toi, et le reste d’Erevos reste
   fermé.
+- **Seulement les contacts :** de la même façon, l’icône Contacts, le bouton **Contacts** du widget et la notification
+  d’un anniversaire demandent le mot de passe, puis n’ouvrent que les contacts : leur liste, la fiche d’un contact
+  (sans tes discussions ni tes appels avec lui), **Modifier**, les groupes, les doublons, la SIM et l’importation.
+  **Appeler** ouvre toujours le numéroteur du téléphone. Une discussion, un SMS, **Réglages** ou le cadenas orange
+  **Tout déverrouiller** en haut redemande le mot de passe, puis ouvre tout l’espace.
 
 - **Voir ce que tu tapes :** chaque champ pour un mot de passe, un PIN ou un jeton, ici et partout dans Erevos, a un
   œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. Il est masqué de nouveau chaque fois

@@ -14,6 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a
+  birthday still ask for the password, but then open only the contacts: their list, a contact's card (without your
+  chats and calls with them), editing, groups, duplicates, the SIM and importing. A chat, an SMS, Settings or the orange
+  padlock **Unlock everything** asks for the password again, then opens all of Erevos.
+- **Old private messages in Nostr chats**: Erevos now also reads private messages sent the older way (NIP-04, kind 4),
+  which Damus, Primal and many apps still send and keep, past and new, and shows them in the same chats. It reads them
+  on the relays where your messages arrive and on up to four more: those a brought key's other app reads (its kind
+  10002 list) and relay.damus.io, nos.lol and relay.primal.net. The relays see who wrote such a message to whom;
+  Erevos itself still sends only the NIP-17 way.
+
 ### Under the hood
 
 ## 4.0.0-rc.8 (2026-11-01)

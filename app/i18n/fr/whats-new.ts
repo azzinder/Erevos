@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock).":
+    "**Seulement les contacts** : quand Erevos est verrouillé, l’icône Contacts, le bouton Contacts du widget et la notification d’un anniversaire demandent le mot de passe, puis n’ouvrent que les contacts. Une discussion, un SMS, les Réglages et le cadenas orange **Tout déverrouiller** le redemandent, puis ouvrent tout Erevos. Voir [Verrou par mot de passe](#lock).",
+  "**Old private messages in Nostr chats**: Erevos also reads private messages sent the older way (NIP-04), which Damus, Primal and many apps still send and keep, past and new, in the same chats. The relays see who wrote such a message to whom; Erevos itself still sends only the NIP-17 way. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Anciens messages privés dans les discussions Nostr** : Erevos lit aussi les messages privés envoyés à l’ancienne manière (NIP-04), que Damus, Primal et beaucoup d’applis envoient et gardent encore : passés et nouveaux, dans les mêmes discussions. Les relais voient qui a écrit un tel message à qui ; Erevos lui-même continue de n’envoyer qu’à la manière de NIP-17. Voir [Discussions avec d’autres applis Nostr](#nostr-chats).",
   // 4.0.0-rc.8
   // 4.0.0-rc.7
   "**Licence**: Settings → General → Licence says under which licence Erevos is free software, AGPL-3.0-or-later, its three additional terms, that it comes with no warranty, and who made it. See [Licence](#licence).":

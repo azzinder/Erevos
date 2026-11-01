@@ -1851,6 +1851,11 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   stižu vaše poruke (njen vlastiti popis kind 10050), osim ako ste ih ovdje promijenili, i taj popis ponovo javlja, pa
   obje aplikacije dobivaju iste poruke; te relaye čita od njihova početka, i jednom dohvaća ono što relayi navedeni u
   starijim popisima ključa još čuvaju.
+- **Stare privatne poruke:** mnoge aplikacije još šalju i čuvaju privatne poruke na stariji način (NIP-04, kind 4);
+  Damus i Primal su ih godinama prikazivali. Erevos ih čita i on, stare i nove, i prikazuje ih u istim razgovorima: na
+  relayima na koje stižu vaše poruke i na najviše četiri druga relaya, onima koje čita druga aplikacija vašeg ključa
+  (njen popis kind 10002, za ključ donesen iz druge aplikacije) te relay.damus.io, nos.lol i relay.primal.net. I te
+  poruke su šifrirane, ali relayi vide tko je kome pisao i kada. Sam Erevos šalje samo na NIP-17 način.
 - **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
   ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
 - **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu
@@ -2244,6 +2249,10 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
   razgovor, **Postavke**, sama ikona Erevosa ili narandžasti lokot **Otključaj sve** na vrhu, ponovo traži lozinku, a
   zatim otvara cijeli prostor. Tako se kod koji je stigao SMS-om može pročitati s nekim pored vas, a ostatak Erevosa
   ostaje zatvoren.
+- **Samo kontakti:** na isti način, ikona Kontakata, dugme **Kontakti** na widgetu i obavijest o rođendanu traže
+  lozinku, a zatim otvaraju samo kontakte: njihov popis, karticu kontakta (bez vaših razgovora i poziva s njim),
+  **Uredi**, grupe, duplikate, SIM karticu i uvoz. **Pozovi** i dalje otvara birač brojeva telefona. Razgovor, SMS,
+  **Postavke** ili narandžasti lokot **Otključaj sve** na vrhu ponovo traži lozinku, a zatim otvara cijeli prostor.
 
 - **Vidjeti šta kucate:** svako polje za lozinku, PIN ili token, ovdje i svuda u Erevosu, ima oko na kraju: dodirnite
   ga da vidite šta kucate, i ponovo da se sakrije. Ponovo je skriveno svaki put kad se polje iznova pojavi, a na
