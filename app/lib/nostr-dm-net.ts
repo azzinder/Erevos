@@ -363,17 +363,31 @@ export class NostrRelay {
   }
 
   /** What the relay has for `filters`, up to `ms`: the events stored, then it stops asking. */
-  query(filters: NostrFilter[], ms = 8000): Promise<NostrEvent[]> {
+  async query(filters: NostrFilter[], ms = 8000): Promise<NostrEvent[]> {
+    return (await this.ask(filters, ms)).events;
+  }
+
+  /**
+   * As query, and how the relay answered: 'all' once it said it sent all it keeps (EOSE), 'closed'
+   * when it closed the ask or the connection ended (with why), 'late' when `ms` went by first.
+   */
+  ask(filters: NostrFilter[], ms = 8000): Promise<{ events: NostrEvent[]; how: 'all' | 'closed' | 'late'; why?: string }> {
+    if (this.ended) return Promise.resolve({ events: [], how: 'closed', why: this.ended.message });
     return new Promise((resolve) => {
       const got: NostrEvent[] = [];
       let stop = () => undefined as unknown;
-      const done = () => {
+      const done = (how: 'all' | 'closed' | 'late', why?: string) => {
         clearTimeout(timer);
         stop();
-        resolve(got);
+        resolve(why ? { events: got, how, why } : { events: got, how });
       };
-      const timer = setTimeout(done, ms);
-      stop = this.subscribe(filters, (event) => got.push(event), done, done);
+      const timer = setTimeout(() => done('late'), ms);
+      stop = this.subscribe(
+        filters,
+        (event) => got.push(event),
+        () => done('all'),
+        (why) => done('closed', why),
+      );
     });
   }
 }

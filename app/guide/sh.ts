@@ -1808,10 +1808,11 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   ime: slika ili riječi koje je druga aplikacija vašeg ključa stavila u vaš profil ostaju.
 - **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
   kao ime@example.org (NIP-05). **Prikaži ljude koje pratite**, ispod toga, navodi ljude koje prati vaš Nostr ključ
-  (njegov javni popis praćenih, tražen i na relayima na kojima vaš ključ piše), s njihovim imenima: dodirnite jednu osobu da joj napišete. Ništa se ne učitava dok ne
-  dodirnete, a profilne slike se ne učitavaju. Razgovori su i na popisu početnog ekrana, svaki označen s **Nostr**;
-  dugme **Nostr** prikazuje samo njih, a tamo **Novi razgovor** otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru
-  ime koje vidite samo vi.
+  (njegov javni popis praćenih, tražen i na relayima koji prikupljaju takve popise te na relayima na kojima vaš ključ
+  piše), s njihovim imenima: dodirnite jednu osobu da joj napišete. Kad nikoga ne nađe, kaže zašto, čiji je popis tražio
+  i kako je svaki relay odgovorio. Ništa se ne učitava dok ne dodirnete, a profilne slike se ne učitavaju. Razgovori su
+  i na popisu početnog ekrana, svaki označen s **Nostr**; dugme **Nostr** prikazuje samo njih, a tamo **Novi razgovor**
+  otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru ime koje vidite samo vi.
 - **Grupe:** **Nova grupa** pravi jednu od dvoje ili više ljudi s kojima razgovarate, najviše dvadeset, s imenom ako
   želite. Nostr grupe nemaju administratore: grupa su ljudi koje njezine poruke navode, svaka poruka ide svakome od
   njih, šifrirana za svakoga, i nikoga se kasnije ne može dodati ni ukloniti; grupa s drugim ljudima je nova grupa.

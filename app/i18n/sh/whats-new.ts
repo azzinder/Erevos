@@ -19,6 +19,8 @@ export const whatsNew: Record<string, string> = {
     "**Kontakt**: Postavke → Općenito → Kontakt dodaje autora Erevosa kao kontakt, da mu pišete u samom Erevosu, šifrirano s kraja na kraj, bez broja telefona i bez e-maila. Pogledajte [Šta je Erevos](#about).",
   "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
     "**Kalkulator se ponovo otvara**: u 4.0.0-rc.6 zatvarao se čim biste ga dodirnuli.",
+  "**People you follow on Nostr are looked for on more relays**: **Show the people you follow** also asks relays that gather follow lists and more of the relays your key writes on, and waits longer for them; when it finds no one, it says why and how each relay answered. See [Chats with other Nostr apps](#nostr-chats).":
+    "**Ljudi koje pratite na Nostru traže se na više relaya**: **Prikaži ljude koje pratite** pita i relaye koji prikupljaju popise praćenih i više relaya na kojima vaš ključ piše, te ih duže čeka; kad nikoga ne nađe, kaže zašto i kako je svaki relay odgovorio. Pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).",
   // 4.0.0-rc.6
   "**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic).":
     "**Lozinka za paniku**: s uključenim zaključavanjem lozinkom, **Postavi lozinku za paniku** u „Gumb za paniku“ postavlja zasebnu lozinku koja, upisana na ekranu za zaključavanje, briše Erevos kao **Obriši sve sada**, dok ekran prikazuje **Pogrešna lozinka**. Ništa ne pokazuje je li neka postavljena. Pogledajte [Gumb za paniku](#panic).",

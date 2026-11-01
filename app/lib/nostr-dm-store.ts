@@ -16,7 +16,8 @@ import {
   addMessage,
   authEvent,
   chatOf,
-  followsIn,
+  FOLLOWS_RELAYS,
+  followsLook,
   forgetChat,
   INBOX_MOST,
   inboxEvent,
@@ -27,12 +28,14 @@ import {
   nameIn,
   newGroup,
   newNostrDm,
+  npubOf,
   profileEvent,
   profileFieldsOf,
   reactionOf,
   readersOf,
   readKey,
   setInbox,
+  shortNpub,
   signedOnce,
   takeWrap,
   wrapMessage,
@@ -614,36 +617,112 @@ export async function nostrDmStart(written: string, name = ''): Promise<string> 
 /** Someone the space's Nostr key follows: their key, and the name they gave themselves if one was found. */
 export type NostrFollow = { key: string; name?: string };
 
+/**
+ * How a look-up of the follow list went, said under its button when no one was found: each relay
+ * asked and how it answered (all it keeps, closed and why, too slow, not reached), how many follow
+ * lists of the key came, how many of them passed the check, and how many people the newest checked
+ * one names.
+ */
+export type NostrFollowsReport = {
+  relays: { url: string; how: 'all' | 'closed' | 'late' | 'unreached'; why?: string }[];
+  lists: number;
+  checked: number;
+  people: number;
+};
+
+/**
+ * What the screen says when the look-up found no one: why first (no relay answered, no list, no
+ * list that passed the check, or an empty one), whose list was looked for, then the relays by how
+ * they answered.
+ */
+export function sayFollowsReport(report: NostrFollowsReport, key: string): string[] {
+  const said = [
+    !report.relays.some((r) => r.how === 'all')
+      ? t('No relay answered. Try again in a while.')
+      : report.lists === 0
+        ? t('No list of people you follow was found on your relays.')
+        : report.checked === 0
+          ? t('Lists of people you follow were found, but none passed the signature check.')
+          : t('Your newest list of people you follow has no one in it.'),
+    t('Looked for the list of {npub}.', { npub: shortNpub(npubOf(key)) }),
+  ];
+  const host = (url: string) => url.replace(/^wss?:\/\//, '').replace(/\/+$/, '');
+  const of = (how: NostrFollowsReport['relays'][number]['how']) => report.relays.filter((r) => r.how === how);
+  const answered = of('all').map((r) => host(r.url));
+  const late = of('late').map((r) => host(r.url));
+  const closed = of('closed').map((r) => (r.why ? `${host(r.url)} (${r.why.slice(0, 80)})` : host(r.url)));
+  const unreached = of('unreached').map((r) => host(r.url));
+  if (answered.length) said.push(t('Answered: {relays}.', { relays: answered.join(', ') }));
+  if (late.length) said.push(t('Too slow: {relays}.', { relays: late.join(', ') }));
+  if (closed.length) said.push(t('Closed: {relays}.', { relays: closed.join(', ') }));
+  if (unreached.length) said.push(t('Not reached: {relays}.', { relays: unreached.join(', ') }));
+  return said;
+}
+
 // How many people one look-up of names asks for, and how many such look-ups go at once.
 const NAMES_AT_ONCE = 200;
 const LOOKUPS_AT_ONCE = 2;
+// How long the follow list's look-up waits for each relay to be reached, and then to say all it
+// keeps: through Tor both take longer than straight.
+const FOLLOWS_REACH_WAIT = 20_000;
+const FOLLOWS_WAIT = 15_000;
+
+/** What each of these relays has for `filters`, together, and how each answered. */
+async function lookUpEach(it: Live, urls: string[], filters: Record<string, unknown>[]): Promise<{ events: NostrEvent[]; relays: NostrFollowsReport['relays'] }> {
+  const answers = await Promise.all(
+    [...new Set(urls)].map(async (url) => {
+      let relay: NostrRelay;
+      let late: ReturnType<typeof setTimeout> | undefined;
+      try {
+        relay = await Promise.race([
+          outTo(it, url),
+          new Promise<never>((_, fail) => {
+            late = setTimeout(() => fail(new Error(t('The Nostr relay did not answer.'))), FOLLOWS_REACH_WAIT);
+          }),
+        ]);
+      } catch (error) {
+        return { url, how: 'unreached' as const, why: error instanceof Error ? error.message : String(error), events: [] };
+      } finally {
+        clearTimeout(late);
+      }
+      return { url, ...(await relay.ask(filters, FOLLOWS_WAIT)) };
+    }),
+  );
+  return {
+    events: answers.flatMap((answer) => answer.events),
+    relays: answers.map(({ url, how, why }) => (why ? { url, how, why } : { url, how })),
+  };
+}
 
 /**
  * Whom the space's Nostr key follows, as its follow list (kind 3) says, looked up now on the
- * relays it reads on and the usual ones for look-ups, with the names they gave themselves (kind
- * 0): named ones first, by name. The list is public, so asking for it and their names tells a
- * relay nothing it could not know; it goes as the space's Tor way says, as every look-up does.
- * Empty when none was found.
+ * relays it reads on, the usual ones for look-ups and those that gather such lists, then on those
+ * its relay list (NIP-65) says it writes on, with the names they gave themselves (kind 0): named
+ * ones first, by name. The list is public, so asking for it and their names tells a relay nothing
+ * it could not know; it goes as the space's Tor way says, as every look-up does. With it, how the
+ * look-up went, for the screen to say when no one was found.
  */
-export async function nostrDmFollows(): Promise<NostrFollow[]> {
+export async function nostrDmFollows(): Promise<{ people: NostrFollow[]; report: NostrFollowsReport }> {
   const it = need();
   const state = it.state;
-  // The newest follow list, and where the key writes (NIP-65), on the relays the space reads and
-  // looks up on; then the list is looked for on those it writes on too, where the other apps of a
-  // key brought here keep it.
-  const where = [...new Set([...state.inbox, ...LOOKUP_RELAYS])];
-  const first = await lookUpAnswered(it, where, [{ kinds: [3, 10002], authors: [state.public] }]);
-  if (!first.answered) throw new Error(t('No relay answered. Try again in a while.'));
+  // The newest follow list, and where the key writes (NIP-65); then the list is looked for on the
+  // relays it writes on too, where the other apps of a key brought here keep it.
+  const where = [...new Set([...state.inbox, ...LOOKUP_RELAYS, ...FOLLOWS_RELAYS])];
+  const first = await lookUpEach(it, where, [{ kinds: [3, 10002], authors: [state.public] }]);
   const writes = (await writesOf(state.public, first.events)).filter((url) => !where.includes(url));
-  const lists = writes.length ? [...first.events, ...(await lookUp(it, writes, [{ kinds: [3], authors: [state.public] }]))] : first.events;
-  const keys = await followsIn(state.public, lists);
-  if (keys.length === 0) return [];
-  where.push(...writes);
+  const second = writes.length ? await lookUpEach(it, writes, [{ kinds: [3], authors: [state.public] }]) : { events: [], relays: [] };
+  const look = await followsLook(state.public, [...first.events, ...second.events]);
+  const relays = [...first.relays, ...second.relays];
+  const report: NostrFollowsReport = { relays, lists: look.lists, checked: look.checked, people: look.keys.length };
+  const keys = look.keys;
+  if (keys.length === 0) return { people: [], report };
+  // Names are asked of the relays that answered.
+  const answering = relays.filter((r) => r.how === 'all').map((r) => r.url);
   const batches: string[][] = [];
   for (let i = 0; i < keys.length; i += NAMES_AT_ONCE) batches.push(keys.slice(i, i + NAMES_AT_ONCE));
   const profiles: NostrEvent[] = [];
   for (let i = 0; i < batches.length; i += LOOKUPS_AT_ONCE) {
-    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUp(it, where, [{ kinds: [0], authors: batch }])));
+    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUp(it, answering, [{ kinds: [0], authors: batch }], FOLLOWS_WAIT)));
     profiles.push(...found.flat());
   }
   const byKey = new Map<string, NostrEvent[]>();
@@ -661,7 +740,7 @@ export async function nostrDmFollows(): Promise<NostrFollow[]> {
     }),
   );
   const named = follows.filter((f) => f.name).sort((a, b) => a.name!.localeCompare(b.name!));
-  return [...named, ...follows.filter((f) => !f.name)];
+  return { people: [...named, ...follows.filter((f) => !f.name)], report };
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */

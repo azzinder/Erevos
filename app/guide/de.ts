@@ -2008,10 +2008,12 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   dort: Ein Bild oder Worte, die eine andere App deines Schlüssels in dein Profil gesetzt hat, bleiben.
 - **Chats:** **Neuer Chat** nimmt ihr npub (oder nprofile), aus ihrem Profil in ihrer App, oder einen Namen wie
   name@example.org (NIP-05). **Menschen zeigen, denen du folgst**, darunter, listet die Menschen auf, denen dein
-  Nostr-Schlüssel folgt (seine öffentliche Folgeliste, auch auf den Relays gesucht, auf denen dein Schlüssel schreibt), mit ihren Namen: Tippe eine Person an, um ihr zu schreiben.
-  Nichts wird geladen, bevor du darauf tippst, und es werden keine Profilbilder geladen. Die Chats stehen auch in der
-  Liste auf dem Startbildschirm, jeder mit **Nostr** markiert; der Chip **Nostr** zeigt nur sie, und dort öffnet **Neuer
-  Chat** diesen Bildschirm. **Hier benennen** gibt einem Chat einen Namen, den nur du siehst.
+  Nostr-Schlüssel folgt (seine öffentliche Folgeliste, auch auf Relays gesucht, die solche Listen sammeln, und auf den
+  Relays, auf denen dein Schlüssel schreibt), mit ihren Namen: Tippe eine Person an, um ihr zu schreiben. Findet es
+  niemanden, sagt es, warum, wessen Liste es gesucht hat und wie jedes Relay geantwortet hat. Nichts wird geladen, bevor
+  du darauf tippst, und es werden keine Profilbilder geladen. Die Chats stehen auch in der Liste auf dem
+  Startbildschirm, jeder mit **Nostr** markiert; der Chip **Nostr** zeigt nur sie, und dort öffnet **Neuer Chat** diesen
+  Bildschirm. **Hier benennen** gibt einem Chat einen Namen, den nur du siehst.
 - **Gruppen:** **Neue Gruppe** erstellt eine aus zwei oder mehr der Menschen, mit denen du chattest, höchstens zwanzig,
   mit einem Namen, wenn du willst. Nostr-Gruppen haben keine Admins: Eine Gruppe sind die Menschen, die ihre Nachrichten
   nennen, jede Nachricht geht an jeden von ihnen, für jeden verschlüsselt, und niemand kann später hinzugefügt oder

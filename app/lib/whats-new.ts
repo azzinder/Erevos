@@ -34,6 +34,7 @@ export const VERSIONS: WhatsNew[] = [
     ],
     underTheHood: [
       mark("**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped."),
+      mark("**People you follow on Nostr are looked for on more relays**: **Show the people you follow** also asks relays that gather follow lists and more of the relays your key writes on, and waits longer for them; when it finds no one, it says why and how each relay answered. See [Chats with other Nostr apps](#nostr-chats)."),
     ],
   },
   {

@@ -38,6 +38,11 @@ export const CHATS_MOST = 300;
 export const DEFAULT_INBOX = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
 /** Where people's lists of relays and names are looked up besides their own relays. */
 export const LOOKUP_RELAYS = ['wss://purplepag.es', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
+/**
+ * Where a key's own follow list (kind 3) and relay list (kind 10002) are also looked for: relays
+ * that gather these lists from everywhere, and big public ones many apps write to.
+ */
+export const FOLLOWS_RELAYS = ['wss://user.kindpag.es', 'wss://indexer.coracle.social', 'wss://relay.nostr.band', 'wss://relay.snort.social', 'wss://nostr.mom'];
 /** NIP-17 asks to keep an inbox small. */
 export const INBOX_MOST = 3;
 
@@ -379,7 +384,7 @@ export async function inboxOf(key: string, events: NostrEvent[]): Promise<string
 }
 
 /** The most of the relays someone writes on (their NIP-65 list) that their follow list is looked for on. */
-export const WRITES_MOST = 4;
+export const WRITES_MOST = 8;
 
 /**
  * Where `key` writes, from the newest of these relay lists (kind 10002, NIP-65) that is theirs and
@@ -402,16 +407,32 @@ export const MOST_FOLLOWS = 1000;
 
 /**
  * Whom `key` follows, from the newest of these follow lists (kind 3) that is theirs and checked:
- * their keys, each once, as the list has them, but `key` itself, MOST_FOLLOWS at most.
+ * their keys, each once, as the list has them, but `key` itself, MOST_FOLLOWS at most. With them,
+ * what was found on the way: how many follow lists of `key` came (the same one from two relays
+ * counts once) and how many of them passed the check. A list that does not pass counts for
+ * nothing, even with the id of one that does.
  */
-export async function followsIn(key: string, events: NostrEvent[]): Promise<string[]> {
-  const lists = events.filter((e) => e.kind === 3 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);
+export async function followsLook(key: string, events: NostrEvent[]): Promise<{ keys: string[]; lists: number; checked: number }> {
+  const seen = new Set<string>();
+  const lists = events
+    .filter((e) => e.kind === 3 && e.pubkey === key)
+    .filter((e) => {
+      const whole = JSON.stringify([e.id, e.pubkey, e.created_at, e.kind, e.tags, e.content, e.sig]);
+      return !seen.has(whole) && !!seen.add(whole);
+    })
+    .sort((a, b) => b.created_at - a.created_at);
+  let keys: string[] | null = null;
+  let checked = 0;
   for (const list of lists) {
     if (!(await verified(list))) continue;
-    const keys = list.tags.filter((tag) => tag[0] === 'p' && typeof tag[1] === 'string' && /^[0-9a-f]{64}$/.test(tag[1])).map((tag) => tag[1]);
-    return [...new Set(keys)].filter((k) => k !== key).slice(0, MOST_FOLLOWS);
+    checked += 1;
+    keys ??= [
+      ...new Set(list.tags.filter((tag) => tag[0] === 'p' && typeof tag[1] === 'string' && /^[0-9a-f]{64}$/.test(tag[1])).map((tag) => tag[1])),
+    ]
+      .filter((k) => k !== key)
+      .slice(0, MOST_FOLLOWS);
   }
-  return [];
+  return { keys: keys ?? [], lists: lists.length, checked };
 }
 
 /** The name `key` gave itself, from the newest of these profiles (kind 0), checked. */

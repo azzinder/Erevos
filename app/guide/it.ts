@@ -1900,10 +1900,11 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   foto o delle parole che un’altra app della tua chiave ha messo nel tuo profilo restano.
 - **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
   nome@example.org (NIP-05). **Mostra le persone che segui**, qui sotto, elenca le persone che la tua chiave Nostr segue
-  (la sua lista pubblica dei seguiti, cercata anche sui relay dove scrive la tua chiave), con i loro nomi: tocca una persona per scriverle. Non viene caricato nulla finché
-  non lo tocchi, e nessuna foto del profilo. Le chat sono anche nella lista della home, ognuna segnata **Nostr**; il
-  pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un
-  nome che vedi solo tu.
+  (la sua lista pubblica dei seguiti, cercata anche su relay che raccolgono tali liste e sui relay dove scrive la tua
+  chiave), con i loro nomi: tocca una persona per scriverle. Quando non trova nessuno, dice perché, di chi ha cercato la
+  lista e come ha risposto ogni relay. Non viene caricato nulla finché non lo tocchi, e nessuna foto del profilo. Le
+  chat sono anche nella lista della home, ognuna segnata **Nostr**; il pulsante **Nostr** mostra solo loro, e lì **Nuova
+  chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi solo tu.
 - **Gruppi:** **Nuovo gruppo** ne crea uno con due o più delle persone con cui chatti, al massimo venti, con un nome se
   vuoi. I gruppi Nostr non hanno amministratori: un gruppo sono le persone che i suoi messaggi nominano, ogni messaggio
   va a ciascuna, cifrato per ciascuna, e nessuno può essere aggiunto o tolto in seguito; un gruppo con altre persone è

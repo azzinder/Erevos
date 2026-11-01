@@ -28,7 +28,9 @@ import {
   nostrDmStart,
   onNostrDmChange,
   runNostrDm,
+  sayFollowsReport,
   type NostrFollow,
+  type NostrFollowsReport,
 } from '../lib/nostr-dm-store';
 import { FILE_SERVERS } from '../lib/nostr-files';
 import { onTorReady } from '../lib/relay';
@@ -227,7 +229,7 @@ export default function NostrChatsScreen() {
         </Text>
       </Card>
 
-      <FollowsCard busy={busy} run={run} open={open} />
+      <FollowsCard me={state.public} busy={busy} run={run} open={open} />
 
       <GroupCard state={state} busy={busy} run={run} open={open} />
 
@@ -334,8 +336,10 @@ function InboxCard({ state, busy, run, where }: { state: NostrDmState; busy: boo
 // their names but no pictures. Tapping one starts a chat with them.
 const FOLLOWS_SHOWN = 50;
 
-function FollowsCard({ busy, run, open }: { busy: boolean; run: Run; open: (key: string) => void }) {
+function FollowsCard({ me, busy, run, open }: { me: string; busy: boolean; run: Run; open: (key: string) => void }) {
   const [follows, setFollows] = useState<(NostrFollow & { npub: string })[] | null>(null);
+  // How the look-up went, said when it found no one: why, whose list, and each relay's answer.
+  const [report, setReport] = useState<NostrFollowsReport | null>(null);
   // Why the list could not be looked up (no relay answered), said here under its button.
   const [failed, setFailed] = useState('');
   const [find, setFind] = useState('');
@@ -352,8 +356,11 @@ function FollowsCard({ busy, run, open }: { busy: boolean; run: Run; open: (key:
           onPress={() =>
             void run(async () => {
               setFailed('');
+              setReport(null);
               try {
-                setFollows((await nostrDmFollows()).map((f) => ({ ...f, npub: npubOf(f.key) })));
+                const found = await nostrDmFollows();
+                setFollows(found.people.map((f) => ({ ...f, npub: npubOf(f.key) })));
+                setReport(found.report);
               } catch (error) {
                 setFollows(null);
                 setFailed(error instanceof Error ? error.message : String(error));
@@ -363,7 +370,19 @@ function FollowsCard({ busy, run, open }: { busy: boolean; run: Run; open: (key:
         />
       </Row>
       {failed ? <Text tone="muted">{failed}</Text> : null}
-      {follows?.length === 0 ? <Text tone="muted">{t('No list of people you follow was found on your relays.')}</Text> : null}
+      {follows?.length === 0 && report
+        ? sayFollowsReport(report, me).map((line, i) =>
+            i === 0 ? (
+              <Text key={i} tone="muted">
+                {line}
+              </Text>
+            ) : (
+              <Text key={i} variant="caption" tone="faint">
+                {line}
+              </Text>
+            ),
+          )
+        : null}
       {follows?.length ? (
         <>
           <Input value={find} onChangeText={setFind} autoCapitalize="none" autoCorrect={false} placeholder={t('Search the people you follow')} accessibilityLabel={t('Search the people you follow')} />

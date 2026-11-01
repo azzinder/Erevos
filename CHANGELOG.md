@@ -29,6 +29,9 @@ On main, not released yet:
 ### Under the hood
 
 - The calculator in place of Erevos's icon opens again: in 4.0.0-rc.6 it closed as soon as it was tapped, because it set the colour of the phone's bars before its screen existed.
+- **Show the people you follow** (Nostr chats) looks for your follow list on more relays: also on relays that
+  gather such lists and on up to eight of the relays your key writes on, and it waits longer for each, as through Tor
+  they answer slower. When it finds no one, it now says why, whose list it looked for, and how each relay answered.
 
 ## 4.0.0-rc.6 (2026-10-31)
 

@@ -1975,10 +1975,12 @@ discussions propres à Erevos.
   une photo ou des mots qu’une autre appli de ta clé a mis dans ton profil restent.
 - **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
   comme nom@example.org (NIP-05). **Afficher les personnes que tu suis**, juste dessous, liste les personnes que suit ta
-  clé Nostr (sa liste publique de personnes suivies, cherchée aussi sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Rien n’est
-  chargé avant que tu appuies dessus, et aucune photo de profil. Les discussions sont aussi dans la liste de l’accueil,
-  chacune marquée **Nostr** ; le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran.
-  **Lui donner un nom ici** donne à une discussion un nom que toi seul vois.
+  clé Nostr (sa liste publique de personnes suivies, cherchée aussi sur des relais qui rassemblent de telles listes et
+  sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Quand il ne trouve personne, il dit
+  pourquoi, de qui il a cherché la liste et comment chaque relais a répondu. Rien n’est chargé avant que tu appuies
+  dessus, et aucune photo de profil. Les discussions sont aussi dans la liste de l’accueil, chacune marquée **Nostr** ;
+  le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran. **Lui donner un nom ici** donne
+  à une discussion un nom que toi seul vois.
 - **Groupes :** **Nouveau groupe** en crée un avec deux personnes ou plus parmi celles avec qui tu discutes, vingt au
   plus, avec un nom si tu veux. Les groupes Nostr n’ont pas d’administrateurs : un groupe, ce sont les personnes que
   nomment ses messages, chaque message va à chacune, chiffré pour chacune, et personne ne peut y être ajouté ou retiré

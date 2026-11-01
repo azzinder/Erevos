@@ -27,6 +27,8 @@ import {
   BACKDATE,
   CHATS_MOST,
   chatCore,
+  FOLLOWS_RELAYS,
+  followsLook,
   GROUP_MOST,
   groupKey,
   inboxEvent,
@@ -65,6 +67,7 @@ import {
   nostrDmStart,
   nostrDmUnread,
   runNostrDm,
+  sayFollowsReport,
   stopNostrDm,
 } from '../lib/nostr-dm-store';
 import { FakeRelay } from './nostr-relay';
@@ -129,6 +132,30 @@ test('Nostr keys are read as people write them', { skip: !coreReady }, async () 
     const key = (await newNostrDm()).public;
     assert.equal(npubOf(key), (await chatCore<{ npub: string }>('npub', { public: key })).npub);
   }
+});
+
+test('a look-up of the follow list that found no one says why, whose list, and how each relay answered', () => {
+  const key = '7e7e9c42a91bfef19fa929e5fda1b72e0ebc1a4c1141673e2794234d86addf4e';
+  const relays = [
+    { url: 'wss://a.example', how: 'all' as const },
+    { url: 'wss://b.example/', how: 'late' as const },
+    { url: 'wss://c.example', how: 'closed' as const, why: 'blocked: no Tor here' },
+    { url: 'wss://d.example', how: 'unreached' as const, why: 'cannot reach d.example through Tor' },
+    { url: 'wss://e.example', how: 'all' as const },
+  ];
+  assert.deepEqual(sayFollowsReport({ relays, lists: 0, checked: 0, people: 0 }, key), [
+    'No list of people you follow was found on your relays.',
+    'Looked for the list of npub10elf…jptg.',
+    'Answered: a.example, e.example.',
+    'Too slow: b.example.',
+    'Closed: c.example (blocked: no Tor here).',
+    'Not reached: d.example.',
+  ]);
+  assert.equal(sayFollowsReport({ relays, lists: 2, checked: 0, people: 0 }, key)[0], 'Lists of people you follow were found, but none passed the signature check.');
+  assert.equal(sayFollowsReport({ relays, lists: 1, checked: 1, people: 0 }, key)[0], 'Your newest list of people you follow has no one in it.');
+  const none = sayFollowsReport({ relays: relays.filter((r) => r.how !== 'all'), lists: 0, checked: 0, people: 0 }, key);
+  assert.equal(none[0], 'No relay answered. Try again in a while.');
+  assert.ok(!none.some((line) => line.startsWith('Answered')));
 });
 
 test("NIP-17's own example opens, for its reader and as its sender's copy", { skip: !coreReady }, async () => {
@@ -365,9 +392,22 @@ test('a space and someone on another app write both ways through their inbox rel
     r.close();
   }
   const authed = aliceInbox.authed.length + index.authed.length;
-  assert.deepEqual(await nostrDmFollows(), [{ key: bob.public, name: 'Bob' }, { key: dan.public }]);
+  const found = await nostrDmFollows();
+  assert.deepEqual(found.people, [{ key: bob.public, name: 'Bob' }, { key: dan.public }]);
   // Asking said no one's name.
   assert.equal(aliceInbox.authed.length + index.authed.length, authed);
+  // Each relay asked once, with how it answered: those that gather lists too, which the checks
+  // do not have, were not reached.
+  const how = Object.fromEntries(found.report.relays.map((r) => [r.url, r.how]));
+  assert.equal(found.report.relays.length, new Set([...me.inbox, ...LOOKUP_RELAYS, ...FOLLOWS_RELAYS]).size);
+  assert.equal(how[index.url], 'all');
+  assert.equal(how[aliceInbox.url], 'all');
+  for (const url of FOLLOWS_RELAYS) assert.equal(how[url], 'unreached');
+  assert.deepEqual([found.report.lists, found.report.checked, found.report.people], [2, 2, 2]);
+  // A changed copy that keeps the id of the newest list, come first, does not hide that list.
+  const look = await followsLook(me.public, [forged, newest, older, newest]);
+  assert.deepEqual([look.keys, look.lists, look.checked], [[bob.public, dan.public], 3, 2]);
+  assert.deepEqual(await followsLook(me.public, [forged]), { keys: [], lists: 1, checked: 0 });
 
   // A newer follow list that only a relay she writes on keeps (her other app's, named in her
   // NIP-65 list; one named for reading only is not asked) is found there.
@@ -379,7 +419,7 @@ test('a space and someone on another app write both ways through their inbox rel
     await r.publish(event);
     r.close();
   }
-  assert.deepEqual(await nostrDmFollows(), [{ key: erin.public }]);
+  assert.deepEqual((await nostrDmFollows()).people, [{ key: erin.public }]);
 
   // Her name changes in the newest profile of her key, which keeps what her other app put there,
   // later than that one even when it says a time ahead of this phone's clock.
