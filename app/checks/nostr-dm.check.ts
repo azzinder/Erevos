@@ -122,6 +122,20 @@ async function until(done: () => boolean, what: string, ms = 5000): Promise<void
   }
 }
 
+// An old private message (NIP-04) as other apps make it, with Node's own crypto: the x coordinate of
+// the secp256k1 Diffie-Hellman point as the AES-256-CBC key, PKCS#7, `<base64>?iv=<base64>`.
+async function oldMessage(from: NostrDmState, to: string, words: string, at: number) {
+  const { createCipheriv, createECDH, randomBytes: bytes } = await import('node:crypto');
+  const ecdh = createECDH('secp256k1');
+  ecdh.setPrivateKey(Buffer.from(from.secret, 'hex'));
+  const other = from.public === to ? from.public : to;
+  const key = ecdh.computeSecret(Buffer.from(`02${other}`, 'hex'));
+  const iv = bytes(16);
+  const cipher = createCipheriv('aes-256-cbc', key, iv);
+  const content = `${Buffer.concat([cipher.update(words, 'utf8'), cipher.final()]).toString('base64')}?iv=${iv.toString('base64')}`;
+  return signed(from, 4, [['p', to]], content, at);
+}
+
 const vector = (name: string) => JSON.parse(readFileSync(new URL(`../../crates/erevos-nostr/tests/${name}`, import.meta.url), 'utf8')) as unknown;
 
 test('Nostr keys are read as people write them', { skip: !coreReady }, async () => {
@@ -700,6 +714,10 @@ test('a key brought from another app reads where that app said, and gets what ca
   // What Bob wrote him before, days ago, kept where each of his lists named.
   const before = await wrapText(bob, dan.public, 'from before', Date.now() - 72 * hour);
   const further = await wrapText(bob, dan.public, 'from further back', Date.now() - 96 * hour);
+  // Old private messages (NIP-04): Bob's to him, where his list says he reads, and his answer from
+  // his other app, where it writes.
+  const oldIn = await oldMessage(bob, dan.public, 'the old way, to Dan', Date.now() - 120 * hour);
+  const oldOut = await oldMessage(dan, bob.public, 'and back, the old way', Date.now() - 119 * hour);
   const put = [
     [danOutbox2, oldest],
     [danOutbox, theirs],
@@ -707,6 +725,8 @@ test('a key brought from another app reads where that app said, and gets what ca
     [index, ours],
     [danInbox, before.theirs],
     [danOlder, further.theirs],
+    [danOutbox2, oldIn],
+    [danOutbox, oldOut],
   ] as const;
   for (const [r, event] of put) {
     const link = await NostrRelay.open(r.url, null);
@@ -724,16 +744,21 @@ test('a key brought from another app reads where that app said, and gets what ca
     await nostrDmBring(await nsecOf(dan));
     // It reads where his other app reads, saying who reads there.
     await until(() => sameRelays(nostrDmNow().state?.inbox ?? [], [danInbox.url]), "his other app's inbox", 10_000);
-    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 2, 'what came before', 10_000);
+    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 4, 'what came before', 10_000);
     assert.deepEqual(
       nostrDmNow()
-        .state!.chats[bob.public].messages.map((m) => [m.mine, m.text])
+        .state!.chats[bob.public].messages.map((m) => [m.mine, m.text, m.old ?? false])
         .sort(),
       [
-        [false, 'from before'],
-        [false, 'from further back'],
+        [false, 'from before', false],
+        [false, 'from further back', false],
+        [false, 'the old way, to Dan', true],
+        [true, 'and back, the old way', true],
       ],
     );
+    // The old ones are read where his NIP-65 list says, besides the inbox; only the inbox counts as such.
+    assert.deepEqual(nostrDmNow().state!.oldRelays, [danOutbox2.url, danOutbox.url]);
+    assert.equal(nostrDmNow().reading, 1);
     assert.ok(danInbox.authed.includes(dan.public));
     // His newest list names that inbox again where lists are looked up: his other app reads it too.
     await until(
@@ -748,8 +773,16 @@ test('a key brought from another app reads where that app said, and gets what ca
     const link = await NostrRelay.open(danInbox.url, null);
     assert.equal((await link.publish(fresh.theirs)).ok, true);
     link.close();
-    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 3, 'a new message');
+    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 5, 'a new message');
     assert.deepEqual(came, [`nostr:${bob.public}`]);
+    // A new old-style one comes too, and is told, once that relay sent all it kept.
+    await until(() => (nostrDmNow().state?.oldSent?.[danOutbox2.url] ?? 0) > 0, 'the old messages read to their end');
+    const freshOld = await oldMessage(bob, dan.public, 'still the old way', Date.now());
+    const link2 = await NostrRelay.open(danOutbox2.url, null);
+    assert.equal((await link2.publish(freshOld)).ok, true);
+    link2.close();
+    await until(() => nostrDmNow().state?.chats[bob.public]?.messages.length === 6, 'a new old-style message');
+    assert.deepEqual(came, [`nostr:${bob.public}`, `nostr:${bob.public}`]);
     // It looked once: the next time it reads, it does not look again.
     assert.ok((nostrDmNow().state?.inboxLooked ?? 0) > 0);
   } finally {

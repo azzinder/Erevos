@@ -66,6 +66,8 @@ export type NostrDmMessage = {
   reactions?: Record<string, string>;
   /** The message it answers, by id (its e tag, as NIP-17 has it). */
   replyTo?: string;
+  /** An old private message (NIP-04, kind 4): the relays saw who wrote to whom, and when. */
+  old?: true;
 };
 
 export type NostrDmChat = {
@@ -120,6 +122,13 @@ export type NostrDmState = {
   /** For a key brought from another app: when Erevos looked for where that app said its messages
    *  come (its kind 10050), to read there too (seconds). Until then, it tells no inbox of its own. */
   inboxLooked?: number;
+  /** Relays of the key's own NIP-65 list, where old private messages (NIP-04, kind 4) are read too,
+   *  besides the inbox and DEFAULT_INBOX; and when that list was looked for (seconds). */
+  oldRelays?: string[];
+  oldLooked?: number;
+  /** For each relay read, until when (seconds) it said it sent all the old private messages it
+   *  keeps: one not there sends from its start, and what it sends then is told of as nothing new. */
+  oldSent?: Record<string, number>;
 };
 
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -569,10 +578,12 @@ function remember(state: NostrDmState, id: string): void {
  * a message was new there, or a reaction changed.
  */
 export async function takeWrap(state: NostrDmState, event: unknown, now = Date.now()): Promise<string | null> {
-  if (!isEvent(event) || event.kind !== 1059 || state.seen.includes(event.id)) return null;
+  if (!isEvent(event) || (event.kind !== 1059 && event.kind !== OLD_DM_KIND) || state.seen.includes(event.id)) return null;
+  // An old private message (NIP-04) opens as a text of the two, with its own id, signed by who wrote it.
+  const old = event.kind === OLD_DM_KIND;
   let opened: { rumor: { id: string; pubkey: string; created_at: number; kind: number; tags: string[][]; content: string } };
   try {
-    opened = await chatCore('unwrap', { secret: state.secret, event: JSON.stringify(event) });
+    opened = await chatCore(old ? 'open_old' : 'unwrap', { secret: state.secret, event: JSON.stringify(event) });
   } catch {
     // Not one this key opens, or forged: never again.
     remember(state, event.id);
@@ -631,7 +642,7 @@ export async function takeWrap(state: NostrDmState, event: unknown, now = Date.n
   // What it answers: the e tag marked so (NIP-10), else its only one.
   const answers = rumor.tags.filter((tag) => tag[0] === 'e' && isHex64(tag[1]));
   const replyTo = (answers.find((tag) => tag[3] === 'reply') ?? answers[0])?.[1];
-  const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}), ...(replyTo ? { replyTo } : {}) };
+  const base = { id: rumor.id, mine, at, ...(group && !mine ? { from: rumor.pubkey } : {}), ...(replyTo ? { replyTo } : {}), ...(old ? { old: true as const } : {}) };
   const message: NostrDmMessage = rumor.kind === 15 ? { ...base, text: '', file: fileOfRumor(rumor.tags, rumor.content) ?? true } : { ...base, text: rumor.content.slice(0, 64_000) };
   const added = addMessage(state, key, message);
   // Reactions to it that came first.
@@ -672,4 +683,44 @@ export function setInbox(state: NostrDmState, relays: string[]): void {
 export function inboxFilter(state: NostrDmState): Record<string, unknown> {
   const since = state.caught ? Math.max(0, state.caught - BACKDATE - 600) : 0;
   return { kinds: [1059], '#p': [state.public], ...(since ? { since } : { limit: 1000 }) };
+}
+
+/** The kind of the old private messages (NIP-04). */
+export const OLD_DM_KIND = 4;
+/** The most relays read for old private messages besides the inbox. */
+export const OLD_MOST = 4;
+
+/** What relay `url` is asked for the old private messages (NIP-04) to and from the key: since it
+ *  last sent all it keeps, or from its start. */
+export function oldFilters(state: NostrDmState, url: string): Record<string, unknown>[] {
+  const sent = state.oldSent?.[url];
+  const since = typeof sent === 'number' && sent > 0 ? Math.max(0, sent - 600) : 0;
+  const when = since ? { since } : { limit: 1000 };
+  return [
+    { kinds: [OLD_DM_KIND], '#p': [state.public], ...when },
+    { kinds: [OLD_DM_KIND], authors: [state.public], ...when },
+  ];
+}
+
+/** The relays the key is read on: its inbox, and for old private messages also the big public
+ *  relays most apps write to and those of the key's own NIP-65 list, OLD_MOST of them at most. */
+export function readRelays(state: NostrDmState): string[] {
+  const inbox = state.inbox.map((r) => r.replace(/\/+$/, ''));
+  const own = (Array.isArray(state.oldRelays) ? state.oldRelays : []).filter((r) => typeof r === 'string' && isNostrRelay(r)).slice(0, 2);
+  const more = [...new Set([...own, ...DEFAULT_INBOX].map((r) => r.replace(/\/+$/, '')))].filter((r) => !inbox.includes(r));
+  return [...inbox, ...more.slice(0, OLD_MOST)];
+}
+
+/** The relays of `key`'s newest checked NIP-65 list (kind 10002), each once: those it reads on
+ *  first (where others write to it), then those it only writes on. */
+export async function nip65Of(key: string, events: NostrEvent[]): Promise<string[]> {
+  const lists = events.filter((e) => e.kind === 10002 && e.pubkey === key).sort((a, b) => b.created_at - a.created_at);
+  for (const list of lists) {
+    if (!(await verified(list))) continue;
+    const named = list.tags.filter((tag) => tag[0] === 'r' && isNostrRelay(tag[1]));
+    const reads = named.filter((tag) => tag[2] !== 'write');
+    const writes = named.filter((tag) => tag[2] === 'write');
+    return [...new Set([...reads, ...writes].map((tag) => tag[1].replace(/\/+$/, '')))];
+  }
+  return [];
 }

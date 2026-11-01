@@ -30,12 +30,17 @@ import {
   newGroup,
   newNostrDm,
   npubOf,
+  OLD_DM_KIND,
+  OLD_MOST,
+  oldFilters,
   otherInboxes,
   profileEvent,
   profileFieldsOf,
   reactionOf,
   readersOf,
   readKey,
+  readRelays,
+  nip65Of,
   sameRelays,
   setInbox,
   shortNpub,
@@ -83,6 +88,8 @@ type Live = {
   /** The inbox relays that said they sent all they keep, since the inbox was last read anew: the
    *  space has read all only once each of them has, so one not reached yet still sends from its start. */
   allSent: Set<string>;
+  /** Its NIP-65 list is being looked for, for the relays of old private messages. */
+  oldLooking: boolean;
   telling: boolean;
   /** The inbox or name changed while they were being told: told again after. */
   tellAgain: boolean;
@@ -114,7 +121,9 @@ const seconds = (now = Date.now()) => Math.floor(now / 1000);
 export function nostrDmNow(where: NetworkWhere = 'space'): { loaded: boolean; state: NostrDmState | null; problem: string; reading: number; tor: boolean } {
   const it = where === 'place' ? places.shown() : live;
   const readers = [...(it?.reading.values() ?? [])].filter((relay) => relay.open);
-  return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', reading: readers.length, tor: readers.length > 0 && readers.every((relay) => relay.tor) };
+  // The relays of its inbox read now; those read only for old private messages are not counted.
+  const inbox = [...(it?.reading.entries() ?? [])].filter(([url, relay]) => relay.open && it?.state?.inbox.includes(url));
+  return { loaded: it?.loaded ?? false, state: it?.state ?? null, problem: it?.problem ?? '', reading: inbox.length, tor: readers.length > 0 && readers.every((relay) => relay.tor) };
 }
 
 /** The account the screen on top acts on. */
@@ -320,17 +329,30 @@ async function read(it: Live, url: string, inboxAt: number): Promise<void> {
       told();
       const askedAt = seconds();
       let caughtUp = false;
+      // An inbox relay is asked for the wraps and the old private messages (NIP-04); another, only for those.
+      const inInbox = state.inbox.includes(url);
+      const oldBefore = state.oldSent?.[url];
       const stop = relay.subscribe(
-        [inboxFilter(state)],
+        inInbox ? [inboxFilter(state), ...oldFilters(state, url)] : oldFilters(state, url),
         (event) =>
-          void changeAccount(it, async () => {
-            if (it.state === state) await takeWrap(state, event);
-          }),
+          void changeAccount(
+            it,
+            async () => {
+              if (it.state === state) await takeWrap(state, event);
+            },
+            // What a relay keeps of old private messages, until it said it sent all, came before.
+            event.kind === OLD_DM_KIND && !oldBefore && !state.oldSent?.[url],
+          ),
         () => {
           // It answers: should it end later, it is asked again soon.
           wait = 3000;
           if (it.inboxAt !== inboxAt) return;
           it.allSent.add(url);
+          void changeAccount(it, async () => {
+            if (it.inboxAt !== inboxAt || !readRelays(state).includes(url)) return;
+            state.oldSent = keepOldSent(state, url, Math.max(state.oldSent?.[url] ?? 0, askedAt));
+          });
+          if (!inInbox) return;
           caughtUp = state.inbox.every((relay) => it.allSent.has(relay));
           if (!caughtUp) return;
           // Not once the inbox changed meanwhile: the new one is read from its start.
@@ -347,10 +369,15 @@ async function read(it: Live, url: string, inboxAt: number): Promise<void> {
       for (;;) {
         const done = await endedWithin(ended, 600_000);
         if (done || !stillOpen(it) || it.inboxAt !== inboxAt) break;
-        caughtUp = state.inbox.every((relay) => it.allSent.has(relay));
+        caughtUp = inInbox && state.inbox.every((relay) => it.allSent.has(relay));
         if (caughtUp) {
           void changeAccount(it, async () => {
             if (it.inboxAt === inboxAt && state.inbox.includes(url)) state.caught = Math.max(state.caught, seconds() - 60);
+          });
+        }
+        if (it.allSent.has(url)) {
+          void changeAccount(it, async () => {
+            if (it.inboxAt === inboxAt && readRelays(state).includes(url)) state.oldSent = keepOldSent(state, url, seconds() - 60);
           });
         }
       }
@@ -375,11 +402,45 @@ function startReading(it: Live): void {
   it.allSent = new Set();
   for (const relay of it.reading.values()) relay.close();
   it.reading.clear();
-  for (const url of state.inbox) void read(it, url, it.inboxAt);
+  for (const url of readRelays(state)) void read(it, url, it.inboxAt);
   // A key brought from another app first looks where that app reads its messages, and only then
   // says where it reads, so as not to name other relays than that app over its list.
   if (!state.madeHere && !state.inboxLooked) void lookForInbox(it, state).catch(() => undefined);
   else void tell(it).catch(() => undefined);
+  // And where others write to it the old way (NIP-04): the relays of its own NIP-65 list.
+  if (!state.madeHere && !state.oldLooked) void lookForOld(it, state).catch(() => undefined);
+}
+
+/** The relays read for old private messages and until when each sent all, for those still read. */
+function keepOldSent(state: NostrDmState, url: string, at: number): Record<string, number> {
+  const read = readRelays(state);
+  const kept = Object.entries(state.oldSent ?? {}).filter(([relay, sent]) => read.includes(relay) && typeof sent === 'number');
+  return { ...Object.fromEntries(kept), [url]: at };
+}
+
+/**
+ * For a key brought from another app: the relays of its own NIP-65 list (kind 10002), looked for
+ * once on the relays that gather such lists, where apps that send the old private messages
+ * (NIP-04) write to it; read from then on, OLD_MOST relays at most besides the inbox. Until a relay
+ * answers, it is tried again the next time.
+ */
+async function lookForOld(it: Live, state: NostrDmState): Promise<void> {
+  if (it.oldLooking) return;
+  it.oldLooking = true;
+  try {
+    const found = await lookUpAnswered(it, [...LOOKUP_RELAYS, ...FOLLOWS_RELAYS], [{ kinds: [10002], authors: [state.public] }], LOOK_WAIT);
+    if (!found.answered || it.state !== state || !stillOpen(it)) return;
+    const relays = (await nip65Of(state.public, found.events)).filter((relay) => !DEFAULT_INBOX.includes(relay)).slice(0, OLD_MOST);
+    const before = readRelays(state);
+    await changeAccount(it, async () => {
+      if (it.state !== state) return;
+      state.oldLooked = seconds();
+      state.oldRelays = relays;
+    });
+    if (it.state === state && stillOpen(it) && !sameRelays(before, readRelays(state))) startReading(it);
+  } finally {
+    it.oldLooking = false;
+  }
 }
 
 /** How long the lists of a brought key are waited for, through Tor, and the wraps a relay keeps. */
@@ -493,6 +554,7 @@ function start(holder: Holder, space: number, key: Uint8Array, pocket?: number):
     reading: new Map(),
     inboxAt: 0,
     allSent: new Set(),
+    oldLooking: false,
     telling: false,
     tellAgain: false,
     listedAt: 0,

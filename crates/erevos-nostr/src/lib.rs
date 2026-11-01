@@ -26,6 +26,8 @@
 //!
 //! Not audited.
 
+use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
+use aes::Aes256;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine;
 use chacha20::cipher::{KeyIvInit, StreamCipher};
@@ -191,6 +193,76 @@ pub fn decrypt(conversation_key: &[u8], payload: &str) -> Result<String> {
         return Err("the Nostr text is padded wrong".to_string());
     }
     String::from_utf8(padded[2..2 + len].to_vec()).map_err(|_| "the Nostr text is not UTF-8".to_string())
+}
+
+// NIP-04: the old private messages (kind 4), which apps such as Primal and Damus still send. Read
+// only: what they hide is the words, not who wrote to whom, nor when, and nothing proves the words
+// were not changed on the way (no MAC). Erevos sends with NIP-17.
+
+/// The longest NIP-04 content opened, in bytes.
+const NIP04_MOST: usize = 128 * 1024;
+
+/// NIP-04's key for two keys: the x coordinate of their Diffie-Hellman point, as it is.
+fn nip04_key(secret: &[u8], public: &[u8]) -> Result<Zeroizing<[u8; 32]>> {
+    let secret = signing_key(secret)?;
+    let public = verifying_key(public)?;
+    let secret = k256::SecretKey::from_bytes(&secret.to_bytes()).map_err(|_| "not a Nostr secret key".to_string())?;
+    let shared = k256::ecdh::diffie_hellman(secret.to_nonzero_scalar(), public.as_affine());
+    let mut key = Zeroizing::new([0u8; 32]);
+    key.copy_from_slice(shared.raw_secret_bytes());
+    Ok(key)
+}
+
+/// Encrypts as NIP-04 does (AES-256-CBC, PKCS#7, `<base64>?iv=<base64>`), with this `iv`: for checks.
+pub fn nip04_encrypt(secret: &[u8], public: &[u8], plaintext: &str, iv: &[u8; 16]) -> Result<String> {
+    let key = nip04_key(secret, public)?;
+    let cipher = Aes256::new(GenericArray::from_slice(key.as_ref()));
+    let pad = 16 - plaintext.len() % 16;
+    let mut data = Zeroizing::new(plaintext.as_bytes().to_vec());
+    data.extend(std::iter::repeat_n(pad as u8, pad));
+    let mut prev = *iv;
+    for chunk in data.chunks_mut(16) {
+        for (byte, before) in chunk.iter_mut().zip(prev.iter()) {
+            *byte ^= before;
+        }
+        let block = GenericArray::from_mut_slice(chunk);
+        cipher.encrypt_block(block);
+        prev.copy_from_slice(chunk);
+    }
+    Ok(format!("{}?iv={}", BASE64.encode(&data[..]), BASE64.encode(iv)))
+}
+
+/// Opens a NIP-04 message's content, written by `public` to `secret`'s key or the other way round.
+pub fn nip04_decrypt(secret: &[u8], public: &[u8], content: &str) -> Result<String> {
+    let wrong = || "not a NIP-04 message".to_string();
+    let (data, iv) = content.split_once("?iv=").ok_or_else(wrong)?;
+    if data.len() > NIP04_MOST / 3 * 4 + 4 {
+        return Err(wrong());
+    }
+    let data = BASE64.decode(data.trim()).map_err(|_| wrong())?;
+    let iv: [u8; 16] = BASE64.decode(iv.trim()).map_err(|_| wrong())?.try_into().map_err(|_| wrong())?;
+    if data.is_empty() || data.len() % 16 != 0 {
+        return Err(wrong());
+    }
+    let key = nip04_key(secret, public)?;
+    let cipher = Aes256::new(GenericArray::from_slice(key.as_ref()));
+    let mut out = Zeroizing::new(Vec::with_capacity(data.len()));
+    let mut prev = iv;
+    for chunk in data.chunks(16) {
+        let mut block = GenericArray::clone_from_slice(chunk);
+        cipher.decrypt_block(&mut block);
+        for (byte, before) in block.iter_mut().zip(prev.iter()) {
+            *byte ^= before;
+        }
+        out.extend_from_slice(&block);
+        prev.copy_from_slice(chunk);
+    }
+    let pad = *out.last().ok_or_else(wrong)? as usize;
+    if pad == 0 || pad > 16 || out[out.len() - pad..].iter().any(|&b| b as usize != pad) {
+        return Err("the NIP-04 message did not open with this key".to_string());
+    }
+    let len = out.len() - pad;
+    String::from_utf8(out[..len].to_vec()).map_err(|_| "the NIP-04 message did not open with this key".to_string())
 }
 
 // NIP-01 events.

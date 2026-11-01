@@ -1509,6 +1509,7 @@ dependencies = [
 name = "erevos-nostr"
 version = "0.0.1"
 dependencies = [
+ "aes 0.8.4",
  "base64 0.22.1",
  "chacha20 0.9.1",
  "hkdf 0.12.4",

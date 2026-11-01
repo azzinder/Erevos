@@ -26,7 +26,7 @@ use rand_core::{OsRng, RngCore};
 use serde_json::{json, Value};
 use zeroize::Zeroizing;
 
-use super::{conversation_key, decrypt, encrypt, event_id, hex, new_secret, public_key, unhex, verifying_key, Event, Result, WRAP_KIND};
+use super::{conversation_key, decrypt, encrypt, event_id, hex, new_secret, nip04_decrypt, public_key, unhex, verifying_key, Event, Result, WRAP_KIND};
 
 /// A seal's kind (NIP-59).
 pub const SEAL_KIND: u64 = 13;
@@ -48,6 +48,7 @@ pub fn call(request: &[u8]) -> Result<Vec<u8>> {
         "nprofile" => json!({ "nprofile": nprofile(&request)? }),
         "wrap" => wrap(&request)?,
         "unwrap" => unwrap(&request)?,
+        "open_old" => open_old(&request)?,
         "sign" => sign(&request)?,
         "verify" => {
             Event::from_value(field(&request, "event")?)?.verify()?;
@@ -159,6 +160,38 @@ fn unwrap(request: &Value) -> Result<Value> {
     Ok(json!({
         "wrap": { "id": wrap.id, "created_at": wrap.created_at },
         "rumor": { "id": id, "pubkey": seal.pubkey, "created_at": created_at, "kind": kind, "tags": tags, "content": content },
+    }))
+}
+
+/// The kind of NIP-04's private messages, the old ones.
+const OLD_DM_KIND: u64 = 4;
+
+/// `{secret, event}`: a NIP-04 private message (kind 4) to or from the key, checked and opened, as
+/// [`unwrap`] answers: its rumor is a text (kind 14) that names the other person in its one `p` tag,
+/// with its id, signer, time and the `e` tags it answers. Its signature proves who wrote it, and
+/// the relays saw who wrote to whom and when.
+fn open_old(request: &Value) -> Result<Value> {
+    let secret = secret(request)?;
+    let me = hex(&public_key(&secret)?);
+    let event = Event::from_json(text(request, "event")?)?;
+    if event.kind != OLD_DM_KIND {
+        return Err("not a NIP-04 private message".to_string());
+    }
+    event.verify()?;
+    let to = event.tags.iter().find(|tag| tag.len() >= 2 && tag[0] == "p").map(|tag| tag[1].clone()).ok_or_else(|| "the message names no one".to_string())?;
+    let other = if event.pubkey == me {
+        to.clone()
+    } else if to == me {
+        event.pubkey.clone()
+    } else {
+        return Err("the message is not for this key".to_string());
+    };
+    let words = nip04_decrypt(&secret, &unhex(&other, 32)?, &event.content)?;
+    let mut tags = vec![vec!["p".to_string(), to]];
+    tags.extend(event.tags.iter().filter(|tag| tag.len() >= 2 && tag[0] == "e").cloned());
+    Ok(json!({
+        "wrap": { "id": event.id, "created_at": event.created_at },
+        "rumor": { "id": event.id, "pubkey": event.pubkey, "created_at": event.created_at, "kind": 14, "tags": tags, "content": words },
     }))
 }
 
@@ -332,6 +365,59 @@ mod tests {
 
     fn ask(request: Value) -> Result<Value> {
         call(request.to_string().as_bytes()).map(|bytes| serde_json::from_slice(&bytes).unwrap())
+    }
+
+    // NIP-04, both ways, and the cases it refuses; the words come from a key pair checked against
+    // Python's cryptography (secp256k1 ECDH x, AES-256-CBC), in checks/nostr-dm.check.ts too.
+    #[test]
+    fn old_private_messages_open() {
+        let alice = new_secret();
+        let bob = new_secret();
+        let alice_pub = hex(&public_key(&alice).unwrap());
+        let bob_pub = hex(&public_key(&bob).unwrap());
+        let content = super::super::nip04_encrypt(&alice, &unhex(&bob_pub, 32).unwrap(), "γεια σου, Bob: δεκαέξι+ bytes", &[7u8; 16]).unwrap();
+        let event = Event::sign(&alice, 1_700_000_000, 4, vec![vec!["p".into(), bob_pub.clone()], vec!["e".into(), "ab".repeat(32)]], content.clone()).unwrap();
+        for (secret, other) in [(&bob, &alice_pub), (&alice, &bob_pub)] {
+            let opened = ask(json!({ "op": "open_old", "secret": hex(secret), "event": event.to_json() })).unwrap();
+            assert_eq!(opened["rumor"]["content"], "γεια σου, Bob: δεκαέξι+ bytes");
+            assert_eq!(opened["rumor"]["kind"], 14);
+            assert_eq!(opened["rumor"]["pubkey"], alice_pub);
+            assert_eq!(opened["rumor"]["id"], event.id);
+            assert_eq!(opened["rumor"]["tags"], json!([["p", bob_pub], ["e", "ab".repeat(32)]]));
+            // Each side opens it with the other's key.
+            assert_ne!(hex(secret), *other);
+        }
+        // Not for this key; changed words; another kind.
+        let carol = new_secret();
+        assert!(ask(json!({ "op": "open_old", "secret": hex(&carol), "event": event.to_json() })).is_err());
+        let mut changed = event.clone();
+        changed.content = format!("{}{}", if content.starts_with('A') { 'B' } else { 'A' }, &content[1..]);
+        assert!(ask(json!({ "op": "open_old", "secret": hex(&bob), "event": changed.to_json() })).is_err());
+        let note = Event::sign(&alice, 1_700_000_000, 1, vec![vec!["p".into(), bob_pub.clone()]], content).unwrap();
+        assert!(ask(json!({ "op": "open_old", "secret": hex(&bob), "event": note.to_json() })).is_err());
+        // A wrong key gives bad padding or bad UTF-8, never words.
+        let wrong = super::super::nip04_decrypt(&carol, &unhex(&alice_pub, 32).unwrap(), &event.content);
+        assert!(wrong.is_err() || wrong.unwrap() != "γεια σου, Bob: δεκαέξι+ bytes");
+        assert!(super::super::nip04_decrypt(&bob, &unhex(&alice_pub, 32).unwrap(), "AAAA?iv=AAAA").is_err());
+        assert!(super::super::nip04_decrypt(&bob, &unhex(&alice_pub, 32).unwrap(), "no iv").is_err());
+    }
+
+    // A NIP-04 message made by another implementation (Python's cryptography: secp256k1 ECDH x as
+    // the AES-256-CBC key, PKCS#7, iv 00..0f) opens for both keys, and the same words encrypt to it.
+    #[test]
+    fn old_private_messages_match_another_implementation() {
+        let alice = unhex("5c0c523f52a5b6fad39ed2403092df8cebc36318b39383bca6c00808626fab3a", 32).unwrap();
+        let bob = unhex("4b22aa260e4acb7021e32f38a6cdf4b673c6a277755bfce287e370c924dc936d", 32).unwrap();
+        let alice_pub = "87d3561f19b74adbe8bf840682992466068830a9d8c36b4a0c99d36f826cb6cb";
+        let bob_pub = "fa3b4f81a620c66514bda0302847df167ed02a483141b5939e57bdd0cf76ad3b";
+        assert_eq!(hex(&public_key(&alice).unwrap()), alice_pub);
+        assert_eq!(hex(&public_key(&bob).unwrap()), bob_pub);
+        let made = "C1+miOk/8SsPGyb5lru9cykGVYIwBF4rj9L2lrrhESwSdyZsu+OmJqryDsdBrTGq?iv=AAECAwQFBgcICQoLDA0ODw==";
+        let words = "nostr: old messages still open, «γεια»";
+        assert_eq!(super::super::nip04_decrypt(&bob, &unhex(alice_pub, 32).unwrap(), made).unwrap(), words);
+        assert_eq!(super::super::nip04_decrypt(&alice, &unhex(bob_pub, 32).unwrap(), made).unwrap(), words);
+        let iv: [u8; 16] = std::array::from_fn(|i| i as u8);
+        assert_eq!(super::super::nip04_encrypt(&alice, &unhex(bob_pub, 32).unwrap(), words, &iv).unwrap(), made);
     }
 
     // NIP-19's own examples.
