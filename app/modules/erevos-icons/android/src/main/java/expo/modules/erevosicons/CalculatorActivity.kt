@@ -54,12 +54,14 @@ class CalculatorActivity : Activity() {
     setTheme(if (night) android.R.style.Theme_Material_NoActionBar else android.R.style.Theme_Material_Light_NoActionBar)
     super.onCreate(savedInstanceState)
     val look = Look(night)
-    bars(night, look)
     setContentView(layout(look).also(::keepClearOfBars))
+    bars(night, look)
     show()
   }
 
-  // The phone's bars over the calculator's own ground, their icons dark on the light one.
+  // The phone's bars over the calculator's own ground, their icons dark on the light one. Only
+  // once the window has its content: before it, the window has no decor view yet, and asking it
+  // for its insets controller stops the calculator as it opens (Android 17 on the Pixel).
   @Suppress("DEPRECATION")
   private fun bars(night: Boolean, look: Look) {
     window.statusBarColor = look.ground

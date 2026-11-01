@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
+    "**Kalkulator se ponovo otvara**: u 4.0.0-rc.6 zatvarao se čim biste ga dodirnuli.",
   // 4.0.0-rc.6
   "**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic).":
     "**Lozinka za paniku**: s uključenim zaključavanjem lozinkom, **Postavi lozinku za paniku** u „Gumb za paniku“ postavlja zasebnu lozinku koja, upisana na ekranu za zaključavanje, briše Erevos kao **Obriši sve sada**, dok ekran prikazuje **Pogrešna lozinka**. Ništa ne pokazuje je li neka postavljena. Pogledajte [Gumb za paniku](#panic).",

@@ -6,7 +6,7 @@ and security inside. After 0.1.16 comes 2.0.0.
 Until then releases were numbered `0.1.<run of the release workflow>`, so some numbers have none:
 0.1.1 went out only on the private repository, without an Android app, and 0.1.3, 0.1.9, 0.1.13
 and 0.1.15 never came out.
-No release so far has a macOS build. **Not audited.**
+4.0.0-rc.6 is the first release with a macOS build. **Not audited.**
 
 ## Unreleased
 
@@ -15,6 +15,8 @@ On main, not released yet:
 ### For you
 
 ### Under the hood
+
+- The calculator in place of Erevos's icon opens again: in 4.0.0-rc.6 it closed as soon as it was tapped, because it set the colour of the phone's bars before its screen existed.
 
 ## 4.0.0-rc.6 (2026-10-31)
 

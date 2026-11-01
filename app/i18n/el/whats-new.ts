@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
+    "**Η αριθμομηχανή ανοίγει ξανά**: στην 4.0.0-rc.6 έκλεινε μόλις την πατούσες.",
   // 4.0.0-rc.6
   "**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic).":
     "**Κωδικός πανικού**: με το κλείδωμα με κωδικό ενεργό, ο **Ορισμός κωδικού πανικού** στο Κουμπί πανικού ορίζει έναν δικό του κωδικό που, αν γραφτεί στην οθόνη κλειδώματος, σβήνει το Erevos όπως το **Σβήσε τα πάντα τώρα**, ενώ η οθόνη δείχνει **Λάθος κωδικός**. Τίποτα δεν δείχνει αν έχει οριστεί. Δες [Κουμπί πανικού](#panic).",

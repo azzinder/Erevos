@@ -22,7 +22,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

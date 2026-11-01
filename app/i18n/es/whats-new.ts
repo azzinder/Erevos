@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
+    "**La calculadora vuelve a abrirse**: en la 4.0.0-rc.6 se cerraba en cuanto la tocabas.",
   // 4.0.0-rc.6
   "**Panic password**: with the password lock on, **Set the panic password** under the Panic button sets a password of its own that, typed on the lock screen, wipes Erevos as **Wipe everything now** does, while the screen shows **Wrong password**. Nothing shows whether one is set. See [Panic button](#panic).":
     "**Contraseña de pánico**: con el bloqueo con contraseña activado, **Poner la contraseña de pánico** en «Botón de pánico» pone una contraseña propia que, escrita en la pantalla de bloqueo, borra Erevos como lo hace **Borrarlo todo ahora**, mientras la pantalla muestra **Contraseña incorrecta**. Nada muestra si hay una puesta. Consulta [Botón de pánico](#panic).",
