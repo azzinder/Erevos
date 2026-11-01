@@ -954,7 +954,7 @@ disappearing setting.
 Under **+** there is more to send than photos and files (the smiley at the end of the message field opens the
 stickers too):
 
-- **Sticker:** one of the 552 stickers built into Erevos, in 23 sets of 24 (among them **Moons**, **Dogs**,
+- **Sticker:** one of the 576 stickers built into Erevos, in 24 sets of 24 (among them **Moons**, **Dogs**,
   **Greece**, **Words** and **Treats**), drawn by each phone itself: only its name travels, so nothing is ever
   downloaded. An Erevos from before this shows its emoji instead. All but the words and the treats move a little for a
   few seconds as they come and when tapped, then rest; with the phone's reduce motion setting on, they stay still. The

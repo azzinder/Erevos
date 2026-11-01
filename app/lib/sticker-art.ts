@@ -13,6 +13,7 @@
 
 import { TUX_BEAK as TUX_BEAK_SHAPE, TUX_BEAK_LINE, TUX_BELLY, TUX_BODY, TUX_BOX, TUX_EYES, TUX_FOOT2, TUX_FRONT, TUX_WING1, TUX_WING2, TUX_WING2_LOW, TUX_WING2_TIP } from './sticker-tux';
 import { AIKI_GI, AIKI_HAKAMA, AIKI_HAKAMA_SEATED, AIKI_SHOULDERS, aikiArm, aikiHead } from './sticker-aikido';
+import { EYES_ART } from './sticker-angry-eyes';
 import { TAKIS_BROWS, TAKIS_HEAD, TAKIS_NOSE, TAKIS_OWN_FACE, TAKIS_SHOULDERS, TAKIS_SUIT, takisArm } from './sticker-takis';
 
 /** Corners rounded the same, or each: top left, top right, bottom right, bottom left. */
@@ -2559,6 +2560,8 @@ export const ART: Record<string, Shape[]> = {
   'takis-nervous': takis([...mood('smile', TAKIS), part('sweat', [box(66, 14, 7, 7, TEAR, [0, 3.5, 3.5, 3.5], { turn: 45 })])]),
   'takis-busy': takis(mood('think', TAKIS), { arm1: -30, arm2: 30, front: [box(27, 80, 46, 16, '#9AA3AD', 3), box(21, 95, 58, 4, '#6B7480', 2), dot(50, 88, 7, '#F4F1EA')] }),
   'takis-cold': takis([...mood('wow', TAKIS), box(38, 63, 24, 7, RED, 3.5), box(53, 66, 7, 18, RED, 3), part('snow', [dot(12, 14, 5, '#DCEBFA'), dot(88, 22, 4, '#DCEBFA'), dot(14, 50, 4, '#DCEBFA'), dot(86, 56, 5, '#DCEBFA')])]),
+  // Angry Eyes (lib/sticker-angry-eyes.ts): the maintainer's own drawings, in layers.
+  ...EYES_ART,
 };
 
 /** The names of a sticker's parts, which its motion moves. */

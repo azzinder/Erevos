@@ -25,6 +25,9 @@ On main, not released yet:
   its languages.
 - **Contact** in Settings → General: adds the maker of Erevos as a contact, from the contact link that comes with
   the app, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email.
+- **A new sticker set, Angry Eyes**: 24 faces of big yellow eyes on a black disc, drawn by the maintainer, each with
+  the moves he gave it (blinking, glancing, shaking, crying, dozing off), played once as the sticker shows, as the
+  other sets are.
 
 ### Under the hood
 

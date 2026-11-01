@@ -31,6 +31,7 @@ export const VERSIONS: WhatsNew[] = [
     forYou: [
       mark("**Licence**: Settings → General → Licence says under which licence Erevos is free software, AGPL-3.0-or-later, its three additional terms, that it comes with no warranty, and who made it. See [Licence](#licence)."),
       mark("**Contact**: Settings → General → Contact adds the maker of Erevos as a contact, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email. See [What Erevos is](#about)."),
+      mark("**A new sticker set, Angry Eyes**: 24 faces of big yellow eyes on a black disc, drawn by the maintainer, each with the moves he gave it."),
     ],
     underTheHood: [
       mark("**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped."),

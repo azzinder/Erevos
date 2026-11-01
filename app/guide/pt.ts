@@ -1020,7 +1020,7 @@ Fotos e arquivos têm as mesmas marcas que o resto, e seguem a configuração de
 Em **+** há mais para enviar do que fotos e arquivos (o rostinho no fim do campo de mensagem também abre as
 figurinhas):
 
-- **Figurinha:** uma das 552 figurinhas embutidas no Erevos, em 23 conjuntos de 24 (entre eles **Luas**,
+- **Figurinha:** uma das 576 figurinhas embutidas no Erevos, em 24 conjuntos de 24 (entre eles **Luas**,
   **Cachorros**, **Grécia**, **Frases** e **Gostosuras**), desenhadas pelo próprio celular: só o nome dela viaja, então
   nada é baixado nunca. Um Erevos de antes disso mostra o emoji dela no lugar. Todas, menos as frases e as gostosuras,
   se mexem um pouco por alguns segundos quando chegam e quando são tocadas, e depois param; com a configuração de

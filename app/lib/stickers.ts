@@ -34,6 +34,7 @@ export type StickerSet =
   | 'sports'
   | 'aikido'
   | 'takis'
+  | 'eyes'
   | 'music'
   | 'transport'
   | 'plants'
@@ -62,6 +63,7 @@ export const SETS: { set: StickerSet; label: string; moves: boolean }[] = [
   { set: 'sports', label: mark('Sports'), moves: true },
   { set: 'aikido', label: mark('Aikido'), moves: true },
   { set: 'takis', label: mark('Takis'), moves: true },
+  { set: 'eyes', label: mark('Angry Eyes'), moves: true },
   { set: 'music', label: mark('Music'), moves: true },
   { set: 'transport', label: mark('On the move'), moves: true },
   { set: 'plants', label: mark('Flowers and plants'), moves: true },
@@ -699,6 +701,32 @@ export const STICKERS: Sticker[] = [
     { name: 'takis-nervous', label: mark('Nervous Takis'), emoji: '😅' },
     { name: 'takis-busy', label: mark('Busy Takis'), emoji: '💻' },
     { name: 'takis-cold', label: mark('Freezing Takis'), emoji: '🥶' },
+  ]),
+  ...inSet('eyes', [
+    { name: 'eyes-angry', label: mark('Angry eyes'), emoji: '😠' },
+    { name: 'eyes-furious', label: mark('Furious eyes'), emoji: '😡' },
+    { name: 'eyes-rage', label: mark('Eyes in a rage'), emoji: '🤬' },
+    { name: 'eyes-evil-grin', label: mark('Eyes with an evil grin'), emoji: '😈' },
+    { name: 'eyes-smug', label: mark('Smug eyes'), emoji: '😏' },
+    { name: 'eyes-mischievous', label: mark('Mischievous eyes'), emoji: '😜' },
+    { name: 'eyes-suspicious', label: mark('Suspicious eyes'), emoji: '🤨' },
+    { name: 'eyes-side-eye', label: mark('Eyes looking sideways'), emoji: '👀' },
+    { name: 'eyes-unimpressed', label: mark('Unimpressed eyes'), emoji: '😒' },
+    { name: 'eyes-eye-roll', label: mark('Eyes rolling'), emoji: '🙄' },
+    { name: 'eyes-confused', label: mark('Confused eyes'), emoji: '😕' },
+    { name: 'eyes-thinking', label: mark('Thinking eyes'), emoji: '🤔' },
+    { name: 'eyes-surprised', label: mark('Surprised eyes'), emoji: '😮' },
+    { name: 'eyes-shocked', label: mark('Shocked eyes'), emoji: '😲' },
+    { name: 'eyes-scream', label: mark('Screaming eyes'), emoji: '😱' },
+    { name: 'eyes-sad', label: mark('Sad eyes'), emoji: '😢' },
+    { name: 'eyes-crying', label: mark('Crying eyes'), emoji: '😭' },
+    { name: 'eyes-pleading', label: mark('Pleading eyes'), emoji: '🥺' },
+    { name: 'eyes-nervous', label: mark('Nervous eyes'), emoji: '😬' },
+    { name: 'eyes-happy', label: mark('Happy eyes'), emoji: '😊' },
+    { name: 'eyes-laughing', label: mark('Laughing eyes'), emoji: '😂' },
+    { name: 'eyes-wink', label: mark('Winking eyes'), emoji: '😉' },
+    { name: 'eyes-in-love', label: mark('Eyes in love'), emoji: '😍' },
+    { name: 'eyes-sleepy', label: mark('Sleepy eyes'), emoji: '😴' },
   ]),
 ];
 

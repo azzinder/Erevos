@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { EYES_MOTIONS } from './sticker-angry-eyes';
+
 // How the built-in stickers move (components/stickers.tsx plays it, lib/sticker-art.ts names the
 // parts): each sticker of the sets that move once, for a few seconds, as it
 // comes into view and when it is tapped, and then it rests on its still frame. Nothing loops, so
@@ -27,6 +29,8 @@ export type Move = {
   sy?: number[];
   opacity?: number[];
   every?: number;
+  /** 'linear': followed straight from one value to the next, for moves given in many small steps; eased between them otherwise. */
+  ease?: 'linear';
 };
 
 /** A sticker's play: how long it lasts, milliseconds, and its moves. */
@@ -684,6 +688,8 @@ export const MOTIONS: Record<string, Motion> = {
   'takis-nervous': { ms: 2200, moves: [fall('sweat', 10, 0.1), { part: 'all', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 1], x: [0, -1.5, 1.5, -1.5, 1.5, 0, 0] }] },
   'takis-busy': { ms: 2000, moves: [{ part: 'arm1', at: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 1], y: [0, -2, 0, -2, 0, -2, 0, 0] }, { part: 'arm2', at: [0, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 1], y: [0, -2, 0, -2, 0, -2, 0, 0] }] },
   'takis-cold': { ms: 2400, moves: [{ part: 'all', at: [0, 0.08, 0.16, 0.24, 0.32, 0.4, 1], x: [0, -2, 2, -2, 2, 0, 0] }, fall('snow', 10, 0.1)] },
+  // Angry Eyes: the moves the maintainer gave them, once (lib/sticker-angry-eyes.ts).
+  ...EYES_MOTIONS,
 };
 
 /** A sticker's motion, to play now: none for one that stays still, or while motion is to be reduced (or not known yet). */

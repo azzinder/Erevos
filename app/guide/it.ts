@@ -1029,7 +1029,7 @@ chat.
 Sotto **+** c’è altro da inviare oltre a foto e file (anche la faccina alla fine del campo del messaggio apre gli
 sticker):
 
-- **Sticker:** uno dei 552 sticker integrati in Erevos, in 23 serie da 24 (tra cui **Lune**, **Cani**, **Grecia**,
+- **Sticker:** uno dei 576 sticker integrati in Erevos, in 24 serie da 24 (tra cui **Lune**, **Cani**, **Grecia**,
   **Parole** e **Golosità**), disegnati da ogni telefono da sé: viaggia solo il loro nome, così non viene mai scaricato
   niente. Un Erevos di prima di questa funzione mostra invece la sua emoji. Tutti tranne le parole e le golosità si
   muovono un po’ per qualche secondo quando arrivano e quando li tocchi, poi stanno fermi; con l’impostazione del

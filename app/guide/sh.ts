@@ -1000,7 +1000,7 @@ Fotografije i datoteke imaju iste oznake kao i ostale i prate postavku nestajanj
 
 Pod **+** ima više za slanje od fotografija i datoteka (smajli na kraju polja za poruku također otvara naljepnice):
 
-- **Naljepnica:** jedna od 552 naljepnica ugrađenih u Erevos, u 23 kompleta po 24 (među njima **Mjeseci**, **Psi**,
+- **Naljepnica:** jedna od 576 naljepnica ugrađenih u Erevos, u 24 kompleta po 24 (među njima **Mjeseci**, **Psi**,
   **Grčka**, **Riječi** i **Poslastice**), koje svaki telefon sam iscrtava: putuje samo njeno ime, pa se nikad ništa
   ne preuzima. Erevos od prije ovoga umjesto nje prikazuje njen emoji. Sve osim riječi i poslastica malo se pomjeraju
   nekoliko sekundi kad stignu i kad ih dodirnete, a zatim miruju; s uključenom postavkom telefona za smanjenje pokreta

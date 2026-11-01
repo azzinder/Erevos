@@ -1019,7 +1019,7 @@ tienen las mismas marcas que el resto, y siguen el ajuste de mensajes temporales
 Bajo **+** hay más cosas que enviar aparte de fotos y archivos (la carita al final del campo de mensaje también abre
 los stickers):
 
-- **Sticker:** uno de los 552 stickers que trae Erevos, en 23 grupos de 24 (entre ellos **Lunas**, **Perros**,
+- **Sticker:** uno de los 576 stickers que trae Erevos, en 24 grupos de 24 (entre ellos **Lunas**, **Perros**,
   **Grecia**, **Frases** y **Antojos**), dibujados por cada teléfono: solo viaja su nombre, así que nunca se descarga
   nada. Un Erevos anterior a esto muestra su emoji en su lugar. Todos menos las frases y los antojos se mueven un poco
   durante unos segundos al llegar y al tocarlos, y luego se quedan quietos; con el ajuste de reducir el movimiento del

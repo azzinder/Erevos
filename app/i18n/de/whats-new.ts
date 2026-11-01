@@ -17,6 +17,8 @@ export const whatsNew: Record<string, string> = {
     "**Lizenz**: Einstellungen → Allgemein → Lizenz sagt, unter welcher Lizenz Erevos freie Software ist, AGPL-3.0-or-later, nennt ihre drei zusätzlichen Bedingungen, dass es ohne jede Garantie kommt, und wer es gemacht hat. Siehe [Lizenz](#licence).",
   "**Contact**: Settings → General → Contact adds the maker of Erevos as a contact, to write to in Erevos itself, end-to-end encrypted, with no phone number and no email. See [What Erevos is](#about).":
     "**Kontakt**: Einstellungen → Allgemein → Kontakt fügt die Person hinter Erevos als Kontakt hinzu, um ihr in Erevos selbst zu schreiben, Ende-zu-Ende-verschlüsselt, ohne Telefonnummer und ohne E-Mail. Siehe [Was Erevos ist](#about).",
+  "**A new sticker set, Angry Eyes**: 24 faces of big yellow eyes on a black disc, drawn by the maintainer, each with the moves he gave it.":
+    "**Ein neues Sticker-Set, Angry Eyes**: 24 Gesichter aus großen gelben Augen auf einer schwarzen Scheibe, gezeichnet von der Person hinter Erevos, jedes mit den Bewegungen, die sie ihm gegeben hat.",
   "**The calculator opens again**: in 4.0.0-rc.6 it closed as soon as it was tapped.":
     "**Der Taschenrechner öffnet sich wieder**: in 4.0.0-rc.6 schloss er sich, sobald du ihn angetippt hast.",
   "**People you follow on Nostr are looked for on more relays**: **Show the people you follow** also asks relays that gather follow lists and more of the relays your key writes on, and waits longer for them; when it finds no one, it says why and how each relay answered. See [Chats with other Nostr apps](#nostr-chats).":

@@ -1103,7 +1103,7 @@ Rest und folgen der Verschwinden-Einstellung des Chats.
 Unter **+** gibt es mehr zu senden als Fotos und Dateien (der Smiley am Ende des Nachrichtenfelds öffnet auch die
 Sticker):
 
-- **Sticker:** einer der 552 in Erevos eingebauten Sticker, in 23 Sätzen zu 24 (darunter **Monde**, **Hunde**,
+- **Sticker:** einer der 576 in Erevos eingebauten Sticker, in 24 Sätzen zu 24 (darunter **Monde**, **Hunde**,
   **Griechenland**, **Worte** und **Leckereien**), von jedem Telefon selbst gezeichnet: Nur sein Name reist, also wird
   nie etwas heruntergeladen. Ein Erevos von vor dieser Funktion zeigt stattdessen sein Emoji. Alle außer den Worten und
   den Leckereien bewegen sich ein paar Sekunden lang ein wenig, wenn sie ankommen und wenn man auf sie tippt, dann
