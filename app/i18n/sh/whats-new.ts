@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  // 4.0.0-rc.9
   "**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock).":
     "**Samo kontakti**: kad je Erevos zaključan, ikona Kontakata, dugme Kontakti na widgetu i obavijest o rođendanu traže lozinku, a zatim otvaraju samo kontakte. Razgovor, SMS, Postavke i narandžasti lokot **Otključaj sve** ponovo traže lozinku, a zatim otvaraju cijeli Erevos. Pogledajte [Zaključavanje lozinkom](#lock).",
   "**Old private messages in Nostr chats**: Erevos also reads private messages sent the older way (NIP-04), which Damus, Primal and many apps still send and keep, past and new, in the same chats. The relays see who wrote such a message to whom; Erevos itself still sends only the NIP-17 way. See [Chats with other Nostr apps](#nostr-chats).":

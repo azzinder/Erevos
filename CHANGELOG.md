@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.9 (2026-11-01)
+
+### For you
+
 - **Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a
   birthday still ask for the password, but then open only the contacts: their list, a contact's card (without your
   chats and calls with them), editing, groups, duplicates, the SIM and importing. A chat, an SMS, Settings or the orange
@@ -23,8 +29,6 @@ On main, not released yet:
   on the relays where your messages arrive and on up to four more: those a brought key's other app reads (its kind
   10002 list) and relay.damus.io, nos.lol and relay.primal.net. The relays see who wrote such a message to whom;
   Erevos itself still sends only the NIP-17 way.
-
-### Under the hood
 
 ## 4.0.0-rc.8 (2026-11-01)
 
