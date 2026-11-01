@@ -24,8 +24,11 @@ including its selection, arrangement and coordination.
 
 ## The role of AI tools
 
-AI tools were used extensively to write the code and the texts, always on the
-maintainer's instructions and from the maintainer's design. The maintainer tests
+Erevos is built by human-directed agentic engineering: the maintainer sets the
+design, the constraints, what each change must do and when it is done; AI tools
+write, run the checks and revise. AI tools were used extensively to write the code
+and the texts, always on the maintainer's instructions and from the maintainer's
+design. The maintainer tests
 changes on real devices before they go into a release, and decides what is kept.
 The design, the decisions and the final responsibility are the maintainer's.
 The maintainer keeps the instructions and reports that directed the work.
@@ -109,7 +112,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ## Ο ρόλος των εργαλείων τεχνητής νοημοσύνης
 
-Για τη συγγραφή του κώδικα και των κειμένων χρησιμοποιήθηκαν εκτεταμένα εργαλεία
+Το Erevos φτιάχνεται με ανθρώπινα κατευθυνόμενη agentic μηχανική (human-directed
+agentic engineering): ο συντηρητής ορίζει τον σχεδιασμό, τους περιορισμούς, τι
+πρέπει να κάνει κάθε αλλαγή και πότε έχει τελειώσει· τα εργαλεία τεχνητής
+νοημοσύνης γράφουν, τρέχουν τους ελέγχους και διορθώνουν. Για τη συγγραφή του
+κώδικα και των κειμένων χρησιμοποιήθηκαν εκτεταμένα εργαλεία
 τεχνητής νοημοσύνης, πάντα με οδηγίες του συντηρητή και πάνω στον δικό του
 σχεδιασμό. Ο συντηρητής δοκιμάζει τις αλλαγές σε πραγματικές συσκευές πριν μπουν
 σε έκδοση και αποφασίζει τι μένει. Ο σχεδιασμός, οι αποφάσεις και η τελική ευθύνη
