@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  // 4.0.0-rc.8
   // 4.0.0-rc.7
   "**Licence**: Settings → General → Licence says under which licence Erevos is free software, AGPL-3.0-or-later, its three additional terms, that it comes with no warranty, and who made it. See [Licence](#licence).":
     "**Licencia**: Ajustes → General → Licencia dice bajo qué licencia es Erevos software libre, AGPL-3.0-or-later, sus tres condiciones adicionales, que no viene con ninguna garantía, y quién lo hizo. Consulta [Licencia](#licence).",

@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 4.0.0-rc.8 (2026-11-01)
+
+### For you
+
 - **Only the SMS**: with Erevos locked, the SMS icon, the widget's SMS button and the notice of a new SMS still ask for
   the password, but then open only the SMS: their list, their conversations, Archived, Spam, Trash and New SMS.
   Anything else, and the orange padlock **Unlock everything**, asks for the password again, then opens all of Erevos.
