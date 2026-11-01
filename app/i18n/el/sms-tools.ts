@@ -160,5 +160,6 @@ export const smsTools: Record<string, string> = {
   'Type it: until then no number counts as from abroad.': 'Γράψ’ τον: μέχρι τότε κανένας αριθμός δεν μετρά ως από το εξωτερικό.',
   'Unlock everything': 'Ξεκλείδωμα όλων',
   'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Είναι ανοιχτά μόνο τα SMS. Οτιδήποτε άλλο στο Erevos ζητά ξανά τον κωδικό.',
+  'Only the contacts are open. Everything else in Erevos asks for the password again.': 'Είναι ανοιχτές μόνο οι επαφές. Οτιδήποτε άλλο στο Erevos ζητά ξανά τον κωδικό.',
   'No SMS yet.': 'Δεν υπάρχουν SMS ακόμα.',
 };

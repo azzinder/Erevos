@@ -85,19 +85,34 @@ export function screenParams(href: string, now = Date.now()): Record<string, str
   return { ...linkParts(href).params, opened: String(now) };
 }
 
-/** The screens (their routes' names) that a password given for the SMS opens: the SMS list on the
- *  home screen, a conversation, and the Archive, Spam and Trash. Any other screen asks for the
- *  password again first (app/_layout.tsx). */
-export const SMS_ONLY_SCREENS = new Set(['index', 'sms', 'sms-folder']);
+/** What a password given for one part of Erevos opens, with the password lock: only the SMS, or
+ *  only the Contacts (their icon, the widget's button, an SMS notice). */
+export type OnlyPart = 'sms' | 'contacts';
 
-/** Whether a link (as linkHref gives it) opens the SMS: the SMS icon and the widget's SMS button
- *  (/?show=sms), an SMS notice, an SMS conversation or one of their folders. With the password
- *  lock, the password given for it opens only the SMS (SMS_ONLY_SCREENS). */
-export function smsOnlyLink(href: string | null): boolean {
-  if (!href) return false;
+/** The screens each part opens alone (app/_layout.tsx): any other asks for the password again. */
+export const ONLY_SCREENS: Record<OnlyPart, ReadonlySet<string>> = {
+  sms: new Set(['index', 'sms', 'sms-folder']),
+  contacts: new Set(['index', 'contacts', 'contact-card', 'contact-edit', 'contact-groups', 'contact-duplicates', 'contact-sim', 'contact-import']),
+};
+/** The screens the SMS open alone. */
+export const SMS_ONLY_SCREENS = ONLY_SCREENS.sms;
+
+/** The part a link (as linkHref gives it) opens alone: 'sms' for the SMS icon and the widget's SMS
+ *  button (/?show=sms), an SMS notice, an SMS conversation or one of their folders; 'contacts' for
+ *  the Contacts icon and the widget's button (/contacts) and the contacts' own screens; else null. */
+export function onlyPartOf(href: string | null): OnlyPart | null {
+  if (!href) return null;
   const { path, params } = linkParts(href);
-  if (path === '/') return params.show === 'sms';
-  return path === '/sms' || path === '/sms-folder';
+  if (path === '/') return params.show === 'sms' ? 'sms' : null;
+  const screen = path.slice(1);
+  if (ONLY_SCREENS.sms.has(screen)) return 'sms';
+  if (ONLY_SCREENS.contacts.has(screen)) return 'contacts';
+  return null;
+}
+
+/** Whether a link opens the SMS alone (onlyPartOf). */
+export function smsOnlyLink(href: string | null): boolean {
+  return onlyPartOf(href) === 'sms';
 }
 
 /** A link (erevos://…) back to a screen by its route's name and parameters, for after the

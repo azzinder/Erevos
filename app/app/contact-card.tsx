@@ -33,6 +33,7 @@ import { makeTextInvite } from '../lib/sms-relay';
 import { qrVCard } from '../lib/vcard';
 import { loadPhoto, savePhoto } from '../lock/avatar-photos';
 import type { ContactLink } from '../lock/contacts-data';
+import { useLock } from '../lock/context';
 import {
   addToPhoneGroup,
   onContactsEvent,
@@ -91,6 +92,9 @@ export default function ContactCardScreen() {
   const erevosId = typeof params.erevos === 'string' && /^[0-9a-f]{64}$/.test(params.erevos) ? params.erevos : '';
   const hidden = params.hidden === '1';
   const hiddenOpen = useOpenHiddenPlace();
+  // With only the Contacts open (app/_layout.tsx), the card shows no history: its calls, SMS and
+  // Erevos messages are the rest of Erevos, behind the password.
+  const contactsOnly = useLock().only === 'contacts';
   // Whose chats its Erevos contact is in: the open hidden chats' among their screens, else the space's.
   const among: Among = hidden ? hiddenOpen : 'space';
   const canConnect = useCanConnect(among);
@@ -630,7 +634,7 @@ export default function ContactCardScreen() {
         </Card>
       ) : null}
 
-      <ContactHistory card={card} hiddenOpen={hidden ? hiddenOpen : null} onCall={call} onSms={sms} onErevos={() => erevos()} />
+      {contactsOnly ? null : <ContactHistory card={card} hiddenOpen={hidden ? hiddenOpen : null} onCall={call} onSms={sms} onErevos={() => erevos()} />}
 
       {onlyChat ? (
         <Row wrap>

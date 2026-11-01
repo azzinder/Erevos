@@ -56,6 +56,7 @@ import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
+import Contacts from './contacts';
 
 // The home screen: the space's chats, newest first, as a messenger shows them, with a search over
 // names and last messages, and the messages found under them, the relay's state, and the rest of
@@ -99,9 +100,10 @@ const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All message
 const DOOR_HOLD = 600;
 const DOOR_BUZZ = 40;
 
-// With only the SMS open (app/_layout.tsx), the home screen is their list alone.
+// With only the SMS or the Contacts open (app/_layout.tsx), the home screen is their list alone.
 export default function HomeScreen() {
-  return useLock().only === 'sms' ? <SmsHome /> : <Home />;
+  const only = useLock().only;
+  return only === 'sms' ? <SmsHome /> : only === 'contacts' ? <Contacts /> : <Home />;
 }
 
 function Home() {

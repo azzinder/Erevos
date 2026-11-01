@@ -11,6 +11,7 @@ import { ContactFace, useCardPhoto } from '../components/contact-face';
 import { readErevosId } from '../components/erevos-id';
 import { LockIcon, MoreIcon, PlusIcon, SearchIcon, ShieldIcon } from '../components/icons';
 import { KeyboardPaddedView } from '../components/keyboard';
+import { LockSign, ShortcutTile } from '../components/shortcut-tile';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Sheet, Text } from '../components/ui';
 import { allowPhoneContacts, byName, cardHref, erevosPeople, groupsByTitle, groupTitles, phoneCards, sealedCard, withErevos, type Card as ContactCard } from '../lib/contact-book';
@@ -23,6 +24,7 @@ import { readQrPhoto } from '../lib/read-qr';
 import { parseInvite } from '../lib/relay-invite';
 import { loadPlace, onSealedChange, placeOf, spacePlace, type Place } from '../lib/sealed-contacts';
 import { contactFromQr } from '../lib/vcard';
+import { useLock } from '../lock/context';
 import { contactsReady, contactsStatus, onContactsEvent, phoneGroups, setBirthdayReminders, watchContacts, type PhoneGroup } from '../modules/erevos-contacts';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -58,6 +60,10 @@ export default function Contacts() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ hidden?: string; add?: string }>();
   const hidden = params.hidden === '1';
+  // With only the Contacts open (app/_layout.tsx), this is the home screen: the orange padlock asks
+  // for the password again, to open all of Erevos.
+  const lock = useLock();
+  const only = lock.only === 'contacts' && !hidden;
   // What another app asks to add to a contact, checked, kept as the screens pass it on.
   const adding = useMemo(() => {
     const fields = !hidden && typeof params.add === 'string' ? askedFields(params.add) : null;
@@ -259,10 +265,18 @@ export default function Contacts() {
     <View style={styles.headerBlock}>
       <View style={styles.topBar}>
         <Text variant="title">{hidden ? t('Hidden contacts') : t('Contacts')}</Text>
-        <Pressable onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel={t('Menu')} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <MoreIcon color={colors.text} />
-        </Pressable>
+        <View style={styles.topActions}>
+          {only ? (
+            <ShortcutTile label={t('Unlock everything')} tint="orange" onPress={() => lock.unlockAll()}>
+              <LockSign tint="orange" />
+            </ShortcutTile>
+          ) : null}
+          <Pressable onPress={() => setMenu(true)} accessibilityRole="button" accessibilityLabel={t('Menu')} hitSlop={6} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+            <MoreIcon color={colors.text} />
+          </Pressable>
+        </View>
       </View>
+      {only ? <Text tone="muted">{t('Only the contacts are open. Everything else in Erevos asks for the password again.')}</Text> : null}
       {hidden ? <Text tone="muted">{t("Kept only here, sealed with the hidden chats: they show nowhere else, not even in the space's contacts.")}</Text> : null}
       <View style={styles.search}>
         <SearchIcon color={colors.textFaint} />
@@ -515,6 +529,11 @@ const makeStyles = (colors: Colors) =>
       gap: space.md,
       paddingTop: space.sm,
       paddingBottom: space.sm,
+    },
+    topActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
     },
     topBar: {
       flexDirection: 'row',

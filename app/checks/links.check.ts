@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
-import { dropLink, holdLink, hrefLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, takeLink } from '../lib/open-link';
+import { dropLink, holdLink, hrefLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -140,6 +140,18 @@ test('the SMS icon, the widget and an SMS notice open only the SMS; every other 
   assert.equal(smsOnlyLink(null), false);
   // The screens it opens are the SMS list (on the home screen), a conversation and the folders.
   assert.deepEqual([...SMS_ONLY_SCREENS].sort(), ['index', 'sms', 'sms-folder']);
+});
+
+test('the Contacts icon and the widget open only the Contacts and their own screens', () => {
+  for (const url of ['erevos://contacts', 'erevos://contacts?add=%2B3069', 'erevos://contact-card?id=4', 'erevos://contact-edit?fill=x', 'erevos://contact-groups', 'erevos://contact-duplicates', 'erevos://contact-sim', 'erevos://contact-import'])
+    assert.equal(onlyPartOf(linkHref(url)), 'contacts', url);
+  for (const url of ['erevos://?show=sms', 'erevos://sms?to=%2B3069']) assert.equal(onlyPartOf(linkHref(url)), 'sms', url);
+  for (const url of ['erevos://', ICON_LINK, 'erevos://phone', 'erevos://chat?contact=ab', 'erevos://contact-maker', 'erevos://contactsx', 'erevos://relay-invite?code=1'])
+    assert.equal(onlyPartOf(linkHref(url)), null, url);
+  assert.equal(onlyPartOf(null), null);
+  // A call or an SMS from a contact, its chat in Erevos, its history: the rest of Erevos, behind the password.
+  for (const screen of ['phone', 'sms', 'chat', 'settings']) assert.equal(ONLY_SCREENS.contacts.has(screen), false, screen);
+  assert.equal(ONLY_SCREENS.contacts.has('index'), true);
 });
 
 test('a screen asked for with only the SMS open is held as a link, and opens after the password', () => {
