@@ -2438,6 +2438,13 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
   par-dessus l’écran du mot de passe. Ses écrans se ferment, les discussions masquées aussi, et l’écran d’appel ne
   montre plus les noms de ses contacts. Son mot de passe le rouvre ; le mot de passe d’un autre espace le ferme d’abord,
   sans rien en garder en mémoire.
+- **Seulement les SMS :** quand Erevos est verrouillé, l’icône SMS, le bouton **SMS** du widget et la notification d’un
+  nouveau SMS demandent encore le mot de passe, mais n’ouvrent ensuite que les SMS : la liste des conversations SMS du
+  téléphone, chacune sur sa propre ligne, les conversations elles-mêmes, **Archivées**, **Spam** et **Corbeille**, et
+  **Nouveau SMS**. Rien d’autre de l’espace ne s’affiche. Tout le reste, un contact, une discussion, **Réglages**,
+  l’icône d’Erevos elle-même ou le cadenas orange **Tout déverrouiller** en haut, redemande le mot de passe, puis ouvre
+  tout l’espace. Ainsi un code arrivé par SMS peut se lire avec quelqu’un à côté de toi, et le reste d’Erevos reste
+  fermé.
 
 - **Voir ce que tu tapes :** chaque champ pour un mot de passe, un PIN ou un jeton, ici et partout dans Erevos, a un
   œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. Il est masqué de nouveau chaque fois

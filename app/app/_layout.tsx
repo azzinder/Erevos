@@ -27,7 +27,7 @@ import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { startSmsWay } from '../lib/sms-way';
-import { linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenParams, takeLink } from '../lib/open-link';
+import { dropLink, holdLink, hrefLink, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, takeLink } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
@@ -61,7 +61,7 @@ import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
 import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
-import { LockContext, type LockState } from '../lock/context';
+import { LockContext, useLock, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { forgetOpenedQueues } from '../lock/queues-data';
@@ -91,13 +91,15 @@ type Phase =
   | { kind: 'loading' }
   // `behind`: the space that goes on behind the password screen, until its password opens it again.
   | { kind: 'locked'; config: LockConfig; behind?: number }
-  | { kind: 'open'; space: number; passwordLock: boolean };
+  // `only`: the password was given for the SMS, which alone show; any other screen asks for it again.
+  | { kind: 'open'; space: number; passwordLock: boolean; only?: 'sms' };
 
 // The space that was open when Android took the screens away (Erevos swiped away from the recent
 // apps), its look, and since when Erevos was away. The space goes on without them
 // (lib/space-running.ts), and the screens that start again find it as after the background.
 // `gated`: the password screen showed in front of it, and shows again.
-let left: { space: number; passwordLock: boolean; look: Look; at: number; gated: boolean } | null = null;
+// `only`: only the SMS showed (Phase), and only they show again.
+let left: { space: number; passwordLock: boolean; look: Look; at: number; gated: boolean; only?: 'sms' } | null = null;
 
 // Shows the password screen when the lock is on, and the app once a space is open. The space
 // decides what the chat finds on the phone (lock/space-data.ts) and how the app looks
@@ -105,7 +107,8 @@ let left: { space: number; passwordLock: boolean; look: Look; at: number; gated:
 // The password screen shows the look last used. With the password lock, locking puts the password
 // screen in front of the open space, which goes on behind it, taking messages and ringing calls
 // (lib/space-running.ts): its screens go, and with them the hidden chats. Its password shows it
-// again; another space's closes it first.
+// again; another space's closes it first. A password given for the SMS (their icon, the widget's
+// SMS button, an SMS notice) shows only them; any other screen asks for it again, and then shows.
 export default function RootLayout() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [look, setLook] = useState<Look>(DEFAULT_LOOK);
@@ -146,7 +149,7 @@ export default function RootLayout() {
   }, []);
 
   const openSpace = useCallback(
-    async (space: number, passwordLock: boolean, key: Uint8Array) => {
+    async (space: number, passwordLock: boolean, key: Uint8Array, only?: 'sms') => {
       setCurrentSpace(space, key);
       const data = await loadSpaceData(space, key);
       // A stopped space reaches no relay, nor Nostr, until it starts again (lib/forget-me.ts).
@@ -158,7 +161,7 @@ export default function RootLayout() {
       setNostr(nostrOf(data.tor, data.nostr));
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
-      setPhase({ kind: 'open', space, passwordLock });
+      setPhase({ kind: 'open', space, passwordLock, only });
       saveLockScreenLook(kept).catch(() => undefined);
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
       // A new Erevos is told at the top of the chats (lib/release-look.ts).
@@ -199,12 +202,17 @@ export default function RootLayout() {
   }, [openSpace, show]);
 
   // The password screen in front of the open space, which goes on behind it. Its contacts' names
-  // leave the call screen, and a link Erevos came back with opens after the password.
+  // leave the call screen, and a link Erevos came back with opens after the password; or `link`,
+  // when given ('' for none): the screen that asked for the password again, with only the SMS open.
   const gate = useCallback(
-    async (space: number) => {
+    async (space: number, link?: string) => {
       setSpaceGated(true);
       clearKnownNames();
       lockingKeepsLink();
+      if (link !== undefined) {
+        dropLink();
+        if (link) holdLink(link);
+      }
       const config = await loadLockConfig();
       if (config.direct !== null || config.slots.length === 0) return start();
       setPhase({ kind: 'locked', config, behind: space });
@@ -219,20 +227,21 @@ export default function RootLayout() {
   }, [gate, start]);
 
   // A password typed or a fingerprint given: the space behind the password screen shows again, or,
-  // for another, it closes and that one opens.
+  // for another, it closes and that one opens. Given for the SMS, it shows only them.
   const unlocked = useCallback(
     async ({ space, key }: { space: number; key: Uint8Array }) => {
       const current = phaseRef.current;
       const behind = current.kind === 'locked' ? current.behind : undefined;
+      const only = smsOnlyLink(peekLink()) ? 'sms' : undefined;
       if (behind !== undefined && behind === space && spaceGated() && sameKey(openKey(), key)) {
         setSpaceGated(false);
         forgetKnownNamesAfter(-1);
         void refreshKnownNames();
-        setPhase({ kind: 'open', space, passwordLock: true });
+        setPhase({ kind: 'open', space, passwordLock: true, only });
         return;
       }
       if (behind !== undefined) closeSpace();
-      await openSpace(space, true, key);
+      await openSpace(space, true, key, only);
     },
     [openSpace],
   );
@@ -245,7 +254,7 @@ export default function RootLayout() {
       await show(was.look);
       if (was.passwordLock && Date.now() - was.at > RELOCK_AFTER_MS) relockAfterCall.current = true;
       else if (was.passwordLock) forgetKnownNamesAfter(-1);
-      setPhase({ kind: 'open', space: was.space, passwordLock: was.passwordLock });
+      setPhase({ kind: 'open', space: was.space, passwordLock: was.passwordLock, only: was.only });
     },
     [show],
   );
@@ -273,7 +282,7 @@ export default function RootLayout() {
     () => () => {
       const current = phaseRef.current;
       const at = backgroundAt.current ?? Date.now();
-      if (current.kind === 'open') left = { space: current.space, passwordLock: current.passwordLock, look: lookRef.current, at, gated: false };
+      if (current.kind === 'open') left = { space: current.space, passwordLock: current.passwordLock, look: lookRef.current, at, gated: false, only: current.only };
       else if (current.kind === 'locked' && current.behind !== undefined && spaceGated()) left = { space: current.behind, passwordLock: true, look: lookRef.current, at, gated: true };
       else left = null;
       endCall();
@@ -371,8 +380,13 @@ export default function RootLayout() {
       openSpace: ({ space, key }) => {
         openSpace(space, true, key).catch(fail);
       },
+      only: phase.kind === 'open' ? (phase.only ?? null) : null,
+      unlockAll: (link) => {
+        const current = phaseRef.current;
+        if (current.kind === 'open' && current.passwordLock) gate(current.space, link ?? '').catch(fail);
+      },
     }),
-    [phase, start, relock, openSpace, fail],
+    [phase, start, relock, openSpace, gate, fail],
   );
 
   // Keyboard tracking for every screen and sheet, the password screen too (components/keyboard.tsx).
@@ -446,8 +460,11 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
         // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx), and goes back by a
         // swipe in its own way, as its back arrow does. Every other screen goes back by a swipe to
         // the right (components/swipe-back.tsx).
+        // With only the SMS open, any other screen asks for the password first, and shows nothing of itself.
         screenLayout={({ children, route }) =>
-          route.name === 'chat' ? (
+          phase.only === 'sms' && !SMS_ONLY_SCREENS.has(route.name) ? (
+            <AskAgain link={screenLink(route.name, route.params as Record<string, unknown> | undefined)} />
+          ) : route.name === 'chat' ? (
             children
           ) : (
             <ScreenBackdrop>
@@ -537,14 +554,29 @@ function Locked({ lang, config, onUnlock }: { lang: Lang; config: LockConfig; on
   return <PasswordGate key={lang} config={config} onUnlock={onUnlock} />;
 }
 
+// With only the SMS open, a screen of the rest of the space: the password again, to open all of it,
+// then that screen.
+function AskAgain({ link }: { link: string }) {
+  const { unlockAll } = useLock();
+  const { colors } = useTheme();
+  useEffect(() => {
+    unlockAll(link);
+  }, [unlockAll, link]);
+  return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
+}
+
 // Opens the screen a link names, held while the password screen showed (lib/open-link.ts), once
 // the screens are there, and each link that comes while the space is open. The home screen is
 // under every other: back to it, not a second one. It, the Phone and Contacts, as the launcher's
 // icons and the widget open them, show the link's tab again each time, also the same link after
 // the owner chose another tab; another screen that shows already only takes the link's details.
-// Erevos's own icon leaves one of its chats open.
+// Erevos's own icon leaves one of its chats open. With only the SMS open, a link to anything else
+// asks for the password again, then opens.
 function OpenLink() {
   const ready = useRootNavigationState()?.key;
+  const lock = useLock();
+  const lockNow = useRef(lock);
+  lockNow.current = lock;
   const pathname = usePathname();
   const { hidden } = useGlobalSearchParams<{ hidden?: string }>();
   const here = useRef({ path: pathname, hidden: false });
@@ -554,6 +586,10 @@ function OpenLink() {
     const open = () => {
       const href = takeLink();
       if (!href) return;
+      if (lockNow.current.only === 'sms' && !smsOnlyLink(href)) {
+        lockNow.current.unlockAll(hrefLink(href));
+        return;
+      }
       const { path, params } = linkParts(href);
       const move = linkMove(href, here.current);
       if (move === 'back') router.dismissTo({ pathname: path, params: screenParams(href) } as Href);

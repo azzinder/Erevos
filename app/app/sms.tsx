@@ -41,6 +41,7 @@ import { pickMmsPhoto } from '../lib/pick-mms-photo';
 import { cancelLater as cancelSmsLater, laterChanged, onLaterSent } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
+import { useLock } from '../lock/context';
 import { currentSpace } from '../lock/keys';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -155,6 +156,9 @@ async function invite(to: string, space: number) {
 
 export default function Sms() {
   const params = useLocalSearchParams<{ to?: string; text?: string; plain?: string }>();
+  // With only the SMS open (app/_layout.tsx), a number of a contact stays a plain SMS conversation,
+  // and nothing names the space's contacts.
+  const smsOnly = useLock().only === 'sms';
   const raw = typeof params.to === 'string' ? params.to : '';
   const numbers = smsNumbers(raw);
   // A sender that writes with a name instead of a number: its SMS show, but cannot be answered.
@@ -289,12 +293,12 @@ export default function Sms() {
     load();
     loadE2EData('space', space, key)
       .then((data) => {
-        const linked = linkedContact(data.contacts, to, params.plain === '1');
+        const linked = linkedContact(data.contacts, to, params.plain === '1' || smsOnly);
         if (linked) {
           // What was passed on to the number goes into the contact's chat instead.
           if (forwarded) forwardTo(`contact:${linked.identity}`, { text: forwarded.text, photo: null });
           router.replace(`/chat?contact=${linked.identity}`);
-        } else setContacts(data.contacts);
+        } else if (!smsOnly) setContacts(data.contacts);
       })
       .catch(() => undefined);
     SmsLink.open(space, key)

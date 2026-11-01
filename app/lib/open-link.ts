@@ -85,6 +85,38 @@ export function screenParams(href: string, now = Date.now()): Record<string, str
   return { ...linkParts(href).params, opened: String(now) };
 }
 
+/** The screens (their routes' names) that a password given for the SMS opens: the SMS list on the
+ *  home screen, a conversation, and the Archive, Spam and Trash. Any other screen asks for the
+ *  password again first (app/_layout.tsx). */
+export const SMS_ONLY_SCREENS = new Set(['index', 'sms', 'sms-folder']);
+
+/** Whether a link (as linkHref gives it) opens the SMS: the SMS icon and the widget's SMS button
+ *  (/?show=sms), an SMS notice, an SMS conversation or one of their folders. With the password
+ *  lock, the password given for it opens only the SMS (SMS_ONLY_SCREENS). */
+export function smsOnlyLink(href: string | null): boolean {
+  if (!href) return false;
+  const { path, params } = linkParts(href);
+  if (path === '/') return params.show === 'sms';
+  return path === '/sms' || path === '/sms-folder';
+}
+
+/** A link (erevos://…) back to a screen by its route's name and parameters, for after the
+ *  password: '' for the home screen, or a screen no link can name. */
+export function screenLink(name: string, params?: Record<string, unknown>): string {
+  const path = name.replace(/(^|\/)index$/, '');
+  if (path && !/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(path)) return '';
+  const query = Object.entries(params ?? {})
+    .filter((entry): entry is [string, string | number] => typeof entry[1] === 'string' || typeof entry[1] === 'number')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&');
+  return path || query ? `erevos://${path}${query ? `?${query}` : ''}` : '';
+}
+
+/** A link's screen (as linkHref gives it) as a link again (erevos://…), to hold. */
+export function hrefLink(href: string): string {
+  return `erevos:/${href}`;
+}
+
 /** Holds a link Erevos was opened with, until a space is open. */
 export function holdLink(url: string, now = Date.now()): void {
   const href = linkHref(url);
@@ -110,6 +142,12 @@ export function takeLink(now = Date.now()): string | null {
 /** Erevos locks: a link opened just before is held again, to open after the password. */
 export function lockingKeepsLink(now = Date.now()): void {
   if (opened && now - opened.at <= RELOCK_MS && !held) held = { href: opened.href, at: now };
+  opened = null;
+}
+
+/** Forgets the link held, and the one opened last, so neither opens after the password. */
+export function dropLink(): void {
+  held = null;
   opened = null;
 }
 

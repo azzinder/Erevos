@@ -2238,6 +2238,12 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
   ekrana za lozinku. Njegovi ekrani se zatvaraju, i skriveni razgovori, a ekran za pozive više ne prikazuje imena
   njegovih kontakata. Njegova lozinka ga ponovo otvara; lozinka drugog prostora ga prvo zatvara, ne zadržavajući ništa
   od njega u memoriji.
+- **Samo SMS-ovi:** kad je Erevos zaključan, ikona SMS-a, dugme **SMS** na widgetu i obavijest o novom SMS-u i dalje
+  traže lozinku, ali zatim otvaraju samo SMS-ove: popis SMS razgovora telefona, svaki u svom redu, same razgovore,
+  **Arhivirano**, **Spam** i **Otpad**, te **Novi SMS**. Ništa drugo od prostora se ne vidi. Sve ostalo, kontakt,
+  razgovor, **Postavke**, sama ikona Erevosa ili narandžasti lokot **Otključaj sve** na vrhu, ponovo traži lozinku, a
+  zatim otvara cijeli prostor. Tako se kod koji je stigao SMS-om može pročitati s nekim pored vas, a ostatak Erevosa
+  ostaje zatvoren.
 
 - **Vidjeti šta kucate:** svako polje za lozinku, PIN ili token, ovdje i svuda u Erevosu, ima oko na kraju: dodirnite
   ga da vidite šta kucate, i ponovo da se sakrije. Ponovo je skriveno svaki put kad se polje iznova pojavi, a na

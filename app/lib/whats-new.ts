@@ -21,8 +21,12 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
-  underTheHood: [],
+  forYou: [
+    mark('**Only the SMS**: with Erevos locked, the SMS icon, the widget\'s SMS button and the notice of a new SMS ask for the password, then open only the SMS. Anything else, and the orange padlock **Unlock everything**, asks for it again, then opens all of Erevos. See [Password lock](#lock).'),
+  ],
+  underTheHood: [
+    mark("**Nostr chats with a key brought from another app get their messages again**: Erevos reads where that app said your messages arrive, as that app does, instead of its own three relays, fetches the messages kept there and in older lists of the key, and reads a relay again when it stops sending. Before, such a key could show its chats with no past messages and get no new ones. See [Chats with other Nostr apps](#nostr-chats)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

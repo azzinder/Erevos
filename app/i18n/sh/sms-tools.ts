@@ -164,4 +164,7 @@ export const smsTools: Record<string, string> = {
   'Your country code': 'Pozivni broj vaše zemlje',
   'A number written with another one is from abroad; one written without any is from here.': 'Broj napisan s drugim je iz inostranstva; broj napisan bez pozivnog je odavde.',
   'Type it: until then no number counts as from abroad.': 'Upišite ga: do tada nijedan broj se ne računa kao iz inostranstva.',
+  'Unlock everything': 'Otključaj sve',
+  'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Otvoreni su samo SMS-ovi. Sve ostalo u Erevosu ponovo traži lozinku.',
+  'No SMS yet.': 'Još nema SMS-ova.',
 };

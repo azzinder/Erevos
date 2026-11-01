@@ -2306,6 +2306,12 @@ duas opções: **Sem bloqueio** e **Senha**.
   da senha. As telas dele fecham, as conversas ocultas também, e a tela de chamada não mostra mais os nomes dos
   contatos dele. A senha dele o abre de novo; a senha de outro espaço o fecha antes, sem nada dele guardado na
   memória.
+- **Só os SMS:** com o Erevos bloqueado, o ícone de SMS, o botão **SMS** do widget e o aviso de um SMS novo ainda pedem
+  a senha, mas depois abrem só os SMS: a lista das conversas de SMS do celular, cada uma em uma linha própria, as
+  próprias conversas, **Arquivadas**, **Spam** e **Lixeira**, e **Novo SMS**. Nada mais do espaço aparece. Qualquer
+  outra coisa, um contato, uma conversa, **Configurações**, o ícone do próprio Erevos ou o cadeado laranja **Desbloquear
+  tudo** no topo, pede a senha de novo e depois abre todo o espaço. Assim um código que chegou por SMS pode ser lido com
+  alguém ao lado, e o resto do Erevos continua fechado.
 
 - **Ver o que você digita:** cada campo de senha, PIN ou token, aqui e em todo o Erevos, tem um olho no fim: toque
   nele para ver o que você digita, e de novo para esconder. Ele volta a ficar escondido cada vez que o campo aparece

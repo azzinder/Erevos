@@ -158,4 +158,7 @@ export const smsTools: Record<string, string> = {
   'Your country code': 'Tu prefijo de país',
   'A number written with another one is from abroad; one written without any is from here.': 'Un número escrito con otro es del extranjero; uno escrito sin ninguno es de aquí.',
   'Type it: until then no number counts as from abroad.': 'Escríbelo: hasta entonces ningún número cuenta como del extranjero.',
+  'Unlock everything': 'Desbloquear todo',
+  'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Solo los SMS están abiertos. Todo lo demás en Erevos vuelve a pedir la contraseña.',
+  'No SMS yet.': 'Aún no hay SMS.',
 };

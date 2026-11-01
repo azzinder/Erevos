@@ -19,6 +19,12 @@ export interface LockState {
   closeNow: () => void;
   /** Switches to another space (its password was just given), with the password lock on. */
   openSpace: (space: Unlocked) => void;
+  /** What the last password opened, with the password lock: 'sms', only the SMS, as it was given
+   *  for the SMS icon, the widget's SMS button or an SMS notice (lib/open-link.ts, smsOnlyLink);
+   *  null, all of the space. */
+  only: 'sms' | null;
+  /** Asks for the password again, to open all of the space; then the screen of `link` (erevos://…), when given, opens. */
+  unlockAll: (link?: string) => void;
 }
 
 export const LockContext = createContext<LockState>({
@@ -28,6 +34,8 @@ export const LockContext = createContext<LockState>({
   lockNow: () => undefined,
   closeNow: () => undefined,
   openSpace: () => undefined,
+  only: null,
+  unlockAll: () => undefined,
 });
 
 export function useLock(): LockState {

@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
-import { holdLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenParams, takeLink } from '../lib/open-link';
+import { dropLink, holdLink, hrefLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, takeLink } from '../lib/open-link';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -132,6 +132,42 @@ test('a held link can be looked at, as the locked Phone does, and stays held', (
   assert.equal(peekLink(1000 + KEEP_MS + 1), null, 'too old');
   assert.equal(takeLink(2000), '/phone?tab=recents');
   assert.equal(peekLink(2000), null);
+});
+
+test('the SMS icon, the widget and an SMS notice open only the SMS; every other link opens all', () => {
+  for (const url of ['erevos://?show=sms', 'erevos://?show=sms&opened=1', 'erevos://sms?to=%2B3069', 'erevos://sms-folder?folder=spam']) assert.equal(smsOnlyLink(linkHref(url)), true, url);
+  for (const url of ['erevos://', 'erevos://?show=erevos', ICON_LINK, 'erevos://?show=all', 'erevos://phone', 'erevos://contacts', 'erevos://chat?contact=ab', 'erevos://sms-settings', 'erevos://smsx']) assert.equal(smsOnlyLink(linkHref(url)), false, url);
+  assert.equal(smsOnlyLink(null), false);
+  // The screens it opens are the SMS list (on the home screen), a conversation and the folders.
+  assert.deepEqual([...SMS_ONLY_SCREENS].sort(), ['index', 'sms', 'sms-folder']);
+});
+
+test('a screen asked for with only the SMS open is held as a link, and opens after the password', () => {
+  assert.equal(screenLink('contacts'), 'erevos://contacts');
+  assert.equal(screenLink('chat', { contact: 'ab', phone: '+30 69' }), 'erevos://chat?contact=ab&phone=%2B30%2069');
+  assert.equal(linkHref(screenLink('chat', { contact: 'ab', phone: '+30 69' })), '/chat?contact=ab&phone=%2B30%2069');
+  assert.equal(linkParts(linkHref(screenLink('chat', { contact: 'ab', phone: '+30 69' }))).params.phone, '+30 69');
+  // Only words and numbers go: what is not a detail of the screen does not.
+  assert.equal(screenLink('phone', { tab: 'recents', screen: { x: 1 }, n: 2 }), 'erevos://phone?tab=recents&n=2');
+  assert.equal(screenLink('settings/index'), 'erevos://settings');
+  assert.equal(screenLink('index'), '');
+  assert.equal(screenLink('guide/[id]', { id: 'lock' }), '');
+  // A link taken while only the SMS show, back to a link to hold.
+  assert.equal(linkHref(hrefLink('/?show=erevos&from=launcher')), '/?show=erevos&from=launcher');
+  assert.equal(linkHref(hrefLink('/phone?tab=recents')), '/phone?tab=recents');
+  // The password asked again forgets the SMS link just opened, and holds the screen asked for.
+  holdLink('erevos://?show=sms', 1000);
+  assert.equal(takeLink(1000), '/?show=sms');
+  lockingKeepsLink(1500);
+  assert.equal(peekLink(1500), '/?show=sms');
+  dropLink();
+  assert.equal(peekLink(1500), null);
+  holdLink(screenLink('contacts'), 1500);
+  assert.equal(smsOnlyLink(peekLink(1500)), false);
+  assert.equal(takeLink(1500), '/contacts');
+  lockingKeepsLink(1600);
+  dropLink();
+  assert.equal(peekLink(1600), null);
 });
 
 test('a call starts with a chat only when a tap in Erevos asked for it, once, for that contact', () => {

@@ -2344,6 +2344,12 @@ due scelte: **Nessun blocco** e **Password**.
   la schermata della password. Le sue schermate si chiudono, anche le chat nascoste, e la schermata di chiamata non
   mostra più i nomi dei suoi contatti. La sua password lo riapre; la password di un altro spazio prima lo chiude, senza
   che ne resti nulla in memoria.
+- **Solo gli SMS:** con Erevos bloccato, l’icona SMS, il pulsante **SMS** del widget e la notifica di un nuovo SMS
+  chiedono comunque la password, ma poi aprono solo gli SMS: l’elenco delle conversazioni SMS del telefono, ciascuna in
+  una riga propria, le conversazioni stesse, **Archiviate**, **Spam** e **Cestino**, e **Nuovo SMS**. Nient’altro dello
+  spazio si vede. Qualsiasi altra cosa, un contatto, una chat, **Impostazioni**, l’icona stessa di Erevos o il lucchetto
+  arancione **Sblocca tutto** in alto, chiede di nuovo la password e poi apre tutto lo spazio. Così un codice arrivato
+  per SMS si può leggere con qualcuno accanto, e il resto di Erevos resta chiuso.
 
 - **Vedere ciò che scrivi:** ogni campo per una password, un PIN o un token, qui e ovunque in Erevos, ha un occhio in
   fondo: toccalo per vedere ciò che scrivi, e di nuovo per nasconderlo. Torna nascosto ogni volta che il campo si

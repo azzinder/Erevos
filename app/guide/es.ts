@@ -2324,6 +2324,12 @@ opciones: **Sin bloqueo** y **Contraseña**.
   pantalla de la contraseña. Sus pantallas se cierran, también los chats ocultos, y la pantalla de llamada ya no muestra
   los nombres de sus contactos. Su contraseña lo vuelve a abrir; la contraseña de otro espacio lo cierra antes, sin
   dejar nada de él en memoria.
+- **Solo los SMS:** con Erevos bloqueado, el icono de SMS, el botón **SMS** del widget y el aviso de un SMS nuevo siguen
+  pidiendo la contraseña, pero luego abren solo los SMS: la lista de las conversaciones de SMS del teléfono, cada una en
+  su propia fila, las conversaciones mismas, **Archivadas**, **Spam** y **Papelera**, y **SMS nuevo**. Nada más del
+  espacio se muestra. Cualquier otra cosa, un contacto, un chat, **Ajustes**, el icono propio de Erevos o el candado
+  naranja **Desbloquear todo** de arriba, vuelve a pedir la contraseña y luego abre todo el espacio. Así un código que
+  llegó por SMS se puede leer con alguien al lado, y el resto de Erevos sigue cerrado.
 
 - **Ver lo que escribes:** cada campo para una contraseña, un PIN o un token, aquí y en todo Erevos, tiene un ojo al
   final: tócalo para ver lo que escribes, y otra vez para ocultarlo. Vuelve a ocultarse cada vez que el campo aparece

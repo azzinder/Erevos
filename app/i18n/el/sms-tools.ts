@@ -158,4 +158,7 @@ export const smsTools: Record<string, string> = {
   'Your country code': 'Ο κωδικός της χώρας σου',
   'A number written with another one is from abroad; one written without any is from here.': 'Ένας αριθμός γραμμένος με άλλον είναι από το εξωτερικό· ένας γραμμένος χωρίς κανέναν είναι από εδώ.',
   'Type it: until then no number counts as from abroad.': 'Γράψ’ τον: μέχρι τότε κανένας αριθμός δεν μετρά ως από το εξωτερικό.',
+  'Unlock everything': 'Ξεκλείδωμα όλων',
+  'Only the SMS are open. Everything else in Erevos asks for the password again.': 'Είναι ανοιχτά μόνο τα SMS. Οτιδήποτε άλλο στο Erevos ζητά ξανά τον κωδικό.',
+  'No SMS yet.': 'Δεν υπάρχουν SMS ακόμα.',
 };

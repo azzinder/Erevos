@@ -15,11 +15,11 @@ import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
+import { SmsHome } from '../components/sms-home';
 import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Chip, font, fontStyle, Input, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { sealedNamer } from '../lib/contact-book';
 import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
@@ -28,7 +28,7 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow, type InboxSms } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
@@ -40,10 +40,10 @@ import { onReceived } from '../lib/receiver';
 import { spaceChats } from '../lib/space-chats';
 import { publicMemberName, spaceGroups } from '../lib/space-groups';
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
-import { groupName, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
-import { blockedNumbers, contactCards, deleteSmsThread, onSmsEvent, smsStatus, smsThreads, smsToolsReady, type ContactCard } from '../modules/erevos-sms';
+import { deleteSmsThread, onSmsEvent, smsStatus, smsToolsReady } from '../modules/erevos-sms';
+import { NO_SMS, smsRows, type SmsList } from '../lib/sms-rows';
 import { Archive } from '../lock/archive';
 import type { ChatNotify } from '../lock/chat-notify';
 import { useLock } from '../lock/context';
@@ -53,7 +53,6 @@ import { searchHidden } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
-import type { SmsData } from '../lock/sms-data';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useStyles, useTheme } from '../theme/context';
@@ -83,35 +82,6 @@ const MENU: { title: string; detail: string; href: Href; links?: boolean }[] = [
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
 ];
 
-// The phone's SMS conversations, by their numbers only until the owner turns names on (`names`,
-// in the list or under SMS): then named as the phone's contacts name them, with their pictures,
-// or as the space's contacts kept only in Erevos do; with the space's own order of them
-// (lib/sms-folders.ts: pinned, archived, in the Trash, spam) and the numbers Android blocks.
-type SmsList = { threads: InboxSms[]; order: SmsData | null; blocked: string[]; names: boolean };
-
-const NO_SMS: SmsList = { threads: [], order: null, blocked: [], names: true };
-
-async function smsRows(space: number, key: Uint8Array): Promise<SmsList> {
-  const threads = await smsThreads();
-  const link = await SmsLink.open(space, key).catch(() => null);
-  const all = threads.flatMap((t) => smsNumbers(t.address));
-  const cards: Record<string, ContactCard> = link?.names ? await contactCards(all).catch(() => ({})) : {};
-  const sealed = link?.names ? await sealedNamer() : () => '';
-  const names: Record<string, string> = {};
-  for (const number of all) {
-    const name = cards[number]?.name || sealed(number);
-    if (name) names[number] = name;
-  }
-  // A group's MMS conversation: named by all its numbers.
-  const rows = threads.map((t) => {
-    const numbers = smsNumbers(t.address);
-    const one = numbers[0] ?? t.address;
-    const card = numbers.length > 1 ? undefined : cards[one];
-    return { ...t, name: numbers.length > 1 ? groupName(numbers, names) : names[one], photo: card?.photo || undefined };
-  });
-  return { threads: rows, order: link?.state ?? null, blocked: await blockedNumbers(), names: !!link?.names };
-}
-
 // The spaces whose Trash was looked at since Erevos started: what was there long enough goes from
 // the phone once each time.
 const trashLooked = new Set<number>();
@@ -129,7 +99,12 @@ const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All message
 const DOOR_HOLD = 600;
 const DOOR_BUZZ = 40;
 
-export default function Home() {
+// With only the SMS open (app/_layout.tsx), the home screen is their list alone.
+export default function HomeScreen() {
+  return useLock().only === 'sms' ? <SmsHome /> : <Home />;
+}
+
+function Home() {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();

@@ -14,17 +14,21 @@ On main, not released yet:
 
 ### For you
 
+- **Only the SMS**: with Erevos locked, the SMS icon, the widget's SMS button and the notice of a new SMS still ask for
+  the password, but then open only the SMS: their list, their conversations, Archived, Spam, Trash and New SMS.
+  Anything else, and the orange padlock **Unlock everything**, asks for the password again, then opens all of Erevos.
+
 ### Under the hood
-
-## 4.0.0-rc.7 (2026-11-01)
-
-### For you
 
 - **Nostr chats with a key brought from another app get their messages again**: Erevos reads where that app said the
   key's messages arrive (its kind 10050 list), as that app does, instead of its own three relays, and says that list
   again as the key's newest; it reads those relays from their start, fetches once what relays named in older lists still
   keep, and reads a relay again when it stops sending. Before, such a key could show its chats with no past messages
   and get no new ones, as Erevos's own list had taken the place of the other app's.
+
+## 4.0.0-rc.7 (2026-11-01)
+
+### For you
 
 - **Licence** in Settings → General: under which licence Erevos is free software (AGPL-3.0-or-later), its three
   additional terms, that it comes with no warranty, and who made it, as AUTHORS.md says; in the guide too, in all

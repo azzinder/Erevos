@@ -2479,6 +2479,13 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   Anruf erscheint über dem Passwortbildschirm. Seine Bildschirme schließen sich, versteckte Chats auch, und der
   Anrufbildschirm zeigt die Namen seiner Kontakte nicht mehr. Sein Passwort öffnet ihn wieder; das Passwort eines
   anderen Bereichs schließt ihn zuerst, ohne dass etwas von ihm im Arbeitsspeicher bleibt.
+- **Nur die SMS:** Bei gesperrtem Erevos fragen das SMS-Symbol, die Taste **SMS** des Widgets und die Benachrichtigung
+  über eine neue SMS weiterhin nach dem Passwort, öffnen dann aber nur die SMS: die Liste der SMS-Unterhaltungen des
+  Telefons, jede in einer eigenen Zeile, die Unterhaltungen selbst, **Archiviert**, **Spam** und **Papierkorb** sowie
+  **Neue SMS**. Vom Bereich ist sonst nichts zu sehen. Alles andere, ein Kontakt, ein Chat, **Einstellungen**, das
+  Symbol von Erevos selbst oder das orange Schloss **Alles entsperren** oben, fragt erneut nach dem Passwort und öffnet
+  dann den ganzen Bereich. So lässt sich ein Code, der per SMS kam, lesen, auch wenn jemand neben dir sitzt, und das
+  übrige Erevos bleibt geschlossen.
 
 - **Sehen, was du tippst:** Jedes Feld für ein Passwort, eine PIN oder ein Token, hier und überall in Erevos, hat am
   Ende ein Auge: Tippe darauf, um zu sehen, was du eingibst, und noch einmal, um es zu verbergen. Es ist jedes Mal

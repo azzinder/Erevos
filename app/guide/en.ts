@@ -2140,6 +2140,12 @@ choices: **No lock** and **Password**.
   behind it: messages and calls still come, with their notices, and a call shows over the password screen. Its
   screens close, hidden chats too, and the call screen no longer shows its contacts' names. Its password opens it
   again; another space's password closes it first, with nothing of it kept in memory.
+- **Only the SMS:** with Erevos locked, the SMS icon, the widget's **SMS** button and the notice of a new SMS still ask
+  for the password, but then open only the SMS: the list of the phone's SMS conversations, each in a row of its own,
+  their conversations, **Archived**, **Spam** and **Trash**, and **New SMS**. Nothing else of the space shows. Anything
+  else, a contact, a chat, **Settings**, Erevos's own icon or the orange padlock **Unlock everything** at the top, asks
+  for the password again, and then opens all of the space. So a code that came by SMS can be read with someone beside
+  you, and the rest of Erevos stays closed.
 
 - **Seeing what you type:** every field for a password, a PIN or a token, here and anywhere in Erevos, has an eye at
   its end: tap it to see what you type, and again to hide it. It is hidden again each time the field shows anew, and

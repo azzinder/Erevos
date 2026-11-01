@@ -499,7 +499,10 @@ internal object SmsStore {
       // "SMS", apart from Erevos's own "Messages" in Android's notice settings; made again, an older one takes the name.
       notifications.createNotificationChannel(NotificationChannel(CHANNEL, "SMS", NotificationManager.IMPORTANCE_HIGH))
     }
-    val launch = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
+    // It opens the SMS (erevos://?show=sms), as their icon does: with the password lock, the
+    // password given then opens only them (app/_layout.tsx).
+    val sms = Intent(Intent.ACTION_VIEW, Uri.parse("erevos://?show=sms")).setPackage(context.packageName)
+    val launch = if (sms.resolveActivity(context.packageManager) != null) sms else context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
     val open = PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
     val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(context, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(context)
     builder
