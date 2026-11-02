@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+## 4.0.0-rc.10 (2026-11-02)
+
+### For you
+
+### Under the hood
+
 - **Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another
   icon or a screen that asks for the password again made Erevos say "Erevos could not open: Maximum call stack size
   exceeded" (reported on the Pixel, 4.0.0-rc.9). The password screen kept the link to open after it by telling the

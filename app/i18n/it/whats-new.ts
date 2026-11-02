@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Erevos non si ferma più quando sono aperti solo gli SMS o i contatti**: da lì, la chat di un contatto, un SMS, un'altra icona o una schermata che chiede di nuovo la password potevano far dire a Erevos che non si era potuto aprire (Maximum call stack size exceeded). Ora la password apre tutto Erevos e poi quella schermata. E quando Erevos non si può aprire, **Riprova** lo riavvia. Vedi [Blocco con password](#lock).",
   "**Each icon opens what it names**: after Erevos was opened by the SMS icon, or from the recent apps, another icon, the widget or a notice could sometimes show the SMS instead. Now each opens what it names. With only the SMS or the Contacts open, another icon asks for the password as when Erevos is locked, then opens its own part: the Contacts icon only the contacts, Erevos's own icon all of it. And Back on Erevos's first screen now puts it behind, as Home does, whatever opened it. See [Password lock](#lock).":

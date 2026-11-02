@@ -22,13 +22,18 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [
-    mark("**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock)."),
-    mark("**Each icon opens what it names**: after Erevos was opened by the SMS icon, or from the recent apps, another icon, the widget or a notice could sometimes show the SMS instead. Now each opens what it names. With only the SMS or the Contacts open, another icon asks for the password as when Erevos is locked, then opens its own part: the Contacts icon only the contacts, Erevos's own icon all of it. And Back on Erevos's first screen now puts it behind, as Home does, whatever opened it. See [Password lock](#lock)."),
-  ],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '4.0.0-rc.10',
+    forYou: [],
+    underTheHood: [
+      mark("**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock)."),
+      mark("**Each icon opens what it names**: after Erevos was opened by the SMS icon, or from the recent apps, another icon, the widget or a notice could sometimes show the SMS instead. Now each opens what it names. With only the SMS or the Contacts open, another icon asks for the password as when Erevos is locked, then opens its own part: the Contacts icon only the contacts, Erevos's own icon all of it. And Back on Erevos's first screen now puts it behind, as Home does, whatever opened it. See [Password lock](#lock)."),
+    ],
+  },
   {
     version: '4.0.0-rc.9',
     forYou: [
