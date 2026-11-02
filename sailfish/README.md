@@ -9,9 +9,11 @@ window. The code is installed with the package; nothing is fetched from a server
   web build from `/usr/share/erevos/web` and gives the page what a browser cannot, with the same
   protocol as the desktop app (`desktop/main.js`): `/__secret` (the keystore), `/__file` and
   `/__files` (the sealed files), `/__folder` and `/__backup` (backups, into `Documents/Erevos`)
-  and `/__save` (into Downloads). Each start makes a new random token, passed to the page in the
-  address's `#` part; every `/__` request must carry it, and the `Host` must be the server's own,
-  so other apps and web pages on the phone get nothing. Data goes to `~/.local/share/erevos`,
+  and `/__save` (into Downloads); also `/__open`, which hands a link that leaves Erevos (`http(s):`,
+  `mailto:`, `tel:`, `sms:`, `geo:`) to the system, since the WebView opens no new window. Each
+  start makes a new random token, passed to the page in the address's `#` part; every `/__`
+  request must carry it, and the `Host` must be the server's own, so other apps and web pages on
+  the phone get nothing. Data goes to `~/.local/share/erevos`,
   written with QSaveFile, readable by the user only.
 - `qml/erevos.qml`: one page with the WebView; the app draws its own screens.
 - `polyfills.js`: what the web build uses and Gecko 91 lacks, loaded first.

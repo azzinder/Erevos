@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now
+  Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.
+- **Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: the page's Content-Security-Policy there
+  (`sailfish/src/shellserver.cpp`) let no HTTPS through, unlike the computer's, so Matrix could not sign in, photos and
+  files neither came nor went, and links showed no preview. Now it allows HTTPS as the computer's does.
+
 ### Under the hood
 
 ## 4.0.0-rc.10 (2026-11-02)

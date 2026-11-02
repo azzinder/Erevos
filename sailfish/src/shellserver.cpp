@@ -9,6 +9,7 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QDesktopServices>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
@@ -31,14 +32,18 @@ namespace {
 // A request larger than this is not one the app makes: backups are at most 200 MB.
 const qint64 MostBody = 256LL * 1024 * 1024;
 
-// Same as the desktop app's (desktop/main.js), for the page and everything it loads.
+// As the desktop app's (desktop/main.js), for the page and everything it loads, without its Element
+// Call frame: HTTPS too, which Matrix, the files of XMPP and Nostr chats and link previews go by.
 const QByteArray Csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
-    "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: ws: wss:; object-src 'none'; base-uri 'self'; "
+    "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
 
 // The most a list of queues for erevos-watch may be: 2048 queues and the words, with room.
 const int MostWatchList = 512 * 1024;
+
+// The longest link that leaves Erevos given to the system (/__open): a sign-in page's, with room.
+const int MostLink = 8192;
 
 // The one address /__latest reads, the same as app/lib/updates.ts LATEST_URL, and how much of it.
 const char LatestUrl[] = "https://github.com/azzinder/erevos-releases/releases/latest/download/version.json";
@@ -249,6 +254,7 @@ void ShellServer::shell(QTcpSocket *socket, const Request &request, const QUrlQu
     else if (path == "/__watch") watch(socket, request);
     else if (path == "/__lan") lan(socket, request, query);
     else if (path == "/__wipe") wipe(socket, request, query);
+    else if (path == "/__open") openOutside(socket, request, value("url"));
     else respond(socket, 404);
 }
 
@@ -404,6 +410,27 @@ void ShellServer::watch(QTcpSocket *socket, const Request &request)
         return;
     }
     respond(socket, 204);
+}
+
+// A link that leaves Erevos (app/lib/shell.ts): Sailfish WebView opens no window of its own, so
+// the system opens it, a web page in the browser (the relay's sign-in with LPHL, say), a number in
+// the phone or the messages, an address in the mail. Only these kinds.
+void ShellServer::openOutside(QTcpSocket *socket, const Request &request, const QString &address)
+{
+    if (request.method != "PUT") {
+        respond(socket, 405);
+        return;
+    }
+    static const QStringList kinds = {QStringLiteral("http"), QStringLiteral("https"), QStringLiteral("mailto"),
+                                      QStringLiteral("tel"), QStringLiteral("sms"), QStringLiteral("geo")};
+    // Tolerant, as a browser is: a space in a number (sms:+30 690…) or a mail's subject is escaped, not
+    // refused. Only the kinds above go to the system all the same.
+    const QUrl url(address, QUrl::TolerantMode);
+    if (address.size() > MostLink || !url.isValid() || !kinds.contains(url.scheme().toLower())) {
+        respond(socket, 400);
+        return;
+    }
+    respond(socket, QDesktopServices::openUrl(url) ? 204 : 404);
 }
 
 void ShellServer::wipe(QTcpSocket *socket, const Request &request, const QUrlQuery &query)

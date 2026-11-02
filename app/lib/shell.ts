@@ -22,6 +22,8 @@ import { t } from './i18n';
 //   /__window         the computer's window (lib/desktop.ts): kept running when closed, brought back
 //   /__watch          on Sailfish OS, the open space's queues for its helper to wait on while Erevos
 //                     is closed (lib/shell-watch.ts)
+//   /__open?url=…     on Sailfish OS, a link that leaves Erevos, which the system opens: Sailfish
+//                     WebView opens no window of its own (see openThroughShell)
 // The computer's shell also says in the address which of its packages it runs from
 // (#erevos-system=…), so Check for updates can name the file to take (lib/updates.ts packageFile).
 
@@ -55,6 +57,29 @@ export function setupShell(): void {
       token = '';
     }
   }
+  if (SHELL === 'sailfish') openThroughShell();
+}
+
+// Links that leave Erevos, on Sailfish OS: Sailfish WebView opens no window of its own (a page's
+// window.open throws NS_ERROR_ABORT), so Signing in with LPHL, a donation page or a link in a chat
+// opened nothing. The shell gives them to the system instead: a web page to the browser, a number
+// to the phone or the messages, an address to the mail (sailfish/src/shellserver.cpp /__open).
+// The computer's shell opens them itself (desktop/main.js setWindowOpenHandler).
+const LEAVES = /^(https?|mailto|tel|sms|geo):/i;
+
+function openThroughShell(): void {
+  // Loaded here, in the Sailfish build only: the checks load this file without React Native.
+  const { Linking } = require('react-native') as typeof import('react-native');
+  const inPage = Linking.openURL.bind(Linking);
+  Linking.openURL = async (url: string) => {
+    if (!LEAVES.test(url)) return inPage(url);
+    // Nothing opens it (404), or the shell would not take it (400): the person can still copy it.
+    const opened = await shellFetch(`/__open?url=${encodeURIComponent(url)}`, { method: 'PUT' }).then(
+      (response) => response.status === 204,
+      () => false,
+    );
+    if (!opened) throw new ShellError(t('Open {url} in a browser.', { url }));
+  };
 }
 
 /** Which package of the computer's shell this is ('windows', 'windows-portable', 'macos', 'linux', 'linux-appimage'), or '' when it does not say. */

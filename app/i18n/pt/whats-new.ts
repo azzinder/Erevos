@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Os links abrem no Sailfish OS**: **Entrar com LPHL**, uma página de doação ou um link numa conversa não abriam nada. Agora o Sailfish OS abre-os: uma página web no navegador, um número no telefone ou nas mensagens, um endereço no email.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix, e fotos e arquivos nas conversas XMPP e Nostr, no Sailfish OS**: lá o Erevos não alcançava os servidores deles por HTTPS, então o Matrix não conseguia entrar, fotos e arquivos não chegavam nem saíam e os links não mostravam prévia. Agora funcionam como num computador.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**O Erevos não para mais quando só os SMS ou os contatos estão abertos**: a partir deles, a conversa de um contato, um SMS, outro ícone ou uma tela que pede a senha de novo podiam fazer o Erevos dizer que não conseguiu abrir (Maximum call stack size exceeded). Agora a senha abre todo o Erevos e depois essa tela. E quando o Erevos não consegue abrir, **Tentar de novo** o inicia outra vez. Veja [Bloqueio com senha](#lock).",

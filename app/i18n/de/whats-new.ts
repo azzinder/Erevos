@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Links öffnen sich unter Sailfish OS**: **Mit LPHL anmelden**, eine Spendenseite oder ein Link in einem Chat öffneten dort nichts. Jetzt öffnet Sailfish OS sie: eine Webseite im Browser, eine Nummer im Telefon oder in den Nachrichten, eine Adresse in der Mail.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix sowie Fotos und Dateien in XMPP- und Nostr-Chats unter Sailfish OS**: Dort erreichte Erevos ihre Server nicht über HTTPS, sodass sich Matrix nicht anmelden konnte, Fotos und Dateien weder ankamen noch hinausgingen und Links keine Vorschau zeigten. Jetzt funktionieren sie wie auf einem Computer.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Erevos hält nicht mehr an, wenn nur die SMS oder die Kontakte offen sind**: Von dort aus konnten der Chat eines Kontakts, eine SMS, ein anderes Symbol oder ein Bildschirm, der wieder nach dem Passwort fragt, Erevos sagen lassen, dass es sich nicht öffnen ließ (Maximum call stack size exceeded). Jetzt öffnet das Passwort ganz Erevos und dann diesen Bildschirm. Und wenn sich Erevos nicht öffnen lässt, startet **Erneut versuchen** es neu. Siehe [Passwortsperre](#lock).",

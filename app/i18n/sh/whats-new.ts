@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Linkovi se otvaraju na Sailfish OS-u**: **Prijava preko LPHL**, stranica za donacije ili link u razgovoru tamo nisu otvarali ništa. Sada ih otvara Sailfish OS: web stranicu u pregledniku, broj u telefonu ili porukama, adresu u e-pošti.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix te fotografije i datoteke u XMPP i Nostr razgovorima na Sailfish OS-u**: tamo Erevos nije dolazio do njihovih servera preko HTTPS-a, pa se Matrix nije mogao prijaviti, fotografije i datoteke nisu ni stizale ni odlazile, a linkovi nisu prikazivali pregled. Sada rade kao na računalu.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Erevos se više ne zaustavlja kada su otvoreni samo SMS-ovi ili kontakti**: odatle su razgovor s kontaktom, SMS, druga ikona ili ekran koji ponovo traži lozinku mogli da dovedu do toga da Erevos kaže da nije mogao da se otvori (Maximum call stack size exceeded). Sada lozinka otvara ceo Erevos, a zatim taj ekran. A kada Erevos ne može da se otvori, **Pokušajte ponovo** ga ponovo pokreće. Pogledajte [Zaključavanje lozinkom](#lock).",

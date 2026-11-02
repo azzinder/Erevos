@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Les liens s'ouvrent sous Sailfish OS** : **Se connecter avec LPHL**, une page de don ou un lien dans une discussion n'ouvraient rien. Désormais Sailfish OS les ouvre : une page web dans le navigateur, un numéro dans le téléphone ou les messages, une adresse dans le courriel.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix, et les photos et fichiers des discussions XMPP et Nostr, sous Sailfish OS** : Erevos n'y joignait pas leurs serveurs en HTTPS, donc Matrix ne pouvait pas se connecter, les photos et fichiers n'arrivaient ni ne partaient, et les liens n'avaient pas d'aperçu. Désormais ils fonctionnent comme sur un ordinateur.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Erevos ne s’arrête plus quand seuls les SMS ou les contacts sont ouverts** : de là, le chat d’un contact, un SMS, une autre icône ou un écran qui redemande le mot de passe pouvaient faire dire à Erevos qu’il n’a pas pu s’ouvrir (Maximum call stack size exceeded). Désormais le mot de passe ouvre tout Erevos, puis cet écran. Et quand Erevos ne peut pas s’ouvrir, **Réessayer** le relance. Voir [Verrou par mot de passe](#lock).",

@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Οι σύνδεσμοι ανοίγουν στο Sailfish OS**: η **Σύνδεση με LPHL**, μια σελίδα δωρεάς ή ένας σύνδεσμος σε συνομιλία δεν άνοιγαν τίποτα εκεί. Τώρα τους ανοίγει το Sailfish OS: μια ιστοσελίδα στον browser, έναν αριθμό στο τηλέφωνο ή στα μηνύματα, μια διεύθυνση στο email.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix, και φωτογραφίες και αρχεία στις συνομιλίες XMPP και Nostr, στο Sailfish OS**: εκεί το Erevos δεν έφτανε στους servers τους μέσω HTTPS, οπότε το Matrix δεν συνδεόταν, φωτογραφίες και αρχεία ούτε έρχονταν ούτε έφευγαν, και οι σύνδεσμοι δεν έδειχναν προεπισκόπηση. Τώρα δουλεύουν όπως σε υπολογιστή.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Το Erevos δεν σταματά πια όταν είναι ανοιχτά μόνο τα SMS ή οι Επαφές**: από εκεί, η συνομιλία μιας επαφής, ένα SMS, άλλο εικονίδιο ή μια οθόνη που ζητά ξανά τον κωδικό μπορούσαν να κάνουν το Erevos να πει ότι δεν μπόρεσε να ανοίξει (Maximum call stack size exceeded). Τώρα ο κωδικός ανοίγει όλο το Erevos και μετά εκείνη την οθόνη. Κι όταν το Erevos δεν μπορεί να ανοίξει, το **Δοκίμασε ξανά** το ξεκινά πάλι. Δες [Κλείδωμα με κωδικό](#lock).",

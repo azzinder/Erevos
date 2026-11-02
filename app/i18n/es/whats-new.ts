@@ -12,6 +12,10 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
+    "**Los enlaces se abren en Sailfish OS**: **Iniciar sesión con LPHL**, una página de donación o un enlace en un chat no abrían nada allí. Ahora Sailfish OS los abre: una página web en el navegador, un número en el teléfono o en los mensajes, una dirección en el correo.",
+  "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
+    "**Matrix, y fotos y archivos en los chats de XMPP y Nostr, en Sailfish OS**: allí Erevos no llegaba a sus servidores por HTTPS, así que Matrix no podía iniciar sesión, las fotos y los archivos ni llegaban ni salían y los enlaces no mostraban vista previa. Ahora funcionan como en un ordenador.",
   // 4.0.0-rc.10
   "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
     "**Erevos ya no se detiene cuando solo están abiertos los SMS o los contactos**: desde ahí, el chat de un contacto, un SMS, otro icono o una pantalla que vuelve a pedir la contraseña podían hacer que Erevos dijera que no pudo abrirse (Maximum call stack size exceeded). Ahora la contraseña abre todo Erevos y luego esa pantalla. Y cuando Erevos no puede abrirse, **Volver a intentarlo** lo inicia de nuevo. Consulta [Bloqueo con contraseña](#lock).",

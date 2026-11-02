@@ -42,6 +42,8 @@ class WatchLink;
 //   /__wipe           the panic button (app/lib/panic.ts): POST deletes everything the app keeps
 //                     (its folder, with the WebView's own, and its cache), with ?backups=1 the
 //                     backups in Documents/Erevos too, stops the helper, and closes Erevos
+//   /__open?url=…     PUT: a link that leaves Erevos, opened by the system (the browser for a web
+//                     page), as Sailfish WebView opens no window of its own
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -79,6 +81,7 @@ private:
     void watch(QTcpSocket *socket, const Request &request);
     void lan(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
     void wipe(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
+    void openOutside(QTcpSocket *socket, const Request &request, const QString &address);
     void lanEvent(const QByteArray &kind, const QString &link, const QByteArray &text = QByteArray());
     void lanAnswer(QTcpSocket *socket, qint64 after);
 
