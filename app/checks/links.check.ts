@@ -9,7 +9,7 @@ import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
-import { dropLink, holdLink, hrefLink, ICON_LINK, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
+import { dropLink, holdLink, hrefLink, ICON_LINK, keepLink, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -152,6 +152,39 @@ test('the Contacts icon and the widget open only the Contacts and their own scre
   // A call or an SMS from a contact, its chat in Erevos, its history: the rest of Erevos, behind the password.
   for (const screen of ['phone', 'sms', 'chat', 'settings']) assert.equal(ONLY_SCREENS.contacts.has(screen), false, screen);
   assert.equal(ONLY_SCREENS.contacts.has('index'), true);
+});
+
+// As app/_layout.tsx has it: with only the Contacts open, the screens' link handler (OpenLink) asks
+// for the password again for a link to anything else, and the password screen keeps that link for
+// after. Told of it, the handler would take it at once and ask again, without end: "Maximum call
+// stack size exceeded" on the Pixel (4.0.0-rc.9), from a contact's chat or SMS, a screen that asks
+// again (AskAgain), or another icon.
+test('a link kept for after the password is not taken again by the screens that are going', () => {
+  dropLink();
+  let taken = 0;
+  const askAgain = (link: string) => {
+    dropLink();
+    keepLink(link);
+  };
+  const stop = onLinkHeld(() => {
+    const href = takeLink();
+    if (!href) return;
+    taken += 1;
+    if (taken > 3) throw new Error('asked again without end');
+    if (onlyPartOf(href) !== 'contacts') askAgain(hrefLink(href));
+  });
+  try {
+    holdLink('erevos://chat?contact=ab');
+    assert.equal(taken, 1);
+    assert.equal(peekLink(), '/chat?contact=ab');
+    // Kept again, quietly: the screens going take nothing; after the password it opens.
+    askAgain('erevos://sms?to=%2B3069');
+    assert.equal(taken, 1);
+    assert.equal(takeLink(), '/sms?to=%2B3069');
+  } finally {
+    stop();
+    dropLink();
+  }
 });
 
 test('a screen asked for with only the SMS open is held as a link, and opens after the password', () => {

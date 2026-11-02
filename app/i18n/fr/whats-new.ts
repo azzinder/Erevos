@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
+    "**Erevos ne s’arrête plus quand seuls les SMS ou les contacts sont ouverts** : de là, le chat d’un contact, un SMS, une autre icône ou un écran qui redemande le mot de passe pouvaient faire dire à Erevos qu’il n’a pas pu s’ouvrir (Maximum call stack size exceeded). Désormais le mot de passe ouvre tout Erevos, puis cet écran. Et quand Erevos ne peut pas s’ouvrir, **Réessayer** le relance. Voir [Verrou par mot de passe](#lock).",
   // 4.0.0-rc.9
   "**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock).":
     "**Seulement les contacts** : quand Erevos est verrouillé, l’icône Contacts, le bouton Contacts du widget et la notification d’un anniversaire demandent le mot de passe, puis n’ouvrent que les contacts. Une discussion, un SMS, les Réglages et le cadenas orange **Tout déverrouiller** le redemandent, puis ouvrent tout Erevos. Voir [Verrou par mot de passe](#lock).",

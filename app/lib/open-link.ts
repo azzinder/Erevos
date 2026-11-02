@@ -140,6 +140,15 @@ export function holdLink(url: string, now = Date.now()): void {
   for (const listener of [...listeners]) listener();
 }
 
+/** Holds a link to open after the password, telling no one. The screens that would open it now
+ *  are going behind the password; told, one of them would take it and ask for the password again,
+ *  which holds it again, without end (with only the SMS or the Contacts open). */
+export function keepLink(url: string, now = Date.now()): void {
+  const href = linkHref(url);
+  if (!href) return;
+  held = { href, at: now };
+}
+
 /** The link held, left held: null when none is, or it came too long ago. */
 export function peekLink(now = Date.now()): string | null {
   return held && now - held.at <= KEEP_MS ? held.href : null;

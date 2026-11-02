@@ -13,7 +13,7 @@ import { HiddenRingHost } from '../components/hidden-ring-screen';
 import { ScreenBackdrop, useBackdropSpec } from '../components/backdrop';
 import { KeyboardProvider } from '../components/keyboard';
 import { SwipeBack } from '../components/swipe-back';
-import { Text } from '../components/ui';
+import { Button, Text } from '../components/ui';
 import { startBackground } from '../lib/background';
 import { runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
@@ -27,7 +27,7 @@ import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { startSmsWay } from '../lib/sms-way';
-import { dropLink, holdLink, hrefLink, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, takeLink, type OnlyPart } from '../lib/open-link';
+import { dropLink, hrefLink, keepLink, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, takeLink, type OnlyPart } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
@@ -117,6 +117,8 @@ export default function RootLayout() {
   const phaseRef = useRef(phase);
   const lookRef = useRef(look);
   const backgroundAt = useRef<number | null>(null);
+  // The password screen came from only the SMS or the Contacts, for something else: the password opens all.
+  const wantsAll = useRef(false);
   const relockAfterCall = useRef(false);
   const lang = useLang();
 
@@ -175,6 +177,7 @@ export default function RootLayout() {
     // Nothing of the space that was open stays in memory, nor its screens: they start afresh
     // once a space opens (after a backup is restored too).
     closeSpace();
+    wantsAll.current = false;
     // A link Erevos came back with opens after the password (lib/open-link.ts).
     lockingKeepsLink();
     setPhase({ kind: 'loading' });
@@ -210,9 +213,11 @@ export default function RootLayout() {
       setSpaceGated(true);
       clearKnownNames();
       lockingKeepsLink();
+      // Asked for again with only the SMS or the Contacts open: the password then opens all.
+      wantsAll.current = link !== undefined;
       if (link !== undefined) {
         dropLink();
-        if (link) holdLink(link);
+        if (link) keepLink(link);
       }
       const config = await loadLockConfig();
       if (config.direct !== null || config.slots.length === 0) return start();
@@ -233,7 +238,9 @@ export default function RootLayout() {
     async ({ space, key }: { space: number; key: Uint8Array }) => {
       const current = phaseRef.current;
       const behind = current.kind === 'locked' ? current.behind : undefined;
-      const only = onlyPartOf(peekLink()) ?? undefined;
+      // A password asked for again, from only the SMS or the Contacts, opens all of the space.
+      const only = wantsAll.current ? undefined : (onlyPartOf(peekLink()) ?? undefined);
+      wantsAll.current = false;
       if (behind !== undefined && behind === space && spaceGated() && sameKey(openKey(), key)) {
         setSpaceGated(false);
         forgetKnownNamesAfter(-1);
@@ -360,6 +367,12 @@ export default function RootLayout() {
     };
   }, [gate, relock, fail]);
 
+  // Erevos could not open: it starts again, from the password, with nothing of before in memory.
+  const retry = useCallback(() => {
+    setError(null);
+    start().catch(fail);
+  }, [start, fail]);
+
   // A look changed on the Appearance screen: kept in the open space, and copied for the password screen.
   const keepLook = useCallback(async (next: Look) => {
     setLook(next);
@@ -396,19 +409,21 @@ export default function RootLayout() {
       <ThemeProvider look={look} onChange={keepLook}>
         {/* A touch anywhere says the owner is there, for safety messages (lib/safety.ts). */}
         <View style={{ flex: 1 }} onTouchStart={() => ownerTouched()}>
-          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} />
+          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} onRetry={retry} />
         </View>
       </ThemeProvider>
     </KeyboardProvider>
   );
 }
 
-function Shell({ lang, phase, error, lockState, onUnlock }: {
+function Shell({ lang, phase, error, lockState, onUnlock, onRetry }: {
   lang: Lang;
   phase: Phase;
   error: string | null;
   lockState: LockState;
   onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void>;
+  /** Starts again after Erevos could not open: from the password, as when it starts. */
+  onRetry: () => void;
 }) {
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();
@@ -424,6 +439,7 @@ function Shell({ lang, phase, error, lockState, onUnlock }: {
           <Text tone="muted" style={{ textAlign: 'center' }}>
             {error}
           </Text>
+          <Button title={t('Try again')} kind="secondary" compact onPress={onRetry} />
         </View>
         {bar}
       </ScreenBackdrop>

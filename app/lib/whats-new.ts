@@ -22,7 +22,9 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

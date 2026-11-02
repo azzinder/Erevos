@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
+    "**Το Erevos δεν σταματά πια όταν είναι ανοιχτά μόνο τα SMS ή οι Επαφές**: από εκεί, η συνομιλία μιας επαφής, ένα SMS, άλλο εικονίδιο ή μια οθόνη που ζητά ξανά τον κωδικό μπορούσαν να κάνουν το Erevos να πει ότι δεν μπόρεσε να ανοίξει (Maximum call stack size exceeded). Τώρα ο κωδικός ανοίγει όλο το Erevos και μετά εκείνη την οθόνη. Κι όταν το Erevos δεν μπορεί να ανοίξει, το **Δοκίμασε ξανά** το ξεκινά πάλι. Δες [Κλείδωμα με κωδικό](#lock).",
   // 4.0.0-rc.9
   "**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock).":
     "**Μόνο οι Επαφές**: όταν το Erevos είναι κλειδωμένο, το εικονίδιο Επαφές, το κουμπί Επαφές του widget και η ειδοποίηση για γενέθλια ζητούν τον κωδικό και μετά ανοίγουν μόνο τις επαφές. Μια συνομιλία, ένα SMS, οι Ρυθμίσεις και η πορτοκαλί κλειδαριά **Ξεκλείδωμα όλων** ζητούν ξανά τον κωδικό και μετά ανοίγουν ολόκληρο το Erevos. Δες [Κλείδωμα με κωδικό](#lock).",

@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another
+  icon or a screen that asks for the password again made Erevos say "Erevos could not open: Maximum call stack size
+  exceeded" (reported on the Pixel, 4.0.0-rc.9). The password screen kept the link to open after it by telling the
+  screens that were going, which took it at once and asked again, without end. It now keeps it quietly, and that
+  password opens all of Erevos, then the screen. When Erevos cannot open, **Try again** starts it again.
+
 ## 4.0.0-rc.9 (2026-11-01)
 
 ### For you

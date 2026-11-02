@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Erevos no longer stops when only the SMS or the Contacts are open**: from them, a contact's chat, an SMS, another icon or a screen that asks for the password again could make Erevos say it could not open (Maximum call stack size exceeded). Now the password opens all of Erevos, then that screen. And when Erevos cannot open, **Try again** starts it again. See [Password lock](#lock).":
+    "**O Erevos não para mais quando só os SMS ou os contatos estão abertos**: a partir deles, a conversa de um contato, um SMS, outro ícone ou uma tela que pede a senha de novo podiam fazer o Erevos dizer que não conseguiu abrir (Maximum call stack size exceeded). Agora a senha abre todo o Erevos e depois essa tela. E quando o Erevos não consegue abrir, **Tentar de novo** o inicia outra vez. Veja [Bloqueio com senha](#lock).",
   // 4.0.0-rc.9
   "**Only the Contacts**: with Erevos locked, the Contacts icon, the widget's Contacts button and the notice of a birthday ask for the password, then open only the contacts. A chat, an SMS, Settings, and the orange padlock **Unlock everything**, ask for it again, then open all of Erevos. See [Password lock](#lock).":
     "**Só os Contatos**: com o Erevos bloqueado, o ícone de Contatos, o botão Contatos do widget e o aviso de um aniversário pedem a senha e depois abrem só os contatos. Uma conversa, um SMS, as Configurações e o cadeado laranja **Desbloquear tudo** pedem a senha de novo e depois abrem todo o Erevos. Veja [Bloqueio com senha](#lock).",
