@@ -1172,22 +1172,27 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   proximité et passe directement entre les téléphones (ou ordinateurs). Il en va de même pour les messages de groupe et
   les appels de groupe.
 - **En arrière-plan (Android) :** tant qu’un espace est ouvert, Erevos continue de tourner quand tu le quittes, avec
-  Accueil ou en le balayant hors des applis récentes, avec une notification discrète, « Erevos – Ready for calls and
-  messages », qui ne s’affiche pas sur l’écran de verrouillage. Il attend au relais et sur les liaisons avec les
-  téléphones à proximité, si bien que les messages arrivent : une notification dit seulement « New message », ou combien
-  sont arrivés, et sur un téléphone verrouillé seulement « Erevos ». Une demande de message, de quelqu’un qui n’a que
-  ton lien de contact, donne la même notification et le même son, et compte sur l’icône, comme tout message. Un appel
-  sonne avec la sonnerie du téléphone et une notification, « Incoming call » (ou « Incoming video call ») – « Open
-  Erevos to answer », sans nom, par-dessus l’écran de verrouillage et l’économiseur d’écran aussi, et l’écran se
-  réveille. Appuie dessus pour répondre. Avec le verrou par mot de passe activé, un appel qui sonne s’affiche avant le
-  mot de passe, et Erevos se verrouille dès qu’il se termine. Verrouillé, l’espace continue derrière l’écran du mot de
-  passe, si bien que messages et appels arrivent encore, et un appel s’affiche par-dessus l’écran du mot de passe. Seuls
-  les discussions et groupes de cet espace arrivent ainsi, et les discussions masquées avec **Recevoir une fois
-  fermées** activé ; les autres discussions masquées disent seulement qu’un message est arrivé, ou sonnent sans nom, si
-  tu le leur permets (voir Discussions masquées). Règle-le dans **Réglages** → **Notifications** → **En arrière-plan** :
-  **Recevoir et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les nouveaux messages**
-  (par défaut) ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi, si Android les
-  demande, **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de verrouillage**. En dessous, **Seulement le gaspillage** (par défaut), **Et les téléphones proches** et **Et le sommeil** règlent combien de batterie il économise en arrière-plan : le deuxième éteint aussi les radios pour téléphones proches tant qu’Erevos est en arrière-plan, le troisième laisse aussi dormir le téléphone, si bien qu’Erevos regarde le relais environ une fois par minute et qu’un message ou un appel peut avoir une ou deux minutes de retard.
+  Accueil, avec Retour sur son premier écran ou en le balayant hors des applis récentes, avec une notification discrète,
+  « Erevos – Ready for calls and messages », qui ne s’affiche pas sur l’écran de verrouillage. Il attend au relais et
+  sur les liaisons avec les téléphones à proximité, si bien que les messages arrivent : une notification dit seulement
+  « New message », ou combien sont arrivés, et sur un téléphone verrouillé seulement « Erevos ». Une demande de message,
+  de quelqu’un qui n’a que ton lien de contact, donne la même notification et le même son, et compte sur l’icône, comme
+  tout message. Un appel sonne avec la sonnerie du téléphone et une notification, « Incoming call » (ou « Incoming video
+  call ») – « Open Erevos to answer », sans nom, par-dessus l’écran de verrouillage et l’économiseur d’écran aussi, et
+  l’écran se réveille. Appuie dessus pour répondre. Avec le verrou par mot de passe activé, un appel qui sonne s’affiche
+  avant le mot de passe, et Erevos se verrouille dès qu’il se termine. Verrouillé, l’espace continue derrière l’écran du
+  mot de passe, si bien que messages et appels arrivent encore, et un appel s’affiche par-dessus l’écran du mot de
+  passe. Seuls les discussions et groupes de cet espace arrivent ainsi, et les discussions masquées avec **Recevoir une
+  fois fermées** activé ; les autres discussions masquées disent seulement qu’un message est arrivé, ou sonnent sans
+  nom, si tu le leur permets (voir Discussions masquées). Règle-le dans **Réglages** → **Notifications** → **En
+  arrière-plan** : **Recevoir et sonner** (par défaut) ou **Seulement quand Erevos est affiché**, et **Signaler les
+  nouveaux messages** (par défaut) ou **Pas de notification**, qui vaut aussi pendant qu’Erevos est affiché. Là aussi,
+  si Android les demande, **Continuer malgré l’économie de batterie** et **Afficher les appels sur l’écran de
+  verrouillage**. En dessous, **Seulement le gaspillage** (par défaut), **Et les téléphones proches** et **Et le
+  sommeil** règlent combien de batterie il économise en arrière-plan : le deuxième éteint aussi les radios pour
+  téléphones proches tant qu’Erevos est en arrière-plan, le troisième laisse aussi dormir le téléphone, si bien
+  qu’Erevos regarde le relais environ une fois par minute et qu’un message ou un appel peut avoir une ou deux minutes de
+  retard.
 - **Le nombre sur l’icône :** avec **Signaler les nouveaux messages** activé, quand tu quittes Erevos avec des messages
   non lus dans les discussions et groupes de l’espace ouvert, la notification reste, sans son, et dit combien, avec ceux
   qu’elle signale ensuite ; elle part tant qu’Erevos est affiché, et revient quand tu le quittes, jusqu’à ce que tu les
@@ -2464,7 +2469,10 @@ d’Erevos** a deux choix : **Pas de verrou** et **Mot de passe**.
   d’un anniversaire demandent le mot de passe, puis n’ouvrent que les contacts : leur liste, la fiche d’un contact
   (sans tes discussions ni tes appels avec lui), **Modifier**, les groupes, les doublons, la SIM et l’importation.
   **Appeler** ouvre toujours le numéroteur du téléphone. Une discussion, un SMS, **Réglages** ou le cadenas orange
-  **Tout déverrouiller** en haut redemande le mot de passe, puis ouvre tout l’espace.
+  **Tout déverrouiller** en haut redemande le mot de passe, puis ouvre tout l’espace. Une autre icône, le widget ou une
+  notification, quand seuls les SMS ou seuls les contacts sont ouverts, demande le mot de passe comme quand Erevos est
+  verrouillé, puis ouvre ce qu’elle désigne : l’icône Contacts seulement les contacts, l’icône SMS seulement les SMS,
+  l’icône d’Erevos elle-même tout l’espace.
 
 - **Voir ce que tu tapes :** chaque champ pour un mot de passe, un PIN ou un jeton, ici et partout dans Erevos, a un
   œil au bout : touche-le pour voir ce que tu tapes, et encore pour le masquer. Il est masqué de nouveau chaque fois

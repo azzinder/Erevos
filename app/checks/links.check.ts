@@ -5,11 +5,16 @@
 // Web addresses in messages (lib/links.ts), and links that open Erevos (lib/open-link.ts).
 // Run with: npm run check
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
 import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
 import { dropLink, holdLink, hrefLink, ICON_LINK, keepLink, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
+
+import { templateFile } from './expo-template';
 
 const urls = (text: string) => splitLinks(text).flatMap((part) => (part.url ? [part.url] : []));
 
@@ -229,4 +234,44 @@ test('a call starts with a chat only when a tap in Erevos asked for it, once, fo
   assert.equal(takeCall(alice, 2000), null);
   handOverCall(alice, 'voice', 1000);
   assert.equal(takeCall(alice, 1000 + 31_000), null);
+});
+
+test('another icon, with only the SMS open, waits for the password and then opens what it names alone', () => {
+  dropLink();
+  // The layout takes the Contacts icon's link with only the SMS open (app/_layout.tsx OpenLink)…
+  holdLink('erevos://contacts', 1000);
+  const href = takeLink(1000);
+  assert.equal(href, '/contacts');
+  assert.notEqual(onlyPartOf(href), 'sms');
+  // …keeps it, quietly, and locks: the password then opens only the Contacts.
+  keepLink(hrefLink(href ?? ''), 1000);
+  lockingKeepsLink(1000);
+  assert.equal(peekLink(1000), '/contacts');
+  assert.equal(onlyPartOf(peekLink(1000)), 'contacts');
+  // Erevos's own icon opens all of it after the password, as when locked.
+  assert.equal(onlyPartOf(linkHref(ICON_LINK)), null);
+  dropLink();
+});
+
+test('the link that brought Erevos back stays its intent, and Back puts it behind (plugins/with-latest-intent.js)', async () => {
+  const require = createRequire(import.meta.url);
+  const config = require('../app.config.js') as (c: { config: Record<string, unknown> }) => Record<string, any>;
+  const app = (JSON.parse(readFileSync(join(import.meta.dirname, '../app.json'), 'utf8')) as { expo: Record<string, unknown> }).expo;
+  assert.ok(config({ config: app }).plugins.includes('./plugins/with-latest-intent'));
+  const plugin = require('../plugins/with-latest-intent.js') as (c: Record<string, unknown>) => { mods: { android: { mainActivity: (c: unknown) => Promise<any> } } };
+  const made = async (contents: string) =>
+    (await plugin({ name: 'Erevos', slug: 'erevos' }).mods.android.mainActivity({
+      modResults: { language: 'kt', contents },
+      modRequest: { platform: 'android', modName: 'mainActivity' },
+      modRawConfig: {},
+    })).modResults.contents as string;
+  const template = templateFile('/MainActivity.kt');
+  const once = await made(template);
+  assert.match(once, /class MainActivity : ReactActivity\(\) \{\n.*\n  override fun onNewIntent\(intent: android\.content\.Intent\) \{\n    setIntent\(intent\)\n    super\.onNewIntent\(intent\)\n  \}\n/);
+  assert.match(once, /override fun invokeDefaultOnBackPressed\(\) \{\n.*\n      if \(isTaskRoot && moveTaskToBack\(false\)\) return\n/);
+  assert.equal(await made(once), once);
+  await assert.rejects(made(template.replace('override fun invokeDefaultOnBackPressed()', 'fun back()')), /invokeDefaultOnBackPressed/);
+  // Opened again from the recent apps, the link Erevos first came with is not opened again.
+  const icons = readFileSync(join(import.meta.dirname, '../modules/erevos-icons/android/src/main/java/expo/modules/erevosicons/ErevosIconsPackage.kt'), 'utf8');
+  assert.match(icons, /FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY\) != 0\) forgetLink\(intent\)/);
 });

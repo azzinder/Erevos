@@ -21,6 +21,14 @@ On main, not released yet:
   exceeded" (reported on the Pixel, 4.0.0-rc.9). The password screen kept the link to open after it by telling the
   screens that were going, which took it at once and asked again, without end. It now keeps it quietly, and that
   password opens all of Erevos, then the screen. When Erevos cannot open, **Try again** starts it again.
+- **Each icon opens what it names**: after Erevos was opened by the SMS icon, or from the recent apps, another icon,
+  the widget or a notice could sometimes show the SMS instead (reported on the Pixel, 4.0.0-rc.9). Android keeps the
+  link Erevos first started with as its intent, which React Native reads when Erevos's screens start again, Expo drops
+  a link that comes while Erevos is still starting, and Back closed Erevos when the SMS, Contacts or Phone icon had
+  opened it, so the next icon started its screens again with only the SMS showing for a moment. Now the link that
+  brings Erevos back becomes its intent (plugins/with-latest-intent.js), a link Erevos is opened with again from the
+  recent apps is not opened again, Back on its first screen puts Erevos behind as Home does, and with only the SMS or
+  the Contacts open another icon asks for the password as when Erevos is locked, then opens what it names.
 
 ## 4.0.0-rc.9 (2026-11-01)
 

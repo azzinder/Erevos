@@ -1196,23 +1196,26 @@ Versteckte Chats und Computer haben das nicht.
   der Nähe aufgebaut und geht direkt zwischen den Telefonen (oder Computern). Dasselbe gilt für Gruppennachrichten und
   Gruppenanrufe.
 - **Im Hintergrund (Android):** Solange ein Bereich offen ist, läuft Erevos weiter, wenn du es verlässt, mit der
-  Home-Taste oder indem du es aus den letzten Apps wegwischst, mit einer stillen Benachrichtigung, „Erevos – Ready for
-  calls and messages“, die nicht auf dem Sperrbildschirm erscheint. Es wartet beim Relay und an den Verbindungen zu
-  Telefonen in der Nähe, damit Nachrichten ankommen: Eine Benachrichtigung sagt nur „New message“ oder wie viele kamen,
-  und auf einem gesperrten Telefon nur „Erevos“. Eine Nachrichtenanfrage, von jemandem, der nur deinen Kontaktlink
-  hat, macht dieselbe Benachrichtigung und denselben Ton und zählt auf dem Symbol, wie jede Nachricht. Ein Anruf
-  klingelt mit dem Klingelton des Telefons und einer Benachrichtigung, „Incoming call“ (oder „Incoming video call“) –
-  „Open Erevos to answer“, ohne Namen, auch über dem Sperrbildschirm und dem Bildschirmschoner, und der Bildschirm
-  wacht auf. Tippe darauf, um anzunehmen. Mit
-  eingeschalteter Passwortsperre erscheint ein klingelnder Anruf vor dem Passwort, und Erevos sperrt sich, sobald er
-  endet. Gesperrt läuft der Bereich hinter dem Passwortbildschirm weiter, also kommen Nachrichten und Anrufe trotzdem,
-  und ein Anruf erscheint über dem Passwortbildschirm. Nur die Chats und Gruppen dieses Bereichs kommen so an, und
-  versteckte Chats mit eingeschaltetem **Empfangen, wenn geschlossen**; andere versteckte Chats sagen nur, dass eine
-  Nachricht kam, oder klingeln ohne Namen, wenn du es erlaubst (siehe „Versteckte Chats“). Stell es unter
-  **Einstellungen** → **Benachrichtigungen** → **Im Hintergrund** ein: **Empfangen und klingeln** (die Voreinstellung)
-  oder **Nur, solange Erevos sichtbar ist**, und **Neue Nachrichten melden** (die Voreinstellung) oder
-  **Keine Benachrichtigung**, was auch gilt, solange Erevos sichtbar ist. Dort auch, wenn Android danach fragt,
-  **Trotz Akku-Sparen weiterlaufen** und **Anrufe über dem Sperrbildschirm zeigen**. Darunter legen **Nur die Verschwendung** (Standard), **Und Telefone in der Nähe** und **Und Schlaf** fest, wie viel Akku es im Hintergrund spart: Die zweite schaltet auch die Funkverbindungen zu Telefonen in der Nähe aus, solange Erevos im Hintergrund ist, die dritte lässt auch das Telefon schlafen, sodass Erevos etwa einmal pro Minute am Relay nachschaut und eine Nachricht oder ein Anruf ein bis zwei Minuten zu spät kommen kann.
+  Home-Taste, mit „Zurück“ auf seinem ersten Bildschirm oder indem du es aus den letzten Apps wegwischst, mit einer
+  stillen Benachrichtigung, „Erevos – Ready for calls and messages“, die nicht auf dem Sperrbildschirm erscheint. Es
+  wartet beim Relay und an den Verbindungen zu Telefonen in der Nähe, damit Nachrichten ankommen: Eine Benachrichtigung
+  sagt nur „New message“ oder wie viele kamen, und auf einem gesperrten Telefon nur „Erevos“. Eine Nachrichtenanfrage,
+  von jemandem, der nur deinen Kontaktlink hat, macht dieselbe Benachrichtigung und denselben Ton und zählt auf dem
+  Symbol, wie jede Nachricht. Ein Anruf klingelt mit dem Klingelton des Telefons und einer Benachrichtigung, „Incoming
+  call“ (oder „Incoming video call“) – „Open Erevos to answer“, ohne Namen, auch über dem Sperrbildschirm und dem
+  Bildschirmschoner, und der Bildschirm wacht auf. Tippe darauf, um anzunehmen. Mit eingeschalteter Passwortsperre
+  erscheint ein klingelnder Anruf vor dem Passwort, und Erevos sperrt sich, sobald er endet. Gesperrt läuft der Bereich
+  hinter dem Passwortbildschirm weiter, also kommen Nachrichten und Anrufe trotzdem, und ein Anruf erscheint über dem
+  Passwortbildschirm. Nur die Chats und Gruppen dieses Bereichs kommen so an, und versteckte Chats mit eingeschaltetem
+  **Empfangen, wenn geschlossen**; andere versteckte Chats sagen nur, dass eine Nachricht kam, oder klingeln ohne Namen,
+  wenn du es erlaubst (siehe „Versteckte Chats“). Stell es unter **Einstellungen** → **Benachrichtigungen** → **Im
+  Hintergrund** ein: **Empfangen und klingeln** (die Voreinstellung) oder **Nur, solange Erevos sichtbar ist**, und
+  **Neue Nachrichten melden** (die Voreinstellung) oder **Keine Benachrichtigung**, was auch gilt, solange Erevos
+  sichtbar ist. Dort auch, wenn Android danach fragt, **Trotz Akku-Sparen weiterlaufen** und **Anrufe über dem
+  Sperrbildschirm zeigen**. Darunter legen **Nur die Verschwendung** (Standard), **Und Telefone in der Nähe** und **Und
+  Schlaf** fest, wie viel Akku es im Hintergrund spart: Die zweite schaltet auch die Funkverbindungen zu Telefonen in
+  der Nähe aus, solange Erevos im Hintergrund ist, die dritte lässt auch das Telefon schlafen, sodass Erevos etwa einmal
+  pro Minute am Relay nachschaut und eine Nachricht oder ein Anruf ein bis zwei Minuten zu spät kommen kann.
 - **Die Zahl auf dem Symbol:** Mit **Neue Nachrichten melden** bleibt die Meldung, wenn du Erevos mit ungelesenen
   Nachrichten in den Chats und Gruppen des offenen Bereichs verlässt, ohne Ton stehen und sagt, wie viele es sind, mit
   denen, die sie danach meldet; sie geht, solange Erevos sichtbar ist, und kommt wieder, wenn du es verlässt, bis du
@@ -2505,7 +2508,10 @@ Unter **Einstellungen** → **Datenschutz und Sicherheit** → **Sperre und zwei
   über einen Geburtstag nach dem Passwort und öffnen dann nur die Kontakte: ihre Liste, die Karte eines Kontakts (ohne
   deine Chats und Anrufe mit ihm), **Bearbeiten**, Gruppen, Duplikate, die SIM und das Importieren. **Anrufen** öffnet
   weiterhin die Telefon-App des Telefons. Ein Chat, eine SMS, **Einstellungen** oder das orange Schloss **Alles
-  entsperren** oben fragt erneut nach dem Passwort und öffnet dann den ganzen Bereich.
+  entsperren** oben fragt erneut nach dem Passwort und öffnet dann den ganzen Bereich. Ein anderes Symbol, das Widget
+  oder eine Benachrichtigung fragt, wenn nur die SMS oder nur die Kontakte offen sind, nach dem Passwort wie bei
+  gesperrtem Erevos und öffnet dann das, wofür es steht: das Kontakte-Symbol nur die Kontakte, das SMS-Symbol nur die
+  SMS, das Symbol von Erevos selbst den ganzen Bereich.
 
 - **Sehen, was du tippst:** Jedes Feld für ein Passwort, eine PIN oder ein Token, hier und überall in Erevos, hat am
   Ende ein Auge: Tippe darauf, um zu sehen, was du eingibst, und noch einmal, um es zu verbergen. Es ist jedes Mal

@@ -1030,8 +1030,8 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
 - **Without internet:** on the same Wi-Fi, a phone's hotspot, or the Wi-Fi two phones make (Wi-Fi Direct), with a
   space open on both, a call needs no relay at all: it is set up over the nearby link and goes straight between the phones (or computers). The same goes for group
   messages and group calls.
-- **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with Home or by
-  swiping it away from the recent apps, with a quiet notice, "Erevos – Ready for calls and messages", that does not
+- **In the background (Android):** while a space is open, Erevos keeps running when you leave it, with Home, Back on
+  its first screen or by swiping it away from the recent apps, with a quiet notice, "Erevos – Ready for calls and messages", that does not
   show on the lock screen. It waits at the relay and on the links to phones nearby, so messages come: a notice
   says only "New message", or how many came, and on a locked phone only "Erevos". A message request, from someone who
   has only your contact link, makes the same notice and sound, and counts on the icon, as any message does. A call
@@ -2162,7 +2162,9 @@ choices: **No lock** and **Password**.
   birthday ask for the password, then open only the contacts: their list, a contact's card (without your chats and
   calls with them), **Edit**, groups, duplicates, the SIM and importing. **Call** still opens the phone's dialer. A chat,
   an SMS, **Settings** or the orange padlock **Unlock everything** at the top asks for the password again, and then
-  opens all of the space.
+  opens all of the space. Another icon, the widget or a notice, with only the SMS or only the Contacts open, asks for
+  the password as when Erevos is locked, then opens what it names: the Contacts icon only the contacts, the SMS icon
+  only the SMS, Erevos's own icon all of it.
 
 - **Seeing what you type:** every field for a password, a PIN or a token, here and anywhere in Erevos, has an eye at
   its end: tap it to see what you type, and again to hide it. It is hidden again each time the field shows anew, and

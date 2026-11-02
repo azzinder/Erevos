@@ -9,8 +9,8 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { gunzipSync } from 'node:zlib';
 
+import { templateFile } from './expo-template';
 import { buildNumber, buildOf, DOWNLOAD_TRIES, isNewer, isReleaseFile, PACKAGE_FILES, packageFile, parseRelease, RELEASES_REPO, stalled } from '../lib/updates';
 
 const SHA = 'a'.repeat(64);
@@ -123,18 +123,6 @@ test("no build's manifest names Google Play services: expo-image-picker's servic
   // Whatever service of Google's the picker names now, the merged manifest leaves it out.
   for (const name of named) assert.ok(removed.includes(name), name);
 });
-
-/** A file of the project Expo makes the Android app from (expo/template.tgz, a tar file). */
-function templateFile(name: string): string {
-  const tar = gunzipSync(readFileSync(join(import.meta.dirname, '../node_modules/expo/template.tgz')));
-  const field = (from: number, length: number) => tar.toString('utf8', from, from + length).replace(/\0.*$/s, '').trim();
-  for (let at = 0; at + 512 <= tar.length; ) {
-    const size = parseInt(field(at + 124, 12) || '0', 8);
-    if (field(at, 100).endsWith(name)) return tar.toString('utf8', at + 512, at + 512 + size);
-    at += 512 + Math.ceil(size / 512) * 512;
-  }
-  throw new Error(`no ${name} in expo/template.tgz`);
-}
 
 test("React Native's plain views come from modules/erevos-views, put first in MainApplication", async () => {
   const require = createRequire(import.meta.url);

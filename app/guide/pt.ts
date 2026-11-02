@@ -1106,20 +1106,24 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   Direct), com um espaço aberto nos dois, uma chamada não precisa de relay nenhum: ela é estabelecida pela conexão por
   perto e vai direto entre os celulares (ou computadores). O mesmo vale para mensagens de grupo e chamadas de grupo.
 - **Em segundo plano (Android):** enquanto um espaço está aberto, o Erevos continua rodando quando você sai dele, com
-  o botão de início ou deslizando-o para fora dos apps recentes, com um aviso discreto, "Erevos – Ready for calls and
-  messages", que não aparece na tela de bloqueio. Ele espera no relay e nas conexões com celulares por perto, para que
-  as mensagens cheguem: um aviso diz só "New message", ou quantas chegaram, e num celular bloqueado só "Erevos". Uma
-  solicitação de mensagem, de alguém que só tem o seu link de contato, gera o mesmo aviso e som, e conta no ícone,
-  como qualquer mensagem. Uma chamada toca com o toque do celular e um aviso, "Incoming call" (ou "Incoming video
-  call") – "Open Erevos to answer", sem nome, também sobre a tela de bloqueio e o protetor de tela, e a tela acorda.
-  Toque nele para atender. Com o bloqueio com senha ativado, uma chamada que toca aparece antes da senha, e o Erevos
-  bloqueia assim que ela termina. Bloqueado, o espaço continua atrás da tela da senha, então mensagens e chamadas
-  ainda chegam, e uma chamada aparece sobre a tela da senha. Só as conversas e os grupos desse espaço chegam assim, e
-  as conversas ocultas com **Receber quando fechadas** ativado; as outras conversas ocultas só dizem que chegou uma
-  mensagem, ou tocam sem nome, se você permitir (veja Conversas ocultas). Defina isso em **Configurações** →
-  **Notificações** → **Em segundo plano**: **Receber e tocar** (o padrão) ou **Só com o Erevos na tela**, e **Avisar
-  quando chega mensagem** (o padrão) ou **Sem aviso**, que vale também para quando o Erevos está na tela. Ali também,
-  se o Android pedir, **Continuar rodando com economia de bateria** e **Mostrar chamadas sobre a tela de bloqueio**. Abaixo, **Só o desperdício** (o padrão), **E os celulares por perto** e **E o sono** definem quanta bateria ele poupa em segundo plano: a segunda desliga também os rádios para celulares por perto enquanto o Erevos está em segundo plano, a terceira deixa também o celular dormir, de modo que o Erevos olha o relay cerca de uma vez por minuto e uma mensagem ou uma chamada pode chegar um ou dois minutos atrasada.
+  o botão de início, com Voltar na primeira tela dele ou deslizando-o para fora dos apps recentes, com um aviso
+  discreto, "Erevos – Ready for calls and messages", que não aparece na tela de bloqueio. Ele espera no relay e nas
+  conexões com celulares por perto, para que as mensagens cheguem: um aviso diz só "New message", ou quantas chegaram, e
+  num celular bloqueado só "Erevos". Uma solicitação de mensagem, de alguém que só tem o seu link de contato, gera o
+  mesmo aviso e som, e conta no ícone, como qualquer mensagem. Uma chamada toca com o toque do celular e um aviso,
+  "Incoming call" (ou "Incoming video call") – "Open Erevos to answer", sem nome, também sobre a tela de bloqueio e o
+  protetor de tela, e a tela acorda. Toque nele para atender. Com o bloqueio com senha ativado, uma chamada que toca
+  aparece antes da senha, e o Erevos bloqueia assim que ela termina. Bloqueado, o espaço continua atrás da tela da
+  senha, então mensagens e chamadas ainda chegam, e uma chamada aparece sobre a tela da senha. Só as conversas e os
+  grupos desse espaço chegam assim, e as conversas ocultas com **Receber quando fechadas** ativado; as outras conversas
+  ocultas só dizem que chegou uma mensagem, ou tocam sem nome, se você permitir (veja Conversas ocultas). Defina isso em
+  **Configurações** → **Notificações** → **Em segundo plano**: **Receber e tocar** (o padrão) ou **Só com o Erevos na
+  tela**, e **Avisar quando chega mensagem** (o padrão) ou **Sem aviso**, que vale também para quando o Erevos está na
+  tela. Ali também, se o Android pedir, **Continuar rodando com economia de bateria** e **Mostrar chamadas sobre a tela
+  de bloqueio**. Abaixo, **Só o desperdício** (o padrão), **E os celulares por perto** e **E o sono** definem quanta
+  bateria ele poupa em segundo plano: a segunda desliga também os rádios para celulares por perto enquanto o Erevos está
+  em segundo plano, a terceira deixa também o celular dormir, de modo que o Erevos olha o relay cerca de uma vez por
+  minuto e uma mensagem ou uma chamada pode chegar um ou dois minutos atrasada.
 - **O número no ícone:** com **Avisar quando chega mensagem** ligado, quando você sai do Erevos com mensagens não
   lidas nas conversas e grupos do espaço aberto, a notificação fica, sem som, e diz quantas são, com as que avisar
   depois; ela some enquanto o Erevos está na tela, e volta quando você sai dele, até você lê-las. Não conta as
@@ -2330,7 +2334,9 @@ duas opções: **Sem bloqueio** e **Senha**.
   pedem a senha, e depois abrem só os contatos: a lista deles, o cartão de um contato (sem suas conversas e chamadas
   com ele), **Editar**, grupos, duplicados, o chip e a importação. **Ligar** ainda abre o discador do celular. Uma
   conversa, um SMS, **Configurações** ou o cadeado laranja **Desbloquear tudo** no topo pede a senha de novo e depois
-  abre todo o espaço.
+  abre todo o espaço. Outro ícone, o widget ou um aviso, com só os SMS ou só os Contatos abertos, pede a senha como
+  quando o Erevos está bloqueado e depois abre o que indica: o ícone de Contatos só os contatos, o ícone de SMS só os
+  SMS, o ícone do próprio Erevos todo o espaço.
 
 - **Ver o que você digita:** cada campo de senha, PIN ou token, aqui e em todo o Erevos, tem um olho no fim: toque
   nele para ver o que você digita, e de novo para esconder. Ele volta a ficar escondido cada vez que o campo aparece

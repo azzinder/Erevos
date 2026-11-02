@@ -1079,21 +1079,24 @@ Skriveni razgovori i računari to nemaju.
 - **Bez interneta:** na istoj Wi-Fi mreži, na hotspotu telefona ili na Wi-Fi mreži koju prave dva telefona (Wi-Fi
   Direct), s prostorom otvorenim na oba, pozivu uopće nije potreban relay: uspostavlja se preko veze u blizini i ide
   direktno između telefona (ili računara). Isto važi i za grupne poruke i grupne pozive.
-- **U pozadini (Android):** dok je prostor otvoren, Erevos nastavlja raditi kad ga napustite, dugmetom za početni
-  ekran ili prevlačenjem iz nedavnih aplikacija, s tihom obaviješću, „Erevos – Ready for calls and messages“, koja se
-  ne prikazuje na zaključanom ekranu. Čeka na relayu i na vezama s telefonima u blizini, pa poruke stižu: obavijest
-  kaže samo „New message“ ili koliko ih je stiglo, a na zaključanom telefonu samo „Erevos“. Zahtjev za razgovor, od
-  nekoga ko ima samo vaš link za kontakt, daje istu obavijest i zvuk, i broji se na ikoni, kao i svaka poruka. Poziv
-  zvoni melodijom telefona i obaviješću, „Incoming call“ (ili „Incoming video call“) – „Open Erevos to answer“, bez
-  imena, i preko zaključanog ekrana i čuvara ekrana, a ekran se budi. Dodirnite je da se javite. S uključenim
-  zaključavanjem lozinkom, poziv koji zvoni prikazuje se prije lozinke, a Erevos se zaključava čim se poziv završi.
-  Kad je zaključan, prostor nastavlja raditi iza ekrana za lozinku, pa poruke i pozivi i dalje stižu, a poziv se
-  prikazuje preko ekrana za lozinku. Tako stižu samo razgovori i grupe tog prostora, i skriveni razgovori s uključenim
-  **Primanje dok su zatvoreni**; ostali skriveni razgovori samo javljaju da je stigla poruka, ili zvone bez imena, ako
-  im to dozvolite (pogledajte Skriveni razgovori). To se podešava u **Postavke** → **Obavijesti** →
-  **U pozadini**: **Primaj i zvoni** (zadano) ili **Samo dok je Erevos na ekranu**, te **Javi da je stigla poruka**
-  (zadano) ili **Bez obavijesti**, što važi i dok je Erevos na ekranu. Tamo su i, ako ih Android traži, **Izuzmi iz
-  uštede baterije** i **Prikazuj pozive preko zaključanog ekrana**. Ispod, **Samo rasipanje** (zadano), **I telefoni u blizini** i **I san** određuju koliko baterije štedi u pozadini: drugi isključuje i radije za telefone u blizini dok je Erevos u pozadini, treći dopušta i telefonu da spava, pa Erevos gleda relay otprilike jednom u minuti, a poruka ili poziv mogu kasniti minutu-dvije.
+- **U pozadini (Android):** dok je prostor otvoren, Erevos nastavlja raditi kad ga napustite, dugmetom za početni ekran,
+  dugmetom Nazad na njegovom prvom ekranu ili prevlačenjem iz nedavnih aplikacija, s tihom obaviješću, „Erevos – Ready
+  for calls and messages“, koja se ne prikazuje na zaključanom ekranu. Čeka na relayu i na vezama s telefonima u
+  blizini, pa poruke stižu: obavijest kaže samo „New message“ ili koliko ih je stiglo, a na zaključanom telefonu samo
+  „Erevos“. Zahtjev za razgovor, od nekoga ko ima samo vaš link za kontakt, daje istu obavijest i zvuk, i broji se na
+  ikoni, kao i svaka poruka. Poziv zvoni melodijom telefona i obaviješću, „Incoming call“ (ili „Incoming video call“) –
+  „Open Erevos to answer“, bez imena, i preko zaključanog ekrana i čuvara ekrana, a ekran se budi. Dodirnite je da se
+  javite. S uključenim zaključavanjem lozinkom, poziv koji zvoni prikazuje se prije lozinke, a Erevos se zaključava čim
+  se poziv završi. Kad je zaključan, prostor nastavlja raditi iza ekrana za lozinku, pa poruke i pozivi i dalje stižu, a
+  poziv se prikazuje preko ekrana za lozinku. Tako stižu samo razgovori i grupe tog prostora, i skriveni razgovori s
+  uključenim **Primanje dok su zatvoreni**; ostali skriveni razgovori samo javljaju da je stigla poruka, ili zvone bez
+  imena, ako im to dozvolite (pogledajte Skriveni razgovori). To se podešava u **Postavke** → **Obavijesti** → **U
+  pozadini**: **Primaj i zvoni** (zadano) ili **Samo dok je Erevos na ekranu**, te **Javi da je stigla poruka** (zadano)
+  ili **Bez obavijesti**, što važi i dok je Erevos na ekranu. Tamo su i, ako ih Android traži, **Izuzmi iz uštede
+  baterije** i **Prikazuj pozive preko zaključanog ekrana**. Ispod, **Samo rasipanje** (zadano), **I telefoni u
+  blizini** i **I san** određuju koliko baterije štedi u pozadini: drugi isključuje i radije za telefone u blizini dok
+  je Erevos u pozadini, treći dopušta i telefonu da spava, pa Erevos gleda relay otprilike jednom u minuti, a poruka ili
+  poziv mogu kasniti minutu-dvije.
 - **Broj na ikoni:** uz uključeno **Javi da je stigla poruka**, kad napustite Erevos s nepročitanim porukama u
   razgovorima i grupama otvorenog prostora, obavijest ostaje, bez zvuka, i kaže koliko ih je, s onima koje javi
   poslije; nestaje dok je Erevos na ekranu, i vraća se kad ga napustite, dok ih ne pročitate. Ne broji poruke utišanog
@@ -2261,6 +2264,9 @@ Erevosa** ima dva izbora: **Bez zaključavanja** i **Lozinka**.
   lozinku, a zatim otvaraju samo kontakte: njihov popis, karticu kontakta (bez vaših razgovora i poziva s njim),
   **Uredi**, grupe, duplikate, SIM karticu i uvoz. **Pozovi** i dalje otvara birač brojeva telefona. Razgovor, SMS,
   **Postavke** ili narandžasti lokot **Otključaj sve** na vrhu ponovo traži lozinku, a zatim otvara cijeli prostor.
+  Druga ikona, widget ili obavijest, kad su otvoreni samo SMS-ovi ili samo kontakti, traži lozinku kao kad je Erevos
+  zaključan, a zatim otvara ono što označava: ikona Kontakata samo kontakte, ikona SMS-a samo SMS-ove, sama ikona
+  Erevosa cijeli prostor.
 
 - **Vidjeti šta kucate:** svako polje za lozinku, PIN ili token, ovdje i svuda u Erevosu, ima oko na kraju: dodirnite
   ga da vidite šta kucate, i ponovo da se sakrije. Ponovo je skriveno svaki put kad se polje iznova pojavi, a na

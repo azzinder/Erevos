@@ -1119,23 +1119,22 @@ computer non ce l’hanno.
   (Wi-Fi Direct), con uno spazio aperto su entrambi, una chiamata non ha bisogno di nessun relay: si avvia tramite il
   collegamento da vicino e va direttamente tra i telefoni (o i computer). Lo stesso vale per i messaggi di gruppo
   e le chiamate di gruppo.
-- **In background (Android):** mentre uno spazio è aperto, Erevos continua a funzionare quando lo lasci, con Home o
-  togliendolo dalle app recenti, con una notifica silenziosa, «Erevos – Ready for calls and messages», che non appare
-  sulla schermata di blocco. Resta in ascolto sul relay e sui collegamenti con i telefoni vicini, così i messaggi
-  arrivano: una notifica dice solo «New message», o quanti ne sono arrivati, e a telefono bloccato solo «Erevos». Una
-  richiesta di messaggio, da qualcuno che ha solo il tuo link di contatto, fa la stessa notifica e lo stesso suono, e
-  conta sull’icona, come qualsiasi messaggio. Una chiamata squilla con la suoneria del telefono e una notifica,
-  «Incoming call» (o «Incoming video call») – «Open Erevos to answer», senza nome, anche sulla schermata di blocco e
-  sul salvaschermo, e lo schermo si accende. Toccala per rispondere. Con il blocco
-  con password attivo, una chiamata che squilla appare prima della password, ed Erevos si blocca appena finisce. Da
+- **In background (Android):** mentre uno spazio è aperto, Erevos continua a funzionare quando lo lasci, con Home, con
+  Indietro nella sua prima schermata o togliendolo dalle app recenti, con una notifica silenziosa, «Erevos – Ready for
+  calls and messages», che non appare sulla schermata di blocco. Resta in ascolto sul relay e sui collegamenti con i
+  telefoni vicini, così i messaggi arrivano: una notifica dice solo «New message», o quanti ne sono arrivati, e a
+  telefono bloccato solo «Erevos». Una richiesta di messaggio, da qualcuno che ha solo il tuo link di contatto, fa la
+  stessa notifica e lo stesso suono, e conta sull’icona, come qualsiasi messaggio. Una chiamata squilla con la suoneria
+  del telefono e una notifica, «Incoming call» (o «Incoming video call») – «Open Erevos to answer», senza nome, anche
+  sulla schermata di blocco e sul salvaschermo, e lo schermo si accende. Toccala per rispondere. Con il blocco con
+  password attivo, una chiamata che squilla appare prima della password, ed Erevos si blocca appena finisce. Da
   bloccato, lo spazio continua dietro la schermata della password, quindi messaggi e chiamate arrivano comunque, e una
-  chiamata appare sopra la schermata della password. Solo le chat
-  e i gruppi di quello spazio arrivano così, e le chat nascoste con **Ricevere da chiuse** attivo; le altre chat
-  nascoste dicono solo che è arrivato un messaggio, o squillano senza nome, se lo permetti
-  (vedi Chat nascoste). Impostalo in **Impostazioni** → **Notifiche** → **In background**:
-  **Ricevi e squilla** (l’impostazione predefinita) o **Solo mentre Erevos è visibile**, e **Avvisa dei nuovi messaggi**
-  (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì, se Android li
-  chiede, **Continua anche col risparmio batteria** e **Mostra le chiamate sulla schermata di
+  chiamata appare sopra la schermata della password. Solo le chat e i gruppi di quello spazio arrivano così, e le chat
+  nascoste con **Ricevere da chiuse** attivo; le altre chat nascoste dicono solo che è arrivato un messaggio, o
+  squillano senza nome, se lo permetti (vedi Chat nascoste). Impostalo in **Impostazioni** → **Notifiche** → **In
+  background**: **Ricevi e squilla** (l’impostazione predefinita) o **Solo mentre Erevos è visibile**, e **Avvisa dei
+  nuovi messaggi** (l’impostazione predefinita) o **Nessun avviso**, che vale anche mentre Erevos è visibile. Anche lì,
+  se Android li chiede, **Continua anche col risparmio batteria** e **Mostra le chiamate sulla schermata di
   blocco**. Sotto, **Solo lo spreco** (predefinito), **E i telefoni vicini** e **E il sonno** stabiliscono quanta batteria risparmia in secondo piano: la seconda spegne anche le radio per i telefoni vicini finché Erevos è in secondo piano, la terza lascia dormire anche il telefono, così Erevos guarda il relay circa una volta al minuto e un messaggio o una chiamata può arrivare con uno o due minuti di ritardo.
 - **Il numero sull’icona:** con **Avvisa dei nuovi messaggi** attivo, quando esci da Erevos con messaggi non letti
   nelle chat e nei gruppi dello spazio aperto, la notifica resta, senza suono, e dice quanti sono, con quelli che
@@ -2368,7 +2367,9 @@ due scelte: **Nessun blocco** e **Password**.
   compleanno chiedono la password, e poi aprono solo i contatti: il loro elenco, la scheda di un contatto (senza le tue
   chat e le chiamate con lui), **Modifica**, i gruppi, i duplicati, la SIM e l’importazione. **Chiama** apre ancora il
   tastierino del telefono. Una chat, un SMS, **Impostazioni** o il lucchetto arancione **Sblocca tutto** in alto chiede
-  di nuovo la password e poi apre tutto lo spazio.
+  di nuovo la password e poi apre tutto lo spazio. Un’altra icona, il widget o una notifica, quando sono aperti solo gli
+  SMS o solo i Contatti, chiede la password come quando Erevos è bloccato e poi apre ciò che indica: l’icona Contatti
+  solo i contatti, l’icona SMS solo gli SMS, l’icona stessa di Erevos tutto lo spazio.
 
 - **Vedere ciò che scrivi:** ogni campo per una password, un PIN o un token, qui e ovunque in Erevos, ha un occhio in
   fondo: toccalo per vedere ciò che scrivi, e di nuovo per nasconderlo. Torna nascosto ogni volta che il campo si

@@ -1107,21 +1107,25 @@ que un SMS normal. Los chats ocultos y los ordenadores no la tienen.
   cerca y va directamente entre los teléfonos (u ordenadores). Lo mismo vale para los mensajes de grupo
   y las llamadas de grupo.
 - **En segundo plano (Android):** mientras un espacio está abierto, Erevos sigue funcionando cuando sales de él, con
-  Inicio o quitándolo de las apps recientes, con un aviso discreto, «Erevos – Ready for calls and messages», que no
-  aparece en la pantalla de bloqueo. Espera en el relay y en los enlaces a teléfonos cercanos, así que los mensajes
-  llegan: un aviso solo dice «New message», o cuántos llegaron, y en un teléfono bloqueado solo «Erevos». Una solicitud
-  de mensaje, de alguien que solo tiene tu enlace de contacto, hace el mismo aviso y sonido, y cuenta en el icono, como
-  cualquier mensaje. Una llamada suena con el tono del teléfono y un aviso, «Incoming call» (o «Incoming video call») –
-  «Open Erevos to answer», sin nombre, también sobre la pantalla de bloqueo y el salvapantallas, y la pantalla se
-  enciende. Tócalo para responder. Con el bloqueo con contraseña activado, una llamada que suena aparece antes de la
-  contraseña, y Erevos se bloquea en cuanto termina. Bloqueado, el espacio sigue detrás de la pantalla de la
-  contraseña, así que los mensajes y las llamadas siguen llegando, y una llamada aparece sobre la pantalla de la
-  contraseña. Solo llegan así los chats y grupos de ese espacio, y los chats ocultos con **Recibir estando cerrados**
-  activado; los demás chats ocultos solo dicen que llegó un mensaje, o suenan sin nombre, si lo permites (ver Chats
-  ocultos). Ajústalo en **Ajustes** → **Notificaciones** → **En segundo plano**: **Recibir y sonar** (por defecto) o
-  **Solo mientras Erevos está a la vista**, y **Avisar de mensajes nuevos** (por defecto) o **Sin aviso**, que vale
-  también mientras Erevos está a la vista. Ahí también, si Android los pide, **Seguir funcionando con ahorro de
-  batería** y **Mostrar llamadas sobre la pantalla de bloqueo**. Debajo, **Solo lo que se desperdicia** (la opción por defecto), **Y los teléfonos cercanos** y **Y el sueño** deciden cuánta batería ahorra en segundo plano: la segunda apaga también las radios para teléfonos cercanos mientras Erevos está en segundo plano, la tercera deja dormir también al teléfono, así que Erevos mira el relay una vez por minuto y un mensaje o una llamada puede llegar uno o dos minutos tarde.
+  Inicio, con Atrás en su primera pantalla o quitándolo de las apps recientes, con un aviso discreto, «Erevos – Ready
+  for calls and messages», que no aparece en la pantalla de bloqueo. Espera en el relay y en los enlaces a teléfonos
+  cercanos, así que los mensajes llegan: un aviso solo dice «New message», o cuántos llegaron, y en un teléfono
+  bloqueado solo «Erevos». Una solicitud de mensaje, de alguien que solo tiene tu enlace de contacto, hace el mismo
+  aviso y sonido, y cuenta en el icono, como cualquier mensaje. Una llamada suena con el tono del teléfono y un aviso,
+  «Incoming call» (o «Incoming video call») – «Open Erevos to answer», sin nombre, también sobre la pantalla de bloqueo
+  y el salvapantallas, y la pantalla se enciende. Tócalo para responder. Con el bloqueo con contraseña activado, una
+  llamada que suena aparece antes de la contraseña, y Erevos se bloquea en cuanto termina. Bloqueado, el espacio sigue
+  detrás de la pantalla de la contraseña, así que los mensajes y las llamadas siguen llegando, y una llamada aparece
+  sobre la pantalla de la contraseña. Solo llegan así los chats y grupos de ese espacio, y los chats ocultos con
+  **Recibir estando cerrados** activado; los demás chats ocultos solo dicen que llegó un mensaje, o suenan sin nombre,
+  si lo permites (ver Chats ocultos). Ajústalo en **Ajustes** → **Notificaciones** → **En segundo plano**: **Recibir y
+  sonar** (por defecto) o **Solo mientras Erevos está a la vista**, y **Avisar de mensajes nuevos** (por defecto) o
+  **Sin aviso**, que vale también mientras Erevos está a la vista. Ahí también, si Android los pide, **Seguir
+  funcionando con ahorro de batería** y **Mostrar llamadas sobre la pantalla de bloqueo**. Debajo, **Solo lo que se
+  desperdicia** (la opción por defecto), **Y los teléfonos cercanos** y **Y el sueño** deciden cuánta batería ahorra en
+  segundo plano: la segunda apaga también las radios para teléfonos cercanos mientras Erevos está en segundo plano, la
+  tercera deja dormir también al teléfono, así que Erevos mira el relay una vez por minuto y un mensaje o una llamada
+  puede llegar uno o dos minutos tarde.
 - **El número en el icono:** con **Avisar de mensajes nuevos** activado, cuando sales de Erevos con mensajes sin leer
   en los chats y grupos del espacio abierto, el aviso se queda, sin sonido, y dice cuántos son, con los que avise
   después; se va mientras Erevos está a la vista, y vuelve al salir, hasta que los hayas leído. No cuenta los mensajes
@@ -2347,7 +2351,9 @@ opciones: **Sin bloqueo** y **Contraseña**.
   cumpleaños piden la contraseña, y luego abren solo los contactos: su lista, la ficha de un contacto (sin tus chats ni
   llamadas con él), **Editar**, los grupos, los duplicados, la SIM y la importación. **Llamar** sigue abriendo el
   marcador del teléfono. Un chat, un SMS, **Ajustes** o el candado naranja **Desbloquear todo** de arriba vuelve a
-  pedir la contraseña y luego abre todo el espacio.
+  pedir la contraseña y luego abre todo el espacio. Otro icono, el widget o un aviso, con solo los SMS o solo los
+  Contactos abiertos, pide la contraseña como cuando Erevos está bloqueado y luego abre lo que nombra: el icono de
+  Contactos solo los contactos, el icono de SMS solo los SMS, el icono propio de Erevos todo el espacio.
 
 - **Ver lo que escribes:** cada campo para una contraseña, un PIN o un token, aquí y en todo Erevos, tiene un ojo al
   final: tócalo para ver lo que escribes, y otra vez para ocultarlo. Vuelve a ocultarse cada vez que el campo aparece

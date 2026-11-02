@@ -25,8 +25,12 @@ class ErevosIconsPackage : Package {
 
 private object IconTap : ReactActivityLifecycleListener {
   // Erevos started by the tap. Brought back after Android stopped it, it shows what it showed.
+  // Opened again from the recent apps, it comes with the link it first came with (an SMS icon's,
+  // a notice's), which opened then: not again, so Erevos does not show the SMS for another icon.
   override fun onCreate(activity: Activity?, savedInstanceState: Bundle?) {
-    if (savedInstanceState == null) activity?.intent?.let(::asLink)
+    val intent = activity?.intent ?: return
+    if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) forgetLink(intent)
+    else if (savedInstanceState == null) asLink(intent)
   }
 
   // Erevos already running.
@@ -49,4 +53,11 @@ private fun asLink(intent: Intent) {
   if ((intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return
   intent.setAction(Intent.ACTION_VIEW)
   intent.setData(Uri.parse(LINK))
+}
+
+/** An Erevos link (erevos://…) an intent brought once, taken off it: Erevos then opens where it was. */
+private fun forgetLink(intent: Intent) {
+  if (intent.action != Intent.ACTION_VIEW || intent.data?.scheme?.lowercase() != "erevos") return
+  intent.setAction(Intent.ACTION_MAIN)
+  intent.setData(null)
 }

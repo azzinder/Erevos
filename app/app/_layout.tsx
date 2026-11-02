@@ -5,7 +5,7 @@
 import { router, Stack, useGlobalSearchParams, useRootNavigationState, usePathname, type Href } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Linking, Platform, View } from 'react-native';
 
 import { AlertHost } from '../components/alert-host';
 import { CallHost, watchCalls } from '../components/call-host';
@@ -27,7 +27,7 @@ import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { startSmsWay } from '../lib/sms-way';
-import { dropLink, hrefLink, keepLink, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, takeLink, type OnlyPart } from '../lib/open-link';
+import { dropLink, hrefLink, keepLink, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, takeLink, type OnlyPart } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
@@ -277,7 +277,13 @@ export default function RootLayout() {
       // No space is open.
     }
     if (was === null || was.space !== open) start().catch(fail);
-    else if (!was.gated && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null || hiddenRingHoldsLock())) goOn(was).catch(fail);
+    else if (!was.gated && (!was.passwordLock || Date.now() - was.at <= RELOCK_AFTER_MS || currentCall() !== null || hiddenRingHoldsLock()))
+      // Only the SMS or the Contacts showed, and another icon or a notice brings Erevos back: the
+      // password first, as when it is locked, which then opens what that one names. The part
+      // showed a moment before otherwise.
+      void (was.only ? linkStartedWith() : Promise.resolve(undefined))
+        .then((href) => (href === undefined || onlyPartOf(href) === was.only ? goOn(was) : show(was.look).then(() => gate(was.space))))
+        .catch(fail);
     else
       show(was.look)
         .then(() => gate(was.space))
@@ -582,13 +588,21 @@ function AskAgain({ link }: { link: string }) {
   return <View style={{ flex: 1, backgroundColor: colors.ground }} />;
 }
 
+// The link Erevos's screens start with on Android, as a screen (lib/open-link.ts linkHref): the
+// same one the router holds (app/+native-intent.ts). Undefined for none, or the home screen alone.
+async function linkStartedWith(): Promise<string | undefined> {
+  if (Platform.OS !== 'android') return undefined;
+  const url = await Promise.race([Linking.getInitialURL().catch(() => null), new Promise<null>((done) => setTimeout(() => done(null), 500))]);
+  return (url && linkHref(url)) || undefined;
+}
+
 // Opens the screen a link names, held while the password screen showed (lib/open-link.ts), once
 // the screens are there, and each link that comes while the space is open. The home screen is
 // under every other: back to it, not a second one. It, the Phone and Contacts, as the launcher's
 // icons and the widget open them, show the link's tab again each time, also the same link after
 // the owner chose another tab; another screen that shows already only takes the link's details.
 // Erevos's own icon leaves one of its chats open. With only the SMS or the Contacts open, a link to anything else
-// asks for the password again, then opens.
+// asks for the password again, as when Erevos is locked, then opens what it names (alone, for the SMS or the Contacts).
 function OpenLink() {
   const ready = useRootNavigationState()?.key;
   const lock = useLock();
@@ -605,7 +619,11 @@ function OpenLink() {
       if (!href) return;
       const only = lockNow.current.only;
       if (only && onlyPartOf(href) !== only) {
-        lockNow.current.unlockAll(hrefLink(href));
+        // An icon, the widget or a notice, for something else: the password again, as when Erevos
+        // is locked (the Phone may open without it), which then opens what the link names, alone
+        // when it is the SMS or the Contacts. Kept quietly, so this does not take it again.
+        keepLink(hrefLink(href));
+        lockNow.current.lockNow();
         return;
       }
       const { path, params } = linkParts(href);
