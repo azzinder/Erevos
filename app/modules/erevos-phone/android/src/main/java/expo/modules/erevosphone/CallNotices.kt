@@ -4,6 +4,7 @@
 
 package expo.modules.erevosphone
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,7 +15,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.media.AudioAttributes
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.telecom.Call
 
 /**
@@ -29,6 +32,9 @@ internal object CallNotices {
   private const val ONGOING_ID = 7202
   private const val INCOMING_CHANNEL = "erevos-phone-incoming"
   private const val ONGOING_CHANNEL = "erevos-phone-ongoing"
+  // Call.EXTRA_IS_SUPPRESSED_BY_DO_NOT_DISTURB (Android 14) and Call.EXTRA_SILENT_RINGING_REQUESTED.
+  private const val SUPPRESSED_BY_DND = "android.telecom.extra.IS_SUPPRESSED_BY_DO_NOT_DISTURB"
+  private const val SILENT_RINGING = "android.telecom.extra.SILENT_RINGING_REQUESTED"
   const val DECLINE = "expo.modules.erevosphone.DECLINE"
   const val END = "expo.modules.erevosphone.END"
 
@@ -44,6 +50,45 @@ internal object CallNotices {
     val front = if (bound) Calls.front() else null
     if (ringing != null) post(context, manager, INCOMING_ID, ringing, true) else cancel(manager, INCOMING_ID)
     if (front != null) post(context, manager, ONGOING_ID, front, false) else cancel(manager, ONGOING_ID)
+  }
+
+  /**
+   * Whether a call that rings needs its screen started at once, besides its notice. Android turns
+   * the notice into the call screen (its full-screen intent) only when it may: Android 14 and later
+   * let that be turned off for an app (Settings → Apps → Special app access → Full-screen
+   * notifications), and with Erevos's notices off, or its channel of incoming calls off or quiet,
+   * no notice shows at all. Then the phone rang with its screen black, and the call could not be
+   * answered. So with the phone locked or its screen off, or with the notice unable to show, the
+   * call screen is started from CallService, which Telecom binds and so may start it from the
+   * background. A call that a screening app silenced, or that Do Not Disturb holds back, rings with
+   * no screen, as Android asks. Not on the main thread: Do Not Disturb may look in the contacts.
+   */
+  fun needsScreen(context: Context, call: Call, number: String): Boolean {
+    val extras = listOfNotNull(call.details.extras, call.details.intentExtras)
+    if (extras.any { it.getBoolean(SUPPRESSED_BY_DND, false) || it.getBoolean(SILENT_RINGING, false) }) return false
+    val manager = context.getSystemService(NotificationManager::class.java)
+    val filter = manager?.currentInterruptionFilter ?: NotificationManager.INTERRUPTION_FILTER_UNKNOWN
+    val quiet = filter != NotificationManager.INTERRUPTION_FILTER_ALL && filter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN
+    if (quiet && !letThrough(manager, number)) return false
+    val locked = context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+    val dark = context.getSystemService(PowerManager::class.java)?.isInteractive == false
+    return locked || dark || !canShow(manager)
+  }
+
+  // Whether Do Not Disturb, on now, lets a call from `number` through. Android 13 and later answer
+  // it for an app that reads the contacts, as Erevos does as the phone app. Before, or for a hidden
+  // number, the call is taken as held back: its notice decides, as with Android's own phone app.
+  private fun letThrough(manager: NotificationManager?, number: String): Boolean {
+    if (manager == null || Build.VERSION.SDK_INT < 33 || number.isEmpty()) return false
+    return runCatching { manager.matchesCallFilter(Uri.fromParts("tel", number, null)) }.getOrDefault(false)
+  }
+
+  // Whether the notice of a call that rings can show at the top of the screen.
+  private fun canShow(manager: NotificationManager?): Boolean {
+    if (manager == null || !manager.areNotificationsEnabled()) return false
+    if (Build.VERSION.SDK_INT < 26) return true
+    val channel = manager.getNotificationChannel(INCOMING_CHANNEL) ?: return true
+    return channel.importance >= NotificationManager.IMPORTANCE_HIGH
   }
 
   private fun cancel(manager: NotificationManager, id: Int) {
@@ -88,6 +133,9 @@ internal object CallNotices {
       .setOnlyAlertOnce(true)
       .setContentIntent(open)
     if (caller.photo != null) builder.setLargeIcon(caller.photo)
+    // Who calls, by number too, so that Do Not Disturb lets the notice of a call it lets ring show,
+    // as with Android's own phone app.
+    if (Build.VERSION.SDK_INT >= 28) builder.addPerson(person(name, caller))
     if (ringing) {
       val answer = PendingIntent.getActivity(
         context,
@@ -136,7 +184,10 @@ internal object CallNotices {
   }
 
   private fun person(name: String, caller: Caller): Person =
-    Person.Builder().setName(name).setImportant(true).apply { caller.photo?.let { setIcon(Icon.createWithBitmap(it)) } }.build()
+    Person.Builder().setName(name).setImportant(true).apply {
+      caller.photo?.let { setIcon(Icon.createWithBitmap(it)) }
+      if (caller.number.isNotEmpty()) setUri(Uri.fromParts("tel", caller.number, null).toString())
+    }.build()
 
   private fun channels(context: Context, manager: NotificationManager) {
     if (Build.VERSION.SDK_INT < 26) return

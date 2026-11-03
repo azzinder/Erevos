@@ -17,7 +17,8 @@ import java.util.IdentityHashMap
  * Erevos shows it (CallActivity, CallNotices). Telecom plays the ringtone itself, each contact's
  * own, and keeps Erevos's process running for as long as the service is bound. A call made shows
  * its screen at once; one that comes shows its notice, which Android turns into the screen over
- * the lock screen or while the screen is off.
+ * the lock screen or while the screen is off, and its screen comes up from here too whenever the
+ * notice may not (CallNotices.needsScreen).
  */
 class CallService : InCallService() {
   private val callbacks = IdentityHashMap<Call, Call.Callback>()
@@ -52,18 +53,25 @@ class CallService : InCallService() {
     call.registerCallback(callback)
     Calls.add(call)
     if (!Calls.isRinging(call) && call.parent == null) CallActivity.show(this)
-    else if (Calls.isRinging(call)) screenAgain(call)
+    else if (Calls.isRinging(call)) ring(call)
   }
 
-  // A call that rings which the screening service did not see (another app screens calls, or
-  // Android did not ask): the rules are looked at here, and a blocked call ends after it began to ring.
-  private fun screenAgain(call: Call) {
+  // A call that rings. One the screening service did not see (another app screens calls, or
+  // Android did not ask) is looked at by the rules here, and a blocked call ends after it began to
+  // ring. One they let through shows its screen at once whenever its notice may not
+  // (CallNotices.needsScreen), so that the phone does not ring with its screen black. Away from the
+  // main thread: the rules and Do Not Disturb may look in the contacts.
+  private fun ring(call: Call) {
     val number = Callers.number(call)
-    if (Calls.wasScreened(number) || !Rules.any(this)) return
+    val rules = !Calls.wasScreened(number) && Rules.any(this)
     val app = applicationContext
     Thread {
-      val blocked = runCatching { Rules.blocks(app, number) }.getOrDefault(false)
-      if (blocked) main.post { if (Calls.isRinging(call)) call.reject(false, null) }
+      val blocked = rules && runCatching { Rules.blocks(app, number) }.getOrDefault(false)
+      val show = !blocked && runCatching { CallNotices.needsScreen(app, call, number) }.getOrDefault(true)
+      main.post {
+        if (!Calls.isRinging(call)) return@post
+        if (blocked) call.reject(false, null) else if (show) CallActivity.show(this)
+      }
     }.start()
   }
 
