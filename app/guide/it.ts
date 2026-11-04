@@ -235,10 +235,12 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
   parti, come **SMS**, le elenca, e ogni parte si apre da sola.
 - **Si vede solo ciò che funziona qui:** su un computer, su Sailfish OS e nella web app non ci sono **Telefono e SMS**,
   Tor, Nostr o LoRa, e un gruppo senza niente da impostare qui non appare.
+- **Solo i moduli attivi:** anche le impostazioni di un modulo disattivato, come **Matrix** o **Telefono e SMS**,
+  non appaiono: vedi [Moduli](#modules).
 
 | Gruppo | Cosa contiene |
 | --- | --- |
-| **Generali** | **Lingua**, **Aggiornamenti**, **Dai Erevos a un telefono vicino** (Android), **Novità**, **Informazioni su Erevos**, **Sostieni Erevos** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, [Aggiornamenti](#updates) e [Erevos a un telefono vicino](#give-app). |
+| **Generali** | **Lingua**, **Moduli**, **Aggiornamenti**, **Dai Erevos a un telefono vicino** (Android), **Novità**, **Informazioni su Erevos**, **Sostieni Erevos** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, [Moduli](#modules), [Aggiornamenti](#updates) e [Erevos a un telefono vicino](#give-app). |
 | **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android), **Widget** (Android) e **Vibrazione al tocco** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android e l’app per computer): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi; su un computer, se Erevos continua a funzionare con la finestra chiusa. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone) e [Su un computer](#desktop). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
@@ -266,6 +268,37 @@ subito.
   telefono può vedere quale lingua hai scelto.
 - **Gli avvisi di Android** (una chiamata in arrivo, nuovi messaggi, Erevos che riceve in background) sono in greco
   quando lo è Erevos, e in inglese in tutte le altre lingue.
+
+## Moduli {#modules}
+
+Erevos è fatto di parti, i suoi moduli: **Erevos** stesso (le sue chat, i suoi gruppi e le sue chiamate,
+crittografati end-to-end, con le chat nascoste), il **Telefono**, gli **SMS** e le chat con app **Nostr**, **Matrix** e
+**XMPP**. Il Telefono e gli SMS ci sono solo su Android. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
+più, almeno uno: **Impostazioni** → **Generali** → **Moduli** attiva o disattiva ciascuno in qualsiasi momento.
+
+La primissima volta che si avvia, prima che si apra il suo primo spazio, Erevos si configura come fa un installer, in
+pochi passi: che cos’è Erevos, e la sua lingua; quali moduli usare, ciascuno con ciò che fa; poi, su un telefono
+Android, ciò che Android deve consentire per loro, con Erevos come app Telefono e come app SMS tra queste cose,
+ciascuna con il suo pulsante. **Avvia Erevos** conserva la scelta e apre il primo spazio. Dopo un aggiornamento ogni
+modulo resta attivo, come prima, finché non lo cambi.
+
+- **Disattivato:** un modulo disattivato non si avvia: niente di esso funziona, aspetta su un server o squilla, quindi
+  Erevos è più leggero, si apre più in fretta e consuma meno batteria. Non compare da nessuna parte: non nella schermata
+  principale, nel suo menu o nelle impostazioni, e le icone del Telefono e degli SMS escono dalle app del telefono. Un
+  link, una notifica o il widget che ancora portano a esso dicono che è disattivato, con **Apri Moduli**.
+- **Non si cancella nulla:** le sue chat, i contatti, gli account e le impostazioni tornano quando viene riattivato. I
+  contatti, il blocco con password, gli spazi, i backup e le Impostazioni ci sono sempre, qualunque cosa sia attiva.
+- **Di nuovo attivo:** un modulo attivato parte subito, e **Autorizzazioni** mostra ciò che Android deve consentire per
+  esso, come al primo avvio.
+- **Il Telefono o gli SMS disattivati** mentre Erevos è ancora l’app Telefono o l’app SMS: Android continua a dare a
+  Erevos le chiamate o gli SMS, conservati come prima. **Apri App predefinite** sceglie un’altra app.
+- **Il Telefono da solo:** senza nessun modulo che porti messaggi, la schermata principale lo dice, con **Telefono** e
+  **Moduli**.
+- **Conservato sul telefono:** la scelta vale per questo telefono, uguale in ogni spazio, ed è conservata fuori dagli
+  spazi, come le icone, perché il Telefono può aprirsi senza la password.
+
+**Perché:** non tutti vogliono tutto. Chi usa Erevos solo come telefono, o solo per Nostr, ottiene un’app che fa solo
+quello, e un telefono che non aspetta in background messaggi che non arrivano mai.
 
 ## Chat con un telefono vicino {#nearby}
 

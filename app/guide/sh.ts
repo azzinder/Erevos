@@ -232,10 +232,12 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
   i svaki dio se otvara zasebno.
 - **Prikazuje se samo ono što ovdje radi:** na računaru, na Sailfish OS-u i u web-aplikaciji nema **Telefon i SMS**,
   Tora, Nostra ni LoRa, a grupa u kojoj ovdje nema šta da se podesi ne prikazuje se.
+- **Samo uključeni moduli:** postavke isključenog modula, kao što su **Matrix** ili **Telefon i SMS**, također se
+  ne prikazuju: pogledajte [Moduli](#modules).
 
 | Grupa | Šta sadrži |
 | --- | --- |
-| **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
+| **Općenito** | **Jezik**, **Moduli**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Moduli](#modules), [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
 | **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android), **Widget** (Android) i **Vibracija na dodir** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
@@ -263,6 +265,36 @@ mijenja odmah.
   izabrali.
 - **Androidove obavijesti** (dolazni poziv, nove poruke, Erevos koji prima u pozadini) su na grčkom kad je Erevos na
   grčkom, a na engleskom na svim ostalim jezicima.
+
+## Moduli {#modules}
+
+Erevos se sastoji od dijelova, svojih modula: samog **Erevosa** (njegovi vlastiti razgovori, grupe i pozivi, šifrirani
+s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora s **Nostr**, **Matrix** i **XMPP**
+aplikacijama. Telefon i SMS postoje samo na Androidu. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
+barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
+
+Pri sasvim prvom pokretanju, prije nego se otvori njegov prvi prostor, Erevos se postavlja kao instalater, u nekoliko
+koraka: šta je Erevos i njegov jezik; koje module koristiti, svaki s onim što radi; zatim, na Android telefonu, ono što
+Android treba dozvoliti za njih, među tim Erevos kao aplikacija za telefon i kao aplikacija za SMS, svaki sa svojim
+dugmetom. **Pokreni Erevos** čuva izbor i otvara prvi prostor. Nakon ažuriranja svaki modul ostaje uključen, kao
+prije, dok ih ne promijenite.
+
+- **Isključen:** isključen modul se ne pokreće: ništa od njega ne radi, ne čeka na serveru niti zvoni, pa je Erevos
+  lakši, brže se otvara i troši manje baterije. Nigdje se ne prikazuje: ni na početnom ekranu, ni u svom meniju, ni u
+  postavkama, a ikone Telefona i SMS-a nestaju među aplikacijama telefona. Veza, obavijest ili widget koji još vode do
+  njega kažu da je isključen, uz **Otvori module**.
+- **Ništa se ne briše:** njegovi razgovori, kontakti, računi i postavke vraćaju se kad se ponovo uključi. Kontakti,
+  zaključavanje lozinkom, prostori, rezervne kopije i Postavke uvijek su tu, šta god da je uključeno.
+- **Ponovo uključen:** uključeni modul se odmah pokreće, a **Dozvole** pokazuju šta Android treba dozvoliti za njega,
+  kao pri prvom pokretanju.
+- **Telefon ili SMS isključen** dok je Erevos još aplikacija za telefon ili aplikacija za SMS: Android i dalje daje
+  Erevosu pozive ili SMS-ove, sačuvane kao prije. **Otvori zadane aplikacije** bira drugu aplikaciju.
+- **Samo Telefon:** bez ijednog modula koji donosi poruke, početni ekran to kaže, uz **Telefon** i **Moduli**.
+- **Čuva se na telefonu:** izbor vrijedi za ovaj telefon, isti u svakom prostoru, i čuva se izvan prostora, kao ikone,
+  jer se Telefon može otvoriti bez lozinke.
+
+**Zašto:** ne žele svi sve. Ko koristi Erevos samo kao telefon, ili samo za Nostr, dobija aplikaciju koja radi samo
+to, i telefon koji u pozadini ne čeka poruke koje nikad ne stižu.
 
 ## Razgovor s telefonom u blizini {#nearby}
 

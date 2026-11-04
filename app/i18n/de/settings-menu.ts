@@ -47,4 +47,6 @@ export const settingsMenu: Record<string, string> = {
   "No vibration": "Keine Vibration",
   "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Ein kurzes Vibrieren, wenn du eine Taste des Wähltastenfelds, Senden, Enter oder einen Schalter antippst und wenn sich ein Menü öffnet. Nie beim Scrollen. Für jeden Bereich auf diesem Telefon.",
   "Touches make no buzz.": "Berührungen vibrieren nicht.",
+  "Modules": "Module",
+  "Erevos, Phone, SMS, Nostr, Matrix and XMPP: the ones you use": "Erevos, Telefon, SMS, Nostr, Matrix und XMPP: die, die du nutzt",
 };
