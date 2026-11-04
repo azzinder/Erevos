@@ -25,6 +25,15 @@ On main, not released yet:
   off. Now `CallService` also starts the call screen itself while the phone is locked or its screen off, or when the
   notice cannot show. A call that Do Not Disturb holds back, or that a screening app silenced, still comes quietly. The
   notice also gives Android the caller's number, so that Do Not Disturb lets the notice of a call it lets ring show.
+- **Public posts in the Nostr tab**: the home's Nostr tab shows first **Posts**, the public posts (kind 1) and shares
+  (kind 6) of the people the space's key follows, newest first, 30 a page, older ones as the list comes to its end and
+  the newest when it is pulled down, with **Chats** one tap away (`components/nostr-feed.tsx`, `lib/nostr-feed.ts`).
+  The follow list (kind 3) is looked up as **Show the people you follow** does, and where they write (NIP-65) in asks
+  of 200 keys of the relays that gather lists; the posts are asked of the look-up relays and of up to 8 of the relays
+  they write on, each for those who write there. A page takes each event once and checked, a shared post once, and
+  stops at the oldest time a relay that sent all it was asked for sent, so paging with `until` skips nothing. Names
+  (kind 0) are asked only for the people shown, no picture or link is fetched, nothing is kept, and all goes through
+  Tor as the space says, with the space's own key only. Tapping who wrote a post offers their posts or a chat.
 
 ### Under the hood
 

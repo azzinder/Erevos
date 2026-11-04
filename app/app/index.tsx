@@ -13,6 +13,7 @@ import { gradientStyle } from '../components/glass';
 import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
+import { isFeedPost, NostrParts, useNostrFeed, type NostrPart } from '../components/nostr-feed';
 import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SmsHome } from '../components/sms-home';
@@ -20,7 +21,7 @@ import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Chip, font, fontStyle, Input, Row, Sheet, Text } from '../components/ui';
 import { UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { canGroup, canPublicGroup, hasCore } from '../lib/core';
+import { canGroup, canNostrChat, canPublicGroup, hasCore } from '../lib/core';
 import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
@@ -32,6 +33,7 @@ import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeR
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
+import type { FeedPost } from '../lib/nostr-feed';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -387,7 +389,8 @@ function Home() {
   useEffect(() => onNostrDmChange(() => setNostrTick((n) => n + 1)), []);
   const matrix = matrixNow().state;
   const xmpp = xmppNow().state;
-  const nostr = nostrDmNow().state;
+  const nostrAccount = nostrDmNow();
+  const nostr = nostrAccount.state;
   const everyRow = useMemo(() => {
     if (!rows) return rows;
     let all = rows;
@@ -418,6 +421,12 @@ function Home() {
   }, [show]);
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
+  // The Nostr tab's two parts (components/nostr-feed.tsx): the posts of the people its key follows,
+  // first, and its chats. A search shows the chats it finds, as in every tab.
+  const [nostrPart, setNostrPart] = useState<NostrPart>('posts');
+  const nostrParts = show === 'nostr' && canNostrChat() && !query.trim();
+  const feedShown = nostrParts && nostrPart === 'posts';
+  const feed = useNostrFeed(!nostrAccount.loaded ? 'loading' : nostr ? 'ready' : 'none', feedShown);
 
   // Turns the names of SMS numbers on, as under Settings → Phone and SMS → SMS (Android asks first), or off.
   async function toggleNames() {
@@ -519,6 +528,8 @@ function Home() {
           {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
         </ScrollView>
       ) : null}
+      {nostrParts ? <NostrParts part={nostrPart} onChange={setNostrPart} unread={tabUnread(everyRow ?? [], 'nostr')} /> : null}
+      {feedShown ? feed.intro : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (
         <Row wrap>
           {folders.archived ? <Chip label={t('Archived · {n}', { n: folders.archived })} onPress={() => router.push('/sms-folder?folder=archived')} /> : null}
@@ -538,24 +549,30 @@ function Home() {
       {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
-        <FlatList
-          data={shown}
+        <FlatList<InboxRow | FeedPost>
+          // The Nostr tab's posts are rows of the same list, so the search above them stays as it is.
+          data={feedShown ? feed.posts : shown}
           // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
           removeClippedSubviews={false}
-          keyExtractor={(row) => row.identity}
+          keyExtractor={(item) => (isFeedPost(item) ? `post:${item.id}` : item.identity)}
           ListHeaderComponent={header}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           renderItem={({ item }) =>
-            item.sms ? (
+            isFeedPost(item) ? (
+              feed.render(item)
+            ) : item.sms ? (
               <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
             ) : (
               <ChatRow row={item} now={now} online={online.has(item.identity)} />
             )
           }
-          extraData={online}
+          extraData={feedShown ? feed.extra : online}
+          refreshControl={feed.refreshControl}
+          onEndReached={feed.more}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={
-            rows === null || hits.length > 0 ? null : query ? (
+            feedShown ? feed.empty : rows === null || hits.length > 0 ? null : query ? (
               <Text tone="muted" style={styles.emptyText}>
                 {t('No chat has “{query}” in it.', { query: query.trim() })}
               </Text>
@@ -584,7 +601,7 @@ function Home() {
             )
           }
           ListFooterComponent={
-            hits.length > 0 ? (
+            feedShown ? feed.footer : hits.length > 0 ? (
               <View style={styles.found}>
                 <Text variant="overline" tone="muted">
                   {t('Messages')}
@@ -649,6 +666,7 @@ function Home() {
       </View>
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
+      {feed.sheet}
       <Sheet visible={door} onClose={closeDoor}>
         <Input
           value={doorPin}

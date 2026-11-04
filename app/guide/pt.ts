@@ -113,8 +113,10 @@ abertas.
   quem pede para adicionar você, ou um grupo que convida você, aparece no topo. O chip **XMPP** mostra só elas, e ali
   **Nova conversa** começa uma conversa no XMPP: veja [XMPP](#xmpp).
 - **As conversas Nostr**, quando o espaço tem uma chave Nostr, ficam na lista do mesmo jeito, cada uma marcada
-  **Nostr**. O botão **Nostr** mostra só elas, e ali **Nova conversa** abre a tela das conversas Nostr: veja
-  [Conversas com outros apps Nostr](#nostr-chats).
+  **Nostr**. Sob o botão **Nostr** há mais dois: **Publicações**, primeiro, as publicações públicas das pessoas que a
+  sua chave Nostr segue, das mais recentes às mais antigas, como no Amethyst ou num canal do Telegram, e **Conversas**,
+  só as conversas Nostr, com quantas mensagens não foram lidas. Ali **Nova conversa** abre a tela das conversas Nostr:
+  veja [Conversas com outros apps Nostr](#nostr-chats).
 - **Nova conversa**, embaixo, abre as configurações do relay e a adição de um contato. **Lembrar-me**, o sino laranja
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
@@ -1873,8 +1875,8 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   segue (a lista pública dela, procurada também em relays que reúnem essas listas e nos relays onde a sua chave
   escreve), com os nomes: toque numa para escrever para ela. Quando não encontra ninguém, diz por quê, de quem procurou
   a lista e como cada relay respondeu. Nada é carregado até você tocar nesse botão, nem fotos de perfil. As conversas
-  também ficam na lista da tela inicial, cada uma marcada **Nostr**; o botão **Nostr** mostra só elas, e ali **Nova
-  conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que só você vê.
+  também ficam na lista da tela inicial, cada uma marcada **Nostr**; sob o botão **Nostr**, **Conversas** mostra só
+  elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que só você vê.
 - **Grupos:** **Novo grupo** cria um com duas ou mais das pessoas com quem você conversa, vinte no máximo, com um nome
   se quiser. Grupos Nostr não têm administradores: um grupo são as pessoas que suas mensagens nomeiam, cada mensagem vai
   para cada uma, criptografada para cada uma, e ninguém pode ser adicionado ou removido depois; um grupo com outras
@@ -1926,6 +1928,18 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   link é aberto: eles aparecem como endereços, que podem ser copiados. Uma publicação com aviso de conteúdo mostra as
   palavras dela depois de um toque em **Mostrar**. Uma conta que só publica para todos, como a de um projeto, não manda
   mensagens privadas: a conversa dela fica vazia, e as publicações dela estão aqui.
+- **Publicações das pessoas que você segue:** na tela inicial, **Publicações**, sob o botão **Nostr**, mostra o que as
+  pessoas que a sua chave Nostr segue publicam para todos, e o que elas compartilharam de novo, das mais recentes às
+  mais antigas, como no Amethyst ou num canal do Telegram: quem escreveu cada publicação, com o nome que a pessoa se
+  deu e o começo e o fim do npub dela, quando, e o que diz. Chegam mais quando você rola até o fim, ou com
+  **Publicações mais antigas**; puxe a lista para baixo para ver as mais recentes (num navegador,
+  **Procurar de novo**). Toque em quem escreveu uma publicação para ver as **Publicações públicas** dessa pessoa, ou em
+  **Enviar mensagem** para começar uma conversa. É somente leitura, como acima: aqui não dá para publicar, responder
+  nem reagir, nem seguir ninguém; para isso, use outro app Nostr com a mesma chave. A sua lista de quem você segue,
+  onde as pessoas dela escrevem (as listas NIP-65 delas) e as publicações delas são buscadas só enquanto
+  **Publicações** aparece, nos relays usados para buscas, nos que reúnem listas e naqueles em que elas escrevem, como
+  diz a escolha do Tor deste espaço; os nomes, só para as publicações que aparecem. Nada disso é guardado, e nenhuma
+  imagem ou link é aberto. É sempre a chave deste espaço, nunca a própria das conversas ocultas.
 - **Marcas:** um ✓ assim que um dos relays da pessoa aceitou a mensagem. O NIP-17 não devolve nada: nem quando o app
   dela a tem, nem quando ela lê. Ler uma conversa aqui não avisa ninguém.
 - **Não anônimo:** sua chave é a mesma para todos com quem você fala, e qualquer um que tenha um npub pode escrever para

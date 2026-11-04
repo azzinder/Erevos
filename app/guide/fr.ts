@@ -120,8 +120,10 @@ que tant que leur code PIN les tient ouvertes.
   **XMPP**, et une personne qui demande à t’ajouter, ou un groupe qui t’invite, s’affiche en haut. La puce **XMPP** ne
   montre qu’elles, et là **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
 - **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
-  marquée **Nostr**. Le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre l’écran des
-  discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
+  marquée **Nostr**. Sous le bouton **Nostr**, il y en a deux autres : **Publications**, d’abord, les publications
+  publiques des personnes que suit ta clé Nostr, les plus récentes d’abord, comme dans Amethyst ou une chaîne Telegram,
+  et **Discussions**, seulement les discussions Nostr, avec le nombre de messages non lus. Là, **Nouvelle discussion**
+  ouvre l’écran des discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
 - **Nouvelle discussion**, en bas, ouvre les réglages du relais et l’ajout d’un contact. **Me rappeler**, la cloche
   orange à côté, t’écrit un rappel.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
@@ -1979,13 +1981,13 @@ discussions propres à Erevos.
   **Ton nom**, si tu en donnes un, est public : les autres applis Nostr l’affichent à la place de ton npub. Seul le nom y change :
   une photo ou des mots qu’une autre appli de ta clé a mis dans ton profil restent.
 - **Discussions :** **Nouvelle discussion** prend son npub (ou nprofile), depuis son profil dans son appli, ou un nom
-  comme nom@example.org (NIP-05). **Afficher les personnes que tu suis**, juste dessous, liste les personnes que suit ta
-  clé Nostr (sa liste publique de personnes suivies, cherchée aussi sur des relais qui rassemblent de telles listes et
-  sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Quand il ne trouve personne, il dit
-  pourquoi, de qui il a cherché la liste et comment chaque relais a répondu. Rien n’est chargé avant que tu appuies
+  comme nom@example.org (NIP-05). **Afficher les personnes que tu suis**, juste dessous, liste les personnes que suit
+  ta clé Nostr (sa liste publique de personnes suivies, cherchée aussi sur des relais qui rassemblent de telles listes
+  et sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Quand il ne trouve personne, il
+  dit pourquoi, de qui il a cherché la liste et comment chaque relais a répondu. Rien n’est chargé avant que tu appuies
   dessus, et aucune photo de profil. Les discussions sont aussi dans la liste de l’accueil, chacune marquée **Nostr** ;
-  le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran. **Lui donner un nom ici** donne
-  à une discussion un nom que toi seul vois.
+  sous le bouton **Nostr**, **Discussions** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran.
+  **Lui donner un nom ici** donne à une discussion un nom que toi seul vois.
 - **Groupes :** **Nouveau groupe** en crée un avec deux personnes ou plus parmi celles avec qui tu discutes, vingt au
   plus, avec un nom si tu veux. Les groupes Nostr n’ont pas d’administrateurs : un groupe, ce sont les personnes que
   nomment ses messages, chaque message va à chacune, chiffré pour chacune, et personne ne peut y être ajouté ou retiré
@@ -2043,6 +2045,19 @@ discussions propres à Erevos.
   copiées. Une publication avec un avertissement de contenu montre ses mots après un appui sur **Afficher**. Un compte
   qui ne publie que pour tous, comme celui d’un projet, n’envoie pas de messages privés : sa discussion reste vide, et
   ses publications sont ici.
+- **Publications des personnes que tu suis :** sur l’écran d’accueil, **Publications**, sous le bouton **Nostr**,
+  montre ce que publient pour tous les personnes que suit ta clé Nostr, et ce qu’elles ont repartagé, les plus récentes
+  d’abord, comme dans Amethyst ou une chaîne Telegram : qui a écrit chaque publication, sous le nom que la personne
+  s’est donné avec le début et la fin de son npub, quand, et ce qu’elle dit. D’autres arrivent quand tu fais défiler
+  jusqu’au bout, ou avec **Publications plus anciennes** ; tire la liste vers le bas pour les plus récentes (dans un
+  navigateur, **Chercher de nouveau**). Touche qui a écrit une publication pour ses **Publications publiques**, ou
+  **Lui écrire** pour commencer une discussion. C’est en lecture seule, comme plus haut : ici, on ne peut ni publier,
+  ni répondre, ni réagir, ni suivre quelqu’un ; pour cela, prends une autre appli Nostr avec la même clé. Ta liste de
+  personnes suivies, où écrivent les personnes qui y sont (leurs listes NIP-65) et leurs publications sont cherchées
+  seulement tant que **Publications** s’affiche, sur les relais utilisés pour les recherches, sur ceux qui rassemblent
+  des listes et sur ceux où elles écrivent, comme le dit le choix de Tor de cet espace ; les noms, seulement pour les
+  publications affichées. Rien n’en est gardé, et aucune image ni aucun lien n’est ouvert. C’est toujours la clé de cet
+  espace, jamais celle des discussions masquées.
 - **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
   quand la personne le lit. Lire une discussion ici ne le dit à personne.
 - **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais

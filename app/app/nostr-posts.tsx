@@ -19,10 +19,12 @@ import { space } from '../theme/colors';
 // looked up when this screen opens and when older ones are asked for (lib/nostr-dm-store.ts
 // nostrDmPosts), as the space's Tor way says, and never kept. Nothing is fetched for them: a
 // picture or a link is its address, as written, which can be selected and copied but not opened
-// from here. A post with a content warning shows its words only when tapped.
+// from here. A post with a content warning shows its words only when tapped. Opened from the Nostr
+// tab's posts (components/nostr-feed.tsx), it is someone the space's key follows, with the name
+// they gave themselves there (`name`) when this space has none for them.
 
 export default function NostrPostsScreen() {
-  const { key: given, hidden } = useLocalSearchParams<{ key?: string; hidden?: string }>();
+  const { key: given, hidden, name: called } = useLocalSearchParams<{ key?: string; hidden?: string; name?: string }>();
   const where = useNetworkWhere(hidden === '1');
   const key = given && /^[0-9a-f]{64}$/.test(given) ? given : undefined;
   const [now, setNow] = useState(nostrDmNow(where));
@@ -74,7 +76,7 @@ export default function NostrPostsScreen() {
   }
 
   const npub = npubOf(key);
-  const name = nameOf(state, key) || shortNpub(npub);
+  const name = nameOf(state, key) || (typeof called === 'string' ? called.trim().slice(0, 64) : '') || shortNpub(npub);
   return (
     <Page>
       <Text variant="title" numberOfLines={2}>

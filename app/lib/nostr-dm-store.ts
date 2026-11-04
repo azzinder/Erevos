@@ -56,6 +56,7 @@ import {
 } from './nostr-dm';
 import { lookUpNip05, NostrRelay, type NostrEvent } from './nostr-dm-net';
 import { downloadBlob, FILE_SERVERS, fileTags, NOSTR_FILE_MOST, openFile, sealFile, uploadBlob, type NostrDmFile } from './nostr-files';
+import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, type FeedAnswer, type FeedPost } from './nostr-feed';
 
 // The open space's Nostr chats as the screens use them (app/nostr-chats.tsx, app/nostr-chat.tsx):
 // loaded from their sealed value (lock/nostr-dm-data.ts), reading the space's inbox relays while
@@ -597,6 +598,7 @@ export function stopNostrDm(): void {
   end(live);
   live = null;
   fetched.clear();
+  nostrDmFeedDone();
   told();
 }
 
@@ -817,23 +819,30 @@ const LOOKUPS_AT_ONCE = 2;
 const FOLLOWS_REACH_WAIT = 20_000;
 const FOLLOWS_WAIT = 15_000;
 
+/** A connection that only looks up, to the relay at `url`, or why none came within FOLLOWS_REACH_WAIT. */
+async function reach(it: Live, url: string): Promise<NostrRelay> {
+  let late: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      outTo(it, url),
+      new Promise<never>((_, fail) => {
+        late = setTimeout(() => fail(new Error(t('The Nostr relay did not answer.'))), FOLLOWS_REACH_WAIT);
+      }),
+    ]);
+  } finally {
+    clearTimeout(late);
+  }
+}
+
 /** What each of these relays has for `filters`, together, and how each answered. */
 async function lookUpEach(it: Live, urls: string[], filters: Record<string, unknown>[]): Promise<{ events: NostrEvent[]; relays: NostrFollowsReport['relays'] }> {
   const answers = await Promise.all(
     [...new Set(urls)].map(async (url) => {
       let relay: NostrRelay;
-      let late: ReturnType<typeof setTimeout> | undefined;
       try {
-        relay = await Promise.race([
-          outTo(it, url),
-          new Promise<never>((_, fail) => {
-            late = setTimeout(() => fail(new Error(t('The Nostr relay did not answer.'))), FOLLOWS_REACH_WAIT);
-          }),
-        ]);
+        relay = await reach(it, url);
       } catch (error) {
         return { url, how: 'unreached' as const, why: error instanceof Error ? error.message : String(error), events: [] };
-      } finally {
-        clearTimeout(late);
       }
       return { url, ...(await relay.ask(filters, FOLLOWS_WAIT)) };
     }),
@@ -845,43 +854,63 @@ async function lookUpEach(it: Live, urls: string[], filters: Record<string, unkn
 }
 
 /**
- * Whom the space's Nostr key follows, as its follow list (kind 3) says, looked up now on the
- * relays it reads on, the usual ones for look-ups and those that gather such lists, then on those
- * its relay list (NIP-65) says it writes on, with the names they gave themselves (kind 0): named
- * ones first, by name. The list is public, so asking for it and their names tells a relay nothing
- * it could not know; it goes as the space's Tor way says, as every look-up does. With it, how the
- * look-up went, for the screen to say when no one was found.
+ * The follow list of the space's key (kind 3), looked up now on the relays it reads on, the usual
+ * ones for look-ups and those that gather such lists, then on those its relay list (NIP-65) says it
+ * writes on, where the other apps of a key brought here keep it: whom its newest checked one names,
+ * and how the look-up went.
  */
-export async function nostrDmFollows(): Promise<{ people: NostrFollow[]; report: NostrFollowsReport }> {
-  const it = need();
-  const state = it.state;
-  // The newest follow list, and where the key writes (NIP-65); then the list is looked for on the
-  // relays it writes on too, where the other apps of a key brought here keep it.
+async function followListOf(it: Live, state: NostrDmState): Promise<{ keys: string[]; report: NostrFollowsReport }> {
   const where = [...new Set([...state.inbox, ...LOOKUP_RELAYS, ...FOLLOWS_RELAYS])];
   const first = await lookUpEach(it, where, [{ kinds: [3, 10002], authors: [state.public] }]);
   const writes = (await writesOf(state.public, first.events)).filter((url) => !where.includes(url));
   const second = writes.length ? await lookUpEach(it, writes, [{ kinds: [3], authors: [state.public] }]) : { events: [], relays: [] };
   const look = await followsLook(state.public, [...first.events, ...second.events]);
   const relays = [...first.relays, ...second.relays];
-  const report: NostrFollowsReport = { relays, lists: look.lists, checked: look.checked, people: look.keys.length };
-  const keys = look.keys;
-  if (keys.length === 0) return { people: [], report };
-  // Names are asked of the relays that answered.
-  const answering = relays.filter((r) => r.how === 'all').map((r) => r.url);
+  return { keys: look.keys, report: { relays, lists: look.lists, checked: look.checked, people: look.keys.length } };
+}
+
+/** What these relays have for `filter` of each NAMES_AT_ONCE of `keys`, LOOKUPS_AT_ONCE look-ups at once, together. */
+async function lookUpBatched(it: Live, urls: string[], keys: string[], filter: (batch: string[]) => Record<string, unknown>): Promise<{ events: NostrEvent[]; answered: boolean }> {
   const batches: string[][] = [];
   for (let i = 0; i < keys.length; i += NAMES_AT_ONCE) batches.push(keys.slice(i, i + NAMES_AT_ONCE));
-  const profiles: NostrEvent[] = [];
+  const events: NostrEvent[] = [];
+  let answered = false;
   for (let i = 0; i < batches.length; i += LOOKUPS_AT_ONCE) {
-    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUp(it, answering, [{ kinds: [0], authors: batch }], FOLLOWS_WAIT)));
-    profiles.push(...found.flat());
+    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUpAnswered(it, urls, [filter(batch)], FOLLOWS_WAIT)));
+    for (const one of found) {
+      events.push(...one.events);
+      answered ||= one.answered;
+    }
   }
+  return { events, answered };
+}
+
+/** These events of `kind`, by their author's key. */
+function byAuthor(found: { events: NostrEvent[] }, kind: number): Map<string, NostrEvent[]> {
   const byKey = new Map<string, NostrEvent[]>();
-  for (const profile of profiles) {
-    if (profile.kind !== 0) continue;
-    const list = byKey.get(profile.pubkey);
-    if (list) list.push(profile);
-    else byKey.set(profile.pubkey, [profile]);
+  for (const event of found.events) {
+    if (event.kind !== kind) continue;
+    const list = byKey.get(event.pubkey);
+    if (list) list.push(event);
+    else byKey.set(event.pubkey, [event]);
   }
+  return byKey;
+}
+
+/**
+ * Whom the space's Nostr key follows, as its follow list (kind 3) says (followListOf), with the
+ * names they gave themselves (kind 0): named ones first, by name. The list is public, so asking for
+ * it and their names tells a relay nothing it could not know; it goes as the space's Tor way says,
+ * as every look-up does. With it, how the look-up went, for the screen to say when no one was found.
+ */
+export async function nostrDmFollows(): Promise<{ people: NostrFollow[]; report: NostrFollowsReport }> {
+  const it = need();
+  const state = it.state;
+  const { keys, report } = await followListOf(it, state);
+  if (keys.length === 0) return { people: [], report };
+  // Names are asked of the relays that answered.
+  const answering = report.relays.filter((r) => r.how === 'all').map((r) => r.url);
+  const byKey = byAuthor(await lookUpBatched(it, answering, keys, (batch) => ({ kinds: [0], authors: batch })), 0);
   const follows = await Promise.all(
     keys.map(async (key): Promise<NostrFollow> => {
       // A name this space gave them comes first, as in their chat.
@@ -919,6 +948,141 @@ export async function nostrDmPosts(key: string, before?: number): Promise<{ post
   const posts = await postsOf(key, [...first.events, ...second.events]);
   const answered = [...first.relays, ...second.relays].some((relay) => relay.how === 'all');
   return { posts, answered, older: posts.length >= POSTS_AT_ONCE };
+}
+
+// The feed of the Nostr tab on home (components/nostr-feed.tsx, lib/nostr-feed.ts): whom the
+// space's key follows, where they write (their NIP-65 lists) and the names of those its pages
+// showed, as looked up while it shows, for its next pages; forgotten as it goes from the screen
+// (nostrDmFeedDone) or the space closes, and never kept. The space's key only: home never shows a
+// hidden place's.
+type FeedKnown = {
+  of: Live;
+  me: string;
+  follows: string[];
+  /** Where the relay lists and names of the people followed are asked: those of GATHERERS that
+   *  answered the follow list's look-up, or, when none did, every relay that answered it. */
+  listing: string[];
+  writes: Map<string, string[]>;
+  /** The names they gave themselves, null for one who gave none. */
+  names: Map<string, string | null>;
+};
+let feedKnown: FeedKnown | null = null;
+// Which showing of the feed a look-up is for: one that ends after the feed went keeps nothing.
+let feedShowing = 0;
+
+/** Relays that gather everyone's relay lists and profiles: a list or a name is asked there, once,
+ *  rather than of every relay. */
+const GATHERERS = ['wss://purplepag.es', 'wss://user.kindpag.es', 'wss://indexer.coracle.social'];
+
+/** A page of the feed, as nostrDmFeed answers. */
+export type NostrFeedPage = {
+  posts: FeedPost[];
+  /** Until when (seconds) the next page is asked. */
+  until: number;
+  /** There may be older posts. */
+  older: boolean;
+  /** Whether a relay answered: for the posts, or for the follow list when it names no one. */
+  answered: boolean;
+  /** How many people the key follows. */
+  follows: number;
+  /** The names of the people on the page, by key: given here, or as they call themselves. */
+  names: Record<string, string>;
+};
+
+/**
+ * What the relay at `url` sends of the posts and shares of `authors`, until `until` (seconds) when
+ * given: an ask for each NAMES_AT_ONCE of them, LOOKUPS_AT_ONCE at once, on a connection that only
+ * looks up. An ask cut short counts as full: what it did not send may be older. With them, whether
+ * the relay answered.
+ */
+async function askFeed(it: Live, url: string, authors: string[], until?: number): Promise<{ answers: FeedAnswer[]; answered: boolean }> {
+  let relay: NostrRelay;
+  try {
+    relay = await reach(it, url);
+  } catch {
+    return { answers: [], answered: false };
+  }
+  const filters: Record<string, unknown>[] = [];
+  for (let i = 0; i < authors.length; i += NAMES_AT_ONCE) {
+    filters.push({ kinds: [1, 6], authors: authors.slice(i, i + NAMES_AT_ONCE), limit: FEED_AT_ONCE, ...(until !== undefined ? { until } : {}) });
+  }
+  const answers: FeedAnswer[] = [];
+  let answered = false;
+  for (let i = 0; i < filters.length; i += LOOKUPS_AT_ONCE) {
+    const got = await Promise.all(filters.slice(i, i + LOOKUPS_AT_ONCE).map((filter) => relay.ask([filter], FOLLOWS_WAIT)));
+    for (const one of got) {
+      answers.push({ events: one.events, full: one.events.length >= FEED_AT_ONCE || one.how !== 'all' });
+      answered ||= one.how === 'all';
+    }
+  }
+  return { answers, answered };
+}
+
+/**
+ * A page of the Nostr tab's feed: the public posts and shares of the people the space's key
+ * follows, newest first, FEED_AT_ONCE at most, until `until` (seconds) when given, none of those
+ * `shown` (lib/nostr-feed.ts feedPage), with the names of the people it names. The newest page
+ * looks up the follow list again (followListOf), and where those not looked up yet write; the posts
+ * are asked of the relays for look-ups and those that gather lists, for everyone, and of the relays
+ * that reach the most of them where they write (feedRelays), each for those who write there. All
+ * of it is public, and goes as the space's Tor way says, on connections that never say whose key
+ * asks; nothing of it is kept. Always the space's own key, never a hidden place's.
+ */
+export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = []): Promise<NostrFeedPage> {
+  const it = live;
+  if (!it?.state || it.stopped) throw new Error(t('There are no Nostr chats in this space.'));
+  const state = it.state;
+  const showing = feedShowing;
+  const kept = feedKnown?.of === it && feedKnown.me === state.public ? feedKnown : null;
+  let known = kept;
+  if (!known || until === undefined) {
+    const { keys, report } = await followListOf(it, state);
+    const answering = report.relays.filter((r) => r.how === 'all').map((r) => r.url);
+    if (!keys.length) return { posts: [], until: 0, older: false, answered: answering.length > 0, follows: 0, names: {} };
+    const gathering = answering.filter((url) => GATHERERS.includes(url));
+    const fresh: FeedKnown = { of: it, me: state.public, follows: keys, listing: gathering.length ? gathering : answering, writes: kept?.writes ?? new Map(), names: kept?.names ?? new Map() };
+    // Where those not looked up yet write; one with no list found is asked of the fixed relays only.
+    const unknown = keys.filter((key) => !fresh.writes.has(key));
+    if (unknown.length) {
+      const found = await lookUpBatched(it, fresh.listing, unknown, (batch) => ({ kinds: [10002], authors: batch }));
+      if (found.answered) {
+        const lists = byAuthor(found, 10002);
+        for (const key of unknown) fresh.writes.set(key, await writesOf(key, lists.get(key) ?? []));
+      }
+    }
+    known = fresh;
+    if (showing === feedShowing) feedKnown = fresh;
+  }
+  const plan = feedRelays(known.follows, known.writes, [...LOOKUP_RELAYS, ...FOLLOWS_RELAYS]);
+  const asked = await Promise.all(plan.map(({ url, authors }) => askFeed(it, url, authors, until)));
+  const page = await feedPage(
+    new Set(known.follows),
+    asked.flatMap((one) => one.answers),
+    shown,
+    until,
+  );
+  // The names of those on the page not looked up yet; a name given here comes first, as in their chat.
+  const people = feedPeople(page.posts);
+  const unnamed = people.filter((key) => key !== state.public && !known.names.has(key));
+  if (unnamed.length && known.listing.length) {
+    const found = await lookUpBatched(it, known.listing, unnamed, (batch) => ({ kinds: [0], authors: batch }));
+    if (found.answered) {
+      const profiles = byAuthor(found, 0);
+      for (const key of unnamed) known.names.set(key, (await nameIn(key, profiles.get(key) ?? [])) ?? null);
+    }
+  }
+  const names: Record<string, string> = {};
+  for (const key of people) {
+    const name = key === state.public ? t('You') : (!state.chats[key]?.members && state.chats[key]?.name) || known.names.get(key) || state.people[key]?.name;
+    if (name) names[key] = name;
+  }
+  return { posts: page.posts, until: page.until, older: page.older, answered: asked.some((one) => one.answered), follows: known.follows.length, names };
+}
+
+/** Forgets what the feed found, as it goes from the screen: its next showing looks all up again. */
+export function nostrDmFeedDone(): void {
+  feedShowing += 1;
+  feedKnown = null;
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */
