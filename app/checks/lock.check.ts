@@ -26,7 +26,7 @@ import {
   SLOTS,
   unlock,
 } from '../lock/config';
-import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, setHiddenPassword } from '../lock/hidden';
+import { MIN_PIN, openHidden, prepareHidden, removeHiddenPassword, searchHidden, searchOpens, setHiddenPassword } from '../lock/hidden';
 import { loadOpenKey, saveOpenKey } from '../lock/keys';
 import { EMPTY_SPACE, firstSpaceKey, loadHiddenData, loadSpaceData, NOSTR_DEFAULT, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { POCKETS } from '../lock/sealed-file';
@@ -515,4 +515,30 @@ t('hidden chats open from a search with their PIN, and a wrong one is only a sea
   // While searches wait, even the right PIN opens nothing, and says nothing.
   assert.equal(await searchHidden(0, 'pin-0', now + 1), null);
   assert.deepEqual((await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000))?.key, key);
+});
+
+t('another space opens from a search with its password; the open one\'s own, or the panic password, is only a search', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await setLockPassword(1, 'decoy-2222', decoy);
+  await prepareHidden();
+  const key = await setHiddenPassword(0, 2, 'pin-0', null);
+  await setPanicPassword('panic-9999');
+  const hex = (found: Awaited<ReturnType<typeof searchOpens>>) => (found && 'space' in found ? { space: found.space.space, key: toHex(found.space.key) } : found);
+  assert.deepEqual(hex(await searchOpens(0, 'decoy-2222')), { space: 1, key: toHex(decoy) });
+  assert.deepEqual(hex(await searchOpens(1, 'real-1111')), { space: 0, key: toHex(real) });
+  assert.deepEqual(await searchOpens(0, 'pin-0'), { place: { key, pocket: 2 } });
+  // With Erevos's own chats off, hidden chats open nowhere, but the spaces still do.
+  assert.equal(await searchOpens(0, 'pin-0', false), null);
+  assert.deepEqual(hex(await searchOpens(0, 'decoy-2222', false)), { space: 1, key: toHex(decoy) });
+  // The open space's own password and the panic password open nothing here, and erase nothing.
+  assert.equal(await searchOpens(0, 'real-1111'), null);
+  assert.equal(await searchOpens(0, 'panic-9999'), null);
+  assert.ok((await loadLockConfig()).slots.length >= 2);
+  assert.deepEqual(hex(await searchOpens(0, 'decoy-2222')), { space: 1, key: toHex(decoy) });
+  // The open space's own password counts as wrong: typing it cannot end the count of wrong ones.
+  const now = Date.now();
+  for (let i = 0; i < FREE_TRIES + 1; i++) assert.equal(await searchOpens(0, i % 2 ? 'real-1111' : `search ${i}`, true, now), null);
+  await assert.rejects(assertNotLockedOut(now, SEARCH_TRIES), LockedOutError);
+  assert.equal(await searchOpens(0, 'decoy-2222', true, now + 1), null);
+  await assertNotLockedOut(now);
 });

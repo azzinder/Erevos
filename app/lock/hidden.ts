@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { hardenSlot, isSlot, ITER, loadLockConfig, preparePanicPassword, SamePasswordError, sealSlot, trySlot, unusedSlot, type Slot } from './config';
+import { hardenSlot, isSlot, ITER, loadLockConfig, preparePanicPassword, SamePasswordError, sealSlot, spaceOf, trySlot, unusedSlot, type Slot, type Unlocked } from './config';
 import { armPlaceReminders } from '../lib/myself';
 import { keepPlace, keptPlaces, prepareKeepEntries } from './hidden-keep';
 import { prepareRingEntries } from './hidden-ring';
@@ -113,6 +113,34 @@ export async function searchHidden(space: number, text: string, now = Date.now()
   if (place) await recordRightPassword(SEARCH_TRIES);
   else await recordWrongPassword(now, SEARCH_TRIES);
   return place;
+}
+
+/** What a search opens: hidden chats of the open space, or another space with its key. */
+export type SearchOpened = { place: HiddenPlace } | { space: Unlocked };
+
+/**
+ * A search on the home screen, tried as a PIN of the open space's hidden chats and as the password
+ * of another space: what it opens, or null. Every pocket and every space's slot is tried each
+ * time, so it takes as long whatever is typed, and its time tells nothing of what there is. Its
+ * tries are counted as searchHidden's; the open space's own password opens nothing, and counts as
+ * wrong, so it cannot end the count. The panic password opens nothing here either: from a search
+ * nothing is erased. `places`: false while Erevos's own chats are off (lib/modules.ts), when
+ * hidden chats open nowhere.
+ */
+export async function searchOpens(space: number, text: string, places = true, now = Date.now()): Promise<SearchOpened | null> {
+  if (text.length < MIN_PIN) return null;
+  try {
+    await assertNotLockedOut(now, SEARCH_TRIES);
+  } catch (error) {
+    if (error instanceof LockedOutError) return null;
+    throw error;
+  }
+  const place = await tryPockets(space, text);
+  const other = await spaceOf(text);
+  const found: SearchOpened | null = place && places ? { place } : other && other.space !== space ? { space: other } : null;
+  if (found) await recordRightPassword(SEARCH_TRIES);
+  else await recordWrongPassword(now, SEARCH_TRIES);
+  return found;
 }
 
 // Sets the PIN of the hidden chats in a space's `pocket`. With `key` (they are open) they stay as

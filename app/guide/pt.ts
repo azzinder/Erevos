@@ -2468,6 +2468,10 @@ existem.
 
 - **A aparência:** o segundo espaço começa com a aparência do espaço em que foi definido, para não chamar atenção.
 - **Uma de cada vez:** definir uma segunda senha de novo substitui a anterior. **Remover a segunda senha** a remove.
+- **Pela busca:** num espaço aberto, digite a senha de outro espaço em **Buscar conversas** e toque em Enter: o espaço
+  aberto se fecha, sem que nada dele fique, e o outro se abre, como com **Bloquear agora** e a senha dele. Leva o
+  mesmo tempo seja o que for digitado, então o tempo não mostra se existe outro espaço. Uma senha errada, ou a do
+  espaço aberto, é só uma busca; a senha de pânico funciona só na tela da senha.
 - **Discrição:** por privacidade, o app nunca mostra se há uma segunda senha definida. No app web com as notificações
   com o app fechado ativadas, o número no ícone do Erevos fica enquanto o Erevos está fechado: se não bater com o
   espaço que você abre, pode denunciar outro (**Número no ícone** o desliga).

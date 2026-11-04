@@ -77,6 +77,11 @@ On main, not released yet:
   rings (`erevos.watch.<n>`, `erevos.ring.<n>`), each space's door (`erevos.door.<n>`) and the phone's door key, so
   after a restore, on another phone too, **Ring calls when closed**, **Say when a message comes** and **Also while
   another space is open** go on as they were. Restoring a backup from before leaves the phone's as they are.
+- **Open another space from the search**: another space's password typed in **Search chats** and sent opens it, as
+  **Lock now** and its password do (lock/hidden.ts `searchOpens`): every search tries every pocket of the open space
+  and every space's slot, so it takes as long whatever is typed, counted as hidden chats' PINs are; the open space's
+  own password counts as wrong and the panic password does nothing there. The switch closes the open space and
+  unmounts its screens before the other opens (app/_layout.tsx).
 
 ### Under the hood
 

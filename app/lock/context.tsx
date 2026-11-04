@@ -18,7 +18,7 @@ export interface LockState {
   lockNow: () => void;
   /** Closes the space, nothing of it kept, and starts as Erevos does (after a backup is restored). */
   closeNow: () => void;
-  /** Switches to another space (its password was just given), with the password lock on. */
+  /** Switches to another space (its password was just given): nothing of the open one stays, and the other opens with the password lock on. */
   openSpace: (space: Unlocked) => void;
   /** What the password opened: only the SMS, or only the Contacts, as it was given for their icon,
    *  the widget's button or an SMS notice (lib/open-link.ts, onlyPartOf); null, all of the space. */

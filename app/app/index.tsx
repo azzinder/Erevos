@@ -54,7 +54,7 @@ import type { ChatNotify } from '../lock/chat-notify';
 import { useLock } from '../lock/context';
 import { loadE2EData } from '../lock/e2e-data';
 import { Logo } from '../lock/gate';
-import { searchHidden } from '../lock/hidden';
+import { searchHidden, searchOpens } from '../lock/hidden';
 import { History, type Message } from '../lock/history';
 import { loadInboxCache, saveInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
@@ -158,12 +158,17 @@ function Home() {
 
   // A search sent with the keyboard's search key is also tried as a PIN of hidden chats. A right
   // one opens those and the search empties; a wrong one is a search like any other.
+  // A search sent is tried as a PIN of hidden chats and as another space's password
+  // (lock/hidden.ts searchOpens): what it opens opens, and anything else stays a search.
   async function searchSubmitted() {
-    if (!moduleOn('erevos')) return;
-    const place = await searchHidden(currentSpace().space, query).catch(() => null);
-    if (!place) return;
+    const found = await searchOpens(currentSpace().space, query, moduleOn('erevos')).catch(() => null);
+    if (!found) return;
     setQuery('');
-    handOverHidden(place);
+    if ('space' in found) {
+      lock.openSpace(found.space);
+      return;
+    }
+    handOverHidden(found.place);
     router.push('/chat?hidden=open');
   }
   // New chat held down asks for a PIN of hidden chats, alike in every space: a right one opens

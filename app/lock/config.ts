@@ -283,6 +283,17 @@ export async function unlock(config: LockConfig, password: string, now = Date.no
   return { space: index, key: openSlot(config, index, keys) };
 }
 
+/**
+ * The space `password` opens, with its key, or null: every slot tried, as unlock does, but not
+ * counted, and the panic password opens nothing here. For the search of the chats, which counts
+ * its own tries (lock/hidden.ts searchOpens).
+ */
+export async function spaceOf(password: string): Promise<Unlocked | null> {
+  const config = await current();
+  const { index, keys } = await match(config, password);
+  return index >= 0 && keys ? { space: index, key: openSlot(config, index, keys) } : null;
+}
+
 // The key of `space` when `password` is that space's own, else null: to make sure it is the owner
 // who turns on unlocking with a fingerprint (biometric.ts). Every slot is checked, and counted.
 export async function ownSpaceKey(space: number, password: string, now = Date.now()): Promise<Uint8Array | null> {

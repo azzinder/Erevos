@@ -2655,6 +2655,11 @@ nichts in der App zeigt, dass es sie gibt.
   nicht auffällt.
 - **Eines nach dem anderen:** Ein erneut festgelegtes zweites Passwort ersetzt das vorherige.
   **Zweites Passwort entfernen** entfernt es.
+- **Aus der Suche:** Tippe in einem offenen Bereich das Passwort eines anderen Bereichs in **Chats durchsuchen** und
+  drücke Enter: Der offene Bereich schließt sich, nichts von ihm bleibt, und der andere öffnet sich, wie mit **Jetzt
+  sperren** und seinem Passwort. Es dauert gleich lang, was auch immer du tippst, sodass die Zeit nicht zeigt, ob es
+  einen anderen Bereich gibt. Ein falsches Passwort oder das des offenen Bereichs ist nur eine Suche; das
+  Panik-Passwort wirkt nur auf dem Passwortbildschirm.
 - **Diskretion:** Zum Schutz deiner Privatsphäre zeigt die App nie, ob ein zweites Passwort festgelegt ist. In der
   Web-App mit eingeschalteten Benachrichtigungen, wenn geschlossen, bleibt die Zahl auf dem Symbol von Erevos, solange
   Erevos geschlossen ist: Passt sie nicht zu dem Bereich, den du öffnest, kann sie auf einen anderen hindeuten

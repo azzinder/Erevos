@@ -2618,6 +2618,11 @@ dans l’app ne montre qu’elles existent.
   remarquer.
 - **Un seul à la fois :** définir de nouveau un second mot de passe remplace le précédent. **Supprimer le second mot de
   passe** le supprime.
+- **Depuis la recherche :** dans un espace ouvert, tape le mot de passe d’un autre espace dans **Rechercher dans les
+  discussions** et appuie sur Entrée : l’espace ouvert se ferme, sans que rien n’en reste, et l’autre s’ouvre, comme
+  avec **Verrouiller maintenant** et son mot de passe. Cela prend le même temps quoi que tu tapes, donc ce temps ne
+  montre pas s’il existe un autre espace. Un mauvais mot de passe, ou celui de l’espace ouvert, n’est qu’une recherche
+  ; le mot de passe de panique ne marche que sur l’écran du mot de passe.
 - **Discrétion :** pour ta confidentialité, l’app ne montre jamais si un second mot de passe est défini. Dans l’app web
   avec les notifications quand l’app est fermée activées, le nombre sur l’icône d’Erevos reste tant qu’Erevos est
   fermé : s’il ne correspond pas à l’espace que tu ouvres, il peut en trahir un autre (**Nombre sur l’icône** le

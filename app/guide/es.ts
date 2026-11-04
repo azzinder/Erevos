@@ -2486,6 +2486,11 @@ con sus propios contactos, relay y aspecto. Tus chats reales siguen ocultos, y n
   atención.
 - **Una cada vez:** poner otra vez una segunda contraseña sustituye a la anterior. **Quitar la segunda contraseña** la
   quita.
+- **Desde la búsqueda:** en un espacio abierto, escribe la contraseña de otro espacio en **Buscar chats** y pulsa
+  Enter: el espacio abierto se cierra, sin que quede nada de él, y se abre el otro, como con **Bloquear ahora** y su
+  contraseña. Tarda lo mismo escribas lo que escribas, así que su tiempo no muestra si hay otro espacio. Una
+  contraseña equivocada, o la del espacio abierto, es solo una búsqueda; la contraseña de pánico funciona solo en la
+  pantalla de contraseña.
 - **Discreción:** por privacidad, la app nunca muestra si hay una segunda contraseña puesta. En la app web con las
   notificaciones con la app cerrada activadas, el número en el icono de Erevos se queda mientras Erevos está cerrado:
   si no coincide con el espacio que abres, puede delatar otro (**Número en el icono** lo desactiva).

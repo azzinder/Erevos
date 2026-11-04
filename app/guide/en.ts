@@ -2290,6 +2290,10 @@ exist.
 
 - **The look:** the second space starts with the look of the space it was set in, so it does not stand out.
 - **One at a time:** setting a second password again replaces the one before. **Remove second password** removes it.
+- **From the search:** in an open space, type another space's password in **Search chats** and press Enter: the open
+  space closes, nothing of it stays, and the other opens, as with **Lock now** and its password. It takes as long
+  whatever is typed, so its time does not show whether there is another space. A wrong password, or the open space's
+  own, is just a search; the panic password works only on the password screen.
 - **Discretion:** for privacy, the app never shows whether a second password is set. In the web app with
   notifications while closed on, the number on Erevos's icon stays while Erevos is closed: one that does not match
   the space you open may hint at another (**Number on the icon** turns it off).

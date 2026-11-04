@@ -2505,6 +2505,11 @@ esistono.
 - **L’aspetto:** il secondo spazio parte con l’aspetto dello spazio in cui è stato impostato, così non si nota.
 - **Una alla volta:** impostare di nuovo una seconda password sostituisce quella precedente. **Rimuovi la seconda
   password** la rimuove.
+- **Dalla ricerca:** in uno spazio aperto, scrivi la password di un altro spazio in **Cerca nelle chat** e premi
+  Invio: lo spazio aperto si chiude, senza che ne resti nulla, e si apre l’altro, come con **Blocca ora** e la sua
+  password. Ci mette lo stesso tempo qualunque cosa scrivi, quindi il tempo non mostra se c’è un altro spazio. Una
+  password sbagliata, o quella dello spazio aperto, è solo una ricerca; la password di panico funziona solo nella
+  schermata della password.
 - **Discrezione:** per privacy, l’app non mostra mai se è impostata una seconda password. Nella web app con le
   notifiche ad app chiusa attive, il numero sull’icona di Erevos resta finché Erevos è chiuso: se non corrisponde allo
   spazio che apri, può lasciarne intuire un altro (**Numero sull’icona** lo disattiva).

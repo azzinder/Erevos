@@ -63,7 +63,7 @@ import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, se
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
-import { hardenLock, loadLockConfig, type LockConfig } from '../lock/config';
+import { hardenLock, loadLockConfig, type LockConfig, type Unlocked } from '../lock/config';
 import { LockContext, useLock, type LockState } from '../lock/context';
 import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
@@ -127,6 +127,9 @@ export default function RootLayout() {
   // The password screen came from only the SMS or the Contacts, for something else: the password opens all.
   const wantsAll = useRef(false);
   const relockAfterCall = useRef(false);
+  // Another space to open, its password just given in the open one (LockState.openSpace): it opens
+  // once the screens of the one that closed are gone.
+  const switching = useRef<Unlocked | null>(null);
   const lang = useLang();
 
   useEffect(() => {
@@ -428,8 +431,12 @@ export default function RootLayout() {
       closeNow: () => {
         start().catch(fail);
       },
-      openSpace: ({ space, key }) => {
-        openSpace(space, true, key).catch(fail);
+      openSpace: (other) => {
+        // Nothing of the open space stays, nor its screens, before the other opens.
+        closeSpace();
+        wantsAll.current = false;
+        switching.current = other;
+        setPhase({ kind: 'loading' });
       },
       only: phase.kind === 'open' ? (phase.only ?? null) : null,
       unlockAll: (link) => {
@@ -439,6 +446,14 @@ export default function RootLayout() {
     }),
     [phase, start, relock, openSpace, gate, fail],
   );
+
+  // The other space a password given in the open one opens, now that nothing of the one before shows.
+  useEffect(() => {
+    const other = switching.current;
+    if (phase.kind !== 'loading' || !other) return;
+    switching.current = null;
+    openSpace(other.space, true, other.key).catch(fail);
+  }, [phase, openSpace, fail]);
 
   // Keyboard tracking for every screen and sheet, the password screen too (components/keyboard.tsx).
   return (

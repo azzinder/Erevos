@@ -2394,6 +2394,10 @@ postoje.
 
 - **Izgled:** drugi prostor počinje s izgledom prostora u kojem je postavljen, kako se ne bi isticao.
 - **Jedna po jedna:** ponovno postavljanje druge lozinke zamjenjuje prethodnu. **Ukloni drugu lozinku** je uklanja.
+- **Iz pretrage:** u otvorenom prostoru upiši lozinku drugog prostora u **Traži razgovore** i pritisni Enter: otvoreni
+  prostor se zatvara, ništa od njega ne ostaje, i otvara se drugi, kao sa **Zaključaj sada** i njegovom lozinkom.
+  Traje jednako dugo što god upišeš, pa vrijeme ne pokazuje postoji li drugi prostor. Pogrešna lozinka, ili lozinka
+  otvorenog prostora, samo je pretraga; lozinka za paniku radi samo na ekranu lozinke.
 - **Diskrecija:** radi privatnosti, aplikacija nikad ne pokazuje je li postavljena druga lozinka. U web-aplikaciji s
   uključenim obavijestima dok je Erevos zatvoren, broj na ikoni Erevosa ostaje dok je Erevos zatvoren: ako se ne slaže
   s prostorom koji otvarate, može nagovijestiti drugi (**Broj na ikoni** to isključuje).
