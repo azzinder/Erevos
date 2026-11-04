@@ -1346,15 +1346,15 @@ connection, so phones know it by that key rather than by its certificate (see [T
 file, in its backups too: with a new one, every phone that knew the old key refuses the relay until someone taps **It
 has a new key** on it.
 
-**Invites:** the relay can let each phone have a token of its own, in a file of tokens, and then let those phones
-invite more, each invite for one phone (see [Invites to the relay](#relay)). Turn it on with
-\`EREVOS_RELAY_INVITES=on\` beside \`EREVOS_RELAY_TOKENS\`; the relay then writes the lines of invited phones in that
-file itself, with who invited them and when, and taking a line out cuts that phone off, and the phones it invited. It
-lets in 100 phones by invite at most (\`EREVOS_RELAY_MAX_INVITED\`). Who invited whom goes by the token, not the name: a
-line put in place of another with a new token cuts the phones the old one invited, unless
-\`erevos-relay free-line NAME\`, run with the relay stopped, frees them first. A phone that comes with the relay's
-token (\`EREVOS_RELAY_TOKEN\`) asks once for a line of its own, which the relay adds as one of yours, saying it came
-with the relay's token and when, 50 a day at most: so you can hand out that token, delete any one phone's line, and
+**Invites:** the relay can let each phone have a token of its own, in a file of tokens, and then let those phones invite
+more, each invite for one phone (see [Invites to the relay](#relay)). Turn it on with \`EREVOS_RELAY_INVITES=on\` beside
+\`EREVOS_RELAY_TOKENS\`; the relay then writes the lines of invited phones in that file itself, with who invited them
+and when, and taking a line out cuts that phone off, that one alone: the phones it invited keep theirs, so to take those
+off too, delete each of their lines (each says who invited it). It lets in 100 phones by invite at most
+(\`EREVOS_RELAY_MAX_INVITED\`). \`erevos-relay free-line NAME\`, run with the relay stopped, makes a line one of yours:
+the phone that invited it can no longer take it back, and it no longer counts among the 100. A phone that comes with the
+relay's token (\`EREVOS_RELAY_TOKEN\`) asks once for a line of its own, which the relay adds as one of yours, saying it
+came with the relay's token and when, 50 a day at most: so you can hand out that token, delete any one phone's line, and
 then change the token without cutting off the others. \`deploy/relay/README.md\` says how.
 
 **Signing in:** with a file of tokens, the relay can also let phones sign in with an OpenID Connect provider, such as
@@ -3250,7 +3250,7 @@ What the relay keeps, and for how long:
 | **Photos and files**, encrypted, in pieces | As messages: until taken, 14 days at most. |
 | **Messages sent for later**, encrypted | Until their time comes. |
 | **Queues**, random ids with no name | Until their phone has not used them for 180 days. |
-| **Access lines**: for each phone, the SHA-256 of its token and a name: the one the inviter typed, or the LPHL user name for those who signed in with LPHL | Until the line is taken out, or the line that invited it goes. |
+| **Access lines**: for each phone, the SHA-256 of its token and a name: random letters and digits for one invited from Erevos 6.0.0 on (before, the one the inviter typed), or the LPHL user name for those who signed in with LPHL | Until the line is taken out. |
 | **Web app push addresses**, for notices while the web app is closed | Until turned off in the web app. |
 
 What it does not keep:

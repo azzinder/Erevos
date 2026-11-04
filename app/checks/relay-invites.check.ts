@@ -5,7 +5,7 @@
 // Invites to a relay (lib/relay-invite.ts, lib/relay.ts, crates/erevos-relay/src/invites.rs): the
 // link in the QR code, its hand-off to the chat of the space it was opened in, and making, taking,
 // listing and taking back invites against a real relay with a file of phones' tokens, where a phone
-// let in by an invite goes with the phone that invited it. The relay part is skipped, with a note,
+// let in by an invite stays when the phone that invited it goes. The relay part is skipped, with a note,
 // when the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
@@ -234,11 +234,12 @@ test("a phone with the relay's token trades it once for one of its own, which in
   const other = await takeOwnLine(shared, '');
   assert.equal(other?.name, 'phone');
 
-  // Whoever runs the relay takes Zoi's line out: her phone goes, with the one it invited; the
-  // others, and the relay's token, stay (changed on the relay, it lets in no phone that left).
+  // Whoever runs the relay takes Zoi's line out: her phone goes, and only hers; the one it
+  // invited, the others, and the relay's token, stay (changed on the relay, it lets in no phone
+  // that left).
   writeFileSync(file, readFileSync(file, 'utf8').split('\n').filter((line) => !line.startsWith(sha(own.token))).join('\n'));
   assert.equal(await lets(zoi), false);
-  assert.equal(await lets({ url, token: leo.token }), false);
+  assert.equal(await lets({ url, token: leo.token }), true);
   assert.equal(await lets({ url, token: other!.token }), true);
   assert.equal(await lets(alice), true);
   assert.equal(await lets(shared), true);
@@ -252,26 +253,37 @@ test("a relay that does not invite gives no line for its token", { skip: !ready 
   assert.equal(readFileSync(quiet, 'utf8'), `${sha(alicesToken)} alice\n`);
 });
 
-test('a phone let in by an invite goes with the phone that invited it, and so do those it invited', { skip: !ready }, async () => {
+test('a phone let in by an invite stays when the phone that invited it goes, and taking one back cuts off that phone alone', { skip: !ready }, async () => {
   const maria = await redeemInvite(url, (await makeInvite(alice, 'Maria'))!.code);
   const nick = await redeemInvite(url, (await makeInvite({ url, token: maria.token }, 'Nick'))!.code);
   const ann = await redeemInvite(url, (await makeInvite({ url, token: nick.token }, 'Ann'))!.code);
+  // One of Maria's invites, not taken yet when her line goes.
+  const waiting = (await makeInvite({ url, token: maria.token }, 'Late'))!;
   // CREATE, on a connection Nick's phone keeps open.
   const theirs = await RelaySession.open({ url, token: nick.token });
   assert.equal((await theirs.call(Uint8Array.of(1)))[0], 0);
   assert.ok(await lets({ url, token: ann.token }));
 
-  // Alice takes back Maria's access: Nick's and Ann's go too, and Nick's open connection is closed
-  // at its next request.
+  // Alice takes back Maria's access: Maria's phone goes, and only hers. Nick's and Ann's stay, and
+  // so does Nick's open connection.
   const [used] = (await listInvites(alice))!;
   assert.equal(used.name, 'maria');
   assert.equal(await takeBackInvite(alice, used.id), true);
-  for (const phone of [maria, nick, ann]) {
-    assert.equal(await lets({ url, token: phone.token }), false, phone.name);
-    assert.ok(!readFileSync(file, 'utf8').includes(sha(phone.token)), phone.name);
+  assert.equal(await lets({ url, token: maria.token }), false);
+  assert.ok(!readFileSync(file, 'utf8').includes(sha(maria.token)));
+  for (const phone of [nick, ann]) {
+    assert.equal(await lets({ url, token: phone.token }), true, phone.name);
+    assert.ok(readFileSync(file, 'utf8').includes(sha(phone.token)), phone.name);
   }
-  await assert.rejects(theirs.call(Uint8Array.of(1)), RelayError);
+  assert.equal((await theirs.call(Uint8Array.of(1)))[0], 0);
   theirs.close();
+  // What Maria made and no one took lets no one in now.
+  await assert.rejects(redeemInvite(url, waiting.code));
+
+  // Whoever runs the relay deletes Nick's line by hand: his phone goes, Ann's stays.
+  writeFileSync(file, readFileSync(file, 'utf8').split('\n').filter((line) => !line.startsWith(sha(nick.token))).join('\n'));
+  assert.equal(await lets({ url, token: nick.token }), false);
+  assert.equal(await lets({ url, token: ann.token }), true);
   assert.ok(await lets(alice), 'the phone that took it back stays');
 });
 

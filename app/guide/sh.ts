@@ -1408,13 +1408,14 @@ stari ključ odbija relay dok neko na njemu ne dodirne **Ima novi ključ**.
 **Pozivnice:** relay može svakom telefonu dati vlastiti token, u datoteci tokena, a zatim tim telefonima dozvoliti da
 pozivaju druge, svaka pozivnica za jedan telefon (pogledajte [Pozivnice na relay](#relay)). Uključite to s
 \`EREVOS_RELAY_INVITES=on\` pored \`EREVOS_RELAY_TOKENS\`; relay tada sam upisuje redove pozvanih telefona u tu
-datoteku, s tim ko ih je pozvao i kada, a uklanjanje reda isključuje taj telefon, kao i telefone koje je on pozvao.
-Putem pozivnica pušta najviše 100 telefona (\`EREVOS_RELAY_MAX_INVITED\`). Ko je koga pozvao određuje token, a ne ime:
-red stavljen umjesto drugog s novim tokenom isključuje telefone koje je pozvao stari, osim ako ih prvo ne oslobodi
-\`erevos-relay free-line NAME\`, pokrenuto dok je relay zaustavljen. Telefon koji dođe s tokenom relaya
-(\`EREVOS_RELAY_TOKEN\`) jednom traži vlastiti red, koji relay dodaje kao jedan od vaših, uz napomenu da je došao s
-tokenom relaya i kada, najviše 50 dnevno: tako možete dijeliti taj token, obrisati red bilo kojeg pojedinačnog
-telefona, a zatim promijeniti token bez isključivanja ostalih. \`deploy/relay/README.md\` kaže kako.
+datoteku, s tim ko ih je pozvao i kada, a uklanjanje reda isključuje taj telefon, samo njega: telefoni koje je on pozvao
+zadržavaju svoje, pa da i njih isključite, obrišite svaki njihov red (svaki kaže ko ga je pozvao). Putem pozivnica pušta
+najviše 100 telefona (\`EREVOS_RELAY_MAX_INVITED\`). \`erevos-relay free-line NAME\`, pokrenuto dok je relay
+zaustavljen, čini red jednim od vaših: telefon koji ga je pozvao više ga ne može povući, i više se ne računa među 100.
+Telefon koji dođe s tokenom relaya (\`EREVOS_RELAY_TOKEN\`) jednom traži vlastiti red, koji relay dodaje kao jedan od
+vaših, uz napomenu da je došao s tokenom relaya i kada, najviše 50 dnevno: tako možete dijeliti taj token, obrisati red
+bilo kojeg pojedinačnog telefona, a zatim promijeniti token bez isključivanja ostalih. \`deploy/relay/README.md\` kaže
+kako.
 
 **Prijava:** s datotekom tokena relay može dozvoliti telefonima i da se prijave preko OpenID Connect pružaoca usluge,
 kao što je Authentik, za vlastiti token, a svaki nalog provjerava svakog sata, uklanjajući njegove telefone nakon 3
@@ -3391,7 +3392,7 @@ ponovo kaže.
 | **Fotografije i datoteke**, šifrirane, u dijelovima | Kao i poruke: dok se ne preuzmu, najviše 14 dana. |
 | **Poruke poslane za kasnije**, šifrirane | Dok ne dođe njihovo vrijeme. |
 | **Redovi**, nasumični identifikatori bez imena | Dok ih njihov telefon ne koristi 180 dana. |
-| **Pristupni redovi**: za svaki telefon, SHA-256 njegovog tokena i ime: ono koje je upisao onaj ko je pozvao, ili LPHL korisničko ime za one koji su se prijavili preko LPHL-a | Dok se red ne ukloni, ili dok ne nestane red koji ga je pozvao. |
+| **Pristupni redovi**: za svaki telefon, SHA-256 njegovog tokena i ime: nasumična slova i cifre za onaj pozvan od Erevosa 6.0.0 (prije toga ono koje je upisao onaj ko je pozvao), ili LPHL korisničko ime za one koji su se prijavili preko LPHL-a | Dok se red ne ukloni. |
 | **Push adrese web-aplikacije**, za obavijesti dok je web-aplikacija zatvorena | Dok se ne isključe u web-aplikaciji. |
 
 Šta ne čuva:

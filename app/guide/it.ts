@@ -1472,15 +1472,14 @@ chiave rifiuta il relay finché qualcuno non tocca **Ha una chiave nuova** su di
 **Inviti:** il relay può dare a ogni telefono un token tutto suo, in un file di token, e poi lasciare che quei telefoni
 ne invitino altri, ogni invito per un telefono (vedi [Inviti al relay](#relay)). Attivalo con
 \`EREVOS_RELAY_INVITES=on\` accanto a \`EREVOS_RELAY_TOKENS\`; il relay scrive allora da solo in quel file le righe dei
-telefoni invitati, con chi li ha invitati e quando, e togliere una riga esclude quel telefono, e i telefoni che ha
-invitato. Fa entrare al massimo 100 telefoni su invito (\`EREVOS_RELAY_MAX_INVITED\`). Chi ha invitato chi si basa sul
-token, non sul nome: una riga messa al posto di un’altra con un token nuovo esclude i telefoni invitati da quella
-vecchia, a meno che
-\`erevos-relay free-line NAME\`, eseguito con il relay fermo, non li liberi prima. Un telefono che arriva con il token
-del relay (\`EREVOS_RELAY_TOKEN\`) chiede una volta una riga tutta sua, che il relay aggiunge come una delle tue,
-indicando che è arrivato con il token del relay e quando, al massimo 50 al giorno: così puoi distribuire quel token,
-eliminare la riga di un singolo telefono, e poi cambiare il token senza escludere gli altri.
-\`deploy/relay/README.md\` spiega come.
+telefoni invitati, con chi li ha invitati e quando, e togliere una riga esclude quel telefono, solo quello: i telefoni
+che ha invitato tengono le loro, quindi per escludere anche loro cancella ciascuna delle loro righe (ognuna dice chi
+l’ha invitato). Fa entrare al massimo 100 telefoni su invito (\`EREVOS_RELAY_MAX_INVITED\`). \`erevos-relay free-line
+NAME\`, eseguito con il relay fermo, fa di una riga una delle tue: il telefono che l’ha invitata non può più ritirarla,
+e non conta più tra i 100. Un telefono che arriva con il token del relay (\`EREVOS_RELAY_TOKEN\`) chiede una volta una
+riga tutta sua, che il relay aggiunge come una delle tue, indicando che è arrivato con il token del relay e quando, al
+massimo 50 al giorno: così puoi distribuire quel token, eliminare la riga di un singolo telefono, e poi cambiare il
+token senza escludere gli altri. \`deploy/relay/README.md\` spiega come.
 
 **Accesso:** con un file di token, il relay può anche far accedere i telefoni con un fornitore OpenID Connect, come
 Authentik, per un token tutto loro, e controlla ogni account ogni ora, togliendo i suoi telefoni dopo 3 giorni senza
@@ -3543,7 +3542,7 @@ Che cosa conserva il relay, e per quanto tempo:
 | **Foto e file**, crittografati, in pezzi | Come i messaggi: finché non vengono presi, al massimo 14 giorni. |
 | **Messaggi inviati per dopo**, crittografati | Finché non arriva la loro ora. |
 | **Code**, id casuali senza nome | Finché il loro telefono non le ha usate per 180 giorni. |
-| **Righe di accesso**: per ogni telefono, lo SHA-256 del suo token e un nome: quello scritto da chi l’ha invitato, o il nome utente LPHL per chi ha fatto l’accesso con LPHL | Finché la riga non viene tolta, o se ne va la riga che l’ha invitato. |
+| **Righe di accesso**: per ogni telefono, lo SHA-256 del suo token e un nome: lettere e cifre a caso per uno invitato da Erevos 6.0.0 in poi (prima, quello scritto da chi l’ha invitato), o il nome utente LPHL per chi ha fatto l’accesso con LPHL | Finché la riga non viene tolta. |
 | **Indirizzi push della web app**, per le notifiche mentre la web app è chiusa | Finché non vengono disattivati nella web app. |
 
 Che cosa non conserva:

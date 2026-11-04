@@ -1566,15 +1566,15 @@ Schlüssel** tippt.
 **Einladungen:** Das Relay kann jedem Telefon ein eigenes Token geben, in einer Token-Datei, und diese Telefone dann
 weitere einladen lassen, jede Einladung für ein Telefon (siehe [Einladungen zum Relay](#relay)). Schalte es mit
 \`EREVOS_RELAY_INVITES=on\` neben \`EREVOS_RELAY_TOKENS\` ein; das Relay schreibt dann die Zeilen eingeladener Telefone
-selbst in diese Datei, mit wer sie eingeladen hat und wann, und eine Zeile herauszunehmen sperrt dieses Telefon aus,
-samt den Telefonen, die es eingeladen hat. Es lässt höchstens 100 Telefone per Einladung herein
-(\`EREVOS_RELAY_MAX_INVITED\`). Wer wen eingeladen hat, richtet sich nach dem Token, nicht nach dem Namen: Eine Zeile,
-die an die Stelle einer anderen mit neuem Token gesetzt wird, sperrt die Telefone aus, die die alte eingeladen hat,
-außer \`erevos-relay free-line NAME\`, bei angehaltenem Relay ausgeführt, gibt sie vorher frei. Ein Telefon, das mit
-dem Token des Relays kommt (\`EREVOS_RELAY_TOKEN\`), bittet einmal um eine eigene Zeile, die das Relay als eine von
-deinen hinzufügt, mit dem Vermerk, dass es mit dem Token des Relays kam, und wann, höchstens 50 am Tag: So kannst du
-dieses Token verteilen, die Zeile jedes einzelnen Telefons löschen und dann das Token ändern, ohne die anderen
-auszusperren. \`deploy/relay/README.md\` sagt, wie.
+selbst in diese Datei, mit wer sie eingeladen hat und wann, und eine Zeile herauszunehmen sperrt dieses Telefon aus, nur
+dieses: Die Telefone, die es eingeladen hat, behalten ihre; um auch sie auszusperren, lösche jede ihrer Zeilen (jede
+sagt, wer es eingeladen hat). Es lässt höchstens 100 Telefone per Einladung herein (\`EREVOS_RELAY_MAX_INVITED\`).
+\`erevos-relay free-line NAME\`, bei angehaltenem Relay ausgeführt, macht eine Zeile zu einer von deinen: Das Telefon,
+das sie eingeladen hat, kann sie nicht mehr zurücknehmen, und sie zählt nicht mehr zu den 100. Ein Telefon, das mit dem
+Token des Relays kommt (\`EREVOS_RELAY_TOKEN\`), bittet einmal um eine eigene Zeile, die das Relay als eine von deinen
+hinzufügt, mit dem Vermerk, dass es mit dem Token des Relays kam, und wann, höchstens 50 am Tag: So kannst du dieses
+Token verteilen, die Zeile jedes einzelnen Telefons löschen und dann das Token ändern, ohne die anderen auszusperren.
+\`deploy/relay/README.md\` sagt, wie.
 
 **Anmelden:** Mit einer Token-Datei kann das Relay Telefone sich auch bei einem OpenID-Connect-Anbieter wie Authentik
 anmelden lassen, für ein eigenes Token, und prüft jedes Konto jede Stunde, wobei es seine Telefone nach 3 Tagen ohne
@@ -3748,7 +3748,7 @@ Was das Relay aufbewahrt, und wie lange:
 | **Fotos und Dateien**, verschlüsselt, in Stücken | Wie Nachrichten: bis sie geholt werden, höchstens 14 Tage. |
 | **Für später gesendete Nachrichten**, verschlüsselt | Bis ihre Zeit kommt. |
 | **Warteschlangen**, zufällige IDs ohne Namen | Bis ihr Telefon sie 180 Tage lang nicht genutzt hat. |
-| **Zugangszeilen**: für jedes Telefon der SHA-256 seines Tokens und ein Name: der, den der Einladende eingegeben hat, oder der LPHL-Benutzername für die, die sich mit LPHL angemeldet haben | Bis die Zeile herausgenommen wird oder die Zeile verschwindet, die es eingeladen hat. |
+| **Zugangszeilen**: für jedes Telefon der SHA-256 seines Tokens und ein Name: zufällige Buchstaben und Ziffern für eines, das ab Erevos 6.0.0 eingeladen wurde (davor der, den der Einladende eingegeben hat), oder der LPHL-Benutzername für die, die sich mit LPHL angemeldet haben | Bis die Zeile herausgenommen wird. |
 | **Push-Adressen der Web-App**, für Benachrichtigungen, während die Web-App geschlossen ist | Bis sie in der Web-App ausgeschaltet werden. |
 
 Was es nicht aufbewahrt:

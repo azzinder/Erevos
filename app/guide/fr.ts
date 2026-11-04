@@ -1543,14 +1543,14 @@ connaissait l’ancienne clé refuse le relais jusqu’à ce que quelqu’un y a
 **Invitations :** le relais peut laisser chaque téléphone avoir son propre jeton, dans un fichier de jetons, puis
 laisser ces téléphones en inviter d’autres, chaque invitation pour un téléphone (voir [Invitations au relais](#relay)).
 Active-le avec \`EREVOS_RELAY_INVITES=on\` à côté de \`EREVOS_RELAY_TOKENS\` ; le relais écrit alors lui-même les lignes
-des téléphones invités dans ce fichier, avec qui les a invités et quand, et retirer une ligne coupe ce téléphone, ainsi
-que les téléphones qu’il a invités. Il laisse entrer 100 téléphones par invitation au plus
-(\`EREVOS_RELAY_MAX_INVITED\`). Qui a invité qui se suit par le jeton, pas par le nom : une ligne mise à la place d’une
-autre avec un nouveau jeton coupe les téléphones que l’ancienne avait invités, sauf si \`erevos-relay free-line NAME\`,
-lancé avec le relais arrêté, les libère d’abord. Un téléphone qui vient avec le jeton du relais (\`EREVOS_RELAY_TOKEN\`)
-demande une fois une ligne à lui, que le relais ajoute comme l’une des tiennes, en notant qu’il est venu avec le jeton
-du relais et quand, 50 par jour au plus : tu peux ainsi distribuer ce jeton, supprimer la ligne de n’importe quel
-téléphone, puis changer le jeton sans couper les autres. \`deploy/relay/README.md\` explique comment.
+des téléphones invités dans ce fichier, avec qui les a invités et quand, et retirer une ligne coupe ce téléphone, lui
+seul : les téléphones qu’il a invités gardent les leurs, donc pour les couper aussi, supprime chacune de leurs lignes
+(chacune dit qui l’a invité). Il laisse entrer 100 téléphones par invitation au plus (\`EREVOS_RELAY_MAX_INVITED\`).
+\`erevos-relay free-line NAME\`, lancé avec le relais arrêté, fait d’une ligne l’une des tiennes : le téléphone qui l’a
+invitée ne peut plus la reprendre, et elle ne compte plus parmi les 100. Un téléphone qui vient avec le jeton du relais
+(\`EREVOS_RELAY_TOKEN\`) demande une fois une ligne à lui, que le relais ajoute comme l’une des tiennes, en notant qu’il
+est venu avec le jeton du relais et quand, 50 par jour au plus : tu peux ainsi distribuer ce jeton, supprimer la ligne
+de n’importe quel téléphone, puis changer le jeton sans couper les autres. \`deploy/relay/README.md\` explique comment.
 
 **Connexion :** avec un fichier de jetons, le relais peut aussi laisser des téléphones se connecter avec un fournisseur
 OpenID Connect, comme Authentik, pour obtenir un jeton à eux, et vérifie chaque compte toutes les heures, retirant ses
@@ -3726,7 +3726,7 @@ Ce que le relais garde, et pendant combien de temps :
 | **Photos et fichiers**, chiffrés, en morceaux | Comme les messages : jusqu’à ce qu’ils soient pris, 14 jours au plus. |
 | **Messages envoyés pour plus tard**, chiffrés | Jusqu’à ce que leur heure vienne. |
 | **Files d’attente**, des identifiants aléatoires sans nom | Jusqu’à ce que leur téléphone ne les ait pas utilisées pendant 180 jours. |
-| **Lignes d’accès** : pour chaque téléphone, le SHA-256 de son jeton et un nom : celui qu’a tapé la personne qui l’a invité, ou le nom d’utilisateur LPHL pour ceux qui se sont connectés avec LPHL | Jusqu’à ce que la ligne soit retirée, ou que la ligne qui l’a invité disparaisse. |
+| **Lignes d’accès** : pour chaque téléphone, le SHA-256 de son jeton et un nom : des lettres et des chiffres au hasard pour un téléphone invité depuis Erevos 6.0.0 (avant, celui qu’a tapé la personne qui l’a invité), ou le nom d’utilisateur LPHL pour ceux qui se sont connectés avec LPHL | Jusqu’à ce que la ligne soit retirée. |
 | **Adresses de push de l’app web**, pour les notifications quand l’app web est fermée | Jusqu’à leur désactivation dans l’app web. |
 
 Ce qu’il ne garde pas :

@@ -1464,14 +1464,14 @@ teléfonos que conocían la clave antigua rechazan el relay hasta que alguien to
 **Invitaciones:** el relay puede dejar que cada teléfono tenga un token propio, en un archivo de tokens, y luego dejar
 que esos teléfonos inviten a más, cada invitación para un teléfono (ver [Invitaciones al relay](#relay)). Actívalo con
 \`EREVOS_RELAY_INVITES=on\` junto a \`EREVOS_RELAY_TOKENS\`; el relay escribe entonces él mismo en ese archivo las
-líneas de los teléfonos invitados, con quién los invitó y cuándo, y quitar una línea corta ese teléfono, y los teléfonos
-que invitó. Deja entrar 100 teléfonos por invitación como mucho (\`EREVOS_RELAY_MAX_INVITED\`). Quién invitó a quién va
-por el token, no por el nombre: una línea puesta en lugar de otra con un token nuevo corta los teléfonos que invitó la
-antigua, salvo que \`erevos-relay free-line NAME\`, ejecutado con el relay parado, los libere antes. Un teléfono que
-llega con el token del relay (\`EREVOS_RELAY_TOKEN\`) pide una vez una línea propia, que el relay añade como una de las
-tuyas, indicando que llegó con el token del relay y cuándo, 50 al día como mucho: así puedes repartir ese token,
-eliminar la línea de un teléfono cualquiera, y luego cambiar el token sin cortar a los demás. \`deploy/relay/README.md\`
-explica cómo.
+líneas de los teléfonos invitados, con quién los invitó y cuándo, y quitar una línea corta ese teléfono, solo ese: los
+teléfonos que invitó conservan las suyas, así que para sacarlos también, borra cada una de sus líneas (cada una dice
+quién lo invitó). Deja entrar 100 teléfonos por invitación como mucho (\`EREVOS_RELAY_MAX_INVITED\`). \`erevos-relay
+free-line NAME\`, ejecutado con el relay parado, hace de una línea una de las tuyas: el teléfono que la invitó ya no
+puede retirarla, y ya no cuenta entre los 100. Un teléfono que llega con el token del relay (\`EREVOS_RELAY_TOKEN\`)
+pide una vez una línea propia, que el relay añade como una de las tuyas, indicando que llegó con el token del relay y
+cuándo, 50 al día como mucho: así puedes repartir ese token, eliminar la línea de un teléfono cualquiera, y luego
+cambiar el token sin cortar a los demás. \`deploy/relay/README.md\` explica cómo.
 
 **Inicio de sesión:** con un archivo de tokens, el relay también puede dejar que los teléfonos inicien sesión con un
 proveedor OpenID Connect, como Authentik, para obtener un token propio, y comprueba cada cuenta cada hora, quitando sus
@@ -3529,7 +3529,7 @@ Lo que guarda el relay, y durante cuánto tiempo:
 | **Fotos y archivos**, cifrados, en trozos | Como los mensajes: hasta que se recogen, 14 días como mucho. |
 | **Mensajes enviados para más tarde**, cifrados | Hasta que llega su hora. |
 | **Colas**, ids aleatorios sin nombre | Hasta que su teléfono lleva 180 días sin usarlas. |
-| **Líneas de acceso**: para cada teléfono, el SHA-256 de su token y un nombre: el que escribió quien lo invitó, o el nombre de usuario de LPHL para quienes iniciaron sesión con LPHL | Hasta que se quita la línea, o desaparece la línea que lo invitó. |
+| **Líneas de acceso**: para cada teléfono, el SHA-256 de su token y un nombre: letras y cifras al azar para uno invitado desde Erevos 6.0.0 (antes, el que escribió quien lo invitó), o el nombre de usuario de LPHL para quienes iniciaron sesión con LPHL | Hasta que se quita la línea. |
 | **Direcciones push de la app web**, para los avisos mientras la app web está cerrada | Hasta que se desactivan en la app web. |
 
 Lo que no guarda:

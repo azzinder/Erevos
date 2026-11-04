@@ -97,6 +97,13 @@ On main, not released yet:
   space's sealed E2E data, the last 100 (`lines`), which the list of invites shows (`lineName`). Before, the relay's
   file of tokens had the typed name, or the phone number of an SMS invite. Taking a relay invite no longer says the
   name the relay gave, which means nothing to them now.
+- **Invited phones stay**: on the relay, a line an invite made stands on its own once it is in the file of tokens:
+  whatever takes out its inviter's line (that one's own inviter, the LPHL check, the operator deleting it by hand), it
+  stays, and so do the lines it invited. Taking back a used invite cuts off that one phone alone. Who invited whom is
+  kept only in the invites, for the inviter's list, taking back, the count of the 100 and signing in again
+  (crates/erevos-relay `invites.rs`, `tokens.rs`; `Invites::finish_moves` at start). An open invite whose inviter's
+  line is gone still lets no one in. Lines the old relay refused for a gone inviter but had not yet written out come
+  back on update. Needs the relay updated.
 
 ### Under the hood
 

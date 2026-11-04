@@ -1452,13 +1452,14 @@ chave antiga recusa o relay até alguém tocar em **Ele tem uma chave nova** nel
 **Convites:** o relay pode dar a cada celular um token próprio, num arquivo de tokens, e então deixar esses celulares
 convidarem mais, cada convite para um celular (veja [Convites para o relay](#relay)). Ative isso com
 \`EREVOS_RELAY_INVITES=on\` ao lado de \`EREVOS_RELAY_TOKENS\`; o relay então grava ele mesmo as linhas dos celulares
-convidados nesse arquivo, com quem os convidou e quando, e tirar uma linha corta esse celular, e os celulares que ele
-convidou. Ele deixa entrar 100 celulares por convite no máximo (\`EREVOS_RELAY_MAX_INVITED\`). Quem convidou quem vale
-pelo token, não pelo nome: uma linha posta no lugar de outra com um token novo corta os celulares que a antiga
-convidou, a menos que \`erevos-relay free-line NOME\`, rodado com o relay parado, os libere antes. Um celular que vem
-com o token do relay (\`EREVOS_RELAY_TOKEN\`) pede uma vez uma linha própria, que o relay acrescenta como uma das suas,
-dizendo que veio com o token do relay e quando, 50 por dia no máximo: assim você pode distribuir esse token, apagar a
-linha de qualquer celular, e depois trocar o token sem cortar os outros. \`deploy/relay/README.md\` explica como.
+convidados nesse arquivo, com quem os convidou e quando, e tirar uma linha corta esse celular, só ele: os celulares que
+ele convidou ficam com as deles, então para tirá-los também, apague cada uma das linhas deles (cada uma diz quem o
+convidou). Ele deixa entrar 100 celulares por convite no máximo (\`EREVOS_RELAY_MAX_INVITED\`). \`erevos-relay free-line
+NOME\`, rodado com o relay parado, torna uma linha uma das suas: o celular que a convidou não pode mais revogá-la, e ela
+não conta mais entre os 100. Um celular que vem com o token do relay (\`EREVOS_RELAY_TOKEN\`) pede uma vez uma linha
+própria, que o relay acrescenta como uma das suas, dizendo que veio com o token do relay e quando, 50 por dia no máximo:
+assim você pode distribuir esse token, apagar a linha de qualquer celular, e depois trocar o token sem cortar os outros.
+\`deploy/relay/README.md\` explica como.
 
 **Login:** com um arquivo de tokens, o relay também pode deixar os celulares entrarem com um provedor OpenID Connect,
 como o Authentik, em troca de um token próprio, e verifica cada conta a cada hora, tirando os celulares dela depois de
@@ -3490,7 +3491,7 @@ O que o relay guarda, e por quanto tempo:
 | **Fotos e arquivos**, criptografados, em pedaços | Como as mensagens: até serem pegos, 14 dias no máximo. |
 | **Mensagens enviadas para mais tarde**, criptografadas | Até chegar o horário delas. |
 | **Filas**, IDs aleatórios sem nome | Até o celular delas ficar 180 dias sem usá-las. |
-| **Linhas de acesso**: para cada celular, o SHA-256 do token dele e um nome: o que quem convidou digitou, ou o nome de usuário do LPHL para quem entrou com LPHL | Até a linha ser tirada, ou a linha que a convidou sair. |
+| **Linhas de acesso**: para cada celular, o SHA-256 do token dele e um nome: letras e números ao acaso para um convidado a partir do Erevos 6.0.0 (antes, o que quem convidou digitou), ou o nome de usuário do LPHL para quem entrou com LPHL | Até a linha ser tirada. |
 | **Endereços de push do app web**, para avisos enquanto o app web está fechado | Até serem desativados no app web. |
 
 O que ele não guarda:
