@@ -25,6 +25,9 @@ On main, not released yet:
   off. Now `CallService` also starts the call screen itself while the phone is locked or its screen off, or when the
   notice cannot show. A call that Do Not Disturb holds back, or that a screening app silenced, still comes quietly. The
   notice also gives Android the caller's number, so that Do Not Disturb lets the notice of a call it lets ring show.
+- **The calculator shows a long result from its start**: upright, a result with many decimals hid its first digits
+  (the display cut a long number at its start), which showed only with the phone turned sideways. Now a long number
+  gets smaller to fit, its first digits always in sight.
 
 ### Under the hood
 

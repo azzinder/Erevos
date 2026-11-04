@@ -14,6 +14,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.TextPaint
 import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
@@ -99,22 +100,26 @@ class CalculatorActivity : Activity() {
       setBackgroundColor(look.ground)
       setPadding(dp(12), dp(24), dp(12), dp(16))
     }
+    // A long number gets smaller to fit, so that its first digits always show; only past the
+    // smallest size are its last ones cut (in portrait, 0.333… once hid its start).
     above = TextView(this).apply {
       setTextColor(look.faint)
-      setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, ABOVE_SP)
       gravity = Gravity.END or Gravity.BOTTOM
       maxLines = 1
-      ellipsize = TextUtils.TruncateAt.START
+      ellipsize = TextUtils.TruncateAt.END
       setPadding(dp(12), 0, dp(12), 0)
+      addOnLayoutChangeListener(refit)
     }
     display = TextView(this).apply {
       setTextColor(look.text)
-      setTextSize(TypedValue.COMPLEX_UNIT_SP, 56f)
+      setTextSize(TypedValue.COMPLEX_UNIT_SP, DISPLAY_SP)
       typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
       gravity = Gravity.END or Gravity.BOTTOM
       maxLines = 1
-      ellipsize = TextUtils.TruncateAt.START
+      ellipsize = TextUtils.TruncateAt.END
       setPadding(dp(12), 0, dp(12), dp(12))
+      addOnLayoutChangeListener(refit)
     }
     column.addView(View(this), LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
     column.addView(above, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -252,6 +257,33 @@ class CalculatorActivity : Activity() {
     val before = kept
     val waiting = operation
     above.text = if (before != null && waiting != null) "${shown(before)} $waiting" else ""
+    fit()
+  }
+
+  // The text of the display and of the line above it, as large as fits their width, at most their
+  // own size and at least SMALLEST_SP.
+  private fun fit() {
+    fit(display, DISPLAY_SP)
+    fit(above, ABOVE_SP)
+  }
+
+  private fun fit(view: TextView, largest: Float) {
+    val room = view.width - view.paddingLeft - view.paddingRight
+    if (room <= 0) return
+    val text = view.text.toString()
+    val paint = TextPaint(view.paint)
+    var size = largest
+    while (size > SMALLEST_SP) {
+      paint.textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, size, resources.displayMetrics)
+      if (paint.measureText(text) <= room) break
+      size = maxOf(SMALLEST_SP, size - 2f)
+    }
+    view.setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
+  }
+
+  // When the display's width changes (it is laid out, or the phone turns), its text fits again.
+  private val refit = View.OnLayoutChangeListener { view, left, _, right, _, oldLeft, _, oldRight, _ ->
+    if (right - left != oldRight - oldLeft) view.post { fit() }
   }
 
   private fun shown(value: BigDecimal): String = value.stripTrailingZeros().let { if (it.signum() == 0) "0" else it.toPlainString() }
@@ -287,6 +319,9 @@ class CalculatorActivity : Activity() {
     private val MATH = MathContext(15, RoundingMode.HALF_EVEN)
     private val HUNDRED = BigDecimal(100)
     private const val MOST_DIGITS = 15
+    private const val DISPLAY_SP = 56f
+    private const val ABOVE_SP = 22f
+    private const val SMALLEST_SP = 18f
   }
 }
 
