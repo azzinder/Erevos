@@ -133,13 +133,14 @@
 //!   (8-byte Unix seconds each, 0 while it was not), and the name on its line
 //!   after a 1-byte length.
 //! - `UNINVITE`: an invite's id. One not used yet goes; one used takes the
-//!   line of the phone it let in out of the file of tokens, with the lines
-//!   that phone invited, so they are refused from then on. Reply: `OK`,
-//!   `NOT_FOUND` if this phone made no such invite, or `FAILED`.
+//!   line of the phone it let in out of the file of tokens, so that phone is
+//!   refused from then on, and only it: the phones it invited keep their
+//!   lines. Reply: `OK`, `NOT_FOUND` if this phone made no such invite, or
+//!   `FAILED`.
 //! - `REDEEM`: on the `/join` path, an invite's secret (32 bytes) and the
 //!   SHA-256 of the token the phone made for itself (32 bytes). The relay adds
-//!   a line for that token to the file of tokens, which lasts as long as the
-//!   inviter's. Reply: the name on the line, to the end; the same again for
+//!   a line for that token to the file of tokens, which stays when the
+//!   inviter's goes. Reply: the name on the line, to the end; the same again for
 //!   the same token; `FULL` when another phone took the invite; `NOT_FOUND`
 //!   when there is no such invite now (expired, taken back, its inviter's line
 //!   gone, past what the relay lets in by invite, or the relay does not
@@ -2823,10 +2824,16 @@ mod tests {
             to_hex(&sha2::Sha256::digest(maria.as_bytes()))
         )));
 
-        // Maria's phone comes in with its token, and may invite in turn.
+        // Maria's phone comes in with its token, and may invite in turn: Anna's phone takes it.
         let mut theirs = connect_with_token(addr, "", &maria);
         ws_create(&mut theirs);
-        assert_eq!(ws_call(&mut theirs, invite_request("anna"))[0], OK);
+        let r = ws_call(&mut theirs, invite_request("anna"));
+        assert_eq!(r[0], OK);
+        let to_anna = unhex(std::str::from_utf8(&r[9..]).unwrap());
+        let (anna, _) = crate::tokens::new_token("");
+        let (mut join, _) = tungstenite::connect(format!("ws://{addr}{JOIN_PATH}")).unwrap();
+        let reply = ws_call(&mut join, redeem_request(&to_anna, &anna));
+        assert_eq!((reply[0], &reply[1..]), (OK, &b"anna"[..]));
         // Pixel sees its invite used, and takes it back: Maria's phone is refused from then on.
         let listed = invites_listed(&mut ws);
         assert_eq!(listed.len(), 1);
@@ -2846,6 +2853,8 @@ mod tests {
             .insert("authorization", format!("Bearer {maria}").parse().unwrap());
         assert!(tungstenite::connect(request).is_err());
         assert!(invites_listed(&mut ws).is_empty());
+        // Anna's phone, whom Maria invited, keeps the relay.
+        ws_create(&mut connect_with_token(addr, "", &anna));
         let _ = std::fs::remove_file(&list);
     }
 

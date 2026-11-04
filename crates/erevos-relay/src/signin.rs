@@ -30,8 +30,9 @@
 //! PKCE. The token is made on the phone, and only its SHA-256 travels, over
 //! the WebSocket. Signing in again on the same phone gives the SHA-256 of its
 //! old token too, and the new line takes the place of the old one when that
-//! is a line of the same account, keeping the phones the old one invited. A
-//! token whose line is in the file already is refused.
+//! is a line of the same account, the old one's invites being the new one's
+//! from then on (see `invites.rs`). A token whose line is in the file already
+//! is refused.
 //!
 //! For each line the relay keeps what the hourly check needs, in
 //! `<file of tokens>.signins`, written before the line goes in, so no line of
@@ -47,7 +48,8 @@
 //! disabled or deleted, its tokens revoked, the refresh token expired), an
 //! access token that is not active, a userinfo that refuses it, names another
 //! account or leaves out the group, all take the line out, and the phone is
-//! refused at once, on connections open too. A provider that cannot be asked,
+//! refused at once, on connections open too; the phones it invited keep their
+//! lines (see `invites.rs`). A provider that cannot be asked,
 //! for whatever reason (down, a wrong client secret, discovery failing), keeps
 //! the line until it has gone `MAX_UNCHECKED` without a good check and then
 //! failed twice more, at checks an hour apart or more: then the line goes too.
@@ -644,8 +646,8 @@ impl SignIn {
             }
             why
         };
-        // The move of what the old line invited is written down before the new line goes in, so a
-        // relay that stops in between finishes it at its next start, and cuts none of them.
+        // The move of the old line's invites is written down before the new line goes in, so a
+        // relay that stops in between finishes it at its next start, and the phone keeps them all.
         let moving = match (&instead, invites) {
             (Some(old), Some(invites)) => {
                 if let Err(e) = invites.moving(&old.line, line) {
@@ -664,7 +666,6 @@ impl SignIn {
             true,
             &note,
             instead.as_ref().map(|i| &i.line),
-            None,
         );
         let name = match added {
             Ok(name) => name,
@@ -910,8 +911,8 @@ impl SignIn {
         state.records = records;
     }
 
-    /// Takes `line` out of the file of tokens, with the lines it invited, and
-    /// then its record. The record is marked to go and written down first,
+    /// Takes `line` out of the file of tokens, and no other line, and then
+    /// its record. The record is marked to go and written down first,
     /// and kept until the line is surely out of the file: when the file
     /// cannot be written, the file of tokens refuses the line meanwhile, each
     /// look tries again, and a relay restarted before then cuts it again
@@ -2192,7 +2193,7 @@ pub mod tests {
     }
 
     #[test]
-    fn signing_in_again_keeps_the_phones_a_line_invited_and_a_line_cut_takes_them_along() {
+    fn signing_in_again_keeps_the_phones_a_line_invited_and_a_line_cut_leaves_them_in() {
         let (fake, signin, tokens, _dir) = setup();
         let invites = Invites::in_memory();
         claimed(&signin, &fake, &tokens, &[1u8; 32], "first", &NONE, NOW).unwrap();
@@ -2204,8 +2205,16 @@ pub mod tests {
         invites
             .redeem(&secret, &line_of("maria"), &tokens, NOW)
             .unwrap();
-        assert!(tokens.has("maria"));
-        // Signed in again on the same phone: Maria's phone stays, now with the new line.
+        let maria = crate::tokens::Phone {
+            hash: line_of("maria"),
+            name: "maria".into(),
+        };
+        let (secret, _) = invites.make(&maria, "anna", &tokens, NOW).unwrap();
+        invites
+            .redeem(&secret, &line_of("anna"), &tokens, NOW)
+            .unwrap();
+        assert!(tokens.has("maria") && tokens.has("anna"));
+        // Signed in again on the same phone: Maria's phone stays, now the new line's invite.
         let code = signed_in(&signin, &fake, &[2u8; 32], NOW);
         signin
             .claim(
@@ -2219,11 +2228,17 @@ pub mod tests {
             )
             .unwrap();
         assert!(!tokens.has("first") && tokens.has("again") && tokens.has("maria"));
-        assert_eq!(invites.edges(&tokens)[&line_of("maria")], line_of("again"));
-        // The account closed: its line goes at the hourly check, and Maria's with it.
+        assert_eq!(invites.list(&line_of("again"), &tokens, NOW).len(), 1);
+        assert!(invites.list(&line_of("first"), &tokens, NOW).is_empty());
+        // The account closed: its line goes at the hourly check, and only it: Maria's phone
+        // stays, and Anna's, whom Maria invited.
         fake.state.lock().unwrap().refuse = true;
         signin.check(&tokens, NOW + CHECK_EVERY);
-        assert!(!tokens.has("again") && !tokens.has("maria"));
+        assert!(!tokens.has("again"));
+        assert!(tokens.has("maria") && tokens.has("anna"));
+        invites.sweep(&tokens, NOW + CHECK_EVERY);
+        assert!(tokens.has("maria") && tokens.has("anna"));
+        assert_eq!(invites.list(&line_of("maria"), &tokens, NOW).len(), 1);
     }
 
     #[test]

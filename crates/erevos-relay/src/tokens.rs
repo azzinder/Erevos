@@ -35,29 +35,26 @@
 //! 5d41402abc4b...e2a0 lphl:nekten # signed in with LPHL on 2026-10-21
 //! ```
 //!
-//! A line an invite made lasts only while the line of the phone that invited
-//! it is there, and so on up (`set_invited`, from what `invites.rs` keeps).
-//! The chain goes by the tokens' SHA-256s, not the names: a line the operator
-//! puts in place of another with a new token is another line, and what the
-//! old one invited goes. When a line goes, whatever took it out (its inviter,
-//! the provider's check, the operator deleting it by hand), the lines it
-//! invited are refused at once, and the lines those invited, all the way
-//! down.
+//! A line an invite made stands on its own once it is in the file, as a line
+//! the operator wrote does: whatever takes out the line of the phone that
+//! invited it (its own inviter, the provider's check, the operator deleting
+//! it by hand), it stays, and so do the lines it invited. Taking a line out
+//! takes out that line alone. Who invited whom is kept by `invites.rs` only,
+//! for each phone's invites.
 //!
 //! Reading the file never writes it, so a save of the operator's under way,
-//! read halfway, is never written over with its first half. The relay takes
-//! the lines out of force out of the file only when it writes the file anyway
-//! (`add`, `remove`) or in its hourly look (`prune`), and then only once the
-//! file has stayed as it is for `SETTLE` (or is as the relay itself wrote
-//! it), and only if it is still as read just before, by its time, length and
-//! inode. A line the relay took out when the file could not be written is
-//! refused all the same (`refused`), and written out at the next look. That
-//! is kept in memory only, so after a restart the line is in force again
-//! until whatever took it out does so again: the provider's check keeps its
-//! record for that (see `signin.rs`), and an invite taken back stays until
-//! then. Since the relay writes the file through a rename, its path must be
-//! the file itself: the relay refuses to start, or to write, when it is a
-//! symbolic link (`plain_file`).
+//! read halfway, is never written over with its first half. A line the relay
+//! took out when the file could not be written is refused all the same
+//! (`refused`), and taken out of the file only when the relay writes the file
+//! anyway (`add`, `remove`) or in its hourly look (`prune`), and then only
+//! once the file has stayed as it is for `SETTLE` (or is as the relay itself
+//! wrote it), and only if it is still as read just before, by its time,
+//! length and inode. That is kept in memory only, so after a restart the line
+//! is in force again until whatever took it out does so again: the provider's
+//! check keeps its record for that (see `signin.rs`), and an invite taken
+//! back stays until then. Since the relay writes the file through a rename,
+//! its path must be the file itself: the relay refuses to start, or to write,
+//! when it is a symbolic link (`plain_file`).
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -109,16 +106,11 @@ struct Seen {
     /// Each token's SHA-256 with a line in the file, with the name on its
     /// line ('' when it has none).
     all: HashMap<[u8; 32], String>,
-    /// Those whose line is in force.
+    /// Those whose line is in force: all but the refused.
     hashes: HashMap<[u8; 32], String>,
-    /// For each line an invite made, by its token's SHA-256, that of the line
-    /// of the phone that invited it.
-    invited: HashMap<[u8; 32], [u8; 32]>,
     /// Lines the relay took out, refused whether or not that could be
     /// written yet; each goes from here once the file is written without it.
     refused: HashSet<[u8; 32]>,
-    /// The lines whose inviter's line is gone, as last said in the log.
-    told: HashSet<[u8; 32]>,
 }
 
 /// A phone whose token is on a line of the file: the token's SHA-256 and the
@@ -220,32 +212,10 @@ impl Tokens {
             .collect()
     }
 
-    /// Which lines invites made, each with the line of the phone that invited
-    /// it, by their tokens' SHA-256s, as the invites keep them; set when the
-    /// relay starts. A line whose inviter's line is gone is refused now.
-    pub fn set_invited(&self, invited: HashMap<[u8; 32], [u8; 32]>) {
-        let mut seen = lock(&self.seen, TOKENS_LOCK);
-        seen.invited = invited;
-        seen.read = false;
-        self.refresh(&mut seen);
-    }
-
-    /// Forgets which phone invited each of `lines`, once their invites are
-    /// gone (see `invites.rs`).
-    pub fn forget_invited(&self, lines: &[[u8; 32]]) {
-        let mut seen = lock(&self.seen, TOKENS_LOCK);
-        for line in lines {
-            seen.invited.remove(line);
-        }
-        self.refresh(&mut seen);
-        seen.force();
-    }
-
     /// Reads the file again, changed or not, and writes it again without the
-    /// lines out of force: those whose inviter's line is gone, and those the
-    /// relay took out when that could not be written. Only once the file has
-    /// stayed as it is for `SETTLE`, and only if it did not change since it
-    /// was read. The relay calls this now and then.
+    /// lines the relay took out when that could not be written. Only once the
+    /// file has stayed as it is for `SETTLE`, and only if it did not change
+    /// since it was read. The relay calls this now and then.
     pub fn prune(&self) {
         let mut seen = lock(&self.seen, TOKENS_LOCK);
         seen.read = false;
@@ -259,8 +229,7 @@ impl Tokens {
         if seen.hashes.len() == seen.all.len() {
             return;
         }
-        let invited = seen.invited.clone();
-        if let Err(e) = self.rewrite(&mut seen, invited, |_| Ok(())) {
+        if let Err(e) = self.rewrite(&mut seen, |_| Ok(())) {
             elog!(
                 "erevos-relay: cannot take the lines out of force out of {} now, so they are only refused until the next try: {e}",
                 self.path.display()
@@ -271,12 +240,10 @@ impl Tokens {
     /// Adds a line for the token whose SHA-256 is `hash`, named `name`, and
     /// `note` after it as a comment. With `unique`, a name another line has
     /// already gets `-2`, `-3` and so on after it. With `instead`, the line of
-    /// that token goes in the same write, and the lines it invited are the new
-    /// line's from then on. With `by`, an invite from the line of that token
-    /// made the new line, which lasts only as long as that one. Returns the
-    /// name written. The file is read again first, so a line the operator just
-    /// added stays; one for `hash` already there is an error (`AlreadyExists`),
-    /// and nothing is written.
+    /// that token goes in the same write. Returns the name written. The file
+    /// is read again first, so a line the operator just added stays; one for
+    /// `hash` already there is an error (`AlreadyExists`), and nothing is
+    /// written.
     pub fn add(
         &self,
         hash: &[u8; 32],
@@ -284,23 +251,9 @@ impl Tokens {
         unique: bool,
         note: &str,
         instead: Option<&[u8; 32]>,
-        by: Option<&[u8; 32]>,
     ) -> io::Result<String> {
         let mut seen = lock(&self.seen, TOKENS_LOCK);
-        let mut invited = seen.invited.clone();
-        if let Some(gone) = instead {
-            invited.remove(gone);
-            for inviter in invited.values_mut() {
-                if inviter == gone {
-                    *inviter = *hash;
-                }
-            }
-        }
-        match by {
-            Some(by) => invited.insert(*hash, *by),
-            None => invited.remove(hash),
-        };
-        let written = self.rewrite(&mut seen, invited, |lines| {
+        let written = self.rewrite(&mut seen, |lines| {
             if lines.iter().any(|line| line_hash(line) == Some(*hash)) {
                 return Err(io::Error::new(
                     ErrorKind::AlreadyExists,
@@ -328,16 +281,15 @@ impl Tokens {
         Ok(written)
     }
 
-    /// Takes out the line of the token whose SHA-256 is `hash`, and the lines
-    /// it invited with it. False when the file has no such line. The line is
-    /// refused from now on, even when the file cannot be written now: the
-    /// next look writes it out (`prune`).
+    /// Takes out the line of the token whose SHA-256 is `hash`, and no other:
+    /// the lines it invited stay. False when the file has no such line. The
+    /// line is refused from now on, even when the file cannot be written now:
+    /// the next look writes it out (`prune`).
     pub fn remove(&self, hash: &[u8; 32]) -> io::Result<bool> {
         let mut seen = lock(&self.seen, TOKENS_LOCK);
         seen.refused.insert(*hash);
         seen.force();
-        let invited = seen.invited.clone();
-        let found = self.rewrite(&mut seen, invited, |lines| {
+        let found = self.rewrite(&mut seen, |lines| {
             let before = lines.len();
             lines.retain(|line| line_hash(line) != Some(*hash));
             Ok(lines.len() != before)
@@ -351,16 +303,14 @@ impl Tokens {
     }
 
     /// Writes the file again from what it holds now, with `change` made to its
-    /// lines, `invited` as the lines invites made from then on, and, when the
-    /// file has stayed as it is for `SETTLE`, without the lines out of force.
-    /// The file is read again first, so no line written since is lost, and
-    /// written only if it is still as read then; when it changed meanwhile,
-    /// all that is done again, `TRIES` times at most. Nothing is written when
-    /// nothing changed.
+    /// lines and, when the file has stayed as it is for `SETTLE`, without the
+    /// lines refused. The file is read again first, so no line written since
+    /// is lost, and written only if it is still as read then; when it changed
+    /// meanwhile, all that is done again, `TRIES` times at most. Nothing is
+    /// written when nothing changed.
     fn rewrite<T>(
         &self,
         seen: &mut Seen,
-        invited: HashMap<[u8; 32], [u8; 32]>,
         mut change: impl FnMut(&mut Vec<String>) -> io::Result<T>,
     ) -> io::Result<T> {
         let mut tries = 0;
@@ -382,22 +332,14 @@ impl Tokens {
             let mut lines = before.clone();
             let out = change(&mut lines)?;
             if seen.settled(stamp) {
-                let held: HashSet<[u8; 32]> = lines
-                    .iter()
-                    .filter_map(|line| line_hash(line))
-                    .filter(|hash| !seen.refused.contains(hash))
-                    .collect();
-                let gone = orphans(&held, &invited);
                 lines.retain(|line| {
-                    line_hash(line).is_none_or(|hash| held.contains(&hash) && !gone.contains(&hash))
+                    line_hash(line).is_none_or(|hash| !seen.refused.contains(&hash))
                 });
             }
             if lines == before {
-                seen.invited = invited;
-                seen.force();
                 return Ok(out);
             }
-            match self.write(seen, &lines, &invited, stamp) {
+            match self.write(seen, &lines, stamp) {
                 Ok(()) => return Ok(out),
                 Err(e) if again(&e, &mut tries) => continue,
                 Err(e) => return Err(e),
@@ -424,16 +366,10 @@ impl Tokens {
         Ok((text, after))
     }
 
-    /// Writes `lines` as the whole file, with `invited` as the lines invites
-    /// made from then on, if the file is still as `read` says it was, and
-    /// reads it back. An error (`Interrupted`) when it changed since.
-    fn write(
-        &self,
-        seen: &mut Seen,
-        lines: &[String],
-        invited: &HashMap<[u8; 32], [u8; 32]>,
-        read: Option<Stamp>,
-    ) -> io::Result<()> {
+    /// Writes `lines` as the whole file, if the file is still as `read` says
+    /// it was, and reads it back. An error (`Interrupted`) when it changed
+    /// since.
+    fn write(&self, seen: &mut Seen, lines: &[String], read: Option<Stamp>) -> io::Result<()> {
         plain_file(&self.path)?;
         let mut text = lines.join("\n");
         text.push('\n');
@@ -450,7 +386,6 @@ impl Tokens {
             Ok(())
         })?;
         seen.wrote = wrote;
-        seen.invited = invited.clone();
         let kept: HashSet<[u8; 32]> = lines.iter().filter_map(|line| line_hash(line)).collect();
         seen.refused.retain(|hash| kept.contains(hash));
         seen.read = false;
@@ -537,30 +472,14 @@ impl Seen {
         }
     }
 
-    /// Works out the lines in force from the lines read, the lines invites
-    /// made and the lines refused, and says in the log each line that went out
-    /// of force for its inviter's since.
+    /// Works out the lines in force from the lines read and the lines refused.
     fn force(&mut self) {
-        let held: HashSet<[u8; 32]> = self
-            .all
-            .keys()
-            .filter(|hash| !self.refused.contains(*hash))
-            .copied()
-            .collect();
-        let gone = orphans(&held, &self.invited);
-        for hash in gone.difference(&self.told) {
-            elog!(
-                "erevos-relay: the line {} is refused: the line of the phone that invited it is gone",
-                short(hash)
-            );
-        }
         self.hashes = self
             .all
             .iter()
-            .filter(|(hash, _)| held.contains(*hash) && !gone.contains(*hash))
+            .filter(|(hash, _)| !self.refused.contains(*hash))
             .map(|(hash, name)| (*hash, name.clone()))
             .collect();
-        self.told = gone;
     }
 
     /// Whether the file, as `stamp` says it is, has stayed as it is for
@@ -613,32 +532,6 @@ pub fn plain_file(path: &Path) -> io::Result<()> {
         )),
         _ => Ok(()),
     }
-}
-
-/// The lines of `held` that are not in force: in force are the lines no
-/// invite made, and each line `invited` says one in force invited. So a line
-/// whose inviter's line is gone is not, nor any it invited, nor lines that
-/// invited each other in a ring.
-fn orphans(held: &HashSet<[u8; 32]>, invited: &HashMap<[u8; 32], [u8; 32]>) -> HashSet<[u8; 32]> {
-    let mut live: HashSet<[u8; 32]> = held
-        .iter()
-        .filter(|hash| !invited.contains_key(*hash))
-        .copied()
-        .collect();
-    loop {
-        let more: Vec<[u8; 32]> = held
-            .iter()
-            .filter(|hash| {
-                !live.contains(*hash) && invited.get(*hash).is_some_and(|by| live.contains(by))
-            })
-            .copied()
-            .collect();
-        if more.is_empty() {
-            break;
-        }
-        live.extend(more);
-    }
-    held.difference(&live).copied().collect()
 }
 
 /// The SHA-256 a line of the file starts with, if it is one.
@@ -772,7 +665,6 @@ mod tests {
                     "maria",
                     true,
                     "invited by pixel on 2026-10-21",
-                    None,
                     None
                 )
                 .unwrap(),
@@ -780,7 +672,7 @@ mod tests {
         );
         assert_eq!(
             tokens
-                .add(&anna, "PIXEL", true, "invited by pixel", None, None)
+                .add(&anna, "PIXEL", true, "invited by pixel", None)
                 .unwrap(),
             "PIXEL-2"
         );
@@ -811,22 +703,20 @@ mod tests {
         let again: [u8; 32] = Sha256::digest(b"anna's new token").into();
         assert_eq!(
             tokens
-                .add(&again, "PIXEL-2", false, "again", Some(&anna), None)
+                .add(&again, "PIXEL-2", false, "again", Some(&anna))
                 .unwrap(),
             "PIXEL-2"
         );
         assert!(!tokens.has("anna's token") && tokens.has("anna's new token"));
         // A file that is not there yet is made.
         fs::remove_file(&path.0).unwrap();
-        tokens
-            .add(&maria, "maria", true, "new", None, None)
-            .unwrap();
+        tokens.add(&maria, "maria", true, "new", None).unwrap();
         assert!(tokens.has("maria's token"));
         assert_eq!(tokens.count(), 1);
     }
 
     #[test]
-    fn a_line_an_invite_made_goes_with_its_inviter_and_what_it_invited_with_it() {
+    fn a_line_an_invite_made_stays_when_its_inviter_s_line_goes_and_one_taken_out_goes_alone() {
         let path = TempPath::new("invited");
         let tokens = Tokens::new(path.0.clone());
         let line = |token: &str| -> [u8; 32] { Sha256::digest(token.as_bytes()).into() };
@@ -843,105 +733,46 @@ mod tests {
             ),
             1,
         );
-        tokens.set_invited(HashMap::from([(maria, pixel), (anna, maria)]));
         assert!(tokens.has("pixel") && tokens.has("maria") && tokens.has("anna"));
-        // The operator deletes Pixel's line by hand: Maria's goes with it, and Anna's with hers.
-        write(
-            &path.0,
-            &format!(
-                "# phones\n{} maria # invited by pixel\n{} anna # invited by maria\n{} other\n",
-                to_hex(&maria),
-                to_hex(&anna),
-                to_hex(&other)
-            ),
-            2,
+        // The operator deletes Pixel's line by hand: Maria's stays, and Anna's, whom Maria invited.
+        let without = format!(
+            "# phones\n{} maria # invited by pixel\n{} anna # invited by maria\n{} other\n",
+            to_hex(&maria),
+            to_hex(&anna),
+            to_hex(&other)
         );
-        assert!(!tokens.has("maria") && !tokens.has("anna"));
-        assert!(tokens.has("other"));
-        assert!(tokens.in_file(&maria) && !tokens.gone(&maria));
-        assert!(
-            fs::read_to_string(&path.0)
-                .unwrap()
-                .contains(&to_hex(&maria)),
-            "reading the file never writes it"
-        );
-        // The hourly look writes it again without them.
+        write(&path.0, &without, 2);
+        assert!(!tokens.has("pixel"));
+        assert!(tokens.has("maria") && tokens.has("anna") && tokens.has("other"));
+        assert_eq!(tokens.count(), 3);
+        // The hourly look leaves them in the file.
         tokens.prune();
+        assert_eq!(fs::read_to_string(&path.0).unwrap(), without);
+        assert!(tokens.gone(&pixel) && !tokens.gone(&maria) && !tokens.gone(&anna));
+        // Taken out by the relay, as an invite taken back or the provider's check does: that line alone.
+        assert!(tokens.remove(&maria).unwrap());
+        assert!(!tokens.has("maria") && tokens.has("anna") && tokens.has("other"));
         assert_eq!(
             fs::read_to_string(&path.0).unwrap(),
-            format!("# phones\n{} other\n", to_hex(&other)),
-        );
-        assert!(tokens.gone(&maria) && !tokens.gone(&other));
-        // Taken out by the relay, as the provider's check does: what it invited goes in the same call.
-        let (signed, invitee) = (line("signed in"), line("invitee"));
-        tokens
-            .add(&signed, "lphl:x", true, "signed in", None, None)
-            .unwrap();
-        tokens
-            .add(
-                &invitee,
-                "y",
-                true,
-                "invited by lphl:x",
-                None,
-                Some(&signed),
-            )
-            .unwrap();
-        assert!(tokens.has("invitee"));
-        assert!(tokens.remove(&signed).unwrap());
-        assert!(!tokens.has("invitee"));
-        assert!(!fs::read_to_string(&path.0)
-            .unwrap()
-            .contains(&to_hex(&invitee)));
-        // A line replaced for the same phone keeps what it invited.
-        let (again, newer) = (line("signed in again"), line("newer"));
-        tokens
-            .add(&signed, "lphl:x", true, "signed in", None, None)
-            .unwrap();
-        tokens
-            .add(
-                &invitee,
-                "y",
-                true,
-                "invited by lphl:x",
-                None,
-                Some(&signed),
-            )
-            .unwrap();
-        tokens
-            .add(
-                &again,
-                "lphl:x",
-                false,
-                "signed in again",
-                Some(&signed),
-                None,
-            )
-            .unwrap();
-        assert!(!tokens.has("signed in") && tokens.has("signed in again") && tokens.has("invitee"));
-        tokens
-            .add(&newer, "lphl:x", false, "and again", Some(&again), None)
-            .unwrap();
-        assert!(tokens.has("invitee"));
-        tokens.remove(&newer).unwrap();
-        assert!(!tokens.has("invitee"));
-        // Lines that invited each other, with no line of the operator's above them, are not in force.
-        write(
-            &path.0,
-            &format!(
-                "{} a\n{} b\n{} other\n",
-                to_hex(&line("a")),
-                to_hex(&line("b")),
+            format!(
+                "# phones\n{} anna # invited by maria\n{} other\n",
+                to_hex(&anna),
                 to_hex(&other)
-            ),
-            3,
+            )
         );
-        tokens.set_invited(HashMap::from([
-            (line("a"), line("b")),
-            (line("b"), line("a")),
-        ]));
-        assert!(!tokens.has("a") && !tokens.has("b") && tokens.has("other"));
-        assert_eq!(tokens.count(), 1);
+        // A line put in place of another, as signing in again does, takes out that one alone too.
+        let (signed, again) = (line("signed in"), line("signed in again"));
+        tokens
+            .add(&signed, "lphl:x", true, "signed in", None)
+            .unwrap();
+        tokens
+            .add(&again, "lphl:x", false, "signed in again", Some(&signed))
+            .unwrap();
+        assert!(!tokens.has("signed in") && tokens.has("signed in again"));
+        assert!(tokens.has("anna") && tokens.has("other"));
+        tokens.remove(&again).unwrap();
+        assert!(tokens.has("anna") && tokens.has("other"));
+        assert_eq!(tokens.count(), 2);
     }
 
     #[test]
@@ -949,12 +780,10 @@ mod tests {
         let path = TempPath::new("twice");
         let tokens = Tokens::new(path.0.clone());
         let maria: [u8; 32] = Sha256::digest(b"maria").into();
-        tokens
-            .add(&maria, "maria", true, "first", None, None)
-            .unwrap();
+        tokens.add(&maria, "maria", true, "first", None).unwrap();
         let before = fs::read_to_string(&path.0).unwrap();
         let e = tokens
-            .add(&maria, "someone", true, "again", None, None)
+            .add(&maria, "someone", true, "again", None)
             .unwrap_err();
         assert_eq!(e.kind(), ErrorKind::AlreadyExists);
         assert_eq!(fs::read_to_string(&path.0).unwrap(), before);
@@ -980,36 +809,29 @@ mod tests {
         let tokens = Tokens::new(link.0.clone());
         assert!(tokens.has("pixel"));
         let e = tokens
-            .add(
-                &Sha256::digest(b"anna").into(),
-                "anna",
-                true,
-                "new",
-                None,
-                None,
-            )
+            .add(&Sha256::digest(b"anna").into(), "anna", true, "new", None)
             .unwrap_err();
         assert_eq!(e.kind(), ErrorKind::InvalidInput);
         // A line taken out cannot be written out through the link, but is refused all the same.
         assert!(tokens.remove(&pixel).is_err());
-        assert!(!tokens.has("pixel"));
-        // So is a line that went with its inviter.
-        tokens.set_invited(HashMap::from([(maria, [9; 32])]));
-        assert!(!tokens.has("maria"));
+        assert!(!tokens.has("pixel") && tokens.has("maria"));
         tokens.prune();
-        assert!(!tokens.has("pixel") && !tokens.has("maria"));
+        assert!(!tokens.has("pixel") && tokens.has("maria"));
         assert!(fs::symlink_metadata(&link.0)
             .unwrap()
             .file_type()
             .is_symlink());
         let text = fs::read_to_string(&path.0).unwrap();
         assert!(text.contains(&to_hex(&pixel)) && text.contains(&to_hex(&maria)));
-        // The file itself in the link's place: the next look writes both out.
+        // The file itself in the link's place: the next look writes it out, and only it.
         fs::remove_file(&link.0).unwrap();
         fs::rename(&path.0, &link.0).unwrap();
         tokens.prune();
-        assert_eq!(fs::read_to_string(&link.0).unwrap(), "\n");
-        assert!(!tokens.has("pixel") && !tokens.has("maria"));
+        assert_eq!(
+            fs::read_to_string(&link.0).unwrap(),
+            format!("{} maria\n", to_hex(&maria))
+        );
+        assert!(!tokens.has("pixel") && tokens.has("maria"));
     }
 
     #[test]
@@ -1021,11 +843,17 @@ mod tests {
         let first = format!("# phones\n{} maria # invited by pixel\n", to_hex(&maria));
         let rest = format!("{} pixel\n{} other\n", to_hex(&pixel), to_hex(&other));
         write(&path.0, &format!("{first}{rest}"), 1);
-        tokens.set_invited(HashMap::from([(maria, pixel)]));
-        assert!(tokens.has("maria") && tokens.has("pixel"));
+        assert!(tokens.has("maria") && tokens.has("pixel") && tokens.has("other"));
+        // Other's line taken out when the file could not be written: refused until a look writes it out.
+        {
+            let mut seen = lock(&tokens.seen, TOKENS_LOCK);
+            seen.refused.insert(other);
+            seen.force();
+        }
+        assert!(!tokens.has("other"));
         // The operator saves the file in place (nano, cat >), and the relay reads it halfway through.
         fs::write(&path.0, &first).unwrap();
-        assert!(!tokens.has("maria") && !tokens.has("pixel"));
+        assert!(tokens.has("maria") && !tokens.has("pixel"));
         assert!(
             !tokens.gone(&pixel),
             "a file just changed may be halfway saved"
@@ -1036,11 +864,11 @@ mod tests {
             first,
             "nothing written"
         );
-        // The rest comes: every line is there, and in force again.
+        // The rest comes: every line is there, and in force again but Other's, still refused.
         let mut file = fs::File::options().append(true).open(&path.0).unwrap();
         std::io::Write::write_all(&mut file, rest.as_bytes()).unwrap();
         drop(file);
-        assert!(tokens.has("maria") && tokens.has("pixel") && tokens.has("other"));
+        assert!(tokens.has("maria") && tokens.has("pixel") && !tokens.has("other"));
         tokens.prune();
         assert_eq!(
             fs::read_to_string(&path.0).unwrap(),
@@ -1052,9 +880,7 @@ mod tests {
         fs::write(&path.0, &more).unwrap();
         let lines: Vec<String> = text.lines().map(str::to_string).collect();
         let mut seen = lock(&tokens.seen, TOKENS_LOCK);
-        let e = tokens
-            .write(&mut seen, &lines, &HashMap::new(), stamp)
-            .unwrap_err();
+        let e = tokens.write(&mut seen, &lines, stamp).unwrap_err();
         assert_eq!(e.kind(), ErrorKind::Interrupted);
         drop(seen);
         assert_eq!(fs::read_to_string(&path.0).unwrap(), more);

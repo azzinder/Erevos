@@ -26,19 +26,21 @@
 //! its own invite more phones, one an invite (see `invites.rs`): an invite is a
 //! QR code with the relay's address and a secret, good for one phone for 7
 //! days, and the phone that takes it gets a line of its own in the file, named
-//! as the inviter typed and saying who invited it. That line lasts only as long
-//! as the inviter's: when the inviter's line goes, for whatever reason, the
-//! lines it invited go too, and those they invited. That goes by the token, so
-//! a line put in place of another with a new token takes the old one's
-//! invited lines with it; `erevos-relay free-line NAME`, run with the relay
-//! stopped, frees a line from the line that invited it. The relay lets in at most
+//! as the inviter typed and saying who invited it. That line stands on its
+//! own: when the inviter's line goes, for whatever reason, it stays, and so do
+//! the lines it invited. The inviter taking back the invite the phone took
+//! takes out that phone's line alone. `erevos-relay free-line NAME`, run with
+//! the relay stopped, drops the invite that made a line, so that its inviter
+//! no longer takes it back, and it no longer counts among the phones let in
+//! by invite. The relay lets in at most
 //! `EREVOS_RELAY_MAX_INVITED` phones by invite at once (100 unless set),
 //! counting invites still open. The relay then writes the file itself, through
 //! a file beside it and a rename, so the file must be in a folder the relay can
 //! write (with the systemd unit in `deploy/relay`, `/var/lib/erevos-relay/`,
 //! not `/etc`), and must be the file itself: the relay does not start when the
 //! path is a symbolic link. The invites are kept in `<file>.invites`, and read
-//! even with invites off, so turning them off frees no one from their inviter.
+//! even with invites off, so that, turned on again, each phone has the invites
+//! it made, also one signed in again meanwhile.
 //! While invites are on, a phone that came with `EREVOS_RELAY_TOKEN` asks once
 //! for a line of its own, which the relay adds as one of the operator's, 50 a
 //! day at most, so changing that token later cuts off no phone that has one.
@@ -243,11 +245,11 @@ fn load_key(path: &Path) -> io::Result<RelayKey> {
 }
 
 /// `erevos-relay free-line NAME`: drops the invite that made the line named
-/// `name` in the file of tokens (`EREVOS_RELAY_TOKENS`), so that it no longer
-/// goes with the line of the phone that invited it and is as a line the
-/// operator wrote. Run with the relay stopped, since a running relay writes
-/// its own invites over the file; as root, the file of invites stays its
-/// owner's.
+/// `name` in the file of tokens (`EREVOS_RELAY_TOKENS`), so that the phone
+/// that invited it no longer lists it or takes it back, it no longer counts
+/// among the phones let in by invite, and it is as a line the operator wrote.
+/// Run with the relay stopped, since a running relay writes its own invites
+/// over the file; as root, the file of invites stays its owner's.
 fn free_line(name: &str) -> ExitCode {
     let Some(path) = env::var("EREVOS_RELAY_TOKENS")
         .ok()
@@ -290,7 +292,7 @@ fn free_line(name: &str) -> ExitCode {
     match invites.free(&line) {
         Ok(by) if by.is_empty() => {
             println!(
-                "No invite kept in {} made the line {name:?}: it goes with no other line already.",
+                "No invite kept in {} made the line {name:?}: no other phone may take it back already.",
                 kept.display()
             );
             ExitCode::SUCCESS
@@ -298,7 +300,7 @@ fn free_line(name: &str) -> ExitCode {
         Ok(by) => {
             give_back(&kept, owner);
             println!(
-                "The line {name:?} no longer goes with the line that invited it ({}). Start the relay again.",
+                "The line {name:?} is no longer an invite of the line that invited it ({}), which can no longer take it back. Start the relay again.",
                 by.join(", ")
             );
             ExitCode::SUCCESS
@@ -632,10 +634,11 @@ fn main() -> ExitCode {
                     if on {
                         elog!("erevos-relay: phones with tokens of their own may invite others, {most} at most let in by invite, {} invites kept in {kept}", invites.len());
                     } else {
-                        elog!("erevos-relay: invites are off, but the phones let in by invite before, kept in {kept}, still go with the phones that invited them");
+                        elog!("erevos-relay: invites are off, but the invites made before stay kept in {kept}, for when they are on again");
                     }
                     if let Some(tokens) = store.tokens.get() {
-                        tokens.set_invited(invites.edges(tokens));
+                        // A phone signed in again just before the relay stopped gets its invites now.
+                        invites.finish_moves(tokens);
                     }
                     let _ = store.invites.set(invites);
                 }

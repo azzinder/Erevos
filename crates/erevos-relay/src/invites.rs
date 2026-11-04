@@ -27,28 +27,34 @@
 //!
 //! A phone sees only its own invites (`INVITES`) and takes back only those
 //! (`UNINVITE`): one not used yet goes, and one used takes the line of the
-//! phone it let in out of the file, cutting that phone off. A phone may have
+//! phone it let in out of the file, cutting that phone off, and that phone
+//! alone: the phones it invited in turn keep their lines. A phone may have
 //! `MAX_OPEN` invites open at once and make `MAX_A_DAY` a day, and the relay
 //! lets in at most `EREVOS_RELAY_MAX_INVITED` phones by invite (`MAX_INVITED`
 //! unless set), counting the invites still open. An invite whose inviter's
 //! line is gone from the file lets no one in.
 //!
-//! A phone let in by an invite uses the relay only while the phone that
-//! invited it does: each used invite keeps the inviter's line beside the one
-//! it made (`edges`), and the file of tokens refuses the made line with the
-//! inviter's, whatever takes that out, and the lines the made one invited in
-//! turn (see `tokens.rs`). A used invite goes only once its line is surely
-//! gone from the file (`sweep`), not while the line is only refused, or the
-//! file could not be read or written: a failed write never frees a line from
-//! its inviter. A line signed in again in place of another (`signin.rs`)
-//! keeps what the other invited: the move is written down before the new line
-//! goes in (`moving`), and finished after (`moved`), or at the next start
-//! when the relay stopped in between (`edges`), so no stop cuts or frees the
-//! phones the old line invited. `erevos-relay free-line NAME`, run with the
-//! relay stopped, drops the invite that made a line (`free`), which is the
-//! operator's own from then on. The invites are read for this even with
-//! invites off, when they were on before, so turning them off frees no one
-//! from their inviter.
+//! A line an invite made stands on its own once it is in the file of tokens
+//! (see `tokens.rs`): whatever takes out the inviter's line (its own inviter,
+//! the provider's check, the operator deleting it by hand), the line it
+//! invited stays, and so do the lines that one invited. Who invited whom is
+//! kept here only, in each used invite, for the inviter's list of its
+//! invites, its taking one back, and the count of the phones let in by
+//! invite. A used invite goes only once its line is surely gone from the file
+//! (`sweep`), not while the line is only refused, or the file could not be
+//! read or written: so a line in the file always has the invite that says who
+//! invited it, and a failed write never keeps its inviter from taking it back
+//! again. A line signed in again in place of another (`signin.rs`) keeps the
+//! other's invites: the move is written down before the new line goes in
+//! (`moving`), and finished after (`moved`), or at the next start when the
+//! relay stopped in between (`finish_moves`), so no stop leaves them with the
+//! old line, where no phone lists them or takes them back, and the open ones
+//! let no one in. `erevos-relay free-line NAME`, run with the relay stopped,
+//! drops the invite that made a line (`free`), which is the operator's own
+//! from then on: its inviter no longer lists it or takes it back, and it no
+//! longer counts among the phones let in by invite. The invites are read even
+//! with invites off, when they were on before, so a line signed in again
+//! meanwhile still has its invites once they are on again.
 //!
 //! A phone that came with the relay's one token, which every phone may have,
 //! cannot invite with it, but asks once for a line of its own (`OWN`, see
@@ -354,24 +360,29 @@ impl Invites {
         lock(&self.state, INVITES_LOCK).invites.len()
     }
 
-    /// The lines invites made, each with the line of the phone that invited
-    /// it, by their tokens' SHA-256s: for the file of tokens (`set_invited`).
-    /// A move left by a relay that stopped between `moving` and `moved` is
-    /// finished first: to the new line if its line is in `tokens`' file, the
-    /// write that put it there having taken the old one out, else not at all;
-    /// with no line in the file, as when it cannot be read now, at the next
-    /// start.
-    pub fn edges(&self, tokens: &Tokens) -> HashMap<[u8; 32], [u8; 32]> {
+    /// Finishes a move left by a relay that stopped between `moving` and
+    /// `moved`: to the new line if its line is in `tokens`' file, the write
+    /// that put it there having taken the old one out, else not at all; with
+    /// no line in the file, as when it cannot be read now, at the next start.
+    /// The relay calls this when it starts.
+    pub fn finish_moves(&self, tokens: &Tokens) {
         let left = lock(&self.state, INVITES_LOCK).moving.clone();
-        if !left.is_empty() && tokens.lines_in_file() > 0 {
-            for (old, new) in left {
-                if tokens.in_file(&new) {
-                    self.moved(&old, &new);
-                } else {
-                    self.not_moved(&old, &new);
-                }
+        if left.is_empty() || tokens.lines_in_file() == 0 {
+            return;
+        }
+        for (old, new) in left {
+            if tokens.in_file(&new) {
+                self.moved(&old, &new);
+            } else {
+                self.not_moved(&old, &new);
             }
         }
+    }
+
+    /// The lines invites made, each with the line of the phone that invited
+    /// it, by their tokens' SHA-256s.
+    #[cfg(test)]
+    fn edges(&self) -> HashMap<[u8; 32], [u8; 32]> {
         lock(&self.state, INVITES_LOCK)
             .invites
             .iter()
@@ -465,8 +476,9 @@ impl Invites {
     }
 
     /// Takes back the invite `id` of the phone `by`: one not used goes, and
-    /// one used takes its phone's line out of `tokens` too. False when that
-    /// phone made no such invite.
+    /// one used takes its phone's line out of `tokens` too, that line alone:
+    /// the phones it invited in turn keep theirs. False when that phone made
+    /// no such invite.
     pub fn take_back(&self, by: &[u8; 32], id: &[u8; 16], tokens: &Tokens) -> io::Result<bool> {
         let mut state = lock(&self.state, INVITES_LOCK);
         let Some(at) = state
@@ -487,8 +499,8 @@ impl Invites {
     }
 
     /// Lets in the phone whose token's SHA-256 is `line` with the invite whose
-    /// secret is `secret`: adds its line to `tokens`, lasting as long as the
-    /// inviter's, and returns the name on it. The same `line` again for the
+    /// secret is `secret`: adds its line to `tokens`, which stands on its own
+    /// from then on, and returns the name on it. The same `line` again for the
     /// same invite returns its name again. The invite is written down as used
     /// before the line goes in, so a line in the file always has the invite
     /// that says who invited it; if the line cannot go in, the invite is open
@@ -532,7 +544,7 @@ impl Invites {
         let mut next = state.clone();
         next.invites[at].used = Some((now, *line));
         self.save(&next).map_err(|_| RedeemError::Storage)?;
-        let name = match tokens.add(line, &invite.name, true, &note, None, Some(&invite.by)) {
+        let name = match tokens.add(line, &invite.name, true, &note, None) {
             Ok(name) => name,
             Err(e) => {
                 if let Err(e) = self.save(&state) {
@@ -590,7 +602,7 @@ impl Invites {
             safe.as_str()
         };
         let note = format!("came with the relay's token on {}", date(now));
-        match tokens.add(line, name, true, &note, None, None) {
+        match tokens.add(line, name, true, &note, None) {
             Ok(written) => {
                 owned.1 += 1;
                 Ok(written)
@@ -602,9 +614,10 @@ impl Invites {
     /// Writes down, before the line `new` goes in the file of tokens in place
     /// of `old`'s (the same phone signed in again, see `signin.rs`), that the
     /// invites of `old` are to be `new`'s: so a relay that stops before
-    /// `moved` or `not_moved` finishes it at its next start (`edges`), and
-    /// the phones `old` invited are neither cut nor freed. An error when that
-    /// cannot be written; then the line must not go in.
+    /// `moved` or `not_moved` finishes it at its next start (`finish_moves`),
+    /// and the phone keeps the phones `old` invited to list and take back, and
+    /// its open invites. An error when that cannot be written; then the line
+    /// must not go in.
     pub fn moving(&self, old: &[u8; 32], new: &[u8; 32]) -> io::Result<()> {
         let mut state = lock(&self.state, INVITES_LOCK);
         if !state.invites.iter().any(|i| &i.by == old) && !state.made.contains_key(old) {
@@ -619,10 +632,11 @@ impl Invites {
 
     /// The invites of the phone whose line was `old` are the line `new`'s from
     /// now on, used and open, with that day's count: `new`'s line went in the
-    /// file of tokens in place of `old`'s, so the phones it invited keep the
-    /// relay. Kept so even when it cannot be written now, as the file of
-    /// tokens has it so: the move written down by `moving` is finished at the
-    /// next start then.
+    /// file of tokens in place of `old`'s, so the phone still lists and takes
+    /// back the phones it invited, and its open invites still let one in.
+    /// Kept so even when it cannot be written now, as the file of tokens has
+    /// the new line: the move written down by `moving` is finished at the next
+    /// start then.
     pub fn moved(&self, old: &[u8; 32], new: &[u8; 32]) {
         let mut state = lock(&self.state, INVITES_LOCK);
         if !state.moving.contains(&(*old, *new))
@@ -655,10 +669,11 @@ impl Invites {
         }
     }
 
-    /// Drops the used invites that made the line `line`, so it no longer goes
-    /// with the line of the phone that invited it, and returns the inviters'
-    /// names: for `erevos-relay free-line`, with the relay stopped, since a
-    /// running relay writes its own invites over these.
+    /// Drops the used invites that made the line `line`, so the phone that
+    /// invited it no longer lists it or takes it back, and it no longer counts
+    /// among the phones let in by invite, and returns the inviters' names: for
+    /// `erevos-relay free-line`, with the relay stopped, since a running relay
+    /// writes its own invites over these.
     pub fn free(&self, line: &[u8; 32]) -> io::Result<Vec<String>> {
         let mut state = lock(&self.state, INVITES_LOCK);
         let made = |i: &Invite| i.used.is_some_and(|(_, used)| &used == line);
@@ -684,11 +699,11 @@ impl Invites {
         Ok(by)
     }
 
-    /// Takes out of `tokens` the lines that went with their inviter's
-    /// (`prune`), then drops invites that expired unused, used ones whose
-    /// line is surely gone from the file of tokens (`Tokens::gone`), and the
-    /// counts of a day gone by. A line still in the file stays invited, even
-    /// refused, so a line that could not be written out, or a file read
+    /// Takes out of `tokens` the lines taken out when the file could not be
+    /// written (`prune`), then drops invites that expired unused, used ones
+    /// whose line is surely gone from the file of tokens (`Tokens::gone`), and
+    /// the counts of a day gone by. A line still in the file stays invited,
+    /// even refused, so a line that could not be written out, or a file read
     /// halfway through a save, keeps who invited it; a file of tokens with no
     /// line at all, as when it is not there for a moment, drops no used
     /// invite either. The relay calls this now and then.
@@ -698,13 +713,8 @@ impl Invites {
         let before = state.invites.len();
         let new_day = state.today(now);
         let none = tokens.lines_in_file() == 0;
-        let mut dropped = Vec::new();
         state.invites.retain(|i| match i.used {
-            Some((_, line)) if !none && tokens.gone(&line) => {
-                dropped.push(line);
-                false
-            }
-            Some(_) => true,
+            Some((_, line)) => none || !tokens.gone(&line),
             None => i.expires > now,
         });
         if new_day || state.invites.len() != before {
@@ -712,8 +722,6 @@ impl Invites {
                 elog!("erevos-relay: cannot write the invites: {e}");
             }
         }
-        drop(state);
-        tokens.forget_invited(&dropped);
     }
 }
 
@@ -1210,65 +1218,97 @@ mod tests {
         line
     }
 
+    /// Deletes the line of `line` from the file of tokens by hand, as the
+    /// operator does, and leaves the file so for a minute; returns the file
+    /// as it is then.
+    fn delete_by_hand(path: &TempPath, line: &[u8; 32]) -> String {
+        let without: String = fs::read_to_string(&path.0)
+            .unwrap()
+            .lines()
+            .filter(|l| !l.starts_with(&to_hex(line)))
+            .map(|l| format!("{l}\n"))
+            .collect();
+        fs::write(&path.0, &without).unwrap();
+        let file = fs::File::options().write(true).open(&path.0).unwrap();
+        file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(4_000_000))
+            .unwrap();
+        without
+    }
+
     #[test]
-    fn a_phone_let_in_by_an_invite_goes_with_the_phone_that_invited_it() {
+    fn the_phones_a_line_invited_stay_when_it_is_deleted_and_a_take_back_cuts_off_one_alone() {
         let path = TempPath::new("tokens");
         let kept = TempPath::new("invites");
         let (tokens, pixel) = phones(&path);
         let invites = Invites::open(&kept.0, true, MAX_INVITED).unwrap();
+        // Pixel invites Maria, who invites Anna, who invites Eleni.
         let (secret, _) = invites.make(&pixel, "maria", &tokens, NOW).unwrap();
         let maria = took(&invites, &secret, "maria's token", &tokens);
         let as_maria = Phone {
             hash: maria,
             name: "maria".into(),
         };
-        let (secret, _) = invites.make(&as_maria, "anna", &tokens, NOW).unwrap();
-        took(&invites, &secret, "anna's token", &tokens);
-        let (open, _) = invites.make(&as_maria, "eleni", &tokens, NOW).unwrap();
-        assert!(tokens.has("maria's token") && tokens.has("anna's token"));
-        assert_eq!(invites.edges(&tokens).get(&maria), Some(&pixel.hash));
+        let (to_anna, _) = invites.make(&as_maria, "anna", &tokens, NOW).unwrap();
+        let anna = took(&invites, &to_anna, "anna's token", &tokens);
+        let as_anna = Phone {
+            hash: anna,
+            name: "anna".into(),
+        };
+        let (secret, _) = invites.make(&as_anna, "eleni", &tokens, NOW).unwrap();
+        let eleni = took(&invites, &secret, "eleni's token", &tokens);
+        let (from_pixel, _) = invites.make(&pixel, "nikos", &tokens, NOW).unwrap();
+        let (from_maria, _) = invites.make(&as_maria, "ioanna", &tokens, NOW).unwrap();
 
-        // After a restart, the file of tokens learns again who invited whom.
+        // After a restart, so that nothing kept in memory only holds them.
         drop(invites);
         let tokens = Tokens::new(path.0.clone());
         let invites = Invites::open(&kept.0, true, MAX_INVITED).unwrap();
-        tokens.set_invited(invites.edges(&tokens));
-        assert!(tokens.has("anna's token"));
+        invites.finish_moves(&tokens);
 
-        // The operator deletes Pixel's line by hand: Maria's phone goes, and Anna's, whom Maria invited.
-        let text = fs::read_to_string(&path.0).unwrap();
-        let mut without: String = text
-            .lines()
-            .filter(|line| !line.starts_with(&to_hex(&pixel.hash)))
-            .map(|line| format!("{line}\n"))
-            .collect();
-        let other = format!("{} other\n", to_hex(&hash(9)));
-        without.push_str(&other);
-        fs::write(&path.0, without).unwrap();
-        let file = fs::File::options().write(true).open(&path.0).unwrap();
-        file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(4_000_000))
-            .unwrap();
-        assert!(!tokens.has("maria's token") && !tokens.has("anna's token"));
-        // Maria's invite still open lets no one in, and the sweep writes out the lines refused, then drops what is gone.
+        // The operator deletes Pixel's line by hand: Maria's phone stays, and Anna's, whom Maria
+        // invited, and Eleni's, whom Anna invited.
+        let without = delete_by_hand(&path, &pixel.hash);
+        assert!(!tokens.holds(&pixel.hash));
+        assert!(tokens.has("maria's token"));
+        assert!(tokens.has("anna's token") && tokens.has("eleni's token"));
+        // The sweep leaves their lines in the file, and who invited each.
+        invites.sweep(&tokens, NOW);
+        assert_eq!(fs::read_to_string(&path.0).unwrap(), without);
+        let edges = invites.edges();
         assert_eq!(
-            invites.redeem(&open, &hash(1), &tokens, NOW),
+            (edges[&maria], edges[&anna], edges[&eleni]),
+            (pixel.hash, maria, anna)
+        );
+        // Pixel's invite still open lets no one in; Maria's lets one more in.
+        assert_eq!(
+            invites.redeem(&from_pixel, &hash(1), &tokens, NOW),
             Err(RedeemError::NotFound)
         );
         assert_eq!(
-            invites.edges(&tokens).len(),
-            2,
-            "kept while their lines are there"
+            invites.redeem(&from_maria, &hash(2), &tokens, NOW),
+            Ok("ioanna".to_string())
         );
+
+        // Maria takes back Anna's invite: Anna's phone is cut off, and only it; Eleni's, whom
+        // Anna invited, stays.
+        assert!(invites
+            .take_back(&maria, &Invite::id_of(&to_anna), &tokens)
+            .unwrap());
+        assert!(!tokens.has("anna's token"));
+        assert!(tokens.has("maria's token") && tokens.has("eleni's token"));
+        assert!(tokens.holds(&hash(2)));
+        assert_eq!(tokens.count(), 3);
+        // Eleni still counts among the phones let in by invite, as Maria and Ioanna do.
         invites.sweep(&tokens, NOW);
+        assert_eq!(invites.edges().get(&eleni), Some(&anna));
         assert_eq!(
-            fs::read_to_string(&path.0).unwrap(),
-            format!("# phones\n{other}")
+            Invites::counted(&lock(&invites.state, INVITES_LOCK), &tokens, NOW),
+            3
         );
-        assert!(invites.edges(&tokens).is_empty());
     }
 
     #[test]
-    fn taking_back_an_invite_cuts_off_the_phones_it_let_in_and_those_they_invited() {
+    fn taking_back_an_invite_cuts_off_the_phone_it_let_in_and_not_those_that_one_invited() {
         let path = TempPath::new("tokens");
         let (tokens, pixel) = phones(&path);
         let invites = Invites::in_memory();
@@ -1286,14 +1326,21 @@ mod tests {
         };
         let (secret, _) = invites.make(&as_anna, "eleni", &tokens, NOW).unwrap();
         took(&invites, &secret, "eleni's token", &tokens);
+        let (open, _) = invites.make(&as_maria, "nikos", &tokens, NOW).unwrap();
         assert!(tokens.has("eleni's token"));
         assert!(invites
             .take_back(&pixel.hash, &Invite::id_of(&to_maria), &tokens)
             .unwrap());
         assert!(!tokens.has("maria's token"));
-        assert!(!tokens.has("anna's token") && !tokens.has("eleni's token"));
+        assert!(tokens.has("anna's token") && tokens.has("eleni's token"));
         assert!(tokens.holds(&pixel.hash));
-        assert_eq!(tokens.count(), 1);
+        assert_eq!(tokens.count(), 3);
+        // Maria's invite still open lets no one in, and Anna's phone still has the one it made.
+        assert_eq!(
+            invites.redeem(&open, &hash(1), &tokens, NOW),
+            Err(RedeemError::NotFound)
+        );
+        assert_eq!(invites.list(&anna, &tokens, NOW).len(), 1);
     }
 
     #[test]
@@ -1309,7 +1356,7 @@ mod tests {
         let again: [u8; 32] = Sha256::digest(b"pixel again").into();
         invites.moving(&pixel.hash, &again).unwrap();
         tokens
-            .add(&again, "pixel", false, "again", Some(&pixel.hash), None)
+            .add(&again, "pixel", false, "again", Some(&pixel.hash))
             .unwrap();
         invites.moved(&pixel.hash, &again);
         assert!(!tokens.holds(&pixel.hash) && tokens.has("maria's token"));
@@ -1319,18 +1366,23 @@ mod tests {
             Ok("anna".to_string())
         );
         assert_eq!(invites.list(&again, &tokens, NOW).len(), 2);
-        // Also after a restart.
+        // Also after a restart: the new line takes back the phone the old one let in.
         drop(invites);
         let tokens = Tokens::new(path.0.clone());
         let invites = Invites::open(&kept.0, true, MAX_INVITED).unwrap();
-        tokens.set_invited(invites.edges(&tokens));
-        assert!(tokens.has("maria's token"));
+        invites.finish_moves(&tokens);
+        assert_eq!(invites.list(&again, &tokens, NOW).len(), 2);
+        assert!(invites
+            .take_back(&again, &Invite::id_of(&secret), &tokens)
+            .unwrap());
+        assert!(!tokens.has("maria's token") && tokens.holds(&hash(1)));
+        // Its own line taken out, the phone it let in stays.
         tokens.remove(&again).unwrap();
-        assert!(!tokens.has("maria's token") && !tokens.holds(&hash(1)));
+        assert!(tokens.holds(&hash(1)));
     }
 
     #[test]
-    fn a_relay_stopped_while_a_phone_signs_in_again_cuts_none_of_the_phones_it_invited() {
+    fn a_relay_stopped_while_a_phone_signs_in_again_moves_its_invites_at_the_next_start() {
         for written in [false, true] {
             let path = TempPath::new("tokens");
             let kept = TempPath::new("invites");
@@ -1342,38 +1394,36 @@ mod tests {
             invites.moving(&pixel.hash, &again).unwrap();
             if written {
                 tokens
-                    .add(&again, "pixel", false, "again", Some(&pixel.hash), None)
+                    .add(&again, "pixel", false, "again", Some(&pixel.hash))
                     .unwrap();
             }
             // The relay stops here, before the move is finished, and starts again.
             drop((invites, tokens));
             let tokens = Tokens::new(path.0.clone());
             let invites = Invites::open(&kept.0, true, MAX_INVITED).unwrap();
-            let edges = invites.edges(&tokens);
+            invites.finish_moves(&tokens);
             let inviter = if written { again } else { pixel.hash };
-            assert_eq!(edges.get(&maria), Some(&inviter), "{written}");
-            tokens.set_invited(edges);
+            assert_eq!(invites.edges().get(&maria), Some(&inviter), "{written}");
+            assert_eq!(invites.list(&inviter, &tokens, NOW).len(), 1, "{written}");
             assert!(tokens.has("maria's token"), "{written}");
             // Finished, and written down so.
             let state = lock(&invites.state, INVITES_LOCK).clone();
             assert!(state.moving.is_empty());
             assert_eq!(
-                Invites::open(&kept.0, true, MAX_INVITED)
-                    .unwrap()
-                    .edges(&tokens)[&maria],
+                Invites::open(&kept.0, true, MAX_INVITED).unwrap().edges()[&maria],
                 inviter
             );
             // Signed in again, but its new line could not go in: the invites stay the old line's.
             let other: [u8; 32] = Sha256::digest(b"pixel once more").into();
             invites.moving(&inviter, &other).unwrap();
             invites.not_moved(&inviter, &other);
-            assert_eq!(invites.edges(&tokens)[&maria], inviter);
+            assert_eq!(invites.edges()[&maria], inviter);
             assert!(lock(&invites.state, INVITES_LOCK).moving.is_empty());
         }
     }
 
     #[test]
-    fn a_phone_let_in_keeps_its_inviter_through_a_save_read_halfway_and_a_write_that_fails() {
+    fn a_used_invite_stays_while_its_line_is_in_the_file_read_halfway_or_refused() {
         let path = TempPath::new("tokens");
         let (tokens, pixel) = phones(&path);
         let invites = Invites::in_memory();
@@ -1389,44 +1439,45 @@ mod tests {
         fs::write(&path.0, &half).unwrap();
         assert!(!tokens.has("maria's token"));
         invites.sweep(&tokens, NOW);
-        assert_eq!(invites.edges(&tokens).get(&maria), Some(&pixel.hash));
-        // The whole file: Maria comes in again, still going with Pixel.
+        assert_eq!(invites.edges().get(&maria), Some(&pixel.hash));
+        // The whole file: Maria comes in again, still by Pixel's invite.
         fs::write(&path.0, &whole).unwrap();
         assert!(tokens.has("maria's token"));
-        // Pixel's invite taken back when the file cannot be written (a link): Maria is refused, and stays invited.
-        let target = path.0.with_extension("real");
-        fs::rename(&path.0, &target).unwrap();
+        // Pixel's line deleted by hand: Maria's stays, and so does her invite.
+        delete_by_hand(&path, &pixel.hash);
+        invites.sweep(&tokens, NOW);
+        assert!(tokens.has("maria's token"));
+        assert_eq!(invites.edges().get(&maria), Some(&pixel.hash));
+        // Pixel's line put back, and its invite taken back when the file cannot be written (a
+        // link): Maria is refused, and stays invited.
+        fs::write(&path.0, &whole).unwrap();
         #[cfg(unix)]
         {
+            let target = path.0.with_extension("real");
+            fs::rename(&path.0, &target).unwrap();
             std::os::unix::fs::symlink(&target, &path.0).unwrap();
             assert!(invites
                 .take_back(&pixel.hash, &Invite::id_of(&secret), &tokens)
                 .is_err());
             assert!(!tokens.has("maria's token"));
             invites.sweep(&tokens, NOW);
-            assert_eq!(invites.edges(&tokens).get(&maria), Some(&pixel.hash));
+            assert_eq!(invites.edges().get(&maria), Some(&pixel.hash));
             assert_eq!(invites.len(), 1);
             fs::remove_file(&path.0).unwrap();
+            fs::rename(&target, &path.0).unwrap();
+            // The file itself again, left so for a minute: the sweep writes Maria's line out, and
+            // only then drops her invite.
+            let file = fs::File::options().write(true).open(&path.0).unwrap();
+            file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(5_000_000))
+                .unwrap();
+            invites.sweep(&tokens, NOW);
+            assert!(!tokens.in_file(&maria) && tokens.holds(&pixel.hash));
+            assert!(invites.edges().is_empty());
         }
-        fs::rename(&target, &path.0).unwrap();
-        // Pixel's line deleted by hand: Maria's goes at the sweep, and only then her invite.
-        let mut without: String = whole
-            .lines()
-            .filter(|line| !line.starts_with(&to_hex(&pixel.hash)))
-            .map(|line| format!("{line}\n"))
-            .collect();
-        without.push_str(&format!("{} other\n", to_hex(&hash(9))));
-        fs::write(&path.0, without).unwrap();
-        let file = fs::File::options().write(true).open(&path.0).unwrap();
-        file.set_modified(SystemTime::UNIX_EPOCH + Duration::from_secs(5_000_000))
-            .unwrap();
-        invites.sweep(&tokens, NOW);
-        assert!(!tokens.in_file(&maria));
-        assert!(invites.edges(&tokens).is_empty());
     }
 
     #[test]
-    fn a_line_freed_no_longer_goes_with_its_inviter() {
+    fn a_line_freed_is_no_longer_its_inviter_s_to_take_back_nor_counted() {
         let path = TempPath::new("tokens");
         let kept = TempPath::new("invites");
         let (tokens, pixel) = phones(&path);
@@ -1440,9 +1491,16 @@ mod tests {
         assert!(offline.free(&maria).unwrap().is_empty());
         drop(offline);
         let invites = Invites::open(&kept.0, true, MAX_INVITED).unwrap();
-        tokens.set_invited(invites.edges(&tokens));
-        tokens.remove(&pixel.hash).unwrap();
+        invites.finish_moves(&tokens);
+        assert!(invites.list(&pixel.hash, &tokens, NOW).is_empty());
+        assert!(!invites
+            .take_back(&pixel.hash, &Invite::id_of(&secret), &tokens)
+            .unwrap());
         assert!(tokens.has("maria's token"));
+        assert_eq!(
+            Invites::counted(&lock(&invites.state, INVITES_LOCK), &tokens, NOW),
+            0
+        );
     }
 
     #[test]

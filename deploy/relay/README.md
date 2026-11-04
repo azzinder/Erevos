@@ -181,7 +181,8 @@ Cyrillic letters in Latin ones, `-` for spaces, at most 32 characters, and
 comment; the relay leaves every line and comment as it is, so add your own
 notes there too. The phone that invited sees its invites in the app, and can
 take back one still waiting or the phone that took one, which takes that line
-out. Lent places invite nobody.
+out, and only that line: the phones it invited in turn keep theirs. Lent
+places invite nobody.
 
 A phone that comes with the relay's own token (`EREVOS_RELAY_TOKEN`), typed
 in, cannot invite with it: Erevos asks the relay once, by itself, for a line
@@ -200,55 +201,58 @@ relay adds such lines only while invites are on, and 50 a day at most, so a
 token that went where it should not cannot fill the file; they do not count
 among the phones let in by invite. Hidden chats keep the relay's token.
 
-A phone let in by an invite may use the relay only as long as the phone that
-invited it. When that phone's line goes, for whatever reason (its inviter took
-it back, its sign-in was ended, or you deleted it), the lines it invited are
-refused at once, and the ones those invited, all the way down, and the log
-names each, by the first 12 hex digits of the line (`grep ^<those digits>
-/var/lib/erevos-relay/phones.tokens` finds it), never by its name. A message one of them sent for later is dropped at its time too.
+A phone let in by an invite keeps the relay when the phone that invited it
+loses it: when a phone's line goes, for whatever reason (its inviter took it
+back, its sign-in was ended, or you deleted it), the phones it invited keep
+their lines, and so do the ones those invited. A phone's inviter can still
+cut it off, by taking back the invite it took, and that cuts off that one
+phone. An invite still waiting whose inviter's line is gone lets no one in.
 For this the relay keeps, in `phones.tokens.invites`, which phone's invite
 each invited line came from, for as long as that line is in the file: keep
-that file with the file of tokens, as without it the invited lines no longer
-go with the phones that invited them. Turned off again, invites still work
-that way: the relay reads `phones.tokens.invites`, makes no invites and takes
-none, and the lines invited before still go with the phones that invited them.
+that file with the file of tokens, as without it no phone can take back the
+phones it invited, and they no longer count toward
+`EREVOS_RELAY_MAX_INVITED`. Turned off again, invites are still kept: the
+relay reads `phones.tokens.invites`, makes no invites and takes none, and each
+phone has its invites again once they are on again.
 
-The relay never writes the file because it read it. It takes the refused lines
-out of the file when it writes the file anyway (an invite taken or taken back,
-a phone signing in or signed out), and at its hourly sweep, and then only once
-the file has stayed as it is for a minute (or is as the relay itself wrote it)
+The relay never writes the file because it read it. A line it takes out (an
+invite taken back, a sign-in ended) when the file cannot be written (the
+folder cannot be written, say) is refused all the same, and taken out of the
+file when the relay writes it anyway (an invite taken or taken back, a phone
+signing in or signed out), or at its hourly sweep, and then only once the
+file has stayed as it is for a minute (or is as the relay itself wrote it)
 and is still, by its time, size and inode, as the relay read it a moment
 before. So a save of yours that the relay reads halfway through (`nano` and
 `cat >` write the file in place) loses no line: what the half it read lacks is
-only refused until the rest is there. An invite is forgotten only once its line
-is gone from a file that stayed as it is for a minute, so a line refused, a
-write that failed or a restart never frees an invited line from its inviter. A
-line the relay took out but could not write out (the folder cannot be written,
-say) is refused all the same, and written out at the next sweep; a restart
-forgets that refusal, so the line works again until whatever took it out does
-so again: a sign-in's record keeps it marked and takes it out again at start,
-and an invite whose taking back could not be written stays, for its inviter to
-take back again. A
-line replaced by signing in again on the same phone keeps the phones it
-invited, also when the relay stops halfway: the move is written down in
+only refused until the rest is there. An invite is forgotten only once its
+line is gone from a file that stayed as it is for a minute, so its inviter
+still lists it, and can take it back, after a line refused, a write that
+failed or a restart. A restart forgets a refusal not yet written out,
+so the line works again until whatever took it out does so again: a sign-in's
+record keeps it marked and takes it out again at start, and an invite whose
+taking back could not be written stays, for its inviter to take back again. A
+line replaced by signing in again on the same phone keeps its invites, to list
+and take back, also when the relay stops halfway: the move is written down in
 `phones.tokens.invites` before the new line goes in, and finished at the next
 start.
 
 Who invited whom goes by each token's SHA-256, not by the name on its line.
 Putting a new token's line in place of a line of yours (a new `new-token` for
-the same phone) makes another line: the phones the old one invited go, and
-those they invited. To keep such a phone, or to have an invited phone stand on
-its own, free its line from its inviter first, with the relay stopped, since a
-running relay writes its own copy of the invites over the file:
+the same phone) makes another line: the phones the old one invited keep the
+relay, but the phone with the new line no longer lists them or takes them
+back, and the old line's invites still waiting let no one in. To have an
+invited phone's line be as one you wrote, which no phone takes back, free it
+from its inviter, with the relay stopped, since a running relay writes its own
+copy of the invites over the file:
 
     sudo systemctl stop erevos-relay
     sudo env EREVOS_RELAY_TOKENS=/var/lib/private/erevos-relay/phones.tokens erevos-relay free-line maria
     sudo systemctl start erevos-relay
 
 `maria` is the name on the line, in any case. The relay forgets the invite that
-made it: the line is then as one you wrote, goes with no other line, no longer
-counts toward `EREVOS_RELAY_MAX_INVITED`, and its inviter no longer lists it or
-takes it back. The folder the service sees as `/var/lib/erevos-relay` is
+made it: the line is then as one you wrote, no longer counts toward
+`EREVOS_RELAY_MAX_INVITED`, and its inviter no longer lists it or takes it
+back. The folder the service sees as `/var/lib/erevos-relay` is
 `/var/lib/private/erevos-relay`, readable by root only, as the service runs as
 a temporary user (`DynamicUser`); run as root, `free-line` leaves
 `phones.tokens.invites` to that user. Or run it as that user, in the folder as
@@ -260,12 +264,13 @@ the service sees it, with the settings of `/etc/erevos-relay.env`:
 
 The relay also forgets an invite once its hourly sweep finds the line gone
 from the file, so a line put back from a backup after that is as one you
-wrote; put back before, while its inviter is gone, it is refused, and taken
-out again at the next sweep.
+wrote; put back before, it is still its inviter's to take back.
 
 To take a phone off, delete its line, as for any token. A phone taken off can
-no longer invite, its invites still waiting let no one in, and the phones it
-invited go with it. A connection a phone has open is closed at its next
+no longer invite, and its invites still waiting let no one in, but the phones
+it invited keep the relay, and the ones those invited: to take them off too,
+delete their lines as well (each says `invited by` and the name of the line
+that invited it). A connection a phone has open is closed at its next
 request once its line is gone. The relay writes the file through a new file
 and a rename, reads it again before each change, and writes only if the file
 did not change meanwhile, so lines you add with `tee -a` or an editor are kept.
@@ -414,8 +419,8 @@ and it answers `429` too.
 
       9b74c9897bac770ffc029102a200c5de...c1 lphl:nekten # signed in with LPHL on 2026-10-21
 
-  Signing in again on the same phone replaces its line, and keeps the phones
-  that line invited.
+  Signing in again on the same phone replaces its line, and the new line has
+  the invites of the old one, to list and take back.
 - The page the provider sends the browser back to shows a six-digit code the
   relay made, and the phone claims its token with it: someone who sends a
   sign-in link and signs in with it themselves sees the code, so the phone
@@ -438,7 +443,8 @@ and it answers `429` too.
   revoked, or the refresh token expired), or the account is not in
   `EREVOS_RELAY_OIDC_GROUP`, the line goes, and from then on the phone is
   refused, as a wrong token is, a connection it has open being closed at its
-  next request. When the provider cannot be reached, or answers with an
+  next request; the phones it invited keep the relay (see [Invites](#invites)).
+  When the provider cannot be reached, or answers with an
   error of its own (`invalid_client` for a client secret it no longer takes,
   a failing discovery, a 5xx), the line stays, is checked again an hour later,
   and the log says so; once a line has gone 72 hours with no check that went
