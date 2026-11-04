@@ -22,12 +22,17 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [
-    mark("**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does."),
-  ],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '6.0.0-rc.2',
+    forYou: [],
+    underTheHood: [
+      mark("**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does."),
+    ],
+  },
   {
     version: '6.0.0-rc.1',
     forYou: [

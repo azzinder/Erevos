@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  // 6.0.0-rc.2
   "**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does.":
     "**De novo Linux, Windows e macOS**: a 6.0.0-rc.1 saiu sem eles: a verificação de que cada versão para computador abre não conhecia a configuração do primeiríssimo início do Erevos. Agora conhece.",
   // 6.0.0-rc.1

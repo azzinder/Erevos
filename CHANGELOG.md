@@ -16,6 +16,12 @@ On main, not released yet:
 
 ### Under the hood
 
+## 6.0.0-rc.2 (2026-11-04)
+
+### For you
+
+### Under the hood
+
 - **Linux, Windows and macOS again**: 6.0.0-rc.1 came out with Android, Sailfish OS and the web app only. The release's
   check that each build for computers opens (`desktop/main.js`, `--smoke`) waited for the chats or the password screen,
   and a first start now shows the setup instead. Now the setup counts as a first screen too. The setup also took the
