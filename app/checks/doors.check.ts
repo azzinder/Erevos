@@ -22,12 +22,13 @@ import { keepMatrixPush, MATRIX_PUSH_APP, startMatrixPush, stopMatrixPush } from
 import { encryptText, fromHex, randomBytes } from '../lib/crypto';
 import { networkChanged } from '../lib/network-change';
 import { createQueue, deleteQueue, receiveMessage, sendMessage, toHex } from '../lib/relay';
-import { DOOR_CONTACTS, hearDoorAll, loadDoor, openDoors, prepareDoors, saveDoor, type Door } from '../lock/doors';
+import { spacesSign } from '../lib/unread-signs';
+import { DOOR_CONTACTS, hearDoorAll, loadDoor, onDoorsCame, openDoors, prepareDoors, saveDoor, type Door } from '../lock/doors';
 import { EMPTY_E2E, saveE2EData, type E2EData } from '../lock/e2e-data';
 import { heardText } from '../lock/hidden-watch';
 import { newSpaceKey, setCurrentSpace } from '../lock/keys';
 import { saveMatrix } from '../lock/matrix-data';
-import { EMPTY_SPACE, saveSpaceData } from '../lock/space-data';
+import { EMPTY_SPACE, loadSpaceData, saveSpaceData } from '../lock/space-data';
 import { Homeserver, HS, PASSWORD } from './matrix-server';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import { store } from './secure-memory';
@@ -195,6 +196,66 @@ test("a closed space's door names the queues it reads on, and tells of each mess
     assert.equal(told.length, 3);
   } finally {
     stop();
+    setCurrentSpace(null);
+  }
+});
+
+test("a closed space that asks for the dot keeps that a message came, at the same size, until it opens", { skip: !relayReady }, async () => {
+  store.clear();
+  await prepareDoors();
+  const shut = store.get('erevos.door.1')!.length;
+  const url = await startRelay();
+  const [open, closed, quiet] = [newSpaceKey(), newSpaceKey(), newSpaceKey()];
+  const ids = await createQueue({ url });
+  const others = await createQueue({ url });
+  await saveSpaceData(1, closed, { ...EMPTY_SPACE, url, tor: 'off', sign: true, ownQueue: { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) } });
+  // Space 2 says a message came too, with no dot.
+  await saveSpaceData(2, quiet, { ...EMPTY_SPACE, url, tor: 'off', ownQueue: { recipientHex: toHex(others.recipientId), senderHex: toHex(others.senderId) } });
+  const door = await doorOf(1, closed);
+  assert.equal(door?.sign, true);
+  assert.equal((await doorOf(2, quiet))?.sign, undefined);
+  await saveDoor(1, door);
+  await saveDoor(2, await doorOf(2, quiet));
+  await keepDoor(1, closed, true);
+  await keepDoor(2, quiet, true);
+  setCurrentSpace(0, open);
+  let came = 0;
+  const unlisten = onDoorsCame(() => came++);
+  let told: number[] = [];
+  const stop = startClosedNotices((count, space) => (told = [...told, ...Array<number>(count).fill(space)]));
+  try {
+    await settle();
+    assert.equal(await spacesSign(), false);
+    await sendMessage({ url }, others.senderId, Uint8Array.of(1), 'message');
+    await until(() => told.length === 1);
+    assert.equal(await spacesSign(), false);
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(2), 'message');
+    await until(() => told.length === 2);
+    assert.equal(await spacesSign(), true);
+    assert.equal(came, 1);
+    assert.equal((await loadDoor(2))?.came, undefined);
+    // Its entry is as long as any.
+    assert.equal(store.get('erevos.door.1')!.length, shut);
+    // Another message: nothing more to keep.
+    await sendMessage({ url }, ids.senderId, Uint8Array.of(3), 'message');
+    await until(() => told.length === 3);
+    assert.equal(came, 1);
+    // It opens: what came is read there, and the dot goes.
+    stop();
+    setCurrentSpace(1, closed);
+    while (await receiveMessage({ url }, ids.recipientId));
+    await keepDoor(1, closed);
+    assert.equal((await loadDoor(1))?.came, undefined);
+    assert.equal((await loadDoor(1))?.sign, true);
+    setCurrentSpace(0, open);
+    assert.equal(await spacesSign(), false);
+    // A door the space no longer asks a dot of says none.
+    await saveSpaceData(1, closed, { ...(await loadSpaceData(1, closed)), sign: false });
+    await followDoor(1, closed);
+    assert.equal((await loadDoor(1))?.sign, undefined);
+  } finally {
+    stop();
+    unlisten();
     setCurrentSpace(null);
   }
 });

@@ -47,6 +47,7 @@ import { publicMemberName, spaceGroups } from '../lib/space-groups';
 import { arrangeRows, dueTrash, emptyTrash, onSmsOrderChanged, sortSms } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import { SmsLink } from '../lib/sms-link';
+import { hiddenSign, onSignsChange, spacesSign } from '../lib/unread-signs';
 import { deleteSmsThread, onSmsEvent, smsStatus, smsToolsReady } from '../modules/erevos-sms';
 import { NO_SMS, smsRows, type SmsList } from '../lib/sms-rows';
 import { Archive } from '../lock/archive';
@@ -260,6 +261,25 @@ function Home() {
   useEffect(() => onModulesChange(() => setAgain((n) => n + 1)), []);
   // How many SMS conversations are in the space's Archive, Spam and Trash.
   const [folders, setFolders] = useState({ archived: 0, spam: 0, trash: 0 });
+  // The dots that say messages came unread where these chats do not show them, each only where it was
+  // asked for (lib/unread-signs.ts): on the search, for hidden chats; on the lock, for the other spaces.
+  const [signs, setSigns] = useState({ hidden: false, spaces: false });
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const read = () => {
+        void Promise.all([hiddenSign().catch(() => false), spacesSign().catch(() => false)]).then(([hidden, spaces]) => {
+          if (active) setSigns((was) => (was.hidden === hidden && was.spaces === spaces ? was : { hidden, spaces }));
+        });
+      };
+      read();
+      const stop = onSignsChange(read);
+      return () => {
+        active = false;
+        stop();
+      };
+    }, []),
+  );
   // The SMS conversation held down, whose actions show.
   const [target, setTarget] = useState<SmsTarget | null>(null);
   const smsRead = useRef(false);
@@ -505,6 +525,7 @@ function Home() {
             label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
             tint="orange"
             onPress={() => (lock.passwordLock ? lock.lockNow() : router.push('/security'))}
+            dot={lock.passwordLock && signs.spaces ? { color: colors.primary, ring: colors.background, label: t('Unread messages elsewhere') } : null}
           >
             <LockSign tint="orange" />
           </ShortcutTile>
@@ -515,7 +536,10 @@ function Home() {
       </View>
       {messagesOn ? (
         <View style={styles.search}>
-          <SearchIcon color={colors.textFaint} />
+          <View>
+            <SearchIcon color={colors.textFaint} />
+            {signs.hidden ? <View accessible accessibilityLabel={t('Unread messages elsewhere')} style={[styles.searchDot, { backgroundColor: colors.primary, borderColor: colors.surfaceAlt }]} /> : null}
+          </View>
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -913,6 +937,15 @@ const makeStyles = (colors: Colors) =>
       backgroundColor: colors.surfaceAlt,
       borderWidth: 1,
       borderColor: withAlpha(colors.border, 0.6),
+    },
+    searchDot: {
+      position: 'absolute',
+      top: -3,
+      right: -4,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      borderWidth: 2,
     },
     searchInput: {
       flex: 1,

@@ -82,6 +82,14 @@ On main, not released yet:
   and every space's slot, so it takes as long whatever is typed, counted as hidden chats' PINs are; the open space's
   own password counts as wrong and the panic password does nothing there. The switch closes the open space and
   unmounts its screens before the other opens (app/_layout.tsx).
+- **A dot for unread messages elsewhere, if you want it**: off unless turned on. Hidden chats with **Receive while
+  closed** get **Dot for unread messages**: while one of their chats or groups has a message unread, or one of their
+  own Matrix, XMPP or Nostr chats had one since they were last open, a small dot shows on the magnifier of **Search
+  chats**. A space with **Also while another space is open** gets **Dot in the other spaces**: once a message came to
+  it while closed, a dot shows on the padlock at the top of the open space's chats until it opens. Never how many, nor
+  where (lib/unread-signs.ts). The space's switch is kept in its door (lock/doors.ts `sign`, `came`), which says no
+  more than the notice does, at the same size; the place's in its own data, read through the key **Receive while
+  closed** already keeps, so places that only say a message came get no dot.
 
 ### Under the hood
 

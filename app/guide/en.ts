@@ -1107,6 +1107,12 @@ call goes over the phone company's network and is not encrypted, as a plain SMS 
   ask about each of those too, or their messages would say nothing. The cost is that its relay may tell that the two
   spaces are on one phone, and someone who examines the phone with tools may find that a second space keeps addresses
   there, and how many contacts it has.
+- **A dot for the other spaces:** in a space set to **Also while another space is open**, **Dot in the other spaces**,
+  under it (the default is **No dot**), also shows a small dot on the padlock at the top of the chats of the space
+  that is open, once a message came to this one while it was closed, until you open it: never how many, nor which
+  space. It works where the notice does: on Android, while the space that is open has **Receive and ring** and **Say a
+  message came** on. For it the phone keeps, beside the addresses above, only whether a message came. Whoever sees the
+  open space's chats sees the dot too, and may guess there is another space.
 - **When the phone turns on:** after the phone starts, Erevos does not run until you open it. With **Start when the
   phone turns on** under **Settings** → **Notifications** → **In the background** (the default is **Wait until I open
   it**), it starts by itself after the phone turns on, or after Erevos is updated, with no space open: no space can open
@@ -2354,6 +2360,12 @@ what the places taken away hold.
   and copies what the phone keeps could open that place too, with no PIN: the PIN then keeps them out of sight of
   whoever holds the phone, not of a forensic tool. Off, their key is only behind the PIN, and their messages wait on the
   relay until you open them. Backups keep the switch.
+- **Dot for unread messages:** with **Receive while closed** on, a switch under it (off unless you turn it on). On,
+  while one of the place's chats or groups has a message unread, or one of its own Matrix, XMPP or Nostr chats had one
+  since you last opened it, a small dot shows on the magnifier of **Search chats** on the home screen: never how many,
+  nor where. It goes once you read them. Whoever sees the space's chats sees it too, and may guess there are hidden
+  chats. Places that only **Say when a message comes** get no dot: the switch would have to be kept where the space
+  could read it.
 - **They close by themselves** once Erevos was in the background for more than 30 seconds, as a chat's own PIN
   locks again, but not during a call, nor while you pick a photo or a file for them or take a photo.
 - **While they are open,** a message that comes plays the sound for new messages, as in your other chats. With Erevos

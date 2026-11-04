@@ -1265,6 +1265,13 @@ chiffré, pas plus qu’un SMS ordinaire. Les discussions masquées et les ordin
   d’attente, l’espace doit aussi interroger le relais sur chacune d’elles, sinon leurs messages ne diraient rien. Le
   prix à payer : son relais peut savoir que les deux espaces sont sur un même téléphone, et quelqu’un qui examine le
   téléphone avec des outils peut trouver qu’un second espace y garde des adresses, et combien de contacts il a.
+- **Un point pour les autres espaces :** dans un espace réglé sur **Aussi quand un autre espace est ouvert**, **Point
+  dans les autres espaces**, en dessous (par défaut **Pas de point**), affiche aussi un petit point sur le cadenas
+  au-dessus des discussions de l’espace ouvert, dès qu’un message est arrivé à celui-ci pendant qu’il était fermé,
+  jusqu’à ce que tu l’ouvres : jamais combien, ni quel espace. Cela marche là où la notification marche : sur Android,
+  tant que l’espace ouvert a **Recevoir et sonner** et **Signaler les nouveaux messages** activés. Pour cela le
+  téléphone garde, à côté des adresses ci-dessus, seulement si un message est arrivé. Qui voit les discussions de
+  l’espace ouvert voit aussi le point, et peut deviner qu’il existe un autre espace.
 - **Quand le téléphone s’allume :** après le démarrage du téléphone, Erevos ne tourne pas tant que tu ne l’ouvres pas.
   Avec **Démarrer à l’allumage du téléphone** sous **Réglages** → **Notifications** → **En arrière-plan** (par défaut,
   c’est **Attendre que je l’ouvre**), il démarre tout seul une fois le téléphone allumé, ou Erevos mis à jour, sans
@@ -2695,6 +2702,13 @@ supprimerait ce que contiennent les emplacements retirés.
   pourrait aussi ouvrir cet emplacement, sans code PIN : le code PIN les cache alors aux yeux de qui tient le téléphone,
   pas d’un outil d’analyse forensique. Désactivé, leur clé n’est que derrière le code PIN, et leurs messages attendent
   sur le relais jusqu’à ce que tu les ouvres. Les sauvegardes gardent l’interrupteur.
+- **Point pour les non-lus :** avec **Recevoir une fois fermées** activé, un interrupteur en dessous (éteint sauf si
+  tu l’allumes). Allumé, tant qu’une des discussions ou un des groupes du lieu a un message non lu, ou qu’une de ses
+  propres discussions Matrix, XMPP ou Nostr en a eu un depuis la dernière fois que tu l’as ouvert, un petit point
+  s’affiche sur la loupe de **Rechercher dans les discussions** sur l’écran d’accueil : jamais combien, ni où. Il part
+  dès que tu les lis. Qui voit les discussions de l’espace le voit aussi, et peut deviner qu’il y a des discussions
+  masquées. Les lieux qui ont seulement **Prévenir quand un message arrive** n’ont pas de point : l’interrupteur
+  devrait être gardé là où l’espace peut le lire.
 - **Elles se ferment toutes seules** dès qu’Erevos a été en arrière-plan plus de 30 secondes, comme se reverrouille le
   code PIN propre d’une discussion, mais pas pendant un appel, ni pendant que tu choisis une photo ou un fichier pour
   elles ou que tu prends une photo.

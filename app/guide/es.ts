@@ -1194,6 +1194,13 @@ que un SMS normal. Los chats ocultos y los ordenadores no la tienen.
   preguntar también por cada una de ellas, o sus mensajes no dirían nada. El precio es que su relay puede saber que los
   dos espacios están en un mismo teléfono, y alguien que examine el teléfono con herramientas puede descubrir que un
   segundo espacio guarda direcciones ahí, y cuántos contactos tiene.
+- **Un punto para los otros espacios:** en un espacio con **También mientras otro espacio está abierto**, **Punto en
+  los otros espacios**, debajo (por defecto es **Sin punto**), muestra además un pequeño punto en el candado sobre los
+  chats del espacio abierto, en cuanto llegó un mensaje a este mientras estaba cerrado, hasta que lo abras: nunca
+  cuántos, ni qué espacio. Funciona donde funciona el aviso: en Android, mientras el espacio abierto tiene **Recibir y
+  sonar** y **Avisar de mensajes nuevos** activados. Para ello el teléfono guarda, junto a las direcciones de arriba,
+  solo si llegó un mensaje. Quien vea los chats del espacio abierto ve también el punto, y puede sospechar que hay
+  otro espacio.
 - **Cuando se enciende el teléfono:** después de que el teléfono arranca, Erevos no funciona hasta que lo abres. Con
   **Iniciar al encender el teléfono** en **Ajustes** → **Notificaciones** → **En segundo plano** (por defecto es
   **Esperar a que yo lo abra**), se inicia solo tras encender el teléfono, o tras actualizar Erevos, sin ningún
@@ -2556,6 +2563,12 @@ lo que contienen los lugares que se quitaran.
   lugar, sin PIN: el PIN los mantiene entonces fuera de la vista de quien tenga el teléfono, no de una herramienta
   forense. Desactivado, su clave solo está tras el PIN, y sus mensajes esperan en el relay hasta que los abras. Las
   copias de seguridad conservan el interruptor.
+- **Punto para lo no leído:** con **Recibir estando cerrados** activado, un interruptor debajo (apagado salvo que lo
+  actives). Activado, mientras uno de los chats o grupos del lugar tenga un mensaje sin leer, o uno de sus propios
+  chats de Matrix, XMPP o Nostr haya tenido uno desde la última vez que lo abriste, un pequeño punto aparece en la
+  lupa de **Buscar chats** en la pantalla de inicio: nunca cuántos, ni dónde. Se va en cuanto los lees. Quien vea los
+  chats del espacio también lo ve, y puede sospechar que hay chats ocultos. Los lugares que solo tienen **Avisar
+  cuando llega un mensaje** no tienen punto: el interruptor tendría que guardarse donde el espacio puede leerlo.
 - **Se cierran solos** en cuanto Erevos ha estado en segundo plano más de 30 segundos, como se vuelve a bloquear el PIN
   propio de un chat, pero no durante una llamada, ni mientras eliges una foto o un archivo para ellos o haces una foto.
 - **Mientras están abiertos,** un mensaje que llega reproduce el sonido de mensajes nuevos, como en tus otros chats.

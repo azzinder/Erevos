@@ -1288,6 +1288,13 @@ Versteckte Chats und Computer haben das nicht.
   sagen. Der Preis ist, dass sein Relay erkennen kann, dass die beiden Bereiche auf einem Telefon sind, und jemand, der
   das Telefon mit Werkzeugen untersucht, finden kann, dass ein zweiter Bereich dort Adressen aufbewahrt, und wie viele
   Kontakte er hat.
+- **Ein Punkt für die anderen Bereiche:** In einem Bereich mit **Auch, wenn ein anderer Bereich offen ist** zeigt
+  **Punkt in den anderen Bereichen**, darunter (Standard ist **Kein Punkt**), auch einen kleinen Punkt auf dem Schloss
+  über den Chats des offenen Bereichs, sobald eine Nachricht zu diesem kam, während er geschlossen war, bis du ihn
+  öffnest: nie wie viele, noch welcher Bereich. Es wirkt, wo die Mitteilung wirkt: auf Android, solange der offene
+  Bereich **Empfangen und klingeln** und **Neue Nachrichten melden** an hat. Dafür behält das Telefon, neben den
+  Adressen oben, nur, ob eine Nachricht kam. Wer die Chats des offenen Bereichs sieht, sieht auch den Punkt und kann
+  vermuten, dass es einen weiteren Bereich gibt.
 - **Wenn das Telefon eingeschaltet wird:** Nachdem das Telefon gestartet ist, läuft Erevos nicht, bis du es öffnest.
   Mit **Starten, wenn das Telefon eingeschaltet wird** unter **Einstellungen** → **Benachrichtigungen** → **Im
   Hintergrund** (die Voreinstellung ist **Warten, bis ich es öffne**) startet es von selbst, nachdem das Telefon
@@ -2731,6 +2738,13 @@ löschen, was die weggenommenen Plätze enthalten.
   ohne PIN: Die PIN hält sie dann vor den Blicken dessen verborgen, der das Telefon in der Hand hat, nicht vor einem
   forensischen Werkzeug. Ausgeschaltet ist ihr Schlüssel nur hinter der PIN, und ihre Nachrichten warten auf dem Relay,
   bis du sie öffnest. Backups behalten den Schalter.
+- **Punkt für Ungelesenes:** mit **Empfangen, wenn geschlossen** an, ein Schalter darunter (aus, außer du schaltest
+  ihn ein). An zeigt sich, solange einer der Chats oder eine der Gruppen des Ortes eine ungelesene Nachricht hat, oder
+  einer seiner eigenen Matrix-, XMPP- oder Nostr-Chats seit dem letzten Öffnen eine bekam, ein kleiner Punkt auf der
+  Lupe von **Chats durchsuchen** auf dem Startbildschirm: nie wie viele, noch wo. Er geht, sobald du sie liest. Wer
+  die Chats des Bereichs sieht, sieht ihn auch und kann vermuten, dass es versteckte Chats gibt. Orte, die nur
+  **Melden, wenn eine Nachricht kommt** haben, bekommen keinen Punkt: Der Schalter müsste dort liegen, wo der Bereich
+  ihn lesen kann.
 - **Sie schließen sich von selbst,** sobald Erevos mehr als 30 Sekunden im Hintergrund war, so wie sich die eigene PIN
   eines Chats wieder sperrt, aber nicht während eines Anrufs und nicht, während du ein Foto oder eine Datei für sie
   wählst oder ein Foto aufnimmst.

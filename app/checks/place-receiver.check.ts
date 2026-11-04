@@ -31,6 +31,7 @@ import { onPlaceGroupMessage, placeGroupsAt } from '../lib/place-groups';
 import { startHiddenNotices } from '../lib/hidden-notices';
 import { holdPlace, onPlaceMessage, onPlaceRing, placesRead, receivesPocket, startPlaceReceiver, takePlaceCalls } from '../lib/place-receiver';
 import { setAppShown } from '../lib/receiver';
+import { hiddenSign } from '../lib/unread-signs';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
 import { spaceGroups } from '../lib/space-groups';
 import { loadGroupData } from '../lock/group-data';
@@ -41,7 +42,7 @@ import { setCurrentSpace } from '../lock/keys';
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
 import { writeNote } from '../lib/myself';
-import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData } from '../lock/space-data';
+import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData, updateHiddenData } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import { reminders } from './device-memory';
@@ -239,6 +240,10 @@ test('a closed place that receives keeps what comes, tells its sender, rings cal
     await write('hi hidden Bob');
     await until(() => texts().includes('hi hidden Bob'));
     await until(() => heard.includes('hi hidden Bob'));
+    // The dot on the search of the space's chats (lib/unread-signs.ts): only once the place asks for it.
+    assert.equal(await hiddenSign(), false);
+    await updateHiddenData(0, 1, placeKey, { sign: true });
+    assert.equal(await hiddenSign(), true);
     // Someone new, a message request: told nothing back until accepted.
     assert.equal(bob.e2e.contacts()[0].request, true);
     await bob.e2e.acceptRequest(bob.e2e.contacts()[0].identity);
@@ -282,6 +287,13 @@ test('a closed place that receives keeps what comes, tells its sender, rings cal
     await until(() => texts().includes(`${CALL_LINE}Missed voice call`));
     assert.equal(rang.length, 2);
 
+    // Read, the dot goes.
+    for (const contact of bob.e2e.contacts()) await bob.history.mark(`contact:${contact.identity}`, false, 2, Date.now());
+    assert.equal(await hiddenSign(), false);
+    await write('one more');
+    await until(() => texts().includes('one more'));
+    assert.equal(await hiddenSign(), true);
+
     // Switched off, nothing reads it any more: what comes waits on the relay.
     await keepPlace(0, spaceKey, 1, null);
     await until(() => !receivesPocket(0, 1));
@@ -290,6 +302,8 @@ test('a closed place that receives keeps what comes, tells its sender, rings cal
     await sleep(300);
     assert.equal(texts().length, count);
     assert.ok(await receiveMessage(relay, fromHex(bobQueue.recipientHex)));
+    // Nor is its dot asked of then.
+    assert.equal(await hiddenSign(), false);
   } finally {
     stop();
     stopHeard();

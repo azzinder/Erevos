@@ -1191,6 +1191,12 @@ SMS comum não é. As conversas ocultas e os computadores não têm isso.
   delas, senão as mensagens deles não diriam nada. O custo é que o relay dele pode perceber que os dois espaços estão
   num mesmo celular, e alguém que examine o celular com ferramentas pode descobrir que um segundo espaço guarda
   endereços ali, e quantos contatos ele tem.
+- **Um ponto para os outros espaços:** num espaço com **Também enquanto outro espaço está aberto**, **Ponto nos outros
+  espaços**, logo abaixo (o padrão é **Sem ponto**), mostra também um pequeno ponto no cadeado acima das conversas do
+  espaço aberto, assim que chegou uma mensagem a este enquanto estava fechado, até você abri-lo: nunca quantas, nem
+  qual espaço. Funciona onde o aviso funciona: no Android, enquanto o espaço aberto tem **Receber e tocar** e **Avisar
+  quando chega mensagem** ligados. Para isso o celular guarda, ao lado dos endereços acima, só se chegou uma mensagem.
+  Quem vê as conversas do espaço aberto vê também o ponto, e pode suspeitar que há outro espaço.
 - **Quando o celular liga:** depois que o celular inicia, o Erevos não roda até você abri-lo. Com **Iniciar quando o
   celular ligar** em **Configurações** → **Notificações** → **Em segundo plano** (o padrão é **Esperar até eu
   abrir**), ele inicia sozinho depois que o celular liga, ou depois que o Erevos é atualizado, sem nenhum espaço
@@ -2537,6 +2543,12 @@ as posições retiradas guardam.
   quem abrir o espaço e copiar o que o celular guarda poderia abrir essa posição também, sem PIN: o PIN então as mantém
   fora da vista de quem estiver com o celular, não de uma ferramenta forense. Desativado, a chave delas fica só atrás do
   PIN, e as mensagens delas esperam no relay até você abri-las. Os backups guardam o interruptor.
+- **Ponto para não lidas:** com **Receber quando fechadas** ligado, um interruptor logo abaixo (desligado, a menos que
+  você o ligue). Ligado, enquanto uma das conversas ou grupos do lugar tiver uma mensagem não lida, ou uma das suas
+  próprias conversas de Matrix, XMPP ou Nostr tiver tido uma desde a última vez que você o abriu, um pequeno ponto
+  aparece na lupa de **Buscar conversas** na tela inicial: nunca quantas, nem onde. Some assim que você as lê. Quem vê
+  as conversas do espaço também o vê, e pode suspeitar que há conversas ocultas. Os lugares que só têm **Avisar quando
+  chega uma mensagem** não têm ponto: o interruptor teria de ficar onde o espaço pode lê-lo.
 - **Elas fecham sozinhas** depois que o Erevos fica em segundo plano por mais de 30 segundos, como o PIN próprio de
   uma conversa bloqueia de novo, mas não durante uma chamada, nem enquanto você escolhe uma foto ou um arquivo para
   elas ou tira uma foto.

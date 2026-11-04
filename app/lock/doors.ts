@@ -28,7 +28,16 @@ export type DoorContact = { r: string; g: number; heard?: string };
  * relay's `/read` path, with no token, as the open space reads them), and whether it goes through
  * Tor (lib/relay.ts TorWay).
  */
-export type Door = { tor: TorWay; queues: Watched[]; contacts?: { url: string; queues: DoorContact[] } };
+export type Door = {
+  tor: TorWay;
+  queues: Watched[];
+  contacts?: { url: string; queues: DoorContact[] };
+  // The space asked for a dot on the lock of the other spaces (SpaceData.sign, lib/unread-signs.ts),
+  // and whether a message came since it was last open (doorCame): the door says no more of it than
+  // the notice already does, that something came to a space that is closed.
+  sign?: true;
+  came?: true;
+};
 
 /** A space's own queue, its contact link's, its groups' and its public groups'. */
 export const DOOR_QUEUES = 4;
@@ -52,7 +61,8 @@ function fitted(door: Door): Door {
   let next = door;
   while (next.contacts && bytesOf(next) > SIZE) {
     const queues = next.contacts.queues.slice(0, -1);
-    next = queues.length > 0 ? { ...next, contacts: { url: next.contacts.url, queues } } : { tor: next.tor, queues: next.queues };
+    const { contacts: _all, ...rest } = next;
+    next = queues.length > 0 ? { ...next, contacts: { url: next.contacts.url, queues } } : rest;
   }
   return next;
 }
@@ -84,7 +94,7 @@ function checkedDoor(value: unknown): Door | null {
   const contacts = checkedContacts(v.contacts);
   // A space's contacts write to queues of their own only once it has a queue of its own.
   if (queues.length === 0) return null;
-  return { tor: torWayOf(v.tor), queues, ...(contacts ? { contacts } : {}) };
+  return { tor: torWayOf(v.tor), queues, ...(contacts ? { contacts } : {}), ...(v.sign === true ? { sign: true } : {}), ...(v.came === true ? { came: true } : {}) };
 }
 
 async function doorKey(): Promise<Uint8Array | null> {
@@ -181,8 +191,45 @@ export function saveDoor(space: number, door: Door | null, fresh = false, whileO
       const kept = keptContacts.find((old) => old.r === queue.r)?.heard;
       return kept ? { ...rest, heard: kept } : rest;
     });
-    return { tor: door.tor, queues, ...(door.contacts && contacts.length > 0 ? { contacts: { url: door.contacts.url, queues: contacts } } : {}) };
+    // That a message came stays, unless all is heard anew: the space has just read it, open.
+    const came = !fresh && door.sign && was?.came;
+    return {
+      tor: door.tor,
+      queues,
+      ...(door.contacts && contacts.length > 0 ? { contacts: { url: door.contacts.url, queues: contacts } } : {}),
+      ...(door.sign ? { sign: true as const } : {}),
+      ...(came ? { came: true as const } : {}),
+    };
   });
+}
+
+const cameListeners = new Set<() => void>();
+
+/** Keeps that a message came to the closed space, when its door asks for the dot (Door.sign), and tells those listening (onDoorsCame). */
+export async function doorCame(space: number): Promise<void> {
+  const door = await loadDoor(space);
+  if (!door?.sign || door.came) return;
+  await change(space, (now) => (now?.sign ? { ...now, came: true } : now));
+  cameListeners.forEach((listener) => listener());
+}
+
+/** Forgets that a message came to the space now open: it is read there. */
+export async function doorSeen(space: number): Promise<void> {
+  if (!(await loadDoor(space))?.came) return;
+  await change(space, (now) => {
+    if (!now) return now;
+    const { came: _came, ...rest } = now;
+    return rest;
+  });
+  cameListeners.forEach((listener) => listener());
+}
+
+/** Calls `listener` each time a closed space's door says, or no longer, that a message came. Returns how to stop. */
+export function onDoorsCame(listener: () => void): () => void {
+  cameListeners.add(listener);
+  return () => {
+    cameListeners.delete(listener);
+  };
 }
 
 /** Shuts the doors of the spaces past `space`, which no password opens any more (lock/config.ts). */

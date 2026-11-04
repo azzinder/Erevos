@@ -580,6 +580,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [watched, setWatched] = useState(false);
   // Whether these hidden chats receive while closed, as the space's chats do (lock/hidden-keep.ts).
   const [receiving, setReceiving] = useState(false);
+  // Whether a dot on the search of the space's chats says these hidden chats have a message unread (SpaceData.sign, lib/unread-signs.ts).
+  const [placeSign, setPlaceSign] = useState(false);
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
   // Whether these chats are still open: false once they close and this screen goes.
@@ -1546,6 +1548,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setViaUrl(data.via);
         setViaToken(data.viaToken);
         setPreviews(data.previews);
+        if (hiddenKey) setPlaceSign(data.sign);
         setHomeUrl(data.spare.url);
         setHomeToken(data.spare.token);
         setOwnQueue(data.ownQueue);
@@ -4660,6 +4663,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     await armPlaceReminders({ holder: hiddenHolder(pocket), space, key: hiddenKey }, on).catch(() => undefined);
   }
 
+  // Has a dot on the search of the space's chats say these hidden chats have a message unread, or no longer.
+  function changePlaceSign(on: boolean) {
+    if (!hiddenKey) return;
+    setPlaceSign(on);
+    updateHiddenData(currentSpace().space, pocket, hiddenKey, { sign: on }).catch((error) => {
+      setPlaceSign(!on);
+      setNote(errorText(error));
+    });
+  }
+
   // Has these hidden chats say a message came while they are closed, or no longer.
   async function changeWatched(on: boolean) {
     const { space, key } = currentSpace();
@@ -6180,6 +6193,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     ? t('Their own Matrix, XMPP and Nostr accounts stay connected too: what comes there says only "New message", and a call rings with no name.')
                     : t('Their own Matrix, XMPP and Nostr accounts connect only while they are open.')}
                 </Text>
+                {receiving ? (
+                  <>
+                    <DetailRow title={t('Dot for unread messages')} checked={placeSign} onPress={() => changePlaceSign(!placeSign)} />
+                    <Text variant="caption" tone="muted">
+                      {placeSign
+                        ? t('While one of these hidden chats has a message unread, a small dot shows on the magnifier of Search chats in this space: never how many, nor where. Whoever sees the space\'s chats sees it too, and may guess there are hidden chats.')
+                        : t('Messages unread here show only once you open these hidden chats.')}
+                    </Text>
+                  </>
+                ) : null}
                 {canRingInBackground && !receiving ? (
                   <>
                     <DetailRow title={t('Say when a message comes')} checked={watched} onPress={() => void changeWatched(!watched)} />

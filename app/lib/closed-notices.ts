@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { DOOR_CONTACTS, DOOR_QUEUES, hearDoor, hearDoorAll, loadDoor, openDoors, saveDoor, type Door } from '../lock/doors';
+import { DOOR_CONTACTS, DOOR_QUEUES, doorCame, hearDoor, hearDoorAll, loadDoor, openDoors, saveDoor, type Door } from '../lock/doors';
 import { loadE2EData } from '../lock/e2e-data';
 import { loadMatrix } from '../lock/matrix-data';
 import { heardOf, type Watched } from '../lock/hidden-watch';
@@ -96,7 +96,7 @@ export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACT
     // (lock/sealed-file.ts): the contacts' queues the door names stay as they are, rather than be
     // left out until the next change.
     const was = await loadDoor(space).catch(() => null);
-    return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(was?.contacts ? { contacts: was.contacts } : {}) };
+    return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(was?.contacts ? { contacts: was.contacts } : {}), ...(data.sign ? { sign: true as const } : {}) };
   }
   // The Matrix and XMPP push queues, at the same relay, first: the contacts' queues where the space reads them,
   // its own queue's relay, then: theirs now first, then those they took the place of, still read for a while.
@@ -109,12 +109,17 @@ export async function doorOf(space: number, key: Uint8Array, most = DOOR_CONTACT
     if (contacts.length >= most) break;
     if (!contacts.some((c) => c.r === q.r) && !kept.some((k) => k.recipientHex === q.r)) contacts.push({ r: q.r, g: q.g });
   }
-  return { tor: data.tor, queues: kept.slice(0, DOOR_QUEUES), ...(own && contacts.length > 0 ? { contacts: { url: own.url, queues: contacts } } : {}) };
+  return {
+    tor: data.tor,
+    queues: kept.slice(0, DOOR_QUEUES),
+    ...(own && contacts.length > 0 ? { contacts: { url: own.url, queues: contacts } } : {}),
+    ...(data.sign ? { sign: true as const } : {}),
+  };
 }
 
-// The queues a door names, to tell whether it changed: its own and its contacts'.
+// The queues a door names, to tell whether it changed: its own and its contacts', and whether it asks for the dot.
 const namesOf = (door: Door | null) =>
-  door ? [...door.queues.map((q) => `${q.url} ${q.recipientHex}`), ...(door.contacts?.queues ?? []).map((q) => `${door.contacts!.url} ${q.r} ${q.g}`), door.tor].join(',') : '';
+  door ? [...door.queues.map((q) => `${q.url} ${q.recipientHex}`), ...(door.contacts?.queues ?? []).map((q) => `${door.contacts!.url} ${q.r} ${q.g}`), door.tor, door.sign ? 'sign' : ''].join(',') : '';
 
 /** Writes the open space's door anew if the queues it names changed, as a contact took a queue of their own: when its door is open. */
 export async function followDoor(space: number, key: Uint8Array): Promise<void> {
@@ -223,6 +228,7 @@ export function startClosedNotices(tell: (count: number, space: number) => void,
         await hearDoor(space, kept.recipientHex, now).catch(() => undefined);
         const came = newsSince(before, now);
         const count = came.messages + came.unmarked + came.rings;
+        if (count > 0) await doorCame(space).catch(() => undefined);
         if (count > 0 && !stopped) tell(count, space);
       } catch (error) {
         // A queue the relay no longer has: the space reads elsewhere now, and its door says where once it opens.
@@ -285,6 +291,7 @@ export function startClosedNotices(tell: (count: number, space: number) => void,
           count += came.messages + came.unmarked + came.rings;
         });
         await hearDoorAll(space, changed).catch(() => undefined);
+        if (count > 0) await doorCame(space).catch(() => undefined);
         if (count > 0 && !stopped) tell(count, space);
       } catch {
         failures++;

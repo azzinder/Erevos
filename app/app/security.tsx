@@ -12,7 +12,7 @@ import { PasswordSheet } from '../components/PasswordSheet';
 import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components/ui';
 import { confirm } from '../lib/alert';
 import { loadBatteryMode, saveBatteryMode, type BatteryMode } from '../lib/battery-mode';
-import { doorIsOpen, setDoorOpen } from '../lib/closed-notices';
+import { doorIsOpen, followDoor, setDoorOpen } from '../lib/closed-notices';
 import { DESKTOP } from '../lib/desktop';
 import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
@@ -37,7 +37,7 @@ import { useLock } from '../lock/context';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { POCKETS } from '../lock/sealed-file';
 import { currentSpace, newSpaceKey } from '../lock/keys';
-import { EMPTY_SPACE, prepareSpaces, saveSpaceData } from '../lock/space-data';
+import { EMPTY_SPACE, loadCurrentSpaceData, prepareSpaces, saveSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 import { biometricSealer } from '../modules/erevos-biometric';
 import { useTheme } from '../theme/context';
 
@@ -333,6 +333,8 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
   const [notices, setNotices] = useState(true);
   const [door, setDoor] = useState<boolean | null>(null);
   const [doorSaid, setDoorSaid] = useState('');
+  // Whether a dot on the lock of the other spaces says a message came here while closed (SpaceData.sign, lib/unread-signs.ts).
+  const [sign, setSign] = useState(false);
   const [allowed, setAllowed] = useState(backgroundState);
   const [battery, setBattery] = useState<BatteryMode>('normal');
   // Whether Erevos starts by itself as the phone turns on (lib/background.ts): the phone's choice.
@@ -343,6 +345,10 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
     loadRingInBackground().then(setOn);
     loadMessageNotices().then(setNotices);
     doorIsOpen().then(setDoor, () => setDoor(false));
+    loadCurrentSpaceData().then(
+      (data) => setSign(data.sign),
+      () => undefined,
+    );
     // Back from Android's settings: what it allows now.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') setAllowed(backgroundState());
@@ -376,6 +382,18 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
       () => setDoor(next),
       (error: unknown) => setDoorSaid(error instanceof Error ? error.message : String(error)),
     );
+  }
+
+  // The door says it too, so the other spaces read it while this one is closed.
+  function chooseSign(next: boolean) {
+    setSign(next);
+    const { space, key } = currentSpace();
+    updateCurrentSpaceData({ sign: next })
+      .then(() => followDoor(space, key))
+      .catch((error: unknown) => {
+        setSign(!next);
+        setDoorSaid(error instanceof Error ? error.message : String(error));
+      });
   }
 
   if (on === null) return null;
@@ -418,6 +436,19 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
                 ? t('While another space is open, this one says only "New message", as that one does, never which space; its hidden chats say nothing then. For it the phone keeps the addresses of its queues at its relay outside its password, including the queue each contact writes to, for up to 64 contacts, never its keys, who its contacts are, or its messages, and its relay may tell that the two spaces are on one phone. If this space goes through Tor (Messages, the default, or Everything), it is asked about only through Tor: while the open space has Tor off, or its Tor is starting or has just failed, this one says nothing, and what came is told once Tor is ready there.')
                 : t('Closed, this space receives nothing: its messages wait at its relay and come when it opens.'))}
           </Text>
+          {door ? (
+            <>
+              <Row wrap>
+                <Chip label={t('Dot in the other spaces')} selected={sign} onPress={() => chooseSign(true)} />
+                <Chip label={t('No dot')} selected={!sign} onPress={() => chooseSign(false)} />
+              </Row>
+              <Text variant="caption" tone="muted" style={hint}>
+                {sign
+                  ? t('When a message comes here while another space is open, a small dot shows on the padlock at the top of that space\'s chats, until you open this one: never how many, nor which space. Whoever sees those chats sees the dot too, and may guess there is another space.')
+                  : t('The other spaces show no sign of this one: only the notice says a message came.')}
+              </Text>
+            </>
+          ) : null}
         </>
       ) : null}
       {on && notices && canStartAtBoot ? (

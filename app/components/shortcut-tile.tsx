@@ -27,10 +27,20 @@ const TILE = 36;
 const SIGN = 20;
 const WHITE = '#ffffff';
 
-export function ShortcutTile({ label, tint, onPress, children }: { label: string; tint: TileTint; onPress: () => void; children: ReactNode }) {
+/** A small dot on a tile's corner, in `color` with a `ring` of what is behind it, said as `label`. */
+export type TileDot = { color: string; ring: string; label: string };
+
+export function ShortcutTile({ label, tint, onPress, dot, children }: { label: string; tint: TileTint; onPress: () => void; dot?: TileDot | null; children: ReactNode }) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} hitSlop={6} style={({ pressed }) => [styles.hit, pressed && styles.pressed]}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={dot ? `${label}. ${dot.label}` : label}
+      hitSlop={6}
+      style={({ pressed }) => [styles.hit, pressed && styles.pressed]}
+    >
       <Tile tint={tint}>{children}</Tile>
+      {dot ? <View style={[styles.dot, { backgroundColor: dot.color, borderColor: dot.ring }]} /> : null}
     </Pressable>
   );
 }
@@ -162,5 +172,14 @@ const styles = StyleSheet.create({
     borderRadius: TILE * 0.32,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dot: {
+    position: 'absolute',
+    top: 1,
+    right: 1,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
   },
 });

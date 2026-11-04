@@ -55,6 +55,7 @@ import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
 import { nostrOf, setNostr } from '../lib/nostr';
 import { runMatrix, stopMatrix } from '../lib/matrix-store';
+import { forgetSigns } from '../lib/unread-signs';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { startLinkedAccounts } from '../lib/linked-accounts';
@@ -792,6 +793,7 @@ function closeSpace(): void {
   setCurrentSpace(null);
   forgetSpaceChats();
   forgetPlaceChats();
+  forgetSigns();
   forgetSpaceMover();
   forgetOffered();
   forgetLinks();

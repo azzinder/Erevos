@@ -1203,6 +1203,12 @@ computer non ce l’hanno.
   sua, lo spazio deve chiedere anche di ciascuna di esse, altrimenti i loro messaggi non direbbero nulla. Il prezzo è
   che il suo relay potrebbe capire che i due spazi sono su un unico telefono, e qualcuno che esamina il telefono con
   degli strumenti potrebbe scoprire che un secondo spazio conserva lì degli indirizzi, e quanti contatti ha.
+- **Un punto per gli altri spazi:** in uno spazio con **Anche mentre è aperto un altro spazio**, **Punto negli altri
+  spazi**, sotto (il predefinito è **Nessun punto**), mostra anche un piccolo punto sul lucchetto sopra le chat dello
+  spazio aperto, appena è arrivato un messaggio a questo mentre era chiuso, finché non lo apri: mai quanti, né quale
+  spazio. Funziona dove funziona la notifica: su Android, finché lo spazio aperto ha **Ricevi e squilla** e **Avvisa
+  dei nuovi messaggi** attivi. Per questo il telefono tiene, accanto agli indirizzi sopra, solo se è arrivato un
+  messaggio. Chi vede le chat dello spazio aperto vede anche il punto, e può intuire che c’è un altro spazio.
 - **Quando il telefono si accende:** dopo l’avvio del telefono, Erevos non funziona finché non lo apri. Con **Avvia
   all’accensione del telefono** in **Impostazioni** → **Notifiche** → **In background** (l’impostazione predefinita è
   **Aspetta che lo apra io**), si avvia da solo dopo l’accensione del telefono, o dopo un aggiornamento di Erevos,
@@ -2576,6 +2582,12 @@ cancellerebbe quello che contengono i posti tolti.
   posto, senza PIN: il PIN allora le tiene nascoste a chi ha in mano il telefono, non a uno strumento forense. Se è
   disattivato, la loro chiave è solo dietro il PIN, e i loro messaggi aspettano sul relay finché non le apri. I backup
   conservano l’interruttore.
+- **Punto per i non letti:** con **Ricevere da chiuse** attivo, un interruttore sotto (spento a meno che non lo
+  accendi). Acceso, finché una delle chat o dei gruppi del posto ha un messaggio non letto, o una delle sue chat
+  Matrix, XMPP o Nostr ne ha avuto uno dall’ultima volta che lo hai aperto, un piccolo punto compare sulla lente di
+  **Cerca nelle chat** nella schermata principale: mai quanti, né dove. Se ne va appena li leggi. Chi vede le chat
+  dello spazio lo vede anche lui, e può intuire che ci sono chat nascoste. I posti che hanno solo **Avvisa quando
+  arriva un messaggio** non hanno il punto: l’interruttore dovrebbe stare dove lo spazio può leggerlo.
 - **Si chiudono da sole** appena Erevos è stato in background per più di 30 secondi, come si riblocca il PIN di una
   chat, ma non durante una chiamata, né mentre scegli una foto o un file per loro o scatti una foto.
 - **Mentre sono aperte,** un messaggio che arriva fa sentire il suono dei nuovi messaggi, come nelle tue altre chat.

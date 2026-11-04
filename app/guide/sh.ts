@@ -1160,6 +1160,12 @@ Skriveni razgovori i računari to nemaju.
   kontakt piše u svoj red, prostor mora pitati i za svaki od njih, inače njihove poruke ne bi ništa javile. Cijena je
   to što njegov relay može saznati da su ta dva prostora na jednom telefonu, a neko ko alatima pregleda telefon može
   otkriti da drugi prostor tamo čuva adrese, i koliko kontakata ima.
+- **Tačka za druge prostore:** u prostoru s **I dok je otvoren drugi prostor**, **Tačka u drugim prostorima**, ispod
+  toga (zadano je **Bez tačke**), pokazuje i malu tačku na lokotu iznad razgovora otvorenog prostora, čim ovom stigne
+  poruka dok je bio zatvoren, dok ga ne otvorite: nikad koliko, ni koji prostor. Radi gdje radi i obavijest: na
+  Androidu, dok otvoreni prostor ima uključeno **Primaj i zvoni** i **Javi da je stigla poruka**. Za to telefon čuva,
+  pored adresa gore, samo je li stigla poruka. Ko vidi razgovore otvorenog prostora vidi i tačku, i može pretpostaviti
+  da postoji još jedan prostor.
 - **Kad se telefon uključi:** nakon pokretanja telefona Erevos ne radi dok ga ne otvorite. S **Pokreni kad se telefon
   uključi** pod **Postavke** → **Obavijesti** → **U pozadini** (zadano je **Čekaj dok ga ne otvorim**) pokreće se sam
   nakon što se telefon uključi, ili nakon ažuriranja Erevosa, bez otvorenog prostora: nijedan prostor se ne može
@@ -2462,6 +2468,12 @@ sadrže uklonjena mjesta.
   prostor i kopira ono što telefon čuva mogao bi otvoriti i to mjesto, bez PIN-a: PIN ih tada skriva od pogleda onoga ko
   drži telefon, ali ne i od forenzičkog alata. Kad je isključen, njihov ključ je samo iza PIN-a, a njihove poruke čekaju
   na relayu dok ih ne otvorite. Rezervne kopije zadržavaju prekidač.
+- **Tačka za nepročitano:** uz uključeno **Primanje dok su zatvoreni**, prekidač ispod toga (isključen, osim ako ga
+  uključite). Uključen, dok neki od razgovora ili grupa tog mjesta ima nepročitanu poruku, ili je neki od njegovih
+  vlastitih Matrix, XMPP ili Nostr razgovora dobio poruku otkad ste ga zadnji put otvorili, mala tačka se pojavi na
+  lupi u **Traži razgovore** na početnom ekranu: nikad koliko, ni gdje. Nestaje čim ih pročitate. Ko vidi razgovore
+  prostora vidi i nju, i može pretpostaviti da postoje skriveni razgovori. Mjesta koja imaju samo **Javi kad stigne
+  poruka** nemaju tačku: prekidač bi se morao čuvati tamo gdje ga prostor može pročitati.
 - **Zatvaraju se sami** kad je Erevos bio u pozadini više od 30 sekundi, kao što se vlastiti PIN razgovora ponovo
   zaključava, ali ne tokom poziva, ni dok za njih birate fotografiju ili datoteku ili snimate fotografiju.
 - **Dok su otvoreni,** poruka koja stigne pušta zvuk za nove poruke, kao u vašim ostalim razgovorima. S Erevosom u

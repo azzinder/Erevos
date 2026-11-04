@@ -87,6 +87,11 @@ export type SpaceData = {
   // servers kept for it was deleted, and it reaches no relay until it starts again. 0 when not. A
   // hidden place keeps its own, set once what the servers kept for it was deleted too.
   stopped: number;
+  // Whether a small dot says, where the space's chats show, that messages came here unread
+  // (lib/unread-signs.ts): for a hidden place that receives while closed, on the search of the
+  // chats; for a space whose door is open (lock/doors.ts), on the lock of the other spaces. Off
+  // unless set.
+  sign: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
@@ -124,6 +129,7 @@ export const EMPTY_SPACE: SpaceData = {
   offered: NO_OFFER,
   relayKeys: {},
   stopped: 0,
+  sign: false,
 };
 
 const BLOCK = 1024;
@@ -196,6 +202,7 @@ function checked(value: unknown): SpaceData {
     offered: checkedOffered(v.offered),
     relayKeys: checkedRelayKeys(v.relayKeys),
     stopped: typeof v.stopped === 'number' && Number.isFinite(v.stopped) && v.stopped > 0 ? v.stopped : 0,
+    sign: v.sign === true,
   };
 }
 
