@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  // 6.0.0-rc.1
   "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
     "**Les liens s'ouvrent sous Sailfish OS** : **Se connecter avec LPHL**, une page de don ou un lien dans une discussion n'ouvraient rien. Désormais Sailfish OS les ouvre : une page web dans le navigateur, un numéro dans le téléphone ou les messages, une adresse dans le courriel.",
   "**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer.":
