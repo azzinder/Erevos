@@ -247,10 +247,12 @@ nicht lesen kannst.
 - **Nur was hier funktioniert, wird gezeigt:** Auf einem Computer, unter Sailfish OS und in der Web-App gibt es kein
   **Telefon und SMS**, kein Tor, Nostr oder LoRa, und eine Gruppe, in der es hier nichts einzustellen gibt, erscheint
   nicht.
+- **Nur die Module, die an sind:** Auch die Einstellungen eines Moduls, das aus ist, etwa **Matrix** oder
+  **Telefon und SMS**, werden nicht gezeigt: siehe [Module](#modules).
 
 | Gruppe | Was darin ist |
 | --- | --- |
-| **Allgemein** | **Sprache**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
+| **Allgemein** | **Sprache**, **Module**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Module](#modules), [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
 | **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android), **Widget** (Android) und **Vibration bei Berührung** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
 | **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (mit dem Panik-Passwort), **Taschenrechner anstelle von Erevos** (Android, unter Darstellung), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
@@ -279,6 +281,39 @@ sich sofort.
   Telefon in der Hand hat, kann sehen, welche Sprache du gewählt hast.
 - **Die Benachrichtigungen von Android** (ein eingehender Anruf, neue Nachrichten, Erevos beim Empfangen im
   Hintergrund) sind auf Griechisch, wenn Erevos es ist, und in jeder anderen Sprache auf Englisch.
+
+## Module {#modules}
+
+Erevos besteht aus Teilen, seinen Modulen: **Erevos** selbst (seine eigenen Chats, Gruppen und Anrufe,
+Ende-zu-Ende-verschlüsselt, mit den versteckten Chats), das **Telefon**, die **SMS** und die Chats mit **Nostr**-,
+**Matrix**- und **XMPP**-Apps. Das Telefon und die SMS gibt es nur auf Android. Jedes davon kann an sein, auch Erevos
+selbst, eines oder mehrere, mindestens eines: **Einstellungen** → **Allgemein** → **Module** schaltet jedes jederzeit
+ein oder aus.
+
+Beim allerersten Start richtet Erevos sich, bevor sein erster Bereich öffnet, in wenigen Schritten selbst ein wie ein
+Installer: was Erevos ist, und seine Sprache; welche Module du nutzen willst, jedes mit dem, was es tut; dann, auf
+einem Android-Telefon, was Android dafür erlauben soll, darunter Erevos als Telefon-App und als SMS-App, jedes mit
+einer eigenen Taste. **Erevos starten** behält die Wahl und öffnet den ersten Bereich. Nach einem Update bleibt jedes
+Modul an, wie bisher, bis du sie änderst.
+
+- **Aus:** Ein Modul, das aus ist, startet nicht: Nichts davon läuft, wartet an einem Server oder klingelt, darum ist
+  Erevos leichter, öffnet schneller und braucht weniger Akku. Es erscheint nirgends: nicht auf dem Startbildschirm, in
+  seinem Menü oder in den Einstellungen, und die Symbole von Telefon und SMS verschwinden aus den Apps des Telefons.
+  Ein Link, eine Benachrichtigung oder das Widget, das noch dorthin führt, sagt, dass es aus ist, mit **Module
+  öffnen**.
+- **Nichts wird gelöscht:** Seine Chats, Kontakte, Konten und Einstellungen sind wieder da, wenn es wieder an ist.
+  Kontakte, die Passwortsperre, die Bereiche, die Backups und die Einstellungen sind immer da, was auch an ist.
+- **Wieder an:** Ein eingeschaltetes Modul startet sofort, und **Berechtigungen** zeigt, was Android dafür erlauben
+  soll, wie beim ersten Start.
+- **Das Telefon oder die SMS aus,** während Erevos noch die Telefon-App oder die SMS-App ist: Android gibt Erevos
+  weiterhin die Anrufe oder die SMS, wie bisher gespeichert. **Standard-Apps öffnen** wählt eine andere App.
+- **Das Telefon allein:** Ohne ein Modul, das Nachrichten bringt, sagt der Startbildschirm es, mit **Telefon** und
+  **Module**.
+- **Auf dem Telefon gespeichert:** Die Wahl gilt für dieses Telefon, in jedem Bereich gleich, und wird außerhalb der
+  Bereiche gespeichert, wie die Symbole, da das Telefon ohne das Passwort öffnen kann.
+
+**Warum:** Nicht jeder will alles. Wer Erevos nur als Telefon nutzt oder nur für Nostr, bekommt eine App, die nur das
+tut, und ein Telefon, das nicht im Hintergrund auf Nachrichten wartet, die nie kommen.
 
 ## Chat mit einem Telefon in der Nähe {#nearby}
 

@@ -46,4 +46,6 @@ export const settingsMenu: Record<string, string> = {
   "No vibration": "Bez vibracije",
   "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Kratka vibracija kad dodirneš tipku na tastaturi, Pošalji, Enter ili prekidač, i kad se otvori meni. Nikad dok skroluješ. Za svaki prostor na ovom telefonu.",
   "Touches make no buzz.": "Dodiri ne vibriraju.",
+  "Modules": "Moduli",
+  "Erevos, Phone, SMS, Nostr, Matrix and XMPP: the ones you use": "Erevos, Telefon, SMS, Nostr, Matrix i XMPP: oni koje koristite",
 };
