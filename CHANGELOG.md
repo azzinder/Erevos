@@ -16,6 +16,13 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Linux, Windows and macOS again**: 6.0.0-rc.1 came out with Android, Sailfish OS and the web app only. The release's
+  check that each build for computers opens (`desktop/main.js`, `--smoke`) waited for the chats or the password screen,
+  and a first start now shows the setup instead. Now the setup counts as a first screen too. The setup also took the
+  keyboard library itself, so in browsers and on computers it threw "PromiseResolve called on non-object" as it opened,
+  though nothing stopped. Now it takes the web stand-in (`components/keyboard.web.tsx`), and
+  `checks/web-stand-ins.check.ts` holds every screen to it.
+
 ## 6.0.0-rc.1 (2026-11-04)
 
 ### For you

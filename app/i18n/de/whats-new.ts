@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does.":
+    "**Wieder Linux, Windows und macOS**: 6.0.0-rc.1 erschien ohne sie: Die Prüfung, ob jede Fassung für Computer startet, kannte die Einrichtung beim allerersten Start von Erevos nicht. Jetzt kennt sie sie.",
   // 6.0.0-rc.1
   "**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail.":
     "**Links öffnen sich unter Sailfish OS**: **Mit LPHL anmelden**, eine Spendenseite oder ein Link in einem Chat öffneten dort nichts. Jetzt öffnet Sailfish OS sie: eine Webseite im Browser, eine Nummer im Telefon oder in den Nachrichten, eine Adresse in der Mail.",

@@ -4,7 +4,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AppState, Pressable, View } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { backgroundState } from '../lib/background';
@@ -19,6 +18,7 @@ import { useColors } from '../theme/context';
 
 import { CheckCard } from './check-card';
 import { DefaultAppCards } from './default-apps';
+import { KeyboardAwareScrollView } from './keyboard';
 import { moduleAbout, moduleName } from './module-texts';
 import { LanguageSheet, languageTitle } from './settings-list';
 import { Button, Card, Chip, Row, SectionTitle, Text, Toggle } from './ui';
