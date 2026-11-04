@@ -451,21 +451,27 @@ async function signInWith(it: Live, jid: string, password: string, given: XmppSe
   return true;
 }
 
-// The space's own account, never a hidden place's, loaded, for what Linked devices brings or lets
-// go of (lib/linked-accounts.ts): null when `space` is not the open one, or this build has no XMPP.
-async function spaceAccount(space: number): Promise<Live | null> {
-  runXmpp();
-  for (let waited = 0; live && !live.loaded && !live.stopped && waited < 20_000; waited += 200) await new Promise((resolve) => setTimeout(resolve, 200));
-  return live && live.loaded && !live.stopped && live.holder === 'space' && live.space === space ? live : null;
+// The space's own account, or with `place` that hidden place's own while it runs
+// (lib/place-networks.ts), loaded, for what Linked devices brings or lets go of
+// (lib/linked-accounts.ts): null when `space` is not the open one, the place's does not run, or this
+// build has no XMPP.
+async function spaceAccount(space: number, place?: PlaceKey): Promise<Live | null> {
+  if (!place) runXmpp();
+  const now = () => (place ? places.running(space, place.pocket, place.key) : live);
+  // A place's starts as its hidden chats open (lib/place-networks.ts), maybe just after its links.
+  for (let waited = 0, it = now(); (it ? !it.loaded && !it.stopped : !!place) && waited < 20_000; waited += 200, it = now()) await new Promise((resolve) => setTimeout(resolve, 200));
+  const it = now();
+  return it && it.loaded && !it.stopped && it.space === space && (place || it.holder === 'space') ? it : null;
 }
 
 /**
- * Signs the space `space` in to the XMPP account its phone gave it (lib/linked-accounts.ts), when it
- * has none: answers whether it did, had that account already, or has another; null when `space` is
- * not open. Throws when it could not sign in, to be tried again.
+ * Signs the space `space`, or its hidden `place`, in to the XMPP account its phone gave it
+ * (lib/linked-accounts.ts), when it has none: answers whether it did, had that account already, or
+ * has another; null when `space` is not open, or the place's account does not run. Throws when it
+ * could not sign in, to be tried again.
  */
-export async function xmppTake(space: number, jid: string, password: string, server?: XmppServer): Promise<'brought' | 'had' | 'other' | null> {
-  const it = await spaceAccount(space);
+export async function xmppTake(space: number, jid: string, password: string, server?: XmppServer, place?: PlaceKey): Promise<'brought' | 'had' | 'other' | null> {
+  const it = await spaceAccount(space, place);
   if (!it) return null;
   if (it.state) return it.state.jid === jid ? 'had' : 'other';
   if (await signInWith(it, jid, password, server)) return 'brought';
@@ -473,9 +479,9 @@ export async function xmppTake(space: number, jid: string, password: string, ser
   return (it.state as XmppState | null)?.jid === jid ? 'had' : 'other';
 }
 
-/** Signs the space `space` out of the XMPP account it brought from its phone (`jid`), once unlinked from it, if it still has it. */
-export async function xmppLetGo(space: number, jid: string): Promise<void> {
-  const it = await spaceAccount(space);
+/** Signs the space `space` (or its hidden `place`) out of the XMPP account it brought from its phone (`jid`), once unlinked from it, if it still has it. */
+export async function xmppLetGo(space: number, jid: string, place?: PlaceKey): Promise<void> {
+  const it = await spaceAccount(space, place);
   if (it?.state?.jid === jid) await signOutOf(it);
 }
 

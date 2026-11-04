@@ -12,6 +12,7 @@ export const connect: Record<string, string> = {
   "Through Nostr, with no relay": "Pelo Nostr, sem relay",
   "Only nearby, for now": "Só por perto, por enquanto",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Este dispositivo está conectado ao seu telefone: tem os contatos dele, e seu link de contato é o do telefone.",
+  "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Estas conversas ocultas estão conectadas às mesmas conversas ocultas do seu telefone: têm os contatos delas, e o link de contato delas é o do telefone.",
   "These hidden chats have a queue of their own on it, which the space knows nothing of.": "Estas conversas ocultas têm ali uma fila própria, da qual o espaço não sabe nada.",
   "Everything works: texts, photos, voice messages, calls and groups, end-to-end encrypted.": "Tudo funciona: textos, fotos, mensagens de voz, chamadas e grupos, com criptografia de ponta a ponta.",
   "Contacts near you reach you with no internet too.": "Contatos perto de você também te alcançam sem internet.",

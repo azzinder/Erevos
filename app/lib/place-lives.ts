@@ -69,6 +69,12 @@ export class PlaceLives<L extends PlaceLive> {
     return null;
   }
 
+  /** The account of the place in `pocket` of `space`, open with `key`, while it runs, or null. */
+  running(space: number, pocket: number, key: Uint8Array): L | null {
+    const it = this.lives.get(pocket);
+    return it && !it.stopped && it.space === space && sameKey(it.key, key) ? it : null;
+  }
+
   /** The pocket `it` runs for, or null. */
   pocketOf(it: L): number | null {
     for (const [pocket, live] of this.lives) if (live === it) return pocket;

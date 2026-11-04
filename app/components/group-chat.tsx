@@ -30,7 +30,6 @@ import { currentCall } from '../lib/call';
 import { shownLine } from '../lib/call-lines';
 import { callPermissions } from '../lib/call-permissions';
 import { currentGroupCall } from '../lib/group-call';
-import { linkedRole } from '../lib/devices';
 import { groupCallGoingOn, joinGroupCall, onGroupCallChange, startGroupCall } from '../lib/group-calls';
 import { MAX_GROUP_NAME } from '../lib/group-signal';
 import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type GroupMember } from '../lib/groups';
@@ -94,7 +93,7 @@ const clock = (at: number) => {
 
 /** Group `id`'s chat; `onBack` goes back from it. */
 export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack: () => void }) {
-  const { at: groupsAt } = useGroupsWhere();
+  const { at: groupsAt, linked: groupsLinked } = useGroupsWhere();
   const hidden = groupsAt.hidden;
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
@@ -341,7 +340,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   async function call(asked: boolean) {
     setNote('');
     // On a linked device the group is the phone's, and so are its calls (lib/devices.ts).
-    if (linkedRole() === 'linked') {
+    if (groupsLinked()) {
       setNote(t('Group calls ring on the phone that holds this account, for now. Call from there.'));
       return;
     }
@@ -396,7 +395,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   // Who asks for this phone's contact link, but a contact here already: the first, the rest wait
   // in the members sheet.
   const asks = info.asks.filter((a) => !contacts.some((c) => c.identity === a.id));
-  const asker = out || pub.isPublic || linkedRole() === 'linked' ? null : (asks[0] ?? null);
+  const asker = out || pub.isPublic || groupsLinked() ? null : (asks[0] ?? null);
   // The panel under "+" closes first: it is not left open under what opens.
   const openMembers = () => {
     media.setAttaching(false);
@@ -723,7 +722,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   onGone: () => void;
 }) {
   const { colors } = useTheme();
-  const { at: groupsAt } = useGroupsWhere();
+  const { at: groupsAt, linked: groupsLinked } = useGroupsWhere();
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [adding, setAdding] = useState<Contact[] | null>(null);
   const [chosen, setChosen] = useState<Set<string>>(new Set());
@@ -778,7 +777,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   };
 
   const out = info.status !== 'in';
-  const linked = linkedRole() === 'linked';
+  const linked = groupsLinked();
 
   // Asks a member for their contact link, once they said what it does.
   const askFor = (identity: string) =>

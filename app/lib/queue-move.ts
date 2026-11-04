@@ -825,6 +825,21 @@ export function onSpaceMoved(listener: (queue: Queue, old: Queue | null, why: Mo
   return () => movedListeners.delete(listener);
 }
 
+// ---- A hidden place's ----
+
+const placeMovedListeners = new Set<(space: number, pocket: number, queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>>();
+
+/** Has `listener` called each time a hidden place's own queue moved (lib/devices.ts, its own links). */
+export function onPlaceMoved(listener: (space: number, pocket: number, queue: Queue, old: Queue | null, why: MoveWhy) => Promise<void>): () => void {
+  placeMovedListeners.add(listener);
+  return () => placeMovedListeners.delete(listener);
+}
+
+/** Says that the own queue of the hidden place in `pocket` of `space` moved: its moves call it, open or receiving closed (app/chat.tsx, lib/place-receiver.ts). */
+export async function placeMoved(space: number, pocket: number, queue: Queue, old: Queue | null, why: MoveWhy): Promise<void> {
+  for (const listener of placeMovedListeners) await listener(space, pocket, queue, old, why).catch(() => undefined);
+}
+
 let spaceGroups: MoveGroups | undefined;
 let spacePush: MoveAt['push'];
 

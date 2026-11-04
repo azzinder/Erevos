@@ -202,7 +202,8 @@ conversas.
   (veja [Conversas ocultas](#hidden)). Os lembretes de uma posição oculta aparecem ali assim que o PIN dela a abre; o
   celular os avisa no horário só enquanto **Receber quando fechadas** está ativado para aquela posição, no mesmo
   aviso. Um PIN novo para a posição, que a começa vazia, ou a posição removida, tira os lembretes dela do celular. As
-  notas de uma posição oculta nunca vão para um dispositivo conectado.
+  notas de uma posição oculta vão só para os dispositivos conectados a essa posição por conta própria, nunca para os
+  do espaço (veja [Dispositivos conectados](#devices)).
 
 **Por quê:** um aviso aparece na tela bloqueada para quem estiver com o celular, então o que um lembrete diz fica
 criptografado no espaço dele e o Android só fica sabendo o horário: o aviso não pode contar a ninguém o que você queria
@@ -2583,6 +2584,11 @@ as posições retiradas guardam.
   ocultas estão abertas, e, fechadas, nada chega. As conversas delas ligam como as do espaço, pela conta própria das
   conversas ocultas; uma chamada para ela, enquanto as conversas ocultas estão abertas, toca com o toque do telefone, e
   elas ficam abertas até a chamada acabar. Uma conta Matrix delas não tem **Avisar quando chega mensagem**.
+- **Dispositivos conectados:** abaixo da lista delas, **Dispositivos conectados** conecta estas conversas ocultas por
+  conta própria à mesma posição num computador ou num navegador, de dentro, à parte do espaço e dos dispositivos
+  conectados dele: as conversas, mensagens e contas próprias delas vão para lá, e nada disso aparece no espaço (veja
+  **Conversas ocultas e segundas senhas** em [Dispositivos conectados](#devices)). Sem conexão, ficam só neste
+  celular.
 - **As prévias de links** têm um interruptor próprio nos detalhes de uma conversa oculta, para todas as conversas
   daquela posição, desativado a menos que você o ative (veja **Prévias de links** em
   [Conversar por um relay](#relay)).
@@ -3137,7 +3143,7 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   mais recente. O que foi escrito antes de conectar vai uma vez, nos dois sentidos, assim que os dois têm esta versão.
   Um lembrete aparece em cada dispositivo no horário dele, e visto em um sai dos outros. A foto ou o arquivo de uma
   nota vai como cópia no relay, apagada de lá assim que é pega, ou, para dois dispositivos ou mais, deixada lá até
-  expirar (14 dias). As notas das conversas ocultas nunca vão.
+  expirar (14 dias). As notas das conversas ocultas vão só dentro da própria conexão delas, mais abaixo.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
   atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
   celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só
@@ -3150,28 +3156,46 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   apagar em **Este celular** feito no celular. Uma mensagem que o celular não conseguiu enviar ao grupo (um grupo
   fechado nesse meio-tempo, por exemplo) aparece no computador como **Não enviada pelo celular**. Criar um grupo, os
   grupos públicos e as chamadas em grupo ficam no celular por enquanto.
-- **Conversas ocultas e segundas senhas** nunca são conectadas. As conversas ocultas escrevem para os dispositivos de
-  um contato nesta versão como as suas outras conversas, então esses as recebem com o celular do contato desligado, e
-  para o contato elas parecem as conversas de um celular que nunca conectou um dispositivo. Uma conversa movida para as
-  conversas ocultas no celular sai do computador. Movida para as conversas ocultas, ou delas para as suas conversas,
-  uma conversa escreve só para o celular do contato, como faz um Erevos mais antigo, até voltar para onde foi criada:
-  o Erevos do contato é avisado primeiro, então os dispositivos dele param de escrever para os seus, e ele pode
-  perceber por isso que a conversa deixou de saber de dispositivos conectados: se ela lhe deu a lista dos seus
-  dispositivos, que ela foi para as conversas ocultas. Um espaço que uma segunda senha abre
-  só conecta de dentro dele, a dispositivos próprios.
+- **Conversas ocultas e segundas senhas** nunca vão com a conexão do espaço: cada uma se conecta por conta própria, de
+  dentro. Para uma posição de conversas ocultas: no computador, abra essa posição com o PIN dela, nova e vazia como um
+  PIN novo a deixa, e dê a ela uma fila própria no relay em **Para usuários avançados** lá; depois toque em
+  **Dispositivos conectados** abaixo da lista dela, e em **Conectar ao meu celular**. No celular, abra a mesma posição
+  com o PIN dela, toque em **Dispositivos conectados** abaixo da lista dela e escaneie o código do computador com a
+  câmera enquanto a posição continua aberta, ou cole lá; depois como acima. A posição passa a ter uma conexão própria,
+  com chaves próprias e sua própria lista de dispositivos, assinada pela própria conta dela, então os contatos dela
+  nesta versão escrevem diretamente para a posição do computador. As mensagens, contatos, grupos, chamadas, fotos e
+  arquivos e a Conversa comigo dela vão entre as duas posições como os do espaço entre dispositivos conectados, e
+  também as próprias contas Matrix, XMPP e Nostr dela, com **Contas Matrix, XMPP e Nostr também** ou **Enviar as
+  contas**. Nada disso aparece no espaço, nas telas dele ou nos dispositivos conectados dele, e a conexão do espaço
+  nunca leva nada de uma posição: o que uma posição guarda da conexão dela é criptografado com a própria chave dela,
+  entre valores feitos para nada para as outras posições, num arquivo do mesmo tamanho haja posição conectada ou
+  nenhuma. A conexão funciona enquanto a posição está aberta, e também fechada se **Receber quando fechadas** estiver
+  ativado; fechada sem isso, nada dela se sincroniza, e o que chega espera no relay (14 dias) até ela abrir, dos dois
+  lados. No computador, novos grupos e chamadas em grupo ficam no celular, uma conversa não pode ser movida para a
+  posição nem para fora dela (mova pelo celular), e uma chamada atendida lá para o toque do celular só enquanto a
+  posição está aberta no celular. As conversas ocultas escrevem para os dispositivos de um contato nesta versão como
+  as suas outras conversas, então esses as recebem com o celular do contato desligado, e para o contato elas parecem
+  as conversas de um celular que nunca conectou um dispositivo. Uma conversa movida para as conversas ocultas no
+  celular sai do computador. Movida para as conversas ocultas, ou delas para as suas conversas, uma conversa escreve
+  só para o celular do contato, como faz um Erevos mais antigo, até voltar para onde foi criada: o Erevos do contato é
+  avisado primeiro, então os dispositivos dele param de escrever para os seus, e ele pode perceber por isso que a
+  conversa deixou de saber de dispositivos conectados: se ela lhe deu a lista dos seus dispositivos, que ela foi para
+  as conversas ocultas. Um espaço que uma segunda senha abre só conecta de dentro dele, a dispositivos próprios.
 - **Trazer as mensagens de novo**, no celular, envia de novo um período do histórico, com as reações, fixações, votos
   e estrelas dele; o que o computador já tem não é guardado duas vezes.
-- **Matrix, XMPP e Nostr**: com **Contas Matrix, XMPP e Nostr também** (ligado no início), o computador entra nas contas
-  Matrix e XMPP deste espaço e leva a chave das conversas Nostr dele, cada uma como um novo dispositivo próprio: o
-  celular fica com o seu. Para um computador já conectado, toque em **Enviar as contas** embaixo dele no celular. XMPP e
-  Nostr chegam sozinhos. Um servidor Matrix raramente deixa o celular fazer entrar um novo dispositivo: então
-  **Dispositivos conectados** no computador avisa, e **Entrar no Matrix** ali abre o Matrix com o ID já preenchido, para
-  a senha dela, uma vez só. As chaves da conta vêm do celular, então não é preciso chave de segurança nem verificar por
-  emoji, e as mensagens de antes abrem pelo backup de chaves dela. Um computador que já tem uma conta própria em uma
-  delas a mantém, e o que ainda não pôde chegar (por estar offline, por exemplo) é tentado de novo toda vez que ele
-  abre. Depois de desconectado, o computador sai das contas que trouxe. As das conversas ocultas nunca vão. Cada
-  dispositivo entra como ele mesmo, nunca com uma cópia das chaves do celular, que seria usada duas vezes e quebraria a
-  criptografia; assim cada um pode ser desconectado sozinho, a partir dos dispositivos da conta.
+- **Matrix, XMPP e Nostr**: com **Contas Matrix, XMPP e Nostr também** (ligado no início), o computador entra nas
+  contas Matrix e XMPP deste espaço e leva a chave das conversas Nostr dele, cada uma como um novo dispositivo
+  próprio: o celular fica com o seu. Para um computador já conectado, toque em **Enviar as contas** embaixo dele no
+  celular. XMPP e Nostr chegam sozinhos. Um servidor Matrix raramente deixa o celular fazer entrar um novo
+  dispositivo: então **Dispositivos conectados** no computador avisa, e **Entrar no Matrix** ali abre o Matrix com o
+  ID já preenchido, para a senha dela, uma vez só. As chaves da conta vêm do celular, então não é preciso chave de
+  segurança nem verificar por emoji, e as mensagens de antes abrem pelo backup de chaves dela. Um computador que já
+  tem uma conta própria em uma delas a mantém, e o que ainda não pôde chegar (por estar offline, por exemplo) é
+  tentado de novo toda vez que ele abre. Depois de desconectado, o computador sai das contas que trouxe. Uma posição
+  de conversas ocultas conectada por conta própria dá as próprias contas do mesmo jeito, pelos próprios **Dispositivos
+  conectados**, para a mesma posição no computador: nunca as do espaço, e as do espaço nunca vão para ela. Cada
+  dispositivo entra como ele mesmo, nunca com uma cópia das chaves do celular, que seria usada duas vezes e quebraria
+  a criptografia; assim cada um pode ser desconectado sozinho, a partir dos dispositivos da conta.
 - **Desvincular**, no celular, desconecta um dispositivo na hora: nada mais vai para ele, e nada que ele envia é
   aceito. Os contatos nesta versão ficam sabendo na próxima vez que o celular alcança o relay: param de escrever para
   ele, e não aceitam mais nada dele. É assim que se desconecta um computador perdido. Se ele estiver ligado, ele é

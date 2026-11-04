@@ -8,15 +8,20 @@ import { checkedGiven, checkedPlace, checkedSeat, checkedSynced, type GivenAccou
 import { checkedErased, checkedRemoved, checkedSiblings, type Siblings } from '../lib/siblings';
 
 import { isRelayKey, type Endpoint } from './e2e-data';
-import { sealedFile } from './sealed-file';
+import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps of its links to the account's other devices (lib/devices.ts): on the phone
 // that holds the account (the primary), each linked device; on a linked device, the primary. For
 // each, the conversation of the link, where it reads, and what waits to go to it; on a linked device,
 // the account's other linked devices it reaches directly too (lib/siblings.ts). Kept sealed with the
-// space's key in FILE, one value for each space (sealed-file.ts), in blocks of BLOCK bytes. Hidden
-// chats have none: they are never linked. A backup leaves this file out, and restoring one leaves it
-// as it is: on another phone there is none, and the devices are linked again.
+// space's key in FILE, one value for each space (sealed-file.ts), in blocks of BLOCK bytes. Each
+// hidden place links on its own (docs/multi-device.md, phase 5), and keeps its links the same way,
+// in a value of its own sealed with its key: every place of every space has one in the file,
+// written or not, of the same size, so neither the file nor the space's value says which places
+// link. The file is there whichever do: each space writes its own value as it opens, should it find
+// none it opens (keepDevicesFile), as the copies' file is kept (lock/fanout-data.ts). A backup leaves
+// this file out, and restoring one leaves it as it is: on another phone there is none, and the
+// devices are linked again.
 
 /** What of the history still goes to a device: from `since` (milliseconds, 0 for all of it) up to `upTo`, photos and files too or not, and how many of those messages went. */
 export type Job = { since: number; files: boolean; upTo: number; done: number };
@@ -305,5 +310,11 @@ function checked(value: unknown): DevicesData {
 
 const store = sealedFile({ name: FILE, empty: EMPTY_DEVICES, checked, block: BLOCK });
 
-export const loadDevicesData = (space: number, key: Uint8Array) => store.load('space', space, key);
-export const saveDevicesData = (space: number, key: Uint8Array, data: DevicesData) => store.save('space', space, key, data);
+/** A space's links, or a hidden place's (`holder`). */
+export const loadDevicesData = (space: number, key: Uint8Array, holder: Holder = 'space') => store.load(holder, space, key);
+export const saveDevicesData = (space: number, key: Uint8Array, data: DevicesData, holder: Holder = 'space') => store.save(holder, space, key, data);
+
+/** Writes a space's links as they are when its value in FILE does not open with its key: FILE is not there yet, or another space wrote it first. */
+export async function keepDevicesFile(space: number, key: Uint8Array, data: DevicesData): Promise<void> {
+  if (!(await store.opens('space', space, key))) await store.save('space', space, key, data);
+}

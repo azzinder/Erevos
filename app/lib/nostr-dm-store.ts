@@ -637,21 +637,27 @@ export async function nostrDmBring(nsec: string): Promise<void> {
   await begin(it, await newNostrDm(written.secret));
 }
 
-// The space's own account, never a hidden place's, loaded, for what Linked devices brings or lets
-// go of (lib/linked-accounts.ts): null when `space` is not the open one, or this build has no Nostr chats.
-async function spaceAccount(space: number): Promise<Live | null> {
-  runNostrDm();
-  for (let waited = 0; live && !live.loaded && !live.stopped && waited < 20_000; waited += 200) await new Promise((resolve) => setTimeout(resolve, 200));
-  return live && live.loaded && !live.stopped && live.holder === 'space' && live.space === space ? live : null;
+// The space's own account, or with `place` that hidden place's own while it runs
+// (lib/place-networks.ts), loaded, for what Linked devices brings or lets go of
+// (lib/linked-accounts.ts): null when `space` is not the open one, the place's does not run, or this
+// build has no Nostr chats.
+async function spaceAccount(space: number, place?: PlaceKey): Promise<Live | null> {
+  if (!place) runNostrDm();
+  const now = () => (place ? places.running(space, place.pocket, place.key) : live);
+  // A place's starts as its hidden chats open (lib/place-networks.ts), maybe just after its links.
+  for (let waited = 0, it = now(); (it ? !it.loaded && !it.stopped : !!place) && waited < 20_000; waited += 200, it = now()) await new Promise((resolve) => setTimeout(resolve, 200));
+  const it = now();
+  return it && it.loaded && !it.stopped && it.space === space && (place || it.holder === 'space') ? it : null;
 }
 
 /**
- * Gives the space `space` the Nostr key its phone gave it (lib/linked-accounts.ts), with the relays
- * it reads on, its name and file servers, when it has none: answers whether it did, had that key
- * already, or has another; null when `space` is not open.
+ * Gives the space `space`, or its hidden `place`, the Nostr key its phone gave it
+ * (lib/linked-accounts.ts), with the relays it reads on, its name and file servers, when it has
+ * none: answers whether it did, had that key already, or has another; null when `space` is not
+ * open, or the place's account does not run.
  */
-export async function nostrDmTake(space: number, given: { secret: string; inbox: string[]; name?: string; files?: string[] }): Promise<'brought' | 'had' | 'other' | null> {
-  const it = await spaceAccount(space);
+export async function nostrDmTake(space: number, given: { secret: string; inbox: string[]; name?: string; files?: string[] }, place?: PlaceKey): Promise<'brought' | 'had' | 'other' | null> {
+  const it = await spaceAccount(space, place);
   if (!it) return null;
   const now = () => (it.state ? (it.state.secret === given.secret ? 'had' : 'other') : null);
   if (it.state) return now();
@@ -668,10 +674,15 @@ export async function nostrDmTake(space: number, given: { secret: string; inbox:
   return 'brought';
 }
 
-/** Lets the space `space` forget the Nostr key it brought from its phone (`publicKey`, hex), once unlinked from it, if it still has it. */
-export async function nostrDmLetGo(space: number, publicKey: string): Promise<void> {
-  const it = await spaceAccount(space);
+/** Lets the space `space` (or its hidden `place`) forget the Nostr key it brought from its phone (`publicKey`, hex), once unlinked from it, if it still has it. */
+export async function nostrDmLetGo(space: number, publicKey: string, place?: PlaceKey): Promise<void> {
+  const it = await spaceAccount(space, place);
   if (it?.state?.public === publicKey) await forgetOf(it);
+}
+
+/** The public half of the Nostr key of the space `space`, or of its hidden `place` while its account runs, hex; null for none. */
+export async function nostrDmPublicOf(space: number, place?: PlaceKey): Promise<string | null> {
+  return (await spaceAccount(space, place))?.state?.public ?? null;
 }
 
 /** Forgets the space's key and its chats here. */

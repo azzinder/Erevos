@@ -200,9 +200,10 @@ i suoi messaggi vocali, ma non le foto e i file, come per le chat.
   promemoria** e **Nessun promemoria**, ed **Elimina**.
 - Ogni spazio ha una sua Chat con me stesso, e così anche ogni posto di chat nascoste, in cima al loro elenco (vedi
   [Chat nascoste](#hidden)). I promemoria di un posto nascosto appaiono lì quando il suo PIN lo apre; il telefono li
-  annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica. Un nuovo PIN
-  per il posto, che lo fa ripartire vuoto, o la rimozione del posto tolgono i suoi promemoria dal telefono. Le note di
-  un posto nascosto non vanno mai a un dispositivo collegato.
+  annuncia alla loro ora solo mentre **Ricevere da chiuse** è attivo per quel posto, nella stessa notifica. Un nuovo
+  PIN per il posto, che lo fa ripartire vuoto, o la rimozione del posto tolgono i suoi promemoria dal telefono. Le
+  note di un posto nascosto vanno solo ai dispositivi collegati a quel posto per conto suo, mai a quelli dello spazio
+  (vedi [Dispositivi collegati](#devices)).
 
 **Perché:** una notifica appare sullo schermo bloccato a chiunque abbia in mano il telefono, quindi quello che dice un
 promemoria resta crittografato nel suo spazio e ad Android viene detta solo la sua ora: la notifica non può dire a
@@ -2621,6 +2622,11 @@ cancellerebbe quello che contengono i posti tolti.
   dall’account proprio delle chat nascoste; una chiamata a esso, mentre le chat nascoste sono aperte, squilla con la
   suoneria del telefono, e restano aperte finché non finisce. Un loro account Matrix non ha **Avvisa dei nuovi
   messaggi**.
+- **Dispositivi collegati:** sotto il loro elenco, **Dispositivi collegati** collega queste chat nascoste per conto
+  loro allo stesso posto su un computer o in un browser, dall’interno, a parte dallo spazio e dai suoi dispositivi
+  collegati: le loro chat, i messaggi e i loro account vanno lì, e niente di questo si vede nello spazio (vedi **Le
+  chat nascoste e le seconde password** in [Dispositivi collegati](#devices)). Non collegate, sono solo su questo
+  telefono.
 - **Le anteprime dei link** hanno un loro interruttore nei dettagli di una chat nascosta, per tutte le chat di quel
   posto, disattivato finché non lo attivi (vedi **Anteprime dei link** in [Chat tramite un relay](#relay)).
 - **Avvisa quando arriva un messaggio** (Android): in cima a un posto mentre **Ricevere da chiuse** è disattivato. Se
@@ -3176,7 +3182,8 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   stessa nota, resta la più recente. Quello che è stato scritto prima del collegamento va una volta, nei due sensi,
   appena entrambi hanno questa versione. Un promemoria si mostra su ogni dispositivo alla sua ora, e visto su uno se
   ne va dagli altri. La foto o il file di una nota va come copia sul relay, eliminata da lì una volta presa, o, per
-  due dispositivi o più, lasciata lì finché scade (14 giorni). Le note delle chat nascoste non vanno mai.
+  due dispositivi o più, lasciata lì finché scade (14 giorni). Le note delle chat nascoste vanno solo nel loro
+  collegamento, più sotto.
 - **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
   che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer
   chiama tramite il telefono; la chiamata stessa va poi direttamente tra il computer e il contatto, crittografata tra
@@ -3190,30 +3197,47 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   messaggio che il telefono non ha potuto inviare al gruppo (uno chiuso nel frattempo, per esempio) appare sul computer
   come **Non inviato dal telefono**. Creare un gruppo, i gruppi pubblici e le chiamate di gruppo restano per ora sul
   telefono.
-- **Le chat nascoste e le seconde password** non vengono mai collegate. Le chat nascoste scrivono ai dispositivi di un
-  contatto con questa versione come fanno le tue altre chat, così quelli le ricevono a telefono del contatto spento, e
-  al contatto sembrano le chat di un telefono che non ha mai collegato un dispositivo. Una chat spostata nelle chat
-  nascoste sul telefono lascia il computer.
-  Spostata nelle chat nascoste, o da lì nelle tue chat, una chat scrive solo al telefono del contatto, come fa un Erevos
-  più vecchio, finché non torna dove è stata creata: al suo Erevos viene detto prima, così i suoi dispositivi smettono
-  di scrivere ai tuoi, e da questo può capire che la chat ha smesso di conoscere i dispositivi collegati: se gli aveva
-  dato l’elenco dei tuoi dispositivi, che è passata nelle chat nascoste. Uno spazio aperto da una seconda password
-  si collega solo dal suo interno, a dispositivi suoi.
+- **Le chat nascoste e le seconde password** non vanno mai con il collegamento dello spazio: ognuno si collega per
+  conto suo, dall’interno. Per un posto di chat nascoste: sul computer, apri quel posto con il suo PIN, nuovo e vuoto
+  come lo lascia un nuovo PIN, e dagli una sua coda sul relay in **Per utenti esperti** lì; poi tocca **Dispositivi
+  collegati** sotto il suo elenco, e **Collega al mio telefono**. Sul telefono, apri lo stesso posto con il suo PIN,
+  tocca **Dispositivi collegati** sotto il suo elenco e scansiona il codice del computer con la fotocamera mentre il
+  posto resta aperto, oppure incollalo lì; poi come sopra. Il posto ha allora un collegamento suo, con chiavi sue e un
+  suo elenco di dispositivi, firmato dal suo account, così i suoi contatti con questa versione scrivono direttamente
+  al posto del computer. I suoi messaggi, contatti, gruppi, chiamate, foto e file e la sua Chat con me stesso vanno
+  tra i due posti come quelli dello spazio tra dispositivi collegati, e così i suoi account Matrix, XMPP e Nostr, con
+  **Anche account Matrix, XMPP e Nostr** o **Invia gli account**. Niente di tutto questo si vede nello spazio, nelle
+  sue schermate o sui suoi dispositivi collegati, e il collegamento dello spazio non porta mai niente di un posto:
+  quello che un posto tiene del suo collegamento è crittografato con la sua chiave, tra valori fatti per niente per
+  gli altri posti, in un file della stessa dimensione che un posto sia collegato o nessuno. Il collegamento funziona
+  mentre il posto è aperto, e anche da chiuso se **Ricevere da chiuse** è attivo; chiuso senza, niente di esso si
+  sincronizza, e quello che arriva aspetta sul relay (14 giorni) finché si apre, da entrambe le parti. Sul computer, i
+  nuovi gruppi e le chiamate di gruppo restano sul telefono, una chat non si può spostare nel posto né fuori (spostala
+  sul telefono), e una chiamata risposta lì ferma lo squillo del telefono solo mentre il posto è aperto sul telefono.
+  Le chat nascoste scrivono ai dispositivi di un contatto con questa versione come fanno le tue altre chat, così
+  quelli le ricevono a telefono del contatto spento, e al contatto sembrano le chat di un telefono che non ha mai
+  collegato un dispositivo. Una chat spostata nelle chat nascoste sul telefono lascia il computer. Spostata nelle chat
+  nascoste, o da lì nelle tue chat, una chat scrive solo al telefono del contatto, come fa un Erevos più vecchio,
+  finché non torna dove è stata creata: al suo Erevos viene detto prima, così i suoi dispositivi smettono di scrivere
+  ai tuoi, e da questo può capire che la chat ha smesso di conoscere i dispositivi collegati: se gli aveva dato
+  l’elenco dei tuoi dispositivi, che è passata nelle chat nascoste. Uno spazio aperto da una seconda password si
+  collega solo dal suo interno, a dispositivi suoi.
 - **Trasferisci di nuovo i messaggi**, sul telefono, invia di nuovo un periodo della cronologia, con le sue reazioni,
   i messaggi fissati, i voti e quelli segnati come importanti; quello che il computer ha già non viene conservato due
   volte.
 - **Matrix, XMPP e Nostr**: con **Anche account Matrix, XMPP e Nostr** (attivo all’inizio), il computer accede agli
-  account Matrix e XMPP di questo spazio e prende la chiave delle sue chat Nostr, ciascuno come nuovo dispositivo a sé:
-  il telefono tiene il suo. Per un computer già collegato, tocca **Invia gli account** sotto di esso sul telefono. XMPP
-  e Nostr arrivano da soli. Un server Matrix di rado lascia che il telefono faccia accedere un nuovo dispositivo: allora
-  lo dice **Dispositivi collegati** sul computer, e **Accedi a Matrix** lì apre Matrix con l’ID già inserito, per la sua
-  password, una volta sola. Le chiavi dell’account arrivano dal telefono, quindi non servono né la chiave di sicurezza
-  né la verifica con le emoji, e i messaggi di prima si aprono dal suo backup delle chiavi. Un computer che ha già un
-  account suo su uno di essi lo tiene, e quello che non è potuto arrivare ancora (perché era offline, per esempio) viene
-  ritentato ogni volta che si apre. Una volta scollegato, il computer esce dagli account che ha trasferito. Quelli delle
-  chat nascoste non partono mai. Ogni dispositivo accede come se stesso, mai con una copia delle chiavi del telefono,
-  che verrebbe usata due volte e romperebbe la crittografia; così ciascuno può uscire da solo, dai dispositivi
-  dell’account.
+  account Matrix e XMPP di questo spazio e prende la chiave delle sue chat Nostr, ciascuno come nuovo dispositivo a
+  sé: il telefono tiene il suo. Per un computer già collegato, tocca **Invia gli account** sotto di esso sul telefono.
+  XMPP e Nostr arrivano da soli. Un server Matrix di rado lascia che il telefono faccia accedere un nuovo dispositivo:
+  allora lo dice **Dispositivi collegati** sul computer, e **Accedi a Matrix** lì apre Matrix con l’ID già inserito,
+  per la sua password, una volta sola. Le chiavi dell’account arrivano dal telefono, quindi non servono né la chiave
+  di sicurezza né la verifica con le emoji, e i messaggi di prima si aprono dal suo backup delle chiavi. Un computer
+  che ha già un account suo su uno di essi lo tiene, e quello che non è potuto arrivare ancora (perché era offline,
+  per esempio) viene ritentato ogni volta che si apre. Una volta scollegato, il computer esce dagli account che ha
+  trasferito. Un posto di chat nascoste collegato per conto suo dà i suoi account allo stesso modo, dai suoi
+  **Dispositivi collegati**, allo stesso posto sul computer: mai quelli dello spazio, e quelli dello spazio non vanno
+  mai a lui. Ogni dispositivo accede come se stesso, mai con una copia delle chiavi del telefono, che verrebbe usata
+  due volte e romperebbe la crittografia; così ciascuno può uscire da solo, dai dispositivi dell’account.
 - **Scollega**, sul telefono, esclude subito un dispositivo: non gli arriva più nulla, e niente di quello che invia
   viene preso. Ai contatti con questa versione viene detto la prossima volta che il telefono raggiunge il relay:
   smettono di scrivergli, e non prendono più nulla da lui. È così che si esclude un computer perso. Se è acceso, gli

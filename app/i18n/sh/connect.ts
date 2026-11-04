@@ -12,6 +12,7 @@ export const connect: Record<string, string> = {
   "Through Nostr, with no relay": "Preko Nostra, bez relaya",
   "Only nearby, for now": "Zasad samo u blizini",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Ovaj uređaj je povezan s vašim telefonom: ima njegove kontakte, a vaš link za kontakt je onaj s telefona.",
+  "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Ovi skriveni razgovori su povezani s istim skrivenim razgovorima na vašem telefonu: imaju njihove kontakte, a njihov link za kontakt je telefonov.",
   "These hidden chats have a queue of their own on it, which the space knows nothing of.": "Ovi skriveni razgovori ondje imaju vlastiti red, o kojem prostor ne zna ništa.",
   "Everything works: texts, photos, voice messages, calls and groups, end-to-end encrypted.": "Sve radi: tekstovi, fotografije, glasovne poruke, pozivi i grupe, šifrirano s kraja na kraj.",
   "Contacts near you reach you with no internet too.": "Kontakti u vašoj blizini dosežu vas i bez interneta.",

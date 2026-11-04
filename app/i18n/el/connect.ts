@@ -12,6 +12,7 @@ export const connect: Record<string, string> = {
   "Through Nostr, with no relay": "Μέσω Nostr, χωρίς relay",
   "Only nearby, for now": "Μόνο από κοντά, προς το παρόν",
   "This device is linked to your phone: it has its contacts, and your contact link is the phone’s.": "Αυτή η συσκευή είναι συνδεδεμένη με το τηλέφωνό σου: έχει τις επαφές του, και ο σύνδεσμος επαφής σου είναι αυτός του τηλεφώνου.",
+  "These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.": "Αυτές οι κρυφές συνομιλίες είναι συνδεδεμένες με τις ίδιες κρυφές συνομιλίες του τηλεφώνου σου: έχουν τις επαφές τους, και ο σύνδεσμος επαφής τους είναι αυτός του τηλεφώνου.",
   "These hidden chats have a queue of their own on it, which the space knows nothing of.": "Αυτές οι κρυφές συνομιλίες έχουν δική τους ουρά σε αυτό, για την οποία ο χώρος δεν ξέρει τίποτα.",
   "Everything works: texts, photos, voice messages, calls and groups, end-to-end encrypted.": "Όλα δουλεύουν: κείμενα, φωτογραφίες, φωνητικά μηνύματα, κλήσεις και ομάδες, κρυπτογραφημένα από άκρο σε άκρο.",
   "Contacts near you reach you with no internet too.": "Οι επαφές κοντά σου σε βρίσκουν και χωρίς ίντερνετ.",

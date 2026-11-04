@@ -210,8 +210,8 @@ Ein Backup nimmt seine Notizen und Sprachnachrichten mit, aber nicht seine Fotos
   Liste (siehe [Versteckte Chats](#hidden)). Die Erinnerungen eines versteckten Platzes erscheinen dort, sobald seine
   PIN ihn öffnet; das Telefon meldet sie zu ihrer Zeit nur, solange **Empfangen, wenn geschlossen** für diesen Platz
   an ist, in derselben Benachrichtigung. Eine neue PIN für den Platz, die ihn leer beginnt, oder das Entfernen des
-  Platzes nimmt seine Erinnerungen vom Telefon. Die Notizen eines versteckten Platzes gehen nie an ein verknüpftes
-  Gerät.
+  Platzes nimmt seine Erinnerungen vom Telefon. Die Notizen eines versteckten Platzes gehen nur an die Geräte, die mit
+  diesem Platz für sich verknüpft sind, nie an die des Bereichs (siehe [Verknüpfte Geräte](#devices)).
 
 **Warum:** Eine Benachrichtigung erscheint auf dem Sperrbildschirm für jeden, der das Telefon in der Hand hat, also
 bleibt der Text einer Erinnerung verschlüsselt in ihrem Bereich, und Android erfährt nur ihre Zeit: Die
@@ -2782,6 +2782,11 @@ löschen, was die weggenommenen Plätze enthalten.
   geschlossen sind, kommt nichts an. Ihre Chats rufen an wie die des Bereichs, vom eigenen Konto der versteckten Chats;
   ein Anruf an dieses, während die versteckten Chats offen sind, klingelt mit dem Klingelton des Telefons, und sie
   bleiben offen, bis er endet. Ein Matrix-Konto von ihnen hat kein **Neue Nachrichten melden**.
+- **Verknüpfte Geräte:** Unter ihrer Liste verknüpft **Verknüpfte Geräte** diese versteckten Chats für sich mit
+  demselben Platz auf einem Computer oder im Browser, von innen, getrennt vom Bereich und seinen verknüpften Geräten:
+  Ihre Chats, Nachrichten und eigenen Konten gehen dorthin, und nichts davon zeigt sich im Bereich (siehe **Versteckte
+  Chats und zweite Passwörter** unter [Verknüpfte Geräte](#devices)). Nicht verknüpft, sind sie nur auf diesem
+  Telefon.
 - **Linkvorschauen** haben einen eigenen Schalter in den Details eines versteckten Chats, für alle Chats dieses
   Platzes, aus, solange du ihn nicht einschaltest (siehe **Linkvorschauen** unter [Chat über ein Relay](#relay)).
 - **Melden, wenn eine Nachricht kommt** (Android): oben auf einem Platz, solange **Empfangen, wenn geschlossen** aus
@@ -3371,7 +3376,7 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   in beide Richtungen, sobald beide diese Version haben. Eine Erinnerung erscheint auf jedem Gerät zu ihrer Zeit, und
   auf einem gesehen, verschwindet sie von den anderen. Das Foto oder die Datei einer Notiz geht als Kopie über das
   Relay und wird dort gelöscht, sobald sie geholt wurde, oder bleibt, bei zwei Geräten oder mehr, dort, bis sie
-  abläuft (14 Tage). Die Notizen versteckter Chats gehen nie.
+  abläuft (14 Tage). Die Notizen versteckter Chats gehen nur innerhalb ihrer eigenen Verknüpfung, siehe unten.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
   beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und
@@ -3385,30 +3390,50 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   **Dieses Telefon**, auf dem Telefon gemacht. Eine Nachricht, die das Telefon nicht an die Gruppe senden konnte
   (etwa weil sie inzwischen geschlossen wurde), erscheint auf dem Computer als **Nicht vom Telefon gesendet**. Eine
   Gruppe zu machen, öffentliche Gruppen und Gruppenanrufe bleiben vorerst auf dem Telefon.
-- **Versteckte Chats und zweite Passwörter** werden nie verknüpft. Versteckte Chats schreiben an die Geräte eines
-  Kontakts mit dieser Version wie deine anderen Chats, sodass diese sie bei ausgeschaltetem Telefon des Kontakts
-  bekommen, und für den Kontakt sehen sie aus wie die Chats eines Telefons, das nie ein Gerät verknüpft hat. Ein auf
-  dem Telefon in versteckte Chats verschobener Chat verschwindet vom Computer.
-  In versteckte Chats verschoben, oder aus ihnen in deine Chats, schreibt ein Chat nur an das Telefon des Kontakts, wie
-  ein älteres Erevos, bis er dorthin zurückkehrt, wo er angelegt wurde: Das Erevos des Kontakts erfährt es zuerst,
-  damit seine Geräte aufhören, an deine zu schreiben, und er kann daraus erkennen, dass der Chat aufgehört hat, von
-  verknüpften Geräten zu wissen: wenn er ihm die Liste deiner Geräte gegeben hat, dass er in versteckte Chats ging. Ein
-  Bereich, den ein zweites Passwort öffnet,
-  verknüpft nur von innen, mit eigenen Geräten.
+- **Versteckte Chats und zweite Passwörter** gehen nie mit der Verknüpfung des Bereichs mit: Jedes wird für sich
+  verknüpft, von innen. Für einen Platz versteckter Chats: Öffne auf dem Computer diesen Platz mit seiner PIN, neu und
+  leer, wie eine neue PIN ihn anlegt, und gib ihm dort unter **Für Fortgeschrittene** eine eigene Warteschlange auf
+  dem Relay; tippe dann unter seiner Liste auf **Verknüpfte Geräte** und auf **Mit meinem Telefon verknüpfen**. Öffne
+  auf dem Telefon denselben Platz mit seiner PIN, tippe unter seiner Liste auf **Verknüpfte Geräte** und scanne den
+  Code des Computers mit der Kamera, solange der Platz offen bleibt, oder füge ihn dort ein; dann wie oben. Der Platz
+  hat dann eine eigene Verknüpfung, mit eigenen Schlüsseln und einer eigenen Liste seiner Geräte, von seinem eigenen
+  Konto signiert, sodass seine Kontakte mit dieser Version direkt an den Platz des Computers schreiben. Seine
+  Nachrichten, Kontakte, Gruppen, Anrufe, Fotos und Dateien und sein Chat mit mir selbst gehen zwischen den beiden
+  Plätzen, wie die des Bereichs zwischen verknüpften Geräten, und ebenso seine eigenen Matrix-, XMPP- und
+  Nostr-Konten, mit **Auch Matrix-, XMPP- und Nostr-Konten** oder **Konten senden**. Nichts davon zeigt sich im
+  Bereich, auf seinen Bildschirmen oder auf seinen verknüpften Geräten, und die Verknüpfung des Bereichs trägt nie
+  etwas von einem Platz: Was ein Platz von seiner Verknüpfung bewahrt, ist mit seinem eigenen Schlüssel verschlüsselt,
+  zwischen Werten, die für die anderen Plätze für nichts angelegt sind, in einer Datei derselben Größe, ob ein Platz
+  verknüpft ist oder keiner. Die Verknüpfung läuft, solange der Platz offen ist, und auch geschlossen, wenn
+  **Empfangen, wenn geschlossen** an ist; geschlossen ohne das wird nichts von ihm abgeglichen, und was ankommt,
+  wartet auf dem Relay (14 Tage), bis er sich öffnet, auf beiden Seiten. Auf dem Computer bleiben neue Gruppen und
+  Gruppenanrufe auf dem Telefon, ein Chat lässt sich nicht in den Platz oder aus ihm heraus verschieben (verschiebe
+  ihn auf dem Telefon), und ein dort angenommener Anruf beendet das Klingeln des Telefons nur, solange der Platz auf
+  dem Telefon offen ist. Versteckte Chats schreiben an die Geräte eines Kontakts mit dieser Version wie deine anderen
+  Chats, sodass diese sie bei ausgeschaltetem Telefon des Kontakts bekommen, und für den Kontakt sehen sie aus wie die
+  Chats eines Telefons, das nie ein Gerät verknüpft hat. Ein auf dem Telefon in versteckte Chats verschobener Chat
+  verschwindet vom Computer. In versteckte Chats verschoben, oder aus ihnen in deine Chats, schreibt ein Chat nur an
+  das Telefon des Kontakts, wie ein älteres Erevos, bis er dorthin zurückkehrt, wo er angelegt wurde: Das Erevos des
+  Kontakts erfährt es zuerst, damit seine Geräte aufhören, an deine zu schreiben, und er kann daraus erkennen, dass
+  der Chat aufgehört hat, von verknüpften Geräten zu wissen: wenn er ihm die Liste deiner Geräte gegeben hat, dass er
+  in versteckte Chats ging. Ein Bereich, den ein zweites Passwort öffnet, verknüpft nur von innen, mit eigenen
+  Geräten.
 - **Nachrichten erneut übertragen**, auf dem Telefon, sendet einen Zeitraum des Verlaufs erneut, mit seinen Reaktionen,
   Anheftungen, Stimmen und Sternen; was der Computer schon hat, wird nicht doppelt aufbewahrt.
 - **Matrix, XMPP und Nostr**: Mit **Auch Matrix-, XMPP- und Nostr-Konten** (zunächst an) meldet sich der Computer bei
-  den Matrix- und XMPP-Konten dieses Bereichs an und übernimmt den Schlüssel seiner Nostr-Chats, jeweils als neues Gerät
-  mit eigenen Schlüsseln: Das Telefon behält seine. Bei einem Computer, der schon verknüpft ist, tippe auf dem Telefon
-  unter ihm auf **Konten senden**. XMPP und Nostr kommen von selbst. Ein Matrix-Server lässt das Telefon nur selten ein
-  neues Gerät anmelden: Dann sagt es **Verknüpfte Geräte** auf dem Computer, und **Bei Matrix anmelden** öffnet dort
-  Matrix mit eingetragener ID, für das Passwort, einmal. Die Schlüssel des Kontos kommen vom Telefon, also ist weder ein
-  Sicherheitsschlüssel noch eine Prüfung per Emoji nötig, und die Nachrichten von früher öffnen sich aus seiner
-  Schlüsselsicherung. Ein Computer, der auf einem davon schon ein eigenes Konto hat, behält es, und was noch nicht
-  kommen konnte (etwa weil er offline war), wird bei jedem Öffnen erneut versucht. Getrennt, meldet sich der Computer
-  von den Konten ab, die er übernommen hat. Die der versteckten Chats gehen nie mit. Jedes Gerät meldet sich als es
-  selbst an, nie mit einer Kopie der Schlüssel des Telefons, die dann doppelt benutzt würde und die Verschlüsselung
-  kaputtmachen würde; so lässt sich jedes allein abmelden, bei den Geräten des Kontos.
+  den Matrix- und XMPP-Konten dieses Bereichs an und übernimmt den Schlüssel seiner Nostr-Chats, jeweils als neues
+  Gerät mit eigenen Schlüsseln: Das Telefon behält seine. Bei einem Computer, der schon verknüpft ist, tippe auf dem
+  Telefon unter ihm auf **Konten senden**. XMPP und Nostr kommen von selbst. Ein Matrix-Server lässt das Telefon nur
+  selten ein neues Gerät anmelden: Dann sagt es **Verknüpfte Geräte** auf dem Computer, und **Bei Matrix anmelden**
+  öffnet dort Matrix mit eingetragener ID, für das Passwort, einmal. Die Schlüssel des Kontos kommen vom Telefon, also
+  ist weder ein Sicherheitsschlüssel noch eine Prüfung per Emoji nötig, und die Nachrichten von früher öffnen sich aus
+  seiner Schlüsselsicherung. Ein Computer, der auf einem davon schon ein eigenes Konto hat, behält es, und was noch
+  nicht kommen konnte (etwa weil er offline war), wird bei jedem Öffnen erneut versucht. Getrennt, meldet sich der
+  Computer von den Konten ab, die er übernommen hat. Ein für sich verknüpfter Platz versteckter Chats gibt seine
+  eigenen Konten auf dieselbe Weise, aus seinen eigenen **Verknüpfte Geräte**, an denselben Platz auf dem Computer:
+  nie die des Bereichs, und die des Bereichs gehen nie an ihn. Jedes Gerät meldet sich als es selbst an, nie mit einer
+  Kopie der Schlüssel des Telefons, die dann doppelt benutzt würde und die Verschlüsselung kaputtmachen würde; so
+  lässt sich jedes allein abmelden, bei den Geräten des Kontos.
 - **Trennen**, auf dem Telefon, sperrt ein Gerät sofort aus: Nichts geht mehr an es, und nichts, was es sendet, wird
   angenommen. Kontakte mit dieser Version erfahren es, wenn das Telefon das nächste Mal das Relay erreicht: Sie hören
   auf, an es zu schreiben, und nehmen nichts mehr von ihm an. So sperrst du einen verlorenen Computer aus. Ist er an,

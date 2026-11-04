@@ -13,7 +13,10 @@
 // the others write, read and change, started again a day after a first packet lost; a backup put
 // back elsewhere meeting no one, and versions from before reached through the phone as they were.
 // The space's Matrix, XMPP and Nostr accounts going to a device linked with them, brought there as
-// far as it can, the rest again as the space opens, and let go of once it is unlinked.
+// far as it can, the rest again as the space opens, and let go of once it is unlinked. A hidden
+// place linked on its own, from inside it: its own link and device list, messages both ways, its
+// contacts writing to the device's place directly, its own accounts, unlinking, and nothing of it
+// in the space, on the space's devices or in the size of the file the links keep.
 // Then contacts given the list: writing to each endpoint alike, each with keys of its own that a
 // device finds them by, a device taking their messages and answering them with the phone off, and with the phone's queue full what they try again, once, its
 // conversation with them going on; each kept once however many come between, what came and was read
@@ -96,13 +99,14 @@ import { VoiceAssembler } from '../lib/voice';
 import { handOverHidden, Owed, OwedError } from '../lib/waiting';
 import { newFileId, type FileRef } from '../lock/attachment-files';
 import { addNote, changeNote, loadNotes, markTold, newNoteId, removeNote, type NotesPlace } from '../lock/myself-data';
-import { loadDevicesData, saveDevicesData, type Brought, type DevicesData } from '../lock/devices-data';
+import { FILE as DEVICES_FILE, loadDevicesData, saveDevicesData, type Brought, type DevicesData } from '../lock/devices-data';
 import { loadE2EData, saveE2EData, WAY_AGAIN, type E2EData } from '../lock/e2e-data';
 import { EMPTY_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { History } from '../lock/history';
 import { loadClip, saveClip } from '../lock/voice-clips';
 import { markRestore } from '../lock/restored';
-import { EMPTY_SPACE, loadSpaceData, saveSpaceData, type Queue } from '../lock/space-data';
+import { EMPTY_SPACE, loadSpaceData, saveHiddenData, saveSpaceData, type Queue } from '../lock/space-data';
+import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
 import { fakeRtc } from './fake-rtc';
@@ -3543,4 +3547,148 @@ test('Chat with myself between two linked computers with the phone off: each tel
     return (await loadNotes(at(pixel))).length === 0 && (await loadNotes(at(dell))).length === 0;
   }, 20_000);
   for (const p of [pixel, dell, lenovo]) p.links.close();
+});
+
+test('a hidden place links on its own: its own link and list, messages both ways, its contacts writing to the device\'s place directly, its own accounts, unlinking, and nothing of it in the space or on the space\'s devices', { skip: !coreReady || !relayReady, timeout: 150_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp } = await setup();
+  // The phone and the computer, their spaces linked as spaces are.
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  await linkUp(pixel, dell);
+  // Hidden chats on each, in pockets of their own, each with its own relay queue and links.
+  const place = async (space: number, pocket: number): Promise<Phone> => {
+    const key = randomBytes(32);
+    const ids = await createQueue(relay);
+    const own = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+    await saveHiddenData(space, pocket, key, { ...EMPTY_SPACE, url, ownQueue: own });
+    const chats = { e2e: await E2E.open(hiddenHolder(pocket), space, key), history: await History.open(hiddenHolder(pocket), space, key), voiceParts: new VoiceAssembler() };
+    const links = await Links.open(space, key, chats, 60 * 60_000, pocket);
+    opened.push(links);
+    return { chats, queue: own, links, space, key };
+  };
+  const hiddenPixel = await place(0, 2);
+  const hiddenDell = await place(1, 0);
+  const placeAccount = hiddenPixel.chats.e2e.identityHex();
+  // Carol, a contact of the phone's hidden chats only.
+  const carol = await phone(3);
+  const carolId = carol.chats.e2e.identityHex();
+  await carol.chats.e2e.addContact({ senderHex: hiddenPixel.queue.senderHex, key: toBase64Url(hiddenPixel.chats.e2e.bundle), relayUrl: url }, carol.queue.senderHex, where);
+  await write(carol, placeAccount, 'before the hidden link');
+  await take(hiddenPixel);
+  await hiddenPixel.chats.e2e.acceptRequest(carolId);
+  const sized = () => files.get(DEVICES_FILE)?.length ?? 0;
+  const size = sized();
+  assert.ok(size > 0);
+
+  // Linked from inside the hidden chats on both: codes, then the place's history.
+  await linkUp(hiddenPixel, hiddenDell, { since: 0, files: true });
+  assert.deepEqual([hiddenPixel.links.role(), hiddenDell.links.role()], ['primary', 'linked']);
+  await until(async () => {
+    await take(hiddenDell);
+    return hiddenDell.chats.history.messages().some((m) => m.text === 'before the hidden link');
+  });
+  assert.deepEqual(
+    hiddenDell.chats.e2e.contacts().map((c) => c.identity),
+    [carolId],
+  );
+  assert.ok(hiddenDell.links.accountLink()?.includes(hiddenPixel.queue.senderHex));
+  // The spaces see nothing of it: their links name only each other, their chats have no Carol,
+  // the file of the links is the size it was, and the space's key opens no place's value.
+  assert.deepEqual([pixel.links.role(), dell.links.role()], ['primary', 'linked']);
+  assert.deepEqual(
+    pixel.links.devices().map((d) => d.name),
+    ['DELL'],
+  );
+  for (const p of [pixel, dell]) assert.equal(p.chats.e2e.record(carolId), null);
+  assert.equal(sized(), size);
+  assert.equal((await loadDevicesData(1, dell.key, hiddenHolder(0))).primary, null);
+  assert.ok((await loadDevicesData(1, hiddenDell.key, hiddenHolder(0))).primary);
+  assert.notEqual((await loadDevicesData(1, dell.key)).primary?.id, (await loadDevicesData(1, hiddenDell.key, hiddenHolder(0))).primary?.id);
+
+  // Carol writes: the phone's hidden chats pass it on to the computer's, never to its space.
+  await write(carol, placeAccount, 'hello hidden both');
+  await take(hiddenPixel);
+  const [came] = await take(hiddenDell);
+  assert.deepEqual([came.identity, came.text], [carolId, 'hello hidden both']);
+  assert.deepEqual(await take(dell), []);
+  // The computer's hidden chats write: the phone's seal it for Carol, as the place's account.
+  const fromDell = await write(hiddenDell, carolId, 'from the hidden computer');
+  await take(hiddenPixel);
+  const [toCarol] = await take(carol);
+  assert.deepEqual([toCarol.identity, toCarol.text, toCarol.tag], [placeAccount, 'from the hidden computer', fromDell]);
+  assert.equal(hiddenPixel.chats.history.messages().find((m) => m.tag === fromDell)?.mine, true);
+
+  // The place's own account signs its own list, naming the computer's place: Carol is given it,
+  // and with the phone's hidden chats closed she reaches the computer's directly.
+  await until(async () => {
+    await take(hiddenPixel);
+    await take(hiddenDell);
+    const list = hiddenPixel.chats.e2e.signedList();
+    return !!list && list.real.length === 1 && Object.keys(list.r ?? {}).length === 4 && hiddenDell.chats.e2e.own()?.list?.n === list.n;
+  });
+  const onHiddenDell = hiddenDell.chats.e2e.endpoint()!;
+  const placeList = (bodyOf(hiddenPixel.chats.e2e.signedList()!) as Body).d.map((e) => e.i);
+  assert.ok(placeList.includes(onHiddenDell.id));
+  assert.ok(!placeList.includes(dell.chats.e2e.endpoint()?.id ?? ''));
+  const spaceList = pixel.chats.e2e.signedList();
+  assert.ok(!spaceList || !(bodyOf(spaceList) as Body).d.some((e) => e.i === onHiddenDell.id));
+  assert.ok((await giveKeys(relay, where, hiddenPixel)).includes(carolId));
+  await take(carol);
+  assert.ok(carol.chats.e2e.record(placeAccount)!.endpoints!.some((w) => w.id === onHiddenDell.id));
+  hiddenPixel.links.close();
+  const direct = await write(carol, placeAccount, 'with the hidden phone closed');
+  await sendCopies(carol.chats.e2e, relay);
+  const atDell = await takeKept(relay, hiddenDell);
+  assert.deepEqual(atDell.filter((m) => m.tag === direct).map((m) => [m.identity, m.text]), [[carolId, 'with the hidden phone closed']]);
+  assert.equal(hiddenDell.chats.history.messages().filter((m) => m.tag === direct).length, 1);
+  assert.deepEqual(await take(dell), []);
+  assert.equal(dell.chats.e2e.record(carolId), null);
+  hiddenPixel.links = await Links.open(0, hiddenPixel.key, hiddenPixel.chats, 60 * 60_000, 2);
+  opened.push(hiddenPixel.links);
+  await take(hiddenPixel);
+
+  // The place's own Matrix, XMPP and Nostr accounts go to the computer's place, said by its pocket;
+  // the space's are its own.
+  const given: GivenAccounts = { xmpp: { jid: 'hidden@example.org', password: 'two words' } };
+  const took: { space: number; pocket: number | null; given: GivenAccounts }[] = [];
+  const gone: { space: number; pocket: number | null; brought: Brought }[] = [];
+  handAccounts({
+    give: async (space, _key, pocket) => (space === 0 && pocket === 2 ? given : {}),
+    take: async (space, _key, said, pocket) => {
+      took.push({ space, pocket, given: said });
+      return { left: {}, brought: { xmpp: said.xmpp!.jid }, problems: [] };
+    },
+    letGo: async (space, _key, brought, pocket) => {
+      gone.push({ space, pocket, brought });
+    },
+  });
+  try {
+    const [hiddenDellId] = hiddenPixel.links.devices().map((d) => d.id);
+    assert.deepEqual(await pixel.links.giveAccounts(pixel.links.devices()[0].id), []);
+    assert.deepEqual(await hiddenPixel.links.giveAccounts(hiddenDellId), ['xmpp']);
+    await until(async () => {
+      await take(hiddenDell);
+      return took.length > 0;
+    });
+    await take(dell);
+    assert.deepEqual(took, [{ space: 1, pocket: 0, given }]);
+    assert.deepEqual(hiddenDell.links.accountsHere(), { left: {}, brought: { xmpp: 'hidden@example.org' }, problems: [] });
+    assert.equal(dell.links.accountsHere(), null);
+
+    // Unlinked from the phone's hidden chats: the computer's let go of their chats and the accounts
+    // brought; the spaces stay linked.
+    assert.ok(await hiddenPixel.links.unlink(hiddenDellId));
+    await take(hiddenDell);
+    await hiddenDell.links.settled();
+    assert.equal(hiddenDell.links.role(), null);
+    assert.deepEqual(hiddenDell.chats.e2e.contacts(), []);
+    assert.deepEqual(hiddenDell.chats.history.messages(), []);
+    assert.deepEqual(gone, [{ space: 1, pocket: 0, brought: { xmpp: 'hidden@example.org' } }]);
+    assert.equal(hiddenPixel.links.role(), null);
+    assert.deepEqual([pixel.links.role(), dell.links.role()], ['primary', 'linked']);
+    assert.equal(sized(), size);
+  } finally {
+    handAccounts(null);
+  }
+  for (const p of [pixel, dell, carol, hiddenPixel, hiddenDell]) p.links.close();
 });

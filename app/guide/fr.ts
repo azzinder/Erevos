@@ -210,11 +210,11 @@ photos ni ses fichiers, comme pour les discussions.
 - **Un appui long sur une note** propose **Copier**, **Ouvrir** (une photo ou un fichier), **Me rappeler**, ou **Changer
   le rappel** et **Sans rappel**, et **Supprimer**.
 - Chaque espace a sa propre Discussion avec moi-même, et chaque emplacement de discussions masquées aussi, en haut de
-  leur liste (voir [Discussions masquées](#hidden)). Les rappels d’un emplacement masqué s’y affichent une fois que son
-  code PIN l’ouvre ; le téléphone les signale à leur heure seulement tant que **Recevoir une fois fermées** est activé
-  pour cet emplacement, dans la même notification. Un nouveau code PIN pour l’emplacement, qui le recommence vide, ou
-  l’emplacement retiré, enlève ses rappels du téléphone. Les notes d’un emplacement masqué ne vont jamais à un
-  appareil associé.
+  leur liste (voir [Discussions masquées](#hidden)). Les rappels d’un emplacement masqué s’y affichent une fois que
+  son code PIN l’ouvre ; le téléphone les signale à leur heure seulement tant que **Recevoir une fois fermées** est
+  activé pour cet emplacement, dans la même notification. Un nouveau code PIN pour l’emplacement, qui le recommence
+  vide, ou l’emplacement retiré, enlève ses rappels du téléphone. Les notes d’un emplacement masqué ne vont qu’aux
+  appareils associés à cet emplacement à part, jamais à ceux de l’espace (voir [Appareils associés](#devices)).
 
 **Pourquoi :** une notification s’affiche sur l’écran verrouillé pour quiconque tient le téléphone, donc ce que dit un
 rappel reste chiffré dans son espace et Android n’apprend que son heure : la notification ne peut dire à personne ce que
@@ -2748,6 +2748,11 @@ supprimerait ce que contiennent les emplacements retirés.
   discussions masquées ; un appel vers lui, tant que les discussions masquées sont ouvertes, sonne avec la sonnerie du
   téléphone, et elles restent ouvertes jusqu’à sa fin. Un compte Matrix à elles n’a pas **Signaler les nouveaux
   messages**.
+- **Appareils associés :** sous leur liste, **Appareils associés** associe ces discussions masquées à part au même
+  emplacement sur un ordinateur ou dans un navigateur, depuis l’intérieur, à l’écart de l’espace et de ses appareils
+  associés : leurs discussions, messages et propres comptes y vont, et rien de cela ne se voit dans l’espace (voir
+  **Les discussions masquées et les seconds mots de passe** dans [Appareils associés](#devices)). Non associées, elles
+  ne sont que sur ce téléphone.
 - **Aperçus des liens** a son propre interrupteur dans les détails d’une discussion masquée, pour toutes les discussions
   de cet emplacement, désactivé tant que tu ne l’actives pas (voir **Aperçus des liens** sous [Discuter par un
   relais](#relay)).
@@ -3347,7 +3352,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   sens, dès que les deux ont cette version. Un rappel s’affiche sur chaque appareil à son heure, et vu sur l’un il
   disparaît des autres. La photo ou le fichier d’une note part en copie sur le relais, supprimée de là une fois prise,
   ou, pour deux appareils ou plus, laissée là jusqu’à son expiration (14 jours). Les notes des discussions masquées ne
-  partent jamais.
+  partent que dans leur propre association, plus bas.
 - Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
   dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
   aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,
@@ -3361,29 +3366,49 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   sur le téléphone. Un message que le téléphone n’a pas pu envoyer au groupe (un groupe fermé entre-temps, par exemple)
   s’affiche sur l’ordinateur comme **Pas envoyé par le téléphone**. Créer un groupe, les groupes publics et les appels
   de groupe restent sur le téléphone pour l’instant.
-- **Les discussions masquées et les seconds mots de passe** ne sont jamais associés. Les discussions masquées écrivent
-  aux appareils d’un contact sur cette version comme le font tes autres discussions, si bien que ceux-ci les reçoivent
-  même avec le téléphone du contact éteint, et pour le contact elles ressemblent aux discussions d’un téléphone qui n’a
-  jamais associé d’appareil. Une discussion déplacée dans les discussions masquées sur le téléphone quitte l’ordinateur.
-  Déplacée dans les discussions masquées, ou hors d’elles vers tes discussions, une discussion n’écrit qu’au téléphone
-  du contact, comme le fait un Erevos plus ancien, jusqu’à ce qu’elle retourne là où elle a été créée : son Erevos est
-  prévenu d’abord, pour que ses appareils cessent d’écrire aux tiens, et il peut en déduire que la discussion a cessé de
-  connaître les appareils associés : si elle lui avait donné la liste de tes appareils, qu’elle est partie dans les
-  discussions masquées. Un espace qu’ouvre un second mot de passe ne s’associe que de l’intérieur, à des appareils à
-  lui.
+- **Les discussions masquées et les seconds mots de passe** ne partent jamais avec l’association de l’espace : chacun
+  s’associe à part, depuis l’intérieur. Pour un emplacement de discussions masquées : sur l’ordinateur, ouvre cet
+  emplacement avec son PIN, neuf et vide comme le laisse un nouveau PIN, et donne-lui sa propre file d’attente sur le
+  relais sous **Pour les utilisateurs avancés** ; puis appuie sur **Appareils associés** sous sa liste, et sur
+  **Associer à mon téléphone**. Sur le téléphone, ouvre le même emplacement avec son PIN, appuie sur **Appareils
+  associés** sous sa liste, et scanne le code de l’ordinateur avec l’appareil photo tant que l’emplacement reste
+  ouvert, ou colle-le là ; puis comme plus haut. L’emplacement a alors sa propre association, avec ses propres clés et
+  sa propre liste d’appareils, signée par son propre compte, si bien que ses contacts sur cette version écrivent
+  directement à l’emplacement de l’ordinateur. Ses messages, contacts, groupes, appels, photos et fichiers et sa
+  Discussion avec moi-même vont entre les deux emplacements comme ceux de l’espace entre appareils associés, et de
+  même ses propres comptes Matrix, XMPP et Nostr, avec **Les comptes Matrix, XMPP et Nostr aussi** ou **Envoyer les
+  comptes**. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses appareils associés, et l’association de
+  l’espace n’emporte jamais rien d’un emplacement : ce qu’un emplacement garde de son association est chiffré avec sa
+  propre clé, parmi des valeurs faites pour rien pour les autres emplacements, dans un fichier de même taille qu’un
+  emplacement soit associé ou aucun. L’association fonctionne tant que l’emplacement est ouvert, et fermé aussi si
+  **Recevoir une fois fermées** est activé ; fermé sans cela, rien de lui ne se synchronise, et ce qui arrive attend
+  sur le relais (14 jours) jusqu’à ce qu’il s’ouvre, des deux côtés. Sur l’ordinateur, les nouveaux groupes et les
+  appels de groupe restent sur le téléphone, une discussion ne peut pas être déplacée dans l’emplacement ni en sortir
+  (déplace-la sur le téléphone), et un appel pris là-bas n’arrête la sonnerie du téléphone que tant que l’emplacement
+  est ouvert sur le téléphone. Les discussions masquées écrivent aux appareils d’un contact sur cette version comme le
+  font tes autres discussions, si bien que ceux-ci les reçoivent même avec le téléphone du contact éteint, et pour le
+  contact elles ressemblent aux discussions d’un téléphone qui n’a jamais associé d’appareil. Une discussion déplacée
+  dans les discussions masquées sur le téléphone quitte l’ordinateur. Déplacée dans les discussions masquées, ou hors
+  d’elles vers tes discussions, une discussion n’écrit qu’au téléphone du contact, comme le fait un Erevos plus
+  ancien, jusqu’à ce qu’elle retourne là où elle a été créée : son Erevos est prévenu d’abord, pour que ses appareils
+  cessent d’écrire aux tiens, et il peut en déduire que la discussion a cessé de connaître les appareils associés : si
+  elle lui avait donné la liste de tes appareils, qu’elle est partie dans les discussions masquées. Un espace qu’ouvre
+  un second mot de passe ne s’associe que de l’intérieur, à des appareils à lui.
 - **Transférer de nouveau les messages**, sur le téléphone, renvoie une période de l’historique, avec ses réactions,
   épingles, votes et étoiles ; ce que l’ordinateur a déjà n’est pas gardé deux fois.
 - **Matrix, XMPP et Nostr** : avec **Les comptes Matrix, XMPP et Nostr aussi** (activé au départ), l’ordinateur se
   connecte aux comptes Matrix et XMPP de cet espace et prend la clé de ses discussions Nostr, chacun comme un nouvel
-  appareil à lui : le téléphone garde le sien. Pour un ordinateur déjà associé, appuie sur **Envoyer les comptes** sous
-  lui, sur le téléphone. XMPP et Nostr arrivent d’eux-mêmes. Un serveur Matrix laisse rarement le téléphone connecter un
-  nouvel appareil : l’écran **Appareils associés** de l’ordinateur le dit alors, et **Se connecter à Matrix** y ouvre
-  Matrix avec l’identifiant déjà rempli, pour son mot de passe, une seule fois. Les clés du compte viennent du
-  téléphone, donc ni clé de sécurité ni vérification par emoji ne sont nécessaires, et les messages d’avant s’ouvrent
-  depuis sa sauvegarde des clés. Un ordinateur qui a déjà un compte à lui sur l’un d’eux le garde, et ce qui n’a pas pu
-  arriver (faute de connexion, par exemple) est réessayé à chaque ouverture. Une fois dissocié, l’ordinateur se
-  déconnecte des comptes qu’il a reçus. Ceux des discussions masquées ne partent jamais. Chaque appareil se connecte en
-  son propre nom, jamais avec une copie des clés du téléphone, qui serviraient alors deux fois et casseraient le
+  appareil à lui : le téléphone garde le sien. Pour un ordinateur déjà associé, appuie sur **Envoyer les comptes**
+  sous lui, sur le téléphone. XMPP et Nostr arrivent d’eux-mêmes. Un serveur Matrix laisse rarement le téléphone
+  connecter un nouvel appareil : l’écran **Appareils associés** de l’ordinateur le dit alors, et **Se connecter à
+  Matrix** y ouvre Matrix avec l’identifiant déjà rempli, pour son mot de passe, une seule fois. Les clés du compte
+  viennent du téléphone, donc ni clé de sécurité ni vérification par emoji ne sont nécessaires, et les messages
+  d’avant s’ouvrent depuis sa sauvegarde des clés. Un ordinateur qui a déjà un compte à lui sur l’un d’eux le garde,
+  et ce qui n’a pas pu arriver (faute de connexion, par exemple) est réessayé à chaque ouverture. Une fois dissocié,
+  l’ordinateur se déconnecte des comptes qu’il a reçus. Un emplacement de discussions masquées associé à part donne
+  ses propres comptes de la même façon, depuis ses propres **Appareils associés**, au même emplacement sur
+  l’ordinateur : jamais ceux de l’espace, et ceux de l’espace ne vont jamais à lui. Chaque appareil se connecte en son
+  propre nom, jamais avec une copie des clés du téléphone, qui serviraient alors deux fois et casseraient le
   chiffrement ; ainsi chacun peut être déconnecté seul, depuis les appareils du compte.
 - **Dissocier**, sur le téléphone, coupe un appareil sur-le-champ : plus rien ne lui est envoyé, et rien de ce qu’il
   envoie n’est pris. Les contacts sur cette version sont prévenus la prochaine fois que le téléphone joint le relais :

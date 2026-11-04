@@ -21,7 +21,7 @@ import { nostrReaderOf, sendNostrAgain } from './nostr-chats';
 import { forgetPlaceChats, placeChats } from './place-chats';
 import { openHeldIn, openPlaceNearby, placeNear } from './place-nearby';
 import { placeGroupsAt } from './place-groups';
-import { QueueMove, tookOf, type Took } from './queue-move';
+import { placeMoved, QueueMove, tookOf, type Took } from './queue-move';
 import {
   appShown,
   awayPace,
@@ -396,7 +396,8 @@ function placeMover(run: Run, chats: SpaceChats, own: Relay): QueueMove {
     queues: placeQueues(space, pocket, key),
     data: run.spare,
     groups: placeGroupsAt(space, pocket, key).moves,
-    moved: async (queue, old) => {
+    moved: async (queue, old, why) => {
+      await placeMoved(space, pocket, queue, old, why);
       const spaceKey = currentSpace().key;
       // Its slot names the old queue, or, as the relay lost it, says it was the one waited on.
       if (!old || !wasWatchedQueue(await loadWatched(space, spaceKey), pocket, old.recipientHex)) return;

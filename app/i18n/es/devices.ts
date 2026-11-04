@@ -15,6 +15,9 @@ export const devices: Record<string, string> = {
   'This space has chats of its own. Link from a space with none, such as one that opens with a new password.':
     'Este espacio tiene chats propios. Vincula desde un espacio sin ninguno, como uno que se abra con una contraseña nueva.',
   'This space is linked already.': 'Este espacio ya está vinculado.',
+  'These hidden chats are linked already.': 'Estos chats ocultos ya están vinculados.',
+  'These hidden chats have chats of their own. Link from hidden chats with none, such as those a new PIN sets.':
+    'Estos chats ocultos tienen chats propios. Vincula desde chats ocultos sin ninguno, como los que abre un PIN nuevo.',
   'Too long to go through the phone.': 'Demasiado largo para pasar por el teléfono.',
   'Type the relay address in Relay first: linked devices reach this phone through it.':
     'Escribe primero la dirección del relay en «Relay»: los dispositivos vinculados llegan a este teléfono a través de él.',
@@ -27,6 +30,9 @@ export const devices: Record<string, string> = {
     'Estos chats vienen de la copia de seguridad de un dispositivo vinculado: puedes leerlos aquí, pero no escribir en ellos. Para escribir, vuelve a vincular este dispositivo al teléfono en Dispositivos vinculados.',
   'This account on a computer or in a browser too': 'Esta cuenta también en un ordenador o en un navegador',
   "This chat is the phone's: move it into hidden chats there.": 'Este chat es del teléfono: muévelo a los chats ocultos desde ahí.',
+  'These hidden chats are linked to a phone: move the chat into them there.':
+    'Estos chats ocultos están vinculados a un teléfono: mueve el chat a ellos desde ahí.',
+  "This chat is the phone's: move it out of the hidden chats there.": 'Este chat es del teléfono: sácalo de los chats ocultos desde ahí.',
 
   // A call answered on another device of the account (components/call-screen.tsx, lib/call-lines.ts).
   'Answered on another device': 'Respondida en otro dispositivo',
@@ -39,6 +45,8 @@ export const devices: Record<string, string> = {
   None: 'Ninguno',
   'Web browser': 'Navegador web',
   'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Código copiado. Pégalo en el teléfono, en «Ajustes → Datos y dispositivos → Dispositivos vinculados».',
+  'Code copied. Paste it on the phone, in Linked devices of the same hidden chats.':
+    'Código copiado. Pégalo en el teléfono, en «Dispositivos vinculados» de los mismos chats ocultos.',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Vinculado. Los chats llegan desde el teléfono, y con ellos los mensajes que se eligió traer.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -60,11 +68,15 @@ export const devices: Record<string, string> = {
   'Since {when}. Last heard from {last}.': 'Desde el {when}. Última conexión: {last}.',
   'This device has the chats and groups of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. New groups, public groups and group calls stay on the phone for now.':
     'Este dispositivo tiene los chats y los grupos del teléfono que tiene la cuenta. Lo que escribes aquí pasa por el teléfono, que tiene que estar encendido y llegar al relay. Las llamadas también suenan aquí. Por ahora, los grupos nuevos, los grupos públicos y las llamadas de grupo se quedan en el teléfono.',
+  'These hidden chats have the chats and groups of the same hidden chats on the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay, with these hidden chats open or receiving while closed there. Calls ring here too. New groups and group calls stay on the phone for now.':
+    'Estos chats ocultos tienen los chats y los grupos de los mismos chats ocultos del teléfono que tiene la cuenta. Lo que escribes aquí pasa por el teléfono, que tiene que estar encendido y llegar al relay, con estos chats ocultos abiertos allí o recibiendo estando cerrados. Las llamadas también suenan aquí. Por ahora, los grupos nuevos y las llamadas de grupo se quedan en el teléfono.',
   'Make or join groups on the phone that holds this account.': 'Crea grupos o únete a ellos desde el teléfono que tiene esta cuenta.',
   'Group calls ring on the phone that holds this account, for now. Call from there.':
     'Por ahora, las llamadas de grupo suenan en el teléfono que tiene esta cuenta. Llama desde ahí.',
-  'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go.':
-    'La misma cuenta en un ordenador o en un navegador. La cuenta sigue en el teléfono: él reenvía, cifrado de extremo a extremo, lo que llega y lo que escribe el ordenador, así que tus contactos no ven nada nuevo. Los chats ocultos y lo que abre una segunda contraseña nunca se pasan.',
+  'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go with it: each links on its own, from inside it.':
+    'La misma cuenta en un ordenador o en un navegador. La cuenta sigue en el teléfono: él reenvía, cifrado de extremo a extremo, lo que llega y lo que escribe el ordenador, así que tus contactos no ven nada nuevo. Los chats ocultos y lo que abre una segunda contraseña nunca se pasan con ella: cada uno se vincula por su cuenta, desde dentro.',
+  'These hidden chats on a computer or in a browser, linked on their own. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Nothing of it shows in the space, nor goes to its linked devices.':
+    'Estos chats ocultos en un ordenador o en un navegador, vinculados por su cuenta. La cuenta sigue en el teléfono: él reenvía, cifrado de extremo a extremo, lo que llega y lo que escribe el ordenador, así que tus contactos no ven nada nuevo. Nada de esto se ve en el espacio ni va a sus dispositivos vinculados.',
   'Link {name}': 'Vincular {name}',
   'Once you tap Link, the computer shows this code. Link only if it shows the same:': 'Cuando toques «Vincular», el ordenador mostrará este código. Vincula solo si muestra el mismo:',
   Link: 'Vincular',
@@ -80,6 +92,8 @@ export const devices: Record<string, string> = {
   'Link a computer to this phone': 'Vincular un ordenador a este teléfono',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'En el ordenador, abre «Ajustes → Datos y dispositivos → Dispositivos vinculados → Vincular a mi teléfono». Luego escanea su código con la cámara de este teléfono, o cópialo ahí y pégalo aquí.',
+  "On the computer, open the same hidden chats with their PIN, then Linked devices → Link to my phone in them. Then scan its code with this phone's camera while these hidden chats are open, or copy it there and paste it here.":
+    'En el ordenador, abre los mismos chats ocultos con su PIN y luego, dentro de ellos, «Dispositivos vinculados → Vincular a mi teléfono». Después escanea su código con la cámara de este teléfono mientras estos chats ocultos están abiertos, o cópialo allí y pégalo aquí.',
   'Code from the computer': 'Código del ordenador',
   Next: 'Siguiente',
   'Link to my phone': 'Vincular a mi teléfono',
@@ -88,11 +102,17 @@ export const devices: Record<string, string> = {
   'They differ': 'No coinciden',
   'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
     'En el teléfono que tiene la cuenta, escanea este código con la cámara, o pégalo en «Ajustes → Datos y dispositivos → Dispositivos vinculados». Este espacio no debe tener chats propios.',
+  'On the phone that holds the account, open the same hidden chats with their PIN, then scan this code with the camera, or paste it in Linked devices in them. These hidden chats must have no chats of their own.':
+    'En el teléfono que tiene la cuenta, abre los mismos chats ocultos con su PIN y luego escanea este código con la cámara, o pégalo en sus «Dispositivos vinculados». Estos chats ocultos no deben tener chats propios.',
   'Copy the code': 'Copiar el código',
   'Share the code': 'Compartir el código',
   'Waiting for the phone. The code works for half an hour.': 'Esperando al teléfono. El código vale durante media hora.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'Usa esto cuando este dispositivo sea el ordenador: sus chats pasan a ser los del teléfono que tiene la cuenta.',
+  'Use this when this device is the computer: these hidden chats become those of the same hidden chats on the phone that holds the account.':
+    'Úsalo cuando este dispositivo sea el ordenador: estos chats ocultos pasan a ser los mismos chats ocultos del teléfono que tiene la cuenta.',
+  'These hidden chats have no relay queue yet: in them, type the relay address under For advanced users, then create their queue.':
+    'Estos chats ocultos aún no tienen cola en el relay: dentro de ellos, escribe la dirección del relay en «Para usuarios avanzados» y luego crea su cola.',
   'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
     'El teléfono responde en una cola de este dispositivo en un relay: el que usa el teléfono, u otro cualquiera. Si el relay pide un token, inicia sesión cuando lo ofrezca, o escribe uno.',
   'Name of this device': 'Nombre de este dispositivo',
@@ -100,9 +120,13 @@ export const devices: Record<string, string> = {
   'Send the accounts to {name}': 'Enviar las cuentas a {name}',
   "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
     'Las cuentas de Matrix, XMPP y Nostr de este espacio se le envían, cifradas de extremo a extremo, y él inicia sesión en cada una como un dispositivo nuevo. Una vez desvinculado, cierra sesión en ellas.',
+  "These hidden chats' own Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, into the same hidden chats there, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Las cuentas propias de Matrix, XMPP y Nostr de estos chats ocultos van a él, cifradas de extremo a extremo, a los mismos chats ocultos de allí, y él inicia sesión en cada una como dispositivo nuevo. Al desvincularse, cierra la sesión en ellas.',
   'Sent to {name}: {accounts}.': 'Enviado a {name}: {accounts}.',
   'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
     'No se envió nada: este espacio no tiene ninguna cuenta de Matrix, XMPP ni Nostr, o ya hay demasiado esperando a ese dispositivo.',
+  'Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.':
+    'No se envió nada: estos chats ocultos no tienen cuenta propia de Matrix, XMPP ni Nostr, o ya espera demasiado para ese dispositivo.',
   'Matrix, XMPP and Nostr accounts too': 'También cuentas de Matrix, XMPP y Nostr',
   'Accounts from the phone': 'Cuentas del teléfono',
   'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, con la sesión iniciada aquí como un dispositivo nuevo.',
@@ -113,6 +137,8 @@ export const devices: Record<string, string> = {
   'Nostr: the key of the Nostr chats is here too.': 'Nostr: la clave de los chats de Nostr también está aquí.',
   'Not brought over yet: {accounts}. Tried again each time this space opens.':
     'Aún sin traer: {accounts}. Se vuelve a intentar cada vez que se abre este espacio.',
+  'Not brought over yet: {accounts}. Tried again each time these hidden chats open.':
+    'Aún sin traer: {accounts}. Se vuelve a intentar cada vez que se abren estos chats ocultos.',
   'Once this device is unlinked, it signs out of the accounts it brought over.':
     'Cuando se desvincule este dispositivo, cerrará sesión en las cuentas que trajo.',
   'Send the accounts': 'Enviar las cuentas',

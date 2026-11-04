@@ -489,24 +489,56 @@ contacts on this version also write to each device directly (above), and a devic
 
 ## Hidden places (phase 5)
 
-Each hidden place links on its own, from inside it, with its own `Links`, data under
-`hiddenHolder(pocket)`, and its own account signing its own list, so its contacts write to the
-device's place directly. On the device, inside one of its four places (opened with that place's
-PIN, empty): **Link to my phone** shows the usual QR; on the phone, inside the place: **Link a
-device** scans it. Nothing of it shows in the space or in its linked devices. A hidden place syncs
-only while open, as its key is in memory only then.
+Each hidden place links on its own, from inside it, with its own `Links` (lib/devices.ts
+`placeLinks`, `placeLinksNow`), data under `hiddenHolder(pocket)` sealed with the place's key, and
+its own account signing its own list, so its contacts write to the device's place directly. On
+the device, inside one of its four places (opened with that place's PIN, empty, with a relay queue
+of its own made under **For advanced users** there): **Linked devices**, then **Link to my phone**
+shows the usual QR (app/devices.tsx with `hidden=1`; app/link.tsx shows the open place's, never
+the space's); on the phone, inside the place: **Linked devices**, then **Link a device** scans it.
+The two places need not be in the same pocket. A place's `Links` opens with its chats, before
+anything uses them (lib/place-chats.ts `joinPlaceChats`), whether the place opens with its PIN or
+receives while closed (lib/place-receiver.ts), and closes as they are let go of
+(`onForgetPlaceChats`). It reads on the place's own relay and queue (`loadHiddenData`,
+`placeQueues`), and sends as the place's chat does, through the relay or Nostr only
+(lib/waiting.ts `handOverHidden`): the copies for a contact's endpoints go once the packet for
+their account went, and, of what the relay could take only later, only when that account's queue
+is full, never through what is nearby. Everything the space's
+link does, the place's does between the two places: history brought over, messages both ways, what
+is done on one only, calls, groups (lib/place-groups.ts), the place's Chat with myself, the list
+and its fillers, the place's queue moving (lib/queue-move.ts `onPlaceMoved`, `placeMoved`), and its
+own Matrix, XMPP and Nostr accounts (lib/linked-accounts.ts with the place's pocket: those under its
+holder, run by lib/place-networks.ts, never the space's). The place's screens hear its links
+(`onLinked(listener, at)`, `changedHere(change, at)`); the space's never do, and what a place's
+device reads leaves the space's notice count alone (`readElsewhere`, `announceReceived` are the
+space's only).
 
-Until then, hidden chats link no device and sign no list, but know about their contacts' devices
-as the space's chat does (`E2E.takesPart`): they say `dv`, take a contact's list, write to every
-endpoint it names and take what those write, keeping the copies that wait in lock/fanout-data.ts
-under their own holder. So to a contact a chat made in hidden chats is a chat of a space that never
-linked a device, and none of its contacts' devices learns anything of it beyond that; nothing of
-hidden chats goes to the space's own devices. A hidden place that rings its contacts' calls while
-closed says its ring queue (`rf`, lock/hidden-ring.ts) in what it copies to their endpoints too, as
-in what goes to their account, whose phone passes it on to their devices as it comes; a device takes
-a ring queue only from what its phone passes on (lib/e2e.ts `heardIn`). A list that names one of the
-space's own devices has hidden chats write to it as to any endpoint, but the device opens none of
-it: each conversation says it is for the contact's account (`to`).
+Nothing of it shows in the space, on its screens or on its devices: the space's links carry nothing
+of a place, and a place's carry nothing of the space. lock/devices-data.ts keeps a value for every
+place of every space in its file, written or not, each the same size (sealed-file.ts, `BLOCK`), and
+each space writes its own as it opens, should it find none it opens with its key
+(`keepDevicesFile`), so the file is there, and of the same size, whichever places link, and the
+space's key opens no place's value. A place's link runs while the place is open, and while it is
+closed too with **Receive while closed** on, as its key is in memory only then; closed with it off,
+nothing of its link runs on that side, and what the other side sends waits on the relay (14 days)
+until the place opens. On the device's place, new groups and group calls stay on the phone, as for
+a space; a chat cannot be moved into it or out of it there (app/chat.tsx refuses: moved on the
+phone, it comes or goes); and a call answered there stops the phone's ring only while the phone's
+place is open, as a closed place's ring (lib/hidden-ring.ts) is not its link's.
+
+A hidden place that links no device signs no list, but knows about its contacts' devices as the
+space's chat does (`E2E.takesPart`): it says `dv`, takes a contact's list, writes to every endpoint
+it names and takes what those write, keeping the copies that wait in lock/fanout-data.ts under its
+own holder. So to a contact a chat made in such a place is a chat of a space that never linked a
+device, and one made in a place that links is a chat of a space that did; none of its contacts'
+devices learns anything of it beyond that, and nothing of hidden chats goes to the space's own
+devices. Put back from a backup, a place signs a list once a contact it accepted says they hold one
+(`newestHeld`), as a space's chat does, but only while its link runs. A hidden place that rings its
+contacts' calls while closed says its ring queue (`rf`, lock/hidden-ring.ts) in what it copies to
+their endpoints too, as in what goes to their account, whose phone passes it on to their devices as
+it comes; a device takes a ring queue only from what its phone passes on (lib/e2e.ts `heardIn`). A
+list that names one of the space's own devices has hidden chats write to it as to any endpoint, but
+the device opens none of it: each conversation says it is for the contact's account (`to`).
 
 A chat moved into hidden chats, or from them into the space's, is known to its contact by the
 identity of where it was made (`Contact.ownIdentity`), and a chat says nothing of devices to such a
@@ -631,15 +663,36 @@ made is known by its own identity again, and each side gives the other its list 
   way's first packet, that way starts again with the next copy a day or more after it started
   (step 4), so the device opens what came after that; what came before is lost on that path, and
   comes back from the primary.
-- Hidden chats, to a contact: a chat made there says and does what a chat of a space that never
-  linked a device does, and differs only in what such a space's chat may do later, sign a list:
-  put back from a backup, a space's chat signs one once a contact it accepted says they hold one
-  (`newestHeld`), hidden chats never; so a contact who knows a chat was put back from a backup, and
-  says that falsely, of a list from before then or up to a day after, can tell which it is by
-  whether a list comes. A chat moved into
-  hidden chats, or out of them, stops saying `dv` at the move (Hidden places), which a contact on
-  this version sees, and a careful one may take for the move; one the chat gave its list can tell,
-  unless it was put back on an Erevos from before, that it went into hidden chats.
+- Hidden chats, to a contact: a chat made there says and does what a chat of a space does, one
+  that never linked a device unless its place links one. Put back from a backup, both sign a list
+  once a contact they accepted says they hold one (`newestHeld`), but hidden chats only while their
+  link runs (open, or receiving while closed): so a contact who knows a chat was put back from a
+  backup, and says that falsely, of a list from before then or up to a day after, gets a list from
+  either, and from hidden chats perhaps only days later, as from a space's chat whose phone stayed
+  off, which hints at them. A chat moved into hidden chats, or out of them, stops saying `dv` at
+  the move (Hidden places), which a contact on this version sees, and a careful one may take for
+  the move; one the chat gave its list can tell, unless it was put back on an Erevos from before,
+  that it went into hidden chats.
+- Hidden places linked on their own run their link only while open, or receiving while closed, on
+  each side. Closed otherwise, what the other side sends waits on the relay, and what is not taken
+  within 14 days is lost there (Bring over messages again sends the history once more); and the
+  phone's place empties the places that fill its list (`drainFillers`) only while it runs, so one
+  unread for 180 days is removed by the relay, and contacts' copies to it go nowhere, silently,
+  until it is made again with the same key once the place runs. The place's relay sees its link,
+  its fillers and the device's queue as a space's relay sees the space's: tied together by the
+  contacts' bursts, read from the phone's address while the place runs, and so, on the same relay
+  as the space, read from the same address as the space's queues, as for hidden chats already. A
+  place's link reads its own relay queue, which the place's chat screen makes and keeps, so the
+  device's place needs one made there before it shows its code. On the device's place, new groups,
+  group calls and moves into or out of it stay on the phone, a call answered there stops the
+  phone's ring only while the phone's place is open; and a device's place put back from its
+  backup says it is a copy on its Linked devices screen, and as it is written in, but not once as
+  it opens (`copyNote` is the space's). A place that never linked nor showed a code never writes
+  its value in the file of links, and one that links writes it as its link changes, while each
+  value written leaves the others as they were (lock/sealed-file.ts): so two copies of the file
+  taken at different times, with no password, show which place's value changed, and so that it
+  links, as two copies of the hidden chats' other files show which place was used. One copy shows
+  nothing.
 - Ways started again: an endpoint that never answers in a conversation this chat started (a place
   that fills the list, or a device whose owner never writes to this contact) gets another a day
   after the first, two days after that, then four, then every eight, each with the next copy for it:
@@ -690,5 +743,5 @@ made is known by its own identity again, and each side gives the other its list 
 2. Own devices reach each other with the primary off.
 3. Contacts write to every endpoint: the change people see.
 4. Calls answered on any device.
-5. Hidden places linked on their own.
+5. Hidden places linked on their own, each from inside it (Hidden places, above).
 6. Later: devices as group members.

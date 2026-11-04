@@ -10,7 +10,8 @@ import { QrCode } from '../components/QrCode';
 import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
 import { ask } from '../lib/alert';
-import { onLinked, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { onLinked, placeLinks, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { mark, t } from '../lib/i18n';
 import { checkLinkCode, linkCodeLink } from '../lib/link-code';
 import { matrixWaiting } from '../lib/linked-accounts';
@@ -18,7 +19,7 @@ import { createQueue, toHex } from '../lib/relay';
 import { ownToken } from '../lib/relay-signin';
 import { SHELL } from '../lib/shell';
 import { START_RELAY } from '../lib/welcome';
-import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData } from '../lock/space-data';
 
 // Settings → Data and devices → Linked devices (lib/devices.ts, docs/linked-devices.md). On a computer or in a browser:
 // Link to my phone shows a code for the phone to read, then the code both show, to compare. On the
@@ -30,6 +31,12 @@ import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data
 // space's Matrix, XMPP and Nostr accounts go with the link when chosen, or later with Send the
 // accounts (lib/linked-accounts.ts); the linked device says which it has from the phone, and asks
 // for the Matrix sign-in when the homeserver gave no token for it.
+//
+// Opened from hidden chats (`hidden=1`, or a code the camera opened while they are open beneath,
+// app/link.tsx) it is theirs: the place's own links (lib/devices.ts, placeLinks), its own accounts,
+// and nothing once they close (lib/hidden-contacts.ts). The phone answers on the place's own relay
+// queue, made in the hidden chats under For advanced users, which keep it themselves (app/chat.tsx),
+// so this screen makes none for them.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 const DAY = 24 * 3600 * 1000;
@@ -62,8 +69,16 @@ function whenText(ms: number): string {
 }
 
 export default function Devices() {
+  const params = useLocalSearchParams<{ hidden?: string }>();
+  return <LinkedDevices hidden={params.hidden === '1'} />;
+}
+
+/** Linked devices of the open space, or of the open hidden chats (`hidden`). */
+export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const router = useRouter();
   const params = useLocalSearchParams<{ key?: string; id?: string; relay?: string; rk?: string; s?: string; name?: string }>();
+  const hiddenOpen = useOpenHiddenPlace();
+  const place = hidden ? hiddenOpen : null;
   const [links, setLinks] = useState<Links | null>(null);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [role, setRole] = useState<ReturnType<Links['role']>>(null);
@@ -95,16 +110,20 @@ export default function Devices() {
     setHere(l.accountsHere());
   };
 
+  useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);
+
   useEffect(() => {
     let active = true;
     let stop: () => void = () => undefined;
-    spaceLinks()
+    setLinks(null);
+    if (hidden && !place) return;
+    (place ? placeLinks(place.space, place.pocket, place.key) : spaceLinks())
       .then(async (l) => {
         if (!active) return;
         setLinks(l);
         refresh(l);
-        stop = onLinked(() => active && refresh(l));
-        const data = await loadCurrentSpaceData();
+        stop = onLinked(() => active && refresh(l), place ? { space: place.space, pocket: place.pocket } : null);
+        const data = place ? await loadHiddenData(place.space, place.pocket, place.key) : await loadCurrentSpaceData();
         if (!active) return;
         setRelayUrl(data.url || START_RELAY);
         setRelayToken(data.token);
@@ -117,7 +136,7 @@ export default function Devices() {
       active = false;
       stop();
     };
-  }, []);
+  }, [hidden, place]);
 
   // A code the camera opened Erevos with: read at once, but nothing goes until Link is tapped.
   const opened = checkLinkCode(params.key, params.id, params.relay, params.rk ?? '', params.s, params.name ?? '');
@@ -145,6 +164,8 @@ export default function Devices() {
     run(async () => {
       if (!links) return;
       const url = relayUrl.trim();
+      // Hidden chats keep their relay and queue themselves, which the phone answers on.
+      if (place && !hasQueue) throw new Error(t('These hidden chats have no relay queue yet: in them, type the relay address under For advanced users, then create their queue.'));
       if (!/^wss?:\/\/[^\s/?#]+(\/[^\s]*)?$/i.test(url)) throw new Error(t('A relay address starts with ws:// or wss://.'));
       // The phone answers on this space's queue, so there has to be one.
       if (!hasQueue) {
@@ -172,7 +193,7 @@ export default function Devices() {
     try {
       if (Platform.OS === 'web') {
         await navigator.clipboard.writeText(text);
-        setNote(t('Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.'));
+        setNote(place ? t('Code copied. Paste it on the phone, in Linked devices of the same hidden chats.') : t('Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.'));
         return;
       }
       await Share.share({ message: text });
@@ -247,11 +268,13 @@ export default function Devices() {
       setNote(t('The messages go to it now. What it has already is not kept twice.'));
     });
 
-  // On the phone: the space's Matrix, XMPP and Nostr accounts to a device linked already.
+  // On the phone: the space's Matrix, XMPP and Nostr accounts to a device linked already, or the hidden chats' own.
   function sendAccounts(device: DeviceInfo) {
     ask(
       t('Send the accounts to {name}', { name: device.name }),
-      t("This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them."),
+      place
+        ? t("These hidden chats' own Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, into the same hidden chats there, and it signs in to each as a new device. Once unlinked, it signs out of them.")
+        : t("This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them."),
       [
         { text: t('Cancel'), style: 'cancel' },
         {
@@ -261,7 +284,10 @@ export default function Devices() {
               if (!links) return;
               const sent = await links.giveAccounts(device.id);
               const names = sent.map((n) => (n === 'matrix' ? 'Matrix' : n === 'xmpp' ? 'XMPP' : 'Nostr')).join(', ');
-              setNote(sent.length > 0 ? t('Sent to {name}: {accounts}.', { name: device.name, accounts: names }) : t('Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.'));
+              const none = place
+                ? t('Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.')
+                : t('Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.');
+              setNote(sent.length > 0 ? t('Sent to {name}: {accounts}.', { name: device.name, accounts: names }) : none);
             }),
         },
       ],
@@ -289,7 +315,9 @@ export default function Devices() {
     <Card>
       <Text variant="heading">{t('Link a computer to this phone')}</Text>
       <Text tone="muted">
-        {t('On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
+        {place
+          ? t('On the computer, open the same hidden chats with their PIN, then Linked devices → Link to my phone in them. Then scan its code with this phone\'s camera while these hidden chats are open, or copy it there and paste it here.')
+          : t('On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone\'s camera, or copy it there and paste it here.')}
       </Text>
       <Field label={t('Code from the computer')}>
         <Input value={pasted} onChangeText={setPasted} placeholder="erevos://link?…" autoCapitalize="none" autoCorrect={false} />
@@ -314,7 +342,9 @@ export default function Devices() {
       ) : offer ? (
         <>
           <Text tone="muted">
-            {t('On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.')}
+            {place
+              ? t('On the phone that holds the account, open the same hidden chats with their PIN, then scan this code with the camera, or paste it in Linked devices in them. These hidden chats must have no chats of their own.')
+              : t('On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.')}
           </Text>
           <QrCode text={offer} size={240} />
           <Button title={Platform.OS === 'web' ? t('Copy the code') : t('Share the code')} kind="secondary" onPress={() => void copy(offer)} />
@@ -325,10 +355,13 @@ export default function Devices() {
       ) : (
         <>
           <Text tone="muted">
-            {t('Use this when this device is the computer: its chats become those of the phone that holds the account.')}
+            {place
+              ? t('Use this when this device is the computer: these hidden chats become those of the same hidden chats on the phone that holds the account.')
+              : t('Use this when this device is the computer: its chats become those of the phone that holds the account.')}
           </Text>
           {copied ? <Text>{t('These chats came from a linked device’s backup: you can read them here, but not write in them. To write, link this device to the phone again, in Linked devices.')}</Text> : null}
-          {!hasQueue ? (
+          {place && !hasQueue ? <Text>{t('These hidden chats have no relay queue yet: in them, type the relay address under For advanced users, then create their queue.')}</Text> : null}
+          {!hasQueue && !place ? (
             <>
               <Field label={t('Relay address')}>
                 <Input value={relayUrl} onChangeText={setRelayUrl} placeholder="wss://relay.example" autoCapitalize="none" autoCorrect={false} keyboardType="url" />
@@ -354,9 +387,18 @@ export default function Devices() {
     </Card>
   ) : null;
 
+  if (hidden && !place) {
+    return (
+      <Page>
+        <Text tone="muted">{t('The hidden chats are closed.')}</Text>
+      </Page>
+    );
+  }
+
   if (role === 'linked') {
     const phone = devices[0];
     const waiting = matrixWaiting(here?.left);
+    const notYet = [here?.left.matrix && !waiting ? 'Matrix' : '', here?.left.xmpp ? 'XMPP' : '', here?.left.nostr ? 'Nostr' : ''].filter(Boolean).join(', ');
     const fromPhone = here ? (
       <Card>
         <Text variant="heading">{t('Accounts from the phone')}</Text>
@@ -366,13 +408,17 @@ export default function Devices() {
             <Text>
               {t('Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.', { id: waiting.userId })}
             </Text>
-            <Button title={t('Sign in to Matrix')} kind="secondary" onPress={() => router.push({ pathname: '/matrix', params: { user: waiting.userId } })} />
+            <Button title={t('Sign in to Matrix')} kind="secondary" onPress={() => router.push({ pathname: '/matrix', params: { user: waiting.userId, ...(place ? { hidden: '1' } : {}) } })} />
           </>
         ) : null}
         {here.brought.xmpp ? <Text tone="muted">{t('XMPP: {id}, signed in here as a new device.', { id: here.brought.xmpp })}</Text> : null}
         {here.brought.nostr ? <Text tone="muted">{t('Nostr: the key of the Nostr chats is here too.')}</Text> : null}
         {here.left.xmpp || here.left.nostr || (here.left.matrix && !waiting) ? (
-          <Text tone="muted">{t('Not brought over yet: {accounts}. Tried again each time this space opens.', { accounts: [here.left.matrix && !waiting ? 'Matrix' : '', here.left.xmpp ? 'XMPP' : '', here.left.nostr ? 'Nostr' : ''].filter(Boolean).join(', ') })}</Text>
+          <Text tone="muted">
+            {place
+              ? t('Not brought over yet: {accounts}. Tried again each time these hidden chats open.', { accounts: notYet })
+              : t('Not brought over yet: {accounts}. Tried again each time this space opens.', { accounts: notYet })}
+          </Text>
         ) : null}
         {here.problems.map((problem) => (
           <Text key={problem} variant="caption" tone="faint">
@@ -391,9 +437,13 @@ export default function Devices() {
           <Text variant="heading">{t('Linked to {name}', { name: phone?.name || t('Phone') })}</Text>
           {phone ? <Text tone="muted">{t('Since {when}. Last heard from {last}.', { when: whenText(phone.since), last: whenText(phone.heard) })}</Text> : null}
           <Text tone="muted">
-            {t(
-              "This device has the chats and groups of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. New groups, public groups and group calls stay on the phone for now.",
-            )}
+            {place
+              ? t(
+                  'These hidden chats have the chats and groups of the same hidden chats on the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay, with these hidden chats open or receiving while closed there. Calls ring here too. New groups and group calls stay on the phone for now.',
+                )
+              : t(
+                  "This device has the chats and groups of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. New groups, public groups and group calls stay on the phone for now.",
+                )}
           </Text>
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}
         </Card>
@@ -407,9 +457,13 @@ export default function Devices() {
     <Page>
       <Text variant="title">{t('Linked devices')}</Text>
       <Text tone="muted">
-        {t(
-          'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go.',
-        )}
+        {place
+          ? t(
+              'These hidden chats on a computer or in a browser, linked on their own. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Nothing of it shows in the space, nor goes to its linked devices.',
+            )
+          : t(
+              'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go with it: each links on its own, from inside it.',
+            )}
       </Text>
 
       {asked ? (

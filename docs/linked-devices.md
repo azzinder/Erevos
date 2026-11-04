@@ -56,7 +56,9 @@ looks, pictures, requests) and of the messages, in its own sealed history, and n
 account's conversations with contacts: only those of its own endpoint (below) with their accounts
 and their endpoints. Linking happens in one space on each side, the one open on each, and
 in no other: nothing of another space, of hidden chats or of what a second password opens goes to
-a linked device, and nothing on the screens of one space shows that another is linked.
+a linked device, and nothing on the screens of one space shows that another is linked. A place of
+hidden chats links the same way on its own, from inside it, to the same place on the device, with
+links of its own (Hidden chats and second passwords, below).
 
 ### The link
 
@@ -125,7 +127,7 @@ device and on the phone. A request accepted on one stays accepted. A contact rem
 removed for what comes of it later, until someone adds it again. A message deleted stays deleted,
 should a copy come late. A message that comes both from a device and through the phone is kept
 once, by its tag. Device names stay on each device. Hidden chats and second passwords never use
-these conversations.
+these conversations: a hidden place linked on its own has its own, between its devices.
 
 A photo or file a device sends, when the list names other devices, stays on its relay for them to
 take, and expires there after 14 days. A phone from before gives no routes, so its devices go
@@ -246,7 +248,7 @@ account only.
 - **Done on the phone only:** a star, or deleting a message or a chat's messages on the phone alone,
   is nothing the contact hears of; it goes to the devices as a change (`changed`, by the chat and
   the message's tag), and each does the same. A device's own stars and deletes stay on it. Hidden
-  chats are never told of.
+  chats are told of only to their own linked devices, never to the space's.
 
 A photo or file that came, or a copy of one the phone put on the relay for its devices, is left there
 when taken until each device told of it said it took it (in its link), and the phone took it too if
@@ -273,8 +275,10 @@ computer shows the account's own contact link and QR code, so people add the acc
 The space's own accounts on other networks go to a linked device when **Matrix, XMPP and Nostr
 accounts too** was chosen as it was linked, or later with **Send the accounts** on the phone
 (`accounts`, `lib/linked-accounts.ts`). They go in the link, end-to-end encrypted as the rest, and
-only the space's: a hidden place's accounts never go. The device signs in to each as a new device,
-never a copy of the phone's, whose keys would then be used twice:
+only the space's. A hidden place linked on its own gives its own accounts the same way, in its own
+link, into the same place on the device (kept under the place's holder, run while the place is
+open or receives while closed): never the space's, and the space's never go to it. The device
+signs in to each as a new device, never a copy of the phone's, whose keys would then be used twice:
 
 - **XMPP**: the address, its password and its server when given by hand. The device signs in as a
   new resource, with an OMEMO device of its own.
@@ -321,10 +325,26 @@ signs a list without it, a new filling key taking its place.
 
 ### Hidden chats and second passwords
 
-Hidden chats have their own account and are never linked; nothing of them is passed on or brought
-over. They write to the devices of contacts on this version as the space's chats do, and take what
-those write, so to a contact they are the chats of a phone that never linked a device. A chat moved
-into hidden chats on the phone leaves the computer, messages and all. Moved into hidden chats, or
+Hidden chats have their own account, and nothing of them goes over the space's link. Each place
+of hidden chats links on its own instead, from inside it (docs/multi-device.md, Hidden places): on
+the device, in a place opened with its PIN, empty, with a relay queue of its own made under **For
+advanced users**, **Linked devices** then **Link to my phone** shows the code; on the phone, in the
+place, **Linked devices** then **Link a device** scans it. The place's links are its own: their
+conversations and keys sealed with the place's key under its holder in `lock/devices-data.ts`, its
+own account signing its own device list, so its contacts write to the device's place directly, and
+its chats, messages, groups, calls, Chat with myself and Matrix, XMPP and Nostr accounts go between
+the two places as a space's go between its devices. Nothing of it shows in the space, on its
+screens or on its devices; the file keeps a value of the same size for every place of every
+space, written or not, so neither it nor the space's value says which places link. The link runs
+while the place is open, and while it is closed with **Receive while closed** on; closed with it
+off, what the other side sends waits on the relay (14 days). On the device's place, new groups and
+group calls stay on the phone, a chat cannot be moved into it or out of it, and a call answered
+there stops the phone's ring only while the phone's place is open.
+
+Hidden chats write to the devices of contacts on this version as the space's chats do, and take
+what those write, so to a contact they are the chats of a phone that never linked a device, or,
+once their place links one, of one that did. A chat moved into hidden chats on the phone leaves
+the space's computer, messages and all. Moved into hidden chats, or
 out of them, a chat is known to its contact by the identity of where it was made, and says nothing
 of devices to them, as an Erevos from before, until it goes back there: it tells them first, so
 their devices let go of its own, and they can see that it stopped knowing of devices; one it gave
@@ -449,16 +469,22 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
 - `lib/linked-calls.ts`: on the phone, where each call signal goes: who rings, who has the call.
 - `lib/groups.ts`: on a linked device, the groups kept as the phone says them (`mirror`), and what
   is done in them goes through it (`GroupLink`).
-- `lock/devices-data.ts`: each space's links, sealed with the space's key.
+- `lock/devices-data.ts`: each space's links, sealed with the space's key, and each hidden place's,
+  sealed with its own, a value for every place written or not (`keepDevicesFile`).
 - `lib/devices.ts`: linking, the link conversations, passing messages on, copying contacts and
-  history.
-- `lib/linked-accounts.ts`: the space's Matrix, XMPP and Nostr accounts given by the phone and
-  brought on the device (`matrixTake`, `xmppTake`, `nostrDmTake` in their stores).
+  history; a hidden place's own links (`placeLinks`, `placeLinksNow`), opened with its chats
+  (`joinPlaceChats` in `lib/place-chats.ts`) and following its queue's moves (`onPlaceMoved` in
+  `lib/queue-move.ts`).
+- `lib/linked-accounts.ts`: the space's Matrix, XMPP and Nostr accounts, or a hidden place's own,
+  given by the phone and brought on the device (`matrixTake`, `xmppTake`, `nostrDmTake` in their
+  stores, with the place).
 - `lib/e2e.ts`: a linked device's chat seals for its primary, and the primary's tells its devices
   what it opened and sealed (`Link`).
 - `lib/attachments.ts`: a photo or file taken stays on the relay while another device is still to take
   it (`watchTakenFiles`).
-- `app/app/devices.tsx`: Settings → Data and devices → Linked devices; `app/app/link.tsx` opens it from a scanned code.
+- `app/app/devices.tsx`: Settings → Data and devices → Linked devices, and with `hidden=1` an open
+  hidden place's own, from **Linked devices** under its list; `app/app/link.tsx` opens it from a
+  scanned code, for the hidden place open beneath if there is one.
 - `app/checks/devices.check.ts`: a phone, a computer and a contact on an older version, through a
   real relay and the real core; devices reaching each other with the phone off; contacts writing to
   every endpoint, each with keys of its own the computer finds them by, hidden chats among them, and
@@ -468,7 +494,12 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
   refused; a computer on an older version listed as a place; a phone put
   back from a backup, its clock behind or not, signing a later list, and one never put back signing
   none for what anyone says; a computer unlinked left out of the list before its place has a queue;
-  and the places keeping their queues and keys offline or while the relay's key is not known.
+  the places keeping their queues and keys offline or while the relay's key is not known; and a
+  hidden place linked on its own, with its own list and accounts, messages both ways, its contacts
+  writing to the device's place directly, unlinking, and nothing of it in the space, on the space's
+  devices or in the size of the file.
+- `app/checks/place-receiver.check.ts`, last: a hidden place linked on its own syncing while it
+  receives closed, and not while closed without it, what was sent then waiting on the relay.
 - `app/checks/endpoints.check.ts`: what goes to which endpoint, and what is kept of them.
 - `app/checks/copies.check.ts`: what a chat writes to the endpoints of a contact's account, with the
   real core and no relay: whose a list's entries can be, each contact's key of its own for each,

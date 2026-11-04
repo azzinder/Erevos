@@ -5,9 +5,10 @@
 import { t } from './i18n';
 
 // How this phone reaches its contacts now, as New chat says it at the top (app/chat.tsx,
-// components/connect-cards.tsx): everywhere through its relay, or a linked device through the
-// phone; only part of the way with a relay but no queue on it, or through Nostr with no relay; or
-// only nearby. Self-contained on purpose (but for i18n), so it can run under plain Node for checks.
+// components/connect-cards.tsx): everywhere through its relay, or a linked device (or hidden chats
+// linked on their own) through the phone; only part of the way with a relay but no queue on it, or
+// through Nostr with no relay; or only nearby. Self-contained on purpose (but for i18n), so it can
+// run under plain Node for checks.
 
 /** How far this phone reaches its contacts: everywhere through a relay, only part of the way, or only nearby. */
 export type Reach = 'ready' | 'part' | 'none';
@@ -36,7 +37,10 @@ export function connectReach(c: Connection): { reach: Reach; title: string; line
   const host = c.relayUrl.trim().replace(/^wss?:\/\//i, '').replace(/\/+$/, '');
   const detail = c.linked || !host ? undefined : [host, c.lent ? t('lent by a contact') : '', c.via ? t('through a second relay') : ''].filter(Boolean).join(' · ');
   if (c.linked) {
-    return { reach: 'ready', title: t('Linked to your phone'), line: t('This device is linked to your phone: it has its contacts, and your contact link is the phone’s.') };
+    const line = c.hidden
+      ? t('These hidden chats are linked to the same hidden chats on your phone: they have their contacts, and their contact link is the phone’s.')
+      : t('This device is linked to your phone: it has its contacts, and your contact link is the phone’s.');
+    return { reach: 'ready', title: t('Linked to your phone'), line };
   }
   if (c.queue) {
     const line = c.hidden

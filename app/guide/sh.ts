@@ -198,7 +198,8 @@ glasovne poruke, ali ne i fotografije i datoteke, kao i kod razgovora.
   (pogledajte [Skriveni razgovori](#hidden)). Podsjetnici skrivenog mjesta prikazuju se tamo kad ga njegov PIN otvori;
   telefon ih javlja u njihovo vrijeme samo dok je za to mjesto uključeno **Primanje dok su zatvoreni**, u istoj
   obavijesti. Novi PIN za mjesto, s kojim ono počinje prazno, ili uklonjeno mjesto, skida njegove podsjetnike s
-  telefona. Bilješke skrivenog mjesta nikad ne idu na povezani uređaj.
+  telefona. Bilješke skrivenog mjesta idu samo na uređaje povezane s tim mjestom zasebno, nikad na one prostora (vidi
+  [Povezani uređaji](#devices)).
 
 **Zašto:** obavijest se na zaključanom ekranu prikazuje svakome ko drži telefon, zato ono što podsjetnik kaže ostaje
 šifrirano u njegovom prostoru, a Androidu se kaže samo njegovo vrijeme: obavijest nikome ne može reći šta ste htjeli
@@ -2506,6 +2507,10 @@ sadrže uklonjena mjesta.
   ne stiže. Njihovi razgovori zovu kao razgovori prostora, s vlastitog računa skrivenih razgovora; poziv na njega, dok
   su skriveni razgovori otvoreni, zvoni zvukom zvona telefona, i oni ostaju otvoreni dok ne završi. Njihov Matrix račun
   nema **Javi da je stigla poruka**.
+- **Povezani uređaji:** ispod njihovog popisa, **Povezani uređaji** povezuje ove skrivene razgovore zasebno s istim
+  mjestom na računaru ili u pregledniku, iznutra, odvojeno od prostora i njegovih povezanih uređaja: njihovi
+  razgovori, poruke i vlastiti računi idu tamo, a ništa od toga se ne vidi u prostoru (vidi **Skriveni razgovori i
+  druge lozinke** pod [Povezani uređaji](#devices)). Nepovezani, nalaze se samo na ovom telefonu.
 - **Pregledi linkova** imaju vlastiti prekidač u detaljima skrivenog razgovora, za sve razgovore tog mjesta,
   isključen dok ga ne uključite (pogledajte **Pregledi linkova** pod [Razgovor preko relaya](#relay)).
 - **Javi kad stigne poruka** (Android): na vrhu mjesta dok je **Primanje dok su zatvoreni** isključeno. Kad je
@@ -3041,7 +3046,8 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   dvije promjene iste bilješke ostaje kasnija. Ono što je napisano prije povezivanja ide jednom, u oba smjera, čim oba
   imaju ovu verziju. Podsjetnik se prikazuje na svakom uređaju u svoje vrijeme, a viđen na jednom nestaje s ostalih.
   Fotografija ili datoteka bilješke ide kao kopija na relayu, tamo obrisana čim je preuzeta, ili, za dva uređaja ili
-  više, ostavljena tamo dok ne istekne (14 dana). Bilješke skrivenih razgovora nikad ne idu.
+  više, ostavljena tamo dok ne istekne (14 dana). Bilješke skrivenih razgovora idu samo unutar njihove vlastite veze,
+  niže.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
   prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
   poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga
@@ -3054,26 +3060,44 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   zvjezdica ili brisanje na **Ovaj telefon** urađeno na telefonu. Poruka koju telefon nije mogao poslati u grupu (na
   primjer u grupu zatvorenu u međuvremenu) prikazuje se na računaru kao **Telefon nije poslao**. Pravljenje grupe,
   javne grupe i grupni pozivi za sada ostaju na telefonu.
-- **Skriveni razgovori i druge lozinke** nikad se ne povezuju. Skriveni razgovori pišu uređajima kontakta s ovom
-  verzijom kao i vaši ostali razgovori, pa ih oni dobijaju i kad je telefon kontakta isključen, a kontaktu izgledaju
-  kao razgovori telefona koji nikad nije povezao uređaj. Razgovor premješten u skrivene razgovore na telefonu napušta
-  računar. Premješten u skrivene razgovore, ili iz njih u vaše razgovore, razgovor piše samo telefonu kontakta, kao
-  stariji Erevos, dok se ne vrati tamo gdje je napravljen: njegovom Erevosu se to prvo javlja, pa njegovi uređaji
-  prestaju pisati vašim, a on iz toga može saznati da je razgovor prestao znati za povezane uređaje: ako mu je dao
-  popis vaših uređaja, da je otišao u skrivene razgovore. Prostor koji otvara druga lozinka
-  povezuje se samo iznutra, s vlastitim uređajima.
+- **Skriveni razgovori i druge lozinke** nikad ne idu s vezom prostora: svaki se povezuje zasebno, iznutra. Za mjesto
+  skrivenih razgovora: na računaru otvorite to mjesto njegovim PIN-om, novo i prazno kakvim ga ostavlja novi PIN, i
+  dajte mu vlastiti red na relayu pod **Za napredne korisnike** tamo; zatim dodirnite **Povezani uređaji** ispod
+  njegovog popisa, i **Poveži s mojim telefonom**. Na telefonu otvorite isto mjesto njegovim PIN-om, dodirnite
+  **Povezani uređaji** ispod njegovog popisa i skenirajte kod računara kamerom dok mjesto ostaje otvoreno, ili ga tamo
+  zalijepite; zatim kao gore. Mjesto tada ima vlastitu vezu, s vlastitim ključevima i vlastitim popisom uređaja, koji
+  potpisuje njegov vlastiti račun, pa njegovi kontakti s ovom verzijom pišu izravno na mjesto računara. Njegove
+  poruke, kontakti, grupe, pozivi, fotografije i datoteke i njegov Razgovor sa sobom idu između dva mjesta kao oni
+  prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, s **I računi Matrix, XMPP
+  i Nostr** ili **Pošalji račune**. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na njegovim povezanim
+  uređajima, a veza prostora nikad ne nosi ništa od nekog mjesta: ono što mjesto čuva o svojoj vezi šifrirano je
+  njegovim vlastitim ključem, među vrijednostima napravljenim ni za šta za ostala mjesta, u datoteci iste veličine
+  bilo da je neko mjesto povezano ili nijedno. Veza radi dok je mjesto otvoreno, i dok je zatvoreno ako je **Primanje
+  dok su zatvoreni** uključeno; zatvoreno bez toga, ništa od njega se ne usklađuje, a ono što stiže čeka na relayu (14
+  dana) dok se ne otvori, na obje strane. Na računaru nove grupe i grupni pozivi ostaju na telefonu, razgovor se ne
+  može premjestiti u mjesto niti iz njega (premjestite ga na telefonu), a poziv javljen tamo zaustavlja zvonjenje
+  telefona samo dok je mjesto otvoreno na telefonu. Skriveni razgovori pišu uređajima kontakta s ovom verzijom kao i
+  vaši ostali razgovori, pa ih oni dobijaju i kad je telefon kontakta isključen, a kontaktu izgledaju kao razgovori
+  telefona koji nikad nije povezao uređaj. Razgovor premješten u skrivene razgovore na telefonu napušta računar.
+  Premješten u skrivene razgovore, ili iz njih u vaše razgovore, razgovor piše samo telefonu kontakta, kao stariji
+  Erevos, dok se ne vrati tamo gdje je napravljen: njegovom Erevosu se to prvo javlja, pa njegovi uređaji prestaju
+  pisati vašim, a on iz toga može saznati da je razgovor prestao znati za povezane uređaje: ako mu je dao popis vaših
+  uređaja, da je otišao u skrivene razgovore. Prostor koji otvara druga lozinka povezuje se samo iznutra, s vlastitim
+  uređajima.
 - **Ponovo prenesi poruke**, na telefonu, ponovo šalje dio historije, s njegovim reakcijama, prikvačenim porukama,
   glasovima i zvjezdicama; ono što računar već ima ne čuva se dvaput.
 - **Matrix, XMPP i Nostr**: s **I računi Matrix, XMPP i Nostr** (isprva uključeno) računar se prijavljuje na Matrix i
   XMPP račune ovog prostora i uzima ključ njegovih Nostr razgovora, svaki kao novi uređaj za sebe: telefon zadržava
   svoj. Za računar koji je već povezan dodirnite na telefonu **Pošalji račune** ispod njega. XMPP i Nostr stižu sami.
   Matrix server rijetko dopušta da telefon prijavi novi uređaj: tada to kaže **Povezani uređaji** na računaru, a
-  **Prijavite se na Matrix** tamo otvara Matrix s upisanim ID-om, jednom, za lozinku. Ključevi računa dolaze s telefona,
-  pa nisu potrebni ni sigurnosni ključ ni provjera emojijima, a ranije poruke se otvaraju iz njegove rezervne kopije
-  ključeva. Računar koji već ima vlastiti račun na nekoj od tih mreža zadržava ga, a ono što još nije moglo stići (na
-  primjer jer nije bilo veze) pokušava se ponovo svaki put kad se otvori. Kad se odvoji, računar se odjavljuje s računa
-  koje je prenio. Oni skrivenih razgovora nikad ne idu. Svaki uređaj se prijavljuje kao on sam, nikad s kopijom ključeva
-  telefona, koja bi se tada koristila dvaput i pokvarila šifriranje; tako se svaki može odjaviti sam, s uređaja računa.
+  **Prijavite se na Matrix** tamo otvara Matrix s upisanim ID-om, jednom, za lozinku. Ključevi računa dolaze s
+  telefona, pa nisu potrebni ni sigurnosni ključ ni provjera emojijima, a ranije poruke se otvaraju iz njegove
+  rezervne kopije ključeva. Računar koji već ima vlastiti račun na nekoj od tih mreža zadržava ga, a ono što još nije
+  moglo stići (na primjer jer nije bilo veze) pokušava se ponovo svaki put kad se otvori. Kad se odvoji, računar se
+  odjavljuje s računa koje je prenio. Mjesto skrivenih razgovora povezano zasebno daje svoje vlastite račune na isti
+  način, iz svojih vlastitih **Povezani uređaji**, na isto mjesto na računaru: nikad one prostora, a oni prostora
+  nikad ne idu njemu. Svaki uređaj se prijavljuje kao on sam, nikad s kopijom ključeva telefona, koja bi se tada
+  koristila dvaput i pokvarila šifriranje; tako se svaki može odjaviti sam, s uređaja računa.
 - **Odvoji**, na telefonu, odmah isključuje uređaj: ništa mu više ne ide, i ništa što pošalje ne prima se. Kontaktima
   s ovom verzijom to se javlja sljedeći put kad telefon dođe do relaya: prestaju mu pisati i više ništa od njega ne
   primaju. Tako se isključuje izgubljeni računar. Ako je uključen, to mu se javlja, a razgovori naloga ga napuštaju. Na

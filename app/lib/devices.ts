@@ -4,13 +4,14 @@
 
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadNotes, mergeNotes, notesSince, onNotesWritten, setNoteFile, stampOf as noteStamp, type Note, type NoteCame, type NotesChanges, type NotesPlace } from '../lock/myself-data';
-import { loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
+import { keepDevicesFile, loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
 import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
-import { spaceQueues } from '../lock/queues-data';
-import { loadSpaceData } from '../lock/space-data';
+import { placeQueues, spaceQueues } from '../lock/queues-data';
+import { hiddenHolder, type Holder } from '../lock/sealed-file';
+import { loadHiddenData, loadSpaceData } from '../lock/space-data';
 import { loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
 import {
   bytesSource,
@@ -101,10 +102,12 @@ import {
 import { LinkedCalls, type CallStep } from './linked-calls';
 import { nearby } from './nearby';
 import { orNostr, type ForNostr } from './nostr-chats';
+import { joinPlaceChats, onForgetPlaceChats, placeChats } from './place-chats';
+import { placeGroupsAt } from './place-groups';
 import { readElsewhere } from './notice-count';
 import { announceReceived } from './receiver';
 import { GRACE, linkSpare } from './moves';
-import { onSpaceMoved, type MoveWhy } from './queue-move';
+import { onPlaceMoved, onSpaceMoved, type MoveWhy } from './queue-move';
 import { createQueue, deleteQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, sameRelay, sendMessage, type Mark as RelayMark, type Relay } from './relay';
 import { isSealedPacket, openPacket, packetKeys, sealedWith, sealPacket, type PacketKeys } from './sealed-packet';
 import {
@@ -220,10 +223,11 @@ import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './wai
 // contact itself goes to them marked as the phone's own would.
 //
 // The phone gives a device the space's own Matrix, XMPP and Nostr accounts too, once the codes
-// match when that was chosen, or when asked again later (`accounts`). lib/linked-accounts.ts gives
-// and brings them, and registers itself here (handAccounts), so this file need not know the
-// networks: the device signs in as a new device of each, never a copy of the phone's, and lets go
-// of what it brought once unlinked, as it lets go of the chats.
+// match when that was chosen, or when asked again later (`accounts`); a hidden place's links give
+// the place's own, never the space's. lib/linked-accounts.ts gives and brings them, and registers
+// itself here (handAccounts), so this file need not know the networks: the device signs in as a
+// new device of each, never a copy of the phone's, and lets go of what it brought once unlinked,
+// as it lets go of the chats.
 //
 // Three turns keep it straight: the chat's own (E2E), which may wait for this file's; this file's
 // (`run`), for the links and their keys, which never waits for the chat; and the work a message
@@ -279,15 +283,15 @@ export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 export type HistoryChoice = { since: number | null; files: boolean; accounts?: boolean };
 
 /**
- * What gives and brings the space's accounts on other networks (lib/linked-accounts.ts): on the
- * primary, those it has, to give a device; on a linked device, brings those the phone gave, as far
- * as it can now, answering what is still to bring, what it brought and what went wrong; and once
- * unlinked, lets go of those it brought.
+ * What gives and brings the accounts on other networks of a space, or of its hidden place `pocket`
+ * with that place's key (lib/linked-accounts.ts): on the primary, those it has, to give a device;
+ * on a linked device, brings those the phone gave, as far as it can now, answering what is still
+ * to bring, what it brought and what went wrong; and once unlinked, lets go of those it brought.
  */
 export type AccountsHand = {
-  give(space: number, key: Uint8Array): Promise<GivenAccounts>;
-  take(space: number, key: Uint8Array, given: GivenAccounts): Promise<{ left: GivenAccounts; brought: Brought; problems: string[] }>;
-  letGo(space: number, key: Uint8Array, brought: Brought): Promise<void>;
+  give(space: number, key: Uint8Array, pocket: number | null): Promise<GivenAccounts>;
+  take(space: number, key: Uint8Array, given: GivenAccounts, pocket: number | null): Promise<{ left: GivenAccounts; brought: Brought; problems: string[] }>;
+  letGo(space: number, key: Uint8Array, brought: Brought, pocket: number | null): Promise<void>;
 };
 
 let hand: AccountsHand | null = null;
@@ -312,19 +316,19 @@ type Taken = Awaited<ReturnType<Link['open']>>;
 type Leaving = { from: FileFrom; phone: boolean };
 type Pending = { code: LinkCode; bundle: Uint8Array; account: Uint8Array; device: string; safety: string };
 
-const listeners = new Set<(change: LinkedChange) => void>();
+/** A hidden place, by its space and pocket. */
+export type PlaceAt = { space: number; pocket: number };
 
-/** Calls `listener` each time the links changed the history or the devices. Returns how to stop. */
-export function onLinked(listener: (change: LinkedChange) => void): () => void {
-  listeners.add(listener);
+// Who listens, to the open space's links (no place) or to a hidden place's: each hears only its own.
+const listeners = new Set<{ at: PlaceAt | null; listener: (change: LinkedChange) => void }>();
+
+/** Calls `listener` each time the links of the open space, or of the hidden place `at`, changed the history or the devices. Returns how to stop. */
+export function onLinked(listener: (change: LinkedChange) => void, at: PlaceAt | null = null): () => void {
+  const entry = { at, listener };
+  listeners.add(entry);
   return () => {
-    listeners.delete(listener);
+    listeners.delete(entry);
   };
-}
-
-function announce(change: LinkedChange = { gone: [] }) {
-  listeners.forEach((listener) => listener(change));
-  announceReceived();
 }
 
 const isText = (v: unknown): v is string => typeof v === 'string';
@@ -492,17 +496,31 @@ export class Links implements Link, TakenFiles {
   private readonly space: number;
   private readonly key: Uint8Array;
   private readonly chats: SpaceChats;
+  // Whose links these are: the space's, or a hidden place's (`pocket`), which links on its own,
+  // sealed with its own key, and of which nothing goes to the space or its devices.
+  private readonly holder: Holder;
+  private readonly pocket: number | null;
 
-  private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData) {
+  private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData, pocket: number | null) {
     this.space = space;
     this.key = key;
     this.chats = chats;
     this.data = data;
+    this.pocket = pocket;
+    this.holder = pocket === null ? 'space' : hiddenHolder(pocket);
   }
 
-  /** The links of a space's chats (`chats`), sealed with `key`; from now on the chat reaches the devices through them. */
-  static async open(space: number, key: Uint8Array, chats: SpaceChats, tick = TICK): Promise<Links> {
-    const links = new Links(space, key, chats, await loadDevicesData(space, key));
+  /**
+   * The links of a space's chats (`chats`), sealed with `key`; from now on the chat reaches the
+   * devices through them. With `pocket`, those of the hidden place there, its chats and key the
+   * place's own.
+   */
+  static async open(space: number, key: Uint8Array, chats: SpaceChats, tick = TICK, pocket: number | null = null): Promise<Links> {
+    const holder: Holder = pocket === null ? 'space' : hiddenHolder(pocket);
+    const data = await loadDevicesData(space, key, holder);
+    // The space's value in the file, so the file is there whichever space or place links.
+    if (pocket === null) await keepDevicesFile(space, key, data).catch(() => undefined);
+    const links = new Links(space, key, chats, data, pocket);
     // A space that is no linked device has no endpoint: one there is a linked device's backup put
     // back elsewhere, without its link, and goes before anything is sealed, so two never seal as one.
     if (!links.data.primary) await chats.e2e.dropEndpoint().catch(() => undefined);
@@ -512,7 +530,12 @@ export class Links implements Link, TakenFiles {
     if (siblings && (!links.data.primary || siblings.of !== chats.e2e.endpoint()?.id)) await links.save(withoutSiblings(links.data));
     chats.e2e.useLink(links);
     links.stopCalls = onCallChange(() => links.callChanged());
-    links.stopMoves = onSpaceMoved(async (_queue, _old, why) => links.spaceMoved(why));
+    links.stopMoves =
+      pocket === null
+        ? onSpaceMoved(async (_queue, _old, why) => links.spaceMoved(why))
+        : onPlaceMoved(async (at, moved, _queue, _old, why) => {
+            if (at === space && moved === pocket) links.spaceMoved(why);
+          });
     links.stopNotes = onNotesWritten((place) => links.notesWritten(place));
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
@@ -578,7 +601,15 @@ export class Links implements Link, TakenFiles {
 
   private async save(data: DevicesData): Promise<void> {
     this.data = data;
-    await saveDevicesData(this.space, this.key, data);
+    await saveDevicesData(this.space, this.key, data, this.holder);
+  }
+
+  // Tells the screens of these links' own chats that the history or the devices changed: the
+  // space's, or the hidden place's only, so the space hears nothing of a place.
+  private announce(change: LinkedChange = { gone: [] }): void {
+    const at = this.pocket === null ? null : { space: this.space, pocket: this.pocket };
+    for (const { at: of, listener } of listeners) if (of === at || (of && at && of.space === at.space && of.pocket === at.pocket)) listener(change);
+    if (this.pocket === null) announceReceived();
   }
 
   get through(): boolean {
@@ -631,7 +662,7 @@ export class Links implements Link, TakenFiles {
 
   // Where this side reads: the space's relay and queue, and the relay's key. Null without them.
   private async here(): Promise<Here | null> {
-    const data = await loadSpaceData(this.space, this.key);
+    const data = this.pocket === null ? await loadSpaceData(this.space, this.key) : await loadHiddenData(this.space, this.pocket, this.key);
     const url = data.url.trim();
     if (!url || !data.ownQueue) return null;
     const own: Relay = { url, token: data.token.trim() || undefined };
@@ -644,14 +675,17 @@ export class Links implements Link, TakenFiles {
     const rk = keyed ? this.keyOf!.key : '';
     const place: Place = { sender: data.ownQueue.senderHex, relay: url, relayKey: rk, spare: this.chats.e2e.spare() };
     this.at = place;
-    const link = (await spaceQueues(this.space, this.key).load().catch(() => null))?.link;
+    const queues = this.pocket === null ? spaceQueues(this.space, this.key) : placeQueues(this.space, this.pocket, this.key);
+    const link = (await queues.load().catch(() => null))?.link;
     this.linkSender = link && sameRelay(link.url, url) ? link.queue.senderHex : place.sender;
     return { own, sends, place, where: { relay: url, relayKey: rk }, keyed };
   }
 
+  // Hidden chats keep nothing waiting as the space's do (lib/waiting.ts, `hidden`).
   private sendPlace(here: Here | null): SendPlace {
-    if (!here) return { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false };
-    return { sends: here.sends, own: here.own, senderHex: here.place.sender, here: here.where, ownKey: here.where.relayKey, relayUp: true };
+    const hidden = this.pocket === null ? {} : { hidden: true };
+    if (!here) return { sends: null, own: null, senderHex: '', here: { relay: '', relayKey: '' }, ownKey: '', relayUp: false, ...hidden };
+    return { sends: here.sends, own: here.own, senderHex: here.place.sender, here: here.where, ownKey: here.where.relayKey, relayUp: true, ...hidden };
   }
 
   // The account's contact link, as the primary's chat shows it: the queue the link names, not the
@@ -831,7 +865,7 @@ export class Links implements Link, TakenFiles {
       ...(said.pk ? { sealTo: said.pk } : {}),
     };
     await this.save({ ...this.data, answer: { peer, account: said.account, code } });
-    announce();
+    this.announce();
     return { kind: 'taken' };
   }
 
@@ -922,7 +956,7 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.letGo(peer.id, null));
         this.callSteps(this.calls.unlinked(peer.id));
         this.act(() => this.signAgain());
-        announce();
+        this.announce();
         break;
       default:
         break;
@@ -1020,7 +1054,7 @@ export class Links implements Link, TakenFiles {
         const given: GivenAccounts = { ...(said.matrix ? { matrix: said.matrix } : {}), ...(said.xmpp ? { xmpp: said.xmpp } : {}), ...(said.nostr ? { nostr: said.nostr } : {}) };
         await this.save({ ...this.data, given: isEmpty(given) ? undefined : given });
         void this.aside(() => this.bringGiven());
-        announce();
+        this.announce();
         break;
       }
       case 'bye':
@@ -1200,7 +1234,7 @@ export class Links implements Link, TakenFiles {
   // marked here as there.
   private async cameHere(c: string, got: string[]): Promise<void> {
     if (!this.chats.e2e.record(c)) return;
-    if ((await this.chats.history.mark(peerOf(c), true, 1, Date.now(), got)).length > 0) announce();
+    if ((await this.chats.history.mark(peerOf(c), true, 1, Date.now(), got)).length > 0) this.announce();
   }
 
   // On the primary, in the turn: what it knows of the devices of each contact's account (`way`,
@@ -1366,7 +1400,7 @@ export class Links implements Link, TakenFiles {
     this.act(() => this.bringHistory(peer.id));
     // The notes of Chat with myself, once it says it takes them.
     void this.noting(() => this.tellNotes());
-    announce();
+    this.announce();
   }
 
   // ---- Linking ----
@@ -1378,9 +1412,16 @@ export class Links implements Link, TakenFiles {
    */
   makeOffer(name: string): Promise<string> {
     return this.run(async () => {
-      if (this.role() !== null) throw new Error(t('This space is linked already.'));
+      const place = this.pocket !== null;
+      if (this.role() !== null) throw new Error(place ? t('These hidden chats are linked already.') : t('This space is linked already.'));
       const chats = this.chats.e2e.contacts().length > 0 || (this.groups?.groups.all().length ?? 0) > 0;
-      if (chats && !this.copied()) throw new Error(t('This space has chats of its own. Link from a space with none, such as one that opens with a new password.'));
+      if (chats && !this.copied()) {
+        throw new Error(
+          place
+            ? t('These hidden chats have chats of their own. Link from hidden chats with none, such as those a new PIN sets.')
+            : t('This space has chats of its own. Link from a space with none, such as one that opens with a new password.'),
+        );
+      }
       const here = await this.here();
       if (!here) throw new Error(t('Type the relay address first.'));
       const account = await core.newAccount();
@@ -1419,7 +1460,7 @@ export class Links implements Link, TakenFiles {
       const primary = await this.seal({ ...answer.peer, since: Date.now() }, { k: 'ready', name: this.data.offer?.name ?? '' });
       await this.save({ ...withoutSiblings(this.data), primary, account: answer.account, offer: null, answer: null, synced, packs: [], copySaid: false, removed: undefined, erased: undefined });
     }).then(async () => {
-      announce();
+      this.announce();
       // Its own endpoint, a new one, said after the codes matched: a phone from before leaves it alone.
       await this.newEndpoint(true).catch(() => undefined);
       return this.flush().catch(() => undefined);
@@ -1487,7 +1528,7 @@ export class Links implements Link, TakenFiles {
     await this.run(async () => {
       await this.save({ ...this.data, devices: [...this.data.devices.filter((d) => d.id !== peer.id), peer] });
     });
-    announce();
+    this.announce();
     await this.flush().catch(() => undefined);
   }
 
@@ -1502,13 +1543,13 @@ export class Links implements Link, TakenFiles {
   }
 
   /**
-   * On the primary: gives the linked device `id` the space's Matrix, XMPP and Nostr accounts
-   * (lib/linked-accounts.ts). Answers which networks went: none when the space has none of them,
-   * or the device is not linked, or has too much waiting for it already.
+   * On the primary: gives the linked device `id` the space's Matrix, XMPP and Nostr accounts, or a
+   * hidden place's own (lib/linked-accounts.ts). Answers which networks went: none when it has none
+   * of them, or the device is not linked, or has too much waiting for it already.
    */
   async giveAccounts(id: string): Promise<(keyof GivenAccounts)[]> {
     if (!hand || this.data.primary) return [];
-    const given = await hand.give(this.space, this.key);
+    const given = await hand.give(this.space, this.key, this.pocket);
     if (isEmpty(given)) return [];
     const told = await this.say({ k: 'accounts', ...given }, id);
     return told.includes(id) ? (Object.keys(given) as (keyof GivenAccounts)[]) : [];
@@ -1532,7 +1573,7 @@ export class Links implements Link, TakenFiles {
   private async bringGiven(): Promise<void> {
     const given = this.data.given;
     if (!hand || !given || !this.data.primary || this.closed) return;
-    const { left, brought, problems } = await hand.take(this.space, this.key, given);
+    const { left, brought, problems } = await hand.take(this.space, this.key, given, this.pocket);
     this.accountsProblems = problems;
     const unlinked = await this.run(async () => {
       if (!this.data.primary) return true;
@@ -1541,8 +1582,8 @@ export class Links implements Link, TakenFiles {
       await this.save({ ...this.data, given: isEmpty(next) ? undefined : next, brought: isEmpty(all) ? undefined : all });
       return false;
     });
-    if (unlinked && !isEmpty(brought)) await hand.letGo(this.space, this.key, brought).catch(() => undefined);
-    announce();
+    if (unlinked && !isEmpty(brought)) await hand.letGo(this.space, this.key, brought, this.pocket).catch(() => undefined);
+    this.announce();
   }
 
   /**
@@ -1574,7 +1615,7 @@ export class Links implements Link, TakenFiles {
       await this.run(async () => {
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
       });
-      announce();
+      this.announce();
       // What was left on the relay only for it, and a call it has; the list no longer names it.
       this.act(() => this.letGo(peer.id, null));
       this.callSteps(this.calls.unlinked(peer.id));
@@ -1594,7 +1635,7 @@ export class Links implements Link, TakenFiles {
       return was;
     });
     // The accounts brought from the phone go with the chats.
-    if (brought && hand) await hand.letGo(this.space, this.key, brought).catch(() => undefined);
+    if (brought && hand) await hand.letGo(this.space, this.key, brought, this.pocket).catch(() => undefined);
     await e2e.dropEndpoint().catch(() => undefined);
     await e2e.forgetBlocked().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);
@@ -1605,7 +1646,7 @@ export class Links implements Link, TakenFiles {
 
   private async clearChats(identities: string[]): Promise<void> {
     for (const identity of identities) await this.chats.history.clear(peerOf(identity)).catch(() => undefined);
-    announce({ gone: identities.map((identity) => ({ peer: peerOf(identity) })) });
+    this.announce({ gone: identities.map((identity) => ({ peer: peerOf(identity) })) });
   }
 
   // ---- Endpoints and the device list (lib/device-list.ts) ----
@@ -2156,8 +2197,9 @@ export class Links implements Link, TakenFiles {
   // all the devices told it at once, and stays there for them (`keep`) until it expires, or, for one
   // device, until it took it; a voice message's sound goes with its note.
 
+  // The notes of these links' own chats: the space's, or the hidden place's (components/myself-chat.tsx).
   private notesPlace(): NotesPlace {
-    return { holder: 'space', space: this.space, key: this.key };
+    return { holder: this.holder, space: this.space, key: this.key };
   }
 
   private noting(call: () => Promise<unknown>): Promise<unknown> {
@@ -2168,9 +2210,9 @@ export class Links implements Link, TakenFiles {
     return this.notesWork;
   }
 
-  /** A change made here to a space's notes (lock/myself-data.ts): told to the account's other devices. */
+  /** A change made here to a space's notes, or a hidden place's (lock/myself-data.ts): told to the account's other devices. */
   notesWritten(place: NotesPlace): void {
-    if (this.closed || place.holder !== 'space' || place.space !== this.space || !this.role()) return;
+    if (this.closed || place.holder !== this.holder || place.space !== this.space || !this.role()) return;
     void this.noting(() => this.tellNotes());
   }
 
@@ -2570,9 +2612,16 @@ export class Links implements Link, TakenFiles {
   // to the relay, saying what it carries (`mark`); then its copies for the endpoints of their
   // account go too, and, with `waits`, also once the relay could take it only later, as it is tried
   // again as it is (lib/e2e.ts copiesAfter).
+  // A hidden place's goes through the relay, or Nostr, only, as its chat's does (lib/waiting.ts
+  // handOverHidden), and its copies go though the relay could take it only later only once their
+  // account's queue is full.
   private async deliver(identity: string, sealed: { sender: string; relay: string; relayKey: string; spare: Contact['spare']; first: Uint8Array | null; packet: Uint8Array; copies: number } & ForNostr, here: Here, mark: RelayMark, waits = false) {
     const send = () => sendSealed(here.sends, sealed, [sealed.packet], mark, () => this.chats.e2e.firstSent(identity));
     const relay = sealed.sender ? orNostr(this.chats.e2e, here.sends, identity, sealed, [sealed.packet], send) : null;
+    if (this.pocket !== null) {
+      await this.chats.e2e.copiesAfter(sealed.copies, relay ? relay() : Promise.reject(new Error(t('There is no relay.'))), waits && 'full');
+      return;
+    }
     await this.chats.e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay), waits);
   }
 
@@ -2606,7 +2655,7 @@ export class Links implements Link, TakenFiles {
     if (read.length > 0) {
       await history.mark(peer, false, 2, now, read);
       // Read there: the messages notice no longer counts them here (lib/background.ts).
-      readElsewhere([`chat:${c}`]);
+      if (this.pocket === null) readElsewhere([`chat:${c}`]);
     }
     const erase = isObject(m.erase) ? m.erase : null;
     if (erase?.all === true) {
@@ -2617,7 +2666,7 @@ export class Links implements Link, TakenFiles {
       gone.push({ peer, tag: erase.tag });
     }
     if (!kept && onlyCame(m, contact.timerAt)) {
-      if (gone.length > 0 || read.length > 0) announce({ gone });
+      if (gone.length > 0 || read.length > 0) this.announce({ gone });
       return true;
     }
     const here = await this.here().catch(() => null);
@@ -2635,7 +2684,7 @@ export class Links implements Link, TakenFiles {
       if (!upload) {
         await this.keepAsSent(peer, m, file, null, WAITING);
         void sendWaiting(this.chats, this.sendPlace(here)).catch(() => undefined);
-        announce();
+        this.announce();
         return true;
       }
     }
@@ -2663,7 +2712,7 @@ export class Links implements Link, TakenFiles {
       // reaction, pin or vote is this phone's own once it went.
       if (!went && read.length > 0) await e2e.hold(c, 'read', read);
       if (went) await this.marksAsOwn(peer, m, now);
-      announce({ gone });
+      this.announce({ gone });
       return went || !Object.keys(m).some((key) => !QUIET.has(key));
     }
     let mark: Mark = went ? 0 : WAITING;
@@ -2678,7 +2727,7 @@ export class Links implements Link, TakenFiles {
     }
     await this.keepAsSent(peer, m, file, voice, mark);
     if (mark === WAITING) void sendWaiting(this.chats, this.sendPlace(here)).catch(() => undefined);
-    announce();
+    this.announce();
     return true;
   }
 
@@ -2739,7 +2788,7 @@ export class Links implements Link, TakenFiles {
         // Sent later.
       }
     }
-    announce();
+    this.announce();
     // What the device wrote to them meanwhile.
     if (this.later.length > 0) await this.sendLater();
   }
@@ -2765,7 +2814,7 @@ export class Links implements Link, TakenFiles {
       const more = await heldAfter(this.chats, c, held).catch(() => []);
       await history.clear(peerOf(c));
       if (held.length + more.length > 0) void this.here().then((here) => here && dropHeld(e2e, here.sends)).catch(() => undefined);
-      announce({ gone: [{ peer: peerOf(c) }] });
+      this.announce({ gone: [{ peer: peerOf(c) }] });
       return;
     }
     if (at === undefined) return this.makeChange(c, contact, said);
@@ -2792,7 +2841,7 @@ export class Links implements Link, TakenFiles {
       const here = await this.here().catch(() => null);
       if (here) await this.deliver(c, await e2e.seal(c, '', here.place.sender, { at: here.where }), here, 'quiet').catch(() => undefined);
     }
-    announce();
+    this.announce();
   }
 
   /**
@@ -3081,7 +3130,7 @@ export class Links implements Link, TakenFiles {
         return groups.forget(id);
       case 'read':
         await groups.markRead(id, transport);
-        readElsewhere([`group:${id}`]);
+        if (this.pocket === null) readElsewhere([`group:${id}`]);
         return;
     }
   }
@@ -3116,7 +3165,7 @@ export class Links implements Link, TakenFiles {
         gone.push({ peer, tag: change.tag });
       } else if (change.starred !== undefined) await history.star(peer, change.tag, change.starred);
     }
-    if (chats.length > 0) announce({ gone });
+    if (chats.length > 0) this.announce({ gone });
     const shared = this.groups;
     if (shared && (groups.length > 0 || whole.length > 0)) await shared.groups.mirror((kept) => ({ groups: changedGroups(kept, { groups, whole }, Date.now()), came: [] }));
   }
@@ -3228,7 +3277,7 @@ export class Links implements Link, TakenFiles {
         );
         await this.save({ ...this.data, devices });
       });
-      announce();
+      this.announce();
       if (last) return;
     }
   }
@@ -3275,7 +3324,7 @@ export class Links implements Link, TakenFiles {
     const read = tagsOf(m.read);
     if (read.length > 0) {
       await history.mark(peer, false, 2, now, read);
-      readElsewhere([`chat:${c}`]);
+      if (this.pocket === null) readElsewhere([`chat:${c}`]);
     }
     const erase = isObject(m.erase) ? m.erase : null;
     if (erase?.all === true || (erase && isTag(erase.tag))) {
@@ -3312,7 +3361,7 @@ export class Links implements Link, TakenFiles {
         } else if (offer) await history.add({ ...base, file: offerRef(offer) });
       }
     }
-    announce({ gone });
+    this.announce({ gone });
   }
 
   // What a message sealed for a contact says of one of the chat's messages, kept as this side's own,
@@ -3375,7 +3424,7 @@ export class Links implements Link, TakenFiles {
     }
     if (added.length === 0) return;
     await history.putIn(added);
-    announce();
+    this.announce();
   }
 }
 
@@ -3383,8 +3432,9 @@ export class Links implements Link, TakenFiles {
 
 let current: Links | null = null;
 
-// To a contact who calls while a linked device has a call, the account is in one.
-callsElsewhere((id) => current?.inCall(id) ?? false);
+// To a contact who calls while a linked device has a call, the account is in one: one of the
+// space's, or of a hidden place's, as a call in hidden chats is one the phone is in.
+callsElsewhere((id) => (current?.inCall(id) ?? false) || [...places.values()].some((links) => links.inCall(id)));
 
 joinSpaceChats(async (chats, space, key) => {
   current?.close();
@@ -3430,8 +3480,68 @@ export async function copyNote(): Promise<string | null> {
 
 /**
  * On the primary: what was done on this phone only to the open space's chat (lib/link-wire.ts,
- * ChatChange), for its linked devices to do too. Hidden chats are not the space's, and are never told.
+ * ChatChange), for its linked devices to do too; with `at`, to that hidden place's chat, for its own
+ * linked devices. The space's devices are never told of a place.
  */
-export function changedHere(change: ChatChange): void {
-  current?.changedHere(change);
+export function changedHere(change: ChatChange, at: PlaceAt | null = null): void {
+  (at ? placeLinksNow(at.space, at.pocket) : current)?.changedHere(change);
+}
+
+// ---- Each hidden place's own links (docs/multi-device.md, phase 5) ----
+
+// The links of each hidden place whose chats are open (lib/place-chats.ts), by space and pocket:
+// opened with them, as the place opens with its PIN or as it receives while closed
+// (lib/place-receiver.ts), and closed as they are let go of. So a place links only while it is open
+// or receives while closed: closed otherwise, what its devices and its phone say to it waits on the
+// relay. Each has its own data, sealed with the place's key under its own holder, and goes through
+// the place's own relay and queue: nothing of it is the space's, nor goes to the space's devices.
+const places = new Map<string, Links>();
+const placeId = (space: number, pocket: number) => `${space}.${pocket}`;
+// How many times every place's chats, and each one's, were let go of: links that open while theirs
+// are let go of close again at once.
+let forgotten = 0;
+const forgottenAt = new Map<string, number>();
+const forgetCount = (at: string) => `${forgotten}.${forgottenAt.get(at) ?? 0}`;
+
+joinPlaceChats(async (chats, space, pocket, key) => {
+  const at = placeId(space, pocket);
+  const before = forgetCount(at);
+  places.get(at)?.close();
+  places.delete(at);
+  // The place's groups, before anything comes, as the space's (lib/place-groups.ts): none is public.
+  const groupsAt = placeGroupsAt(space, pocket, key);
+  const groups = core.canGroup() ? await groupsAt.groups().catch(() => null) : null;
+  const links = await Links.open(space, key, chats, TICK, pocket);
+  if (forgetCount(at) !== before) {
+    links.close();
+    return;
+  }
+  if (groups) links.useGroups(groups, groupsAt.transport);
+  places.set(at, links);
+});
+
+onForgetPlaceChats((space, pocket) => {
+  if (space === undefined || pocket === undefined) {
+    forgotten++;
+    for (const links of places.values()) links.close();
+    places.clear();
+    return;
+  }
+  const at = placeId(space, pocket);
+  forgottenAt.set(at, (forgottenAt.get(at) ?? 0) + 1);
+  places.get(at)?.close();
+  places.delete(at);
+});
+
+/** The own links of the hidden place in `pocket` of `space`, open with `key`, once its chats are open. */
+export async function placeLinks(space: number, pocket: number, key: Uint8Array): Promise<Links> {
+  await placeChats(space, pocket, key);
+  const links = places.get(placeId(space, pocket));
+  if (!links) throw new Error(t('Linked devices could not open.'));
+  return links;
+}
+
+/** The own links of the hidden place in `pocket` of `space`, if its chats are open, or null. */
+export function placeLinksNow(space: number, pocket: number): Links | null {
+  return places.get(placeId(space, pocket)) ?? null;
 }

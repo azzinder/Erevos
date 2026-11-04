@@ -10,8 +10,10 @@
 // it, a call rings with no name and waits for the PIN, and one ended or too old is kept as missed.
 // Switched off, nothing reads it any more. A place's groups are its own (lib/place-groups.ts): made
 // with its contacts, they go through its relay to a queue of its own, are read while it is closed,
-// and are kept apart from the space's. The relay part is skipped, with a note, when the core or
-// the relay is not built.
+// and are kept apart from the space's. Linked on their own to a phone's (lib/devices.ts), they sync
+// while they receive closed, as their links open with their chats, and not at all while closed
+// without it: what the phone passes on waits on the relay. The relay part is skipped, with a note,
+// when the core or the relay is not built.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -24,25 +26,29 @@ import type { CallSignal } from '../lib/call-signal';
 import { CALL_LINE } from '../lib/calls';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes } from '../lib/crypto';
+import { Links, placeLinksNow } from '../lib/devices';
 import { E2E, toBase64Url, type Received } from '../lib/e2e';
 import { isGroupPacket } from '../lib/groups';
-import { forgetPlaceChats, placeChats } from '../lib/place-chats';
+import { forgetPlaceChats, placeChats, placeChatsNow } from '../lib/place-chats';
 import { onPlaceGroupMessage, placeGroupsAt } from '../lib/place-groups';
 import { startHiddenNotices } from '../lib/hidden-notices';
 import { holdPlace, onPlaceMessage, onPlaceRing, placesRead, receivesPocket, startPlaceReceiver, takePlaceCalls } from '../lib/place-receiver';
-import { setAppShown } from '../lib/receiver';
+import { keepReceived, setAppShown } from '../lib/receiver';
 import { hiddenSign } from '../lib/unread-signs';
 import { createQueue, fromHex, receiveMessage, sendMessage, toHex } from '../lib/relay';
+import type { SpaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
+import { VoiceAssembler } from '../lib/voice';
 import { loadGroupData } from '../lock/group-data';
 import { prepareHidden, removeHiddenPassword, setHiddenPassword } from '../lock/hidden';
 import { keepPlace, keepsPlace, keptPlaces, onKeptChange, prepareKeepEntries } from '../lock/hidden-keep';
+import { History } from '../lock/history';
 import { watchPocket } from '../lock/hidden-watch';
 import { setCurrentSpace } from '../lock/keys';
 import { placeQueues } from '../lock/queues-data';
 import { hiddenHolder } from '../lock/sealed-file';
 import { writeNote } from '../lib/myself';
-import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData, updateHiddenData } from '../lock/space-data';
+import { EMPTY_SPACE, saveHiddenData, updateCurrentSpaceData, updateHiddenData, type Queue } from '../lock/space-data';
 import { blobs, files } from './files-memory';
 import { ready as relayReady, relayNote, startRelay } from './real-relay';
 import { reminders } from './device-memory';
@@ -406,6 +412,104 @@ test('a hidden place’s groups are its own: made with its contacts, through its
     stopHeard();
     (await holdPlace(0, 1))();
     forgetPlaceChats();
+    setCurrentSpace(null);
+  }
+});
+
+test('hidden chats linked on their own sync while they receive closed, and not while closed without it: what the phone passes on waits on the relay', { skip: !coreReady || !relayReady }, async () => {
+  store.clear();
+  files.clear();
+  blobs.clear();
+  const url = await startRelay();
+  const relay = { url };
+  const where = { relay: url, relayKey: '' };
+  const queue = async (): Promise<Queue> => {
+    const ids = await createQueue(relay);
+    return { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+  };
+  // What comes to a queue, opened and kept as the chat keeps it, read here by hand.
+  const takeOn = async (own: Queue, chats: SpaceChats, links: Links | null) => {
+    for (let bytes = await receiveMessage(relay, fromHex(own.recipientHex)); bytes; bytes = await receiveMessage(relay, fromHex(own.recipientHex))) {
+      const received = await chats.e2e.receive(bytes);
+      if (received.kind === 'message') await keepReceived(chats, received);
+    }
+    await links?.settled();
+  };
+
+  // The computer's space is open, and its hidden chats in pocket 1, held as their screen holds them.
+  const spaceKey = randomBytes(32);
+  const placeKey = randomBytes(32);
+  setCurrentSpace(0, spaceKey);
+  await prepareKeepEntries();
+  const dellQueue = await queue();
+  await saveHiddenData(0, 1, placeKey, { ...EMPTY_SPACE, url, ownQueue: dellQueue });
+  const release = await holdPlace(0, 1);
+  const dell = await placeChats(0, 1, placeKey);
+  const dellLinks = placeLinksNow(0, 1)!;
+  assert.ok(dellLinks);
+  // The phone's hidden chats, and Carol, their contact, on other phones.
+  const pixelKey = randomBytes(32);
+  const pixelQueue = await queue();
+  await saveHiddenData(5, 2, pixelKey, { ...EMPTY_SPACE, url, ownQueue: pixelQueue });
+  const pixel = { e2e: await E2E.open(hiddenHolder(2), 5, pixelKey), history: await History.open(hiddenHolder(2), 5, pixelKey), voiceParts: new VoiceAssembler() };
+  const pixelLinks = await Links.open(5, pixelKey, pixel, 60 * 60_000, 2);
+  const carol = await E2E.open('space', 6, randomBytes(32));
+  const carolQueue = await queue();
+  const carolId = carol.identityHex();
+  const { identity: account } = await carol.addContact({ senderHex: pixelQueue.senderHex, key: toBase64Url(pixel.e2e.bundle), relayUrl: url }, carolQueue.senderHex, where);
+  const [first] = carol.pending();
+  await sendMessage(relay, fromHex(first.sender), first.first);
+  await carol.firstSent(account);
+  const write = async (text: string) => {
+    const sealed = await carol.seal(account, text, carolQueue.senderHex, { at: where });
+    await sendMessage(relay, fromHex(sealed.sender), sealed.packet);
+    return sealed.tag;
+  };
+  await write('hello');
+  await takeOn(pixelQueue, pixel, pixelLinks);
+  await pixel.e2e.acceptRequest(carolId);
+  const texts = (chats: SpaceChats | null) => chats?.history.messages().map((m) => m.text) ?? [];
+
+  const stop = startPlaceReceiver(30);
+  try {
+    // Linked from inside them, with the codes compared, while they are open.
+    const asked = await pixelLinks.prepare(await dellLinks.makeOffer('DELL'));
+    await pixelLinks.link({ since: 0, files: false }, 'Pixel');
+    await takeOn(dellQueue, dell, dellLinks);
+    await dellLinks.confirm(asked.code);
+    await takeOn(pixelQueue, pixel, pixelLinks);
+    await until(async () => {
+      await takeOn(dellQueue, dell, dellLinks);
+      return texts(dell).includes('hello');
+    });
+    assert.equal(dellLinks.role(), 'linked');
+
+    // Closed, not receiving: their chats and links are let go of, and nothing reads them. What
+    // Carol writes, the phone passes on, and it waits on the relay.
+    assert.ok(!receivesPocket(0, 1));
+    release();
+    forgetPlaceChats(0, 1);
+    assert.equal(placeLinksNow(0, 1), null);
+    const closed = await write('while closed');
+    await takeOn(pixelQueue, pixel, pixelLinks);
+    await sleep(300);
+    assert.deepEqual([placeChatsNow(0, 1), placeLinksNow(0, 1)], [null, null]);
+    assert.ok(!(await History.open(hiddenHolder(1), 0, placeKey)).messages().some((m) => m.tag === closed));
+
+    // Receive while closed on: the receiver opens them, their links with them, and it comes.
+    await keepPlace(0, spaceKey, 1, placeKey);
+    await until(() => receivesPocket(0, 1));
+    await until(() => texts(placeChatsNow(0, 1)).includes('while closed'));
+    assert.equal(placeLinksNow(0, 1)?.role(), 'linked');
+    const later = await write('still closed');
+    await takeOn(pixelQueue, pixel, pixelLinks);
+    await until(() => texts(placeChatsNow(0, 1)).includes('still closed'));
+    assert.equal(placeChatsNow(0, 1)!.history.messages().filter((m) => m.tag === later).length, 1);
+  } finally {
+    stop();
+    (await holdPlace(0, 1))();
+    forgetPlaceChats();
+    pixelLinks.close();
     setCurrentSpace(null);
   }
 });

@@ -15,6 +15,9 @@ export const devices: Record<string, string> = {
   'This space has chats of its own. Link from a space with none, such as one that opens with a new password.':
     'Cet espace a ses propres discussions. Associe depuis un espace qui n’en a aucune, comme un espace qui s’ouvre avec un nouveau mot de passe.',
   'This space is linked already.': 'Cet espace est déjà associé.',
+  'These hidden chats are linked already.': 'Ces discussions masquées sont déjà associées.',
+  'These hidden chats have chats of their own. Link from hidden chats with none, such as those a new PIN sets.':
+    'Ces discussions masquées ont leurs propres discussions. Associe depuis des discussions masquées qui n’en ont aucune, comme celles qu’ouvre un nouveau PIN.',
   'Too long to go through the phone.': 'Trop long pour passer par le téléphone.',
   'Type the relay address in Relay first: linked devices reach this phone through it.':
     'Saisis d’abord l’adresse du relais dans « Relais » : les appareils associés joignent ce téléphone par lui.',
@@ -27,6 +30,10 @@ export const devices: Record<string, string> = {
     'Ces discussions viennent de la sauvegarde d’un appareil associé : tu peux les lire ici, mais pas y écrire. Pour écrire, associe de nouveau cet appareil au téléphone, dans Appareils associés.',
   'This account on a computer or in a browser too': 'Ce compte aussi sur un ordinateur ou dans un navigateur',
   "This chat is the phone's: move it into hidden chats there.": 'Cette discussion appartient au téléphone : déplace-la dans les discussions masquées depuis celui-ci.',
+  'These hidden chats are linked to a phone: move the chat into them there.':
+    'Ces discussions masquées sont associées à un téléphone : déplace-y la discussion depuis celui-ci.',
+  "This chat is the phone's: move it out of the hidden chats there.":
+    'Cette discussion appartient au téléphone : sors-la des discussions masquées depuis celui-ci.',
 
   // A call answered on another device of the account (components/call-screen.tsx, lib/call-lines.ts).
   'Answered on another device': 'Répondu sur un autre appareil',
@@ -39,6 +46,8 @@ export const devices: Record<string, string> = {
   None: 'Aucun',
   'Web browser': 'Navigateur web',
   'Code copied. Paste it on the phone in Settings → Data and devices → Linked devices.': 'Code copié. Colle-le sur le téléphone dans « Réglages → Données et appareils → Appareils associés ».',
+  'Code copied. Paste it on the phone, in Linked devices of the same hidden chats.':
+    'Code copié. Colle-le sur le téléphone, dans « Appareils associés » des mêmes discussions masquées.',
   'Linked. The chats come from the phone, and with them the messages it chose to bring over.':
     'Associé. Les discussions arrivent depuis le téléphone, avec les messages qu’il a choisi de transférer.',
   'Not linked. Someone else may have read the code. Make a new one, and link again.':
@@ -60,11 +69,15 @@ export const devices: Record<string, string> = {
   'Since {when}. Last heard from {last}.': 'Depuis le {when}. Dernier contact le {last}.',
   'This device has the chats and groups of the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay. Calls ring here too. New groups, public groups and group calls stay on the phone for now.':
     'Cet appareil a les discussions et les groupes du téléphone qui détient le compte. Ce que tu écris ici passe par le téléphone, qui doit être allumé et joindre le relais. Les appels sonnent aussi ici. Les nouveaux groupes, les groupes publics et les appels de groupe restent sur le téléphone pour l’instant.',
+  'These hidden chats have the chats and groups of the same hidden chats on the phone that holds the account. What you write here goes through the phone, which has to be on and reach the relay, with these hidden chats open or receiving while closed there. Calls ring here too. New groups and group calls stay on the phone for now.':
+    'Ces discussions masquées ont les discussions et les groupes des mêmes discussions masquées du téléphone qui détient le compte. Ce que tu écris ici passe par le téléphone, qui doit être allumé et joindre le relais, avec ces discussions masquées ouvertes là-bas ou qui reçoivent une fois fermées. Les appels sonnent aussi ici. Les nouveaux groupes et les appels de groupe restent sur le téléphone pour l’instant.',
   'Make or join groups on the phone that holds this account.': 'Crée des groupes ou rejoins-en depuis le téléphone qui détient ce compte.',
   'Group calls ring on the phone that holds this account, for now. Call from there.':
     'Pour l’instant, les appels de groupe sonnent sur le téléphone qui détient ce compte. Appelle depuis celui-ci.',
-  'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go.':
-    'Le même compte sur un ordinateur ou dans un navigateur. Le compte reste celui du téléphone : il transmet, chiffré de bout en bout, ce qui arrive et ce que l’ordinateur écrit, donc tes contacts ne voient rien de nouveau. Les discussions masquées et ce qu’ouvre un second mot de passe ne sont jamais transmis.',
+  'The same account on a computer or in a browser. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Hidden chats and what a second password opens never go with it: each links on its own, from inside it.':
+    'Le même compte sur un ordinateur ou dans un navigateur. Le compte reste celui du téléphone : il transmet, chiffré de bout en bout, ce qui arrive et ce que l’ordinateur écrit, donc tes contacts ne voient rien de nouveau. Les discussions masquées et ce qu’ouvre un second mot de passe ne sont jamais transmis avec lui : chacun s’associe à part, depuis l’intérieur.',
+  'These hidden chats on a computer or in a browser, linked on their own. The phone stays the account: it passes on, end-to-end encrypted, what comes and what the computer writes, so contacts see nothing new. Nothing of it shows in the space, nor goes to its linked devices.':
+    'Ces discussions masquées sur un ordinateur ou dans un navigateur, associées à part. Le compte reste celui du téléphone : il transmet, chiffré de bout en bout, ce qui arrive et ce que l’ordinateur écrit, donc tes contacts ne voient rien de nouveau. Rien de cela ne se voit dans l’espace, ni ne va à ses appareils associés.',
   'Link {name}': 'Associer {name}',
   'Once you tap Link, the computer shows this code. Link only if it shows the same:': 'Dès que tu appuies sur « Associer », l’ordinateur affiche ce code. N’associe que s’il affiche le même :',
   Link: 'Associer',
@@ -80,6 +93,8 @@ export const devices: Record<string, string> = {
   'Link a computer to this phone': 'Associer un ordinateur à ce téléphone',
   "On the computer, open Settings → Data and devices → Linked devices → Link to my phone. Then scan its code with this phone's camera, or copy it there and paste it here.":
     'Sur l’ordinateur, ouvre « Réglages → Données et appareils → Appareils associés → Associer à mon téléphone ». Scanne ensuite son code avec l’appareil photo de ce téléphone, ou copie-le là-bas et colle-le ici.',
+  "On the computer, open the same hidden chats with their PIN, then Linked devices → Link to my phone in them. Then scan its code with this phone's camera while these hidden chats are open, or copy it there and paste it here.":
+    'Sur l’ordinateur, ouvre les mêmes discussions masquées avec leur PIN, puis, dans celles-ci, « Appareils associés → Associer à mon téléphone ». Ensuite scanne son code avec l’appareil photo de ce téléphone pendant que ces discussions masquées sont ouvertes, ou copie-le là-bas et colle-le ici.',
   'Code from the computer': 'Code de l’ordinateur',
   Next: 'Suivant',
   'Link to my phone': 'Associer à mon téléphone',
@@ -88,11 +103,17 @@ export const devices: Record<string, string> = {
   'They differ': 'Ils sont différents',
   'On the phone that holds the account, scan this code with the camera, or paste it in Settings → Data and devices → Linked devices. This space must have no chats of its own.':
     'Sur le téléphone qui détient le compte, scanne ce code avec l’appareil photo, ou colle-le dans « Réglages → Données et appareils → Appareils associés ». Cet espace ne doit avoir aucune discussion à lui.',
+  'On the phone that holds the account, open the same hidden chats with their PIN, then scan this code with the camera, or paste it in Linked devices in them. These hidden chats must have no chats of their own.':
+    'Sur le téléphone qui détient le compte, ouvre les mêmes discussions masquées avec leur PIN, puis scanne ce code avec l’appareil photo, ou colle-le dans leurs « Appareils associés ». Ces discussions masquées ne doivent pas avoir de discussions à elles.',
   'Copy the code': 'Copier le code',
   'Share the code': 'Partager le code',
   'Waiting for the phone. The code works for half an hour.': 'En attente du téléphone. Le code est valable une demi-heure.',
   'Use this when this device is the computer: its chats become those of the phone that holds the account.':
     'À utiliser quand cet appareil est l’ordinateur : ses discussions deviennent celles du téléphone qui détient le compte.',
+  'Use this when this device is the computer: these hidden chats become those of the same hidden chats on the phone that holds the account.':
+    'Utilise ceci quand cet appareil est l’ordinateur : ces discussions masquées deviennent les mêmes discussions masquées du téléphone qui détient le compte.',
+  'These hidden chats have no relay queue yet: in them, type the relay address under For advanced users, then create their queue.':
+    'Ces discussions masquées n’ont pas encore de file d’attente sur le relais : dans celles-ci, tape l’adresse du relais sous « Pour les utilisateurs avancés », puis crée leur file d’attente.',
   'The phone answers on a queue of this device on a relay: the one the phone uses, or any other. If the relay asks for a token, sign in when it offers that, or type one.':
     'Le téléphone répond sur une file d’attente de cet appareil sur un relais : celui qu’utilise le téléphone, ou un autre. Si le relais demande un jeton, connecte-toi quand il le propose, ou tape-en un.',
   'Name of this device': 'Nom de cet appareil',
@@ -101,9 +122,13 @@ export const devices: Record<string, string> = {
   'Send the accounts to {name}': 'Envoyer les comptes à {name}',
   "This space's Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, and it signs in to each as a new device. Once unlinked, it signs out of them.":
     'Les comptes Matrix, XMPP et Nostr de cet espace lui sont envoyés, chiffrés de bout en bout, et il se connecte à chacun comme un nouvel appareil. Une fois dissocié, il s’en déconnecte.',
+  "These hidden chats' own Matrix, XMPP and Nostr accounts go to it, end-to-end encrypted, into the same hidden chats there, and it signs in to each as a new device. Once unlinked, it signs out of them.":
+    'Les propres comptes Matrix, XMPP et Nostr de ces discussions masquées lui sont transmis, chiffrés de bout en bout, dans les mêmes discussions masquées là-bas, et il se connecte à chacun comme nouvel appareil. Une fois dissocié, il s’en déconnecte.',
   'Sent to {name}: {accounts}.': 'Envoyé à {name} : {accounts}.',
   'Nothing went: this space has no Matrix, XMPP or Nostr account, or too much waits for that device already.':
     'Rien n’est parti : cet espace n’a aucun compte Matrix, XMPP ou Nostr, ou trop de choses attendent déjà pour cet appareil.',
+  'Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.':
+    'Rien n’est parti : ces discussions masquées n’ont pas de compte Matrix, XMPP ou Nostr à elles, ou trop de choses attendent déjà pour cet appareil.',
   'Matrix, XMPP and Nostr accounts too': 'Les comptes Matrix, XMPP et Nostr aussi',
   'Accounts from the phone': 'Comptes du téléphone',
   'Matrix: {id}, signed in here as a new device.': 'Matrix : {id}, connecté ici comme un nouvel appareil.',
@@ -114,6 +139,8 @@ export const devices: Record<string, string> = {
   'Nostr: the key of the Nostr chats is here too.': 'Nostr : la clé des discussions Nostr est aussi ici.',
   'Not brought over yet: {accounts}. Tried again each time this space opens.':
     'Pas encore transféré : {accounts}. Nouvel essai à chaque ouverture de cet espace.',
+  'Not brought over yet: {accounts}. Tried again each time these hidden chats open.':
+    'Pas encore transféré : {accounts}. Nouvel essai à chaque ouverture de ces discussions masquées.',
   'Once this device is unlinked, it signs out of the accounts it brought over.':
     'Une fois cet appareil dissocié, il se déconnecte des comptes qu’il a reçus du téléphone.',
   'Send the accounts': 'Envoyer les comptes',

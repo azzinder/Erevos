@@ -104,6 +104,17 @@ On main, not released yet:
   (crates/erevos-relay `invites.rs`, `tokens.rs`; `Invites::finish_moves` at start). An open invite whose inviter's
   line is gone still lets no one in. Lines the old relay refused for a gone inviter but had not yet written out come
   back on update. Needs the relay updated.
+- **Hidden chats on your linked devices**: each place of hidden chats links on its own, from inside it, to the same
+  place on a computer or in a browser, with **Linked devices** under its list (on the device, in a place opened with
+  its PIN, empty, with a relay queue of its own). The place has links of its own (`lib/devices.ts` `placeLinks`),
+  opened with its chats as it opens or receives while closed (`lib/place-chats.ts` `joinPlaceChats`), sealed with the
+  place's key under its own holder in `erevos-devices`, and its own account signs its own device list, so its contacts
+  write to the device's place directly. Its chats, messages, groups, calls, Chat with myself and its own Matrix, XMPP
+  and Nostr accounts go there as a space's go to its devices. Nothing of it shows in the space, on its screens or on
+  its linked devices: the file holds a value of the same size for every place of every space, written or not, and each
+  space writes its own as it opens, so the file is there whichever places link. Closed with **Receive while closed**
+  off, a place's link does not run, and what the other side sends waits on the relay (14 days). On the device's place,
+  new groups, group calls and moving a chat in or out stay on the phone. See docs/multi-device.md, Hidden places.
 
 ### Under the hood
 

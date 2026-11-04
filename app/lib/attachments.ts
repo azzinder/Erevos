@@ -305,16 +305,17 @@ function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
  * deletes them from the relay, unless they are left there (`leave`): a group's file the other
  * members take too stays on the relay and expires there. Left out, for a chat's file, the
  * account's other devices say (see watchTakenFiles): while one still takes it, it stays there
- * until it did. Returns where it is now kept. If any chunk is missing or was changed, nothing is
- * kept. A photo that came in pieces through Nostr is taken from those `place` keeps, the chat's own.
+ * until it did; a hidden place's chat names its own devices instead (lib/devices.ts, its links).
+ * Returns where it is now kept. If any chunk is missing or was changed, nothing is kept. A photo
+ * that came in pieces through Nostr is taken from those `place` keeps, the chat's own.
  */
-export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean, place: PiecePlace | null = null): Promise<FileRef> {
+export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean | TakenFiles, place: PiecePlace | null = null): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
   if (!onRelay(from)) return takeSent(ref, from, progress, place);
   if (!own) throw new FileMissingError();
-  const watch = leave === undefined ? takenFiles : null;
-  const left = leave ?? watch?.leave(from) ?? false;
+  const watch = leave === undefined ? takenFiles : typeof leave === 'object' ? leave : null;
+  const left = (typeof leave === 'boolean' ? leave : watch?.leave(from)) ?? false;
   const { at, via } = fileWay(own, from.relay);
   const key = fromHex(ref.key);
   const ids = Array.from({ length: ref.count }, (_, n) => fromHex(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX)));

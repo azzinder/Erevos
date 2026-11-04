@@ -5,6 +5,7 @@
 import { router } from 'expo-router';
 import { createContext, useContext } from 'react';
 
+import { linkedRole } from '../lib/devices';
 import { spaceGroupsAt, type GroupsAt } from '../lib/space-groups';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
@@ -24,6 +25,8 @@ export type GroupsWhere = {
   /** Shows a group's chat, or a contact's. */
   openGroup(id: string): void;
   openContact(identity: string): void;
+  /** Whether these chats are a linked device's (lib/devices.ts): the space's, or the hidden place's own. */
+  linked(): boolean;
 };
 
 /** The open space's groups, each on its own screen. */
@@ -33,6 +36,7 @@ export const spaceGroupsWhere: GroupsWhere = {
   previews: async () => (await loadCurrentSpaceData()).previews,
   openGroup: (id) => router.push(`/group?id=${id}`),
   openContact: (identity) => router.push(`/chat?contact=${identity}`),
+  linked: () => linkedRole() === 'linked',
 };
 
 const GroupsWhereContext = createContext<GroupsWhere>(spaceGroupsWhere);

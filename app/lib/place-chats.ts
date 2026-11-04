@@ -16,7 +16,8 @@ import { VoiceAssembler } from './voice';
 // space's are (lib/space-chats.ts): two copies of a conversation's keys would each move on without
 // the other. They are let go of once nothing holds them: as their chats close, unless they
 // receive, and all of them when the space closes, so a place that does not receive leaves nothing
-// in memory once closed.
+// in memory once closed. What joins them as they open, the place's own links to its other devices
+// (lib/devices.ts), lives as long as they do.
 
 // `ready`: the same once open, for what must know at once (lib/chat-notices.ts).
 type Opened = { key: Uint8Array; chats: Promise<SpaceChats>; ready?: SpaceChats };
@@ -25,6 +26,15 @@ const opened = new Map<string, Opened>();
 const at = (space: number, pocket: number) => `${space}.${pocket}`;
 
 const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+// What joins a place's chats as they open, before anything uses them: its links to the place's
+// other devices (lib/devices.ts), which registers itself here so this file need not know it.
+const joiners: ((chats: SpaceChats, space: number, pocket: number, key: Uint8Array) => Promise<void>)[] = [];
+
+/** Has `join` called each time a place's chats open, before they are handed out. */
+export function joinPlaceChats(join: (chats: SpaceChats, space: number, pocket: number, key: Uint8Array) => Promise<void>): void {
+  joiners.push(join);
+}
 
 /** The chats of the hidden place in `pocket` of `space`, open with `key`, opened the first time they are asked for. */
 export function placeChats(space: number, pocket: number, key: Uint8Array): Promise<SpaceChats> {
@@ -40,7 +50,10 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
     const pieces: PiecePlace = { holder: hiddenHolder(pocket), space, key: key.slice() };
     // What waited too long among the pieces of photos it keeps goes.
     void sweepPieces(pieces).catch(() => undefined);
-    return { e2e, history, voiceParts: new VoiceAssembler(), pieces };
+    const made = { e2e, history, voiceParts: new VoiceAssembler(), pieces };
+    // The chats still open without what could not join them.
+    for (const join of joiners) await join(made, space, pocket, key.slice()).catch(() => undefined);
+    return made;
   })();
   opened.set(at(space, pocket), { key: key.slice(), chats });
   chats.then(

@@ -92,7 +92,7 @@ import { onWelcomeOffered, parseWelcome, START_RELAY, type Welcome } from '../li
 import { connectReach } from '../lib/connect-reach';
 import { oldToken, ownToken } from '../lib/relay-signin';
 import { canGroup, canMatrix, canNostrChat, canRelaySeal, canSealOpen, canXmpp, hasCore } from '../lib/core';
-import { accountLink, changedHere, linkedRole, onLinked } from '../lib/devices';
+import { accountLink, changedHere, linkedRole, onLinked, placeLinksNow } from '../lib/devices';
 import type { ChatChange } from '../lib/link-wire';
 import { BlockedContactError, E2E, fromBase64Url, ONLINE, toBase64Url, type ContactInfo, type Where, type Erase, type Extra } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
@@ -125,9 +125,10 @@ import { ownSpaceKey, SamePasswordError } from '../lock/config';
 import { useLock } from '../lock/context';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
 import { cleanName, MAX_NAME, type Avatar, type Blocked, type Spare } from '../lock/e2e-data';
+import { loadDevicesData } from '../lock/devices-data';
 import { placeQueues, type QueueKind } from '../lock/queues-data';
 import { onContactsCame } from '../lib/contact-queues';
-import { QueueMove, linkOf, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
+import { QueueMove, linkOf, placeMoved, spaceMover, tookOf, type MoveWhy, type Took } from '../lib/queue-move';
 import { FAKE_RINGS_WITHIN, fakeRings, linkSpare } from '../lib/moves';
 import { HIDDEN_OFFER_MS, hiddenAnswerAt, lapseHiddenAnswer } from '../lib/hidden-ring';
 import { savePhoto } from '../lock/avatar-photos';
@@ -584,6 +585,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [placeSign, setPlaceSign] = useState(false);
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
+  // The links of these chats' own devices (lib/devices.ts): the space's, or these hidden chats' own,
+  // which the space's never hear of. What the phone keeps for both, a linked device leaves to it.
+  const placeLinked = () => (hiddenKey ? placeLinksNow(currentSpace().space, pocket) : null);
+  const linkHere = () => (hiddenKey ? (placeLinked()?.accountLink() ?? null) : accountLink());
   // Whether these chats are still open: false once they close and this screen goes.
   const hiddenOpen = useRef(true);
   useEffect(
@@ -2416,9 +2421,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   // What is done on this phone only, which the contact is not told of, the account's linked devices
-  // do too (lib/devices.ts): never what is done in hidden chats.
+  // do too (lib/devices.ts): in hidden chats, only their own devices, never the space's.
   function toDevices(peer: string, change: Omit<ChatChange, 'c'>) {
-    if (!hiddenKey && peer.startsWith(CONTACT_PREFIX)) changedHere({ c: peer.slice(CONTACT_PREFIX.length), ...change });
+    if (!peer.startsWith(CONTACT_PREFIX)) return;
+    changedHere({ c: peer.slice(CONTACT_PREFIX.length), ...change }, hiddenKey ? { space: currentSpace().space, pocket } : null);
   }
 
   function forgetChatHere(peer: string) {
@@ -2906,6 +2912,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             previews: async () => (await loadHiddenData(currentSpace().space, pocket, hiddenKey)).previews,
             openGroup: setShownGroup,
             openContact: (identity) => openFromGroup.current(identity),
+            linked: () => placeLinksNow(currentSpace().space, pocket)?.role() === 'linked',
           }
         : null,
     [placeGroups, hiddenKey, pocket, stickerPlace],
@@ -3565,7 +3572,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     // A message request knows only the queue the contact link names: nothing moves for it, but for
     // one blocked while that is the own queue, before the first move (lib/e2e.ts deleteContact). On
     // a linked computer the phone moves.
-    const moves = e2e.moveDue() > 0 || (!request && !!accountLink());
+    const moves = e2e.moveDue() > 0 || (!request && !!linkHere());
     let said = !moves
       ? block
         ? t('Blocked.')
@@ -3888,9 +3895,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     tried.current.add(key);
     setTaking((now) => ({ ...now, [key]: '0%' }));
     try {
-      // Hidden chats are never linked: what they take goes from the relay at once, and no other device hears of it.
+      // What hidden chats take stays on the relay only while their own devices still take it (lib/devices.ts),
+      // which the space's never hear of; with none, it goes from the relay at once.
       // A photo that came in pieces through Nostr is taken from those this place keeps (lib/nostr-pieces.ts).
-      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? false : undefined, contactsPlace);
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? (placeLinked() ?? false) : undefined, contactsPlace);
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
       // Deleted while it came: its chunks go too.
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);
@@ -3929,8 +3937,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   // What the account's other devices changed in the history while the chat is open (lib/devices.ts):
   // messages brought over or written on another of them, marks raised there, messages deleted there.
+  // Hidden chats hear only their own devices.
   useEffect(() => {
-    if (hiddenKey) return;
+    const where = hiddenKey ? { space: currentSpace().space, pocket } : null;
     return onLinked(({ gone }) => {
       const kept = history.current;
       if (!kept) return;
@@ -3964,8 +3973,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           .map((m) => ({ ...m, until: m.until ?? 0, lasts: m.lasts ?? 0, mark: m.mark ?? 0, id: nextId.current++ }));
         return added.length > 0 ? [...marked, ...added].sort((a, b) => a.at - b.at) : marked;
       });
-    });
-  }, [hiddenKey]);
+    }, where);
+  }, [hiddenKey, pocket]);
 
   useEffect(() => {
     loadPhotoQuality().then(setQuality, () => undefined);
@@ -4382,6 +4391,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         return;
       }
       const { key, pocket } = place;
+      // Hidden chats linked to a phone have its chats only: a chat moves into them there.
+      if ((await loadDevicesData(space, key, hiddenHolder(pocket)).catch(() => null))?.primary) {
+        throw new Error(t("These hidden chats are linked to a phone: move the chat into them there."));
+      }
       // Hidden chats reach the relay as the space does until they are given their own settings.
       const data = await loadHiddenData(space, pocket, key);
       const settings = data.url.trim()
@@ -4447,6 +4460,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Moves a chat of these hidden chats back among the space's chats: the move into them, the other way.
   async function moveToSpace(peer: string) {
     if (!e2e || !history.current || !hiddenKey || moving) return;
+    if (placeLinked()?.role() === 'linked') {
+      setMoveNote(t("This chat is the phone's: move it out of the hidden chats there."));
+      return;
+    }
     const identity = peer.slice(CONTACT_PREFIX.length);
     setMoving(true);
     setMoveNote('');
@@ -4556,12 +4573,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return true;
   };
 
-  // What moves with these hidden chats' own queue (lib/queue-move.ts): the watch slot says the new
-  // one. The ring queue moves too, with the move's own steps (MoveAt.ring).
+  // What moves with these hidden chats' own queue (lib/queue-move.ts): their own linked devices are
+  // told (lib/devices.ts), and the watch slot says the new one. The ring queue moves too, with the
+  // move's own steps (MoveAt.ring).
   const hiddenMoved = useRef(async (_queue: Queue, _old: Queue | null, _why: MoveWhy) => undefined as void);
-  hiddenMoved.current = async (queue, old) => {
+  hiddenMoved.current = async (queue, old, why) => {
     if (!hiddenKey) return;
     const { space, key } = currentSpace();
+    await placeMoved(space, pocket, queue, old, why);
     const url = relayUrl.trim();
     if (!url) return;
     // Decided by the slot too: the relay may have lost the old queue before the switch was read.
@@ -5166,8 +5185,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // reaches this phone nearby, or there.
   const ownLink = !e2e
     ? null
-    : !hiddenKey && accountLink()
-      ? accountLink()
+    : linkHere()
+      ? linkHere()
       : ownQueue
       ? contactLink({
           // The queue the link names, which a deletion or a block leaves as it is (lib/queue-move.ts),
@@ -5191,7 +5210,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
   // How this phone reaches its contacts now, said at the top of New chat.
   const reached = connectReach({
-    linked: !!accountLink(),
+    linked: !!linkHere(),
     relayUrl,
     queue: !!ownQueue,
     hidden: !!hiddenKey,
@@ -6253,13 +6272,16 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   />
                 ))}
                 {placeRows.length === 0 ? <Text tone="muted">{t('No hidden chats yet. Add a contact below, or move a chat here from its details.')}</Text> : null}
-                {(placeWhere && canGroup()) || canMatrix() || canXmpp() || canNostrChat() ? (
-                  // The place's own accounts on the networks (lib/place-networks.ts), apart from the space's.
+                {(placeWhere && canGroup()) || canMatrix() || canXmpp() || canNostrChat() || hasCore() ? (
+                  // The place's own accounts on the networks (lib/place-networks.ts), apart from the space's,
+                  // and its own linked devices (app/devices.tsx), which the space's know nothing of. On a
+                  // linked device new groups stay on the phone, as the space's do.
                   <Row wrap>
-                    {placeWhere && canGroup() ? <Button title={t('New group')} kind="secondary" compact onPress={() => setMakingGroup(true)} /> : null}
+                    {placeWhere && canGroup() && placeLinked()?.role() !== 'linked' ? <Button title={t('New group')} kind="secondary" compact onPress={() => setMakingGroup(true)} /> : null}
                     {canMatrix() ? <Button title="Matrix" kind="secondary" compact onPress={() => router.push({ pathname: '/matrix', params: { hidden: '1' } })} /> : null}
                     {canXmpp() ? <Button title="XMPP" kind="secondary" compact onPress={() => router.push({ pathname: '/xmpp', params: { hidden: '1' } })} /> : null}
                     {canNostrChat() ? <Button title="Nostr" kind="secondary" compact onPress={() => router.push({ pathname: '/nostr-chats', params: { hidden: '1' } })} /> : null}
+                    {hasCore() ? <Button title={t('Linked devices')} kind="secondary" compact onPress={() => router.push({ pathname: '/devices', params: { hidden: '1' } })} /> : null}
                   </Row>
                 ) : null}
               </View>
@@ -6345,7 +6367,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             {loaded ? (
               <ConnectStatus reach={reached.reach} title={reached.title} line={reached.line} detail={reached.detail}>
                 {relayUrl.trim() ? <RelayKeyNote url={relayUrl.trim()} /> : null}
-                {relayUrl.trim() && !ownQueue && !accountLink() ? <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} /> : null}
+                {relayUrl.trim() && !ownQueue && !linkHere() ? <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} /> : null}
               </ConnectStatus>
             ) : null}
             {newcomer ? (
@@ -6436,7 +6458,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         onPress={() => void shareLink(ownLink)}
                       />
                       {!hiddenKey ? <Button title={t('Link for a website')} kind="secondary" compact onPress={() => setWebLinking(true)} /> : null}
-                      {ownQueue && !accountLink() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
+                      {ownQueue && !linkHere() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}
                     </Row>
                     {ownQueue && canSharePlace ? (
                       <View>
@@ -6527,7 +6549,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 </>
               ) : null}
               {/* On a linked computer the phone keeps who is blocked. */}
-              {!accountLink() ? (
+              {!linkHere() ? (
                 <>
                   <DetailRow
                     title={t('Blocked contacts')}
