@@ -306,7 +306,10 @@ test('a space and someone on another app write both ways through their inbox rel
     assert.notEqual(wrap.pubkey, alice.public);
     assert.notEqual(wrap.pubkey, bob.public);
     assert.ok(wrap.created_at <= now && wrap.created_at >= now - BACKDATE);
-    assert.ok(!wrap.content.includes('Bob'));
+    // Sealed: a NIP-44 payload (version 2) in base64, so nothing in clear, the name neither. Its form
+    // shows it, as random base64 can hold "Bob" by chance.
+    assert.match(wrap.content, /^[A-Za-z0-9+/]+=*$/);
+    assert.equal(Buffer.from(wrap.content, 'base64')[0], 2);
   }
   assert.equal(wraps(bobInbox)[0].tags[0][1], bob.public);
   assert.equal(wraps(aliceInbox)[0].tags[0][1], alice.public);
