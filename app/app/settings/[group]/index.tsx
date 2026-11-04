@@ -3,9 +3,10 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { LanguageSheet, languageTitle, openLeaf, SettingsCard, SettingsRow, settingsPlace } from '../../../components/settings-list';
+import { useModules } from '../../../lib/modules';
 import { Page, Text } from '../../../components/ui';
 import { LANG_LABELS, lang, t } from '../../../lib/i18n';
 import { findGroup, hasParts, itemsHere, partsHere } from '../../../lib/settings';
@@ -13,7 +14,9 @@ import { findGroup, hasParts, itemsHere, partsHere } from '../../../lib/settings
 /** A group of settings (lib/settings.ts): each opens its screen, or the list of its parts. */
 export default function SettingsGroupScreen() {
   const { group: id } = useLocalSearchParams<{ group: string }>();
-  const [place] = useState(settingsPlace);
+  // Read again when a module is turned on or off (lib/modules.ts).
+  const modules = useModules();
+  const place = useMemo(() => settingsPlace(), [modules]);
   const [languages, setLanguages] = useState(false);
   const group = findGroup(id);
   if (!group) return <Page>{null}</Page>;

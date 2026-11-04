@@ -370,6 +370,11 @@ export async function prepareSpaces(from: number): Promise<void> {
 
 // The key the first space opens with when no lock is on: the one in its keystore slot once the
 // space has its entry, else a new one, saved there, with what the chat kept before there were spaces.
+/** Whether this is Erevos's very first start on this device: not even its first space was ever kept. */
+export async function firstStart(): Promise<boolean> {
+  return !(await secureGet(entry(0))) && !(await secureGet(OLDER_ENTRY));
+}
+
 export async function firstSpaceKey(): Promise<Uint8Array> {
   if (await secureGet(entry(0))) return loadOpenKey(0);
   const key = newSpaceKey();

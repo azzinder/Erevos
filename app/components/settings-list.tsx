@@ -10,6 +10,7 @@ import { canRingInBackground } from '../lib/background';
 import { DESKTOP } from '../lib/desktop';
 import { LANG_LABELS, LANGS, lang, setLang, t } from '../lib/i18n';
 import { WEB_APP } from '../lib/integrity';
+import { modulesOn } from '../lib/modules';
 import { HAS_CHECKS } from '../lib/permissions';
 import type { SettingsIcon, SettingsLeaf, SettingsPlace } from '../lib/settings';
 import { PUSH_AVAILABLE } from '../lib/web-push';
@@ -36,6 +37,7 @@ export function settingsPlace(): SettingsPlace {
     launcher: launcherColors() !== null,
     widget: widgetOrder() !== null,
     sims: (smsStatus()?.slots ?? 0) >= 2,
+    modules: new Set(modulesOn()),
   };
 }
 

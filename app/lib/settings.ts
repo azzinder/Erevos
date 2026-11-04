@@ -4,6 +4,7 @@
 
 import { mark } from './i18n';
 import { makerContact } from './maker';
+import type { Module } from './modules';
 
 // The Settings screens (app/settings/): every setting of Erevos in groups, as the phone's own
 // settings are. A group lists its settings; a setting opens its screen, or the list of its parts,
@@ -28,6 +29,8 @@ export type SettingsPlace = {
   widget: boolean;
   /** The phone has two SIMs. */
   sims: boolean;
+  /** The modules on (lib/modules.ts): a setting of one that is off does not show. Every one, when not told. */
+  modules?: ReadonlySet<Module>;
 };
 
 export type SettingsIcon = 'gear' | 'globe' | 'contrast' | 'bell' | 'lock' | 'signal' | 'phone' | 'stack' | 'stopwatch';
@@ -50,6 +53,15 @@ export type SettingsItem = SettingsLeaf | SettingsBranch;
 export type SettingsGroup = { id: string; title: string; icon: SettingsIcon; items: SettingsItem[]; when?: (place: SettingsPlace) => boolean };
 
 const phone = (place: SettingsPlace) => !place.web;
+// While the module, or one of them, is on.
+const uses =
+  (...modules: Module[]) =>
+  (place: SettingsPlace) =>
+    !place.modules || modules.some((m) => place.modules?.has(m));
+const phoneUses =
+  (...modules: Module[]) =>
+  (place: SettingsPlace) =>
+    phone(place) && uses(...modules)(place);
 
 export const SETTINGS: SettingsGroup[] = [
   {
@@ -59,6 +71,8 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       // Its detail is the language chosen, by its own name.
       { id: 'language', title: mark('Language'), detail: '', language: true },
+      // Which parts of Erevos are on (lib/modules.ts).
+      { id: 'modules', title: mark('Modules'), detail: mark('Erevos, Phone, SMS, Nostr, Matrix and XMPP: the ones you use'), href: '/modules' },
       { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
       { id: 'give-app', title: mark('Give Erevos to a phone nearby'), detail: mark('Over Wi-Fi or a hotspot, with no internet'), href: '/give-app', when: phone },
       // What each version changed, by its number (lib/whats-new.ts).
@@ -134,8 +148,8 @@ export const SETTINGS: SettingsGroup[] = [
     icon: 'lock',
     items: [
       { id: 'lock', title: mark('Lock and second password'), detail: mark('Password, fingerprint or face, second password'), href: '/security?part=lock' },
-      { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden' },
-      { id: 'forget-me', title: mark('Delete me from everywhere'), detail: mark('Delete what the servers keep for this space, and stop it'), href: '/forget-me' },
+      { id: 'hidden', title: mark('Hidden chats'), detail: mark('Chats that open only with their own PIN'), href: '/security?part=hidden', when: uses('erevos') },
+      { id: 'forget-me', title: mark('Delete me from everywhere'), detail: mark('Delete what the servers keep for this space, and stop it'), href: '/forget-me', when: uses('erevos', 'nostr', 'matrix', 'xmpp') },
       { id: 'panic', title: mark('Panic button'), detail: mark('Wipe Erevos at once, from here, a panic app or a panic password'), href: '/panic' },
       { id: 'calculator', title: mark('Calculator in place of Erevos'), detail: mark("Hide Erevos's icon behind a calculator that works"), href: '/appearance?part=icons', when: (place) => place.launcher },
       { id: 'screenshots', title: mark('Screenshots'), detail: mark('Let screenshots and screen recordings of Erevos, or keep them out'), href: '/security?part=screen', when: phone },
@@ -147,27 +161,28 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Relay and networks'),
     icon: 'signal',
     items: [
-      { id: 'relay', title: mark('Relay'), detail: mark('Your relay: its address, its token and invites'), href: '/chat?setup=relay' },
-      { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay' },
-      { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', when: phone },
-      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', when: phone },
-      { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix' },
-      { id: 'xmpp', title: mark('XMPP'), detail: mark('Chats with people on XMPP: encrypted, not anonymous'), href: '/xmpp' },
-      { id: 'nostr-chats', title: mark('Nostr chats'), detail: mark('Chats with people on other Nostr apps: encrypted, not anonymous'), href: '/nostr-chats' },
-      { id: 'lora', title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', when: phone },
+      { id: 'relay', title: mark('Relay'), detail: mark('Your relay: its address, its token and invites'), href: '/chat?setup=relay', when: uses('erevos') },
+      { id: 'home-relay', title: mark('Home relay'), detail: mark('A second relay contacts write to while yours is down'), href: '/home-relay', when: uses('erevos') },
+      { id: 'tor', title: mark('Tor'), detail: mark('Reach the relays through Tor: messages, unless changed'), href: '/tor', when: phoneUses('erevos', 'nostr') },
+      { id: 'nostr', title: mark('Nostr'), detail: mark('Texts through Nostr relays, through Tor: on, unless changed'), href: '/nostr', when: phoneUses('erevos') },
+      { id: 'matrix', title: mark('Matrix'), detail: mark('Chats with people on Matrix: encrypted, not anonymous'), href: '/matrix', when: uses('matrix') },
+      { id: 'xmpp', title: mark('XMPP'), detail: mark('Chats with people on XMPP: encrypted, not anonymous'), href: '/xmpp', when: uses('xmpp') },
+      { id: 'nostr-chats', title: mark('Nostr chats'), detail: mark('Chats with people on other Nostr apps: encrypted, not anonymous'), href: '/nostr-chats', when: uses('nostr') },
+      { id: 'lora', title: mark('LoRa radio'), detail: mark('Text over a Meshtastic radio, kilometres away, without internet'), href: '/lora', when: phoneUses('erevos') },
     ],
   },
   {
     id: 'phone',
     title: mark('Phone and SMS'),
     icon: 'phone',
-    when: phone,
+    when: phoneUses('phone', 'sms'),
     items: [
-      { id: 'phone', title: mark('Phone'), detail: mark('The phone app, blocking calls and quick replies'), href: '/phone-settings' },
+      { id: 'phone', title: mark('Phone'), detail: mark('The phone app, blocking calls and quick replies'), href: '/phone-settings', when: uses('phone') },
       {
         id: 'sms',
         title: mark('SMS'),
         detail: mark('Erevos as the SMS app, one list for all messages'),
+        when: uses('sms'),
         parts: [
           { id: 'app', title: mark('Erevos as the SMS app'), detail: mark('Making it the SMS app, and what Android allows it'), href: '/sms-settings?part=app' },
           { id: 'find', title: mark('Find Erevos on a number'), detail: mark('A hidden invite with the first SMS to a number'), href: '/sms-settings?part=find' },
@@ -190,8 +205,8 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       { id: 'backups', title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
       { id: 'backup-pieces', title: mark('Backup pieces'), detail: mark('Your backup password in pieces with friends, and the pieces you keep for them'), href: '/backup-pieces' },
-      { id: 'devices', title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices' },
-      { id: 'imported', title: mark('Imported chats'), detail: mark('Telegram, WhatsApp and Viber exports'), href: '/imported' },
+      { id: 'devices', title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices', when: uses('erevos') },
+      { id: 'imported', title: mark('Imported chats'), detail: mark('Telegram, WhatsApp and Viber exports'), href: '/imported', when: uses('erevos') },
     ],
   },
   {
@@ -199,8 +214,8 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('For testing'),
     icon: 'stopwatch',
     items: [
-      { id: 'relay-test', title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay' },
-      { id: 'radio-test', title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', when: phone },
+      { id: 'relay-test', title: mark('Relay test'), detail: mark('For testing a relay'), href: '/relay', when: uses('erevos') },
+      { id: 'radio-test', title: mark('Radio test'), detail: mark('For testing the nearby link'), href: '/radio', when: phoneUses('erevos') },
     ],
   },
 ];

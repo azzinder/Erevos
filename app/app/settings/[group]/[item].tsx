@@ -3,9 +3,10 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { openLeaf, SettingsCard, SettingsRow, settingsPlace } from '../../../components/settings-list';
+import { useModules } from '../../../lib/modules';
 import { Page, Text } from '../../../components/ui';
 import { t } from '../../../lib/i18n';
 import { findGroup, findItem, hasParts, partsHere } from '../../../lib/settings';
@@ -13,7 +14,9 @@ import { findGroup, findItem, hasParts, partsHere } from '../../../lib/settings'
 /** A setting's parts (lib/settings.ts), each opening on its screen alone. */
 export default function SettingsPartsScreen() {
   const { group, item: id } = useLocalSearchParams<{ group: string; item: string }>();
-  const [place] = useState(settingsPlace);
+  // Read again when a module is turned on or off (lib/modules.ts).
+  const modules = useModules();
+  const place = useMemo(() => settingsPlace(), [modules]);
   const item = findItem(findGroup(group), id);
   if (!item || !hasParts(item)) return <Page>{null}</Page>;
 

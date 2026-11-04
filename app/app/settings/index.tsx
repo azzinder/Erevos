@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
 import { LanguageSheet, languageTitle, openLeaf, SettingsCard, SettingsRow, settingsPlace } from '../../components/settings-list';
+import { useModules } from '../../lib/modules';
 import { Input, Page, Text } from '../../components/ui';
 import { LANG_LABELS, lang, t } from '../../lib/i18n';
 import { groupsHere, itemsHere, searchSettings } from '../../lib/settings';
@@ -14,7 +15,9 @@ import { space } from '../../theme/colors';
 
 /** Settings: the language, the groups of settings, and a search through all of them (lib/settings.ts). */
 export default function SettingsScreen() {
-  const [place] = useState(settingsPlace);
+  // Read again when a module is turned on or off (lib/modules.ts).
+  const modules = useModules();
+  const place = useMemo(() => settingsPlace(), [modules]);
   const [query, setQuery] = useState('');
   const [languages, setLanguages] = useState(false);
   const hits = useMemo(() => searchSettings(query, place, t), [query, place]);

@@ -42,7 +42,7 @@ import { forgetSpaceChats } from '../lib/space-chats';
 import { forgetPlaceChats } from '../lib/place-chats';
 import { startPlaceReceiver } from '../lib/place-receiver';
 import { startShellWatch } from '../lib/shell-watch';
-import { keepSpaceRunning, onSpaceGatedChange, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
+import { keepSpaceRunning, onSpaceGatedChange, restartSpaceRunning, setSpaceGated, spaceGated, stopSpaceRunning } from '../lib/space-running';
 import { watchStoppedPlaces } from '../lib/forget-me';
 import { relayStopped, setRelayStopped } from '../lib/relay';
 import { forgetSpare } from '../lib/spare';
@@ -57,6 +57,7 @@ import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { startLinkedAccounts } from '../lib/linked-accounts';
+import { loadModules, moduleOn, modulesChosen, onModulesChange, setModules, type Module } from '../lib/modules';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
@@ -66,7 +67,8 @@ import { PasswordGate } from '../lock/gate';
 import { prepareHidden } from '../lock/hidden';
 import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
-import { firstSpaceKey, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { Setup } from '../components/setup';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
 import { ensureStyleFonts } from '../theme/fonts';
@@ -89,6 +91,8 @@ let hiddenPrepared = false;
 
 type Phase =
   | { kind: 'loading' }
+  // Erevos's very first start: which modules to use, and what Android should allow them (components/setup.tsx).
+  | { kind: 'setup' }
   // `behind`: the space that goes on behind the password screen, until its password opens it again.
   | { kind: 'locked'; config: LockConfig; behind?: number }
   // `only`: the password was given for the SMS or the Contacts, which alone show; any other screen asks for it again.
@@ -193,6 +197,8 @@ export default function RootLayout() {
     // backup is restored too); whatever changes the lock waits for it.
     void hardenLock().catch(() => undefined);
     await loadLang();
+    // Which parts of Erevos run (lib/modules.ts): every one, until the owner chooses.
+    await loadModules();
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.
@@ -200,10 +206,23 @@ export default function RootLayout() {
     } else if (config.slots.length > 0) {
       await show(await loadLockScreenLook());
       setPhase({ kind: 'locked', config });
+    } else if (!modulesChosen() && (await firstStart())) {
+      // The very first start: the modules first, then the first space opens.
+      await show(await loadLockScreenLook());
+      setPhase({ kind: 'setup' });
     } else {
       await openSpace(0, false, await firstSpaceKey());
     }
   }, [openSpace, show]);
+
+  // The first start's modules were chosen: kept, then Erevos opens with them.
+  const setupDone = useCallback(
+    async (chosen: Module[]) => {
+      await setModules(chosen);
+      await start();
+    },
+    [start],
+  );
 
   // The password screen in front of the open space, which goes on behind it. Its contacts' names
   // leave the call screen, and a link Erevos came back with opens after the password; or `link`,
@@ -415,14 +434,14 @@ export default function RootLayout() {
       <ThemeProvider look={look} onChange={keepLook}>
         {/* A touch anywhere says the owner is there, for safety messages (lib/safety.ts). */}
         <View style={{ flex: 1 }} onTouchStart={() => ownerTouched()}>
-          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} onRetry={retry} />
+          <Shell lang={lang} phase={phase} error={error} lockState={lockState} onUnlock={unlocked} onRetry={retry} onSetup={(chosen) => setupDone(chosen).catch(fail)} />
         </View>
       </ThemeProvider>
     </KeyboardProvider>
   );
 }
 
-function Shell({ lang, phase, error, lockState, onUnlock, onRetry }: {
+function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
   lang: Lang;
   phase: Phase;
   error: string | null;
@@ -430,6 +449,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry }: {
   onUnlock: (space: { space: number; key: Uint8Array }) => Promise<void>;
   /** Starts again after Erevos could not open: from the password, as when it starts. */
   onRetry: () => void;
+  /** The first start's setup chose these modules. */
+  onSetup: (chosen: Module[]) => void;
 }) {
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();
@@ -455,6 +476,15 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry }: {
     return (
       <ScreenBackdrop>
         <View style={{ flex: 1, backgroundColor: colors.ground }} />
+        {bar}
+      </ScreenBackdrop>
+    );
+  }
+  if (phase.kind === 'setup') {
+    return (
+      <ScreenBackdrop>
+        <Setup key={lang} onDone={onSetup} />
+        <AlertHost />
         {bar}
       </ScreenBackdrop>
     );
@@ -654,29 +684,32 @@ function OpenLink() {
 // OS a helper waits at the relay for it then (lib/shell-watch.ts). All of it stops when the space
 // closes, not with the screens (lib/space-running.ts).
 function Receiver({ space }: { space: number }) {
-  useEffect(
-    () =>
-      keepSpaceRunning(space, () => {
-        // A stopped space (lib/forget-me.ts) waits at no relay: its queues there are gone.
-        const relays = relayStopped() ? [watchStoppedPlaces()] : [startReceiver(), startPlaceReceiver(), startPublicDoors(), startShellWatch()];
-        return [
-          ...relays,
-          startNearbyLinks(),
-          startSmsWay(),
-          startSmsLater(),
-          watchKnownNames(),
-          startBackground(),
-          followAppShown(),
-          watchCalls(),
-          startMatrix(),
-          startXmpp(),
-          startNostrChats(),
-          startLinkedAccounts(),
-          watchPlaceNetworks(),
-        ];
-      }),
-    [space],
-  );
+  useEffect(() => {
+    keepSpaceRunning(space, () => {
+      // Only what the modules on use runs (lib/modules.ts): Erevos's own chats and calls, its
+      // phone's names, the SMS sent for later, and the Matrix, XMPP and Nostr chats.
+      const erevos = moduleOn('erevos');
+      const chats = erevos || moduleOn('nostr') || moduleOn('matrix') || moduleOn('xmpp');
+      // A stopped space (lib/forget-me.ts) waits at no relay: its queues there are gone.
+      const relays = !erevos ? [] : relayStopped() ? [watchStoppedPlaces()] : [startReceiver(), startPlaceReceiver(), startPublicDoors(), startShellWatch()];
+      return [
+        ...relays,
+        ...(erevos ? [startNearbyLinks(), startSmsWay(), startLinkedAccounts(), watchPlaceNetworks()] : []),
+        ...(moduleOn('sms') ? [startSmsLater()] : []),
+        ...(moduleOn('phone') ? [watchKnownNames()] : []),
+        // Receiving and ringing in the background, for what brings messages and calls; the phone's
+        // calls and the SMS come through Android itself.
+        ...(chats ? [startBackground()] : []),
+        followAppShown(),
+        ...(erevos || moduleOn('matrix') || moduleOn('xmpp') ? [watchCalls()] : []),
+        ...(moduleOn('matrix') ? [startMatrix()] : []),
+        ...(moduleOn('xmpp') ? [startXmpp()] : []),
+        ...(moduleOn('nostr') ? [startNostrChats()] : []),
+      ];
+    });
+    // A module turned on or off: what runs follows it.
+    return onModulesChange(() => restartSpaceRunning());
+  }, [space]);
   return null;
 }
 
