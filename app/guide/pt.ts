@@ -3161,26 +3161,27 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   PIN novo a deixa, e dê a ela uma fila própria no relay em **Para usuários avançados** lá; depois toque em
   **Dispositivos conectados** abaixo da lista dela, e em **Conectar ao meu celular**. No celular, abra a mesma posição
   com o PIN dela, toque em **Dispositivos conectados** abaixo da lista dela e escaneie o código do computador com a
-  câmera enquanto a posição continua aberta, ou cole lá; depois como acima. A posição passa a ter uma conexão própria,
-  com chaves próprias e sua própria lista de dispositivos, assinada pela própria conta dela, então os contatos dela
-  nesta versão escrevem diretamente para a posição do computador. As mensagens, contatos, grupos, chamadas, fotos e
-  arquivos e a Conversa comigo dela vão entre as duas posições como os do espaço entre dispositivos conectados, e
-  também as próprias contas Matrix, XMPP e Nostr dela, com **Contas Matrix, XMPP e Nostr também** ou **Enviar as
-  contas**. Nada disso aparece no espaço, nas telas dele ou nos dispositivos conectados dele, e a conexão do espaço
-  nunca leva nada de uma posição: o que uma posição guarda da conexão dela é criptografado com a própria chave dela,
-  entre valores feitos para nada para as outras posições, num arquivo do mesmo tamanho haja posição conectada ou
-  nenhuma. A conexão funciona enquanto a posição está aberta, e também fechada se **Receber quando fechadas** estiver
-  ativado; fechada sem isso, nada dela se sincroniza, e o que chega espera no relay (14 dias) até ela abrir, dos dois
-  lados. No computador, novos grupos e chamadas em grupo ficam no celular, uma conversa não pode ser movida para a
-  posição nem para fora dela (mova pelo celular), e uma chamada atendida lá para o toque do celular só enquanto a
-  posição está aberta no celular. As conversas ocultas escrevem para os dispositivos de um contato nesta versão como
-  as suas outras conversas, então esses as recebem com o celular do contato desligado, e para o contato elas parecem
-  as conversas de um celular que nunca conectou um dispositivo. Uma conversa movida para as conversas ocultas no
-  celular sai do computador. Movida para as conversas ocultas, ou delas para as suas conversas, uma conversa escreve
-  só para o celular do contato, como faz um Erevos mais antigo, até voltar para onde foi criada: o Erevos do contato é
+  câmera enquanto a posição continua aberta, ou cole lá; depois como acima. Um código mostrado numa posição conecta só
+  uma posição, e o de um espaço só um espaço: lido pelo outro, ele simplesmente some, e **Conectar ao meu celular** começa de novo no computador. A
+  posição passa a ter uma conexão própria, com chaves próprias e sua própria lista de dispositivos, assinada pela
+  própria conta dela, então os contatos dela nesta versão escrevem diretamente para a posição do computador. As
+  mensagens, contatos, grupos, chamadas, fotos e arquivos e a Conversa comigo dela vão entre as duas posições como os do
+  espaço entre dispositivos conectados, e também as próprias contas Matrix, XMPP e Nostr dela, com **Contas Matrix, XMPP
+  e Nostr também** ou **Enviar as contas**. Nada disso aparece no espaço, nas telas dele ou nos dispositivos conectados
+  dele, e a conexão do espaço nunca leva nada de uma posição: o que uma posição guarda da conexão dela é criptografado
+  com a própria chave dela, entre valores feitos para nada para as outras posições, num arquivo do mesmo tamanho haja
+  posição conectada ou nenhuma. A conexão funciona enquanto a posição está aberta, e também fechada se **Receber quando
+  fechadas** estiver ativado; fechada sem isso, nada dela se sincroniza, e o que chega espera no relay (14 dias) até ela
+  abrir, dos dois lados. No computador, novos grupos e chamadas em grupo ficam no celular, uma conversa não pode ser
+  movida para a posição nem para fora dela (mova pelo celular), e uma chamada atendida lá para o toque do celular só
+  enquanto a posição está aberta no celular. As conversas ocultas escrevem para os dispositivos de um contato nesta
+  versão como as suas outras conversas, então esses as recebem com o celular do contato desligado, e para o contato elas
+  parecem as conversas de um celular que nunca conectou um dispositivo. Uma conversa movida para as conversas ocultas no
+  celular sai do computador. Movida para as conversas ocultas, ou delas para as suas conversas, uma conversa escreve só
+  para o celular do contato, como faz um Erevos mais antigo, até voltar para onde foi criada: o Erevos do contato é
   avisado primeiro, então os dispositivos dele param de escrever para os seus, e ele pode perceber por isso que a
-  conversa deixou de saber de dispositivos conectados: se ela lhe deu a lista dos seus dispositivos, que ela foi para
-  as conversas ocultas. Um espaço que uma segunda senha abre só conecta de dentro dele, a dispositivos próprios.
+  conversa deixou de saber de dispositivos conectados: se ela lhe deu a lista dos seus dispositivos, que ela foi para as
+  conversas ocultas. Um espaço que uma segunda senha abre só conecta de dentro dele, a dispositivos próprios.
 - **Trazer as mensagens de novo**, no celular, envia de novo um período do histórico, com as reações, fixações, votos
   e estrelas dele; o que o computador já tem não é guardado duas vezes.
 - **Matrix, XMPP e Nostr**: com **Contas Matrix, XMPP e Nostr também** (ligado no início), o computador entra nas

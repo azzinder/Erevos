@@ -565,11 +565,12 @@ export class Links implements Link, TakenFiles {
     return next;
   }
 
-  // Work a message brought, one after another, after the turn that brought it.
+  // Work a message brought, one after another, after the turn that brought it; none once closed,
+  // so a place's links do nothing more on its relay once it closes.
   private act(call: () => Promise<unknown>): void {
     this.acts = this.acts
       .catch(() => undefined)
-      .then(call)
+      .then(() => (this.closed ? undefined : call()))
       .catch(() => undefined);
   }
 
@@ -844,6 +845,14 @@ export class Links implements Link, TakenFiles {
     }
     const said = this.parts.take('answer', opened.plaintext);
     if (said?.k !== 'hello' || said.secret !== offer.secret || !said.at) return { kind: 'taken' };
+    // A code shown in hidden chats links only hidden chats, and a space's only a space, whichever
+    // the phone had open when it read the code: its own camera may hand it to the other. The code
+    // goes, and the device shows a new one.
+    if ((said.h === 1) !== (this.pocket !== null)) {
+      await this.save({ ...this.data, offer: null });
+      this.announce();
+      return { kind: 'taken' };
+    }
     const phone = await core.conversationPeer(opened.conversation);
     const own = await core.accountIdentity(fromBase64(offer.account));
     const code = linkSafetyCode(await core.safetyNumber(own, phone));
@@ -1432,6 +1441,12 @@ export class Links implements Link, TakenFiles {
   }
 
   /** On the device to link: the code it shows, while it is good. */
+  /** On the device to link: whether a code is shown still, not gone since (refused, or too old). */
+  offered(): boolean {
+    const offer = this.data.offer;
+    return !!offer && Date.now() - offer.made <= OFFER_LASTS;
+  }
+
   async shownOffer(): Promise<string | null> {
     const offer = this.data.offer;
     if (!offer || Date.now() - offer.made > OFFER_LASTS) return null;
@@ -1504,7 +1519,9 @@ export class Links implements Link, TakenFiles {
     if (!here) throw new Error(t('Type the relay address in Relay first: linked devices reach this phone through it.'));
     const now = Date.now();
     const key = newPacketKey();
-    const hello = encodeOne({ k: 'hello', secret: pending.code.secret, name: cleanDeviceName(phone), account: this.chats.e2e.identityHex() }, here.place, key)!;
+    // Whether this is a space or hidden chats, always said, at the same size: the device takes the
+    // phone only from the same kind (answered).
+    const hello = encodeOne({ k: 'hello', secret: pending.code.secret, name: cleanDeviceName(phone), account: this.chats.e2e.identityHex(), h: this.pocket === null ? 0 : 1 }, here.place, key)!;
     const started = await core.startConversation(pending.account, pending.bundle, hello);
     const { senderHex, relayUrl, relayKey: rk, name } = pending.code;
     const peer: Peer = {
@@ -3503,7 +3520,17 @@ let forgotten = 0;
 const forgottenAt = new Map<string, number>();
 const forgetCount = (at: string) => `${forgotten}.${forgottenAt.get(at) ?? 0}`;
 
+// Whether `space` is still the one open: a place of a space closed meanwhile links no more.
+const spaceOpen = (space: number) => {
+  try {
+    return currentSpace().space === space;
+  } catch {
+    return false;
+  }
+};
+
 joinPlaceChats(async (chats, space, pocket, key) => {
+  if (!spaceOpen(space)) return;
   const at = placeId(space, pocket);
   const before = forgetCount(at);
   places.get(at)?.close();
@@ -3512,7 +3539,7 @@ joinPlaceChats(async (chats, space, pocket, key) => {
   const groupsAt = placeGroupsAt(space, pocket, key);
   const groups = core.canGroup() ? await groupsAt.groups().catch(() => null) : null;
   const links = await Links.open(space, key, chats, TICK, pocket);
-  if (forgetCount(at) !== before) {
+  if (forgetCount(at) !== before || !spaceOpen(space)) {
     links.close();
     return;
   }

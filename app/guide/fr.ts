@@ -3371,29 +3371,31 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   emplacement avec son PIN, neuf et vide comme le laisse un nouveau PIN, et donne-lui sa propre file d’attente sur le
   relais sous **Pour les utilisateurs avancés** ; puis appuie sur **Appareils associés** sous sa liste, et sur
   **Associer à mon téléphone**. Sur le téléphone, ouvre le même emplacement avec son PIN, appuie sur **Appareils
-  associés** sous sa liste, et scanne le code de l’ordinateur avec l’appareil photo tant que l’emplacement reste
-  ouvert, ou colle-le là ; puis comme plus haut. L’emplacement a alors sa propre association, avec ses propres clés et
-  sa propre liste d’appareils, signée par son propre compte, si bien que ses contacts sur cette version écrivent
-  directement à l’emplacement de l’ordinateur. Ses messages, contacts, groupes, appels, photos et fichiers et sa
-  Discussion avec moi-même vont entre les deux emplacements comme ceux de l’espace entre appareils associés, et de
-  même ses propres comptes Matrix, XMPP et Nostr, avec **Les comptes Matrix, XMPP et Nostr aussi** ou **Envoyer les
-  comptes**. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses appareils associés, et l’association de
-  l’espace n’emporte jamais rien d’un emplacement : ce qu’un emplacement garde de son association est chiffré avec sa
-  propre clé, parmi des valeurs faites pour rien pour les autres emplacements, dans un fichier de même taille qu’un
-  emplacement soit associé ou aucun. L’association fonctionne tant que l’emplacement est ouvert, et fermé aussi si
-  **Recevoir une fois fermées** est activé ; fermé sans cela, rien de lui ne se synchronise, et ce qui arrive attend
-  sur le relais (14 jours) jusqu’à ce qu’il s’ouvre, des deux côtés. Sur l’ordinateur, les nouveaux groupes et les
-  appels de groupe restent sur le téléphone, une discussion ne peut pas être déplacée dans l’emplacement ni en sortir
-  (déplace-la sur le téléphone), et un appel pris là-bas n’arrête la sonnerie du téléphone que tant que l’emplacement
-  est ouvert sur le téléphone. Les discussions masquées écrivent aux appareils d’un contact sur cette version comme le
-  font tes autres discussions, si bien que ceux-ci les reçoivent même avec le téléphone du contact éteint, et pour le
-  contact elles ressemblent aux discussions d’un téléphone qui n’a jamais associé d’appareil. Une discussion déplacée
-  dans les discussions masquées sur le téléphone quitte l’ordinateur. Déplacée dans les discussions masquées, ou hors
-  d’elles vers tes discussions, une discussion n’écrit qu’au téléphone du contact, comme le fait un Erevos plus
-  ancien, jusqu’à ce qu’elle retourne là où elle a été créée : son Erevos est prévenu d’abord, pour que ses appareils
-  cessent d’écrire aux tiens, et il peut en déduire que la discussion a cessé de connaître les appareils associés : si
-  elle lui avait donné la liste de tes appareils, qu’elle est partie dans les discussions masquées. Un espace qu’ouvre
-  un second mot de passe ne s’associe que de l’intérieur, à des appareils à lui.
+  associés** sous sa liste, et scanne le code de l’ordinateur avec l’appareil photo tant que l’emplacement reste ouvert,
+  ou colle-le là ; puis comme plus haut. Un code affiché dans un emplacement n’associe qu’un emplacement, et celui d’un
+  espace qu’un espace : lu par l’autre, il disparaît simplement, et **Associer à mon téléphone** recommence sur l’ordinateur. L’emplacement a
+  alors sa propre association, avec ses propres clés et sa propre liste d’appareils, signée par son propre compte, si
+  bien que ses contacts sur cette version écrivent directement à l’emplacement de l’ordinateur. Ses messages, contacts,
+  groupes, appels, photos et fichiers et sa Discussion avec moi-même vont entre les deux emplacements comme ceux de
+  l’espace entre appareils associés, et de même ses propres comptes Matrix, XMPP et Nostr, avec **Les comptes Matrix,
+  XMPP et Nostr aussi** ou **Envoyer les comptes**. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses
+  appareils associés, et l’association de l’espace n’emporte jamais rien d’un emplacement : ce qu’un emplacement garde
+  de son association est chiffré avec sa propre clé, parmi des valeurs faites pour rien pour les autres emplacements,
+  dans un fichier de même taille qu’un emplacement soit associé ou aucun. L’association fonctionne tant que
+  l’emplacement est ouvert, et fermé aussi si **Recevoir une fois fermées** est activé ; fermé sans cela, rien de lui ne
+  se synchronise, et ce qui arrive attend sur le relais (14 jours) jusqu’à ce qu’il s’ouvre, des deux côtés. Sur
+  l’ordinateur, les nouveaux groupes et les appels de groupe restent sur le téléphone, une discussion ne peut pas être
+  déplacée dans l’emplacement ni en sortir (déplace-la sur le téléphone), et un appel pris là-bas n’arrête la sonnerie
+  du téléphone que tant que l’emplacement est ouvert sur le téléphone. Les discussions masquées écrivent aux appareils
+  d’un contact sur cette version comme le font tes autres discussions, si bien que ceux-ci les reçoivent même avec le
+  téléphone du contact éteint, et pour le contact elles ressemblent aux discussions d’un téléphone qui n’a jamais
+  associé d’appareil. Une discussion déplacée dans les discussions masquées sur le téléphone quitte l’ordinateur.
+  Déplacée dans les discussions masquées, ou hors d’elles vers tes discussions, une discussion n’écrit qu’au téléphone
+  du contact, comme le fait un Erevos plus ancien, jusqu’à ce qu’elle retourne là où elle a été créée : son Erevos est
+  prévenu d’abord, pour que ses appareils cessent d’écrire aux tiens, et il peut en déduire que la discussion a cessé de
+  connaître les appareils associés : si elle lui avait donné la liste de tes appareils, qu’elle est partie dans les
+  discussions masquées. Un espace qu’ouvre un second mot de passe ne s’associe que de l’intérieur, à des appareils à
+  lui.
 - **Transférer de nouveau les messages**, sur le téléphone, renvoie une période de l’historique, avec ses réactions,
   épingles, votes et étoiles ; ce que l’ordinateur a déjà n’est pas gardé deux fois.
 - **Matrix, XMPP et Nostr** : avec **Les comptes Matrix, XMPP et Nostr aussi** (activé au départ), l’ordinateur se

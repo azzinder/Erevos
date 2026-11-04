@@ -3188,27 +3188,28 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   cuenta, desde dentro. Para un lugar de chats ocultos: en el ordenador, abre ese lugar con su PIN, nuevo y vacío como
   lo deja un PIN nuevo, y dale una cola propia en el relay en **Para usuarios avanzados** allí; luego toca
   **Dispositivos vinculados** bajo su lista, y **Vincular a mi teléfono**. En el teléfono, abre el mismo lugar con su
-  PIN, toca **Dispositivos vinculados** bajo su lista y escanea el código del ordenador con la cámara mientras el
-  lugar sigue abierto, o pégalo allí; luego como arriba. El lugar tiene entonces un vínculo propio, con claves propias
-  y su propia lista de dispositivos, firmada por su propia cuenta, así que sus contactos con esta versión escriben
-  directamente al lugar del ordenador. Sus mensajes, contactos, grupos, llamadas, fotos y archivos y su Chat conmigo
-  van entre los dos lugares como los del espacio entre dispositivos vinculados, y también sus propias cuentas de
-  Matrix, XMPP y Nostr, con **También cuentas de Matrix, XMPP y Nostr** o **Enviar las cuentas**. Nada de esto se ve
-  en el espacio, en sus pantallas ni en sus dispositivos vinculados, y el vínculo del espacio nunca lleva nada de un
-  lugar: lo que un lugar guarda de su vínculo va cifrado con su propia clave, entre valores hechos para nada para los
-  demás lugares, en un archivo del mismo tamaño se vincule algún lugar o ninguno. El vínculo funciona mientras el
-  lugar está abierto, y también cerrado si **Recibir estando cerrados** está activado; cerrado sin eso, nada de él se
-  sincroniza, y lo que llega espera en el relay (14 días) hasta que se abre, en los dos lados. En el ordenador, los
-  grupos nuevos y las llamadas de grupo se quedan en el teléfono, un chat no puede moverse al lugar ni sacarse de él
-  (muévelo en el teléfono), y una llamada respondida allí hace callar al teléfono solo mientras el lugar está abierto
-  en el teléfono. Los chats ocultos escriben a los dispositivos de un contacto con esta versión como tus otros chats,
-  así que estos los reciben con el teléfono del contacto apagado, y para el contacto parecen los chats de un teléfono
-  que nunca vinculó un dispositivo. Un chat movido a los chats ocultos en el teléfono sale del ordenador. Movido a los
-  chats ocultos, o sacado de ellos a tus chats, un chat escribe solo al teléfono del contacto, como hace un Erevos más
-  antiguo, hasta que vuelve a donde se creó: a su Erevos se le dice antes, para que sus dispositivos dejen de escribir
-  a los tuyos, y por ello puede saber que el chat dejó de conocer los dispositivos vinculados: si le había dado la
-  lista de tus dispositivos, que pasó a los chats ocultos. Un espacio que abre una segunda contraseña solo se vincula
-  desde dentro, a dispositivos propios.
+  PIN, toca **Dispositivos vinculados** bajo su lista y escanea el código del ordenador con la cámara mientras el lugar
+  sigue abierto, o pégalo allí; luego como arriba. Un código mostrado en un lugar solo vincula un lugar, y el de un
+  espacio solo un espacio: si lo lee el otro, simplemente se pierde, y **Vincular a mi teléfono** empieza de nuevo en el ordenador. El lugar tiene
+  entonces un vínculo propio, con claves propias y su propia lista de dispositivos, firmada por su propia cuenta, así
+  que sus contactos con esta versión escriben directamente al lugar del ordenador. Sus mensajes, contactos, grupos,
+  llamadas, fotos y archivos y su Chat conmigo van entre los dos lugares como los del espacio entre dispositivos
+  vinculados, y también sus propias cuentas de Matrix, XMPP y Nostr, con **También cuentas de Matrix, XMPP y Nostr** o
+  **Enviar las cuentas**. Nada de esto se ve en el espacio, en sus pantallas ni en sus dispositivos vinculados, y el
+  vínculo del espacio nunca lleva nada de un lugar: lo que un lugar guarda de su vínculo va cifrado con su propia clave,
+  entre valores hechos para nada para los demás lugares, en un archivo del mismo tamaño se vincule algún lugar o
+  ninguno. El vínculo funciona mientras el lugar está abierto, y también cerrado si **Recibir estando cerrados** está
+  activado; cerrado sin eso, nada de él se sincroniza, y lo que llega espera en el relay (14 días) hasta que se abre, en
+  los dos lados. En el ordenador, los grupos nuevos y las llamadas de grupo se quedan en el teléfono, un chat no puede
+  moverse al lugar ni sacarse de él (muévelo en el teléfono), y una llamada respondida allí hace callar al teléfono solo
+  mientras el lugar está abierto en el teléfono. Los chats ocultos escriben a los dispositivos de un contacto con esta
+  versión como tus otros chats, así que estos los reciben con el teléfono del contacto apagado, y para el contacto
+  parecen los chats de un teléfono que nunca vinculó un dispositivo. Un chat movido a los chats ocultos en el teléfono
+  sale del ordenador. Movido a los chats ocultos, o sacado de ellos a tus chats, un chat escribe solo al teléfono del
+  contacto, como hace un Erevos más antiguo, hasta que vuelve a donde se creó: a su Erevos se le dice antes, para que
+  sus dispositivos dejen de escribir a los tuyos, y por ello puede saber que el chat dejó de conocer los dispositivos
+  vinculados: si le había dado la lista de tus dispositivos, que pasó a los chats ocultos. Un espacio que abre una
+  segunda contraseña solo se vincula desde dentro, a dispositivos propios.
 - **Volver a traer los mensajes**, en el teléfono, vuelve a enviar un periodo del historial, con sus reacciones,
   mensajes fijados, votos y estrellas; lo que el ordenador ya tiene no se guarda dos veces.
 - **Matrix, XMPP y Nostr**: con **También cuentas de Matrix, XMPP y Nostr** (activado al principio), el ordenador

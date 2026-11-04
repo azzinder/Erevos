@@ -2925,27 +2925,28 @@ The chats then come to the computer, and after them the messages chosen.
   message the phone could not send to the group (one closed meanwhile, say) shows on the computer as **Not sent by the
   phone**. Making a group, public groups and group calls stay on the phone for now.
 - **Hidden chats and second passwords** never go with the space's link: each links on its own, from inside it. For a
-  place of hidden chats: on the computer, open that place with its PIN, new and empty as a new PIN sets it, and give
-  it a relay queue of its own under **For advanced users** there; then tap **Linked devices** under its list, and
-  **Link to my phone**. On the phone, open the same place with its PIN, tap **Linked devices** under its list, and
-  scan the computer's code with the camera while the place stays open, or paste it there; then as above. The place
-  then has a link of its own, with keys of its own and its own list of devices, signed by its own account, so its
+  place of hidden chats: on the computer, open that place with its PIN, new and empty as a new PIN sets it, and give it
+  a relay queue of its own under **For advanced users** there; then tap **Linked devices** under its list, and **Link to
+  my phone**. On the phone, open the same place with its PIN, tap **Linked devices** under its list, and scan the
+  computer's code with the camera while the place stays open, or paste it there; then as above. A code shown in a place
+  links only a place, and a space's only a space: read by the other, it just goes, and **Link to my phone** starts again on the computer. The
+  place then has a link of its own, with keys of its own and its own list of devices, signed by its own account, so its
   contacts on this version write to the computer's place directly. Its messages, contacts, groups, calls, photos and
   files and its Chat with myself go between the two places as the space's go between linked devices, and so do its own
-  Matrix, XMPP and Nostr accounts, with **Matrix, XMPP and Nostr accounts too** or **Send the accounts**. Nothing of
-  it shows in the space, on its screens or on its linked devices, and the space's link never carries anything of a
-  place: what a place keeps of its link is encrypted with its own key, among values made for nothing for the other
-  places, in a file of the same size whether any place links or none. The link runs while the place is open, and while
-  it is closed too if **Receive while closed** is on; closed with it off, nothing of it syncs, and what comes waits on
-  the relay (14 days) until it opens, on either side. On the computer, new groups and group calls stay on the phone, a
-  chat cannot be moved into the place or out of it (move it on the phone), and a call answered there stops the phone's
-  ring only while the place is open on the phone. Hidden chats write to the devices of a contact on this version as
-  your other chats do, so those get them with the contact's phone off, and to the contact they look like the chats of
-  a phone that never linked a device. A chat moved into hidden chats on the phone leaves the computer. Moved into
-  hidden chats, or out of them into your chats, a chat writes to the contact's phone only, as an older Erevos does,
-  until it goes back to where it was made: their Erevos is told first, so their devices stop writing to yours, and
-  they can tell from it that the chat stopped knowing of linked devices: if it gave them the list of your devices,
-  that it went into hidden chats. A space a second password opens links only from inside it, to devices of its own.
+  Matrix, XMPP and Nostr accounts, with **Matrix, XMPP and Nostr accounts too** or **Send the accounts**. Nothing of it
+  shows in the space, on its screens or on its linked devices, and the space's link never carries anything of a place:
+  what a place keeps of its link is encrypted with its own key, among values made for nothing for the other places, in a
+  file of the same size whether any place links or none. The link runs while the place is open, and while it is closed
+  too if **Receive while closed** is on; closed with it off, nothing of it syncs, and what comes waits on the relay (14
+  days) until it opens, on either side. On the computer, new groups and group calls stay on the phone, a chat cannot be
+  moved into the place or out of it (move it on the phone), and a call answered there stops the phone's ring only while
+  the place is open on the phone. Hidden chats write to the devices of a contact on this version as your other chats do,
+  so those get them with the contact's phone off, and to the contact they look like the chats of a phone that never
+  linked a device. A chat moved into hidden chats on the phone leaves the computer. Moved into hidden chats, or out of
+  them into your chats, a chat writes to the contact's phone only, as an older Erevos does, until it goes back to where
+  it was made: their Erevos is told first, so their devices stop writing to yours, and they can tell from it that the
+  chat stopped knowing of linked devices: if it gave them the list of your devices, that it went into hidden chats. A
+  space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
   and stars; what the computer has already is not kept twice.
 - **Matrix, XMPP and Nostr**: with **Matrix, XMPP and Nostr accounts too** (on at first), the computer signs in to

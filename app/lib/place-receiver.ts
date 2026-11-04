@@ -421,6 +421,9 @@ async function lookPlace(run: Run, stop: () => boolean): Promise<void> {
   if (!hasCore()) return;
   const { space, pocket, key, state } = run;
   const data = await loadHiddenData(space, pocket, key);
+  // Stopped meanwhile (receive while closed turned off, or the space closed): its chats, and their
+  // links to its devices, are not opened again.
+  if (stop()) return;
   const chats = await placeChats(space, pocket, key);
   if (!run.chats) {
     run.chats = chats;

@@ -72,7 +72,7 @@ export type FieldTimes = Partial<Record<(typeof TIMED)[number] | 'added', number
 export type Json = Record<string, unknown>;
 
 export type Envelope =
-  | { k: 'hello'; secret: string; name: string; account: string }
+  | { k: 'hello'; secret: string; name: string; account: string; h?: 0 | 1 }
   | { k: 'ready'; name: string }
   | { k: 'contacts'; all: boolean; list: Synced[]; gone: string[]; link?: string }
   | { k: 'in'; c: string; m: Json }
@@ -391,7 +391,10 @@ export function checkedGiven(value: unknown, kept = false): GivenAccounts {
 function checkedEnvelope(v: Json): Envelope | null {
   switch (v.k) {
     case 'hello':
-      return isHex(v.secret, 32) && isText(v.name) && isHex(v.account, 64) ? { k: 'hello', secret: v.secret, name: v.name, account: v.account } : null;
+      // `h`: whether the phone links from hidden chats (1) or a space (0); none from before 6.0.0, a space's.
+      return isHex(v.secret, 32) && isText(v.name) && isHex(v.account, 64)
+        ? { k: 'hello', secret: v.secret, name: v.name, account: v.account, ...(v.h === 1 || v.h === 0 ? { h: v.h } : {}) }
+        : null;
     case 'ready':
       return { k: 'ready', name: isText(v.name) ? v.name : '' };
     case 'contacts': {

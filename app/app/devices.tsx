@@ -108,6 +108,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     setAnswer(l.answerCode());
     setCopied(l.copied());
     setHere(l.accountsHere());
+    // A code gone meanwhile, as when a phone's space read a place's: Link to my phone starts again.
+    if (!l.offered()) setOffer(null);
   };
 
   useEffect(() => (hidden ? enterHiddenScreen() : undefined), [hidden]);

@@ -18,8 +18,8 @@ import { sealedFile, type Holder } from './sealed-file';
 // hidden place links on its own (docs/multi-device.md, phase 5), and keeps its links the same way,
 // in a value of its own sealed with its key: every place of every space has one in the file,
 // written or not, of the same size, so neither the file nor the space's value says which places
-// link. The file is there whichever do: each space writes its own value as it opens, should it find
-// none it opens (keepDevicesFile), as the copies' file is kept (lock/fanout-data.ts). A backup leaves
+// link. The file is there whichever do: each space writes its own value again as it opens
+// (keepDevicesFile), so neither its being there nor its time says that anything links. A backup leaves
 // this file out, and restoring one leaves it as it is: on another phone there is none, and the
 // devices are linked again.
 
@@ -314,7 +314,7 @@ const store = sealedFile({ name: FILE, empty: EMPTY_DEVICES, checked, block: BLO
 export const loadDevicesData = (space: number, key: Uint8Array, holder: Holder = 'space') => store.load(holder, space, key);
 export const saveDevicesData = (space: number, key: Uint8Array, data: DevicesData, holder: Holder = 'space') => store.save(holder, space, key, data);
 
-/** Writes a space's links as they are when its value in FILE does not open with its key: FILE is not there yet, or another space wrote it first. */
+/** Writes a space's links again, as `data` has them as it opens, so FILE is there and its time says only that a space was open. */
 export async function keepDevicesFile(space: number, key: Uint8Array, data: DevicesData): Promise<void> {
-  if (!(await store.opens('space', space, key))) await store.save('space', space, key, data);
+  await store.save('space', space, key, data);
 }

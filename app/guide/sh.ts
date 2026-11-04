@@ -3065,17 +3065,18 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   dajte mu vlastiti red na relayu pod **Za napredne korisnike** tamo; zatim dodirnite **Povezani uređaji** ispod
   njegovog popisa, i **Poveži s mojim telefonom**. Na telefonu otvorite isto mjesto njegovim PIN-om, dodirnite
   **Povezani uređaji** ispod njegovog popisa i skenirajte kod računara kamerom dok mjesto ostaje otvoreno, ili ga tamo
-  zalijepite; zatim kao gore. Mjesto tada ima vlastitu vezu, s vlastitim ključevima i vlastitim popisom uređaja, koji
-  potpisuje njegov vlastiti račun, pa njegovi kontakti s ovom verzijom pišu izravno na mjesto računara. Njegove
-  poruke, kontakti, grupe, pozivi, fotografije i datoteke i njegov Razgovor sa sobom idu između dva mjesta kao oni
-  prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, s **I računi Matrix, XMPP
-  i Nostr** ili **Pošalji račune**. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na njegovim povezanim
-  uređajima, a veza prostora nikad ne nosi ništa od nekog mjesta: ono što mjesto čuva o svojoj vezi šifrirano je
-  njegovim vlastitim ključem, među vrijednostima napravljenim ni za šta za ostala mjesta, u datoteci iste veličine
-  bilo da je neko mjesto povezano ili nijedno. Veza radi dok je mjesto otvoreno, i dok je zatvoreno ako je **Primanje
-  dok su zatvoreni** uključeno; zatvoreno bez toga, ništa od njega se ne usklađuje, a ono što stiže čeka na relayu (14
-  dana) dok se ne otvori, na obje strane. Na računaru nove grupe i grupni pozivi ostaju na telefonu, razgovor se ne
-  može premjestiti u mjesto niti iz njega (premjestite ga na telefonu), a poziv javljen tamo zaustavlja zvonjenje
+  zalijepite; zatim kao gore. Kod prikazan na mjestu povezuje samo mjesto, a kod prostora samo prostor: ako ga pročita
+  drugo, jednostavno nestane, a **Poveži s mojim telefonom** počinje ispočetka na računaru. Mjesto tada ima vlastitu vezu, s vlastitim ključevima i vlastitim
+  popisom uređaja, koji potpisuje njegov vlastiti račun, pa njegovi kontakti s ovom verzijom pišu izravno na mjesto
+  računara. Njegove poruke, kontakti, grupe, pozivi, fotografije i datoteke i njegov Razgovor sa sobom idu između dva
+  mjesta kao oni prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, s **I računi
+  Matrix, XMPP i Nostr** ili **Pošalji račune**. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na
+  njegovim povezanim uređajima, a veza prostora nikad ne nosi ništa od nekog mjesta: ono što mjesto čuva o svojoj vezi
+  šifrirano je njegovim vlastitim ključem, među vrijednostima napravljenim ni za šta za ostala mjesta, u datoteci iste
+  veličine bilo da je neko mjesto povezano ili nijedno. Veza radi dok je mjesto otvoreno, i dok je zatvoreno ako je
+  **Primanje dok su zatvoreni** uključeno; zatvoreno bez toga, ništa od njega se ne usklađuje, a ono što stiže čeka na
+  relayu (14 dana) dok se ne otvori, na obje strane. Na računaru nove grupe i grupni pozivi ostaju na telefonu, razgovor
+  se ne može premjestiti u mjesto niti iz njega (premjestite ga na telefonu), a poziv javljen tamo zaustavlja zvonjenje
   telefona samo dok je mjesto otvoreno na telefonu. Skriveni razgovori pišu uređajima kontakta s ovom verzijom kao i
   vaši ostali razgovori, pa ih oni dobijaju i kad je telefon kontakta isključen, a kontaktu izgledaju kao razgovori
   telefona koji nikad nije povezao uređaj. Razgovor premješten u skrivene razgovore na telefonu napušta računar.

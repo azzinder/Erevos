@@ -3568,6 +3568,14 @@ test('a hidden place links on its own: its own link and list, messages both ways
   };
   const hiddenPixel = await place(0, 2);
   const hiddenDell = await place(1, 0);
+  // A code shown in the computer's hidden chats, read by another phone's space, as its own camera
+  // may hand it there: the computer takes nothing of a space, and its code goes.
+  const stray = await phone(4);
+  await stray.links.prepare(await hiddenDell.links.makeOffer('DELL'));
+  await stray.links.link({ since: 0, files: false }, 'Stray');
+  await take(hiddenDell);
+  const refused = await loadDevicesData(1, hiddenDell.key, hiddenHolder(0));
+  assert.deepEqual([refused.offer, refused.answer, refused.primary], [null, null, null]);
   const placeAccount = hiddenPixel.chats.e2e.identityHex();
   // Carol, a contact of the phone's hidden chats only.
   const carol = await phone(3);

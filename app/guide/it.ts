@@ -3197,31 +3197,32 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   messaggio che il telefono non ha potuto inviare al gruppo (uno chiuso nel frattempo, per esempio) appare sul computer
   come **Non inviato dal telefono**. Creare un gruppo, i gruppi pubblici e le chiamate di gruppo restano per ora sul
   telefono.
-- **Le chat nascoste e le seconde password** non vanno mai con il collegamento dello spazio: ognuno si collega per
-  conto suo, dall’interno. Per un posto di chat nascoste: sul computer, apri quel posto con il suo PIN, nuovo e vuoto
-  come lo lascia un nuovo PIN, e dagli una sua coda sul relay in **Per utenti esperti** lì; poi tocca **Dispositivi
-  collegati** sotto il suo elenco, e **Collega al mio telefono**. Sul telefono, apri lo stesso posto con il suo PIN,
-  tocca **Dispositivi collegati** sotto il suo elenco e scansiona il codice del computer con la fotocamera mentre il
-  posto resta aperto, oppure incollalo lì; poi come sopra. Il posto ha allora un collegamento suo, con chiavi sue e un
-  suo elenco di dispositivi, firmato dal suo account, così i suoi contatti con questa versione scrivono direttamente
-  al posto del computer. I suoi messaggi, contatti, gruppi, chiamate, foto e file e la sua Chat con me stesso vanno
-  tra i due posti come quelli dello spazio tra dispositivi collegati, e così i suoi account Matrix, XMPP e Nostr, con
-  **Anche account Matrix, XMPP e Nostr** o **Invia gli account**. Niente di tutto questo si vede nello spazio, nelle
-  sue schermate o sui suoi dispositivi collegati, e il collegamento dello spazio non porta mai niente di un posto:
-  quello che un posto tiene del suo collegamento è crittografato con la sua chiave, tra valori fatti per niente per
-  gli altri posti, in un file della stessa dimensione che un posto sia collegato o nessuno. Il collegamento funziona
-  mentre il posto è aperto, e anche da chiuso se **Ricevere da chiuse** è attivo; chiuso senza, niente di esso si
-  sincronizza, e quello che arriva aspetta sul relay (14 giorni) finché si apre, da entrambe le parti. Sul computer, i
-  nuovi gruppi e le chiamate di gruppo restano sul telefono, una chat non si può spostare nel posto né fuori (spostala
-  sul telefono), e una chiamata risposta lì ferma lo squillo del telefono solo mentre il posto è aperto sul telefono.
-  Le chat nascoste scrivono ai dispositivi di un contatto con questa versione come fanno le tue altre chat, così
-  quelli le ricevono a telefono del contatto spento, e al contatto sembrano le chat di un telefono che non ha mai
-  collegato un dispositivo. Una chat spostata nelle chat nascoste sul telefono lascia il computer. Spostata nelle chat
-  nascoste, o da lì nelle tue chat, una chat scrive solo al telefono del contatto, come fa un Erevos più vecchio,
-  finché non torna dove è stata creata: al suo Erevos viene detto prima, così i suoi dispositivi smettono di scrivere
-  ai tuoi, e da questo può capire che la chat ha smesso di conoscere i dispositivi collegati: se gli aveva dato
-  l’elenco dei tuoi dispositivi, che è passata nelle chat nascoste. Uno spazio aperto da una seconda password si
-  collega solo dal suo interno, a dispositivi suoi.
+- **Le chat nascoste e le seconde password** non vanno mai con il collegamento dello spazio: ognuno si collega per conto
+  suo, dall’interno. Per un posto di chat nascoste: sul computer, apri quel posto con il suo PIN, nuovo e vuoto come lo
+  lascia un nuovo PIN, e dagli una sua coda sul relay in **Per utenti esperti** lì; poi tocca **Dispositivi collegati**
+  sotto il suo elenco, e **Collega al mio telefono**. Sul telefono, apri lo stesso posto con il suo PIN, tocca
+  **Dispositivi collegati** sotto il suo elenco e scansiona il codice del computer con la fotocamera mentre il posto
+  resta aperto, oppure incollalo lì; poi come sopra. Un codice mostrato in un posto collega solo un posto, e quello di
+  uno spazio solo uno spazio: letto dall’altro, semplicemente decade, e **Collega al mio telefono** ricomincia sul computer. Il posto ha
+  allora un collegamento suo, con chiavi sue e un suo elenco di dispositivi, firmato dal suo account, così i suoi
+  contatti con questa versione scrivono direttamente al posto del computer. I suoi messaggi, contatti, gruppi, chiamate,
+  foto e file e la sua Chat con me stesso vanno tra i due posti come quelli dello spazio tra dispositivi collegati, e
+  così i suoi account Matrix, XMPP e Nostr, con **Anche account Matrix, XMPP e Nostr** o **Invia gli account**. Niente
+  di tutto questo si vede nello spazio, nelle sue schermate o sui suoi dispositivi collegati, e il collegamento dello
+  spazio non porta mai niente di un posto: quello che un posto tiene del suo collegamento è crittografato con la sua
+  chiave, tra valori fatti per niente per gli altri posti, in un file della stessa dimensione che un posto sia collegato
+  o nessuno. Il collegamento funziona mentre il posto è aperto, e anche da chiuso se **Ricevere da chiuse** è attivo;
+  chiuso senza, niente di esso si sincronizza, e quello che arriva aspetta sul relay (14 giorni) finché si apre, da
+  entrambe le parti. Sul computer, i nuovi gruppi e le chiamate di gruppo restano sul telefono, una chat non si può
+  spostare nel posto né fuori (spostala sul telefono), e una chiamata risposta lì ferma lo squillo del telefono solo
+  mentre il posto è aperto sul telefono. Le chat nascoste scrivono ai dispositivi di un contatto con questa versione
+  come fanno le tue altre chat, così quelli le ricevono a telefono del contatto spento, e al contatto sembrano le chat
+  di un telefono che non ha mai collegato un dispositivo. Una chat spostata nelle chat nascoste sul telefono lascia il
+  computer. Spostata nelle chat nascoste, o da lì nelle tue chat, una chat scrive solo al telefono del contatto, come fa
+  un Erevos più vecchio, finché non torna dove è stata creata: al suo Erevos viene detto prima, così i suoi dispositivi
+  smettono di scrivere ai tuoi, e da questo può capire che la chat ha smesso di conoscere i dispositivi collegati: se
+  gli aveva dato l’elenco dei tuoi dispositivi, che è passata nelle chat nascoste. Uno spazio aperto da una seconda
+  password si collega solo dal suo interno, a dispositivi suoi.
 - **Trasferisci di nuovo i messaggi**, sul telefono, invia di nuovo un periodo della cronologia, con le sue reazioni,
   i messaggi fissati, i voti e quelli segnati come importanti; quello che il computer ha già non viene conservato due
   volte.

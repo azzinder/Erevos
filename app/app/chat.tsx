@@ -1594,6 +1594,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         // Nothing usable saved. Start empty.
       })
       .then(async () => {
+        // Closed while it read: its chats, and a place's links to its devices, are not opened again.
+        if (!active) return;
         if (!hasCore()) {
           setNote(t(NO_CORE));
           return;

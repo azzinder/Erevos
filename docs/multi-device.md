@@ -692,7 +692,8 @@ made is known by its own identity again, and each side gives the other its list 
   value written leaves the others as they were (lock/sealed-file.ts): so two copies of the file
   taken at different times, with no password, show which place's value changed, and so that it
   links, as two copies of the hidden chats' other files show which place was used. One copy shows
-  nothing.
+  only when the file was last written, and each space writes its own value again as it opens
+  (keepDevicesFile), so a file written lately says no more than that a space was open.
 - Ways started again: an endpoint that never answers in a conversation this chat started (a place
   that fills the list, or a device whose owner never writes to this contact) gets another a day
   after the first, two days after that, then four, then every eight, each with the next copy for it:
