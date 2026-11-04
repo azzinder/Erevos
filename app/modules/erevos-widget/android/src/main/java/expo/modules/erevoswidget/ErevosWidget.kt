@@ -42,21 +42,26 @@ class ErevosWidget : AppWidgetProvider() {
     const val PREFS = "erevos-widget"
     const val MESSAGES = "messages"
 
-    /** Draws every Erevos widget on the home screen again, if there is any. */
+    /** Draws every Erevos widget on the home screen again, if there is any, and has the launcher
+     *  icons that show a number of their own count again (IconNumbers.kt). */
     fun refreshAll(context: Context) {
+      runCatching { IconNumbers.update(context) }
       val manager = AppWidgetManager.getInstance(context) ?: return
       val ids = manager.getAppWidgetIds(ComponentName(context, ErevosWidget::class.java))
       if (ids.isNotEmpty()) draw(context, manager, ids)
     }
 
+    /** How many are new, by button: missed calls, unread SMS and MMS, Erevos messages; none for Contacts. */
+    fun counts(context: Context): Map<String, Int> = mapOf(
+      "phone" to missedCalls(context),
+      "sms" to unreadSms(context),
+      "messages" to context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(MESSAGES, 0),
+      "contacts" to 0,
+    )
+
     private fun draw(context: Context, manager: AppWidgetManager, ids: IntArray) {
-      val missed = missedCalls(context)
-      val counts = mapOf(
-        "phone" to missed,
-        "sms" to unreadSms(context),
-        "messages" to context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(MESSAGES, 0),
-        "contacts" to 0,
-      )
+      val counts = counts(context)
+      val missed = counts.getValue("phone")
       val words = words(context)
       val order = order(context)
       for (id in ids) {

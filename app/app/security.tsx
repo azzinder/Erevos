@@ -468,7 +468,8 @@ function BackgroundCalls({ titled }: { titled: boolean }) {
 
 // The number on Erevos's icon (lib/icon-number.ts), on this device: the web app's, with
 // notifications while closed, or on Android the one the launcher draws from the messages notice
-// (lib/background.ts).
+// (lib/background.ts); and on Huawei's and Honor's launchers, which take a number for each icon,
+// each icon's own (modules/erevos-widget, IconNumbers.kt).
 function IconNumberChoice({ titled }: { titled: boolean }) {
   const [on, setOn] = useState<boolean | null>(null);
 
@@ -499,6 +500,13 @@ function IconNumberChoice({ titled }: { titled: boolean }) {
               ? t("Where the browser can show it (an iPhone's or iPad's home screen, a Mac's Dock, Chrome or Edge installed on a computer), Erevos's icon shows how many messages the space you had open has not read, and those that came since, never a hidden chat's. Only for a space with notifications while closed on. The number stays while Erevos is closed: one that does not match the space you open may hint at another. For every space on this device.")
               : t("Erevos's icon shows no number.")}
         </Text>
+        {canRingInBackground ? (
+          <Text variant="caption" tone="muted" style={hint}>
+            {t(
+              "With Show the number, Huawei's and Honor's launchers put a number on each of Erevos's icons apart: on Erevos's own the messages its notice counts, on SMS's the SMS not read, on Phone's the missed calls, on Contacts's a birthday today. Other launchers, such as those of Pixel and GrapheneOS, Samsung's, Xiaomi's and Kvaesitso, show each notice of Erevos on all its icons alike: Android gives it to the app, not to one of its icons, and Erevos cannot change that.",
+            )}
+          </Text>
+        ) : null}
       </Card>
     </>
   );

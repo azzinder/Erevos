@@ -2949,6 +2949,15 @@ para que el texto siempre se lea bien, también sobre cristal.
   abre lo que nombra su icono, también cuando Erevos mostraba otro de ellos. El color es del teléfono, no de cada
   espacio, ya que los iconos se ven antes de desbloquear Erevos. Después de un cambio, algunos lanzadores quitan el icono
   de la pantalla de inicio: vuelve a añadirlo desde la lista de apps.
+- **Puntos y números en los iconos** (Android): Android da el punto o el número de un aviso a la app, no a uno de sus
+  iconos, así que en la mayoría de los lanzadores, como los de los Pixel y GrapheneOS, el de Samsung, el de Xiaomi y
+  Kvaesitso, cada aviso de Erevos (un mensaje, un SMS, una llamada, un cumpleaños) aparece igual en los iconos Erevos,
+  Teléfono, SMS y Contactos; ahí Erevos no puede cambiarlo. Para dejar el punto solo en algunos avisos, desactívalo
+  para los demás en los ajustes de Android para las notificaciones de Erevos, donde cada tipo de aviso tiene su propio
+  interruptor. Los lanzadores de Huawei y Honor aceptan un número para cada icono: ahí, con **Ajustes** →
+  **Notificaciones** → **Número en el icono** → **Mostrar el número**, el propio icono de Erevos muestra los mensajes
+  que cuenta su aviso, el de SMS los SMS sin leer, el de Teléfono las llamadas perdidas y el de Contactos un
+  cumpleaños de hoy, cada número solo en su icono.
 - **Calculadora en lugar de Erevos** (Android, en **Iconos del lanzador**): una calculadora que funciona aparece entre
   las apps del teléfono en lugar del icono de Erevos. Toca **Poner la calculadora en su lugar**, escribe dos veces un
   código de 4 a 12 dígitos y toca **Guardar**. A partir de entonces abre la calculadora, escribe el código y luego

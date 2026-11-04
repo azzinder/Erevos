@@ -2844,6 +2844,14 @@ tekst uvijek bio dobro čitljiv, i na staklu.
   otvara ono što njegova ikona navodi, i kad je Erevos prikazivao neku drugu od njih. Boja pripada telefonu, a ne
   svakom prostoru, jer se ikone prikazuju prije nego što se Erevos otključa. Nakon promjene neki pokretači uklanjaju
   ikonu s početnog ekrana: ponovo je dodajte s popisa aplikacija.
+- **Tačke i brojevi na ikonama** (Android): Android daje tačku ili broj obavijesti aplikaciji, a ne jednoj od njenih
+  ikona, pa na većini pokretača, poput onih na Pixelu i GrapheneOS-u, Samsungovog, Xiaomijevog i Kvaesitsa, svaka
+  obavijest Erevosa (poruka, SMS, poziv, rođendan) izgleda jednako na ikonama Erevos, Telefon, SMS i Kontakti; tu
+  Erevos to ne može promijeniti. Da tačka ostane samo za neke obavijesti, isključite je za ostale u postavkama
+  Androida za Erevosove obavijesti, gdje svaka vrsta obavijesti ima svoj prekidač. Pokretači Huaweija i Honora primaju
+  broj za svaku ikonu: tamo, uz **Postavke** → **Obavijesti** → **Broj na ikoni** → **Prikaži broj**, Erevosova
+  vlastita ikona pokazuje poruke koje broji njegova obavijest, ikona SMS nepročitane SMS poruke, ikona Telefon
+  propuštene pozive, a ikona Kontakti današnji rođendan, svaki broj samo na svojoj ikoni.
 - **Kalkulator umjesto Erevosa** (Android, pod **Ikone u pokretaču**): kalkulator koji radi prikazuje se među
   aplikacijama telefona umjesto ikone Erevosa. Dodirnite **Stavi kalkulator na njegovo mjesto**, dvaput upišite kod od
   4 do 12 cifara i dodirnite **Sačuvaj**. Od tada otvarajte kalkulator, upišite kod, pa **=**: Erevos se otvara i
