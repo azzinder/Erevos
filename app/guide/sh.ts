@@ -2627,6 +2627,10 @@ uređaji** → **Rezervne kopije**.
   uređaj na telefonu s kojeg je kopija došla; prostor se ponovo prijavljuje, kao novi uređaj, a njegov sigurnosni ključ
   otvara ranije poruke. Vraćeni kakvi su bili, razgovori takvog uređaja ponovo bi koristili ključeve poruka koje drugi
   odbijaju, a telefon s kojeg je kopija došla možda još koristi uređaj.
+- **Zatvoreni razgovori:** rezervna kopija čuva i ono što trebaju **Zvonjava poziva kad su zatvoreni** i **Javi kad
+  stigne poruka** skrivenih razgovora, te **I dok je otvoren drugi prostor**. Tako nakon vraćanja, i na drugom
+  telefonu, rade kao prije. Rezervna kopija od prije ove verzije nema ništa od toga: njeno vraćanje ostavlja ih kakve
+  ih telefon ima.
 - **Jedan po jedan telefon:** rezervna kopija vraćena na drugom telefonu čita iste redove na relayu kao i prvi, i
   svaki preuzima poruke koje drugi tada nikad ne dobije. Koristite je za prelazak na novi telefon, a ne za držanje
   dva.

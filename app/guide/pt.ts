@@ -2710,6 +2710,10 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   backup; o espaço entra de novo, como um novo dispositivo, e a chave de segurança dele abre as mensagens de antes.
   Postas de volta como estavam, as conversas de um dispositivo assim usariam de novo chaves de mensagem que os outros
   recusam, e o celular de onde veio o backup pode ainda estar usando o dispositivo.
+- **Conversas fechadas:** um backup guarda também o que **Tocar as chamadas quando fechadas** e **Avisar quando chega
+  uma mensagem** das conversas ocultas, e **Também enquanto outro espaço está aberto**, precisam. Assim, depois de uma
+  restauração, também em outro celular, eles continuam como estavam. Um backup de antes desta versão não tem nada
+  disso: restaurá-lo os deixa como o celular os tem.
 - **Um celular de cada vez:** um backup restaurado num segundo celular lê as mesmas filas do relay que o primeiro, e
   cada um pega mensagens que o outro então nunca recebe. Use-o para mudar para um celular novo, não para manter dois.
 - **Discrição:** todos os espaços mostram a mesma tela de Backups, e um backup guarda todos os espaços, então nenhum

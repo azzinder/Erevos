@@ -73,6 +73,10 @@ On main, not released yet:
   stops at the oldest time a relay that sent all it was asked for sent, so paging with `until` skips nothing. Names
   (kind 0) are asked only for the people shown, no picture or link is fetched, nothing is kept, and all goes through
   Tor as the space says, with the space's own key only. Tapping who wrote a post offers their posts or a chat.
+- **Backups keep what closed chats need**: a backup also holds each slot's queues for its hidden chats' notices and
+  rings (`erevos.watch.<n>`, `erevos.ring.<n>`), each space's door (`erevos.door.<n>`) and the phone's door key, so
+  after a restore, on another phone too, **Ring calls when closed**, **Say when a message comes** and **Also while
+  another space is open** go on as they were. Restoring a backup from before leaves the phone's as they are.
 
 ### Under the hood
 

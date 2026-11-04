@@ -2916,6 +2916,10 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   neu an, als neues Gerät, und sein Sicherheitsschlüssel öffnet die Nachrichten von früher. So, wie sie waren, würden
   die Unterhaltungen eines solchen Geräts Nachrichtenschlüssel wieder benutzen, die die anderen ablehnen, und das
   Telefon, von dem das Backup kam, benutzt das Gerät vielleicht noch.
+- **Geschlossene Chats:** Ein Backup enthält auch, was **Klingeln bei Anrufen, wenn geschlossen** und **Melden, wenn
+  eine Nachricht kommt** der versteckten Chats sowie **Auch, wenn ein anderer Bereich offen ist** brauchen. So laufen
+  sie nach einer Wiederherstellung, auch auf einem anderen Telefon, weiter wie zuvor. Ein Backup von vor dieser
+  Version enthält nichts davon: Seine Wiederherstellung lässt sie so, wie das Telefon sie hat.
 - **Ein Telefon nach dem anderen:** Ein auf einem zweiten Telefon wiederhergestelltes Backup liest dieselben
   Relay-Warteschlangen wie das erste, und jedes holt Nachrichten, die das andere dann nie bekommt. Nutze es, um auf ein
   neues Telefon umzuziehen, nicht um zwei zu führen.

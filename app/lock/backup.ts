@@ -10,8 +10,11 @@ import { t } from '../lib/i18n';
 import { FILE as ARCHIVE } from './archive';
 import { ITER } from './config';
 import { FILE as CONTACTS } from './contacts-data';
+import { prepareDoors } from './doors';
 import { FILE as E2E } from './e2e-data';
 import { FILE as GROUPS } from './group-data';
+import { prepareRingEntries } from './hidden-ring';
+import { prepareWatchEntries } from './hidden-watch';
 import { FILE as HISTORY, PAGE_PREFIX as PAGE } from './history';
 import { FILE as MATRIX } from './matrix-data';
 import { FILE as MYSELF } from './myself-data';
@@ -83,6 +86,11 @@ const SLOTTED = Array.from({ length: MOST_SLOTS }, (_, n) => [
   `erevos.keep.${n}`,
 ]).flat();
 const KEYS = [...FIXED, ...OTHER_POCKETS.map((p) => `erevos.hidden-lock.${p}`), ...SLOTTED];
+// What lets closed chats be heard: each slot's queues for its hidden chats' notices and rings
+// (hidden-watch.ts, hidden-ring.ts), each space's door (doors.ts) and the phone's door key, each
+// as padded as on the phone. So a restore keeps those switches on, on another phone too. A backup
+// from before they were in one holds none: restoring it leaves the phone's as they are.
+const HEARD = [...Array.from({ length: MOST_SLOTS }, (_, n) => [`erevos.watch.${n}`, `erevos.ring.${n}`, `erevos.door.${n}`]).flat(), 'erevos.doors-key'];
 
 // The sealed files that are text; voice messages' sounds, pictures and stickers' pictures are
 // bytes. A file not on the phone is left out, so the backup of a phone that keeps no contacts, or
@@ -155,7 +163,7 @@ export async function isBackupPassword(password: string, kept: BackupKey): Promi
 
 async function collect(): Promise<Entry[]> {
   const entries: Entry[] = [];
-  for (const name of KEYS) {
+  for (const name of [...KEYS, ...HEARD]) {
     const value = await secureGet(name);
     if (value !== null) entries.push({ kind: KIND_KEY, name, data: utf8Encode(value) });
   }
@@ -190,7 +198,7 @@ function pack(entries: Entry[]): Uint8Array {
 
 // A name a backup may restore: one of the keystore entries above, or a file of Erevos's own.
 function allowed(kind: number, name: string): boolean {
-  if (kind === KIND_KEY) return KEYS.includes(name);
+  if (kind === KIND_KEY) return KEYS.includes(name) || HEARD.includes(name);
   if (kind === KIND_TEXT) return TEXT_FILES.includes(name);
   if (kind === KIND_PHONE_SMS) return name === PHONE_SMS;
   return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && /^[a-z0-9-]+$/.test(name);
@@ -317,6 +325,12 @@ export async function restoreBackup({ entries }: Backup): Promise<void> {
   // One made before the queues entries were, or that held fewer spaces, has none for some: each is
   // there again, sealed with a random key, before anything opens, so which are used shows nowhere.
   await prepareQueueEntries();
+  if (HEARD.some((name) => keep.has(name))) {
+    for (const name of HEARD) if (!keep.has(name)) await secureDelete(name);
+    await prepareWatchEntries();
+    await prepareRingEntries();
+    await prepareDoors();
+  }
   smsDataChanged();
   // The chats' conversations are as they were when the backup was made: each moves past the
   // message keys it may have used since, when its chat next opens.

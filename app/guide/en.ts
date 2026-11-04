@@ -2511,6 +2511,9 @@ again with a password of its own. It is under **Settings** → **Data and device
   device on the phone the backup came from; the space signs in again, as a new device, and its Security Key opens the
   messages from before. Put back as they were, the conversations of such a device would use again message keys that the
   others refuse, and the phone the backup came from may still be using the device.
+- **Closed chats:** a backup also holds what **Ring calls when closed** and **Say when a message comes** of hidden
+  chats, and **Also while another space is open**, need. So after a restore, on another phone too, they go on as they
+  were. A backup from before this version has none of it: restoring it leaves them as the phone has them.
 - **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
   takes messages the other then never gets. Use it to move to a new phone, not to keep two.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how

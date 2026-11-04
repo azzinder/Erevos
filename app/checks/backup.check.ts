@@ -34,6 +34,9 @@ import { loadLockConfig, setLockPassword, unlock } from '../lock/config';
 import { History, newTag } from '../lock/history';
 import { openHidden, prepareHidden, setHiddenPassword } from '../lock/hidden';
 import { keepsPlace } from '../lock/hidden-keep';
+import { loadRinged, ringPocket } from '../lock/hidden-ring';
+import { loadWatched, watchPocket } from '../lock/hidden-watch';
+import { loadDoor, saveDoor } from '../lock/doors';
 import { setCurrentSpace } from '../lock/keys';
 import { EMPTY_SPACE, loadHiddenData, loadSpaceData, prepareSpaces, saveHiddenData, saveSpaceData } from '../lock/space-data';
 import { loadClip, saveClip } from '../lock/voice-clips';
@@ -49,6 +52,7 @@ import { newNostrDm, type NostrDmState } from '../lib/nostr-dm';
 import type { XmppState } from '../lib/xmpp';
 import { cloudRequest as browserRequest } from '../lib/backup-http.web';
 import { blobs, files } from './files-memory';
+import { ready as relayReady, startRelay } from './real-relay';
 import { store } from './secure-memory';
 import { useWasmCore } from './wasm-core';
 
@@ -270,6 +274,36 @@ t('holds every place of hidden chats, and gives them back', async () => {
   assert.equal(place?.pocket, 3);
   assert.equal((await loadHiddenData(0, 3, place!.key)).token, 'place 4');
   assert.ok(await keepsPlace(0, spaceKey, 3, place!.key));
+});
+
+t('holds what lets closed chats be heard: hidden chats\' notice and ring queues, and a space\'s door', async () => {
+  // The other pockets get queues made for nothing at the relay.
+  if (!relayReady) return;
+  const url = await startRelay();
+  const { key } = await phone();
+  await prepareHidden();
+  const queue = (digit: string) => ({ url, token: '', recipientHex: digit.repeat(48) });
+  await watchPocket(0, key, 2, queue('a'));
+  await ringPocket(0, key, 2, { ...queue('b'), senderHex: 'c'.repeat(48) });
+  await saveDoor(0, { tor: 'messages', queues: [queue('d')] });
+  const file = await makeBackup(await backupKey('backup-pass'));
+  const heard = async () => [(await loadWatched(0, key))[2]?.recipientHex[0], (await loadRinged(0, key))[2]?.recipientHex[0], (await loadDoor(0))?.queues[0]?.recipientHex[0]];
+
+  // On another phone, as a new one starts: all three as they were.
+  wipe();
+  await prepareHidden();
+  await restoreBackup(await openBackup(file, 'backup-pass'));
+  assert.deepEqual(await heard(), ['a', 'b', 'd']);
+  // Every other pocket and space still has its entry, of the same length as before.
+  for (const name of ['erevos.watch.1', 'erevos.ring.1', 'erevos.door.1']) assert.ok(store.has(name), name);
+
+  // One from before they were in backups leaves the phone's as they are.
+  await watchPocket(0, key, 2, queue('e'));
+  const backup = await openBackup(file, 'backup-pass');
+  const older = backup.entries.filter((entry) => !/^erevos\.(watch|ring|door)\.|^erevos\.doors-key$/.test(entry.name));
+  assert.ok(older.length < backup.entries.length);
+  await restoreBackup({ ...backup, entries: older });
+  assert.deepEqual(await heard(), ['e', 'b', 'd']);
 });
 
 t('holds the phone\'s SMS when given them, sealed, and restoring writes them nowhere', async () => {

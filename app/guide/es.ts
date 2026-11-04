@@ -2731,6 +2731,10 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   y su clave de seguridad abre los mensajes de antes. Puestas como estaban, las conversaciones de un dispositivo así
   volverían a usar claves de mensaje que los demás rechazan, y el teléfono de donde vino la copia puede seguir usando el
   dispositivo.
+- **Chats cerrados:** una copia guarda también lo que necesitan **Sonar las llamadas cuando están cerrados** y
+  **Avisar cuando llega un mensaje** de los chats ocultos, y **También mientras otro espacio está abierto**. Así, tras
+  restaurarla, también en otro teléfono, siguen como estaban. Una copia de antes de esta versión no tiene nada de eso:
+  restaurarla los deja como los tiene el teléfono.
 - **Un teléfono a la vez:** una copia restaurada en un segundo teléfono lee las mismas colas del relay que el primero,
   y cada uno recoge mensajes que entonces el otro nunca recibe. Úsala para pasar a un teléfono nuevo, no para tener dos.
 - **Discreción:** todos los espacios muestran la misma pantalla de Copias de seguridad, y una copia contiene todos los

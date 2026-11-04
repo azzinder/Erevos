@@ -2884,6 +2884,10 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   nouvel appareil, et sa clé de sécurité ouvre les messages d’avant. Remises telles qu’elles étaient, les conversations
   d’un tel appareil réutiliseraient des clés de message que les autres refusent, et le téléphone d’où vient la
   sauvegarde peut encore se servir de l’appareil.
+- **Discussions fermées :** une sauvegarde garde aussi ce dont ont besoin **Faire sonner les appels quand elles sont
+  fermées** et **Prévenir quand un message arrive** des discussions masquées, et **Aussi quand un autre espace est
+  ouvert**. Ainsi, après une restauration, sur un autre téléphone aussi, ils continuent comme avant. Une sauvegarde
+  d’avant cette version n’en a rien : la restaurer les laisse tels que le téléphone les a.
 - **Un téléphone à la fois :** une sauvegarde restaurée sur un second téléphone lit les mêmes files d’attente sur le
   relais que le premier, et chacun prend des messages que l’autre ne reçoit alors jamais. Utilise-la pour passer à un
   nouveau téléphone, pas pour en garder deux.

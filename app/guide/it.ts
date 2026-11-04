@@ -2748,6 +2748,10 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   telefono da cui viene il backup; lo spazio accede di nuovo, come nuovo dispositivo, e la sua chiave di sicurezza apre
   i messaggi di prima. Rimesse com’erano, le conversazioni di un dispositivo così riuserebbero chiavi di messaggio che
   gli altri rifiutano, e il telefono da cui viene il backup potrebbe usare ancora il dispositivo.
+- **Chat chiuse:** un backup tiene anche ciò che serve a **Fai squillare le chiamate quando sono chiuse** e **Avvisa
+  quando arriva un messaggio** delle chat nascoste, e ad **Anche mentre è aperto un altro spazio**. Così, dopo un
+  ripristino, anche su un altro telefono, continuano come prima. Un backup di prima di questa versione non ne ha
+  nulla: ripristinarlo li lascia come li ha il telefono.
 - **Un telefono alla volta:** un backup ripristinato su un secondo telefono legge le stesse code sul relay del primo, e
   ognuno prende messaggi che l’altro poi non riceve mai. Usalo per passare a un nuovo telefono, non per tenerne due.
 - **Discrezione:** ogni spazio mostra la stessa schermata Backup, e un backup contiene ogni spazio, quindi né l’una né
