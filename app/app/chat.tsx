@@ -111,7 +111,7 @@ import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { FoundExport, useImportFlow } from '../components/import-flow';
 import { Archive, type LinkedMessage } from '../lock/archive';
-import { MIN_PIN, openHidden, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
+import { MIN_PIN, openHidden, searchOpens, setHiddenPassword, type HiddenPlace } from '../lock/hidden';
 import { loadWatched, rewatchLost, unwatchPocket, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';
 import { keepPlace, keepsPlace } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
@@ -120,7 +120,7 @@ import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/stic
 import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
 import { MAX_SMS_WAY } from '../lock/sms-data';
 import type { ChatNotify } from '../lock/chat-notify';
-import { moveChat } from '../lock/move-chat';
+import { checkMove, moveChat } from '../lock/move-chat';
 import { ownSpaceKey, SamePasswordError } from '../lock/config';
 import { useLock } from '../lock/context';
 import { LockedOutError, lockedOutMessage } from '../lock/tries';
@@ -140,7 +140,7 @@ import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/seal
 import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
 import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData, loadHiddenData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
 import { groupCallSignal, onGroupCallChange } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
@@ -741,7 +741,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [renaming, setRenaming] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState('');
   // The part of the details opened under its row: the picture, the timer, or moving the chat.
-  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | 'back' | 'starred' | null>(null);
+  const [opened, setOpened] = useState<'picture' | 'timer' | 'move' | 'space' | 'back' | 'starred' | null>(null);
   // Moving the chat into the hidden chats: the PIN typed, whether new hidden chats are being
   // started with it (asked a second time), what went wrong, and while it moves.
   const [pinDraft, setPinDraft] = useState('');
@@ -750,6 +750,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // they used, as nothing on the phone can tell.
   const [newPocket, setNewPocket] = useState<number | null>(null);
   const [moveNote, setMoveNote] = useState('');
+  // The password of the space a chat moves into (moveToOtherSpace).
+  const [passwordDraft, setPasswordDraft] = useState('');
   const [moving, setMoving] = useState(false);
   const router = useRouter();
   const [e2e, setE2E] = useState<E2E | null>(null);
@@ -4414,6 +4416,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // with when their queue was made, before the tell below says it.
       release = await holdPlace(space, pocket);
       const { e2e: hiddenChats, history: hiddenHistory } = await placeChats(space, pocket, key);
+      checkMove(identity, e2e, hiddenChats);
       // A contact who knows about devices is told first, by the space's chat, as the hidden chats
       // will say it to one who knows them by the space's identity: nothing of devices. Their devices
       // then stop writing to this account's, and to this account themselves, though their phone is
@@ -4474,6 +4477,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       const target = relayFor(data.url, data.token, data.via, data.viaToken);
       if (!target || !data.ownQueue) throw new Error(t("The space's chats have no relay queue yet: create it under Relay there first."));
       const space = await spaceChats();
+      checkMove(identity, e2e, space.e2e);
       // A contact who knows about devices is told first, as the move into hidden chats tells them:
       // nothing of devices, as the space's chat will say it to one who knows it by this identity.
       const sends = relayTarget();
@@ -4499,6 +4503,74 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       } catch {
         setNote(t('Moved back to your chats. Their phone learns where to write when you next write to them from there.'));
       }
+    } catch (error) {
+      setMoveNote(t('Not moved. {error}', { error: errorText(error) }));
+    } finally {
+      setMoving(false);
+    }
+  }
+
+  // Moves a contact's chat into another space, the one `password` opens, as into hidden chats: the
+  // contact, its messages, its look and its imported chats go there, sealed with that space's key,
+  // and nothing of it stays here (lock/move-chat.ts). That space is not opened: its key serves the
+  // move only and is let go of after. The password is tried as the search tries it (lock/hidden.ts
+  // searchOpens): every space and PIN, in the same time whatever it is, its wrong tries counted with
+  // the search's, so the row says nothing of whether another space exists. Their phone is told at
+  // once, from that space's relay queue, to write there from now on.
+  async function moveToOtherSpace(peer: string, password: string) {
+    if (!e2e || !history.current || hiddenKey || moving) return;
+    if (linkedRole() === 'linked') {
+      setMoveNote(t("This chat is the phone's: move it to another space there."));
+      return;
+    }
+    const identity = peer.slice(CONTACT_PREFIX.length);
+    setMoving(true);
+    setMoveNote('');
+    try {
+      const here = currentSpace();
+      const found = await searchOpens(here.space, password, false);
+      const other = found && 'space' in found ? found.space : null;
+      if (!other) {
+        setMoveNote(t('Wrong password'));
+        return;
+      }
+      // A space linked to a phone has that phone's chats only: a chat moves into it there.
+      if ((await loadDevicesData(other.space, other.key).catch(() => null))?.primary) {
+        throw new Error(t('That space is linked to a phone: move the chat into it there.'));
+      }
+      const data = await loadSpaceData(other.space, other.key);
+      const target = relayFor(data.url, data.token, data.via, data.viaToken);
+      if (!target || !data.ownQueue) throw new Error(t("That space's chats have no relay queue yet: create it under Relay there first."));
+      const queue = data.ownQueue;
+      const theirs = await E2E.open('space', other.space, other.key);
+      checkMove(identity, e2e, theirs);
+      // A contact who knows about devices is told first, as a move into hidden chats tells them:
+      // the other space's chat says nothing of devices to one who knows it by this identity.
+      const sends = relayTarget();
+      if (sends && e2e.record(identity)?.dv !== undefined) {
+        await sendToContact(sends, identity, '', { leaving: true })
+          .then(() => sendCopies(e2e, sends))
+          .catch(() => undefined);
+      }
+      const theirHistory = await History.open('space', other.space, other.key);
+      const theirArchive = await Archive.open('space', other.space, other.key);
+      await moveChat(identity, { e2e, history: history.current, archive }, { e2e: theirs, history: theirHistory, archive: theirArchive });
+      setMessages((list) => list.filter((m) => m.peer !== peer));
+      setContacts(e2e.contacts());
+      setPasswordDraft('');
+      setOpened(null);
+      setDetails(false);
+      setSelected(null);
+      // Where to write from now on, said from the other space's chats.
+      try {
+        const key = await relayKey(target).catch(() => null);
+        const sealed = await theirs.seal(identity, '', queue.senderHex, { at: { relay: data.url.trim(), relayKey: key ? toBase64Url(key) : '' } });
+        await sendSealed(target, sealed, [sealed.packet], 'quiet', () => theirs.firstSent(identity));
+        setNote(t('Moved to the other space. Open Erevos with its password to write there.'));
+      } catch {
+        setNote(t('Moved to the other space. Their phone learns where to write when you next write to them from there.'));
+      }
+      if (initial) router.canGoBack() ? router.back() : router.replace('/');
     } catch (error) {
       setMoveNote(t('Not moved. {error}', { error: errorText(error) }));
     } finally {
@@ -6093,6 +6165,46 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                       setNewPocket(null);
                                     }}
                                   />
+                                </Row>
+                                <Text variant="caption" tone="muted">
+                                  {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}
+                                </Text>
+                              </View>
+                            ) : null}
+                            <View style={styles.rule} />
+                            <DetailRow
+                              title={t('Move to another space')}
+                              open={opened === 'space'}
+                              onPress={() => {
+                                setOpened((now) => (now === 'space' ? null : 'space'));
+                                setMoveNote('');
+                                setPasswordDraft('');
+                              }}
+                            />
+                            {opened === 'space' ? (
+                              <View style={styles.rowMore}>
+                                <Text variant="caption" tone="muted">
+                                  {t("The chat leaves this space with its messages, name, picture and look, and goes into the space whose password you type, sealed with that space's key. That space stays closed, and nothing here shows whether there is one. The safety number stays the same.")}
+                                </Text>
+                                <Input
+                                  value={passwordDraft}
+                                  onChangeText={(text) => {
+                                    setPasswordDraft(text);
+                                    setMoveNote('');
+                                  }}
+                                  placeholder={t('Password of the other space')}
+                                  secureTextEntry
+                                  autoCapitalize="none"
+                                  autoCorrect={false}
+                                  onSubmitEditing={() => void moveToOtherSpace(selectedContact, passwordDraft)}
+                                />
+                                {moveNote ? (
+                                  <Text variant="caption" style={{ color: colors.danger }}>
+                                    {moveNote}
+                                  </Text>
+                                ) : null}
+                                <Row wrap>
+                                  <Button title={t('Move')} compact loading={moving} disabled={passwordDraft.length < MIN_PIN} onPress={() => void moveToOtherSpace(selectedContact, passwordDraft)} />
                                 </Row>
                                 <Text variant="caption" tone="muted">
                                   {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}

@@ -158,7 +158,7 @@ Ende), **Online**, **In der Nähe**, solange das Telefon des Kontakts per Funk m
 einer Kamera einen Videoanruf und die grüne mit einem Hörer einen Sprachanruf. Tippe auf den Namen oder auf **⋯**
 dahinter (**⋮** auf Android), um die **Details** des Chats zu öffnen: sein Bild (tippe darauf, um es zu ändern),
 **Anrufen**, **Video**, **Umbenennen** und **Bild**, dann **Verschwindende Nachrichten**, **Offline erscheinen**,
-**Chat-Aussehen**, die **Sicherheitsnummer**, **In versteckte Chats verschieben** und **Nachrichten löschen**.
+**Chat-Aussehen**, die **Sicherheitsnummer**, **In versteckte Chats verschieben**, **In einen anderen Bereich verschieben** und **Nachrichten löschen**.
 **Fertig** schließt sie.
 
 **Medien, Links und Dateien**, in den Details unter **In diesem Chat suchen**, listet auf, was der Chat enthält, jede
@@ -2669,6 +2669,15 @@ nichts in der App zeigt, dass es sie gibt.
   sperren** und seinem Passwort. Es dauert gleich lang, was auch immer du tippst, sodass die Zeit nicht zeigt, ob es
   einen anderen Bereich gibt. Ein falsches Passwort oder das des offenen Bereichs ist nur eine Suche; das
   Panik-Passwort wirkt nur auf dem Passwortbildschirm.
+- **Einen Chat dorthin verschieben:** Tippe in den **Details** eines Chats auf **In einen anderen Bereich verschieben**,
+  gib das Passwort des anderen Bereichs ein und tippe auf **Verschieben**. Der Chat kommt dorthin mit seinen
+  Nachrichten, seinem Namen, Bild und Aussehen und den darin importierten Chats, verschlüsselt mit dem Schlüssel jenes
+  Bereichs, und jener Bereich bleibt geschlossen. Die Sicherheitsnummer bleibt gleich, und das Telefon des Kontakts
+  erfährt sofort, dass es von nun an dorthin schreiben soll. Die Zeile zeigt sich in jedem Bereich, und das Passwort
+  wird so geprüft wie in der Suche: Ein falsches oder das des offenen Bereichs verschiebt nichts. Ein Chat mit jemandem,
+  mit dem der andere Bereich schon einen eigenen Chat hat, bleibt, wo er ist. Wer den anderen Bereich mit einem
+  forensischen Werkzeug liest, könnte erkennen, dass der Chat von woanders kam: Sein Kontakt kennt ihn weiter unter dem
+  Schlüssel dieses Bereichs.
 - **Diskretion:** Zum Schutz deiner Privatsphäre zeigt die App nie, ob ein zweites Passwort festgelegt ist. In der
   Web-App mit eingeschalteten Benachrichtigungen, wenn geschlossen, bleibt die Zahl auf dem Symbol von Erevos, solange
   Erevos geschlossen ist: Passt sie nicht zu dem Bereich, den du öffnest, kann sie auf einen anderen hindeuten

@@ -153,7 +153,7 @@ Dentro de un chat, su nombre y su imagen están arriba con cómo viaja: **Cifrad
 mensajes del chat desaparecen. A su lado, el recuadro azul con una cámara inicia una videollamada y el verde con un
 auricular, una llamada de voz. Toca el nombre, o **⋯** tras ellos (**⋮** en Android), para los **Detalles** del chat: su
 imagen (tócala para cambiarla), **Llamar**, **Vídeo**, **Cambiar nombre** e **Imagen**, luego **Mensajes temporales**,
-**Aparecer sin conexión**, **Apariencia del chat**, el **Número de seguridad**, **Mover a chats ocultos** y **Eliminar
+**Aparecer sin conexión**, **Apariencia del chat**, el **Número de seguridad**, **Mover a chats ocultos**, **Mover a otro espacio** y **Eliminar
 mensajes**. **Hecho** los cierra.
 
 **Multimedia, enlaces y archivos**, en los detalles bajo **Buscar en este chat**, lista lo que contiene el chat, cada tipo
@@ -2503,6 +2503,13 @@ con sus propios contactos, relay y aspecto. Tus chats reales siguen ocultos, y n
   contraseña. Tarda lo mismo escribas lo que escribas, así que su tiempo no muestra si hay otro espacio. Una
   contraseña equivocada, o la del espacio abierto, es solo una búsqueda; la contraseña de pánico funciona solo en la
   pantalla de contraseña.
+- **Mover un chat allí:** en los **Detalles** de un chat, toca **Mover a otro espacio**, escribe la contraseña del otro
+  espacio y toca **Mover**. El chat pasa allí con sus mensajes, nombre, imagen y aspecto, y los chats importados en él,
+  cifrado con la clave de ese espacio, y ese espacio sigue cerrado. El número de seguridad sigue igual, y a su teléfono
+  se le dice al instante que a partir de ahora escriba allí. La opción se ve en todos los espacios, y la contraseña se
+  prueba como en la búsqueda: una equivocada, o la del espacio abierto, no mueve nada. Un chat con alguien con quien el
+  otro espacio ya tiene un chat propio se queda donde está. Quien lea el otro espacio con una herramienta forense podría
+  ver que el chat vino de otro sitio: su contacto lo sigue conociendo por la clave de este espacio.
 - **Discreción:** por privacidad, la app nunca muestra si hay una segunda contraseña puesta. En la app web con las
   notificaciones con la app cerrada activadas, el número en el icono de Erevos se queda mientras Erevos está cerrado:
   si no coincide con el espacio que abres, puede delatar otro (**Número en el icono** lo desactiva).

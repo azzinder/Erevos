@@ -149,7 +149,7 @@ mreži**, **U blizini** dok je telefon te osobe povezan s vašim preko radija, i
 razgovora nestaju. Pored njih, plava pločica s kamerom pokreće videopoziv, a zelena sa slušalicom glasovni poziv.
 Dodirnite ime ili **⋯** iza njih (**⋮** na Androidu) za **Detalji** razgovora: njegova slika (dodirnite je da je
 promijenite), **Pozovi**, **Video**, **Preimenuj** i **Slika**, zatim **Poruke koje nestaju**, **Prikazuj me kao da
-nisam na mreži**, **Izgled razgovora**, **Sigurnosni broj**, **Premjesti u skrivene razgovore** i **Obriši poruke**.
+nisam na mreži**, **Izgled razgovora**, **Sigurnosni broj**, **Premjesti u skrivene razgovore**, **Premjesti u drugi prostor** i **Obriši poruke**.
 **Gotovo** ih zatvara.
 
 **Mediji, linkovi i fajlovi**, u detaljima ispod **Traži u ovom razgovoru**, prikazuje sve što razgovor sadrži, svaku
@@ -2406,6 +2406,13 @@ postoje.
   prostor se zatvara, ništa od njega ne ostaje, i otvara se drugi, kao sa **Zaključaj sada** i njegovom lozinkom.
   Traje jednako dugo što god upišeš, pa vrijeme ne pokazuje postoji li drugi prostor. Pogrešna lozinka, ili lozinka
   otvorenog prostora, samo je pretraga; lozinka za paniku radi samo na ekranu lozinke.
+- **Premještanje razgovora tamo:** u **Detalji** razgovora dodirni **Premjesti u drugi prostor**, upiši lozinku drugog
+  prostora i dodirni **Premjesti**. Razgovor ide tamo sa svojim porukama, imenom, slikom i izgledom, te razgovorima
+  uvezenim u njega, šifriran ključem tog prostora, a taj prostor ostaje zatvoren. Sigurnosni broj ostaje isti, a
+  telefonu te osobe odmah se javlja da od sada piše tamo. Stavka se vidi u svakom prostoru, a lozinka se provjerava kao
+  u pretrazi: pogrešna, ili lozinka otvorenog prostora, ne premješta ništa. Razgovor s nekim s kim drugi prostor već ima
+  svoj razgovor ostaje gdje jest. Tko pročita drugi prostor forenzičkim alatom mogao bi vidjeti da je razgovor došao
+  odnekud drugdje: njegov kontakt ga i dalje zna po ključu ovog prostora.
 - **Diskrecija:** radi privatnosti, aplikacija nikad ne pokazuje je li postavljena druga lozinka. U web-aplikaciji s
   uključenim obavijestima dok je Erevos zatvoren, broj na ikoni Erevosa ostaje dok je Erevos zatvoren: ako se ne slaže
   s prostorom koji otvarate, može nagovijestiti drugi (**Broj na ikoni** to isključuje).

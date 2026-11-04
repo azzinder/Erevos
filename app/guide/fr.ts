@@ -161,7 +161,7 @@ quand les messages de la discussion disparaissent. À côté, la tuile bleue ave
 verte avec un combiné un appel vocal. Appuie sur le nom, ou sur **⋯** après eux (**⋮** sur Android), pour les
 **Détails** de la discussion : son image (appuie dessus pour la changer), **Appeler**, **Vidéo**, **Renommer** et
 **Image**, puis **Messages éphémères**, **Apparaître hors ligne**, **Apparence de la discussion**, le **Numéro de
-sécurité**, **Déplacer dans les discussions masquées** et **Supprimer les messages**. **Terminé** les ferme.
+sécurité**, **Déplacer dans les discussions masquées**, **Déplacer dans un autre espace** et **Supprimer les messages**. **Terminé** les ferme.
 
 **Médias, liens et fichiers**, dans les détails sous **Rechercher dans cette discussion**, liste ce que contient la
 discussion, chaque type sous son propre onglet avec leur nombre : **Photos** (en grille), **Vidéos**, **Messages
@@ -2634,6 +2634,14 @@ dans l’app ne montre qu’elles existent.
   avec **Verrouiller maintenant** et son mot de passe. Cela prend le même temps quoi que tu tapes, donc ce temps ne
   montre pas s’il existe un autre espace. Un mauvais mot de passe, ou celui de l’espace ouvert, n’est qu’une recherche
   ; le mot de passe de panique ne marche que sur l’écran du mot de passe.
+- **Y déplacer une discussion :** dans les **Détails** d’une discussion, appuie sur **Déplacer dans un autre espace**,
+  tape le mot de passe de l’autre espace et appuie sur **Déplacer**. La discussion y va avec ses messages, son nom, son
+  image et son apparence, et les discussions importées dedans, chiffrée avec la clé de cet espace, et cet espace reste
+  fermé. Le numéro de sécurité reste le même, et le téléphone du contact est aussitôt informé qu’il doit désormais y
+  écrire. La ligne s’affiche dans chaque espace, et le mot de passe est essayé comme dans la recherche : un mauvais, ou
+  celui de l’espace ouvert, ne déplace rien. Une discussion avec quelqu’un avec qui l’autre espace a déjà sa propre
+  discussion reste où elle est. Qui lit l’autre espace avec un outil d’analyse forensique pourrait voir que la
+  discussion vient d’ailleurs : son contact la connaît toujours par la clé de cet espace.
 - **Discrétion :** pour ta confidentialité, l’app ne montre jamais si un second mot de passe est défini. Dans l’app web
   avec les notifications quand l’app est fermée activées, le nombre sur l’icône d’Erevos reste tant qu’Erevos est
   fermé : s’il ne correspond pas à l’espace que tu ouvres, il peut en trahir un autre (**Nombre sur l’icône** le

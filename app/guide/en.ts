@@ -143,7 +143,7 @@ Inside a chat, its name and picture are at the top with how it travels: **Encryp
 **Nearby** while their phone is linked to yours over the radio, or **typing…**, with a stopwatch when the chat's
 messages disappear. Beside them, the blue tile with a camera starts a video call and the green one with a handset a voice call. Tap the name, or **⋯**
 after them (**⋮** on Android), for the chat's **Details**: its picture (tap it to change it), **Call**, **Video**, **Rename** and **Picture**, then **Disappearing messages**,
-**Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats** and **Delete messages**. **Done**
+**Appear offline**, **Chat look**, the **Safety number**, **Move to hidden chats**, **Move to another space** and **Delete messages**. **Done**
 closes them.
 
 **Media, links and files**, in the details under **Search in this chat**, lists what the chat holds, each kind under its
@@ -2301,6 +2301,13 @@ exist.
   space closes, nothing of it stays, and the other opens, as with **Lock now** and its password. It takes as long
   whatever is typed, so its time does not show whether there is another space. A wrong password, or the open space's
   own, is just a search; the panic password works only on the password screen.
+- **Moving a chat there:** in a chat's **Details**, tap **Move to another space**, type the other space's password and
+  tap **Move**. The chat goes there with its messages, name, picture, look and imported chats, encrypted with that
+  space's key, and that space stays closed. The safety number stays the same, and their phone is told at once to write
+  there from now on. The row shows in every space, and the password is tried as the search tries it: a wrong one, or
+  this space's own, moves nothing. A chat with someone the other space already has a chat with stays where it is.
+  Whoever reads the other space with a forensic tool could tell the chat came from elsewhere: its contact still knows it
+  by this space's key.
 - **Discretion:** for privacy, the app never shows whether a second password is set. In the web app with
   notifications while closed on, the number on Erevos's icon stays while Erevos is closed: one that does not match
   the space you open may hint at another (**Number on the icon** turns it off).

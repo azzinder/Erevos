@@ -1017,6 +1017,78 @@ t('a chat moves into the hidden chats whole, with the same safety number, and go
   assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
 });
 
+t('a chat moves into another space whole, with the same safety number, and goes on there', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('hidden', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  await alice.e2e.firstSent(added.identity);
+  await alice.e2e.rename(added.identity, 'Bob');
+  const before = await alice.e2e.safetyNumber(added.identity);
+  const peer = `contact:${added.identity}`;
+  const history = await History.open('space', 0, key);
+  await history.add({ peer, text: 'γεια', mine: true, at: 1, tag: newTag() });
+
+  // Into the space another password opens, which has an identity key of its own.
+  const otherKey = randomBytes(32);
+  const other = { e2e: await E2E.open('space', 2, otherKey), history: await History.open('space', 2, otherKey) };
+  assert.notEqual(other.e2e.identityHex(), alice.e2e.identityHex());
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, other);
+  assert.deepEqual((await E2E.open('space', 0, key)).contacts(), []);
+  assert.deepEqual((await History.open('space', 0, key)).messages(), []);
+  const reopened = await E2E.open('space', 2, otherKey);
+  assert.equal(reopened.contacts()[0].name, 'Bob');
+  assert.equal(await reopened.safetyNumber(added.identity), before);
+  assert.deepEqual((await History.open('space', 2, otherKey)).messages().map((m) => m.text), ['γεια']);
+
+  // Told from that space's queue, Bob writes there, and that space reads it.
+  const queue = sender();
+  message(await bob.e2e.receive((await reopened.seal(added.identity, '', queue)).packet));
+  const answer = await bob.e2e.seal(hello.identity, 'εδώ είμαι', bob.from);
+  assert.equal(answer.sender, queue);
+  assert.equal(message(await reopened.receive(answer.packet)).text, 'εδώ είμαι');
+});
+
+t('a chat never moves into chats that have one of their own with the same contact, but a move cut short goes on', async () => {
+  const key = randomBytes(32);
+  const alice = await chat('space', 0, key);
+  const bob = await chat('hidden', 1);
+  const added = await alice.e2e.addContact(bob.code, alice.from);
+  await alice.e2e.firstSent(added.identity);
+  const history = await History.open('space', 0, key);
+  await history.add({ peer: `contact:${added.identity}`, text: 'εδώ', mine: true, at: 1, tag: newTag() });
+
+  // Another space knows Bob by its own identity key, in a chat of its own.
+  const otherKey = randomBytes(32);
+  const other = await chat('space', 2, otherKey);
+  await other.e2e.addContact(bob.code, other.from);
+  await other.e2e.rename(added.identity, 'Bob there');
+  const otherHistory = await History.open('space', 2, otherKey);
+  await otherHistory.add({ peer: `contact:${added.identity}`, text: 'εκεί', mine: true, at: 1, tag: newTag() });
+  await assert.rejects(
+    moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, { e2e: other.e2e, history: otherHistory }),
+    /a chat of their own there already/,
+  );
+  // Both stay as they were.
+  assert.equal((await E2E.open('space', 0, key)).contacts().length, 1);
+  assert.deepEqual((await History.open('space', 0, key)).messages().map((m) => m.text), ['εδώ']);
+  const there = await E2E.open('space', 2, otherKey);
+  assert.equal(there.contacts()[0].name, 'Bob there');
+  assert.equal(there.record(added.identity)?.ownIdentity ?? '', '');
+  assert.deepEqual((await History.open('space', 2, otherKey)).messages().map((m) => m.text), ['εκεί']);
+
+  // A move cut short after putting the chat in leaves the same chat in both: moving again ends it.
+  const thirdKey = randomBytes(32);
+  const third = { e2e: await E2E.open('space', 3, thirdKey), history: await History.open('space', 3, thirdKey) };
+  const contact = alice.e2e.record(added.identity)!;
+  await third.e2e.putIn({ ...contact, ownIdentity: alice.e2e.identityHex() }, alice.e2e.saidTo(added.identity));
+  await moveChat(added.identity, { e2e: alice.e2e, history, archive: null }, third);
+  assert.deepEqual((await E2E.open('space', 0, key)).contacts(), []);
+  assert.equal((await E2E.open('space', 3, thirdKey)).contacts().length, 1);
+  assert.deepEqual((await History.open('space', 3, thirdKey)).messages().map((m) => m.text), ['εδώ']);
+});
+
 t('a chat moving into hidden chats takes its imported chats along, and brings them back', async () => {
   const key = randomBytes(32);
   const alice = await chat('space', 0, key);

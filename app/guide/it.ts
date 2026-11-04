@@ -154,7 +154,7 @@ cronometro quando i messaggi della chat scompaiono. Accanto, il riquadro blu con
 videochiamata e quello verde con una cornetta una chiamata vocale. Tocca il nome, o **⋯** dopo di loro (**⋮** su
 Android), per i **Dettagli** della chat: la sua immagine (toccala per cambiarla), **Chiama**, **Video**, **Rinomina** e
 **Immagine**, poi **Messaggi effimeri**, **Mostrati offline**, **Aspetto della chat**, il **Codice di sicurezza**,
-**Sposta nelle chat nascoste** ed **Elimina messaggi**. **Fatto** li chiude.
+**Sposta nelle chat nascoste**, **Sposta in un altro spazio** ed **Elimina messaggi**. **Fatto** li chiude.
 
 **Media, link e file**, nei dettagli sotto **Cerca in questa chat**, elenca quello che contiene la chat, ogni tipo
 nella sua scheda con quanti ce ne sono: **Foto** (in una griglia), **Video**, **Messaggi vocali**, **Musica**, **File**
@@ -2518,6 +2518,13 @@ esistono.
   password. Ci mette lo stesso tempo qualunque cosa scrivi, quindi il tempo non mostra se c’è un altro spazio. Una
   password sbagliata, o quella dello spazio aperto, è solo una ricerca; la password di panico funziona solo nella
   schermata della password.
+- **Spostarci una chat:** nei **Dettagli** di una chat, tocca **Sposta in un altro spazio**, scrivi la password
+  dell’altro spazio e tocca **Sposta**. La chat ci va con i suoi messaggi, nome, immagine e aspetto, e le chat importate
+  in essa, cifrata con la chiave di quello spazio, e quello spazio resta chiuso. Il codice di sicurezza resta lo stesso,
+  e al suo telefono viene detto subito di scrivere lì d’ora in poi. La voce si vede in ogni spazio, e la password viene
+  provata come nella ricerca: una sbagliata, o quella dello spazio aperto, non sposta nulla. Una chat con qualcuno con
+  cui l’altro spazio ha già una chat sua resta dov’è. Chi legge l’altro spazio con uno strumento forense potrebbe capire
+  che la chat viene da altrove: il suo contatto la conosce ancora con la chiave di questo spazio.
 - **Discrezione:** per privacy, l’app non mostra mai se è impostata una seconda password. Nella web app con le
   notifiche ad app chiusa attive, il numero sull’icona di Erevos resta finché Erevos è chiuso: se non corrisponde allo
   spazio che apri, può lasciarne intuire un altro (**Numero sull’icona** lo disattiva).

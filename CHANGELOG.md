@@ -115,6 +115,14 @@ On main, not released yet:
   space writes its own as it opens, so the file is there whichever places link. Closed with **Receive while closed**
   off, a place's link does not run, and what the other side sends waits on the relay (14 days). On the device's place,
   new groups, group calls and moving a chat in or out stay on the phone. See docs/multi-device.md, Hidden places.
+- **Move a chat to another space**: in a chat's **Details** in a space, **Move to another space** asks for the other
+  space's password, tried as the search tries it (`lock/hidden.ts` `searchOpens`, every slot in the same time, its wrong
+  tries counted with the search's), and moves the chat there as into hidden chats (`lock/move-chat.ts`): the contact,
+  its messages, look and imported chats go into that space's sealed data, nothing of it stays, and the contact keeps the
+  identity key they know the chat by, so the safety number stays the same. That space is not opened; its relay queue
+  tells their phone at once to write there. The row shows in every space. A move into a space linked to a phone, or from
+  a linked device, is refused. A move, into hidden chats too, no longer replaces a chat that the chats it goes into have
+  with the same contact (`checkMove`); one a move cut short left there goes on moving. See docs/threat-model.md.
 
 ### Under the hood
 

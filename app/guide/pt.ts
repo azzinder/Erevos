@@ -152,7 +152,7 @@ um cronômetro quando as mensagens da conversa desaparecem. Ao lado deles, o blo
 videochamada e o verde com um fone, uma chamada de voz. Toque no nome, ou em **⋯** depois deles (**⋮** no Android),
 para os **Detalhes** da conversa: a imagem dela (toque nela para mudá-la), **Ligar**, **Vídeo**, **Renomear** e
 **Imagem**, depois **Mensagens temporárias**, **Aparecer offline**, **Aparência da conversa**, o **Número de segurança**,
-**Mover para conversas ocultas** e **Apagar mensagens**. **Pronto** os fecha.
+**Mover para conversas ocultas**, **Mover para outro espaço** e **Apagar mensagens**. **Pronto** os fecha.
 
 **Mídia, links e arquivos**, nos detalhes abaixo de **Buscar nesta conversa**, lista o que a conversa guarda,
 cada tipo na sua própria aba com quantos há: **Fotos** (numa grade), **Vídeos**, **Mensagens de voz**, **Música**,
@@ -2481,6 +2481,14 @@ existem.
   aberto se fecha, sem que nada dele fique, e o outro se abre, como com **Bloquear agora** e a senha dele. Leva o
   mesmo tempo seja o que for digitado, então o tempo não mostra se existe outro espaço. Uma senha errada, ou a do
   espaço aberto, é só uma busca; a senha de pânico funciona só na tela da senha.
+- **Mover uma conversa para lá:** nos **Detalhes** de uma conversa, toque em **Mover para outro espaço**, digite a senha
+  do outro espaço e toque em **Mover**. A conversa vai para lá com as mensagens, o nome, a imagem e a aparência dela, e
+  as conversas importadas nela, criptografada com a chave desse espaço, e esse espaço continua fechado. O número de
+  segurança continua o mesmo, e o celular da pessoa é avisado na hora para escrever para lá a partir de agora. A opção
+  aparece em todo espaço, e a senha é testada como na busca: uma errada, ou a do espaço aberto, não move nada. Uma
+  conversa com alguém com quem o outro espaço já tem uma conversa própria fica onde está. Quem ler o outro espaço com
+  uma ferramenta forense poderia perceber que a conversa veio de outro lugar: o contato dela ainda a conhece pela chave
+  deste espaço.
 - **Discrição:** por privacidade, o app nunca mostra se há uma segunda senha definida. No app web com as notificações
   com o app fechado ativadas, o número no ícone do Erevos fica enquanto o Erevos está fechado: se não bater com o
   espaço que você abre, pode denunciar outro (**Número no ícone** o desliga).
