@@ -13,6 +13,8 @@ export const whatsNew: Record<string, string> = {
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
   // 6.0.0-rc.2
+  "**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock).":
+    "**Τα κουμπιά της αρχικής οθόνης μένουν κάτω**: μετά τον κωδικό, η **Υπενθύμιση** και η **Νέα συνομιλία** της αρχικής οθόνης μπορούσαν να μένουν στη μέση της οθόνης, πάνω από τις συνομιλίες, με τη λίστα να τελειώνει πάνω από αυτά, ώσπου να βγεις από το Erevos και να ξαναμπείς. Τώρα η οθόνη ρωτά αμέσως το Android αν είναι ανοιχτό πληκτρολόγιο. Δες [Κλείδωμα με κωδικό](#lock).",
   "**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does.":
     "**Ξανά Linux, Windows και macOS**: η 6.0.0-rc.1 βγήκε χωρίς αυτά, γιατί ο έλεγχος ότι ανοίγει κάθε έκδοση για υπολογιστή δεν αναγνώριζε τον οδηγό της πρώτης εκκίνησης του Erevos. Τώρα τον αναγνωρίζει.",
   // 6.0.0-rc.1

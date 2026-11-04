@@ -30,6 +30,7 @@ export const VERSIONS: WhatsNew[] = [
     version: '6.0.0-rc.2',
     forYou: [],
     underTheHood: [
+      mark("**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock)."),
       mark("**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does."),
     ],
   },

@@ -22,6 +22,13 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway
+  up the screen, over the chats, with the list ending above them, until Erevos went away and came back (on the Pixel,
+  after the update to 6.0.0-rc.1). The keyboard of the password screen came and went before home was there, and
+  `KeyboardPaddedView` (`components/keyboard.tsx`) listened for the keyboard only from the first screen that used it,
+  and looked at Android's word only after a move: home came up with the keyboard library still holding a keyboard's
+  height, and nothing moved again. Now the keyboard is watched from the start, and every such screen asks Android as it
+  comes up, and again 0.6 s later.
 - **Linux, Windows and macOS again**: 6.0.0-rc.1 came out with Android, Sailfish OS and the web app only. The release's
   check that each build for computers opens (`desktop/main.js`, `--smoke`) waited for the chats or the password screen,
   and a first start now shows the setup instead. Now the setup counts as a first screen too. The setup also took the

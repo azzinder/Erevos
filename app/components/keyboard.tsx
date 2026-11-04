@@ -33,7 +33,9 @@ export { KeyboardAvoidingView, KeyboardAwareScrollView, KeyboardProvider } from 
  */
 export function KeyboardPaddedView({ bottom = 0, inset = 0, style, ...props }: ViewProps & { bottom?: number; inset?: number }) {
   const { height } = useReanimatedKeyboardAnimation();
-  useEffect(watchKeyboard, []);
+  // A screen that comes up may find the library still holding a keyboard that went before it was
+  // there, with nothing to move again: Android is asked.
+  useEffect(lookNow, []);
   // The keyboard moves: the screen follows the library's height again, and once that height has
   // been still a while, Android is asked whether a keyboard is there at all.
   useAnimatedReaction(
@@ -88,6 +90,17 @@ async function putDown(mine: number) {
   if (!(shown ?? Keyboard.isVisible())) keyboardDown.value = true;
 }
 
+/**
+ * Asks Android at once, as a screen comes up, and again once a keyboard that was going has gone:
+ * the screen may come up just as the field that had the keyboard goes.
+ */
+function lookNow() {
+  clearTimeout(settling);
+  const mine = ++round;
+  void putDown(mine);
+  settling = setTimeout(() => void putDown(mine), SETTLE_MS);
+}
+
 function watchKeyboard() {
   if (watching) return;
   watching = true;
@@ -101,6 +114,12 @@ function watchKeyboard() {
     if (state === 'active') settle();
   });
 }
+
+// From the start, not from the first screen that follows the keyboard: a keyboard that came and
+// went on the password screen before home was there left home's buttons floating halfway up the
+// screen, over the chats, and its list ending above them (on the Pixel, 6.0.0-rc.1, after the
+// update), until the app went away and came back.
+watchKeyboard();
 
 /**
  * Closes the keyboard, and resolves once it is down (at once if it was closed), when what sat on it
