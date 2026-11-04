@@ -62,6 +62,8 @@ export const settings: Record<string, string> = {
   'Not made. {error}': 'Nije napravljena. {error}',
   'Made a backup in {folder}.': 'Rezervna kopija je napravljena u {folder}.',
   'That file is not an Erevos backup.': 'Ta datoteka nije rezervna kopija Erevosa.',
+  'A newer Erevos made this backup, so this one cannot restore it. Update Erevos to the latest version, then restore it.':
+    'Ovu rezervnu kopiju napravio je noviji Erevos, pa je ovaj ne može vratiti. Ažurirajte Erevos na najnoviju verziju, pa je onda vratite.',
   'Could not read that file. {error}': 'Ta datoteka se nije mogla pročitati. {error}',
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': 'Datoteka {name} ({size}) sačuvana je u {folder}. Čuvajte njenu lozinku: bez nje ništa ne otvara rezervnu kopiju.',
   'Replace everything': 'Zamijeni sve',

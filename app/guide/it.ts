@@ -2839,8 +2839,9 @@ ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impos
   una volta. Per scriverci, collega di nuovo quel computer al telefono: le chat che il telefono ha ancora restano, con
   quello che è arrivato nel frattempo, e le altre se ne vanno. Sul telefono, scollega il dispositivo che era prima. Fai
   i backup sul telefono.
-- **Un backup da un Erevos più recente:** Erevos 0.1.8 e successivi lo aprono comunque, e ne ripristinano tutto quello
-  che conoscono; quelli precedenti dicono che una parte resta fuori. Aggiorna prima Erevos per ripristinarlo tutto.
+- **Versioni:** un backup si apre solo in un Erevos recente quanto quello che l’ha fatto, o più. Uno fatto da un Erevos
+  più recente viene rifiutato, senza cambiare nulla: aggiorna prima Erevos all’ultima versione. Un Erevos precedente
+  alla 6.0.0 dice di un backup dalla 6.0.0 in poi che non è un backup di Erevos: aggiorna anche quello.
 
 ## Pezzi del backup presso amici {#backup-pieces}
 

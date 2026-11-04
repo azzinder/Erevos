@@ -123,24 +123,26 @@ On main, not released yet:
   tells their phone at once to write there. The row shows in every space. A move into a space linked to a phone, or from
   a linked device, is refused. A move, into hidden chats too, no longer replaces a chat that the chats it goes into have
   with the same contact (`checkMove`); one a move cut short left there goes on moving. See docs/threat-model.md.
-- **Backups bring the phone back as it was**: photos, files and voice messages (`erevos-file-*`, `erevos-voice-*`) go
-  in parts of at most 4 MB, made and read one at a time, never all in memory: files beside the backup
+- **Backups bring the phone back as it was**: photos, files and voice messages (`erevos-file-*`, `erevos-voice-*`) go in
+  parts of at most 4 MB, made and read one at a time, never all in memory: files beside the backup
   (`<stem>.part<n>.erevos`, the stem made unique where the folder cannot be listed), or uploads of their own to the
-  server, padded to a whole multiple of one size, under random names as long as the backup's (the server can still
-  count them by their size). Each part is sealed with a key the backup's key gives and holds the backup's random id
-  and its number, so a part swapped, reordered, dropped or taken from another backup opens nothing; restoring reads
-  them all before anything is put in place, and when one is missing or damaged it names it and offers to restore the
-  rest without it, keeping the phone's own photos, files and voice messages. Automatic backups keep the 3 newest with
-  their parts, in the folder (also the desktop app's and Sailfish's) and on the server, which deletes what an upload
-  cut short before the next one. A backup also holds the panic password's entry, the portable settings (applied at
-  once), the Phone module's quick replies and call rules (a group's only where this phone has a group of that title
-  and account), each space's SMS data in full and the SIMs chosen for calls (put back on the same phone only, as SIM
-  ids are the phone's own), the copies waiting for contacts' other devices and the space's own carried packets, and
-  automatic backups' and their server's settings without the folder; the linked LoRa radio keeps its own settings.
-  The restore is marked before the first file is written. An SMS for later whose time passed before the restore is
-  held for the owner to send or delete. After a restore Android opens Permissions for the modules on. The web app
-  saves the files one tap at a time and says so when they were not all saved. Backups from before still open; an
-  older Erevos restores a new backup without its parts.
+  server, padded to a whole multiple of one size, under random names as long as the backup's (the server can still count
+  them by their size). Each part is sealed with a key the backup's key gives and holds the backup's random id and its
+  number, so a part swapped, reordered, dropped or taken from another backup opens nothing; restoring reads them all
+  before anything is put in place, and when one is missing or damaged it names it and offers to restore the rest without
+  it, keeping the phone's own photos, files and voice messages. Automatic backups keep the 3 newest with their parts, in
+  the folder (also the desktop app's and Sailfish's) and on the server, which deletes what an upload cut short before
+  the next one. A backup also holds the panic password's entry, the portable settings (applied at once), the Phone
+  module's quick replies and call rules (a group's only where this phone has a group of that title and account), each
+  space's SMS data in full and the SIMs chosen for calls (put back on the same phone only, as SIM ids are the phone's
+  own), the copies waiting for contacts' other devices and the space's own carried packets, and automatic backups' and
+  their server's settings without the folder; the linked LoRa radio keeps its own settings. The restore is marked before
+  the first file is written. An SMS for later whose time passed before the restore is held for the owner to send or
+  delete. After a restore Android opens Permissions for the modules on. The web app saves the files one tap at a time
+  and says so when they were not all saved. Backups from before still open. One holding an entry of a kind this Erevos
+  does not know is refused, with nothing changed, telling the owner to update Erevos to the latest version first
+  (`NewerBackupError`); keystore entries are written as kind 7 (`KIND_SECRET`), so an Erevos from before 6.0.0, which
+  looks for the lock as kind 0, says a new backup is no backup rather than restore it without its parts.
 
 ### Under the hood
 

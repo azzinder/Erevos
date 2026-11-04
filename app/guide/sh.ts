@@ -2711,8 +2711,9 @@ svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Posta
   biste pisali u njima, ponovo povežite taj računar s telefonom: razgovori koje telefon još ima ostaju, s onim što je
   stiglo u međuvremenu, a ostali nestaju. Na telefonu odvojite uređaj koji je to bio prije. Rezervne kopije pravite na
   telefonu.
-- **Rezervna kopija iz novijeg Erevosa:** Erevos 0.1.8 i noviji je također otvaraju i vraćaju sve što od nje poznaju;
-  prije toga kažu da dio ostaje izvan. Prvo ažurirajte Erevos da biste vratili sve.
+- **Verzije:** rezervna kopija se otvara samo u Erevosu jednako novom kao onaj koji ju je napravio, ili novijem. Kopija
+  novijeg Erevosa se odbija, a ništa se ne mijenja: prvo ažurirajte Erevos na najnoviju verziju. Erevos prije 6.0.0 za
+  kopiju od 6.0.0 nadalje kaže da nije rezervna kopija Erevosa: ažurirajte i njega.
 
 ## Dijelovi rezervne kopije kod prijatelja {#backup-pieces}
 

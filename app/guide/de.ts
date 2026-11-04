@@ -3011,9 +3011,9 @@ Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und G
   schreiben, und Erevos sagt das einmal. Um darin zu schreiben, verknüpfe diesen Computer erneut mit dem Telefon: Die
   Chats, die das Telefon noch hat, bleiben, mit dem, was seitdem kam, und die anderen verschwinden. Trenne auf dem
   Telefon das Gerät, das er vorher war. Mache die Backups auf dem Telefon.
-- **Ein Backup von einem neueren Erevos:** Erevos 0.1.8 und neuer öffnen es auch und stellen alles davon wieder her,
-  was sie kennen; ältere sagen, dass ein Teil davon draußen bleibt. Aktualisiere zuerst Erevos, um alles
-  wiederherzustellen.
+- **Versionen:** Ein Backup öffnet sich nur in einem Erevos, das so neu ist wie das, das es gemacht hat, oder neuer.
+  Eines von einem neueren Erevos wird abgelehnt, und nichts ändert sich: Aktualisiere Erevos zuerst auf die neueste
+  Version. Ein Erevos vor 6.0.0 sagt über ein Backup ab 6.0.0, es sei kein Erevos-Backup: Aktualisiere auch dieses.
 
 ## Backup-Teile bei Freunden {#backup-pieces}
 

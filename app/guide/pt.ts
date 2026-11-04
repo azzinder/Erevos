@@ -2799,8 +2799,9 @@ cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configura�
   escrever nelas, e o Erevos avisa uma vez. Para escrever nelas, conecte esse computador ao celular de novo: as
   conversas que o celular ainda tem ficam, com o que chegou desde então, e as outras somem. No celular, desconecte o
   dispositivo que ele era antes. Faça os backups no celular.
-- **Um backup de um Erevos mais novo:** o Erevos 0.1.8 e posteriores também o abrem, e restauram tudo o que conhecem
-  dele; antes disso, dizem que parte dele fica de fora. Atualize o Erevos primeiro para restaurar tudo.
+- **Versões:** um backup só abre num Erevos tão novo quanto o que o fez, ou mais. Um feito por um Erevos mais novo é
+  recusado, sem mudar nada: atualize primeiro o Erevos para a versão mais recente. Um Erevos anterior à 6.0.0 diz de um
+  backup da 6.0.0 em diante que não é um backup do Erevos: atualize-o também.
 
 ## Partes do backup com amigos {#backup-pieces}
 

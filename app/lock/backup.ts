@@ -46,9 +46,14 @@ import { FILE as XMPP } from './xmpp-data';
 // after another: their kind (1 byte), name (2-byte length, then the name) and data (4-byte length,
 // then the data). A backup from before Argon2id starts with MAGIC_1 and has no Argon2id: K is its
 // key. It still opens; one with MAGIC opens only in an Erevos from Argon2id on.
-// An entry of a kind or name this Erevos does not know, from a newer one, is left out, and the
-// rest restored; an Erevos before that refused the whole backup. What is damaged, or not sealed
-// with the backup's key, opens nothing.
+// An entry of a kind this Erevos does not know is a newer Erevos's: the whole backup is refused,
+// with nothing changed, and the owner told to update Erevos first (NewerBackupError). So a newer
+// Erevos that adds to what a backup holds gives it an entry of a kind of its own. One of a known
+// kind with a name this Erevos does not restore is left out, and the rest restored. The keystore's
+// entries are of kind SECRET from 6.0.0 on, KEY before: an Erevos from before 6.0.0, which knows
+// only KEY, finds none of the lock's entries in a newer backup and refuses it as no backup, rather
+// than restore it without what it does not know (its photos, files and voice messages among them).
+// What is damaged, or not sealed with the backup's key, opens nothing.
 //
 // Photos, files and voice messages (lock/attachment-files.ts, lock/voice-clips.ts) are far more
 // than the rest, more than a phone's memory holds at once. So they go in parts, made and read one
@@ -200,6 +205,10 @@ const PARTS = 'parts';
 // The phone module's own settings (lib/backup-native.ts).
 const KIND_NATIVE = 6;
 const NATIVE = 'phone';
+// A keystore entry, as written from 6.0.0 on; read as KEY (see above).
+const KIND_SECRET = 7;
+// The kinds this Erevos knows: any other is a newer one's.
+const KINDS = new Set([KIND_KEY, KIND_TEXT, KIND_BYTES, KIND_PHONE_SMS, KIND_PAD, KIND_PARTS, KIND_NATIVE, KIND_SECRET]);
 // An entry's kind, name length and data length, and PAD's name.
 const PAD_ENTRY = 1 + 2 + 4 + PAD.length;
 // What follows MAGIC: the salt, PBKDF2's rounds, Argon2id's salt, memory and passes.
@@ -226,8 +235,8 @@ type Entry = { kind: number; name: string; data: Uint8Array };
  *  that opens them, and the id of the phone it was made on ('' when it does not say). */
 export type BackupParts = { names: string[]; id: Uint8Array; key: Uint8Array; phone: string };
 
-/** What a backup holds, opened: ready to restore. `unknown`: how many entries in it this Erevos
- *  does not know (a newer one made it), left out. `parts`: its photos, files and voice messages,
+/** What a backup holds, opened: ready to restore. `unknown`: how many entries in it have a name
+ *  this Erevos does not restore, left out. `parts`: its photos, files and voice messages,
  *  in parts of their own; null for a backup from before them. */
 export type Backup = { entries: Entry[]; size: number; unknown: number; parts: BackupParts | null };
 
@@ -247,6 +256,13 @@ export type PartReader = (name: string) => Promise<Uint8Array | null>;
 export class NotABackupError extends Error {
   constructor() {
     super(t('That file is not an Erevos backup.'));
+  }
+}
+
+/** The backup holds what only a newer Erevos knows: it is refused, and nothing changed. */
+export class NewerBackupError extends Error {
+  constructor() {
+    super(t('A newer Erevos made this backup, so this one cannot restore it. Update Erevos to the latest version, then restore it.'));
   }
 }
 
@@ -380,7 +396,7 @@ function pack(entries: Entry[], head = new Uint8Array(0)): Uint8Array {
   const view = new DataView(out.buffer);
   let at = head.length;
   entries.forEach((entry, i) => {
-    out[at] = entry.kind;
+    out[at] = entry.kind === KIND_KEY ? KIND_SECRET : entry.kind;
     view.setUint16(at + 1, names[i].length);
     out.set(names[i], at + 3);
     at += 3 + names[i].length;
@@ -413,7 +429,8 @@ function unpack(bytes: Uint8Array, known: (kind: number, name: string) => boolea
   let at = 0;
   while (at < bytes.length) {
     if (at + 3 > bytes.length) throw new NotABackupError();
-    const kind = bytes[at];
+    if (!KINDS.has(bytes[at])) throw new NewerBackupError();
+    const kind = bytes[at] === KIND_SECRET ? KIND_KEY : bytes[at];
     const nameLength = view.getUint16(at + 1);
     at += 3;
     if (at + nameLength + 4 > bytes.length) throw new NotABackupError();
@@ -422,7 +439,7 @@ function unpack(bytes: Uint8Array, known: (kind: number, name: string) => boolea
     const length = view.getUint32(at);
     at += 4;
     if (at + length > bytes.length) throw new NotABackupError();
-    // One this Erevos does not know, as a newer one may hold, is left out and never written.
+    // A name this Erevos does not restore is left out and never written.
     if (kind === KIND_PAD && name === PAD) {
       // Nothing, there for the size.
     } else if (known(kind, name)) entries.push({ kind, name, data: bytes.slice(at, at + length) });
@@ -572,7 +589,7 @@ function partsOf(entry: Entry, key: Uint8Array): BackupParts {
   }
 }
 
-/** Opens a backup file with its password, a bare one too. Throws NotABackupError or WrongBackupPasswordError. */
+/** Opens a backup file with its password, a bare one too. Throws NotABackupError, NewerBackupError or WrongBackupPasswordError. */
 export async function openBackup(bytes: Uint8Array, password: string): Promise<Backup> {
   const old = bytes.length >= MAGIC_1.length && sameBytes(bytes.subarray(0, MAGIC_1.length), MAGIC_1);
   const bare = !old && !(bytes.length >= MAGIC.length && sameBytes(bytes.subarray(0, MAGIC.length), MAGIC));

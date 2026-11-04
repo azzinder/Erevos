@@ -2588,8 +2588,9 @@ them together. It is under **Settings** → **Data and devices** → **Backups**
   not the link to write in them: restored, they can be read there but not written in, and Erevos says so once. To write
   in them, link that computer to the phone again: the chats the phone still has stay, with what came since, and the
   others go. On the phone, unlink the device it was before. Make the backups on the phone.
-- **A backup from a newer Erevos:** Erevos 0.1.8 and later open it too, and restore all of it they know; before
-  that, they say some of it stays out. Update Erevos first to restore all of it.
+- **Versions:** a backup opens only in an Erevos as new as the one that made it, or newer. One made by a newer Erevos is
+  refused, with nothing changed: update Erevos to the latest version first. An Erevos from before 6.0.0 says a backup
+  from 6.0.0 on is not an Erevos backup: update it too.
 
 ## Backup pieces with friends {#backup-pieces}
 

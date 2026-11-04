@@ -2822,8 +2822,9 @@ uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Aj
   Para escribir en ellos, vuelve a vincular ese ordenador al teléfono: los chats que el teléfono todavía tiene se
   quedan, con lo que llegó desde entonces, y los demás desaparecen. En el teléfono, desvincula el dispositivo que era
   antes. Haz las copias en el teléfono.
-- **Una copia de un Erevos más nuevo:** Erevos 0.1.8 y posteriores también la abren, y restauran todo lo que conocen de
-  ella; antes de eso, dicen que una parte se queda fuera. Actualiza Erevos primero para restaurarla entera.
+- **Versiones:** una copia se abre solo en un Erevos tan nuevo como el que la hizo, o más. Una hecha por un Erevos más
+  nuevo se rechaza, sin cambiar nada: actualiza primero Erevos a la última versión. Un Erevos anterior a la 6.0.0 dice
+  de una copia de la 6.0.0 en adelante que no es una copia de seguridad de Erevos: actualízalo también.
 
 ## Piezas de copias con amigos {#backup-pieces}
 

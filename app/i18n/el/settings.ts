@@ -61,6 +61,8 @@ export const settings: Record<string, string> = {
   'Not made. {error}': 'Δεν έγινε. {error}',
   'Made a backup in {folder}.': 'Έγινε αντίγραφο ασφαλείας στο {folder}.',
   'That file is not an Erevos backup.': 'Αυτό το αρχείο δεν είναι αντίγραφο ασφαλείας του Erevos.',
+  'A newer Erevos made this backup, so this one cannot restore it. Update Erevos to the latest version, then restore it.':
+    'Αυτό το αντίγραφο το έφτιαξε νεότερο Erevos και δεν μπορεί να επαναφερθεί εδώ. Αναβάθμισε το Erevos στην τελευταία έκδοση και μετά κάνε την επαναφορά.',
   'Could not read that file. {error}': 'Δεν ήταν δυνατή η ανάγνωση του αρχείου. {error}',
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': 'Αποθηκεύτηκε το {name} ({size}) στο {folder}. Κράτα τον κωδικό του: τίποτα δεν ανοίγει το αντίγραφο χωρίς αυτόν.',
   'Replace everything': 'Αντικατάσταση όλων',

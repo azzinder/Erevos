@@ -62,6 +62,8 @@ export const settings: Record<string, string> = {
   'Not made. {error}': 'Non créée. {error}',
   'Made a backup in {folder}.': 'Sauvegarde créée dans {folder}.',
   'That file is not an Erevos backup.': 'Ce fichier n’est pas une sauvegarde Erevos.',
+  'A newer Erevos made this backup, so this one cannot restore it. Update Erevos to the latest version, then restore it.':
+    'Cette sauvegarde a été faite par un Erevos plus récent, donc celui-ci ne peut pas la restaurer. Mets Erevos à jour vers la dernière version, puis restaure-la.',
   'Could not read that file. {error}': 'Impossible de lire ce fichier. {error}',
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': '{name} ({size}) enregistré dans {folder}. Garde son mot de passe : rien n’ouvre la sauvegarde sans lui.',
   'Replace everything': 'Tout remplacer',

@@ -131,8 +131,6 @@ export const smsTools: Record<string, string> = {
   'Without the SMS': 'Sans les SMS',
   'Putting the SMS back into the phone…': 'Remise des SMS dans le téléphone…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.": '{sms} SMS et {mms} MMS sont retournés dans les SMS du téléphone. Ceux qu’il avait déjà sont restés tels quels.',
-  'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
-    'Cette sauvegarde vient d’un Erevos plus récent : ce que celui-ci ne connaît pas encore reste de côté. Mets d’abord Erevos à jour pour tout restaurer.',
   "The SMS could not go back into the phone's SMS: {error}": 'Les SMS n’ont pas pu retourner dans les SMS du téléphone : {error}',
   'Copy code': 'Copier le code',
   'The code is copied: any app that reads the clipboard can read it.': 'Le code est copié : toute appli qui lit le presse-papiers peut le lire.',

@@ -2978,9 +2978,10 @@ sous **Réglages** → **Données et appareils** → **Sauvegardes**.
   restaurées, elles peuvent y être lues mais pas écrites, et Erevos le dit une fois. Pour y écrire, associe de nouveau
   cet ordinateur au téléphone : les discussions que le téléphone a encore restent, avec ce qui est arrivé depuis, et les
   autres disparaissent. Sur le téléphone, dissocie l’appareil qu’il était avant. Fais les sauvegardes sur le téléphone.
-- **Une sauvegarde d’un Erevos plus récent :** Erevos 0.1.8 et plus récent l’ouvrent aussi, et en restaurent tout ce
-  qu’ils connaissent ; avant cela, ils disent qu’une partie reste dehors. Mets d’abord Erevos à jour pour tout
-  restaurer.
+- **Versions :** une sauvegarde ne s’ouvre que dans un Erevos aussi récent que celui qui l’a faite, ou plus. Une
+  sauvegarde faite par un Erevos plus récent est refusée, sans rien changer : mets d’abord Erevos à jour vers la
+  dernière version. Un Erevos d’avant la 6.0.0 dit d’une sauvegarde de la 6.0.0 ou plus récente que ce n’est pas une
+  sauvegarde Erevos : mets-le à jour aussi.
 
 ## Morceaux de sauvegarde chez des amis {#backup-pieces}
 

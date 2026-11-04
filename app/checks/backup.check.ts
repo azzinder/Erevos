@@ -32,6 +32,7 @@ import {
   makeBackup,
   MissingPartError,
   newBackupHard,
+  NewerBackupError,
   NotABackupError,
   openBackup,
   padme,
@@ -283,7 +284,7 @@ t('a wrong password or another file opens nothing', async () => {
   await assert.rejects(openBackup(changed, 'backup-pass'), WrongBackupPasswordError);
 });
 
-t('leaves out what is not Erevos’s own, as a newer Erevos may hold, and opens nothing damaged', async () => {
+t('leaves out what is not Erevos’s own, refuses what only a newer Erevos knows, and opens nothing damaged', async () => {
   // In the shape of a backup from before Argon2id, which still opens.
   const { key, salt, iter } = await backupKey('backup-pass', undefined, undefined, null);
   // A file sealed right, holding these entries.
@@ -307,9 +308,12 @@ t('leaves out what is not Erevos’s own, as a newer Erevos may hold, and opens 
   const lock = entry(0, 'erevos.lock', '{}');
   const known = await openBackup(forged([lock, entry(0, 'erevos.space.3', 'x')]), 'backup-pass');
   assert.deepEqual([known.entries.map((e) => e.name), known.unknown], [['erevos.lock', 'erevos.space.3'], 0]);
-  // A name or a kind this Erevos does not know is left out, and the rest restores; nothing of it is
+  // The keystore's entries as written from 6.0.0 on, of a kind of their own, open as the others.
+  const secret = await openBackup(forged([entry(7, 'erevos.lock', '{}'), entry(7, 'erevos.space.3', 'x')]), 'backup-pass');
+  assert.deepEqual([secret.entries.map((e) => [e.kind, e.name]), secret.unknown], [[[0, 'erevos.lock'], [0, 'erevos.space.3']], 0]);
+  // A name this Erevos does not restore is left out, and the rest restores; nothing of it is
   // written anywhere.
-  for (const [kind, name] of [[0, 'erevos.lock-tries'], [2, '../erevos-history'], [1, 'erevos-voice-aa'], [9, 'erevos-from-later']] as const) {
+  for (const [kind, name] of [[0, 'erevos.lock-tries'], [2, '../erevos-history'], [1, 'erevos-voice-aa']] as const) {
     const backup = await openBackup(forged([lock, entry(kind, name, 'x')]), 'backup-pass');
     assert.deepEqual([backup.entries.map((e) => e.name), backup.unknown], [['erevos.lock'], 1], name);
     await restoreBackup(backup);
@@ -319,7 +323,12 @@ t('leaves out what is not Erevos’s own, as a newer Erevos may hold, and opens 
   // Cut short, sealed with another key, holding nothing Erevos knows, or empty: it opens nothing.
   await assert.rejects(openBackup(forged([lock, entry(1, 'erevos-history', 'x').subarray(0, 10)]), 'backup-pass'), NotABackupError);
   await assert.rejects(openBackup(forged([lock], randomBytes(32)), 'backup-pass'), WrongBackupPasswordError);
-  await assert.rejects(openBackup(forged([entry(9, 'erevos-from-later', 'x')]), 'backup-pass'), NotABackupError);
+  await assert.rejects(openBackup(forged([entry(0, 'erevos.lock-tries', 'x')]), 'backup-pass'), NotABackupError);
+  // A kind only a newer Erevos knows: the whole backup is refused, and nothing changes.
+  store.set('erevos.lock', 'as it was');
+  await assert.rejects(openBackup(forged([lock, entry(9, 'erevos-from-later', 'x')]), 'backup-pass'), NewerBackupError);
+  await assert.rejects(openBackup(forged([entry(9, 'erevos-from-later', 'x'), lock]), 'backup-pass'), NewerBackupError);
+  assert.equal(store.get('erevos.lock'), 'as it was');
   await assert.rejects(openBackup(new Uint8Array(0), 'backup-pass'), NotABackupError);
 });
 
@@ -959,7 +968,7 @@ t('a backup from before parts opens and restores as before: the phone keeps its 
   assert.equal(files.get('erevos-fanout'), 'copies here');
 });
 
-t('an Erevos from before parts opens a backup with them as one of its own kind, and leaves out what it does not know, saying a newer one made it', async () => {
+t('an Erevos from before 6.0.0 opens a new backup but finds none of the lock in it, so refuses it as no backup', async () => {
   await phone();
   photos(2);
   const password = 'backup-pass';
@@ -978,8 +987,11 @@ t('an Erevos from before parts opens a backup with them as one of its own kind, 
     at += 4 + packed.readUInt32BE(at);
     kinds.set(kind, [...(kinds.get(kind) ?? []), name]);
   }
-  // Keys, text and bytes, as ever, and two kinds it never knew, which it leaves out and counts.
-  assert.deepEqual([...kinds.keys()].sort(), [0, 1, 2, 5, 6]);
+  // Text and bytes, as ever, and kinds it never knew, which it leaves out: the keystore's entries
+  // among them, so it finds no lock (erevos.lock, erevos.space-keys), and says it is no backup,
+  // rather than restore it without its photos, files and voice messages.
+  assert.deepEqual([...kinds.keys()].sort(), [1, 2, 5, 6, 7]);
+  assert.ok(kinds.get(7)!.includes('erevos.lock'));
   assert.deepEqual(kinds.get(5), ['parts']);
   assert.deepEqual(kinds.get(6), ['phone']);
   assert.ok(!kinds.get(2)!.some((name) => name.startsWith('erevos-file-') || name.startsWith('erevos-voice-')));

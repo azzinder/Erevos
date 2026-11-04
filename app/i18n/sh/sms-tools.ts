@@ -137,8 +137,6 @@ export const smsTools: Record<string, string> = {
   'Putting the SMS back into the phone…': 'Vraćanje SMS poruka u telefon…',
   "{sms} SMS and {mms} MMS went back into the phone's SMS. Those it had already stayed as they were.":
     'U SMS poruke telefona vraćeno je: {sms} SMS i {mms} MMS. One koje je telefon već imao ostale su kakve su bile.',
-  'A newer Erevos made this backup: what this one does not know yet stays out. Update Erevos first to restore all of it.':
-    'Ovu rezervnu kopiju napravio je noviji Erevos: ono što ovaj još ne poznaje izostavlja se. Prvo ažurirajte Erevos da biste vratili sve.',
   "The SMS could not go back into the phone's SMS: {error}": 'SMS poruke nisu se mogle vratiti u SMS poruke telefona: {error}',
   'Copy code': 'Kopiraj kod',
   'The code is copied: any app that reads the clipboard can read it.': 'Kod je kopiran: svaka aplikacija koja čita međuspremnik može ga pročitati.',
