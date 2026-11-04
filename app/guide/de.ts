@@ -2161,6 +2161,12 @@ Die Einladung ist eine Daten-SMS, die Messaging-Apps nicht anzeigen, also zeigt 
 - **Fotos (MMS):** Das Bild vor dem Nachrichtenfeld (**Foto**) fügt ein Foto hinzu, verkleinert, damit es in eine MMS
   passt (etwa 280 KB), mit nichts darin außer dem Bild. Fotos, die per MMS kommen, erscheinen in der Unterhaltung. Eine
   MMS ist so offen wie eine SMS: Die Telefongesellschaft kann sie sehen.
+- **Empfänger wählen:** Tippe unter **Neue SMS** auf **Kontakte**, um aus deinen Kontakten zu wählen, mit Suche, oder
+  tippe einfach: Kontakte, die zu Name oder Nummer passen, erscheinen unter dem Feld, und ein Tippen füllt es aus. Ein
+  Kontakt mit mehreren Nummern zeigt für jede eine Zeile. Bei einer Gruppe wird jede Wahl zu den vorhandenen Nummern
+  hinzugefügt. Es sind die Kontakte des Telefons und, bei entsperrtem Erevos, die nur in Erevos gehaltenen und deine
+  Erevos-Kontakte mit Nummer, nie die Namen versteckter Chats. Ist nur die SMS-Ansicht offen, erscheinen nur die
+  Kontakte des Telefons. Android fragt vorher, ob Erevos sie lesen darf.
 - **Gruppen-MMS:** Gib unter **Einstellungen** → **Telefon und SMS** → **SMS** → **Neue SMS** mehrere Nummern durch
   Kommas getrennt ein und tippe auf **Schreiben**. Jede Nachricht geht an alle als eine MMS, auch reiner Text, und ihre
   Antworten kommen in dieselbe Unterhaltung, jede mit dem, der sie geschrieben hat. Alle darin sehen die Nummern aller,

@@ -2022,6 +2022,12 @@ Erevos no muestra nada.
 - **Fotos (MMS):** la imagen antes del campo de mensaje (**Foto**) añade una foto, reducida para caber en un MMS (unos
   280 KB), sin nada más que la imagen. Las fotos que llegan por MMS aparecen en la conversación. Un MMS es tan normal
   como un SMS: la compañía telefónica puede verlo.
+- **Elegir al destinatario:** en **SMS nuevo**, toca **Contactos** para elegir entre tus contactos, con búsqueda, o
+  simplemente escribe: los contactos que coinciden con el nombre o el número que escribes aparecen bajo el campo, y un
+  toque lo rellena. Un contacto con varios números muestra una línea por cada uno. En un grupo, cada contacto que elijas
+  se añade a los números que ya hay. Son los contactos del teléfono y, con Erevos desbloqueado, los que se guardan solo
+  en Erevos y tus contactos de Erevos con número, nunca los nombres de chats ocultos. Con solo los SMS abiertos, solo
+  salen los contactos del teléfono. Android pregunta antes si Erevos puede leerlos.
 - **MMS de grupo:** en **Ajustes** → **Teléfono y SMS** → **SMS** → **SMS nuevo**, escribe varios números separados por
   comas y toca **Escribir**. Cada mensaje va a todos ellos como un solo MMS, también el texto solo, y sus respuestas
   llegan a la misma conversación, cada una con quién la escribió. Todos los que están en ella ven el número de todos, y

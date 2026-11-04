@@ -28,7 +28,8 @@ import { PlusIcon, SearchIcon } from './icons';
 import { KeyboardPaddedView } from './keyboard';
 import { LockSign, ShortcutTile } from './shortcut-tile';
 import { SmsActions, type SmsTarget } from './sms-actions';
-import { Button, Chip, Field, fontStyle, Input, Row, Sheet, Text } from './ui';
+import { SmsRecipient } from './sms-recipient';
+import { Button, Chip, fontStyle, Row, Sheet, Text } from './ui';
 import { UndoBar } from './undo-bar';
 
 // The home screen when the password was given for the SMS (their icon, the widget's SMS button, an
@@ -201,9 +202,7 @@ export function SmsHome() {
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
       <Sheet visible={writing} onClose={closeWriting} title={t('New SMS')}>
-        <Field label={t('Phone number')} hint={t('For a group MMS, several numbers separated by commas.')}>
-          <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" autoFocus onSubmitEditing={write} />
-        </Field>
+        <SmsRecipient value={number} onChange={setNumber} onSubmit={write} autoFocus />
         <Button title={t('Write')} onPress={write} />
         {note ? <Text tone="muted">{note}</Text> : null}
       </Sheet>

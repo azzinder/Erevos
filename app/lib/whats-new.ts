@@ -25,6 +25,7 @@ export const NEXT: Changes = {
     mark("**Links open on Sailfish OS**: **Sign in with LPHL**, a donation page or a link in a chat opened nothing there. Now Sailfish OS opens them: a web page in the browser, a number in the phone or the messages, an address in the mail."),
     mark("**Matrix, and photos and files in XMPP and Nostr chats, on Sailfish OS**: Erevos there could not reach their servers over HTTPS, so Matrix could not sign in, photos and files neither came nor went, and links showed no preview. Now they work as on a computer."),
     mark("**A phone call shows its screen**: with Erevos as the phone app, a call that came could ring with the phone's screen black, so it could not be answered, when Android's full-screen notifications for Erevos, Erevos's notices or its notices of incoming calls were off. Now the call screen comes up by itself, over the lock screen too, and turns the screen on. A call that Do Not Disturb holds back still comes quietly, with the screen off. See [Phone](#phone)."),
+    mark("**Pick the recipient of a new SMS from your contacts**: **New SMS** has a **Contacts** button that opens your contacts with a search, and typing a name or number suggests the contacts that match. A contact with several numbers shows a line for each, and for a group MMS each one you pick is added. With only the SMS open, only the phone's contacts show. See [SMS](#sms)."),
   ],
   underTheHood: [],
 };

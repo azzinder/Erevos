@@ -25,6 +25,12 @@ On main, not released yet:
   off. Now `CallService` also starts the call screen itself while the phone is locked or its screen off, or when the
   notice cannot show. A call that Do Not Disturb holds back, or that a screening app silenced, still comes quietly. The
   notice also gives Android the caller's number, so that Do Not Disturb lets the notice of a call it lets ring show.
+- **Pick the recipient of a new SMS from your contacts**: **New SMS** (the SMS home and Settings → Phone and SMS →
+  SMS) has a **Contacts** button that opens the contacts with a search, and typing a name or number suggests the
+  contacts that match, accents and case aside. A contact with several numbers shows a line for each; for a group MMS
+  each pick is added to the numbers there. The contacts are the Phone's search's: the phone's and, with Erevos
+  unlocked, those kept only in Erevos and Erevos contacts with a number, never hidden chats'; with only the SMS open,
+  the phone's alone.
 
 ### Under the hood
 

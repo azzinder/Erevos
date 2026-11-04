@@ -2127,6 +2127,13 @@ téléphone sans Erevos n’affiche rien.
 - **Photos (MMS) :** l’image avant le champ de message (**Photo**) ajoute une photo, réduite pour tenir dans un MMS
   (environ 280 Ko), sans rien d’autre que l’image. Les photos qui arrivent par MMS s’affichent dans la conversation. Un
   MMS est aussi peu protégé qu’un SMS : l’opérateur téléphonique peut le voir.
+- **Choisir le destinataire :** sous **Nouveau SMS**, touche **Contacts** pour choisir parmi tes contacts, avec une
+  recherche, ou tape simplement : les contacts dont le nom ou le numéro correspond à ce que tu tapes s'affichent sous le
+  champ, et un toucher le remplit. Un contact avec plusieurs numéros montre une ligne pour chacun. Pour un groupe,
+  chaque contact choisi s'ajoute aux numéros déjà là. Ce sont les contacts du téléphone et, avec Erevos déverrouillé,
+  ceux gardés seulement dans Erevos et tes contacts Erevos avec un numéro, jamais les noms des chats cachés. Avec
+  seulement les SMS ouverts, seuls les contacts du téléphone s'affichent. Android demande d'abord si Erevos peut les
+  lire.
 - **MMS de groupe :** sous **Réglages** → **Téléphone et SMS** → **SMS** → **Nouveau SMS**, tape plusieurs numéros
   séparés par des virgules et appuie sur **Écrire**. Chaque message part à tous en un seul MMS, même un texte seul, et
   leurs réponses arrivent dans la même conversation, chacune avec son auteur. Tout le monde y voit le numéro de chacun,

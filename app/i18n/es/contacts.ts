@@ -8,6 +8,7 @@ export const contacts: Record<string, string> = {
   'This build of Erevos has no contacts part yet. It comes with the next build of the app.': 'Esta versión de Erevos aún no tiene la parte de contactos. Llegará con la próxima versión de la app.',
   "Only Erevos on Android reads the phone's contacts.": 'Solo Erevos en Android lee los contactos del teléfono.',
   'Search contacts': 'Buscar contactos',
+  'Choose from contacts': 'Elegir entre los contactos',
   "Erevos may not read the phone's contacts yet": 'Erevos aún no tiene permiso para leer los contactos del teléfono',
   "Erevos reads and changes them only in Android's own contacts, where they stay for your other apps. It sends them nowhere.":
     'Erevos solo los lee y los cambia en los contactos del propio Android, donde siguen estando para tus otras apps. No los envía a ningún sitio.',
