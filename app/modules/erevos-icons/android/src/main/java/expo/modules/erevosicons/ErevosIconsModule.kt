@@ -62,6 +62,7 @@ class ErevosIconsModule : Module() {
         if (kept != null) {
           show(context, icon, kept)
           offPrefs(context).edit().remove(icon).apply()
+          recount(context)
         }
       } else if (kept == null) {
         offPrefs(context).edit().putString(icon, colorOf(context, icon)).apply()
@@ -69,6 +70,7 @@ class ErevosIconsModule : Module() {
         for (each in COLORS) {
           packages.setComponentEnabledSetting(component(context, icon, each), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
         }
+        recount(context)
       }
       true
     }
