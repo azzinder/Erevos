@@ -6,6 +6,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 
 import { ask } from './alert';
 import { integrityStatus, WEB_APP } from './integrity';
+import { checkWanted, modulesOn, type Module } from './modules';
 import { t } from './i18n';
 import type { Check, CheckId } from './permission-checks';
 import { secureGet, secureSet } from './secure';
@@ -77,9 +78,10 @@ async function subscribed(): Promise<boolean | null> {
   }
 }
 
-/** Every check that applies to this browser; none in the shells. */
-export async function readChecks(): Promise<Check[]> {
+/** Every check that applies to this browser, for what the modules `of` use (lib/modules.ts), those on unless given; none in the shells. */
+export async function readChecks(of: Iterable<Module> = modulesOn()): Promise<Check[]> {
   if (!HAS_CHECKS || !BROWSER) return [];
+  const modules = [...of];
   const [microphone, camera, kept, address, pushWanted] = await Promise.all([
     answer('microphone'),
     answer('camera'),
@@ -90,7 +92,7 @@ export async function readChecks(): Promise<Check[]> {
       () => false,
     ),
   ]);
-  return webChecksFrom({
+  const checks = webChecksFrom({
     browser: BROWSER,
     android: /Android/.test(userAgent),
     installed: installed(),
@@ -103,6 +105,7 @@ export async function readChecks(): Promise<Check[]> {
     camera,
     persisted: kept,
   });
+  return checks.filter((check) => checkWanted(check.id, modules));
 }
 
 let offered = false;

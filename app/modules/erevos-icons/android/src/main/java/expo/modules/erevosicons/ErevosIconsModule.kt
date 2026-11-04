@@ -38,7 +38,34 @@ class ErevosIconsModule : Module() {
         Calculator.prefs(context).edit().putString(Calculator.EREVOS_COLOR, color).apply()
         return@Function true
       }
+      // An icon taken off while its part of Erevos is off: its colour is kept for when it is back.
+      if (offColor(context, icon) != null) {
+        offPrefs(context).edit().putString(icon, color).apply()
+        return@Function true
+      }
       show(context, icon, color)
+      true
+    }
+
+    // Takes the Phone's or the SMS's icon off the phone's apps while that part of Erevos is off
+    // (lib/modules.ts), its colour kept; or puts it back in that colour. Erevos's own icon and the
+    // Contacts' always stay. False for any other icon, or with no app context.
+    Function("setShown") { icon: String, shown: Boolean ->
+      val context = context() ?: return@Function false
+      if (icon != "phone" && icon != "sms") return@Function false
+      val kept = offColor(context, icon)
+      if (shown) {
+        if (kept != null) {
+          show(context, icon, kept)
+          offPrefs(context).edit().remove(icon).apply()
+        }
+      } else if (kept == null) {
+        offPrefs(context).edit().putString(icon, colorOf(context, icon)).apply()
+        val packages = context.packageManager
+        for (each in COLORS) {
+          packages.setComponentEnabledSetting(component(context, icon, each), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
+        }
+      }
       true
     }
 
@@ -109,11 +136,17 @@ private fun launcher(prefix: String, color: String, first: String) =
 private fun component(context: Context, icon: String, color: String) =
   ComponentName(context.packageName, ICONS.getValue(icon).name(context, color))
 
-/** The colour whose alias is on: turned on here, or on by the manifest and never changed; Erevos's behind the calculator, the one kept. */
+// The colours of the icons taken off while their part of Erevos is off, by icon.
+private fun offPrefs(context: Context) = context.applicationContext.getSharedPreferences("erevos-icons-off", Context.MODE_PRIVATE)
+
+private fun offColor(context: Context, icon: String): String? = offPrefs(context).getString(icon, null)?.takeIf { it in COLORS }
+
+/** The colour whose alias is on: turned on here, or on by the manifest and never changed; Erevos's behind the calculator, and an icon taken off, the one kept. */
 private fun colorOf(context: Context, icon: String): String {
   if (icon == "erevos" && Calculator.isOn(context)) {
     Calculator.prefs(context).getString(Calculator.EREVOS_COLOR, null)?.takeIf { it in COLORS }?.let { return it }
   }
+  offColor(context, icon)?.let { return it }
   val packages = context.packageManager
   val first = ICONS.getValue(icon).first
   return COLORS.firstOrNull { color ->

@@ -224,10 +224,12 @@ phone's own settings do. In the other languages it is named in that language and
   lists them, and each part opens alone.
 - **Only what works here shows:** on a computer, on Sailfish OS and in the web app there is no **Phone and SMS**,
   Tor, Nostr or LoRa, and a group with nothing to set here does not show.
+- **Only the modules on show:** the settings of a module that is off, such as **Matrix** or **Phone and SMS**, do not
+  show either: see [Modules](#modules).
 
 | Group | What is in it |
 | --- | --- |
-| **General** | **Language**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
+| **General** | **Language**, **Modules**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Modules](#modules), [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
 | **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android), **Widget** (Android) and **Vibrate on touch** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
@@ -254,6 +256,37 @@ at once.
   too, and every space opens in it. It is not sealed: whoever holds the phone can see which language you chose.
 - **Android's notices** (an incoming call, new messages, Erevos receiving in the background) are in Greek when Erevos
   is, and in English in every other language.
+
+## Modules {#modules}
+
+Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups and calls, end-to-end encrypted, with
+the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The Phone and
+the SMS are only on Android. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
+**General** → **Modules** turns each on or off at any time.
+
+The very first time Erevos starts, before its first space opens, it sets itself up as an installer does, in a few
+steps: what Erevos is, and its language; which modules to use, each with what it does; then, on an Android phone, what
+Android should allow for them, Erevos as the phone app and as the SMS app among it, each with its own button.
+**Start Erevos** keeps the choice and opens the first space. After an update every module stays on, as before, until
+you change them.
+
+- **Off:** a module that is off does not start: nothing of it runs, waits at a server or rings, so Erevos is lighter,
+  opens faster and uses less battery. It shows nowhere: not on the home screen, in its menu or in Settings, and the
+  Phone's and the SMS's icons leave the phone's apps. A link, a notice or the widget that still leads to it says that
+  it is off, with **Open Modules**.
+- **Nothing is deleted:** its chats, contacts, accounts and settings are there again when it is back on. Contacts, the
+  password lock, the spaces, the backups and Settings are always there, whatever is on.
+- **On again:** a module turned on starts at once, and **Permissions** shows what Android should allow for it, as at
+  the first start.
+- **The Phone or the SMS off** while Erevos is still the phone app or the SMS app: Android goes on giving Erevos the
+  calls or the SMS, kept as before. **Open Default apps** chooses another app.
+- **The Phone alone:** with no module that brings messages on, the home screen says so, with **Phone** and
+  **Modules**.
+- **Kept on the phone:** the choice is for this phone, the same in every space, and kept outside the spaces, as the
+  icons are, since the Phone may open without the password.
+
+**Why:** not everyone wants all of it. Someone who uses Erevos only as a phone, or only for Nostr, gets an app that
+does only that, and a phone that does not wait in the background for messages that never come.
 
 ## Chat with a nearby phone {#nearby}
 

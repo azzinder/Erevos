@@ -8,6 +8,7 @@ import { FlatList, Image, PermissionsAndroid, Platform, Pressable, ScrollView, S
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatRow, MyselfRow } from '../components/chat-row';
+import { NewSmsSheet } from '../components/new-sms-sheet';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
 import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
@@ -29,7 +30,8 @@ import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
-import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
+import { moduleOn, onModulesChange, useModules } from '../lib/modules';
 import { matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
@@ -71,15 +73,17 @@ type Relay = 'ready' | 'no-queue' | 'none';
 
 // The places of Erevos; its settings are in Settings (lib/settings.ts), the Phone and Contacts in
 // the tiles at the top. `links`: where there are links to phones nearby.
-const MENU: { title: string; detail: string; href: Href; links?: boolean }[] = [
-  { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group' },
-  { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups' },
-  { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred' },
+// `erevos`: part of Erevos's own chats, so only while they are on (lib/modules.ts).
+const MENU: { title: string; detail: string; href: Href; links?: boolean; erevos?: boolean }[] = [
+  { title: mark('New group'), detail: mark('A group chat with your contacts, end-to-end encrypted'), href: '/new-group', erevos: true },
+  { title: mark('Public groups'), detail: mark('Make a group anyone with its link can join, or join one by a link'), href: '/public-groups', erevos: true },
+  { title: mark('Starred messages'), detail: mark('The messages you starred, in all your chats'), href: '/starred', erevos: true },
   {
     title: mark('Nearby phones'),
     detail: HAS_RADIO ? mark('Your contacts over Bluetooth and Wi-Fi, without internet') : mark('Your contacts on the same Wi-Fi, without internet'),
     href: '/chat',
     links: true,
+    erevos: true,
   },
   { title: mark('User guide'), detail: mark('How Erevos works, and what is not protected yet'), href: '/guide' },
 ];
@@ -112,11 +116,19 @@ function Home() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const lock = useLock();
+  // Only the modules on show (lib/modules.ts): their chats, tiles, menu and buttons.
+  const modules = useModules();
+  const erevosOn = modules.has('erevos');
+  const phoneOn = modules.has('phone');
+  // Whether any module that brings messages is on: with none (the Phone alone), there is no list.
+  const messagesOn = erevosOn || modules.has('sms') || modules.has('nostr') || modules.has('matrix') || modules.has('xmpp');
   const [rows, setRows] = useState<InboxRow[] | null>(null);
   const [relay, setRelay] = useState<Relay>('none');
   const [query, setQuery] = useState('');
   const params = useLocalSearchParams<{ show?: string; opened?: string }>();
-  const [show, setShow] = useState<InboxShow>(showOf(params.show));
+  const [chosenShow, setShow] = useState<InboxShow>(showOf(params.show));
+  // A part whose module is off (an icon or the widget may still name it) shows all.
+  const show: InboxShow = chosenShow === 'all' || modules.has(chosenShow) ? chosenShow : 'all';
   useEffect(() => {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show, params.opened]);
@@ -145,6 +157,7 @@ function Home() {
   // A search sent with the keyboard's search key is also tried as a PIN of hidden chats. A right
   // one opens those and the search empties; a wrong one is a search like any other.
   async function searchSubmitted() {
+    if (!moduleOn('erevos')) return;
     const place = await searchHidden(currentSpace().space, query).catch(() => null);
     if (!place) return;
     setQuery('');
@@ -235,8 +248,9 @@ function Home() {
   const [online, setOnline] = useState<Set<string>>(new Set());
   // The phone's SMS as last read: the list shows them while they are read again.
   const smsShown = useRef<SmsList>(NO_SMS);
-  // Read again, as when the names were just turned on.
+  // Read again, as when the names were just turned on, or a module was turned on or off.
   const [again, setAgain] = useState(0);
+  useEffect(() => onModulesChange(() => setAgain((n) => n + 1)), []);
   // How many SMS conversations are in the space's Archive, Spam and Trash.
   const [folders, setFolders] = useState({ archived: 0, spam: 0, trash: 0 });
   // The SMS conversation held down, whose actions show.
@@ -266,7 +280,9 @@ function Home() {
         let chatsRead: ((sms: SmsList) => void) | null = null;
         // The phone's SMS show only once Erevos is its SMS app.
         let smsFirst = false;
-        if (smsStatus()?.isDefault) {
+        // Erevos's own chats, groups and those brought in from other apps only with Erevos on.
+        const erevos = moduleOn('erevos');
+        if (smsStatus()?.isDefault && moduleOn('sms')) {
           smsFirst = smsRead.current === false;
           void quiet(smsRows(current, key), smsShown.current).then((sms) => {
             if (!active) return;
@@ -283,12 +299,13 @@ function Home() {
               .catch(() => undefined);
           }
         } else smsShown.current = NO_SMS;
+        const groupsOn = erevos && canGroup();
         void Promise.all([
-          quiet(chats(), [[], []]),
-          quiet(Archive.open('space', current, key).then((a) => a.chats()), []),
+          erevos ? quiet(chats(), [[], []]) : Promise.resolve<Awaited<ReturnType<typeof chats>>>([[], []]),
+          erevos ? quiet(Archive.open('space', current, key).then((a) => a.chats()), []) : Promise.resolve([]),
           quiet(loadCurrentSpaceData(), null),
-          canGroup() ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
-          canGroup() ? quiet(spaceGroups().then((g) => g.list().flatMap((group) => groupFindables(group.id, g.messages(group.id)))), []) : Promise.resolve([]),
+          groupsOn ? quiet(spaceGroups().then((g) => g.list() as InboxGroup[]), []) : Promise.resolve([] as InboxGroup[]),
+          groupsOn ? quiet(spaceGroups().then((g) => g.list().flatMap((group) => groupFindables(group.id, g.messages(group.id)))), []) : Promise.resolve([]),
         ]).then(([[contacts, messages], imported, data, groups, said]) => {
           if (!active) return;
           const name = (identity: string) => publicMemberName(identity) ?? memberName(identity, contacts);
@@ -325,7 +342,7 @@ function Home() {
       // Who shows online, again every few seconds, as it lasts only a while. A chat that appears
       // offline does not see it.
       const lookOnline = () =>
-        void (hasCore() ? spaceChats() : Promise.reject())
+        void (hasCore() && moduleOn('erevos') ? spaceChats() : Promise.reject())
           .then(({ e2e }) => {
             const at = Date.now();
             const ids = e2e.contacts().filter((c) => !c.hide && e2e.onlineUntil(c.identity, at) > 0).map((c) => c.identity);
@@ -386,17 +403,18 @@ function Home() {
   useEffect(() => onXmppChange(() => setXmppTick((n) => n + 1)), []);
   const [nostrTick, setNostrTick] = useState(0);
   useEffect(() => onNostrDmChange(() => setNostrTick((n) => n + 1)), []);
-  const matrix = matrixNow().state;
-  const xmpp = xmppNow().state;
-  const nostr = nostrDmNow().state;
+  const matrix = modules.has('matrix') ? matrixNow().state : null;
+  const xmpp = modules.has('xmpp') ? xmppNow().state : null;
+  const nostr = modules.has('nostr') ? nostrDmNow().state : null;
   const everyRow = useMemo(() => {
     if (!rows) return rows;
-    let all = rows;
+    // The copy kept from last time may still have a module's rows that is off now.
+    let all = rows.filter((row) => rowOn(row, modules));
     if (matrix) all = mergeRows(all, matrixInboxRows(matrix));
     if (xmpp) all = mergeRows(all, xmppInboxRows(xmpp));
     if (nostr) all = mergeRows(all, nostrInboxRows(nostr));
     return all;
-  }, [rows, matrix, matrixTick, xmpp, xmppTick, nostr, nostrTick]);
+  }, [rows, modules, matrix, matrixTick, xmpp, xmppTick, nostr, nostrTick]);
   const shown = useMemo(() => {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
@@ -405,6 +423,12 @@ function Home() {
   const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr);
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
+  // Where New chat goes: on Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one
+  // (app/xmpp.tsx); on Nostr's, one with another Nostr app (app/nostr-chats.tsx); otherwise an
+  // Erevos chat, or, with Erevos off, the first other part on, a new SMS last. None without chats.
+  const newChat: Href | 'sms' | null =
+    show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : show === 'sms' && !erevosOn ? 'sms' : erevosOn ? '/chat?setup=1' : modules.has('matrix') ? '/matrix' : modules.has('xmpp') ? '/xmpp' : modules.has('nostr') ? '/nostr-chats' : modules.has('sms') ? 'sms' : null;
+  const [writingSms, setWritingSms] = useState(false);
   // The chips' line: where each tab's chip sits in it, and how far it is scrolled.
   const strip = useRef<ScrollView>(null);
   const chipAt = useRef(new Map<InboxShow, { x: number; width: number }>());
@@ -418,7 +442,7 @@ function Home() {
     else if (chip.x + chip.width + edge > x + width) strip.current?.scrollTo({ x: chip.x + chip.width + edge - width, animated: true });
   }, [show]);
   // Names, once there are SMS conversations: they unlock the names of their numbers.
-  const hasSmsRows = (rows ?? []).some((row) => row.sms !== '');
+  const hasSmsRows = (everyRow ?? []).some((row) => row.sms !== '');
 
   // Turns the names of SMS numbers on, as under Settings → Phone and SMS → SMS (Android asks first), or off.
   async function toggleNames() {
@@ -453,9 +477,11 @@ function Home() {
         <View style={styles.tools}>
           {Platform.OS !== 'web' ? (
             <>
-              <ShortcutTile label={t('Phone')} tint="green" onPress={() => router.push('/phone')}>
-                <PhoneSign />
-              </ShortcutTile>
+              {phoneOn ? (
+                <ShortcutTile label={t('Phone')} tint="green" onPress={() => router.push('/phone')}>
+                  <PhoneSign />
+                </ShortcutTile>
+              ) : null}
               <ShortcutTile label={t('Contacts')} tint="violet" onPress={() => router.push('/contacts')}>
                 <PersonSign />
               </ShortcutTile>
@@ -473,32 +499,37 @@ function Home() {
           </IconButton>
         </View>
       </View>
-      <View style={styles.search}>
-        <SearchIcon color={colors.textFaint} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={() => {
-            press();
-            void searchSubmitted();
-          }}
-          placeholder={t('Search chats')}
-          placeholderTextColor={colors.textFaint}
-          style={styles.searchInput}
-          autoCorrect={false}
-          returnKeyType="search"
-        />
-      </View>
-      <Pressable
-        onPress={() => router.push(relay === 'ready' ? '/chat' : '/chat?setup=1')}
-        accessibilityRole="button"
-        style={({ pressed }) => [styles.status, pressed && styles.pressed]}
-      >
-        <View style={[styles.dot, { backgroundColor: relay === 'ready' ? colors.success : relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
-        <Text variant="caption" tone="muted" style={styles.statusText}>
-          {relayText}
-        </Text>
-      </Pressable>
+      {messagesOn ? (
+        <View style={styles.search}>
+          <SearchIcon color={colors.textFaint} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={() => {
+              press();
+              void searchSubmitted();
+            }}
+            placeholder={t('Search chats')}
+            placeholderTextColor={colors.textFaint}
+            style={styles.searchInput}
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+        </View>
+      ) : null}
+      {/* The relay is Erevos's own (lib/modules.ts). */}
+      {erevosOn ? (
+        <Pressable
+          onPress={() => router.push(relay === 'ready' ? '/chat' : '/chat?setup=1')}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.status, pressed && styles.pressed]}
+        >
+          <View style={[styles.dot, { backgroundColor: relay === 'ready' ? colors.success : relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
+          <Text variant="caption" tone="muted" style={styles.statusText}>
+            {relayText}
+          </Text>
+        </Pressable>
+      ) : null}
       {/* One line that scrolls to the side, so a chip that comes or goes moves none of the others to a
           line of their own; the chosen one is scrolled into sight. */}
       {mixed || hasSmsRows ? (
@@ -532,7 +563,7 @@ function Home() {
       ) : null}
       {/* A new Erevos, then Chat with myself, stay first, whatever comes in, but for one network alone and a search. */}
       {release && !query.trim() && (show === 'all' || show === 'erevos') ? <ReleaseRow release={release} /> : null}
-      {notes !== null && !query.trim() && (show === 'all' || show === 'erevos') ? <MyselfRow notes={notes} /> : null}
+      {erevosOn && notes !== null && !query.trim() && (show === 'all' || show === 'erevos') ? <MyselfRow notes={notes} /> : null}
     </View>
   );
 
@@ -575,15 +606,32 @@ function Home() {
               <Text tone="muted" style={styles.emptyText}>
                 {t('No Nostr chats yet.')}
               </Text>
+            ) : !messagesOn ? (
+              // The Phone alone (lib/modules.ts): no chats, nor SMS, to list.
+              <View style={styles.empty}>
+                <Logo size={64} />
+                <Text variant="heading" style={styles.emptyText}>
+                  {t('Only the Phone is on')}
+                </Text>
+                <Text tone="muted" style={styles.emptyText}>
+                  {t('Erevos shows no chats, as no part with messages is on. More parts can be turned on in Settings → General → Modules.')}
+                </Text>
+                <Row wrap style={{ justifyContent: 'center' }}>
+                  <Button title={t('Phone')} compact onPress={() => router.push('/phone')} />
+                  <Button title={t('Modules')} kind="secondary" compact onPress={() => router.push('/modules')} />
+                </Row>
+              </View>
             ) : (
               <View style={styles.empty}>
                 <Logo size={64} />
                 <Text variant="heading" style={styles.emptyText}>
                   {t('No chats yet')}
                 </Text>
-                <Text tone="muted" style={styles.emptyText}>
-                  {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
-                </Text>
+                {erevosOn ? (
+                  <Text tone="muted" style={styles.emptyText}>
+                    {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
+                  </Text>
+                ) : null}
               </View>
             )
           }
@@ -608,49 +656,55 @@ function Home() {
           }
         />
       </SwipeTabs>
-      {/* Remind me, named where there is room for it beside New chat. */}
-      <View style={[styles.fabs, { bottom: insets.bottom + space.xl }]}>
-        <Pressable
-          onPress={() => setReminding(true)}
-          accessibilityRole="button"
-          accessibilityLabel={t('Remind me')}
-          style={({ pressed }) => [styles.remindFab, !wide && styles.remindRound, pressed && styles.fabPressedLight]}
-        >
-          <BellIcon color="#ffffff" size={22} />
-          {wide ? (
-            <Text variant="label" color="#ffffff">
-              {t('Remind me')}
-            </Text>
+      {/* Remind me, named where there is room for it beside New chat: Remind me only with Erevos, as it
+          goes in Chat with myself, and New chat with any part that has chats (lib/modules.ts). */}
+      {newChat ? (
+        <View style={[styles.fabs, { bottom: insets.bottom + space.xl }]}>
+          {erevosOn ? (
+            <Pressable
+              onPress={() => setReminding(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('Remind me')}
+              style={({ pressed }) => [styles.remindFab, !wide && styles.remindRound, pressed && styles.fabPressedLight]}
+            >
+              <BellIcon color="#ffffff" size={22} />
+              {wide ? (
+                <Text variant="label" color="#ffffff">
+                  {t('Remind me')}
+                </Text>
+              ) : null}
+            </Pressable>
           ) : null}
-        </Pressable>
-        <Pressable
-          // On Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one (app/xmpp.tsx);
-          // on Nostr's, one with another Nostr app (app/nostr-chats.tsx).
-          onPress={() => router.push(show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : '/chat?setup=1')}
-          onLongPress={() => {
-            try {
-              Vibration.vibrate(DOOR_BUZZ);
-            } catch {
-              // A phone without a vibrator: nothing to feel.
-            }
-            setDoor(true);
-          }}
-          delayLongPress={DOOR_HOLD}
-          accessibilityRole="button"
-          accessibilityLabel={t('New chat')}
-          style={({ pressed }) => [
-            styles.fab,
-            // Neon and Matrix: lit, so it glows.
-            shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
-            pressed && styles.fabPressed,
-          ]}
-        >
-          <PlusIcon color={colors.onPrimary} size={20} />
-          <Text variant="label" color={colors.onPrimary}>
-            {t('New chat')}
-          </Text>
-        </Pressable>
-      </View>
+          <Pressable
+            onPress={() => (newChat === 'sms' ? setWritingSms(true) : newChat && router.push(newChat))}
+            onLongPress={() => {
+              // The PIN of hidden chats, which are Erevos's own.
+              if (!moduleOn('erevos')) return;
+              try {
+                Vibration.vibrate(DOOR_BUZZ);
+              } catch {
+                // A phone without a vibrator: nothing to feel.
+              }
+              setDoor(true);
+            }}
+            delayLongPress={DOOR_HOLD}
+            accessibilityRole="button"
+            accessibilityLabel={t('New chat')}
+            style={({ pressed }) => [
+              styles.fab,
+              // Neon and Matrix: lit, so it glows.
+              shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
+              pressed && styles.fabPressed,
+            ]}
+          >
+            <PlusIcon color={colors.onPrimary} size={20} />
+            <Text variant="label" color={colors.onPrimary}>
+              {newChat === 'sms' ? t('New SMS') : t('New chat')}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+      <NewSmsSheet visible={writingSms} onClose={() => setWritingSms(false)} />
       <UndoBar bottom={insets.bottom + space.xl + 56 + space.md} />
       <SmsActions target={target} onClose={() => setTarget(null)} />
       <Sheet visible={door} onClose={closeDoor}>
@@ -685,7 +739,7 @@ function Home() {
       </Sheet>
       <Sheet visible={menu} onClose={closeMenu}>
         {/* A linked device has the phone's groups, but makes and joins none (lib/devices.ts). */}
-        {MENU.filter((item) => (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
+        {MENU.filter((item) => (!item.erevos || erevosOn) && (!item.links || HAS_LINKS) && (item.href !== '/new-group' || (canGroup() && linkedRole() !== 'linked')) && (item.href !== '/public-groups' || (canPublicGroup() && linkedRole() !== 'linked'))).map((item) => (
           <Pressable
             key={item.title}
             accessibilityRole="button"

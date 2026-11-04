@@ -129,6 +129,29 @@ export function useModules(): ReadonlySet<Module> {
   return now;
 }
 
+/** The modules named in `text` (a link's "a,b"), those this device can run, in their order. */
+export function moduleList(text: string | undefined, here: readonly Module[] = modulesHere()): Module[] {
+  const named = new Set((text ?? '').split(','));
+  return here.filter((m) => named.has(m));
+}
+
+// The screens of each module but Erevos's (app/), by their route's name: one of a module that is
+// off shows that it is off instead (app/_layout.tsx), as a link, the widget or a notice may still
+// lead there. Contacts, Settings, the password, the backups and the guide belong to none.
+const SCREENS: Record<Module, readonly string[]> = {
+  erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'starred', 'nostr'],
+  phone: ['phone', 'phone-settings'],
+  sms: ['sms', 'sms-folder', 'sms-settings'],
+  nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts'],
+  matrix: ['matrix', 'matrix-chat', 'matrix-sso'],
+  xmpp: ['xmpp', 'xmpp-chat'],
+};
+
+/** The module the screen `route` (its route's name) is part of; null for a screen of every module. */
+export function screenModule(route: string): Module | null {
+  return MODULES.find((m) => SCREENS[m].includes(route)) ?? null;
+}
+
 /** The modules that turned on from `before` to `after`: their permissions are asked for again. */
 export function turnedOn(before: Iterable<Module>, after: Iterable<Module>): Module[] {
   const was = new Set(before);

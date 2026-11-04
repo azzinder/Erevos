@@ -14,7 +14,9 @@
 
 import { mutedNow, type ChatNotify } from '../lock/chat-notify';
 import type { Avatar } from '../lock/e2e-data';
+
 import { roomAvatar, type MatrixState } from './matrix';
+import type { Module } from './modules';
 import { nameOf as nostrNameOf, npubOf, shortNpub, type NostrDmState } from './nostr-dm';
 import { bare, nameOf, type XmppState } from './xmpp';
 import { sameNumber } from './sms-invite';
@@ -172,6 +174,16 @@ export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show
   if (show === 'erevos') return row.sms === '' && !row.network;
   if (show === 'matrix' || show === 'xmpp' || show === 'nostr') return row.network === show;
   return true;
+}
+
+/**
+ * Whether a row's module is on (lib/modules.ts): a Matrix room, an XMPP chat or a Nostr one with
+ * its own; an SMS conversation with the SMS; every other, a contact's chat, a group or a chat
+ * brought in from another app, with Erevos.
+ */
+export function rowOn(row: Pick<InboxRow, 'sms' | 'network'>, on: ReadonlySet<Module>): boolean {
+  if (row.network) return on.has(row.network);
+  return on.has(row.sms !== '' ? 'sms' : 'erevos');
 }
 
 /**

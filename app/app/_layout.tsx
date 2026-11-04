@@ -57,7 +57,8 @@ import { runMatrix, stopMatrix } from '../lib/matrix-store';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { startLinkedAccounts } from '../lib/linked-accounts';
-import { loadModules, moduleOn, modulesChosen, onModulesChange, setModules, type Module } from '../lib/modules';
+import { followModuleIcons } from '../lib/module-icons';
+import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules, type Module } from '../lib/modules';
 import { watchPlaceNetworks } from '../lib/place-networks';
 import { forgetTextInvite } from '../lib/text-invite';
 import { forgetWelcome } from '../lib/welcome';
@@ -68,6 +69,7 @@ import { prepareHidden } from '../lock/hidden';
 import { forgetOpenedQueues } from '../lock/queues-data';
 import { currentSpace, loadOpenKey, setCurrentSpace } from '../lock/keys';
 import { firstSpaceKey, firstStart, loadSpaceData, updateCurrentSpaceData } from '../lock/space-data';
+import { ModuleOff } from '../components/module-off';
 import { Setup } from '../components/setup';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
@@ -199,6 +201,7 @@ export default function RootLayout() {
     await loadLang();
     // Which parts of Erevos run (lib/modules.ts): every one, until the owner chooses.
     await loadModules();
+    followModuleIcons();
     const config = await loadLockConfig();
     if (config.direct !== null) {
       // The lock was turned off in a later space: that one opens directly, with its key from the keystore.
@@ -454,6 +457,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
 }) {
   const { colors, scheme } = useTheme();
   const spec = useBackdropSpec();
+  // A screen of a module that is off shows that it is off instead (lib/modules.ts).
+  const modules = useModules();
   const bar = <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 
   if (error) {
@@ -514,17 +519,25 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
         // swipe in its own way, as its back arrow does. Every other screen goes back by a swipe to
         // the right (components/swipe-back.tsx).
         // With only the SMS or the Contacts open, any other screen asks for the password first, and shows nothing of itself.
-        screenLayout={({ children, route }) =>
-          phase.only && !ONLY_SCREENS[phase.only].has(route.name) ? (
+        // A screen of a module that is off shows only that it is off (lib/modules.ts).
+        screenLayout={({ children, route }) => {
+          const part = screenModule(route.name);
+          return phase.only && !ONLY_SCREENS[phase.only].has(route.name) ? (
             <AskAgain link={screenLink(route.name, route.params as Record<string, unknown> | undefined)} />
+          ) : part && !modules.has(part) ? (
+            <ScreenBackdrop>
+              <SwipeBack>
+                <ModuleOff module={part} bare={HEADERLESS.has(route.name)} />
+              </SwipeBack>
+            </ScreenBackdrop>
           ) : route.name === 'chat' ? (
             children
           ) : (
             <ScreenBackdrop>
               <SwipeBack>{children}</SwipeBack>
             </ScreenBackdrop>
-          )
-        }
+          );
+        }}
         screenOptions={{
           title: '',
           headerStyle: { backgroundColor: headerColor },
@@ -550,6 +563,9 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
     </LockContext.Provider>
   );
 }
+
+// The screens that draw their own bar, so have no header (below).
+const HEADERLESS = new Set(['index', 'chat', 'group', 'myself']);
 
 // How long before Erevos goes to the background a call made on the locked Phone may be, for it to
 // be what took Erevos there.
@@ -582,7 +598,8 @@ function Locked({ lang, config, onUnlock }: { lang: Lang; config: LockConfig; on
     };
     void phoneOpensLocked().then((on) => {
       if (!active) return;
-      opens.current = on;
+      // Not while the Phone is off (lib/modules.ts).
+      opens.current = on && moduleOn('phone');
       look();
     });
     const stop = onLinkHeld(look);

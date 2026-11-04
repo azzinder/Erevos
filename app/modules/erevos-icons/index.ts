@@ -20,6 +20,8 @@ const native = requireOptionalNativeModule<{
   calculator?(): boolean | null;
   setCalculator?(code: string): boolean;
   calculatorOff?(): boolean;
+  // Missing in a build before the modules.
+  setShown?(icon: string, shown: boolean): boolean;
 }>('ErevosIcons');
 
 /** Each icon's colour as the launcher shows it now, or null where there is no choice. */
@@ -66,6 +68,15 @@ export function setCalculator(code: string): boolean {
 export function calculatorOff(): boolean {
   try {
     return native?.calculatorOff?.() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/** Takes the Phone's or the SMS's icon off the phone's apps, or puts it back (lib/modules.ts); false where it cannot. */
+export function setLauncherShown(icon: 'phone' | 'sms', shown: boolean): boolean {
+  try {
+    return native?.setShown?.(icon, shown) ?? false;
   } catch {
     return false;
   }

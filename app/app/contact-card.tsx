@@ -23,6 +23,7 @@ import { fromBase64 } from '../lib/crypto';
 import { enterHiddenScreen, hiddenScreens, useOpenHiddenPlace, type OpenHiddenPlace } from '../lib/hidden-contacts';
 import { t } from '../lib/i18n';
 import { linkedName } from '../lib/linked-name';
+import { moduleOn } from '../lib/modules';
 import { pickAvatar } from '../lib/pick-avatar';
 import { CAN_TAKE_PHOTOS } from '../lib/pick-photo';
 import { linkCard, linkPhoneContact, linkSealed, loadPlace, onSealedChange, placeOf, removeSealed, saveSealed, setSealedPhoto, spacePlace, starSealed, type Place } from '../lib/sealed-contacts';
@@ -434,7 +435,7 @@ export default function ContactCardScreen() {
       const link = await makeTextInvite(number, card.name);
       const text = t('Join me on Erevos, for messages and calls only we can read: {link}', { link });
       const to = smsAddress(smsNumbers(number));
-      if (smsReady() && smsStatus()?.isDefault) router.push(`/sms?to=${encodeURIComponent(to)}&text=${encodeURIComponent(text)}&plain=1`);
+      if (smsReady() && smsStatus()?.isDefault && moduleOn('sms')) router.push(`/sms?to=${encodeURIComponent(to)}&text=${encodeURIComponent(text)}&plain=1`);
       else await Linking.openURL(`sms:${to}?body=${encodeURIComponent(text)}`);
     } catch (error) {
       setIdNote(t('No invite now. {error}', { error: errorText(error) }));
@@ -456,7 +457,9 @@ export default function ContactCardScreen() {
   }
 
   const call = (number: string) => void Linking.openURL(`tel:${number.replace(/[^\d+*#,;]/g, '')}`).catch((error) => setNote(errorText(error)));
-  const sms = (number: string) => router.push(`/sms?to=${encodeURIComponent(smsAddress(smsNumbers(number)))}&plain=1`);
+  // In Erevos while its SMS are on (lib/modules.ts), else in the phone's SMS app.
+  const sms = (number: string) =>
+    moduleOn('sms') ? router.push(`/sms?to=${encodeURIComponent(smsAddress(smsNumbers(number)))}&plain=1`) : void Linking.openURL(`sms:${smsAddress(smsNumbers(number))}`).catch((error) => setNote(errorText(error)));
   const first = card.phones[0]?.value;
   const birthday = parseBirthday(card.birthday);
   const editHref = card.sealed ? `/contact-edit?sealed=${card.sealed.id}${hidden ? '&hidden=1' : ''}` : `/contact-edit?id=${card.phone?.id ?? 0}`;
@@ -503,7 +506,8 @@ export default function ContactCardScreen() {
         )}
       </View>
 
-      {card.erevos ? (
+      {/* Erevos's own chats and calls only while they are on (lib/modules.ts). */}
+      {!moduleOn('erevos') ? null : card.erevos ? (
         <Card>
           <Row>
             <ShieldIcon color={colors.success} size={14} />

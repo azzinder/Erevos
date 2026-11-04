@@ -7,6 +7,7 @@ import { Linking, PermissionsAndroid, Platform, type Permission } from 'react-na
 
 import { callAudio, type NoticeChannel, type SettingsScreen } from '../modules/erevos-call';
 import { askBattery, askFullScreen, backgroundState, loadMessageNotices, loadRingInBackground, noticesAsked } from './background';
+import { checkWanted, modulesOn, type Module } from './modules';
 import { checksFrom, known, offerFor, type Check, type CheckId } from './permission-checks';
 import { HAS_RADIO, nearbyPermissions } from './radio';
 import { secureGet, secureSet } from './secure';
@@ -33,10 +34,11 @@ export const BROWSER: Browser | null = null;
 
 export const IOS_OTHER_BROWSER = false;
 
-/** Every check that applies to this phone; none elsewhere. */
-export async function readChecks(): Promise<Check[]> {
+/** Every check that applies to this phone, for what the modules `of` use (lib/modules.ts), those on unless given; none elsewhere. */
+export async function readChecks(of: Iterable<Module> = modulesOn()): Promise<Check[]> {
   if (!HAS_CHECKS) return [];
-  return checksFrom({
+  const modules = [...of];
+  const checks = await checksFrom({
     background: backgroundState(),
     granted: (permission) => PermissionsAndroid.check(permission as Permission),
     sdk: SDK,
@@ -44,6 +46,7 @@ export async function readChecks(): Promise<Check[]> {
     makerDone: (await secureGet(MAKER_KEY).catch(() => null)) === 'done',
     messageNotices: await loadMessageNotices(),
   });
+  return checks.filter((check) => checkWanted(check.id, modules));
 }
 
 let offered = false;

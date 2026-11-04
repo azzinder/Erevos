@@ -43,6 +43,15 @@ On main, not released yet:
   keyboard's Enter where it sends or submits, buttons, chips, switches and the menus that open now buzz for 10 to 15
   ms (`lib/haptics.ts`), never while scrolling. **Settings** → **Appearance** → **Vibrate on touch** turns it off,
   for the phone; nothing on the web app and the computer.
+- **Choose the parts of Erevos you use**: Erevos's own chats, the Phone, the SMS, and the chats with Nostr, Matrix and
+  XMPP apps are modules (`lib/modules.ts`), any combination, Erevos's own too, at least one, kept on the device outside
+  the spaces. One that is off does not start (the space's receivers, Matrix, XMPP and Nostr connections, calls and the
+  background service follow them, `app/_layout.tsx` Receiver), and shows nowhere: the home screen's rows, tiles, menu
+  and buttons, its settings, the permissions it would ask for, and the Phone's and the SMS's launcher icons (their
+  aliases disabled, colour kept). A screen of one that is off, reached by a link, a notice or the widget, says so.
+  Nothing is deleted. Erevos's first start is a setup (`components/setup.tsx`): what Erevos is, its language, the
+  modules, then on Android the permissions for them with Erevos as the phone and SMS app; turning one on later opens
+  the permissions for it again. Installs from before keep every module on. **Settings** → **General** → **Modules**.
 
 ### Under the hood
 

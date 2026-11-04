@@ -1,0 +1,136 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// The parts of Erevos the owner uses (lib/modules.ts): what is kept, what each permission and
+// screen belongs to, and the home screen's rows (lib/inbox.ts rowOn).
+// Run with: npm run check
+/// <reference types="node" />
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+
+import { rowOn } from '../lib/inbox';
+import {
+  checkWanted,
+  keptModules,
+  loadModules,
+  moduleList,
+  moduleOn,
+  modulesChosen,
+  modulesHere,
+  modulesOn,
+  onModulesChange,
+  parseModules,
+  screenModule,
+  setModules,
+  turnedOn,
+  type Module,
+} from '../lib/modules';
+
+const ANDROID = modulesHere('android');
+const ELSEWHERE = modulesHere('ios');
+
+test('the phone and the SMS only on Android; every other module everywhere', () => {
+  assert.deepEqual(ANDROID, ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp']);
+  assert.deepEqual(ELSEWHERE, ['erevos', 'nostr', 'matrix', 'xmpp']);
+  assert.deepEqual(modulesHere('web'), ELSEWHERE);
+});
+
+test('nothing kept, or nothing usable, is every module on', () => {
+  assert.equal(parseModules(null, ANDROID), null);
+  assert.equal(parseModules('', ANDROID), null);
+  assert.equal(parseModules('not json', ANDROID), null);
+  assert.equal(parseModules('{"erevos":true}', ANDROID), null);
+  assert.equal(parseModules('[]', ANDROID), null);
+  assert.equal(parseModules('["fax"]', ANDROID), null);
+  // The phone kept on Android, read on a computer from a backup: nothing this device runs.
+  assert.equal(parseModules('["phone","sms"]', ELSEWHERE), null);
+});
+
+test('what is kept is read back, in the modules order, only those this device runs', () => {
+  assert.deepEqual([...(parseModules('["xmpp","phone"]', ANDROID) ?? [])], ['phone', 'xmpp']);
+  assert.deepEqual([...(parseModules('["phone","nostr"]', ELSEWHERE) ?? [])], ['nostr']);
+  assert.equal(keptModules(['xmpp', 'erevos'], ANDROID), '["erevos","xmpp"]');
+  assert.equal(keptModules(['phone'], ELSEWHERE), null);
+  assert.equal(keptModules([], ANDROID), null);
+});
+
+test('Erevos itself can be off; at least one stays on', async () => {
+  // As before the owner chose: every module this device runs is on.
+  await loadModules(true);
+  assert.equal(modulesChosen(), false);
+  assert.deepEqual(modulesOn(), modulesHere());
+  let told = 0;
+  const stop = onModulesChange(() => told++);
+  assert.equal(await setModules([]), false);
+  assert.equal(told, 0);
+  assert.equal(await setModules(['nostr']), true);
+  assert.equal(modulesChosen(), true);
+  assert.equal(moduleOn('erevos'), false);
+  assert.equal(moduleOn('nostr'), true);
+  assert.equal(told, 1);
+  // The same again tells no one.
+  assert.equal(await setModules(['nostr']), true);
+  assert.equal(told, 1);
+  // Read again as the next start reads it.
+  await loadModules(true);
+  assert.equal(modulesChosen(), true);
+  assert.deepEqual(modulesOn(), ['nostr']);
+  stop();
+  assert.equal(await setModules(modulesHere()), true);
+  assert.equal(told, 1);
+});
+
+test('turned on: only those that were off', () => {
+  assert.deepEqual(turnedOn(['erevos', 'sms'], ['erevos', 'nostr', 'matrix']), ['nostr', 'matrix']);
+  assert.deepEqual(turnedOn(['erevos'], ['erevos']), []);
+});
+
+test('a link names modules this device runs, in their order', () => {
+  assert.deepEqual(moduleList('xmpp,phone,fax', ANDROID), ['phone', 'xmpp']);
+  assert.deepEqual(moduleList('phone', ELSEWHERE), []);
+  assert.deepEqual(moduleList(undefined, ANDROID), []);
+});
+
+test('each permission is asked for only by the modules that use it', () => {
+  const only = (...m: Module[]) => m;
+  // Every module needs the notices; only Erevos the phones nearby and the reminders.
+  for (const module of ANDROID) assert.equal(checkWanted('notices', only(module)), true);
+  assert.equal(checkWanted('nearby', only('erevos')), true);
+  assert.equal(checkWanted('nearby', only('nostr', 'matrix', 'xmpp', 'phone', 'sms')), false);
+  assert.equal(checkWanted('reminders', only('phone')), false);
+  // Waiting for messages in the background: not for the Phone or the SMS, which Android brings.
+  assert.equal(checkWanted('battery', only('phone', 'sms')), false);
+  assert.equal(checkWanted('battery', only('matrix')), true);
+  // Calls over the lock screen for the Phone too; the call notice for the chats' calls.
+  assert.equal(checkWanted('fullScreen', only('phone')), true);
+  assert.equal(checkWanted('calls', only('phone')), false);
+  assert.equal(checkWanted('calls', only('xmpp')), true);
+  assert.equal(checkWanted('contacts', only('sms')), true);
+  assert.equal(checkWanted('contacts', only('nostr')), false);
+});
+
+test('each screen belongs to its module; contacts, settings and the guide to none', () => {
+  assert.equal(screenModule('phone'), 'phone');
+  assert.equal(screenModule('sms-folder'), 'sms');
+  assert.equal(screenModule('matrix-chat'), 'matrix');
+  assert.equal(screenModule('xmpp'), 'xmpp');
+  assert.equal(screenModule('nostr-chats'), 'nostr');
+  assert.equal(screenModule('chat'), 'erevos');
+  assert.equal(screenModule('group'), 'erevos');
+  // Erevos's own way through Nostr, not the chats with other Nostr apps.
+  assert.equal(screenModule('nostr'), 'erevos');
+  for (const route of ['index', 'contacts', 'contact-card', 'settings/index', 'modules', 'permissions', 'guide/index', 'backup', 'security', 'appearance']) {
+    assert.equal(screenModule(route), null, route);
+  }
+});
+
+test('the home screen lists only the rows of modules on', () => {
+  const on = new Set<Module>(['sms', 'matrix']);
+  assert.equal(rowOn({ sms: '+30691', network: undefined }, on), true);
+  assert.equal(rowOn({ sms: '', network: 'matrix' }, on), true);
+  assert.equal(rowOn({ sms: '', network: 'nostr' }, on), false);
+  // A contact's chat, a group or one brought in from another app: Erevos's own.
+  assert.equal(rowOn({ sms: '', network: undefined }, on), false);
+  assert.equal(rowOn({ sms: '', network: undefined }, new Set<Module>(['erevos'])), true);
+});
