@@ -80,6 +80,14 @@ export function loadModules(again = false): Promise<void> {
   return loaded;
 }
 
+/** Reads the modules chosen again, as a restored backup put them (lib/backup-settings.ts), and
+ *  tells those who follow them when they changed. */
+export async function reloadModules(): Promise<void> {
+  const before = on;
+  await loadModules(true);
+  if (before.size !== on.size || [...on].some((m) => !before.has(m))) changes.forEach((listener) => listener());
+}
+
 /** Whether the owner chose the modules (the setup, or Settings), or every one is on as before. */
 export function modulesChosen(): boolean {
   return chosen;

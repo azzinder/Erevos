@@ -183,7 +183,7 @@ Uma boa primeira hora:
 ninguém: escreva notas, links, fotos, arquivos e mensagens de voz para você mesmo, como em qualquer conversa. Ela não
 vai para mais ninguém: fica criptografada no espaço, e vai só para os seus próprios dispositivos conectados,
 criptografada de ponta a ponta, para que cada um tenha as mesmas notas e os mesmos lembretes (veja [Dispositivos
-conectados](#devices)). Um backup leva as notas e as mensagens de voz dela, mas não as fotos e os arquivos, como nas
+conectados](#devices)). Um backup leva tudo dela, notas, fotos, arquivos e mensagens de voz, como nas
 conversas.
 
 - **Um lembrete:** toque em **Lembrar-me** (o sino laranja ao lado de **Nova conversa**), escreva do que quer ser
@@ -2619,7 +2619,7 @@ as posições retiradas guardam.
   byte que cada uma leva (veja o que o relay vê, acima), nunca as próprias mensagens. Quem vê o aviso e não encontra
   nada novo nas suas conversas pode supor que há mais. Depois que você apaga ou bloqueia alguém na posição, a primeira
   mensagem de alguém novo, pelo link de contato ou pelo código QR da posição, não faz nenhum: ela aparece quando você
-  abre a posição. Os backups não guardam isso: ative de novo depois de restaurar.
+  abre a posição. Os backups guardam isso.
 - **Tocar as chamadas quando fechadas** (Android): abaixo de **Avisar quando chega uma mensagem**, enquanto **Receber
   quando fechadas** está desativado. Ativado, enquanto a posição está fechada, com o Erevos em segundo plano ou em
   qualquer tela, uma chamada de um dos contatos dela faz o celular tocar e mostrar "Incoming call" sem nome, como faz
@@ -2631,8 +2631,8 @@ as posições retiradas guardam.
   tocam criadas à toa no mesmo relay, como no aviso de mensagens acima, para que abrir o espaço não revele nada. Quem
   liga só faz tocar uma fila ali; a própria chamada espera na fila da própria conversa até o PIN abri-la. Um contato
   que você apagou ainda pode fazê-lo tocar, mas a chamada nunca consegue se conectar. Uma chamada feita de um
-  computador conectado só toca enquanto as conversas ocultas estão abertas. Os backups não guardam isso: ative de novo
-  depois de restaurar.
+  computador conectado só toca enquanto as conversas ocultas estão abertas. Os backups guardam
+  isso.
 - **Um PIN novo para uma posição** (em **Conversas ocultas** nas **Configurações**, ou **Novas conversas ocultas**) a
   começa vazia e substitui o que havia nela. Para manter as conversas e mudar só o PIN, abra-as e use **Alterar PIN**
   ali. Cada PIN tem de ser diferente dos outros e da senha que abre o Erevos.
@@ -2680,16 +2680,19 @@ deve nem ser vista, use as conversas ocultas.
 
 ## Backups {#backup}
 
-Um backup é um arquivo que guarda tudo o que o Erevos mantém neste celular: todos os espaços, com os contatos, as chaves
-das conversas, as mensagens, as mensagens de voz, as conversas importadas, as conversas ocultas e as contas Matrix, XMPP
-e Nostr de cada um, a Conversa comigo dele, e o bloqueio. Dentro dele cada espaço continua selado com a própria senha, e
-o arquivo é selado de novo com uma senha própria. Fica em **Configurações** → **Dados e dispositivos** → **Backups**.
+Um backup guarda tudo o que o Erevos mantém neste celular: todos os espaços, com os contatos, as chaves das conversas,
+as mensagens, as fotos, os arquivos, as mensagens de voz, as conversas importadas, as conversas ocultas e as contas
+Matrix, XMPP e Nostr de cada um, a Conversa comigo dele, o bloqueio e a senha de pânico, e as configurações que vão com
+você para outro celular. Dentro dele cada espaço continua selado com a própria senha, e o backup é selado de novo com
+uma senha própria. As fotos, os arquivos e as mensagens de voz dele vão em arquivos próprios ao lado dele, de até 4 MB
+cada, cujos nomes começam como o dele: mantenha-os juntos. Fica em **Configurações** → **Dados e dispositivos** →
+**Backups**.
 
 1. **Fazer um backup:** toque em **Fazer um backup**, escolha uma pasta (no celular, num cartão de memória, ou num app
    de nuvem que mostre as pastas dele ali; num computador, qualquer pasta), digite duas vezes uma senha para o backup
-   (pelo menos 12 caracteres, ou quatro palavras) e toque em **Salvar**.
+   (pelo menos 12 caracteres, ou quatro palavras) e toque em **Salvar**. Num navegador, o backup e os arquivos dele vão para o menu de compartilhamento ou para os downloads: o primeiro na hora, e cada um dos seguintes depois de um toque em **Salvar**.
 2. **Backups automáticos:** escolha **Todo dia** ou **Toda semana**, depois uma pasta e uma senha. O Erevos faz um
-   quando abre e o último é mais antigo que isso, e a pasta guarda os 3 mais recentes. Abaixo deles ficam **Fazer
+   quando abre e o último é mais antigo que isso, e a pasta guarda os 3 mais recentes, cada um com seus arquivos. Abaixo deles ficam **Fazer
    backup agora**, **Mudar de pasta** e **Alterar senha**; **Desativado** os interrompe, e os já feitos ficam na
    pasta.
 3. **Também para um servidor:** no Android e no app para computador, com os backups automáticos ligados, **Adicionar
@@ -2699,10 +2702,12 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
    interrompe, e os que estão lá ficam. No web app, que não faz backups sozinho, **Enviar um backup agora** envia um
    para lá, com uma senha que você digita a cada vez.
 4. **Restaurar:** toque em **Restaurar um backup**, escolha o arquivo e digite a senha dele. O Erevos pergunta mais
-   uma vez, depois põe o backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito,
-   com as senhas usadas então. **Restaurar de um servidor** procura na pasta para onde vão os backups automáticos, ou
-   numa que você indicar com usuário e senha, e mostra os backups que estão lá, os mais recentes primeiro: escolha um,
-   digite a senha dele, e ele é restaurado do mesmo jeito.
+   uma vez, encontra os arquivos do backup ao lado dele, ou pede que você os escolha, ou a pasta deles, depois põe o
+   backup no lugar de tudo o que há no celular, e abre como estava quando o backup foi feito, com as senhas usadas
+   então. Se um dos arquivos dele faltar, estiver danificado ou for de outro backup, o Erevos diz qual, e nada muda, a não ser que você escolha restaurar o resto sem ele: então as fotos, os arquivos e as mensagens de voz do celular ficam como estão, e os que ele contém não voltam. **Restaurar de um
+   servidor** procura na pasta para onde vão os backups automáticos, ou numa que você indicar com usuário e senha, e
+   mostra os backups que estão lá, os mais recentes primeiro: escolha um, digite a senha dele, e ele é restaurado do
+   mesmo jeito, com os arquivos dele de lá.
 
 - **Guarde a senha do backup:** nada abre um backup sem ela, e ninguém pode recuperá-la. Sem bloqueio com senha, a
   senha do backup é tudo o que o protege. Quem tem o arquivo pode testar senhas nele tão rápido quanto o computador
@@ -2712,8 +2717,11 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   pasta deles ainda precisa das senhas dos espaços para ler as conversas.
 - **Num servidor:** o backup que vai para lá é selado com a senha dele como os outros, e essa senha nunca sai do
   celular, então o servidor não consegue abri-lo. O nome é aleatório e o arquivo parece bytes aleatórios, de um entre
-  poucos tamanhos, então nenhum dos dois diz que é do Erevos nem exatamente quanto guarda. O servidor ainda vê sua
-  conta, quando chega um e mais ou menos o tamanho. No Android, os backups vão para lá como diz a escolha do espaço em
+  poucos tamanhos, então nenhum dos dois diz que é do Erevos nem exatamente quanto guarda. As fotos, os arquivos e as
+  mensagens de voz dele vão como envios próprios, todos do mesmo tamanho, cada um também com um nome aleatório e selado
+  com a senha do backup, preso a esse backup e ao lugar dele nele, para que nenhum possa ser trocado, tirado ou vir de
+  outro backup sem que se perceba; o servidor os guarda com o backup deles e os apaga junto com ele. Os nomes deles têm o mesmo comprimento que o do backup, mas o tamanho os distingue dele, então o servidor pode contá-los e saber assim mais ou menos quanto o backup guarda. O que um backup interrompido deixou lá é apagado antes que o próximo vá, então um servidor que ficou sem espaço volta a ter. O servidor ainda
+  vê sua conta, quando chega um e mais ou menos o tamanho. No Android, os backups vão para lá como diz a escolha do espaço em
   **Configurações** → **Relay e redes** → **Tor**, como o Matrix: com **Tudo** só pelo Tor, então o servidor não vê o
   endereço do celular; com **Mensagens** pelo Tor assim que o Tor está pronto, e direto enquanto o Tor inicia ou
   quando falha; com **Nada** direto, e o servidor vê o endereço do celular. Um backup espera primeiro até dois minutos
@@ -2723,8 +2731,9 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   fábrica. Nenhum dos dois tem Tor para isso: enquanto um espaço envia **Tudo** pelo Tor, nenhum vai de lá. No web app
   a senha do servidor fica guardada no navegador, selada com uma chave que o navegador não entrega. **Restaurar de um
   servidor** baixa o que você escolher do mesmo jeito, pelo Tor como diz o espaço, e não escreve nada lá; uma senha
-  digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor um backup maior que 64 MB não chega,
-  e direto nenhum maior que 100 MB, o máximo que o Erevos aceita num download: então baixe-o do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
+  digitada para isso serve só para essa restauração e não fica guardada. Pelo Tor nenhum arquivo de um backup maior que
+  64 MB chega, e direto nenhum maior que 100 MB, o máximo que o Erevos aceita num download: então baixe o backup e os
+  arquivos dele do servidor e toque em **Restaurar um backup**. Um Erevos anterior a esta versão não abre um backup
   assim. O Google Drive ficou de fora de propósito: o Google liga o arquivo ao seu nome, e o Erevos precisaria dos
   apps do Google e de um login no Google no celular.
 - **Conversas que continuaram depois do backup:** restaurar devolve as chaves de cada conversa como estavam então. As
@@ -2746,25 +2755,39 @@ o arquivo é selado de novo com uma senha própria. Fica em **Configurações** 
   uma mensagem** das conversas ocultas, e **Também enquanto outro espaço está aberto**, precisam. Assim, depois de uma
   restauração, também em outro celular, eles continuam como estavam. Um backup de antes desta versão não tem nada
   disso: restaurá-lo os deixa como o celular os tem.
+- **Configurações:** um backup guarda as configurações que são suas e não do celular: o idioma, os módulos, a
+  vibração, os avisos em segundo plano e o número no ícone, a economia de bateria, a privacidade da tela, a qualidade
+  das fotos, se o Telefone abre sem a senha, e como o Erevos chega aos celulares por perto (levando as mensagens deles,
+  na mesma Wi-Fi, por Wi-Fi Direct, Wi-Fi Aware e um rádio LoRa, que só volta a ligar onde este celular o conhece). No
+  Android ele guarda também as respostas rápidas do Telefone e as chamadas que ele recusa, as de um grupo de contatos
+  só onde este celular tem um grupo com esse nome na mesma conta. Os backups automáticos e o servidor deles voltam com
+  a senha deles, mas não com a pasta, na qual o Android só deixa gravar o celular em que ela foi escolhida: em outro
+  celular, **Backups** pede que você escolha uma, e até lá eles vão só para o servidor.
 - **Um celular de cada vez:** um backup restaurado num segundo celular lê as mesmas filas do relay que o primeiro, e
   cada um pega mensagens que o outro então nunca recebe. Use-o para mudar para um celular novo, não para manter dois.
 - **Discrição:** todos os espaços mostram a mesma tela de Backups, e um backup guarda todos os espaços, então nenhum
-  dos dois diz quantos espaços há nem se há conversas ocultas definidas. O nome do arquivo diz que é um backup do
-  Erevos, e o tamanho dele mostra mais ou menos quanto está guardado.
+  dos dois diz quantos espaços há nem se há conversas ocultas definidas. Os nomes dos arquivos dizem que são um backup do
+  Erevos, e a quantidade e o tamanho deles mostram mais ou menos quanto está guardado.
 - **Os SMS do celular:** no Android, **Incluir os SMS nos backups** acrescenta os SMS e MMS do celular a cada backup a
   partir daí, com até 32 MB das imagens deles, enquanto o Erevos é o app de SMS. Eles são selados com a senha do
   backup como o resto. Restaurar o backup devolve aos SMS do celular cada mensagem que ele ainda não tem, e não apaga
   nenhuma; o Erevos tem de ser o app de SMS então também, ou o resto é restaurado sem eles. Os SMS são do celular, os
   mesmos em todos os espaços. Um Erevos mais antigo não abre um backup que contém SMS.
 - **Os SMS em ordem:** os fixados, as conversas arquivadas, a Lixeira, os rascunhos, o filtro e as marcas de spam de
-  cada espaço, e quanto tempo um SMS espera para poder ser desfeito, estão em todo backup, selados com a senha do
-  espaço como o resto. Os SMS enviados mais tarde (**SMS mais tarde**) não estão, para que um backup restaurado em
-  outro celular nunca envie um de novo; nem os convites, os nomes dos seus contatos e o chip escolhido para cada
-  número. Um Erevos mais antigo não abre um backup que os contém; um feito por um Erevos mais antigo restaura como
-  sempre, sem eles.
-- **Fora do backup:** fotos e arquivos, ainda não: um backup é feito na memória do celular, e eles não caberiam. Um
-  backup restaurado no mesmo celular os mostra de novo; em outro celular eles aparecem como não estando nele. Também
-  ficam de fora: a contagem de senhas erradas, e como os backups automáticos estão configurados.
+  cada espaço, quanto tempo um SMS espera para poder ser desfeito, os SMS para enviar mais tarde (**SMS mais tarde**),
+  os convites, os nomes dos seus contatos, se as mensagens para contatos do Erevos podem ir por SMS, e o chip escolhido
+  para cada número estão em todo backup, selados com a senha do espaço como o resto. O chip escolhido só volta no mesmo celular, pois cada celular dá aos seus chips identificadores próprios: em outro, os SMS e as chamadas vão pelo chip padrão dele até você escolher um lá. Um SMS para mais tarde cuja hora
+  chegou antes da restauração não sai sozinho, pois o celular de onde veio o backup pode já tê-lo enviado: ele aparece
+  como não enviado, e um toque nele o envia ou o apaga. Um cuja hora ainda não chegou sai na hora dele. Um Erevos mais
+  antigo não abre um backup que os contém; um feito por um Erevos mais antigo restaura como sempre, sem eles.
+- **O que nunca volta:** o que pertence ao próprio celular não vem com nenhum backup, então uma restauração em outro
+  celular não consegue trazê-lo: a digital ou o rosto, cuja chave o Android guarda no chip daquele celular; as pastas
+  em que o Erevos pode gravar, como a dos backups automáticos, nas quais o Android só o deixa entrar no celular em que
+  foram escolhidas; o que o Android permite ao Erevos e quais apps fazem as chamadas e enviam os SMS, que só você pode
+  permitir em cada celular, por isso depois de uma restauração no Android abre **Permissões** para os módulos ativados;
+  o que o Android guarda para todos os apps, como o histórico de chamadas e a própria lista de números bloqueados; e a
+  contagem de senhas erradas. Uma conta XMPP volta como um novo dispositivo dela mesma e o Matrix entra de novo, como
+  acima, e os dispositivos conectados não estão num backup por enquanto, como abaixo.
 - **Os dispositivos conectados** não estão num backup: uma conexão fica com o celular e o computador em que foi
   feita. Depois de restaurar um backup em outro celular, conecte o computador de novo: no computador, toque em
   **Desconectar este dispositivo**, depois conecte-o como na primeira vez, veja [Dispositivos conectados](#devices).
@@ -2867,7 +2890,7 @@ tela de bloqueio, apaga o Erevos como **Apagar tudo agora**. No Android, no app 
   jeito e pelo mesmo tempo. Então nem o que o celular guarda nem o tempo de uma conferência mostram se há uma
   definida, e esta tela também não pode dizer: se você não tem certeza, defina-a de novo.
 - **Só na tela de bloqueio:** digitada em qualquer outro lugar onde o Erevos pede uma senha, ela é só uma senha
-  errada. Ela não vai nos backups: depois de restaurar um, defina-a de novo. Enquanto tentativas erradas fazem a tela
+  errada. Os backups a guardam como estava quando foram feitos. Enquanto tentativas erradas fazem a tela
   de bloqueio esperar (veja [Bloqueio com senha](#lock)), ela também espera.
 
 **Por quê:** alguém pode obrigar você a abrir o Erevos. Com uma senha de pânico você pode parecer dar a sua, e o que a
@@ -2960,8 +2983,8 @@ celular de qualquer jeito.
   **Abrir** o arquivo dela. **Buscar nesta conversa** também encontra as mensagens importadas. Arquivos com mais de
   1 GB, e os que a exportação não contém, ficam para trás, e a conversa diz onde havia um.
 - **Espaço no celular:** enquanto um .zip chega, o celular precisa de cerca do dobro do tamanho dele livre, pois o
-  Erevos lê uma cópia dele e guarda os arquivos selados. Os arquivos importados ainda não estão nos backups, como os
-  outros arquivos também não.
+  Erevos lê uma cópia dele e guarda os arquivos selados. Os arquivos importados também estão nos backups, como os
+  outros arquivos.
 - **Só neste celular, só para ler:** as mensagens importadas nunca são enviadas, então o outro celular não as recebe.
   O Erevos não tem como mostrar quem realmente as escreveu.
 - **Avisos e chamadas** do outro app ficam de fora, e a conversa diz quantos.
@@ -3291,7 +3314,7 @@ isso, poderia enviar código alterado. O Erevos não aceita esse código de conf
   então eles não estão ali. Depois de cada nova versão assinada, a tela abre sozinha quando falta algo de que as
   mensagens, as chamadas ou os dados precisam. Em outro navegador (Chrome, Firefox) é igual, com as configurações
   desse navegador.
-- **Os backups** são feitos à mão: **Fazer um backup** salva o arquivo pelo menu de compartilhamento (Arquivos,
+- **Os backups** são feitos à mão: **Fazer um backup** salva o backup e os arquivos dele pelo menu de compartilhamento (Arquivos,
   iCloud Drive ou outro app). Um navegador só entrega um arquivo depois de um toque, então não há backups automáticos.
 - **As mensagens de voz** gravadas num iPhone são AAC; elas tocam em todo lugar.
 - **A Apple** faz o Safari e poderia mudá-lo, como com qualquer app num iPhone.
@@ -3492,9 +3515,9 @@ O Erevos diz claramente o que protege e o que ainda não protege.
 | **Histórico de mensagens** | Guardado no celular, selado no espaço dele, sem limite, em páginas do mesmo tamanho misturadas para todos os espaços. Só o quanto tudo ocupa aparece, não a que espaço pertence. Apagar dos dois celulares, e as mensagens temporárias, dependem do Erevos do outro celular. | |
 | **Mensagens por perto** | Abertas só no espaço que tem o contato. Uma para outro espaço espera na memória, seis horas no máximo, até esse espaço abrir. Uma para conversas ocultas só abre enquanto elas estão abertas, ou recebem fechadas, e o espaço nunca fica sabendo que um contato delas está por perto. | |
 | **Mensagens de voz** | Criptografadas de ponta a ponta pelo relay ou por perto, em pedaços: o relay, ou quem escuta por perto, consegue saber mais ou menos quanto cada uma dura. Cada som é selado num arquivo próprio; quantos arquivos há, e os tamanhos deles, mostram mais ou menos quantas estão guardadas, não em que espaço. Fora do selo no cache só enquanto toca. | Arquivos de som todos de um mesmo tamanho. |
-| **Fotos e arquivos** | Criptografados de ponta a ponta, pelo armazenamento de arquivos do relay, em pedaços de um mesmo tamanho: o relay vê quantos e quando, e assim mais ou menos o tamanho. O seu relay vê o seu endereço, como nas mensagens; o contato os pega pelo próprio relay dele. As fotos perdem o lugar, o celular e a hora, a menos que sejam enviadas como arquivo; um arquivo mantém o que diz por dentro. Selados no celular nos seus pedaços, mostrados a partir da memória. As cópias salvas ficam fora do Erevos. Ainda não nos backups. | Backups que os incluam. |
+| **Fotos e arquivos** | Criptografados de ponta a ponta, pelo armazenamento de arquivos do relay, em pedaços de um mesmo tamanho: o relay vê quantos e quando, e assim mais ou menos o tamanho. O seu relay vê o seu endereço, como nas mensagens; o contato os pega pelo próprio relay dele. As fotos perdem o lugar, o celular e a hora, a menos que sejam enviadas como arquivo; um arquivo mantém o que diz por dentro. Selados no celular nos seus pedaços, mostrados a partir da memória. As cópias salvas ficam fora do Erevos. Os backups os incluem, selados com a senha do backup, em arquivos próprios. | |
 | **Num computador** | Selado como no celular, na pasta própria do app. O keystore dele é selado com o chaveiro do sistema (no Windows, a chave da sua conta); num sistema Linux sem um, o Erevos não guarda nada a menos que seja iniciado com \`--plain-secrets\`, e então o guarda como está. | |
-| **Backups** | Um arquivo selado com uma senha própria, contendo cada espaço como está selado no celular. O nome dele diz que é um backup do Erevos, e o tamanho dele mostra mais ou menos quanto está guardado. Os backups automáticos guardam a senha deles no celular. Vai para um servidor só se você adicionar um: bytes aleatórios com um nome aleatório, de um tamanho arredondado; o servidor vê sua conta e quando, e seu endereço a não ser que vá pelo Tor. | |
+| **Backups** | Selados com uma senha própria, contêm cada espaço como está selado no celular, com as fotos, os arquivos e as mensagens de voz dele em arquivos próprios ao lado do backup. Os nomes deles dizem que são um backup do Erevos, e a quantidade e o tamanho deles mostram mais ou menos quanto está guardado. Os backups automáticos guardam a senha deles no celular. Vão para um servidor só se você adicionar um: bytes aleatórios com nomes aleatórios, de tamanhos arredondados; o servidor vê sua conta e quando, e seu endereço a não ser que vão pelo Tor. | |
 | **Marcas ✓✓ e ✓✓✓** | O celular do contato fica sabendo quando o seu recebeu e leu as mensagens dele, criptografado. Em um grupo que não é público, o celular de quem enviou a mensagem também fica sabendo. O relay, ou quem escuta por perto, vê mais uma mensagem pequena. | Uma opção para não avisar quando você lê. |
 | **Impressão digital ou rosto (Android)** | Desativado a menos que seja ativado. Abre só o espaço da primeira senha: a chave dele selada no Android Keystore, utilizável só logo depois de uma verificação forte de impressão digital ou rosto, e descartada quando elas mudam. Alguém que detém você pode usar o seu dedo. | |
 | **Avisos (Android)** | Em segundo plano: "Erevos – Ready for calls and messages" (não na tela de bloqueio), "Incoming call" ou "Incoming video call" – "Open Erevos to answer", e "New message" ou quantas chegaram; quando o Android ou a senha o param, "Closed by Android" ou "Locked" – "Open it to receive calls and messages again"; um lembrete, "Reminder" ou quantos; uma versão nova, "Erevos X is out". Nunca quem nem o quê. Num celular bloqueado, o aviso das mensagens diz só "Erevos". As conversas ocultas que podem dizer isso mostram o mesmo aviso, contado com o resto: quem o vê e não encontra nada novo pode adivinhar que há mais. Como app de telefone, o aviso de uma chamada telefônica nomeia quem liga, também sobre a tela de bloqueio, como faz o de todo app de telefone, mas nunca por um nome que só as conversas ocultas conhecem: uma chamada de um dos contatos delas mostra o número. | |

@@ -71,4 +71,58 @@ export const cloudBackup: Record<string, string> = {
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "Num navegador isto só funciona com um servidor configurado para deixar o web app entrar (CORS), o que o Nextcloud não é de fábrica. O app para computador e o Android não precisam de nada disso.",
   "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Um backup maior que {size} MB não chega de um servidor. Baixe-o do servidor e toque em Restaurar um backup.",
+  "Automatic backups need a folder on {device}: choose one.":
+    "Os backups automáticos precisam de uma pasta {device}: escolha uma.",
+  "Sent a backup to {server}.":
+    "Backup enviado para {server}.",
+  "Making the backup: photos, files and voice messages, {percent}%…":
+    "Fazendo o backup: fotos, arquivos e mensagens de voz, {percent}%…",
+  "Putting back photos, files and voice messages: {percent}%…":
+    "Restaurando fotos, arquivos e mensagens de voz: {percent}%…",
+  "Choose the files":
+    "Escolher os arquivos",
+  "Choose the folder":
+    "Escolher a pasta",
+  "No folder on {device} yet":
+    "Ainda não há pasta {device}",
+  "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.":
+    "Estes backups automáticos vieram com um backup feito em outro dispositivo, com a senha deles; a pasta para onde iam fica com aquele dispositivo. Escolha uma pasta aqui, e eles continuam nela.",
+  "Until then they go only to the server.":
+    "Até lá, eles vão só para o servidor.",
+  "Choose a folder":
+    "Escolher uma pasta",
+  "What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.":
+    "O que fica com cada dispositivo e não vem com nenhum backup: a impressão digital, as pastas em que o Erevos pode gravar, o que o celular permite que ele faça e quais apps fazem as chamadas e enviam os SMS. Uma conta XMPP volta como um novo dispositivo dela mesma, e o Matrix pede que você entre de novo.",
+  "Its photos, files and voice messages are in {n} more file beside it, with the same start: keep them together.":
+    "As fotos, arquivos e mensagens de voz dele estão em mais {n} arquivo ao lado dele, com o mesmo começo de nome: mantenha-os juntos.",
+  "Its photos, files and voice messages are in {n} more files beside it, with the same start: keep them together.":
+    "As fotos, arquivos e mensagens de voz dele estão em mais {n} arquivos ao lado dele, com o mesmo começo de nome: mantenha-os juntos.",
+  "A file of this backup is not there: {name}.":
+    "Um arquivo deste backup não está lá: {name}.",
+  "{n} files of this backup are not there, {name} among them.":
+    "{n} arquivos deste backup não estão lá, entre eles {name}.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
+    "As fotos, arquivos e mensagens de voz deste backup estão em mais {n} arquivo ao lado dele, com o mesmo começo de nome. Escolha-o.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
+    "As fotos, arquivos e mensagens de voz deste backup estão em mais {n} arquivos ao lado dele, com o mesmo começo de nome. Escolha todos.",
+  "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
+    "As fotos, arquivos e mensagens de voz deste backup estão em mais {n} arquivo ao lado dele. Escolha a pasta em que o backup está.",
+  "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":
+    "As fotos, arquivos e mensagens de voz deste backup estão em mais {n} arquivos ao lado dele. Escolha a pasta em que o backup está.",
+  "A file of this backup is missing: {name}. Nothing was changed.":
+    "Falta um arquivo deste backup: {name}. Nada mudou.",
+  "A file of this backup is damaged, or belongs to another backup: {name}. Nothing was changed.":
+    "Um arquivo deste backup está danificado ou pertence a outro backup: {name}. Nada mudou.",
+  "A file of this backup is damaged, or belongs to another backup: {name}.":
+    "Um arquivo deste backup está danificado ou pertence a outro backup: {name}.",
+  "Restore everything else without it? The photos, files and voice messages on {device} stay as they are, and those it holds do not come back.":
+    "Restaurar todo o resto sem ele? As fotos, os arquivos e as mensagens de voz {device} ficam como estão, e os que ele contém não voltam.",
+  "Restore everything else without them? The photos, files and voice messages on {device} stay as they are, and those they hold do not come back.":
+    "Restaurar todo o resto sem eles? As fotos, os arquivos e as mensagens de voz {device} ficam como estão, e os que eles contêm não voltam.",
+  "Restore the rest":
+    "Restaurar o resto",
+  "Restored without {n} file of the backup, {name}: the photos, files and voice messages in it did not come back.":
+    "Restaurado sem {n} arquivo do backup, {name}: as fotos, os arquivos e as mensagens de voz que ele continha não voltaram.",
+  "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
+    "Restaurado sem {n} arquivos do backup, entre eles {name}: as fotos, os arquivos e as mensagens de voz que eles continham não voltaram.",
 };

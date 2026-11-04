@@ -36,6 +36,12 @@ export async function saveBatteryMode(mode: BatteryMode): Promise<void> {
   listeners.forEach((listener) => listener(mode));
 }
 
+/** Reads the mode again, as a restored backup put it (lib/backup-settings.ts), and tells those who follow it. */
+export async function reloadBatteryMode(): Promise<void> {
+  const mode = await loadBatteryMode();
+  listeners.forEach((listener) => listener(mode));
+}
+
 /** Has `listener` called whenever the mode is set. Returns how to stop. */
 export function onBatteryMode(listener: (mode: BatteryMode) => void): () => void {
   listeners.add(listener);

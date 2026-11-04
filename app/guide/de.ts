@@ -190,7 +190,7 @@ Eine gute erste Stunde:
 sonst niemand ist: Schreib dir Notizen, Links, Fotos, Dateien und Sprachnachrichten, wie in jedem Chat. Er geht an
 niemanden sonst: Er bleibt verschlüsselt im Bereich und geht nur an deine eigenen verknüpften Geräte,
 Ende-zu-Ende-verschlüsselt, sodass jedes dieselben Notizen und Erinnerungen hat (siehe [Verknüpfte Geräte](#devices)).
-Ein Backup nimmt seine Notizen und Sprachnachrichten mit, aber nicht seine Fotos und Dateien, wie bei Chats.
+Ein Backup nimmt alles davon mit, Notizen, Fotos, Dateien und Sprachnachrichten, wie bei Chats.
 
 - **Eine Erinnerung:** Tippe auf **Erinnern** (die orange Glocke neben **Neuer Chat**), schreib, woran du erinnert
   werden willst, wähle eine Zeit (**In 1 Stunde**, **Heute Abend 20:00**, **Morgen 09:00** oder einen beliebigen Tag,
@@ -2818,8 +2818,7 @@ löschen, was die weggenommenen Plätze enthalten.
   Byte zählt, das jede trägt (siehe, was das Relay sieht, oben), nie nach ihnen selbst. Wer die Benachrichtigung sieht
   und in deinen Chats nichts Neues findet, kann ahnen, dass es mehr gibt. Nachdem du im Platz jemanden gelöscht oder
   blockiert hast, macht die erste Nachricht von jemand Neuem, über den Kontaktlink oder QR-Code des Platzes, keine:
-  Sie zeigt sich, wenn du den Platz öffnest. Backups behalten es nicht: Schalte es nach dem Wiederherstellen erneut
-  ein.
+  Sie zeigt sich, wenn du den Platz öffnest. Backups behalten es.
 - **Klingeln bei Anrufen, wenn geschlossen** (Android): unter **Melden, wenn eine Nachricht kommt**, solange
   **Empfangen, wenn geschlossen** aus ist. Eingeschaltet lässt ein Anruf von einem seiner Kontakte, solange der Platz
   geschlossen ist, mit Erevos im Hintergrund oder auf irgendeinem Bildschirm, das Telefon klingeln und
@@ -2833,7 +2832,7 @@ löschen, was die weggenommenen Plätze enthalten.
   Warteschlange klingeln; der Anruf selbst wartet in der eigenen Warteschlange des Chats, bis die PIN ihn öffnet. Ein
   Kontakt, den du gelöscht hast, kann es trotzdem klingeln lassen, aber der Anruf kann sich nie verbinden. Ein von einem
   verknüpften Computer aus geführter Anruf klingelt nur, solange die versteckten Chats offen sind.
-  Backups behalten es nicht: Schalte es nach dem Wiederherstellen erneut ein.
+  Backups behalten es.
 - **Eine neue PIN für einen Platz** (über **Versteckte Chats** in **Einstellungen** oder **Neue versteckte Chats**)
   beginnt ihn leer und ersetzt, was darin war. Um die Chats zu behalten und nur die PIN zu ändern, öffne sie und nutze
   dort **PIN ändern**. Jede PIN muss sich von den anderen und von dem Passwort unterscheiden, das Erevos öffnet.
@@ -2883,17 +2882,19 @@ trotzdem lesen. Für einen Chat, der nicht einmal gesehen werden darf, nutze ver
 
 ## Backups {#backup}
 
-Ein Backup ist eine Datei, die alles enthält, was Erevos auf diesem Telefon aufbewahrt: jeden Bereich, mit seinen
-Kontakten, den Schlüsseln seiner Unterhaltungen, seinen Nachrichten, Sprachnachrichten, importierten Chats und
-versteckten Chats, seinen Konten bei Matrix, XMPP und Nostr, seinem „Chat mit mir selbst“, und die Sperre. Darin bleibt
-jeder Bereich mit seinem eigenen Passwort versiegelt, und die Datei wird noch einmal mit einem eigenen Passwort
-versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
+Ein Backup enthält alles, was Erevos auf diesem Telefon aufbewahrt: jeden Bereich, mit seinen Kontakten, den
+Schlüsseln seiner Unterhaltungen, seinen Nachrichten, Fotos, Dateien, Sprachnachrichten, importierten Chats und
+versteckten Chats, seinen Konten bei Matrix, XMPP und Nostr, seinem „Chat mit mir selbst“, die Sperre und das
+Panik-Passwort, und die Einstellungen, die mit dir auf ein anderes Telefon gehen. Darin bleibt jeder Bereich mit seinem
+eigenen Passwort versiegelt, und das Backup wird noch einmal mit einem eigenen Passwort versiegelt. Seine Fotos, Dateien
+und Sprachnachrichten kommen in eigene Dateien daneben, bis zu 4 MB jede, deren Namen wie der des Backups anfangen:
+Halte sie zusammen. Backups findest du unter **Einstellungen** → **Daten und Geräte** → **Backups**.
 
 1. **Backup erstellen:** Tippe auf **Backup erstellen**, wähle einen Ordner (auf dem Telefon, einer Speicherkarte oder
    einer Cloud-App, die dort ihre Ordner zeigt; auf einem Computer jeden Ordner), gib zweimal ein Passwort für das
-   Backup ein (mindestens 12 Zeichen oder vier Wörter) und tippe auf **Speichern**.
+   Backup ein (mindestens 12 Zeichen oder vier Wörter) und tippe auf **Speichern**. In einem Browser gehen das Backup und seine Dateien ins Teilen-Menü oder in die Downloads: die erste sofort, jede nächste nach einem Tippen auf **Speichern**.
 2. **Automatische Backups:** Wähle **Jeden Tag** oder **Jede Woche**, dann einen Ordner und ein Passwort. Erevos macht
-   eines, wenn es öffnet und das letzte älter ist, und der Ordner behält die 3 neuesten. Darunter sind
+   eines, wenn es öffnet und das letzte älter ist, und der Ordner behält die 3 neuesten, jedes mit seinen Dateien. Darunter sind
    **Jetzt sichern**, **Ordner ändern** und **Passwort ändern**; **Aus** beendet sie, und die gemachten bleiben im
    Ordner.
 3. **Auch auf einen Server:** Auf Android und in der Desktop-App schickt **Server hinzufügen** unter **Auch auf einen
@@ -2903,10 +2904,11 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
    senden** beendet es, und die dort bleiben. In der Web-App, die keine Backups von selbst macht, schickt **Jetzt ein
    Backup senden** eines dorthin, mit einem Passwort, das du jedes Mal eingibst.
 4. **Wiederherstellen:** Tippe auf **Backup wiederherstellen**, wähle die Datei und gib ihr Passwort ein. Erevos fragt
-   noch einmal, setzt dann das Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das
-   Backup gemacht wurde, mit den damals genutzten Passwörtern. **Von einem Server wiederherstellen** sieht im Ordner
-   nach, in den automatische Backups gehen, oder in einem, den du mit Benutzername und Passwort angibst, und zeigt die
-   Backups dort, die neuesten zuerst: Wähle eines, gib sein Passwort ein, und es wird genauso wiederhergestellt.
+   noch einmal, findet die Dateien des Backups daneben oder bittet dich, sie oder ihren Ordner zu wählen, setzt dann das
+   Backup an die Stelle von allem auf dem Telefon und öffnet sich so, wie es war, als das Backup gemacht wurde, mit den
+   damals genutzten Passwörtern. Fehlt eine seiner Dateien, ist sie beschädigt oder gehört sie zu einem anderen Backup, sagt Erevos, welche, und es wird nichts geändert, außer du wählst, den Rest ohne sie wiederherzustellen: Dann bleiben die Fotos, Dateien und Sprachnachrichten auf dem Telefon, wie sie sind, und die in ihr kommen nicht zurück. **Von einem Server wiederherstellen** sieht im Ordner nach, in den automatische Backups gehen,
+   oder in einem, den du mit Benutzername und Passwort angibst, und zeigt die Backups dort, die neuesten zuerst: Wähle
+   eines, gib sein Passwort ein, und es wird genauso wiederhergestellt, mit seinen Dateien von dort.
 
 - **Bewahre das Passwort des Backups auf:** Nichts öffnet ein Backup ohne es, und niemand kann es wiederherstellen.
   Ohne Passwortsperre ist das Passwort des Backups alles, was es schützt. Wer die Datei hat, kann Passwörter daran so
@@ -2917,7 +2919,11 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
 - **Auf einem Server:** Das Backup, das dorthin geht, ist wie die anderen mit seinem Passwort versiegelt, und dieses
   Passwort verlässt nie das Telefon, also kann der Server es nicht öffnen. Sein Name ist zufällig und die Datei sieht
   aus wie zufällige Bytes, in einer von wenigen Größen, also sagt keines von beiden, dass es von Erevos ist, oder
-  genau, wie viel es enthält. Der Server sieht aber dein Konto, wann eines kommt und ungefähr wie groß es ist. Auf
+  genau, wie viel es enthält. Seine Fotos, Dateien und Sprachnachrichten gehen als eigene Uploads, alle gleich groß,
+  jeder ebenfalls unter einem zufälligen Namen und mit dem Passwort des Backups versiegelt, an dieses Backup und ihren
+  Platz darin gebunden, sodass keiner unbemerkt vertauscht, weggelassen oder aus einem anderen Backup genommen werden
+  kann; der Server behält sie mit ihrem Backup und löscht sie mit ihm. Ihre Namen sind so lang wie der des Backups, aber ihre Größe unterscheidet sie von ihm, also kann der Server sie zählen und so ungefähr sagen, wie viel das Backup enthält. Was ein abgebrochenes Backup dort ließ, wird gelöscht, bevor das nächste geht, sodass ein Server ohne Platz wieder welchen hat. Der Server sieht aber dein Konto, wann eines
+  kommt und ungefähr wie groß es ist. Auf
   Android gehen Backups dorthin, wie die Wahl des Bereichs unter **Einstellungen** → **Relay und Netze** → **Tor**
   sagt, wie bei Matrix: mit **Alles** nur über Tor, sodass der Server die Adresse des Telefons nicht sieht; mit
   **Nachrichten** über Tor, sobald Tor bereit ist, und direkt, solange Tor startet oder wenn es scheitert; mit
@@ -2929,8 +2935,8 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   geht von dort keines. In der Web-App wird das Passwort des Servers im Browser aufbewahrt, versiegelt mit einem
   Schlüssel, den der Browser nicht herausgibt. **Von einem Server wiederherstellen** lädt das gewählte auf demselben
   Weg herunter, über Tor, wie der Bereich sagt, und schreibt dort nichts; ein dafür eingegebenes Passwort dient nur
-  dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt ein Backup über 64 MB nicht, und direkt keines über 100 MB, das Höchste, das Erevos bei
-  einem Download annimmt: Dann lade es vom
+  dieser Wiederherstellung und wird nicht aufbewahrt. Über Tor kommt keine Datei eines Backups über 64 MB, und direkt keine über 100 MB, das Höchste, das
+  Erevos bei einem Download annimmt: Dann lade das Backup und seine Dateien vom
   Server herunter und tippe auf **Backup wiederherstellen**. Ein Erevos vor dieser Version öffnet ein solches Backup
   nicht. Google Drive fehlt mit Absicht: Google verbindet die Datei mit deinem Namen, und Erevos bräuchte die Apps von
   Google und eine Google-Anmeldung auf dem Telefon.
@@ -2955,12 +2961,21 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   eine Nachricht kommt** der versteckten Chats sowie **Auch, wenn ein anderer Bereich offen ist** brauchen. So laufen
   sie nach einer Wiederherstellung, auch auf einem anderen Telefon, weiter wie zuvor. Ein Backup von vor dieser
   Version enthält nichts davon: Seine Wiederherstellung lässt sie so, wie das Telefon sie hat.
+- **Einstellungen:** Ein Backup enthält die Einstellungen, die zu dir gehören und nicht zum Telefon: die Sprache, die
+  Module, die Vibration, die Benachrichtigungen im Hintergrund und die Zahl auf dem Symbol, die Akkunutzung, den
+  Bildschirmschutz, die Fotoqualität, ob sich das Telefon ohne Passwort öffnet, und wie Erevos Telefone in der Nähe
+  erreicht (ihre Nachrichten mitnehmen, dasselbe WLAN, Wi-Fi Direct, Wi-Fi Aware und ein LoRa-Funkgerät, das nur dort
+  wieder angeht, wo dieses Telefon es kennt). Auf Android enthält es auch die Schnellantworten des Telefons und die
+  Anrufe, die es abweist, die einer Kontaktgruppe nur dort, wo dieses Telefon eine Gruppe mit diesem Namen im selben
+  Konto hat. Automatische Backups und ihr Server kommen mit ihrem Passwort zurück, aber ohne ihren Ordner, in den
+  Android nur das Telefon schreiben lässt, auf dem er gewählt wurde: Auf einem anderen Telefon sagt **Backups**, dass
+  einer zu wählen ist, und bis dahin gehen sie nur an den Server.
 - **Ein Telefon nach dem anderen:** Ein auf einem zweiten Telefon wiederhergestelltes Backup liest dieselben
   Relay-Warteschlangen wie das erste, und jedes holt Nachrichten, die das andere dann nie bekommt. Nutze es, um auf ein
   neues Telefon umzuziehen, nicht um zwei zu führen.
 - **Diskretion:** Jeder Bereich zeigt denselben Backup-Bildschirm, und ein Backup enthält jeden Bereich, also verrät
-  keines von beiden, wie viele Bereiche es gibt oder ob versteckte Chats angelegt sind. Der Name der Datei sagt, dass
-  sie ein Erevos-Backup ist, und ihre Größe zeigt ungefähr, wie viel aufbewahrt wird.
+  keines von beiden, wie viele Bereiche es gibt oder ob versteckte Chats angelegt sind. Die Namen der Dateien sagen, dass
+  sie ein Erevos-Backup sind, und ihre Zahl und Größe zeigen ungefähr, wie viel aufbewahrt wird.
 - **Die SMS des Telefons:** Auf Android fügt **SMS in Backups aufnehmen** ab dann jedem Backup die SMS und MMS des
   Telefons hinzu, mit bis zu 32 MB ihrer Bilder, solange Erevos die SMS-App ist. Sie werden wie der Rest mit dem
   Passwort des Backups versiegelt. Das Wiederherstellen des Backups legt jede Nachricht, die die SMS des Telefons noch
@@ -2968,15 +2983,22 @@ versiegelt. Backups findest du unter **Einstellungen** → **Daten und Geräte**
   wiederhergestellt. Die SMS gehören dem Telefon und sind in jedem Bereich gleich. Ein älteres Erevos öffnet kein
   Backup, das SMS enthält.
 - **Die SMS in Ordnung:** Die Anheftungen, archivierten Unterhaltungen, der Papierkorb, die Entwürfe, der Spamfilter
-  und die Markierungen jedes Bereichs, und wie lange eine SMS wartet, bevor sie nicht mehr zurückgeholt werden kann,
-  sind in jedem Backup, wie der Rest mit dem Passwort des Bereichs versiegelt. Die später gesendeten SMS
-  (**SMS später**) nicht, damit ein auf einem anderen Telefon wiederhergestelltes Backup nie eine erneut sendet; auch
-  nicht Einladungen, Namen aus deinen Kontakten und die für jede Nummer gewählte SIM. Ein älteres Erevos öffnet kein
+  und die Markierungen jedes Bereichs, wie lange eine SMS wartet, bevor sie nicht mehr zurückgeholt werden kann, die
+  später zu sendenden SMS (**SMS später**), Einladungen, Namen aus deinen Kontakten, ob Nachrichten an Erevos-Kontakte
+  per SMS gehen dürfen, und die für jede Nummer gewählte SIM sind in jedem Backup, wie der Rest mit dem Passwort des
+  Bereichs versiegelt. Die gewählte SIM kommt nur auf demselben Telefon zurück, da jedes Telefon seinen SIMs eigene Kennungen gibt: Auf einem anderen gehen SMS und Anrufe über seine Standard-SIM, bis du dort eine wählst. Eine SMS für später, deren Zeit vor der Wiederherstellung kam, geht nicht von selbst, da das
+  Telefon, von dem das Backup kam, sie schon gesendet haben kann: Sie erscheint als nicht gesendet, und ein Tippen
+  darauf sendet oder löscht sie. Eine, deren Zeit noch kommt, geht zu ihrer Zeit. Ein älteres Erevos öffnet kein
   Backup, das sie enthält; eines, das ein älteres Erevos gemacht hat, wird wie immer wiederhergestellt, ohne sie.
-- **Nicht in einem Backup:** Fotos und Dateien, noch nicht: Ein Backup wird im Arbeitsspeicher des Telefons gemacht,
-  und sie würden nicht hineinpassen. Ein auf demselben Telefon wiederhergestelltes Backup zeigt sie wieder; auf einem
-  anderen Telefon erscheinen sie als nicht darauf vorhanden. Ebenfalls weggelassen: die Zählung falscher Passwörter
-  und wie automatische Backups eingestellt sind.
+- **Was nie zurückkommt:** Was zum Telefon selbst gehört, kommt mit keinem Backup, also kann eine Wiederherstellung
+  auf einem anderen Telefon es nicht bringen: Fingerabdruck oder Gesicht, deren Schlüssel Android im Chip jenes
+  Telefons aufbewahrt; die Ordner, in die Erevos schreiben darf, wie der automatischer Backups, in die Android es nur
+  auf dem Telefon lässt, auf dem sie gewählt wurden; was Android Erevos erlaubt und welche Apps Anrufe und SMS
+  übernehmen, was nur du auf jedem Telefon erlauben kannst, weshalb sich nach einer Wiederherstellung auf Android
+  **Berechtigungen** für die eingeschalteten Module öffnet; was Android für jede App aufbewahrt, wie die Anrufliste und
+  seine eigene Liste blockierter Nummern; und die Zählung falscher Passwörter. Ein XMPP-Konto kommt als neues Gerät
+  seiner selbst zurück und Matrix meldet sich neu an, wie oben, und verknüpfte Geräte sind vorerst nicht in einem
+  Backup, wie unten.
 - **Verknüpfte Geräte** sind nicht in einem Backup: Eine Verknüpfung bleibt bei dem Telefon und dem Computer, auf
   denen sie gemacht wurde. Nachdem du ein Backup auf einem anderen Telefon wiederhergestellt hast, verknüpfe den
   Computer erneut: Tippe auf dem Computer auf **Dieses Gerät trennen** und verknüpfe ihn dann wie beim ersten Mal,
@@ -3083,8 +3105,8 @@ Computer und auf Sailfish OS.
   auf dieselbe Weise und gleich lange. Weder was das Telefon aufbewahrt noch wie lange eine Prüfung dauert, verrät
   also, ob eines festgelegt ist, und dieser Bildschirm kann es dir auch nicht sagen: Wenn du unsicher bist, lege es
   erneut fest.
-- **Nur auf dem Sperrbildschirm:** Überall sonst, wo Erevos nach einem Passwort fragt, ist es nur ein falsches. Es ist
-  nicht in Backups: Lege es nach dem Wiederherstellen eines Backups erneut fest. Solange falsche Versuche den
+- **Nur auf dem Sperrbildschirm:** Überall sonst, wo Erevos nach einem Passwort fragt, ist es nur ein falsches. Backups
+  behalten es so, wie es war, als sie gemacht wurden. Solange falsche Versuche den
   Sperrbildschirm warten lassen (siehe [Passwortsperre](#lock)), wartet es auch.
 
 **Warum:** Jemand kann dich zwingen, Erevos zu öffnen. Mit einem Panik-Passwort kannst du ihm scheinbar deines geben,
@@ -3182,8 +3204,8 @@ davon verlässt so oder so das Telefon.
   öffnen. **In diesem Chat suchen** findet auch die importierten Nachrichten. Dateien über 1 GB, und die, die der
   Export nicht enthält, bleiben zurück, und der Chat sagt, wo eine war.
 - **Platz auf dem Telefon:** Während eine .zip hereinkommt, braucht das Telefon etwa ihre doppelte Größe frei, da
-  Erevos eine Kopie davon liest und die Dateien versiegelt aufbewahrt. Importierte Dateien sind noch nicht in Backups,
-  wie andere Dateien auch nicht.
+  Erevos eine Kopie davon liest und die Dateien versiegelt aufbewahrt. Backups enthalten auch importierte Dateien,
+  wie andere Dateien.
 - **Nur auf diesem Telefon, nur zum Lesen:** Importierte Nachrichten werden nie gesendet, also bekommt das andere
   Telefon sie nicht. Erevos kann nicht zeigen, wer sie wirklich geschrieben hat.
 - **Hinweise und Anrufe** aus der anderen App werden weggelassen, und der Chat sagt, wie viele.
@@ -3534,7 +3556,7 @@ Glauben:
   Energiesparen oder den Stromsparmodus nicht lesen, also sind diese nicht dabei. Nach jedem neuen signierten Release
   öffnet es sich von selbst, wenn etwas fehlt, das Nachrichten, Anrufe oder die Daten brauchen. In einem anderen
   Browser (Chrome, Firefox) ist es genauso, mit den Einstellungen dieses Browsers.
-- **Backups** werden von Hand gemacht: **Backup erstellen** speichert die Datei über das Teilen-Menü (Dateien, iCloud
+- **Backups** werden von Hand gemacht: **Backup erstellen** speichert das Backup und seine Dateien über das Teilen-Menü (Dateien, iCloud
   Drive oder eine andere App). Ein Browser gibt eine Datei nur nach einem Tippen heraus, also gibt es keine
   automatischen Backups.
 - **Sprachnachrichten**, die auf einem iPhone aufgenommen werden, sind AAC; sie spielen überall.
@@ -3750,9 +3772,9 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Nachrichtenverlauf** | Auf dem Telefon aufbewahrt, versiegelt in seinem Bereich, ohne Grenze, in Seiten gleicher Größe, gemischt für alle Bereiche. Nur wie viel alles zusammen belegt, ist sichtbar, nicht zu welchem Bereich es gehört. Löschen auf beiden Telefonen und verschwindende Nachrichten verlassen sich auf das Erevos des anderen Telefons. | |
 | **Nachrichten in der Nähe** | Öffnen sich nur in dem Bereich, der den Kontakt hat. Eine für einen anderen Bereich wartet im Arbeitsspeicher, höchstens sechs Stunden, bis sich dieser Bereich öffnet. Eine für versteckte Chats öffnet sich nur, solange sie offen sind oder geschlossen empfangen, und der Bereich erfährt nie, dass einer ihrer Kontakte in der Nähe ist. | |
 | **Sprachnachrichten** | Ende-zu-Ende-verschlüsselt über das Relay oder in der Nähe, in Stücken: Das Relay, oder wer in der Nähe mithört, kann ungefähr erkennen, wie lang jede ist. Jeder Ton ist in einer eigenen Datei versiegelt; wie viele Dateien es gibt und wie groß sie sind, zeigt ungefähr, wie viele aufbewahrt werden, nicht in welchem Bereich. Nur während des Abspielens entsiegelt im Cache. | Tondateien alle gleich groß. |
-| **Fotos und Dateien** | Ende-zu-Ende-verschlüsselt, über den Dateispeicher des Relays, in Stücken gleicher Größe: Das Relay sieht wie viele und wann, also ungefähr wie groß. Dein Relay sieht deine Adresse, wie bei Nachrichten; der Kontakt holt sie über sein eigenes Relay. Fotos verlieren ihren Ort, ihr Telefon und ihre Zeit, außer sie werden als Datei gesendet; eine Datei behält, was sie in sich sagt. Auf dem Telefon in ihren Stücken versiegelt, aus dem Arbeitsspeicher gezeigt. Gespeicherte Kopien sind außerhalb von Erevos. Noch nicht in Backups. | Backups, die sie enthalten. |
+| **Fotos und Dateien** | Ende-zu-Ende-verschlüsselt, über den Dateispeicher des Relays, in Stücken gleicher Größe: Das Relay sieht wie viele und wann, also ungefähr wie groß. Dein Relay sieht deine Adresse, wie bei Nachrichten; der Kontakt holt sie über sein eigenes Relay. Fotos verlieren ihren Ort, ihr Telefon und ihre Zeit, außer sie werden als Datei gesendet; eine Datei behält, was sie in sich sagt. Auf dem Telefon in ihren Stücken versiegelt, aus dem Arbeitsspeicher gezeigt. Gespeicherte Kopien sind außerhalb von Erevos. Backups enthalten sie, mit dem Passwort des Backups versiegelt, in eigenen Dateien. | |
 | **Auf einem Computer** | Versiegelt wie auf dem Telefon, im eigenen Ordner der App. Sein Schlüsselspeicher ist mit dem Schlüsselbund des Systems versiegelt (unter Windows mit dem Schlüssel deines Kontos); auf einem Linux-System ohne Schlüsselbund bewahrt Erevos nichts auf, außer es wurde mit \`--plain-secrets\` gestartet, und bewahrt ihn dann so auf, wie er ist. | |
-| **Backups** | Eine mit eigenem Passwort versiegelte Datei, die jeden Bereich so enthält, wie er auf dem Telefon versiegelt ist. Ihr Name sagt, dass sie ein Erevos-Backup ist, und ihre Größe zeigt ungefähr, wie viel aufbewahrt wird. Automatische Backups bewahren ihr Passwort auf dem Telefon auf. Geht nur an einen Server, wenn du einen hinzufügst: zufällige Bytes unter einem zufälligen Namen, in aufgerundeter Größe; der Server sieht dein Konto und wann, und deine Adresse, außer es geht über Tor. | |
+| **Backups** | Mit eigenem Passwort versiegelt, enthalten sie jeden Bereich so, wie er auf dem Telefon versiegelt ist, seine Fotos, Dateien und Sprachnachrichten in eigenen Dateien neben dem Backup. Ihre Namen sagen, dass sie ein Erevos-Backup sind, und ihre Zahl und Größe zeigen ungefähr, wie viel aufbewahrt wird. Automatische Backups bewahren ihr Passwort auf dem Telefon auf. Gehen nur an einen Server, wenn du einen hinzufügst: zufällige Bytes unter zufälligen Namen, in aufgerundeten Größen; der Server sieht dein Konto und wann, und deine Adresse, außer sie gehen über Tor. | |
 | **Zeichen ✓✓ und ✓✓✓** | Das Telefon des Kontakts erfährt, verschlüsselt, wann deines seine Nachrichten bekommen und gelesen hat. In einer Gruppe, die nicht öffentlich ist, erfährt es auch das Telefon dessen, der die Nachricht geschickt hat. Das Relay, oder wer in der Nähe mithört, sieht eine weitere kleine Nachricht. | Ein Schalter, um nicht mehr mitzuteilen, wann du liest. |
 | **Fingerabdruck oder Gesicht (Android)** | Aus, solange nicht eingeschaltet. Öffnet nur den Bereich des ersten Passworts: sein Schlüssel im Android Keystore versiegelt, nur direkt nach einer starken Fingerabdruck- oder Gesichtsprüfung nutzbar und verworfen, wenn diese sich ändern. Jemand, der dich festhält, kann deinen Finger benutzen. | |
 | **Benachrichtigungen (Android)** | Im Hintergrund: „Erevos – Ready for calls and messages“ (nicht auf dem Sperrbildschirm), „Incoming call“ oder „Incoming video call“ – „Open Erevos to answer“, und „New message“ oder wie viele kamen; wenn Android oder das Passwort es beendet, „Closed by Android“ oder „Locked“ – „Open it to receive calls and messages again“; eine Erinnerung, „Reminder“ oder wie viele; eine neue Version, „Erevos X is out“. Nie wer oder was. Auf einem gesperrten Telefon sagt die für Nachrichten nur „Erevos“. Versteckte Chats, die es dürfen, zeigen dieselbe Benachrichtigung, mit dem Rest gezählt: Wer sie sieht und nichts Neues findet, kann ahnen, dass es mehr gibt. Als Telefon-App nennt die Benachrichtigung eines Telefonanrufs, wer anruft, auch über dem Sperrbildschirm, wie die jeder Telefon-App, aber nie mit einem Namen, den nur versteckte Chats kennen: Ein Anruf von einem ihrer Kontakte zeigt die Nummer. | |

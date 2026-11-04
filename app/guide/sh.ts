@@ -179,8 +179,8 @@ Dobar prvi sat:
 **Razgovor sa sobom** je uvijek na vrhu razgovora, prikvačen, u svakom prostoru. To je razgovor u kojem nema nikog
 drugog: pišite sebi bilješke, linkove, fotografije, datoteke i glasovne poruke, kao u svakom razgovoru. Ne ide nikome
 drugom: ostaje šifrirano u prostoru, a ide samo na vaše vlastite povezane uređaje, šifrirano s kraja na kraj, pa svaki
-ima iste bilješke i podsjetnike (pogledajte [Povezani uređaji](#devices)). Rezervna kopija uzima njegove bilješke i
-glasovne poruke, ali ne i fotografije i datoteke, kao i kod razgovora.
+ima iste bilješke i podsjetnike (pogledajte [Povezani uređaji](#devices)). Rezervna kopija uzima sve iz njega,
+bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
 
 - **Podsjetnik:** dodirnite **Podsjeti me** (narandžasto zvono pored **Novi razgovor**), napišite na šta da vas
   podsjeti, izaberite vrijeme (**Za 1 sat**, **Večeras u 20:00**, **Sutra u 09:00** ili bilo koji dan, sat i minut) i
@@ -2537,8 +2537,8 @@ sadrže uklonjena mjesta.
   relay prostora; relay se pita samo koliko je poruka stiglo, jer ih broji po bajtu koji svaka nosi (pogledajte šta
   relay vidi, iznad), nikad se ne traže same poruke. Onaj ko vidi obavijest i ne nađe ništa novo u vašim razgovorima
   mogao bi pretpostaviti da ih ima još. Nakon što obrišete ili blokirate nekoga u mjestu, prva poruka nekoga novog,
-  preko linka za kontakt ili QR koda mjesta, ne pravi nijednu: vidi se kad otvorite mjesto. Rezervne kopije ovo ne
-  zadržavaju: ponovo ga uključite nakon vraćanja kopije.
+  preko linka za kontakt ili QR koda mjesta, ne pravi nijednu: vidi se kad otvorite mjesto. Rezervne kopije ovo
+  zadržavaju.
 - **Zvonjava poziva kad su zatvoreni** (Android): ispod **Javi kad stigne poruka**, dok je **Primanje dok su
   zatvoreni** isključeno. Kad je uključeno, dok je mjesto zatvoreno, a Erevos u pozadini ili na bilo kojem ekranu,
   poziv od jednog od njegovih kontakata tjera telefon da zvoni i prikaže „Incoming call“ bez imena, kao što to radi
@@ -2549,8 +2549,8 @@ sadrže uklonjena mjesta.
   prave uzalud na istom relayu, isto kao i obavijest o porukama iznad, pa otvaranje prostora ništa ne
   odaje. Pozivalac samo zvoni na red tamo; sam poziv čeka u vlastitom redu razgovora dok ga PIN ne otvori. Kontakt
   kojeg ste obrisali i dalje može natjerati telefon da zvoni, ali poziv se nikad ne može povezati. Poziv upućen s
-  povezanog računara zvoni samo dok su skriveni razgovori otvoreni. Rezervne kopije ovo ne zadržavaju: ponovo ga
-  uključite nakon vraćanja kopije.
+  povezanog računara zvoni samo dok su skriveni razgovori otvoreni. Rezervne kopije ovo
+  zadržavaju.
 - **Novi PIN za mjesto** (iz **Skriveni razgovori** u **Postavke**, ili **Novi skriveni razgovori**) pokreće ga
   prazno i zamjenjuje ono što je bilo u njemu. Da ih zadržite i promijenite samo PIN, otvorite ih i tamo koristite
   **Promijeni PIN**. Svaki PIN mora se razlikovati od ostalih i od lozinke koja otvara Erevos.
@@ -2595,17 +2595,19 @@ skrivene razgovore.
 
 ## Rezervne kopije {#backup}
 
-Rezervna kopija je jedna datoteka koja sadrži sve što Erevos čuva na ovom telefonu: svaki prostor, s njegovim
-kontaktima, ključevima njegovih razgovora, porukama, glasovnim porukama, uvezenim i skrivenim razgovorima, njegovim
-Matrix, XMPP i Nostr računima, njegovim Razgovorom sa sobom, i zaključavanje. Unutar nje svaki prostor ostaje zapečaćen
-vlastitom lozinkom, a datoteka je ponovo zapečaćena vlastitom lozinkom. Nalazi se pod **Postavke** → **Podaci i
-uređaji** → **Rezervne kopije**.
+Rezervna kopija sadrži sve što Erevos čuva na ovom telefonu: svaki prostor, s njegovim kontaktima, ključevima
+njegovih razgovora, porukama, fotografijama, datotekama, glasovnim porukama, uvezenim i skrivenim razgovorima, njegovim
+Matrix, XMPP i Nostr računima, njegovim Razgovorom sa sobom, zaključavanje i lozinku za paniku, i postavke koje idu s
+vama na drugi telefon. Unutar nje svaki prostor ostaje zapečaćen vlastitom lozinkom, a rezervna kopija je ponovo
+zapečaćena vlastitom lozinkom. Njene fotografije, datoteke i glasovne poruke idu u zasebne datoteke pored nje, do 4 MB
+svaka, čija imena počinju kao njeno: držite ih zajedno. Nalazi se pod **Postavke** → **Podaci i uređaji** →
+**Rezervne kopije**.
 
 1. **Napravi rezervnu kopiju:** dodirnite **Napravi rezervnu kopiju**, izaberite folder (na telefonu, memorijskoj
    kartici ili u aplikaciji za oblak koja tamo prikazuje svoje foldere; na računaru, bilo koji folder), upišite
-   lozinku za rezervnu kopiju dvaput (najmanje 12 znakova, ili četiri riječi) i dodirnite **Sačuvaj**.
+   lozinku za rezervnu kopiju dvaput (najmanje 12 znakova, ili četiri riječi) i dodirnite **Sačuvaj**. U pregledniku rezervna kopija i njene datoteke idu u meni za dijeljenje ili u preuzimanja: prva odmah, a svaka sljedeća nakon dodira na **Sačuvaj**.
 2. **Automatske rezervne kopije:** izaberite **Svaki dan** ili **Svake sedmice**, zatim folder i lozinku. Erevos pravi
-   kopiju kad se otvori, a posljednja je starija od toga, a folder čuva 3 najnovije. Ispod njih su **Napravi kopiju
+   kopiju kad se otvori, a posljednja je starija od toga, a folder čuva 3 najnovije, svaku s njenim datotekama. Ispod njih su **Napravi kopiju
    sada**, **Promijeni folder** i **Promijeni lozinku**; **Isključeno** ih zaustavlja, a napravljene ostaju u folderu.
 3. **I na server:** na Androidu i u aplikaciji za računar, s uključenim automatskim rezervnim kopijama, **Dodaj
    server** pod **I na server** šalje svaku i u folder na serveru koji izaberete i koji govori WebDAV, kao vaš
@@ -2614,10 +2616,11 @@ uređaji** → **Rezervne kopije**.
    aplikaciji, koja ne pravi rezervne kopije sama, **Pošalji rezervnu kopiju sada** šalje jednu tamo, s lozinkom koju
    upisujete svaki put.
 4. **Vrati:** dodirnite **Vrati rezervnu kopiju**, izaberite datoteku i upišite njenu lozinku. Erevos pita još jednom,
-   a zatim stavlja rezervnu kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija
-   napravljena, s lozinkama koje su se tada koristile. **Vrati sa servera** gleda u folder u koji idu automatske
-   rezervne kopije, ili u onaj koji navedete s korisničkim imenom i lozinkom, i prikazuje rezervne kopije koje su
-   tamo, najnovije prve: izaberite jednu, upišite njenu lozinku, i vraća se na isti način.
+   nađe datoteke rezervne kopije pored nje ili traži da ih izaberete, ili njihov folder, a zatim stavlja rezervnu
+   kopiju umjesto svega što je na telefonu i otvara se onakav kakav je bio kad je kopija napravljena, s lozinkama koje
+   su se tada koristile. Ako neka od njenih datoteka nedostaje, oštećena je ili pripada drugoj kopiji, Erevos kaže koja, i ništa se ne mijenja, osim ako izaberete da vratite ostalo bez nje: tada fotografije, datoteke i glasovne poruke na telefonu ostaju kakve jesu, a one koje ona sadrži se ne vraćaju. **Vrati sa servera** gleda u folder u koji idu automatske rezervne kopije, ili u onaj koji navedete s
+   korisničkim imenom i lozinkom, i prikazuje rezervne kopije koje su tamo, najnovije prve: izaberite jednu, upišite
+   njenu lozinku, i vraća se na isti način, s njenim datotekama odande.
 
 - **Čuvajte lozinku rezervne kopije:** bez nje ništa ne otvara rezervnu kopiju, i niko je ne može vratiti. Bez
   zaključavanja lozinkom, lozinka rezervne kopije je sve što je štiti. Ko ima datoteku može na njoj isprobavati lozinke
@@ -2627,8 +2630,11 @@ uređaji** → **Rezervne kopije**.
   njihov folder i dalje trebaju lozinke prostora da bi čitao razgovore.
 - **Na serveru:** rezervna kopija koja ide tamo zapečaćena je svojom lozinkom kao i ostale, a ta lozinka nikad ne
   napušta telefon, pa je server ne može otvoriti. Ime joj je nasumično, a datoteka izgleda kao nasumični bajtovi,
-  jedne od nekoliko veličina, pa ni jedno ni drugo ne kaže da je Erevosova niti koliko tačno sadrži. Server ipak vidi
-  vaš nalog, kad jedna stigne i otprilike koliko je velika. Na Androidu rezervne kopije idu tamo kako kaže izbor
+  jedne od nekoliko veličina, pa ni jedno ni drugo ne kaže da je Erevosova niti koliko tačno sadrži. Njene
+  fotografije, datoteke i glasovne poruke idu kao zasebna slanja, sva iste veličine, svako također pod nasumičnim
+  imenom i zapečaćeno lozinkom rezervne kopije, vezano za tu kopiju i za svoje mjesto u njoj, pa nijedno ne može
+  neprimjetno biti zamijenjeno, izostavljeno ili uzeto iz druge kopije; server ih čuva uz njihovu kopiju i briše ih s
+  njom. Imena su im iste dužine kao ime kopije, ali ih veličina razlikuje od nje, pa ih server može prebrojati i tako otprilike znati koliko kopija sadrži. Ono što je tamo ostavila prekinuta kopija briše se prije nego što ode sljedeća, pa server kojem je ponestalo mjesta opet ga ima. Server ipak vidi vaš nalog, kad jedna stigne i otprilike koliko je velika. Na Androidu rezervne kopije idu tamo kako kaže izbor
   prostora pod **Postavke** → **Relay i mreže** → **Tor**, kao i Matrix: sa **Sve** samo preko Tora, pa server ne vidi
   adresu telefona; s **Poruke** preko Tora čim je Tor spreman, a direktno dok se Tor pokreće ili kad ne uspije; s
   **Ništa** direktno, i server vidi adresu telefona. Kopija prvo čeka do dvije minute da se Tor pokrene, a **I na
@@ -2638,8 +2644,8 @@ uređaji** → **Rezervne kopije**.
   **Sve** preko Tora, odatle ne ide nijedna. U web aplikaciji lozinka servera čuva se u pregledniku, zapečaćena
   ključem koji preglednik ne daje van. **Vrati sa servera** preuzima onu koju izaberete na isti način, preko Tora kako
   kaže prostor, i tamo ništa ne piše; lozinka upisana za to koristi se samo za to vraćanje i ne čuva se. Preko Tora
-  rezervna kopija veća od 64 MB ne stiže, a direktno nijedna veća od 100 MB, koliko Erevos najviše prima pri
-  preuzimanju: tada je preuzmite sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
+  ne stiže nijedna datoteka rezervne kopije veća od 64 MB, a direktno nijedna veća od 100 MB, koliko Erevos najviše
+  prima pri preuzimanju: tada preuzmite kopiju i njene datoteke sa servera i dodirnite **Vrati rezervnu kopiju**. Erevos
   stariji od ove verzije ne otvara takvu kopiju. Google Drive je namjerno izostavljen: Google vezuje datoteku za vaše
   ime, a Erevos bi trebao Googleove aplikacije i prijavu na Google na telefonu.
 - **Razgovori koji su se nastavili nakon kopije:** vraćanje vraća ključeve svakog razgovora kakvi su tada bili. Poruke
@@ -2660,25 +2666,40 @@ uređaji** → **Rezervne kopije**.
   stigne poruka** skrivenih razgovora, te **I dok je otvoren drugi prostor**. Tako nakon vraćanja, i na drugom
   telefonu, rade kao prije. Rezervna kopija od prije ove verzije nema ništa od toga: njeno vraćanje ostavlja ih kakve
   ih telefon ima.
+- **Postavke:** rezervna kopija čuva postavke koje su vaše, a ne telefona: jezik, module, vibraciju, obavijesti u
+  pozadini i broj na ikoni, uštedu baterije, privatnost ekrana, kvalitet fotografija, otvara li se Telefon bez lozinke,
+  i kako Erevos dolazi do telefona u blizini (prenoseći njihove poruke, na istom Wi-Fi-ju, preko Wi-Fi Directa, Wi-Fi
+  Awarea i LoRa radija, koji se ponovo uključuje samo tamo gdje ga ovaj telefon poznaje). Na Androidu čuva i brze
+  odgovore Telefona i pozive koje odbija, one iz grupe kontakata samo tamo gdje ovaj telefon ima grupu tog imena na
+  istom nalogu. Automatske rezervne kopije i njihov server vraćaju se sa svojom lozinkom, ali ne i sa svojim folderom,
+  u koji Android pušta da piše samo telefon na kojem je izabran: na drugom telefonu **Rezervne kopije** kažu da
+  izaberete jedan, a do tada idu samo na server.
 - **Jedan po jedan telefon:** rezervna kopija vraćena na drugom telefonu čita iste redove na relayu kao i prvi, i
   svaki preuzima poruke koje drugi tada nikad ne dobije. Koristite je za prelazak na novi telefon, a ne za držanje
   dva.
 - **Diskrecija:** svaki prostor prikazuje isti ekran Rezervne kopije, a rezervna kopija sadrži svaki prostor, pa ni
-  jedno ni drugo ne govori koliko ima prostora ni jesu li postavljeni skriveni razgovori. Ime datoteke kaže da je to
-  Erevos rezervna kopija, a njena veličina otprilike pokazuje koliko se čuva.
+  jedno ni drugo ne govori koliko ima prostora ni jesu li postavljeni skriveni razgovori. Imena datoteka kažu da je to
+  Erevos rezervna kopija, a njihov broj i veličina otprilike pokazuju koliko se čuva.
 - **SMS poruke telefona:** na Androidu, **Stavljaj SMS poruke u rezervne kopije** od tada dodaje SMS i MMS poruke
   telefona svakoj rezervnoj kopiji, s najviše 32 MB njihovih slika, dok je Erevos SMS aplikacija. Zapečaćene su
   lozinkom rezervne kopije kao i ostalo. Vraćanje rezervne kopije vraća u SMS poruke telefona svaku poruku koju još
   nema, i ne briše nijednu; Erevos tada također mora biti SMS aplikacija, inače se ostalo vraća bez njih. SMS poruke
   pripadaju telefonu, iste su u svakom prostoru. Stariji Erevos ne otvara rezervnu kopiju koja sadrži SMS poruke.
-- **Red u SMS porukama:** prikvačeni i arhivirani razgovori svakog prostora, otpad, nacrti, filter spama i oznake, te
-  koliko SMS čeka da bi se mogao povući, nalaze se u svakoj rezervnoj kopiji, zapečaćeni lozinkom prostora kao i
-  ostalo. SMS poruke poslane kasnije (**SMS kasnije**) nisu, pa rezervna kopija vraćena na drugom telefonu nikad
-  ponovo ne šalje nijednu; nisu ni pozivnice, imena iz vaših kontakata i SIM kartica izabrana za svaki broj. Stariji
-  Erevos ne otvara rezervnu kopiju koja ih sadrži; ona koju je napravio stariji Erevos vraća se kao i uvijek, bez njih.
-- **Nije u rezervnoj kopiji:** fotografije i datoteke, još ne: rezervna kopija pravi se u memoriji telefona, a one ne
-  bi stale. Rezervna kopija vraćena na istom telefonu ponovo ih prikazuje; na drugom telefonu prikazuju se kao da
-  nisu na njemu. Izostavljeni su i broj pogrešnih lozinki i postavke automatskih rezervnih kopija.
+- **Red u SMS porukama:** prikvačeni i arhivirani razgovori svakog prostora, otpad, nacrti, filter spama i oznake,
+  koliko SMS čeka da bi se mogao povući, SMS poruke za kasnije (**SMS kasnije**), pozivnice, imena iz vaših kontakata,
+  smiju li poruke Erevos kontaktima ići SMS-om, i SIM kartica izabrana za svaki broj nalaze se u svakoj rezervnoj
+  kopiji, zapečaćeni lozinkom prostora kao i ostalo. Izabrana SIM kartica vraća se samo na istom telefonu, jer svaki telefon daje svojim SIM karticama vlastite oznake: na drugom, SMS poruke i pozivi idu preko njegove podrazumijevane SIM kartice dok tamo ne izaberete jednu. SMS za kasnije čije je vrijeme došlo prije vraćanja ne odlazi sam,
+  jer ga je telefon s kojeg je kopija došla možda već poslao: prikazuje se kao neposlan, a dodir na njega šalje ga ili
+  briše. Onaj čije vrijeme tek dolazi odlazi u svoje vrijeme. Stariji Erevos ne otvara rezervnu kopiju koja ih sadrži;
+  ona koju je napravio stariji Erevos vraća se kao i uvijek, bez njih.
+- **Šta se nikad ne vraća:** ono što pripada samom telefonu ne dolazi ni s jednom rezervnom kopijom, pa ga vraćanje
+  na drugom telefonu ne može donijeti: otisak prsta ili lice, čiji ključ Android čuva u čipu tog telefona; folderi u
+  koje Erevos smije pisati, kao onaj automatskih rezervnih kopija, u koje ga Android pušta samo na telefonu na kojem
+  su izabrani; ono što Android dozvoljava Erevosu i koje aplikacije obavljaju pozive i šalju SMS, što samo vi možete
+  dozvoliti na svakom telefonu, pa se nakon vraćanja na Androidu otvaraju **Dozvole** za uključene module; ono što
+  Android čuva za sve aplikacije, kao historija poziva i njegova vlastita lista blokiranih brojeva; i broj pogrešnih
+  lozinki. XMPP račun se vraća kao novi uređaj samog sebe, a Matrix se ponovo prijavljuje, kao gore, a povezani uređaji
+  zasad nisu u rezervnoj kopiji, kao dolje.
 - **Povezani uređaji** nisu u rezervnoj kopiji: veza ostaje s telefonom i računarom na kojima je napravljena. Nakon
   vraćanja rezervne kopije na drugom telefonu ponovo povežite računar: na računaru dodirnite **Odvoji ovaj uređaj**, a
   zatim ga povežite kao prvi put, pogledajte [Povezani uređaji](#devices). Kontakti s ovom verzijom tada prestaju pisati
@@ -2778,7 +2799,7 @@ i na Sailfish OS-u.
   i jednako dugo. Zato ni ono što telefon čuva ni trajanje provjere ne pokazuju je li neka postavljena, a ni ovaj
   zaslon vam to ne može reći: ako niste sigurni, postavite je ponovo.
 - **Samo na zaslonu za zaključavanje:** upisana bilo gdje drugdje gdje Erevos traži lozinku, samo je pogrešna lozinka.
-  Nije u rezervnim kopijama: nakon vraćanja jedne, postavite je ponovo. Dok pogrešni pokušaji tjeraju zaslon za
+  Rezervne kopije je čuvaju onakvu kakva je bila kad su napravljene. Dok pogrešni pokušaji tjeraju zaslon za
   zaključavanje da čeka (pogledajte [Zaključavanje lozinkom](#lock)), čeka i ona.
 
 **Zašto:** netko vas može natjerati da otvorite Erevos. S lozinkom za paniku možete izgledati kao da dajete svoju, a
@@ -2869,8 +2890,8 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ionako 
   poruci da je **Kopiraj** ili **Otvori** njenu datoteku. **Traži u ovom razgovoru** pronalazi i uvezene poruke.
   Datoteke veće od 1 GB, i one koje izvoz ne sadrži, ostaju izvan, a razgovor kaže gdje je neka bila.
 - **Prostor na telefonu:** dok .zip dolazi, telefonu treba otprilike dvostruko više slobodnog prostora od njegove
-  veličine, jer Erevos čita njegovu kopiju i čuva datoteke zapečaćene. Uvezene datoteke još nisu u rezervnim kopijama,
-  kao ni ostale datoteke.
+  veličine, jer Erevos čita njegovu kopiju i čuva datoteke zapečaćene. I uvezene datoteke su u rezervnim kopijama,
+  kao i ostale datoteke.
 - **Samo na ovom telefonu, samo za čitanje:** uvezene poruke nikad se ne šalju, pa ih drugi telefon ne dobija. Erevos
   ne može pokazati ko ih je zaista napisao.
 - **Obavještenja i pozivi** iz druge aplikacije izostavljaju se, a razgovor kaže koliko ih je.
@@ -3189,7 +3210,7 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
   dozvoljava Erevosu da čita uštedu baterije ili Način rada niske potrošnje, pa toga tamo nema. Nakon svakog novog
   potpisanog izdanja otvara se sama kad nedostaje nešto što trebaju poruke, pozivi ili podaci. U drugom pregledniku
   (Chrome, Firefox) isto je, s postavkama tog preglednika.
-- **Rezervne kopije** se prave ručno: **Napravi rezervnu kopiju** čuva datoteku preko izbornika za dijeljenje (Datoteke,
+- **Rezervne kopije** se prave ručno: **Napravi rezervnu kopiju** čuva kopiju i njene datoteke preko izbornika za dijeljenje (Datoteke,
   iCloud Drive ili druga aplikacija). Preglednik daje datoteku tek nakon dodira, pa nema automatskih rezervnih kopija.
 - **Glasovne poruke** snimljene na iPhoneu su AAC; puštaju se svuda.
 - **Apple** pravi Safari i mogao bi ga promijeniti, kao i kod svake aplikacije na iPhoneu.
@@ -3392,9 +3413,9 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Historija poruka** | Čuva se na telefonu, zapečaćena u svom prostoru, bez ograničenja, u stranicama iste veličine pomiješanim za sve prostore. Vidi se samo koliko sve zajedno zauzima, a ne kojem prostoru pripada. Brisanje na oba telefona i poruke koje nestaju oslanjaju se na Erevos drugog telefona. | |
 | **Poruke u blizini** | Otvaraju se samo u prostoru koji ima taj kontakt. Poruka za drugi prostor čeka u memoriji, najviše šest sati, dok se taj prostor ne otvori. Poruka za skrivene razgovore otvara se samo dok su otvoreni, ili primaju i zatvoreni, a prostor nikad ne sazna da je neki njihov kontakt u blizini. | |
 | **Glasovne poruke** | Šifrirane s kraja na kraj preko relaya ili u blizini, u dijelovima: relay, ili onaj ko prisluškuje u blizini, može otprilike saznati koliko je svaka duga. Svaki zvuk zapečaćen je u vlastitoj datoteci; broj datoteka i njihove veličine otprilike pokazuju koliko ih se čuva, ali ne i u kojem prostoru. Otpečaćen u kešu samo dok se pušta. | Zvučne datoteke sve iste veličine. |
-| **Fotografije i datoteke** | Šifrirane s kraja na kraj, preko pohrane datoteka relaya, u dijelovima iste veličine: relay vidi koliko ih je i kada, dakle otprilike koliko su velike. Vaš relay vidi vašu adresu, kao i kod poruka; kontakt ih preuzima preko vlastitog relaya. Fotografije gube lokaciju, telefon i vrijeme, osim ako su poslane kao datoteka; datoteka zadržava ono što govori u sebi. Zapečaćene na telefonu u svojim dijelovima, prikazane iz memorije. Sačuvane kopije su izvan Erevosa. Još nisu u rezervnim kopijama. | Rezervne kopije koje ih sadrže. |
+| **Fotografije i datoteke** | Šifrirane s kraja na kraj, preko pohrane datoteka relaya, u dijelovima iste veličine: relay vidi koliko ih je i kada, dakle otprilike koliko su velike. Vaš relay vidi vašu adresu, kao i kod poruka; kontakt ih preuzima preko vlastitog relaya. Fotografije gube lokaciju, telefon i vrijeme, osim ako su poslane kao datoteka; datoteka zadržava ono što govori u sebi. Zapečaćene na telefonu u svojim dijelovima, prikazane iz memorije. Sačuvane kopije su izvan Erevosa. Rezervne kopije ih sadrže, zapečaćene lozinkom kopije, u zasebnim datotekama. | |
 | **Na računaru** | Zapečaćeno kao na telefonu, u vlastitom folderu aplikacije. Njeno spremište ključeva zapečaćeno je privjeskom za ključeve sistema (na Windowsu ključem vašeg naloga); na Linux sistemu bez njega Erevos ne čuva ništa osim ako nije pokrenut sa \`--plain-secrets\`, a tada ga čuva onakvo kakvo jeste. | |
-| **Rezervne kopije** | Jedna datoteka zapečaćena vlastitom lozinkom, koja sadrži svaki prostor onako kako je zapečaćen na telefonu. Njeno ime kaže da je to Erevos rezervna kopija, a njena veličina otprilike pokazuje koliko se čuva. Automatske rezervne kopije čuvaju svoju lozinku na telefonu. Ide na server samo ako ga dodate: nasumični bajtovi pod nasumičnim imenom, zaokružene veličine; server vidi vaš nalog i kada, i vašu adresu osim ako ide preko Tora. | |
+| **Rezervne kopije** | Zapečaćene vlastitom lozinkom, sadrže svaki prostor onako kako je zapečaćen na telefonu, s njegovim fotografijama, datotekama i glasovnim porukama u zasebnim datotekama pored kopije. Njihova imena kažu da je to Erevos rezervna kopija, a njihov broj i veličina otprilike pokazuju koliko se čuva. Automatske rezervne kopije čuvaju svoju lozinku na telefonu. Idu na server samo ako ga dodate: nasumični bajtovi pod nasumičnim imenima, zaokruženih veličina; server vidi vaš nalog i kada, i vašu adresu osim ako idu preko Tora. | |
 | **Oznake ✓✓ i ✓✓✓** | Telefon kontakta saznaje, šifrirano, kada je vaš dobio i pročitao njegove poruke. U grupi koja nije javna, to saznaje i telefon onoga ko je poslao poruku. Relay, ili onaj ko prisluškuje u blizini, vidi još jednu malu poruku. | Prekidač da se ne javlja kada čitate. |
 | **Otisak prsta ili lice (Android)** | Isključeno dok se ne uključi. Otvara samo prostor prve lozinke: njegov ključ zapečaćen je u Android Keystoreu, upotrebljiv samo odmah nakon jake provjere otiska prsta ili lica, i odbacuje se kad se oni promijene. Neko ko vas drži može upotrijebiti vaš prst. | |
 | **Obavijesti (Android)** | U pozadini: „Erevos – Ready for calls and messages“ (ne na zaključanom ekranu), „Incoming call“ ili „Incoming video call“ – „Open Erevos to answer“, i „New message“ ili koliko ih je stiglo; kad ga zaustavi Android ili lozinka, „Closed by Android“ ili „Locked“ – „Open it to receive calls and messages again“; podsjetnik, „Reminder“ ili koliko ih je; nova verzija, „Erevos X is out“. Nikad od koga ni šta. Na zaključanom telefonu obavijest o porukama kaže samo „Erevos“. Skriveni razgovori kojima je to dozvoljeno prikazuju istu obavijest, brojanu s ostalima: onaj ko je vidi i ne nađe ništa novo mogao bi pretpostaviti da ih ima još. Kao aplikacija za telefon, obavijest o telefonskom pozivu navodi ko zove, i preko zaključanog ekrana, kao kod svake aplikacije za telefon, ali nikad imenom koje znaju samo skriveni razgovori: poziv od jednog od njihovih kontakata prikazuje broj. | |

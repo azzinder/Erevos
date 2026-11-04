@@ -49,6 +49,13 @@ export async function setHapticsOn(value: boolean): Promise<void> {
   if (value) press();
 }
 
+/** Reads the choice again, as a restored backup put it (lib/backup-settings.ts). */
+export async function reloadHaptics(): Promise<void> {
+  on = await hapticsOn();
+  read = true;
+  changes.forEach((listener) => listener());
+}
+
 /** Calls `listener` each time the buzz is turned on or off, until the function it gives is called. */
 export function onHapticsChange(listener: () => void): () => void {
   changes.add(listener);

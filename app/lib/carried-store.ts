@@ -19,7 +19,7 @@ import { secureGet, secureSet } from './secure';
 
 const OTHERS_FILE = 'erevos-carried-others';
 const OTHERS_KEY = 'erevos.carried-key';
-const OWN_FILE = 'erevos-carried';
+export const OWN_FILE = 'erevos-carried';
 const BLOCK = 16 * 1024;
 
 // A packet kept: the relay's address, the sealed packet (base64), how many more phones it may go

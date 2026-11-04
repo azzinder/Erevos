@@ -9,8 +9,12 @@
 // once Android says it went. Where Android cannot hold it (a build without that, or one kept
 // before it, whose time came), it goes from here, while Erevos runs: beside the receiver, in the
 // background too while the space is open (app/_layout.tsx), or else when Erevos next opens.
+// One a backup brought back (lock/backup.ts) whose time came before it was restored, which Android
+// here does not hold, goes from nowhere by itself: the phone the backup came from may have sent it
+// already. It waits for the owner, who sends it or deletes it (app/sms.tsx).
 
 import { currentSpace } from '../lock/keys';
+import { restoredAt } from '../lock/restored';
 import type { LaterSms } from '../lock/sms-data';
 import { laterSmsHolder, onSmsEvent, sendSms, smsReady, type LaterSmsHolder, type LaterSmsState } from '../modules/erevos-sms';
 import { SmsLink } from './sms-link';
@@ -20,14 +24,19 @@ const RETRY = 5 * 60_000;
 
 type Send = (to: string, text: string, sim: number) => Promise<unknown>;
 
+/** Whether an SMS for later waits for the owner: its time came before a backup was restored here,
+ *  at `restored` (lock/restored.ts), and it went from nowhere. */
+export const waitsForOwner = (sms: LaterSms, restored: number): boolean => restored > 0 && sms.at <= restored;
+
 /**
  * Hands Android what it does not hold yet and forgets what it says went; sends from here the SMS
  * whose time came that Android does not hold, the soonest first, each forgotten once it went; one
- * that could not go stays, and is tried again. Says which went, and when to look again: the next
- * one's time that goes from here, or RETRY from now when one stays or Android's is late, or 0 when
- * there is nothing to look at.
+ * that could not go stays, and is tried again. One that waits for the owner (waitsForOwner, with
+ * `restored`) is left as it is. Says which went, and when to look again: the next one's time that
+ * goes from here, or RETRY from now when one stays or Android's is late, or 0 when there is
+ * nothing to look at.
  */
-export async function sendDue(link: SmsLink, send: Send, now = Date.now(), holder: LaterSmsHolder | null = null): Promise<{ went: LaterSms[]; next: number }> {
+export async function sendDue(link: SmsLink, send: Send, now = Date.now(), holder: LaterSmsHolder | null = null, restored = 0): Promise<{ went: LaterSms[]; next: number }> {
   const went: LaterSms[] = [];
   let stays = false;
   let ahead = 0;
@@ -53,6 +62,7 @@ export async function sendDue(link: SmsLink, send: Send, now = Date.now(), holde
       stays ||= sms.at <= now;
       continue;
     }
+    if (waitsForOwner(sms, restored)) continue;
     if (held && sms.at > now) {
       try {
         await holder!.schedule(sms);
@@ -116,7 +126,7 @@ export function startSmsLater(): () => void {
     turn = turn
       .then(async () => {
         if (stopped) return;
-        const { went, next } = await sendDue(await SmsLink.open(space, key), sendSms, Date.now(), holder);
+        const { went, next } = await sendDue(await SmsLink.open(space, key), sendSms, Date.now(), holder, await restoredAt());
         if (went.length > 0) listeners.forEach((listener) => listener());
         // Timers longer than about 24 days go off at once: one that far looks again then.
         if (!stopped && next > 0) timer = setTimeout(check, Math.min(Math.max(0, next - Date.now()), 2 ** 31 - 1));

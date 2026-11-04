@@ -193,8 +193,8 @@ Une bonne première heure :
 discussion où il n’y a personne d’autre : écris-toi des notes, des liens, des photos, des fichiers et des messages
 vocaux, comme dans n’importe quelle discussion. Elle ne va à personne d’autre : elle reste chiffrée dans l’espace, et
 ne va qu’à tes propres appareils associés, chiffrée de bout en bout, pour que chacun ait les mêmes notes et les mêmes
-rappels (voir [Appareils associés](#devices)). Une sauvegarde prend ses notes et ses messages vocaux, mais pas ses
-photos ni ses fichiers, comme pour les discussions.
+rappels (voir [Appareils associés](#devices)). Une sauvegarde la prend tout entière, notes, photos,
+fichiers et messages vocaux, comme pour les discussions.
 
 - **Un rappel :** appuie sur **Me rappeler** (la cloche orange à côté de **Nouvelle discussion**), écris de quoi te
   rappeler, choisis une heure (**Dans 1 heure**, **Ce soir 20:00**, **Demain 09:00**, ou n’importe quel jour, heure et
@@ -2785,8 +2785,7 @@ supprimerait ce que contiennent les emplacements retirés.
   porte (voir ce que voit le relais, plus haut), jamais les messages eux-mêmes. Celui qui voit la notification et ne
   trouve rien de nouveau dans tes discussions peut deviner qu’il y en a d’autres. Après que tu as supprimé ou bloqué
   quelqu’un dans l’emplacement, le premier message d’une nouvelle personne, par le lien de contact ou le code QR de
-  l’emplacement, n’en fait aucune : il se voit quand tu ouvres l’emplacement. Les sauvegardes ne le gardent pas :
-  active-le de nouveau après une restauration.
+  l’emplacement, n’en fait aucune : il se voit quand tu ouvres l’emplacement. Les sauvegardes le gardent.
 - **Faire sonner les appels quand elles sont fermées** (Android) : sous **Prévenir quand un message arrive**, tant que
   **Recevoir une fois fermées** est désactivé. Activé, tant que l’emplacement est fermé, avec Erevos en arrière-plan ou
   sur n’importe quel écran, un appel d’un de ses contacts fait sonner le téléphone et affiche « Incoming call » sans
@@ -2799,7 +2798,7 @@ supprimerait ce que contiennent les emplacements retirés.
   qu’ouvrir l’espace ne trahit rien. L’appelant ne fait que sonner une file là-bas ; l’appel lui-même attend sur la file
   propre de la discussion jusqu’à ce que le code PIN l’ouvre. Un contact que tu as supprimé peut encore le faire sonner,
   mais l’appel ne peut jamais se connecter. Un appel passé depuis un ordinateur associé ne sonne que tant que les
-  discussions masquées sont ouvertes. Les sauvegardes ne le gardent pas : active-le de nouveau après une restauration.
+  discussions masquées sont ouvertes. Les sauvegardes le gardent.
 - **Un nouveau code PIN pour un emplacement** (depuis **Discussions masquées** dans **Réglages**, ou **Nouvelles
   discussions masquées**) le recommence vide et remplace ce qui s’y trouvait. Pour garder les discussions et changer
   seulement le code PIN, ouvre-les et utilise **Changer le code PIN** là. Chaque code PIN doit être différent des autres
@@ -2850,18 +2849,20 @@ les lire. Pour une discussion qui ne doit même pas être vue, utilise les discu
 
 ## Sauvegardes {#backup}
 
-Une sauvegarde est un fichier unique qui contient tout ce qu’Erevos garde sur ce téléphone : chaque espace, avec ses
-contacts, les clés de ses conversations, ses messages, messages vocaux, discussions importées et discussions masquées,
-ses comptes Matrix, XMPP et Nostr, sa Discussion avec moi-même, et le verrou. À l’intérieur, chaque espace reste scellé
-avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot de passe à lui. C’est sous **Réglages** →
-**Données et appareils** → **Sauvegardes**.
+Une sauvegarde contient tout ce qu’Erevos garde sur ce téléphone : chaque espace, avec ses contacts, les clés de ses
+conversations, ses messages, photos, fichiers, messages vocaux, discussions importées et discussions masquées, ses
+comptes Matrix, XMPP et Nostr, sa Discussion avec moi-même, le verrou et le mot de passe de panique, et les réglages qui
+te suivent sur un autre téléphone. À l’intérieur, chaque espace reste scellé avec son propre mot de passe, et la
+sauvegarde est scellée de nouveau avec un mot de passe à elle. Ses photos, fichiers et messages vocaux vont dans des
+fichiers à part, à côté d’elle, de 4 Mo au plus chacun, dont le nom commence comme le sien : garde-les ensemble. C’est
+sous **Réglages** → **Données et appareils** → **Sauvegardes**.
 
 1. **Créer une sauvegarde :** appuie sur **Créer une sauvegarde**, choisis un dossier (sur le téléphone, une carte
    mémoire, ou une app cloud qui y montre ses dossiers ; sur un ordinateur, n’importe quel dossier), tape deux fois un
-   mot de passe pour la sauvegarde (au moins 12 caractères, ou quatre mots) et appuie sur **Enregistrer**.
+   mot de passe pour la sauvegarde (au moins 12 caractères, ou quatre mots) et appuie sur **Enregistrer**. Dans un navigateur, la sauvegarde et ses fichiers vont au menu de partage ou dans les téléchargements : le premier tout de suite, chacun des suivants après un appui sur **Enregistrer**.
 2. **Sauvegardes automatiques :** choisis **Chaque jour** ou **Chaque semaine**, puis un dossier et un mot de passe.
    Erevos en crée une quand il s’ouvre et que la dernière est plus ancienne que cela, et le dossier garde les 3 plus
-   récentes. En dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
+   récentes, chacune avec ses fichiers. En dessous se trouvent **Sauvegarder maintenant**, **Changer de dossier** et **Changer le mot de passe** ;
    **Désactivé** les arrête, et celles déjà faites restent dans le dossier.
 3. **Aussi vers un serveur :** sur Android et dans l’app de bureau, avec les sauvegardes automatiques activées,
    **Ajouter un serveur** sous **Aussi vers un serveur** envoie chacune aussi dans un dossier sur un serveur de ton
@@ -2871,11 +2872,12 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
    sauvegardes d’elle-même, **Envoyer une sauvegarde maintenant** en envoie une là-bas, avec un mot de passe que tu
    tapes à chaque fois.
 4. **Restaurer :** appuie sur **Restaurer une sauvegarde**, choisis le fichier et tape son mot de passe. Erevos
-   demande encore une fois, puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel
-   qu’il était quand la sauvegarde a été faite, avec les mots de passe utilisés alors. **Restaurer depuis un serveur**
-   regarde dans le dossier où vont les sauvegardes automatiques, ou dans un dossier que tu donnes avec son nom
-   d’utilisateur et son mot de passe, et montre les sauvegardes qui s’y trouvent, les plus récentes d’abord :
-   choisis-en une, tape son mot de passe, et elle est restaurée de la même façon.
+   demande encore une fois, trouve les fichiers de la sauvegarde à côté d’elle, ou te demande de les choisir, ou leur
+   dossier, puis met la sauvegarde à la place de tout ce qui est sur le téléphone, et s’ouvre tel qu’il était quand la
+   sauvegarde a été faite, avec les mots de passe utilisés alors. Si l’un de ses fichiers manque, est abîmé ou appartient à une autre sauvegarde, Erevos dit lequel, et rien n’est changé, sauf si tu choisis de restaurer le reste sans lui : alors les photos, les fichiers et les messages vocaux du téléphone restent tels quels, et ceux qu’il contient ne reviennent pas. **Restaurer depuis un serveur** regarde dans le dossier où
+   vont les sauvegardes automatiques, ou dans un dossier que tu donnes avec son nom d’utilisateur et son mot de passe,
+   et montre les sauvegardes qui s’y trouvent, les plus récentes d’abord : choisis-en une, tape son mot de passe, et
+   elle est restaurée de la même façon, avec ses fichiers venus de là-bas.
 
 - **Garde le mot de passe de la sauvegarde :** rien n’ouvre une sauvegarde sans lui, et personne ne peut le récupérer.
   Sans verrou par mot de passe, le mot de passe de la sauvegarde est tout ce qui la protège. Celui qui a le fichier peut
@@ -2886,8 +2888,11 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
 - **Sur un serveur :** la sauvegarde envoyée là-bas est scellée avec son mot de passe comme les autres, et ce mot de
   passe ne quitte jamais le téléphone, donc le serveur ne peut pas l’ouvrir. Son nom est aléatoire et le fichier
   ressemble à des octets aléatoires, d’une taille parmi quelques-unes, donc ni l’un ni l’autre ne dit qu’il est
-  d’Erevos ni combien il contient exactement. Le serveur voit quand même ton compte, quand une arrive et à peu près sa
-  taille. Sur Android, les sauvegardes y vont comme le dit le choix de l’espace sous **Réglages** → **Relais et
+  d’Erevos ni combien il contient exactement. Ses photos, fichiers et messages vocaux partent en envois à part, tous
+  de la même taille, chacun aussi sous un nom aléatoire et scellé avec le mot de passe de la sauvegarde, lié à cette
+  sauvegarde et à sa place en elle, si bien qu’aucun ne peut être échangé, retiré ou pris d’une autre sauvegarde sans
+  que cela se voie ; le serveur les garde avec leur sauvegarde et les supprime avec elle. Leurs noms sont aussi longs que celui de la sauvegarde, mais leur taille les distingue d’elle : le serveur peut donc les compter, et savoir ainsi à peu près ce que la sauvegarde contient. Ce qu’une sauvegarde coupée en route a laissé là-bas est supprimé avant que la suivante parte, si bien qu’un serveur qui n’avait plus de place en a de nouveau. Le serveur voit quand même ton
+  compte, quand une arrive et à peu près sa taille. Sur Android, les sauvegardes y vont comme le dit le choix de l’espace sous **Réglages** → **Relais et
   réseaux** → **Tor**, comme Matrix : avec **Tout** seulement par Tor, donc le serveur ne voit pas l’adresse du
   téléphone ; avec **Messages** par Tor dès que Tor est prêt, et en direct tant que Tor démarre ou quand il échoue ;
   avec **Rien** en direct, et le serveur voit l’adresse du téléphone. Une sauvegarde attend d’abord jusqu’à deux
@@ -2898,9 +2903,9 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   Dans l’app web, le mot de passe du serveur est gardé dans le navigateur, scellé avec une clé que le navigateur ne
   donne pas. **Restaurer depuis un serveur** télécharge celle que tu choisis de la même façon, par Tor comme le dit
   l’espace, et n’écrit rien là-bas ; un mot de passe tapé pour cela ne sert qu’à cette restauration et n’est pas
-  gardé. Par Tor, une sauvegarde de plus de 64 Mo ne vient pas, et en direct aucune de plus de 100 Mo, le maximum
-  qu’Erevos accepte pour un téléchargement : télécharge-la alors depuis le serveur et appuie sur
-  **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
+  gardé. Par Tor, aucun fichier d’une sauvegarde de plus de 64 Mo ne vient, et en direct aucun de plus de
+  100 Mo, le maximum qu’Erevos accepte pour un téléchargement : télécharge alors la sauvegarde et ses fichiers depuis
+  le serveur et appuie sur **Restaurer une sauvegarde**. Un Erevos d’avant cette version n’ouvre pas une telle sauvegarde. Google Drive est
   laissé de côté exprès : Google lie le fichier à ton nom, et Erevos aurait besoin des apps de Google et d’une
   connexion Google sur le téléphone.
 - **Les discussions qui ont continué après la sauvegarde :** restaurer remet les clés de chaque conversation telles
@@ -2924,12 +2929,21 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   fermées** et **Prévenir quand un message arrive** des discussions masquées, et **Aussi quand un autre espace est
   ouvert**. Ainsi, après une restauration, sur un autre téléphone aussi, ils continuent comme avant. Une sauvegarde
   d’avant cette version n’en a rien : la restaurer les laisse tels que le téléphone les a.
+- **Réglages :** une sauvegarde garde les réglages qui sont les tiens et non ceux du téléphone : la langue, les
+  modules, la vibration, les notifications en arrière-plan et le nombre sur l’icône, l’économie de batterie, la
+  confidentialité de l’écran, la qualité des photos, si le Téléphone s’ouvre sans le mot de passe, et la façon dont
+  Erevos joint les téléphones à proximité (en transportant leurs messages, sur le même Wi-Fi, par Wi-Fi Direct, Wi-Fi
+  Aware et une radio LoRa, qui ne se rallume que là où ce téléphone la connaît). Sur Android, elle garde aussi les
+  réponses rapides du Téléphone et les appels qu’il refuse, ceux d’un groupe de contacts seulement là où ce téléphone a
+  un groupe de ce nom dans le même compte. Les sauvegardes automatiques et leur serveur reviennent avec leur mot de
+  passe, mais pas avec leur dossier, où Android ne laisse écrire que le téléphone sur lequel il a été choisi : sur un
+  autre téléphone, **Sauvegardes** dit d’en choisir un, et d’ici là elles vont seulement au serveur.
 - **Un téléphone à la fois :** une sauvegarde restaurée sur un second téléphone lit les mêmes files d’attente sur le
   relais que le premier, et chacun prend des messages que l’autre ne reçoit alors jamais. Utilise-la pour passer à un
   nouveau téléphone, pas pour en garder deux.
 - **Discrétion :** chaque espace montre le même écran Sauvegardes, et une sauvegarde contient chaque espace, si bien que
-  ni l’un ni l’autre ne dit combien il y a d’espaces ni si des discussions masquées sont définies. Le nom du fichier dit
-  que c’est une sauvegarde Erevos, et sa taille montre à peu près combien est gardé.
+  ni l’un ni l’autre ne dit combien il y a d’espaces ni si des discussions masquées sont définies. Le nom des fichiers dit
+  que c’est une sauvegarde Erevos, et leur nombre et leur taille montrent à peu près combien est gardé.
 - **Les SMS du téléphone :** sur Android, **Inclure les SMS dans les sauvegardes** ajoute les SMS et MMS du téléphone à
   chaque sauvegarde à partir de là, avec jusqu’à 32 Mo de leurs images, tant qu’Erevos est l’app SMS. Ils sont scellés
   avec le mot de passe de la sauvegarde comme le reste. Restaurer la sauvegarde remet dans les SMS du téléphone chaque
@@ -2937,15 +2951,22 @@ avec son propre mot de passe, et le fichier est scellé de nouveau avec un mot d
   restauré sans eux. Les SMS sont ceux du téléphone, les mêmes dans chaque espace. Un Erevos plus ancien n’ouvre pas une
   sauvegarde qui contient des SMS.
 - **Les SMS en ordre :** les épingles, conversations archivées, corbeille, brouillons, filtre anti-spam et marques de
-  chaque espace, et le délai pendant lequel un SMS peut encore être annulé, sont dans chaque sauvegarde, scellés avec le
-  mot de passe de l’espace comme le reste. Les SMS envoyés plus tard (**SMS plus tard**) n’y sont pas, si bien qu’une
-  sauvegarde restaurée sur un autre téléphone n’en renvoie jamais un ; pas plus que les invitations, les noms de tes
-  contacts et la SIM choisie pour chaque numéro. Un Erevos plus ancien n’ouvre pas une sauvegarde qui les contient ; une
-  sauvegarde faite par un Erevos plus ancien se restaure comme toujours, sans eux.
-- **Pas dans une sauvegarde :** les photos et les fichiers, pas encore : une sauvegarde est faite dans la mémoire du
-  téléphone, et ils n’y tiendraient pas. Une sauvegarde restaurée sur le même téléphone les montre de nouveau ; sur un
-  autre téléphone, ils s’affichent comme absents de celui-ci. Sont aussi exclus : le compte des mots de passe erronés,
-  et le réglage des sauvegardes automatiques.
+  chaque espace, le délai pendant lequel un SMS peut encore être annulé, les SMS à envoyer plus tard (**SMS plus
+  tard**), les invitations, les noms de tes contacts, si les messages aux contacts Erevos peuvent passer par SMS, et la
+  SIM choisie pour chaque numéro sont dans chaque sauvegarde, scellés avec le mot de passe de l’espace comme le reste. La SIM choisie ne revient que sur le même téléphone, car chaque téléphone donne à ses SIM des identifiants à lui : sur un autre, les SMS et les appels passent par sa SIM par défaut jusqu’à ce que tu en choisisses une là-bas.
+  Un SMS pour plus tard dont l’heure est venue avant la restauration ne part pas tout seul, car le téléphone d’où vient
+  la sauvegarde l’a peut-être envoyé : il s’affiche comme non envoyé, et un appui dessus l’envoie ou le supprime. Celui
+  dont l’heure est encore à venir part à son heure. Un Erevos plus ancien n’ouvre pas une sauvegarde qui les contient ;
+  une sauvegarde faite par un Erevos plus ancien se restaure comme toujours, sans eux.
+- **Ce qui ne revient jamais :** ce qui appartient au téléphone lui-même ne vient avec aucune sauvegarde, donc une
+  restauration sur un autre téléphone ne peut pas l’apporter : l’empreinte ou le visage, dont Android garde la clé dans
+  la puce de ce téléphone ; les dossiers où Erevos peut écrire, comme celui des sauvegardes automatiques, où Android ne
+  le laisse entrer que sur le téléphone où ils ont été choisis ; ce qu’Android permet à Erevos et quelles apps passent
+  les appels et envoient les SMS, que toi seul peux autoriser sur chaque téléphone, c’est pourquoi après une
+  restauration sur Android **Autorisations** s’ouvre pour les modules activés ; ce qu’Android garde pour toutes les
+  apps, comme l’historique des appels et sa propre liste de numéros bloqués ; et le compte des mots de passe erronés.
+  Un compte XMPP revient comme un nouvel appareil de lui-même et Matrix se reconnecte, comme plus haut, et les appareils
+  associés ne sont pas dans une sauvegarde pour l’instant, comme plus bas.
 - **Les appareils associés** ne sont pas dans une sauvegarde : une association reste avec le téléphone et l’ordinateur
   où elle a été faite. Après la restauration d’une sauvegarde sur un autre téléphone, associe de nouveau l’ordinateur :
   sur l’ordinateur, appuie sur **Dissocier cet appareil**, puis associe-le comme la première fois, voir [Appareils
@@ -3056,7 +3077,7 @@ sur un ordinateur et sur Sailfish OS.
   ne montrent donc s’il y en a un de défini, et cet écran ne peut pas vous le dire non plus : si vous n’êtes pas sûr,
   définissez-le de nouveau.
 - **Seulement sur l’écran de verrouillage :** saisi partout ailleurs où Erevos demande un mot de passe, ce n’est qu’un
-  mot de passe incorrect. Il n’est pas dans les sauvegardes : après en avoir restauré une, définissez-le de nouveau.
+  mot de passe incorrect. Les sauvegardes le gardent tel qu’il était quand elles ont été faites.
   Tant que des essais incorrects font attendre l’écran de verrouillage (voir [Verrou par mot de passe](#lock)), il
   attend aussi.
 
@@ -3154,8 +3175,8 @@ n’en quitte le téléphone, dans un cas comme dans l’autre.
   **Rechercher dans cette discussion** trouve aussi les messages importés. Les fichiers de plus de 1 Go, et ceux que
   l’export ne contient pas, restent en arrière, et la discussion dit où il y en avait un.
 - **De la place sur le téléphone :** pendant qu’un .zip entre, le téléphone a besoin d’environ deux fois sa taille
-  d’espace libre, car Erevos en lit une copie et garde les fichiers scellés. Les fichiers importés ne sont pas encore
-  dans les sauvegardes, comme les autres fichiers ne le sont pas.
+  d’espace libre, car Erevos en lit une copie et garde les fichiers scellés. Les fichiers importés sont aussi
+  dans les sauvegardes, comme les autres fichiers.
 - **Seulement sur ce téléphone, seulement pour les lire :** les messages importés ne sont jamais envoyés, donc l’autre
   téléphone ne les reçoit pas. Erevos ne peut pas montrer qui les a vraiment écrits.
 - Les **notifications et appels** de l’autre appli sont laissés de côté, et la discussion dit combien.
@@ -3511,7 +3532,7 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
   laisse pas Erevos lire l’économie de batterie ni le mode Économie d’énergie, donc ils n’y sont pas. Après chaque
   nouvelle version signée, il s’ouvre de lui-même quand il manque quelque chose dont les messages, les appels ou les
   données ont besoin. Dans un autre navigateur (Chrome, Firefox), c’est pareil, avec les réglages de ce navigateur.
-- Les **sauvegardes** se font à la main : **Créer une sauvegarde** enregistre le fichier par la feuille de partage
+- Les **sauvegardes** se font à la main : **Créer une sauvegarde** enregistre la sauvegarde et ses fichiers par la feuille de partage
   (Fichiers, iCloud Drive ou une autre app). Un navigateur ne livre un fichier qu’après un appui, donc il n’y a pas de
   sauvegardes automatiques.
 - Les **messages vocaux** enregistrés sur un iPhone sont en AAC ; ils se lisent partout.
@@ -3729,9 +3750,9 @@ Erevos dit clairement ce qu’il protège et ce qu’il ne protège pas, pour l�
 | **Historique des messages** | Gardé sur le téléphone, scellé dans son espace, sans limite, dans des pages de même taille mêlées pour tous les espaces. Seule la place que tout cela prend se voit, pas l’espace auquel il appartient. La suppression sur les deux téléphones, et les messages éphémères, reposent sur l’Erevos de l’autre téléphone. | |
 | **Messages à proximité** | Ouverts seulement dans l’espace qui a le contact. Un message pour un autre espace attend en mémoire, six heures au plus, jusqu’à ce que cet espace s’ouvre. Un message pour des discussions masquées ne s’ouvre que tant qu’elles sont ouvertes, ou reçoivent fermées, et l’espace n’apprend jamais qu’un de leurs contacts est à proximité. | |
 | **Messages vocaux** | Chiffrés de bout en bout par le relais ou à proximité, en morceaux : le relais, ou qui écoute à proximité, peut savoir à peu près la durée de chacun. Chaque son est scellé dans un fichier à lui ; le nombre de fichiers, et leurs tailles, montrent à peu près combien il y en a de gardés, pas dans quel espace. Déscellé dans le cache seulement pendant sa lecture. | Des fichiers sonores tous de la même taille. |
-| **Photos et fichiers** | Chiffrés de bout en bout, par le stockage de fichiers du relais, en morceaux d’une même taille : le relais voit combien et quand, donc à peu près quelle taille. Ton relais voit ton adresse, comme pour les messages ; le contact les prend par son propre relais. Les photos perdent leur lieu, leur téléphone et leur heure, sauf si elles sont envoyées comme fichier ; un fichier garde ce qu’il dit à l’intérieur. Scellés sur le téléphone dans leurs morceaux, affichés depuis la mémoire. Les copies enregistrées sont hors d’Erevos. Pas encore dans les sauvegardes. | Des sauvegardes qui les contiennent. |
+| **Photos et fichiers** | Chiffrés de bout en bout, par le stockage de fichiers du relais, en morceaux d’une même taille : le relais voit combien et quand, donc à peu près quelle taille. Ton relais voit ton adresse, comme pour les messages ; le contact les prend par son propre relais. Les photos perdent leur lieu, leur téléphone et leur heure, sauf si elles sont envoyées comme fichier ; un fichier garde ce qu’il dit à l’intérieur. Scellés sur le téléphone dans leurs morceaux, affichés depuis la mémoire. Les copies enregistrées sont hors d’Erevos. Les sauvegardes les contiennent, scellés avec le mot de passe de la sauvegarde, dans des fichiers à part. | |
 | **Sur un ordinateur** | Scellé comme sur le téléphone, dans le dossier propre de l’appli. Son magasin de clés est scellé avec le trousseau du système (sous Windows, la clé de ton compte) ; sur un système Linux sans trousseau, Erevos ne garde rien à moins d’être lancé avec \`--plain-secrets\`, et le garde alors tel quel. | |
-| **Sauvegardes** | Un fichier scellé avec son propre mot de passe, contenant chaque espace tel qu’il est scellé sur le téléphone. Son nom dit que c’est une sauvegarde Erevos, et sa taille montre à peu près combien est gardé. Les sauvegardes automatiques gardent leur mot de passe sur le téléphone. Envoyée à un serveur seulement si tu en ajoutes un : des octets aléatoires sous un nom aléatoire, d’une taille arrondie ; le serveur voit ton compte et quand, et ton adresse sauf si elle passe par Tor. | |
+| **Sauvegardes** | Scellées avec leur propre mot de passe, elles contiennent chaque espace tel qu’il est scellé sur le téléphone, avec ses photos, fichiers et messages vocaux dans des fichiers à part à côté de la sauvegarde. Leurs noms disent que c’est une sauvegarde Erevos, et leur nombre et leur taille montrent à peu près combien est gardé. Les sauvegardes automatiques gardent leur mot de passe sur le téléphone. Envoyées à un serveur seulement si tu en ajoutes un : des octets aléatoires sous des noms aléatoires, de tailles arrondies ; le serveur voit ton compte et quand, et ton adresse sauf si elles passent par Tor. | |
 | **Marques ✓✓ et ✓✓✓** | Le téléphone du contact apprend quand le tien a reçu et lu ses messages, chiffré. Dans un groupe qui n’est pas public, le téléphone de qui a envoyé le message l’apprend aussi. Le relais, ou qui écoute à proximité, voit un petit message de plus. | Un interrupteur pour cesser de dire quand tu lis. |
 | **Empreinte digitale ou visage (Android)** | Désactivé sauf si tu l’actives. N’ouvre que l’espace du premier mot de passe : sa clé est scellée dans l’Android Keystore, utilisable seulement juste après une vérification forte de l’empreinte ou du visage, et abandonnée quand ils changent. Quelqu’un qui te retient peut utiliser ton doigt. | |
 | **Notifications (Android)** | En arrière-plan : « Erevos – Ready for calls and messages » (pas sur l’écran de verrouillage), « Incoming call » ou « Incoming video call » – « Open Erevos to answer », et « New message » ou combien sont arrivés ; quand Android ou le mot de passe l’arrête, « Closed by Android » ou « Locked » – « Open it to receive calls and messages again » ; un rappel, « Reminder » ou combien ; une nouvelle version, « Erevos X is out ». Jamais qui ni quoi. Sur un téléphone verrouillé, celle des messages dit seulement « Erevos ». Les discussions masquées qui ont le droit de le dire affichent la même notification, comptées avec le reste : qui la voit et ne trouve rien de nouveau peut deviner qu’il y en a d’autres. En tant qu’appli de téléphone, la notification d’un appel téléphonique nomme qui appelle, sur l’écran de verrouillage aussi, comme celle de toute appli de téléphone, mais jamais par un nom que seules les discussions masquées connaissent : un appel de l’un de leurs contacts affiche le numéro. | |

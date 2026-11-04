@@ -38,11 +38,12 @@ import { onSmsOrderChanged, shownMessages, smsFolder, spamReason, spamWhy, trash
 import { groupName, sameConversation, smsAddress, smsNumbers } from '../lib/sms-group';
 import { sameNumber } from '../lib/sms-invite';
 import { pickMmsPhoto } from '../lib/pick-mms-photo';
-import { cancelLater as cancelSmsLater, laterChanged, onLaterSent } from '../lib/sms-later';
+import { cancelLater as cancelSmsLater, laterChanged, onLaterSent, waitsForOwner } from '../lib/sms-later';
 import { chooseSim, simLabel, SmsLink } from '../lib/sms-link';
 import { cleanName, loadE2EData, type Contact } from '../lock/e2e-data';
 import { useLock } from '../lock/context';
 import { currentSpace } from '../lock/keys';
+import { restoredAt } from '../lock/restored';
 import { LinkedText } from '../components/linked-text';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { LATER_TEXT, type LaterSms, type SmsData } from '../lock/sms-data';
@@ -186,6 +187,8 @@ export default function Sms() {
   const [inContacts, setInContacts] = useState<boolean | null>(null);
   const [later, setLater] = useState<LaterSms[]>([]);
   const [laterMenu, setLaterMenu] = useState(false);
+  // When a backup was restored here: an SMS for later whose time came before waits for the owner (lib/sms-later.ts).
+  const [restored, setRestored] = useState(0);
   // The space's order of its SMS (lib/sms-folders.ts), and the numbers Android blocks.
   const [order, setOrder] = useState<SmsData | null>(null);
   const [blocked, setBlocked] = useState<string[]>([]);
@@ -300,6 +303,9 @@ export default function Sms() {
           router.replace(`/chat?contact=${linked.identity}`);
         } else if (!smsOnly) setContacts(data.contacts);
       })
+      .catch(() => undefined);
+    void restoredAt()
+      .then(setRestored)
       .catch(() => undefined);
     SmsLink.open(space, key)
       .then(async (opened) => {
@@ -519,6 +525,42 @@ export default function Sms() {
     ]);
   }
 
+  // An SMS for later a backup brought back, whose time came before it was restored: it went from
+  // nowhere here, and the phone the backup came from may have sent it. The owner sends it now, or
+  // deletes it.
+  function heldLater(sms: LaterSms) {
+    const forget = async () => {
+      const kept = link.current;
+      if (!kept) return false;
+      const cancelled = await cancelSmsLater(kept, sms.id);
+      setLater(kept.later.filter((l) => sameNumber(l.to, to)));
+      laterChanged();
+      return cancelled;
+    };
+    ask(t('SMS later'), t('This SMS was to go on {when}, before this backup was restored, and did not go from this phone. The phone the backup came from may have sent it already.', { when: laterLabel(sms.at) }), [
+      { text: t('Keep it'), style: 'cancel' },
+      {
+        text: t('Delete'),
+        style: 'destructive',
+        onPress: () => void forget().catch((error) => setNote(t('Not deleted. {reason}', { reason: errorText(error) }))),
+      },
+      {
+        text: t('Send now'),
+        onPress: () => {
+          void (async () => {
+            await maySendSms();
+            if (!(await forget())) {
+              setNote(t('It had gone already.'));
+              load();
+              return;
+            }
+            await deliver({ id: toBase64Url(randomBytes(9)), to: sms.to, text: sms.text, photo: null, sim: sms.sim, group: false, space: currentSpace().space });
+          })().catch((error) => setNote(t('Not sent. {error}', { error: errorText(error) })));
+        },
+      },
+    ]);
+  }
+
   // One of ours that did not go, or did not reach their phone, goes again, in its place.
   function sendAgain(m: SmsMessage) {
     setChosen(null);
@@ -650,12 +692,23 @@ export default function Sms() {
             </Pressable>
           ))}
           {later.map((l) => (
-            <Pressable key={l.id} onPress={() => cancelLater(l)} accessibilityRole="button" style={[styles.bubble, styles.mine, styles.later]}>
+            <Pressable
+              key={l.id}
+              onPress={() => (waitsForOwner(l, restored) ? heldLater(l) : cancelLater(l))}
+              accessibilityRole="button"
+              style={[styles.bubble, styles.mine, styles.later]}
+            >
               <Text>{l.text}</Text>
-              <Text variant="caption" tone="faint">
-                {t('Scheduled · {when}', { when: laterLabel(l.at) })}
-                {sims.length > 1 && simLabel(sims, l.sim) ? ` · ${simLabel(sims, l.sim)}` : ''}
-              </Text>
+              {waitsForOwner(l, restored) ? (
+                <Text variant="caption" color={colors.danger}>
+                  {t('Not sent · was to go {when}. Tap to send it or delete it.', { when: laterLabel(l.at) })}
+                </Text>
+              ) : (
+                <Text variant="caption" tone="faint">
+                  {t('Scheduled · {when}', { when: laterLabel(l.at) })}
+                  {sims.length > 1 && simLabel(sims, l.sim) ? ` · ${simLabel(sims, l.sim)}` : ''}
+                </Text>
+              )}
             </Pressable>
           ))}
           {waiting.map(({ item, at }) => (

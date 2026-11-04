@@ -148,6 +148,18 @@ export async function loadLang(): Promise<Lang> {
   return current;
 }
 
+/** Reads the choice again, as a restored backup put it (lib/backup-settings.ts): the phone's
+ *  language when it holds none. */
+export async function reloadLang(): Promise<Lang> {
+  const kept = await secureGet(KEY).catch(() => null);
+  const next = kept && (LANGS as string[]).includes(kept) ? (kept as Lang) : deviceLang();
+  if (next !== current) {
+    current = next;
+    for (const listener of listeners) listener();
+  }
+  return current;
+}
+
 export function onLangChange(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);

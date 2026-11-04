@@ -65,7 +65,8 @@ export const settings: Record<string, string> = {
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': 'Αποθηκεύτηκε το {name} ({size}) στο {folder}. Κράτα τον κωδικό του: τίποτα δεν ανοίγει το αντίγραφο χωρίς αυτόν.',
   'Replace everything': 'Αντικατάσταση όλων',
   'Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.': 'Κάθε χώρος σε {device}, με τις επαφές, τα μηνύματα και τις κρυφές συνομιλίες του, θα αντικατασταθεί από ό,τι περιέχει το αντίγραφο ασφαλείας. Ό,τι υπάρχει τώρα εδώ και δεν είναι στο αντίγραφο χάνεται οριστικά. Μετά το Erevos ανοίγει όπως ήταν όταν έγινε το αντίγραφο, με τους κωδικούς που ίσχυαν τότε.',
-  'A backup is one file holding everything Erevos keeps on {device}: every space, with its contacts, messages, voice messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its own too.': 'Το αντίγραφο ασφαλείας είναι ένα αρχείο με ό,τι κρατά το Erevos σε {device}: κάθε χώρο, με τις επαφές, τα μηνύματα, τα φωνητικά μηνύματα, τις εισαγμένες συνομιλίες και τις κρυφές συνομιλίες του, το καθένα ακόμα κρυπτογραφημένο με τον δικό του κωδικό. Και το αντίγραφο έχει δικό του κωδικό.',
+  "A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it, with the same start: keep them together.":
+    "Το αντίγραφο ασφαλείας περιέχει ό,τι κρατά το Erevos σε {device}: κάθε χώρο, με τις επαφές, τα μηνύματα, τις φωτογραφίες, τα αρχεία, τα φωνητικά μηνύματα, τις εισαγμένες συνομιλίες και τις κρυφές συνομιλίες του, το καθένα ακόμα κρυπτογραφημένο με τον δικό του κωδικό, και τις ρυθμίσεις που έρχονται μαζί σου σε άλλη συσκευή. Και το αντίγραφο έχει δικό του κωδικό. Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματά του μπαίνουν σε δικά τους αρχεία δίπλα του, με την ίδια αρχή στο όνομα: κράτα τα μαζί.",
   'Make a backup': 'Δημιουργία αντιγράφου',
   'A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.': 'Ο browser αποθηκεύει αρχείο μόνο όταν πατάς, οπότε εδώ το Erevos δεν κάνει αντίγραφα ασφαλείας μόνο του. Κάνε ένα που και που.',
   'Automatic backups': 'Αυτόματα αντίγραφα ασφαλείας',
@@ -296,6 +297,12 @@ export const settings: Record<string, string> = {
   'Cancel this SMS? It has not gone, and will not.': 'Να ακυρωθεί αυτό το SMS; Δεν έχει σταλεί, και δεν θα σταλεί.',
   'Keep it': 'Κράτησέ το',
   'Cancel it': 'Ακύρωσέ το',
+  "This SMS was to go on {when}, before this backup was restored, and did not go from this phone. The phone the backup came from may have sent it already.":
+    "Αυτό το SMS ήταν να σταλεί στις {when}, πριν γίνει η επαναφορά αυτού του αντιγράφου, και δεν στάλθηκε από αυτό το τηλέφωνο. Το τηλέφωνο από όπου ήρθε το αντίγραφο μπορεί να το έχει στείλει ήδη.",
+  "Send now":
+    "Αποστολή τώρα",
+  "Not sent · was to go {when}. Tap to send it or delete it.":
+    "Δεν στάλθηκε · ήταν να σταλεί στις {when}. Πάτησέ το για να το στείλεις ή να το σβήσεις.",
   'It had gone already.': 'Είχε ήδη σταλεί.',
   'Not cancelled. {reason}': 'Δεν ακυρώθηκε. {reason}',
   'It goes at that time, with Erevos closed and locked too; if the phone is off then, as soon as it is on again. Until then it is not in the phone\'s SMS: it waits locked with a key of this phone. Text only, to one number.': 'Φεύγει εκείνη την ώρα, ακόμα και με το Erevos κλειστό και κλειδωμένο· αν το τηλέφωνο είναι σβηστό τότε, μόλις ανοίξει ξανά. Ως τότε δεν είναι στα SMS του τηλεφώνου: περιμένει κλειδωμένο με κλειδί αυτού του τηλεφώνου. Μόνο κείμενο, προς έναν αριθμό.',

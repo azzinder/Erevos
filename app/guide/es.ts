@@ -183,8 +183,8 @@ Una buena primera hora:
 **Chat conmigo** está siempre arriba de los chats, con una chincheta, en cada espacio. Es un chat sin nadie más: escríbete
 notas, enlaces, fotos, archivos y mensajes de voz, como en cualquier chat. No va a nadie más: se queda cifrado en el
 espacio, y va solo a tus propios dispositivos vinculados, cifrado de extremo a extremo, para que cada uno tenga las
-mismas notas y los mismos recordatorios (ver [Dispositivos vinculados](#devices)). Una copia de seguridad incluye sus
-notas y mensajes de voz, pero no sus fotos ni archivos, como con los chats.
+mismas notas y los mismos recordatorios (ver [Dispositivos vinculados](#devices)). Una copia de seguridad lo incluye
+todo, notas, fotos, archivos y mensajes de voz, como con los chats.
 
 - **Un recordatorio:** toca **Recordarme** (la campana naranja junto a **Chat nuevo**), escribe lo que quieres que te
   recuerde, elige una hora (**En 1 hora**, **Esta noche 20:00**, **Mañana 09:00**, o cualquier día, hora y minuto) y
@@ -2639,7 +2639,7 @@ lo que contienen los lugares que se quitaran.
   cuenta por el byte que lleva cada uno (ver lo que ve el relay, más arriba), nunca se le piden. Quien vea el aviso y no
   encuentre nada nuevo en tus chats puede suponer que hay más. Después de borrar o bloquear a alguien en el lugar, el
   primer mensaje de alguien nuevo, por el enlace de contacto o el código QR del lugar, no hace ninguno: se ve al abrir
-  el lugar. Las copias de seguridad no lo conservan: vuelve a activarlo tras restaurar.
+  el lugar. Las copias de seguridad lo conservan.
 - **Sonar las llamadas cuando están cerrados** (Android): debajo de **Avisar cuando llega un mensaje**, mientras
   **Recibir estando cerrados** está desactivado. Activado, mientras el lugar está cerrado, con Erevos en segundo plano o
   en cualquier pantalla, una llamada de uno de sus contactos hace sonar el teléfono y mostrar «Incoming call» sin
@@ -2651,7 +2651,7 @@ lo que contienen los lugares que se quitaran.
   aviso de mensajes de arriba, así que abrir el espacio no delata nada. Quien llama solo hace sonar una cola ahí; la
   llamada en sí espera en la cola propia del chat hasta que el PIN la abre. Un contacto que has eliminado todavía puede
   hacerlo sonar, pero la llamada nunca puede conectarse. Una llamada hecha desde un ordenador vinculado solo suena
-  mientras los chats ocultos están abiertos. Las copias de seguridad no lo conservan: vuelve a activarlo tras restaurar.
+  mientras los chats ocultos están abiertos. Las copias de seguridad lo conservan.
 - **Un PIN nuevo para un lugar** (desde **Chats ocultos** en **Ajustes**, o **Chats ocultos nuevos**) lo empieza vacío
   y sustituye lo que había en él. Para conservarlos y cambiar solo el PIN, ábrelos y usa **Cambiar PIN** ahí. Cada PIN
   debe ser distinto de los demás y de la contraseña que abre Erevos.
@@ -2699,17 +2699,19 @@ debe verse, usa los chats ocultos.
 
 ## Copias de seguridad {#backup}
 
-Una copia de seguridad es un archivo que contiene todo lo que Erevos guarda en este teléfono: cada espacio, con sus
-contactos, las claves de sus conversaciones, sus mensajes, mensajes de voz, chats importados y chats ocultos, sus
-cuentas de Matrix, XMPP y Nostr, su Chat conmigo, y el bloqueo. Dentro de ella cada espacio sigue sellado con su propia
-contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está en **Ajustes** → **Datos y dispositivos** →
+Una copia de seguridad contiene todo lo que Erevos guarda en este teléfono: cada espacio, con sus contactos, las
+claves de sus conversaciones, sus mensajes, fotos, archivos, mensajes de voz, chats importados y chats ocultos, sus
+cuentas de Matrix, XMPP y Nostr, su Chat conmigo, el bloqueo y la contraseña de pánico, y los ajustes que te acompañan
+a otro teléfono. Dentro de ella cada espacio sigue sellado con su propia contraseña, y la copia se vuelve a sellar con
+una contraseña propia. Sus fotos, archivos y mensajes de voz van en archivos propios junto a ella, de hasta 4 MB cada
+uno, cuyos nombres empiezan como el de la copia: mantenlos juntos. Está en **Ajustes** → **Datos y dispositivos** →
 **Copias de seguridad**.
 
 1. **Hacer una copia de seguridad:** toca **Hacer una copia de seguridad**, elige una carpeta (en el teléfono, una
    tarjeta de memoria, o una app en la nube que muestre ahí sus carpetas; en un ordenador, cualquier carpeta), escribe
-   dos veces una contraseña para la copia (al menos 12 caracteres, o cuatro palabras) y toca **Guardar**.
+   dos veces una contraseña para la copia (al menos 12 caracteres, o cuatro palabras) y toca **Guardar**. En un navegador, la copia y sus archivos van al menú de compartir o a las descargas: el primero enseguida, y cada uno de los siguientes tras un toque en **Guardar**.
 2. **Copias automáticas:** elige **Cada día** o **Cada semana**, y luego una carpeta y una contraseña. Erevos hace una
-   cuando se abre y la última es más antigua que eso, y la carpeta conserva las 3 más nuevas. Debajo están **Hacer
+   cuando se abre y la última es más antigua que eso, y la carpeta conserva las 3 más nuevas, cada una con sus archivos. Debajo están **Hacer
    copia ahora**, **Cambiar carpeta** y **Cambiar contraseña**; **Desactivado** las detiene, y las ya hechas se quedan
    en la carpeta.
 3. **También a un servidor:** en Android y en la app de escritorio, con las copias automáticas activadas, **Añadir un
@@ -2719,10 +2721,12 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
    detiene, y las que hay allí se quedan. En la web app, que no hace copias por sí sola, **Enviar una copia ahora**
    envía una allí, con una contraseña que escribes cada vez.
 4. **Restaurar:** toca **Restaurar una copia de seguridad**, elige el archivo y escribe su contraseña. Erevos pregunta
-   una vez más, y luego pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo
-   la copia, con las contraseñas de entonces. **Restaurar desde un servidor** mira en la carpeta a la que van las
-   copias automáticas, o en una que des con su usuario y contraseña, y muestra las copias que hay allí, las más
-   recientes primero: elige una, escribe su contraseña y se restaura igual.
+   una vez más, encuentra los archivos de la copia junto a ella, o te pide que los elijas a ellos o su carpeta, y luego
+   pone la copia en lugar de todo lo que hay en el teléfono, y se abre como estaba cuando se hizo la copia, con las
+   contraseñas de entonces. Si falta uno de sus archivos, está dañado o es de otra copia, Erevos dice cuál, y no se cambia nada a menos que elijas restaurar el resto sin él: entonces las fotos, los archivos y los mensajes de voz del teléfono quedan como están, y los que contiene no vuelven.
+   **Restaurar desde un servidor** mira en la carpeta a la que van las copias automáticas, o en una que des con su
+   usuario y contraseña, y muestra las copias que hay allí, las más recientes primero: elige una, escribe su contraseña
+   y se restaura igual, con sus archivos desde allí.
 
 - **Guarda la contraseña de la copia:** nada abre una copia sin ella, y nadie puede recuperarla. Sin bloqueo con
   contraseña, la contraseña de la copia es lo único que la protege. Quien tenga el archivo puede probar contraseñas en
@@ -2732,8 +2736,11 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   su carpeta sigue necesitando las contraseñas de los espacios para leer los chats.
 - **En un servidor:** la copia que va allí está sellada con su contraseña como las demás, y esa contraseña nunca sale
   del teléfono, así que el servidor no puede abrirla. Su nombre es aleatorio y el archivo parece bytes aleatorios, de
-  uno de pocos tamaños, así que ninguno dice que es de Erevos ni cuánto guarda exactamente. Aun así el servidor ve tu
-  cuenta, cuándo llega una y más o menos cuánto ocupa. En Android, las copias van allí como dice la elección del
+  uno de pocos tamaños, así que ninguno dice que es de Erevos ni cuánto guarda exactamente. Sus fotos, archivos y
+  mensajes de voz van como subidas propias, todas del mismo tamaño, cada una también con un nombre aleatorio y sellada
+  con la contraseña de la copia, atada a esa copia y a su lugar en ella, así que ninguna puede cambiarse, faltar o
+  venir de otra copia sin que se note; el servidor las guarda con su copia y las borra con ella. Sus nombres son tan largos como el de la copia, pero su tamaño las distingue de ella, así que el servidor puede contarlas, y saber así más o menos cuánto guarda la copia. Lo que dejó allí una copia cortada a medias se borra antes de que vaya la siguiente, así que un servidor que no tenía sitio vuelve a tenerlo. Aun así el servidor ve
+  tu cuenta, cuándo llega una y más o menos cuánto ocupa. En Android, las copias van allí como dice la elección del
   espacio en **Ajustes** → **Relay y redes** → **Tor**, como Matrix: con **Todo** solo por Tor, así que el servidor no
   ve la dirección del teléfono; con **Mensajes** por Tor en cuanto Tor está listo, y directo mientras Tor arranca o
   cuando falla; con **Nada** directo, y el servidor ve la dirección del teléfono. Una copia espera primero hasta dos
@@ -2744,8 +2751,8 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   desde ahí. En la web app la contraseña del servidor se guarda en el navegador, sellada con una clave que el
   navegador no entrega. **Restaurar desde un servidor** descarga la que elijas del mismo modo, por Tor según diga el
   espacio, y no escribe nada allí; una contraseña escrita para ello se usa solo para esa restauración y no se guarda.
-  Por Tor no llega una copia de más de 64 MB, y directamente ninguna de más de 100 MB, lo máximo que Erevos
-  acepta en una descarga: entonces descárgala del servidor y toca **Restaurar una copia de
+  Por Tor no llega ningún archivo de una copia de más de 64 MB, y directamente ninguno de más de 100 MB, lo máximo que
+  Erevos acepta en una descarga: entonces descarga la copia y sus archivos del servidor y toca **Restaurar una copia de
   seguridad**. Un Erevos anterior a esta versión no abre una copia así. Google Drive queda fuera a propósito: Google
   ata el archivo a tu nombre, y Erevos necesitaría las apps de Google y una sesión de Google en el teléfono.
 - **Chats que siguieron después de la copia:** restaurar devuelve las claves de cada conversación como estaban
@@ -2769,25 +2776,41 @@ contraseña, y el archivo se vuelve a sellar con una contraseña propia. Está e
   **Avisar cuando llega un mensaje** de los chats ocultos, y **También mientras otro espacio está abierto**. Así, tras
   restaurarla, también en otro teléfono, siguen como estaban. Una copia de antes de esta versión no tiene nada de eso:
   restaurarla los deja como los tiene el teléfono.
+- **Ajustes:** una copia guarda los ajustes que son tuyos y no del teléfono: el idioma, los módulos, la vibración, los
+  avisos en segundo plano y el número en el icono, el ahorro de batería, la privacidad de la pantalla, la calidad de
+  las fotos, si el Teléfono se abre sin la contraseña, y cómo llega Erevos a los teléfonos cercanos (llevando sus
+  mensajes, la misma Wi-Fi, Wi-Fi Direct, Wi-Fi Aware y una radio LoRa, que solo vuelve a encenderse donde este teléfono
+  la conoce). En Android guarda también las respuestas rápidas del Teléfono y las llamadas que rechaza, las de un grupo
+  de contactos solo donde este teléfono tiene un grupo con ese nombre en la misma cuenta. Las copias automáticas y su
+  servidor vuelven con su contraseña, pero no con su carpeta, en la que Android solo deja escribir al teléfono en el
+  que se eligió: en otro teléfono, **Copias de seguridad** dice que elijas una, y hasta entonces solo van al servidor.
 - **Un teléfono a la vez:** una copia restaurada en un segundo teléfono lee las mismas colas del relay que el primero,
   y cada uno recoge mensajes que entonces el otro nunca recibe. Úsala para pasar a un teléfono nuevo, no para tener dos.
 - **Discreción:** todos los espacios muestran la misma pantalla de Copias de seguridad, y una copia contiene todos los
-  espacios, así que ninguna de las dos dice cuántos espacios hay ni si hay chats ocultos configurados. El nombre del
-  archivo dice que es una copia de seguridad de Erevos, y su tamaño muestra más o menos cuánto se guarda.
+  espacios, así que ninguna de las dos dice cuántos espacios hay ni si hay chats ocultos configurados. Los nombres de
+  los archivos dicen que son una copia de seguridad de Erevos, y su número y tamaño muestran más o menos cuánto se guarda.
 - **Los SMS del teléfono:** en Android, **Incluir los SMS en las copias** añade los SMS y MMS del teléfono a cada copia
   a partir de entonces, con hasta 32 MB de sus imágenes, mientras Erevos es la app de SMS. Se sellan con la contraseña
   de la copia como el resto. Restaurar la copia devuelve a los SMS del teléfono cada mensaje que aún no tiene, y no
   elimina ninguno; Erevos también tiene que ser la app de SMS entonces, o el resto se restaura sin ellos. Los SMS son
   del teléfono, los mismos en todos los espacios. Un Erevos más antiguo no abre una copia que contenga SMS.
 - **Los SMS en orden:** las conversaciones fijadas, las archivadas, la Papelera, los borradores, el filtro y las marcas
-  de spam de cada espacio, y cuánto espera un SMS para poder deshacer su envío, están en todas las copias, sellados con
-  la contraseña del espacio como el resto. Los SMS enviados más tarde (**SMS más tarde**) no, para que una copia
-  restaurada en otro teléfono nunca vuelva a enviar uno; ni tampoco las invitaciones, los nombres de tus contactos y la
-  SIM elegida para cada número. Un Erevos más antiguo no abre una copia que los contenga; una hecha por un Erevos más
-  antiguo se restaura como siempre, sin ellos.
-- **No está en una copia:** las fotos y los archivos, todavía no: una copia se hace en la memoria del teléfono, y no
-  cabrían. Una copia restaurada en el mismo teléfono los vuelve a mostrar; en otro teléfono aparecen como que no están
-  en él. También se omiten: el contador de contraseñas incorrectas, y cómo están configuradas las copias automáticas.
+  de spam de cada espacio, cuánto espera un SMS para poder deshacer su envío, los SMS que se envían más tarde (**SMS
+  más tarde**), las invitaciones, los nombres de tus contactos, si los mensajes a contactos de Erevos pueden ir por SMS,
+  y la SIM elegida para cada número están en todas las copias, sellados con la contraseña del espacio como el resto. La SIM elegida solo vuelve en el mismo teléfono, ya que cada teléfono da a sus SIM identificadores propios: en otro, los SMS y las llamadas van por su SIM predeterminada hasta que elijas una allí.
+  Un SMS para más tarde cuya hora llegó antes de la restauración no sale solo, ya que el teléfono del que vino la copia
+  puede haberlo enviado: aparece como no enviado, y un toque en él lo envía o lo borra. Uno cuya hora aún no ha llegado
+  sale a su hora. Un Erevos más antiguo no abre una copia que los contenga; una hecha por un Erevos más antiguo se
+  restaura como siempre, sin ellos.
+- **Lo que nunca vuelve:** lo que pertenece al propio teléfono no viene con ninguna copia, así que una restauración en
+  otro teléfono no puede traerlo: la huella o la cara, cuya clave Android guarda en el chip de ese teléfono; las
+  carpetas en las que Erevos puede escribir, como la de las copias automáticas, en las que Android solo lo deja entrar
+  en el teléfono en que se eligieron; lo que Android permite hacer a Erevos y qué apps hacen las llamadas y envían los
+  SMS, que solo tú puedes permitir en cada teléfono, por eso tras restaurar en Android se abre **Permisos** para los
+  módulos activados; lo que Android guarda para todas las apps, como el historial de llamadas y su propia lista de
+  números bloqueados; y el contador de contraseñas incorrectas. Una cuenta XMPP vuelve como un dispositivo nuevo de sí
+  misma y Matrix vuelve a iniciar sesión, como arriba, y los dispositivos vinculados no están en una copia por ahora,
+  como abajo.
 - **Los dispositivos vinculados** no están en una copia: un vínculo se queda con el teléfono y el ordenador en los que
   se hizo. Después de restaurar una copia en otro teléfono, vuelve a vincular el ordenador: en el ordenador, toca
   **Desvincular este dispositivo**, y luego vincúlalo como la primera vez, ver [Dispositivos vinculados](#devices). Los
@@ -2889,7 +2912,7 @@ en un ordenador y en Sailfish OS.
   la misma manera y durante el mismo tiempo. Así que ni lo que guarda el teléfono ni lo que tarda una comprobación
   muestran si hay una puesta, y esta pantalla tampoco puede decírtelo: si no estás seguro, ponla de nuevo.
 - **Solo en la pantalla de bloqueo:** escrita en cualquier otro sitio donde Erevos pide una contraseña, es solo una
-  contraseña incorrecta. No va en las copias de seguridad: tras restaurar una, ponla de nuevo. Mientras los intentos
+  contraseña incorrecta. Las copias de seguridad la conservan como estaba cuando se hicieron. Mientras los intentos
   fallidos hacen esperar a la pantalla de bloqueo (ver [Bloqueo con contraseña](#lock)), ella también espera.
 
 **Por qué:** alguien puede obligarte a abrir Erevos. Con una contraseña de pánico puedes parecer darle la tuya, y lo
@@ -2982,8 +3005,8 @@ caso.
   este chat** también encuentra los mensajes importados. Los archivos de más de 1 GB, y los que la exportación no
   contiene, se quedan fuera, y el chat dice dónde había uno.
 - **Espacio en el teléfono:** mientras entra un .zip, el teléfono necesita libre más o menos el doble de su tamaño, ya
-  que Erevos lee una copia y guarda los archivos sellados. Los archivos importados aún no están en las copias de
-  seguridad, como tampoco lo están los demás archivos.
+  que Erevos lee una copia y guarda los archivos sellados. Los archivos importados también están en las copias de
+  seguridad, como los demás archivos.
 - **Solo en este teléfono, solo para leer:** los mensajes importados nunca se envían, así que el otro teléfono no los
   recibe. Erevos no puede mostrar quién los escribió realmente.
 - **Los avisos y las llamadas** de la otra app se omiten, y el chat dice cuántos.
@@ -3320,7 +3343,7 @@ al que se le ordene, podría enviar código modificado. Erevos no se fía de ese
   el modo de bajo consumo, así que no están ahí. Tras cada nueva versión firmada se abre solo cuando falta algo que
   necesitan los mensajes, las llamadas o los datos. En otro navegador (Chrome, Firefox) es igual, con los ajustes de ese
   navegador.
-- **Las copias de seguridad** se hacen a mano: **Hacer una copia de seguridad** guarda el archivo a través de la hoja
+- **Las copias de seguridad** se hacen a mano: **Hacer una copia de seguridad** guarda la copia y sus archivos a través de la hoja
   de compartir (Archivos, iCloud Drive u otra app). Un navegador solo entrega un archivo tras un toque, así que no hay
   copias automáticas.
 - **Los mensajes de voz** grabados en un iPhone son AAC; se reproducen en todas partes.
@@ -3530,9 +3553,9 @@ Erevos dice claramente lo que protege y lo que todavía no.
 | **Historial de mensajes** | Guardado en el teléfono, sellado en su espacio, sin límite, en páginas del mismo tamaño mezcladas para todos los espacios. Solo se ve cuánto ocupa todo, no a qué espacio pertenece. Eliminar en los dos teléfonos, y los mensajes temporales, dependen del Erevos del otro teléfono. | |
 | **Mensajes de cerca** | Solo se abren en el espacio que tiene el contacto. Uno para otro espacio espera en memoria, seis horas como mucho, hasta que ese espacio se abra. Uno para chats ocultos solo se abre mientras están abiertos, o reciben cerrados, y el espacio nunca sabe que uno de sus contactos está cerca. | |
 | **Mensajes de voz** | Cifrados de extremo a extremo por el relay o de cerca, en trozos: el relay, o quien escuche cerca, puede saber más o menos cuánto dura cada uno. Cada sonido se sella en un archivo propio; cuántos archivos hay, y sus tamaños, muestran más o menos cuántos se guardan, no en qué espacio. Sin sellar en la caché solo mientras se reproduce. | Archivos de sonido todos del mismo tamaño. |
-| **Fotos y archivos** | Cifrados de extremo a extremo, a través del almacén de archivos del relay, en trozos del mismo tamaño: el relay ve cuántos y cuándo, así que más o menos lo grandes que son. Tu relay ve tu dirección, como para los mensajes; el contacto los recoge a través de su propio relay. Las fotos pierden su lugar, su teléfono y su hora, salvo que se envíen como archivo; un archivo conserva lo que dice dentro. Sellados en el teléfono en sus trozos, mostrados desde la memoria. Las copias guardadas están fuera de Erevos. Aún no en las copias de seguridad. | Copias de seguridad que los contengan. |
+| **Fotos y archivos** | Cifrados de extremo a extremo, a través del almacén de archivos del relay, en trozos del mismo tamaño: el relay ve cuántos y cuándo, así que más o menos lo grandes que son. Tu relay ve tu dirección, como para los mensajes; el contacto los recoge a través de su propio relay. Las fotos pierden su lugar, su teléfono y su hora, salvo que se envíen como archivo; un archivo conserva lo que dice dentro. Sellados en el teléfono en sus trozos, mostrados desde la memoria. Las copias guardadas están fuera de Erevos. Las copias de seguridad los contienen, sellados con la contraseña de la copia, en archivos propios. | |
 | **En un ordenador** | Sellado como en el teléfono, en la carpeta propia de la app. Su almacén de claves está sellado con el llavero del sistema (en Windows, la clave de tu cuenta); en un sistema Linux sin llavero, Erevos no guarda nada salvo que se inicie con \`--plain-secrets\`, y entonces lo guarda tal cual. | |
-| **Copias de seguridad** | Un archivo sellado con su propia contraseña, que contiene cada espacio tal como está sellado en el teléfono. Su nombre dice que es una copia de seguridad de Erevos, y su tamaño muestra más o menos cuánto se guarda. Las copias automáticas guardan su contraseña en el teléfono. Va a un servidor solo si añades uno: bytes aleatorios con un nombre aleatorio, de un tamaño redondeado; el servidor ve tu cuenta y cuándo, y tu dirección salvo que vaya por Tor. | |
+| **Copias de seguridad** | Selladas con su propia contraseña, contienen cada espacio tal como está sellado en el teléfono, con sus fotos, archivos y mensajes de voz en archivos propios junto a la copia. Sus nombres dicen que son una copia de seguridad de Erevos, y su número y tamaño muestran más o menos cuánto se guarda. Las copias automáticas guardan su contraseña en el teléfono. Van a un servidor solo si añades uno: bytes aleatorios con nombres aleatorios, de tamaños redondeados; el servidor ve tu cuenta y cuándo, y tu dirección salvo que vayan por Tor. | |
 | **Marcas ✓✓ y ✓✓✓** | El teléfono del contacto sabe cuándo el tuyo recibió y leyó sus mensajes, cifrado. En un grupo que no es público, también lo sabe el teléfono de quien envió el mensaje. El relay, o quien escuche cerca, ve un mensaje pequeño más. | Un interruptor para dejar de decir cuándo lees. |
 | **Huella o cara (Android)** | Desactivado salvo que se active. Solo abre el espacio de la primera contraseña: su clave sellada en el Android Keystore, utilizable solo justo después de una comprobación fuerte de huella o cara, y descartada cuando estas cambian. Alguien que te retenga puede usar tu dedo. | |
 | **Avisos (Android)** | En segundo plano: «Erevos – Ready for calls and messages» (no en la pantalla de bloqueo), «Incoming call» o «Incoming video call» – «Open Erevos to answer», y «New message» o cuántos llegaron; cuando Android o la contraseña lo detienen, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un recordatorio, «Reminder» o cuántos; una versión nueva, «Erevos X is out». Nunca quién ni qué. En un teléfono bloqueado, el de los mensajes solo dice «Erevos». Los chats ocultos que pueden decirlo muestran el mismo aviso, contado con el resto: quien lo vea y no encuentre nada nuevo puede suponer que hay más. Como app de teléfono, el aviso de una llamada telefónica nombra a quien llama, también sobre la pantalla de bloqueo, como el de cualquier app de teléfono, pero nunca con un nombre que solo conozcan los chats ocultos: una llamada de uno de sus contactos muestra el número. | |

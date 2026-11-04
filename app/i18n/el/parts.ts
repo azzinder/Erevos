@@ -262,4 +262,7 @@ export const parts: Record<string, string> = {
   'could not connect': 'δεν συνδέθηκε',
   'they were in another call': 'μιλούσε σε άλλη κλήση',
   'not answered': 'δεν απαντήθηκε',
+  'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Μόνο {given} από τα {all} αρχεία πήγαν στις λήψεις, οπότε δεν αποθηκεύτηκαν όλα.',
+  'Save the files': 'Αποθήκευση των αρχείων',
+  '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} από τα {all} αρχεία πήγαν στις λήψεις. Πάτα Αποθήκευση για το επόμενο: {name}',
 };

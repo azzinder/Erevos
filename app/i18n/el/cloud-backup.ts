@@ -73,4 +73,58 @@ export const cloudBackup: Record<string, string> = {
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "Σε έναν browser αυτό δουλεύει μόνο με server ρυθμισμένο να αφήνει το web app να μπει (CORS), όπως δεν είναι το Nextcloud από μόνο του. Η εφαρμογή υπολογιστή και το Android δεν χρειάζονται τίποτα τέτοιο.",
   "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Ένα αντίγραφο μεγαλύτερο από {size} MB δεν έρχεται από server. Κατέβασέ το από τον server και πάτα Επαναφορά αντιγράφου.",
+  "Automatic backups need a folder on {device}: choose one.":
+    "Τα αυτόματα αντίγραφα χρειάζονται έναν φάκελο σε {device}: διάλεξε έναν.",
+  "Sent a backup to {server}.":
+    "Στάλθηκε αντίγραφο στο {server}.",
+  "Making the backup: photos, files and voice messages, {percent}%…":
+    "Γίνεται το αντίγραφο: φωτογραφίες, αρχεία και φωνητικά μηνύματα, {percent}%…",
+  "Putting back photos, files and voice messages: {percent}%…":
+    "Επαναφορά φωτογραφιών, αρχείων και φωνητικών μηνυμάτων: {percent}%…",
+  "Choose the files":
+    "Επιλογή αρχείων",
+  "Choose the folder":
+    "Επιλογή φακέλου",
+  "No folder on {device} yet":
+    "Ακόμα κανένας φάκελος σε {device}",
+  "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.":
+    "Αυτά τα αυτόματα αντίγραφα ήρθαν με ένα αντίγραφο από άλλη συσκευή, μαζί με τον κωδικό τους· ο φάκελος όπου πήγαιναν μένει σε εκείνη τη συσκευή. Διάλεξε εδώ έναν φάκελο, και συνεχίζουν σε αυτόν.",
+  "Until then they go only to the server.":
+    "Μέχρι τότε πηγαίνουν μόνο στον server.",
+  "Choose a folder":
+    "Επιλογή φακέλου",
+  "What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.":
+    "Μένουν σε κάθε συσκευή και δεν έρχονται με κανένα αντίγραφο: το δακτυλικό αποτύπωμα, οι φάκελοι όπου μπορεί να γράφει το Erevos, ό,τι του επιτρέπει το τηλέφωνο και ποιες εφαρμογές κάνουν τις κλήσεις και στέλνουν τα SMS. Ένας λογαριασμός XMPP επιστρέφει ως νέα συσκευή του ίδιου λογαριασμού, και το Matrix σού ζητά να συνδεθείς ξανά.",
+  "Its photos, files and voice messages are in {n} more file beside it, with the same start: keep them together.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματά του είναι σε {n} ακόμα αρχείο δίπλα του, με την ίδια αρχή στο όνομα: κράτα τα μαζί.",
+  "Its photos, files and voice messages are in {n} more files beside it, with the same start: keep them together.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματά του είναι σε {n} ακόμα αρχεία δίπλα του, με την ίδια αρχή στο όνομα: κράτα τα μαζί.",
+  "A file of this backup is not there: {name}.":
+    "Ένα αρχείο αυτού του αντιγράφου δεν βρίσκεται εκεί: {name}.",
+  "{n} files of this backup are not there, {name} among them.":
+    "{n} αρχεία αυτού του αντιγράφου δεν βρίσκονται εκεί, ανάμεσά τους το {name}.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχείο δίπλα του, με την ίδια αρχή στο όνομα. Διάλεξέ το.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχεία δίπλα του, με την ίδια αρχή στο όνομα. Διάλεξέ τα όλα.",
+  "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχείο δίπλα του. Διάλεξε τον φάκελο όπου είναι το αντίγραφο.",
+  "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχεία δίπλα του. Διάλεξε τον φάκελο όπου είναι το αντίγραφο.",
+  "A file of this backup is missing: {name}. Nothing was changed.":
+    "Λείπει ένα αρχείο αυτού του αντιγράφου: {name}. Δεν άλλαξε τίποτα.",
+  "A file of this backup is damaged, or belongs to another backup: {name}. Nothing was changed.":
+    "Ένα αρχείο αυτού του αντιγράφου είναι χαλασμένο ή ανήκει σε άλλο αντίγραφο: {name}. Δεν άλλαξε τίποτα.",
+  "A file of this backup is damaged, or belongs to another backup: {name}.":
+    "Ένα αρχείο αυτού του αντιγράφου είναι χαλασμένο ή ανήκει σε άλλο αντίγραφο: {name}.",
+  "Restore everything else without it? The photos, files and voice messages on {device} stay as they are, and those it holds do not come back.":
+    "Επαναφορά όλων των άλλων χωρίς αυτό; Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα σε {device} μένουν όπως είναι, και όσα κρατά αυτό δεν επιστρέφουν.",
+  "Restore everything else without them? The photos, files and voice messages on {device} stay as they are, and those they hold do not come back.":
+    "Επαναφορά όλων των άλλων χωρίς αυτά; Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα σε {device} μένουν όπως είναι, και όσα κρατούν αυτά δεν επιστρέφουν.",
+  "Restore the rest":
+    "Επαναφορά των υπολοίπων",
+  "Restored without {n} file of the backup, {name}: the photos, files and voice messages in it did not come back.":
+    "Επανήλθε χωρίς {n} αρχείο του αντιγράφου, το {name}: οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα που είχε δεν επέστρεψαν.",
+  "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
+    "Επανήλθε χωρίς {n} αρχεία του αντιγράφου, ανάμεσά τους το {name}: οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα που είχαν δεν επέστρεψαν.",
 };

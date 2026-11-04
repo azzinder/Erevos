@@ -72,4 +72,58 @@ export const cloudBackup: Record<string, string> = {
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "Dans un navigateur, cela ne marche qu’avec un serveur réglé pour laisser entrer l’app web (CORS), ce que Nextcloud n’est pas de base. L’app de bureau et Android n’en ont pas besoin.",
   "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Une sauvegarde de plus de {size} Mo ne vient pas d’un serveur. Télécharge-la depuis le serveur et appuie sur Restaurer une sauvegarde.",
+  "Automatic backups need a folder on {device}: choose one.":
+    "Les sauvegardes automatiques ont besoin d’un dossier sur {device} : choisis-en un.",
+  "Sent a backup to {server}.":
+    "Sauvegarde envoyée à {server}.",
+  "Making the backup: photos, files and voice messages, {percent}%…":
+    "Sauvegarde en cours : photos, fichiers et messages vocaux, {percent} %…",
+  "Putting back photos, files and voice messages: {percent}%…":
+    "Remise en place des photos, fichiers et messages vocaux : {percent} %…",
+  "Choose the files":
+    "Choisir les fichiers",
+  "Choose the folder":
+    "Choisir le dossier",
+  "No folder on {device} yet":
+    "Pas encore de dossier sur {device}",
+  "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.":
+    "Ces sauvegardes automatiques sont venues avec une sauvegarde faite sur un autre appareil, avec leur mot de passe ; le dossier où elles allaient reste lié à cet appareil. Choisis un dossier ici, et elles continuent dedans.",
+  "Until then they go only to the server.":
+    "D’ici là, elles vont seulement au serveur.",
+  "Choose a folder":
+    "Choisir un dossier",
+  "What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.":
+    "Ce qui reste propre à chaque appareil et ne vient avec aucune sauvegarde : l’empreinte digitale, les dossiers où Erevos peut écrire, ce que le téléphone lui permet de faire et quelles apps passent les appels et envoient les SMS. Un compte XMPP revient comme un nouvel appareil de lui-même, et Matrix te demande de te reconnecter.",
+  "Its photos, files and voice messages are in {n} more file beside it, with the same start: keep them together.":
+    "Ses photos, fichiers et messages vocaux sont dans {n} autre fichier à côté d’elle, avec le même début de nom : garde-les ensemble.",
+  "Its photos, files and voice messages are in {n} more files beside it, with the same start: keep them together.":
+    "Ses photos, fichiers et messages vocaux sont dans {n} autres fichiers à côté d’elle, avec le même début de nom : garde-les ensemble.",
+  "A file of this backup is not there: {name}.":
+    "Un fichier de cette sauvegarde n’est pas là : {name}.",
+  "{n} files of this backup are not there, {name} among them.":
+    "{n} fichiers de cette sauvegarde ne sont pas là, dont {name}.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autre fichier à côté d’elle, avec le même début de nom. Choisis-le.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autres fichiers à côté d’elle, avec le même début de nom. Choisis-les tous.",
+  "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autre fichier à côté d’elle. Choisis le dossier où se trouve la sauvegarde.",
+  "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autres fichiers à côté d’elle. Choisis le dossier où se trouve la sauvegarde.",
+  "A file of this backup is missing: {name}. Nothing was changed.":
+    "Il manque un fichier de cette sauvegarde : {name}. Rien n’a changé.",
+  "A file of this backup is damaged, or belongs to another backup: {name}. Nothing was changed.":
+    "Un fichier de cette sauvegarde est abîmé ou appartient à une autre sauvegarde : {name}. Rien n’a changé.",
+  "A file of this backup is damaged, or belongs to another backup: {name}.":
+    "Un fichier de cette sauvegarde est abîmé ou appartient à une autre sauvegarde : {name}.",
+  "Restore everything else without it? The photos, files and voice messages on {device} stay as they are, and those it holds do not come back.":
+    "Restaurer tout le reste sans lui ? Les photos, les fichiers et les messages vocaux sur {device} restent tels quels, et ceux qu’il contient ne reviennent pas.",
+  "Restore everything else without them? The photos, files and voice messages on {device} stay as they are, and those they hold do not come back.":
+    "Restaurer tout le reste sans eux ? Les photos, les fichiers et les messages vocaux sur {device} restent tels quels, et ceux qu’ils contiennent ne reviennent pas.",
+  "Restore the rest":
+    "Restaurer le reste",
+  "Restored without {n} file of the backup, {name}: the photos, files and voice messages in it did not come back.":
+    "Restaurée sans {n} fichier de la sauvegarde, {name} : les photos, les fichiers et les messages vocaux qu’il contenait ne sont pas revenus.",
+  "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
+    "Restaurée sans {n} fichiers de la sauvegarde, dont {name} : les photos, les fichiers et les messages vocaux qu’ils contenaient ne sont pas revenus.",
 };

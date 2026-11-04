@@ -54,7 +54,8 @@ const int LanKept = 500;
 const int LanWaitMs = 20000;
 
 const QRegularExpression FileName(QStringLiteral("^erevos-[a-z0-9-]+$"));
-const QRegularExpression BackupName(QStringLiteral("^erevos-backup-[0-9-]+\\.erevos$"));
+// A backup's own file, or one of its parts beside it (app/lock/backup.ts): its start, then the part.
+const QRegularExpression BackupName(QStringLiteral("^(erevos-backup-[0-9-]+)(\\.part[0-9]+)?\\.erevos$"));
 
 QByteArray typeOf(const QString &path)
 {
@@ -339,12 +340,25 @@ void ShellServer::backup(QTcpSocket *socket, const Request &request, const QUrlQ
         respond(socket, 500, "The backup could not be written.");
         return;
     }
+    // As app/lock/backup.ts staleBackups says: the older backups go with their parts, and the parts
+    // of older ones that never ended; those of one newer than the newest whole one stay.
     if (keep > 0) {
-        QStringList backups;
-        for (const QString &entry : dir.entryList(QDir::Files, QDir::Name)) {
-            if (BackupName.match(entry).hasMatch()) backups << entry;
+        const QStringList entries = dir.entryList(QDir::Files, QDir::Name);
+        QStringList whole;
+        for (const QString &entry : entries) {
+            const QRegularExpressionMatch found = BackupName.match(entry);
+            if (found.hasMatch() && found.captured(2).isEmpty()) whole << found.captured(1);
         }
-        for (int i = 0; i < backups.size() - keep; ++i) dir.remove(backups[i]);
+        whole.removeDuplicates();
+        whole.sort();
+        if (!whole.isEmpty()) {
+            const QStringList kept = whole.mid(qMax(0, int(whole.size()) - keep));
+            const QString newest = whole.last();
+            for (const QString &entry : entries) {
+                const QRegularExpressionMatch found = BackupName.match(entry);
+                if (found.hasMatch() && !kept.contains(found.captured(1)) && found.captured(1) < newest) dir.remove(entry);
+            }
+        }
     }
     respond(socket, 204);
 }
@@ -448,7 +462,7 @@ void ShellServer::wipe(QTcpSocket *socket, const Request &request, const QUrlQue
         m_lanEvents.clear();
     }
     bool left = false;
-    // The automatic backups, when the owner chose it: only those Erevos named, in its own folder.
+    // The automatic backups, when the owner chose it: only those Erevos named, with their parts, in its own folder.
     if (query.queryItemValue(QStringLiteral("backups")) == QLatin1String("1")) {
         QDir backups(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QStringLiteral("/Erevos"));
         for (const QString &entry : backups.entryList(QDir::Files)) {

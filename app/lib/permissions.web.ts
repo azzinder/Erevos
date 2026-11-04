@@ -113,11 +113,11 @@ let offered = false;
 let release: string | null = null;
 
 /**
- * Whether the check should show by itself now: once for each new signed release the web app
- * runs, and only when messages, calls or the data need something. Asked once each start;
+ * Whether the check should show by itself now ('update'): once for each new signed release the
+ * web app runs, and only when messages, calls or the data need something. Asked once each start;
  * checksOffered then counts it as seen, so "back" waits for the next release.
  */
-export async function offerChecks(): Promise<boolean> {
+export async function offerChecks(): Promise<false | 'update' | 'restore'> {
   if (!HAS_CHECKS || !WEB_APP || offered) return false;
   offered = true;
   const current = (await integrityStatus().catch(() => null))?.current;
@@ -130,8 +130,11 @@ export async function offerChecks(): Promise<boolean> {
     await checksOffered();
     return false;
   }
-  return true;
+  return 'update';
 }
+
+/** A browser's permissions are its own, the same after a restore: nothing more to look at. */
+export async function offerChecksAfterRestore(): Promise<void> {}
 
 /** The check showed for the release that runs. */
 export async function checksOffered(): Promise<void> {

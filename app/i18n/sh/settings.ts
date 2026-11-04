@@ -66,7 +66,8 @@ export const settings: Record<string, string> = {
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': 'Datoteka {name} ({size}) sačuvana je u {folder}. Čuvajte njenu lozinku: bez nje ništa ne otvara rezervnu kopiju.',
   'Replace everything': 'Zamijeni sve',
   'Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.': 'Svaki prostor na {device}, s kontaktima, porukama i skrivenim razgovorima, zamjenjuje se sadržajem rezervne kopije. Ono što je sada ovdje, a nije u rezervnoj kopiji, nestaje zauvijek. Zatim se Erevos otvara kakav je bio kad je rezervna kopija napravljena, s tadašnjim lozinkama.',
-  'A backup is one file holding everything Erevos keeps on {device}: every space, with its contacts, messages, voice messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its own too.': 'Rezervna kopija je jedna datoteka koja sadrži sve što Erevos čuva na {device}: svaki prostor, s kontaktima, porukama, glasovnim porukama, uvezenim i skrivenim razgovorima, svaki i dalje zapečaćen vlastitom lozinkom. I sama rezervna kopija ima vlastitu lozinku.',
+  "A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it, with the same start: keep them together.":
+    "Rezervna kopija sadrži sve što Erevos čuva na {device}: svaki prostor, s kontaktima, porukama, fotografijama, datotekama, glasovnim porukama, uvezenim i skrivenim razgovorima, svaki i dalje šifriran vlastitom lozinkom, i postavke koje idu s vama na drugi uređaj. I sama rezervna kopija ima vlastitu lozinku. Njene fotografije, datoteke i glasovne poruke idu u zasebne datoteke pored nje, s istim početkom imena: držite ih zajedno.",
   'Make a backup': 'Napravi rezervnu kopiju',
   'A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.': 'Preglednik čuva datoteku samo kad dodirnete, pa ovdje Erevos sam ne pravi rezervne kopije. Pravite ih s vremena na vrijeme.',
   'Automatic backups': 'Automatske rezervne kopije',
@@ -296,6 +297,12 @@ export const settings: Record<string, string> = {
   'Cancel this SMS? It has not gone, and will not.': 'Otkazati ovaj SMS? Nije poslan i neće biti poslan.',
   'Keep it': 'Zadrži ga',
   'Cancel it': 'Otkaži ga',
+  "This SMS was to go on {when}, before this backup was restored, and did not go from this phone. The phone the backup came from may have sent it already.":
+    "Ovaj SMS je trebao otići {when}, prije nego što je ova rezervna kopija vraćena, i nije otišao s ovog telefona. Telefon s kojeg je rezervna kopija došla možda ga je već poslao.",
+  "Send now":
+    "Pošalji sada",
+  "Not sent · was to go {when}. Tap to send it or delete it.":
+    "Nije poslan · trebao je otići {when}. Dodirnite ga da ga pošaljete ili obrišete.",
   'It had gone already.': 'Već je bio poslan.',
   'Not cancelled. {reason}': 'Nije otkazano. {reason}',
   'It goes at that time, with Erevos closed and locked too; if the phone is off then, as soon as it is on again. Until then it is not in the phone\'s SMS: it waits locked with a key of this phone. Text only, to one number.': 'Šalje se u to vrijeme, čak i kad je Erevos zatvoren i zaključan; ako je telefon tada isključen, čim se ponovo uključi. Do tada nije među SMS porukama telefona: čeka zaključan ključem ovog telefona. Samo tekst, na jedan broj.',

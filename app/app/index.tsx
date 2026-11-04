@@ -136,9 +136,10 @@ function Home() {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show, params.opened]);
   // After a new version, the permissions check shows by itself once, when calls and messages in
-  // the background need something (lib/permissions.ts); in the web app after a new signed release,
-  // when messages, calls or the data need something (lib/permissions.web.ts). A moment later, and
-  // only if nothing else opened meanwhile (a link, the widget, a call): then the next start offers it.
+  // the background need something (lib/permissions.ts), and on Android once after a backup was
+  // restored; in the web app after a new signed release, when messages, calls or the data need
+  // something (lib/permissions.web.ts). A moment later, and only if nothing else opened meanwhile
+  // (a link, the widget, a call): then the next start offers it.
   const navigation = useNavigation();
   useEffect(() => {
     let active = true;
@@ -146,7 +147,7 @@ function Home() {
       void offerChecks().then((offer) => {
         if (!offer || !active || !navigation.isFocused()) return;
         void checksOffered();
-        router.push('/permissions?after=update');
+        router.push(`/permissions?after=${offer}`);
       });
     }, 1500);
     return () => {

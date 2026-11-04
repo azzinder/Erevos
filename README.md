@@ -168,20 +168,23 @@ cryptography. Do not rely on it to protect anyone yet.
   server. With **Messages** a message never waits for Tor: while Tor starts, it goes straight.
 - **Phone, SMS and contacts** (Android): Erevos can be the phone's SMS app (SMS and MMS, with a spam
   filter you can set), its phone app and its contacts app, with a home-screen widget.
-- **Backups**: one file sealed with its own password, holding every space with its voice messages,
-  its Chat with myself and its Matrix, XMPP and Nostr accounts. Made by hand, or automatically
-  every day or week into a folder you choose: on the phone, a memory card, or a cloud app that
-  shows its folders in Android's folder picker; on a computer, any folder. The web app in a browser
-  makes them by hand only. They can also hold the phone's SMS and MMS. Photos and files sent in
-  chats are not in backups yet.
+- **Backups**: sealed with their own password, holding every space with its photos, files and
+  voice messages, its Chat with myself and its Matrix, XMPP and Nostr accounts, with the panic
+  password and the settings that go with you, so a restore brings the phone back as it was; the
+  photos, files and voice messages go in files of their own beside the backup. Made by hand, or
+  automatically every day or week into a folder you choose: on the phone, a memory card, or a
+  cloud app that shows its folders in Android's folder picker; on a computer, any folder. The web
+  app in a browser makes them by hand only. They can also hold the phone's SMS and MMS.
 - **Backups to your own server too**: with automatic backups on (Android and the desktop app), each
   also goes to a folder on a WebDAV server, such as your own Nextcloud, with an app password made
-  for Erevos alone. The file looks like random bytes, under a random name, of a padded size, and
-  the server keeps the 3 newest; it still sees your account, when one comes and roughly how big,
+  for Erevos alone. Each file looks like random bytes, under a random name, of a padded size, the
+  photos, files and voice messages in uploads of their own, each a multiple of one size, and the
+  server keeps the 3 newest; it still sees your account, when one comes, how many uploads and
+  roughly how big,
   and your address unless it goes through Tor, which on Android follows the space's choice.
   **Restore from a server** lists the backups there (on a new phone, with the server's user name
   and password), downloads one the same way and opens it with its password; it works in the
-  desktop app and the web app too. Through Tor a backup over 64 MB does not come, and straight none
+  desktop app and the web app too. Through Tor no file of a backup over 64 MB comes, and straight none
   over 100 MB; a file chosen by hand goes up to 200 MB. The web app has **Send a backup now**, with
   a password typed each time, to a server set to let the web app in (Nextcloud is not as it
   comes). The desktop app and the web app have no Tor for it. Google Drive is left out on purpose.

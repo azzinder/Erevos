@@ -11,6 +11,7 @@ import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
 import {
   cloudLabel,
+  cloudParts,
   cloudServer,
   cloudThroughTor,
   CLOUD_RESTORE_MOST,
@@ -37,19 +38,25 @@ import {
   folderLabel,
   KEEP,
   loadAutoBackup,
+  partsIn,
   pickFolder,
+  pickParts,
+  PICKS_PART_FILES,
   runAutoBackup,
   startAutoBackup,
   stopAutoBackup,
   writeBackup,
   type AutoBackup,
+  type PartSource,
 } from '../lib/backup-folder';
+import { phoneSettingsForBackup } from '../lib/backup-native';
+import { afterRestore, beforeRestore } from '../lib/backup-settings';
 import { backsUpSms, canBackUpSms, phoneSmsForBackup, setBacksUpSms, smsCounts, SMS_PICTURES_MB } from '../lib/backup-sms';
 import { takeHandedServer } from '../lib/backup-pieces';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
-import { backupKey, backupPhoneSms, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup } from '../lock/backup';
+import { backupKey, backupNative, backupPhoneSms, DamagedPartError, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup, type MissingPartError } from '../lock/backup';
 import { useLock } from '../lock/context';
 import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
@@ -61,10 +68,21 @@ import { useTheme } from '../theme/context';
 // (lib/backup-sms.ts), put back into the phone's SMS when it is restored. On Android, automatic
 // backups can go to a server too (lib/backup-cloud.ts), once the owner gives one, and a backup there
 // can be restored from the server itself; in the desktop app too, and in the web app, which makes
-// no backups by itself, one sent there when the owner asks.
+// no backups by itself, one sent there when the owner asks. A backup's photos, files and voice
+// messages are in parts beside it (lock/backup.ts): restored, they are read from where the backup
+// came from, the server, or the folder automatic backups go to, else from the folder or files the
+// owner chooses; all of them are there, and open, before anything is replaced. Should one be
+// missing or damaged, the screen says which, and the owner may restore all the rest without such
+// files: the photos, files and voice messages on the phone then stay as they are.
 
 // What the password sheet is for: a backup made now, automatic backups' password, or a backup to open.
-type Asking = { kind: 'make'; folder: string } | { kind: 'auto'; every: number; folder: string } | { kind: 'open'; bytes: Uint8Array; name: string } | { kind: 'cloud' } | null;
+// A backup to open says the server it came from, if one: its parts are there too.
+type Asking =
+  | { kind: 'make'; folder: string }
+  | { kind: 'auto'; every: number; folder: string }
+  | { kind: 'open'; bytes: Uint8Array; name: string; server?: CloudServer }
+  | { kind: 'cloud' }
+  | null;
 
 // A backup file larger than this is not one Erevos made: every space's chats are far smaller. One
 // from a server comes up to 100 MB only (CLOUD_RESTORE_MOST), as any download (lib/net-http.ts).
@@ -197,7 +215,13 @@ export default function Backups() {
       setAuto(next);
       setCloud(sent);
       if (next?.error) say(t('Not made. {error}', { error: next.error }), true);
-      else if (next && sent?.error) say(t('Made a backup in {folder}, but it did not go to the server. {error}', { folder: folderLabel(next.folder), error: sent.error }), true);
+      else if (next && !next.folder) {
+        // Restored from a backup made elsewhere: no folder here yet.
+        const choosing = t('Automatic backups need a folder on {device}: choose one.', { device: t(THIS_DEVICE) });
+        if (sent?.error) say(`${t('Not sent. {error}', { error: sent.error })} ${choosing}`, true);
+        else if (sent) say(`${t('Sent a backup to {server}.', { server: cloudLabel(sent) })} ${choosing}`);
+        else say(choosing, true);
+      } else if (next && sent?.error) say(t('Made a backup in {folder}, but it did not go to the server. {error}', { folder: folderLabel(next.folder), error: sent.error }), true);
       else if (next && sent) say(t('Made a backup in {folder} and sent it to {server}.', { folder: folderLabel(next.folder), server: cloudLabel(sent) }));
       else if (next) say(t('Made a backup in {folder}.', { folder: folderLabel(next.folder) }));
     } finally {
@@ -284,7 +308,7 @@ export default function Backups() {
     try {
       const bytes = await fetchFromCloud(listed.server, file.name, CLOUD_RESTORE_MOST);
       setListed(null);
-      setAsking({ kind: 'open', bytes, name: fileText(file) });
+      setAsking({ kind: 'open', bytes, name: fileText(file), server: listed.server });
     } catch (error) {
       say(errorText(error), true);
     } finally {
@@ -313,6 +337,81 @@ export default function Backups() {
     setSmsToo(!smsToo);
   }
 
+  // Says how far a backup's photos, files and voice messages are, made or put back, as they go.
+  const shownPercent = useRef(-1);
+  function progress(making: boolean) {
+    shownPercent.current = -1;
+    return (done: number, all: number) => {
+      const percent = Math.floor((done * 100) / Math.max(1, all));
+      if (percent === shownPercent.current) return;
+      shownPercent.current = percent;
+      say(making ? t('Making the backup: photos, files and voice messages, {percent}%…', { percent }) : t('Putting back photos, files and voice messages: {percent}%…', { percent }));
+    };
+  }
+
+  // Where a backup's files beside it are, said after it is made.
+  function partsText(parts: number): string {
+    return parts > 0
+      ? ` ${plural(parts, 'Its photos, files and voice messages are in {n} more file beside it, with the same start: keep them together.', 'Its photos, files and voice messages are in {n} more files beside it, with the same start: keep them together.')}`
+      : '';
+  }
+
+  // What a restore without some of the backup's files leaves as it is, and does not bring back.
+  const withoutText = (n: number) =>
+    plural(
+      n,
+      'Restore everything else without it? The photos, files and voice messages on {device} stay as they are, and those it holds do not come back.',
+      'Restore everything else without them? The photos, files and voice messages on {device} stay as they are, and those they hold do not come back.',
+      { device: t(THIS_DEVICE) },
+    );
+  const notThereText = (missing: string[]) => plural(missing.length, 'A file of this backup is not there: {name}.', '{n} files of this backup are not there, {name} among them.', { name: missing[0] });
+
+  // Asked when a file of the backup is missing or damaged: whether to restore the rest without it.
+  const restoreWithout = (error: MissingPartError | DamagedPartError) =>
+    chooseOne(
+      t('Restore a backup'),
+      `${error instanceof DamagedPartError ? t('A file of this backup is damaged, or belongs to another backup: {name}.', { name: error.part }) : notThereText([error.part])} ${withoutText(1)}`,
+      t('Cancel'),
+      t('Restore the rest'),
+    );
+
+  // Where the parts of a backup being opened are: on the server it came from, in the folder
+  // automatic backups go to, else where the owner chooses. With those not there named, the owner
+  // may restore the rest without them (`without`). Null when the owner went back.
+  async function findParts(names: string[], server: CloudServer | undefined): Promise<{ source: PartSource | null; without: boolean } | null> {
+    const found = async (source: PartSource | null, missing: string[]) => {
+      if (!missing.length) return { source, without: false };
+      return (await chooseOne(t('Restore a backup'), `${notThereText(missing)} ${withoutText(missing.length)}`, t('Cancel'), t('Restore the rest'))) ? { source, without: true } : null;
+    };
+    if (server) {
+      const there = await cloudParts(server);
+      return found(there, there.missing(names));
+    }
+    // A backup in the folder automatic backups go to has its files beside it there.
+    if (auto?.folder) {
+      const there = await partsIn(auto.folder).catch(() => null);
+      if (there && there.missing(names).length === 0) return { source: there, without: false };
+    }
+    const go = await chooseOne(
+      t('Restore a backup'),
+      PICKS_PART_FILES
+        ? plural(names.length, "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.", "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.")
+        : plural(names.length, "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.", "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in."),
+      t('Cancel'),
+      PICKS_PART_FILES ? t('Choose the files') : t('Choose the folder'),
+    );
+    if (!go || picking.current) return null;
+    picking.current = true;
+    let picked: PartSource | null;
+    try {
+      picked = await pickParts(names);
+    } finally {
+      picking.current = false;
+    }
+    // None chosen: all of them are not there.
+    return picked ? found(picked, picked.missing(names)) : found(null, names);
+  }
+
   // What a backup holds of the phone's SMS, said after it is made.
   function smsText(sms: Uint8Array | null): string {
     const counts = sms ? smsCounts(sms) : null;
@@ -326,13 +425,16 @@ export default function Backups() {
     if (asking.kind === 'make') {
       const key = await backupKey(password);
       setAsking(null);
+      setBusy(true);
       try {
-        const sms = await phoneSmsForBackup();
-        const backup = await makeBackup(key, sms);
-        const { name, size, where } = await writeBackup(asking.folder, backup);
-        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + smsText(sms));
+        const phoneSms = await phoneSmsForBackup();
+        const native = await phoneSettingsForBackup();
+        const { name, size, parts, where } = await writeBackup(asking.folder, (part) => makeBackup(key, { parts: part, phoneSms, native, progress: progress(true) }));
+        say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + partsText(parts) + smsText(phoneSms));
       } catch (error) {
         say(errorText(error), true);
+      } finally {
+        setBusy(false);
       }
     } else if (asking.kind === 'cloud') {
       // The web app's backup sent now, with a password of its own: it keeps none for backups.
@@ -341,7 +443,7 @@ export default function Backups() {
       if (!cloud) return;
       setBusy(true);
       try {
-        const sent = await sendToCloud(cloud, await makeBackup(key, null, true), KEEP);
+        const sent = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, bare: true, progress: progress(true) }), KEEP);
         setCloud(sent);
         if (sent.error) say(t('Not sent. {error}', { error: sent.error }), true);
         else say(t('Sent a backup to {server}. Keep its password: nothing opens the backup without it.', { server: cloudLabel(sent) }));
@@ -362,7 +464,24 @@ export default function Backups() {
         if (error instanceof WrongBackupPasswordError) return false;
         throw error;
       }
+      const opening = asking;
       setAsking(null);
+      // Its photos, files and voice messages: every part looked for before anything is asked.
+      const names = backup.parts?.names ?? [];
+      let parts: { source: PartSource | null; without: boolean } | null = { source: null, without: false };
+      if (names.length) {
+        setBusy(true);
+        try {
+          parts = await findParts(names, opening.server);
+        } catch (error) {
+          parts = null;
+          say(errorText(error), true);
+        } finally {
+          setBusy(false);
+        }
+        if (!parts) return;
+      }
+      const { source, without } = parts;
       // The phone's SMS in it go back into the phone's SMS only while Erevos is the SMS app.
       const sms = backupPhoneSms(backup);
       const putSms = !!sms && canBackUpSms() && !!smsStatus()?.isDefault;
@@ -382,8 +501,20 @@ export default function Backups() {
         // and starts again with the space as restored.
         const release = await holdReceiver();
         let told = '';
+        let left: string[] = [];
+        setBusy(true);
         try {
-          await restoreBackup(backup);
+          const before = await beforeRestore();
+          // A part missing or damaged changes nothing, unless the owner wants the rest without it
+          // (lock/backup.ts): else said, and Erevos stays as it was.
+          try {
+            ({ left } = await restoreBackup(backup, source?.read ?? null, progress(false), { without: without ? async () => true : restoreWithout }));
+          } catch (error) {
+            say(errorText(error), true);
+            return;
+          }
+          // The settings it held, followed at once, and the phone module's put back.
+          await afterRestore(backupNative(backup), before);
           if (sms && putSms) {
             setBusy(true);
             say(t('Putting the SMS back into the phone…'));
@@ -394,9 +525,19 @@ export default function Backups() {
           }
           closeNow();
         } finally {
+          setBusy(false);
           release();
         }
-        if (told) ask(t('SMS'), told, [{ text: t('OK') }]);
+        // Said once Erevos opens again: which of the backup's files did not come back.
+        const leftText = left.length
+          ? plural(
+              left.length,
+              'Restored without {n} file of the backup, {name}: the photos, files and voice messages in it did not come back.',
+              'Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.',
+              { name: left[0] },
+            )
+          : '';
+        if (leftText || told) ask(leftText ? t('Restore a backup') : t('SMS'), [leftText, told].filter(Boolean).join('\n\n'), [{ text: t('OK') }]);
       }
     }
   }
@@ -410,7 +551,7 @@ export default function Backups() {
     <Page>
       <Text variant="title">{t('Backups')}</Text>
       <Text variant="caption" tone="muted" style={hint}>
-        {t('A backup is one file holding everything Erevos keeps on {device}: every space, with its contacts, messages, voice messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its own too.', { device: t(THIS_DEVICE) })}
+        {t('A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it, with the same start: keep them together.', { device: t(THIS_DEVICE) })}
       </Text>
 
       <SectionTitle title={t('Make a backup')} />
@@ -456,7 +597,19 @@ export default function Backups() {
               <Chip key={choice.every} label={t(choice.label)} selected={every === choice.every} onPress={() => void choose(choice.every)} disabled={busy} />
             ))}
           </Row>
-          {auto ? (
+          {auto && !auto.folder ? (
+            <Card>
+              <Text variant="bodyStrong">{t('No folder on {device} yet', { device: t(THIS_DEVICE) })}</Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {t('These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.')}
+                {cloud ? ` ${t('Until then they go only to the server.')}` : ''}
+              </Text>
+              <Row wrap>
+                <Button title={t('Choose a folder')} compact onPress={moveAuto} disabled={busy} />
+                <Button title={t('Change password')} kind="secondary" compact onPress={changePassword} disabled={busy} />
+              </Row>
+            </Card>
+          ) : auto ? (
             <Card>
               <Text variant="bodyStrong">{t('Into {folder}', { folder: folderLabel(auto.folder) })}</Text>
               <Text variant="caption" tone="muted" style={hint}>
@@ -555,6 +708,9 @@ export default function Backups() {
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
           {t('Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.', { device: t(THIS_DEVICE) })}
+        </Text>
+        <Text variant="caption" tone="muted" style={hint}>
+          {t('What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.')}
         </Text>
         <Row wrap>
           <Button title={t('Restore a backup')} kind="secondary" compact onPress={pickBackup} disabled={busy} />

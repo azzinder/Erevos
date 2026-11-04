@@ -174,8 +174,9 @@ async function save(config: LockConfig): Promise<void> {
 // start (preparePanicPassword), random until one is set and again once it is turned off, and
 // checked with the slots each time a password is compared with them, the same way. So neither what
 // is stored nor how long a check takes shows whether a panic password is set. It must open no
-// space, and no space's password may be it (SamePasswordError).
-const PANIC_KEY = 'erevos.lock-panic';
+// space, and no space's password may be it (SamePasswordError). Backups hold it with the lock
+// (lock/backup.ts), so a restore keeps the panic password as it was.
+export const PANIC_KEY = 'erevos.lock-panic';
 
 async function loadPanicSlot(iter: number): Promise<Slot> {
   try {

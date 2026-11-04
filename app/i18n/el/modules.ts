@@ -56,4 +56,6 @@ export const modulesText: Record<string, string> = {
   'What Android should allow': 'Τι πρέπει να επιτρέψει το Android',
   "For the parts you chose to work while Erevos is closed, Android should allow these. Each button opens Android's own question or setting, and nothing is sent anywhere. You can also do it later, in Settings → General → Permissions.":
     'Για να δουλεύουν οι ενότητες που διάλεξες όσο το Erevos είναι κλειστό, το Android πρέπει να επιτρέψει αυτά. Κάθε κουμπί ανοίγει την ερώτηση ή τη ρύθμιση του ίδιου του Android, και τίποτα δεν στέλνεται πουθενά. Μπορείς να το κάνεις και αργότερα, στις Ρυθμίσεις → Γενικά → Άδειες.',
+  "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
+    "Μόλις έγινε επαναφορά αντιγράφου. Ό,τι επιτρέπει το Android στο Erevos, και ποιες εφαρμογές κάνουν τις κλήσεις και στέλνουν τα SMS, μένουν σε κάθε τηλέφωνο και δεν έρχονται με κανένα αντίγραφο: αυτά χρειάζονται σε αυτό το τηλέφωνο οι ενότητες που είναι ενεργές.",
 };

@@ -30,7 +30,8 @@ class WatchLink;
 //                     owner only
 //   /__file?name=…    the app's sealed files; /__files?prefix=… lists them
 //   /__folder         the folder for backups: Documents/Erevos
-//   /__backup?…       writes a backup there, keeping the newest
+//   /__backup?…       writes a backup's file there, its own or a part's, keeping the newest
+//                     backups with their parts
 //   /__save?name=…    saves a photo or file from a chat in Downloads
 //   /__latest         the latest release's version.json (app/lib/updates.ts), asked for here:
 //                     GitHub's downloads do not answer a page's own requests
@@ -41,7 +42,8 @@ class WatchLink;
 //                     gives what happened since, waiting a while for something (app/lib/radio.ts)
 //   /__wipe           the panic button (app/lib/panic.ts): POST deletes everything the app keeps
 //                     (its folder, with the WebView's own, and its cache), with ?backups=1 the
-//                     backups in Documents/Erevos too, stops the helper, and closes Erevos
+//                     backups in Documents/Erevos too, with their parts, stops the helper, and
+//                     closes Erevos
 //   /__open?url=…     PUT: a link that leaves Erevos, opened by the system (the browser for a web
 //                     page), as Sailfish WebView opens no window of its own
 class ShellServer : public QObject

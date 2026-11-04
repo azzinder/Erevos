@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { phoneId, simsHere } from './restored';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps for SMS (lib/sms-invite.ts), sealed like its contacts (sealed-file.ts):
@@ -13,13 +14,19 @@ import { sealedFile, type Holder } from './sealed-file';
 // Android holds a copy locked with this phone's own key, to send it then with the space locked.
 // Whether messages to Erevos contacts may go by SMS, encrypted, when nothing else takes them
 // (lib/sms-way.ts): for every contact with a number, or for some; off unless turned on, as it costs
-// what SMS cost and tells the phone company who wrote to whom and when. Backups do not hold it, so
-// a backup restored never starts sending SMS by itself.
+// what SMS cost and tells the phone company who wrote to whom and when.
 // The space's own order of its SMS is sealed in ORDER_FILE, never in the phone's store, so no other
 // app and no other space sees it (lib/sms-folders.ts): the conversations pinned, archived and put
 // in the Trash, what is typed in each and not sent, the spam filter's rules and the numbers marked
 // spam or not, and the seconds an SMS waits before it goes, to be taken back. Backups hold that
-// file and not this one, so a backup restored on another phone never sends an SMS for later again.
+// file, and this one too from the version that holds photos and files on (lock/backup.ts): all of
+// it as it was, these switches with it. An SMS for later whose time came before the backup was
+// restored does not go by itself (lib/sms-later.ts): the phone the backup came from may have sent
+// it already, so it waits for the owner to send it or delete it. One whose time is still ahead goes
+// then, as on the phone it came from. The SIMs chosen, for numbers and for SMS for later, are known
+// by the ids this phone gave them, which on another phone name another SIM or none: they count
+// only on the phone they were chosen on (`simsOn`, lock/restored.ts), and elsewhere SMS go on the
+// phone's default SIM until one is chosen there.
 
 export type { Holder };
 
@@ -54,6 +61,9 @@ export type SmsData = {
   /** Show the names the phone's contacts give SMS numbers. Off until the owner turns it on. */
   names: boolean;
   sims: NumberSim[];
+  /** The phone `sims` and the SIMs of `later` were chosen on (lock/restored.ts phoneId), '' for
+   *  those kept before it was said. */
+  simsOn: string;
   /** SMS sent for later, until they go. */
   later: LaterSms[];
   /** Conversations at the top of the list. */
@@ -90,6 +100,7 @@ export const EMPTY_SMS: SmsData = {
   waiting: [],
   names: false,
   sims: [],
+  simsOn: '',
   later: [],
   pinned: [],
   archived: [],
@@ -108,7 +119,9 @@ export const EMPTY_SMS: SmsData = {
   smsWayFor: [],
 };
 
-const FILE = 'erevos-sms';
+/** The rest of the space's SMS data. Backups hold it too, from the version that holds photos and
+ *  files on (lock/backup.ts). */
+export const FILE = 'erevos-sms';
 /** The space's own order of its SMS, in a file of its own that backups hold (lock/backup.ts). */
 export const ORDER_FILE = 'erevos-sms-order';
 const BLOCK = 4 * 1024;
@@ -165,6 +178,7 @@ function checked(value: unknown): SmsData {
       .filter((n) => isText(n.number) && n.number.length > 0 && n.number.length <= 400 && Number.isInteger(n.sim) && (n.sim as number) >= 0)
       .map((n) => ({ number: n.number as string, sim: n.sim as number }))
       .slice(-MAX_SIMS),
+    simsOn: isText(v.simsOn) && v.simsOn.length <= 64 ? v.simsOn : '',
     later: list(v.later, (l) =>
       isText(l.id) && /^[A-Za-z0-9_-]{1,32}$/.test(l.id) && isNumber(l.to) && isText(l.text) && l.text.length > 0 && l.text.length <= LATER_TEXT && isTime(l.at) && Number.isInteger(l.sim) && (l.sim as number) >= -1
         ? { id: l.id, to: l.to, text: l.text, at: l.at, sim: l.sim as number }
@@ -225,14 +239,17 @@ export function smsDataChanged(): void {
 
 export async function loadSmsData(holder: Holder, space: number, key: Uint8Array): Promise<SmsData> {
   const [data, order] = await Promise.all([store.load(holder, space, key), orders.load(holder, space, key)]);
-  return order.kept ? { ...data, ...orderOf(order) } : data;
+  const all = order.kept ? { ...data, ...orderOf(order) } : data;
+  // SIMs chosen on another phone name none of this one's: the phone's default, until chosen here.
+  return (await simsHere(all.simsOn)) ? all : { ...all, sims: [], later: all.later.map((later) => ({ ...later, sim: -1 })) };
 }
 
-/** Saves the order first: once it is kept there, FILE's copy of it from before is read no more. */
+/** Saves the order first: once it is kept there, FILE's copy of it from before is read no more. The
+ *  SIMs in it are this phone's from then on. */
 export async function saveSmsData(holder: Holder, space: number, key: Uint8Array, data: SmsData): Promise<void> {
   try {
     await orders.save(holder, space, key, { ...orderOf(data), kept: true });
-    await store.save(holder, space, key, { ...data, ...orderOf(EMPTY_SMS) });
+    await store.save(holder, space, key, { ...data, ...orderOf(EMPTY_SMS), simsOn: await phoneId() });
   } finally {
     saves++;
   }

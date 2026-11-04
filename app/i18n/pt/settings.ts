@@ -66,7 +66,8 @@ export const settings: Record<string, string> = {
   'Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.': '{name} ({size}) salvo em {folder}. Guarde a senha dele: nada abre o backup sem ela.',
   'Replace everything': 'Substituir tudo',
   'Every space on {device}, with its contacts, messages and hidden chats, will be replaced by what the backup holds. What is here now and not in the backup is gone for good. Then Erevos opens as it was when the backup was made, with the passwords used then.': 'Cada espaço {device}, com os contatos, mensagens e conversas ocultas dele, será substituído pelo que o backup contém. O que está aqui agora e não está no backup se perde de vez. Depois o Erevos abre como estava quando o backup foi feito, com as senhas daquela época.',
-  'A backup is one file holding everything Erevos keeps on {device}: every space, with its contacts, messages, voice messages, imported chats and hidden chats, each still sealed with its own password. The backup has a password of its own too.': 'Um backup é um único arquivo com tudo o que o Erevos guarda {device}: cada espaço, com os contatos, mensagens, mensagens de voz, conversas importadas e conversas ocultas dele, cada um ainda selado com a própria senha. O backup também tem uma senha própria.',
+  "A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it, with the same start: keep them together.":
+    "Um backup guarda tudo o que o Erevos mantém {device}: cada espaço, com os contatos, mensagens, fotos, arquivos, mensagens de voz, conversas importadas e conversas ocultas dele, cada um ainda criptografado com a própria senha, e as configurações que vão com você para outro dispositivo. O backup também tem uma senha própria. As fotos, arquivos e mensagens de voz dele vão em arquivos próprios ao lado dele, com o mesmo começo de nome: mantenha-os juntos.",
   'Make a backup': 'Fazer um backup',
   'A browser saves a file only when you tap, so here Erevos makes no backups by itself. Make one now and then.': 'Um navegador só salva um arquivo quando você toca, então aqui o Erevos não faz backups sozinho. Faça um de vez em quando.',
   'Automatic backups': 'Backups automáticos',
@@ -296,6 +297,12 @@ export const settings: Record<string, string> = {
   'Cancel this SMS? It has not gone, and will not.': 'Cancelar este SMS? Ele ainda não saiu, e não vai sair.',
   'Keep it': 'Manter',
   'Cancel it': 'Cancelar envio',
+  "This SMS was to go on {when}, before this backup was restored, and did not go from this phone. The phone the backup came from may have sent it already.":
+    "Este SMS estava agendado para {when}, antes de este backup ser restaurado, e não saiu deste celular. O celular de onde veio o backup pode já ter enviado.",
+  "Send now":
+    "Enviar agora",
+  "Not sent · was to go {when}. Tap to send it or delete it.":
+    "Não enviado · estava agendado para {when}. Toque nele para enviar ou apagar.",
   'It had gone already.': 'Ele já tinha saído.',
   'Not cancelled. {reason}': 'Não cancelado. {reason}',
   'It goes at that time, with Erevos closed and locked too; if the phone is off then, as soon as it is on again. Until then it is not in the phone\'s SMS: it waits locked with a key of this phone. Text only, to one number.': 'Ele sai nesse horário, mesmo com o Erevos fechado e bloqueado; se o celular estiver desligado nessa hora, assim que ligar de novo. Até lá ele não fica nos SMS do celular: aguarda trancado com uma chave deste celular. Só texto, para um único número.',

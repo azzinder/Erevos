@@ -183,8 +183,8 @@ Una buona prima ora:
 **Chat con me stesso** è sempre in cima alle chat, con una puntina, in ogni spazio. È una chat senza nessun altro
 dentro: scrivi a te stesso note, link, foto, file e messaggi vocali, come in qualsiasi chat. Non va a nessun altro:
 resta crittografata nello spazio, e va solo ai tuoi dispositivi collegati, crittografata end-to-end, così che ognuno
-abbia le stesse note e gli stessi promemoria (vedi [Dispositivi collegati](#devices)). Un backup prende le sue note e
-i suoi messaggi vocali, ma non le foto e i file, come per le chat.
+abbia le stesse note e gli stessi promemoria (vedi [Dispositivi collegati](#devices)). Un backup la prende tutta, note,
+foto, file e messaggi vocali, come per le chat.
 
 - **Un promemoria:** tocca **Ricordamelo** (la campanella arancione accanto a **Nuova chat**), scrivi di che cosa
   ricordarti, scegli un’ora (**Tra 1 ora**, **Stasera 20:00**, **Domani 09:00**, o qualsiasi giorno, ora e minuto) e
@@ -2656,7 +2656,7 @@ cancellerebbe quello che contengono i posti tolti.
   byte che ognuno porta (vedi che cosa vede il relay, sopra), mai i messaggi stessi. Chi vede la notifica e non trova
   niente di nuovo nelle tue chat può immaginare che ce ne siano altre. Dopo che hai eliminato o bloccato qualcuno nel
   posto, il primo messaggio di qualcuno di nuovo, dal link di contatto o dal codice QR del posto, non ne fa nessuna:
-  si vede quando apri il posto. I backup non lo conservano: riattivalo dopo il ripristino.
+  si vede quando apri il posto. I backup lo conservano.
 - **Fai squillare le chiamate quando sono chiuse** (Android): sotto **Avvisa quando arriva un messaggio**, mentre
   **Ricevere da chiuse** è disattivato. Se lo attivi, mentre il posto è chiuso, con Erevos in background o su qualsiasi
   schermata, una chiamata da uno dei suoi contatti fa squillare il telefono e
@@ -2668,7 +2668,7 @@ cancellerebbe quello che contengono i posti tolti.
   la notifica dei messaggi qui sopra, così aprire lo spazio non rivela nulla. Chi chiama fa solo squillare una coda lì;
   la chiamata stessa aspetta sulla coda della chat finché il PIN non la apre. Un contatto che hai eliminato può ancora
   farlo squillare, ma la chiamata non può mai collegarsi. Una chiamata fatta da un computer collegato squilla solo
-  mentre le chat nascoste sono aperte. I backup non lo conservano: riattivalo dopo il ripristino.
+  mentre le chat nascoste sono aperte. I backup lo conservano.
 - **Un nuovo PIN per un posto** (da **Chat nascoste** in **Impostazioni**, o da **Nuove chat nascoste**) lo fa
   ripartire vuoto e sostituisce quello che conteneva. Per tenere le chat e cambiare solo il PIN, aprile e usa **Cambia
   PIN** lì. Ogni PIN deve essere diverso dagli altri e dalla password che apre Erevos.
@@ -2716,16 +2716,19 @@ nemmeno essere vista, usa le chat nascoste.
 
 ## Backup {#backup}
 
-Un backup è un unico file con tutto quello che Erevos conserva su questo telefono: ogni spazio, con i suoi contatti, le
-chiavi delle sue conversazioni, i suoi messaggi, messaggi vocali, chat importate e chat nascoste, i suoi account Matrix,
-XMPP e Nostr, la sua Chat con me stesso, e il blocco. Al suo interno ogni spazio resta sigillato con la sua password, e
-il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni** → **Dati e dispositivi** → **Backup**.
+Un backup contiene tutto quello che Erevos conserva su questo telefono: ogni spazio, con i suoi contatti, le chiavi
+delle sue conversazioni, i suoi messaggi, foto, file, messaggi vocali, chat importate e chat nascoste, i suoi account
+Matrix, XMPP e Nostr, la sua Chat con me stesso, il blocco e la password di panico, e le impostazioni che ti seguono su
+un altro telefono. Al suo interno ogni spazio resta sigillato con la sua password, e il backup è sigillato di nuovo con
+una sua password. Le sue foto, i file e i messaggi vocali vanno in file a parte accanto a lui, di 4 MB al massimo
+ciascuno, il cui nome comincia come il suo: tienili insieme. Si trova in **Impostazioni** → **Dati e dispositivi** →
+**Backup**.
 
 1. **Crea un backup:** tocca **Crea un backup**, scegli una cartella (sul telefono, su una scheda di memoria, o in
    un’app cloud che vi mostra le sue cartelle; su un computer, qualsiasi cartella), scrivi due volte una password per
-   il backup (almeno 12 caratteri, o quattro parole) e tocca **Salva**.
+   il backup (almeno 12 caratteri, o quattro parole) e tocca **Salva**. In un browser, il backup e i suoi file vanno al menu di condivisione o nei download: il primo subito, ognuno dei successivi dopo un tocco su **Salva**.
 2. **Backup automatici:** scegli **Ogni giorno** o **Ogni settimana**, poi una cartella e una password. Erevos ne fa
-   uno quando si apre e l’ultimo è più vecchio di così, e la cartella conserva i 3 più recenti. Sotto ci sono **Fai il
+   uno quando si apre e l’ultimo è più vecchio di così, e la cartella conserva i 3 più recenti, ognuno con i suoi file. Sotto ci sono **Fai il
    backup ora**, **Cambia cartella** e **Cambia password**; **Disattivato** li ferma, e quelli fatti restano nella
    cartella.
 3. **Anche su un server:** su Android e nell’app per computer, con i backup automatici attivi, **Aggiungi un server**
@@ -2735,10 +2738,12 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
    restano. Nella web app, che non fa backup da sé, **Invia un backup ora** ne invia uno lì, con una password che
    scrivi ogni volta.
 4. **Ripristina:** tocca **Ripristina un backup**, scegli il file e scrivi la sua password. Erevos chiede ancora una
-   volta, poi mette il backup al posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è
-   stato fatto, con le password di allora. **Ripristina da un server** guarda nella cartella in cui vanno i backup
-   automatici, o in una che indichi con nome utente e password, e mostra i backup che ci sono, i più recenti per
-   primi: scegline uno, scrivi la sua password, e viene ripristinato allo stesso modo.
+   volta, trova i file del backup accanto a lui, o ti chiede di sceglierli, o la loro cartella, poi mette il backup al
+   posto di tutto quello che c’è sul telefono, e si apre com’era quando il backup è stato fatto, con le password di
+   allora. Se uno dei suoi file manca, è danneggiato o è di un altro backup, Erevos dice quale, e non cambia niente, a meno che tu non scelga di ripristinare il resto senza di esso: allora le foto, i file e i messaggi vocali del telefono restano come sono, e quelli che contiene non tornano. **Ripristina da un
+   server** guarda nella cartella in cui vanno i backup automatici, o in una che indichi con nome utente e password, e
+   mostra i backup che ci sono, i più recenti per primi: scegline uno, scrivi la sua password, e viene ripristinato
+   allo stesso modo, con i suoi file da lì.
 
 - **Conserva la password del backup:** niente apre un backup senza di essa, e nessuno può recuperarla. Senza un blocco
   con password, la password del backup è tutto ciò che lo protegge. Chi ha il file può provarci sopra password alla
@@ -2748,8 +2753,11 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   loro cartella ha comunque bisogno delle password degli spazi per leggere le chat.
 - **Su un server:** il backup che va lì è sigillato con la sua password come gli altri, e quella password non lascia
   mai il telefono, quindi il server non può aprirlo. Il suo nome è casuale e il file sembra fatto di byte casuali, di
-  una tra poche dimensioni, quindi né l’uno né l’altro dice che è di Erevos né quanto contiene esattamente. Il server
-  vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande. Su Android, i backup ci vanno come
+  una tra poche dimensioni, quindi né l’uno né l’altro dice che è di Erevos né quanto contiene esattamente. Le sue
+  foto, i file e i messaggi vocali vanno come caricamenti a parte, tutti della stessa dimensione, ognuno anche con un
+  nome casuale e sigillato con la password del backup, legato a quel backup e al suo posto in esso, così nessuno può
+  essere scambiato, tolto o preso da un altro backup senza che si veda; il server li tiene con il loro backup e li
+  elimina con esso. I loro nomi sono lunghi quanto quello del backup, ma la loro dimensione li distingue da esso, quindi il server può contarli, e sapere così più o meno quanto contiene il backup. Quello che un backup interrotto ha lasciato lì viene eliminato prima che parta il successivo, così un server rimasto senza spazio ne ha di nuovo. Il server vede comunque il tuo account, quando ne arriva uno e più o meno quanto è grande. Su Android, i backup ci vanno come
   dice la scelta dello spazio in **Impostazioni** → **Relay e reti** → **Tor**, come Matrix: con **Tutto** solo
   tramite Tor, così il server non vede l’indirizzo del telefono; con **Messaggi** tramite Tor appena Tor è pronto, e
   direttamente mentre Tor parte o quando fallisce; con **Niente** direttamente, e il server vede l’indirizzo del
@@ -2760,8 +2768,8 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   Tor, da lì non ne parte nessuno. Nella web app la password del server è conservata nel browser, sigillata con una
   chiave che il browser non dà fuori. **Ripristina da un server** scarica quello che scegli allo stesso modo, tramite
   Tor come dice lo spazio, e lì non scrive nulla; una password scritta per questo serve solo a quel ripristino e non
-  viene conservata. Tramite Tor un backup di più di 64 MB non arriva, e direttamente nessuno di più di 100 MB, il massimo che
-  Erevos accetta in un download: allora scaricalo dal server e tocca **Ripristina
+  viene conservata. Tramite Tor nessun file di un backup di più di 64 MB arriva, e direttamente nessuno di più di 100 MB, il
+  massimo che Erevos accetta in un download: allora scarica il backup e i suoi file dal server e tocca **Ripristina
   un backup**. Un Erevos precedente a questa versione non apre un backup così. Google Drive è escluso apposta: Google
   lega il file al tuo nome, ed Erevos avrebbe bisogno delle app di Google e di un accesso a Google sul telefono.
 - **Le chat proseguite dopo il backup:** il ripristino rimette le chiavi di ogni conversazione com’erano allora. I
@@ -2783,11 +2791,20 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   quando arriva un messaggio** delle chat nascoste, e ad **Anche mentre è aperto un altro spazio**. Così, dopo un
   ripristino, anche su un altro telefono, continuano come prima. Un backup di prima di questa versione non ne ha
   nulla: ripristinarlo li lascia come li ha il telefono.
+- **Impostazioni:** un backup tiene le impostazioni che sono tue e non del telefono: la lingua, i moduli, la
+  vibrazione, le notifiche in background e il numero sull’icona, il risparmio batteria, la privacy dello schermo, la
+  qualità delle foto, se il Telefono si apre senza la password, e come Erevos raggiunge i telefoni vicini (portando i
+  loro messaggi, sullo stesso Wi-Fi, con Wi-Fi Direct, Wi-Fi Aware e una radio LoRa, che si riaccende solo dove questo
+  telefono la conosce). Su Android tiene anche le risposte rapide del Telefono e le chiamate che rifiuta, quelle di un
+  gruppo di contatti solo dove questo telefono ha un gruppo con quel nome nello stesso account. I backup automatici e il
+  loro server tornano con la loro password, ma non con la loro cartella, in cui Android lascia scrivere solo il
+  telefono su cui è stata scelta: su un altro telefono, **Backup** dice di sceglierne una, e fino ad allora vanno solo
+  al server.
 - **Un telefono alla volta:** un backup ripristinato su un secondo telefono legge le stesse code sul relay del primo, e
   ognuno prende messaggi che l’altro poi non riceve mai. Usalo per passare a un nuovo telefono, non per tenerne due.
 - **Discrezione:** ogni spazio mostra la stessa schermata Backup, e un backup contiene ogni spazio, quindi né l’una né
-  l’altro dicono quanti spazi ci sono o se ci sono chat nascoste impostate. Il nome del file dice che è un backup di
-  Erevos, e la sua dimensione mostra più o meno quanto viene conservato.
+  l’altro dicono quanti spazi ci sono o se ci sono chat nascoste impostate. I nomi dei file dicono che sono un backup di
+  Erevos, e il loro numero e la loro dimensione mostrano più o meno quanto viene conservato.
 - **Gli SMS del telefono:** su Android, **Includi gli SMS nei backup** aggiunge da quel momento a ogni backup gli SMS e
   gli MMS del telefono, con al massimo 32 MB delle loro immagini, mentre Erevos è l’app per gli SMS. Sono sigillati con
   la password del backup come il resto. Il ripristino del backup rimette negli SMS del telefono ogni messaggio che non
@@ -2795,14 +2812,22 @@ il file è sigillato di nuovo con una sua password. Si trova in **Impostazioni**
   ripristinato senza di loro. Gli SMS sono del telefono, gli stessi in ogni spazio. Un Erevos più vecchio non apre un
   backup che contiene SMS.
 - **Gli SMS in ordine:** i messaggi fissati, le conversazioni archiviate, il Cestino, le bozze, il filtro antispam e i
-  segni di ogni spazio, e quanto aspetta un SMS per poter essere annullato, sono in ogni backup, sigillati con la
-  password dello spazio come il resto. Gli SMS inviati più tardi (**SMS più tardi**) no, così un backup ripristinato su
-  un altro telefono non ne invia mai uno di nuovo; né gli inviti, i nomi dai tuoi contatti e la SIM scelta per ogni
-  numero. Un Erevos più vecchio non apre un backup che li contiene; uno fatto da un Erevos più vecchio si ripristina
-  come sempre, senza di loro.
-- **Non in un backup:** foto e file, non ancora: un backup viene creato nella memoria del telefono, e non ci
-  starebbero. Un backup ripristinato sullo stesso telefono li mostra di nuovo; su un altro telefono appaiono come non
-  presenti. Restano fuori anche: il conteggio delle password sbagliate, e come sono impostati i backup automatici.
+  segni di ogni spazio, quanto aspetta un SMS per poter essere annullato, gli SMS da inviare più tardi (**SMS più
+  tardi**), gli inviti, i nomi dai tuoi contatti, se i messaggi ai contatti Erevos possono andare via SMS, e la SIM
+  scelta per ogni numero sono in ogni backup, sigillati con la password dello spazio come il resto. La SIM scelta torna solo sullo stesso telefono, perché ogni telefono dà alle sue SIM identificativi propri: su un altro, gli SMS e le chiamate passano dalla sua SIM predefinita finché non ne scegli una lì. Un SMS per più
+  tardi la cui ora è arrivata prima del ripristino non parte da solo, perché il telefono da cui viene il backup potrebbe
+  averlo già inviato: appare come non inviato, e un tocco lo invia o lo elimina. Uno la cui ora deve ancora venire
+  parte alla sua ora. Un Erevos più vecchio non apre un backup che li contiene; uno fatto da un Erevos più vecchio si
+  ripristina come sempre, senza di loro.
+- **Quello che non torna mai:** quello che appartiene al telefono stesso non arriva con nessun backup, quindi un
+  ripristino su un altro telefono non può portarlo: l’impronta o il volto, la cui chiave Android tiene nel chip di quel
+  telefono; le cartelle in cui Erevos può scrivere, come quella dei backup automatici, in cui Android lo lascia entrare
+  solo sul telefono su cui sono state scelte; quello che Android consente a Erevos e quali app fanno le chiamate e
+  mandano gli SMS, che solo tu puoi consentire su ogni telefono, per questo dopo un ripristino su Android si apre
+  **Autorizzazioni** per i moduli attivi; quello che Android tiene per tutte le app, come la cronologia delle chiamate e
+  la sua lista di numeri bloccati; e il conteggio delle password sbagliate. Un account XMPP torna come un nuovo
+  dispositivo di sé stesso e Matrix accede di nuovo, come sopra, e i dispositivi collegati per ora non sono in un
+  backup, come sotto.
 - **I dispositivi collegati** non sono in un backup: un collegamento resta con il telefono e il computer su cui è stato
   fatto. Dopo aver ripristinato un backup su un altro telefono, collega di nuovo il computer: sul computer, tocca
   **Scollega questo dispositivo**, poi collegalo come la prima volta, vedi [Dispositivi collegati](#devices). I
@@ -2904,7 +2929,7 @@ computer e su Sailfish OS.
   blocco, allo stesso modo e per lo stesso tempo. Così né ciò che il telefono conserva né il tempo di un controllo
   mostrano se ce n’è una impostata, e nemmeno questa schermata può dirtelo: se non sei sicuro, impostala di nuovo.
 - **Solo sulla schermata di blocco:** scritta in qualsiasi altro posto dove Erevos chiede una password, è solo una
-  password errata. Non è nei backup: dopo averne ripristinato uno, impostala di nuovo. Finché i tentativi sbagliati
+  password errata. I backup la conservano com’era quando sono stati fatti. Finché i tentativi sbagliati
   fanno aspettare la schermata di blocco (vedi [Blocco con password](#lock)), aspetta anche lei.
 
 **Perché:** qualcuno può costringerti ad aprire Erevos. Con una password di panico puoi sembrare dargli la tua, e ciò
@@ -2995,7 +3020,7 @@ niente lascia il telefono.
   per **Copia** o **Apri** il suo file. **Cerca in questa chat** trova anche i messaggi importati. I file più grandi di
   1 GB, e quelli che l’esportazione non contiene, restano fuori, e la chat dice dove ce n’era uno.
 - **Spazio sul telefono:** mentre entra uno .zip, al telefono serve libero circa il doppio della sua dimensione, perché
-  Erevos ne legge una copia e conserva i file sigillati. I file importati non sono ancora nei backup, come non lo sono
+  Erevos ne legge una copia e conserva i file sigillati. Anche i file importati sono nei backup, come
   gli altri file.
 - **Solo su questo telefono, solo da leggere:** i messaggi importati non vengono mai inviati, quindi l’altro telefono
   non li riceve. Erevos non può mostrare chi li ha scritti davvero.
@@ -3333,7 +3358,7 @@ ordinato, potrebbe inviare codice modificato. Erevos non prende quel codice sull
   browser non lascia leggere a Erevos il risparmio energetico o la modalità Risparmio energetico, quindi non ci sono.
   Dopo ogni nuova versione firmata si apre da sola quando manca qualcosa di cui hanno bisogno i messaggi, le chiamate o
   i dati. In un altro browser (Chrome, Firefox) è lo stesso, con le impostazioni di quel browser.
-- **I backup** si fanno a mano: **Crea un backup** salva il file tramite il menu di condivisione (File, iCloud Drive o
+- **I backup** si fanno a mano: **Crea un backup** salva il backup e i suoi file tramite il menu di condivisione (File, iCloud Drive o
   un’altra app). Un browser consegna un file solo dopo un tocco, quindi non ci sono backup automatici.
 - **I messaggi vocali** registrati su un iPhone sono AAC; si riproducono ovunque.
 - **Apple** fa Safari e potrebbe cambiarlo, come con qualsiasi app su un iPhone.
@@ -3542,9 +3567,9 @@ Erevos dice chiaramente che cosa protegge e che cosa non protegge, ancora.
 | **Cronologia dei messaggi** | Conservata sul telefono, sigillata nel suo spazio, senza limiti, in pagine della stessa dimensione mescolate per tutti gli spazi. Si vede solo quanto occupa tutto insieme, non a quale spazio appartiene. L’eliminazione su entrambi i telefoni, e i messaggi effimeri, dipendono dall’Erevos dell’altro telefono. | |
 | **Messaggi da vicino** | Si aprono solo nello spazio che ha il contatto. Uno per un altro spazio aspetta in memoria, al massimo sei ore, finché quello spazio non si apre. Uno per le chat nascoste si apre solo mentre sono aperte, o ricevono da chiuse, e lo spazio non sa mai che uno dei loro contatti è vicino. | |
 | **Messaggi vocali** | Crittografati end-to-end tramite il relay o da vicino, in pezzi: il relay, o chi ascolta da vicino, può capire più o meno quanto dura ognuno. Ogni suono è sigillato in un file a sé; quanti file ci sono, e le loro dimensioni, mostrano più o meno quanti ne sono conservati, non in quale spazio. Dissigillati nella cache solo durante la riproduzione. | File audio tutti della stessa dimensione. |
-| **Foto e file** | Crittografati end-to-end, tramite l’archivio di file del relay, in pezzi della stessa dimensione: il relay vede quanti e quando, quindi più o meno quanto sono grandi. Il tuo relay vede il tuo indirizzo, come per i messaggi; il contatto li prende tramite il suo relay. Le foto perdono luogo, telefono e ora, a meno che non vengano inviate come file; un file conserva quello che dice al suo interno. Sigillati sul telefono nei loro pezzi, mostrati dalla memoria. Le copie salvate sono fuori da Erevos. Non ancora nei backup. | Backup che li contengano. |
+| **Foto e file** | Crittografati end-to-end, tramite l’archivio di file del relay, in pezzi della stessa dimensione: il relay vede quanti e quando, quindi più o meno quanto sono grandi. Il tuo relay vede il tuo indirizzo, come per i messaggi; il contatto li prende tramite il suo relay. Le foto perdono luogo, telefono e ora, a meno che non vengano inviate come file; un file conserva quello che dice al suo interno. Sigillati sul telefono nei loro pezzi, mostrati dalla memoria. Le copie salvate sono fuori da Erevos. I backup li contengono, sigillati con la password del backup, in file a parte. | |
 | **Su un computer** | Sigillato come sul telefono, nella cartella dell’app. Il suo archivio di chiavi è sigillato con il portachiavi del sistema (su Windows, la chiave del tuo account); su un sistema Linux senza portachiavi, Erevos non conserva nulla a meno che non venga avviato con \`--plain-secrets\`, e allora lo conserva così com’è. | |
-| **Backup** | Un unico file sigillato con una sua password, che contiene ogni spazio così come è sigillato sul telefono. Il suo nome dice che è un backup di Erevos, e la sua dimensione mostra più o meno quanto viene conservato. I backup automatici conservano la loro password sul telefono. Inviato a un server solo se ne aggiungi uno: byte casuali con un nome casuale, di una dimensione arrotondata; il server vede il tuo account e quando, e il tuo indirizzo a meno che non passi per Tor. | |
+| **Backup** | Sigillati con una loro password, contengono ogni spazio così come è sigillato sul telefono, con le sue foto, i file e i messaggi vocali in file a parte accanto al backup. I loro nomi dicono che sono un backup di Erevos, e il loro numero e la loro dimensione mostrano più o meno quanto viene conservato. I backup automatici conservano la loro password sul telefono. Inviati a un server solo se ne aggiungi uno: byte casuali con nomi casuali, di dimensioni arrotondate; il server vede il tuo account e quando, e il tuo indirizzo a meno che non passino per Tor. | |
 | **Segni ✓✓ e ✓✓✓** | Il telefono del contatto sa quando il tuo ha ricevuto e letto i suoi messaggi, in modo crittografato. In un gruppo non pubblico, lo sa anche il telefono di chi ha mandato il messaggio. Il relay, o chi ascolta da vicino, vede un piccolo messaggio in più. | Un interruttore per non dire più quando leggi. |
 | **Impronta o volto (Android)** | Disattivato finché non lo attivi. Apre solo lo spazio della prima password: la sua chiave è sigillata nell’Android Keystore, utilizzabile solo subito dopo un controllo forte dell’impronta o del volto, e scartata quando questi cambiano. Qualcuno che ti trattiene può usare il tuo dito. | |
 | **Notifiche (Android)** | In background: «Erevos – Ready for calls and messages» (non sulla schermata di blocco), «Incoming call» o «Incoming video call» – «Open Erevos to answer», e «New message» o quanti ne sono arrivati; quando Android o la password lo fermano, «Closed by Android» o «Locked» – «Open it to receive calls and messages again»; un promemoria, «Reminder» o quanti; una nuova versione, «Erevos X is out». Mai chi o cosa. A telefono bloccato quella dei messaggi dice solo «Erevos». Le chat nascoste a cui è permesso dirlo mostrano la stessa notifica, contata con il resto: chi la vede e non trova niente di nuovo può immaginare che ce ne siano altre. Come app Telefono, la notifica di una chiamata telefonica dice chi chiama, anche sulla schermata di blocco, come fa quella di ogni app Telefono, ma mai con un nome che conoscono solo le chat nascoste: una chiamata da uno dei loro contatti mostra il numero. | |

@@ -34,6 +34,11 @@ export async function setIconNumberOn(on: boolean): Promise<void> {
   changes.forEach((listener) => listener());
 }
 
+/** Tells those who follow the choice that a restored backup put it (lib/backup-settings.ts). */
+export function iconNumberChanged(): void {
+  changes.forEach((listener) => listener());
+}
+
 /** Calls `listener` each time the number is turned on or off, until the function it gives is called. */
 export function onIconNumberChange(listener: () => void): () => void {
   changes.add(listener);

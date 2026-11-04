@@ -261,4 +261,7 @@ export const parts: Record<string, string> = {
   'could not connect': 'kam nicht zustande',
   'they were in another call': 'war in einem anderen Anruf',
   'not answered': 'nicht angenommen',
+  'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Nur {given} der {all} Dateien gingen in die Downloads, also sind nicht alle gespeichert.',
+  'Save the files': 'Die Dateien speichern',
+  '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} der {all} Dateien gingen in die Downloads. Tippe auf Speichern für die nächste: {name}',
 };

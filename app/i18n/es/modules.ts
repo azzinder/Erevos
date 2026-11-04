@@ -40,4 +40,6 @@ export const modulesText: Record<string, string> = {
   "Start Erevos": "Iniciar Erevos",
   "What Android should allow": "Qué debe permitir Android",
   "For the parts you chose to work while Erevos is closed, Android should allow these. Each button opens Android's own question or setting, and nothing is sent anywhere. You can also do it later, in Settings → General → Permissions.": "Para que las partes que elegiste funcionen mientras Erevos está cerrado, Android debe permitir esto. Cada botón abre la pregunta o el ajuste propios de Android, y no se envía nada a ningún sitio. También puedes hacerlo más tarde, en Ajustes → General → Permisos.",
+  "A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.":
+    "Se acaba de restaurar una copia. Lo que Android permite hacer a Erevos, y qué apps hacen las llamadas y envían los SMS, se quedan en cada teléfono y no vienen con ninguna copia: esto es lo que necesitan en este teléfono los módulos activados.",
 };

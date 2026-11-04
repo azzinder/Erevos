@@ -5,26 +5,31 @@
 import { hardBackupKey, isBackupPassword, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
 
 import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
+import { phoneSettingsForBackup } from './backup-native';
 import { writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
 import { panicFolderChanged } from './panic';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
 
-export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, pickFolder, writeBackup } from './backup-place';
+export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, partsIn, pickFolder, pickParts, PICKS_PART_FILES, writeBackup, type PartSource, type Written } from './backup-place';
 
 // Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
 // phone with Android's folder picker, on a computer in the desktop app.
 //
 // Automatic backups are made when a space opens and the last one is older than the days chosen,
-// into the folder chosen, which keeps the KEEP newest. Their settings are kept in the keystore
-// entry AUTO, outside every space and out of backups, with the key their password gives, so
-// they need no password each time. Whichever space opens, the setting is the same, and the
-// backups are of all of them. Settings from before Argon2id kept PBKDF2's key: the next automatic
-// backup gives it Argon2id (lock/backup.ts), without the password, and keeps that key instead.
-// When the owner gave a server (lib/backup-cloud.ts), each automatic backup goes there too, bare,
-// on the phone and in the desktop app,
-// and one the server missed goes the next time a space opens, even when the folder's is not due.
+// into the folder chosen, which keeps the KEEP newest, each with its parts (lock/backup.ts). Their
+// settings are kept in the keystore entry AUTO, outside every space, with the key their password
+// gives, so they need no password each time. Whichever space opens, the setting is the same, and
+// the backups are of all of them. Settings from before Argon2id kept PBKDF2's key: the next
+// automatic backup gives it Argon2id (lock/backup.ts), without the password, and keeps that key
+// instead. When the owner gave a server (lib/backup-cloud.ts), each automatic backup goes there
+// too, bare, on the phone and in the desktop app, and one the server missed goes the next time a
+// space opens, even when the folder's is not due.
+//
+// Backups hold AUTO, with its key, but not its folder, which only this phone may write in: a
+// backup restored on another phone leaves automatic backups on with no folder ('') until the
+// owner chooses one there, and meanwhile only the server gets them, when there is one.
 
 /** How automatic backups are made. `every` is days, 0 when off; `last` milliseconds, 0 if never.
  *  `hard` is Argon2id's salt and cost, null in settings from before it. */
@@ -120,8 +125,10 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
     let auto = await loadAutoBackup();
     let cloud = await loadCloudBackup();
     if (!auto || !auto.every) return { auto, cloud };
-    const due = force || now - auto.last >= auto.every * DAY;
-    const cloudDue = !!cloud && (due || cloud.last < auto.last);
+    const every = auto.every * DAY;
+    const due = !!auto.folder && (force || now - auto.last >= every);
+    // Without a folder, the server's go by themselves, as often.
+    const cloudDue = !!cloud && (due || cloud.last < auto.last || (!auto.folder && (force || now - cloud.last >= every)));
     if (!due && !cloudDue) return { auto, cloud };
     try {
       let hard = auto.hard;
@@ -131,19 +138,20 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
         auto = { ...auto, key: toBase64(await hardBackupKey(fromBase64(auto.key), fresh)), hard };
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      // With the phone's SMS, when the owner wants them (lib/backup-sms.ts).
-      const sms = await phoneSmsForBackup();
+      // With the phone's SMS, when the owner wants them (lib/backup-sms.ts), and the phone module's settings.
+      const phoneSms = await phoneSmsForBackup();
+      const native = await phoneSettingsForBackup();
       const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...hard, salt: fromBase64(hard.salt) } };
       if (due) {
         try {
-          await writeBackup(auto.folder, await makeBackup(key, sms), now, KEEP);
+          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, native }), now, KEEP);
           auto = { ...auto, last: now, error: '' };
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      if (cloud && cloudDue) cloud = await sendToCloud(cloud, await makeBackup(key, sms, true), KEEP, now);
+      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, native, bare: true }), KEEP, now);
     } catch (error) {
       auto = { ...auto, error: errorText(error) };
       await secureSet(AUTO, JSON.stringify(auto));

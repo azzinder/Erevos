@@ -17,10 +17,14 @@ import type { Browser } from './web-permission-checks';
 // maker, let Erevos do, read again after each new version, since an update, the maker's battery
 // settings or the owner may have taken some away. A friend's Huawei rang only once Erevos was
 // opened. What it reads stays on the phone; each button opens Android's own question or screen.
-// The web app's is lib/permissions.web.ts.
+// After a backup is restored it shows once more, whatever it finds: what Android allows, and which
+// app is the phone's for calls and SMS, stay with each phone and come with no backup. The web
+// app's is lib/permissions.web.ts.
 
 const SEEN_KEY = 'erevos.permissions-seen';
 const MAKER_KEY = 'erevos.permissions-maker';
+// What SEEN_KEY says after a restore, till the check shows.
+const RESTORED = 'restored';
 
 const SDK = Platform.OS === 'android' ? Number(Platform.Version) : 0;
 
@@ -52,11 +56,12 @@ export async function readChecks(of: Iterable<Module> = modulesOn()): Promise<Ch
 let offered = false;
 
 /**
- * Whether the check should show by itself now: once for each version installed, and only when
- * calls and messages in the background need something. Asked once each start; checksOffered
- * then counts it as seen, so "back" waits for the next version.
+ * Whether the check should show by itself now, and why: once for each version installed, and only
+ * when calls and messages in the background need something ('update'); and once after a backup
+ * was restored, whatever they need ('restore'). Asked once each start, and again after a restore;
+ * checksOffered then counts it as seen, so "back" waits for the next version.
  */
-export async function offerChecks(): Promise<boolean> {
+export async function offerChecks(): Promise<false | 'update' | 'restore'> {
   if (!HAS_CHECKS || offered) return false;
   offered = true;
   const seen = await secureGet(SEEN_KEY).catch(() => null);
@@ -64,13 +69,21 @@ export async function offerChecks(): Promise<boolean> {
   // Android's own question whether Erevos may show notices, put as the space opened, is answered
   // first: the screen then shows what was chosen, not over the question.
   await noticesAsked();
+  if (seen === RESTORED) return 'restore';
   const [rings, checks] = await Promise.all([loadRingInBackground(), readChecks()]);
   // Nothing to show this version: not looked at again until the next.
   if (!offerFor(seen, INSTALLED, rings, checks)) {
     await checksOffered();
     return false;
   }
-  return true;
+  return 'update';
+}
+
+/** A backup was restored here: the check shows the next time a space opens (offerChecks). */
+export async function offerChecksAfterRestore(): Promise<void> {
+  if (!HAS_CHECKS) return;
+  await secureSet(SEEN_KEY, RESTORED).catch(() => undefined);
+  offered = false;
 }
 
 /** The check showed for the installed version. */

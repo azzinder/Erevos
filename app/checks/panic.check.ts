@@ -40,7 +40,7 @@ test('on a computer and on Sailfish OS the shell wipes: only by the page with it
   const wipe = desktop.slice(desktop.indexOf('async function wipe('), desktop.indexOf('function handle('));
   assert.match(wipe, /request\.method !== 'POST'/);
   assert.match(wipe, /chosenFolders\(\)\.includes\(where\)/, 'backups only in a folder chosen for them');
-  assert.match(wipe, /if \(!BACKUP\.test\(name\)\) continue;/, 'only the files Erevos named');
+  assert.match(wipe, /if \(!isBackupFile\(name\)\) continue;/, "only the files Erevos named, a backup's and its parts'");
   assert.match(wipe, /'secrets\.json', 'files'/);
   assert.match(wipe, /clearStorageData\(\)/);
   assert.match(wipe, /app\.relaunch\(\)/);

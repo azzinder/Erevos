@@ -34,6 +34,8 @@ const t = (name: string, fn: () => Promise<void>) =>
   });
 
 const piece = () => randomBytes(NOSTR_PIECE);
+// A phone with no photos, files or voice messages: a backup of it has no parts.
+const noParts = async (): Promise<string> => assert.fail('no parts');
 const place = (holder: PiecePlace['holder'], space: number): PiecePlace => ({ holder, space, key: randomBytes(32) });
 
 // Whether `needle` lies anywhere in what the app keeps, outside the keystore.
@@ -188,7 +190,7 @@ t('a backup holds each place’s pieces with their pages, and restored they are 
   const sealed = piece();
   await keepPiece(hidden, wrapPiece(sealed));
   store.set('erevos.space-keys', '[]');
-  const backup = await makeBackup(await backupKey('backup-pass', randomBytes(16), 1000));
+  const backup = await makeBackup(await backupKey('backup-pass', randomBytes(16), 1000), { parts: noParts });
   const pages = [...blobs.keys()];
   files.clear();
   blobs.clear();

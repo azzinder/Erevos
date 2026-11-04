@@ -14,7 +14,9 @@
  *   /__file?name=…             the app's own files, already sealed by the app, in the folder files/
  *   /__files?prefix=…          their names
  *   /__folder                  asks for a folder for backups and remembers it (folders.json)
- *   /__backup?folder=&name=&keep=  writes a backup there, deleting older ones but the newest `keep`
+ *   /__backup?folder=&name=&keep=  a backup's files there, its own and its parts' (backups.js):
+ *                              GET lists or reads them, PUT writes one, deleting older backups
+ *                              but the newest `keep` with their parts, DELETE deletes one
  *   /__pick?most=…             asks for a file to open (a backup, a chat export) and gives its bytes
  *   /__save?name=…             asks where to save a photo or file from a chat and writes it there
  *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
@@ -37,9 +39,9 @@
  *   /__wipe?backups=&folder=   the panic button (app/lib/panic.ts): POST deletes everything the
  *                              app keeps (secrets.json, files/, the page's own storage, the rest
  *                              of its data folder), with backups=1 the backups Erevos named in
- *                              `folder` too, when it was chosen for them; then Erevos starts again
- *                              as if just installed. The Keychain or keyring item stays: its key
- *                              alone opens nothing, as what it sealed is gone.
+ *                              `folder` too, with their parts, when it was chosen for them; then
+ *                              Erevos starts again as if just installed. The Keychain or keyring
+ *                              item stays: its key alone opens nothing, as what it sealed is gone.
  * The app's data is in the folder Electron gives it (~/.config/Erevos, on a Mac
  * ~/Library/Application Support/Erevos, on Windows %APPDATA%\Erevos). The page is also told, in its
  * address, which package it runs from (#erevos-system=…), so Check for updates names the file to take.
@@ -62,6 +64,7 @@ const { app, BrowserWindow, Menu, Notification, Tray, dialog, nativeImage, net, 
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { backupRequest, isBackupFile } = require('./backups');
 const { Lan } = require('./lan');
 
 const ORIGIN = 'app://erevos';
@@ -306,22 +309,8 @@ async function folder() {
   return Response.json({ path: chosen });
 }
 
-const BACKUP = /^erevos-backup-[0-9-]+\.erevos$/;
-
-async function backup(request, url) {
-  const where = url.searchParams.get('folder');
-  const name = url.searchParams.get('name');
-  const keep = Number(url.searchParams.get('keep') ?? 0);
-  if (!where || !chosenFolders().includes(where)) return new Response('That folder was not chosen for backups.', { status: 403 });
-  if (!name || !BACKUP.test(name)) return new Response('bad name', { status: 400 });
-  if (!fs.existsSync(where)) return new Response('', { status: 404 });
-  fs.writeFileSync(path.join(where, name), Buffer.from(await request.arrayBuffer()));
-  if (keep > 0) {
-    const backups = fs.readdirSync(where).filter((n) => BACKUP.test(n)).sort();
-    for (const old of backups.slice(0, Math.max(0, backups.length - keep))) fs.rmSync(path.join(where, old), { force: true });
-  }
-  return new Response(null, { status: 204 });
-}
+// A backup's files in a chosen folder, its own and its parts' (backups.js).
+const backup = (request, url) => backupRequest(request, url, chosenFolders);
 
 async function pick(url) {
   const most = Number(url.searchParams.get('most') ?? 0);
@@ -574,7 +563,7 @@ async function wipe(request, url) {
       // The folder is gone, or out of reach: nothing of Erevos's to delete there.
     }
     for (const name of names) {
-      if (!BACKUP.test(name)) continue;
+      if (!isBackupFile(name)) continue;
       try {
         fs.rmSync(path.join(where, name), { force: true });
       } catch {

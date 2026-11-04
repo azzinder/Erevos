@@ -8,9 +8,9 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // The phone's SMS and MMS in Erevos's backups (lock/backup.ts), when the owner wants them: read
 // whole from Android's store as the SMS app (modules/erevos-sms, SmsBackup.kt) into the backup,
 // sealed with its password like everything in it, and put back from one into the phone's SMS, each
-// message the phone does not have yet. The choice is kept on the phone, outside every space and out
-// of backups, as automatic backups' settings are: whichever space opens, it is the same, and the
-// SMS are the phone's, the same in every space.
+// message the phone does not have yet. The choice is kept on the phone, outside every space, as
+// automatic backups' settings are: whichever space opens, it is the same, and the SMS are the
+// phone's, the same in every space. Backups hold the choice too, with the phone's other settings.
 
 const KEY = 'erevos.backup-sms';
 const MAGIC = 'EREVOS SMS 1\n';

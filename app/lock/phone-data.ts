@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { phoneId, simsHere } from './restored';
 import { sealedFile, type Holder } from './sealed-file';
 
 // What each space keeps for the phone's calls (app/phone.tsx), sealed like its contacts
 // (sealed-file.ts): the SIM chosen for each number called. The calls themselves stay in the phone's
 // call history, where Android keeps them for every phone app; the rules that turn calls away stay
-// with Android too (lib/phone-rules.ts), as it applies them while Erevos is locked.
+// with Android too (lib/phone-rules.ts), as it applies them while Erevos is locked, and backups
+// hold them with the quick replies (lib/backup-native.ts). The SIMs are known by the ids this
+// phone gave them, which on another phone may name another SIM: they count only on the phone they
+// were chosen on (`simsOn`, lock/restored.ts), as the SMS's do (lock/sms-data.ts).
 
 export type { Holder };
 
@@ -16,11 +20,13 @@ export type NumberAccount = { number: string; account: string };
 
 export type PhoneData = {
   sims: NumberAccount[];
+  /** The phone `sims` were chosen on (lock/restored.ts phoneId), '' for those kept before it was said. */
+  simsOn: string;
 };
 
-export const EMPTY_PHONE: PhoneData = { sims: [] };
+export const EMPTY_PHONE: PhoneData = { sims: [], simsOn: '' };
 
-const FILE = 'erevos-phone';
+export const FILE = 'erevos-phone';
 const BLOCK = 4 * 1024;
 export const MAX_SIMS = 300;
 
@@ -34,10 +40,19 @@ function checked(value: unknown): PhoneData {
       .filter((n) => isText(n.number) && n.number.length > 0 && n.number.length <= 32 && isText(n.account) && n.account.length > 0 && n.account.length <= 200)
       .map((n) => ({ number: n.number as string, account: n.account as string }))
       .slice(-MAX_SIMS),
+    simsOn: isText(v.simsOn) && v.simsOn.length <= 64 ? v.simsOn : '',
   };
 }
 
 const store = sealedFile({ name: FILE, empty: EMPTY_PHONE, checked, block: BLOCK });
 
-export const loadPhoneData = store.load;
-export const savePhoneData = store.save;
+/** The space's data; SIMs chosen on another phone are none of this one's, and left out. */
+export async function loadPhoneData(holder: Holder, space: number, key: Uint8Array): Promise<PhoneData> {
+  const data = await store.load(holder, space, key);
+  return (await simsHere(data.simsOn)) ? data : { ...data, sims: [] };
+}
+
+/** Saves the space's data: its SIMs are this phone's from then on. */
+export async function savePhoneData(holder: Holder, space: number, key: Uint8Array, data: PhoneData): Promise<void> {
+  await store.save(holder, space, key, { ...data, simsOn: await phoneId() });
+}

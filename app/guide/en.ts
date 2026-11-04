@@ -171,8 +171,8 @@ A good first hour:
 **Chat with myself** is always at the top of the chats, with a pin, in every space. It is a chat with no one else in
 it: write notes, links, photos, files and voice messages to yourself, as in any chat. It goes to no one else: it stays
 encrypted in the space, and goes only to your own linked devices, end-to-end encrypted, so each has the same notes and
-reminders (see [Linked devices](#devices)). A backup takes its notes and voice messages, but not its photos and files,
-as with chats.
+reminders (see [Linked devices](#devices)). A backup takes all of it, notes, photos, files and voice messages, as
+with chats.
 
 - **A reminder:** tap **Remind me** (the orange bell beside **New chat**), write what to remind you of, pick a time
   (**In 1 hour**, **Tonight 20:00**, **Tomorrow 09:00**, or any day, hour and minute) and tap **Remind me**. It goes in
@@ -2424,8 +2424,7 @@ what the places taken away hold.
   relay; the relay is asked only how many messages came, as it counts them by the byte each one carries (see what
   the relay sees, above), never for them. Whoever sees the notice and finds nothing new in your chats may guess there
   are more. After you delete or block someone in the place, a first message from someone new, by the place's contact
-  link or QR code, makes none: it shows when you open the place. Backups do not keep it: turn it on again after
-  restoring.
+  link or QR code, makes none: it shows when you open the place. Backups keep it.
 - **Ring calls when closed** (Android): below **Say when a message comes**, while **Receive while closed** is off.
   Turned on, while the place is closed, with Erevos in the background or on any screen, a call from one of its
   contacts makes the phone ring and show "Incoming call" with no name, as a call from your other chats does. On the ringing screen, tap **Answer** or the small sign,
@@ -2437,7 +2436,7 @@ what the places taken away hold.
   same as the message notice above, so opening the space gives nothing away. The caller only rings a queue there; the
   call itself waits on the chat's own queue until the PIN opens it. A contact you have deleted can still make it ring,
   but the call can never connect. A call placed from a linked computer rings only while the hidden chats are open.
-  Backups do not keep it: turn it on again after restoring.
+  Backups keep it.
 - **A new PIN for a place** (from **Hidden chats** in **Settings**, or **New hidden chats**) starts it empty and
   replaces what was in it. To keep them and change only the PIN, open them and use **Change PIN** there. Each PIN must
   differ from the others and from the password that opens Erevos.
@@ -2482,27 +2481,29 @@ while the space is open could still read them. For a chat that must not even be 
 
 ## Backups {#backup}
 
-A backup is one file holding everything Erevos keeps on this phone: every space, with its contacts, the keys of its
-conversations, its messages, voice messages, imported chats and hidden chats, its accounts on Matrix, XMPP and Nostr,
-its Chat with myself, and the lock. Inside it each space stays sealed with its own password, and the file is sealed
-again with a password of its own. It is under **Settings** → **Data and devices** → **Backups**.
+A backup holds everything Erevos keeps on this phone: every space, with its contacts, the keys of its conversations,
+its messages, photos, files, voice messages, imported chats and hidden chats, its accounts on Matrix, XMPP and Nostr,
+its Chat with myself, the lock and the panic password, and the settings that go with you to another phone. Inside it
+each space stays sealed with its own password, and the backup is sealed again with a password of its own. Its photos,
+files and voice messages go in files of their own beside it, up to 4 MB each, whose names start as the backup's: keep
+them together. It is under **Settings** → **Data and devices** → **Backups**.
 
 1. **Make a backup:** tap **Make a backup**, choose a folder (on the phone, a memory card, or a cloud app that shows
    its folders there; on a computer, any folder), type a password for the backup twice (at least 12 characters, or
-   four words) and tap **Save**.
+   four words) and tap **Save**. In a browser the backup and its files go to the share sheet, or to the downloads: the first at once, each next one after a tap on **Save**.
 2. **Automatic backups:** choose **Every day** or **Every week**, then a folder and a password. Erevos makes one when
-   it opens and the last one is older than that, and the folder keeps the 3 newest. Under them are **Back up now**,
+   it opens and the last one is older than that, and the folder keeps the 3 newest, each with its files. Under them are **Back up now**,
    **Change folder** and **Change password**; **Off** stops them, and the ones made stay in the folder.
 3. **To a server too:** on Android and in the desktop app, with automatic backups on, **Add a server** under **To a
    server too** sends each one also to a folder on a server you choose that speaks WebDAV, such as your own Nextcloud:
    give the folder's address, a user name and, best, an app password made for Erevos alone, then tap **Connect**. The
    server keeps the 3 newest; **Stop sending** stops it, and those there stay. In the web app, which makes no backups
    by itself, **Send a backup now** sends one there, with a password you type each time.
-4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, then puts the
-   backup in place of everything on the phone, and opens as it was when the backup was made, with the passwords used
-   then. **Restore from a server** looks in the folder automatic backups go to, or in one you give with its user name
-   and password, and lists the backups there, newest first: choose one, type its password, and it is restored the same
-   way.
+4. **Restore:** tap **Restore a backup**, choose the file and type its password. Erevos asks once more, finds the
+   backup's files beside it, or asks you to choose them or their folder, then puts the backup in place of everything on
+   the phone, and opens as it was when the backup was made, with the passwords used then. With one of its files missing, damaged or another backup's, Erevos says which, and nothing is changed unless you choose to restore the rest without it: then the photos, files and voice messages on the phone stay as they are, and those it holds do not come back. **Restore from a server** looks in the folder automatic
+   backups go to, or in one you give with its user name and password, and lists the backups there, newest first:
+   choose one, type its password, and it is restored the same way, with its files from there.
 
 - **Keep the backup's password:** nothing opens a backup without it, and no one can recover it. Without a password
   lock, the backup's password is all that protects it. Whoever has the file can try passwords on it as fast as their
@@ -2511,8 +2512,11 @@ again with a password of its own. It is under **Settings** → **Data and device
   folder still needs the spaces' passwords to read the chats.
 - **On a server:** the backup sent there is sealed with its password like the others, and that password never leaves
   the phone, so the server cannot open it. Its name is random and the file looks like random bytes, of one of a few
-  sizes, so neither says it is Erevos's nor tells exactly how much it holds. The server still sees your account, when
-  one comes and roughly how big it is. On Android, backups go to it as the space's choice under **Settings** → **Relay
+  sizes, so neither says it is Erevos's nor tells exactly how much it holds. Its photos, files and voice messages go
+  as uploads of their own, all of one size, each under a random name too and sealed with the backup's password, bound
+  to that backup and to their place in it, so none can be swapped, dropped or taken from another backup unseen; the
+  server keeps them with their backup and deletes them with it. Their names are as long as the backup's, but their size tells them from it, so the server can count them, and so tell roughly how much the backup holds. What a backup cut short left there is deleted before the next one goes, so a server that had no room left has some again. The server still sees your account, when one comes and
+  roughly how big it is. On Android, backups go to it as the space's choice under **Settings** → **Relay
   and networks** → **Tor** says, as Matrix does: with **Everything** only through Tor, so the server does not see the
   phone's address; with **Messages** through Tor once Tor is ready, and straight while Tor starts or when it fails;
   with **Nothing** straight, and the server sees the phone's address. A backup first waits up to two minutes for Tor
@@ -2522,8 +2526,9 @@ again with a password of its own. It is under **Settings** → **Data and device
   **Everything** through Tor, none goes from there. In the web app the server's password is kept in the browser,
   sealed with a key the browser does not give out. **Restore from a server** downloads the one you choose the same
   way, through Tor as the space says, and writes nothing there; a password typed for it is used for that restore only
-  and not kept. Through Tor a backup larger than 64 MB does not come, and straight none larger than 100 MB, the most
-  Erevos takes in any download: then download it from the server and tap **Restore a backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
+  and not kept. Through Tor no file of a backup larger than 64 MB comes, and straight none larger than 100 MB, the
+  most Erevos takes in any download: then download the backup and its files from the server and tap **Restore a
+  backup**. An Erevos from before this version does not open such a backup. Google Drive is left out on
   purpose: Google ties the file to your name, and Erevos would need Google's apps and a Google sign-in on the phone.
 - **Chats that went on after the backup:** restoring puts back each conversation's keys as they were then. Messages
   that came after the backup and were already read are not in it, and a chat that went on may stop opening new
@@ -2542,24 +2547,38 @@ again with a password of its own. It is under **Settings** → **Data and device
 - **Closed chats:** a backup also holds what **Ring calls when closed** and **Say when a message comes** of hidden
   chats, and **Also while another space is open**, need. So after a restore, on another phone too, they go on as they
   were. A backup from before this version has none of it: restoring it leaves them as the phone has them.
+- **Settings:** a backup holds the settings that are yours rather than the phone's: the language, the modules,
+  vibration, notices in the background and the number on the icon, the battery mode, screen privacy, photo quality,
+  whether the Phone opens without the password, and how Erevos reaches phones nearby (carrying their messages, the
+  same Wi-Fi, Wi-Fi Direct, Wi-Fi Aware and a LoRa radio, which comes back on only where this phone knows it). On
+  Android it also holds the Phone's quick replies and the calls it turns away, those of a group of contacts only where
+  this phone has a group of that name in the same account. Automatic backups and their server come back with their
+  password, but not their folder, which Android lets only the phone it was chosen on write in: on another phone,
+  **Backups** says to choose one, and until then they go only to the server.
 - **One phone at a time:** a backup restored on a second phone reads the same relay queues as the first, and each
   takes messages the other then never gets. Use it to move to a new phone, not to keep two.
 - **Discretion:** every space shows the same Backups screen, and a backup holds every space, so neither tells how
-  many spaces there are or whether hidden chats are set. The file's name says it is an Erevos backup, and its size
-  shows roughly how much is kept.
+  many spaces there are or whether hidden chats are set. The files' names say they are an Erevos backup, and their
+  number and size show roughly how much is kept.
 - **The phone's SMS:** on Android, **Put the SMS in backups** adds the phone's SMS and MMS to each backup from then
   on, with up to 32 MB of their pictures, while Erevos is the SMS app. They are sealed with the backup's password like
   the rest. Restoring the backup puts back into the phone's SMS each message it does not have yet, and deletes none;
   Erevos has to be the SMS app then too, or the rest is restored without them. The SMS are the phone's, the same in
   every space. An older Erevos does not open a backup that holds SMS.
-- **The SMS in order:** each space's pins, archived conversations, Trash, drafts, spam filter and marks, and how long
-  an SMS waits to be taken back are in every backup, sealed with the space's password like the rest. The SMS sent
-  later (**SMS later**) are not, so a backup restored on another phone never sends one again; nor are invites, names
-  from your contacts and the SIM chosen for each number. An older Erevos does not open a backup that holds them; one
-  made by an older Erevos restores as ever, without them.
-- **Not in a backup:** photos and files, not yet: a backup is made in the phone's memory, and they would not fit. A
-  backup restored on the same phone shows them again; on another phone they show as not on it. Also left out: the
-  count of wrong passwords, and how automatic backups are set.
+- **The SMS in order:** each space's pins, archived conversations, Trash, drafts, spam filter and marks, how long an
+  SMS waits to be taken back, the SMS to go later (**SMS later**), invites, names from your contacts, whether messages
+  to Erevos contacts may go by SMS, and the SIM chosen for each number are in every backup, sealed with the space's
+  password like the rest. The SIM chosen comes back only on the same phone, as each phone gives its SIMs ids of its own: on another, SMS and calls go on its default SIM until you choose one there. An SMS for later whose time came before the restore does not go by itself, as the phone the
+  backup came from may have sent it: it shows as not sent, and a tap on it sends it or deletes it. One still to come
+  goes at its time. An older Erevos does not open a backup that holds them; one made by an older Erevos restores as
+  ever, without them.
+- **What never comes back:** what belongs to the phone itself comes with no backup, so a restore on another phone
+  cannot bring it: the fingerprint or face, whose key Android keeps in that phone's chip; the folders Erevos may write
+  in, as that of automatic backups, which Android lets it into only on the phone they were chosen on; what Android lets
+  Erevos do and which apps make calls and send SMS, which only you can allow on each phone, so after a restore on
+  Android **Permissions** opens for the modules that are on; what Android keeps for every app, as the call history and
+  its own list of blocked numbers; and the count of wrong passwords. An XMPP account comes back as a new device of
+  itself and Matrix signs in again, as above, and linked devices are not in a backup for now, as below.
 - **Linked devices** are not in a backup: a link stays with the phone and the computer it was made on. After restoring
   a backup on another phone, link the computer again: on the computer, tap **Unlink this device**, then link it as the
   first time, see [Linked devices](#devices). Contacts on this version then stop writing to your computers until you
@@ -2651,8 +2670,8 @@ screen, wipes Erevos as **Wipe everything now** does. On Android, in the web app
   shaped the same after, and checks it with every password typed on the lock screen, the same way and for as long. So
   neither what the phone keeps nor how long a check takes shows whether one is set, and this screen cannot tell you
   either: if you are not sure, set it again.
-- **Only on the lock screen:** typed anywhere else Erevos asks for a password, it is only a wrong one. It is not in
-  backups: after restoring one, set it again. While wrong tries make the lock screen wait (see
+- **Only on the lock screen:** typed anywhere else Erevos asks for a password, it is only a wrong one. Backups keep
+  it as it was when they were made. While wrong tries make the lock screen wait (see
   [Password lock](#lock)), it waits too.
 
 **Why:** someone may make you open Erevos. With a panic password you can seem to give them yours, and what they would
@@ -2741,7 +2760,7 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
   messages too. Files larger than 1 GB, and those the export does not hold, stay behind, and the chat says where
   one was.
 - **Room on the phone:** while a .zip comes in, the phone needs about twice its size free, as Erevos reads a copy of it
-  and keeps the files sealed. Imported files are not in backups yet, as other files are not.
+  and keeps the files sealed. Backups hold imported files too, as other files.
 - **Only on this phone, only to read:** imported messages are never sent, so the other phone does not get them. Erevos
   cannot show who really wrote them.
 - **Notices and calls** from the other app are left out, and the chat says how many.
@@ -3049,8 +3068,8 @@ send changed code. Erevos does not take that code on trust:
   browser does not let Erevos read battery saving or Low Power Mode, so those are not there. After each new signed
   release it opens by itself when something messages, calls or the data need is missing. In another browser (Chrome,
   Firefox) it is the same, with that browser's settings.
-- **Backups** are made by hand: **Make a backup** saves the file through the share sheet (Files, iCloud Drive or
-  another app). A browser gives out a file only after a tap, so there are no automatic backups.
+- **Backups** are made by hand: **Make a backup** saves the backup and its files through the share sheet (Files,
+  iCloud Drive or another app). A browser gives out a file only after a tap, so there are no automatic backups.
 - **Voice messages** recorded on an iPhone are AAC; they play everywhere.
 - **Apple** makes Safari and could change it, as with any app on an iPhone.
 
@@ -3246,9 +3265,9 @@ Erevos says plainly what it protects and what it does not, yet.
 | **Message history** | Kept on the phone, sealed in its space, with no limit, in same-size pages mixed for all spaces. Only how much it all takes shows, not which space it belongs to. Deleting on both phones, and disappearing messages, rely on the other phone's Erevos. | |
 | **Nearby messages** | Open only in the space that has the contact. One for another space waits in memory, six hours at most, until that space opens. One for hidden chats opens only while they are open, or receive while closed, and the space never learns that one of their contacts is near. | |
 | **Voice messages** | End-to-end encrypted through the relay or nearby, in pieces: the relay, or whoever listens nearby, can tell roughly how long each is. Each sound is sealed in a file of its own; how many files there are, and their sizes, show roughly how many are kept, not in which space. Unsealed in the cache only while it plays. | Sound files all of one size. |
-| **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Not in backups yet. | Backups that hold them. |
+| **Photos and files** | End-to-end encrypted, through the relay's file store, in pieces of one size: the relay sees how many and when, so roughly how big. Your relay sees your address, as for messages; the contact takes them through their own relay. Photos lose their place, phone and time, unless sent as a file; a file keeps what it says inside. Sealed on the phone in their pieces, shown from memory. Saved copies are outside Erevos. Backups hold them, sealed with the backup's password, in files of their own. | |
 | **On a computer** | Sealed as on the phone, in the app's own folder. Its keystore is sealed with the system's keyring (on Windows, your account's key); on a Linux system without one, Erevos keeps nothing unless started with \`--plain-secrets\`, and then keeps it as it is. | |
-| **Backups** | One file sealed with its own password, holding every space as it is sealed on the phone. Its name says it is an Erevos backup, and its size shows roughly how much is kept. Automatic backups keep their password on the phone. Sent to a server only once you add one: random bytes under a random name, of a padded size; the server sees your account and when, and your address unless it goes through Tor. | |
+| **Backups** | Sealed with their own password, holding every space as it is sealed on the phone, its photos, files and voice messages in files of their own beside the backup. Their names say they are an Erevos backup, and their number and size show roughly how much is kept. Automatic backups keep their password on the phone. Sent to a server only once you add one: random bytes under random names, of padded sizes; the server sees your account and when, and your address unless it goes through Tor. | |
 | **Marks ✓✓ and ✓✓✓** | The contact's phone learns when yours got and read their messages, encrypted. In a group that is not public, so does the phone of whoever sent the message. The relay, or whoever listens nearby, sees one more small message. | A switch to stop telling when you read. |
 | **Fingerprint or face (Android)** | Off unless turned on. Opens only the first password's space: its key sealed in the Android Keystore, usable only right after a strong fingerprint or face check, and dropped when they change. Someone who holds you can use your finger. | |
 | **Notices (Android)** | In the background: "Erevos – Ready for calls and messages" (not on the lock screen), "Incoming call" or "Incoming video call" – "Open Erevos to answer", and "New message" or how many came; when Android or the password stops it, "Closed by Android" or "Locked" – "Open it to receive calls and messages again"; a reminder, "Reminder" or how many; a new version, "Erevos X is out". Never who or what. On a locked phone the one for messages says only "Erevos". Hidden chats that may say so show the same notice, counted with the rest: whoever sees it and finds nothing new may guess there are more. As the phone app, the notice of a phone call names who calls, over the lock screen too, as every phone app's does, but never by a name only hidden chats know: a call from one of their contacts shows the number. | |

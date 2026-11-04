@@ -42,6 +42,8 @@ const person = (given: string, number = ''): Fields => ({ ...EMPTY_FIELDS, given
 const hiddenPlace = (key: Uint8Array) => ({ space: 0, pocket: 1, key, erevos: () => [], messages: () => [], open: () => undefined, takeName: async () => '' });
 
 const IDENTITY = 'ab'.repeat(32);
+// A phone with no photos, files or voice messages: a backup of it has no parts.
+const noParts = async (): Promise<string> => assert.fail('no parts');
 
 t('a contact is kept sealed in its space, and changed in place', async () => {
   const key = randomBytes(32);
@@ -180,9 +182,9 @@ t('a backup holds the sealed contacts, and leaves the file out when there is non
   setCurrentSpace(0, key);
   store.set('erevos.lock', 'x');
   const password = await backupKey('backup password');
-  const before = await openBackup(await makeBackup(password), 'backup password');
+  const before = await openBackup(await makeBackup(password, { parts: noParts }), 'backup password');
   assert.ok(!before.entries.some((e) => e.name === FILE), 'older versions still open it');
   await saveSealed(spacePlace(), null, person('Eleni'));
-  const after = await openBackup(await makeBackup(password), 'backup password');
+  const after = await openBackup(await makeBackup(password, { parts: noParts }), 'backup password');
   assert.ok(after.entries.some((e) => e.name === FILE));
 });

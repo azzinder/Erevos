@@ -262,4 +262,7 @@ export const parts: Record<string, string> = {
   'could not connect': 'n’a pas abouti',
   'they were in another call': 'déjà en appel',
   'not answered': 'sans réponse',
+  'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Seuls {given} des {all} fichiers sont allés dans les téléchargements : ils ne sont donc pas tous enregistrés.',
+  'Save the files': 'Enregistrer les fichiers',
+  '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} des {all} fichiers sont allés dans les téléchargements. Touche Enregistrer pour le suivant : {name}',
 };

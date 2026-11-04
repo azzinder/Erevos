@@ -12,7 +12,7 @@ import { moduleNames } from '../components/module-texts';
 import { Card, Page, SectionTitle, Text } from '../components/ui';
 import { backgroundState } from '../lib/background';
 import { plural, t } from '../lib/i18n';
-import { moduleList } from '../lib/modules';
+import { moduleList, modulesOn } from '../lib/modules';
 import { lacking, makerOf, type Check } from '../lib/permission-checks';
 import { HAS_CHECKS, readChecks } from '../lib/permissions';
 import { space } from '../theme/colors';
@@ -22,7 +22,9 @@ import { space } from '../theme/colors';
 // why it matters and the button that asks for it. In the web app, what the browser lets it do
 // (lib/permissions.web.ts), with the browser's own question, or where its setting is. Only what
 // the modules on use (lib/modules.ts); or, with `for`, what the modules just turned on use
-// (app/modules.tsx), as the first start's setup asked for it (components/setup.tsx).
+// (app/modules.tsx), as the first start's setup asked for it (components/setup.tsx). After a
+// backup was restored on Android (`after` restore), all of it for the modules on, with which app
+// is the phone's for calls and SMS: they stay with each phone, and no backup holds them.
 
 const WEB = Platform.OS === 'web';
 
@@ -31,6 +33,8 @@ export default function PermissionsScreen() {
   const [checks, setChecks] = useState<Check[] | null>(null);
   const maker = makerOf(backgroundState()?.maker);
   const only = useMemo(() => moduleList(turned), [turned]);
+  const restored = after === 'restore';
+  const roles = only.length ? only : restored ? modulesOn() : [];
 
   const read = useCallback(() => {
     void (only.length ? readChecks(only) : readChecks())
@@ -60,7 +64,14 @@ export default function PermissionsScreen() {
           </Text>
         </Card>
       ) : null}
-      {only.length ? <DefaultAppCards modules={only} /> : null}
+      {restored && !only.length ? (
+        <Card>
+          <Text tone="muted" style={hint}>
+            {t('A backup was just restored. What Android lets Erevos do, and which apps make calls and send SMS, stay with each phone and come with no backup: this is what the modules on need on this phone.')}
+          </Text>
+        </Card>
+      ) : null}
+      {roles.length ? <DefaultAppCards modules={roles} /> : null}
       <Card>
         {WEB ? (
           <>

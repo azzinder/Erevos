@@ -71,4 +71,58 @@ export const cloudBackup: Record<string, string> = {
   "In a browser this works only with a server set to let the web app in (CORS), which Nextcloud is not as it comes. The desktop app and Android need nothing of it.":
     "U pregledniku ovo radi samo sa serverom podešenim da pusti web aplikaciju (CORS), što Nextcloud sam po sebi nije. Aplikacija za računar i Android ne trebaju ništa od toga.",
   "A backup larger than {size} MB does not come from a server. Download it from the server and tap Restore a backup.": "Rezervna kopija veća od {size} MB ne stiže sa servera. Preuzmite je sa servera i dodirnite Vrati rezervnu kopiju.",
+  "Automatic backups need a folder on {device}: choose one.":
+    "Automatskim rezervnim kopijama treba folder na {device}: izaberite jedan.",
+  "Sent a backup to {server}.":
+    "Rezervna kopija poslana na {server}.",
+  "Making the backup: photos, files and voice messages, {percent}%…":
+    "Pravi se rezervna kopija: fotografije, datoteke i glasovne poruke, {percent}%…",
+  "Putting back photos, files and voice messages: {percent}%…":
+    "Vraćaju se fotografije, datoteke i glasovne poruke: {percent}%…",
+  "Choose the files":
+    "Izaberi datoteke",
+  "Choose the folder":
+    "Izaberi folder",
+  "No folder on {device} yet":
+    "Još nema foldera na {device}",
+  "These automatic backups came with a backup made on another device, with their password; the folder they went to stays with that device. Choose a folder here, and they go on into it.":
+    "Ove automatske rezervne kopije stigle su s rezervnom kopijom napravljenom na drugom uređaju, zajedno sa svojom lozinkom; folder u koji su išle ostaje uz taj uređaj. Izaberite folder ovdje i one nastavljaju u njega.",
+  "Until then they go only to the server.":
+    "Do tada idu samo na server.",
+  "Choose a folder":
+    "Izaberi folder",
+  "What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.":
+    "Ono što ostaje uz svaki uređaj i ne dolazi ni s jednom rezervnom kopijom: otisak prsta, folderi u koje Erevos smije pisati, ono što mu telefon dozvoljava i koje aplikacije obavljaju pozive i šalju SMS. XMPP račun se vraća kao novi uređaj samog sebe, a Matrix traži da se ponovo prijavite.",
+  "Its photos, files and voice messages are in {n} more file beside it, with the same start: keep them together.":
+    "Njene fotografije, datoteke i glasovne poruke su u još {n} datoteci pored nje, s istim početkom imena: držite ih zajedno.",
+  "Its photos, files and voice messages are in {n} more files beside it, with the same start: keep them together.":
+    "Njene fotografije, datoteke i glasovne poruke su u još {n} datoteci pored nje, s istim početkom imena: držite ih zajedno. | Njene fotografije, datoteke i glasovne poruke su u još {n} datoteke pored nje, s istim početkom imena: držite ih zajedno. | Njene fotografije, datoteke i glasovne poruke su u još {n} datoteka pored nje, s istim početkom imena: držite ih zajedno.",
+  "A file of this backup is not there: {name}.":
+    "Jedna datoteka ove rezervne kopije nije tu: {name}.",
+  "{n} files of this backup are not there, {name} among them.":
+    "{n} datoteka ove rezervne kopije nije tu, među njima {name}. | {n} datoteke ove rezervne kopije nisu tu, među njima {name}. | {n} datoteka ove rezervne kopije nije tu, među njima {name}.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, s istim početkom imena. Izaberite je.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, s istim početkom imena. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteke pored nje, s istim početkom imena. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteka pored nje, s istim početkom imena. Izaberite ih sve.",
+  "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje. Izaberite folder u kojem je rezervna kopija.",
+  "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje. Izaberite folder u kojem je rezervna kopija. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteke pored nje. Izaberite folder u kojem je rezervna kopija. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteka pored nje. Izaberite folder u kojem je rezervna kopija.",
+  "A file of this backup is missing: {name}. Nothing was changed.":
+    "Nedostaje datoteka ove rezervne kopije: {name}. Ništa nije promijenjeno.",
+  "A file of this backup is damaged, or belongs to another backup: {name}. Nothing was changed.":
+    "Datoteka ove rezervne kopije je oštećena ili pripada drugoj rezervnoj kopiji: {name}. Ništa nije promijenjeno.",
+  "A file of this backup is damaged, or belongs to another backup: {name}.":
+    "Datoteka ove rezervne kopije je oštećena ili pripada drugoj rezervnoj kopiji: {name}.",
+  "Restore everything else without it? The photos, files and voice messages on {device} stay as they are, and those it holds do not come back.":
+    "Vratiti sve ostalo bez nje? Fotografije, datoteke i glasovne poruke na {device} ostaju kakve jesu, a one koje ona sadrži se ne vraćaju.",
+  "Restore everything else without them? The photos, files and voice messages on {device} stay as they are, and those they hold do not come back.":
+    "Vratiti sve ostalo bez njih? Fotografije, datoteke i glasovne poruke na {device} ostaju kakve jesu, a one koje one sadrže se ne vraćaju. | Vratiti sve ostalo bez njih? Fotografije, datoteke i glasovne poruke na {device} ostaju kakve jesu, a one koje one sadrže se ne vraćaju. | Vratiti sve ostalo bez njih? Fotografije, datoteke i glasovne poruke na {device} ostaju kakve jesu, a one koje one sadrže se ne vraćaju.",
+  "Restore the rest":
+    "Vrati ostalo",
+  "Restored without {n} file of the backup, {name}: the photos, files and voice messages in it did not come back.":
+    "Vraćeno bez {n} datoteke rezervne kopije, {name}: fotografije, datoteke i glasovne poruke u njoj nisu se vratile.",
+  "Restored without {n} files of the backup, {name} among them: the photos, files and voice messages in them did not come back.":
+    "Vraćeno bez {n} datoteke rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile. | Vraćeno bez {n} datoteke rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile. | Vraćeno bez {n} datoteka rezervne kopije, među njima {name}: fotografije, datoteke i glasovne poruke u njima nisu se vratile.",
 };
