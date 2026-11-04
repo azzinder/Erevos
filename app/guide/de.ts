@@ -3140,6 +3140,16 @@ Text immer gut lesbar ist, auch auf Glas.
   oder dunkel. Jedes Tippen öffnet, was sein Symbol nennt, auch wenn Erevos gerade ein anderes davon zeigte. Die Farbe
   gehört dem Telefon, nicht jedem Bereich, da die Symbole erscheinen, bevor Erevos entsperrt ist. Nach einer Änderung
   nehmen manche Launcher das Symbol vom Startbildschirm: Füge es aus der App-Liste wieder hinzu.
+- **Punkte und Zahlen auf den Symbolen** (Android): Android gibt den Punkt oder die Zahl einer Meldung der App, nicht
+  einem ihrer Symbole. Auf den meisten Launchern, etwa denen von Pixel und GrapheneOS, dem von Samsung, dem von Xiaomi
+  und Kvaesitso, zeigt sich daher jede Meldung von Erevos (eine Nachricht, eine SMS, ein Anruf, ein Geburtstag) gleich
+  auf den Symbolen Erevos, Telefon, SMS und Kontakte; dort kann Erevos das nicht ändern. Soll der Punkt nur für manche
+  Meldungen bleiben, schalte ihn für die anderen in den Android-Einstellungen für die Benachrichtigungen von Erevos
+  aus, wo jede Art von Meldung einen eigenen Schalter hat. Die Launcher von Huawei und Honor nehmen eine Zahl für
+  jedes Symbol: Dort zeigt, mit **Einstellungen** → **Benachrichtigungen** → **Zahl auf dem Symbol** → **Zahl
+  zeigen**, das Symbol von Erevos selbst die Nachrichten, die seine Meldung zählt, das SMS-Symbol die ungelesenen SMS,
+  das Telefon-Symbol die verpassten Anrufe und das Kontakte-Symbol einen Geburtstag heute, jede Zahl nur auf ihrem
+  eigenen Symbol.
 - **Taschenrechner anstelle von Erevos** (Android, unter **Startbildschirm-Symbole**): Ein Taschenrechner, der
   funktioniert, erscheint unter den Apps des Telefons statt des Symbols von Erevos. Tippe auf **Taschenrechner an
   seine Stelle setzen**, gib einen Code aus 4 bis 12 Ziffern zweimal ein und tippe auf **Speichern**. Öffne von da an

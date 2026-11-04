@@ -25,6 +25,18 @@ On main, not released yet:
   off. Now `CallService` also starts the call screen itself while the phone is locked or its screen off, or when the
   notice cannot show. A call that Do Not Disturb holds back, or that a screening app silenced, still comes quietly. The
   notice also gives Android the caller's number, so that Do Not Disturb lets the notice of a call it lets ring show.
+- **A number on each icon, on Huawei and Honor**: every notice of Erevos showed its dot or number on all four of its
+  icons (reported on the Pixel and Kvaesitso). Launchers give a notice to the app, not to one of its icons: Android's
+  Launcher3 (Pixel, GrapheneOS, LineageOS) looks it up by package (`PopupDataProvider.getDotInfoForItem`), with only a
+  pinned shortcut matched by the notice's shortcut id, Kvaesitso by package too (`NotificationBadgeProvider`), and
+  Samsung's and Xiaomi's count an app's notices; no notice can name a launcher activity. Huawei's and Honor's launchers
+  instead take a number for one icon at a time (`change_badge`, by the icon's activity). Erevos now tells them, as the
+  widget counts (`IconNumbers.kt` in `erevos-widget`): on the icon of Erevos that is on, the messages its notice counts,
+  on SMS's the SMS and MMS not read, on Phone's the missed calls the call history marks new, on Contacts's a birthday
+  notice that shows; none on an icon that is off or on the calculator, and none with **Number on the icon** off. Only
+  to that launcher, a system app, while it is the phone's own and in use. It takes their `CHANGE_BADGE` permission,
+  granted at install without asking, and has Android 11 and later let Erevos see which launcher is in use. Other
+  launchers stay as they were: the guide says so, and how to keep the dot for some notices only.
 
 ### Under the hood
 

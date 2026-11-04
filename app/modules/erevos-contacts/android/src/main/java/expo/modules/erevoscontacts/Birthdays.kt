@@ -51,7 +51,17 @@ internal object Birthdays {
     } else {
       arm(context)
       context.getSystemService(NotificationManager::class.java)?.cancel(NOTICE)
+      recount(context)
     }
+  }
+
+  // The number on the Contacts icon, on the launchers that show one on each icon apart (erevos-widget
+  // IconNumbers.kt), counts again, told by its class name as the widget is: the notice came or went.
+  private fun recounting(context: Context) =
+    Intent("expo.modules.erevoswidget.REFRESH").setClassName(context.packageName, "expo.modules.erevoswidget.ErevosWidget")
+
+  private fun recount(context: Context) {
+    runCatching { context.sendBroadcast(recounting(context)) }
   }
 
   private fun alarm(context: Context): PendingIntent {
@@ -163,10 +173,12 @@ internal object Birthdays {
       .setVisibility(Notification.VISIBILITY_PRIVATE)
       .setPublicVersion(public)
       .setContentIntent(tap)
+      .setDeleteIntent(PendingIntent.getBroadcast(context, NOTICE, recounting(context), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT))
       .setAutoCancel(true)
       .build()
     try {
       notifications.notify(NOTICE, notice)
+      recount(context)
     } catch (_: SecurityException) {
       // Notifications are not allowed: the birthday shows in Contacts.
       Log.i(TAG, "A birthday notice was not allowed")

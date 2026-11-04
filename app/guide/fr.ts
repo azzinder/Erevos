@@ -3110,6 +3110,16 @@ pour que le texte se lise toujours bien, sur le verre aussi.
   La couleur est celle du téléphone, pas de chaque espace, car les icônes s’affichent avant qu’Erevos soit déverrouillé.
   Après un changement, certains lanceurs retirent l’icône de l’écran d’accueil : ajoute-la de nouveau depuis la liste
   des applis.
+- **Points et nombres sur les icônes** (Android) : Android donne le point ou le nombre d’une notification à l’appli,
+  pas à l’une de ses icônes ; sur la plupart des lanceurs, comme ceux des Pixel et de GrapheneOS, celui de Samsung,
+  celui de Xiaomi et Kvaesitso, chaque notification d’Erevos (un message, un SMS, un appel, un anniversaire) s’affiche
+  donc à l’identique sur les icônes Erevos, Téléphone, SMS et Contacts, et Erevos n’y peut rien changer. Pour garder
+  le point pour certaines notifications seulement, désactive-le pour les autres dans les réglages d’Android pour les
+  notifications d’Erevos, où chaque type de notification a son propre interrupteur. Les lanceurs de Huawei et d’Honor
+  acceptent un nombre pour chaque icône : là, avec **Réglages** → **Notifications** → **Nombre sur l’icône** →
+  **Afficher le nombre**, l’icône d’Erevos elle-même montre les messages que compte sa notification, celle des SMS les
+  SMS non lus, celle du Téléphone les appels manqués et celle des Contacts un anniversaire du jour, chaque nombre sur
+  sa propre icône seulement.
 - **Calculatrice à la place d’Erevos** (Android, sous **Icônes du lanceur**) : une calculatrice qui fonctionne
   apparaît parmi les applis du téléphone à la place de l’icône d’Erevos. Appuie sur **Mettre la calculatrice à sa
   place**, saisis deux fois un code de 4 à 12 chiffres et appuie sur **Enregistrer**. Ensuite, ouvre la calculatrice,

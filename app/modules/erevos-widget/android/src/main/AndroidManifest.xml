@@ -5,6 +5,20 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The number on each launcher icon on Huawei's and Honor's own launchers (IconNumbers.kt), which
+       take it for one icon at a time: granted at install, without asking, it lets Erevos only set
+       those numbers. Other phones have no such permission and ignore it. -->
+  <uses-permission android:name="com.huawei.android.launcher.permission.CHANGE_BADGE" />
+  <uses-permission android:name="com.hihonor.android.launcher.permission.CHANGE_BADGE" />
+  <!-- Which launcher is in use, and theirs, from Android 11, which hides other apps otherwise. -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.HOME" />
+    </intent>
+    <provider android:authorities="com.huawei.android.launcher.settings" />
+    <provider android:authorities="com.hihonor.android.launcher.settings" />
+  </queries>
   <application>
     <!-- Erevos's widget on the home screen (ErevosWidget.kt): REFRESH comes from Erevos's other
          modules, by class name, as calls, SMS and messages come. -->

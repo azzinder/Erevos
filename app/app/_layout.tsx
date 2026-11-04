@@ -24,6 +24,7 @@ import { forgetLinks } from '../lib/devices';
 import { endGroupCall } from '../lib/group-calls';
 import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '../lib/hidden-ring';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
+import { iconNumberOn, onIconNumberChange } from '../lib/icon-number';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { startSmsWay } from '../lib/sms-way';
@@ -48,7 +49,7 @@ import { relayStopped, setRelayStopped } from '../lib/relay';
 import { forgetSpare } from '../lib/spare';
 import { callAudio } from '../modules/erevos-call';
 import { clearKnownNames, forgetKnownNamesAfter } from '../modules/erevos-phone';
-import { refreshWidget } from '../modules/erevos-widget';
+import { refreshWidget, setIconNumbers } from '../modules/erevos-widget';
 import { forgetSpaceGroups } from '../lib/space-groups';
 import { startPublicDoors } from '../lib/space-public-groups';
 import { applyTor, leaveTor } from '../lib/tor';
@@ -313,6 +314,14 @@ export default function RootLayout() {
     // So does the web app's notice while it is closed (pwa/sw.js).
     noticeLanguage(lang);
   }, [lang]);
+
+  // The launchers that show a number on each icon apart (Huawei's and Honor's, modules/erevos-widget)
+  // follow Number on the icon, also while Erevos is closed: told it as Erevos starts and as it changes.
+  useEffect(() => {
+    const tell = () => void iconNumberOn().then(setIconNumbers);
+    tell();
+    return onIconNumberChange(tell);
+  }, []);
 
   // The web app's notice tells of what came since Erevos was last on the screen: from nothing again
   // when it shows, and when it leaves (not when it opens in a tab out of sight).

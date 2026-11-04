@@ -9,8 +9,11 @@ import { requireOptionalNativeModule } from 'expo-modules-core';
 // SMS and messages come, and as Erevos goes to the background (app/_layout.tsx), when what was
 // read there is no longer new. On other platforms, and in an app built before this module, there
 // is none, and refreshWidget does nothing.
+// With it comes the number on each launcher icon, on the launchers that take one for each icon
+// (IconNumbers.kt: Huawei's and Honor's), counted again with the widget, with or without one on the
+// home screen; Number on the icon (lib/icon-number.ts) turns it on or off (setIconNumbers).
 
-type Native = { refresh(): void; order(): string[] | null; setOrder(order: string[]): boolean };
+type Native = { refresh(): void; order(): string[] | null; setOrder(order: string[]): boolean; setIconNumbers?(on: boolean): void };
 
 export type WidgetButton = 'phone' | 'sms' | 'messages' | 'contacts';
 /** The buttons in the order Erevos first shows them. */
@@ -43,6 +46,15 @@ export function setWidgetOrder(order: WidgetButton[]): boolean {
     return isOrder(order) ? (native?.setOrder?.(order) ?? false) : false;
   } catch {
     return false;
+  }
+}
+
+/** Number on the icon turned on or off, for the launchers that show a number on each icon apart. */
+export function setIconNumbers(on: boolean): void {
+  try {
+    native?.setIconNumbers?.(on);
+  } catch {
+    // A build from before them: no icon has a number of its own.
   }
 }
 

@@ -7,7 +7,8 @@ package expo.modules.erevoswidget
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
-/** JS API for the home-screen widget (ErevosWidget): counting again, and the order of its buttons. */
+/** JS API for the home-screen widget (ErevosWidget): counting again, and the order of its buttons;
+ *  and Number on the icon, for the launchers that take one for each icon (IconNumbers.kt). */
 class ErevosWidgetModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ErevosWidget")
@@ -23,6 +24,11 @@ class ErevosWidgetModule : Module() {
 
     Function("setOrder") { order: List<String> ->
       appContext.reactContext?.applicationContext?.let { ErevosWidget.setOrder(it, order) } ?: false
+    }
+
+    // Number on the icon turned on or off (lib/icon-number.ts).
+    Function("setIconNumbers") { on: Boolean ->
+      appContext.reactContext?.applicationContext?.let { IconNumbers.setOn(it, on) }
     }
   }
 }

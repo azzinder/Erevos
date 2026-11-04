@@ -2958,6 +2958,15 @@ perché il testo si legga sempre bene, anche sul vetro.
   quello che la sua icona nomina, anche quando Erevos mostrava un’altra di esse. Il colore è del telefono, non di ogni
   spazio, perché le icone appaiono prima che Erevos sia sbloccato. Dopo una modifica alcuni launcher tolgono l’icona
   dalla schermata Home: aggiungila di nuovo dall’elenco delle app.
+- **Punti e numeri sulle icone** (Android): Android dà il punto o il numero di una notifica all’app, non a una delle
+  sue icone, quindi nella maggior parte dei launcher, come quelli dei Pixel e di GrapheneOS, quello di Samsung, quello
+  di Xiaomi e Kvaesitso, ogni notifica di Erevos (un messaggio, un SMS, una chiamata, un compleanno) appare uguale
+  sulle icone Erevos, Telefono, SMS e Contatti; lì Erevos non può cambiarlo. Per lasciare il punto solo ad alcune
+  notifiche, disattivalo per le altre nelle impostazioni di Android per le notifiche di Erevos, dove ogni tipo di
+  notifica ha un suo interruttore. I launcher di Huawei e Honor accettano un numero per ogni icona: lì, con
+  **Impostazioni** → **Notifiche** → **Numero sull’icona** → **Mostra il numero**, l’icona di Erevos stessa mostra i
+  messaggi che conta la sua notifica, quella degli SMS gli SMS non letti, quella del Telefono le chiamate perse e
+  quella dei Contatti un compleanno di oggi, ogni numero solo sulla sua icona.
 - **Calcolatrice al posto di Erevos** (Android, sotto **Icone del launcher**): una calcolatrice che funziona compare
   tra le app del telefono al posto dell’icona di Erevos. Tocca **Metti la calcolatrice al suo posto**, scrivi due
   volte un codice da 4 a 12 cifre e tocca **Salva**. Da lì in poi apri la calcolatrice, scrivi il codice, poi **=**:

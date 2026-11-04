@@ -19,3 +19,13 @@ Expo native module for Erevos's widget on the phone's home screen. Android only.
   background.
 - **In the app's language.** Its words follow Erevos's language (the `erevos-lang` preferences); the widget's name
   in the phone's list of widgets follows the phone's.
+- **A number on each launcher icon** (`IconNumbers.kt`), where the launcher takes one for each icon: Huawei's and
+  Honor's (`change_badge` on their `…launcher.settings/badge/` provider, with the alias's class name; their
+  `CHANGE_BADGE` permission). Each time the widget counts, with or without a widget on the home screen, the icon of
+  Erevos that is on gets the messages count, SMS's the unread SMS and MMS, Phone's the missed calls, Contacts's 1
+  while the birthday notice shows (erevos-contacts sends `REFRESH` as it comes and goes, erevos-icons after a colour
+  or the calculator changes); icons that are off, and the calculator, get 0. Told only to that launcher, a system
+  app that is the default home, and only what changed since (the `erevos-icon-numbers` preferences), with the icons
+  that are on told again once per start. `setIconNumbers(on)` follows Number on the icon (lib/icon-number.ts); off, every icon gets 0. Every
+  other launcher known gives a notice to the app, not to one icon (Launcher3 and Kvaesitso look it up by package,
+  Samsung's and Xiaomi's count the app's notices): there nothing is told, and each notice shows on all four icons.

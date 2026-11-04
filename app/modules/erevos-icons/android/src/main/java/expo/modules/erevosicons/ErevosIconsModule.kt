@@ -6,7 +6,10 @@ package expo.modules.erevosicons
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -39,6 +42,7 @@ class ErevosIconsModule : Module() {
         return@Function true
       }
       show(context, icon, color)
+      recount(context)
       true
     }
 
@@ -61,6 +65,7 @@ class ErevosIconsModule : Module() {
       for (each in COLORS) {
         packages.setComponentEnabledSetting(component(context, "erevos", each), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
       }
+      recount(context)
       true
     }
 
@@ -72,6 +77,7 @@ class ErevosIconsModule : Module() {
       context.packageManager.setComponentEnabledSetting(Calculator.component(context), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
       Calculator.forgetCode(context)
       Calculator.prefs(context).edit().remove(Calculator.EREVOS_COLOR).apply()
+      recount(context)
       true
     }
   }
@@ -88,6 +94,15 @@ private fun show(context: Context, icon: String, color: String) {
     if (other == color) continue
     packages.setComponentEnabledSetting(component(context, icon, other), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
   }
+}
+
+// The icons that are on changed: on the launchers that show a number on each icon apart, the number
+// moves to the one now on, and the calculator never has one (erevos-widget IconNumbers.kt, told by its
+// class name, as the widget is), once the launcher has taken the change in.
+private fun recount(context: Context) {
+  val app = context.applicationContext
+  val intent = Intent("expo.modules.erevoswidget.REFRESH").setClassName(app.packageName, "expo.modules.erevoswidget.ErevosWidget")
+  Handler(Looper.getMainLooper()).postDelayed({ runCatching { app.sendBroadcast(intent) } }, 2_000)
 }
 
 /** The colours, in the order Appearance shows them; "dark" is the first look, a dark tile with a red mark. */

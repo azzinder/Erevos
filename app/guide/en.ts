@@ -2711,6 +2711,14 @@ always reads well, on glass too.
   names, also when Erevos showed another of them. The colour is the phone's, not each space's, as the icons show
   before Erevos is unlocked. After a change some launchers take the icon off the home screen: add it again from the
   list of apps.
+- **Dots and numbers on the icons** (Android): Android gives a notice's dot or number to the app, not to one of its
+  icons, so on most launchers, such as those of Pixel and GrapheneOS, Samsung's, Xiaomi's and Kvaesitso, each notice
+  of Erevos (a message, an SMS, a call, a birthday) shows on the Erevos, Phone, SMS and Contacts icons alike; Erevos
+  cannot change that there. To keep the dot for some notices only, turn it off for the others in Android's settings
+  for Erevos's notifications, where each kind of notice has a switch of its own. Huawei's and Honor's launchers take a
+  number for each icon: there, with **Settings** → **Notifications** → **Number on the icon** → **Show the number**,
+  Erevos's own icon shows the messages its notice counts, the SMS icon the SMS not read, the Phone icon the missed
+  calls and the Contacts icon a birthday today, each number on its own icon only.
 - **Calculator in place of Erevos** (Android, under **Launcher icons**): a calculator that works shows among the
   phone's apps instead of Erevos's icon. Tap **Put the calculator in its place**, type a code of 4 to 12 digits twice
   and tap **Save**. From then on open the calculator, type the code, then **=**: Erevos opens, asking for its password
