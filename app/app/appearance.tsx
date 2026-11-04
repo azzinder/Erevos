@@ -4,9 +4,10 @@
 
 import { useLocalSearchParams } from 'expo-router';
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, useColorScheme, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { LauncherIcons } from '../components/launcher-icons';
+import { TouchChoice } from '../components/touch-choice';
 import { WidgetOrder } from '../components/widget-order';
 import { Button, Card, Chip, Page, Row, SectionTitle, Sheet, Text, TextButton } from '../components/ui';
 import {
@@ -132,7 +133,7 @@ function PaletteTile({ choice, style, scheme, selected, onPress }: {
 }
 
 // The parts of the Appearance screen that open alone from Settings (lib/settings.ts), by their titles.
-const PARTS = { style: mark('Style and colours'), wallpaper: mark('Wallpaper'), messages: mark('Messages'), icons: mark('Launcher icons'), widget: mark('Widget') };
+const PARTS = { style: mark('Style and colours'), wallpaper: mark('Wallpaper'), messages: mark('Messages'), icons: mark('Launcher icons'), widget: mark('Widget'), touch: mark('Vibrate on touch') };
 type Part = keyof typeof PARTS;
 const partOf = (part: unknown): Part | null => (typeof part === 'string' && part in PARTS ? (part as Part) : null);
 
@@ -403,6 +404,8 @@ export function AppearanceEditor({ title, top, part = null }: { title?: string; 
       {/* The phone's launcher icons and widget: not a chat's look (Android only). */}
       {top || !shows('icons') ? null : <LauncherIcons titled={!part} />}
       {top || !shows('widget') ? null : <WidgetOrder titled={!part} />}
+      {/* Whether a touch buzzes (lib/haptics.ts): not a chat's look either. */}
+      {top || Platform.OS === 'web' || !shows('touch') ? null : <TouchChoice titled={!part} />}
 
       <Sheet visible={pickColor} onClose={() => setPickColor(false)} title={t('My color')}>
         <View style={styles.dots}>

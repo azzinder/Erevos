@@ -111,6 +111,8 @@ export const SETTINGS: SettingsGroup[] = [
       { id: 'bubbles', title: mark('Messages'), detail: mark('The shape of the message bubbles'), href: '/appearance?part=messages' },
       { id: 'icons', title: mark('Launcher icons'), detail: mark("The colours of Erevos's icons on the home screen"), href: '/appearance?part=icons', when: (place) => place.launcher },
       { id: 'widget', title: mark('Widget'), detail: mark("The widget's buttons and their order"), href: '/appearance?part=widget', when: (place) => place.widget },
+      // A short buzz for keys, Send and Enter (lib/haptics.ts).
+      { id: 'touch', title: mark('Vibrate on touch'), detail: mark('A short buzz for keys, Send and Enter'), href: '/appearance?part=touch', when: phone },
     ],
   },
   {

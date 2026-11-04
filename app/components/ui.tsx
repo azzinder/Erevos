@@ -25,6 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { radius, shape, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
+import { press, tap } from '../lib/haptics';
 import { plural, t } from '../lib/i18n';
 
 import { useGlassBlur, useGlassLift } from './glass';
@@ -196,8 +197,22 @@ export function Button({ title, onPress, onLongPress, kind = 'primary', disabled
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={disabled ? undefined : onPress}
-      onLongPress={onLongPress}
+      onPress={
+        disabled
+          ? undefined
+          : () => {
+              tap();
+              onPress();
+            }
+      }
+      onLongPress={
+        onLongPress
+          ? () => {
+              press();
+              onLongPress();
+            }
+          : undefined
+      }
       disabled={(disabled && !onLongPress) || loading}
       style={({ pressed }) => [
         {
@@ -289,7 +304,14 @@ export function Chip({ label, selected, onPress, disabled, mono, fit, count }: {
   const on = !!selected && !disabled;
   return (
     <Pressable
-      onPress={onPress}
+      onPress={
+        onPress
+          ? () => {
+              tap();
+              onPress();
+            }
+          : undefined
+      }
       disabled={disabled}
       accessibilityRole="radio"
       accessibilityLabel={count ? `${label}, ${plural(count, '{n} unread message', '{n} unread messages')}` : undefined}
@@ -359,8 +381,18 @@ export function Field({ label, hint, children }: { label?: string; hint?: string
  *  passwords for Erevos would show there is a second space, and one kept the PIN of hidden chats.
  *  It has an eye beside what is typed, which shows it, and hides it again: hidden each time the
  *  field shows anew. Shown, the keyboard still learns nothing of it, as far as the phone lets. */
-export function Input({ style, ...props }: TextInputProps) {
+export function Input({ style, onSubmitEditing, ...inputProps }: TextInputProps) {
   const colors = useColors();
+  // The keyboard's Enter, where it acts, is felt.
+  const props: TextInputProps = {
+    ...inputProps,
+    onSubmitEditing: onSubmitEditing
+      ? (event) => {
+          press();
+          onSubmitEditing(event);
+        }
+      : undefined,
+  };
   const [visible, setVisible] = useState(false);
   const secret = !!props.secureTextEntry;
   const look: StyleProp<TextStyle> = [

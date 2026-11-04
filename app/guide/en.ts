@@ -228,7 +228,7 @@ phone's own settings do. In the other languages it is named in that language and
 | Group | What is in it |
 | --- | --- |
 | **General** | **Language**, **Updates**, **Give Erevos to a phone nearby** (Android), **What's new**, **About Erevos**, **Support Erevos** and **Permissions** (Android and the web app). See Language below, [Updates](#updates) and [Erevos to a phone nearby](#give-app). |
-| **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android) and **Widget** (Android). See [Appearance](#appearance). |
+| **Appearance** | **Style and colours** (look, glass, style, theme, colours and text on coloured areas, with the preview), **Wallpaper**, **Messages** (the bubbles' shape), **Launcher icons** (Android), **Widget** (Android) and **Vibrate on touch** (Android). See [Appearance](#appearance). |
 | **Notifications** | **In the background** (Android and the computer app): receiving and ringing while Erevos is closed, and the notice for messages; on a computer, whether Erevos keeps running with its window closed. **Notifications while closed** (the web app): Web Push. **Number on the icon**: how many messages are not read, on Erevos's icon. See [On an iPhone](#iphone) and [On a computer](#desktop). |
 | **Privacy and security** | **Lock and second password** (lock when Erevos opens, the password, screen privacy, fingerprint or face, the second password), **Hidden chats** (the PINs of the 4 places), **Panic button** (with the panic password), **Calculator in place of Erevos** (Android, under Appearance), **Screenshots** (Android) and **This web app** (the web app only). See [Password lock](#lock), [Second password](#second), [Hidden chats](#hidden) and [Panic button](#panic). See also [Delete me from everywhere](#forget). |
 | **Relay and networks** | **Relay** (it opens **New chat** with **For advanced users** open), **Home relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** and **Nostr chats**. See [Chat through a relay](#relay), [Home relay](#home-relay), [Through Tor](#tor), [Through Nostr](#nostr), [Over a LoRa radio](#lora), [Matrix](#matrix), [XMPP](#xmpp) and [Chats with other Nostr apps](#nostr-chats). |
@@ -2011,6 +2011,7 @@ that title, and tapping it opens the Phone's **Settings**.
   a few seconds first; until then they only hide.
 - **Favourites:** the contacts starred in your phone's contacts, with their photos. A tap calls the contact's
   default number, or asks which when there are several and none is the default; held down, it shows them all.
+- **More for a number:** once a number is typed on the keypad, **⋯** beside it offers **Add to contacts**, **Add to an existing contact** (your contacts open: tap the one to add the number to, or make a new one), **Send an SMS** and **Copy the number**. In **Recents**, the row's calls offer the same, and **Open the contact** for a number that is one of your contacts. In **Favourites**, hold a contact down to see its numbers, each with **Send an SMS** and **Copy the number**, and **Open the contact**. With Erevos locked, the Phone only calls, and copies a number: no SMS, no changes to your contacts. Every key, **Call** and the keyboard's Enter give a short buzz; **Settings** → **Appearance** → **Vibrate on touch** turns it off. See [Appearance](#appearance).
 - **Wi-Fi calling and HD voice:** the call screen says so under the name when a call goes over Wi-Fi or with HD
   voice, and **Recents** says it for each call.
 - **Blocking:** under **Phone** → **Settings**, **Block telemarketing** blocks calls from the numbers some countries
@@ -2727,6 +2728,7 @@ always reads well, on glass too.
   **Why:** whoever glances at the phone sees a calculator, not a messenger; the password still guards what is inside.
 - **Widget** (Android): the order of the widget's four buttons, from left to right, with the widget drawn as it will
   look. Tap ↑ or ↓ to move a button; **First order** puts them back.
+- **Vibrate on touch** (Android): a short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens; never while you scroll. On unless turned off here. It is the phone's, the same in every space.
 
 ## On a computer {#desktop}
 

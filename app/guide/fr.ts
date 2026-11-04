@@ -253,7 +253,7 @@ langue et en anglais, comme **Einstellungen · Settings**, pour qu’on les trou
 | Groupe | Ce qu’il contient |
 | --- | --- |
 | **Général** | **Langue**, **Mises à jour**, **Donner Erevos à un téléphone proche** (Android), **Nouveautés**, **À propos d’Erevos**, **Soutenir Erevos** et **Autorisations** (Android et l’app web). Voir Langue ci-dessous, [Mises à jour](#updates) et [Erevos vers un téléphone proche](#give-app). |
-| **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android) et **Widget** (Android). Voir [Apparence](#appearance). |
+| **Apparence** | **Style et couleurs** (rendu, verre, style, thème, couleurs et texte sur les zones colorées, avec l’aperçu), **Fond d’écran**, **Messages** (la forme des bulles), **Icônes du lanceur** (Android), **Widget** (Android) et **Vibrer au toucher** (Android). Voir [Apparence](#appearance). |
 | **Notifications** | **En arrière-plan** (Android et l’app pour ordinateur) : recevoir et sonner quand Erevos est fermé, et la notification des messages ; sur un ordinateur, si Erevos continue de tourner fenêtre fermée. **Notifications quand l’app est fermée** (l’app web) : Web Push. **Nombre sur l’icône** : combien de messages ne sont pas lus, sur l’icône d’Erevos. Voir [Sur un iPhone](#iphone) et [Sur un ordinateur](#desktop). |
 | **Confidentialité et sécurité** | **Verrou et second mot de passe** (verrouiller à l’ouverture d’Erevos, le mot de passe, la confidentialité de l’écran, l’empreinte digitale ou le visage, le second mot de passe), **Discussions masquées** (les codes PIN des 4 emplacements), **Bouton de panique** (avec le mot de passe de panique), **Calculatrice à la place d’Erevos** (Android, dans Apparence), **Captures d’écran** (Android) et **Cette app web** (l’app web seulement). Voir [Verrou par mot de passe](#lock), [Second mot de passe](#second), [Discussions masquées](#hidden) et [Bouton de panique](#panic). Voir aussi [Me supprimer partout](#forget). |
 | **Relais et réseaux** | **Relais** (il ouvre **Nouvelle discussion** avec **Pour les utilisateurs avancés** ouvert), **Relais d’attache**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** et **Discussions Nostr**. Voir [Discuter par un relais](#relay), [Relais d’attache](#home-relay), [Par Tor](#tor), [Par Nostr](#nostr), [Par une radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) et [Discussions avec d’autres applis Nostr](#nostr-chats). |
@@ -2295,6 +2295,7 @@ montre que ce titre, et appuyer dessus ouvre les **Réglages** du Téléphone.
 - **Favoris :** les contacts avec une étoile dans les contacts de ton téléphone, avec leurs photos. Un appui appelle le
   numéro par défaut du contact, ou demande lequel quand il y en a plusieurs et qu’aucun n’est par défaut ; en appui
   long, il les montre tous.
+- **Plus pour un numéro :** dès qu’un numéro est tapé sur le clavier, **⋯** à côté propose **Ajouter aux contacts**, **Ajouter à un contact existant** (tes contacts s’ouvrent : touche celui auquel ajouter le numéro, ou crées-en un nouveau), **Envoyer un SMS** et **Copier le numéro**. Dans **Récents**, les appels de la ligne proposent la même chose, et **Ouvrir le contact** pour un numéro qui est l’un de tes contacts. Dans **Favoris**, un appui long sur un contact montre ses numéros, chacun avec **Envoyer un SMS** et **Copier le numéro**, et **Ouvrir le contact**. Avec Erevos verrouillé, le Téléphone ne fait qu’appeler et copier un numéro : pas de SMS, pas de changement dans tes contacts. Chaque touche, **Appeler** et la touche Entrée du clavier font vibrer brièvement ; **Réglages** → **Apparence** → **Vibrer au toucher** l’éteint. Voir [Apparence](#appearance).
 - **Appels Wi-Fi et voix HD :** l’écran d’appel le dit sous le nom quand un appel passe par le Wi-Fi ou en voix HD, et
   **Récents** le dit pour chaque appel.
 - **Blocage :** sous **Téléphone** → **Réglages**, **Bloquer le démarchage** bloque les appels des numéros que certains
@@ -3130,6 +3131,7 @@ pour que le texte se lise toujours bien, sur le verre aussi.
   toujours ce qu’il y a dedans.
 - **Widget** (Android) : l’ordre des quatre boutons du widget, de gauche à droite, avec le widget dessiné tel qu’il
   sera. Appuie sur ↑ ou ↓ pour déplacer un bouton ; **Ordre initial** les remet en place.
+- **Vibrer au toucher** (Android) : une brève vibration quand tu touches une touche du clavier, Envoyer, Entrée ou un interrupteur, et quand un menu s’ouvre ; jamais pendant le défilement. Activée, sauf si tu l’éteins ici. Elle est celle du téléphone, la même dans chaque espace.
 
 ## Sur un ordinateur {#desktop}
 

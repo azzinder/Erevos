@@ -236,7 +236,7 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
 | Grupa | Šta sadrži |
 | --- | --- |
 | **Općenito** | **Jezik**, **Ažuriranja**, **Daj Erevos obližnjem telefonu** (Android), **Šta je novo**, **O Erevosu**, **Podržite Erevos** i **Dozvole** (Android i web-aplikacija). Pogledajte Jezik ispod, [Ažuriranja](#updates) i [Erevos obližnjem telefonu](#give-app). |
-| **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android) i **Widget** (Android). Pogledajte [Izgled](#appearance). |
+| **Izgled** | **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama, s pregledom), **Pozadina**, **Poruke** (oblik oblačića), **Ikone u pokretaču** (Android), **Widget** (Android) i **Vibracija na dodir** (Android). Pogledajte [Izgled](#appearance). |
 | **Obavijesti** | **U pozadini** (Android i aplikacija za računar): primanje i zvonjenje dok je Erevos zatvoren, i obavijest o porukama; na računaru, ostaje li Erevos pokrenut sa zatvorenim prozorom. **Obavijesti dok je Erevos zatvoren** (web-aplikacija): Web Push. **Broj na ikoni**: koliko poruka nije pročitano, na ikoni Erevosa. Pogledajte [Na iPhoneu](#iphone) i [Na računaru](#desktop). |
 | **Privatnost i sigurnost** | **Zaključavanje i druga lozinka** (zaključavanje pri otvaranju Erevosa, lozinka, privatnost ekrana, otisak prsta ili lice, druga lozinka), **Skriveni razgovori** (PIN-ovi 4 mjesta), **Gumb za paniku** (s lozinkom za paniku), **Kalkulator umjesto Erevosa** (Android, u Izgledu), **Snimci ekrana** (Android) i **Ova web-aplikacija** (samo web-aplikacija). Pogledajte [Zaključavanje lozinkom](#lock), [Druga lozinka](#second), [Skriveni razgovori](#hidden) i [Gumb za paniku](#panic). Vidi i [Obriši me odasvud](#forget). |
 | **Relay i mreže** | **Relay** (otvara **Novi razgovor** s otvorenim **Za napredne korisnike**), **Kućni relay**, **Tor** (Android), **Nostr** (Android), **LoRa radio** (Android), **Matrix**, **XMPP** i **Nostr razgovori**. Pogledajte [Razgovor preko relaya](#relay), [Kućni relay](#home-relay), [Preko Tora](#tor), [Preko Nostra](#nostr), [Preko LoRa radija](#lora), [Matrix](#matrix), [XMPP](#xmpp) i [Razgovori s drugim Nostr aplikacijama](#nostr-chats). |
@@ -2098,6 +2098,7 @@ upišete, osim ako se Telefon otvara bez nje (pogledajte Lozinka Erevosa, ispod)
   su samo sakriveni.
 - **Favoriti:** kontakti označeni zvjezdicom u kontaktima vašeg telefona, s njihovim fotografijama. Dodir poziva
   zadani broj kontakta, ili pita koji, kad ih ima više, a nijedan nije zadani; kad zadržite prst, prikazuje sve.
+- **Više za broj:** čim se na tastaturi otkuca broj, **⋯** pored njega nudi **Dodaj u kontakte**, **Dodaj postojećem kontaktu** (otvore se tvoji kontakti: dodirni onaj kome ćeš dodati broj, ili napravi novi), **Pošalji SMS** i **Kopiraj broj**. U **Nedavnima** pozivi reda nude isto, te **Otvori kontakt** za broj koji je jedan od tvojih kontakata. U **Favoritima** drži pritisnut kontakt da vidiš njegove brojeve, svaki sa **Pošalji SMS** i **Kopiraj broj**, te **Otvori kontakt**. Dok je Erevos zaključan, Telefon samo zove i kopira broj: bez SMS-a, bez promjena u tvojim kontaktima. Svaka tipka, **Pozovi** i Enter na tastaturi kratko vibriraju; u **Postavke** → **Izgled** → **Vibracija na dodir** to isključuješ. Pogledajte [Izgled](#appearance).
 - **Wi-Fi pozivanje i HD glas:** ekran za pozive to kaže ispod imena kad poziv ide preko Wi-Fi mreže ili s HD glasom,
   a **Nedavni** to kaže za svaki poziv.
 - **Blokiranje:** pod **Telefon** → **Postavke**, **Blokiraj telemarketing** blokira pozive s brojeva koje neke zemlje
@@ -2855,6 +2856,7 @@ tekst uvijek bio dobro čitljiv, i na staklu.
   unutra.
 - **Widget** (Android): redoslijed četiri dugmeta widgeta, slijeva nadesno, s widgetom iscrtanim onako kako će
   izgledati. Dodirnite ↑ ili ↓ da pomjerite dugme; **Početni redoslijed** ih vraća.
+- **Vibracija na dodir** (Android): kratka vibracija kad dodirneš tipku na tastaturi, Pošalji, Enter ili prekidač, i kad se otvori meni; nikad dok skroluješ. Uključena je, osim ako je ovdje ne isključiš. Pripada telefonu, ista u svakom prostoru.
 
 ## Na računaru {#desktop}
 

@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Call } from '../lib/call';
 import { callPermissions } from '../lib/call-permissions';
 import { callClock } from '../lib/calls';
+import { press } from '../lib/haptics';
 import type { CallEnd } from '../lib/call-signal';
 import { t, mark } from '../lib/i18n';
 import { CallVideo } from './call-video';
@@ -167,7 +168,10 @@ export function CallScreen({ call, identity, name, encryption, speaker, onSpeake
 export function Round({ title, onPress, on = false, color }: { title: string; onPress: () => void; on?: boolean; color?: string }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        press();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityState={{ selected: on }}

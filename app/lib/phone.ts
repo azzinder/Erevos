@@ -26,6 +26,11 @@ export function typeKey(number: string, key: string): string {
   return number + key;
 }
 
+/** Whether what was typed is a number a contact or an SMS can have: digits, a + only at the start, at least three. Codes with * or # (such as *#06#) are not. */
+export function textable(number: string): boolean {
+  return /^\+?\d{3,}$/.test(dialNumber(number));
+}
+
 /** The names a space gives the numbers linked to its contacts, `{ number: name }`, for the call
  *  screen while the space is open (setKnownNames in modules/erevos-phone). A message request, not
  *  accepted yet, gives none. */

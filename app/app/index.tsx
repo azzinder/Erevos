@@ -24,6 +24,7 @@ import { canGroup, canPublicGroup, hasCore } from '../lib/core';
 import { copyNote, linkedRole } from '../lib/devices';
 import { memberName, noteText } from '../lib/groups';
 import { handOverHidden } from '../lib/hidden-handoff';
+import { press } from '../lib/haptics';
 import { lang, mark, t } from '../lib/i18n';
 import { armReminders, myNotes, onNotesChanged, writeNote, type Note } from '../lib/myself';
 import { CURRENT_BUILD } from '../lib/release-look';
@@ -477,7 +478,10 @@ function Home() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          onSubmitEditing={() => void searchSubmitted()}
+          onSubmitEditing={() => {
+            press();
+            void searchSubmitted();
+          }}
           placeholder={t('Search chats')}
           placeholderTextColor={colors.textFaint}
           style={styles.searchInput}
@@ -659,7 +663,10 @@ function Home() {
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="go"
-          onSubmitEditing={() => void openDoor()}
+          onSubmitEditing={() => {
+            press();
+            void openDoor();
+          }}
         />
         <Button title={t('Open')} onPress={() => void openDoor()} />
       </Sheet>

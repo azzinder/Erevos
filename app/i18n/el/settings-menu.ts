@@ -41,4 +41,10 @@ export const settingsMenu: Record<string, string> = {
   'Language, appearance, privacy, the relay and more': 'Γλώσσα, εμφάνιση, απόρρητο, relay και άλλα',
   'Search the settings': 'Αναζήτηση στις ρυθμίσεις',
   'No setting has “{query}” in it.': 'Καμία ρύθμιση δεν έχει «{query}».',
+  "Vibrate on touch": "Δόνηση στο άγγιγμα",
+  "A short buzz for keys, Send and Enter": "Μια σύντομη δόνηση για τα πλήκτρα, την Αποστολή και το Enter",
+  "Vibrate": "Δόνηση",
+  "No vibration": "Χωρίς δόνηση",
+  "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Μια σύντομη δόνηση όταν πατάς ένα πλήκτρο του πληκτρολογίου κλήσεων, την Αποστολή, το Enter ή έναν διακόπτη, και όταν ανοίγει ένα μενού. Ποτέ όταν κάνεις κύλιση. Ισχύει για κάθε χώρο αυτού του τηλεφώνου.",
+  "Touches make no buzz.": "Τα αγγίγματα δεν κάνουν δόνηση.",
 };

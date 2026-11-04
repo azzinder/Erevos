@@ -9,6 +9,7 @@ import { Linking, Platform, Pressable, View } from 'react-native';
 
 import { Button, Card, Page, Text, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
+import { tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { FDROID } from '../lib/distribution';
 import { CAN_GIVE, CAN_TAKE, takeFromNearby } from '../lib/give-app';
@@ -224,7 +225,10 @@ export default function UpdatesScreen() {
           {telling !== null ? (
             <>
               <Pressable
-                onPress={() => void setNoticeOn(!telling).catch(() => undefined)}
+                onPress={() => {
+                  tap();
+                  void setNoticeOn(!telling).catch(() => undefined);
+                }}
                 accessibilityRole="switch"
                 accessibilityState={{ checked: telling }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}

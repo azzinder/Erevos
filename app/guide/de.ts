@@ -251,7 +251,7 @@ nicht lesen kannst.
 | Gruppe | Was darin ist |
 | --- | --- |
 | **Allgemein** | **Sprache**, **Updates**, **Erevos an ein Telefon in der Nähe geben** (Android), **Was ist neu**, **Über Erevos**, **Erevos unterstützen** und **Berechtigungen** (Android und die Web-App). Siehe „Sprache“ weiter unten, [Updates](#updates) und [Erevos an ein Telefon in der Nähe](#give-app). |
-| **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android) und **Widget** (Android). Siehe [Darstellung](#appearance). |
+| **Darstellung** | **Stil und Farben** (Look, Glas, Stil, Thema, Farben und Text auf farbigen Flächen, mit der Vorschau), **Hintergrund**, **Nachrichten** (die Form der Blasen), **Startbildschirm-Symbole** (Android), **Widget** (Android) und **Vibration bei Berührung** (Android). Siehe [Darstellung](#appearance). |
 | **Benachrichtigungen** | **Im Hintergrund** (Android und die Computer-App): Empfangen und Klingeln, während Erevos geschlossen ist, und die Benachrichtigung für Nachrichten; auf einem Computer, ob Erevos mit geschlossenem Fenster weiterläuft. **Benachrichtigungen, wenn geschlossen** (die Web-App): Web Push. **Zahl auf dem Symbol**: wie viele Nachrichten ungelesen sind, auf dem Symbol von Erevos. Siehe [Auf einem iPhone](#iphone) und [Auf einem Computer](#desktop). |
 | **Datenschutz und Sicherheit** | **Sperre und zweites Passwort** (Sperren, wenn Erevos öffnet, das Passwort, Bildschirmschutz, Fingerabdruck oder Gesicht, das zweite Passwort), **Versteckte Chats** (die PINs der 4 Plätze), **Panikknopf** (mit dem Panik-Passwort), **Taschenrechner anstelle von Erevos** (Android, unter Darstellung), **Bildschirmfotos** (Android) und **Diese Web-App** (nur die Web-App). Siehe [Passwortsperre](#lock), [Zweites Passwort](#second), [Versteckte Chats](#hidden) und [Panikknopf](#panic). Siehe auch [Von überall löschen](#forget). |
 | **Relay und Netze** | **Relay** (es öffnet **Neuer Chat** mit geöffnetem **Für Fortgeschrittene**), **Heim-Relay**, **Tor** (Android), **Nostr** (Android), **LoRa-Funk** (Android), **Matrix**, **XMPP** und **Nostr-Chats**. Siehe [Chat über ein Relay](#relay), [Heim-Relay](#home-relay), [Über Tor](#tor), [Über Nostr](#nostr), [Über LoRa-Funk](#lora), [Matrix](#matrix), [XMPP](#xmpp) und [Chats mit anderen Nostr-Apps](#nostr-chats). |
@@ -2326,6 +2326,7 @@ auf einem kleinen Telefon zeigt sie nur diesen Titel, und ein Tippen darauf öff
 - **Favoriten:** die in den Kontakten deines Telefons mit Stern markierten Kontakte, mit ihren Fotos. Ein Tippen ruft
   die Standardnummer des Kontakts an, oder fragt, welche, wenn es mehrere gibt und keine Standard ist; gedrückt
   gehalten, zeigt es alle.
+- **Mehr zu einer Nummer:** Sobald auf der Wähltastatur eine Nummer getippt ist, bietet **⋯** daneben **Zu Kontakten hinzufügen**, **Zu bestehendem Kontakt hinzufügen** (deine Kontakte öffnen sich: tippe den, dem die Nummer hinzugefügt wird, oder lege einen neuen an), **SMS senden** und **Nummer kopieren**. In der **Anrufliste** bieten die Anrufe der Zeile dasselbe, dazu **Kontakt öffnen** für eine Nummer, die einer deiner Kontakte ist. Bei den **Favoriten** zeigt ein langes Drücken auf einen Kontakt seine Nummern, jede mit **SMS senden** und **Nummer kopieren**, dazu **Kontakt öffnen**. Bei gesperrtem Erevos ruft das Telefon nur an und kopiert eine Nummer: keine SMS, keine Änderungen an deinen Kontakten. Jede Taste, **Anrufen** und die Enter-Taste der Tastatur vibrieren kurz; unter **Einstellungen** → **Darstellung** → **Vibration bei Berührung** schaltest du das aus. Siehe [Darstellung](#appearance).
 - **WLAN-Telefonie und HD Voice:** Der Anrufbildschirm sagt es unter dem Namen, wenn ein Anruf über WLAN oder mit HD
   Voice geht, und die **Anrufliste** sagt es für jeden Anruf.
 - **Anrufe blockieren:** Unter **Telefon** → **Einstellungen** blockiert **Telemarketing blockieren** Anrufe von den
@@ -3160,6 +3161,7 @@ Text immer gut lesbar ist, auch auf Glas.
 - **Widget** (Android): die Reihenfolge der vier Tasten des Widgets, von links nach rechts, mit dem Widget so
   gezeichnet, wie es aussehen wird. Tippe auf ↑ oder ↓, um eine Taste zu verschieben; **Ursprüngliche Reihenfolge**
   stellt sie zurück.
+- **Vibration bei Berührung** (Android): ein kurzes Vibrieren, wenn du eine Taste des Wähltastenfelds, Senden, Enter oder einen Schalter antippst und wenn sich ein Menü öffnet; nie beim Scrollen. Eingeschaltet, solange du es hier nicht ausschaltest. Sie gilt für das Telefon, in jedem Bereich gleich.
 
 ## Auf einem Computer {#desktop}
 

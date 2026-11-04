@@ -239,7 +239,7 @@ inglese, come **Impostazioni · Settings**, così la trovi anche in una lingua c
 | Gruppo | Cosa contiene |
 | --- | --- |
 | **Generali** | **Lingua**, **Aggiornamenti**, **Dai Erevos a un telefono vicino** (Android), **Novità**, **Informazioni su Erevos**, **Sostieni Erevos** e **Autorizzazioni** (Android e la web app). Vedi Lingua più sotto, [Aggiornamenti](#updates) e [Erevos a un telefono vicino](#give-app). |
-| **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android) e **Widget** (Android). Vedi [Aspetto](#appearance). |
+| **Aspetto** | **Stile e colori** (finitura, vetro, stile, tema, colori e testo sulle aree colorate, con l’anteprima), **Sfondo**, **Messaggi** (la forma delle nuvolette), **Icone del launcher** (Android), **Widget** (Android) e **Vibrazione al tocco** (Android). Vedi [Aspetto](#appearance). |
 | **Notifiche** | **In background** (Android e l’app per computer): ricevere e squillare mentre Erevos è chiuso, e l’avviso dei messaggi; su un computer, se Erevos continua a funzionare con la finestra chiusa. **Notifiche ad app chiusa** (la web app): Web Push. **Numero sull’icona**: quanti messaggi non sono stati letti, sull’icona di Erevos. Vedi [Su iPhone](#iphone) e [Su un computer](#desktop). |
 | **Privacy e sicurezza** | **Blocco e seconda password** (blocco all’apertura di Erevos, la password, la privacy dello schermo, impronta o volto, la seconda password), **Chat nascoste** (i PIN dei 4 posti), **Pulsante di panico** (con la password di panico), **Calcolatrice al posto di Erevos** (Android, in Aspetto), **Screenshot** (Android) e **Questa web app** (solo la web app). Vedi [Blocco con password](#lock), [Seconda password](#second), [Chat nascoste](#hidden) e [Pulsante di panico](#panic). Vedi anche [Cancellami da ovunque](#forget). |
 | **Relay e reti** | **Relay** (apre **Nuova chat** con **Per utenti esperti** aperto), **Relay di casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** e **Chat Nostr**. Vedi [Chat tramite un relay](#relay), [Relay di casa](#home-relay), [Tramite Tor](#tor), [Tramite Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) e [Chat con altre app Nostr](#nostr-chats). |
@@ -2197,6 +2197,7 @@ telefono piccolo mostra solo quel titolo, e toccarlo apre le **Impostazioni** de
 - **Preferiti:** i contatti con la stella nei contatti del tuo telefono, con le loro foto. Un tocco chiama il numero
   predefinito del contatto, o chiede quale quando ce ne sono più di uno e nessuno è predefinito; tenuto premuto, li
   mostra tutti.
+- **Altro per un numero:** appena un numero è digitato sulla tastiera, **⋯** accanto offre **Aggiungi ai contatti**, **Aggiungi a un contatto esistente** (si aprono i tuoi contatti: tocca quello a cui aggiungere il numero, o creane uno nuovo), **Invia un SMS** e **Copia il numero**. In **Recenti**, le chiamate della riga offrono lo stesso, e **Apri il contatto** per un numero che è uno dei tuoi contatti. In **Preferiti**, tieni premuto un contatto per vedere i suoi numeri, ciascuno con **Invia un SMS** e **Copia il numero**, e **Apri il contatto**. Con Erevos bloccato, il Telefono si limita a chiamare e a copiare un numero: niente SMS, nessuna modifica ai tuoi contatti. Ogni tasto, **Chiama** e l’Invio della tastiera danno una breve vibrazione; in **Impostazioni** → **Aspetto** → **Vibrazione al tocco** la spegni. Vedi [Aspetto](#appearance).
 - **Chiamate Wi-Fi e voce HD:** la schermata di chiamata lo dice sotto il nome quando una chiamata passa via Wi-Fi o
   con la voce HD, e **Recenti** lo dice per ogni chiamata.
 - **Blocco chiamate:** in **Telefono** → **Impostazioni**, **Blocca il telemarketing** blocca le chiamate dai numeri
@@ -2976,6 +2977,7 @@ perché il testo si legga sempre bene, anche sul vetro.
   ciò che c’è dentro.
 - **Widget** (Android): l’ordine dei quattro pulsanti del widget, da sinistra a destra, con il widget disegnato come
   apparirà. Tocca ↑ o ↓ per spostare un pulsante; **Ordine iniziale** li rimette a posto.
+- **Vibrazione al tocco** (Android): una breve vibrazione quando tocchi un tasto della tastiera, Invia, Invio o un interruttore, e quando si apre un menu; mai mentre scorri. Attiva, a meno che tu non la spenga qui. È del telefono, uguale in ogni spazio.
 
 ## Su un computer {#desktop}
 
