@@ -1946,6 +1946,12 @@ Pozivnica je podatkovni SMS, koji aplikacije za poruke ne prikazuju, pa telefon 
 - **Fotografije (MMS):** slika ispred polja za poruku (**Fotografija**) dodaje fotografiju, smanjenu da stane u jedan
   MMS (oko 280 KB), bez ičega u njoj osim same slike. Fotografije koje stignu MMS-om prikazuju se u razgovoru. MMS je
   jednako običan kao i SMS: telefonska kompanija ga može vidjeti.
+- **Biranje primaoca:** pod **Novi SMS** dodirnite **Kontakti** da biste izabrali iz kontakata, uz pretragu, ili samo
+  ukucajte: kontakti čije ime ili broj odgovara onome što kucate prikazuju se ispod polja, a dodir ga popunjava. Kontakt
+  s više brojeva prikazuje po jedan red za svaki. Za grupu se svaki izabrani kontakt dodaje brojevima koji već postoje.
+  To su kontakti telefona i, uz otključan Erevos, oni čuvani samo u Erevosu i vaši Erevos kontakti s brojem, nikad
+  imena skrivenih razgovora. Kad su otvoreni samo SMS, prikazuju se samo kontakti telefona. Android prvo pita sme li
+  Erevos da ih čita.
 - **Grupni MMS:** pod **Postavke** → **Telefon i SMS** → **SMS** → **Novi SMS** upišite nekoliko brojeva odvojenih
   zarezima i dodirnite **Napiši**. Svaka poruka ide svima njima kao jedan MMS, pa i sam tekst, a njihovi odgovori
   stižu u isti razgovor, svaki s autorom. Svi u njemu vide svačiji broj, a telefonska kompanija vidi sve.

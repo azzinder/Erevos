@@ -1864,6 +1864,11 @@ invite is a data SMS, which messaging apps do not show, so a phone without Erevo
 - **Photos (MMS):** the picture before the message field (**Photo**) adds a photo, made smaller to fit one MMS (about 280 KB),
   with nothing in it besides the picture. Photos that come by MMS show in the conversation. An MMS is as plain as an
   SMS: the phone company can see it.
+- **Choosing a recipient:** under **New SMS**, tap **Contacts** to pick from your contacts, with a search, or just type: contacts
+  that match the name or number you type show under the field, and a tap fills it in. A contact with several numbers
+  shows one line for each. For a group, each one you pick is added to the numbers there. They are the Phone's contacts
+  and, with Erevos unlocked, those kept only in Erevos and your Erevos contacts with a number, never the names of hidden
+  chats. With only the SMS open, only the phone's contacts show. Android asks first to let Erevos read them.
 - **Group MMS:** under **Settings** → **Phone and SMS** → **SMS** → **New SMS**, type several numbers separated by
   commas and tap **Write**. Every message goes to all of them as one MMS, text alone too, and their answers come into
   the same conversation, each with who wrote it. Everyone in it sees everyone's number, and the phone company sees all

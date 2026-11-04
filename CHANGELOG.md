@@ -28,6 +28,12 @@ On main, not released yet:
 - **The calculator shows a long result from its start**: upright, a result with many decimals hid its first digits
   (the display cut a long number at its start), which showed only with the phone turned sideways. Now a long number
   gets smaller to fit, its first digits always in sight.
+- **Pick the recipient of a new SMS from your contacts**: **New SMS** (the SMS home and Settings → Phone and SMS →
+  SMS) has a **Contacts** button that opens the contacts with a search, and typing a name or number suggests the
+  contacts that match, accents and case aside. A contact with several numbers shows a line for each; for a group MMS
+  each pick is added to the numbers there. The contacts are the Phone's search's: the phone's and, with Erevos
+  unlocked, those kept only in Erevos and Erevos contacts with a number, never hidden chats'; with only the SMS open,
+  the phone's alone.
 
 ### Under the hood
 

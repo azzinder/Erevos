@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { AppState, Linking, PermissionsAndroid, Platform } from 'react-native';
 
 import { BlockedNumbers } from '../components/blocked-numbers';
+import { SmsRecipient } from '../components/sms-recipient';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { mark, plural, t } from '../lib/i18n';
 import { guessHome, smsOrderChanged } from '../lib/sms-folders';
@@ -519,9 +520,7 @@ export default function SmsSettings() {
       {shows('new') ? (
         <>
           {part ? null : <SectionTitle title={t('New SMS')} />}
-          <Field label={t('Phone number')} hint={t('For a group MMS, several numbers separated by commas.')}>
-            <Input value={number} onChangeText={setNumber} keyboardType="phone-pad" placeholder="+30 69…, +30 69…" onSubmitEditing={open} />
-          </Field>
+          <SmsRecipient value={number} onChange={setNumber} onSubmit={open} />
           <Button title={t('Write')} kind="secondary" onPress={open} />
           {note ? <Text tone="muted">{note}</Text> : null}
         </>
