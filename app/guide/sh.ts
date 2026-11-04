@@ -111,9 +111,10 @@ dok ih njihov PIN drži otvorenima.
 - **XMPP razgovori**, kad se prijavite na XMPP, nalaze se na listi na isti način, svaki označen **XMPP**, a ko traži da
   vas doda ili grupa koja vas poziva stoji na vrhu. Dugme **XMPP** pokazuje samo njih, i tamo **Novi razgovor** počinje
   XMPP razgovor: pogledajte [XMPP](#xmpp).
-- **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Dugme
-  **Nostr** prikazuje samo njih, a tamo **Novi razgovor** otvara ekran Nostr razgovora: pogledajte
-  [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
+- **Nostr razgovori**, kad prostor ima Nostr ključ, na popisu su na isti način, svaki označen s **Nostr**. Ispod
+  dugmeta **Nostr** su još dva: **Objave**, prvo, javne objave ljudi koje prati vaš Nostr ključ, najnovije prvo, kao u
+  Amethystu ili na Telegram kanalu, i **Razgovori**, samo Nostr razgovori, s brojem nepročitanih poruka. Tamo
+  **Novi razgovor** otvara ekran Nostr razgovora: pogledajte [Razgovori s drugim Nostr aplikacijama](#nostr-chats).
 - **Novi razgovor**, na dnu, otvara postavke relaya i dodavanje kontakta. **Podsjeti me**, narandžasto zvono pored
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
@@ -1844,10 +1845,10 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
 - **Razgovori:** **Novi razgovor** uzima njihov npub (ili nprofile), s njihovog profila u njihovoj aplikaciji, ili ime
   kao ime@example.org (NIP-05). **Prikaži ljude koje pratite**, ispod toga, navodi ljude koje prati vaš Nostr ključ
   (njegov javni popis praćenih, tražen i na relayima koji prikupljaju takve popise te na relayima na kojima vaš ključ
-  piše), s njihovim imenima: dodirnite jednu osobu da joj napišete. Kad nikoga ne nađe, kaže zašto, čiji je popis tražio
-  i kako je svaki relay odgovorio. Ništa se ne učitava dok ne dodirnete, a profilne slike se ne učitavaju. Razgovori su
-  i na popisu početnog ekrana, svaki označen s **Nostr**; dugme **Nostr** prikazuje samo njih, a tamo **Novi razgovor**
-  otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru ime koje vidite samo vi.
+  piše), s njihovim imenima: dodirnite jednu osobu da joj napišete. Kad nikoga ne nađe, kaže zašto, čiji je popis
+  tražio i kako je svaki relay odgovorio. Ništa se ne učitava dok ne dodirnete, a profilne slike se ne učitavaju.
+  Razgovori su i na popisu početnog ekrana, svaki označen s **Nostr**; ispod dugmeta **Nostr**, **Razgovori** prikazuju
+  samo njih, a tamo **Novi razgovor** otvara ovaj ekran. **Imenujte ih ovdje** daje razgovoru ime koje vidite samo vi.
 - **Grupe:** **Nova grupa** pravi jednu od dvoje ili više ljudi s kojima razgovarate, najviše dvadeset, s imenom ako
   želite. Nostr grupe nemaju administratore: grupa su ljudi koje njezine poruke navode, svaka poruka ide svakome od
   njih, šifrirana za svakoga, i nikoga se kasnije ne može dodati ni ukloniti; grupa s drugim ljudima je nova grupa.
@@ -1899,6 +1900,17 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   se mogu kopirati. Objava s upozorenjem o sadržaju prikazuje svoje riječi nakon dodira na **Prikaži**. Račun koji
   objavljuje samo za sve, poput računa nekog projekta, ne šalje privatne poruke: njegov razgovor ostaje prazan, a
   njegove su objave ovdje.
+- **Objave ljudi koje pratite:** na početnom ekranu, **Objave**, ispod dugmeta **Nostr**, prikazuju ono što ljudi koje
+  prati vaš Nostr ključ objavljuju za sve, i ono što su ponovo podijelili, najnovije prvo, kao u Amethystu ili na
+  Telegram kanalu: tko je napisao svaku objavu, s imenom koje je sam sebi dao i početkom i krajem svog npub-a, kada, i
+  što kaže. Još ih stiže kad se pomaknete do kraja, ili sa **Starije objave**; povucite popis prema dolje za najnovije
+  (u pregledniku, **Traži ponovo**). Dodirnite onoga tko je napisao objavu za njegove **Javne objave**, ili
+  **Pošaljite poruku** da započnete razgovor. Namijenjeno je samo čitanju, kao gore: ovdje se ne može objavljivati,
+  odgovarati ni reagirati, niti ikoga pratiti; za to koristite drugu Nostr aplikaciju s istim ključem. Vaš popis
+  praćenih, gdje ljudi s njega pišu (njihovi NIP-65 popisi) i njihove objave traže se samo dok se prikazuju **Objave**,
+  na relayima koji služe za traženje, na onima koji prikupljaju popise i na onima na kojima oni pišu, onako kako
+  određuje izbor Tora za ovaj prostor; imena samo za objave koje se prikazuju. Ništa se od toga ne čuva, a slike i
+  linkovi se ne otvaraju. Uvijek je to ključ ovog prostora, nikad vlastiti ključ skrivenih razgovora.
 - **Oznake:** jedna ✓ čim jedan od njihovih relaya prihvati poruku. NIP-17 ništa ne vraća: ni kada je njihova aplikacija
   ima, ni kada je pročitaju. Čitanje razgovora ovdje nikome ništa ne javlja.
 - **Nije anonimno:** vaš ključ isti je za sve kojima pišete, i svatko tko ima npub može mu pisati. Relayi na koje stižu

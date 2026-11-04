@@ -170,6 +170,13 @@ as it comes.
   written in by all, its reactions (one before its message), and a photo through a Blossom server
   played in the check (encrypted there, the upload signed by a one-time key, opened by the others);
   a file another app sent with a 16-byte nonce.
+- `app/checks/nostr-feed.check.ts`: the relays a page of the Nostr tab's posts is asked of, and for
+  whom; a page from what several relays sent (each event and post once, checked, a share with
+  its post, the people not followed and the future let be); paging with until that skips nothing
+  behind a relay that sent all it was asked for, and does not stop on a crowded second; then, with
+  the real core and the relays played in the checks, the space's follow list, a follow's own relay
+  asked for their posts alone, 252 people asked of in asks of 200 at most, two pages, names asked only
+  for those shown, nothing kept, and the follow list looked up again once the posts went.
 - `docs/nostr-checks/nip17-cross.ts` against nostr-tools, the library many Nostr apps are built on:
   a message Erevos wraps opens there, as the reader's and as the sender's copy; one it wraps opens
   in Erevos; npub, nsec and nprofile read the same both ways; a wrap changed on the way is refused;
@@ -207,6 +214,44 @@ is remembered only while Erevos runs. Read only, as the space's Tor way says, ne
 fetched for them, so a picture or a link shows as its address. A content warning (NIP-36) covers a
 post's words until **Show**; an answer (an `e` tag that is not a mention, NIP-10) says so.
 
+## The posts of the people followed
+
+The home list's Nostr tab has two parts (`components/nostr-feed.tsx`): **Posts**, first, as the home
+of Amethyst or a Telegram channel shows them, and **Chats**, one tap away, with how many are not read.
+**Posts** are the public posts (kind 1) and shares (kind 6) of the people the space's key follows,
+newest first, `FEED_AT_ONCE` (30) a page, more as the list comes to its end (or **Older posts**), the
+newest again when it is pulled down (**Look again** in a browser). Each shows who wrote it, by the
+name they gave themselves (kind 0) or one given here, with the start and end of their npub, its time
+and its words; a share says who shared it. Tapping who wrote one offers their **Public posts** and
+**Write to them** (a chat). Read only, as the posts of one person are.
+
+- Who: the space's newest follow list (kind 3), looked up as **Show the people you follow** does
+  (`followListOf` in `app/lib/nostr-dm-store.ts`), each time the newest page is asked; where each of
+  them writes, from their NIP-65 list (kind 10002, `writesOf`), asked for those not looked up yet, 200
+  keys an ask, two asks at once, of the relays that gather lists (purplepag.es, user.kindpag.es,
+  indexer.coracle.social) that answered, or of every relay that answered when none of those did.
+- Where (`feedRelays` in `app/lib/nostr-feed.ts`): the relays for look-ups and those that gather
+  lists (`LOOKUP_RELAYS`, `FOLLOWS_RELAYS`), for everyone; then `FEED_RELAYS_MOST` (8) of the relays
+  they write on, each for those who write there, each next one the relay that reaches the most people
+  no relay asked reaches yet. Each relay is asked once for each 200 of its people (relays limit the
+  size of a filter), two at once, `limit` 30 and `until` for an older page.
+- A page (`feedPage`): what all the relays sent, each event once and checked, a share's post too,
+  each post once (a post shared, or shared by two, shows once, at its newest share), the people not
+  followed, posts more than ten minutes ahead and shares with nothing to show let be. A relay that sent
+  as many as it was asked for may keep more, older, which could come before what another relay sent: the
+  page stops at the oldest time such a relay sent, so no post is skipped. The next page is asked until
+  the oldest second shown, that second too, and each post shows once; a page that brings nothing new
+  asks before that second, so a second with more posts than a page holds stops nothing.
+- Names: only of the people on a page, 200 keys an ask, of the same relays as the lists, and only
+  while the posts show. No profile pictures.
+- Kept: nothing. The posts are held by the screen while they show; the follow list, where they
+  write and their names, by the store for the next pages, and forgotten once the posts no longer show
+  (the other part, another tab, a search) or the space closes (`nostrDmFeedDone`). As the space's Tor
+  way says, on connections that only look up and never answer `AUTH`. Always the space's own key:
+  home never shows a hidden place's, and hidden chats have no feed.
+- Said plainly: no key yet (with the way to Nostr chats), a key that follows no one, no relay that
+  answered, no post found.
+
 ## Screens
 
 - `app/nostr-chats.tsx`, under Settings → Relay and networks → Nostr chats: making a key or bringing
@@ -228,7 +273,8 @@ post's words until **Show**; an answer (an `e` tag that is not a mention, NIP-10
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a
-  key.
+  key. Under it, **Posts** and **Chats** (above): the posts are rows of the same list, so the search
+  over it stays as it is, and a search shows the chats it finds.
 
 ## Notices
 

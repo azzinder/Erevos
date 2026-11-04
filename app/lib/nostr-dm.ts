@@ -749,8 +749,8 @@ export type NostrPost = {
 export const POSTS_AT_ONCE = 30;
 export const POST_MOST = 8000;
 
-/** A post (kind 1) as shown: its words, whether it answers another, its warning. */
-function postParts(event: NostrEvent): Pick<NostrPost, 'text' | 'answer' | 'warning'> {
+/** A post (kind 1) as shown: its words, whether it answers another, its warning (also lib/nostr-feed.ts). */
+export function postParts(event: NostrEvent): Pick<NostrPost, 'text' | 'answer' | 'warning'> {
   const answer = event.tags.some((tag) => tag[0] === 'e' && typeof tag[1] === 'string' && tag[3] !== 'mention');
   const warned = event.tags.find((tag) => tag[0] === 'content-warning');
   return {

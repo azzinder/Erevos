@@ -107,9 +107,10 @@ same whether a space has any or not: their messages can be read only while their
 - **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks to
   add you, or a group that invites you, shows at the top. The **XMPP** chip shows only them, and there **New chat**
   starts an XMPP chat: see [XMPP](#xmpp).
-- **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
-  chip shows only them, and there **New chat** opens the Nostr chats screen: see
-  [Chats with other Nostr apps](#nostr-chats).
+- **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. Under the
+  **Nostr** chip are two more: **Posts**, first, the public posts of the people your Nostr key follows, newest first,
+  as in Amethyst or a Telegram channel, and **Chats**, only the Nostr chats, with how many are not read. There
+  **New chat** opens the Nostr chats screen: see [Chats with other Nostr apps](#nostr-chats).
 - **New chat**, at the bottom, opens the relay settings and adding a contact. **Remind me**, the orange bell beside it,
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
@@ -1772,11 +1773,11 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   words that another app of your key put in your profile stay.
 - **Chats:** **New chat** takes their npub (or nprofile), from their profile in their app, or a name such as
   name@example.org (NIP-05). **Show the people you follow**, under it, lists the people your Nostr key follows (its
-  public follow list, looked for also on relays that gather such lists and on the relays your key writes on), with their
-  names: tap one to write to them. When it finds no one, it says why, whose list it looked for and how each relay
-  answered. Nothing is loaded until you tap it, and no profile
-  pictures. The chats are in the home list too, each marked **Nostr**; the **Nostr** chip shows only them, and there
-  **New chat** opens this screen. **Name them here** gives a chat a name that only you see.
+  public follow list, looked for also on relays that gather such lists and on the relays your key writes on), with
+  their names: tap one to write to them. When it finds no one, it says why, whose list it looked for and how each relay
+  answered. Nothing is loaded until you tap it, and no profile pictures. The chats are in the home list too, each
+  marked **Nostr**; under the **Nostr** chip, **Chats** shows only them, and there **New chat** opens this screen.
+  **Name them here** gives a chat a name that only you see.
 - **Groups:** **New group** makes one from two or more of the people you chat with, twenty at most, with a name if you
   like. Nostr groups have no admins: a group is the people its messages name, each message goes to each of them,
   encrypted for each, and nobody can be added or taken out later; a group with other people is a new group. **Name this
@@ -1824,6 +1825,16 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   kept. No pictures or links are opened: they show as their addresses, which can be copied. A post with a content
   warning shows its words after a tap on **Show**. An account that only posts for everyone, such as a project's, sends
   no private messages: its chat stays empty, and its posts are here.
+- **Posts of the people you follow:** on the home screen, **Posts**, under the **Nostr** chip, shows what the people
+  your Nostr key follows post for everyone, and what they shared again, newest first, as in Amethyst or a Telegram
+  channel: who wrote each post, by the name they gave themselves with the start and end of their npub, when, and its
+  words. More come as you scroll to the end, or with **Older posts**; pull the list down for the newest (in a browser,
+  **Look again**). Tap who wrote a post for their **Public posts**, or **Write to them** to start a chat. It is read
+  only, as above: nothing can be posted, answered or reacted to here, and nobody followed: use another Nostr app with
+  the same key for that. Your follow list, where the people in it write (their NIP-65 lists) and their posts are looked
+  up only while **Posts** shows, on the relays used for look-ups, on those that gather lists and on those they write
+  on, as the space's Tor way says; names only for the posts that show. Nothing of it is kept, and no pictures or links
+  are opened. It is always this space's key, never the hidden chats' own.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The

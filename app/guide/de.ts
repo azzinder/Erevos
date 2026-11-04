@@ -118,8 +118,10 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   markiert, und wer dich hinzufügen möchte oder dich in eine Gruppe einlädt, steht oben. Der Chip **XMPP** zeigt nur
   sie, und dort beginnt **Neuer Chat** einen XMPP-Chat: siehe [XMPP](#xmpp).
 - **Nostr-Chats** stehen, sobald der Bereich einen Nostr-Schlüssel hat, genauso in der Liste, jeder mit **Nostr**
-  markiert. Der Chip **Nostr** zeigt nur sie, und dort öffnet **Neuer Chat** den Bildschirm der Nostr-Chats: siehe
-  [Chats mit anderen Nostr-Apps](#nostr-chats).
+  markiert. Unter dem Chip **Nostr** gibt es zwei weitere: **Beiträge**, zuerst, die öffentlichen Beiträge der
+  Menschen, denen dein Nostr-Schlüssel folgt, das Neueste zuerst, wie in Amethyst oder einem Telegram-Kanal, und
+  **Chats**, nur die Nostr-Chats, mit der Zahl der ungelesenen Nachrichten. Dort öffnet **Neuer Chat** den Bildschirm
+  der Nostr-Chats: siehe [Chats mit anderen Nostr-Apps](#nostr-chats).
 - **Neuer Chat**, unten, öffnet die Relay-Einstellungen und das Hinzufügen eines Kontakts. **Erinnern**, die orange
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den
@@ -2048,10 +2050,10 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   name@example.org (NIP-05). **Menschen zeigen, denen du folgst**, darunter, listet die Menschen auf, denen dein
   Nostr-Schlüssel folgt (seine öffentliche Folgeliste, auch auf Relays gesucht, die solche Listen sammeln, und auf den
   Relays, auf denen dein Schlüssel schreibt), mit ihren Namen: Tippe eine Person an, um ihr zu schreiben. Findet es
-  niemanden, sagt es, warum, wessen Liste es gesucht hat und wie jedes Relay geantwortet hat. Nichts wird geladen, bevor
-  du darauf tippst, und es werden keine Profilbilder geladen. Die Chats stehen auch in der Liste auf dem
-  Startbildschirm, jeder mit **Nostr** markiert; der Chip **Nostr** zeigt nur sie, und dort öffnet **Neuer Chat** diesen
-  Bildschirm. **Hier benennen** gibt einem Chat einen Namen, den nur du siehst.
+  niemanden, sagt es, warum, wessen Liste es gesucht hat und wie jedes Relay geantwortet hat. Nichts wird geladen,
+  bevor du darauf tippst, und es werden keine Profilbilder geladen. Die Chats stehen auch in der Liste auf dem
+  Startbildschirm, jeder mit **Nostr** markiert; unter dem Chip **Nostr** zeigt **Chats** nur sie, und dort öffnet
+  **Neuer Chat** diesen Bildschirm. **Hier benennen** gibt einem Chat einen Namen, den nur du siehst.
 - **Gruppen:** **Neue Gruppe** erstellt eine aus zwei oder mehr der Menschen, mit denen du chattest, höchstens zwanzig,
   mit einem Namen, wenn du willst. Nostr-Gruppen haben keine Admins: Eine Gruppe sind die Menschen, die ihre Nachrichten
   nennen, jede Nachricht geht an jeden von ihnen, für jeden verschlüsselt, und niemand kann später hinzugefügt oder
@@ -2111,6 +2113,19 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Ein Beitrag mit Inhaltswarnung zeigt seinen Text nach einem Tipp auf **Zeigen**. Ein Konto, das nur für alle
   veröffentlicht, etwa das eines Projekts, sendet keine privaten Nachrichten: Sein Chat bleibt leer, und seine Beiträge
   sind hier.
+- **Beiträge der Menschen, denen du folgst:** Auf dem Startbildschirm zeigt **Beiträge**, unter dem Chip **Nostr**,
+  was die Menschen, denen dein Nostr-Schlüssel folgt, für alle veröffentlichen und was sie weitergeteilt haben, das
+  Neueste zuerst, wie in Amethyst oder einem Telegram-Kanal: wer jeden Beitrag geschrieben hat, mit dem Namen, den die
+  Person sich selbst gegeben hat, und Anfang und Ende ihres npub, wann, und was er sagt. Weitere kommen, wenn du bis
+  zum Ende scrollst, oder mit **Ältere Beiträge**; zieh die Liste nach unten für das Neueste (im Browser
+  **Erneut suchen**). Tippe an, wer einen Beitrag geschrieben hat, für **Öffentliche Beiträge** dieser Person, oder auf
+  **Nachricht schreiben**, um einen Chat zu beginnen. Es ist nur zum Lesen, wie oben: Hier lässt sich nichts
+  veröffentlichen, beantworten oder mit einer Reaktion versehen, und niemandem folgen; dafür nimm eine andere Nostr-App
+  mit demselben Schlüssel. Deine Folgeliste, wo die Menschen darin schreiben (ihre NIP-65-Listen), und ihre Beiträge
+  werden nur abgefragt, solange **Beiträge** zu sehen ist, auf den Relays, die für Abfragen dienen, auf denen, die
+  Listen sammeln, und auf denen, auf die sie schreiben, so, wie es die Tor-Wahl dieses Bereichs sagt; Namen nur für die
+  Beiträge, die zu sehen sind. Nichts davon wird gespeichert, und Bilder oder Links werden nicht geöffnet. Es ist immer
+  der Schlüssel dieses Bereichs, nie der eigene der versteckten Chats.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.

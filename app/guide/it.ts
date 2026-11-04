@@ -115,7 +115,9 @@ mentre il loro PIN le tiene aperte.
   **XMPP**, e chi chiede di aggiungerti, o un gruppo che ti invita, compare in cima. Il chip **XMPP** mostra solo loro,
   e lì **Nuova chat** avvia una chat XMPP: vedi [XMPP](#xmpp).
 - **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata
-  **Nostr**. Il pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre la schermata delle chat Nostr: vedi
+  **Nostr**. Sotto il pulsante **Nostr** ce ne sono altri due: **Post**, per primo, i post pubblici delle persone che
+  la tua chiave Nostr segue, dai più recenti, come in Amethyst o in un canale Telegram, e **Chat**, solo le chat Nostr,
+  con quanti messaggi non sono letti. Lì **Nuova chat** apre la schermata delle chat Nostr: vedi
   [Chat con altre app Nostr](#nostr-chats).
 - **Nuova chat**, in basso, apre le impostazioni del relay e l’aggiunta di un contatto. **Ricordamelo**, la campanella
   arancione accanto, scrive un promemoria per te.
@@ -1931,12 +1933,13 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   **Il tuo nome**, se ne dai uno, è pubblico: le altre app Nostr lo mostrano al posto del tuo npub. Lì cambia solo il nome: una
   foto o delle parole che un’altra app della tua chiave ha messo nel tuo profilo restano.
 - **Chat:** **Nuova chat** prende il suo npub (o nprofile), dal suo profilo nella sua app, o un nome come
-  nome@example.org (NIP-05). **Mostra le persone che segui**, qui sotto, elenca le persone che la tua chiave Nostr segue
-  (la sua lista pubblica dei seguiti, cercata anche su relay che raccolgono tali liste e sui relay dove scrive la tua
-  chiave), con i loro nomi: tocca una persona per scriverle. Quando non trova nessuno, dice perché, di chi ha cercato la
-  lista e come ha risposto ogni relay. Non viene caricato nulla finché non lo tocchi, e nessuna foto del profilo. Le
-  chat sono anche nella lista della home, ognuna segnata **Nostr**; il pulsante **Nostr** mostra solo loro, e lì **Nuova
-  chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi solo tu.
+  nome@example.org (NIP-05). **Mostra le persone che segui**, qui sotto, elenca le persone che la tua chiave Nostr
+  segue (la sua lista pubblica dei seguiti, cercata anche su relay che raccolgono tali liste e sui relay dove scrive la
+  tua chiave), con i loro nomi: tocca una persona per scriverle. Quando non trova nessuno, dice perché, di chi ha
+  cercato la lista e come ha risposto ogni relay. Non viene caricato nulla finché non lo tocchi, e nessuna foto del
+  profilo. Le chat sono anche nella lista della home, ognuna segnata **Nostr**; sotto il pulsante **Nostr**, **Chat**
+  mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi
+  solo tu.
 - **Gruppi:** **Nuovo gruppo** ne crea uno con due o più delle persone con cui chatti, al massimo venti, con un nome se
   vuoi. I gruppi Nostr non hanno amministratori: un gruppo sono le persone che i suoi messaggi nominano, ogni messaggio
   va a ciascuna, cifrato per ciascuna, e nessuno può essere aggiunto o tolto in seguito; un gruppo con altre persone è
@@ -1989,6 +1992,17 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   possono copiare. Un post con un avviso di contenuto mostra le sue parole dopo un tocco su **Mostra**. Un account che
   pubblica solo per tutti, come quello di un progetto, non manda messaggi privati: la sua chat resta vuota, e i suoi
   post sono qui.
+- **Post delle persone che segui:** nella schermata principale, **Post**, sotto il pulsante **Nostr**, mostra quello
+  che pubblicano per tutti le persone che la tua chiave Nostr segue, e quello che hanno condiviso di nuovo, dal più
+  recente, come in Amethyst o in un canale Telegram: chi ha scritto ogni post, con il nome che si è dato e l’inizio e
+  la fine del suo npub, quando, e cosa dice. Ne arrivano altri quando scorri fino in fondo, o con
+  **Post meno recenti**; tira giù la lista per i più recenti (in un browser, **Cerca di nuovo**). Tocca chi ha scritto
+  un post per i suoi **Post pubblici**, o **Invia un messaggio** per iniziare una chat. È in sola lettura, come sopra:
+  qui non si può pubblicare, rispondere né reagire, né seguire nessuno; per questo usa un’altra app Nostr con la stessa
+  chiave. La tua lista dei seguiti, dove scrivono le persone che ci sono (le loro liste NIP-65) e i loro post vengono
+  cercati solo mentre **Post** è in vista, sui relay usati per le ricerche, su quelli che raccolgono liste e su quelli
+  dove scrivono, come dice la scelta Tor di questo spazio; i nomi solo per i post in vista. Nulla viene conservato, e
+  non vengono aperte immagini né link. È sempre la chiave di questo spazio, mai quella delle chat nascoste.
 - **Segni:** un ✓ appena uno dei suoi relay ha accettato il messaggio. NIP-17 non rimanda niente: né quando la sua app
   lo ha, né quando lo legge. Leggere una chat qui non lo dice a nessuno.
 - **Non anonimo:** la tua chiave è la stessa per tutti quelli a cui scrivi, e chiunque abbia un npub può scrivergli. I
