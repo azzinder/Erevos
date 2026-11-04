@@ -18,6 +18,7 @@ import { devices } from './devices';
 import { publicGroups } from './public-groups';
 import { contacts } from './contacts';
 import { linkContact } from './link-contact';
+import { modulesText } from './modules';
 import { hiddenRing } from './hidden-ring';
 import { hiddenKeep } from './hidden-keep';
 import { relayInvites } from './relay-invites';
@@ -52,4 +53,4 @@ import { giveApp } from './give-app';
 import { matrixMore } from './matrix-more';
 import { forgetMe } from './forget-me';
 
-export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe };
+export const EL: Record<string, string> = { ...app, ...chat, ...screens, ...settings, ...parts, ...phone, ...messages, ...smsTools, ...more, ...groups, ...devices, ...publicGroups, ...contacts, ...linkContact, ...hiddenRing, ...hiddenKeep, ...relayInvites, ...moves, ...settingsMenu, ...myself, ...media, ...importsHere, ...closedSpaces, ...donate, ...edit, ...nostrOnly, ...releaseNotice, ...chatPin, ...chatNotify, ...connect, ...textInvite, ...relayKey, ...whatsNew, ...iconNumber, ...matrix, ...cloudBackup, ...desktop, ...xmpp, ...nostrChats, ...contactTrust, ...smsWay, ...backupPieces, ...panic, ...guard, ...giveApp, ...matrixMore, ...forgetMe, ...modulesText };
