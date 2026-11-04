@@ -19,7 +19,7 @@ import { loadCurrentSpaceData } from '../lock/space-data';
 // Invite someone (lib/welcome.ts): one QR code or link, for one person, for 7 days. Their phone
 // opens it in Erevos and joins: it takes access of its own to this phone's relay (an invite to it,
 // when the relay lets this phone invite), and the two are each other's contacts at once. The name
-// typed for them is the name of their access on the relay too, which its operator sees.
+// typed for them stays here: their access on the relay has a name of random letters (E2E.lineFor).
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
@@ -58,7 +58,8 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
     setFailed('');
     try {
       // Access of their own to the relay, when it lets this phone invite; good for as long as both last.
-      let access = relay?.token ? await makeInvite(relay, who) : null;
+      // The relay has a name of random letters for them; the one typed stays here (lib/e2e.ts lineFor).
+      let access = relay?.token ? await makeInvite(relay, await e2e.lineFor(who)) : null;
       // A token typed in, as the relay's one for all, lets no one in: their phone would be a contact
       // the relay refuses. So it is traded for one of this phone's own first, where the relay does
       // so. A token of this phone's own that cannot invite is the relay's choice.
@@ -70,7 +71,7 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
           );
           return;
         }
-        access = await makeInvite(own, who);
+        access = await makeInvite(own, await e2e.lineFor(who));
       }
       const hi = await e2e.welcome(who, as);
       const until = Math.min(Date.now() + WELCOME_DAYS * 24 * 3600 * 1000, access?.expires ?? Infinity);

@@ -489,9 +489,9 @@ onaj ko vodi relay može ukloniti bilo koji pojedinačni telefon.
   računaju se u tih 100: relay daje vlastiti token za 50 telefona dnevno koji su došli s njegovim tokenom, a nalog ima
   10 telefona. Relay istovremeno opslužuje 512 veza, ma čije bile, osim ako je njegov operater izabrao drukčije.
 - **Uklanjanje telefona:** onaj ko vodi relay briše njegov red u datoteci tokena relaya: telefon više ne može koristiti
-  relay, kao ni telefoni koje je pozvao. Ako je ikad imao token relaya, mijenja se i taj token, pa se telefon s njim ne
-  može vratiti. Telefoni s vlastitim tokenima nastavljaju kao i dosad: novi token treba samo telefonu na kojem je još
-  upisan stari (koji od tada nije otvaran, ili sa starijim Erevosom).
+  relay, dok telefoni koje je pozvao zadržavaju svoj. Ako je ikad imao token relaya, mijenja se i taj token, pa se
+  telefon s njim ne može vratiti. Telefoni s vlastitim tokenima nastavljaju kao i dosad: novi token treba samo telefonu
+  na kojem je još upisan stari (koji od tada nije otvaran, ili sa starijim Erevosom).
 - **Skriveni razgovori** zadržavaju token relaya koji je za njih upisan: kad bi se zamijenio u istom trenutku kao i
   token prostora, relay bi vidio da pripadaju ovom telefonu. Kad se token relaya promijeni, upišite novi pod njihovim
   **Za napredne korisnike**.
@@ -510,23 +510,24 @@ ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgov
   QR kod: kad Erevos bude na njenom telefonu, ona ga skenira kamerom i otvori link u Erevosu, ili dodirnite **Podijeli
   pozivnicu** i pošaljite joj link. Pozivnica je za jednu osobu, na 7 dana, ili kraće ako pozivnica za relay ističe
   ranije. Ko je prvi iskoristi, njegova je, pa je dajte samo toj osobi.
-- **Da se pridružite:** na telefonu koji još nema relay, **Novi razgovor** prikazuje **Odaberite kako ćete početi**:
-  dodirnite **Imam pozivnicu**. Skenirajte pozivnicu kamerom i otvorite link u Erevosu, ili dodirnite **Fotografišite
+- **Da se pridružite:** na telefonu koji još nema relay, **Novi razgovor** prikazuje jedan način ulaska, **Imam
+  pozivnicu**: dodirnite ga. Skenirajte pozivnicu kamerom i otvorite link u Erevosu, ili dodirnite **Fotografišite
   pozivnicu** ili **Izaberite fotografiju pozivnice**, ili zalijepite link i dodirnite **Pridruži se**. Link otvara
   **… vas poziva u Erevos**: dodirnite **Pridruži se** samo ako je stigao od te osobe. Erevos uzima vlastiti pristup
   njenom relayu i red na njemu, dodaje je i kaže **Dobro došli u Erevos**. Njegova prva poruka javlja to njenom
   telefonu, koji odmah dodaje ovaj kao kontakt, pod imenom koje je ta osoba upisala.
-- **Umjesto toga, s nalogom:** **Prijava preko LPHL**, drugi način ulaska, prijavljuje ovaj telefon na LPHL-ov relay s
-  LPHL nalogom, u pregledniku (pogledajte Prijava na relay ispod); zatim dodajte svoje kontakte putem njihovih
-  pozivnica ili linkova. Treći, **Počnite bez relaya**, nalazi se u Bez ikakvog relaya, pod Preko Nostra. **Za
-  napredne korisnike** sadrži postavke relaya, kao u koracima od 1 do 6 iznad.
-- **Šta vaš relay mora dozvoliti:** vlastiti pristup je pozivnica na vaš relay (pogledajte Pozivnice na relay ispod),
-  pa dolazi samo s telefona koji ima vlastiti token na relayu koji prima pozivnice. Računa se među vaše pozivnice, pod
-  imenom koje ste upisali za tu osobu, i nestaje s vašim. Telefon s jednim zajedničkim tokenom relaya prvo ga mijenja
-  za vlastiti (pogledajte Načini ulaska na relay iznad); tamo gdje relay to ne radi, ne pravi pozivnicu: prvo se
-  prijavite na relay (ispod polja **Token**, pod **Za napredne korisnike**) ili uzmite pozivnicu za njega. Kad vaš
-  relay ne prima pozivnice, pozivnica vas ipak čini kontaktima, a telefon te osobe koristi vaš relay samo onako kako
-  to dozvoljava vaš link za kontakt, kao u Bez vlastitog relaya ispod.
+- **Ostali načini ulaska:** ispod toga, **Za napredne korisnike** otvara ostale, za one koji ih traže: **Prijava preko
+  LPHL** prijavljuje ovaj telefon na LPHL-ov relay s LPHL nalogom, u pregledniku (pogledajte Prijava na relay ispod),
+  a zatim dodajete svoje kontakte putem njihovih pozivnica ili linkova; **Počnite bez relaya**, kao u Bez ikakvog
+  relaya, pod Preko Nostra; i postavke relaya, kao u koracima od 1 do 6 iznad. Pozivnica je najjednostavniji način
+  ulaska, a na relayu pozvani telefon ima samo ime od nasumičnih slova i cifara.
+- **Šta vaš relay mora dozvoliti:** vlastiti pristup je pozivnica na vaš relay (pogledajte Pozivnice na relay ispod), pa
+  dolazi samo s telefona koji ima vlastiti token na relayu koji prima pozivnice. Računa se među vaše pozivnice, pod
+  imenom od nasumičnih slova i cifara, i ostaje čak i kad vaš nestane. Telefon s jednim zajedničkim tokenom relaya prvo
+  ga mijenja za vlastiti (pogledajte Načini ulaska na relay iznad); tamo gdje relay to ne radi, ne pravi pozivnicu: prvo
+  se prijavite na relay (ispod polja **Token**, pod **Za napredne korisnike**) ili uzmite pozivnicu za njega. Kad vaš
+  relay ne prima pozivnice, pozivnica vas ipak čini kontaktima, a telefon te osobe koristi vaš relay samo onako kako to
+  dozvoljava vaš link za kontakt, kao u Bez vlastitog relaya ispod.
 - **Telefon koji već ima relay** zadržava svoj: pozivnica vas samo dodaje, a odmah ste kontakti svejedno.
 - **Šta se čuva:** vaš telefon čuva tajnu svake pozivnice i ime za tu osobu, zapečaćene u prostoru, dok se ne
   iskoristi ili ne isteknu njenih 7 dana, najviše 20 istovremeno. Od toga na relayu nema ništa osim pozivnice za
@@ -579,21 +580,20 @@ s vlastitim tokenom tog telefona, pa se nijedan token ne upisuje niti prosljeđu
   na relay**, upišite za koga je i dodirnite **Napravi pozivnicu**. Otvara se QR kod: neka ga telefon te osobe
   skenira kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj je. Vrijedi za jedan
   telefon 7 dana, a ko je prvi iskoristi, njegova je, pa je pokažite samo toj osobi.
-- **Da je prihvatite:** link otvara **Pozivnica za relay**, s adresom relaya: dodirnite **Koristi ovaj relay** samo
-  ako je stigla od nekoga koga poznajete. U Erevosu, **Snimi QR kod** i **Izaberi fotografiju QR koda** pod **Dodaj
+- **Da je prihvatite:** link otvara **Pozivnica za relay**, s adresom relaya: dodirnite **Koristi ovaj relay** samo ako
+  je stigla od nekoga koga poznajete. U Erevosu, **Snimi QR kod** i **Izaberi fotografiju QR koda** pod **Dodaj
   kontakt** čitaju i pozivnicu, a njen link može se zalijepiti u tamošnje polje. Erevos pravi token za ovaj telefon,
-  čuva ga s adresom relaya samo u ovom prostoru, pravi vaš red na relayu i kaže ime koje je relay dao telefonu. Ako
-  telefon koristi drugi relay, prvo pita, a kontakti saznaju vaš novi red iz vaše sljedeće poruke. Erevos prima
-  pozivnicu za wss:// relay, ili za ws:// relay samo na kućnoj mreži (kao \`ws://192.168.1.10:7879\`). Skriveni
-  razgovori ne primaju pozivnice.
-- **Vaše pozivnice:** navedene ispod dugmeta, na čekanju ili u upotrebi. **Povuci** povlači pozivnicu koja još čeka,
-  ili odmah isključuje telefon koji ju je uzeo, kao i telefone koje je on zatim pozvao.
-- **Dok god i vaš:** telefon koji ste pozvali koristi relay samo dok to smije i vaš. Kad vaš red nestane, jer ga je
-  povukao telefon koji vas je pozvao, nalog s kojim ste se prijavili više ne smije koristiti relay, ili vas je
-  operater uklonio, nestaju i redovi telefona koje ste pozvali, kao i telefona koje su oni pozvali. Ponovna prijava na
-  vašem telefonu ih zadržava.
-- **Šta relay čuva:** ime koje ste upisali, latiničnim slovima (Μαρία postaje \`maria\`), da ste vi pozvali taj
-  telefon, i otisak njegovog tokena, a ne token. Onaj ko vodi relay to vidi i može ukloniti bilo koji telefon s njega.
+  čuva ga s adresom relaya samo u ovom prostoru i pravi vaš red na relayu. Ako telefon koristi drugi relay, prvo pita, a
+  kontakti saznaju vaš novi red iz vaše sljedeće poruke. Erevos prima pozivnicu za wss:// relay, ili za ws:// relay samo
+  na kućnoj mreži (kao \`ws://192.168.1.10:7879\`). Skriveni razgovori ne primaju pozivnice.
+- **Vaše pozivnice:** navedene ispod dugmeta, na čekanju ili u upotrebi. **Povuci** povlači pozivnicu koja još čeka, ili
+  odmah isključuje telefon koji ju je uzeo, samo njega: telefoni koje je on zatim pozvao zadržavaju svoj.
+- **Njihov ostaje:** telefon koji ste pozvali zadržava svoj red na relayu čak i kad vaš nestane, jer ga je povukao
+  telefon koji vas je pozvao, nalog s kojim ste se prijavili više ne smije koristiti relay, ili vas je operater uklonio,
+  a isto tako i telefoni koje je on pozvao. Samo vaše pozivnice koje još čekaju tada više nikoga ne puštaju.
+- **Šta relay čuva:** za taj telefon ime od nasumičnih slova i cifara, koje ništa ne govori o tome ko je (ime koje ste
+  upisali ostaje na vašem telefonu; Erevos prije 6.0.0 davao je relayu to ime, latiničnim slovima), da ste ga vi
+  pozvali, i otisak njegovog tokena, a ne token. Onaj ko vodi relay to vidi i može ukloniti bilo koji telefon s njega.
   Telefon može imati 5 pozivnica na čekanju istovremeno i napraviti 10 dnevno, a relay putem pozivnica pušta samo
   ograničen broj telefona (100, osim ako je njegov operater izabrao drukčije).
 - **Ko može pozivati:** telefon s vlastitim tokenom, na relayu čiji je operater uključio pozivnice (pogledajte
@@ -618,9 +618,9 @@ token, bez ikakvog upisivanja u Erevosu.
   ponovo. Erevos otvara samo stranicu za prijavu na vlastitoj adresi relaya, preko https-a.
 - **Ponovna prijava** na istom telefonu zamjenjuje njegov red na relayu, ako je njegov token onaj koji je dobio od tog
   relaya. Svaki telefon dobija vlastiti red, najviše 10 za jedan nalog.
-- **Šta vide relay i LPHL:** relay red telefona imenuje po vašem korisničkom imenu (\`lphl:nekten\`), a svakog sata
-  pita LPHL smije li ga nalog još koristiti: kad se nalog zatvori ili onemogući, ili se LPHL ne može pitati 3 dana, red
-  nestaje i telefon više ne može koristiti relay, kao ni telefoni koje je pozvao. LPHL vidi svaku prijavu i ove
+- **Šta vide relay i LPHL:** relay red telefona imenuje po vašem korisničkom imenu (\`lphl:nekten\`), a svakog sata pita
+  LPHL smije li ga nalog još koristiti: kad se nalog zatvori ili onemogući, ili se LPHL ne može pitati 3 dana, red
+  nestaje i telefon više ne može koristiti relay; telefoni koje je pozvao zadržavaju svoj. LPHL vidi svaku prijavu i ove
   provjere, ali ništa od vaših prostora, razgovora ili kontakata. Prijava iz drugog prostora istim nalogom pokazuje
   relayu da su oba vaša.
 - **Skriveni razgovori** se ne prijavljuju.

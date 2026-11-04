@@ -496,9 +496,10 @@ así que quien gestiona el relay puede sacar a cualquier teléfono por separado.
   con su token, y una cuenta tiene 10 teléfonos. El relay atiende 512 conexiones a la vez, sean de quien sean, salvo que
   quien lo gestiona haya elegido otra cosa.
 - **Sacar un teléfono:** quien gestiona el relay borra su línea en el archivo de tokens del relay: ya no puede usar el
-  relay, ni tampoco los teléfonos que invitó. Si alguna vez tuvo el token del relay, también cambia ese token, para que
-  no pueda volver con él. Los teléfonos con tokens propios siguen como están: solo un teléfono que todavía tenga escrito
-  el token antiguo (sin abrirse desde entonces, o con un Erevos más antiguo) necesita el nuevo.
+  relay, mientras que los teléfonos que invitó conservan su acceso. Si alguna vez tuvo el token del relay, también
+  cambia ese token, para que no pueda volver con él. Los teléfonos con tokens propios siguen como están: solo un
+  teléfono que todavía tenga escrito el token antiguo (sin abrirse desde entonces, o con un Erevos más antiguo) necesita
+  el nuevo.
 - **Los chats ocultos** conservan el token del relay escrito para ellos: cambiarlo en el mismo momento que el del
   espacio mostraría al relay que son de este teléfono. Cuando cambia el token del relay, escribe el nuevo en su **Para
   usuarios avanzados**.
@@ -517,23 +518,25 @@ nada, y sois contactos el uno del otro al instante, sin solicitud de mensaje.
   código QR: en cuanto tenga Erevos en su teléfono, lo escanea con la cámara y abre el enlace en Erevos, o toca
   **Compartir la invitación** y envíale el enlace. Es para una persona, durante 7 días, o menos si la invitación del
   relay acaba antes. Quien la use primero se la queda, así que dásela solo a esa persona.
-- **Para unirse:** en un teléfono que aún no tiene relay, **Chat nuevo** muestra **Elige cómo empezar**: toca **Tengo
-  una invitación**. Escanea la invitación con la cámara y abre el enlace en Erevos, o toca **Hacer una foto de la
-  invitación** o **Elegir una foto de la invitación**, o pega el enlace y toca
-  **Unirse**. El enlace abre **… te invita a Erevos**: toca **Unirse** solo si viene de esa persona. Erevos obtiene
-  acceso propio a su relay y una cola ahí, la añade y dice **Te damos la bienvenida a Erevos**. Su primer mensaje avisa
-  a su teléfono, que añade este como contacto al instante, con el nombre que escribió.
-- **Con una cuenta en su lugar:** **Iniciar sesión con LPHL**, la segunda forma de entrar, inicia sesión en el relay de
-  LPHL desde este teléfono con una cuenta LPHL, en el navegador (ver Iniciar sesión en el relay más abajo); luego añade
-  a tus contactos con sus invitaciones o enlaces. La tercera, **Empezar sin relay**, está en Sin ningún relay, en A
-  través de Nostr. **Para usuarios avanzados** tiene los ajustes del relay, como en los pasos 1 a 6 de arriba.
+- **Para unirse:** en un teléfono que aún no tiene relay, **Chat nuevo** muestra una forma de entrar, **Tengo una
+  invitación**: tócala. Escanea la invitación con la cámara y abre el enlace en Erevos, o toca **Hacer una foto de la
+  invitación** o **Elegir una foto de la invitación**, o pega el enlace y toca **Unirse**. El enlace abre **… te
+  invita a Erevos**: toca **Unirse** solo si viene de esa persona. Erevos obtiene acceso propio a su relay y una cola
+  ahí, la añade y dice **Te damos la bienvenida a Erevos**. Su primer mensaje avisa a su teléfono, que añade este como
+  contacto al instante, con el nombre que escribió.
+- **Las otras formas de entrar:** debajo, **Para usuarios avanzados** abre las demás, para quien las busque: **Iniciar
+  sesión con LPHL** inicia sesión en el relay de LPHL desde este teléfono con una cuenta LPHL, en el navegador (ver
+  Iniciar sesión en el relay más abajo), y luego añades a tus contactos con sus invitaciones o enlaces; **Empezar sin
+  relay**, como en Sin ningún relay, en A través de Nostr; y los ajustes del relay, como en los pasos 1 a 6 de arriba.
+  Una invitación es la forma más sencilla de entrar, y en el relay un teléfono invitado solo tiene un nombre de letras
+  y cifras al azar.
 - **Lo que tu relay debe permitir:** el acceso propio es una invitación a tu relay (ver Invitaciones al relay más
   abajo), así que solo sale de un teléfono con token propio en un relay que acepte invitaciones. Cuenta entre tus
-  invitaciones, con el nombre que escribiste para esa persona, y va con las tuyas. Un teléfono con el token único del
-  relay para todos lo cambia antes por uno propio (ver Formas de entrar al relay más arriba); donde el relay no lo hace,
-  no crea ninguna invitación: inicia sesión en el relay primero (debajo del **Token**, en **Para usuarios avanzados**),
-  o usa una invitación a él. Cuando tu relay no acepta invitaciones, la invitación igualmente os hace contactos, y su
-  teléfono usa tu relay solo como le permite tu enlace de contacto, como en Sin relay propio más abajo.
+  invitaciones, con un nombre de letras y cifras al azar, y se queda aunque el tuyo se vaya. Un teléfono con el token
+  único del relay para todos lo cambia antes por uno propio (ver Formas de entrar al relay más arriba); donde el relay
+  no lo hace, no crea ninguna invitación: inicia sesión en el relay primero (debajo del **Token**, en **Para usuarios
+  avanzados**), o usa una invitación a él. Cuando tu relay no acepta invitaciones, la invitación igualmente os hace
+  contactos, y su teléfono usa tu relay solo como le permite tu enlace de contacto, como en Sin relay propio más abajo.
 - **Un teléfono que ya tiene relay** conserva el suyo: la invitación solo te añade, y sois contactos al instante igual.
 - **Lo que se guarda:** tu teléfono guarda el secreto de cada invitación y el nombre para esa persona, sellados en el
   espacio, hasta que se usa o acaban sus 7 días, 20 como mucho a la vez. Nada de ello está en el relay salvo la
@@ -587,22 +590,23 @@ token propio de ese teléfono, así que no se escribe ni se pasa ningún token.
   cámara y abra el enlace en Erevos, o toca **Compartir la invitación** y envíasela. Vale para un teléfono durante 7
   días, y quien la use primero se la queda, así que muéstrasela solo a esa persona.
 - **Para usar una:** el enlace abre **Invitación a un relay**, con la dirección del relay: toca **Usar este relay** solo
-  si viene de alguien que conoces. En Erevos, **Hacer foto del código QR** y **Elegir foto del código QR** bajo
-  **Añadir un contacto** también leen una invitación, y su enlace se puede pegar en el campo de ahí. Erevos crea un
-  token para este teléfono, lo guarda con la dirección del relay solo en este espacio, crea tu cola ahí y dice el nombre
-  que el relay dio al teléfono. Si el teléfono usa otro relay, pregunta antes, y los contactos conocen tu nueva cola con
-  tu siguiente mensaje. Erevos acepta una invitación a un relay wss://, o a uno ws:// solo en una red doméstica (como
-  \`ws://192.168.1.10:7879\`). Los chats ocultos no aceptan invitaciones.
+  si viene de alguien que conoces. En Erevos, **Hacer foto del código QR** y **Elegir foto del código QR** bajo **Añadir
+  un contacto** también leen una invitación, y su enlace se puede pegar en el campo de ahí. Erevos crea un token para
+  este teléfono, lo guarda con la dirección del relay solo en este espacio y crea tu cola ahí. Si el teléfono usa otro
+  relay, pregunta antes, y los contactos conocen tu nueva cola con tu siguiente mensaje. Erevos acepta una invitación a
+  un relay wss://, o a uno ws:// solo en una red doméstica (como \`ws://192.168.1.10:7879\`). Los chats ocultos no
+  aceptan invitaciones.
 - **Tus invitaciones:** listadas bajo el botón, pendientes o en uso. **Retirar** retira una todavía pendiente, o corta
-  al instante el teléfono que la usó, y a los teléfonos que este invitó a su vez.
-- **Mientras dure el tuyo:** un teléfono que invitaste usa el relay solo mientras el tuyo pueda. Cuando tu línea
-  desaparece, porque el teléfono que te invitó la retiró, la cuenta con la que iniciaste sesión ya no puede usar el
-  relay, o quien lo gestiona la sacó, desaparecen también las líneas de los teléfonos que invitaste, y las de los
-  teléfonos que estos invitaron. Volver a iniciar sesión en tu teléfono las conserva.
-- **Lo que guarda el relay:** el nombre que escribiste, en letras latinas (Μαρία es \`maria\`), que invitaste a ese
-  teléfono, y una huella de su token, no el token. Quien gestiona el relay ve esto, y puede sacar del relay a cualquier
-  teléfono. Un teléfono puede tener 5 invitaciones pendientes a la vez, y crear 10 al día, y el relay solo deja entrar
-  cierto número de teléfonos por invitación (100, salvo que quien lo gestiona haya elegido otra cosa).
+  al instante el teléfono que la usó, solo ese: los teléfonos que este invitó a su vez conservan su acceso.
+- **El suyo se queda:** un teléfono que invitaste conserva su línea en el relay aunque la tuya desaparezca, porque el
+  teléfono que te invitó la retiró, la cuenta con la que iniciaste sesión ya no puede usar el relay, o quien lo gestiona
+  la sacó, y lo mismo los teléfonos que este invitó. Solo tus invitaciones aún pendientes ya no dejan entrar a nadie.
+- **Lo que guarda el relay:** para ese teléfono un nombre de letras y cifras al azar, que no dice nada de quién es (el
+  nombre que escribiste se queda en tu teléfono; un Erevos anterior a 6.0.0 daba al relay ese nombre, en letras
+  latinas), que lo invitaste tú, y una huella de su token, no el token. Quien gestiona el relay ve esto, y puede sacar
+  del relay a cualquier teléfono. Un teléfono puede tener 5 invitaciones pendientes a la vez, y crear 10 al día, y el
+  relay solo deja entrar cierto número de teléfonos por invitación (100, salvo que quien lo gestiona haya elegido otra
+  cosa).
 - **Quién puede invitar:** un teléfono con token propio, en un relay cuyo gestor activó las invitaciones (ver
   [Tener tu propio relay](#own-relay)). Un teléfono con el token único del relay para todos lo cambia antes por uno
   propio (ver Formas de entrar al relay más arriba). Con un sitio prestado no hay **Invitar al relay**.
@@ -628,9 +632,9 @@ obtener un token propio, sin nada que escribir en Erevos.
   ese relay. Cada teléfono obtiene una línea propia, 10 como mucho para una cuenta.
 - **Lo que ven el relay y LPHL:** el relay nombra la línea del teléfono con tu nombre de usuario (\`lphl:nekten\`), y
   cada hora pregunta a LPHL si la cuenta todavía puede usarlo: en cuanto la cuenta se cierra o se desactiva, o no se
-  puede preguntar a LPHL durante 3 días, la línea desaparece, y el teléfono ya no puede usar el relay, ni los teléfonos
-  que invitó. LPHL ve cada inicio de sesión y estas comprobaciones, pero nada de tus espacios, chats o contactos.
-  Iniciar sesión desde otro espacio con la misma cuenta muestra al relay que los dos son tuyos.
+  puede preguntar a LPHL durante 3 días, la línea desaparece, y el teléfono ya no puede usar el relay; los teléfonos que
+  invitó conservan su acceso. LPHL ve cada inicio de sesión y estas comprobaciones, pero nada de tus espacios, chats o
+  contactos. Iniciar sesión desde otro espacio con la misma cuenta muestra al relay que los dos son tuyos.
 - **Los chats ocultos** no inician sesión.
 
 **Por qué:** la página muestra el código y tú lo escribes en Erevos, no al revés, así que un enlace de inicio de sesión

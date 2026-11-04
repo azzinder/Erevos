@@ -496,9 +496,9 @@ ali, então quem cuida do relay pode tirar qualquer celular sozinho.
   dele, e uma conta tem 10 celulares. O relay atende 512 conexões ao mesmo tempo, sejam de quem forem, a menos que o
   operador dele tenha escolhido outra coisa.
 - **Tirar um celular:** quem cuida do relay apaga a linha dele no arquivo de tokens do relay: ele não pode mais usar o
-  relay, nem os celulares que ele convidou. Se ele já teve o token do relay, também trocam esse token, para que ele não
-  possa voltar com ele. Os celulares com token próprio seguem como estão: só um celular com o token antigo ainda
-  digitado (não aberto desde então, ou com um Erevos mais antigo) precisa do novo.
+  relay, enquanto os celulares que ele convidou ficam com o deles. Se ele já teve o token do relay, também trocam esse
+  token, para que ele não possa voltar com ele. Os celulares com token próprio seguem como estão: só um celular com o
+  token antigo ainda digitado (não aberto desde então, ou com um Erevos mais antigo) precisa do novo.
 - **As conversas ocultas** mantêm o token do relay digitado para elas: trocá-lo no mesmo momento que o do espaço
   mostraria ao relay que elas são deste celular. Quando o token do relay mudar, digite o novo no **Para usuários
   avançados** delas.
@@ -517,23 +517,24 @@ nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
   convite**. Abre-se um código QR: quando o Erevos estiver no celular da pessoa, ela o lê com a câmera e abre o link no
   Erevos, ou toque em **Compartilhar o convite** e envie o link para ela. É para uma pessoa, por 7 dias, ou menos
   quando o convite do relay acaba antes. Quem o pegar primeiro fica com ele, então dê só para ela.
-- **Para entrar:** num celular ainda sem relay, **Nova conversa** mostra **Escolha como começar**: toque em **Tenho um
-  convite**. Leia o convite com a câmera e abra o link no Erevos, ou toque em **Tirar foto do convite** ou **Escolher
+- **Para entrar:** num celular ainda sem relay, **Nova conversa** mostra uma forma de entrar, **Tenho um convite**:
+  toque nela. Leia o convite com a câmera e abra o link no Erevos, ou toque em **Tirar foto do convite** ou **Escolher
   foto do convite**, ou cole o link e toque em **Entrar**. O link abre **… convida você para o Erevos**: toque em
-  **Entrar** só se ele veio dessa pessoa. O Erevos obtém acesso próprio ao relay dela e uma fila ali, adiciona a pessoa
-  e diz **Boas-vindas ao Erevos**. A primeira mensagem dele avisa o celular da pessoa, que adiciona este como contato
-  na hora, com o nome que ela digitou.
-- **Com uma conta, em vez disso:** **Entrar com LPHL**, a segunda forma de entrar, faz o login deste celular no relay
-  do LPHL com uma conta LPHL, no navegador (veja Entrar no relay abaixo); depois adicione os seus contatos pelos
-  convites ou links deles. A terceira, **Começar sem relay**, está em Sem nenhum relay, em Pelo Nostr. **Para usuários
-  avançados** tem as configurações do relay, como de 1 a 6 acima.
+  **Entrar** só se ele veio dessa pessoa. O Erevos obtém acesso próprio ao relay dela e uma fila ali, adiciona a
+  pessoa e diz **Boas-vindas ao Erevos**. A primeira mensagem dele avisa o celular da pessoa, que adiciona este como
+  contato na hora, com o nome que ela digitou.
+- **As outras formas de entrar:** logo abaixo, **Para usuários avançados** abre as demais, para quem as procura:
+  **Entrar com LPHL** faz o login deste celular no relay do LPHL com uma conta LPHL, no navegador (veja Entrar no
+  relay abaixo), e depois você adiciona os seus contatos pelos convites ou links deles; **Começar sem relay**, como em
+  Sem nenhum relay, em Pelo Nostr; e as configurações do relay, como de 1 a 6 acima. Um convite é a forma mais simples
+  de entrar, e no relay um celular convidado tem só um nome de letras e números ao acaso.
 - **O que o seu relay precisa permitir:** o acesso próprio é um convite para o seu relay (veja Convites para o relay
-  abaixo), então só vem de um celular com token próprio num relay que aceita convites. Ele conta entre os seus
-  convites, com o nome que você digitou para a pessoa, e termina junto com o seu. Um celular com o token único do relay
+  abaixo), então só vem de um celular com token próprio num relay que aceita convites. Ele conta entre os seus convites,
+  com um nome de letras e números ao acaso, e continua mesmo quando o seu termina. Um celular com o token único do relay
   para todos troca-o primeiro por um próprio (veja Formas de entrar no relay acima); onde o relay não faz isso, ele não
-  cria convite: entre no relay primeiro (abaixo do **Token**, em **Para usuários avançados**), ou aceite um convite
-  para ele. Quando o seu relay não aceita convites, o convite ainda torna vocês contatos, e o celular da pessoa usa o
-  seu relay só como o seu link de contato permite, como em Sem relay próprio abaixo.
+  cria convite: entre no relay primeiro (abaixo do **Token**, em **Para usuários avançados**), ou aceite um convite para
+  ele. Quando o seu relay não aceita convites, o convite ainda torna vocês contatos, e o celular da pessoa usa o seu
+  relay só como o seu link de contato permite, como em Sem relay próprio abaixo.
 - **Um celular que já tem relay** mantém o próprio: o convite só adiciona vocês, e vocês viram contatos na hora do
   mesmo jeito.
 - **O que fica guardado:** o seu celular guarda o segredo de cada convite e o nome para a pessoa, selados no espaço,
@@ -590,20 +591,20 @@ próprio desse celular, para que nenhum token seja digitado ou repassado.
 - **Para aceitar um:** o link abre **Convite para um relay**, com o endereço do relay: toque em **Usar este relay** só
   se ele veio de alguém que você conhece. No Erevos, **Tirar foto do código QR** e **Escolher foto do código QR** em
   **Adicionar um contato** também leem um convite, e o link dele pode ser colado no campo dali. O Erevos cria um token
-  para este celular, guarda-o com o endereço do relay só neste espaço, cria a sua fila ali e diz o nome que o relay deu
-  ao celular. Se o celular usa outro relay, ele pergunta antes, e os contatos ficam sabendo da sua nova fila pela sua
-  próxima mensagem. O Erevos aceita um convite para um relay wss://, ou para um ws:// só numa rede doméstica (como
-  \`ws://192.168.1.10:7879\`). As conversas ocultas não aceitam convites.
-- **Seus convites:** listados abaixo do botão, aguardando ou em uso. **Revogar** revoga um que ainda está aguardando,
-  ou corta na hora o celular que o pegou, e os celulares que ele convidou por sua vez.
-- **Enquanto o seu durar:** um celular que você convidou só usa o relay enquanto o seu puder. Quando a sua linha cai,
-  porque o celular que convidou você a revogou, a conta com que você entrou não pode mais usar o relay, ou o operador
-  dele a tirou, as linhas dos celulares que você convidou também caem, e as dos celulares que eles convidaram. Entrar
-  de novo no seu celular as mantém.
-- **O que o relay guarda:** o nome que você digitou, em letras latinas (Μαρία vira \`maria\`), que você convidou aquele
-  celular, e uma impressão digital do token dele, não o token. Quem cuida do relay vê isso, e pode tirar qualquer
-  celular dele. Um celular pode ter 5 convites aguardando ao mesmo tempo, e fazer 10 por dia, e o relay só deixa entrar
-  um certo número de celulares por convite (100, a menos que o operador dele tenha escolhido outra coisa).
+  para este celular, guarda-o com o endereço do relay só neste espaço e cria a sua fila ali. Se o celular usa outro
+  relay, ele pergunta antes, e os contatos ficam sabendo da sua nova fila pela sua próxima mensagem. O Erevos aceita um
+  convite para um relay wss://, ou para um ws:// só numa rede doméstica (como \`ws://192.168.1.10:7879\`). As conversas
+  ocultas não aceitam convites.
+- **Seus convites:** listados abaixo do botão, aguardando ou em uso. **Revogar** revoga um que ainda está aguardando, ou
+  corta na hora o celular que o pegou, só ele: os celulares que ele convidou por sua vez ficam com o deles.
+- **O deles fica:** um celular que você convidou fica com a linha dele no relay mesmo quando a sua cai, porque o celular
+  que convidou você a revogou, a conta com que você entrou não pode mais usar o relay, ou o operador dele a tirou, e o
+  mesmo vale para os celulares que ele convidou. Só os seus convites ainda aguardando não deixam mais ninguém entrar.
+- **O que o relay guarda:** para aquele celular um nome de letras e números ao acaso, que não diz nada de quem ele é (o
+  nome que você digitou fica no seu celular; um Erevos anterior ao 6.0.0 dava esse nome ao relay, em letras latinas),
+  que você o convidou, e uma impressão digital do token dele, não o token. Quem cuida do relay vê isso, e pode tirar
+  qualquer celular dele. Um celular pode ter 5 convites aguardando ao mesmo tempo, e fazer 10 por dia, e o relay só
+  deixa entrar um certo número de celulares por convite (100, a menos que o operador dele tenha escolhido outra coisa).
 - **Quem pode convidar:** um celular com token próprio, num relay cujo operador ativou os convites (veja
   [Rodar o seu próprio relay](#own-relay)). Um celular com o token único do relay para todos troca-o primeiro por um
   próprio (veja Formas de entrar no relay acima). Com um lugar emprestado não há **Convidar para o relay**.
@@ -628,9 +629,9 @@ token próprio, sem nada para digitar no Erevos.
   relay. Cada celular recebe uma linha própria, 10 no máximo para uma conta.
 - **O que o relay e o LPHL veem:** o relay dá à linha do celular o nome do seu usuário (\`lphl:nekten\`), e a cada hora
   pergunta ao LPHL se a conta ainda pode usá-lo: assim que a conta é fechada ou desativada, ou o LPHL não pode ser
-  consultado por 3 dias, a linha cai, e o celular não pode mais usar o relay, nem os celulares que ele convidou. O LPHL
-  vê cada login e essas verificações, mas nada dos seus espaços, conversas ou contatos. Entrar a partir de outro espaço
-  com a mesma conta mostra ao relay que os dois são seus.
+  consultado por 3 dias, a linha cai, e o celular não pode mais usar o relay; os celulares que ele convidou ficam com o
+  deles. O LPHL vê cada login e essas verificações, mas nada dos seus espaços, conversas ou contatos. Entrar a partir de
+  outro espaço com a mesma conta mostra ao relay que os dois são seus.
 - **As conversas ocultas** não fazem login.
 
 **Por quê:** a página mostra o código e você o digita no Erevos, não o contrário, então um link de login que outra

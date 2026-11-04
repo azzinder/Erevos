@@ -150,6 +150,24 @@ t('someone who says back an invite given here is a contact at once, named as inv
   assert.deepEqual([fromDora.request, again.contacts().find((c) => c.identity === fromDora.identity)!.name], [false, 'Eleni']);
 });
 
+t('an invite to the relay gives it random letters and digits for a name, and the name given stays here, sealed', async () => {
+  const inviter = await chat('space', 0);
+  const line = await inviter.e2e.lineFor('  Μαρία ');
+  assert.match(line, /^[a-z0-9]{10}$/);
+  // Each invite a name of its own, whoever it is for.
+  const other = await inviter.e2e.lineFor('Μαρία');
+  assert.notEqual(other, line);
+  assert.deepEqual([inviter.e2e.lineName(line), inviter.e2e.lineName(other)], ['Μαρία', 'Μαρία']);
+  // A line not named here, such as one from before, is not known.
+  assert.equal(inviter.e2e.lineName('maria'), '');
+  const again = await E2E.open('space', 0, inviter.key);
+  assert.equal(again.lineName(line), 'Μαρία');
+  // The last MAX_LINES are kept: the oldest goes first.
+  for (let i = 0; i < 99; i++) await again.lineFor(`n${i}`);
+  assert.equal(again.lineName(line), '');
+  assert.equal(again.lineName(other), 'Μαρία');
+});
+
 t('someone new who writes first is a message request until accepted, refused or answered', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

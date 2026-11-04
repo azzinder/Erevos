@@ -263,6 +263,12 @@ export type Invited = { hi: string; name: string; until: number };
 /** The most invites waiting at once: the oldest goes first. */
 export const MAX_INVITED = 20;
 
+/** An invite to the relay made from here: the name of random letters and digits the relay has for it (`l`), and who it is for (`n`). */
+export type InviteLine = { l: string; n: string };
+
+/** The most names of invites to the relay kept: as many phones as a relay usually lets in by invite. The oldest goes first. */
+export const MAX_LINES = 100;
+
 /**
  * An introduction (lib/intros.ts), as kept. Made here (`by`): the two contacts asked (`a` is told
  * where to write, `b` gives the link), whether each said yes (`ya`, `yb`) and `b`'s link and secret
@@ -539,6 +545,8 @@ export type E2EData = {
   invited?: Invited[];
   /** The name this phone gave itself in its last invite, offered again for the next. */
   invitedAs?: string;
+  /** Who each invite to the relay made from here is for, by the name of random letters the relay has for it (lib/e2e.ts lineFor), the latest last. Missing when none. */
+  lines?: InviteLine[];
   /** Introductions made here, or asked of this chat (lib/intros.ts). Missing when none. */
   intros?: IntroKept[];
   /** Pieces of backup passwords, kept for contacts or given to them (lib/backup-pieces.ts). Missing when none. */
@@ -807,6 +815,11 @@ function checkedInvited(value: unknown): Invited | null {
   return isText(v.hi) && /^[0-9a-f]{32}$/.test(v.hi) && isText(v.name) && isTime(v.until) ? { hi: v.hi, name: cleanName(v.name), until: v.until } : null;
 }
 
+function checkedLine(value: unknown): InviteLine | null {
+  const v = (value ?? {}) as Partial<Record<keyof InviteLine, unknown>>;
+  return isText(v.l) && /^[a-z0-9]{10}$/.test(v.l) && isText(v.n) ? { l: v.l, n: cleanName(v.n) } : null;
+}
+
 function checkedOldFiller(value: unknown): OldFiller | null {
   const v = (value ?? {}) as Partial<Record<keyof OldFiller, unknown>>;
   return isHex(v.q) && v.q.length === 48 && isText(v.relay) && v.relay.length <= 2048 && isTime(v.until) ? { q: v.q, relay: v.relay, until: v.until } : null;
@@ -841,6 +854,7 @@ function checked(value: unknown): E2EData {
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
+    ...(Array.isArray(v.lines) && v.lines.length > 0 ? { lines: v.lines.map(checkedLine).filter((l): l is InviteLine => l !== null).slice(-MAX_LINES) } : {}),
     ...(Array.isArray(v.intros) ? { intros: v.intros.map(checkedIntroKept).filter((i): i is IntroKept => i !== null).slice(-MAX_INTROS) } : {}),
     ...(checkedPieces(v.pieces) ? { pieces: checkedPieces(v.pieces)! } : {}),
     ...(isTime(v.nostrAt) && v.nostrAt > 0 ? { nostrAt: v.nostrAt } : {}),

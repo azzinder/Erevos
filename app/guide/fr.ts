@@ -525,10 +525,10 @@ téléphone sur ce relais, si bien que celui qui fait tourner le relais peut ret
   téléphones par jour venus avec son jeton, et un compte a 10 téléphones. Le relais sert 512 connexions à la fois,
   quelles qu’elles soient, sauf si son opérateur en a décidé autrement.
 - **Retirer un téléphone :** celui qui fait tourner le relais supprime sa ligne dans le fichier des jetons du relais :
-  le téléphone ne peut plus utiliser le relais, ni les téléphones qu’il a invités. S’il a jamais eu le jeton du relais,
-  il faut aussi changer ce jeton, pour qu’il ne puisse pas revenir avec. Les téléphones qui ont leur propre jeton
-  continuent comme avant : seul un téléphone où l’ancien jeton est encore tapé (pas ouvert depuis, ou avec un Erevos
-  plus ancien) a besoin du nouveau.
+  le téléphone ne peut plus utiliser le relais, tandis que les téléphones qu’il a invités gardent le leur. S’il a jamais
+  eu le jeton du relais, il faut aussi changer ce jeton, pour qu’il ne puisse pas revenir avec. Les téléphones qui ont
+  leur propre jeton continuent comme avant : seul un téléphone où l’ancien jeton est encore tapé (pas ouvert depuis, ou
+  avec un Erevos plus ancien) a besoin du nouveau.
 - **Les discussions masquées** gardent le jeton du relais tapé pour elles : l’échanger au même moment que celui de
   l’espace montrerait au relais qu’elles sont celles de ce téléphone. Quand le jeton du relais change, tape le nouveau
   sous leur **Pour les utilisateurs avancés**.
@@ -548,25 +548,27 @@ lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans
   ouvre le lien dans Erevos ; ou bien appuie sur **Partager l’invitation** et envoie-lui le lien. L’invitation est pour
   une personne, pour 7 jours, ou moins quand l’invitation du relais se termine plus tôt. Qui la prend en premier l’a,
   alors ne la donne qu’à cette personne.
-- **Pour rejoindre :** sur un téléphone qui n’a pas encore de relais, **Nouvelle discussion** affiche **Choisis comment
-  commencer** : appuie sur **J’ai une invitation**. Scanne l’invitation avec l’appareil photo et ouvre le lien dans
-  Erevos, ou appuie sur **Prendre une photo de l’invitation** ou **Choisir une photo de l’invitation**, ou colle le lien
-  et appuie sur **Rejoindre**. Le lien ouvre **… t’invite sur Erevos** : appuie sur **Rejoindre** seulement s’il vient
-  de cette personne. Erevos prend un accès à lui sur son relais et une file d’attente là-bas, l’ajoute et dit
-  **Bienvenue sur Erevos**. Son premier message prévient le téléphone de la personne, qui ajoute aussitôt celui-ci comme
-  contact, nommé comme elle l’a tapé.
-- **Avec un compte plutôt :** **Se connecter avec LPHL**, la deuxième façon d’entrer, connecte ce téléphone au relais de
-  LPHL avec un compte LPHL, dans le navigateur (voir Se connecter au relais ci-dessous) ; ajoute ensuite tes contacts
-  par leurs invitations ou leurs liens. La troisième, **Commencer sans relais**, se trouve dans Sans aucun relais, sous
-  Par Nostr. **Pour les utilisateurs avancés** contient les réglages du relais, comme aux étapes 1 à 6 ci-dessus.
+- **Pour rejoindre :** sur un téléphone qui n’a pas encore de relais, **Nouvelle discussion** affiche une façon
+  d’entrer, **J’ai une invitation** : appuie dessus. Scanne l’invitation avec l’appareil photo et ouvre le lien dans
+  Erevos, ou appuie sur **Prendre une photo de l’invitation** ou **Choisir une photo de l’invitation**, ou colle le
+  lien et appuie sur **Rejoindre**. Le lien ouvre **… t’invite sur Erevos** : appuie sur **Rejoindre** seulement s’il
+  vient de cette personne. Erevos prend un accès à lui sur son relais et une file d’attente là-bas, l’ajoute et dit
+  **Bienvenue sur Erevos**. Son premier message prévient le téléphone de la personne, qui ajoute aussitôt celui-ci
+  comme contact, nommé comme elle l’a tapé.
+- **Les autres façons d’entrer :** en dessous, **Pour les utilisateurs avancés** ouvre les autres, pour qui les
+  cherche : **Se connecter avec LPHL** connecte ce téléphone au relais de LPHL avec un compte LPHL, dans le navigateur
+  (voir Se connecter au relais ci-dessous), puis tu ajoutes tes contacts par leurs invitations ou leurs liens ;
+  **Commencer sans relais**, comme dans Sans aucun relais, sous Par Nostr ; et les réglages du relais, comme aux
+  étapes 1 à 6 ci-dessus. Une invitation est la façon la plus simple d’entrer, et sur le relais un téléphone invité
+  n’a qu’un nom de lettres et de chiffres au hasard.
 - **Ce que ton relais doit permettre :** l’accès à lui est une invitation à ton relais (voir Invitations au relais
   ci-dessous), donc il ne vient que d’un téléphone qui a son propre jeton sur un relais qui accepte les invitations. Il
-  compte parmi tes invitations, sous le nom que tu as tapé pour la personne, et disparaît avec le tien. Un téléphone qui
-  a le jeton unique du relais pour tous l’échange d’abord contre un jeton à lui (voir Les façons d’entrer sur le relais
-  ci-dessus) ; là où le relais ne le fait pas, il ne crée pas d’invitation : connecte-toi d’abord au relais (sous le
-  **Jeton**, dans **Pour les utilisateurs avancés**), ou prends une invitation à celui-ci. Quand ton relais n’accepte
-  pas d’invitations, l’invitation fait quand même de vous des contacts, et son téléphone n’utilise ton relais que dans
-  la mesure où ton lien de contact le permet, comme dans Pas de relais à toi ci-dessous.
+  compte parmi tes invitations, sous un nom de lettres et de chiffres au hasard, et reste même quand le tien disparaît.
+  Un téléphone qui a le jeton unique du relais pour tous l’échange d’abord contre un jeton à lui (voir Les façons
+  d’entrer sur le relais ci-dessus) ; là où le relais ne le fait pas, il ne crée pas d’invitation : connecte-toi d’abord
+  au relais (sous le **Jeton**, dans **Pour les utilisateurs avancés**), ou prends une invitation à celui-ci. Quand ton
+  relais n’accepte pas d’invitations, l’invitation fait quand même de vous des contacts, et son téléphone n’utilise ton
+  relais que dans la mesure où ton lien de contact le permet, comme dans Pas de relais à toi ci-dessous.
 - **Un téléphone qui a déjà un relais** garde le sien : l’invitation ne fait que t’ajouter, et vous êtes aussitôt
   contacts tout de même.
 - **Ce qui est gardé :** ton téléphone garde le secret de chaque invitation et le nom de la personne, scellés dans
@@ -625,22 +627,24 @@ ce relais, avec un jeton propre à ce téléphone, si bien qu’aucun jeton n’
 - **Pour en prendre une :** le lien ouvre **Invitation à un relais**, avec l’adresse du relais : appuie sur **Utiliser
   ce relais** seulement si elle vient de quelqu’un que tu connais. Dans Erevos, **Photographier le code QR** et
   **Choisir une photo du code QR** sous **Ajouter un contact** lisent aussi une invitation, et son lien peut être collé
-  dans le champ là. Erevos crée un jeton pour ce téléphone, le garde avec l’adresse du relais dans cet espace seulement,
-  y crée ta file d’attente et dit le nom que le relais a donné au téléphone. Si le téléphone utilise un autre relais, il
-  demande d’abord, et tes contacts apprennent ta nouvelle file d’attente par ton prochain message. Erevos accepte une
-  invitation à un relais wss://, ou à un relais ws:// sur un réseau domestique seulement (comme
-  \`ws://192.168.1.10:7879\`). Les discussions masquées n’acceptent pas d’invitations.
+  dans le champ là. Erevos crée un jeton pour ce téléphone, le garde avec l’adresse du relais dans cet espace seulement
+  et y crée ta file d’attente. Si le téléphone utilise un autre relais, il demande d’abord, et tes contacts apprennent
+  ta nouvelle file d’attente par ton prochain message. Erevos accepte une invitation à un relais wss://, ou à un relais
+  ws:// sur un réseau domestique seulement (comme \`ws://192.168.1.10:7879\`). Les discussions masquées n’acceptent pas
+  d’invitations.
 - **Tes invitations :** listées sous le bouton, en attente ou utilisées. **Reprendre** reprend une invitation encore en
-  attente, ou coupe aussitôt le téléphone qui l’a prise, et les téléphones qu’il a invités à son tour.
-- **Aussi longtemps que le tien :** un téléphone que tu as invité n’utilise le relais que tant que le tien le peut.
-  Quand ta ligne disparaît, parce que le téléphone qui t’a invité l’a reprise, que le compte avec lequel tu t’es
-  connecté ne peut plus utiliser le relais, ou que son opérateur l’a retiré, les lignes des téléphones que tu as invités
-  disparaissent aussi, ainsi que celles des téléphones qu’ils ont invités. Te reconnecter sur ton téléphone les garde.
-- **Ce que le relais garde :** le nom que tu as tapé, en lettres latines (Μαρία devient \`maria\`), le fait que tu as
-  invité ce téléphone, et une empreinte de son jeton, pas le jeton. Celui qui fait tourner le relais voit cela, et peut
-  en retirer n’importe quel téléphone. Un téléphone peut avoir 5 invitations en attente à la fois, et en créer 10 par
-  jour, et le relais ne laisse entrer qu’un nombre limité de téléphones par invitation (100, sauf si son opérateur en a
-  décidé autrement).
+  attente, ou coupe aussitôt le téléphone qui l’a prise, lui seul : les téléphones qu’il a invités à son tour gardent le
+  leur.
+- **Le leur reste :** un téléphone que tu as invité garde sa ligne sur le relais même quand la tienne disparaît, parce
+  que le téléphone qui t’a invité l’a reprise, que le compte avec lequel tu t’es connecté ne peut plus utiliser le
+  relais, ou que son opérateur l’a retirée, et de même les téléphones qu’il a invités. Seules tes invitations encore en
+  attente ne laissent alors plus entrer personne.
+- **Ce que le relais garde :** pour ce téléphone un nom de lettres et de chiffres au hasard, qui ne dit rien de qui il
+  est (le nom que tu as tapé reste sur ton téléphone ; un Erevos d’avant la 6.0.0 donnait ce nom au relais, en lettres
+  latines), le fait que tu l’as invité, et une empreinte de son jeton, pas le jeton. Celui qui fait tourner le relais
+  voit cela, et peut en retirer n’importe quel téléphone. Un téléphone peut avoir 5 invitations en attente à la fois, et
+  en créer 10 par jour, et le relais ne laisse entrer qu’un nombre limité de téléphones par invitation (100, sauf si son
+  opérateur en a décidé autrement).
 - **Qui peut inviter :** un téléphone qui a son propre jeton, sur un relais dont l’opérateur a activé les invitations
   (voir [Faire tourner ton propre relais](#own-relay)). Un téléphone qui a le jeton unique du relais pour tous l’échange
   d’abord contre un jeton à lui (voir Les façons d’entrer sur le relais ci-dessus). Avec une place prêtée, il n’y a pas
@@ -668,9 +672,9 @@ obtenir un jeton à eux, sans rien à taper dans Erevos.
 - **Ce que voient le relais et LPHL :** le relais nomme la ligne du téléphone d’après ton nom d’utilisateur
   (\`lphl:nekten\`), et chaque heure il demande à LPHL si le compte peut encore l’utiliser : dès que le compte est fermé
   ou désactivé, ou que LPHL ne peut pas être interrogé pendant 3 jours, la ligne disparaît, et le téléphone ne peut plus
-  utiliser le relais, ni les téléphones qu’il a invités. LPHL voit chaque connexion et ces vérifications, mais rien de
-  tes espaces, discussions ou contacts. Se connecter depuis un autre espace avec le même compte montre au relais que les
-  deux sont à toi.
+  utiliser le relais ; les téléphones qu’il a invités gardent le leur. LPHL voit chaque connexion et ces vérifications,
+  mais rien de tes espaces, discussions ou contacts. Se connecter depuis un autre espace avec le même compte montre au
+  relais que les deux sont à toi.
 - **Les discussions masquées** ne se connectent pas.
 
 **Pourquoi :** la page montre le code et tu le tapes dans Erevos, pas l’inverse, si bien qu’un lien de connexion que

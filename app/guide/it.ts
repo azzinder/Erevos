@@ -499,9 +499,9 @@ lì, così chi gestisce il relay può togliere un singolo telefono da solo.
   token, e un account ha 10 telefoni. Il relay serve 512 connessioni insieme, chiunque siano, a meno che il suo gestore
   non abbia scelto diversamente.
 - **Togliere un telefono:** chi gestisce il relay cancella la sua riga nel file dei token del relay: non può più usare
-  il relay, e nemmeno i telefoni che ha invitato. Se ha mai avuto il token del relay, cambia anche quel token, così non
-  può tornare con quello. I telefoni con un token tutto loro continuano come sono: solo un telefono che ha ancora
-  scritto il vecchio token (non aperto da allora, o con un Erevos più vecchio) ha bisogno di quello nuovo.
+  il relay, mentre i telefoni che ha invitato tengono il loro. Se ha mai avuto il token del relay, cambia anche quel
+  token, così non può tornare con quello. I telefoni con un token tutto loro continuano come sono: solo un telefono che
+  ha ancora scritto il vecchio token (non aperto da allora, o con un Erevos più vecchio) ha bisogno di quello nuovo.
 - **Le chat nascoste** tengono il token del relay scritto per loro: scambiarlo nello stesso momento di quello dello
   spazio mostrerebbe al relay che sono di questo telefono. Quando il token del relay cambia, scrivi quello nuovo nel loro
   **Per utenti esperti**.
@@ -520,23 +520,24 @@ tutto suo, senza scrivere nulla, e siete subito l’uno contatto dell’altro, s
   quando Erevos è sul suo telefono, lo scansiona con la fotocamera e apre il link in Erevos, oppure tocca **Condividi
   l’invito** e mandagli il link. È per una persona, per 7 giorni, o meno se l’invito al relay finisce prima. Chi lo
   prende per primo lo ha, quindi dallo solo a quella persona.
-- **Per entrare:** su un telefono ancora senza relay, **Nuova chat** mostra **Scegli come iniziare**: tocca **Ho un
-  invito**. Scansiona l’invito con la fotocamera e apri il link in Erevos, oppure tocca **Scatta una foto dell’invito**
+- **Per entrare:** su un telefono ancora senza relay, **Nuova chat** mostra un modo per entrare, **Ho un invito**:
+  toccalo. Scansiona l’invito con la fotocamera e apri il link in Erevos, oppure tocca **Scatta una foto dell’invito**
   o **Scegli una foto dell’invito**, o incolla il link e tocca **Partecipa**. Il link apre **… ti invita su Erevos**:
   tocca **Partecipa** solo se è arrivato da quella persona. Erevos prende un accesso tutto suo al suo relay e una coda
   lì, la aggiunge e dice **Benvenuto su Erevos**. Il suo primo messaggio lo dice al suo telefono, che aggiunge subito
   questo come contatto, con il nome che ha scritto.
-- **Con un account invece:** **Accedi con LPHL**, il secondo modo per entrare, fa accedere questo telefono al relay di
-  LPHL con un account LPHL, nel browser (vedi Accedere al relay più sotto); poi aggiungi i tuoi contatti con i loro
-  inviti o link. Il terzo, **Inizia senza relay**, è in Senza nessun relay, in Tramite Nostr. **Per utenti esperti** ha
-  le impostazioni del relay, come in 1–6 sopra.
+- **Gli altri modi per entrare:** sotto, **Per utenti esperti** apre gli altri, per chi li cerca: **Accedi con LPHL**
+  fa accedere questo telefono al relay di LPHL con un account LPHL, nel browser (vedi Accedere al relay più sotto), e
+  poi aggiungi i tuoi contatti con i loro inviti o link; **Inizia senza relay**, come in Senza nessun relay, in
+  Tramite Nostr; e le impostazioni del relay, come in 1–6 sopra. Un invito è il modo più semplice per entrare, e sul
+  relay un telefono invitato ha solo un nome di lettere e cifre a caso.
 - **Cosa deve permettere il tuo relay:** l’accesso tutto suo è un invito al tuo relay (vedi Inviti al relay più sotto),
   quindi arriva solo da un telefono con un token tutto suo su un relay che accetta inviti. Conta tra i tuoi inviti, con
-  il nome che hai scritto per quella persona, e va insieme al tuo. Un telefono con l’unico token condiviso del relay lo
-  scambia prima con uno tutto suo (vedi Modi per entrare nel relay sopra); dove il relay non lo fa, non crea nessun
-  invito: prima accedi al relay (sotto il **Token**, in **Per utenti esperti**), o prendi un invito per il relay. Quando
-  il tuo relay non accetta inviti, l’invito vi rende comunque contatti, e il suo telefono usa il tuo relay solo come
-  glielo permette il tuo link di contatto, come in Nessun relay tuo più sotto.
+  un nome di lettere e cifre a caso, e resta anche quando il tuo se ne va. Un telefono con l’unico token condiviso del
+  relay lo scambia prima con uno tutto suo (vedi Modi per entrare nel relay sopra); dove il relay non lo fa, non crea
+  nessun invito: prima accedi al relay (sotto il **Token**, in **Per utenti esperti**), o prendi un invito per il relay.
+  Quando il tuo relay non accetta inviti, l’invito vi rende comunque contatti, e il suo telefono usa il tuo relay solo
+  come glielo permette il tuo link di contatto, come in Nessun relay tuo più sotto.
 - **Un telefono che ha già un relay** tiene il suo: l’invito aggiunge solo te, e siete subito contatti lo stesso.
 - **Che cosa viene conservato:** il tuo telefono conserva il segreto di ogni invito e il nome per quella persona,
   sigillati nello spazio, finché non viene usato o finiscono i suoi 7 giorni, al massimo 20 insieme. Sul relay non c’è
@@ -592,18 +593,19 @@ con un token tutto di quel telefono, così nessun token viene scritto o passato 
 - **Per prenderne uno:** il link apre **Invito a un relay**, con l’indirizzo del relay: tocca **Usa questo relay** solo
   se è arrivato da qualcuno che conosci. In Erevos, anche **Fotografa il codice QR** e **Scegli una foto del codice QR**
   in **Aggiungi un contatto** leggono un invito, e il suo link si può incollare nel campo lì. Erevos crea un token per
-  questo telefono, lo conserva con l’indirizzo del relay solo in questo spazio, crea lì la tua coda e dice il nome che
-  il relay ha dato al telefono. Se il telefono usa un altro relay, prima chiede, e i contatti conoscono la tua nuova
-  coda dal tuo prossimo messaggio. Erevos accetta un invito a un relay wss://, o a uno ws:// solo su una rete di casa
-  (come \`ws://192.168.1.10:7879\`). Le chat nascoste non accettano inviti.
+  questo telefono, lo conserva con l’indirizzo del relay solo in questo spazio e crea lì la tua coda. Se il telefono usa
+  un altro relay, prima chiede, e i contatti conoscono la tua nuova coda dal tuo prossimo messaggio. Erevos accetta un
+  invito a un relay wss://, o a uno ws:// solo su una rete di casa (come \`ws://192.168.1.10:7879\`). Le chat nascoste
+  non accettano inviti.
 - **I tuoi inviti:** elencati sotto il pulsante, in attesa o in uso. **Ritira** ritira uno ancora in attesa, o esclude
-  subito il telefono che l’ha preso, e a loro volta i telefoni che ha invitato.
-- **Finché vale il tuo:** un telefono che hai invitato usa il relay solo finché può farlo il tuo. Quando la tua riga se
-  ne va, perché il telefono che ti ha invitato l’ha ritirata, l’account con cui hai fatto l’accesso non può più usare il
-  relay, o il suo gestore l’ha tolta, se ne vanno anche le righe dei telefoni che hai invitato, e quelle dei telefoni
-  che loro hanno invitato. Accedere di nuovo sul tuo telefono le mantiene.
-- **Che cosa conserva il relay:** il nome che hai scritto, in lettere latine (Μαρία diventa \`maria\`), che hai invitato
-  tu quel telefono, e un’impronta del suo token, non il token. Chi gestisce il relay vede questo, e può togliere
+  subito il telefono che l’ha preso, solo quello: i telefoni che ha invitato a loro volta tengono il loro.
+- **Il loro resta:** un telefono che hai invitato tiene la sua riga sul relay anche quando la tua se ne va, perché il
+  telefono che ti ha invitato l’ha ritirata, l’account con cui hai fatto l’accesso non può più usare il relay, o il suo
+  gestore l’ha tolta, e così anche i telefoni che ha invitato. Solo i tuoi inviti ancora in attesa non fanno più entrare
+  nessuno.
+- **Che cosa conserva il relay:** per quel telefono un nome di lettere e cifre a caso, che non dice nulla di chi è (il
+  nome che hai scritto resta sul tuo telefono; un Erevos prima della 6.0.0 dava al relay quel nome, in lettere latine),
+  che l’hai invitato tu, e un’impronta del suo token, non il token. Chi gestisce il relay vede questo, e può togliere
   qualsiasi telefono. Un telefono può avere 5 inviti in attesa insieme, e farne 10 al giorno, e il relay fa entrare solo
   un certo numero di telefoni su invito (100, a meno che il suo gestore non abbia scelto diversamente).
 - **Chi può invitare:** un telefono con un token tutto suo, su un relay il cui gestore ha attivato gli inviti (vedi
@@ -631,9 +633,9 @@ senza niente da scrivere in Erevos.
   che ha ricevuto da quel relay. Ogni telefono riceve una riga tutta sua, al massimo 10 per un account.
 - **Che cosa vedono il relay e LPHL:** il relay dà alla riga del telefono il tuo nome utente (\`lphl:nekten\`), e ogni
   ora chiede a LPHL se l’account può ancora usarlo: quando l’account viene chiuso o disattivato, o LPHL non si può
-  interpellare per 3 giorni, la riga se ne va, e il telefono non può più usare il relay, e nemmeno i telefoni che ha
-  invitato. LPHL vede ogni accesso e questi controlli, ma niente dei tuoi spazi, chat o contatti. Accedere da un altro
-  spazio con lo stesso account mostra al relay che sono entrambi tuoi.
+  interpellare per 3 giorni, la riga se ne va, e il telefono non può più usare il relay; i telefoni che ha invitato
+  tengono il loro. LPHL vede ogni accesso e questi controlli, ma niente dei tuoi spazi, chat o contatti. Accedere da un
+  altro spazio con lo stesso account mostra al relay che sono entrambi tuoi.
 - **Le chat nascoste** non accedono.
 
 **Perché:** la pagina mostra il codice e tu lo scrivi in Erevos, non il contrario, così un link di accesso che

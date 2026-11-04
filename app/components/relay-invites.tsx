@@ -8,6 +8,7 @@ import { Platform, Share, View } from 'react-native';
 import { QrCode } from './QrCode';
 import { Button, Field, Input, Row, Sheet, Text, TextButton } from './ui';
 import { confirm } from '../lib/alert';
+import type { E2E } from '../lib/e2e';
 import { t } from '../lib/i18n';
 import { laterDay, laterLabel } from '../lib/later';
 import { listInvites, makeInvite, takeBackInvite, type InviteListed, type Relay } from '../lib/relay';
@@ -15,13 +16,13 @@ import { inviteLink } from '../lib/relay-invite';
 
 // Invites to the relay (lib/relay.ts, crates/erevos-relay/src/invites.rs), under the token in Relay
 // and new contacts: with a token of its own on a relay that invites, this phone makes an invite for
-// one more phone, named as typed, and shows it as a QR code. It shows only when the relay says this
+// one more phone, named with random letters there and as typed here, and shows it as a QR code. It shows only when the relay says this
 // phone may invite. Nothing of the invites is kept here: the relay lists them each time, and taking
 // one back that was used cuts that phone off.
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
-export function RelayInvites({ relay, onNote }: { relay: Relay | null; onNote: (note: string) => void }) {
+export function RelayInvites({ relay, e2e = null, onNote }: { relay: Relay | null; e2e?: E2E | null; onNote: (note: string) => void }) {
   // This phone's invites; null when it cannot invite here.
   const [listed, setListed] = useState<InviteListed[] | null>(null);
   const [naming, setNaming] = useState(false);
@@ -60,7 +61,8 @@ export function RelayInvites({ relay, onNote }: { relay: Relay | null; onNote: (
     if (!relay || !typed || busy) return;
     setBusy(true);
     try {
-      const got = await makeInvite(relay, typed);
+      // The relay has a name of random letters for them; the one typed stays here (lib/e2e.ts lineFor).
+      const got = await makeInvite(relay, e2e ? await e2e.lineFor(typed) : typed);
       if (!got) {
         onNote(t('This relay does not take invites from this phone.'));
         return;
@@ -90,11 +92,14 @@ export function RelayInvites({ relay, onNote }: { relay: Relay | null; onNote: (
     }
   }
 
+  // Who an invite is for: the name typed here, or the relay's for one made elsewhere or before.
+  const shownName = (invite: InviteListed) => e2e?.lineName(invite.name) || invite.name;
+
   async function takeBack(invite: InviteListed) {
     const sure = invite.used
       ? await confirm(
-          t("Take back {name}'s access?", { name: invite.name }),
-          t('Their phone can no longer use this relay, nor the phones it invited, from now on.'),
+          t("Take back {name}'s access?", { name: shownName(invite) }),
+          t('Their phone can no longer use this relay from now on. The phones it invited keep theirs.'),
           t('Take back'),
         )
       : await confirm(t('Take back this invite?'), t('Its QR code no longer lets a phone in.'), t('Take back'));
@@ -126,7 +131,7 @@ export function RelayInvites({ relay, onNote }: { relay: Relay | null; onNote: (
       )}
       <Text variant="caption" tone="muted">
         {t(
-          "An invite lets one more phone use this relay, with a token of its own, for as long as yours may: when your access goes, theirs goes too, and so does that of the phones they invited. The relay's operator sees the name you give and that you invited it.",
+          "An invite lets one more phone use this relay, with a token of its own, which stays even once yours goes. The relay's operator sees that you invited it, and for it only a name of random letters and digits: the name you give stays on this phone.",
         )}
       </Text>
       {listed.length > 0 ? (
@@ -135,7 +140,7 @@ export function RelayInvites({ relay, onNote }: { relay: Relay | null; onNote: (
           {listed.map((invite) => (
             <Row key={invite.id} wrap>
               <View style={{ flex: 1, minWidth: 160 }}>
-                <Text>{invite.name}</Text>
+                <Text>{shownName(invite)}</Text>
                 <Text variant="caption" tone="muted">
                   {invite.used
                     ? t('Uses the relay since {day}', { day: laterDay(invite.used) })

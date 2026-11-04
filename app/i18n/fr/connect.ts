@@ -24,7 +24,7 @@ export const connect: Record<string, string> = {
   "through a second relay": "par un second relais",
   "Paste their contact link or invite": "Colle son lien de contact ou son invitation",
   "No hidden chats yet. Add a contact below, or move a chat here from its details.": "Pas encore de discussions masquées. Ajoute un contact ci-dessous, ou déplace ici une discussion depuis ses détails.",
-  "Choose how to start": "Choisis comment commencer",
+  "Other ways in: signing in to a relay, starting without one, a relay address and token": "Autres façons d’entrer : se connecter à un relais, commencer sans, l’adresse et le token d’un relais",
   "I have an invite": "J’ai une invitation",
   "From someone who uses Erevos: scan its QR code or paste its link. You join typing nothing, and you are contacts at once.": "De quelqu’un qui utilise Erevos : scanne son code QR ou colle son lien. Tu rejoins sans rien taper, et vous êtes aussitôt contacts.",
   "Start without a relay": "Commencer sans relais",

@@ -90,6 +90,13 @@ On main, not released yet:
   where (lib/unread-signs.ts). The space's switch is kept in its door (lock/doors.ts `sign`, `came`), which says no
   more than the notice does, at the same size; the place's in its own data, read through the key **Receive while
   closed** already keeps, so places that only say a message came get no dot.
+- **Joining takes only the invite**: on a phone with no relay yet, **New chat** shows one way in, **I have an
+  invite**; signing in with LPHL, **Start without a relay** and the relay's settings are under **For advanced users**.
+  An invite to the relay made here, by hand, for someone new, by SMS or offered to a contact by itself, now gives the
+  relay a line name of 10 random letters and digits (lib/e2e.ts `lineFor`), and the name typed for it stays in the
+  space's sealed E2E data, the last 100 (`lines`), which the list of invites shows (`lineName`). Before, the relay's
+  file of tokens had the typed name, or the phone number of an SMS invite. Taking a relay invite no longer says the
+  name the relay gave, which means nothing to them now.
 
 ### Under the hood
 

@@ -1204,7 +1204,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(t('The invite was not taken. {error}', { error: errorText(error) }));
       return;
     }
-    await tookToken(invite.relayUrl, token, name);
+    // The relay names it as the invite did, with random letters and digits for one made since 6.0.0: not said, as it means nothing to them.
+    await tookToken(invite.relayUrl, token, name, false, true);
   }
 
   // With no relay of its own yet, or only a place lent on one, this phone takes access of its own to
@@ -1320,8 +1321,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // with a queue there when this phone has none on that relay. Which token it is, and from which
   // relay, is kept too, so signing in there again names only this one as the phone's before.
   // `first`: signed in from the start, with no relay yet: the note says so in plain words, and the
-  // relay's settings stay closed.
-  async function tookToken(url: string, token: string, name: string, first = false) {
+  // relay's settings stay closed. `invited`: from an invite, so the note leaves the name out.
+  async function tookToken(url: string, token: string, name: string, first = false, invited = false) {
     const same = !!relayUrl.trim() && sameRelay(relayUrl.trim(), url);
     setRelayUrl(url);
     setRelayToken(token);
@@ -1331,7 +1332,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     });
     const joined = first
       ? t('You are in, as {name}. Now add your contacts: by their invite, or by the contact link or QR code they give you.', { name })
-      : t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
+      : invited
+        ? t('This phone now uses the relay at {url}, with a token of its own.', { url })
+        : t('This phone now uses the relay at {url}, with a token of its own, named {name} there.', { url, name });
     if (same && ownQueue) {
       setNote(joined);
       return;
@@ -2144,8 +2147,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       if (offeredNow.current.has(identity) || (!nearby.isNear(identity) && !(nostrReady() && e2e.readsOnNostr(identity)))) continue;
       offeredNow.current.add(identity);
       try {
+        // The relay sees a name of random letters and digits; the contact's stays here (lib/e2e.ts lineFor).
         const name = e2e.contacts().find((c) => c.identity === identity)?.name || identity.slice(0, 8);
-        const made = await makeInvite(own, name);
+        const made = await makeInvite(own, await e2e.lineFor(name));
         if (!made) return;
         await sendToContact(sends, identity, '', { more: { ri: { r: own.url, c: made.code } } }, true);
         await e2e.relayInviteSent(identity);
@@ -5421,6 +5425,113 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     );
   }
 
+  // The relay's address and token, a second relay and invites to it: under For advanced users.
+  const relayFields = () => (
+    <View style={styles.section}>
+      <Text variant="caption" tone="muted">
+        {t('A relay of your own, or one whose address and token you were given. Most people need none of this.')}
+      </Text>
+      <Field label={t('Relay address')}>
+        <Input
+          value={typedRelay.shown}
+          onChangeText={typedRelay.type}
+          onBlur={typedRelay.done}
+          placeholder="ws://computer-address:7879"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+      </Field>
+      {isLentToken(relayToken) ? (
+        <Text variant="caption" tone="muted">
+          {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
+        </Text>
+      ) : (
+        <Field label={t('Token (optional)')}>
+          <Input
+            value={typedToken.shown}
+            onChangeText={typedToken.type}
+            onBlur={typedToken.done}
+            placeholder={t('Token, if the relay needs one')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+          />
+        </Field>
+      )}
+      {!hiddenKey && relayUrl.trim() ? (
+        <RelaySignIn
+          url={relayUrl.trim()}
+          token={relayToken.trim()}
+          onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
+          onNote={setNote}
+        />
+      ) : null}
+      {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
+        <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} e2e={e2e} onNote={setNote} />
+      ) : null}
+      <Field label={t('Second relay (optional)')}>
+        <Input
+          value={typedVia.shown}
+          onChangeText={typedVia.type}
+          onBlur={typedVia.done}
+          placeholder="wss://another-relay"
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+      </Field>
+      {typedVia.shown.trim() ? (
+        <Field label={t('Second relay token (optional)')}>
+          <Input
+            value={typedViaToken.shown}
+            onChangeText={typedViaToken.type}
+            onBlur={typedViaToken.done}
+            placeholder={t('Token, if the second relay needs one')}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry
+          />
+        </Field>
+      ) : null}
+      <Text variant="caption" tone="muted">
+        {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
+      </Text>
+      <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
+      {hiddenKey ? (
+        <>
+          <Field label={t('Home relay for these hidden chats (optional)')}>
+            <Input
+              value={homeUrl}
+              onChangeText={setHomeUrl}
+              placeholder="wss://relay.at-home.example"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+          </Field>
+          {homeUrl.trim() ? (
+            <Field label={t('Home relay token (optional)')}>
+              <Input
+                value={homeToken}
+                onChangeText={setHomeToken}
+                placeholder={t('Token, if the home relay needs one')}
+                autoCapitalize="none"
+                autoCorrect={false}
+                secureTextEntry
+              />
+            </Field>
+          ) : null}
+          <Text variant="caption" tone="muted">
+            {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
+          </Text>
+          <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
+          {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
+        </>
+      ) : null}
+    </View>
+  );
+
   return (
     <SwipeBack onBack={goBack}>
       <View style={styles.container} onLayout={(event) => measured({ height: event.nativeEvent.layout.height })}>
@@ -6239,7 +6350,6 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             ) : null}
             {newcomer ? (
               <View style={styles.section}>
-                <Text variant="label">{t('Choose how to start')}</Text>
                 <WayCard
                   tint="blue"
                   sign={<QrSign />}
@@ -6264,8 +6374,15 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     <Button title={t('Join')} compact onPress={() => addContact()} />
                   </Row>
                 </WayCard>
-                <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} card />
-                {ownLink ? (
+                {/* An invite is the way in shown; the others, signing in, starting without a relay and a relay's address and token, are for whoever looks for them. */}
+                <DetailRow title={t('For advanced users')} open={relayShown} onPress={() => setRelayShown((on) => !on)} />
+                {!relayShown ? (
+                  <Text variant="caption" tone="muted">
+                    {t('Other ways in: signing in to a relay, starting without one, a relay address and token')}
+                  </Text>
+                ) : null}
+                {relayShown ? <RelaySignIn url={START_RELAY} token="" onToken={(token, name) => void tookToken(START_RELAY, token, name, true)} onNote={setNote} card /> : null}
+                {relayShown && ownLink ? (
                   <WayCard
                     tint="green"
                     sign={<GlobeIcon color="#ffffff" size={20} />}
@@ -6296,6 +6413,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     {addTheirs}
                   </WayCard>
                 ) : null}
+                {relayShown ? relayFields() : null}
               </View>
             ) : (
               <>
@@ -6437,116 +6555,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                   ) : null}
                 </>
               ) : null}
-              <DetailRow title={t('For advanced users')} open={relayShown} onPress={() => setRelayShown((on) => !on)} />
-              {relayShown ? (
-                <View style={styles.section}>
-                  <Text variant="caption" tone="muted">
-                    {t('A relay of your own, or one whose address and token you were given. Most people need none of this.')}
-                  </Text>
-                  <Field label={t('Relay address')}>
-                    <Input
-                      value={typedRelay.shown}
-                      onChangeText={typedRelay.type}
-                      onBlur={typedRelay.done}
-                      placeholder="ws://computer-address:7879"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="url"
-                    />
-                  </Field>
-                  {isLentToken(relayToken) ? (
-                    <Text variant="caption" tone="muted">
-                      {t("A place lent on this relay through a contact's link: no token of your own is needed. Type another relay to use that one instead.")}
-                    </Text>
+              {/* For a newcomer they are under For advanced users at the top, with the other ways in. */}
+              {!newcomer ? (
+                <>
+                  <DetailRow title={t('For advanced users')} open={relayShown} onPress={() => setRelayShown((on) => !on)} />
+                  {relayShown ? (
+                    relayFields()
                   ) : (
-                    <Field label={t('Token (optional)')}>
-                      <Input
-                        value={typedToken.shown}
-                        onChangeText={typedToken.type}
-                        onBlur={typedToken.done}
-                        placeholder={t('Token, if the relay needs one')}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        secureTextEntry
-                      />
-                    </Field>
+                    <Text variant="caption" tone="muted">
+                      {t('Relay address and token, a second relay, invites to your relay')}
+                    </Text>
                   )}
-                  {!hiddenKey && relayUrl.trim() ? (
-                    <RelaySignIn
-                      url={relayUrl.trim()}
-                      token={relayToken.trim()}
-                      onToken={(token, name) => void tookToken(relayUrl.trim(), token, name)}
-                      onNote={setNote}
-                    />
-                  ) : null}
-                  {!hiddenKey && relayUrl.trim() && relayToken.trim() && !isLentToken(relayToken) ? (
-                    <RelayInvites relay={{ url: relayUrl.trim(), token: relayToken.trim() }} onNote={setNote} />
-                  ) : null}
-                  <Field label={t('Second relay (optional)')}>
-                    <Input
-                      value={typedVia.shown}
-                      onChangeText={typedVia.type}
-                      onBlur={typedVia.done}
-                      placeholder="wss://another-relay"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      keyboardType="url"
-                    />
-                  </Field>
-                  {typedVia.shown.trim() ? (
-                    <Field label={t('Second relay token (optional)')}>
-                      <Input
-                        value={typedViaToken.shown}
-                        onChangeText={typedViaToken.type}
-                        onBlur={typedViaToken.done}
-                        placeholder={t('Token, if the second relay needs one')}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        secureTextEntry
-                      />
-                    </Field>
-                  ) : null}
-                  <Text variant="caption" tone="muted">
-                    {t("With a second relay, what you send goes through it first, sealed for your relay. Your relay then never sees your phone's address, and the second relay never sees who a message is for. Taking messages still goes straight to your relay.")}
-                  </Text>
-                  <Button title={t('Create my relay queue')} compact onPress={createOwnQueue} />
-                  {hiddenKey ? (
-                    <>
-                      <Field label={t('Home relay for these hidden chats (optional)')}>
-                        <Input
-                          value={homeUrl}
-                          onChangeText={setHomeUrl}
-                          placeholder="wss://relay.at-home.example"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                          keyboardType="url"
-                        />
-                      </Field>
-                      {homeUrl.trim() ? (
-                        <Field label={t('Home relay token (optional)')}>
-                          <Input
-                            value={homeToken}
-                            onChangeText={setHomeToken}
-                            placeholder={t('Token, if the home relay needs one')}
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            secureTextEntry
-                          />
-                        </Field>
-                      ) : null}
-                      <Text variant="caption" tone="muted">
-                        {t("A second relay with a queue of their own, which contacts write to while your relay cannot be reached. It is kept with these hidden chats only, so the space knows nothing of it, and it is looked at while they are open. Use another one than the space's home relay.")}
-                      </Text>
-                      <Button title={t('Save home relay')} kind="secondary" compact onPress={() => void saveHome()} />
-                      {homeNote ? <Text variant="caption" tone="muted">{homeNote}</Text> : null}
-                    </>
-                  ) : null}
-                </View>
-              ) : (
-                <Text variant="caption" tone="muted">
-                  {t('Relay address and token, a second relay, invites to your relay')}
-                </Text>
-              )}
+                </>
+              ) : null}
             </View>
           </ScrollView>
         ) : selectedContact && contacts.some((c) => c.request && `${CONTACT_PREFIX}${c.identity}` === selectedContact) ? (

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_LINES, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type InviteLine, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
@@ -728,6 +728,16 @@ async function endpointOf(account: Uint8Array): Promise<Endpoint> {
   return { id: toHex(identity), bundle: toBase64Url(bundle) };
 }
 
+const LINE_LETTERS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+
+/** Ten random letters and digits: the name the relay has for an invite to it made here (E2E.lineFor). */
+export function randomLineName(): string {
+  let out = '';
+  // 252 is 7 times 36: a byte past it is left out, so each letter is as likely.
+  while (out.length < 10) for (const byte of randomBytes(16)) if (byte < 252 && out.length < 10) out += LINE_LETTERS[byte % 36];
+  return out;
+}
+
 export class E2E {
   /** This account's identity key. */
   readonly identity: Uint8Array;
@@ -1105,6 +1115,24 @@ export class E2E {
   /** The name this phone gave itself in its last invite, or ''. */
   invitedAs(): string {
     return this.data.invitedAs ?? '';
+  }
+
+  /**
+   * A name for an invite to the relay for someone named `name` here: random letters and digits, the
+   * only name the relay and whoever runs it see for them, while `name` stays here (lineName).
+   */
+  lineFor(name: string): Promise<string> {
+    return this.run(async () => {
+      const line = randomLineName();
+      const lines: InviteLine[] = [...(this.data.lines ?? []), { l: line, n: cleanName(name) }].slice(-MAX_LINES);
+      await this.save({ ...this.data, lines });
+      return line;
+    });
+  }
+
+  /** Who the invite to the relay the relay names `line` was made for here, or '' when not from here. */
+  lineName(line: string): string {
+    return (this.data.lines ?? []).find((l) => l.l === line)?.n ?? '';
   }
 
   // The invites given from here that wait still.

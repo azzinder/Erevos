@@ -530,9 +530,9 @@ Telefons dort, sodass, wer das Relay betreibt, jedes einzelne Telefon für sich 
   kamen, ein eigenes Token, und ein Konto hat 10 Telefone. Das Relay bedient 512 Verbindungen gleichzeitig, egal von
   wem, sofern sein Betreiber nichts anderes gewählt hat.
 - **Ein Telefon herausnehmen:** Wer das Relay betreibt, löscht dessen Zeile in der Token-Datei des Relays: Es kann das
-  Relay nicht mehr nutzen, und die Telefone, die es eingeladen hat, auch nicht. Hatte es jemals das Token des Relays,
-  ändert der Betreiber auch dieses Token, damit es damit nicht zurückkommen kann. Telefone mit eigenen Tokens machen
-  weiter wie bisher: Nur ein Telefon, in dem noch das alte Token eingegeben ist (seitdem nicht geöffnet, oder mit
+  Relay nicht mehr nutzen, während die Telefone, die es eingeladen hat, ihren behalten. Hatte es jemals das Token des
+  Relays, ändert der Betreiber auch dieses Token, damit es damit nicht zurückkommen kann. Telefone mit eigenen Tokens
+  machen weiter wie bisher: Nur ein Telefon, in dem noch das alte Token eingegeben ist (seitdem nicht geöffnet, oder mit
   einem älteren Erevos), braucht das neue.
 - **Versteckte Chats** behalten das Token des Relays, das für sie eingegeben ist: Es im selben Moment wie das des
   Bereichs einzutauschen, würde dem Relay zeigen, dass sie zu diesem Telefon gehören. Wenn sich das Token des Relays
@@ -553,25 +553,27 @@ eigenem Zugang, ohne etwas einzutippen, und ihr seid sofort gegenseitig Kontakte
   der Kamera und öffnet den Link in Erevos, oder du tippst auf **Einladung teilen** und schickst ihr den Link. Sie gilt
   für eine Person, 7 Tage lang, oder kürzer, wenn die Einladung des Relays früher endet. Wer sie zuerst nimmt, hat sie,
   also gib sie nur dieser Person.
-- **Beitreten:** Auf einem Telefon ohne Relay zeigt **Neuer Chat** **Wähle, wie du anfängst**: Tippe auf
-  **Ich habe eine Einladung**. Scanne die Einladung mit der Kamera und öffne den Link in Erevos, oder tippe auf
-  **Foto der Einladung aufnehmen** oder **Foto der Einladung auswählen**, oder füge den Link ein und tippe auf
-  **Beitreten**. Der Link öffnet **… lädt dich zu Erevos ein**: Tippe nur auf **Beitreten**, wenn er von dieser Person
-  kam. Erevos nimmt einen eigenen Zugang zu ihrem Relay und eine Warteschlange dort, fügt die Person hinzu und sagt
-  **Willkommen bei Erevos**. Seine erste Nachricht sagt es dem Telefon der Person, das dieses sofort als Kontakt
-  hinzufügt, so benannt, wie sie es eingegeben hat.
-- **Stattdessen mit einem Konto:** **Mit LPHL anmelden**, der zweite Weg hinein, meldet dieses Telefon mit einem
-  LPHL-Konto im Browser beim Relay von LPHL an (siehe „Beim Relay anmelden“ weiter unten); füge dann deine Kontakte
-  über ihre Einladungen oder Links hinzu. Der dritte, **Ohne Relay anfangen**, steht in „Ganz ohne Relay“ unter „Über
-  Nostr“. **Für Fortgeschrittene** hat die Relay-Einstellungen, wie in 1 bis 6 oben.
+- **Beitreten:** Auf einem Telefon ohne Relay zeigt **Neuer Chat** einen Weg hinein, **Ich habe eine Einladung**:
+  Tippe darauf. Scanne die Einladung mit der Kamera und öffne den Link in Erevos, oder tippe auf **Foto der Einladung
+  aufnehmen** oder **Foto der Einladung auswählen**, oder füge den Link ein und tippe auf **Beitreten**. Der Link
+  öffnet **… lädt dich zu Erevos ein**: Tippe nur auf **Beitreten**, wenn er von dieser Person kam. Erevos nimmt einen
+  eigenen Zugang zu ihrem Relay und eine Warteschlange dort, fügt die Person hinzu und sagt **Willkommen bei Erevos**.
+  Seine erste Nachricht sagt es dem Telefon der Person, das dieses sofort als Kontakt hinzufügt, so benannt, wie sie
+  es eingegeben hat.
+- **Die anderen Wege hinein:** Darunter öffnet **Für Fortgeschrittene** die übrigen, für wen sie sucht: **Mit LPHL
+  anmelden** meldet dieses Telefon mit einem LPHL-Konto im Browser beim Relay von LPHL an (siehe „Beim Relay anmelden“
+  weiter unten), dann fügst du deine Kontakte über ihre Einladungen oder Links hinzu; **Ohne Relay anfangen**, wie in
+  „Ganz ohne Relay“ unter „Über Nostr“; und die Relay-Einstellungen, wie in 1 bis 6 oben. Eine Einladung ist der
+  einfachste Weg hinein, und auf dem Relay hat ein eingeladenes Telefon nur einen Namen aus zufälligen Buchstaben und
+  Ziffern.
 - **Was dein Relay erlauben muss:** Der eigene Zugang ist eine Einladung zu deinem Relay (siehe „Einladungen zum Relay“
   weiter unten), also kommt er nur von einem Telefon mit eigenem Token auf einem Relay, das Einladungen annimmt. Er
-  zählt zu deinen Einladungen, unter dem Namen, den du für die Person eingegeben hast, und geht mit deinen. Ein Telefon
-  mit dem einen Token des Relays für alle tauscht es zuerst gegen ein eigenes (siehe „Wege zum Relay“ oben); wo das
-  Relay das nicht tut, macht es keine Einladung: Melde dich zuerst beim Relay an (unter dem **Token**, unter
-  **Für Fortgeschrittene**) oder nimm eine Einladung dazu an. Wenn dein Relay keine Einladungen annimmt, macht euch
-  die Einladung trotzdem zu Kontakten, und das andere Telefon nutzt dein Relay nur so, wie es dein Kontaktlink zulässt,
-  wie in „Kein eigenes Relay“ weiter unten.
+  zählt zu deinen Einladungen, unter einem Namen aus zufälligen Buchstaben und Ziffern, und bleibt, auch wenn deiner
+  geht. Ein Telefon mit dem einen Token des Relays für alle tauscht es zuerst gegen ein eigenes (siehe „Wege zum Relay“
+  oben); wo das Relay das nicht tut, macht es keine Einladung: Melde dich zuerst beim Relay an (unter dem **Token**,
+  unter **Für Fortgeschrittene**) oder nimm eine Einladung dazu an. Wenn dein Relay keine Einladungen annimmt, macht
+  euch die Einladung trotzdem zu Kontakten, und das andere Telefon nutzt dein Relay nur so, wie es dein Kontaktlink
+  zulässt, wie in „Kein eigenes Relay“ weiter unten.
 - **Ein Telefon, das schon ein Relay hat,** behält sein eigenes: Die Einladung fügt nur dich hinzu, und ihr seid
   trotzdem sofort Kontakte.
 - **Was gespeichert wird:** Dein Telefon bewahrt das Geheimnis jeder Einladung und den Namen für die Person auf,
@@ -629,27 +631,27 @@ lassen, mit einem eigenen Token dieses Telefons, sodass kein Token eingetippt od
   das andere Telefon ihn mit seiner Kamera scannen und den Link in Erevos öffnen, oder tippe auf **Einladung teilen**
   und schick sie. Sie gilt für ein Telefon 7 Tage lang, und wer sie zuerst nimmt, hat sie, also zeig sie nur der
   richtigen Person.
-- **Eine annehmen:** Der Link öffnet **Einladung zu einem Relay**, mit der Adresse des Relays: Tippe nur auf
-  **Dieses Relay nutzen**, wenn sie von jemandem kam, den du kennst. In Erevos lesen auch **Foto des QR-Codes
-  aufnehmen** und **Foto des QR-Codes auswählen** unter **Kontakt hinzufügen** eine Einladung, und ihr Link lässt sich
-  in das Feld dort einfügen. Erevos macht ein Token für dieses Telefon, bewahrt es mit der Adresse des Relays nur in
-  diesem Bereich auf, legt dort deine Warteschlange an und sagt den Namen, den das Relay dem Telefon gegeben hat. Nutzt
-  das Telefon ein anderes Relay, fragt es zuerst, und Kontakte erfahren deine neue Warteschlange mit deiner nächsten
-  Nachricht. Erevos nimmt eine Einladung zu einem wss://-Relay an, oder zu einem ws://-Relay nur in einem Heimnetz
-  (etwa \`ws://192.168.1.10:7879\`). Versteckte Chats nehmen keine Einladungen an.
+- **Eine annehmen:** Der Link öffnet **Einladung zu einem Relay**, mit der Adresse des Relays: Tippe nur auf **Dieses
+  Relay nutzen**, wenn sie von jemandem kam, den du kennst. In Erevos lesen auch **Foto des QR-Codes aufnehmen** und
+  **Foto des QR-Codes auswählen** unter **Kontakt hinzufügen** eine Einladung, und ihr Link lässt sich in das Feld dort
+  einfügen. Erevos macht ein Token für dieses Telefon, bewahrt es mit der Adresse des Relays nur in diesem Bereich auf
+  und legt dort deine Warteschlange an. Nutzt das Telefon ein anderes Relay, fragt es zuerst, und Kontakte erfahren
+  deine neue Warteschlange mit deiner nächsten Nachricht. Erevos nimmt eine Einladung zu einem wss://-Relay an, oder zu
+  einem ws://-Relay nur in einem Heimnetz (etwa \`ws://192.168.1.10:7879\`). Versteckte Chats nehmen keine Einladungen
+  an.
 - **Deine Einladungen:** unter der Taste aufgelistet, offen oder in Gebrauch. **Zurücknehmen** nimmt eine noch offene
-  zurück oder sperrt das Telefon, das sie genommen hat, sofort aus, samt den Telefonen, die dieses wiederum eingeladen
-  hat.
-- **So lange wie deines:** Ein Telefon, das du eingeladen hast, nutzt das Relay nur, solange deines es darf. Wenn deine
-  Zeile verschwindet, weil das Telefon, das dich eingeladen hat, sie zurückgenommen hat, das Konto, mit dem du dich
-  angemeldet hast, das Relay nicht mehr nutzen darf oder sein Betreiber es herausgenommen hat, verschwinden auch die
-  Zeilen der Telefone, die du eingeladen hast, und die der Telefone, die diese eingeladen haben. Eine erneute Anmeldung
-  auf deinem Telefon erhält sie.
-- **Was das Relay aufbewahrt:** den Namen, den du eingegeben hast, in lateinischen Buchstaben (Μαρία wird zu
-  \`maria\`), dass du dieses Telefon eingeladen hast, und einen Fingerabdruck seines Tokens, nicht das Token. Wer das
-  Relay betreibt, sieht das und kann jedes Telefon davon entfernen. Ein Telefon kann 5 Einladungen gleichzeitig offen
-  haben und 10 am Tag machen, und das Relay lässt nur begrenzt viele Telefone per Einladung herein (100, sofern sein
-  Betreiber nichts anderes gewählt hat).
+  zurück oder sperrt das Telefon, das sie genommen hat, sofort aus, nur dieses: Die Telefone, die es wiederum eingeladen
+  hat, behalten ihren Zugang.
+- **Ihrer bleibt:** Ein Telefon, das du eingeladen hast, behält seine Zeile auf dem Relay, auch wenn deine verschwindet,
+  weil das Telefon, das dich eingeladen hat, sie zurückgenommen hat, das Konto, mit dem du dich angemeldet hast, das
+  Relay nicht mehr nutzen darf oder sein Betreiber sie herausgenommen hat, und ebenso die Telefone, die es eingeladen
+  hat. Nur deine noch offenen Einladungen lassen dann niemanden mehr herein.
+- **Was das Relay aufbewahrt:** für dieses Telefon einen Namen aus zufälligen Buchstaben und Ziffern, der nichts darüber
+  sagt, wer es ist (der Name, den du eingegeben hast, bleibt auf deinem Telefon; ein Erevos vor 6.0.0 gab dem Relay
+  diesen Namen, in lateinischen Buchstaben), dass du es eingeladen hast, und einen Fingerabdruck seines Tokens, nicht
+  das Token. Wer das Relay betreibt, sieht das und kann jedes Telefon davon entfernen. Ein Telefon kann 5 Einladungen
+  gleichzeitig offen haben und 10 am Tag machen, und das Relay lässt nur begrenzt viele Telefone per Einladung herein
+  (100, sofern sein Betreiber nichts anderes gewählt hat).
 - **Wer einladen kann:** ein Telefon mit eigenem Token, auf einem Relay, dessen Betreiber Einladungen eingeschaltet hat
   (siehe [Ein eigenes Relay betreiben](#own-relay)). Ein Telefon mit dem einen Token des Relays für alle tauscht es
   zuerst gegen ein eigenes (siehe „Wege zum Relay“ oben). Mit einem geliehenen Platz gibt es kein
@@ -677,8 +679,8 @@ Token, ohne dass in Erevos etwas einzutippen ist.
 - **Was das Relay und LPHL sehen:** Das Relay benennt die Zeile des Telefons nach deinem Benutzernamen
   (\`lphl:nekten\`), und jede Stunde fragt es LPHL, ob das Konto es noch nutzen darf: Sobald das Konto geschlossen oder
   deaktiviert ist oder LPHL 3 Tage lang nicht gefragt werden kann, verschwindet die Zeile, und das Telefon kann das
-  Relay nicht mehr nutzen, und die Telefone, die es eingeladen hat, auch nicht. LPHL sieht jede Anmeldung und diese
-  Prüfungen, aber nichts von deinen Bereichen, Chats oder Kontakten. Wenn du dich aus einem anderen Bereich mit
+  Relay nicht mehr nutzen; die Telefone, die es eingeladen hat, behalten ihren Zugang. LPHL sieht jede Anmeldung und
+  diese Prüfungen, aber nichts von deinen Bereichen, Chats oder Kontakten. Wenn du dich aus einem anderen Bereich mit
   demselben Konto anmeldest, zeigt das dem Relay, dass beide dir gehören.
 - **Versteckte Chats** melden sich nicht an.
 
