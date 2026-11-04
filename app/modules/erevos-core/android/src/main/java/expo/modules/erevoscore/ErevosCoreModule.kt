@@ -160,8 +160,16 @@ private inline fun <T> tor(call: () -> T): T =
 
 // Expo runs every module's async calls on one thread, one after another, and a relay's answer
 // through Tor can take a minute (a wait, lib/relay.ts waitForMessage): those go on threads of
-// their own, so the others do not wait behind them.
-private suspend fun <T> torIo(call: () -> T): T = withContext(Dispatchers.IO) { tor(call) }
+// their own, so the others do not wait behind them. Each such call keeps its thread while it
+// waits: the relays' waits, each Nostr relay's next frame (lib/nostr-dm-net.ts), the opens under
+// way. Dispatchers.IO lends at most 64 threads to all the app's waits, Expo's own too, and once
+// they are taken a call waits behind the others' waits before it even starts: the Nostr tab's
+// posts, which open some twenty relays at once, then waited minutes for each step. These go on
+// TOR_THREADS of their own, beyond those 64, as Dispatchers.IO lends a view of it.
+private const val TOR_THREADS = 256
+private val torThreads = Dispatchers.IO.limitedParallelism(TOR_THREADS)
+
+private suspend fun <T> torIo(call: () -> T): T = withContext(torThreads) { tor(call) }
 
 // The JNI functions in crates/erevos-ffi/src/android.rs. The library is built into the app by
 // this module's build.gradle.

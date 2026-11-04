@@ -31,6 +31,7 @@ export const VERSIONS: WhatsNew[] = [
     forYou: [],
     underTheHood: [
       mark("**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock)."),
+      mark("**The Nostr tab's posts come**: **Posts** could stay on **Looking…** for good through Tor. Each wait through Tor took one of the threads the whole app shares, and once all were taken, every look-up of the posts waited behind the others; a relay that answered and then could not be reached kept them waiting with no end. Now Tor's waits have threads of their own, a relay that cannot be reached is let be after 20 seconds, and the posts come within about two minutes at most, with what was found by then. See [Chats with other Nostr apps](#nostr-chats)."),
       mark("**Linux, Windows and macOS again**: 6.0.0-rc.1 came out without them: the check that each build for computers opens did not know the setup of Erevos's very first start. Now it does."),
     ],
   },

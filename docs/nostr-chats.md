@@ -176,7 +176,9 @@ as it comes.
   behind a relay that sent all it was asked for, and does not stop on a crowded second; then, with
   the real core and the relays played in the checks, the space's follow list, a follow's own relay
   asked for their posts alone, 252 people asked of in asks of 200 at most, two pages, names asked only
-  for those shown, nothing kept, and the follow list looked up again once the posts went.
+  for those shown, nothing kept, and the follow list looked up again once the posts went; and a
+  relay that answers the follow list and then cannot be reached keeps the page waiting no longer
+  than its reach.
 - `docs/nostr-checks/nip17-cross.ts` against nostr-tools, the library many Nostr apps are built on:
   a message Erevos wraps opens there, as the reader's and as the sender's copy; one it wraps opens
   in Erevos; npub, nsec and nprofile read the same both ways; a wrap changed on the way is refused;
@@ -244,6 +246,12 @@ and its words; a share says who shared it. Tapping who wrote one offers their **
   asks before that second, so a second with more posts than a page holds stops nothing.
 - Names: only of the people on a page, 200 keys an ask, of the same relays as the lists, and only
   while the posts show. No profile pictures.
+- How long: each relay asked for where people write or for names is reached within 20 s, as for the
+  follow list, and only the keys a relay said all it keeps for count as looked up (the others are
+  asked again with the next page); a page begins no such ask after `FEED_LOOK_MOST` (two minutes),
+  so it comes with what was found by then. Through Tor, the calls that wait go on threads of their
+  own (`torIo` in `ErevosCoreModule.kt`), not on the 64 the whole app shares, so twenty relays opened
+  at once wait behind nothing.
 - Kept: nothing. The posts are held by the screen while they show; the follow list, where they
   write and their names, by the store for the next pages, and forgotten once the posts no longer show
   (the other part, another tab, a search) or the space closes (`nostrDmFeedDone`). As the space's Tor

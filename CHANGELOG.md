@@ -29,6 +29,17 @@ On main, not released yet:
   and looked at Android's word only after a move: home came up with the keyboard library still holding a keyboard's
   height, and nothing moved again. Now the keyboard is watched from the start, and every such screen asks Android as it
   comes up, and again 0.6 s later.
+- **The Nostr tab's posts come**: through Tor, **Posts** could stay on **Looking…** for good (on the Pixel, with
+  6.0.0-rc.1). Each call through Tor that waits (a relay's wait for messages, each Nostr relay's next frame, an open
+  under way) kept a thread of `Dispatchers.IO` while it waited, and those are at most 64 for all of the app's waits,
+  Expo's own too: with some twenty Nostr relays opened at once for the posts, a call waited behind the others' waits
+  before it even began. And a relay that answered the follow list and then went (as one closed after a minute unused)
+  was opened again for where people write and their names with no limit in time (`lookUpAnswered` in
+  `lib/nostr-dm-store.ts`). Now Tor's calls go on threads of their own, 256 at most, beyond those 64
+  (`Dispatchers.IO.limitedParallelism`, `ErevosCoreModule.kt`); those look-ups reach each relay within 20 s, as the
+  follow list's does, and only the keys a relay said all it keeps for count as looked up; and the newest page begins no
+  such look-up after two minutes, so it comes with what was found by then. `checks/nostr-feed.check.ts` plays a relay
+  that answers the follow list and then cannot be reached: the old code never brought the page.
 - **Linux, Windows and macOS again**: 6.0.0-rc.1 came out with Android, Sailfish OS and the web app only. The release's
   check that each build for computers opens (`desktop/main.js`, `--smoke`) waited for the chats or the password screen,
   and a first start now shows the setup instead. Now the setup counts as a first screen too. The setup also took the

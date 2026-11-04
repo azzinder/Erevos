@@ -16,14 +16,14 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { after, before, test } from 'node:test';
+import { after, before, mock, test } from 'node:test';
 
 import { setCurrentSpace } from '../lock/keys';
 import { setCore, type Core } from '../lib/core';
 import { randomBytes, toHex } from '../lib/crypto';
 import { FOLLOWS_RELAYS, LOOKUP_RELAYS, newNostrDm, signed, type NostrDmState } from '../lib/nostr-dm';
-import { setNostrOpen, type NostrEvent } from '../lib/nostr-dm-net';
-import { nostrDmFeed, nostrDmFeedDone, nostrDmMake, nostrDmNow, runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
+import { setNostrOpen, type NostrEvent, type NostrLink, type NostrOpen } from '../lib/nostr-dm-net';
+import { nostrDmFeed, nostrDmFeedDone, nostrDmMake, nostrDmNow, runNostrDm, stopNostrDm, type NostrFeedPage } from '../lib/nostr-dm-store';
 import { FEED_AT_ONCE, feedPage, feedPeople, feedRelays, morePosts, type FeedAnswer } from '../lib/nostr-feed';
 import { FakeRelay } from './nostr-relay';
 
@@ -157,17 +157,19 @@ const index = relay(LOOKUP_RELAYS[0]);
 const big = relay(LOOKUP_RELAYS[1]);
 for (const url of LOOKUP_RELAYS.slice(2)) relay(url);
 const annOutbox = relay('wss://outbox.ann.example');
+const openFake: NostrOpen = async (url) => {
+  const found = relays.get(url);
+  if (!found) throw new Error(`No relay at ${url}`);
+  return found.link();
+};
 
 before(() => {
   if (!coreReady) return;
   const wasm = createRequire(import.meta.url)(built.pathname) as Record<string, (...args: never[]) => unknown>;
   setCore(Object.fromEntries(Object.entries(wasm).map(([name, fn]) => [name, async (...args: never[]) => fn(...args)])) as unknown as Core);
-  setNostrOpen(async (url) => {
-    const found = relays.get(url);
-    if (!found) throw new Error(`No relay at ${url}`);
-    return found.link();
-  });
+  setNostrOpen(openFake);
 });
+
 
 after(() => {
   stopNostrDm();
@@ -261,6 +263,75 @@ test("the posts of the people the space's key follows, from where they write, tw
     await nostrDmFeed(first.until, first.posts);
     assert.equal(lists(), before + 1);
   } finally {
+    stopNostrDm();
+    setCurrentSpace(null);
+  }
+});
+
+test('a relay that answers the follow list and then cannot be reached keeps the posts waiting no longer than its reach', { skip: !coreReady }, async () => {
+  const [a, b] = await Promise.all([newNostrDm(), newNostrDm()]);
+  const outbox = relay('wss://outbox.far.example');
+  const at = Date.now() - 3600_000;
+  outbox.events.push(await signed(a, 1, [], 'Far away', at));
+  big.events.push(...(await Promise.all([1, 2].map((m) => signed(b, 1, [], `Near ${m}`, at + m * 60_000)))));
+  index.events.push(await signed(a, 10002, [['r', outbox.url, 'write']], '', at), await signed(b, 0, [], JSON.stringify({ name: 'Bea' }), at));
+  // The relay that gathers lists answers the follow list, then goes; through Tor, a new connection
+  // to it never comes, nor says why.
+  let listAsk = '';
+  let away = false;
+  setNostrOpen(async (url) => {
+    if (url === index.url && away) return new Promise<never>(() => undefined);
+    const link = await openFake(url);
+    if (url !== index.url) return link;
+    const watched: NostrLink = {
+      ...link,
+      async send(frame) {
+        const filter = frame[2] as { kinds?: number[] } | undefined;
+        if (frame[0] === 'REQ' && JSON.stringify(filter?.kinds) === '[3,10002]') listAsk = frame[1] as string;
+        return link.send(frame);
+      },
+      async next(ms) {
+        const frame = await link.next(ms);
+        if (frame?.[0] === 'EOSE' && listAsk && frame[1] === listAsk) {
+          away = true;
+          setImmediate(() => index.drop());
+        }
+        return frame;
+      },
+    };
+    return watched;
+  });
+  setCurrentSpace(12, randomBytes(32));
+  try {
+    runNostrDm();
+    await until(() => nostrDmNow().loaded, 'the account to load');
+    await nostrDmMake();
+    const me = nostrDmNow().state!;
+    index.events.push(await signed(me, 3, [['p', a.public], ['p', b.public]], '', Date.now()));
+    // Time goes as the checks say: the waits for the relay that went pass at once.
+    mock.timers.enable({ apis: ['setTimeout', 'Date'], now: Date.now() });
+    let page: NostrFeedPage | null = null;
+    let failed: unknown = null;
+    void nostrDmFeed().then(
+      (got) => (page = got),
+      (error) => (failed = error),
+    );
+    for (let step = 0; step < 3000 && !page && !failed; step++) {
+      for (let i = 0; i < 4; i++) await new Promise((resolve) => setImmediate(resolve));
+      mock.timers.tick(100);
+    }
+    assert.equal(failed, null);
+    assert.ok(away, 'the relay that gathers lists went');
+    const got = page as NostrFeedPage | null;
+    assert.ok(got, 'the page came');
+    // Bea's posts from the big relay; where Ann writes was not found, so her relay was not asked.
+    assert.deepEqual(got.posts.map((p) => p.text), ['Near 2', 'Near 1']);
+    assert.deepEqual([got.follows, got.answered], [2, true]);
+    assert.deepEqual(got.names, {});
+    assert.equal(outbox.heard.length, 0);
+  } finally {
+    mock.timers.reset();
+    setNostrOpen(openFake);
     stopNostrDm();
     setCurrentSpace(null);
   }

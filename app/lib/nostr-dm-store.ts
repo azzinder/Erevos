@@ -880,18 +880,31 @@ async function followListOf(it: Live, state: NostrDmState): Promise<{ keys: stri
   return { keys: look.keys, report: { relays, lists: look.lists, checked: look.checked, people: look.keys.length } };
 }
 
-/** What these relays have for `filter` of each NAMES_AT_ONCE of `keys`, LOOKUPS_AT_ONCE look-ups at once, together. */
-async function lookUpBatched(it: Live, urls: string[], keys: string[], filter: (batch: string[]) => Record<string, unknown>): Promise<{ events: NostrEvent[]; answered: boolean }> {
+/**
+ * What these relays have for `filter` of each NAMES_AT_ONCE of `keys`, LOOKUPS_AT_ONCE look-ups at
+ * once, together, each relay reached within FOLLOWS_REACH_WAIT as lookUpEach does: a relay that
+ * cannot be reached keeps none waiting. With them, the keys of the batches a relay said all it
+ * keeps for (`answered`): of the others, nothing found says nothing. No look-up begins after `ends`
+ * (as Date.now() counts): its keys are not answered.
+ */
+async function lookUpBatched(
+  it: Live,
+  urls: string[],
+  keys: string[],
+  filter: (batch: string[]) => Record<string, unknown>,
+  ends = Infinity,
+): Promise<{ events: NostrEvent[]; answered: string[] }> {
   const batches: string[][] = [];
   for (let i = 0; i < keys.length; i += NAMES_AT_ONCE) batches.push(keys.slice(i, i + NAMES_AT_ONCE));
   const events: NostrEvent[] = [];
-  let answered = false;
-  for (let i = 0; i < batches.length; i += LOOKUPS_AT_ONCE) {
-    const found = await Promise.all(batches.slice(i, i + LOOKUPS_AT_ONCE).map((batch) => lookUpAnswered(it, urls, [filter(batch)], FOLLOWS_WAIT)));
-    for (const one of found) {
+  const answered: string[] = [];
+  for (let i = 0; i < batches.length && Date.now() < ends; i += LOOKUPS_AT_ONCE) {
+    const asked = batches.slice(i, i + LOOKUPS_AT_ONCE);
+    const found = await Promise.all(asked.map((batch) => lookUpEach(it, urls, [filter(batch)])));
+    found.forEach((one, n) => {
       events.push(...one.events);
-      answered ||= one.answered;
-    }
+      if (one.relays.some((relay) => relay.how === 'all')) answered.push(...asked[n]);
+    });
   }
   return { events, answered };
 }
@@ -980,6 +993,11 @@ type FeedKnown = {
 let feedKnown: FeedKnown | null = null;
 // Which showing of the feed a look-up is for: one that ends after the feed went keeps nothing.
 let feedShowing = 0;
+// How long the newest page may go on looking up where people write and their names, from when it
+// began: through Tor, with some twenty relays, each step can take long, and the screen says
+// Looking… until the page comes. A look-up not begun by then is let be: their posts are asked of
+// the fixed relays, and their names wait for the next page.
+const FEED_LOOK_MOST = 120_000;
 
 /** Relays that gather everyone's relay lists and profiles: a list or a name is asked there, once,
  *  rather than of every relay. */
@@ -1044,6 +1062,7 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
   if (!it?.state || it.stopped) throw new Error(t('There are no Nostr chats in this space.'));
   const state = it.state;
   const showing = feedShowing;
+  const ends = Date.now() + FEED_LOOK_MOST;
   const kept = feedKnown?.of === it && feedKnown.me === state.public ? feedKnown : null;
   let known = kept;
   if (!known || until === undefined) {
@@ -1055,11 +1074,9 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
     // Where those not looked up yet write; one with no list found is asked of the fixed relays only.
     const unknown = keys.filter((key) => !fresh.writes.has(key));
     if (unknown.length) {
-      const found = await lookUpBatched(it, fresh.listing, unknown, (batch) => ({ kinds: [10002], authors: batch }));
-      if (found.answered) {
-        const lists = byAuthor(found, 10002);
-        for (const key of unknown) fresh.writes.set(key, await writesOf(key, lists.get(key) ?? []));
-      }
+      const found = await lookUpBatched(it, fresh.listing, unknown, (batch) => ({ kinds: [10002], authors: batch }), ends);
+      const lists = byAuthor(found, 10002);
+      for (const key of found.answered) fresh.writes.set(key, await writesOf(key, lists.get(key) ?? []));
     }
     known = fresh;
     if (showing === feedShowing) feedKnown = fresh;
@@ -1076,11 +1093,9 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
   const people = feedPeople(page.posts);
   const unnamed = people.filter((key) => key !== state.public && !known.names.has(key));
   if (unnamed.length && known.listing.length) {
-    const found = await lookUpBatched(it, known.listing, unnamed, (batch) => ({ kinds: [0], authors: batch }));
-    if (found.answered) {
-      const profiles = byAuthor(found, 0);
-      for (const key of unnamed) known.names.set(key, (await nameIn(key, profiles.get(key) ?? [])) ?? null);
-    }
+    const found = await lookUpBatched(it, known.listing, unnamed, (batch) => ({ kinds: [0], authors: batch }), ends);
+    const profiles = byAuthor(found, 0);
+    for (const key of found.answered) known.names.set(key, (await nameIn(key, profiles.get(key) ?? [])) ?? null);
   }
   const names: Record<string, string> = {};
   for (const key of people) {
