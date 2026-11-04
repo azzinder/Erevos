@@ -190,6 +190,7 @@ import { sendSms, smsPacketsReady, type SmsMessage } from '../modules/erevos-sms
 import type { Look } from '../theme/look';
 import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
+import { press, tap } from '../lib/haptics';
 import { t, plural, mark, locale, useLang } from '../lib/i18n';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
@@ -7029,7 +7030,10 @@ function DetailRow({ title, value, right, checked, open, danger = false, onPress
   const colors = useColors();
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        tap();
+        onPress();
+      }}
       accessibilityRole={checked === undefined ? 'button' : 'switch'}
       accessibilityState={checked !== undefined ? { checked } : open === undefined ? undefined : { expanded: open }}
       style={({ pressed }) => ({
@@ -7167,7 +7171,10 @@ const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, t
       ) : null}
       <Pressable
         onPress={message.voice ? () => acts.play(message) : message.file ? () => acts.open(message) : undefined}
-        onLongPress={() => acts.menu(message)}
+        onLongPress={() => {
+          press();
+          acts.menu(message);
+        }}
         accessibilityHint={message.voice ? t('Tap to play, hold for more') : message.file ? t('Tap to open, hold for more') : t('Hold for more')}
         style={[
           styles.bubble,

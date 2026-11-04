@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
+import { press } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { rowTime, shownName, type InboxRow } from '../lib/inbox';
 import { laterLabel } from '../lib/later';
@@ -49,7 +50,14 @@ export function ChatRow({
   const preview = row.locked ? t('Locked with a PIN') : row.draft || row.last || (row.imported ? t('Imported chat, goes on here') : t('No messages yet'));
   return (
     <Pressable
-      onLongPress={onLong}
+      onLongPress={
+        onLong
+          ? () => {
+              press();
+              onLong();
+            }
+          : undefined
+      }
       onPress={
         onOpen ??
         (() =>

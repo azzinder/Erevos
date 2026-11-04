@@ -5,6 +5,7 @@
 import { useEffect, useRef } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { space } from '../theme/colors';
 
@@ -62,7 +63,12 @@ export function useSayTyping(on: boolean, say: (typing: boolean) => void): { typ
 export function SayTypingSwitch({ on, server, onChange }: { on: boolean; server: string; onChange: (on: boolean) => void }) {
   return (
     <View style={{ gap: space.xs }}>
-      <Pressable onPress={() => onChange(!on)} accessibilityRole="switch" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+      <Pressable
+        onPress={() => {
+          tap();
+          onChange(!on);
+        }}
+        accessibilityRole="switch" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <Text variant="bodyStrong" style={{ flex: 1 }}>
           {t('Say when I am writing')}
         </Text>

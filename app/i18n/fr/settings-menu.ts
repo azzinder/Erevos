@@ -40,4 +40,10 @@ export const settingsMenu: Record<string, string> = {
   'Language, appearance, privacy, the relay and more': 'Langue, apparence, confidentialité, le relais et plus',
   'Search the settings': 'Rechercher dans les réglages',
   'No setting has “{query}” in it.': 'Aucun réglage ne contient « {query} ».',
+  "Vibrate on touch": "Vibrer au toucher",
+  "A short buzz for keys, Send and Enter": "Une brève vibration pour les touches, Envoyer et Entrée",
+  "Vibrate": "Vibrer",
+  "No vibration": "Sans vibration",
+  "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Une brève vibration quand tu touches une touche du clavier, Envoyer, Entrée ou un interrupteur, et quand un menu s’ouvre. Jamais pendant le défilement. Pour chaque espace de ce téléphone.",
+  "Touches make no buzz.": "Les touches ne font pas vibrer le téléphone.",
 };

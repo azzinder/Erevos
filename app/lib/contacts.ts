@@ -562,6 +562,11 @@ export function newContactHref(number: string): `/contact-edit?fill=${string}` {
   return `/contact-edit?fill=${encodeURIComponent(fillText({ ...EMPTY_FIELDS, phones: [{ value: number, kind: 'mobile', label: '' }] }))}`;
 }
 
+/** The contacts list, to pick the contact this number is added to (app/contacts.tsx, `add`), or to make a new one there. */
+export function addToContactHref(number: string): `/contacts?add=${string}` {
+  return `/contacts?add=${encodeURIComponent(fillText({ ...EMPTY_FIELDS, phones: [{ value: number, kind: 'mobile', label: '' }] }))}`;
+}
+
 /** An Erevos contact as the contacts screens show it: its identity (hex), its name, and the number linked to it in Erevos ('' for none). */
 export type ErevosPerson = { identity: string; name: string; phone: string };
 

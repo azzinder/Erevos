@@ -3,9 +3,10 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef, useState } from 'react';
-import { Vibration, View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
+import { View, type AccessibilityActionEvent, type GestureResponderEvent } from 'react-native';
 
 import { playVoice, useVoiceRecorder } from '../lib/audio';
+import { tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { MAX_VOICE_MS, MIN_VOICE_MS, voiceDuration, waveformBars, waveformOf } from '../lib/voice';
 import { radius, space } from '../theme/colors';
@@ -31,13 +32,7 @@ const clock = (ms: number) => {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 };
 
-function buzz() {
-  try {
-    Vibration.vibrate(12);
-  } catch {
-    // A phone without a vibrator: nothing to feel.
-  }
-}
+const buzz = tap;
 
 /**
  * Records one voice message at a time for MicButton: `send` is given the sound, how long it is and

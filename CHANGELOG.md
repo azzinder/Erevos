@@ -25,6 +25,15 @@ On main, not released yet:
   off. Now `CallService` also starts the call screen itself while the phone is locked or its screen off, or when the
   notice cannot show. A call that Do Not Disturb holds back, or that a screening app silenced, still comes quietly. The
   notice also gives Android the caller's number, so that Do Not Disturb lets the notice of a call it lets ring show.
+- **More for a number in the Phone**: on the keypad, a **⋯** beside a typed number offers **Add to contacts**,
+  **Add to an existing contact** (the contacts open to pick one, `/contacts?add=`), **Send an SMS** and
+  **Copy the number**. **Recents** adds **Add to an existing contact** for a number that is none of the contacts,
+  **Open the contact** for one that is, and **Copy the number**; **Favourites** adds **Send an SMS**, **Copy the
+  number** and **Open the contact** to each number. With Erevos locked, the Phone still only calls (and copies).
+- **A short buzz on touch**: the keys of the keypad (held **0** for +), **Call**, the call screen's buttons, Send, the
+  keyboard's Enter where it sends or submits, buttons, chips, switches and the menus that open now buzz for 10 to 15
+  ms (`lib/haptics.ts`), never while scrolling. **Settings** → **Appearance** → **Vibrate on touch** turns it off,
+  for the phone; nothing on the web app and the computer.
 
 ### Under the hood
 

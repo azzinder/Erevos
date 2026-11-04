@@ -12,12 +12,14 @@ import { SwipeTabs } from '../components/swipe-tabs';
 import { Button, Card, Chip, fontStyle, Page, Row, Sheet, Text, TextButton } from '../components/ui';
 import { offerUndo, UNDO_SHOWS, UndoBar } from '../components/undo-bar';
 import { ask } from '../lib/alert';
-import { dialCards, isContactNumber, type Card as ContactCard } from '../lib/contact-book';
-import { newContactHref, toDial, type Findable } from '../lib/contacts';
+import { CAN_COPY, copyText } from '../lib/clipboard';
+import { cardHref, dialCards, isContactNumber, type Card as ContactCard } from '../lib/contact-book';
+import { addToContactHref, newContactHref, toDial, type Findable } from '../lib/contacts';
+import { press, tap } from '../lib/haptics';
 import { Held } from '../lib/held';
 import { mark, plural, t } from '../lib/i18n';
 import { refreshKnownNames } from '../lib/known-names';
-import { callLength, dialNumber, KEYS, typeKey } from '../lib/phone';
+import { callLength, dialNumber, KEYS, textable, typeKey } from '../lib/phone';
 import { isBlocked, onSmsOrderChanged, smsOrderChanged } from '../lib/sms-folders';
 import { sameNumber } from '../lib/sms-invite';
 import {
@@ -160,6 +162,8 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   const [chosen, setChosen] = useState('');
   // The number to call once its SIM is chosen.
   const [choosing, setChoosing] = useState<string | null>(null);
+  // The actions for the number typed on the keypad (add it to the contacts, text it, copy it).
+  const [more, setMore] = useState(false);
   // The height left for the keypad under the title, card and tabs, and those of its SIM chips and
   // note, once laid out.
   const [room, setRoom] = useState(0);
@@ -239,7 +243,8 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
 
   // "Type a phone number." goes as soon as one is typed.
   useEffect(() => {
-    if (number) setNote((shown) => (shown === t('Type a phone number.') ? '' : shown));
+    if (number) setNote((shown) => (shown === t('Type a phone number.') || shown === t('Copied.') || shown === t('Not copied.') ? '' : shown));
+    else setMore(false);
   }, [number]);
 
   if (Platform.OS !== 'android' || !phoneReady()) {
@@ -258,6 +263,7 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
   // Calls `to` on `account`; without one, on the SIM kept for the number, or asks which. With two
   // SIMs, the one it goes on is kept for the number.
   async function call(to: string, account?: string) {
+    press();
     const plain = dialNumber(to);
     if (!plain) {
       setNote(t('Type a phone number.'));
@@ -281,6 +287,10 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
     } catch (error) {
       setNote(t('Not called. {error}', { error: error instanceof Error ? error.message : String(error) }));
     }
+  }
+
+  async function copyNumber(to: string) {
+    setNote((await copyText(to)) ? t('Copied.') : t('Not copied.'));
   }
 
   // The SIMs show once Erevos may read the phone's state; the phone app may, else it asks.
@@ -456,10 +466,28 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
               }}
             />
           ) : tab === 'favourites' ? (
-            <Favourites onCall={(to) => void call(to)} />
+            <Favourites locked={!!locked} onCall={(to) => void call(to)} />
           ) : (
             <View style={styles.keypad} onLayout={measured(setRoom)}>
               <View style={styles.numberLine}>
+                {number && (CAN_COPY || (!locked && textable(number))) ? (
+                  <Pressable
+                    onPress={() => {
+                      tap();
+                      setMore(true);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('More for this number')}
+                    hitSlop={10}
+                    style={({ pressed }) => [styles.erase, { opacity: pressed ? 0.6 : 1 }]}
+                  >
+                    <Text variant="heading" tone="muted">
+                      ⋯
+                    </Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.erase} />
+                )}
                 <TextInput
                   value={number}
                   onChangeText={(text) => setNumber(dialNumber(text))}
@@ -471,8 +499,14 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                   textAlign="center"
                 />
                 <Pressable
-                  onPress={() => setNumber((n) => n.slice(0, -1))}
-                  onLongPress={() => setNumber('')}
+                  onPress={() => {
+                    tap();
+                    setNumber((n) => n.slice(0, -1));
+                  }}
+                  onLongPress={() => {
+                    press();
+                    setNumber('');
+                  }}
                   disabled={!number}
                   accessibilityRole="button"
                   accessibilityLabel={t('Delete')}
@@ -505,8 +539,18 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
                     {keys.map((key) => (
                       <Pressable
                         key={key}
-                        onPress={() => setNumber((n) => typeKey(n, key))}
-                        onLongPress={key === '0' ? () => setNumber((n) => typeKey(n, '+')) : undefined}
+                        onPress={() => {
+                          tap();
+                          setNumber((n) => typeKey(n, key));
+                        }}
+                        onLongPress={
+                          key === '0'
+                            ? () => {
+                                press();
+                                setNumber((n) => typeKey(n, '+'));
+                              }
+                            : undefined
+                        }
                         accessibilityRole="button"
                         accessibilityLabel={key}
                         style={({ pressed }) => [styles.key, sized.key, pressed && styles.keyPressed]}
@@ -577,6 +621,47 @@ export function PhoneView({ params, locked }: { params: { number?: string; tab?:
             {t('Erevos keeps this SIM for the number, sealed in this space, and calls it on the same SIM next time.')}
           </Text>
         )}
+      </Sheet>
+
+      <Sheet visible={more} onClose={() => setMore(false)} title={number}>
+        {locked || !textable(number) ? null : (
+          <>
+            <Button
+              title={t('Add to contacts')}
+              kind="secondary"
+              onPress={() => {
+                setMore(false);
+                router.push(newContactHref(number));
+              }}
+            />
+            <Button
+              title={t('Add to an existing contact')}
+              kind="secondary"
+              onPress={() => {
+                setMore(false);
+                router.push(addToContactHref(number));
+              }}
+            />
+            <Button
+              title={t('Send an SMS')}
+              kind="secondary"
+              onPress={() => {
+                setMore(false);
+                router.push(`/sms?to=${encodeURIComponent(number)}`);
+              }}
+            />
+          </>
+        )}
+        {CAN_COPY ? (
+          <Button
+            title={t('Copy the number')}
+            kind="secondary"
+            onPress={() => {
+              setMore(false);
+              void copyNumber(number);
+            }}
+          />
+        ) : null}
       </Sheet>
 
       <UndoBar bottom={insets.bottom + space.md} />
@@ -716,6 +801,19 @@ function Recents({ accounts, locked, onCall, onEdit }: {
       active = false;
     };
   }, [openNumber]);
+
+  // Opens the contact that has this number, as the contacts show it.
+  async function openContact(number: string) {
+    setNote('');
+    const cards = await dialCards(true).catch((): ContactCard[] => []);
+    const found = cards.find((card) => card.phones.some((entry) => sameNumber(entry.value, number)));
+    if (found) router.push(cardHref(found));
+    else setNote(t('No contact has this number.'));
+  }
+
+  async function copyNumber(number: string) {
+    setNote((await copyText(number)) ? t('Copied.') : t('Not copied.'));
+  }
 
   async function allow() {
     const answer = await PermissionsAndroid.request('android.permission.READ_CALL_LOG').catch(() => null);
@@ -876,12 +974,42 @@ function Recents({ accounts, locked, onCall, onEdit }: {
               />
             )}
             {known === false ? (
+              <>
+                <Button
+                  title={t('Add to contacts')}
+                  kind="secondary"
+                  onPress={() => {
+                    setOpen(null);
+                    router.push(newContactHref(first.number));
+                  }}
+                />
+                <Button
+                  title={t('Add to an existing contact')}
+                  kind="secondary"
+                  onPress={() => {
+                    setOpen(null);
+                    router.push(addToContactHref(first.number));
+                  }}
+                />
+              </>
+            ) : null}
+            {!locked && (known === true || (first.name && known === null)) ? (
               <Button
-                title={t('Add to contacts')}
+                title={t('Open the contact')}
                 kind="secondary"
                 onPress={() => {
                   setOpen(null);
-                  router.push(newContactHref(first.number));
+                  void openContact(first.number);
+                }}
+              />
+            ) : null}
+            {CAN_COPY ? (
+              <Button
+                title={t('Copy the number')}
+                kind="secondary"
+                onPress={() => {
+                  setOpen(null);
+                  void copyNumber(first.number);
                 }}
               />
             ) : null}
@@ -1008,7 +1136,7 @@ function CallDetails({ row, accounts, onDelete }: { row: CallRow; accounts: Phon
 }
 
 // The phone's starred contacts, to call at a tap; one with several numbers and no default asks which.
-function Favourites({ onCall }: { onCall: (number: string) => void }) {
+function Favourites({ locked, onCall }: { locked: boolean; onCall: (number: string) => void }) {
   const styles = useStyles(makeStyles);
   const [found, setFound] = useState<{ allowed: boolean; favourites: Favourite[] } | null>(null);
   const [open, setOpen] = useState<Favourite | null>(null);
@@ -1052,6 +1180,7 @@ function Favourites({ onCall }: { onCall: (number: string) => void }) {
   return (
     <>
       <ScrollView contentContainerStyle={styles.list}>
+        {note ? <Text tone="muted">{note}</Text> : null}
         {found && found.favourites.length === 0 ? (
           <Text tone="muted" style={styles.empty}>
             {t('No favourites yet. The contacts you star show here, to call at a tap.')}
@@ -1062,7 +1191,10 @@ function Favourites({ onCall }: { onCall: (number: string) => void }) {
             <Pressable
               key={f.id}
               onPress={() => tap(f)}
-              onLongPress={() => setOpen(f)}
+              onLongPress={() => {
+                press();
+                setOpen(f);
+              }}
               accessibilityRole="button"
               accessibilityLabel={t('Call {name}', { name: f.name })}
               style={({ pressed }) => [styles.favourite, pressed && styles.pressed]}
@@ -1078,16 +1210,54 @@ function Favourites({ onCall }: { onCall: (number: string) => void }) {
 
       <Sheet visible={open !== null} onClose={() => setOpen(null)} title={open?.name}>
         {(open?.numbers ?? []).map((n) => (
+          <View key={n.number} style={{ gap: space.xs }}>
+            <Button
+              title={[n.label, n.shown || n.number].filter(Boolean).join(' · ')}
+              kind={n.number === open?.primary ? 'primary' : 'secondary'}
+              onPress={() => {
+                setOpen(null);
+                onCall(n.number);
+              }}
+            />
+            {locked && !CAN_COPY ? null : (
+              <Row wrap>
+                {locked ? null : (
+                  <Button
+                    title={t('Send an SMS')}
+                    kind="ghost"
+                    compact
+                    onPress={() => {
+                      setOpen(null);
+                      router.push(`/sms?to=${encodeURIComponent(n.number)}`);
+                    }}
+                  />
+                )}
+                {CAN_COPY ? (
+                  <Button
+                    title={t('Copy the number')}
+                    kind="ghost"
+                    compact
+                    onPress={() => {
+                      setOpen(null);
+                      void copyText(n.number).then((done) => setNote(done ? t('Copied.') : t('Not copied.')));
+                    }}
+                  />
+                ) : null}
+              </Row>
+            )}
+          </View>
+        ))}
+        {open && !locked ? (
           <Button
-            key={n.number}
-            title={[n.label, n.shown || n.number].filter(Boolean).join(' · ')}
-            kind={n.number === open?.primary ? 'primary' : 'secondary'}
+            title={t('Open the contact')}
+            kind="secondary"
             onPress={() => {
+              const id = open.id;
               setOpen(null);
-              onCall(n.number);
+              router.push(`/contact-card?id=${encodeURIComponent(id)}`);
             }}
           />
-        ))}
+        ) : null}
       </Sheet>
     </>
   );
@@ -1278,7 +1448,6 @@ const makeStyles = (colors: Colors) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: space.sm,
-      paddingLeft: 44,
     },
     number: {
       flex: 1,

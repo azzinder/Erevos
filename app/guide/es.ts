@@ -239,7 +239,7 @@ como **Ajustes · Settings**, para encontrarlo en un idioma que no sabes leer.
 | Grupo | Qué contiene |
 | --- | --- |
 | **General** | **Idioma**, **Actualizaciones**, **Dar Erevos a un teléfono cercano** (Android), **Novedades**, **Acerca de Erevos**, **Apoyar Erevos** y **Permisos** (Android y la app web). Ver Idioma más abajo, [Actualizaciones](#updates) y [Erevos a un teléfono cercano](#give-app). |
-| **Apariencia** | **Estilo y colores** (acabado, cristal, estilo, tema, colores y texto sobre zonas de color, con la vista previa), **Fondo de pantalla**, **Mensajes** (la forma de las burbujas), **Iconos del lanzador** (Android) y **Widget** (Android). Ver [Apariencia](#appearance). |
+| **Apariencia** | **Estilo y colores** (acabado, cristal, estilo, tema, colores y texto sobre zonas de color, con la vista previa), **Fondo de pantalla**, **Mensajes** (la forma de las burbujas), **Iconos del lanzador** (Android), **Widget** (Android) y **Vibrar al tocar** (Android). Ver [Apariencia](#appearance). |
 | **Notificaciones** | **En segundo plano** (Android y la app de ordenador): recibir y sonar mientras Erevos está cerrado, y el aviso de mensajes; en un ordenador, si Erevos sigue funcionando con la ventana cerrada. **Notificaciones con la app cerrada** (la app web): Web Push. **Número en el icono**: cuántos mensajes no has leído, en el icono de Erevos. Ver [En un iPhone](#iphone) y [En un ordenador](#desktop). |
 | **Privacidad y seguridad** | **Bloqueo y segunda contraseña** (bloquear al abrir Erevos, la contraseña, la privacidad de la pantalla, huella o cara, la segunda contraseña), **Chats ocultos** (los PIN de los 4 lugares), **Botón de pánico** (con la contraseña de pánico), **Calculadora en lugar de Erevos** (Android, en Apariencia), **Capturas de pantalla** (Android) y **Esta app web** (solo la app web). Ver [Bloqueo con contraseña](#lock), [Segunda contraseña](#second), [Chats ocultos](#hidden) y [Botón de pánico](#panic). Ver también [Borrarme de todas partes](#forget). |
 | **Relay y redes** | **Relay** (abre **Chat nuevo** con **Para usuarios avanzados** abierto), **Relay de casa**, **Tor** (Android), **Nostr** (Android), **Radio LoRa** (Android), **Matrix**, **XMPP** y **Chats de Nostr**. Ver [Chatear a través de un relay](#relay), [Relay de casa](#home-relay), [A través de Tor](#tor), [A través de Nostr](#nostr), [Con una radio LoRa](#lora), [Matrix](#matrix), [XMPP](#xmpp) y [Chats con otras apps de Nostr](#nostr-chats). |
@@ -2177,6 +2177,7 @@ teléfono**; en un teléfono pequeño solo muestra ese título, y al tocarla se 
 - **Favoritos:** los contactos marcados con estrella en los contactos de tu teléfono, con sus fotos. Un toque llama al
   número predeterminado del contacto, o pregunta cuál cuando hay varios y ninguno es el predeterminado; al mantenerlo
   pulsado, los muestra todos.
+- **Más para un número:** en cuanto se escribe un número en el teclado, **⋯** a su lado ofrece **Añadir a contactos**, **Añadir a un contacto existente** (se abren tus contactos: toca aquel al que añadir el número, o crea uno nuevo), **Enviar un SMS** y **Copiar el número**. En **Recientes**, las llamadas de la fila ofrecen lo mismo, y **Abrir el contacto** para un número que es uno de tus contactos. En **Favoritos**, mantén pulsado un contacto para ver sus números, cada uno con **Enviar un SMS** y **Copiar el número**, y **Abrir el contacto**. Con Erevos bloqueado, el Teléfono solo llama y copia un número: sin SMS, sin cambios en tus contactos. Cada tecla, **Llamar** y el Intro del teclado dan una vibración breve; en **Ajustes** → **Apariencia** → **Vibrar al tocar** la desactivas. Ver [Apariencia](#appearance).
 - **Llamada por Wi-Fi y voz HD:** la pantalla de llamada lo dice bajo el nombre cuando una llamada va por Wi-Fi o con
   voz HD, y **Recientes** lo dice para cada llamada.
 - **Bloqueo de llamadas:** en **Teléfono** → **Ajustes**, **Bloquear el telemarketing** bloquea las llamadas de los
@@ -2954,6 +2955,7 @@ para que el texto siempre se lea bien, también sobre cristal.
   que hay dentro.
 - **Widget** (Android): el orden de los cuatro botones del widget, de izquierda a derecha, con el widget dibujado como
   se verá. Toca ↑ o ↓ para mover un botón; **Orden inicial** los devuelve a su sitio.
+- **Vibrar al tocar** (Android): una vibración breve al tocar una tecla del teclado, Enviar, Intro o un interruptor, y al abrirse un menú; nunca al desplazarte. Activada, salvo que la desactives aquí. Es del teléfono, igual en cada espacio.
 
 ## En un ordenador {#desktop}
 

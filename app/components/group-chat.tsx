@@ -37,6 +37,7 @@ import { ASK_AGAIN, MAX_GROUP_TEXT, memberName, noteText, type GroupInfo, type G
 import { leftOff } from '../lib/left-off';
 import { namesFor, typingMention, withMention } from '../lib/mentions';
 import { takeShared } from '../lib/share-in';
+import { press } from '../lib/haptics';
 import { plural, t } from '../lib/i18n';
 import { appShown, onAppShown } from '../lib/receiver';
 import { keepPrivate } from '../lib/screen-privacy';
@@ -514,7 +515,10 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
             return (
               <View key={i} onLayout={parts.placedAt(m)}>
                 <Pressable
-                  onLongPress={() => parts.hold(m)}
+                  onLongPress={() => {
+                    press();
+                    parts.hold(m);
+                  }}
                   accessibilityHint={t('Hold for more')}
                   style={[styles.bubble, mine ? b.mine : b.theirs, m.file?.kind === 'photo' && !stuck && (mine || !first) && styles.photoBubble, stuck && styles.stickerBubble, parts.litStyle(m)]}
                 >

@@ -13,7 +13,6 @@ import {
   Pressable,
   ScrollView,
   TextInput,
-  Vibration,
   View,
   useWindowDimensions,
   type AccessibilityActionEvent,
@@ -23,6 +22,7 @@ import {
   type TextStyle,
 } from 'react-native';
 
+import { press, tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { QUALITIES, qualityNote } from '../lib/photo-quality';
 import type { PhotoQuality } from '../lib/pick-photo';
@@ -213,11 +213,7 @@ export function SendDisc({ onPress, onLongPress, disabled, busy }: { onPress: ()
         disabled
           ? undefined
           : () => {
-              try {
-                Vibration.vibrate(12);
-              } catch {
-                // A phone without a vibrator: nothing to feel.
-              }
+              press();
               onPress();
             }
       }
@@ -405,11 +401,7 @@ export function Composer({
   }
 
   function buzz() {
-    try {
-      Vibration.vibrate(12);
-    } catch {
-      // A phone without a vibrator: nothing to feel.
-    }
+    tap();
   }
 
   // Starts recording, held (`tapped` false) or for a screen reader, on until tapped again.
@@ -480,6 +472,7 @@ export function Composer({
   // keyboard is still going down, it would float a keyboard's height above the arrow.
   function openMenu() {
     if (sendWays.length === 0) return;
+    press();
     const fallback = { bottom: 96, right: space.sm };
     void dismissKeyboard().then(() => {
       if (!bar.current) {
@@ -686,7 +679,14 @@ export function Composer({
                   }}
                   submitBehavior={enterSends ? 'submit' : undefined}
                   returnKeyType={enterSends ? 'send' : 'default'}
-                  onSubmitEditing={enterSends ? onSend : undefined}
+                  onSubmitEditing={
+                    enterSends
+                      ? () => {
+                          press();
+                          onSend();
+                        }
+                      : undefined
+                  }
                   onKeyPress={enterSends && Platform.OS === 'web' ? onKeyPress : undefined}
                   onContentSizeChange={(event) => setFieldHeight(Math.min(140, Math.max(44, Math.ceil(event.nativeEvent.contentSize.height))))}
                   style={[

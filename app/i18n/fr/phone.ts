@@ -147,4 +147,9 @@ export const phone: Record<string, string> = {
   // A plain call from the top of a chat or an SMS conversation (components/dial-tile.tsx).
   'Mobile call, not encrypted': 'Appel mobile, non chiffré',
   'This phone has no app to call {number}.': 'Ce téléphone n’a pas d’app pour appeler le {number}.',
+  "More for this number": "Plus pour ce numéro",
+  "Add to an existing contact": "Ajouter à un contact existant",
+  "Copy the number": "Copier le numéro",
+  "Open the contact": "Ouvrir le contact",
+  "No contact has this number.": "Aucun contact n’a ce numéro.",
 };

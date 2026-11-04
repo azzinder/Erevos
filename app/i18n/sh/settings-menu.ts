@@ -40,4 +40,10 @@ export const settingsMenu: Record<string, string> = {
   'Language, appearance, privacy, the relay and more': 'Jezik, izgled, privatnost, relay i još',
   'Search the settings': 'Pretraži postavke',
   'No setting has “{query}” in it.': 'Nijedna postavka ne sadrži „{query}“.',
+  "Vibrate on touch": "Vibracija na dodir",
+  "A short buzz for keys, Send and Enter": "Kratka vibracija za tipke, Pošalji i Enter",
+  "Vibrate": "Vibriraj",
+  "No vibration": "Bez vibracije",
+  "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Kratka vibracija kad dodirneš tipku na tastaturi, Pošalji, Enter ili prekidač, i kad se otvori meni. Nikad dok skroluješ. Za svaki prostor na ovom telefonu.",
+  "Touches make no buzz.": "Dodiri ne vibriraju.",
 };

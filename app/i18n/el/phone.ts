@@ -147,4 +147,9 @@ export const phone: Record<string, string> = {
   // A plain call from the top of a chat or an SMS conversation (components/dial-tile.tsx).
   'Mobile call, not encrypted': 'Κλήση κινητής, χωρίς κρυπτογράφηση',
   'This phone has no app to call {number}.': 'Αυτό το κινητό δεν έχει εφαρμογή για να καλέσει το {number}.',
+  "More for this number": "Περισσότερα για αυτόν τον αριθμό",
+  "Add to an existing contact": "Προσθήκη σε υπάρχουσα επαφή",
+  "Copy the number": "Αντιγραφή του αριθμού",
+  "Open the contact": "Άνοιγμα της επαφής",
+  "No contact has this number.": "Καμία επαφή δεν έχει αυτόν τον αριθμό.",
 };
