@@ -26,6 +26,11 @@ name: release
 # The jobs hand their files to the publish job through a draft release, build-<run number>:
 # artifacts would fill the account's Actions storage, release files do not count toward it.
 # The five newest releases stay.
+#
+# From main, or from a series' own branch, release/<major>.x (release/6.x: fixes of the 6 series
+# while main moves on to 7): from there the version must be of that series and newer than the
+# series' own last release, started by hand. A release goes out as GitHub's latest only when no
+# published release has a newer version, so a fix of an older series never hides a newer one.
 
 on:
   schedule:
@@ -63,6 +68,7 @@ jobs:
     outputs:
       build: ${{ steps.check.outputs.build }}
       version: ${{ steps.check.outputs.version }}
+      latest: ${{ steps.check.outputs.latest }}
     steps:
       - name: Check the branch, whether main changed since the last release, and the version
         id: check
@@ -71,11 +77,24 @@ jobs:
           GH_REPO: ${{ github.repository }}
           WANTED: ${{ inputs.version }}
         run: |
-          if [ "$GITHUB_REF_NAME" != main ]; then
-            echo "::error::Releases are built only from main, not from $GITHUB_REF_NAME"; exit 1
+          series=""
+          if [[ "$GITHUB_REF_NAME" =~ ^release/([1-9][0-9]*)\.x$ ]]; then
+            series=${BASH_REMATCH[1]}
+          elif [ "$GITHUB_REF_NAME" != main ]; then
+            echo "::error::Releases are built only from main or a release/<major>.x branch, not from $GITHUB_REF_NAME"; exit 1
           fi
-          read -r latest last <<< "$(gh api "repos/$GH_REPO/releases/latest" --jq '"\(.tag_name) \(.target_commitish)"' 2>/dev/null || true)"
-          latest=${latest#v}
+          # Every published release's version, oldest first. Sorted with "-" as "~", which sort -V
+          # puts before the end: 4.0.0~rc.1 before 4.0.0.
+          published=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.draft | not) | .tag_name | ltrimstr("v")' 2>/dev/null |
+            grep -E '^[1-9][0-9]*\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$' | tr '-' '~' | sort -V | tr '~' '-' || true)
+          if [ -n "$series" ]; then
+            # A series' branch: its own last release, whatever main released since.
+            latest=$(grep -E "^$series\." <<< "$published" | tail -n1 || true)
+            last=""
+          else
+            read -r latest last <<< "$(gh api "repos/$GH_REPO/releases/latest" --jq '"\(.tag_name) \(.target_commitish)"' 2>/dev/null || true)"
+            latest=${latest#v}
+          fi
           if [ -n "$WANTED" ]; then
             version=${WANTED#v}
           elif [[ "$latest" =~ ^[1-9][0-9]*\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?$ ]]; then
@@ -87,12 +106,19 @@ jobs:
           if [[ ! "$version" =~ ^[1-9][0-9]*\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)\.[1-9][0-9]*)?$ ]]; then
             echo "::error::Not a version: $version. It looks like 2.1.0, or 4.0.0-rc.1 for a test release before 4.0.0."; exit 1
           fi
+          if [ -n "$series" ] && [ "${version%%.*}" != "$series" ]; then
+            echo "::error::$GITHUB_REF_NAME releases only $series.x versions, not $version: name the version when starting it."; exit 1
+          fi
           # Sorted with "-" as "~", which sort -V puts before the end: 4.0.0~rc.1 before 4.0.0.
           newest=$(printf '%s\n%s\n' "${latest//-/\~}" "${version//-/\~}" | sort -V | tail -n1)
           if [ "$version" = "$latest" ] || [ "$newest" != "${version//-/\~}" ]; then
             echo "::error::$version is not newer than the latest release, $latest."; exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          # GitHub's latest only when no published release is newer (a fix of an older series is not).
+          top=$(printf '%s\n%s\n' "$published" "$version" | grep . | tr '-' '~' | sort -V | tail -n1 | tr '~' '-')
+          if [ "$top" = "$version" ]; then echo "latest=true" >> "$GITHUB_OUTPUT"; else echo "latest=false" >> "$GITHUB_OUTPUT"; fi
+          echo "GitHub's latest release after it: $([ "$top" = "$version" ] && echo this one || echo "still $top")."
           echo "This release: $version (build $EREVOS_BUILD; the latest is ${latest:-none})."
           if [ "$GITHUB_EVENT_NAME" = schedule ] && [ "$last" = "$GITHUB_SHA" ]; then
             echo "main has not changed since the last release (${GITHUB_SHA::7}): nothing to build."
@@ -472,6 +498,8 @@ jobs:
       contents: write
     env:
       EREVOS_VERSION: ${{ needs.version.outputs.version }}
+      # true unless a published release has a newer version (see the top of this file).
+      EREVOS_LATEST: ${{ needs.version.outputs.latest }}
       # Writes to the public download repository that Updates → Check for updates reads
       # (app/lib/updates.ts); without the token that step is skipped.
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
@@ -529,7 +557,7 @@ jobs:
           Updating keeps your contacts and chats; make a backup first. In Erevos: Updates → Check for updates; by hand: User guide → Updates.
           NOTES
           cat notes.md
-          gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest
+          gh release create "v$EREVOS_VERSION" files/* --target "$GITHUB_SHA" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST"
           gh release delete "build-$EREVOS_BUILD" --yes
           # The five newest releases stay.
           gh release list --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
@@ -541,6 +569,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
-          gh release create "v$EREVOS_VERSION" files/* --repo "$RELEASES_REPO" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest
+          gh release create "v$EREVOS_VERSION" files/* --repo "$RELEASES_REPO" --title "Erevos $EREVOS_VERSION" --notes-file notes.md --latest="$EREVOS_LATEST"
           gh release list --repo "$RELEASES_REPO" --limit 100 --exclude-drafts --json tagName --jq '.[5:][].tagName' |
             xargs -r -n1 gh release delete --repo "$RELEASES_REPO" --cleanup-tag --yes
