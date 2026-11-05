@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
+    '**Στήριξε το Erevos**: πλέον κάθε τρόπος έχει τον κωδικό QR του, ακόμη και το Liberapay και το PayPal. Το PayPal ανοίγει τώρα στον browser.',
   // 6.0.0-rc.2
   "**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock).":
     "**Τα κουμπιά της αρχικής οθόνης μένουν κάτω**: μετά τον κωδικό, η **Υπενθύμιση** και η **Νέα συνομιλία** της αρχικής οθόνης μπορούσαν να μένουν στη μέση της οθόνης, πάνω από τις συνομιλίες, με τη λίστα να τελειώνει πάνω από αυτά, ώσπου να βγεις από το Erevos και να ξαναμπείς. Τώρα η οθόνη ρωτά αμέσως το Android αν είναι ανοιχτό πληκτρολόγιο. Δες [Κλείδωμα με κωδικό](#lock).",

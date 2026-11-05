@@ -14,7 +14,16 @@ On main, not released yet:
 
 ### For you
 
+- **Support Erevos**: every way has its QR code now, Liberapay and PayPal too, besides the Monero and Bitcoin
+  addresses. PayPal opens in the browser: its old link only handed over to the PayPal app, so it failed without it.
+  The page `site/donate` has the same QR codes.
+
 ### Under the hood
+
+- **QR codes of Liberapay and PayPal**: Liberapay's holds its link, PayPal's its link with `&source=qr` at the end
+  (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
+  coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and
+  `site/donate/build.mjs` draws the same two for the web page.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

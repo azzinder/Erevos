@@ -8,13 +8,13 @@ import { Linking } from 'react-native';
 import { QrCode } from '../components/QrCode';
 import { Button, Card, Page, Row, Text } from '../components/ui';
 import { CAN_COPY, copyText } from '../lib/clipboard';
-import { BITCOIN, LIBERAPAY, MONERO, PAYPAL, walletLink } from '../lib/donate';
+import { BITCOIN, LIBERAPAY, LIBERAPAY_QR, MONERO, PAYPAL, PAYPAL_QR, walletLink } from '../lib/donate';
 import { t } from '../lib/i18n';
 
 // Support Erevos (Settings → General): the ways to give to it, for its running costs, as its maker
 // gave them (lib/donate.ts). Nothing here is fetched: each way opens in the browser or a wallet only
-// when tapped, so Erevos sends nothing and never knows who gave. Each coin's address shows whole,
-// with its QR code, to copy or scan.
+// when tapped, so Erevos sends nothing and never knows who gave. Every way shows its QR code to scan;
+// each coin's address shows whole too, to copy.
 
 // One coin: its address whole, with its QR code, to copy or open in a wallet.
 function Coin({ name, address, about, onCopy, onOpen }: { name: string; address: string; about: string; onCopy: () => void; onOpen: () => void }) {
@@ -61,11 +61,13 @@ export default function DonateScreen() {
       <Card>
         <Text variant="bodyStrong">Liberapay</Text>
         <Text tone="muted">{t('Once, or every week or month. Liberapay itself keeps no share.')}</Text>
+        <QrCode text={LIBERAPAY_QR} size={220} />
         <Button title={t('Open Liberapay')} onPress={() => open(LIBERAPAY, t('Open {url} in a browser.', { url: LIBERAPAY }))} />
       </Card>
       <Card>
         <Text variant="bodyStrong">PayPal</Text>
         <Text tone="muted">{t('Known and easy, but PayPal knows who gives.')}</Text>
+        <QrCode text={PAYPAL_QR} size={220} />
         <Button title={t('Open PayPal')} kind="secondary" onPress={() => open(PAYPAL, t('Open {url} in a browser.', { url: PAYPAL }))} />
       </Card>
       <Coin name="Monero" {...wallet('monero', MONERO)} about={t('The most private: the Monero network shows neither who gave nor how much.')} />

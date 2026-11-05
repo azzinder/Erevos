@@ -9,8 +9,12 @@
 
 /** Liberapay's page for giving, once or every week or month. */
 export const LIBERAPAY = 'https://liberapay.com/Nekten/donate';
-/** PayPal's page for giving, the one its QR code opens. */
-export const PAYPAL = 'https://www.paypal.com/qrcodes/managed/36556cec-d7d1-41c0-a1cb-cbb14bd80a9b';
+/** PayPal's page for giving: it opens in the browser, with or without the PayPal app. */
+export const PAYPAL = 'https://www.paypal.com/donate/?business=A9DV5LKGBGUF4&no_recurring=0&currency_code=EUR';
+/** What PayPal's QR code holds: its page for giving, marked as scanned from a QR code. */
+export const PAYPAL_QR = PAYPAL + '&source=qr';
+/** What Liberapay's QR code holds: its page for giving. */
+export const LIBERAPAY_QR = LIBERAPAY;
 /** The Bitcoin address (native SegWit, bech32). */
 export const BITCOIN = 'bc1qu4k2pva3n29luaawhdu2924xww8ghzgvzn2a8d';
 /** The Monero address (a subaddress, which keeps receiving though the wallet shows a new one). */

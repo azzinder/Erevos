@@ -28,6 +28,10 @@ function constant(name) {
 }
 const LIBERAPAY = constant('LIBERAPAY');
 const PAYPAL = constant('PAYPAL');
+// What the two QR codes hold, as lib/donate.ts has them (checks/donate.check.ts holds the app to these).
+const LIBERAPAY_QR = LIBERAPAY;
+const PAYPAL_QR = PAYPAL + '&source=qr';
+if (!source.includes('export const LIBERAPAY_QR = LIBERAPAY;') || !source.includes("export const PAYPAL_QR = PAYPAL + '&source=qr';")) throw new Error('QR texts differ from app/lib/donate.ts');
 const BITCOIN = constant('BITCOIN');
 const MONERO = constant('MONERO');
 for (const url of [LIBERAPAY, PAYPAL]) if (!url.startsWith('https://')) throw new Error(`not https: ${url}`);
@@ -62,6 +66,7 @@ const text = {
     copied: 'Copied',
     wallet: 'Open in a wallet',
     qr: 'QR code of the address',
+    qrPage: 'QR code of the page for giving',
     app: 'In the app, the same ways are under Settings → General → Support Erevos.',
     foot: 'This page loads nothing from anywhere else. Each way opens only when you tap it, and Erevos does not know who gave.',
   },
@@ -78,6 +83,7 @@ const text = {
     copied: 'Αντιγράφηκε',
     wallet: 'Άνοιγμα σε πορτοφόλι',
     qr: 'Κωδικός QR της διεύθυνσης',
+    qrPage: 'Κωδικός QR της σελίδας δωρεάς',
     app: 'Στην εφαρμογή, οι ίδιοι τρόποι είναι στις Ρυθμίσεις → Γενικά → Στήριξε το Erevos.',
     foot: 'Αυτή η σελίδα δεν φορτώνει τίποτα από αλλού. Κάθε τρόπος ανοίγει μόνο όταν τον πατήσεις, και το Erevos δεν ξέρει ποιος έδωσε.',
   },
@@ -104,12 +110,14 @@ const section = (lang) => {
     <article class="card">
       <h2>Liberapay</h2>
       <p class="muted">${t.liberapay}</p>
+      ${qrSvg(LIBERAPAY_QR, `${t.qrPage} (Liberapay)`)}
       <div class="row"><a class="btn" href="${LIBERAPAY}" rel="noopener noreferrer">${t.openLiberapay}</a></div>
     </article>
     <article class="card">
       <h2>PayPal</h2>
       <p class="muted">${t.paypal}</p>
-      <div class="row"><a class="btn secondary" href="${PAYPAL}" rel="noopener noreferrer">${t.openPaypal}</a></div>
+      ${qrSvg(PAYPAL_QR, `${t.qrPage} (PayPal)`)}
+      <div class="row"><a class="btn secondary" href="${PAYPAL.replace(/&/g, '&amp;')}" rel="noopener noreferrer">${t.openPaypal}</a></div>
     </article>${coin(t, 'Monero', 'monero', MONERO, t.monero)}${coin(t, 'Bitcoin', 'bitcoin', BITCOIN, t.bitcoin)}
     <p class="muted small">${t.app}</p>
     <p class="faint small">${t.foot}</p>

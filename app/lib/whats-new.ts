@@ -21,7 +21,9 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [],
+  forYou: [
+    mark('**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.'),
+  ],
   underTheHood: [],
 };
 

@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
+    '**Podržite Erevos**: svaki način sada ima svoj QR kôd, i Liberapay i PayPal, a PayPal se otvara u pregledniku.',
   // 6.0.0-rc.2
   "**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock).":
     "**Dugmad početnog ekrana ostaju dolje**: nakon lozinke, **Podsjeti me** i **Novi razgovor** mogli su lebdjeti na pola ekrana, preko razgovora, a lista se završavala iznad njih, dok se Erevos ne napusti i ponovo otvori. Sada ekran odmah pita Android da li je tastatura otvorena. Vidi [Zaključavanje lozinkom](#lock).",

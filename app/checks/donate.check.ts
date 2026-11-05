@@ -12,7 +12,7 @@ import { test } from 'node:test';
 
 import { keccak_256 } from '@noble/hashes/sha3.js';
 
-import { BITCOIN, LIBERAPAY, MONERO, PAYPAL, walletLink } from '../lib/donate';
+import { BITCOIN, LIBERAPAY, LIBERAPAY_QR, MONERO, PAYPAL, PAYPAL_QR, walletLink } from '../lib/donate';
 
 // Bech32 (BIP 173): the checksum over the human part and the data.
 const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
@@ -88,5 +88,23 @@ test('the Monero address is a whole main-network subaddress', () => {
 test("the pages for giving are the services' own, over https", () => {
   assert.equal(new URL(LIBERAPAY).origin, 'https://liberapay.com');
   assert.equal(new URL(PAYPAL).origin, 'https://www.paypal.com');
-  for (const page of [LIBERAPAY, PAYPAL]) assert.equal(new URL(page).search, '');
+  assert.equal(new URL(LIBERAPAY).search, '');
+});
+
+test("PayPal's page is the donate page of the business, in euros, one-off or recurring", () => {
+  const url = new URL(PAYPAL);
+  assert.equal(url.origin, 'https://www.paypal.com');
+  assert.equal(url.pathname, '/donate/');
+  assert.deepEqual([...url.searchParams.entries()], [
+    ['business', 'A9DV5LKGBGUF4'],
+    ['no_recurring', '0'],
+    ['currency_code', 'EUR'],
+  ]);
+});
+
+test('the QR codes hold the links, PayPal marked as scanned, and the coins only the bare address', () => {
+  assert.equal(PAYPAL_QR, PAYPAL + '&source=qr');
+  assert.equal(LIBERAPAY_QR, 'https://liberapay.com/Nekten/donate');
+  assert.equal(new URL(LIBERAPAY_QR).search, '');
+  assert.equal(new URL(PAYPAL_QR).searchParams.get('source'), 'qr');
 });

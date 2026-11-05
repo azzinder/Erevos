@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
+    '**Soutenir Erevos** : chaque moyen a maintenant son code QR, Liberapay et PayPal aussi, et PayPal s’ouvre dans le navigateur.',
   // 6.0.0-rc.2
   "**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock).":
     "**Les boutons de l’écran d’accueil restent en bas** : après le mot de passe, **Me rappeler** et **Nouvelle discussion** pouvaient flotter à mi-hauteur, sur les discussions, la liste s’arrêtant au-dessus d’eux, jusqu’à ce qu’on quitte Erevos et qu’on y revienne. Maintenant, l’écran demande tout de suite à Android si un clavier est ouvert. Voir [Verrou par mot de passe](#lock).",
