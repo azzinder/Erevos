@@ -78,7 +78,7 @@
 
 import { chacha20poly1305 } from '@noble/ciphers/chacha.js';
 
-import { canRelayChannel, canTorWays, coreReason, relayChannelKeys, relaySeal, sealPublic, tor, torOpenChannel, torOpenOn } from './core';
+import { canRelayChannel, canTor, canTorWays, coreReason, relayChannelKeys, relaySeal, sealPublic, tor, torOpenChannel, torOpenOn } from './core';
 import { randomBytes, sha256Bytes } from './crypto';
 import { t } from './i18n';
 import { isSignInPage } from './relay-signin';
@@ -115,6 +115,10 @@ const WAIT_ANY = 29;
 const NEWS_ANY = 30;
 const TIME = 31;
 const XMPP_PUSH = 32;
+const COUPON_KEY = 33;
+const COUPON_SIGN = 34;
+const COUPON_KEYS = 35;
+const COUPON_REDEEM = 36;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -155,8 +159,10 @@ export type QueueIds = { recipientId: Uint8Array; senderId: Uint8Array };
 // `fallback`: where a send goes next when this relay cannot take it (lib/spare.ts), each with the
 // sender id there, or the same one when it has none. `backup`: this phone's backup relay, which
 // sends to contacts go through when its own relay cannot be reached.
-/** A relay, its token, and how it is reached; `torOnly` only through Tor, never straight (lib/closed-notices.ts). */
-export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay; torOnly?: boolean };
+/** A relay, its token, and how it is reached; `torOnly` only through Tor, never straight (lib/closed-notices.ts).
+ *  `tor`: always through Tor, whatever the space's way, files too, never straight: a backup relay
+ *  that is not to see this phone's address (lib/spare.ts). */
+export type Relay = { url: string; token?: string; via?: Relay; key?: Uint8Array; fallback?: Fallback[]; backup?: Relay; torOnly?: boolean; tor?: boolean };
 export type Fallback = { relay: Relay; senderId?: Uint8Array };
 
 export class RelayError extends Error {
@@ -370,6 +376,12 @@ export function torOff(): boolean {
 export function torFor(files: boolean, now = Date.now()): boolean {
   if (torWay === 'all') return true;
   return torWay === 'messages' && !files && torReady && now >= torRestUntil;
+}
+
+// Whether a request to `relay` goes through Tor now: always for one reached only through Tor
+// (Relay.tor), else as the space's way says.
+function torTo(relay: Relay, files: boolean): boolean {
+  return relay.tor === true || torFor(files);
 }
 
 // The core's Tor says what failed in its own words: a RelayError, as a direct connection's failure is.
@@ -723,10 +735,13 @@ class SocketLine implements Line {
 /** A connection's messages through the core's Tor, which is slower: each may take twice as long. */
 class TorLine implements Line {
   private readonly id: Uint8Array;
+  // To a relay reached only through Tor (Relay.tor): its failures say nothing of the space's way.
+  private readonly own: boolean;
   private ended: RelayError | null = null;
 
-  private constructor(id: Uint8Array) {
+  private constructor(id: Uint8Array, own: boolean) {
     this.id = id;
+    this.own = own;
   }
 
   /** On the circuits named `way`, when given and this build can (canTorWays). */
@@ -734,19 +749,19 @@ class TorLine implements Line {
     const token = channel ? '' : (relay.token ?? '');
     const open = () =>
       way && canTorWays() ? torOpenOn(relay.url, token, way, channel) : channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, token);
-    return new TorLine(await viaTor(open, !channel));
+    return new TorLine(await viaTor(open, !channel && !relay.tor), relay.tor === true);
   }
 
   call(bytes: Uint8Array, within: number, rest = true): Promise<Uint8Array> {
     if (this.ended) return Promise.reject(this.ended);
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        if (rest && torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
+        if (rest && !this.own && torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
         this.ended ??= lateError();
         this.close();
         reject(this.ended);
       }, 2 * within);
-      viaTor(() => tor().torCall(this.id, bytes), rest)
+      viaTor(() => tor().torCall(this.id, bytes), rest && !this.own)
         .catch((error: RelayError) => {
           this.ended ??= error;
           throw error;
@@ -850,7 +865,7 @@ async function request(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, wa
   try {
     return await requestOnce(relay, bytes, signal, way);
   } catch (error) {
-    if (!tor || torWay !== 'messages' || relay.torOnly || signal?.aborted || !(error instanceof RelayUnreachableError) || error instanceof RelayKeyError) throw error;
+    if (!tor || torWay !== 'messages' || relay.torOnly || relay.tor || signal?.aborted || !(error instanceof RelayUnreachableError) || error instanceof RelayKeyError) throw error;
     torRestUntil = Math.max(torRestUntil, Date.now() + TOR_REST_MS);
     return requestOnce(relay, bytes, signal, way);
   }
@@ -862,10 +877,11 @@ async function requestOnce(relay: Relay, bytes: Uint8Array, signal?: AbortSignal
   if (!isRelayAddress(relay.url)) throw new BadRelayAddressError(relay.url);
   // A space that goes through Tor, waited on while another is open: never straight.
   if (relay.torOnly && !torFor(false)) throw new RelayUnreachableError(t('Tor is not ready.'));
+  if (relay.tor && !canTor()) throw new RelayUnreachableError(t('This relay is reached only through Tor, which this build of Erevos does not have.'));
   const pin = channelPin(relay);
   if (!pin) return plainRequest(relay, bytes, signal, way);
   try {
-    const { line, reply } = await openChannel(relay, pin, torFor(false), bytes, signal, way);
+    const { line, reply } = await openChannel(relay, pin, torTo(relay, false), bytes, signal, way);
     line.close();
     return reply;
   } catch (error) {
@@ -883,19 +899,20 @@ function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way
   // Tor may have gone to rest while a channel was tried through it: a Tor-only relay still never goes straight.
   if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
   const within = answerWithin(bytes);
-  if (torFor(false)) {
+  if (torTo(relay, false)) {
     const reply =
       way && canTorWays()
         ? TorLine.open(relay, false, way).then((line) =>
             line.call(bytes, within).finally(() => line.close()),
           )
-        : viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes));
+        : viaTor(() => tor().torRequest(relay.url, relay.token ?? '', bytes), !relay.tor);
     // Tor's request runs on until it ends; its reply is not waited for once the request ended
     // here, or took too long (twice as long as straight, as Tor is slower).
     return new Promise((resolve, reject) => {
       const end = () => reject(new Ended());
       const late = setTimeout(() => {
-        if (torWay === 'messages') torRestUntil = Date.now() + TOR_REST_MS;
+        // A relay reached only through Tor says nothing of how the space's other requests go.
+        if (torWay === 'messages' && !relay.tor) torRestUntil = Date.now() + TOR_REST_MS;
         reject(lateError());
       }, 2 * within);
       signal?.addEventListener('abort', end);
@@ -1696,6 +1713,80 @@ export async function takeOwnLine(relay: Relay, name: string): Promise<{ token: 
 }
 
 /**
+ * The public key `relay` signs coupons with for this phone (crates/erevos-relay/src/coupons.rs),
+ * as SubjectPublicKeyInfo DER: null when it signs none, not for this token (a token that came with
+ * a coupon, or the relay's one token), or is from before.
+ */
+export async function couponKey(relay: Relay): Promise<Uint8Array | null> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(COUPON_KEY));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return null;
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return null;
+  check(reply, 'coupon');
+  return reply.slice(1);
+}
+
+/** Has `relay` sign a blinded coupon with this phone's token: the blind signature. Throws FULL when
+ *  this phone had all the coupons it may signed today. */
+export async function signCoupon(relay: Relay, blinded: Uint8Array): Promise<Uint8Array> {
+  const reply = await request(relay, Uint8Array.of(COUPON_SIGN, blinded.length >> 8, blinded.length & 0xff, ...blinded));
+  if (reply[0] === FULL) throw new RelayError(t('Your relay signs only a few coupons a day for each phone. Erevos tries again tomorrow.'), FULL);
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('Your relay signs no coupons for this phone.'), NOT_FOUND);
+  check(reply, 'coupon');
+  return reply.slice(1);
+}
+
+/** The relay a backup relay's coupon requests go to: its /join path, reached as `tor` says. */
+function joinOf(url: string, tor: boolean): Relay {
+  return { ...relayPath(url, '/join'), ...(tor ? { tor: true } : {}) };
+}
+
+/** The SHA-256 of each issuer's key whose coupons the relay at `url` takes, through Tor when `tor`:
+ *  none when it takes no coupons, or is from before. */
+export async function couponIssuers(url: string, tor: boolean): Promise<Uint8Array[]> {
+  const relay = joinOf(url, tor);
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(COUPON_KEYS));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return [];
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return [];
+  check(reply, 'coupon');
+  const count = reply[1] ?? 0;
+  if (reply.length !== 2 + 32 * count) throw new RelayError('coupon: unexpected reply');
+  return Array.from({ length: count }, (_, i) => reply.slice(2 + 32 * i, 34 + 32 * i));
+}
+
+/** A coupon finished, to take to a backup relay: the SHA-256 of its issuer's key, and its nonce,
+ *  message randomizer and signature. */
+export type Coupon = { issuer: Uint8Array; nonce: Uint8Array; randomizer: Uint8Array; signature: Uint8Array };
+
+/**
+ * Takes `coupon` to the relay at `url`, through Tor when `tor`, for a line for `token` there,
+ * a token this phone made for it: the name on the line. The same again is answered again. Throws
+ * when the relay does not take it (NOT_FOUND), it was taken with another token (WRONG), or the
+ * relay has all the lines from coupons it may (FULL).
+ */
+export async function redeemCoupon(url: string, tor: boolean, coupon: Coupon, token: string): Promise<string> {
+  const { issuer, nonce, randomizer, signature } = coupon;
+  const reply = await request(
+    joinOf(url, tor),
+    Uint8Array.of(COUPON_REDEEM, ...issuer, ...nonce, ...randomizer, signature.length >> 8, signature.length & 0xff, ...signature, ...sha256Bytes(utf8Encode(token))),
+  );
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('The backup relay does not take coupons from your relay.'), NOT_FOUND);
+  if (reply[0] === WRONG) throw new RelayError(t('This coupon was taken already.'), WRONG);
+  if (reply[0] === FULL) throw new RelayError(t('The backup relay gives no more tokens for coupons now.'), FULL);
+  check(reply, 'coupon');
+  return utf8Decode(reply.slice(1));
+}
+
+/**
  * Whether the relay at `url` lets phones sign in with a provider for a token of their own: the
  * provider's name, and the page the browser opens to sign in. Null when it does not, is from
  * before signing in, or cannot be reached now. Asked on the /join path, which needs no token.
@@ -1811,7 +1902,8 @@ export class RelaySession {
   /** Opens it; `files` for the requests of files, which go through Tor only the way 'all'. */
   static async open(relay: Relay, files = false): Promise<RelaySession> {
     if (stopped && clearing === 0) throw new SpaceStoppedError();
-    const throughTor = torFor(files);
+    if (relay.tor && !canTor()) throw new RelayUnreachableError(t('This relay is reached only through Tor, which this build of Erevos does not have.'));
+    const throughTor = torTo(relay, files);
     const pin = channelPin(relay);
     if (pin) {
       try {

@@ -1,0 +1,128 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+import type { PendingCoupon, SpareRelay } from '../lock/space-data';
+import { canCoupons, couponBlind, couponFinalize } from './core';
+import { randomBytes, sha256Bytes } from './crypto';
+import { t } from './i18n';
+import { couponIssuers, couponKey, newPhoneToken, redeemCoupon, RelayError, signCoupon, toHex, type Relay } from './relay';
+
+// The token of a home relay reached only through Tor (lib/spare.ts, SpareRelay.tor), taken with a
+// coupon (crates/erevos-core/src/coupon.rs): the space's own relay, where this phone is a member,
+// signs a coupon blind, and the home relay gives a token for it, through Tor and with no token,
+// once for each coupon. The space's relay sees a blinded message only, the home relay a coupon the
+// first never saw and no address: neither can tell whose the token is, so a second space whose
+// relay is this one's home relay, and the other way round, are not tied together by either.
+//
+// The coupon is taken some time after it was signed (WAIT_LEAST to WAIT_MOST, at random), so the
+// times the two relays saw do not match. Still, with few phones on a relay, whoever runs both could
+// guess by the times alone. The token lasts COUPON_DAYS on the home relay (crates/erevos-relay);
+// a new coupon is taken from RENEW_AFTER on, and the token before is used until the new one comes.
+
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
+/** How long a token from a coupon lasts on the home relay (crates/erevos-relay coupons::COUPON_DAYS). */
+export const COUPON_DAYS = 90;
+/** From when a token from a coupon is renewed. */
+export const RENEW_AFTER = 45 * DAY;
+/** How long after it was signed a coupon is taken at the least and the most. */
+export const WAIT_LEAST = 5 * MINUTE;
+export const WAIT_MOST = 60 * MINUTE;
+/** After a failed renewal, how long until the next try; the token before still works. */
+const RETRY = 60 * MINUTE;
+
+// Bytes from hex kept by this phone (lock/space-data.ts checked it is hex).
+const bytesOf = (hex: string) => Uint8Array.from(hex.match(/../g) ?? [], (pair) => parseInt(pair, 16));
+
+/** The coupon is signed and is taken on the home relay later; until then the home relay has no token. */
+export class CouponWaitError extends RelayError {
+  constructor() {
+    super(t('Your relay signed a coupon for the backup relay. Its token comes from there within the hour: the wait keeps the two relays from telling by the time that it is yours.'));
+  }
+}
+
+/** Whether a home relay takes its token with a coupon now: one through Tor with none yet, or one near its end. */
+export function wantsCoupon(spare: SpareRelay, now = Date.now()): boolean {
+  if (spare.tor !== true || !spare.url.trim()) return false;
+  return !spare.token.trim() || (spare.coupon !== undefined && now - spare.coupon >= RENEW_AFTER);
+}
+
+/** Whether a token from a coupon is surely gone from the home relay: past its days. */
+export function couponEnded(spare: SpareRelay, now = Date.now()): boolean {
+  return spare.coupon !== undefined && now - spare.coupon >= COUPON_DAYS * DAY;
+}
+
+/** What a coupon step gives: the home relay's settings to keep from now on, if they changed, and
+ *  whether it waits for a coupon to be taken later. */
+export type CouponStep = { next: SpareRelay | null; waits: boolean };
+
+// The last failed try at each home relay, while Erevos runs, so a renewal is not asked at each look.
+const failed = new Map<string, number>();
+
+function without(spare: SpareRelay): SpareRelay {
+  const { pending: _pending, ...rest } = spare;
+  return rest;
+}
+
+/**
+ * One step towards the token of the home relay `spare` with a coupon of `primary`, the space's own
+ * relay with this phone's token: takes a coupon whose time came, or has a new one signed. Throws
+ * when that cannot be done, unless the home relay has a token still to go on with.
+ */
+export async function couponStep(spare: SpareRelay, primary: Relay | null, now = Date.now(), random: () => number = Math.random): Promise<CouponStep> {
+  const url = spare.url.trim();
+  const going = !!spare.token.trim() && !couponEnded(spare, now);
+  if (going && now - (failed.get(url) ?? 0) < RETRY) return { next: null, waits: false };
+  try {
+    return await step(spare, primary, now, random);
+  } catch (error) {
+    if (!going) throw error;
+    failed.set(url, now);
+    return { next: null, waits: false };
+  }
+}
+
+async function step(spare: SpareRelay, primary: Relay | null, now: number, random: () => number): Promise<CouponStep> {
+  const url = spare.url.trim();
+  // Through Tor, as the home relay is reached (wantsCoupon asks only for one that is).
+  const tor = spare.tor === true;
+  const pending = spare.pending;
+  if (pending) {
+    if (now < pending.after) return { next: null, waits: true };
+    const coupon = { issuer: bytesOf(pending.issuer), nonce: bytesOf(pending.nonce), randomizer: bytesOf(pending.randomizer), signature: bytesOf(pending.signature) };
+    try {
+      await redeemCoupon(url, tor, coupon, pending.token);
+    } catch (error) {
+      // One the home relay will never take (NOT_FOUND, 1: not its issuer's; WRONG, 5: taken with
+      // another token) is let go of, and the next look has a new one signed.
+      if (error instanceof RelayError && (error.status === 1 || error.status === 5)) {
+        return { next: without(spare), waits: false };
+      }
+      throw error;
+    }
+    failed.delete(url);
+    return { next: { ...without(spare), token: pending.token, coupon: now }, waits: false };
+  }
+  const issuers = await couponIssuers(url, tor);
+  // A home relay that takes no coupons: as it is, with no token, or the one typed.
+  if (issuers.length === 0) return { next: null, waits: false };
+  if (!primary?.url.trim()) throw new RelayError(t('This backup relay gives its token for a coupon from your relay: set your relay first.'));
+  if (!canCoupons()) throw new RelayError(t('This version of Erevos cannot make coupons. Update it, or type a token for the backup relay.'));
+  const key = await couponKey(primary);
+  if (!key) throw new RelayError(t('Your relay signs no coupons for this phone. Type a token for the backup relay instead.'));
+  const id = sha256Bytes(key);
+  if (!issuers.some((one) => toHex(one) === toHex(id))) throw new RelayError(t('The backup relay does not take coupons from your relay.'));
+  const nonce = randomBytes(32);
+  const blinded = await couponBlind(key, nonce);
+  const signature = await couponFinalize(key, await signCoupon(primary, blinded.message), blinded, nonce);
+  const next: PendingCoupon = {
+    issuer: toHex(id),
+    nonce: toHex(nonce),
+    randomizer: toHex(blinded.randomizer),
+    signature: toHex(signature),
+    token: newPhoneToken(),
+    after: now + WAIT_LEAST + Math.floor(random() * (WAIT_MOST - WAIT_LEAST)),
+  };
+  return { next: { ...spare, pending: next }, waits: true };
+}

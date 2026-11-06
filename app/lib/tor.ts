@@ -28,6 +28,10 @@ const LOOK_READY = 30_000;
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 let watching = 0;
+// The open space's bridges, and whether Tor was started: a relay reached only through Tor
+// (lib/spare.ts) starts it the space's way does not (ensureTor).
+let bridgesNow: Bridges = NO_BRIDGES;
+let started = false;
 
 // The way 'messages' sends through Tor only while it is ready: asked of the core until it stops.
 function watchReady(way: TorWay): void {
@@ -58,13 +62,30 @@ function watchReady(way: TorWay): void {
 export async function applyTor(way: TorWay, bridges: Bridges = NO_BRIDGES): Promise<void> {
   setThroughTor(way);
   watchReady(way);
+  bridgesNow = bridges;
   if (way === 'off' || !canTor()) return;
+  await startTor(bridges);
+}
+
+async function startTor(bridges: Bridges): Promise<void> {
   const lines = bridgeLines(bridges);
   if (bridges.use !== 'none' && lines.length === 0) {
+    started = false;
     await tor().torStop();
     throw new NoBridgesError();
   }
   await tor().torStart(lines.join('\n'));
+  started = true;
+}
+
+/**
+ * Starts Tor, through the space's bridges, for a relay reached only through it (Relay.tor), when
+ * the space's way did not: the space's own requests still go as its way says. Throws when this
+ * build has no Tor, or the bridges chosen are none.
+ */
+export async function ensureTor(): Promise<void> {
+  if (!canTor()) throw new Error('noTor');
+  if (!started) await startTor(bridgesNow);
 }
 
 /** Stops sending through Tor, as the space closes. */

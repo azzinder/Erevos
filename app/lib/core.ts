@@ -51,6 +51,9 @@ export interface Core {
   bundleVerify?(bundle: Uint8Array, context: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
   accountBind?(account: Uint8Array): Promise<Uint8Array>;
   bundleBound?(bundle: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
+  /** Coupons for a token on a second relay (crates/erevos-core/src/coupon.rs): missing in a build made before them. */
+  couponBlind?(spki: Uint8Array, nonce: Uint8Array): Promise<Uint8Array>;
+  couponFinalize?(spki: Uint8Array, blindSignature: Uint8Array, secret: Uint8Array, randomizer: Uint8Array, nonce: Uint8Array): Promise<Uint8Array>;
   /** Group chats (crates/erevos-group): missing in a build made before them. */
   groupNew?(about: Uint8Array): Promise<Uint8Array>;
   groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
@@ -440,6 +443,35 @@ export async function bundleBound(bundle: Uint8Array, signature: Uint8Array): Pr
   if (!it.bundleBound) throw new NoCoreError();
   const identity = await it.bundleBound(bundle, signature).catch(() => null);
   return identity?.length === 32 ? identity : null;
+}
+
+/** Whether the core makes coupons for a token on a second relay (lib/coupons.ts): a core from before cannot. */
+export function canCoupons(): boolean {
+  return typeof core?.couponBlind === 'function' && typeof core?.couponFinalize === 'function';
+}
+
+/** A coupon of `nonce` blinded for the issuer whose key is `spki`: the message to have signed, and the secret and randomizer to keep. */
+export type BlindedCoupon = { message: Uint8Array; secret: Uint8Array; randomizer: Uint8Array };
+
+export async function couponBlind(spki: Uint8Array, nonce: Uint8Array): Promise<BlindedCoupon> {
+  const it = need();
+  if (!it.couponBlind) throw new NoCoreError();
+  const packed = await it.couponBlind(spki, nonce);
+  const view = new DataView(packed.buffer, packed.byteOffset, packed.byteLength);
+  const first = view.getUint16(0);
+  const message = packed.slice(2, 2 + first);
+  const second = view.getUint16(2 + first);
+  const secret = packed.slice(4 + first, 4 + first + second);
+  const randomizer = packed.slice(4 + first + second);
+  if (randomizer.length !== 32) throw new Error('malformed coupon');
+  return { message, secret, randomizer };
+}
+
+/** The coupon's signature from the issuer's blind one, checked against its key. */
+export function couponFinalize(spki: Uint8Array, blindSignature: Uint8Array, coupon: BlindedCoupon, nonce: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.couponFinalize) throw new NoCoreError();
+  return it.couponFinalize(spki, blindSignature, coupon.secret, coupon.randomizer, nonce);
 }
 
 const utf8 = (text: string) => new TextEncoder().encode(text);

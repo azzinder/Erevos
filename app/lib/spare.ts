@@ -8,7 +8,9 @@ import { loadCurrentSpaceData, loadHiddenData, MORE_SPARES, updateCurrentSpaceDa
 import type { SpareCode } from './contact-code';
 import type { E2E } from './e2e';
 import { toBase64Url } from './e2e';
+import { CouponWaitError, couponStep, wantsCoupon } from './coupons';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, toHex, type Relay } from './relay';
+import { ensureTor } from './tor';
 
 // The space's backup relay, as Briar's Mailbox: a second relay (one at home, on a Raspberry Pi or
 // an old computer, say) with a queue of its own. The contact link and every message say that
@@ -22,6 +24,12 @@ import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, toHex,
 // queue of its own, the contact link and messages say each after the first (Spare.more), a contact
 // tries them in order, and each is looked at. Sends of this phone go through the first one ready
 // when its own relay cannot be reached. An Erevos before the list reads only the first.
+//
+// A home relay may be reached only through Tor (SpareRelay.tor), files too, whatever the space's
+// way, so it never sees this phone's address: Tor starts for it alone when the space's way is off.
+// With no token typed, such a relay gives one for a coupon the space's relay signs blind
+// (lib/coupons.ts), so neither relay can tell whose it is. Two spaces can then each use the
+// other's relay as their home relay, and no relay ties them together.
 
 // Messages taken from each backup queue in one look, at most.
 const BATCH = 50;
@@ -91,12 +99,31 @@ export function forgetSpare(store?: SpareStore): void {
   else ready.clear();
 }
 
-/** Saves the first backup relay, keeping the others. A new address gets a new queue there with the next look. */
-export async function setSpareRelay(url: string, token: string, store: SpareStore = spaceSpare()): Promise<void> {
+/** Saves the first backup relay, keeping the others; `tor`, as it was unless given. A new address gets a new queue there with the next look. */
+export async function setSpareRelay(url: string, token: string, store: SpareStore = spaceSpare(), tor?: boolean): Promise<void> {
   const data = await store.load();
-  const same = data.spare.url.trim() === url.trim();
-  await store.update({ spare: { ...data.spare, url: url.trim(), token: token.trim(), queue: same ? data.spare.queue : null } });
+  const kept = keptFor(data.spare, { url, token, tor: tor ?? data.spare.tor === true });
+  const { more } = data.spare;
+  await store.update({ spare: more?.length ? { ...kept, more } : kept });
   forgetSpare(store);
+}
+
+// A home relay as given, with what was kept for its address: its queue, and a token from a coupon
+// and the coupon waiting, while no other token is typed and it is still reached through Tor.
+function keptFor(was: SpareRelay | undefined, given: { url: string; token: string; tor?: boolean }): SpareRelay {
+  const url = given.url.trim();
+  const same = !!was && was.url.trim() === url;
+  const tor = given.tor === true;
+  const token = given.token.trim();
+  const fromCoupon = same && tor && was.tor === true && was.coupon !== undefined && (!token || token === was.token);
+  return {
+    url,
+    token: fromCoupon ? was.token : token,
+    queue: same ? was.queue : null,
+    ...(tor ? { tor: true } : {}),
+    ...(fromCoupon ? { coupon: was.coupon } : {}),
+    ...(same && tor && was.tor === true && !token && was.pending ? { pending: was.pending } : {}),
+  };
 }
 
 /**
@@ -104,7 +131,7 @@ export async function setSpareRelay(url: string, token: string, store: SpareStor
  * empty ones left out. One whose address stays keeps its queue; a new one gets a new queue there
  * with the next look.
  */
-export async function setSpareRelays(list: { url: string; token: string }[], store: SpareStore = spaceSpare()): Promise<void> {
+export async function setSpareRelays(list: { url: string; token: string; tor?: boolean }[], store: SpareStore = spaceSpare()): Promise<void> {
   const data = await store.load();
   const was = homeRelays(data.spare);
   const seen = new Set<string>();
@@ -113,8 +140,7 @@ export async function setSpareRelays(list: { url: string; token: string }[], sto
     const url = one.url.trim();
     if (!url || seen.has(url.toLowerCase()) || next.length > MORE_SPARES) continue;
     seen.add(url.toLowerCase());
-    const kept = was.find((w) => w.url.trim() === url);
-    next.push({ url, token: one.token.trim(), queue: kept?.queue ?? null });
+    next.push(keptFor(was.find((w) => w.url.trim() === url), one));
   }
   const [first, ...more] = next;
   await store.update({ spare: first ? (more.length > 0 ? { ...first, more } : first) : { url: '', token: '', queue: null } });
@@ -140,22 +166,32 @@ export async function readySpare(store: SpareStore = spaceSpare()): Promise<bool
 
 // The backup queue on the home relay at `at`, made the first time, and what to say of it: its
 // sender id, the relay and the relay's key. Null when there is no relay there.
-async function prepare(store: SpareStore, at: number, spare: SpareRelay): Promise<Ready | null> {
+async function prepare(store: SpareStore, at: number, given: SpareRelay): Promise<Ready | null> {
+  let spare = given;
   const url = spare.url.trim();
   if (!url) return null;
   const known = ready.get(store.of)?.get(at);
-  if (known && known.url === url && known.queue.recipientHex === spare.queue?.recipientHex) return known;
-  const relay: Relay = { url, token: spare.token.trim() || undefined };
+  const coupon = wantsCoupon(spare);
+  if (!coupon && known && known.url === url && known.queue.recipientHex === spare.queue?.recipientHex && (known.relay.token ?? '') === spare.token.trim()) return known;
+  if (spare.tor) await ensureTor();
+  if (coupon) {
+    const data = await store.load();
+    const primary: Relay | null = data.url.trim() ? { url: data.url.trim(), token: data.token.trim() || undefined } : null;
+    const { next, waits } = await couponStep(spare, primary);
+    if (next) {
+      spare = next;
+      await keep(store, url, () => next);
+    }
+    if (waits && !spare.token.trim()) throw new CouponWaitError();
+  }
+  if (known && known.url === url && known.queue.recipientHex === spare.queue?.recipientHex && (known.relay.token ?? '') === spare.token.trim()) return known;
+  const relay: Relay = { url, token: spare.token.trim() || undefined, ...(spare.tor ? { tor: true } : {}) };
   let queue = spare.queue;
   if (!queue) {
     const ids = await createQueue(relay);
     const made: Queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
     queue = made;
-    // Kept where that address is now, should the list have changed meanwhile.
-    const data = await store.load();
-    const list = homeRelays(data.spare);
-    const now = list.findIndex((one) => one.url.trim() === url);
-    if (now >= 0) await store.update({ spare: withAt(data.spare, now, { ...list[now], queue: made }) });
+    await keep(store, url, (one) => ({ ...one, queue: made }));
   }
   const key = await relayKey(relay).catch(() => null);
   const next: Ready = { url, relay, queue, said: { sender: queue.senderHex, relay: url, relayKey: key ? toBase64Url(key) : '' } };
@@ -163,6 +199,15 @@ async function prepare(store: SpareStore, at: number, spare: SpareRelay): Promis
   all.set(at, next);
   ready.set(store.of, all);
   return next;
+}
+
+// Changes the home relay at `url` as `change` says, where that address is now, should the list
+// have changed meanwhile.
+async function keep(store: SpareStore, url: string, change: (one: SpareRelay) => SpareRelay): Promise<void> {
+  const data = await store.load();
+  const list = homeRelays(data.spare);
+  const now = list.findIndex((one) => one.url.trim() === url);
+  if (now >= 0) await store.update({ spare: withAt(data.spare, now, change(list[now])) });
 }
 
 /**

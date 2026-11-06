@@ -105,7 +105,15 @@ export type SpaceData = {
   publicCards: boolean;
 };
 
-export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
+/**
+ * A home relay (lib/spare.ts). `tor`: reached only through Tor, files too, whatever the space's way,
+ * so it never sees this phone's address. `coupon`: when its token came with a coupon (ms), which
+ * the space's relay signed blind (lib/coupons.ts), so it is taken again before it ends. `pending`:
+ * a coupon signed and not taken there yet, with the token made for it, taken from `after` (ms).
+ */
+export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[]; tor?: boolean; coupon?: number; pending?: PendingCoupon };
+/** A coupon signed and not taken yet (lib/coupons.ts): hex, but the token as it is. */
+export type PendingCoupon = { issuer: string; nonce: string; randomizer: string; signature: string; token: string; after: number };
 /** The most home relays a space has besides the first (SpareRelay.more): a contact link says each. */
 export const MORE_SPARES = 2;
 export type NostrSetting = { on: boolean; relays: string[] };
@@ -164,12 +172,25 @@ function checkedSpareRelay(value: unknown, inner = false): SpareRelay {
   const q = v.queue as Partial<Queue> | null | undefined;
   if (typeof v.url !== 'string') return NO_SPARE;
   const more = !inner && Array.isArray(v.more) ? v.more.map((m) => checkedSpareRelay(m, true)).filter((m) => m.url.trim()).slice(0, MORE_SPARES) : [];
+  const pending = checkedPending(v.pending);
   return {
     url: v.url,
     token: typeof v.token === 'string' ? v.token : '',
     queue: q && isHex(q.recipientHex, 48) && isHex(q.senderHex, 48) ? { recipientHex: q.recipientHex, senderHex: q.senderHex } : null,
     ...(more.length > 0 ? { more } : {}),
+    ...(v.tor === true ? { tor: true } : {}),
+    ...(typeof v.coupon === 'number' && Number.isFinite(v.coupon) && v.coupon > 0 ? { coupon: v.coupon } : {}),
+    ...(pending ? { pending } : {}),
   };
+}
+
+const isHexOf = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length % 2 === 0 && v.length <= 2048 && /^[0-9a-f]+$/.test(v);
+
+function checkedPending(value: unknown): PendingCoupon | undefined {
+  const v = (value ?? null) as Partial<Record<keyof PendingCoupon, unknown>> | null;
+  if (!v || !isHex(v.issuer, 64) || !isHex(v.nonce, 64) || !isHex(v.randomizer, 64) || !isHexOf(v.signature)) return undefined;
+  if (typeof v.token !== 'string' || !/^[0-9a-f]{64}$/.test(v.token) || typeof v.after !== 'number' || !Number.isFinite(v.after)) return undefined;
+  return { issuer: v.issuer, nonce: v.nonce, randomizer: v.randomizer, signature: v.signature, token: v.token, after: v.after };
 }
 
 /** The Nostr setting stored: the relays this version takes, each once, the most it says; as at first when none. */

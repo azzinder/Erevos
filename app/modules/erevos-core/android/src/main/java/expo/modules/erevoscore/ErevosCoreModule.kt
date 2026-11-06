@@ -34,6 +34,12 @@ class ErevosCoreModule : Module() {
     AsyncFunction("bundleBound") { bundle: ByteArray, signature: ByteArray ->
       ErevosCoreNative.bundleBound(bundle, signature)
     }
+    AsyncFunction("couponBlind") { spki: ByteArray, nonce: ByteArray ->
+      ErevosCoreNative.couponBlind(spki, nonce)
+    }
+    AsyncFunction("couponFinalize") { spki: ByteArray, blindSignature: ByteArray, secret: ByteArray, randomizer: ByteArray, nonce: ByteArray ->
+      ErevosCoreNative.couponFinalize(spki, blindSignature, secret, randomizer, nonce)
+    }
     AsyncFunction("conversationStart") { account: ByteArray, bundle: ByteArray, plaintext: ByteArray ->
       ErevosCoreNative.conversationStart(account, bundle, plaintext)
     }
@@ -191,6 +197,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun accountSign(account: ByteArray, context: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun bundleVerify(bundle: ByteArray, context: ByteArray, message: ByteArray, signature: ByteArray): ByteArray
   @JvmStatic external fun accountBind(account: ByteArray): ByteArray
+  @JvmStatic external fun couponBlind(spki: ByteArray, nonce: ByteArray): ByteArray
+  @JvmStatic external fun couponFinalize(spki: ByteArray, blindSignature: ByteArray, secret: ByteArray, randomizer: ByteArray, nonce: ByteArray): ByteArray
   @JvmStatic external fun bundleBound(bundle: ByteArray, signature: ByteArray): ByteArray
   @JvmStatic external fun conversationStart(account: ByteArray, bundle: ByteArray, plaintext: ByteArray): ByteArray
   @JvmStatic external fun conversationAccept(account: ByteArray, packet: ByteArray): ByteArray
