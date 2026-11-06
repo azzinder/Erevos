@@ -119,4 +119,5 @@ export const publicGroups: Record<string, string> = {
     'Σου ανήκει: αν την κλείσεις, αφαιρούνται όλα τα μέλη και κανείς δεν μπορεί να γράψει ξανά σε αυτήν. Για να συνεχίσει χωρίς εσένα, παράδωσέ την πρώτα.',
   'The owner’s phone takes you out the next time Erevos is open on it. You read nothing the group says after.':
     'Το τηλέφωνο του ιδιοκτήτη σε αφαιρεί την επόμενη φορά που θα είναι ανοιχτό εκεί το Erevos. Δεν διαβάζεις τίποτα από όσα λέει η ομάδα μετά.',
+  "Public groups stay on the phone: make and join them there.": "Οι δημόσιες ομάδες μένουν στο τηλέφωνο: φτιάξε τες και μπες σε αυτές από εκεί.",
 };

@@ -3024,6 +3024,13 @@ The chats then come to the computer, and after them the messages chosen.
   delete it for everyone) shows on the computer too, as does a star or deleting on **This phone** done on the phone. A
   message the phone could not send to the group (one closed meanwhile, say) shows on the computer as **Not sent by the
   phone**. Making a group, public groups and group calls stay on the phone for now.
+- **Groups stay on** a device of your choice: on the phone, under **Settings** → **Data and devices** → **Linked
+  devices** → **Groups stay on**, pick **This phone** or a linked computer. The keys of the groups then move there, never
+  copied, so the groups work there with the phone off, and new ones can be made there; the phone and the other devices
+  write in them through it, so it has to be on. Members see nothing new: the same you, whose group messages come to
+  another queue. Moving needs both on and the relay, and public groups stay on the phone (leave them first). To unlink
+  that computer, move the groups back to the phone first. If it is lost, unlink it all the same: the groups
+  then show as left on the phone. A computer whose Erevos is older cannot hold them.
 - **Hidden chats and second passwords** never go with the space's link: each links on its own, from inside it. For a
   place of hidden chats: on the computer, open that place with its PIN, new and empty as a new PIN sets it, and give it
   a relay queue of its own under **For advanced users** there; then tap **Linked devices** under its list, and **Link to

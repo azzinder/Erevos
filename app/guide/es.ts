@@ -3294,6 +3294,14 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   mensaje que el teléfono no pudo enviar al grupo (uno cerrado mientras tanto, por ejemplo) aparece en el ordenador
   como **El teléfono no lo envió**. Crear un grupo, los grupos públicos y las llamadas de grupo se quedan en el teléfono
   por ahora.
+- **Los grupos están en** el dispositivo que elijas: en el teléfono, en **Ajustes** → **Datos y dispositivos** →
+  **Dispositivos vinculados** → **Los grupos están en**, elige **Este teléfono** o un ordenador vinculado. Las claves de
+  los grupos se mueven entonces allí, nunca copiadas, así que los grupos funcionan allí con el teléfono apagado, y se
+  pueden crear grupos nuevos allí; el teléfono y los otros dispositivos escriben en ellos a través de él, así que tiene
+  que estar encendido. Los miembros no ven nada nuevo: a ti, como siempre, solo que tus mensajes de grupo llegan a otra
+  cola. Para moverlos hacen falta los dos encendidos y el relay, y los grupos públicos se quedan en el teléfono (sal de
+  ellos primero). Para desvincular ese ordenador, devuelve primero los grupos al teléfono. Si lo perdiste, desvincúlalo de todos modos: los
+  grupos aparecen entonces como abandonados en el teléfono. Un ordenador con un Erevos más antiguo no puede guardarlos.
 - **Los chats ocultos y las segundas contraseñas** nunca van con el vínculo del espacio: cada uno se vincula por su
   cuenta, desde dentro. Para un lugar de chats ocultos: en el ordenador, abre ese lugar con su PIN, nuevo y vacío como
   lo deja un PIN nuevo, y dale una cola propia en el relay en **Para usuarios avanzados** allí; luego toca

@@ -3306,6 +3306,14 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   messaggio che il telefono non ha potuto inviare al gruppo (uno chiuso nel frattempo, per esempio) appare sul computer
   come **Non inviato dal telefono**. Creare un gruppo, i gruppi pubblici e le chiamate di gruppo restano per ora sul
   telefono.
+- **I gruppi restano su** un dispositivo a tua scelta: sul telefono, in **Impostazioni** → **Dati e dispositivi** →
+  **Dispositivi collegati** → **I gruppi restano su**, scegli **Questo telefono** o un computer collegato. Le chiavi dei
+  gruppi vanno allora lì, mai copiate, così i gruppi funzionano lì a telefono spento, e lì se ne possono creare di nuovi;
+  il telefono e gli altri dispositivi ci scrivono attraverso di esso, quindi deve essere acceso. I membri non vedono
+  niente di nuovo: te, come sempre, solo che i tuoi messaggi di gruppo arrivano in un’altra coda. Per spostarli servono
+  tutti e due accesi e il relay, e i gruppi pubblici restano sul telefono (esci prima da quelli). Per scollegare quel
+  computer, riporta prima i gruppi sul telefono. Se è perso, scollegalo comunque: i gruppi allora risultano
+  abbandonati sul telefono. Un computer con un Erevos più vecchio non può tenerli.
 - **Le chat nascoste e le seconde password** non vanno mai con il collegamento dello spazio: ognuno si collega per conto
   suo, dall’interno. Per un posto di chat nascoste: sul computer, apri quel posto con il suo PIN, nuovo e vuoto come lo
   lascia un nuovo PIN, e dagli una sua coda sul relay in **Per utenti esperti** lì; poi tocca **Dispositivi collegati**

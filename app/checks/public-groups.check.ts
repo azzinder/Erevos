@@ -459,6 +459,23 @@ test('keys in a public group are made new every week, with the same members, nam
   assert.equal(status(dave, id), 'in');
 });
 
+test('public groups stay on the phone: a linked device holding the groups makes and joins none, and one asking to join keeps them on the phone', live, async () => {
+  const net = network();
+  const alice = await net.phone('Alice', one);
+  const dell = await net.phone('DELL', two);
+  const id = await alice.groups.createPublic('Λέσχη', 'Alice', false, alice.transport);
+  const link = parseJoinLink(alice.groups.publicInfo(id)!.link)!;
+  // A linked device that holds the groups (lib/devices.ts): not through the phone, and a device.
+  dell.groups.useLink({ through: () => false, device: () => true, ask: async () => undefined, members: () => [], took: () => undefined });
+  await assert.rejects(dell.groups.createPublic('Άλλη', 'DELL', false, dell.transport), /stay on the phone/);
+  await assert.rejects(dell.groups.ask(link, 'DELL'), /stay on the phone/);
+  // On the phone, asking to join one keeps the groups there: its welcome needs what made the request.
+  const bob = await net.phone('Bob', two);
+  await bob.groups.create('Φίλοι', [], bob.transport);
+  await bob.groups.ask(link, 'Bob');
+  await assert.rejects(bob.groups.moveOut('ab'), /Public groups stay on the phone/);
+});
+
 test('a private group goes as before beside public ones', live, async () => {
   const net = network();
   const alice = await net.phone('Alice', one);

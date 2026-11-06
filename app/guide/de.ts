@@ -3504,6 +3504,14 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   **Dieses Telefon**, auf dem Telefon gemacht. Eine Nachricht, die das Telefon nicht an die Gruppe senden konnte
   (etwa weil sie inzwischen geschlossen wurde), erscheint auf dem Computer als **Nicht vom Telefon gesendet**. Eine
   Gruppe zu machen, öffentliche Gruppen und Gruppenanrufe bleiben vorerst auf dem Telefon.
+- **Gruppen bleiben auf** einem Gerät deiner Wahl: Wähle auf dem Telefon unter **Einstellungen** → **Daten und Geräte**
+  → **Verknüpfte Geräte** → **Gruppen bleiben auf** **Dieses Telefon** oder einen verknüpften Computer. Die Schlüssel der
+  Gruppen ziehen dann dorthin um, nie kopiert, sodass die Gruppen dort auch bei ausgeschaltetem Telefon funktionieren und
+  dort neue angelegt werden können; das Telefon und die anderen Geräte schreiben über ihn darin, also muss er an sein.
+  Die Mitglieder sehen nichts Neues: dich wie bisher, nur kommen deine Gruppennachrichten in eine andere Warteschlange.
+  Zum Umziehen müssen beide an sein und das Relay erreichbar, und öffentliche Gruppen bleiben auf dem Telefon (verlass
+  sie zuerst). Um diesen Computer zu trennen, hol die Gruppen zuerst auf das Telefon zurück. Ist er verloren, trenne ihn trotzdem: Die
+  Gruppen erscheinen dann auf dem Telefon als verlassen. Ein Computer mit älterem Erevos kann sie nicht halten.
 - **Versteckte Chats und zweite Passwörter** gehen nie mit der Verknüpfung des Bereichs mit: Jedes wird für sich
   verknüpft, von innen. Für einen Platz versteckter Chats: Öffne auf dem Computer diesen Platz mit seiner PIN, neu und
   leer, wie eine neue PIN ihn anlegt, und gib ihm dort unter **Für Fortgeschrittene** eine eigene Warteschlange auf dem

@@ -3266,6 +3266,14 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   apagar em **Este celular** feito no celular. Uma mensagem que o celular não conseguiu enviar ao grupo (um grupo
   fechado nesse meio-tempo, por exemplo) aparece no computador como **Não enviada pelo celular**. Criar um grupo, os
   grupos públicos e as chamadas em grupo ficam no celular por enquanto.
+- **Os grupos ficam em** um dispositivo à sua escolha: no celular, em **Configurações** → **Dados e dispositivos** →
+  **Dispositivos conectados** → **Os grupos ficam em**, escolha **Este celular** ou um computador conectado. As chaves dos
+  grupos vão então para lá, nunca copiadas, então os grupos funcionam lá com o celular desligado, e dá para criar novos
+  lá; o celular e os outros dispositivos escrevem neles por meio dele, então ele precisa estar ligado. Os membros não
+  veem nada novo: você, como sempre, só que suas mensagens de grupo chegam a outra fila. Para movê-los, os dois precisam
+  estar ligados e o relay, e os grupos públicos ficam no celular (saia deles primeiro). Para desconectar esse
+  computador, traga primeiro os grupos de volta para o celular. Se ele foi perdido, desconecte-o mesmo assim: os grupos
+  aparecem então como abandonados no celular. Um computador com um Erevos mais antigo não pode guardá-los.
 - **Conversas ocultas e segundas senhas** nunca vão com a conexão do espaço: cada uma se conecta por conta própria, de
   dentro. Para uma posição de conversas ocultas: no computador, abra essa posição com o PIN dela, nova e vazia como um
   PIN novo a deixa, e dê a ela uma fila própria no relay em **Para usuários avançados** lá; depois toque em

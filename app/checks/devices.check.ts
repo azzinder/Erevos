@@ -45,10 +45,10 @@ import { Call, currentCall } from '../lib/call';
 import type { CallSignal } from '../lib/call-signal';
 import { acceptConversation, accountBundle, accountIdentity, newAccount, open as openIn, seal as sealIn, setCore, startConversation, type Core } from '../lib/core';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
-import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
+import { bytesSource, dropFile, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { addToCollection, deleteItems, loadCollection, setCollectionOption } from '../lock/collection-data';
 import { bodyOf, nextList, readPass, signList, signPass, verifyList, type Body } from '../lib/device-list';
-import { handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
+import { GroupsHeldError, handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -1371,13 +1371,15 @@ test('what changes later in messages told already: only what changed, or all of 
 function groupNet() {
   type Member = { identity: string; groups: Groups; queue: Uint8Array[]; transport: GroupTransport };
   const members = new Map<string, Member>();
+  // Who reads at each queue, where that is not where the member's phone does: a device that holds its groups.
+  const bySender = new Map<string, Member>();
   const signals: { from: string; to: string; signal: GroupSignal }[] = [];
   const member = (identity: string): Member => {
     const sender = toHex(randomBytes(24));
     const groups = new Groups(EMPTY_GROUPS, async () => undefined, async () => ({ id: identity, sender, relay: 'wss://relay.example.org', relayKey: '' }));
     const transport: GroupTransport = {
       async post(to, packet) {
-        members.get(to.id)?.queue.push(packet);
+        (bySender.get(to.sender) ?? members.get(to.id))?.queue.push(packet);
       },
       async signal(to, signal) {
         signals.push({ from: identity, to, signal });
@@ -1396,7 +1398,7 @@ function groupNet() {
         if (target) await target.groups.signal(from, signal, false, target.transport);
         moved = true;
       }
-      for (const m of members.values()) {
+      for (const m of [...members.values(), ...bySender.values()]) {
         while (m.queue.length > 0) {
           await m.groups.receive(m.queue.shift()!, m.transport);
           moved = true;
@@ -1405,8 +1407,142 @@ function groupNet() {
       if (!moved) return;
     }
   };
-  return { member, settle };
+  // The groups of `identity`'s device that reads at `sender`, as they say where they read; what they send goes as a member's does.
+  const device = (identity: string, sender: string, groups: Groups): Member => {
+    const transport: GroupTransport = {
+      async post(to, packet) {
+        (bySender.get(to.sender) ?? members.get(to.id))?.queue.push(packet);
+      },
+      async signal(to, signal) {
+        signals.push({ from: identity, to, signal });
+      },
+    };
+    const it: Member = { identity, groups, queue: [], transport };
+    bySender.set(sender, it);
+    return it;
+  };
+  return { member, settle, device };
 }
+
+test('the groups held on a linked computer: their MLS state moved there and back, never copied; the members write to where it reads, what still comes to the phone goes on to it, and the phone writes through it', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const net = groupNet();
+  const account = pixel.chats.e2e.identityHex();
+  const onPixel = net.member(account);
+  const bob = net.member(toHex(randomBytes(32)));
+  const dellSender = toHex(randomBytes(24));
+  const onDell = new Groups(EMPTY_GROUPS, async () => undefined, async () => ({ id: account, sender: dellSender, relay: 'wss://relay.example.org', relayKey: '' }));
+  const atDell = net.device(account, dellSender, onDell);
+  pixel.links.useGroups(onPixel.groups, onPixel.transport);
+  dell.links.useGroups(onDell, atDell.transport);
+  const round = async () => {
+    for (let n = 0; n < 3; n++) {
+      await take(dell);
+      await dell.links.settled();
+      await take(pixel);
+      await pixel.links.settled();
+      await net.settle();
+    }
+  };
+  const id = await onPixel.groups.create('Φίλοι', [bob.identity], onPixel.transport);
+  await net.settle();
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(dell);
+    return onDell.list().some((g) => g.id === id);
+  });
+  const dellId = pixel.links.devices()[0].id;
+  // The computer said its Erevos can hold them.
+  await until(async () => {
+    await round();
+    return pixel.links.groupsHolder().can.includes(dellId);
+  });
+
+  // To the computer: the state goes, and is gone from the phone, which keeps it as it went till the
+  // computer says it took it, and the group as told.
+  await pixel.links.moveGroups(dellId);
+  assert.equal(onPixel.groups.hasState(), false);
+  assert.ok(onPixel.groups.handed());
+  assert.deepEqual([pixel.links.groupsHolder().on, pixel.links.groupsHolder().to], [dellId, dellId]);
+  await assert.rejects(pixel.links.moveGroups(null), /on their way/);
+  await round();
+  assert.equal(onDell.hasState(), true);
+  assert.equal(onPixel.groups.handed(), null);
+  assert.deepEqual([pixel.links.groupsHolder().on, pixel.links.groupsHolder().to], [dellId, undefined]);
+  assert.deepEqual(dell.links.groupsHolder().on, 'here');
+  assert.deepEqual(onDell.list().map((g) => [g.name, g.admin, g.status]), [['Φίλοι', true, 'in']]);
+  // Neither unlinks while it holds them, unless asked again.
+  await assert.rejects(pixel.links.unlink(dellId), GroupsHeldError);
+  await assert.rejects(dell.links.unlink(), GroupsHeldError);
+
+  // Bob writes to where the account read before: the phone passes it on, and the computer tells the phone.
+  await bob.groups.send(id, 'still to the phone', bob.transport);
+  await round();
+  assert.ok(onDell.messages(id).some((m) => m.text === 'still to the phone'));
+  assert.ok(onPixel.groups.messages(id).some((m) => m.text === 'still to the phone'));
+
+  // New keys from the computer say where it reads: Bob writes there now, past the phone.
+  await onDell.renewKeys(atDell.transport);
+  await net.settle();
+  await bob.groups.send(id, 'to the computer', bob.transport);
+  assert.equal(atDell.queue.length, 1);
+  await round();
+  assert.ok(onDell.messages(id).some((m) => m.text === 'to the computer'));
+  assert.ok(onPixel.groups.messages(id).some((m) => m.text === 'to the computer'));
+
+  // The phone writes through the computer, as the account.
+  await onPixel.groups.send(id, 'from the phone', onPixel.transport);
+  await round();
+  assert.equal(bob.groups.messages(id).find((m) => m.text === 'from the phone')?.from, account);
+  assert.equal(onPixel.groups.messages(id).filter((m) => m.text === 'from the phone').length, 1);
+
+  // Back to the phone: asked, given, and gone from the computer. What the phone writes on the way,
+  // the computer, which no longer holds them, gives back, and it goes once they came.
+  await pixel.links.moveGroups(null);
+  await pixel.links.settled();
+  await take(dell);
+  await dell.links.settled();
+  assert.equal(onDell.hasState(), false);
+  assert.ok(onDell.handed());
+  await onPixel.groups.send(id, 'on the way', onPixel.transport);
+  await round();
+  assert.deepEqual([onPixel.groups.hasState(), onDell.hasState()], [true, false]);
+  assert.equal(onDell.handed(), null);
+  assert.deepEqual([pixel.links.groupsHolder().on, dell.links.groupsHolder().on], [null, null]);
+  assert.equal(bob.groups.messages(id).filter((m) => m.text === 'on the way').length, 1);
+  await onPixel.groups.renewKeys(onPixel.transport);
+  await net.settle();
+  await bob.groups.send(id, 'to the phone again', bob.transport);
+  await round();
+  assert.ok(onPixel.groups.messages(id).some((m) => m.text === 'to the phone again'));
+  assert.ok(onDell.messages(id).some((m) => m.text === 'to the phone again'));
+  // The queue the computer read at is still its own a while: its members may write there yet.
+  assert.ok((await onDell.ownSenders()).has(dellSender));
+
+  // One the computer cannot take (gone from the relay before it looked) is said so, and the phone
+  // keeps them again, as they went.
+  await pixel.links.moveGroups(dellId);
+  const handing = (pixel.links as unknown as { data: DevicesData }).data.handing!;
+  await dropFile(relay, offerRef(handing.offer).from!);
+  await round();
+  assert.deepEqual([onPixel.groups.hasState(), onDell.hasState(), onPixel.groups.handed()], [true, false, null]);
+  assert.equal(pixel.links.groupsHolder().on, null);
+  assert.match(pixel.links.groupsHolder().problem ?? '', /could not take/);
+  await onPixel.groups.send(id, 'still here', onPixel.transport);
+  await net.settle();
+  assert.ok(bob.groups.messages(id).some((m) => m.text === 'still here'));
+
+  // A computer lost while it holds them: unlinked all the same, the phone leaves each group.
+  await pixel.links.moveGroups(dellId);
+  await round();
+  assert.equal(onDell.hasState(), true);
+  await pixel.links.unlink(dellId, true);
+  assert.equal(pixel.links.groupsHolder().on, null);
+  assert.deepEqual(onPixel.groups.list().map((g) => g.status), ['out']);
+  for (const p of [pixel, dell]) p.links.close();
+});
 
 test('groups on a linked computer: the phone\'s, read and written there through it', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
   const { relay, phone, take, linkUp } = await setup();

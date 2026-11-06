@@ -118,7 +118,18 @@ export type GroupData = {
   orphans: string[];
   /** Key packages given, as `group:identity`, so a contact cannot make this phone make many. */
   given: string[];
+  /** Handed to another device of the account (docs/sync.md, S6): the MLS state as it went, JSON
+   *  (lib/groups.ts HeldGroups), kept till that device says it took it, and given back here should
+   *  it say it cannot; `to` is that device's id, '' for the phone. Wiped from `state` in the same save. */
+  handed?: { to: string; held: string };
+  /** The queues this phone said its group messages come to, as they were when the groups were handed
+   *  on: their members write to them till their keys are made new, so they are kept a while (S6). */
+  left?: { sender: string; at: number }[];
 };
+
+/** The largest MLS state handed between devices, as JSON (S6). */
+export const MAX_HELD_GROUPS = 64 * 1024 * 1024;
+const MAX_LEFT_SENDERS = 50;
 
 export const EMPTY_GROUPS: GroupData = { state: '', seal: '', groups: [], orphans: [], given: [] };
 
@@ -269,7 +280,8 @@ export function checkedGroup(value: unknown): Group | null {
   };
 }
 
-function checked(value: unknown): GroupData {
+/** What a group store holds, checked, as kept or as handed from another device (lib/groups.ts HeldGroups). */
+export function checkedGroupData(value: unknown): GroupData {
   const v = (value ?? {}) as Partial<Record<keyof GroupData, unknown>>;
   return {
     state: isBase64(v.state) ? v.state : '',
@@ -277,10 +289,26 @@ function checked(value: unknown): GroupData {
     groups: Array.isArray(v.groups) ? v.groups.map(checkedGroup).filter((g): g is Group => g !== null) : [],
     orphans: Array.isArray(v.orphans) ? v.orphans.filter(isBase64).slice(-MAX_ORPHANS) : [],
     given: Array.isArray(v.given) ? v.given.filter(isText).slice(-MAX_GIVEN) : [],
+    ...(checkedHanded(v.handed) ? { handed: checkedHanded(v.handed)! } : {}),
+    ...(checkedLeft(v.left).length > 0 ? { left: checkedLeft(v.left) } : {}),
   };
 }
 
-const store = sealedFile({ name: FILE, empty: EMPTY_GROUPS, checked, block: BLOCK });
+function checkedHanded(value: unknown): GroupData['handed'] | null {
+  const v = (value ?? {}) as { to?: unknown; held?: unknown };
+  return isText(v.to) && /^[0-9a-f]{0,64}$/.test(v.to) && isText(v.held) && v.held.length > 0 && v.held.length <= MAX_HELD_GROUPS ? { to: v.to, held: v.held } : null;
+}
+
+function checkedLeft(value: unknown): { sender: string; at: number }[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((x) => (x ?? {}) as { sender?: unknown; at?: unknown })
+    .filter((x): x is { sender: string; at: number } => isText(x.sender) && x.sender.length > 0 && x.sender.length <= 128 && isTime(x.at))
+    .map(({ sender, at }) => ({ sender, at }))
+    .slice(-MAX_LEFT_SENDERS);
+}
+
+const store = sealedFile({ name: FILE, empty: EMPTY_GROUPS, checked: checkedGroupData, block: BLOCK });
 
 /** The groups of a space, or of a hidden place (`holder`, lock/sealed-file.ts hiddenHolder). */
 export const loadGroupData = (space: number, key: Uint8Array, holder: Holder = 'space') => store.load(holder, space, key);

@@ -13,7 +13,7 @@ import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from
 import { bodyOf, checkedList, checkedPass, MAX_LISTED, type DeviceList, type Pass } from './device-list';
 import { waysFor, withRoutes } from './endpoints';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
-import { cleanGroupName, isGroupId } from './group-signal';
+import { cleanGroupName, decodeGroup, encodeGroup, isGroupId, type GroupSignal } from './group-signal';
 import { checkedOffer, type ChunkOffer } from './sync/lan-chunks';
 
 // What goes between the devices of one account (lib/devices.ts), inside the conversation of their
@@ -101,6 +101,18 @@ export type Envelope =
   | { k: 'cfetch'; ids: string[] }
   | { k: 'cfile'; list: { id: string; offer: FileOffer }[] }
   | { k: 'move' }
+  // The groups held on another device (docs/sync.md, S6): their MLS state handed on, as a file on
+  // the relay (`hold`); asked back (`give`); a group message (`gpkt`, base64, `h` the times it was
+  // passed on) or a contact's group signal (`gsig`) that came where they are not held.
+  | { k: 'hold'; offer: FileOffer }
+  | { k: 'give' }
+  | { k: 'gpkt'; p: string; h: number }
+  | { k: 'gsig'; c: string; s: GroupSignal; r?: true }
+  // Taken (`held`) or not to be taken (`nohold`, it is kept where it came from again): the state
+  // handed on, by its file's first piece (`f`). And, from a device, that it can hold them (`can`).
+  | { k: 'held'; f: string }
+  | { k: 'nohold'; f: string }
+  | { k: 'can'; g: 1 }
   | { k: 'bye' };
 
 /**
@@ -242,6 +254,11 @@ type Part = { k: 'part'; id: string; n: number; of: number; d: string };
 
 /** The largest envelope one packet takes: the core's largest padding bucket holds 16383 bytes. */
 export const MAX_ENVELOPE = 16 * 1024 - 1;
+// The longest group message passed on between devices, base64: a welcome of the largest group, sealed.
+const MAX_GROUP_PACKET = 256 * 1024;
+/** How the groups' state handed on is named back (`held`, `nohold`): its file's first piece id, hex. */
+export const HELD_MARK = 48;
+export const heldMark = (offer: FileOffer): string => offer.ids.slice(0, HELD_MARK);
 // An envelope larger than this goes in parts of PART_BYTES each.
 const SPLIT_OVER = 15 * 1024;
 const PART_BYTES = 10 * 1024;
@@ -523,8 +540,25 @@ function checkedEnvelope(v: Json): Envelope | null {
         : [];
       return list.length > 0 ? { k: 'cfile', list } : null;
     }
+    case 'hold': {
+      const offer = readOffer(v.offer);
+      return offer ? { k: 'hold', offer } : null;
+    }
+    case 'gpkt':
+      // A group message is at most a welcome, sealed: well under what one envelope holds.
+      return isText(v.p) && v.p.length > 0 && v.p.length <= MAX_GROUP_PACKET && /^[A-Za-z0-9+/]*={0,2}$/.test(v.p) && (v.h === 1 || v.h === 2) ? { k: 'gpkt', p: v.p, h: v.h } : null;
+    case 'gsig': {
+      const signal = decodeGroup(v.s);
+      return isHex(v.c, 64) && signal ? { k: 'gsig', c: v.c, s: signal, ...(v.r === true ? { r: true as const } : {}) } : null;
+    }
+    case 'held':
+    case 'nohold':
+      return isHex(v.f, HELD_MARK) ? { k: v.k, f: v.f } : null;
+    case 'can':
+      return v.g === 1 ? { k: 'can', g: 1 } : null;
     case 'here':
     case 'move':
+    case 'give':
     case 'bye':
       return { k: v.k };
     default:
@@ -733,7 +767,8 @@ function checkedAsk(value: unknown): GroupAsk | null {
  * back (`pk`, lib/sealed-packet.ts), as it goes in a packet or in parts.
  */
 export function encodeEnvelope(envelope: Envelope, at: Place | null, pk = ''): Uint8Array[] {
-  const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(at ? { at } : {}), ...(pk ? { pk } : {}) }));
+  const said = envelope.k === 'gsig' ? { ...envelope, s: encodeGroup(envelope.s) } : envelope;
+  const bytes = utf8Encode(JSON.stringify({ v: 1, ...said, ...(at ? { at } : {}), ...(pk ? { pk } : {}) }));
   if (bytes.length <= SPLIT_OVER) return [bytes];
   const id = toHex(randomBytes(8));
   const of = Math.ceil(bytes.length / PART_BYTES);
@@ -750,7 +785,8 @@ export function encodeEnvelope(envelope: Envelope, at: Place | null, pk = ''): U
  */
 export function encodeOne(envelope: Envelope, at: Place | null, pk = ''): Uint8Array | null {
   for (const where of at ? [at, null] : [null]) {
-    const bytes = utf8Encode(JSON.stringify({ v: 1, ...envelope, ...(where ? { at: where } : {}), ...(pk ? { pk } : {}) }));
+    const said = envelope.k === 'gsig' ? { ...envelope, s: encodeGroup(envelope.s) } : envelope;
+    const bytes = utf8Encode(JSON.stringify({ v: 1, ...said, ...(where ? { at: where } : {}), ...(pk ? { pk } : {}) }));
     if (bytes.length <= MAX_ENVELOPE) return bytes;
   }
   return null;

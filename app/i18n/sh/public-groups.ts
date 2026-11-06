@@ -126,4 +126,5 @@ export const publicGroups: Record<string, string> = {
     'Vi ste vlasnik: zatvaranjem grupe uklanjaju se svi članovi i u njoj se više ne može pisati. Da bi grupa i dalje postojala bez vas, prvo je predajte.',
   'The owner’s phone takes you out the next time Erevos is open on it. You read nothing the group says after.':
     'Telefon vlasnika uklanja vas kad sljedeći put na njemu bude otvoren Erevos. Poslije toga ne čitate ništa što se kaže u grupi.',
+  "Public groups stay on the phone: make and join them there.": "Javne grupe ostaju na telefonu: napravi ih i pridruži im se ondje.",
 };

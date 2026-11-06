@@ -3162,6 +3162,13 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   zvjezdica ili brisanje na **Ovaj telefon** urađeno na telefonu. Poruka koju telefon nije mogao poslati u grupu (na
   primjer u grupu zatvorenu u međuvremenu) prikazuje se na računaru kao **Telefon nije poslao**. Pravljenje grupe,
   javne grupe i grupni pozivi za sada ostaju na telefonu.
+- **Grupe ostaju na** uređaju po tvom izboru: na telefonu, pod **Postavke** → **Podaci i uređaji** → **Povezani
+  uređaji** → **Grupe ostaju na**, izaberi **Ovaj telefon** ili povezani računar. Ključevi grupa se tada premještaju
+  tamo, nikad kopirani, pa grupe tamo rade i kad je telefon isključen, i tamo se mogu praviti nove; telefon i ostali
+  uređaji pišu u njima preko njega, pa mora biti uključen. Članovi ne vide ništa novo: tebe, kao i uvijek, samo što tvoje
+  grupne poruke stižu u drugi red. Za premještanje oba moraju biti uključena i relay, a javne grupe ostaju na telefonu
+  (prvo izađi iz njih). Da bi odvojio taj računar, prvo vrati grupe na telefon. Ako je izgubljen, ipak ga odvoji: grupe se tada na
+  telefonu prikazuju kao napuštene. Računar sa starijim Erevosom ne može ih držati.
 - **Skriveni razgovori i druge lozinke** nikad ne idu s vezom prostora: svaki se povezuje zasebno, iznutra. Za mjesto
   skrivenih razgovora: na računaru otvorite to mjesto njegovim PIN-om, novo i prazno kakvim ga ostavlja novi PIN, i
   dajte mu vlastiti red na relayu pod **Za napredne korisnike** tamo; zatim dodirnite **Povezani uređaji** ispod

@@ -17,4 +17,8 @@ export const groups: Record<string, string> = {
   'Read ✓✓✓': 'Διάβασαν ✓✓✓',
   'Reached their phone ✓✓': 'Έφτασε στο τηλέφωνό τους ✓✓',
   'Not yet': 'Όχι ακόμα',
+  "Public groups stay on the phone: leave them first to move the groups.": "Οι δημόσιες ομάδες μένουν στο τηλέφωνο: βγες πρώτα από αυτές για να μετακινήσεις τις ομάδες.",
+  "The groups are here already.": "Οι ομάδες είναι ήδη εδώ.",
+  "The groups are on their way to the other device. Try again in a moment.": "Οι ομάδες είναι καθ’ οδόν προς την άλλη συσκευή. Δοκίμασε ξανά σε λίγο.",
+  "The groups are too large to move.": "Οι ομάδες είναι πολύ μεγάλες για να μετακινηθούν.",
 };

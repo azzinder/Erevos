@@ -168,6 +168,11 @@ export class PublicGroups extends Groups {
   }
 
   /** Whether a group is a public one. */
+  // One asked to join keeps the groups on the phone too: its welcome needs what made the key package.
+  protected hasPublic(): boolean {
+    return super.hasPublic() || this.pub.asking.length > 0;
+  }
+
   isPublic(id: string): boolean {
     return this.record(id) !== undefined;
   }
@@ -262,6 +267,7 @@ export class PublicGroups extends Groups {
    */
   createPublic(name: string, myName: string, approve: boolean, transport: GroupTransport): Promise<string> {
     return this.run(async () => {
+      if (this.onDevice()) throw new Error(t('Public groups stay on the phone: make and join them there.'));
       const clean = cleanGroupName(name);
       if (!clean) throw new Error(t('Give the group a name.'));
       if (!cleanName(myName)) throw new Error(t('Choose the name the group sees.'));
@@ -304,6 +310,7 @@ export class PublicGroups extends Groups {
    */
   ask(link: JoinLink, name: string): Promise<void> {
     return this.run(async () => {
+      if (this.onDevice()) throw new Error(t('Public groups stay on the phone: make and join them there.'));
       const group = this.find(link.group);
       if (group && group.status !== 'out') throw new Error(t('You are in this group already.'));
       const chosen = cleanName(name);

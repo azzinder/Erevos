@@ -10,7 +10,7 @@ import { QrCode } from '../components/QrCode';
 import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
-import { onLinked, placeLinks, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { GroupsHeldError, onLinked, placeLinks, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
 import { tap } from '../lib/haptics';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { mark, t } from '../lib/i18n';
@@ -105,6 +105,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const [copied, setCopied] = useState(false);
   // On a linked device: the accounts from the phone.
   const [here, setHere] = useState<AccountsHere | null>(null);
+  // Where the groups are held (docs/sync.md, S6), and where they go while they move.
+  const [holder, setHolder] = useState<ReturnType<Links['groupsHolder']>>({ on: null, to: undefined, can: [], problem: null });
 
   const refresh = (l: Links) => {
     setDevices(l.devices());
@@ -112,6 +114,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     setAnswer(l.answerCode());
     setCopied(l.copied());
     setHere(l.accountsHere());
+    setHolder(l.groupsHolder());
     // A code gone meanwhile, as when a phone's space read a place's: Link to my phone starts again.
     if (!l.offered()) setOffer(null);
   };
@@ -257,12 +260,41 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           onPress: () =>
             void run(async () => {
               if (!links) return;
-              const told = await links.unlink(device.id);
-              setNote(told ? t('Unlinked.') : own ? t('Unlinked here. The phone was not told: unlink this device there too.') : t('Unlinked. The device was not told, and gets nothing more.'));
+              let told: boolean;
+              try {
+                told = await links.unlink(device.id);
+              } catch (error) {
+                // The groups are held there (or here): unlinked all the same only once asked again.
+                if (error instanceof GroupsHeldError) return unlinkHolding(device, error.message);
+                throw error;
+              }
+              unlinked(told, own);
             }),
         },
       ],
     );
+  }
+
+  function unlinked(told: boolean, own: boolean) {
+    setNote(told ? t('Unlinked.') : own ? t('Unlinked here. The phone was not told: unlink this device there too.') : t('Unlinked. The device was not told, and gets nothing more.'));
+  }
+
+  // The groups are held on the device unlinked, or on this one: unlinked all the same, they show as
+  // left on the phone (a lost device), and go with the account's chats here.
+  function unlinkHolding(device: DeviceInfo, why: string) {
+    const own = role === 'linked';
+    ask(t('Unlink all the same?'), `${why} ${own ? t('Unlinked now, the groups go from this device, and the phone shows each as left.') : t('Unlinked now, this phone shows each of the groups as left, unless they are still on their way to it: those stay here. Do it if the device is lost.')}`, [
+      { text: t('Cancel'), style: 'cancel' },
+      {
+        text: t('Unlink'),
+        style: 'destructive',
+        onPress: () =>
+          void run(async () => {
+            if (!links) return;
+            unlinked(await links.unlink(device.id, true), own);
+          }),
+      },
+    ]);
   }
 
   const bringAgain = (id: string) =>
@@ -401,6 +433,34 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     if (next && links) await links.takeSettings().catch(() => undefined);
   }
 
+  // On the phone: which one device holds the groups' keys, this phone or a linked device.
+  const linkedNow = devices.filter((d) => d.linked);
+  const moveGroups = (to: string | null) =>
+    run(async () => {
+      tap();
+      if (!links) return;
+      await links.moveGroups(to);
+      setNote(to === null ? t('The groups come back to this phone once the device that holds them hears it.') : t('The groups go to {name} once it hears it.', { name: linkedNow.find((d) => d.id === to)?.name ?? '' }));
+    });
+  const holding =
+    role === 'primary' && linkedNow.length > 0 ? (
+      <Card>
+        <Text variant="heading">{t('Groups stay on')}</Text>
+        <Row wrap>
+          <Chip label={t('This phone')} selected={holder.on === null} onPress={() => void moveGroups(null)} />
+          {linkedNow.map((d) => (
+            <Chip key={d.id} label={d.name} selected={holder.on === d.id} disabled={!holder.can.includes(d.id) && holder.on !== d.id} onPress={() => void moveGroups(d.id)} />
+          ))}
+        </Row>
+        {holder.to !== undefined ? <Text tone="muted">{t('Moving: both devices have to be on.')}</Text> : null}
+        {holder.problem ? <Text>{holder.problem}</Text> : null}
+        {linkedNow.some((d) => !holder.can.includes(d.id)) ? <Text variant="caption" tone="muted">{t('A device whose Erevos is older cannot hold them: update it there first.')}</Text> : null}
+        <Text variant="caption" tone="muted">
+          {t('The keys of the groups are on one device at a time, never copied. There, groups work with the phone off; the other devices write in them through it, so it has to be on. Moving them needs both on, and the relay. Public groups stay on the phone.')}
+        </Text>
+      </Card>
+    ) : null;
+
   // The space's own, never hidden chats': its language, look and last seen, on every device of the account.
   const sharing =
     !place && (role === 'linked' || devices.length > 0) ? (
@@ -477,6 +537,12 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           </Text>
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}
         </Card>
+        {holder.on === 'here' ? (
+          <Card>
+            <Text variant="heading">{t('The groups are held here')}</Text>
+            <Text tone="muted">{t('Groups work on this device with the phone off, and you can make new ones here. The phone and the other devices write in them through this one, so it has to be on.')}</Text>
+          </Card>
+        ) : null}
         {fromPhone}
         {sharing}
         {note ? <Text tone="muted">{note}</Text> : null}
@@ -541,6 +607,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           ))}
         </>
       ) : null}
+
+      {holding}
 
       {sharing}
 

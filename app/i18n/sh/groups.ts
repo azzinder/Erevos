@@ -17,4 +17,8 @@ export const groups: Record<string, string> = {
   'Read ✓✓✓': 'Pročitali ✓✓✓',
   'Reached their phone ✓✓': 'Stiglo na njihov telefon ✓✓',
   'Not yet': 'Još ne',
+  "Public groups stay on the phone: leave them first to move the groups.": "Javne grupe ostaju na telefonu: prvo izađi iz njih da bi premjestio grupe.",
+  "The groups are here already.": "Grupe su već ovdje.",
+  "The groups are on their way to the other device. Try again in a moment.": "Grupe su na putu do drugog uređaja. Pokušaj ponovo za trenutak.",
+  "The groups are too large to move.": "Grupe su prevelike za premještanje.",
 };

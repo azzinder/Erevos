@@ -6,7 +6,7 @@ import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadNotes, mergeNotes, notesSince, onNotesWritten, setNoteFile, stampOf as noteStamp, type Note, type NoteCame, type NotesChanges, type NotesPlace } from '../lock/myself-data';
 import { keepDevicesFile, loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
 import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
-import type { Group, GroupMessage } from '../lock/group-data';
+import { checkedGroupData, MAX_HELD_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
 import { keepSyncFile, loadSyncData, saveSyncData } from '../lock/sync-data';
@@ -44,7 +44,8 @@ import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from 
 import { isCopied, waysFor } from './endpoints';
 import { currentGroupCall } from './group-call';
 import { groupPartsOf } from './group-parts';
-import type { GroupMember, Groups, GroupTransport } from './groups';
+import type { GroupMember, Groups, GroupTransport, HeldGroups } from './groups';
+import type { GroupSignal } from './group-signal';
 import { t } from './i18n';
 import { cleanDeviceName, linkCodeLink, linkSafetyCode, parseLinkCode, type LinkCode } from './link-code';
 import {
@@ -97,6 +98,7 @@ import {
   type Place,
   type Synced,
   type WholeGroup,
+  heldMark,
   wayOf,
   withWay,
 } from './link-wire';
@@ -275,6 +277,20 @@ const SYNC_EVERY = 10 * 60_000;
 // taken back up to this size.
 const SNAP_OVER = 12 * 1024;
 const SNAP_MOST = 64 * 1024 * 1024;
+// The groups' MLS state handed on (docs/sync.md, S6) is told again this often till the other device
+// says it took it; what came for the groups meanwhile waits here, this much of it at most.
+const HAND_AGAIN = 10 * 60_000;
+const GROUPS_WAITING = 500;
+
+// What came on the phone for the groups while their state was on its way (S6): an ask of a device
+// (`from`), a group message, or a contact's group signal.
+type GroupsWaiting = { k: 'group'; from: string; id: string; ask: GroupAsk } | { k: 'gpkt'; p: string } | { k: 'gsig'; c: string; s: GroupSignal; r: boolean };
+
+// The groups' state handed here cannot be taken, ever: as it is, or too large.
+class HeldError extends Error {}
+
+/** Unlinking the device the groups are held on, or unlinking this one that holds them (S6): `unlink` again with `force` to all the same. */
+export class GroupsHeldError extends Error {}
 // How often the phone looks whether the accounts on other networks changed, for the devices.
 const ACCOUNTS_EVERY = 60_000;
 const DRAIN_MOST = 1000;
@@ -497,6 +513,11 @@ export class Links implements Link, TakenFiles {
   // linked device, what went wrong last bringing them.
   private accounts: Promise<unknown> = Promise.resolve();
   private accountsProblems: string[] = [];
+  // The groups' state on its way between devices (S6): what came for them meanwhile, here till they
+  // are held again; what went wrong moving them last; whether this device said it can hold them.
+  private groupsWaiting: GroupsWaiting[] = [];
+  private groupsProblem: string | null = null;
+  private saidCan = false;
   // When the phone last looked who the accounts are (followAccounts); none yet, so the first tick does.
   private accountsLooked = 0;
   // Where each linked device gives the chunks of large files on the same Wi-Fi, as it last said (`chunks`).
@@ -828,8 +849,11 @@ export class Links implements Link, TakenFiles {
       const make = typeof envelope === 'function' ? envelope : () => envelope;
       if (this.data.primary) {
         if (only && only !== this.data.primary.id) return [];
-        await this.save({ ...this.data, primary: await this.seal(this.data.primary, make(this.data.primary)) });
-        return [this.data.primary.id];
+        const was = this.data.primary;
+        const sealed = await this.seal(was, make(was));
+        await this.save({ ...this.data, primary: sealed });
+        // One whose outbox is full takes no more: not told.
+        return sealed.outbox.length > was.outbox.length ? [was.id] : [];
       }
       const devices: Peer[] = [];
       const told: string[] = [];
@@ -1044,6 +1068,43 @@ export class Links implements Link, TakenFiles {
       case 'group':
         this.act(() => this.groupFor(peer.id, said.id, said.ask));
         break;
+      // The groups held on that device (docs/sync.md, S6): as it tells them, and given back.
+      case 'groups':
+        if (peer.id === this.data.holder) {
+          const members: DevicesData['members'] = said.all ? {} : { ...this.data.members };
+          for (const id of said.gone) delete members[id];
+          for (const g of said.list) members[g.id] = g.members;
+          await this.save({ ...this.data, members });
+          this.act(() => this.mirrorFrom(said));
+        }
+        break;
+      case 'changed':
+        if (peer.id === this.data.holder) {
+          this.act(() => this.changedFrom([], said.groups, said.whole));
+          // What the device that holds them could not send for another device, that device is told.
+          const unsent = said.groups.filter((g) => g.unsent);
+          if (unsent.length > 0) for (const d of this.groupPeers()) void this.say({ k: 'changed', chats: [], groups: unsent, whole: [] }, d.id).catch(() => undefined);
+        }
+        break;
+      case 'hold':
+        if (peer.id === this.data.holder) this.act(() => this.heldFrom(peer, said.offer));
+        break;
+      case 'held':
+      case 'nohold':
+        this.act(() => this.handedTo(peer, said.f, said.k === 'held'));
+        break;
+      case 'gpkt':
+        this.act(() => this.packetFrom(peer, said.p, said.h));
+        break;
+      case 'gsig':
+        this.act(() => this.signalFor(peer, said.c, said.s, said.r === true));
+        break;
+      case 'can': {
+        const now = this.data.devices.find((d) => d.id === peer.id);
+        if (now && !now.canHold) await this.keepPeer({ ...now, canHold: true });
+        this.announce();
+        break;
+      }
       case 'endpoint':
         if (core.canSign()) await this.endpointFrom(peer.id, said.bundle, said.ek);
         // The log names it from now: what it lacks of it goes, the contacts first written should none be.
@@ -1094,6 +1155,8 @@ export class Links implements Link, TakenFiles {
         break;
       case 'bye':
         this.chunksGone(peer.id);
+        // Gone with the groups held there (an Erevos that let it go all the same): they are left.
+        if (this.data.holder === peer.id) await this.groupsGone();
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
         this.act(() => this.letGo(peer.id, null));
         this.callSteps(this.calls.unlinked(peer.id));
@@ -1159,6 +1222,8 @@ export class Links implements Link, TakenFiles {
         this.endElsewhere(said.id, said.done === 'declined');
         break;
       case 'groups': {
+        // Held here, they are told from here, not to here.
+        if (this.data.holds) break;
         // Who is in each, in the turn; the groups and their messages, in the work after.
         const members: DevicesData['members'] = said.all ? {} : { ...this.data.members };
         for (const id of said.gone) delete members[id];
@@ -1168,7 +1233,35 @@ export class Links implements Link, TakenFiles {
         break;
       }
       case 'changed':
-        this.act(() => this.changedFrom(said.chats, said.groups, said.whole));
+        this.act(() => this.changedFrom(said.chats, this.data.holds ? said.groups.filter((g) => g.unsent) : said.groups, this.data.holds ? [] : said.whole));
+        break;
+      // The groups held here or to be (docs/sync.md, S6): handed on, asked back, and what comes for
+      // them on the phone, passed on.
+      case 'hold':
+        this.act(() => this.heldFrom(primary, said.offer));
+        break;
+      case 'held':
+      case 'nohold':
+        this.act(() => this.handedTo(primary, said.f, said.k === 'held'));
+        break;
+      case 'give':
+        this.act(async () => {
+          if (this.data.holds) await this.handGroups('').catch(() => undefined);
+        });
+        break;
+      // In the work after, as the groups handed here before it are. Not held here (they are on
+      // their way, or went), back to the phone.
+      case 'group':
+        this.act(async () => {
+          if (this.data.holds) await this.groupFor(primary.id, said.id, said.ask);
+          else await this.say({ k: 'group', id: said.id, ask: said.ask });
+        });
+        break;
+      case 'gpkt':
+        this.act(() => this.packetFrom(primary, said.p, said.h));
+        break;
+      case 'gsig':
+        this.act(() => this.signalFor(primary, said.c, said.s, said.r === true));
         break;
       case 'list':
         if (core.canSign()) return { kind: 'taken', ...contactsOf(both(place, await this.listFrom(said))) };
@@ -1935,6 +2028,7 @@ export class Links implements Link, TakenFiles {
       this.announce();
       // Its own endpoint, a new one, said after the codes matched: a phone from before leaves it alone.
       await this.newEndpoint(true).catch(() => undefined);
+      await this.sayCan();
       return this.flush().catch(() => undefined);
     });
   }
@@ -2088,15 +2182,33 @@ export class Links implements Link, TakenFiles {
     return [...this.chunkOffers].filter(([id]) => known.has(id)).map(([, offer]) => lanWay(chunkHand!, offer));
   }
 
+  // On the phone: the device the groups were held on is gone (S6). Those handed to it and not taken
+  // yet are kept here again; otherwise, with their state gone with it, each is left here.
+  private async groupsGone(): Promise<void> {
+    const shared = this.groups;
+    const handed = shared?.groups.handed();
+    if (shared && handed && handed.to === this.data.holder) await shared.groups.takeBack().catch(() => undefined);
+    else if (shared) await shared.groups.mirror((groups) => ({ groups: groups.map((g) => ({ ...g, status: 'out' as const })), came: [] })).catch(() => undefined);
+    const { holder: _holder, moveTo: _moveTo, handing: _handing, ...rest } = this.data;
+    await this.save(rest);
+    this.groupsWaiting = [];
+  }
+
   // A device unlinked: what it could take, and where it gave, go.
   private chunksGone(id: string): void {
     this.chunkOffers.delete(id);
     void giver?.forget(id);
   }
 
-  async unlink(id = ''): Promise<boolean> {
+  async unlink(id = '', force = false): Promise<boolean> {
     const peer = this.data.primary ?? this.data.devices.find((d) => d.id === id);
     if (!peer) return true;
+    // The groups' MLS state is on one device only (docs/sync.md, S6): back to the phone first, or,
+    // `force`d (the device is lost), they go: on the phone, those handed and not taken yet come
+    // back, and otherwise each is left; on this device, they go with the account's chats.
+    if (!force && (this.data.holds || this.groups?.groups.handed())) throw new GroupsHeldError(t('The groups are held on this device. On the phone, move them back to it first, under Groups stay on.'));
+    if (!force && !this.data.primary && this.data.holder === peer.id) throw new GroupsHeldError(t('The groups are held on {name}. Move them back to this phone first, under Groups stay on.', { name: peer.name }));
+    if (!this.data.primary && this.data.holder === peer.id) await this.run(() => this.groupsGone());
     let told = false;
     try {
       const here = await this.here();
@@ -2135,7 +2247,7 @@ export class Links implements Link, TakenFiles {
     const { e2e } = this.chats;
     const brought = await this.run(async () => {
       const was = this.data.brought;
-      await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined, given: undefined, brought: undefined });
+      await this.save({ ...withoutSiblings(this.data), primary: null, account: '', link: '', synced: {}, packs: [], offer: null, answer: null, members: {}, removed: undefined, erased: undefined, given: undefined, brought: undefined, holds: undefined, handing: undefined, tookHold: undefined });
       return was;
     });
     // The accounts brought from the phone go with the chats.
@@ -2146,6 +2258,8 @@ export class Links implements Link, TakenFiles {
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
     await this.groups?.groups.mirror(() => ({ groups: [], came: [] })).catch(() => undefined);
+    // Held here, the groups' state goes too (S6).
+    await this.groups?.groups.wipe().catch(() => undefined);
     await this.clearChats(gone);
   }
 
@@ -3084,6 +3198,13 @@ export class Links implements Link, TakenFiles {
 
   // A device the outbox had no room for, once it drained: the contacts again, and the history from when it fell behind.
   private async catchUp(): Promise<void> {
+    // On a device that holds the groups, the phone it could not tell of them: all of them again,
+    // what it has already kept once (lib/link-wire.ts mirrorGroups).
+    const primary = this.data.primary;
+    if (primary && this.data.holds && primary.behind && primary.outbox.length === 0) {
+      await this.run(() => this.save({ ...this.data, primary: { ...this.data.primary!, behind: 0, groups: {} } }));
+      this.groupsChanged();
+    }
     for (const d of this.data.devices) {
       if (!d.linked || !d.behind || d.outbox.length > 0) continue;
       await this.run(async () => {
@@ -3117,6 +3238,10 @@ export class Links implements Link, TakenFiles {
     if (!this.data.primary && core.canSign() && this.chats.e2e.newestHeld() > (signed?.n ?? 0)) this.act(() => this.signAgain());
     if (!this.data.primary && this.data.resign && Date.now() - (this.data.resignedAt ?? 0) >= RESIGN_EVERY) this.act(() => this.resignDue());
     if (this.waysLeft) this.act(() => this.run(() => this.tellWays()).then(() => this.flush()));
+    // The groups' state handed on and not said taken (S6), told again; and, from a device, once as
+    // it opens, that it can hold them.
+    if (this.groups?.groups.handed()) this.act(() => this.sendHanded());
+    if (this.data.primary && !this.saidCan) this.act(() => this.sayCan());
     // What the relay dropped by now.
     const old = Date.now() - LEFT_LASTS;
     if (this.data.left.some((l) => l.at < old)) {
@@ -3465,12 +3590,22 @@ export class Links implements Link, TakenFiles {
     this.stopGroups?.();
     this.groups = { groups, transport, shared };
     groups.useLink({
-      through: () => this.data.primary !== null,
+      through: () => !this.holdsGroups(),
+      device: () => this.data.primary !== null,
+      // On the phone, to the device that holds them; on a device, to the phone, which passes it on.
       ask: async (id, ask) => {
-        await this.say({ k: 'group', id, ask });
+        await this.say({ k: 'group', id, ask }, this.data.primary ? undefined : this.data.holder);
       },
       members: (id) => this.seatsOf(id),
-      took: (from) => this.tookAll([from.ids]),
+      // A copy a device that holds them put on the relay for the phone goes as all left there does.
+      took: (from) => (this.data.primary ? this.tookAll([from.ids]) : undefined),
+      pass: async (packet) => {
+        await this.say({ k: 'gpkt', p: toBase64(packet), h: 1 }, this.data.primary ? undefined : this.data.holder);
+      },
+      passSignal: async (identity, signal, request) => {
+        if (this.data.primary || !this.data.holder) return;
+        await this.say({ k: 'gsig', c: identity, s: signal, ...(request ? { r: true as const } : {}) }, this.data.holder);
+      },
     });
     // What was done to their messages as the space opens: what the devices were told, unless the
     // space closed before they were told of a change (their marks then differ, and they are told whole).
@@ -3482,6 +3617,267 @@ export class Links implements Link, TakenFiles {
   private marksNow(group: Group): { marks: Map<string, GroupMarked>; digest: string } {
     const marks = groupMarks(group.messages);
     return { marks, digest: marksDigest(marks) };
+  }
+
+  // Whether the groups' MLS state is here (docs/sync.md, S6): on the phone, unless it handed them
+  // to a device; on a device, once it was handed them.
+  private holdsGroups(): boolean {
+    return this.data.primary ? this.data.holds === true : !this.data.holder;
+  }
+
+  // Who is told of the groups as they change here: from where they are held, on the phone each
+  // linked device but the one that holds them, on that device the phone. None where they are not.
+  private groupPeers(): Peer[] {
+    if (this.data.primary) return this.data.holds ? [this.data.primary] : [];
+    return this.data.devices.filter((d) => d.linked && d.id !== this.data.holder);
+  }
+
+  /**
+   * On the phone: where the groups are held, the device's id, or null for this phone; where they go
+   * next, while they move; the linked devices that can hold them (an older Erevos cannot); and what
+   * went wrong moving them last.
+   */
+  groupsHolder(): { on: string | null; to: string | null | undefined; can: string[]; problem: string | null } {
+    const problem = this.groupsProblem;
+    if (this.data.primary) return { on: this.data.holds ? 'here' : null, to: undefined, can: [], problem };
+    const to = this.groups?.groups.handed()?.to ?? this.data.moveTo;
+    return { on: this.data.holder ?? null, to: to === undefined ? undefined : to || null, can: this.data.devices.filter((d) => d.linked && d.canHold).map((d) => d.id), problem };
+  }
+
+  /**
+   * On the phone: moves the groups to the linked device `to`, or back to this phone (null), as the
+   * account's one MLS state, never copied (docs/sync.md, S6). From a device, it asks them back
+   * first, and they go on from here once they came. Throws while in a public group, with no relay
+   * to hand them on through, to a device whose Erevos cannot hold them, and while they move.
+   */
+  moveGroups(to: string | null): Promise<void> {
+    return this.run(async () => {
+      if (this.data.primary || !this.groups) return;
+      const device = to === null ? null : this.data.devices.find((d) => d.linked && d.id === to);
+      if (to !== null && !device) throw new Error(t('That device is no longer linked.'));
+      if (device && !device.canHold) throw new Error(t('{name} has an older Erevos: update it there first.', { name: device.name }));
+      if (this.groups.groups.handed()) throw new Error(t('The groups are on their way to the other device. Try again in a moment.'));
+      this.groupsProblem = null;
+      const on = this.data.holder ?? null;
+      if (on === to) {
+        if (this.data.moveTo !== undefined) await this.save({ ...this.data, moveTo: undefined });
+        return;
+      }
+      await this.save({ ...this.data, moveTo: to ?? '' });
+    }).then(async () => {
+      this.announce();
+      const { on, to: next } = this.groupsHolder();
+      if (next === undefined) return;
+      if (on) await this.say({ k: 'give' }, on);
+      else if (next) await this.handGroups(next);
+    });
+  }
+
+  // Hands the groups' MLS state to `to` (the phone, from a device: ''): wiped here and kept as it
+  // went in one save (lib/groups.ts moveOut), then put on the relay as a file whose key goes in the
+  // envelope, told again till the other device says it took it or cannot.
+  private async handGroups(to: string): Promise<void> {
+    const shared = this.groups;
+    const here = await this.here();
+    if (!shared || !here) throw new Error(t('The groups go to the other device through the relay. Type its address in Relay first.'));
+    await shared.groups.moveOut(to);
+    await this.handedFlags();
+    this.announce();
+    await this.sendHanded(true);
+  }
+
+  // What says where the groups are, as what was handed on says: on the phone, the device they went
+  // to; on a device, not here. Should it have stopped between the two saves.
+  private async handedFlags(): Promise<void> {
+    const handed = this.groups?.groups.handed();
+    if (!handed) return;
+    await this.run(async () => {
+      if (this.data.primary) {
+        if (!this.data.holds) return;
+        const { holds: _holds, ...rest } = this.data;
+        await this.save(rest);
+      } else if (this.data.holder !== handed.to || this.data.moveTo !== undefined) {
+        const { moveTo: _moveTo, ...rest } = this.data;
+        await this.save({ ...rest, holder: handed.to });
+      }
+    });
+  }
+
+  // The groups' state handed on and not taken yet: put on the relay once, and told to the other
+  // device, again each HAND_AGAIN (`now`: at once) till it says.
+  private async sendHanded(now = false): Promise<void> {
+    const shared = this.groups;
+    const handed = shared?.groups.handed();
+    if (!shared || !handed) return;
+    await this.handedFlags();
+    const was = this.data.handing;
+    if (was && !now && Date.now() - was.at < HAND_AGAIN) return;
+    let offer = was?.offer;
+    if (!offer) {
+      const here = await this.here();
+      if (!here) return;
+      const sent = await sendFile(here.own, bytesSource(utf8Encode(handed.held)), { name: 'groups.json', mime: 'application/json', kind: 'file' });
+      await deleteChunks(sent.ref.id, sent.ref.count).catch(() => undefined);
+      offer = sent.offer;
+    }
+    const told = await this.say({ k: 'hold', offer }, handed.to || undefined);
+    const made = offer;
+    await this.run(async () => {
+      await this.save({ ...this.data, handing: { offer: made, at: told.length > 0 ? Date.now() : 0 } });
+    });
+  }
+
+  // The groups' MLS state another device handed on (`hold`), taken from the relay and kept here,
+  // with what each device was told of them as it is now: each has them as told already. Said taken
+  // (`held`), and then the relay lets go of it; one that cannot be taken, ever, is said so (`nohold`),
+  // and kept there again. One that cannot be taken now is told again.
+  private async heldFrom(from: Peer, offer: FileOffer): Promise<void> {
+    const shared = this.groups;
+    const here = await this.here();
+    if (!shared || !here) return;
+    const f = heldMark(offer);
+    const answer = (k: 'held' | 'nohold') => this.say({ k, f }, this.data.primary ? undefined : from.id);
+    if (this.data.tookHold === f) {
+      await answer('held');
+      return;
+    }
+    if (this.holdsGroups()) return;
+    let held: HeldGroups;
+    try {
+      if (offer.size > MAX_HELD_GROUPS) throw new HeldError();
+      const ref = await takeFile(here.own, offerRef(offer), undefined, true);
+      let bytes: Uint8Array | null;
+      try {
+        bytes = await readFile(ref);
+      } finally {
+        await deleteChunks(ref.id, ref.count).catch(() => undefined);
+      }
+      if (!bytes || bytes.length > MAX_HELD_GROUPS) throw new HeldError();
+      const data = checkedGroupData(JSON.parse(utf8Decode(bytes)) as unknown);
+      if (!data.state || !data.seal) throw new HeldError();
+      held = { state: data.state, seal: data.seal, orphans: data.orphans, given: data.given, groups: data.groups };
+    } catch (error) {
+      if (error instanceof HeldError || error instanceof FileGoneError || error instanceof FileDamagedError || error instanceof SyntaxError) await answer('nohold');
+      return;
+    }
+    await shared.groups.moveIn(held);
+    const told = Object.fromEntries((await this.groupMirrors()).map(({ group, mark }) => [group.id, { meta: mark, last: lastKey(group), at: group.messages[group.messages.length - 1]?.at ?? 0, marks: this.marksNow(group).digest }]));
+    const next = await this.run(async () => {
+      if (this.data.primary) {
+        await this.save({ ...this.data, holds: true, tookHold: f, primary: { ...this.data.primary, groups: told } });
+        return null;
+      }
+      const { holder: _holder, moveTo, ...rest } = this.data;
+      await this.save({ ...rest, tookHold: f, devices: this.data.devices.map((d) => (d.id === from.id ? { ...d, groups: told } : d)) });
+      return moveTo || null;
+    });
+    await answer('held');
+    this.announce();
+    this.groupsAgain();
+    if (next && next !== from.id) await this.handGroups(next).catch((error: unknown) => this.movedWrong(error));
+  }
+
+  // The other device said what it did with the groups handed to it (`held`, or `nohold`: they are
+  // kept here again, as they went). Then the relay lets go of them.
+  private async handedTo(from: Peer, f: string, took: boolean): Promise<void> {
+    const shared = this.groups;
+    const handed = shared?.groups.handed();
+    const handing = this.data.handing;
+    if (!shared || !handed || !handing || heldMark(handing.offer) !== f) return;
+    if (this.data.primary ? from.id !== this.data.primary.id : from.id !== handed.to) return;
+    if (took) await shared.groups.handedDone();
+    else await shared.groups.takeBack();
+    await this.run(async () => {
+      const { handing: _handing, ...rest } = this.data;
+      if (took) await this.save(rest);
+      else if (this.data.primary) await this.save({ ...rest, holds: true });
+      else {
+        const { holder: _holder, moveTo: _moveTo, ...back } = rest;
+        await this.save(back);
+      }
+    });
+    if (!took) this.groupsProblem = t('The other device could not take the groups: they stay here.');
+    const ref = offerRef(handing.offer);
+    if (ref.from) await this.drop(ref.from);
+    this.announce();
+    this.groupsAgain();
+  }
+
+  // On a linked device: says to the phone it can hold the groups (`can`), once each time it opens.
+  private async sayCan(): Promise<void> {
+    if (!this.data.primary || this.saidCan) return;
+    this.saidCan = true;
+    const told = await this.say({ k: 'can', g: 1 }).catch(() => []);
+    if (told.length === 0) this.saidCan = false;
+  }
+
+  private movedWrong(error: unknown): void {
+    this.groupsProblem = error instanceof Error ? error.message : String(error);
+    this.announce();
+  }
+
+  // What came for the groups while their state was on its way (`GroupsWaiting`): kept till it is
+  // held somewhere again, then done here or passed on there. And what is done with each now.
+  private waitGroups(item: GroupsWaiting): void {
+    this.groupsWaiting = [...this.groupsWaiting, item].slice(-GROUPS_WAITING);
+  }
+
+  private groupsAgain(): void {
+    const waiting = this.groupsWaiting;
+    this.groupsWaiting = [];
+    for (const item of waiting) this.act(() => this.groupsCame(item));
+  }
+
+  private async groupsCame(item: GroupsWaiting): Promise<void> {
+    switch (item.k) {
+      case 'group':
+        if (this.holdsGroups()) return this.groupFor(item.from, item.id, item.ask);
+        if (this.data.holder) await this.say({ k: 'group', id: item.id, ask: item.ask }, this.data.holder);
+        return;
+      case 'gpkt':
+        return this.packetFrom(null, item.p, 1);
+      case 'gsig':
+        return this.signalFor(null, item.c, item.s, item.r);
+    }
+  }
+
+  // A group message that came where the groups are not held, passed on (`gpkt`): taken here; on a
+  // device, back to the phone; on the phone, on to the device that holds them, at most twice, or,
+  // should it come from that device, kept till they are held again: they are on their way.
+  private async packetFrom(from: Peer | null, p: string, h: number): Promise<void> {
+    const shared = this.groups;
+    if (!shared) return;
+    if (this.holdsGroups()) {
+      await shared.groups.receive(fromBase64(p), shared.transport).catch(() => false);
+      return;
+    }
+    if (this.data.primary) {
+      await this.say({ k: 'gpkt', p, h: 2 });
+      return;
+    }
+    const holder = this.data.holder;
+    if (!holder) return;
+    if (from?.id === holder) this.waitGroups({ k: 'gpkt', p });
+    else if (h < 2) await this.say({ k: 'gpkt', p, h: h + 1 }, holder);
+  }
+
+  // A contact's group signal the phone passed on (`gsig`), as packetFrom does with a message.
+  private async signalFor(from: Peer | null, c: string, signal: GroupSignal, request: boolean): Promise<void> {
+    const shared = this.groups;
+    if (!shared) return;
+    if (this.holdsGroups()) {
+      await shared.groups.signal(c, signal, request, shared.transport);
+      return;
+    }
+    const said: Envelope = { k: 'gsig', c, s: signal, ...(request ? { r: true as const } : {}) };
+    if (this.data.primary) {
+      await this.say(said);
+      return;
+    }
+    const holder = this.data.holder;
+    if (!holder) return;
+    if (from?.id === holder) this.waitGroups({ k: 'gsig', c, s: signal, r: request });
+    else await this.say(said, holder);
   }
 
   // The groups the devices are told of, as they are now, with their members.
@@ -3523,7 +3919,7 @@ export class Links implements Link, TakenFiles {
 
   // On the primary: a group changed. The devices are told, once for changes close together.
   private groupsChanged(): void {
-    if (this.telling || this.closed || this.data.primary || !this.data.devices.some((d) => d.linked)) return;
+    if (this.telling || this.closed || this.groupPeers().length === 0) return;
     this.telling = true;
     this.act(async () => {
       this.telling = false;
@@ -3536,15 +3932,15 @@ export class Links implements Link, TakenFiles {
   // since to those it was told of, and the groups gone. A photo or file this phone keeps goes as a
   // copy put on the relay for the devices, deleted there once they took it.
   private async tellGroups(): Promise<void> {
-    if (!this.groups || this.data.primary) return;
+    if (!this.groups || this.groupPeers().length === 0) return;
     this.groupsLate = false;
     const now = await this.groupMirrors();
     const here = await this.here().catch(() => null);
     const copies = new Map<string, FileOffer | null>();
     const kept = new Set<string>();
     const marked = new Map(now.map(({ group }) => [group.id, this.marksNow(group)]));
-    for (const d of this.data.devices) {
-      if (!d.linked || d.behind) continue;
+    for (const d of this.groupPeers()) {
+      if (d.behind) continue;
       const told = d.groups;
       const list: GroupMirror[] = [];
       const entries: GroupEntry[] = [];
@@ -3587,9 +3983,9 @@ export class Links implements Link, TakenFiles {
       const changed = changes.length > 0 || whole.length > 0;
       if (!groups && !changed && JSON.stringify(next) === JSON.stringify(told)) continue;
       await this.run(async () => {
-        const peer = this.data.devices.find((p) => p.id === d.id);
+        const peer = this.groupPeers().find((p) => p.id === d.id);
         // Told otherwise meanwhile, as when caught up: the next change tells it.
-        if (!peer?.linked || peer.behind || JSON.stringify(peer.groups) !== JSON.stringify(told)) return;
+        if (!peer || peer.behind || JSON.stringify(peer.groups) !== JSON.stringify(told)) return;
         let sealed = peer;
         const envelopes = [...(groups ? groupEnvelopes(list, gone, entries) : []), ...(changed ? changeEnvelopes([], changes, whole) : [])];
         // Each member's message is a message, in an envelope of its own; the rest is quiet.
@@ -3599,7 +3995,8 @@ export class Links implements Link, TakenFiles {
           return;
         }
         await this.keepPeer({ ...sealed, groups: next });
-        await this.save({ ...this.data, left: this.leftFor([peer.id], files) });
+        // On a device that holds them, a copy for the phone stays on the relay till it expires.
+        if (!this.data.primary) await this.save({ ...this.data, left: this.leftFor([peer.id], files) });
         for (const file of files) kept.add(file.from.ids);
       });
     }
@@ -3641,6 +4038,13 @@ export class Links implements Link, TakenFiles {
   // On the primary: what a device asked to do in one of the groups that go to it, done here as this
   // phone's own. A message that cannot go to the group, the device that wrote it shows as not sent.
   private async groupFor(device: string, id: string, ask: GroupAsk): Promise<void> {
+    // Held on a device: it does it there (docs/sync.md, S6). From that device, they are on their way
+    // here: done once they came.
+    if (!this.data.primary && this.data.holder) {
+      if (device === this.data.holder) this.waitGroups({ k: 'group', from: device, id, ask });
+      else await this.say({ k: 'group', id, ask }, this.data.holder);
+      return;
+    }
     const shared = this.groups;
     const there = !!shared?.shared(id) && shared.groups.all().some((g) => g.id === id);
     if (ask.t === 'text' || ask.t === 'file') {
@@ -3686,7 +4090,8 @@ export class Links implements Link, TakenFiles {
   // the history (`quiet`) do not say a message came.
   private async mirrorFrom(said: { list: GroupMirror[]; gone: string[]; entries: GroupEntry[] }, quiet = false): Promise<void> {
     const shared = this.groups;
-    if (!shared) return;
+    // Held here, what was said before they came is past.
+    if (!shared || this.holdsGroups()) return;
     let again: FileFrom[] = [];
     await shared.groups.mirror((groups) => {
       const made = mirrorGroups(groups, said);

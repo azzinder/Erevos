@@ -124,7 +124,8 @@ export function openGroups({ data, save, pub, savePub, settings, chats }: {
 }): PublicGroups {
   const meAt = (kind: 'groupHex' | 'publicHex') => async () => {
     const [{ e2e }, place] = await Promise.all([chats(), settings()]);
-    return { id: toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
+    // On a linked device that holds the groups (lib/devices.ts), the account's, as on the phone.
+    return { id: e2e.own()?.identity || toHex(e2e.identity), sender: place[kind], relay: place.own.url, relayKey: place.relayKey };
   };
   return new PublicGroups(data, save, meAt('groupHex'), pub, savePub, relayDoors(settings), meAt('publicHex'));
 }

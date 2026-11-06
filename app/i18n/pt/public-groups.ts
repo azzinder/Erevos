@@ -126,4 +126,5 @@ export const publicGroups: Record<string, string> = {
     'O grupo é seu: fechar o grupo remove todos os membros, e ninguém mais poderá escrever nele. Para que ele continue sem você, transfira-o primeiro.',
   'The owner’s phone takes you out the next time Erevos is open on it. You read nothing the group says after.':
     'O celular do dono vai remover você na próxima vez que o Erevos estiver aberto nele. Depois disso, você não lê mais nada do grupo.',
+  "Public groups stay on the phone: make and join them there.": "Os grupos públicos ficam no celular: crie-os e entre neles por lá.",
 };

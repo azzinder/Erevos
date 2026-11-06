@@ -7,11 +7,13 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import {
   checkedAbout,
+  checkedGroupData,
   EMPTY_GROUPS,
   MAX_CONTACT_ASKS,
   MAX_CONTACT_KEY,
   MAX_GIVEN,
   MAX_GROUP_MESSAGES,
+  MAX_HELD_GROUPS,
   MAX_LATER,
   MAX_ORPHANS,
   MAX_OUTBOX,
@@ -75,7 +77,10 @@ import { MAX_VOICE_MS } from './voice';
 //
 // On a device linked to the phone that holds the account (lib/devices.ts), the groups here are the
 // phone's, kept as it says them (`mirror`), and what is done in one, the phone does (`GroupLink`):
-// this device has no MLS state of its own, and makes and joins no group.
+// this device has no MLS state of its own, and makes and joins no group. Unless the groups are held
+// there (docs/sync.md, S6): the account's one MLS state moves to it (`moveOut`, `moveIn`), never
+// copied, and the phone is then the one that keeps them as told, asks, and passes on what comes for
+// them. The members see the same member, whose group messages come to another queue.
 //
 // Each group message tells the relay what it carries (lib/relay.ts, Mark), for a web app's notice
 // while it is closed: a member's words, photo, file or voice message, or an ask for one's contact
@@ -153,7 +158,24 @@ export type GroupLink = {
   members(id: string): GroupMember[];
   /** Says a photo, file or voice message of a group was taken here from where it waited. */
   took(from: FileFrom): void;
+  /** A group message that came here, for the device that holds the groups now (docs/sync.md, S6). */
+  pass?(packet: Uint8Array): Promise<void>;
+  /** A group signal from a contact's chat that came here, for the device that holds the groups now. */
+  passSignal?(identity: string, signal: GroupSignal, request: boolean): Promise<void>;
+  /** Whether this is a linked device, the groups held here or not: public groups are the phone's. */
+  device?(): boolean;
 };
+
+// How long the queues the groups' messages came to stay this device's once they were handed on
+// (S6): long past when their members heard the keys made new on the other device.
+const LEFT_SENDERS_LAST = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The groups' MLS state and what goes with it, as one device hands it to another (docs/sync.md,
+ * S6): moved, never copied. Each group as kept, without its messages, which the other has as it was
+ * told them, nor its PIN and notifications, which stay on each.
+ */
+export type HeldGroups = Pick<GroupData, 'state' | 'seal' | 'orphans' | 'given'> & { groups: Group[] };
 
 /** A group as the screens show it. */
 export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
@@ -369,6 +391,109 @@ export class Groups {
       this.changed();
       for (const id of came) this.messageListeners.forEach((listener) => listener(id));
     });
+  }
+
+  /**
+   * Hands the MLS state on (docs/sync.md, S6) to the device `to` ('' for the phone): in one save it
+   * is wiped from here and kept as it went (`handed`), so it is never in two places as kept, nor
+   * lost, should this device stop on the way. The groups stay as they are, as told. Throws while in
+   * a public group or asking to join one, which stay on the phone, and with no groups.
+   */
+  moveOut(to: string, now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      if (!this.data.state) throw new Error(t('No groups here yet.'));
+      if (this.data.handed) throw new Error(t('The groups are on their way to the other device. Try again in a moment.'));
+      if (this.hasPublic()) throw new Error(t('Public groups stay on the phone: leave them first to move the groups.'));
+      const held: HeldGroups = {
+        state: this.data.state,
+        seal: this.data.seal,
+        orphans: this.data.orphans,
+        given: this.data.given,
+        groups: this.data.groups.map(({ messages: _messages, pin: _pin, notify: _notify, ...g }) => ({ ...g, messages: [] })),
+      };
+      // Where its members write to it till the other device makes its keys new: kept on a while.
+      const keep = now - LEFT_SENDERS_LAST;
+      const left = [...(this.data.left ?? []).filter((l) => l.at >= keep), ...[...(await this.sendersNow())].map((sender) => ({ sender, at: now }))];
+      const json = JSON.stringify(held);
+      if (json.length > MAX_HELD_GROUPS) throw new Error(t('The groups are too large to move.'));
+      await this.save({
+        ...this.data,
+        state: '',
+        seal: '',
+        orphans: [],
+        given: [],
+        groups: this.data.groups.map((g) => ({ ...g, later: [], outbox: [] })),
+        handed: { to, held: json },
+        left: [...new Map(left.map((l) => [l.sender, l])).values()],
+      });
+      this.changed();
+    });
+  }
+
+  /** The MLS state handed on (moveOut), as it went and to whom, till the other device says it took it. */
+  handed(): { to: string; held: string } | null {
+    return this.data.handed ?? null;
+  }
+
+  /** The other device took what was handed: here it goes. */
+  handedDone(): Promise<void> {
+    return this.run(async () => {
+      if (!this.data.handed) return;
+      const { handed: _handed, ...rest } = this.data;
+      await this.save(rest);
+    });
+  }
+
+  /** The other device could not take what was handed: it is kept here again, as it went. */
+  takeBack(): Promise<void> {
+    return this.run(async () => {
+      const handed = this.data.handed;
+      if (!handed || this.data.state) return;
+      const held = checkedGroupData(JSON.parse(handed.held) as unknown);
+      const { handed: _handed, ...rest } = this.data;
+      this.data = rest;
+      await this.takeIn({ state: held.state, seal: held.seal, orphans: held.orphans, given: held.given, groups: held.groups });
+    });
+  }
+
+  /**
+   * Takes the MLS state another device handed on (moveOut): the groups as it kept them, with their
+   * messages as told here, and the PIN and notifications here. Each group then makes its keys new
+   * with the next renewKeys, saying where this device's group messages come to.
+   */
+  moveIn(held: HeldGroups): Promise<void> {
+    return this.run(() => this.takeIn(held));
+  }
+
+  private async takeIn(held: HeldGroups): Promise<void> {
+    if (this.data.state) throw new Error(t('The groups are here already.'));
+    if (!held.state || !held.seal) throw new Error(t('No groups here yet.'));
+    const here = new Map(this.data.groups.map((g) => [g.id, g]));
+    const groups = held.groups.map((g) => {
+      const kept = here.get(g.id);
+      const { renewing: _renewing, ...rest } = g;
+      return { ...rest, keysAt: 0, messages: kept?.messages ?? [], ...(kept?.pin ? { pin: kept.pin } : {}), ...(kept?.notify ? { notify: kept.notify } : {}) };
+    });
+    await this.save({ ...this.data, state: held.state, seal: held.seal, orphans: held.orphans, given: held.given, groups });
+    this.changed();
+  }
+
+  /** Everything of the groups here goes, their MLS state too: a linked device unlinked (lib/devices.ts forget). */
+  wipe(): Promise<void> {
+    return this.run(async () => {
+      await this.save({ ...EMPTY_GROUPS });
+      this.changed();
+    });
+  }
+
+  // Whether a public group keeps the groups on the phone (moveOut): one this phone is in.
+  protected hasPublic(): boolean {
+    return this.data.groups.some((g) => g.status !== 'out' && this.isPublic(g.id));
+  }
+
+  // Whether this is a linked device (GroupLink.device): public groups are made and joined on the phone.
+  protected onDevice(): boolean {
+    return this.link?.device?.() === true;
   }
 
   protected run<T>(call: () => Promise<T>): Promise<T> {
@@ -1103,25 +1228,32 @@ export class Groups {
     });
   }
 
-  /** The queues this phone says its group messages come to, in its own leaf of each group it is in, by sender id. */
-  ownSenders(): Promise<Set<string>> {
+  /** The queues this phone says its group messages come to, in its own leaf of each group it is in, by sender id; and those it said before the groups were handed on, a while (S6). */
+  ownSenders(now = Date.now()): Promise<Set<string>> {
     return this.run(async () => {
-      const senders = new Set<string>();
-      if (!this.data.state || this.through()) return senders;
-      for (const g of this.data.groups) {
-        if (g.status === 'out') continue;
-        try {
-          const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(g.id)))) as { own: number; members: { leaf: number; about: string }[] };
-          const mine = json.members.find((m) => m.leaf === json.own);
-          const sender = mine ? (JSON.parse(mine.about) as { sender?: unknown }).sender : undefined;
-          if (typeof sender === 'string') senders.add(sender);
-        } catch {
-          // A group the core no longer has, or a leaf that is not what an Erevos says.
-        }
-      }
+      const senders = this.through() ? new Set<string>() : await this.sendersNow();
+      for (const l of this.data.left ?? []) if (l.at >= now - LEFT_SENDERS_LAST) senders.add(l.sender);
       return senders;
     });
   }
+
+  private async sendersNow(): Promise<Set<string>> {
+    const senders = new Set<string>();
+    if (!this.data.state) return senders;
+    for (const g of this.data.groups) {
+      if (g.status === 'out') continue;
+      try {
+        const json = JSON.parse(utf8Decode(await core.group.members(this.kept(), fromHex(g.id)))) as { own: number; members: { leaf: number; about: string }[] };
+        const mine = json.members.find((m) => m.leaf === json.own);
+        const sender = mine ? (JSON.parse(mine.about) as { sender?: unknown }).sender : undefined;
+        if (typeof sender === 'string') senders.add(sender);
+      } catch {
+        // A group the core no longer has, or a leaf that is not what an Erevos says.
+      }
+    }
+    return senders;
+  }
+
 
   // On the admin's phone: new keys for its own leaf, in a commit that also takes out whoever asked
   // to leave, saying where this phone's group messages come to now when the core can.
@@ -1286,6 +1418,8 @@ export class Groups {
    */
   signal(identity: string, signal: GroupSignal, request: boolean, transport: GroupTransport): Promise<void> {
     return this.run(async () => {
+      const link = this.through();
+      if (link?.passSignal && !this.data.state) return link.passSignal(identity, signal, request);
       if (request) return;
       if (signal.kind === 'ask') {
         const given = `${signal.group}:${identity}`;
@@ -1348,7 +1482,14 @@ export class Groups {
   /** A group message from the relay. Says whether it was one for this phone. */
   receive(packet: Uint8Array, transport: GroupTransport): Promise<boolean> {
     return this.run(async () => {
-      if (!isGroupPacket(packet) || !this.data.seal) return false;
+      if (!isGroupPacket(packet)) return false;
+      // Held on another device: it goes there.
+      const link = this.through();
+      if (link?.pass && !this.data.seal) {
+        await link.pass(packet);
+        return true;
+      }
+      if (!this.data.seal) return false;
       this.lastTransport = transport;
       let message: Uint8Array;
       try {

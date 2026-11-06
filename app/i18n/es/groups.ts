@@ -17,4 +17,8 @@ export const groups: Record<string, string> = {
   'Read ✓✓✓': 'Lo leyeron ✓✓✓',
   'Reached their phone ✓✓': 'Llegó a su teléfono ✓✓',
   'Not yet': 'Todavía no',
+  "Public groups stay on the phone: leave them first to move the groups.": "Los grupos públicos se quedan en el teléfono: sal de ellos primero para mover los grupos.",
+  "The groups are here already.": "Los grupos ya están aquí.",
+  "The groups are on their way to the other device. Try again in a moment.": "Los grupos van de camino al otro dispositivo. Inténtalo de nuevo en un momento.",
+  "The groups are too large to move.": "Los grupos son demasiado grandes para moverlos.",
 };

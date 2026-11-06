@@ -83,6 +83,8 @@ export type Peer = {
   passed?: number;
   /** On the primary: where that pass says the account reads (JSON), so a new one goes once that moves. */
   passTo?: string;
+  /** On the primary: the device said it can hold the groups (`can`, docs/sync.md S6): a version from before cannot. */
+  canHold?: true;
   /** The key this side gave it for the packets it sends here, and the one it gave this side (lib/sealed-packet.ts), base64url. Missing while not said: a version from before says none, and is sealed nothing. */
   key?: string;
   sealTo?: string;
@@ -147,6 +149,19 @@ export type DevicesData = {
   /** On a linked device: what of the accounts the phone gave it is still to bring, and what it brought (lib/linked-accounts.ts). */
   given?: GivenAccounts;
   brought?: Brought;
+  /** On the primary: the linked device the groups are held on (docs/sync.md, S6), by its id; none
+   *  while they are on this phone. And where they are to go next once that device gave them back
+   *  (`moveTo`: a device's id, '' for this phone). */
+  holder?: string;
+  moveTo?: string;
+  /** On a linked device: the groups are held here, their MLS state with them (S6). */
+  holds?: true;
+  /** Where the groups' state handed on from here waits on the relay (lib/groups.ts handed), and when
+   *  the other device was last told of it: told again till it says it took it. */
+  handing?: { offer: FileOffer; at: number };
+  /** The state last taken here, by its file's first piece (lib/link-wire.ts heldMark): told again,
+   *  it is said taken again. */
+  tookHold?: string;
   /** Set in every file saved since packets said what they carry: in one from before (0.1.16), what
    *  waited for a device was kept with no marks, and goes with none (lib/relay.ts, Mark). */
   marked?: true;
@@ -236,6 +251,7 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(isText(v.routed) ? { routed: v.routed } : {}),
     ...(isTime(v.passed) && v.passed > 0 ? { passed: v.passed } : {}),
     ...(typeof v.passTo === 'string' && v.passTo.length <= 1024 ? { passTo: v.passTo } : {}),
+    ...(v.canHold === true ? { canHold: true as const } : {}),
     ...(isRelayKey(v.key) ? { key: v.key } : {}),
     ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
     ...(checkedWays(v.ways) ? { ways: checkedWays(v.ways)! } : {}),
@@ -265,6 +281,12 @@ function checkedWays(value: unknown): Record<string, string> | null {
   // One kept whole, by the version before, is no digest: that way is told once more.
   for (const [id, said] of Object.entries(value)) if (isHex(id, 64) && isHex(said, 16)) ways[id] = said;
   return Object.keys(ways).length > 0 ? ways : null;
+}
+
+function checkedHanding(value: unknown): DevicesData['handing'] | null {
+  const v = (value ?? {}) as { offer?: unknown; at?: unknown };
+  const offer = readOffer(v.offer);
+  return offer && isTime(v.at) ? { offer, at: v.at } : null;
 }
 
 function checked(value: unknown): DevicesData {
@@ -310,6 +332,11 @@ function checked(value: unknown): DevicesData {
     ...(isTime(v.moving) && v.moving > 0 ? { moving: v.moving } : {}),
     ...(Object.keys(given).length > 0 ? { given } : {}),
     ...(brought ? { brought } : {}),
+    ...(isText(v.holder) && /^[0-9a-f]{1,64}$/.test(v.holder) ? { holder: v.holder } : {}),
+    ...(isText(v.moveTo) && /^[0-9a-f]{0,64}$/.test(v.moveTo) ? { moveTo: v.moveTo } : {}),
+    ...(v.holds === true ? { holds: true as const } : {}),
+    ...(checkedHanding(v.handing) ? { handing: checkedHanding(v.handing)! } : {}),
+    ...(isText(v.tookHold) && /^[0-9a-f]{48}$/.test(v.tookHold) ? { tookHold: v.tookHold } : {}),
     marked: true,
   };
 }

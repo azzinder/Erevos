@@ -235,6 +235,40 @@ desktop/chunks.js (modules/erevos-radio/android/lan-check).
   no new start (`Contact.byDevice`): the ways to the endpoints stay.
 - A link from before, or a core that cannot make or check the word, goes through the phone as before.
 
+## Phase S6: a holder of the groups that moves
+
+- The account keeps one MLS leaf in each group, so members never learn how many devices it has. Its state, the seal key
+  group messages to it are sealed to, and what goes with them (`HeldGroups`: each group's outbox, what waits for a
+  later epoch, orphans, key packages given) are on one device at a time: the phone, or the linked device the phone
+  chooses (**Groups stay on**, `Links.moveGroups`).
+- Moving, in two steps: the side that holds them wipes them and keeps them as they went (`GroupData.handed`) in one
+  save (`Groups.moveOut`), so they are never kept in two places, nor lost should it stop on the way. It puts them on
+  the relay as a file whose key goes only in the link (`hold`), told again every 10 minutes (`HAND_AGAIN`). The other
+  side takes them with the relay's copy left (`moveIn`), keeps each group's messages as it was told them, says so
+  (`held`, by the file's first piece), and makes its keys new in each group with the next `renewKeys`, which says
+  where its group messages come to now. Only then does the first side drop its copy and the relay's. One that can
+  never be taken (gone from the relay, damaged, too large: `MAX_HELD_GROUPS`) is said so (`nohold`), and the first
+  side keeps them again (`takeBack`). Told again after it took them, it says `held` again (`tookHold`). The members
+  see the same leaf whose queue moved; the queues it read at stay its own 30 days (`GroupData.left`), as members may
+  write there till they heard the new keys. From a device back to the phone, the phone asks (`give`); to another
+  device, they go through the phone. A second move waits till the first is done.
+- Only to a device that said its Erevos can hold them (`can`, once each time it opens: `Peer.canHold`).
+- Where they are not held, the groups are kept as told (as on a device before): the phone and the other devices ask
+  the holder through the link (`group`), which tells the phone as they change, and the phone tells the other devices.
+  A group message that still comes to the phone's queue, or a contact's group signal (which only the account gets),
+  is passed on to the holder (`gpkt`, at most twice; `gsig`). While they are on their way, a device that does not
+  hold them gives what comes for them back to the phone, which keeps it in memory (500 at most) till they are held
+  again, then does it or passes it on.
+- Refused while in a public group or asking to join one, which stay on the phone; a linked device makes and joins
+  none, even holding the groups. Neither side unlinks while the device holds them, unless asked again (a lost
+  device: `unlink(id, true)`): then the phone shows each group as left, or keeps those still on their way to the
+  device; a device unlinked so wipes them with the account's chats. A device that left all the same leaves the groups
+  as left on the phone.
+- A backup has the groups as they were where it was made: one from before they moved holds an older state, and
+  members see a phone restored from it as behind, as with any backup of the groups (the groups then have to be
+  joined again).
+- A copy of a photo or file the holder keeps, put on the relay for the phone, stays there till it expires (14 days).
+
 ## Next
 
-S6 (a holder of the groups that moves).
+All of S0 to S7 are on main. Not device-tested.

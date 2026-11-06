@@ -3476,6 +3476,14 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   sur le téléphone. Un message que le téléphone n’a pas pu envoyer au groupe (un groupe fermé entre-temps, par exemple)
   s’affiche sur l’ordinateur comme **Pas envoyé par le téléphone**. Créer un groupe, les groupes publics et les appels
   de groupe restent sur le téléphone pour l’instant.
+- **Les groupes restent sur** l’appareil de ton choix : sur le téléphone, sous **Réglages** → **Données et appareils** →
+  **Appareils associés** → **Les groupes restent sur**, choisis **Ce téléphone** ou un ordinateur associé. Les clés des
+  groupes vont alors là, jamais copiées, si bien que les groupes y fonctionnent téléphone éteint, et qu’on peut y en
+  créer de nouveaux ; le téléphone et les autres appareils y écrivent par lui, il doit donc être allumé. Les membres ne
+  voient rien de nouveau : toi, comme avant, dont les messages de groupe arrivent dans une autre file d’attente. Le
+  déplacement demande les deux allumés et le relais, et les groupes publics restent sur le téléphone (quitte-les
+  d’abord). Pour dissocier cet ordinateur, ramène d’abord les groupes sur le téléphone. S’il est perdu, dissocie-le quand même : les
+  groupes apparaissent alors comme quittés sur le téléphone. Un ordinateur avec un Erevos plus ancien ne peut pas les garder.
 - **Les discussions masquées et les seconds mots de passe** ne partent jamais avec l’association de l’espace : chacun
   s’associe à part, depuis l’intérieur. Pour un emplacement de discussions masquées : sur l’ordinateur, ouvre cet
   emplacement avec son PIN, neuf et vide comme le laisse un nouveau PIN, et donne-lui sa propre file d’attente sur le

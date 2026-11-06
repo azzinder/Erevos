@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Groups stay on the device you choose**: on the phone, under Linked devices → Groups stay on, move the groups to a
+  linked computer. Their keys go there, never copied, so the groups work there with the phone off and new ones can be
+  made there; members see nothing new. A lost computer that holds them can still be unlinked.
 - **Add someone new on a linked device without the phone**: a computer adds someone whose contact link is from this
   version by itself, with the phone off, and writes to them at once; they see your account as a request, with the same
   safety number, and the phone adds them too once it is on.
@@ -112,6 +115,15 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A holder of the groups that moves (sync phase S6)**: the account's one MLS state moves between the phone and a
+  linked device in two steps: wiped where it was and kept as it went in one save (lib/groups.ts `moveOut`,
+  `GroupData.handed`), put on the relay as a file (`hold`), and let go of only once the other side says it took it
+  (`held`), or kept again should it never be taken (`nohold`, `takeBack`); never copied. Only to a device whose Erevos
+  says it can (`can`). The holder announces its own queue with its next keys, and the queues read before stay its own
+  30 days; the other side passes on group messages and signals that still come to it (`gpkt`, `gsig`) and asks through
+  it, and what comes while they are on their way waits on the phone till they are held again; the members see the same
+  leaf. Refused while in or asking to join a public group, which a linked device makes and joins none of; the holder
+  is unlinked only when asked again, a lost device's groups then showing as left (docs/sync.md, S6).
 - **A new contact from a linked device (sync phase S5)**: the account's X25519 identity signs (XEdDSA, in the core:
   `accountBind`, `bundleBound`) that its bundle's signing key is its own; the phone gives that word to its devices with
   the list, and a pass for each device, signed for 14 days and renewed, which says where the account reads. Contact links
