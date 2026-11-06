@@ -63,7 +63,7 @@ export const collectionText: Record<string, string> = {
   "Only a photo or video picked from the phone’s files. Android asks you to confirm each time. Photos taken with the camera never go to the gallery.": "Μόνο φωτογραφία ή βίντεο που επιλέγεις από τα αρχεία του τηλεφώνου. Το Android ζητά να το επιβεβαιώνεις κάθε φορά. Οι φωτογραφίες από την κάμερα δεν πάνε ποτέ στη γκαλερί.",
   "Android 11 or later is needed for this.": "Χρειάζεται Android 11 ή νεότερο.",
   "Stop playing when the space locks": "Σταμάτα την αναπαραγωγή όταν κλειδώνει ο χώρος",
-  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next and previous work.": "Αλλιώς η μουσική και τα βίντεο συνεχίζουν αφού κλειδώσει ο χώρος· στην οθόνη κλειδώματος του τηλεφώνου λειτουργούν μόνο αναπαραγωγή, παύση, επόμενο και προηγούμενο.",
+  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next, previous and stop work.": "Αλλιώς η μουσική και τα βίντεο συνεχίζουν αφού κλειδώσει ο χώρος· στην οθόνη κλειδώματος του τηλεφώνου λειτουργούν μόνο αναπαραγωγή, παύση, επόμενο, προηγούμενο και διακοπή.",
   "Show the title in the notification": "Εμφάνιση τίτλου στην ειδοποίηση",
   "Otherwise the notification and the phone’s lock screen say only “Playing”.": "Αλλιώς η ειδοποίηση και η οθόνη κλειδώματος του τηλεφώνου γράφουν μόνο «Αναπαραγωγή».",
   "Playing": "Αναπαραγωγή",

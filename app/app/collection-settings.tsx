@@ -117,7 +117,7 @@ export default function CollectionSettingsScreen() {
         <Card>
           <Switch
             title={t('Stop playing when the space locks')}
-            text={t('Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next and previous work.')}
+            text={t('Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next, previous and stop work.')}
             on={options?.stopOnLock === true}
             disabled={!options}
             onPress={() => void turn('stopOnLock')}

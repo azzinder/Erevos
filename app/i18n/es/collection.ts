@@ -63,7 +63,7 @@ export const collectionText: Record<string, string> = {
   "Only a photo or video picked from the phone’s files. Android asks you to confirm each time. Photos taken with the camera never go to the gallery.": "Solo una foto o un vídeo elegido de los archivos del teléfono. Android te pide confirmarlo cada vez. Las fotos hechas con la cámara nunca van a la galería.",
   "Android 11 or later is needed for this.": "Para esto hace falta Android 11 o posterior.",
   "Stop playing when the space locks": "Detener la reproducción cuando el espacio se bloquea",
-  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next and previous work.": "Si no, la música y los vídeos siguen después de que el espacio se bloquee; en la pantalla de bloqueo del teléfono solo funcionan reproducir, pausa, siguiente y anterior.",
+  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next, previous and stop work.": "Si no, la música y los vídeos siguen después de que el espacio se bloquee; en la pantalla de bloqueo del teléfono solo funcionan reproducir, pausa, siguiente, anterior y detener.",
   "Show the title in the notification": "Mostrar el título en la notificación",
   "Otherwise the notification and the phone’s lock screen say only “Playing”.": "Si no, la notificación y la pantalla de bloqueo del teléfono solo dicen «Reproduciendo».",
   "Playing": "Reproduciendo",

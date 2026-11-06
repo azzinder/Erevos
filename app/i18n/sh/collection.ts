@@ -63,7 +63,7 @@ export const collectionText: Record<string, string> = {
   "Only a photo or video picked from the phone’s files. Android asks you to confirm each time. Photos taken with the camera never go to the gallery.": "Samo fotografija ili video izabran iz datoteka telefona. Android svaki put traži da potvrdite. Fotografije snimljene kamerom nikad ne idu u galeriju.",
   "Android 11 or later is needed for this.": "Za ovo je potreban Android 11 ili noviji.",
   "Stop playing when the space locks": "Zaustavi reprodukciju kad se prostor zaključa",
-  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next and previous work.": "Inače muzika i video nastavljaju nakon što se prostor zaključa; na zaključanom ekranu telefona rade samo reprodukcija, pauza, sljedeće i prethodno.",
+  "Otherwise music and videos go on after the space locks; on the phone’s lock screen only play, pause, next, previous and stop work.": "Inače muzika i video nastavljaju nakon što se prostor zaključa; na zaključanom ekranu telefona rade samo reprodukcija, pauza, sljedeće, prethodno i zaustavljanje.",
   "Show the title in the notification": "Prikaži naslov u obavještenju",
   "Otherwise the notification and the phone’s lock screen say only “Playing”.": "Inače obavještenje i zaključani ekran telefona pokazuju samo „Reprodukcija“.",
   "Playing": "Reprodukcija",
