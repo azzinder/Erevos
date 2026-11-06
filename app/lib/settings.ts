@@ -207,6 +207,8 @@ export const SETTINGS: SettingsGroup[] = [
     items: [
       { id: 'backups', title: mark('Backups'), detail: mark('Make one, automatic backups, restore'), href: '/backup' },
       { id: 'backup-pieces', title: mark('Backup pieces'), detail: mark('Your backup password in pieces with friends, and the pieces you keep for them'), href: '/backup-pieces' },
+      // Whether the Collection goes into the backups (lib/modules.ts, lock/collection-data.ts).
+      { id: 'collection', title: mark('Collection'), detail: mark('Whether your photos and files go into the backups'), href: '/collection-settings', when: phoneUses('collection') },
       { id: 'devices', title: mark('Linked devices'), detail: mark('This account on a computer or in a browser too'), href: '/devices', when: uses('erevos') },
       { id: 'imported', title: mark('Imported chats'), detail: mark('Telegram, WhatsApp and Viber exports'), href: '/imported', when: uses('erevos') },
     ],

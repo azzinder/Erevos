@@ -51,6 +51,13 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Ove datoteke više nema. Sigurnosna kopija vraćena bez nje ostavlja samo njen naziv.",
   "Open with another app": "Otvori drugom aplikacijom",
   "Encrypted collection": "Šifrirana",
+  "Photos and files, encrypted. This Collection opens only while its space or hidden place is open.": "Fotografije i datoteke, šifrirane. Ova se Zbirka otvara samo dok je otvoren njezin prostor ili skriveno mjesto.",
+  "The Collection goes into the backups": "Zbirka ulazi u sigurnosne kopije",
+  "Only this one. It counts for backups made while it is open.": "Samo ova. Vrijedi za kopije napravljene dok je otvorena.",
+  "Delete the original from the gallery after importing": "Izbriši original iz galerije nakon uvoza",
+  "Coming in a later version.": "Stiže u kasnijoj verziji.",
+  "Collection settings": "Postavke Zbirke",
+  "Whether your photos and files go into the backups": "Ulaze li vaše fotografije i datoteke u sigurnosne kopije",
   "Which folder?": "U koju mapu?",
   "Encrypted · only in this space": "Šifrirana · samo u ovom prostoru",
 };

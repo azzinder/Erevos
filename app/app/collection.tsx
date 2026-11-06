@@ -8,7 +8,7 @@ import { BackHandler, FlatList, Image, Pressable, ScrollView, StyleSheet, useWin
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CollectionViewer, addedText } from '../components/collection-viewer';
-import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon } from '../components/icons';
+import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon } from '../components/icons';
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
@@ -99,7 +99,7 @@ export default function CollectionScreen() {
   const [adding, setAdding] = useState(false);
   const [moving, setMoving] = useState<string[] | null>(null);
   const [naming, setNaming] = useState<Naming>(null);
-  const [menu, setMenu] = useState<{ folder?: CollectionFolder; item?: CollectionItem } | null>(null);
+  const [menu, setMenu] = useState<{ folder?: CollectionFolder; item?: CollectionItem; top?: boolean } | null>(null);
   const [viewing, setViewing] = useState<number | null>(null);
   const [busy, setBusy] = useState<{ done: number; count: number } | null>(null);
   const [note, setNote] = useState('');
@@ -344,11 +344,9 @@ export default function CollectionScreen() {
           {t('Encrypted collection')}
         </Text>
       </View>
-      {folderNow ? (
-        <IconTap label={t('Folder options')} onPress={() => setMenu({ folder: folderNow })}>
-          <MoreIcon color={colors.text} size={20} />
-        </IconTap>
-      ) : null}
+      <IconTap label={folderNow ? t('Folder options') : t('More')} onPress={() => setMenu(folderNow ? { folder: folderNow } : { top: true })}>
+        <MoreIcon color={colors.text} size={20} />
+      </IconTap>
       <IconTap label={t('Search')} onPress={() => setQuery('')}>
         <SearchIcon color={colors.text} size={20} />
       </IconTap>
@@ -545,6 +543,17 @@ export default function CollectionScreen() {
       </Sheet>
 
       <Sheet visible={menu !== null} onClose={() => setMenu(null)} title={menu?.folder?.name ?? menu?.item?.file.name}>
+        {menu?.folder || menu?.top ? (
+          <AddRow
+            icon={<GearIcon color={colors.primary} size={22} />}
+            title={t('Collection settings')}
+            onPress={() => {
+              setMenu(null);
+              router.push(inHidden ? '/collection-settings?hidden=1' : '/collection-settings');
+            }}
+            colors={colors}
+          />
+        ) : null}
         {menu?.folder ? (
           <>
             <AddRow

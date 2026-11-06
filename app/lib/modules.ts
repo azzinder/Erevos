@@ -157,7 +157,7 @@ const SCREENS: Record<Module, readonly string[]> = {
   nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts'],
   matrix: ['matrix', 'matrix-chat', 'matrix-sso'],
   xmpp: ['xmpp', 'xmpp-chat'],
-  collection: ['collection'],
+  collection: ['collection', 'collection-settings'],
 };
 
 /** The module the screen `route` (its route's name) is part of; null for a screen of every module. */

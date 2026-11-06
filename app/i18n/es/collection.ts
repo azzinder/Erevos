@@ -51,6 +51,13 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Este archivo ya no está. Una copia de seguridad restaurada sin él deja solo su nombre.",
   "Open with another app": "Abrir con otra aplicación",
   "Encrypted collection": "Cifrada",
+  "Photos and files, encrypted. This Collection opens only while its space or hidden place is open.": "Fotos y archivos, cifrados. Esta Colección solo se abre mientras su espacio o lugar oculto está abierto.",
+  "The Collection goes into the backups": "La Colección entra en las copias de seguridad",
+  "Only this one. It counts for backups made while it is open.": "Solo esta. Vale para las copias que se hacen mientras está abierta.",
+  "Delete the original from the gallery after importing": "Borrar el original de la galería tras importarlo",
+  "Coming in a later version.": "Llegará en una versión posterior.",
+  "Collection settings": "Ajustes de la Colección",
+  "Whether your photos and files go into the backups": "Si tus fotos y archivos entran en las copias de seguridad",
   "Which folder?": "¿En qué carpeta?",
   "Encrypted · only in this space": "Cifrada · solo de este espacio",
 };

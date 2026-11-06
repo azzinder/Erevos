@@ -51,6 +51,13 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Αυτό το αρχείο δεν υπάρχει πια. Ένα αντίγραφο ασφαλείας που επαναφέρθηκε χωρίς αυτό αφήνει πίσω μόνο το όνομά του.",
   "Open with another app": "Άνοιγμα με άλλη εφαρμογή",
   "Encrypted collection": "Κρυπτογραφημένη",
+  "Photos and files, encrypted. This Collection opens only while its space or hidden place is open.": "Φωτογραφίες και αρχεία, κρυπτογραφημένα. Αυτή η Συλλογή ανοίγει μόνο όσο είναι ανοιχτός ο χώρος ή το κρυφό μέρος της.",
+  "The Collection goes into the backups": "Η Συλλογή μπαίνει στα αντίγραφα ασφαλείας",
+  "Only this one. It counts for backups made while it is open.": "Μόνο αυτή. Ισχύει για αντίγραφα που γίνονται όσο είναι ανοιχτή.",
+  "Delete the original from the gallery after importing": "Σβήσιμο της αρχικής από τη γκαλερί μετά την εισαγωγή",
+  "Coming in a later version.": "Έρχεται σε επόμενη έκδοση.",
+  "Collection settings": "Ρυθμίσεις Συλλογής",
+  "Whether your photos and files go into the backups": "Αν οι φωτογραφίες και τα αρχεία σου μπαίνουν στα αντίγραφα ασφαλείας",
   "Which folder?": "Σε ποιον φάκελο;",
   "Encrypted · only in this space": "Κρυπτογραφημένη · αυτού του χώρου",
 };
