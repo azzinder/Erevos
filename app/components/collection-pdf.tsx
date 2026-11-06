@@ -53,7 +53,7 @@ function DeskPdf({ item, top, bottom, muted }: Props) {
       .then((bytes) => {
         if (!active) return;
         if (!bytes) {
-          setFailed(t('This file is not here any more. A backup restored without it leaves its name behind.'));
+          setFailed(t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.'));
           return;
         }
         made = memoryUri(bytes, 'application/pdf');

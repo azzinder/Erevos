@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **The Collection on your linked devices**: **On my linked devices too** in a Collection's settings sends that
+  Collection to the linked devices of its space or hidden place, and the switch goes to all of them. Files added,
+  renamed, moved or deleted on one are so on all; small pictures come at once, a file itself at once on the same Wi-Fi,
+  else when it is opened (from the Collection's WebDAV server, or through the relay up to 100 MB), a piece at a time,
+  each kept only once it opens with the file's key. A file is deleted elsewhere only when it was deleted on one of your
+  devices, never for being missing. Off until turned on. See [Collection](#collection).
 - **Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what
   changes straight there, with no internet too. See [Linked devices](#devices).
 - **Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no
@@ -163,6 +169,11 @@ On main, not released yet:
   key of its own inside their encrypted link, for the files it may take only; both sides show they hold it before
   anything else, and each chunk is kept only once it opens with the file's key. Unlinked, the key is let go. Not on
   the web app or Sailfish OS. `checks/chunk-channel.check.ts` cuts the Wi-Fi at chunk 17 of 40.
+- **The Collection's catalogue in the place's log** (`lib/sync/collection.ts`, `lib/collection-links.ts`): files, folders,
+  the WebDAV server and the switch as records of kind `collection`, written field by field only where they changed here
+  since the log last said them; a file goes elsewhere only by the log's removal. Chunks come by ChunkFetch: the fast
+  Wi-Fi way, the place's server, or the relay on asking a device that has them (envelopes `cfetch`, `cfile`).
+  `checks/sync-collection.check.ts`, `checks/collection-links.check.ts`.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

@@ -55,7 +55,7 @@ export default function CollectionSettingsScreen() {
       .then((c) => {
         if (!active) return;
         setBackup(c.backup);
-        setOptions({ deleteOriginals: c.deleteOriginals === true, stopOnLock: c.stopOnLock === true, showTitle: c.showTitle === true });
+        setOptions({ deleteOriginals: c.deleteOriginals === true, stopOnLock: c.stopOnLock === true, showTitle: c.showTitle === true, devices: c.devices === true });
       })
       .catch(() => {
         if (!active) return;
@@ -115,6 +115,15 @@ export default function CollectionSettingsScreen() {
             {note}
           </Text>
         ) : null}
+      </Card>
+      <Card>
+        <Switch
+          title={t('On my linked devices too')}
+          text={t('The Collection goes to the linked devices of this space or hidden place, and a change made on one goes to all. Small pictures come at once; a file itself on the same Wi-Fi, or when you open it. A file deleted on one is deleted on all.')}
+          on={options?.devices === true}
+          disabled={!options}
+          onPress={() => void turn('devices')}
+        />
       </Card>
       {place && CAN_CLOUD_BACKUP ? <ServerCard place={place} /> : null}
       {DESK ? null : (

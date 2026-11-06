@@ -77,11 +77,13 @@ export type Collection = {
   showTitle?: boolean;
   /** The server the chunks are copied to, when the owner gave one. */
   server?: CollectionServer;
+  /** The Collection goes to the account's linked devices too, through the place's log (lib/collection-links.ts). */
+  devices?: boolean;
 };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
-export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle';
-const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle'];
+export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices';
+const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices'];
 
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;
@@ -117,6 +119,11 @@ function kept(value: unknown): FileRef | null {
 
 export function cleanFolderName(name: string): string {
   return name.replace(/[\u0000-\u001f\u007f/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_FOLDER_NAME);
+}
+
+/** A Collection as kept, from what was read or came: what is not as it should be is left out. */
+export function checkedCollection(value: unknown): Collection {
+  return checked(value);
 }
 
 function checked(value: unknown): Collection {
@@ -380,6 +387,24 @@ export function deleteFolder(place: CollectionPlace, id: string, now = Date.now(
   });
 }
 
+/**
+ * Changes the place's Collection as `merge` says, from what another of the account's devices did
+ * (lib/collection-links.ts): the next Collection, or null for no change, and the files it no
+ * longer has, whose chunks are deleted once the catalogue no longer names them.
+ */
+export async function mergeCollection(place: CollectionPlace, merge: (now: Collection) => { next: Collection; dropped: CollectionItem[] } | null): Promise<CollectionItem[]> {
+  const dropped = await change(place, async (c) => {
+    const merged = merge(c);
+    return merged ? { next: checked(merged.next), result: merged.dropped } : { next: null, result: [] as CollectionItem[] };
+  });
+  const still = new Set((await loadCollection(place)).items.flatMap((i) => [i.file.id, ...(i.thumb ? [i.thumb.id] : [])]));
+  for (const item of dropped) {
+    if (!still.has(item.file.id)) await deleteChunks(item.file.id, item.file.count).catch(() => undefined);
+    if (item.thumb && !still.has(item.thumb.id)) await deleteChunks(item.thumb.id, item.thumb.count).catch(() => undefined);
+  }
+  return dropped;
+}
+
 /** Whether the place's Collection goes into backups made while it is open. */
 export function setCollectionBackup(place: CollectionPlace, on: boolean): Promise<void> {
   return change(place, async (c) => ({ next: c.backup === on ? null : { ...c, backup: on }, result: undefined }));
@@ -471,21 +496,29 @@ export async function openCollectionSkips(): Promise<Set<string>> {
   return backupSkips(openPlaces()).catch(() => new Set<string>());
 }
 
-// What fetches a file's missing chunks from its place's server (lib/collection-webdav.ts): whether
-// it did, so the file opens now.
+// What fetches a file's missing chunks from its place's server (lib/collection-webdav.ts), and
+// from the account's other devices (lib/collection-links.ts): whether it did, so the file opens now.
 let filler: ((item: CollectionItem) => Promise<boolean>) | null = null;
+const fillers = new Set<(item: CollectionItem) => Promise<boolean>>();
 
-/** Sets what fetches a file's missing chunks when it is opened (null for nothing). */
+/** Sets what fetches a file's missing chunks from its server when it is opened (null for nothing). */
 export function setMissingFiller(fill: ((item: CollectionItem) => Promise<boolean>) | null): void {
   filler = fill;
 }
 
+/** Adds a way to fetch a file's missing chunks when it is opened, tried after the server: returns how to take it away. */
+export function addMissingFiller(fill: (item: CollectionItem) => Promise<boolean>): () => void {
+  fillers.add(fill);
+  return () => fillers.delete(fill);
+}
+
 // The file `ref` of `item`, read; when its chunks are not here, fetched first from the place's
-// server, if it has one.
+// server, if it has one, else from the account's other devices.
 async function readOrFill(item: CollectionItem, ref: FileRef): Promise<Uint8Array | null> {
   const bytes = await readFile(ref);
-  if (bytes || !filler) return bytes;
-  return (await filler(item).catch(() => false)) ? readFile(ref) : null;
+  if (bytes) return bytes;
+  for (const fill of [...(filler ? [filler] : []), ...fillers]) if (await fill(item).catch(() => false)) return readFile(ref);
+  return null;
 }
 
 /** A file's bytes, whole, or null when its chunks are gone (as after a backup restored without them) and its place's server has them not. */

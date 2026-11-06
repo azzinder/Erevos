@@ -261,7 +261,7 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
       ) : (
         <View style={styles.center}>
           <Text color="#FFFFFF" style={styles.centered}>
-            {gone ? t('This file is not here any more. A backup restored without it leaves its name behind.') : t('Opening the photo…')}
+            {gone ? t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.') : t('Opening the photo…')}
           </Text>
         </View>
       )}
@@ -314,7 +314,7 @@ function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: Collec
       </Text>
       {gone ? (
         <Text color={colors.danger} style={styles.centered}>
-          {t('This file is not here any more. A backup restored without it leaves its name behind.')}
+          {t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.')}
         </Text>
       ) : (
         <>

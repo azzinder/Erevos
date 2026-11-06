@@ -174,7 +174,25 @@ Checked: chunk-channel.check.ts (the key, what it may take, a damaged chunk, a c
 40 going on from 17), devices.check.ts (the offer inside the link), and the phone's Kotlin against
 desktop/chunks.js (modules/erevos-radio/android/lan-check).
 
+## Phase S7: the Collection on the linked devices
+
+- The switch **On my linked devices too** (per space and per hidden place, off until turned on) is record `on` of kind
+  `collection` in the place's log, so it goes to every device of the place. Off, nothing of the Collection goes.
+- Each file is record `i<id>` (fields `file`, the file as kept with its key; `thumb`; `folder`; `added`), each folder
+  `d<id>` (`name`), the WebDAV server `server` (address, user name, password, folder: the other devices fetch from it;
+  copying to it stays each device's own choice).
+- A device writes a field only when it changed there since the log last said it (`Since`; after a restart, by when it
+  changed), so what came is never written back over a later change; a field changed here and not written yet stays when
+  something else of the record comes.
+- A file or folder goes elsewhere only by the log's removal (the catalogue's `gone` mark, written as `x: 'del'`). One the
+  log never named stays, and goes in with the next write: nothing is deleted for being missing. A file removed while it
+  comes stops (`ChunkFetch.stop`) and keeps no chunk.
+- The chunks: small pictures at once by any way; a file itself at once over the fast Wi-Fi channel (S3), else when it is
+  opened: from the place's server, or through the relay up to 100 MB (envelope `cfetch` asks a device to put files on
+  its relay for this one, `cfile` says where). Each chunk is kept only once it opens with the file's key.
+- Every device with the fast channel tells each linked device which of its files' chunks it may take there.
+- A hidden place's Collection runs in that place's own log and links only.
+
 ## Next
 
-The Collection's catalog on the log (S7), which brings its files with ChunkFetch, the fast way
-first (`Links.offerChunks` for the files a device may take), then the file server.
+S4 (calls and send-later without the phone), S5 (a new contact from a device), S6 (a holder of the groups that moves).

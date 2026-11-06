@@ -25,7 +25,7 @@ const PHOTOS = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
 export async function copyToSend(item: CollectionItem): Promise<SharedFile> {
   if (item.file.kind !== 'photo' || !PHOTOS.has(item.file.mime)) return { file: '', name: item.file.name, mime: item.file.mime, held: itemSource(item) };
   const bytes = await openItem(item);
-  if (!bytes) throw new Error(t('This file is not here any more. A backup restored without it leaves its name behind.'));
+  if (!bytes) throw new Error(t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.'));
   const quality = await loadPhotoQuality().catch(() => 'original' as const);
   const photo = await photoToSend(new Blob([bytes as BlobPart], { type: item.file.mime }), quality);
   return { file: '', name: photo.name, mime: photo.mime, held: bytesSource(photo.bytes), w: photo.w ?? item.file.w, h: photo.h ?? item.file.h };

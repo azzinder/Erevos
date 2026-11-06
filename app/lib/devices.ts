@@ -146,6 +146,7 @@ import { isThere as isThereInLog, valueOf as syncValueOf, type Change as SyncCha
 import type { Said as SyncSaid } from './sync/wire';
 import type { ChunkWay } from './sync/chunks';
 import { ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from './sync/lan-chunks';
+import { CollectionSync } from './collection-links';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -545,6 +546,10 @@ export class Links implements Link, TakenFiles {
   // The account's log (lib/sync/, docs/sync.md), said in these links; when it was last told.
   private readonly syncs: SyncLinks;
   private syncSaid = Date.now();
+  // The place's Collection on the account's other devices (lib/collection-links.ts), and when it was last looked at.
+  private readonly collection: CollectionSync;
+  private collectionLooked = 0;
+  private collectionWork: Promise<unknown> = Promise.resolve();
 
   private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData, pocket: number | null) {
     this.space = space;
@@ -558,6 +563,25 @@ export class Links implements Link, TakenFiles {
       save: (log) => saveSyncData(space, key, { log }, this.holder),
       send: (to, said) => this.sendSync(to, said),
       who: () => this.syncWho(),
+    });
+    this.collection = new CollectionSync({
+      place: { holder: this.holder, space, key },
+      write: (changesOf) => this.syncs.writeFrom(changesOf),
+      peers: () => (this.data.primary ? [this.data.primary.id] : this.linked().map((d) => d.id)),
+      ask: async (peer, ids) => void (await this.say({ k: 'cfetch', ids }, peer)),
+      answer: async (peer, list) => void (await this.say({ k: 'cfile', list }, peer)),
+      upload: async (ref) => {
+        const at = await this.here();
+        if (!at) throw new FileMissingError();
+        return uploadFile(at.own, ref);
+      },
+      take: async (ref, offer) => {
+        const at = await this.here();
+        if (!at) throw new FileMissingError();
+        await takeFile(at.own, { ...ref, from: { relay: offer.relay, ids: offer.ids } }, undefined, false);
+      },
+      ways: () => this.chunkWays(),
+      offer: (peer, ids) => this.offerChunks(peer, ids),
     });
   }
 
@@ -609,6 +633,7 @@ export class Links implements Link, TakenFiles {
     this.stopMoves?.();
     this.stopNotes?.();
     this.stopSettings?.();
+    this.collection.close();
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
@@ -1038,11 +1063,18 @@ export class Links implements Link, TakenFiles {
       case 'chunks':
         this.chunkOffers.set(peer.id, { hosts: said.hosts, port: said.port, key: said.key });
         break;
+      case 'cfetch':
+        void this.collection.asking(peer.id, said.ids).catch(() => undefined);
+        break;
+      case 'cfile':
+        this.collection.answered(said.list);
+        break;
       case 'sync':
         if (peer.endpoint) {
           const heard = await this.syncHeard(peer.endpoint.id, said.s).catch(() => null);
           if (heard) this.act(() => this.syncOnPrimary(heard));
           if (heard) this.settingsFrom(heard);
+          if (heard) this.collectionFrom(heard);
         }
         break;
       case 'unblock':
@@ -1143,6 +1175,12 @@ export class Links implements Link, TakenFiles {
         break;
       case 'chunks':
         this.chunkOffers.set(primary.id, { hosts: said.hosts, port: said.port, key: said.key });
+        break;
+      case 'cfetch':
+        void this.collection.asking(primary.id, said.ids).catch(() => undefined);
+        break;
+      case 'cfile':
+        this.collection.answered(said.list);
         break;
       case 'sync':
         return this.syncOnDevice(await this.syncHeard(this.data.account, said.s).catch(() => null), place);
@@ -1690,6 +1728,18 @@ export class Links implements Link, TakenFiles {
     });
   }
 
+  // The place's Collection as the log took it, put in place here.
+  private collectionFrom({ log, took, whole }: SyncHeard): void {
+    const touched = whole || took.some((op) => op.k === 'collection');
+    this.collectionWork = this.collectionWork.catch(() => undefined).then(() => this.collection.heard(log, touched));
+  }
+
+  /** For the checks: the Collection's work under way here, done. */
+  async collectionSettled(): Promise<void> {
+    await this.collectionWork.catch(() => undefined);
+    await this.collection.settled();
+  }
+
   // The settings another device changed, as the space's log took them, put in place here.
   private settingsFrom({ log, took, whole }: SyncHeard): void {
     if (this.pocket !== null) return;
@@ -1709,6 +1759,7 @@ export class Links implements Link, TakenFiles {
     if (!heard || !this.data.primary) return none;
     this.settingsFrom(heard);
     this.accountsFrom(heard);
+    this.collectionFrom(heard);
     const { log, took, whole } = heard;
     const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
     const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];
@@ -2989,6 +3040,10 @@ export class Links implements Link, TakenFiles {
     if (Date.now() - this.syncSaid >= SYNC_EVERY) {
       this.syncSaid = Date.now();
       void this.syncs.ask().catch(() => undefined);
+    }
+    if (Date.now() - this.collectionLooked >= ACCOUNTS_EVERY) {
+      this.collectionLooked = Date.now();
+      void this.collection.written().catch(() => undefined);
     }
     if (!this.data.primary && Date.now() - this.accountsLooked >= ACCOUNTS_EVERY) {
       this.accountsLooked = Date.now();

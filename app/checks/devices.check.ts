@@ -46,6 +46,7 @@ import type { CallSignal } from '../lib/call-signal';
 import { acceptConversation, accountBundle, accountIdentity, newAccount, open as openIn, seal as sealIn, setCore, startConversation, type Core } from '../lib/core';
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
+import { addToCollection, deleteItems, loadCollection, setCollectionOption } from '../lock/collection-data';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
 import { handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
@@ -3617,6 +3618,26 @@ test('the fast way on the same Wi-Fi: each side tells the other inside their lin
   } finally {
     handChunks(null);
   }
+});
+
+test('the Collection on the linked computer once turned on: its catalogue through the space\'s log, a file deleted there deleted on the phone', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { phone, take, linkUp } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  await linkUp(pixel, dell);
+  await take(dell);
+  const onPixel = { holder: 'space' as const, space: pixel.space, key: pixel.key };
+  const onDell = { holder: 'space' as const, space: dell.space, key: dell.key };
+  const item = await addToCollection(onPixel, bytesSource(new Uint8Array(3000).fill(5)), { name: 'sea.jpg', mime: 'image/jpeg', kind: 'photo' }, { thumb: new Uint8Array(200).fill(9) });
+  await setCollectionOption(onPixel, 'devices', true);
+  await until(async () => (await take(dell), await dell.links.collectionSettled(), (await loadCollection(onDell)).items.length === 1), 20_000);
+  const there = (await loadCollection(onDell)).items[0];
+  assert.deepEqual([there.id, there.file.name, there.file.key], [item.id, 'sea.jpg', item.file.key]);
+  assert.equal((await loadCollection(onDell)).devices, true);
+  // Deleted on the computer: deleted on the phone.
+  await deleteItems(onDell, [item.id]);
+  await until(async () => (await take(pixel), await pixel.links.collectionSettled(), (await loadCollection(onPixel)).items.length === 0), 20_000);
+  for (const p of [pixel, dell]) p.links.close();
 });
 
 test('Chat with myself goes between the phone and a linked computer: words, reminders, photos and voice messages, both ways, and deleting', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {

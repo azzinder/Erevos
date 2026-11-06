@@ -98,6 +98,8 @@ export type Envelope =
   | { k: 'here' }
   | { k: 'sync'; s: Json }
   | ({ k: 'chunks' } & ChunkOffer)
+  | { k: 'cfetch'; ids: string[] }
+  | { k: 'cfile'; list: { id: string; offer: FileOffer }[] }
   | { k: 'move' }
   | { k: 'bye' };
 
@@ -232,6 +234,10 @@ export type GroupAsk =
   | { t: 'read' };
 
 type Said = Envelope & { at?: Place; pk?: string };
+/** The most files of the Collection asked of, or told by, a device at once. */
+const MAX_COLLECTION_ASKED = 20;
+const onRelayOffer = (offer: FileOffer) => offer.via === undefined;
+
 type Part = { k: 'part'; id: string; n: number; of: number; d: string };
 
 /** The largest envelope one packet takes: the core's largest padding bucket holds 16383 bytes. */
@@ -498,6 +504,20 @@ function checkedEnvelope(v: Json): Envelope | null {
       // Where the device gives the chunks of large files on the same Wi-Fi, and the key for this one (lib/sync/lan-chunks.ts).
       const offer = checkedOffer(v);
       return offer ? { k: 'chunks', ...offer } : null;
+    }
+    case 'cfetch': {
+      // Files of the Collection a device asks to be put on the relay for it (lib/collection-links.ts), by their chunks' names.
+      const ids = Array.isArray(v.ids) ? v.ids.filter((id): id is string => isHex(id, 32)).slice(0, MAX_COLLECTION_ASKED) : [];
+      return ids.length > 0 ? { k: 'cfetch', ids } : null;
+    }
+    case 'cfile': {
+      const list = Array.isArray(v.list)
+        ? v.list
+            .map((x) => (isObject(x) && isHex(x.id, 32) ? { id: x.id, offer: readOffer(x.offer) } : null))
+            .filter((x): x is { id: string; offer: FileOffer } => x !== null && x.offer !== null && onRelayOffer(x.offer))
+            .slice(0, MAX_COLLECTION_ASKED)
+        : [];
+      return list.length > 0 ? { k: 'cfile', list } : null;
     }
     case 'here':
     case 'move':
