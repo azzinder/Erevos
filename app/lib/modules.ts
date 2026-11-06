@@ -10,9 +10,8 @@ import { SHELL } from './shell';
 
 // The parts of Erevos the owner uses (Settings → General → Modules, and the first start's setup,
 // components/setup.tsx): Erevos's own end-to-end encrypted chats and calls, the phone, the SMS,
-// the chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files (on Android and
-// in the desktop app; not in a plain browser, whose storage is too small for it, nor on Sailfish OS
-// for now). Any of them, Erevos's own too, at least one that is not the Collection alone.
+// the chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files (on Android, in
+// the desktop app, in a browser, the web app on an iPhone's home screen too, and on Sailfish OS). Any of them, Erevos's own too, at least one that is not the Collection alone.
 // One that is off does not start (app/_layout.tsx Receiver) and shows nowhere: not on the home
 // screen, in its menu, in Settings, nor its icon among the phone's apps; so Erevos is lighter,
 // starts faster and uses less battery. Nothing of it is deleted: its chats, contacts and settings
@@ -38,13 +37,14 @@ function platform(): string {
 
 /**
  * The modules this device can run: the phone and the SMS only on Android; the Collection on
- * Android and in the desktop app (the web build in its Electron shell, `shell` 'electron'), whose
- * files it keeps in its own folder on the computer.
+ * Android and in the web build: in the desktop app and on Sailfish OS (`shell` 'electron' or
+ * 'sailfish') its chunks are files in the shell's own folder, in a plain browser they are kept in
+ * the browser's storage (lib/web-store.ts), as much as it gives.
  */
-export function modulesHere(os: string = platform(), shell: typeof SHELL = SHELL): Module[] {
+export function modulesHere(os: string = platform(), _shell: typeof SHELL = SHELL): Module[] {
   return MODULES.filter((m) => {
     if (m === 'phone' || m === 'sms') return os === 'android';
-    if (m === 'collection') return os === 'android' || (os === 'web' && shell === 'electron');
+    if (m === 'collection') return os === 'android' || os === 'web';
     return true;
   });
 }
