@@ -17,7 +17,12 @@
  *   /__backup?folder=&name=&keep=  a backup's files there, its own and its parts' (backups.js):
  *                              GET lists or reads them, PUT writes one, deleting older backups
  *                              but the newest `keep` with their parts, DELETE deletes one
- *   /__pick?most=…             asks for a file to open (a backup, a chat export) and gives its bytes
+ *   /__pick?most=…             asks for a file to open (a backup, a chat export) and gives its bytes;
+ *                              with &pieces=1 (a file for the Collection, up to some GB) only its
+ *                              name, size and an id made here, to read it by
+ *   /__picked?id=&at=&length=  GET reads that many bytes of such a file from `at` (16 MB at most),
+ *                              DELETE forgets it; only a file the owner picked, until the page
+ *                              forgets it or the panic button
  *   /__save?name=…             asks where to save a photo or file from a chat and writes it there
  *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
  *                              it, POST ?link=… sends the body on a link, GET ?after=… gives what
@@ -56,6 +61,14 @@
  * a Mac in the Dock. The page goes on at full pace there, out of sight: it waits at the relay, a call
  * rings and brings the window back, and a notice says how many messages came. The tray's menu opens
  * the window again or quits; so does starting Erevos again, where the desktop shows no tray.
+ *
+ * The Collection (app/lock/collection-data.ts) keeps its files as the chats' are, in files/, and
+ * opens them in the page's memory only: a photo or text as it is, a video or music in an HTML
+ * player and a PDF in Chromium's own PDF viewer (webPreferences.plugins), each from a blob: address
+ * of bytes decrypted there, which the page lets go of when the file closes, the space locks or the
+ * panic button is pressed. So the page may show a blob: address of its own in a frame (CSP frame-src
+ * and object-src, will-frame-navigate), and nothing is downloaded from one (will-download): the PDF
+ * viewer's own Save would write a plain copy without the app's warning.
  *
  * With --smoke the app opens, waits for its first screen, says so and quits: the check the GitHub
  * runners make of each build (.github/workflows/desktop.yml), where nobody can look.
@@ -123,14 +136,20 @@ const TYPES = {
  * WebSocket (ws: and wss:, any host), and to the Matrix, XMPP and Nostr servers the owner adds, over
  * HTTPS and WebSocket, and to nothing else: 'wasm-unsafe-eval' starts the Erevos
  * core (WebAssembly), 'unsafe-inline' is for the styles the interface sets from script, blob: for
- * voice messages, which play from memory. Its one frame is Element Call's.
+ * voice messages and the Collection's videos and music, which play from memory. Its frames are
+ * Element Call's and a PDF of the Collection, shown by Chromium's PDF viewer from a blob: address
+ * the page made of bytes it decrypted (frame-src blob:). A blob: document takes this same policy,
+ * and the PDF viewer is a plugin there, so object-src allows blob: too, and nothing else: only the
+ * page's own script, from 'self', can make a blob: address of its origin.
  */
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; frame-src app://element-call";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src blob:; base-uri 'self'; frame-ancestors 'self'; frame-src blob: app://element-call";
 /** Element Call's pages: as pwa/element-call.mjs says (CALL_CSP), shown only in the app's frame. */
 const CALL_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors app://erevos";
 // As on Android: what Element Call's frame may not reach.
+// Chromium's PDF viewer, an extension built into Electron, always with this id.
+const PDF_VIEWER = 'mhjfbmdgcfjbbpaeojofohoefgiehjai';
 const REFUSED_TO_CALL = ['posthog.com', 'sentry.io', 'google.com', 'googleapis.com', 'gstatic.com', 'recaptcha.net', 'jsdelivr.net'];
 
 /** Only the app's own page knows this; the shell paths (/__…) are refused without it. */
@@ -312,13 +331,47 @@ async function folder() {
 // A backup's files in a chosen folder, its own and its parts' (backups.js).
 const backup = (request, url) => backupRequest(request, url, chosenFolders);
 
+// Files picked to be read a piece at a time (/__picked), by the id given for each: only files the
+// owner chose in the dialog, until the page forgets them. Only their paths, in memory.
+const picked = new Map();
+const PIECE_MOST = 16 * 1024 * 1024;
+
 async function pick(url) {
   const most = Number(url.searchParams.get('most') ?? 0);
   const result = await dialog.showOpenDialog(window, { defaultPath: app.getPath('documents'), properties: ['openFile'] });
   const chosen = result.canceled ? null : result.filePaths[0];
   if (!chosen) return new Response('', { status: 404 });
-  if (most > 0 && fs.statSync(chosen).size > most) return new Response('', { status: 413 });
+  const size = fs.statSync(chosen).size;
+  if (most > 0 && size > most) return new Response('', { status: 413 });
+  if (url.searchParams.get('pieces') === '1') {
+    const id = crypto.randomBytes(16).toString('hex');
+    picked.set(id, chosen);
+    return Response.json({ id, name: path.basename(chosen), size });
+  }
   return new Response(fs.readFileSync(chosen), { headers: { 'X-Erevos-Name': encodeURIComponent(path.basename(chosen)) } });
+}
+
+/** A piece of a file picked with pieces=1, or forgetting it; see /__picked above. */
+async function pickedPiece(request, url) {
+  const id = url.searchParams.get('id') ?? '';
+  const chosen = picked.get(id);
+  if (!chosen) return new Response('', { status: 404 });
+  if (request.method === 'DELETE') {
+    picked.delete(id);
+    return new Response(null, { status: 204 });
+  }
+  if (request.method !== 'GET') return new Response('', { status: 405 });
+  const at = Number(url.searchParams.get('at'));
+  const length = Number(url.searchParams.get('length'));
+  if (!Number.isSafeInteger(at) || at < 0 || !Number.isSafeInteger(length) || length < 0 || length > PIECE_MOST) return new Response('', { status: 400 });
+  const handle = await fs.promises.open(chosen, 'r');
+  try {
+    const piece = Buffer.alloc(length);
+    const { bytesRead } = await handle.read(piece, 0, length, at);
+    return new Response(piece.subarray(0, bytesRead), { headers: { 'Content-Type': 'application/octet-stream' } });
+  } finally {
+    await handle.close();
+  }
 }
 
 async function save(request, url) {
@@ -553,6 +606,7 @@ async function wipe(request, url) {
   if (request.method !== 'POST') return new Response('', { status: 405 });
   lan?.stop();
   lan = null;
+  picked.clear();
   const where = url.searchParams.get('folder');
   let left = 0;
   if (url.searchParams.get('backups') === '1' && where && chosenFolders().includes(where)) {
@@ -623,6 +677,7 @@ function handle(request) {
     if (url.pathname === '/__folder') return folder();
     if (url.pathname === '/__backup') return backup(request, url);
     if (url.pathname === '/__pick') return pick(url);
+    if (url.pathname === '/__picked') return pickedPiece(request, url);
     if (url.pathname === '/__save') return save(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
     if (url.pathname === '/__latest') return latest();
@@ -647,7 +702,8 @@ function createWindow() {
     ...(MAC ? {} : { icon: path.join(__dirname, 'icon.png') }),
     show: !SMOKE,
     // Out of sight it goes on at full pace: it waits at the relay, and a call rings at once.
-    webPreferences: { contextIsolation: true, sandbox: true, backgroundThrottling: false },
+    // plugins: Chromium's own PDF viewer, for a PDF of the Collection (see the header).
+    webPreferences: { contextIsolation: true, sandbox: true, backgroundThrottling: false, plugins: true },
   });
   // Links to other sites open in the browser.
   window.webContents.setWindowOpenHandler(({ url }) => {
@@ -660,9 +716,12 @@ function createWindow() {
       if (/^https?:/.test(url)) shell.openExternal(url);
     }
   });
-  // A frame shows only Element Call.
+  // A frame shows only Element Call, or a PDF of the Collection: a blob: address of the page's own,
+  // and the frame Chromium's PDF viewer draws it in (its built-in extension, by its fixed id).
   window.webContents.on('will-frame-navigate', (event) => {
-    if (!event.isMainFrame && !event.url.startsWith(`${CALL_ORIGIN}/`)) event.preventDefault();
+    if (event.isMainFrame) return;
+    const allowed = event.url.startsWith(`${CALL_ORIGIN}/`) || event.url.startsWith(`blob:${ORIGIN}/`) || event.url.startsWith(`chrome-extension://${PDF_VIEWER}/`);
+    if (!allowed) event.preventDefault();
   });
   window.loadURL(`${ORIGIN}/#erevos-token=${TOKEN}&erevos-system=${system()}`);
   // Closed while Erevos keeps running, it only hides.
@@ -744,6 +803,11 @@ if (!app.requestSingleInstanceLock()) {
         // The frame is gone: nothing of it to refuse.
       }
       callback({ cancel: refused });
+    });
+    // Nothing is downloaded from a blob: address: the app saves through /__save, after its warning,
+    // and the PDF viewer's own Save would leave a plain copy of a file of the Collection.
+    session.defaultSession.on('will-download', (event, item) => {
+      if (item.getURL().startsWith('blob:')) event.preventDefault();
     });
     protocol.handle('app', handle);
     createWindow();

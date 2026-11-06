@@ -170,7 +170,7 @@ test('the worker and the computer give Element Call the policy pwa/element-call.
   assert.equal(policy(WORKER, 'CALL_CSP'), tool.CALL_CSP);
   const desktop = readFileSync(join(import.meta.dirname, '../../desktop/main.js'), 'utf8');
   assert.equal(policy(desktop, 'CALL_CSP'), `${tool.CALL_CSP}; frame-ancestors app://erevos`);
-  assert.match(policy(desktop, 'CSP') ?? '', /; frame-src app:\/\/element-call$/);
+  assert.match(policy(desktop, 'CSP') ?? '', /; frame-src blob: app:\/\/element-call$/);
   assert.match(readFileSync(join(made, 'index.html'), 'utf8'), new RegExp(`content="${tool.CALL_CSP.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
 });
 
