@@ -155,6 +155,38 @@ export function LockSign({ tint }: { tint: TileTint }) {
   );
 }
 
+/** Two pictures one over the other, with a tiny padlock on the front one: the Collection. */
+export function CollectionSign({ tint }: { tint: TileTint }) {
+  const size = SIGN;
+  const line = Math.max(1.5, size * 0.09);
+  const { deep } = TINTS[tint];
+  return (
+    <View style={{ width: size, height: size }}>
+      <View style={{ position: 'absolute', left: 0, top: 0, width: size * 0.66, height: size * 0.56, borderRadius: size * 0.12, borderWidth: line, borderColor: WHITE }} />
+      <View
+        style={{
+          position: 'absolute',
+          left: size * 0.26,
+          top: size * 0.3,
+          width: size * 0.74,
+          height: size * 0.64,
+          borderRadius: size * 0.14,
+          backgroundColor: WHITE,
+          borderWidth: line,
+          borderColor: TINTS[tint].bottom,
+          overflow: 'hidden',
+        }}
+      >
+        <View style={{ position: 'absolute', left: size * 0.1, top: size * 0.1, width: size * 0.14, height: size * 0.14, borderRadius: size, backgroundColor: deep, opacity: 0.55 }} />
+        <View style={{ position: 'absolute', left: -size * 0.04, bottom: -size * 0.12, width: size * 0.5, height: size * 0.34, borderRadius: size, backgroundColor: deep, opacity: 0.55 }} />
+      </View>
+      <View style={{ position: 'absolute', right: -size * 0.02, bottom: -size * 0.04, width: size * 0.34, height: size * 0.3, borderRadius: size * 0.08, backgroundColor: deep, borderWidth: 1, borderColor: WHITE }}>
+        <View style={{ position: 'absolute', left: size * 0.07, top: -size * 0.16, width: size * 0.14, height: size * 0.16, borderTopLeftRadius: size, borderTopRightRadius: size, borderWidth: line * 0.7, borderBottomWidth: 0, borderColor: WHITE }} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   hit: {
     width: 44,

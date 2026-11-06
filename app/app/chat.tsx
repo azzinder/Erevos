@@ -55,7 +55,7 @@ import { ConnectStatus, QrSign, WayCard } from '../components/connect-cards';
 import { RelayKeyNote } from '../components/relay-key-note';
 import { BackIcon, GlobeIcon, MoreIcon, PlusIcon, ShieldIcon, TimerIcon } from '../components/icons';
 import { canDial, DialTile } from '../components/dial-tile';
-import { PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
+import { CollectionSign, PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
@@ -115,6 +115,8 @@ import { MIN_PIN, openHidden, searchOpens, setHiddenPassword, type HiddenPlace }
 import { loadWatched, rewatchLost, unwatchPocket, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';
 import { keepPlace, keepsPlace } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
+import { useModules } from '../lib/modules';
+import { hiddenPlaceOpen } from '../lock/collection-data';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
 import { openOwnSticker, type OwnSticker, type StickerPlace } from '../lock/sticker-data';
 import { makeChatPin, opensChat, RELOCK_MS } from '../lock/chat-pin';
@@ -583,6 +585,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [receiving, setReceiving] = useState(false);
   // Whether a dot on the search of the space's chats says these hidden chats have a message unread (SpaceData.sign, lib/unread-signs.ts).
   const [placeSign, setPlaceSign] = useState(false);
+  // Whether the Collection is on, for its way in at the top of hidden chats (lib/modules.ts).
+  const modules = useModules();
   const watchedNow = useRef(false);
   watchedNow.current = watched || receiving;
   // The links of these chats' own devices (lib/devices.ts): the space's, or these hidden chats' own,
@@ -1721,9 +1725,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       },
       tells: () => watchedNow.current,
     });
+    // The hidden places open now are asked for what a backup leaves out (lock/collection-data.ts).
+    const collection = { holder: hiddenHolder(pocket), space: currentSpace().space, key: hiddenKey };
+    hiddenPlaceOpen(collection, true);
     return () => {
       lending = false;
       setOpenHiddenPlace(null);
+      hiddenPlaceOpen(collection, false);
     };
   }, [hiddenKey, loaded, e2e]);
   // The call asked for starts once its chat is open.
@@ -6358,6 +6366,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
               </View>
             ) : hiddenKey && onChangePassword ? (
               <View style={styles.headerLinks}>
+                {modules.has('collection') ? (
+                  <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection?hidden=1')}>
+                    <CollectionSign tint="blue" />
+                  </ShortcutTile>
+                ) : null}
                 <TextButton title={t('Contacts')} onPress={() => router.push('/contacts?hidden=1')} />
                 <TextButton title={t('Change PIN')} onPress={onChangePassword} />
               </View>

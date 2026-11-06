@@ -9,7 +9,7 @@ import { secureGet, secureSet } from './secure';
 // (Android's FLAG_SECURE, modules/erevos-device). Without it, the last screen shown stays as a
 // picture among the recent apps until Erevos opens again, so whoever holds the unlocked phone a
 // moment sees a hidden chat without its PIN. Hidden chats always keep out of it while they are
-// open (app/chat.tsx). A space with a password lock does too, unless the owner turns it off in
+// open (app/chat.tsx), and the Collection does while it is shown (app/collection.tsx). A space with a password lock does too, unless the owner turns it off in
 // Lock: the setting is the phone's, the same in every space, so it tells nothing of which opened.
 // Other platforms have no such switch, and nothing happens there.
 
@@ -22,7 +22,7 @@ const reasons = new Set<string>();
 
 /** Keeps the screen private while any reason asks for it: `why` asks, or no longer. Said again on
  *  every change, so a screen made anew (Erevos swiped away and opened) gets it too. */
-export function keepPrivate(why: 'lock' | 'hidden' | 'chat', on: boolean): void {
+export function keepPrivate(why: 'lock' | 'hidden' | 'chat' | 'collection', on: boolean): void {
   if (on) reasons.add(why);
   else reasons.delete(why);
   device?.setSecure?.(reasons.size > 0);

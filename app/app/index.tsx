@@ -15,7 +15,7 @@ import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../
 import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
 import { isFeedPost, NostrParts, useNostrFeed, type NostrPart } from '../components/nostr-feed';
-import { LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
+import { CollectionSign, LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SmsHome } from '../components/sms-home';
 import { SwipeTabs } from '../components/swipe-tabs';
@@ -123,6 +123,7 @@ function Home() {
   const modules = useModules();
   const erevosOn = modules.has('erevos');
   const phoneOn = modules.has('phone');
+  const collectionOn = modules.has('collection');
   // Whether any module that brings messages is on: with none (the Phone alone), there is no list.
   const messagesOn = erevosOn || modules.has('sms') || modules.has('nostr') || modules.has('matrix') || modules.has('xmpp');
   const [rows, setRows] = useState<InboxRow[] | null>(null);
@@ -521,6 +522,11 @@ function Home() {
                 <PersonSign />
               </ShortcutTile>
             </>
+          ) : null}
+          {collectionOn ? (
+            <ShortcutTile label={t('Collection')} tint="blue" onPress={() => router.push('/collection')}>
+              <CollectionSign tint="blue" />
+            </ShortcutTile>
           ) : null}
           <ShortcutTile
             label={lock.passwordLock ? t('Lock now') : t('Lock and second password')}
