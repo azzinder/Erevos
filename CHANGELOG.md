@@ -52,7 +52,7 @@ On main, not released yet:
   chat**, **Save to phone** and **Open with another app**, each asking first, since the file leaves the Collection
   unencrypted. A photo from the camera goes straight in and never to the gallery; **Save to the Collection** in a
   chat's message menu, and **Send to** from other apps, which has the Collection first. It is a module, on Android
-  only (**Settings** → **General** → **Modules**), with its own settings for leaving it out of backups.
+  and in the desktop app (**Settings** → **General** → **Modules**), with its own settings for leaving it out of backups.
 - **Music, videos and PDFs in the Collection**: music and videos play straight from their encrypted pieces, never from
   a plain copy, with seeking: a video on the whole screen, music on with the screen off, with play, pause, next and
   previous in the notification and on the phone's lock screen, and only those there. The list goes on after the space
