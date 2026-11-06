@@ -23,6 +23,7 @@ import {
 } from '../lock/collection-data';
 
 import { openChunk } from './attachments';
+import { CAN_CLOUD_BACKUP } from './backup-place';
 import { askServer, cloudFolder, CloudError, cloudStatusText, listFolder, type CloudAnswer, type CloudServer } from './backup-cloud';
 import { fromHex, randomBytes, toHex } from './crypto';
 
@@ -327,9 +328,9 @@ setMissingFiller(async (item, options) => {
 type Slot = { place: CollectionPlace; timer: ReturnType<typeof setTimeout> | null; stop: AbortController | null; again: boolean };
 const slots = new Map<string, Slot>();
 
-/** Copies the place's Collection to its server `after` milliseconds from now, while it is open; one running now goes again once it ends. */
+/** Copies the place's Collection to its server `after` milliseconds from now, while it is open; one running now goes again once it ends. Never where backups cannot go to a server (Sailfish OS, lib/backup-place.web.ts). */
 export function scheduleServerCopy(place: CollectionPlace, after = AFTER_CHANGE_MS): void {
-  if (!placeIsOpen(place)) return;
+  if (!CAN_CLOUD_BACKUP || !placeIsOpen(place)) return;
   const name = nameOf(place);
   const slot: Slot = slots.get(name) ?? { place, timer: null, stop: null, again: false };
   slots.set(name, slot);
