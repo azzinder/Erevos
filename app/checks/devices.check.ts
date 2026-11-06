@@ -441,9 +441,9 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   // Said once, they do not go back and forth.
   await dell.links.settled();
   assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
-  // The account's log (lib/sync/) holds the same, as the phone wrote it there: nothing reads it yet.
+  // The account's log (lib/sync/) holds the same: the computer's name, the phone's timer.
   const logged = contactsIn((await dell.links.syncLog())!);
-  assert.deepEqual(logged.map((c) => [c.identity, c.timer]), [[carolId, 3600]]);
+  assert.deepEqual(logged.map((c) => [c.identity, c.name, c.timer]), [[carolId, 'Carol', 3600]]);
   assert.deepEqual(contactsIn((await pixel.links.syncLog())!), logged);
 
   // What it carries beyond words goes with it: here a sticker, answering the computer's message.
@@ -1718,6 +1718,8 @@ test('the devices the list names reach each other: started by the lower id, seal
   await take(dell);
   await take(lenovo);
   assert.deepEqual([nameOn(dell), nameOn(lenovo)], ['Carol L', 'Carol L']);
+  // In the account's log of each too, with the phone off: the devices give it each other.
+  for (const p of [dell, lenovo]) assert.equal(contactsIn((await p.links.syncLog())!).find((c) => c.identity === carolId)?.name, 'Carol L');
   // A contact added on one comes to the other; removed there, it goes from both.
   const dave = await phone(4, false);
   const daveId = dave.chats.e2e.identityHex();

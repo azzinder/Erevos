@@ -70,8 +70,25 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   The devices keep it. Nothing reads it yet: the envelopes of before (`contacts`, `set`, `blocked`)
   still carry the contacts, so nothing changes for anyone.
 
+## Phase S1, second part: the devices write, and the contacts follow the log
+
+- A linked device writes into the log each change it makes to a contact, as it says it in `set`
+  (lib/sync/contacts.ts `syncChangesOf`): a name, timer, look, hidden, a request accepted, a contact
+  removed. It goes to the phone and to the other devices, with the phone off too.
+- What a device takes from the log changes its contacts as a `set` from another device does
+  (`setsFromLog`, then lib/devices.ts `setFrom`): field by field, each by when it was set, so what
+  came the way of before already changes nothing, and the later of the two ways wins. A contact the
+  log removed goes; one the log never named stays. Those blocked follow the log as they follow the
+  phone's `blocked`.
+- What the phone takes from a device's ops it does as that device's `set` (`setFor`), and then
+  writes into the log what it has, should it differ: the log ends with what the phone has, as the
+  devices did before.
+- Nothing thanks for ops; but a device that writes before it heard how far the phone is gives it
+  only what it lacks of others' ops, never the whole log: only what a device says itself tells it was
+  put back from a backup.
+- The envelopes of before still go, for devices of the 6 series.
+
 ## Next
 
-The second part of S1: the devices write their own changes to the contacts into the log, and the
-contacts as the log says them replace what `contacts` and `set` say, between devices of this
-version; then notes. The envelopes of before go on for devices of the 6 series.
+The notes of Chat with myself onto the log, then the settings and the accounts on other networks
+(phase S2).

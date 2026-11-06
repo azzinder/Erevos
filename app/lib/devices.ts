@@ -139,9 +139,9 @@ import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
 import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './waiting';
-import { changesFor } from './sync/contacts';
-import { SyncLinks, type Who } from './sync/links';
-import type { Json as SyncJson, Log as SyncLog } from './sync/log';
+import { blockedFromLog, changesFor, checkedLookOf, setsFromLog, syncChangesOf } from './sync/contacts';
+import { SyncLinks, type SyncHeard, type Who } from './sync/links';
+import type { Change as SyncChange, Json as SyncJson, Log as SyncLog } from './sync/log';
 import type { Said as SyncSaid } from './sync/wire';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
@@ -976,7 +976,10 @@ export class Links implements Link, TakenFiles {
         break;
       }
       case 'sync':
-        if (peer.endpoint) void this.syncs.heard(peer.endpoint.id, said.s).catch(() => undefined);
+        if (peer.endpoint) {
+          const heard = await this.syncs.heard(peer.endpoint.id, said.s).catch(() => null);
+          if (heard) this.act(() => this.syncOnPrimary(heard));
+        }
         break;
       case 'unblock':
         // Unblocked on the device, as it asked when their link was added there: so here too, before what it says next.
@@ -1074,8 +1077,7 @@ export class Links implements Link, TakenFiles {
         void this.noting(() => this.notesFrom(said, said.keep === true));
         break;
       case 'sync':
-        void this.syncs.heard(this.data.account, said.s).catch(() => undefined);
-        break;
+        return this.syncOnDevice(await this.syncs.heard(this.data.account, said.s).catch(() => null), place);
       case 'move':
         // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
         this.act(() => this.chats.e2e.moveSoon());
@@ -1333,7 +1335,9 @@ export class Links implements Link, TakenFiles {
     let removed = this.data.removed ?? {};
     let changes = false;
     const time = Date.now();
+    const logged: SyncChange[] = [];
     const tell = async (envelope: Envelope) => {
+      if (envelope.k === 'set') logged.push(...syncChangesOf(envelope));
       primary = await this.seal(primary, envelope);
       const told: Sibling[] = [];
       for (const s of list) told.push(await this.sealSibling(s, envelope));
@@ -1365,6 +1369,8 @@ export class Links implements Link, TakenFiles {
       changes = true;
     }
     if (changes) await this.save({ ...this.data, primary, synced, ...removedOf(removed), ...(siblings ? { siblings: { ...siblings, list } } : {}) });
+    // The same into the account's log (lib/sync/), which the phone and the others take too.
+    if (logged.length > 0) void this.syncs.write(logged).catch(() => undefined);
   }
 
   // On the primary: what changed of the contacts goes to each linked device, with when each field
@@ -1483,14 +1489,57 @@ export class Links implements Link, TakenFiles {
     if (device) void this.say(envelope, device.id).catch(() => undefined);
   }
 
-  // On the primary (phase S1, first part): the contacts and those blocked, as this phone has them,
-  // written into the log, which the devices keep. Nothing reads them from it yet: the envelopes of
-  // before still carry them (contacts, set, blocked).
+  // On the primary: the contacts and those blocked, as this phone has them, written into the log
+  // should it say otherwise, so it ends with what the phone has. The envelopes of before (contacts,
+  // set, blocked) still carry them too, for devices of the 6 series.
   private syncContacts(contacts: readonly Contact[], blocked: readonly Blocked[]): void {
     if (this.data.primary) return;
     const logged = contacts.map((c) => ({ identity: c.identity, name: c.name, timer: c.timer, request: c.request, look: (c.look ?? null) as SyncJson, hide: c.hide }));
     const kept = blocked.map((b) => ({ identity: b.identity, name: b.name }));
     void this.syncs.writeFrom((log) => changesFor(log, logged, kept)).catch(() => undefined);
+  }
+
+  // On a linked device, in the turn: what the log took changes the contacts here, as a change
+  // another device said in `set` does (setFrom), field by field, each by when it was set: so what
+  // came the way of before already changes nothing, and a later one either way wins. A contact the
+  // log removed goes; one the log has not named yet stays. Those blocked, as the log says them.
+  private async syncOnDevice(heard: SyncHeard | null, place: ((contacts: Contact[]) => Contact[]) | null): Promise<Taken> {
+    const none: Taken = { kind: 'taken', ...(place ? { contacts: place } : {}) };
+    if (!heard || !this.data.primary) return none;
+    const { log, took, whole } = heard;
+    const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
+    const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];
+    for (const c of ids) {
+      for (const said of setsFromLog(log, c, this.data.synced[c])) {
+        const taken = await this.setFrom(said);
+        if (taken?.kind === 'taken' && taken.contacts) fns.push(taken.contacts);
+      }
+    }
+    const blockedToo = whole || took.some((op) => op.k === 'blocked');
+    return {
+      kind: 'taken',
+      ...(fns.length > 0 ? { contacts: (contacts: Contact[]) => fns.reduce((x, fn) => fn(x), contacts) } : {}),
+      ...(blockedToo ? { blocked: blockedFromLog(log) } : {}),
+    };
+  }
+
+  // On the primary, in the work after: what a device wrote into the log of a contact, done as its
+  // `set` is (setFor); then the log says again what this phone has, should it differ, so every
+  // device ends with the phone's.
+  private async syncOnPrimary(heard: SyncHeard): Promise<void> {
+    for (const op of heard.took) {
+      if (op.k !== 'contact' || op.x === 'add') continue;
+      if (op.x === 'del') await this.setFor(op.id, {}, true, op.at.t);
+      else if (op.f === 'timer' && typeof op.v === 'number') await this.setFor(op.id, { timer: op.v, timerAt: op.at.t }, false, op.at.t);
+      else if (op.f === 'request' && op.v === false) await this.setFor(op.id, { request: false }, false, op.at.t);
+      else if (op.f === 'name' && typeof op.v === 'string') await this.setFor(op.id, { name: op.v }, false, op.at.t);
+      else if (op.f === 'hide' && typeof op.v === 'boolean') await this.setFor(op.id, { hide: op.v }, false, op.at.t);
+      else if (op.f === 'look') {
+        const look = checkedLookOf(op.v);
+        if (look !== undefined) await this.setFor(op.id, { look }, false, op.at.t);
+      }
+    }
+    if (heard.took.some((op) => op.k === 'contact')) this.syncContacts(this.contactsKept(), this.chats.e2e.blocked());
   }
 
   // ---- Linking ----
@@ -2239,7 +2288,7 @@ export class Links implements Link, TakenFiles {
     if (said.k === 'out') this.act(() => this.ownFrom(said.c, said.m, said.mark));
     else if (said.k === 'came') this.act(() => this.cameHere(said.c, said.got));
     else if (said.k === 'set') return this.setFrom(said);
-    else if (said.k === 'sync') void this.syncs.heard(sibling.id, said.s).catch(() => undefined);
+    else if (said.k === 'sync') return this.syncOnDevice(await this.syncs.heard(sibling.id, said.s).catch(() => null), null);
     else if (said.k === 'notes') {
       await this.heardNotes({ id: sibling.id, sibling: true });
       void this.noting(() => this.notesFrom(said, said.keep === true));

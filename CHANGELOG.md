@@ -47,6 +47,10 @@ On main, not released yet:
   out of backups like the links), and said in the links to the phone and between linked devices. The phone writes its
   contacts and those it blocked into it; the devices keep it, and nothing reads it yet. A change costs one packet to
   each device, with nothing said back; now and then the phone asks a device that may lack something how far it is.
+- **Contacts through the account's log**: a linked device writes its own changes to a contact (name, timer, look,
+  hidden, a request accepted, removed) into the log, and the contacts on every device follow it, field by field by
+  when each was set, as they follow a change another device says. The phone does a device's change as before and
+  then writes what it has, so all end with the phone's. The messages of before still go, for devices of 6.x.
 - **QR codes of Liberapay and PayPal**: Liberapay's holds its link, PayPal's its link with `&source=qr` at the end
   (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
   coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and

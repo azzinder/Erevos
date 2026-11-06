@@ -70,7 +70,10 @@ export function upTo(a: Record<string, number> | undefined, b: Record<string, nu
  * was given it since (`given`). Nothing when it lacks nothing.
  */
 export function push(log: Log, peer: string, given?: Record<string, number>): Said[] {
-  return said(log, lackOf(log, peer, upTo(log.seen[peer], given)));
+  // Its own ops it has, whatever this one knows of it: only what it says itself tells it was put back.
+  const theirs = upTo(log.seen[peer], given);
+  theirs[peer] = Math.max(theirs[peer] ?? 0, log.vv[peer] ?? 0);
+  return said(log, lackOf(log, peer, theirs));
 }
 
 /** Whether `peer` may lack ops this device has (not its own): what it said it has is behind, or it said nothing. */
@@ -79,21 +82,30 @@ export function asking(log: Log, peer: string): boolean {
   return Object.entries(log.vv).some(([d, n]) => d !== peer && n > (theirs[d] ?? 0));
 }
 
+/** What hearing something did: what to say back, the ops taken, whether a whole log was taken. */
+export type Heard = { back: Said[]; took: Op[]; whole: boolean };
+
 /**
- * What this device says back to what `from`, another of the account's devices, said: nothing when
- * there is nothing more to say.
+ * What this device says back to what `from`, another of the account's devices, said, and what it
+ * took of it: nothing to say when there is nothing more to say.
  */
-export function heard(log: Log, from: string, x: unknown, now: number): Said[] {
+export function hear(log: Log, from: string, x: unknown, now: number): Heard {
+  const none: Heard = { back: [], took: [], whole: false };
   const m = readSaid(x);
-  if (m === null || from === log.me || !log.peers.includes(from)) return [];
+  if (m === null || from === log.me || !log.peers.includes(from)) return none;
   if (m.k === 'have') {
-    const out = said(log, answer(log, from, m.vv));
-    if (m.ask || ahead(m.vv, log)) out.push(have(log));
-    return out;
+    const back = said(log, answer(log, from, m.vv));
+    if (m.ask || ahead(m.vv, log)) back.push(have(log));
+    return { ...none, back };
   }
   if (m.k === 'ops') {
-    take(log, m.ops, now);
-    return m.more ? [have(log)] : [];
+    const { taken } = take(log, m.ops, now);
+    return { back: m.more ? [have(log)] : [], took: taken, whole: false };
   }
-  return takeWhole(log, from, { vv: m.vv, data: m.data }) ? [have(log)] : [];
+  return takeWhole(log, from, { vv: m.vv, data: m.data }) ? { back: [have(log)], took: [], whole: true } : none;
+}
+
+/** What to say back to what `from` said, as `hear` says. */
+export function heard(log: Log, from: string, x: unknown, now: number): Said[] {
+  return hear(log, from, x, now).back;
 }

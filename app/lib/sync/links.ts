@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { change, emptyLog, setPeers, type Change, type Log } from './log';
-import { asking, have, heard, push, upTo, type Said } from './wire';
+import { change, emptyLog, setPeers, type Change, type Log, type Op } from './log';
+import { asking, have, hear, push, upTo, type Said } from './wire';
 
 // The account's log on one device, between its links (lib/devices.ts) and its file
 // (lock/sync-data.ts): one after another, what another device said of the log is taken and
@@ -14,6 +14,9 @@ import { asking, have, heard, push, upTo, type Said } from './wire';
 // said goes: `send` seals it in that device's link. Self-contained, so it runs under plain Node.
 
 export type Who = { me: string; primary: string; peers: string[] };
+
+/** What hearing something took: the ops, or a whole log, with the log as it was then. */
+export type SyncHeard = { log: Log; took: Op[]; whole: boolean };
 
 export type SyncIo = {
   load(): Promise<Log | null>;
@@ -61,16 +64,20 @@ export class SyncLinks {
     return log;
   }
 
-  /** What another of the account's devices said of the log: taken, kept, answered. */
-  heard(from: string, said: unknown): Promise<void> {
+  /**
+   * What another of the account's devices said of the log: taken, kept, answered. Says what it took,
+   * with the log as it is then, for what reads it; null while this side takes no part.
+   */
+  heard(from: string, said: unknown): Promise<SyncHeard | null> {
     return this.run(async () => {
       const log = await this.ready();
-      if (!log) return;
-      const back = heard(log, from, said, this.now());
+      if (!log) return null;
+      const { back, took, whole } = hear(log, from, said, this.now());
       // What it said it has is known now: what was given it before, it said it has or lacks.
       if (typeof said === 'object' && said !== null && (said as { k?: unknown }).k === 'have') this.given.delete(from);
       await this.io.save(log);
       for (const s of back) this.io.send(from, s);
+      return { log: structuredClone(log), took: took as Op[], whole };
     });
   }
 

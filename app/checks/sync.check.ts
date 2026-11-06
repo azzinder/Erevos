@@ -380,3 +380,14 @@ test('a device unlinked forgets the log, and starts a new one when linked again'
   await deliver();
   assert.deepEqual(contactsIn((await dell.read())!), [carol]);
 });
+
+test('a device that writes before it heard from the phone gives it its op alone, not the whole log', async () => {
+  const { phone, dell, said, deliver } = linked();
+  await phone.writeFrom((log) => changesFor(log, [carol], []));
+  await deliver();
+  said.length = 0;
+  await dell.write([{ k: 'contact', id: carol.identity, f: 'name', v: 'Carol D' }]);
+  assert.deepEqual(said.map((s) => [s.m.k, s.m.k === 'ops' ? s.m.ops.length : 0]), [['ops', 1]]);
+  await deliver();
+  assert.equal(contactsIn((await phone.read())!)[0].name, 'Carol D');
+});
