@@ -11,6 +11,7 @@ import { phoneSmsForBackup } from './backup-sms';
 import { panicFolderChanged } from './panic';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
 import { secureDelete, secureGet, secureSet } from './secure';
+import { openCollectionSkips } from '../lock/collection-data';
 
 export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOUD_NEEDS_CORS, folderLabel, partsIn, pickFolder, pickParts, PICKS_PART_FILES, writeBackup, type PartSource, type Written } from './backup-place';
 
@@ -141,17 +142,19 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
       // With the phone's SMS, when the owner wants them (lib/backup-sms.ts), and the phone module's settings.
       const phoneSms = await phoneSmsForBackup();
       const native = await phoneSettingsForBackup();
+      // Without the open space's Collection when its owner keeps it out of backups.
+      const skip = await openCollectionSkips();
       const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...hard, salt: fromBase64(hard.salt) } };
       if (due) {
         try {
-          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, native }), now, KEEP);
+          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, native, skip }), now, KEEP);
           auto = { ...auto, last: now, error: '' };
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, native, bare: true }), KEEP, now);
+      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, native, bare: true, skip }), KEEP, now);
     } catch (error) {
       auto = { ...auto, error: errorText(error) };
       await secureSet(AUTO, JSON.stringify(auto));

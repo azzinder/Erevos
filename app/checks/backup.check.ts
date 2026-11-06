@@ -764,6 +764,17 @@ const snapshot = () => ({ store: new Map(store), files: new Map(files), blobs: n
 // name and length for each, and the seal.
 const PART_MOST = PART + 20 + 3 * (3 + 64 + 4) + 28 + 16;
 
+t('the chunks of an open Collection kept out of backups stay out, and the others go in', async () => {
+  await phone();
+  const chunks = photos(3);
+  const [out, ...kept] = [...chunks.keys()];
+  const opened = await openBackup(await backUp(await backupKey('backup-pass'), { skip: new Set([out]) }), 'backup-pass');
+  wipe();
+  await restoreBackup(opened, fromShelf);
+  assert.equal(blobs.get(out), undefined);
+  for (const name of kept) assert.deepEqual(blobs.get(name), chunks.get(name));
+});
+
 t('photos, files and voice messages go in parts beside the backup, a few MB each, read one at a time, and come back with it', async () => {
   const { clip } = await phone();
   const without = await backUp(await backupKey('backup-pass'));

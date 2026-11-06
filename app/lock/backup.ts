@@ -96,6 +96,11 @@ import { FILE as XMPP } from './xmpp-data';
 // An Erevos from before PARTS opens such a backup and says a newer Erevos made it: it restores the
 // rest, without the photos, files and voice messages, as backups were before.
 //
+// The one exception: a space, or a hidden place, whose owner keeps its Collection out of backups
+// (lock/collection-data.ts) names that Collection's chunks to a backup made while it is open, which
+// leaves them out (MakeOptions.skip). Nothing else can tell them from a chat's, so the Collections
+// of the spaces closed then go in. Restoring such a backup leaves that Collection's files gone.
+//
 // What no backup holds stays with the phone, as it belongs to it: how many wrong passwords were
 // typed, the fingerprint's key in the phone's chip (lock/biometric.ts), the folders Android let
 // Erevos write in, what the permissions check saw (lib/permissions.ts), the packets carried for
@@ -498,8 +503,8 @@ function openPart(key: Uint8Array, id: Uint8Array, n: number, name: string, byte
 }
 
 // Makes the parts, a few MB at a time, and gives their names in their order.
-async function makeParts(key: Uint8Array, id: Uint8Array, sink: PartSink, bare: boolean, progress?: (done: number, all: number) => void): Promise<string[]> {
-  const all = [...(await listFiles(ATTACHMENT)), ...(await listFiles(VOICE))].filter(fileName).sort();
+async function makeParts(key: Uint8Array, id: Uint8Array, sink: PartSink, bare: boolean, progress?: (done: number, all: number) => void, skip?: ReadonlySet<string>): Promise<string[]> {
+  const all = [...(await listFiles(ATTACHMENT)), ...(await listFiles(VOICE))].filter((name) => fileName(name) && !skip?.has(name)).sort();
   const names: string[] = [];
   let held: Entry[] = [];
   let size = 0;
@@ -539,11 +544,13 @@ export type MakeOptions = {
   bare?: boolean;
   /** Told, as the parts are made, how many of the photos', files' and voice messages' files went in, of how many. */
   progress?: (done: number, all: number) => void;
+  /** The chunk files left out: those of the open places' Collections that stay out of backups (lock/collection-data.ts). */
+  skip?: ReadonlySet<string>;
 };
 
 /** A backup of everything on the phone, sealed with `key`: its parts go to `parts` first, one at a
  *  time, then the bytes of the backup itself, which names them, are given back. */
-export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, native = null, bare = false, progress }: MakeOptions): Promise<Uint8Array> {
+export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, native = null, bare = false, progress, skip }: MakeOptions): Promise<Uint8Array> {
   // Every backup made has Argon2id: a key without it is only for opening old ones.
   if (!hard) throw new Error('a backup is made with Argon2id');
   // The backup itself is read first, then the parts: a photo its messages show is on the phone then.
@@ -552,7 +559,7 @@ export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, 
   if (native) entries.push({ kind: KIND_NATIVE, name: NATIVE, data: native });
   const id = randomBytes(ID);
   const phone = await phoneId();
-  const names = await makeParts(partKey(key), id, parts, bare, progress);
+  const names = await makeParts(partKey(key), id, parts, bare, progress, skip);
   entries.push({ kind: KIND_PARTS, name: PARTS, data: utf8Encode(JSON.stringify({ id: toHex(id), names, phone })) });
   if (bare) {
     const size = HEAD + SEALING + pack(entries).length + PAD_ENTRY;

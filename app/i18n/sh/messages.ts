@@ -666,6 +666,8 @@ export const messages: Record<string, string> = {
   'Making the sticker…': 'Izrada naljepnice…',
   'This photo cannot be a sticker.': 'Od ove fotografije ne može se napraviti naljepnica.',
   'You have {n} stickers, the most there can be. Delete one to make room.': 'Imate najveći mogući broj naljepnica: {n}. Obrišite jednu da napravite mjesta.',
+  'This file is too large for the Collection.': 'Ova datoteka je prevelika za Zbirku.',
+  'That folder is not there any more.': 'Ta mapa više ne postoji.',
   'Delete sticker': 'Obriši naljepnicu',
   'Delete this sticker of yours? Where it was sent, it stays.': 'Obrisati ovu svoju naljepnicu? Tamo gdje je poslana, ostaje.',
   'Tap to send, hold to delete': 'Dodirnite za slanje, zadržite za brisanje',

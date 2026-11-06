@@ -666,6 +666,8 @@ export const messages: Record<string, string> = {
   'Making the sticker…': 'Creazione dello sticker…',
   'This photo cannot be a sticker.': 'Questa foto non può diventare uno sticker.',
   'You have {n} stickers, the most there can be. Delete one to make room.': 'Hai {n} sticker, il massimo possibile. Eliminane uno per fare spazio.',
+  'This file is too large for the Collection.': 'Questo file è troppo grande per la Raccolta.',
+  'That folder is not there any more.': 'Quella cartella non esiste più.',
   'Delete sticker': 'Elimina sticker',
   'Delete this sticker of yours? Where it was sent, it stays.': 'Eliminare questo tuo sticker? Dove è stato inviato, resta.',
   'Tap to send, hold to delete': 'Tocca per inviare, tieni premuto per eliminare',

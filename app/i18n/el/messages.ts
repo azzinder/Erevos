@@ -666,6 +666,8 @@ export const messages: Record<string, string> = {
   'Making the sticker…': 'Φτιάχνω το αυτοκόλλητο…',
   'This photo cannot be a sticker.': 'Αυτή η φωτογραφία δεν μπορεί να γίνει αυτοκόλλητο.',
   'You have {n} stickers, the most there can be. Delete one to make room.': 'Έχεις {n} αυτοκόλλητα, όσα χωράνε το πολύ. Διάγραψε ένα για να κάνεις χώρο.',
+  'This file is too large for the Collection.': 'Αυτό το αρχείο είναι πολύ μεγάλο για τη Συλλογή.',
+  'That folder is not there any more.': 'Αυτός ο φάκελος δεν υπάρχει πια.',
   'Delete sticker': 'Διαγραφή αυτοκόλλητου',
   'Delete this sticker of yours? Where it was sent, it stays.': 'Διαγραφή αυτού του αυτοκόλλητού σου; Όπου στάλθηκε, μένει.',
   'Tap to send, hold to delete': 'Πάτα για αποστολή, κράτα πατημένο για διαγραφή',

@@ -57,6 +57,7 @@ import { pickFile, TooLargeError } from '../lib/pick-file';
 import { SHELL } from '../lib/shell';
 import { holdReceiver } from '../lib/receiver';
 import { backupKey, backupNative, backupPhoneSms, DamagedPartError, makeBackup, openBackup, restoreBackup, WrongBackupPasswordError, type Backup, type MissingPartError } from '../lock/backup';
+import { openCollectionSkips } from '../lock/collection-data';
 import { useLock } from '../lock/context';
 import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
@@ -429,7 +430,8 @@ export default function Backups() {
       try {
         const phoneSms = await phoneSmsForBackup();
         const native = await phoneSettingsForBackup();
-        const { name, size, parts, where } = await writeBackup(asking.folder, (part) => makeBackup(key, { parts: part, phoneSms, native, progress: progress(true) }));
+        const skip = await openCollectionSkips();
+        const { name, size, parts, where } = await writeBackup(asking.folder, (part) => makeBackup(key, { parts: part, phoneSms, native, progress: progress(true), skip }));
         say(t('Saved {name} ({size}) in {folder}. Keep its password: nothing opens the backup without it.', { name, size: sizeText(size), folder: where ?? folderLabel(asking.folder) }) + partsText(parts) + smsText(phoneSms));
       } catch (error) {
         say(errorText(error), true);
@@ -443,7 +445,8 @@ export default function Backups() {
       if (!cloud) return;
       setBusy(true);
       try {
-        const sent = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, bare: true, progress: progress(true) }), KEEP);
+        const skip = await openCollectionSkips();
+        const sent = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, bare: true, progress: progress(true), skip }), KEEP);
         setCloud(sent);
         if (sent.error) say(t('Not sent. {error}', { error: sent.error }), true);
         else say(t('Sent a backup to {server}. Keep its password: nothing opens the backup without it.', { server: cloudLabel(sent) }));
