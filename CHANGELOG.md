@@ -33,8 +33,16 @@ On main, not released yet:
   chat**, **Save to phone** and **Open with another app**, each asking first, since the file leaves the Collection
   unencrypted. A photo from the camera goes straight in and never to the gallery; **Save to the Collection** in a
   chat's message menu, and **Send to** from other apps, which has the Collection first. It is a module, on Android
-  only (**Settings** → **General** → **Modules**), with its own settings for leaving it out of backups. Deleting the
-  original from the gallery after importing comes later.
+  only (**Settings** → **General** → **Modules**), with its own settings for leaving it out of backups.
+- **Music, videos and PDFs in the Collection**: music and videos play straight from their encrypted pieces, never from
+  a plain copy, with seeking: a video on the whole screen, music on with the screen off, with play, pause, next and
+  previous in the notification and on the phone's lock screen, and only those there. The list goes on after the space
+  locks unless **Stop playing when the space locks** is on; **Stop** and the panic button end it, and the notification
+  says only **Playing** unless **Show the title in the notification** is on. A PDF reads page by page inside Erevos
+  (Android 11 and later), decrypted in memory only. **Open with another app** now hands the file over as it is
+  decrypted, with no plain copy left on the phone. **Delete the original from the gallery after importing** works on
+  Android 11 and later: a photo or video picked from the phone's files is deleted from the gallery once it is in the
+  Collection, after Android asks you to confirm. See [Collection](#collection).
 
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.

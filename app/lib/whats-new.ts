@@ -27,6 +27,7 @@ export const NEXT: Changes = {
     mark("**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices)."),
     mark("**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices)."),
     mark('**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).'),
+    mark('**Music, videos and PDFs in the Collection**: music and videos play from their encrypted pieces, music on with the screen off and with play, pause, next and previous on the lock screen, and PDFs read page by page inside Erevos. **Open with another app** leaves no plain copy, and a photo or video picked from the gallery can be deleted there after importing. See [Collection](#collection).'),
   ],
   underTheHood: [],
 };
