@@ -2722,6 +2722,9 @@ nichts in der App zeigt, dass es sie gibt.
   mit dem der andere Bereich schon einen eigenen Chat hat, bleibt, wo er ist. Wer den anderen Bereich mit einem
   forensischen Werkzeug liest, könnte erkennen, dass der Chat von woanders kam: Sein Kontakt kennt ihn weiter unter dem
   Schlüssel dieses Bereichs.
+  Hat jener Bereich noch kein Relay, bietet Erevos das dieses Bereichs an: **Mit dem Relay dieses Bereichs
+  verschieben** verschiebt den Chat und gibt jenem Bereich dieses Relay zum Behalten, und das Relay kann dann
+  erkennen, dass beide Bereiche auf einem Telefon sind.
 - **Diskretion:** Zum Schutz deiner Privatsphäre zeigt die App nie, ob ein zweites Passwort festgelegt ist. In der
   Web-App mit eingeschalteten Benachrichtigungen, wenn geschlossen, bleibt die Zahl auf dem Symbol von Erevos, solange
   Erevos geschlossen ist: Passt sie nicht zu dem Bereich, den du öffnest, kann sie auf einen anderen hindeuten

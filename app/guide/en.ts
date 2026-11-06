@@ -2346,6 +2346,8 @@ exist.
   this space's own, moves nothing. A chat with someone the other space already has a chat with stays where it is.
   Whoever reads the other space with a forensic tool could tell the chat came from elsewhere: its contact still knows it
   by this space's key.
+  If that space has no relay yet, Erevos offers this space's: **Move with this space's relay** moves the chat and
+  gives that space this relay to keep, and the relay can then tell that both spaces are on one phone.
 - **Discretion:** for privacy, the app never shows whether a second password is set. In the web app with
   notifications while closed on, the number on Erevos's icon stays while Erevos is closed: one that does not match
   the space you open may hint at another (**Number on the icon** turns it off).

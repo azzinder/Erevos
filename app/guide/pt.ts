@@ -2531,6 +2531,9 @@ existem.
   conversa com alguém com quem o outro espaço já tem uma conversa própria fica onde está. Quem ler o outro espaço com
   uma ferramenta forense poderia perceber que a conversa veio de outro lugar: o contato dela ainda a conhece pela chave
   deste espaço.
+  Se esse espaço ainda não tem relay, o Erevos oferece o deste espaço: **Mover com o relay deste espaço** move a
+  conversa e dá a esse espaço este relay para manter, e o relay pode então saber que os dois espaços estão num mesmo
+  telefone.
 - **Discrição:** por privacidade, o app nunca mostra se há uma segunda senha definida. No app web com as notificações
   com o app fechado ativadas, o número no ícone do Erevos fica enquanto o Erevos está fechado: se não bater com o
   espaço que você abre, pode denunciar outro (**Número no ícone** o desliga).

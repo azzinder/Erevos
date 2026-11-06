@@ -2685,6 +2685,9 @@ dans l’app ne montre qu’elles existent.
   celui de l’espace ouvert, ne déplace rien. Une discussion avec quelqu’un avec qui l’autre espace a déjà sa propre
   discussion reste où elle est. Qui lit l’autre espace avec un outil d’analyse forensique pourrait voir que la
   discussion vient d’ailleurs : son contact la connaît toujours par la clé de cet espace.
+  Si cet espace n’a pas encore de relais, Erevos propose celui de cet espace-ci : **Déplacer avec le relais de cet
+  espace** déplace la discussion et donne ce relais à l’autre espace, qui le garde, et le relais peut alors savoir que
+  les deux espaces sont sur un même téléphone.
 - **Discrétion :** pour ta confidentialité, l’app ne montre jamais si un second mot de passe est défini. Dans l’app web
   avec les notifications quand l’app est fermée activées, le nombre sur l’icône d’Erevos reste tant qu’Erevos est
   fermé : s’il ne correspond pas à l’espace que tu ouvres, il peut en trahir un autre (**Nombre sur l’icône** le

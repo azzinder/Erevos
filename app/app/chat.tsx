@@ -143,7 +143,7 @@ import { linkCard, onSealedChange, type Place as SealedPlace } from '../lib/seal
 import { linkedCardNumber, type Among, type Card as ContactCard } from '../lib/contact-book';
 import { History, isTag, newTag, WAITING, type Mark, type Message as Kept, type Parts, type Route } from '../lock/history';
 import { currentSpace } from '../lock/keys';
-import { loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, type Queue, type SpaceData } from '../lock/space-data';
+import { loadCurrentSpaceData, loadHiddenData, loadSpaceData, NO_LENDING, updateCurrentSpaceData, updateHiddenData, updateSpaceData, type Queue, type SpaceData } from '../lock/space-data';
 import { isGroupPacket, memberName, noteText, type GroupInfo } from '../lib/groups';
 import { groupCallSignal, onGroupCallChange } from '../lib/group-calls';
 import { spaceGroups, takeGroupPacket, takeGroupSignal } from '../lib/space-groups';
@@ -762,6 +762,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [moveNote, setMoveNote] = useState('');
   // The password of the space a chat moves into (moveToOtherSpace).
   const [passwordDraft, setPasswordDraft] = useState('');
+  // That space has no relay yet: whether it is offered this space's (a second tap moves with it).
+  const [relayOffer, setRelayOffer] = useState(false);
   const [moving, setMoving] = useState(false);
   const router = useRouter();
   const [e2e, setE2E] = useState<E2E | null>(null);
@@ -4580,7 +4582,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // searchOpens): every space and PIN, in the same time whatever it is, its wrong tries counted with
   // the search's, so the row says nothing of whether another space exists. Their phone is told at
   // once, from that space's relay queue, to write there from now on.
-  async function moveToOtherSpace(peer: string, password: string) {
+  async function moveToOtherSpace(peer: string, password: string, shareRelay = false) {
     if (!e2e || !history.current || hiddenKey || moving) return;
     if (linkedRole() === 'linked') {
       setMoveNote(t("This chat is the phone's: move it to another space there."));
@@ -4602,11 +4604,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         throw new Error(t('That space is linked to a phone: move the chat into it there.'));
       }
       const data = await loadSpaceData(other.space, other.key);
-      const target = relayFor(data.url, data.token, data.via, data.viaToken);
-      if (!target || !data.ownQueue) throw new Error(t("That space's chats have no relay queue yet: create it under Relay there first."));
-      const queue = data.ownQueue;
       const theirs = await E2E.open('space', other.space, other.key);
       checkMove(identity, e2e, theirs);
+      // That space's own relay; with none yet, this space's, once the owner says so with a second
+      // tap (relayOffer): kept as that space's from then on, as hidden chats keep the space's, though
+      // the relay can then tell the two spaces are one phone's.
+      let settings = { url: data.url, token: data.token, via: data.via, viaToken: data.viaToken };
+      if (!settings.url.trim()) {
+        if (!relayUrl.trim()) throw new Error(t('Neither space has a relay yet: set one under Relay in that space first.'));
+        if (!shareRelay) {
+          setRelayOffer(true);
+          return;
+        }
+        settings = { url: relayUrl, token: relayToken, via: viaUrl, viaToken };
+      }
+      const target = relayFor(settings.url, settings.token, settings.via, settings.viaToken);
+      if (!target) throw new Error(t('Type the relay address in Relay first.'));
+      // Its queue there, made now when it has none yet, or when it takes this space's relay.
+      let queue = settings.url === data.url ? data.ownQueue : null;
+      if (!queue) {
+        const ids = await createQueue(target);
+        queue = { recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) };
+      }
+      await updateSpaceData(other.space, other.key, { ...settings, ownQueue: queue });
       // A contact who knows about devices is told first, as a move into hidden chats tells them:
       // the other space's chat says nothing of devices to one who knows it by this identity.
       const sends = relayTarget();
@@ -4621,13 +4641,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setMessages((list) => list.filter((m) => m.peer !== peer));
       setContacts(e2e.contacts());
       setPasswordDraft('');
+      setRelayOffer(false);
       setOpened(null);
       setDetails(false);
       setSelected(null);
       // Where to write from now on, said from the other space's chats.
       try {
         const key = await relayKey(target).catch(() => null);
-        const sealed = await theirs.seal(identity, '', queue.senderHex, { at: { relay: data.url.trim(), relayKey: key ? toBase64Url(key) : '' } });
+        const sealed = await theirs.seal(identity, '', queue.senderHex, { at: { relay: settings.url.trim(), relayKey: key ? toBase64Url(key) : '' } });
         await sendSealed(target, sealed, [sealed.packet], 'quiet', () => theirs.firstSent(identity));
         setNote(t('Moved to the other space. Open Erevos with its password to write there.'));
       } catch {
@@ -6259,6 +6280,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                 setOpened((now) => (now === 'space' ? null : 'space'));
                                 setMoveNote('');
                                 setPasswordDraft('');
+                                setRelayOffer(false);
                               }}
                             />
                             {opened === 'space' ? (
@@ -6271,6 +6293,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                   onChangeText={(text) => {
                                     setPasswordDraft(text);
                                     setMoveNote('');
+                                    setRelayOffer(false);
                                   }}
                                   placeholder={t('Password of the other space')}
                                   secureTextEntry
@@ -6283,8 +6306,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                     {moveNote}
                                   </Text>
                                 ) : null}
+                                {relayOffer ? (
+                                  <Text variant="caption" tone="muted">
+                                    {t("That space has no relay yet. It can take this space's relay, and keep it: the relay can then tell that both spaces are on one phone.")}
+                                  </Text>
+                                ) : null}
                                 <Row wrap>
-                                  <Button title={t('Move')} compact loading={moving} disabled={passwordDraft.length < MIN_PIN} onPress={() => void moveToOtherSpace(selectedContact, passwordDraft)} />
+                                  {relayOffer ? (
+                                    <Button title={t("Move with this space's relay")} compact loading={moving} onPress={() => void moveToOtherSpace(selectedContact, passwordDraft, true)} />
+                                  ) : (
+                                    <Button title={t('Move')} compact loading={moving} disabled={passwordDraft.length < MIN_PIN} onPress={() => void moveToOtherSpace(selectedContact, passwordDraft)} />
+                                  )}
                                 </Row>
                                 <Text variant="caption" tone="muted">
                                   {t('Their phone is told at once where to write from now on. A message they send in that moment may not come.')}

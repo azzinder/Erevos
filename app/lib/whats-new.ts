@@ -35,7 +35,9 @@ export const NEXT: Changes = {
     mark("**Files up to 4 GB in the Collection**: on Android a file picked from the phone's files is encrypted as it is read, with no plain copy first, so it comes in faster and needs no room twice. In the desktop app music and videos up to 1 GB play. See [Collection](#collection)."),
     mark("**The Collection on a WebDAV server**: each space and hidden place can copy its Collection, still encrypted, to a folder on a server you choose, Nextcloud, ownCloud or any that speaks WebDAV, so big files are not only on the phone. Only what is new goes, and a phone that lacks a file fetches it from there. See [Collection](#collection)."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Moving a chat to a space with no relay**: **Move to another space** stopped there, as that space had no relay of its own. Now it offers this space's relay, which that space then keeps, and it makes that space's relay queue when it has a relay but no queue yet. See [Second password](#second)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

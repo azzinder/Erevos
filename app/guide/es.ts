@@ -2553,6 +2553,9 @@ con sus propios contactos, relay y aspecto. Tus chats reales siguen ocultos, y n
   prueba como en la búsqueda: una equivocada, o la del espacio abierto, no mueve nada. Un chat con alguien con quien el
   otro espacio ya tiene un chat propio se queda donde está. Quien lea el otro espacio con una herramienta forense podría
   ver que el chat vino de otro sitio: su contacto lo sigue conociendo por la clave de este espacio.
+  Si ese espacio aún no tiene relay, Erevos ofrece el de este espacio: **Mover con el relay de este espacio** mueve el
+  chat y le da a ese espacio este relay para quedárselo, y entonces el relay puede saber que ambos espacios están en
+  un mismo teléfono.
 - **Discreción:** por privacidad, la app nunca muestra si hay una segunda contraseña puesta. En la app web con las
   notificaciones con la app cerrada activadas, el número en el icono de Erevos se queda mientras Erevos está cerrado:
   si no coincide con el espacio que abres, puede delatar otro (**Número en el icono** lo desactiva).

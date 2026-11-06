@@ -97,6 +97,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
+  queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
+  with this space's relay**, which that space then keeps (the relay can then tell that both spaces are on one phone), and
+  it makes that space's relay queue itself when it has a relay but no queue yet. See [Second password](#second).
 - **Last seen** (`lib/last-seen.ts`): each message to a contact of the space's own chat says `ls`, when that space
   was last shown on the screen (kept per space, in memory only), or 0 once turned off (`SpaceData.lastSeen`, on by
   default; shared with linked devices through the account's log as setting `lastSeen`), and the same for each hidden

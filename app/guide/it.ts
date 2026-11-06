@@ -2566,6 +2566,9 @@ esistono.
   provata come nella ricerca: una sbagliata, o quella dello spazio aperto, non sposta nulla. Una chat con qualcuno con
   cui l’altro spazio ha già una chat sua resta dov’è. Chi legge l’altro spazio con uno strumento forense potrebbe capire
   che la chat viene da altrove: il suo contatto la conosce ancora con la chiave di questo spazio.
+  Se quello spazio non ha ancora un relay, Erevos offre quello di questo spazio: **Sposta con il relay di questo
+  spazio** sposta la chat e dà a quello spazio questo relay da tenere, e il relay può allora capire che entrambi gli
+  spazi sono su un solo telefono.
 - **Discrezione:** per privacy, l’app non mostra mai se è impostata una seconda password. Nella web app con le
   notifiche ad app chiusa attive, il numero sull’icona di Erevos resta finché Erevos è chiuso: se non corrisponde allo
   spazio che apri, può lasciarne intuire un altro (**Numero sull’icona** lo disattiva).
