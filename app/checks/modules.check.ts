@@ -30,10 +30,17 @@ import {
 const ANDROID = modulesHere('android');
 const ELSEWHERE = modulesHere('ios');
 
-test('the phone, the SMS and the Collection only on Android; every other module everywhere', () => {
+test('the phone and the SMS only on Android, the Collection on Android and in the desktop app; every other module everywhere', () => {
   assert.deepEqual(ANDROID, ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp', 'collection']);
   assert.deepEqual(ELSEWHERE, ['erevos', 'nostr', 'matrix', 'xmpp']);
-  assert.deepEqual(modulesHere('web'), ELSEWHERE);
+  assert.deepEqual(modulesHere('web', null), ELSEWHERE);
+  // The desktop app keeps the Collection's files in its own folder; a plain browser's storage is too
+  // small for it, and Sailfish OS does not have it yet.
+  assert.deepEqual(modulesHere('web', 'electron'), ['erevos', 'nostr', 'matrix', 'xmpp', 'collection']);
+  assert.deepEqual(modulesHere('web', 'sailfish'), ELSEWHERE);
+  assert.deepEqual(modulesHere('android', 'electron'), ANDROID);
+  // A backup made on Android, read in the desktop app: the Collection stays on there.
+  assert.deepEqual([...(parseModules('["phone","collection","erevos"]', modulesHere('web', 'electron')) ?? [])], ['erevos', 'collection']);
 });
 
 test('nothing kept, or nothing usable, is every module on', () => {
