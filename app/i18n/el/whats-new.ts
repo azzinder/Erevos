@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":
+    "**Ίδιες ρυθμίσεις στις συνδεδεμένες συσκευές**: η γλώσσα και η εμφάνιση που αλλάζεις στο τηλέφωνο ή σε έναν υπολογιστή αλλάζουν και στις άλλες. Μια φωτογραφία πίσω από τις οθόνες, οι κωδικοί, τα PIN και ό,τι αφορά μία μόνο συσκευή μένουν στην καθεμία. Μια συσκευή μπορεί να κρατά τις δικές της: **Ίδιες ρυθμίσεις σε όλες τις συσκευές** στις Συνδεδεμένες συσκευές. Δες [Συνδεδεμένες συσκευές](#devices).",
   "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":
     "**Συλλογή**: ένας κρυπτογραφημένος χώρος σε κάθε χώρο και κάθε κρυφό μέρος για φωτογραφίες, αρχεία και φακέλους, με το εικονίδιό της δίπλα στο λουκέτο. Ενεργοποίησέ την στις Ενότητες. Δες τη [Συλλογή](#collection).",
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':

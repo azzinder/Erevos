@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Same settings on your linked devices**: the language and the look (style, colours, text size) changed on the phone
+  or on a computer change on the others too. A photo behind the screens stays on the device it was chosen on, and so
+  does what is about one device alone: passwords, PINs, the panic code, the lock's time, vibration, the relay and Tor,
+  the modules, its name. **Same settings on every device** in **Linked devices** lets a device keep its own; turned on
+  again, it takes the others'. Hidden chats keep theirs. See [Linked devices](#devices).
 - **Support Erevos**: every way has its QR code now, Liberapay and PayPal too, besides the Monero and Bitcoin
   addresses. PayPal opens in the browser: its old link only handed over to the PayPal app, so it failed without it.
   The page `site/donate` has the same QR codes.
@@ -65,6 +70,10 @@ On main, not released yet:
   **Messages**, **Everything**, and asks **Turn Tor on?** going from **Nothing** to either of the others.
   `checks/nostr.check.ts` has a check that with Tor off nothing opens through Tor, and that the connections follow the
   way as it changes.
+- **Settings through the account's log** (`lib/sync/settings.ts`): the language and the look are records of kind
+  `setting` in the space's log, written as they change on a device, never as they come from it, and put in place on
+  the others; the phone writes those it has into a log that has none yet, so a device just linked takes the phone's.
+  Each device can stop sharing them (`erevos.share-settings`). `checks/sync-settings.check.ts`.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":
+    "**Iste postavke na tvojim povezanim uređajima**: jezik i izgled promijenjeni na telefonu ili računaru mijenjaju se i na drugima. Fotografija iza ekrana, lozinke, PIN-ovi i ono što se tiče samo jednog uređaja ostaju na svakom. Uređaj može zadržati svoje: **Iste postavke na svim uređajima** u Povezanim uređajima. Vidi [Povezani uređaji](#devices).",
   "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":
     "**Zbirka**: šifrirano mjesto u svakom prostoru i skrivenom mjestu za fotografije, datoteke i foldere, s ikonom pored lokota. Uključite je u Modulima. Pogledajte [Zbirku](#collection).",
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':

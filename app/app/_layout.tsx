@@ -76,6 +76,7 @@ import { Setup } from '../components/setup';
 import { space as gap } from '../theme/colors';
 import { ThemeProvider, useTheme } from '../theme/context';
 import { ensureStyleFonts } from '../theme/fonts';
+import { loadSettingsShared, lookFrom, lookToShare, onSettingCame, onSettingNow, settingChanged, shareLanguage } from '../lib/sync/settings';
 import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
 import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { PhoneView } from './phone';
@@ -419,8 +420,30 @@ export default function RootLayout() {
   const keepLook = useCallback(async (next: Look) => {
     setLook(next);
     if (phaseRef.current.kind !== 'open') return;
+    // To the account's other devices too, as they share the settings (lib/sync/settings.ts).
+    settingChanged('look', lookToShare(next));
     await Promise.all([updateCurrentSpaceData({ look: next }), saveLockScreenLook(next)]);
   }, []);
+
+  // The settings the account's devices share: the language, and the open space's look, which a
+  // look chosen on another device replaces here (lib/sync/settings.ts).
+  useEffect(() => {
+    void loadSettingsShared().catch(() => undefined);
+    const stopLanguage = shareLanguage();
+    const stopNow = onSettingNow('look', () => (phaseRef.current.kind === 'open' ? lookToShare(lookRef.current) : undefined));
+    const stopCame = onSettingCame('look', async (value) => {
+      if (phaseRef.current.kind !== 'open') return;
+      const next = lookFrom(value, lookRef.current);
+      if (!next || JSON.stringify(next) === JSON.stringify(lookRef.current)) return;
+      await show(next);
+      await Promise.all([updateCurrentSpaceData({ look: next }), saveLockScreenLook(next)]);
+    });
+    return () => {
+      stopLanguage();
+      stopNow();
+      stopCame();
+    };
+  }, [show]);
 
   const lockState = useMemo<LockState>(
     () => ({

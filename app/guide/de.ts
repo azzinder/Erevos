@@ -3429,6 +3429,12 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   auf einem gesehen, verschwindet sie von den anderen. Das Foto oder die Datei einer Notiz geht als Kopie über das
   Relay und wird dort gelöscht, sobald sie geholt wurde, oder bleibt, bei zwei Geräten oder mehr, dort, bis sie
   abläuft (14 Tage). Die Notizen versteckter Chats gehen nur innerhalb ihrer eigenen Verknüpfung, siehe unten.
+- **Einstellungen:** Sprache und Aussehen (der Stil, die Farben, die Textgröße) sind auf allen Geräten des Bereichs
+  gleich: auf einem geändert, ändern sie sich auch auf den anderen. Ein Foto hinter den Bildschirmen bleibt auf dem
+  Gerät, auf dem es gewählt wurde, ebenso alles, was nur ein Gerät betrifft: Passwörter, PINs und der Paniccode, die
+  Sperrzeit, die Vibration, das Relay und Tor, die Module, der Gerätename. Ein Gerät, das seine eigenen behalten soll:
+  **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte** → **Gleiche Einstellungen auf allen Geräten** aus.
+  Wieder eingeschaltet, übernimmt es sofort die der anderen. Versteckte Chats behalten ihre eigenen.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
   beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und

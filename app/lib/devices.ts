@@ -141,7 +141,8 @@ import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
 import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './waiting';
 import { blockedFromLog, changesFor, checkedLookOf, setsFromLog, syncChangesOf } from './sync/contacts';
 import { SyncLinks, type SyncHeard, type Who } from './sync/links';
-import type { Change as SyncChange, Json as SyncJson, Log as SyncLog } from './sync/log';
+import { onSettingChanged, settingCame, settingsNow } from './sync/settings';
+import { valueOf as syncValueOf, type Change as SyncChange, type Json as SyncJson, type Log as SyncLog } from './sync/log';
 import type { Said as SyncSaid } from './sync/wire';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
@@ -459,6 +460,7 @@ export class Links implements Link, TakenFiles {
   private stopCalls: (() => void) | null = null;
   private stopMoves: (() => void) | null = null;
   private stopNotes: (() => void) | null = null;
+  private stopSettings: (() => void) | null = null;
   // The accounts given or brought (lib/linked-accounts.ts), one after another, apart from other
   // work: a sign-in or a key backup's keys may take long, and messages cannot wait for them. On a
   // linked device, what went wrong last bringing them.
@@ -554,6 +556,8 @@ export class Links implements Link, TakenFiles {
             if (at === space && moved === pocket) links.spaceMoved(why);
           });
     links.stopNotes = onNotesWritten((place) => links.notesWritten(place));
+    // The settings the devices share (lib/sync/settings.ts) go in the space's log only.
+    if (pocket === null) links.stopSettings = onSettingChanged((id, value) => links.syncSetting(id, value));
     links.tickTimer = setInterval(() => links.tick(), tick);
     links.tick();
     links.act(() => links.listsAtOpen());
@@ -571,6 +575,7 @@ export class Links implements Link, TakenFiles {
     this.stopCalls?.();
     this.stopMoves?.();
     this.stopNotes?.();
+    this.stopSettings?.();
     this.stopGroups?.();
     this.groups?.groups.useLink(null);
     this.chats.e2e.useLink(null);
@@ -954,6 +959,7 @@ export class Links implements Link, TakenFiles {
         if (core.canSign()) await this.endpointFrom(peer.id, said.bundle, said.ek);
         // The log names it from now: what it lacks of it goes, the contacts first written should none be.
         this.syncContacts(this.contactsKept(), this.chats.e2e.blocked());
+        if (this.pocket === null) this.seedSettings();
         break;
       case 'out':
         // What the device wrote to a contact itself: this phone's own too, and the devices that do
@@ -979,6 +985,7 @@ export class Links implements Link, TakenFiles {
         if (peer.endpoint) {
           const heard = await this.syncs.heard(peer.endpoint.id, said.s).catch(() => null);
           if (heard) this.act(() => this.syncOnPrimary(heard));
+          if (heard) this.settingsFrom(heard);
         }
         break;
       case 'unblock':
@@ -1499,6 +1506,39 @@ export class Links implements Link, TakenFiles {
     void this.syncs.writeFrom((log) => changesFor(log, logged, kept)).catch(() => undefined);
   }
 
+  // A setting this device changed (lib/sync/settings.ts), into the space's log should it say otherwise.
+  private syncSetting(id: string, value: SyncJson): void {
+    const v = JSON.stringify(value);
+    void this.syncs.writeFrom((log) => (JSON.stringify(syncValueOf(log, 'setting', id, 'v') ?? null) === v ? [] : [{ k: 'setting', id, f: 'v', v: value }])).catch(() => undefined);
+  }
+
+  // On the primary: the settings as they are here, into a log that has none of them yet, so a
+  // device linked takes them though none was changed since.
+  private seedSettings(): void {
+    const here = settingsNow();
+    void this.syncs.writeFrom((log) => here.filter(({ id }) => syncValueOf(log, 'setting', id, 'v') === undefined).map(({ id, value }) => ({ k: 'setting', id, f: 'v', v: value }))).catch(() => undefined);
+  }
+
+  /**
+   * The shared settings as the space's log has them, put in place here: once this device shares them
+   * again (Settings → Data and devices → Linked devices), so it ends with the account's.
+   */
+  async takeSettings(): Promise<void> {
+    if (this.pocket !== null) return;
+    const log = await this.syncs.read().catch(() => null);
+    if (log) this.settingsFrom({ log, took: [], whole: true });
+  }
+
+  // The settings another device changed, as the space's log took them, put in place here.
+  private settingsFrom({ log, took, whole }: SyncHeard): void {
+    if (this.pocket !== null) return;
+    const ids = whole ? Object.keys(log.data.setting ?? {}) : [...new Set(took.filter((op) => op.k === 'setting').map((op) => op.id))];
+    for (const id of ids) {
+      const value = syncValueOf(log, 'setting', id, 'v');
+      if (value !== undefined) void settingCame(id, value).catch(() => undefined);
+    }
+  }
+
   // On a linked device, in the turn: what the log took changes the contacts here, as a change
   // another device said in `set` does (setFrom), field by field, each by when it was set: so what
   // came the way of before already changes nothing, and a later one either way wins. A contact the
@@ -1506,6 +1546,7 @@ export class Links implements Link, TakenFiles {
   private async syncOnDevice(heard: SyncHeard | null, place: ((contacts: Contact[]) => Contact[]) | null): Promise<Taken> {
     const none: Taken = { kind: 'taken', ...(place ? { contacts: place } : {}) };
     if (!heard || !this.data.primary) return none;
+    this.settingsFrom(heard);
     const { log, took, whole } = heard;
     const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
     const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];

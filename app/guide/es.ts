@@ -3222,6 +3222,13 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   archivo de una nota va como copia en el relay, eliminada de ahí en cuanto se recoge, o, con dos dispositivos o más,
   se deja ahí hasta que caduca (14 días). Las notas de los chats ocultos van solo dentro de su propio vínculo, más
   abajo.
+- **Ajustes:** el idioma y el aspecto (el estilo, los colores, el tamaño del texto) son los mismos en todos los
+  dispositivos del espacio: cambiados en uno, cambian también en los otros. Una foto detrás de las pantallas se queda
+  en el dispositivo donde se eligió, igual que todo lo que atañe a un solo dispositivo: contraseñas, PIN y el código
+  de pánico, el tiempo del bloqueo, la vibración, el relay y Tor, los módulos, el nombre del dispositivo. Un
+  dispositivo que deba guardar los suyos: **Ajustes** → **Datos y dispositivos** → **Dispositivos vinculados** → **Los
+  mismos ajustes en todos los dispositivos** desactivado. Activado de nuevo, toma enseguida los de los otros. Los
+  chats ocultos guardan los suyos.
 - **Las llamadas** suenan en el teléfono y en el ordenador. Responde en cualquiera de los dos: el otro deja de sonar, y
   dice que se respondió en otro dispositivo. Rechazar una llamada en uno la rechaza en los dos. El ordenador también
   llama a través del teléfono; la llamada en sí va entonces directamente entre el ordenador y el contacto, cifrada entre

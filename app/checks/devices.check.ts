@@ -110,6 +110,8 @@ import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
 import { contactsIn } from '../lib/sync/contacts';
+import type { Json as SyncJson } from '../lib/sync/log';
+import { onSettingCame } from '../lib/sync/settings';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
 import { store as secureStore } from './secure-memory';
@@ -504,6 +506,21 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
     toDave.map((m) => [m.identity, m.text]).filter(([, text]) => text),
     [[account, 'hi Dave']],
   );
+
+  // A setting changed on the computer (lib/sync/settings.ts) is put in place on the phone, and
+  // one changed on the phone on the computer: through the log, by what keeps it on each.
+  const settingsCame: [string, unknown][] = [];
+  const stops = (['language', 'look'] as const).map((id) => onSettingCame(id, (value) => void settingsCame.push([id, value])));
+  const changeOn = (p: Phone, id: 'language' | 'look', value: SyncJson) => (p.links as unknown as { syncSetting(id: string, value: SyncJson): void }).syncSetting(id, value);
+  changeOn(dell, 'language', 'de');
+  await dell.links.settled();
+  await until(async () => (await take(pixel), settingsCame.length > 0));
+  assert.deepEqual(settingsCame, [['language', 'de']]);
+  changeOn(pixel, 'look', { style: 'nocturne', wallpaper: 'dots' });
+  await pixel.links.settled();
+  await until(async () => (await take(dell), settingsCame.length > 1));
+  assert.deepEqual(settingsCame[1], ['look', { style: 'nocturne', wallpaper: 'dots' }]);
+  for (const stop of stops) stop();
 
   // Unlinked on the phone: the computer is told, and the account's chats leave it.
   assert.equal(await pixel.links.unlink(pixel.links.devices()[0].id), true);

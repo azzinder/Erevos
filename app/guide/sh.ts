@@ -3097,6 +3097,12 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   Fotografija ili datoteka bilješke ide kao kopija na relayu, tamo obrisana čim je preuzeta, ili, za dva uređaja ili
   više, ostavljena tamo dok ne istekne (14 dana). Bilješke skrivenih razgovora idu samo unutar njihove vlastite veze,
   niže.
+- **Postavke:** jezik i izgled (stil, boje, veličina teksta) isti su na svim uređajima prostora: promijenjeni na
+  jednom, mijenjaju se i na drugima. Fotografija iza ekrana ostaje na uređaju na kojem je izabrana, kao i sve što se
+  tiče samo jednog uređaja: lozinke, PIN-ovi i kod za paniku, vrijeme zaključavanja, vibracija, relej i Tor, moduli,
+  ime uređaja. Uređaj koji treba da zadrži svoje: **Postavke** → **Podaci i uređaji** → **Povezani uređaji** → **Iste
+  postavke na svim uređajima** isključeno. Ponovo uključen, odmah preuzima postavke drugih. Skriveni razgovori
+  zadržavaju svoje.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
   prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
   poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga

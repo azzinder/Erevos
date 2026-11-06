@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":
+    "**Mêmes réglages sur tes appareils associés** : la langue et l’apparence changées sur le téléphone ou un ordinateur changent aussi sur les autres. Une photo derrière les écrans, les mots de passe, les codes PIN et ce qui ne concerne qu’un appareil restent sur chacun. Un appareil peut garder les siens : **Mêmes réglages sur tous les appareils** dans Appareils associés. Voir [Appareils associés](#devices).",
   "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":
     "**Collection** : un endroit chiffré dans chaque espace et chaque lieu caché pour les photos, les fichiers et les dossiers, avec son icône à côté du cadenas. Active-la dans Modules. Voir [Collection](#collection).",
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':

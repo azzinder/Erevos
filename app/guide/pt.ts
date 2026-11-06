@@ -3197,6 +3197,12 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   Um lembrete aparece em cada dispositivo no horário dele, e visto em um sai dos outros. A foto ou o arquivo de uma
   nota vai como cópia no relay, apagada de lá assim que é pega, ou, para dois dispositivos ou mais, deixada lá até
   expirar (14 dias). As notas das conversas ocultas vão só dentro da própria conexão delas, mais abaixo.
+- **Configurações:** o idioma e a aparência (o estilo, as cores, o tamanho do texto) são os mesmos em todos os
+  dispositivos do espaço: mudados em um, mudam também nos outros. Uma foto atrás das telas fica no dispositivo onde
+  foi escolhida, assim como tudo o que diz respeito a um só dispositivo: senhas, PINs e o código de pânico, o tempo do
+  bloqueio, a vibração, o relay e o Tor, os módulos, o nome do dispositivo. Um dispositivo que deve manter as suas:
+  **Configurações** → **Dados e dispositivos** → **Dispositivos conectados** → **As mesmas configurações em todos os
+  dispositivos** desligado. Ligado de novo, pega na hora as dos outros. As conversas ocultas mantêm as suas.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
   atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
   celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só

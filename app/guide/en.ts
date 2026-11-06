@@ -2960,6 +2960,12 @@ The chats then come to the computer, and after them the messages chosen.
   at its time, and seen on one it goes from the others. A note's photo or file goes as a copy on the relay, deleted
   there once taken, or, for two devices or more, left there until it expires (14 days). Hidden chats' notes go only
   within their own link, below.
+- **Settings:** the language and the look (the style, the colours, the size of the text) are the same on every device
+  of the space: changed on one, they change on the others too. A photo behind the screens stays on the device it was
+  chosen on, and so does all that is about one device alone: passwords, PINs and the panic code, the lock's time,
+  vibration, the relay and Tor, the modules, the device's name. A device that should keep its own: **Settings** →
+  **Data and devices** → **Linked devices** → **Same settings on every device** off. Turned on again, it takes the
+  others' at once. Hidden chats keep their own.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
   answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
   too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone

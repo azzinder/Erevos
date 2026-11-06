@@ -4,13 +4,14 @@
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Share } from 'react-native';
+import { Platform, Pressable, Share, View } from 'react-native';
 
 import { QrCode } from '../components/QrCode';
 import { RelaySignIn } from '../components/relay-signin';
-import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton } from '../components/ui';
+import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
 import { onLinked, placeLinks, spaceLinks, type AccountsHere, type DeviceInfo, type HistoryChoice, type Links } from '../lib/devices';
+import { tap } from '../lib/haptics';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { mark, t } from '../lib/i18n';
 import { checkLinkCode, linkCodeLink } from '../lib/link-code';
@@ -18,8 +19,10 @@ import { matrixWaiting } from '../lib/linked-accounts';
 import { createQueue, toHex } from '../lib/relay';
 import { ownToken } from '../lib/relay-signin';
 import { SHELL } from '../lib/shell';
+import { setSettingsShared, settingsShared } from '../lib/sync/settings';
 import { START_RELAY } from '../lib/welcome';
 import { loadCurrentSpaceData, loadHiddenData, updateCurrentSpaceData } from '../lock/space-data';
+import { space } from '../theme/colors';
 
 // Settings → Data and devices → Linked devices (lib/devices.ts, docs/linked-devices.md). On a computer or in a browser:
 // Link to my phone shows a code for the phone to read, then the code both show, to compare. On the
@@ -98,6 +101,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const [files, setFiles] = useState(true);
   const [accounts, setAccounts] = useState(true);
   const [again, setAgain] = useState<string | null>(null);
+  // Whether this device has the same settings as the account's other devices (lib/sync/settings.ts).
+  const [shared, setShared] = useState(settingsShared);
   const [copied, setCopied] = useState(false);
   // On a linked device: the accounts from the phone.
   const [here, setHere] = useState<AccountsHere | null>(null);
@@ -389,6 +394,31 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     </Card>
   ) : null;
 
+  async function turnShared() {
+    tap();
+    const next = !shared;
+    setShared(next);
+    await setSettingsShared(next);
+    // On again: this device takes the account's settings as they are now.
+    if (next && links) await links.takeSettings().catch(() => undefined);
+  }
+
+  // The space's own, never hidden chats': its language and look, on every device of the account.
+  const sharing =
+    !place && (role === 'linked' || devices.length > 0) ? (
+      <Card>
+        <Pressable onPress={() => void turnShared()} accessibilityRole="switch" accessibilityState={{ checked: shared }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <View style={{ flex: 1 }}>
+            <Text variant="bodyStrong">{t('Same settings on every device')}</Text>
+            <Text variant="caption" tone="muted">
+              {t('The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.')}
+            </Text>
+          </View>
+          <Toggle on={shared} />
+        </Pressable>
+      </Card>
+    ) : null;
+
   if (hidden && !place) {
     return (
       <Page>
@@ -450,6 +480,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           {phone ? <Button title={t('Unlink this device')} kind="danger" disabled={busy} onPress={() => unlink(phone)} /> : null}
         </Card>
         {fromPhone}
+        {sharing}
         {note ? <Text tone="muted">{note}</Text> : null}
       </Page>
     );
@@ -512,6 +543,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           ))}
         </>
       ) : null}
+
+      {sharing}
 
       {ON_COMPUTER ? toPhone : fromComputer}
       {ON_COMPUTER ? fromComputer : toPhone}

@@ -3238,6 +3238,12 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   ne va dagli altri. La foto o il file di una nota va come copia sul relay, eliminata da lì una volta presa, o, per
   due dispositivi o più, lasciata lì finché scade (14 giorni). Le note delle chat nascoste vanno solo nel loro
   collegamento, più sotto.
+- **Impostazioni:** la lingua e l’aspetto (lo stile, i colori, la dimensione del testo) sono gli stessi su ogni
+  dispositivo dello spazio: cambiati su uno, cambiano anche sugli altri. Una foto dietro le schermate resta sul
+  dispositivo dove è stata scelta, come tutto ciò che riguarda un solo dispositivo: password, PIN e codice di panico,
+  il tempo del blocco, la vibrazione, il relay e Tor, i moduli, il nome del dispositivo. Un dispositivo che deve
+  tenere le sue: **Impostazioni** → **Dati e dispositivi** → **Dispositivi collegati** → **Stesse impostazioni su
+  tutti i dispositivi** disattivato. Riattivato, prende subito quelle degli altri. Le chat nascoste tengono le loro.
 - **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
   che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer
   chiama tramite il telefono; la chiamata stessa va poi direttamente tra il computer e il contatto, crittografata tra

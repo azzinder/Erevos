@@ -144,4 +144,7 @@ export const devices: Record<string, string> = {
   'Once this device is unlinked, it signs out of the accounts it brought over.':
     'Une fois cet appareil dissocié, il se déconnecte des comptes qu’il a reçus du téléphone.',
   'Send the accounts': 'Envoyer les comptes',
+  'Same settings on every device': 'Mêmes réglages sur tous les appareils',
+  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    "La langue et l'apparence changent aussi sur les autres appareils. Une photo derrière les écrans, les mots de passe, les codes PIN et ce qui ne concerne que cet appareil restent tels quels sur chacun.",
 };

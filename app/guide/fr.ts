@@ -3404,6 +3404,13 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   disparaît des autres. La photo ou le fichier d’une note part en copie sur le relais, supprimée de là une fois prise,
   ou, pour deux appareils ou plus, laissée là jusqu’à son expiration (14 jours). Les notes des discussions masquées ne
   partent que dans leur propre association, plus bas.
+- **Réglages :** la langue et l’apparence (le style, les couleurs, la taille du texte) sont les mêmes sur chaque
+  appareil de l’espace : changées sur l’un, elles changent aussi sur les autres. Une photo derrière les écrans reste
+  sur l’appareil où elle a été choisie, comme tout ce qui ne concerne qu’un appareil : mots de passe, codes PIN et
+  code de panique, le délai du verrouillage, la vibration, le relais et Tor, les modules, le nom de l’appareil. Un
+  appareil qui doit garder les siens : **Réglages** → **Données et appareils** → **Appareils associés** → **Mêmes
+  réglages sur tous les appareils** désactivé. Réactivé, il prend aussitôt ceux des autres. Les discussions cachées
+  gardent les leurs.
 - Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
   dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
   aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,

@@ -142,4 +142,7 @@ export const devices: Record<string, string> = {
   'Once this device is unlinked, it signs out of the accounts it brought over.':
     'Cuando se desvincule este dispositivo, cerrará sesión en las cuentas que trajo.',
   'Send the accounts': 'Enviar las cuentas',
+  'Same settings on every device': 'Los mismos ajustes en todos los dispositivos',
+  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    'El idioma y el aspecto cambian también en los otros dispositivos. Una foto detrás de las pantallas, las contraseñas, los PIN y lo que solo atañe a este dispositivo se quedan como están en cada uno.',
 };

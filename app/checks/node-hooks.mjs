@@ -22,8 +22,10 @@ const LIB = new URL('../lib/', import.meta.url).href;
 
 export async function resolve(specifier, context, next) {
   const inLib = context.parentURL?.startsWith(LIB) && specifier.startsWith('./');
-  if (specifier.endsWith('/lib/secure') || (inLib && specifier === './secure')) return { url: MEMORY, shortCircuit: true };
-  if (specifier.endsWith('/lib/files') || (inLib && specifier === './files')) return { url: FILES, shortCircuit: true };
+  // From a folder inside lib/ too (lib/sync/), by where the specifier leads.
+  const inLibAt = (name) => context.parentURL?.startsWith(LIB) && specifier.startsWith('.') && new URL(specifier, context.parentURL).href === LIB + name;
+  if (specifier.endsWith('/lib/secure') || (inLib && specifier === './secure') || inLibAt('secure')) return { url: MEMORY, shortCircuit: true };
+  if (specifier.endsWith('/lib/files') || (inLib && specifier === './files') || inLibAt('files')) return { url: FILES, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-sms')) return { url: SMS, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-device')) return { url: DEVICE, shortCircuit: true };
   if (specifier.endsWith('/modules/erevos-phone')) return { url: PHONE, shortCircuit: true };

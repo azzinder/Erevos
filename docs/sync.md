@@ -88,7 +88,26 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   put back from a backup.
 - The envelopes of before still go, for devices of the 6 series.
 
+## Phase S2, first part: the settings
+
+- The settings that mean the same on every device go as records of kind `setting`, field `v`
+  (lib/sync/settings.ts `SHARED_SETTINGS`): `language`, and `look`, the open space's look without
+  its photo behind the screens (`lookToShare`). A look that comes keeps this device's own photo,
+  should it have one, else takes the style's own ground (`lookFrom`).
+- What stays on each device: passwords, PINs, the panic code, the lock's time, vibration, battery,
+  LoRa and BLE, the modules and permissions, the device's name, its relay and Tor (where its queue
+  is), the SMS Shield (the phone's alone).
+- A setting is written as it changes on a device (`settingChanged`, lib/devices.ts `syncSetting`,
+  only if the log says otherwise), never as one comes from the log (`settingCame` puts it in place
+  and is not told back). The phone writes those it has into a log that has none of them yet
+  (`seedSettings`), so a device just linked takes the phone's and does not give it its own.
+- Only the space's links carry them: hidden chats keep their own.
+- Each device can keep its own (`erevos.share-settings`, Settings → Data and devices → Linked
+  devices → Same settings on every device): then it writes none and takes none; turned on again, it
+  takes the log's at once (`takeSettings`).
+- The notes of Chat with myself stay on their own way: a voice message or file is far beyond what a
+  value of the log may hold (16 KB).
+
 ## Next
 
-The notes of Chat with myself onto the log, then the settings and the accounts on other networks
-(phase S2).
+The accounts on other networks (Matrix, XMPP, Nostr) onto the log, the rest of phase S2.
