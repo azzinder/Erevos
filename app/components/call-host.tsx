@@ -87,7 +87,7 @@ export function watchCalls(): () => void {
   });
   const stopMessages = onMessage((received) => {
     if (!received.call) return;
-    void callSignal(spaceCalls, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc);
+    void callSignal(spaceCalls, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc, received.from);
   });
   // Calls of the space's XMPP account (lib/xmpp-calls.ts), on the same screen.
   const stopXmpp = watchXmppCalls(rtc);

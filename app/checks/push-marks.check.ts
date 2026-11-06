@@ -961,7 +961,7 @@ test('a linked computer that writes to a contact itself, the phone off or on, co
   assert.deepEqual((await take(carol)).filter((m) => m.text || m.voice), []);
 });
 
-test("a contact's call, given the list, rings the phone as a call and goes to no place in it, and the phone has it ring the computer; the computer's own call goes quiet through the phone, though it writes to her itself, and rings her", { skip: !ready, timeout: 120_000 }, async () => {
+test("a contact's call, given the list, rings the phone and is copied to every place in it, ringing each, and the phone has it ring no device she copied it to; the computer's own call goes to her itself, and rings her", { skip: !ready, timeout: 120_000 }, async () => {
   files.clear();
   blobs.clear();
   const { pixel, dell, carol, account, carolId, fillers } = await listedForCarol();
@@ -977,38 +977,35 @@ test("a contact's call, given the list, rings the phone as a call and goes to no
   await pixel.links!.settled();
   await take(dell);
 
-  // Her offer rings the phone, as a call, and is copied to no place: none is to ring from her. The
-  // phone has it ring the computer, as a call too; its end goes on quiet.
+  // Her offer rings the phone, as a call, and, as her chat copies a call's signals to the account's
+  // endpoints, is copied whole to every place, ringing each alike. The phone has it ring no device
+  // she copied it to: the computer rings once.
   seen.length = 0;
   const offer = await write(carol, account, '', { call: call('offer') });
-  assert.equal(offer.copies, 0);
-  assert.equal(await sendCopies(carol.chats.e2e, relay), 0);
+  assert.ok(offer.copies > 0);
+  assert.equal(await sendCopies(carol.chats.e2e, relay), places.length);
   assert.deepEqual(marks(pixel.queue.senderHex), ['ring']);
-  for (const place of places) assert.deepEqual(marks(place), []);
+  for (const place of places) assert.deepEqual(marks(place), ['ring']);
   await take(pixel);
-  await until(() => marks(dell.queue.senderHex).includes('ring'));
+  await pixel.links!.settled();
   assert.deepEqual(marks(dell.queue.senderHex).filter((m) => m !== 'quiet'), ['ring']);
   await take(dell);
+  // Its end goes to each too, quiet.
   const ended = await write(carol, account, '', { call: { id: '0123456789abcdef', kind: 'end', reason: 'hangup' } });
-  assert.equal(ended.copies, 0);
+  assert.ok(ended.copies > 0);
+  assert.equal(await sendCopies(carol.chats.e2e, relay), places.length);
   await take(pixel);
   await take(dell);
-  for (const place of fillers) assert.deepEqual(marks(place), []);
+  for (const place of fillers) assert.deepEqual(marks(place), ['ring', 'quiet']);
   assert.deepEqual(marks(dell.queue.senderHex).filter((m) => m !== 'quiet'), ['ring']);
 
-  // The computer calls her: the offer goes to the phone, quiet, not to her in its own way, and the
-  // phone rings her with it.
+  // The computer calls her: it writes the offer to her itself, as she takes a call's signals from
+  // the account's endpoints, and it rings her; nothing goes to the phone.
   const since = seen.length;
   const own = await write(dell, carolId, '', { call: { ...call('offer'), id: 'fedcba9876543210' } });
-  assert.equal(own.through, true);
-  assert.equal(own.copies, 0);
-  assert.deepEqual(marks(pixel.queue.senderHex, since), ['quiet']);
-  assert.deepEqual(marks(carol.queue.senderHex, since), []);
-  await until(async () => {
-    await take(pixel);
-    return marks(carol.queue.senderHex, since).length > 0;
-  }, 15_000);
+  assert.equal(own.through, false);
   assert.deepEqual(marks(carol.queue.senderHex, since), ['ring']);
+  assert.deepEqual(marks(pixel.queue.senderHex, since), []);
 });
 
 test('telling kept contacts where a space reads after its queue moved is quiet, and the one deleted is told nothing', { skip: !ready, timeout: 60_000 }, async () => {

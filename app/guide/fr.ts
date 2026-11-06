@@ -3428,8 +3428,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   éteint si longtemps que sa file d’attente sur le relais se remplit (1000 messages), ce qu’ils écrivent et lisent
   atteint toujours l’ordinateur, un long message vocal en entier ; ce à quoi ils réagissent, ce qu’ils épinglent, ce
   pour quoi ils votent ou ce qu’ils suppriment, et leurs appels, ne passent pas avant que le téléphone soit de nouveau
-  allumé. Pour les contacts sur des versions plus anciennes, les groupes, les appels, l’ajout d’un contact et les
-  messages envoyés pour plus tard, **le téléphone doit être allumé** et joindre le relais : ce que l’ordinateur écrit
+  allumé. Pour les contacts sur des versions plus anciennes, les groupes et l’ajout d’un contact, **le téléphone doit être allumé** et joindre le relais : ce que l’ordinateur écrit
   entre-temps attend sur le relais, et part une fois le téléphone revenu. Deux appareils associés ou plus se joignent
   aussi directement : téléphone éteint, chacun montre toujours ce que les autres écrivent, lisent et ce à quoi ils
   réagissent, et les changements qu’ils font aux contacts ; celui qui a manqué le premier message d’un autre en reçoit
@@ -3457,10 +3456,15 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
 - **Sur le même Wi-Fi :** le téléphone et un ordinateur sur le même Wi-Fi ou point d’accès (avec **Trouver Erevos sur le même Wi-Fi** activé) se donnent ce qui change directement là, sans internet aussi ; le relais reçoit quand même sa copie,
   qui ne change alors plus rien. Seulement ceux de l’espace : les associations des discussions cachées passent par le
   relais.
-- Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
-  dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
-  aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,
-  et le téléphone ne doit rester allumé que pour l’établir.
+- Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de
+  sonner, et dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. Avec un
+  contact sur cette version, l’ordinateur appelle et reçoit les appels lui-même, téléphone éteint aussi ; avec un
+  contact sur une version plus ancienne, il appelle par le téléphone, qui ne doit rester allumé que pour établir
+  l’appel. Dans les deux cas, l’appel lui-même passe directement entre l’ordinateur et le contact, chiffré entre eux.
+- L’**envoi pour plus tard** marche aussi sur l’ordinateur. À un contact sur cette version, l’ordinateur le remet
+  lui-même au relais, avec une copie pour chacun de ses appareils : il part à son heure ton téléphone éteint, et
+  arrive sur les siens son téléphone éteint ; à un contact sur une version plus ancienne, il passe par le téléphone.
+  Chacun de tes appareils le montre comme programmé, et le supprimer sur l’un d’eux avant son heure l’annule partout.
 - Les **groupes** sont aussi sur l’ordinateur, avec leurs messages, photos, fichiers et messages vocaux. Écris-y,
   réponds, réagis, vote, épingle, supprime tes propres messages pour tout le monde, ajoute et retire des membres,
   renomme un groupe ou quitte-le, là comme sur le téléphone : le téléphone le fait pour l’ordinateur, comme si c’était

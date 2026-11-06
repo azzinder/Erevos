@@ -3258,8 +3258,7 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   che scrivono, leggono e a cui reagiscono arriva, e quello che scrivi tu parte. Se il telefono resta spento così a
   lungo che la sua coda sul relay si riempie (1000 messaggi), quello che scrivono e leggono raggiunge comunque il
   computer, un lungo messaggio vocale per intero; quello a cui reagiscono, che fissano, votano o eliminano, e le loro
-  chiamate, non passano finché il telefono non è di nuovo acceso. Per i contatti con versioni più vecchie, i gruppi,
-  le chiamate, l’aggiunta di un contatto e i messaggi inviati per dopo, **il telefono deve essere acceso** e
+  chiamate, non passano finché il telefono non è di nuovo acceso. Per i contatti con versioni più vecchie, i gruppi e l’aggiunta di un contatto, **il telefono deve essere acceso** e
   raggiungere il relay: quello che il computer scrive nel frattempo aspetta sul relay, e parte appena il telefono
   torna. Due o più dispositivi collegati si raggiungono anche direttamente: a telefono spento, ognuno mostra comunque
   quello che gli altri scrivono, leggono e a cui reagiscono, e le modifiche che fanno ai contatti; uno che ha perso il
@@ -3287,10 +3286,15 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 - **Sullo stesso Wi-Fi:** il telefono e un computer sullo stesso Wi-Fi o hotspot (con **Trova Erevos sulla stessa rete Wi-Fi**
   attivo) si passano ciò che cambia direttamente lì, anche senza internet; il relay riceve comunque la sua copia, che
   allora non cambia più nulla. Solo quelli dello spazio: i collegamenti delle chat nascoste passano dal relay.
-- **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
-  che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer
-  chiama tramite il telefono; la chiamata stessa va poi direttamente tra il computer e il contatto, crittografata tra
-  loro, e il telefono deve restare acceso solo per avviarla.
+- **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e
+  dice che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Con un
+  contatto con questa versione, il computer chiama e riceve le chiamate da solo, anche a telefono spento; con uno con
+  una versione più vecchia chiama tramite il telefono, che deve restare acceso solo per avviare la chiamata. In
+  entrambi i casi la chiamata stessa va direttamente tra il computer e il contatto, crittografata tra loro.
+- **Invia più tardi** funziona anche sul computer. A un contatto con questa versione il computer lo consegna da sé
+  al relay, con una copia per ognuno dei suoi dispositivi, così parte alla sua ora a telefono spento e arriva ai suoi
+  dispositivi anche con il suo telefono spento; a uno con una versione più vecchia passa dal telefono. Ogni tuo
+  dispositivo lo mostra come programmato, ed eliminarlo su uno qualsiasi prima della sua ora lo annulla ovunque.
 - **I gruppi** sono anche sul computer, con i loro messaggi, foto, file e messaggi vocali. Scrivici, rispondi,
   reagisci, vota, fissa, elimina i tuoi per tutti, aggiungi e rimuovi membri, rinominane uno o lascialo, lì come sul
   telefono: il telefono lo fa per il computer, come se fosse suo. Una foto o un file che il telefono conserva va al

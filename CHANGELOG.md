@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **Calls and Send later on your linked devices without the phone**: with a contact on this version, a computer calls
+  and is called by itself, with the phone off too: answered on one device, the others stop ringing; turned down on one,
+  it is turned down on all. **Send later** on a computer hands the message to the relay itself, with a copy for each
+  of the contact's devices, so it goes at its time with your phone off and reaches theirs with their phone off. Every
+  device of yours shows it as scheduled, and deleting it on any of them before its time takes it back everywhere. With
+  contacts on older versions, both still go through the phone. See [Linked devices](#devices).
 - **The Collection on your linked devices**: **On my linked devices too** in a Collection's settings sends that
   Collection to the linked devices of its space or hidden place, and the switch goes to all of them. Files added,
   renamed, moved or deleted on one are so on all; small pictures come at once, a file itself at once on the same Wi-Fi,
@@ -103,6 +109,11 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Calls and Send later from the linked devices (sync phase S4)**: every message says `cl: 1`, which lets call signals
+  go whole to each endpoint of the other account and a device write its own; the caller ends the others with
+  `end{taken, by}` once one answers. Sent for later, a copy for each endpoint is held by the relay too (`Copy.due`), and
+  where each is held is kept to take back with the message. What is held is record `later` in the place's log, so every
+  device shows it and can take it back (docs/sync.md, S4).
 - **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
   queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
   with this space's relay**, which that space then keeps (the relay can then tell that both spaces are on one phone), and

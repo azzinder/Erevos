@@ -147,6 +147,7 @@ import type { Said as SyncSaid } from './sync/wire';
 import type { ChunkWay } from './sync/chunks';
 import { ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from './sync/lan-chunks';
 import { CollectionSync } from './collection-links';
+import { laterChanges, laterFrom, laterGone, type Scheduled } from './sync/later';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -550,6 +551,8 @@ export class Links implements Link, TakenFiles {
   private readonly collection: CollectionSync;
   private collectionLooked = 0;
   private collectionWork: Promise<unknown> = Promise.resolve();
+  // What is sent for later, as the place's log says it (lib/sync/later.ts): written and taken in turn.
+  private laterWork: Promise<unknown> = Promise.resolve();
 
   private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData, pocket: number | null) {
     this.space = space;
@@ -1075,6 +1078,7 @@ export class Links implements Link, TakenFiles {
           if (heard) this.act(() => this.syncOnPrimary(heard));
           if (heard) this.settingsFrom(heard);
           if (heard) this.collectionFrom(heard);
+          if (heard) this.laterFrom(heard);
         }
         break;
       case 'unblock':
@@ -1265,7 +1269,10 @@ export class Links implements Link, TakenFiles {
     if (!this.data.devices.some((d) => d.linked)) return;
     const m = parse(plaintext);
     const call = m && isCall(m) ? decodeCall(m.call) : null;
-    if (call) this.callSteps(this.calls.contact(identity, call, this.linked().map((d) => d.id), !!(currentCall() || currentGroupCall())));
+    // A contact whose chat copies a call's signals to the account's endpoints rang each device it
+    // reaches already (docs/multi-device.md, Calls): this phone rings only the others.
+    const rang = call && this.chats.e2e.record(identity)?.calls ? this.copiedTo(m!, true) : new Set<string>();
+    if (call) this.callSteps(this.calls.contact(identity, call, this.linked().filter((d) => !rang.has(d.id)).map((d) => d.id), !!(currentCall() || currentGroupCall())));
     if (!m) return;
     // What a call's or a group's signal says was read goes on as a receipt says it: the signal
     // itself goes as lib/linked-calls.ts says, or not at all.
@@ -1283,14 +1290,14 @@ export class Links implements Link, TakenFiles {
   }
 
   // On the primary: the linked devices a contact's message (`m`) went to directly too, as their chat
-  // writes to the endpoints of the list it holds: one it copies (lib/endpoints.ts isCopied), from a
+  // writes to the endpoints of the list it holds: one it copies (lib/endpoints.ts isCopied), or a call's signal (`call`) from one that copies those, from a
   // chat that holds the list signed last (`dv`), to each device that list names as taking messages
   // (waysFor) and that reads where it says, as one that said what the keys contacts seal for it
   // with are drawn from does; one that did not reads none of it. Whether it went, only their chat knows: its outbox may
   // have had no room for that device, or the device's queue was gone.
-  private copiedTo(m: Json): Set<string> {
+  private copiedTo(m: Json, call = false): Set<string> {
     const list = this.chats.e2e.signedList();
-    const body = list && m.dv === list.n && isCopied(m) ? bodyOf(list) : null;
+    const body = list && m.dv === list.n && (call || isCopied(m)) ? bodyOf(list) : null;
     if (!list || !body) return new Set();
     const taking = new Set(waysFor(undefined, body.d, undefined).map((w) => w.id).filter((id) => list.real.includes(id)));
     return new Set(this.data.devices.filter((d) => d.linked && d.endpoint?.ek && taking.has(d.endpoint.id)).map((d) => d.id));
@@ -1740,6 +1747,64 @@ export class Links implements Link, TakenFiles {
     await this.collection.settled();
   }
 
+  // What this device sent for later and a relay holds, as the log says it: none of a safety
+  // message, which only this device puts off as its owner opens Erevos (lib/safety.ts).
+  private scheduledHere(): Scheduled[] {
+    const { e2e, history } = this.chats;
+    return history.heldLater(Date.now()).flatMap((m): Scheduled[] => {
+      if (!m.peer.startsWith(CONTACT_PREFIX) || !m.held || !m.mine || m.safety || !m.tag) return [];
+      const c = m.peer.slice(CONTACT_PREFIX.length);
+      if (!e2e.record(c)) return [];
+      const copies = e2e.laterCopies(c, m.tag).map(({ id, relay }) => ({ id, relay }));
+      return [{ c, tag: m.tag, at: m.at, text: m.text, what: m.voice ? 'voice' : m.file ? 'file' : 'text', ...(m.file ? { name: m.file.name } : {}), lasts: m.lasts ?? 0, held: m.held, copies }];
+    });
+  }
+
+  /** Writes into the place's log what is sent for later here, so each device of the account shows it and can take it back; done in turn with what came of it. */
+  laterWritten(): Promise<void> {
+    const run = this.laterWork.catch(() => undefined).then(() => this.syncs.writeFrom((log) => laterChanges(log, this.scheduledHere())));
+    this.laterWork = run;
+    return run.then(() => undefined);
+  }
+
+  // What another device sent for later, as the log took it, shown here as scheduled; one it took
+  // back, let go of here. Kept without the queue it was held for, so only the device that sent it
+  // holds it anew should their queue move (lib/waiting.ts, holdAgain).
+  private laterFrom({ log, took, whole }: SyncHeard): void {
+    const ids = whole ? null : [...new Set(took.filter((op) => op.k === 'later').map((op) => op.id))];
+    if (ids && ids.length === 0) return;
+    this.laterWork = this.laterWork.catch(() => undefined).then(async () => {
+      const { e2e, history } = this.chats;
+      const { came, gone } = laterFrom(log, ids);
+      const changed: LinkedChange['gone'] = [];
+      let added = false;
+      for (const s of came) {
+        const peer = peerOf(s.c);
+        if (!e2e.record(s.c) || this.erasedHere(peer, s.tag) || history.messages().some((m) => m.peer === peer && m.tag === s.tag)) continue;
+        // Words, or what a voice message or file is: its sound and bytes are the relay's, sealed for them.
+        const text = s.what === 'text' ? s.text : [s.what === 'voice' ? '🎤' : `📎 ${s.name ?? ''}`.trim(), s.text].filter(Boolean).join('\n');
+        await history.add({ peer, text, mine: true, at: s.at, tag: s.tag, lasts: s.lasts, held: s.held });
+        if (s.copies.length > 0) await e2e.copiesHeld(s.copies.map((h) => ({ ...h, at: s.at, c: s.c, t: s.tag })));
+        added = true;
+      }
+      for (const { c, tag } of gone) {
+        const peer = peerOf(c);
+        const kept = history.messages().find((m) => m.peer === peer && m.tag === tag);
+        if (kept?.mine && kept.held && kept.at > Date.now()) {
+          await history.remove(peer, tag);
+          changed.push({ peer, tag });
+        }
+        await e2e.letGoCopies(c, tag);
+      }
+      if (added || changed.length > 0) this.announce({ gone: changed });
+    });
+  }
+
+  /** For the checks: what is sent for later, written and taken here. */
+  async laterSettled(): Promise<void> {
+    await this.laterWork.catch(() => undefined);
+  }
+
   // The settings another device changed, as the space's log took them, put in place here.
   private settingsFrom({ log, took, whole }: SyncHeard): void {
     if (this.pocket !== null) return;
@@ -1760,6 +1825,7 @@ export class Links implements Link, TakenFiles {
     this.settingsFrom(heard);
     this.accountsFrom(heard);
     this.collectionFrom(heard);
+    this.laterFrom(heard);
     const { log, took, whole } = heard;
     const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
     const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];
@@ -3044,6 +3110,7 @@ export class Links implements Link, TakenFiles {
     if (Date.now() - this.collectionLooked >= ACCOUNTS_EVERY) {
       this.collectionLooked = Date.now();
       void this.collection.written().catch(() => undefined);
+      void this.laterWritten().catch(() => undefined);
     }
     if (!this.data.primary && Date.now() - this.accountsLooked >= ACCOUNTS_EVERY) {
       this.accountsLooked = Date.now();
@@ -3305,6 +3372,8 @@ export class Links implements Link, TakenFiles {
    * deleted here, which the contact is not told of: its linked devices do the same.
    */
   changedHere(change: ChatChange): void {
+    // Taken back here (or the whole chat deleted): what the log says was sent for later goes on every device.
+    if (change.gone) void this.syncs.writeFrom((log) => laterGone(log, change.c, change.tag)).catch(() => undefined);
     if (this.data.primary || !this.data.devices.some((d) => d.linked) || !this.chats.e2e.record(change.c)) return;
     void this.say({ k: 'changed', chats: [change], groups: [], whole: [] }).catch(() => undefined);
   }

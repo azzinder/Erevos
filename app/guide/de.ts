@@ -3453,7 +3453,7 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   aus, dass seine Warteschlange auf dem Relay voll wird (1000 Nachrichten), erreicht, was sie schreiben und lesen,
   trotzdem den Computer, eine lange Sprachnachricht vollständig; worauf sie reagieren, was sie anheften, worüber sie
   abstimmen oder was sie löschen, und ihre Anrufe, kommen erst durch, wenn das Telefon wieder an ist. Für Kontakte mit
-  älteren Versionen, Gruppen, Anrufe, das Hinzufügen eines Kontakts und für später gesendete Nachrichten **muss das
+  älteren Versionen, Gruppen und das Hinzufügen eines Kontakts **muss das
   Telefon an sein** und das Relay erreichen: Was der Computer inzwischen schreibt, wartet auf dem Relay und geht,
   sobald das Telefon zurück ist. Zwei oder mehr verknüpfte Geräte erreichen sich auch direkt: Bei ausgeschaltetem
   Telefon zeigt jedes trotzdem, was die anderen schreiben, lesen und worauf sie reagieren, und die Änderungen, die sie
@@ -3484,8 +3484,15 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   mehr ändert. Nur die des Bereichs: die Verknüpfungen versteckter Chats gehen über das Relay.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
-  beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und
-  dem Kontakt, verschlüsselt zwischen ihnen, und das Telefon muss nur an bleiben, um ihn aufzubauen.
+  beiden ab. Mit einem Kontakt mit dieser Version ruft der Computer selbst an und wird selbst angerufen, auch bei
+  ausgeschaltetem Telefon; mit einem Kontakt mit einer älteren Version ruft er über das Telefon an, das nur an bleiben
+  muss, um den Anruf aufzubauen. So oder so geht der Anruf selbst direkt zwischen dem Computer und dem Kontakt,
+  verschlüsselt zwischen ihnen.
+- **Später senden** geht auch auf dem Computer. An einen Kontakt mit dieser Version gibt der Computer die Nachricht
+  selbst dem Relay, dazu eine Kopie für jedes seiner Geräte, so geht sie zu ihrer Zeit bei ausgeschaltetem Telefon und
+  erreicht seine Geräte auch, wenn sein Telefon aus ist; an einen mit einer älteren Version geht sie über das Telefon.
+  Jedes deiner Geräte zeigt sie als geplant, und vor ihrer Zeit auf einem davon gelöscht, wird sie überall
+  zurückgenommen.
 - **Gruppen** sind auch auf dem Computer, mit ihren Nachrichten, Fotos, Dateien und Sprachnachrichten. Schreibe darin,
   antworte, reagiere, stimme ab, hefte an, lösche deine eigenen für alle, füge Mitglieder hinzu und nimm sie heraus,
   benenne eine um oder verlasse sie, dort wie auf dem Telefon: Das Telefon macht es für den Computer, als seines. Ein

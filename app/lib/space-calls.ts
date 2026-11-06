@@ -67,6 +67,10 @@ export const spaceCalls: CallPlace = {
     if (place) void ringOffer(e2e, place.sends, identity, signal, sealed.packet.length).catch(() => undefined);
     await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay));
   },
+  async me() {
+    const { e2e } = await spaceChats();
+    return e2e.endpoint()?.id ?? '';
+  },
   async callRelay() {
     const { own } = await settings();
     return soon(callRelay(own), RELAY_WAIT, null);

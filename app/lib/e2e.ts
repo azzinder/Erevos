@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_LINES, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type InviteLine, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type Way } from '../lock/e2e-data';
+import { againAfter, INTRO_LASTS, MAX_INTROS, type IntroKept, MAX_PIECES, type PiecesKept, checkedAvatar, checkedNostrTo, checkedSpare, cleanName, EARLY_LASTS, isRelay, isRelayKey, isTimer, loadE2EData, MAX_BLOCKED, MAX_GONE, MAX_HELD, MAX_OLD_FILLERS, MAX_PREKEYS, MAX_INVITED, MAX_LINES, MAX_NOSTR_BACKUP, MAX_READY, MAX_SEEN_EACH, MAX_TOOK, MAX_UNDROPPED, NOSTR_BACKUP_LASTS, saveE2EData, TOOK_DAY, TOOK_LASTS, tookDay, UNVERIFIED_LASTS, type Avatar, type Blocked, type Contact, type E2EData, type Endpoint, type Holder, type Invited, type InviteLine, type Mine, type NostrKey, type NostrTo, type OldFiller, type OldMine, type Own, type OwnList, type Ready, type Route, type Spare, type Took, type Undropped, type HeldCopy, type Way } from '../lock/e2e-data';
 import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import type { ChatPin } from '../lock/chat-pin';
 import { COPIES_LAST, EMPTY_FANOUT, keepFanoutFile, loadFanoutData, MAX_COPIES, MAX_COPIES_EACH, saveFanoutData, type Copy, type FanoutData } from '../lock/fanout-data';
@@ -189,6 +189,10 @@ type Message = {
   rf?: string;
   /** The `n` of the other account's device list the sender holds, 0 for none (docs/multi-device.md). An Erevos before, and a chat moved into or out of hidden chats, say none. */
   dv?: number;
+  /** 1: the sender's chat copies a call's signals to the endpoints of the other account, and takes
+   *  them from its own endpoints and theirs (docs/multi-device.md, Calls). An Erevos before says none,
+   *  and its calls go through the phone. */
+  cl?: 1;
   /** The sender's account's device list, signed, with where each endpoint reads. */
   dl?: DeviceList;
   /** In the first message of a conversation a linked device's endpoint starts: the account it is one of (hex). */
@@ -271,7 +275,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi, ns, ls }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, qa, hi, ns, ls }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -298,6 +302,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(pk ? { pk } : {}),
       ...(ak ? { ak } : {}),
       ...(rf !== undefined ? { rf } : {}),
+      ...(cl ? { cl } : {}),
       ...(dv !== undefined ? { dv } : {}),
       ...(dl ? { dl } : {}),
       ...(acct ? { acct } : {}),
@@ -421,6 +426,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       // Absent (`undefined`) says nothing of a ring queue; present says it, a sender id or '' for none.
       rf: 'rf' in value ? (typeof value.rf === 'string' && /^[0-9a-f]{48}$/.test(value.rf) ? value.rf : '') : undefined,
       ...(Number.isSafeInteger(value.dv) && (value.dv as number) >= 0 ? { dv: value.dv as number } : {}),
+      ...(value.cl === 1 ? { cl: 1 as const } : {}),
       ...(checkedList(value.dl) ? { dl: checkedList(value.dl)! } : {}),
       // Said but not an identity: said still, as nothing an account takes.
       ...(value.acct !== undefined ? { acct: typeof value.acct === 'string' && /^[0-9a-f]{64}$/.test(value.acct) ? value.acct : '' } : {}),
@@ -662,7 +668,11 @@ function copyKey(m: Message): string {
  * tags), the part of a voice message it is (`part`), and whether it is the last packet of a
  * message someone reads (`mark`).
  */
-type ToCopy = { m: Message; key: string; part?: number; mark?: 'message' };
+type ToCopy = { m: Message; key: string; part?: number; mark?: 'message' | 'ring' };
+
+// A message sent for later that goes to each endpoint too, as a copy the relay holds till its time:
+// one someone reads (words, a voice message, a photo or file), never a call's or a group's.
+const laterCopied = (m: Message) => !!m.due && !!m.tag && !m.call && !m.group && (!!m.text || !!m.voice || !!m.file);
 
 /** What a sealing is to copy: for its contact (`c`), to each endpoint (`w`), and what a conversation started with one says first (`like`, with `packetKey`), none when `leaving`. */
 type Held = { c: string; ways: { w: string; items: ToCopy[] }[]; like: Message; packetKey: string; leaving: boolean; at: number };
@@ -1202,6 +1212,36 @@ export class E2E {
     return held.length > 0 ? { undropped: [...this.undropped().filter((u) => !held.some((h) => h.id === u.id)), ...held].slice(-MAX_UNDROPPED) } : {};
   }
 
+  /** What relays hold for later for the endpoints of a contact's account (lib/fanout.ts), of the message `tag`, or of all theirs without one. */
+  laterCopies(c: string, tag?: string, now = Date.now()): HeldCopy[] {
+    return (this.data.heldCopies ?? []).filter((h) => h.c === c && (tag === undefined || h.t === tag) && h.at > now);
+  }
+
+  /** Keeps what relays now hold for later for the endpoints of contacts' accounts; those past their time are let go of. */
+  copiesHeld(held: HeldCopy[], now = Date.now()): Promise<void> {
+    return this.run(async () => {
+      const kept = [...(this.data.heldCopies ?? []).filter((h) => h.at > now && !held.some((x) => x.id === h.id)), ...held.filter((h) => h.at > now)].slice(-MAX_UNDROPPED);
+      if (kept.length === 0 && !this.data.heldCopies) return;
+      const { heldCopies: _was, ...rest } = this.data;
+      await this.save(kept.length > 0 ? { ...rest, heldCopies: kept } : rest);
+    });
+  }
+
+  /** The copies of a message sent for later (or of all a contact's) go no more, as it was taken back: kept to drop (lib/waiting.ts, dropHeld). */
+  letGoCopies(c: string, tag?: string): Promise<void> {
+    return this.run(async () => {
+      const going = this.laterCopies(c, tag);
+      if (going.length === 0) return;
+      await this.save({ ...this.data, ...this.withUndropped(going.map(({ id, relay, at }) => ({ id, relay, at }))), ...this.withoutCopies(c, tag) });
+    });
+  }
+
+  // What relays hold for the endpoints of a contact's account, without those of `tag` (all theirs without one).
+  private withoutCopies(c: string, tag?: string): Pick<E2EData, 'heldCopies'> {
+    const kept = (this.data.heldCopies ?? []).filter((h) => !(h.c === c && (tag === undefined || h.t === tag)));
+    return { heldCopies: kept.length > 0 ? kept : undefined };
+  }
+
   /** Whether `identity` is blocked here: what they ask through a group or an SMS invite is dropped too. */
   isBlocked(identity: string): boolean {
     return this.blocked().some((b) => b.identity === identity);
@@ -1516,7 +1556,8 @@ export class E2E {
       const gone = contact?.avatar;
       // Their own queue is deleted on the relay (lib/contact-queues.ts).
       const queues = contact ? withGone(this.data.gone, minesOf(contact, 0)) : undefined;
-      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped(held), ...(queues ? { gone: queues } : {}) });
+      const copies = this.laterCopies(identity).map(({ id, relay, at }) => ({ id, relay, at }));
+      await this.save({ ...this.data, contacts: this.data.contacts.filter((c) => c.identity !== identity), ...this.withUndropped([...held, ...copies]), ...this.withoutCopies(identity), ...(queues ? { gone: queues } : {}) });
       if (contact) this.contactRemoved(identity);
       if (gone?.kind === 'photo') await deletePhoto(gone.id);
     });
@@ -1544,12 +1585,14 @@ export class E2E {
       // Their own queue is deleted on the relay at once (lib/contact-queues.ts); the own queue
       // moves only while it is the one they know.
       const gone = contact ? withGone(this.data.gone, minesOf(contact, 0)) : undefined;
+      const copies = this.laterCopies(identity).map(({ id, relay, at }) => ({ id, relay, at }));
       await this.save({
         ...this.data,
+        ...this.withoutCopies(identity),
         contacts: this.data.contacts.filter((c) => c.identity !== identity),
         ...(through || !contact || (contact.request && !(block && this.linkOwn)) || !this.knowsOwn(contact) ? {} : { moveDue: now }),
         ...(blocked ? { blocked } : {}),
-        ...this.withUndropped(held),
+        ...this.withUndropped([...held, ...copies]),
         ...(gone ? { gone } : {}),
       });
       if (blocked) this.link?.blockedChanged?.(blocked);
@@ -2161,8 +2204,8 @@ export class E2E {
 
   // What this chat says in every message of the devices of a contact's account: which list of it
   // it holds (`dv`, 0 for none); to one it does not take part with (`partOf`), nothing.
-  private saysDevices(contact: Contact | undefined): { dv?: number } {
-    return this.partOf(contact) ? { dv: contact?.list?.n ?? 0 } : {};
+  private saysDevices(contact: Contact | undefined): { dv?: number; cl?: 1 } {
+    return this.partOf(contact) ? { dv: contact?.list?.n ?? 0, cl: 1 } : {};
   }
 
   // Whether this chat takes part with a contact (`takesPart`): with one made here, as a new one
@@ -2249,7 +2292,7 @@ export class E2E {
     for (const way of copying ? (contact.endpoints ?? []) : []) {
       if (!way.sender || this.isAccount(way.id) || (leaving && way.conversations.length === 0)) continue;
       const waits = waiting.get(way.id) ?? 0;
-      const items = this.toCopy(contact.identity, way, said, cameOf, waits >= MAX_COPIES_EACH || (waits > 0 && this.isRefused(contact.identity, way)), routed, packetKey);
+      const items = this.toCopy(contact.identity, way, said, cameOf, waits >= MAX_COPIES_EACH || (waits > 0 && this.isRefused(contact.identity, way)), routed, packetKey, contact.calls === true);
       if (items.length === 0) continue;
       // And its first packet, should one start, or the outbox have lost it (sealCopies).
       const starts = way.conversations.length === 0 || (!leaving && startsAgain(way, now)) || (!!way.first && !this.fanout.copies.some((c) => c.c === contact.identity && c.w === way.id && c.first));
@@ -2302,13 +2345,16 @@ export class E2E {
   // after those that went. Once as many wait for it as one endpoint holds, or one waits for it
   // while the relay says its queue is full (`full`), only a voice message's next part. Says in
   // `routed` which messages' `got` is that endpoint's and went there.
-  private toCopy(c: string, way: Way, said: Message[], cameOf: (tag: string) => string, full: boolean, routed: Set<string>, packetKey: string): ToCopy[] {
+  private toCopy(c: string, way: Way, said: Message[], cameOf: (tag: string) => string, full: boolean, routed: Set<string>, packetKey: string, calls = false): ToCopy[] {
     const pk = way.sealsIn ? '' : packetKey;
     const sofar = new Map<string, number>();
     const had = (key: string) => (sofar.has(key) ? sofar.get(key) : this.wentTo(c, way.id, key));
     const items: ToCopy[] = [];
     for (const [i, m] of said.entries()) {
-      const as = copiedAs({ ...m, ...m.more });
+      // A call's signal, to an account that takes them on its endpoints: to each, whole, so each rings,
+      // and the one that has the call hears it. Never one of a group's call, nor with anything else.
+      // And one sent for later, held for each by the relay till its time as for the account (lib/fanout.ts).
+      const as = calls && m.call && !m.group && !m.due && !m.text ? 'whole' : calls && laterCopied(m) ? 'whole' : copiedAs({ ...m, ...m.more });
       const came = m.got.filter((tag) => cameOf(tag) === way.id);
       const got = came.filter((tag) => had(`got ${tag}`) === undefined);
       const read = m.read.filter((tag) => had(`read ${tag}`) === undefined);
@@ -2316,7 +2362,9 @@ export class E2E {
       const part = key && m.voice ? m.voice.part : 0;
       const next = part > 0 ? had(key) === part : !full && (!key || had(key) === undefined);
       let item: ToCopy | null = null;
-      if (as === 'whole' && next) item = { m: { ...m, ...SAYS_NOTHING, got, read, pk }, key, ...(key && m.voice ? { part } : {}), ...(readsAs(m) ? { mark: 'message' as const } : {}) };
+      // A call's offer copied rings where it goes, as on their account (lib/space-chats.ts markOf).
+      const mark = readsAs(m) ? ('message' as const) : as === 'whole' && m.call?.kind === 'offer' ? ('ring' as const) : undefined;
+      if (as === 'whole' && next) item = { m: { ...m, ...SAYS_NOTHING, got, read, pk }, key, ...(key && m.voice ? { part } : {}), ...(mark ? { mark } : {}) };
       else if (!full && got.length + read.length > 0) item = { m: receiptOf(m, got, read, pk), key: '' };
       if (item) {
         items.push(item);
@@ -2368,14 +2416,18 @@ export class E2E {
 
   // Whether a linked device writes these to a contact itself, not through the primary: their
   // account started a conversation with this device's endpoint, which the list this device holds
-  // names, and they hold that list too. Never a call's or a group's signal, nor one sent for later,
-  // which the primary sends.
+  // names, and they hold that list too. Never a group's signal, nor a call's or one sent for later
+  // to an account that does not take those from its endpoints, which the primary sends.
   private isDirect(contact: Contact, messages: Message[]): boolean {
     const own = this.data.own?.list;
     const endpoint = this.ownEndpoint;
     if (!this.link?.through || !this.takesPart || !endpoint || !own?.real.includes(endpoint.id) || contact.dv !== own.n) return false;
     if (!contact.direct?.conversations[0] || !contact.direct.sender) return false;
-    return messages.every((m) => !m.call && !m.group && !m.due);
+    // A call's signals too, once their account takes them from its endpoints and copies its own to this one's.
+    // One sent for later too, held for their account and copied to each endpoint (lib/fanout.ts), once
+    // they take those; the devices of this account see it as scheduled through the place's log
+    // (lib/sync/later.ts).
+    return messages.every((m) => (!m.call || contact.calls === true) && !m.group && (!m.due || contact.calls === true));
   }
 
   // Keeps what a sealing is to copy until what it sealed for the account went (`copiesAfter`): the
@@ -2512,7 +2564,7 @@ export class E2E {
       for (const item of due) {
         const sealed = await core.seal(inWay, encodeMessage(item.m));
         inWay = sealed.conversation;
-        copies.push({ ...of, p: toBase64(w.sealTo ? sealPacket(this.keysOf(w.sealTo), sealed.packet) : sealed.packet), ...(item.mark ? { mark: item.mark } : {}) });
+        copies.push({ ...of, p: toBase64(w.sealTo ? sealPacket(this.keysOf(w.sealTo), sealed.packet) : sealed.packet), ...(item.mark ? { mark: item.mark } : {}), ...(item.m.due && item.m.tag ? { due: item.m.due, t: item.m.tag } : {}) });
         if (item.key) went.push({ w: id, key: item.key, n: (item.part ?? 0) + 1 });
         for (const tag of item.m.got) went.push({ w: id, key: `got ${tag}`, n: 1 });
         for (const tag of item.m.read) went.push({ w: id, key: `read ${tag}`, n: 1 });
@@ -3170,8 +3222,8 @@ export class E2E {
   // that knows nothing of them (an Erevos before, or theirs moved into or out of hidden chats): what
   // was kept of their devices goes, and nothing more goes to those.
   private async heardOf(contact: Contact, message: Message): Promise<Partial<Contact>> {
-    if (message.dv === undefined) return { dv: undefined, list: undefined, endpoints: undefined, direct: undefined, listSent: undefined, listGiven: undefined };
-    const learned: Partial<Contact> = { dv: message.dv };
+    if (message.dv === undefined) return { dv: undefined, list: undefined, endpoints: undefined, direct: undefined, listSent: undefined, listGiven: undefined, calls: undefined };
+    const learned: Partial<Contact> = { dv: message.dv, calls: message.cl === 1 ? true : undefined };
     // They hold an older list than they said: given it again.
     if (contact.dv !== undefined && message.dv < contact.dv) Object.assign(learned, { listSent: 0, listGiven: undefined });
     if (!message.dl) return learned;

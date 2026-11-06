@@ -3245,8 +3245,7 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   que escriben, leen y a lo que reaccionan llega, y lo que escribes sale. Si el teléfono sigue apagado tanto tiempo que
   su cola en el relay se llena (1000 mensajes), lo que escriben y leen sigue llegando al ordenador, un mensaje de voz
   largo entero; aquello a lo que reaccionan, fijan, votan o eliminan, y sus llamadas, no pasa hasta que el teléfono se
-  vuelve a encender. Para los contactos con versiones más antiguas, los grupos, las llamadas, añadir un contacto y los
-  mensajes enviados para más tarde, **el teléfono tiene que estar encendido** y llegar al
+  vuelve a encender. Para los contactos con versiones más antiguas, los grupos y añadir un contacto, **el teléfono tiene que estar encendido** y llegar al
   relay: lo que el ordenador escribe mientras tanto espera en el relay, y sale en cuanto vuelve el teléfono. Dos o más
   dispositivos vinculados también se comunican directamente: con el teléfono apagado, cada uno sigue mostrando lo que
   los otros escriben, leen y a lo que reaccionan, y los cambios que hacen en los contactos; uno que se perdió el primer
@@ -3274,10 +3273,16 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   chats ocultos guardan los suyos.
 - **En la misma Wi-Fi:** el teléfono y un ordenador en la misma Wi-Fi o punto de acceso (con **Buscar Erevos en la misma Wi-Fi** activado) se dan lo que cambia directamente allí, también sin internet; el relay recibe igualmente su copia,
   que entonces ya no cambia nada. Solo los del espacio: los vínculos de los chats ocultos van por el relay.
-- **Las llamadas** suenan en el teléfono y en el ordenador. Responde en cualquiera de los dos: el otro deja de sonar, y
-  dice que se respondió en otro dispositivo. Rechazar una llamada en uno la rechaza en los dos. El ordenador también
-  llama a través del teléfono; la llamada en sí va entonces directamente entre el ordenador y el contacto, cifrada entre
-  ellos, y el teléfono solo tiene que seguir encendido para establecerla.
+- **Las llamadas** suenan en el teléfono y en el ordenador. Responde en cualquiera de los dos: el otro deja de
+  sonar, y dice que se respondió en otro dispositivo. Rechazar una llamada en uno la rechaza en los dos. Con un
+  contacto con esta versión, el ordenador llama y recibe llamadas por sí mismo, también con el teléfono apagado; con
+  uno con una versión más antigua llama a través del teléfono, que solo tiene que seguir encendido para establecerla.
+  En los dos casos la llamada en sí va directamente entre el ordenador y el contacto, cifrada entre ellos.
+- **Enviar más tarde** funciona también en el ordenador. A un contacto con esta versión el ordenador lo entrega él
+  mismo al relay, con una copia para cada uno de sus dispositivos, así que sale a su hora con tu teléfono apagado y
+  llega a los suyos con su teléfono apagado; a uno con una versión más antigua va a través del teléfono. Cada
+  dispositivo tuyo lo muestra como programado, y eliminarlo en cualquiera de ellos antes de su hora lo retira en
+  todos.
 - **Los grupos** también están en el ordenador, con sus mensajes, fotos, archivos y mensajes de voz. Escribe en ellos,
   responde, reacciona, vota, fija, elimina los tuyos para todos, añade y saca miembros, cambia el nombre de uno o sal de
   él, ahí como en el teléfono: el teléfono lo hace por el ordenador, como propio. Una foto o un archivo que guarda el

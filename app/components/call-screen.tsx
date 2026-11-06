@@ -33,6 +33,7 @@ const ENDS: Record<CallEnd, { ours: string; theirs: string }> = {
   busy: { ours: mark('Call ended'), theirs: mark('They are in another call') },
   missed: { ours: mark('Call ended'), theirs: mark('Not answered') },
   failed: { ours: mark('The call could not connect'), theirs: mark('The call could not connect on their phone') },
+  taken: { ours: mark('Call ended'), theirs: mark('Answered on another device') },
 };
 
 /** How a call stands, in a few words. */

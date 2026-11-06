@@ -2981,7 +2981,7 @@ The chats then come to the computer, and after them the messages chosen.
   read and react to comes, and what you write goes. If the phone stays off so long that its queue on the relay fills
   (1000 messages), what they write and read still reaches the computer, a long voice message whole; what they react
   to, pin, vote on or delete, and their calls, do not go through until the phone is on again. For contacts on older
-  versions, groups, calls, adding a contact and messages sent for later, **the phone has to be on** and reach the
+  versions, groups and adding a contact, **the phone has to be on** and reach the
   relay: what the computer writes meanwhile waits on the relay, and goes once the phone is back. Two or more linked
   devices also reach each other directly: with the phone off, each still shows what the others write, read and react
   to, and the changes they make to contacts; one that missed the first message of another gets a new one a day or more
@@ -3007,9 +3007,14 @@ The chats then come to the computer, and after them the messages chosen.
   give each other what changes straight there, with no internet too; the relay still gets its copy, which then changes
   nothing more. Only the space's: hidden chats' links go through the relay.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
-  answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
-  too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone
-  has to stay on only to set it up.
+  answered on another device. Turning a call down on one turns it down on both. With a contact on this version, the
+  computer calls and is called by itself, with the phone off too; with one on an older version it calls through the
+  phone, which has to stay on only to set it up. Either way the call itself goes straight between the computer and the
+  contact, encrypted between them.
+- **Send later** works on the computer too. To a contact on this version the computer hands it to the relay itself, and
+  a copy for each of their devices, so it goes at its time with your phone off and reaches theirs with their phone off;
+  to one on an older version it goes through the phone. Every device of yours shows it as scheduled, and deleting it
+  on any of them before its time takes it back everywhere.
 - **Groups** are on the computer too, with their messages, photos, files and voice messages. Write in them, answer,
   react, vote, pin, delete your own for everyone, add and take out members, rename one or leave it, there as on the
   phone: the phone does it for the computer, as its own. A photo or file the phone keeps goes to the computer as a copy

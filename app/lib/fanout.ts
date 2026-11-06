@@ -4,7 +4,8 @@
 
 import { fromBase64 } from './crypto';
 import type { E2E, Outgoing } from './e2e';
-import { fromHex, isQueueFull, isQueueNotFound, RelaySends, RelayUnreachableError, type Relay } from './relay';
+import type { HeldCopy } from '../lock/e2e-data';
+import { CannotHoldError, fromHex, isQueueFull, isQueueNotFound, RelaySends, RelayUnreachableError, sendMessageLater, type Relay } from './relay';
 import { contactTarget } from './space-chats';
 
 // The copies of what the space's chat sealed for the endpoints of contacts' accounts (lib/e2e.ts,
@@ -19,7 +20,12 @@ import { contactTarget } from './space-chats';
 // again. A copy older than the relay keeps a message goes unsent. A device and a place that only
 // fills the list are written to alike: the relay takes both, each told what it carries as the copy
 // says (lib/relay.ts, Mark): the last packet of a message someone reads as one, all else quiet.
-// Those for one relay go on one connection (lib/relay.ts RelaySends).
+// Those for one relay go on one connection (lib/relay.ts RelaySends). A copy of a message sent for
+// later (`due`) is handed to the relay to hold till its time, as the one for the account was
+// (lib/waiting.ts, holdLater), and the chat keeps where, to take it back with that one.
+
+// A copy sent for later whose time is closer than this goes now: it would be held for nothing.
+const SOON = 1000;
 
 const runs = new WeakMap<E2E, { run: Promise<number>; again: boolean }>();
 
@@ -52,6 +58,7 @@ async function sendOnce(e2e: E2E, sends: Relay): Promise<number> {
   const held = new Set<string>();
   const down = new Set<string>();
   const relay = new RelaySends();
+  const later: HeldCopy[] = [];
   try {
     for (const copy of copies) {
       const way = `${copy.c}|${copy.w}`;
@@ -65,7 +72,16 @@ async function sendOnce(e2e: E2E, sends: Relay): Promise<number> {
         continue;
       }
       try {
-        await relay.send(to, fromHex(copy.s), fromBase64(copy.p), copy.mark ?? 'quiet');
+        // A relay from before LATER takes it now: their device shows it at its time all the same (lib/later.ts, showsAt).
+        const held =
+          copy.due && copy.t && copy.due > Date.now() + SOON
+            ? await sendMessageLater(to, fromHex(copy.s), [fromBase64(copy.p)], copy.due, copy.mark ?? 'quiet').catch((error) => {
+                if (error instanceof CannotHoldError) return null;
+                throw error;
+              })
+            : null;
+        if (held) later.push({ ...held, at: copy.due!, c: copy.c, t: copy.t! });
+        else await relay.send(to, fromHex(copy.s), fromBase64(copy.p), copy.mark ?? 'quiet');
         sent.push(copy);
       } catch (error) {
         held.add(way);
@@ -77,6 +93,7 @@ async function sendOnce(e2e: E2E, sends: Relay): Promise<number> {
   } finally {
     relay.close();
   }
+  if (later.length > 0) await e2e.copiesHeld(later);
   if (sent.length + gone.length + full.length > 0) await e2e.copiesSent(sent, gone, full);
   return sent.length;
 }

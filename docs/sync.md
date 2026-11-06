@@ -193,6 +193,24 @@ desktop/chunks.js (modules/erevos-radio/android/lan-check).
 - Every device with the fast channel tells each linked device which of its files' chunks it may take there.
 - A hidden place's Collection runs in that place's own log and links only.
 
+## Phase S4: calls and sent for later without the phone
+
+- Every message of a chat on this version says `cl: 1`: it copies a call's signals to the endpoints of the other
+  account, and takes them from its endpoints (`Contact.calls`). An Erevos before says nothing, and its calls and what it
+  is sent for later go through the phone as before.
+- To such a contact, a call's offer, answer and end go whole to every endpoint, so each device rings; a linked device
+  writes its own signals to them itself, as it writes its words. The caller, answered from one endpoint
+  (`Received.from`), sends `end{taken, by}` to the account, so the others stop ringing and the one named goes on; a
+  decline from an endpoint ends it for all as `end{decline, by}`. Each device ignores the end that names itself.
+- Sent for later from a device goes from the device: the relay's LATER holds it for the contact's account, and one copy
+  for each endpoint of theirs (`Copy.due`, lib/fanout.ts), so their devices have it at its time with their phone off.
+  Where each copy is held is kept (`E2EData.heldCopies`), and taken back with the message.
+- Each held one is record `<contact>.<tag>` of kind `later` in the place's log (lib/sync/later.ts): its time, words,
+  what it is, how long it lasts once read, and where it and its copies are held. Every device shows it as scheduled and
+  can take it back; the one that does removes the record, and the others let it go. Only the device that sent it holds
+  it anew should the contact's queue move; a safety message stays the sending device's own. A record goes a day after
+  its time.
+
 ## Next
 
-S4 (calls and send-later without the phone), S5 (a new contact from a device), S6 (a holder of the groups that moves).
+S5 (a new contact from a device), S6 (a holder of the groups that moves).

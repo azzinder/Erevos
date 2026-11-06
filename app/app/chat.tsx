@@ -859,7 +859,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const stopPlaying = useRef<(() => void) | null>(null);
   // Where this chat's calls belong (lib/calls.ts): the space's, or these hidden chats', which
   // seal with this chat's own keys and keep their lines here. Its functions use this render's state.
-  const latest = useRef({ send: async (_identity: string, _extra: Extra) => undefined as unknown, line: (_message: Kept) => undefined as void, name: (peer: string) => peer, relay: () => Promise.resolve(null as CallRelay | null) });
+  const latest = useRef({ send: async (_identity: string, _extra: Extra) => undefined as unknown, line: (_message: Kept) => undefined as void, name: (peer: string) => peer, relay: () => Promise.resolve(null as CallRelay | null), me: (): string => '' });
   const hiddenCalls = useRef<CallPlace>({
     send: async (identity, signal) => {
       await latest.current.send(identity, { call: signal });
@@ -867,6 +867,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     callRelay: () => latest.current.relay(),
     line: (peer, mine, text) => latest.current.line(callLineMessage(peer, mine, text, 0)),
     name: (peer) => latest.current.name(peer),
+    me: async () => latest.current.me(),
   });
   const callPlace = hiddenKey ? hiddenCalls.current : spaceCalls;
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
@@ -2245,7 +2246,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!hiddenKey || !e2e || !loaded) return;
     for (const received of takePlaceCalls(currentSpace().space, pocket)) {
       if (!received.call) continue;
-      void callSignal(callPlace, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc).then((said) => {
+      void callSignal(callPlace, `${CONTACT_PREFIX}${received.identity}`, received.call, received.request, rtc, received.from).then((said) => {
         if (said) setNote(said);
       });
     }
@@ -2277,7 +2278,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setContacts(e2e.contacts());
     setSelected((current) => current ?? peer);
     if (received.call) {
-      void callSignal(callPlace, peer, received.call, received.request, rtc).then((said) => {
+      void callSignal(callPlace, peer, received.call, received.request, rtc, received.from).then((said) => {
         if (said) setNote(said);
       });
     }
@@ -2525,6 +2526,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             void inTurn(message.tag, async () => {
               const dropped = await takeBack(relayTarget(), heldNow());
               if (dropped) stopSafety(message.tag);
+              // And its copies for the endpoints of their account, now or with a later look (lib/fanout.ts).
+              if (dropped && e2e && message.peer.startsWith(CONTACT_PREFIX)) {
+                await e2e.letGoCopies(message.peer.slice(CONTACT_PREFIX.length), message.tag).catch(() => undefined);
+                void dropHeld(e2e, relayTarget()).catch(() => undefined);
+              }
               return dropped;
             })
               .then((dropped) => {
@@ -3091,6 +3097,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }
 
   latest.current = {
+    me: () => e2e?.endpoint()?.id ?? '',
     send: async (identity, extra) => {
       const target = relayTarget();
       if (!target) throw new Error(t('No relay.'));

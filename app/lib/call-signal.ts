@@ -12,8 +12,12 @@
 // The descriptions hold every address to try (no trickling one at a time): the relay is only
 // looked at every few seconds, so one message each way is quicker than many.
 
-/** Why a call ended: hung up, turned down, already in another call, not answered, or it could not connect. */
-export type CallEnd = 'hangup' | 'decline' | 'busy' | 'missed' | 'failed';
+/**
+ * Why a call ended: hung up, turned down, already in another call, not answered, or it could not
+ * connect; or, from the caller to the other devices of the account it called, answered on another
+ * of them (`taken`, docs/multi-device.md, Calls).
+ */
+export type CallEnd = 'hangup' | 'decline' | 'busy' | 'missed' | 'failed' | 'taken';
 
 export type CallSignal =
   // `at`: when the call was made, milliseconds, so a phone that only sees it later does not ring.
@@ -21,12 +25,15 @@ export type CallSignal =
   | { id: string; kind: 'answer'; sdp: string }
   // Ringing on their phone now: the caller hears it ring rather than wait in silence.
   | { id: string; kind: 'ringing' }
-  | { id: string; kind: 'end'; reason: CallEnd };
+  // `by`: from the caller, which device of the account called answered (`taken`) or turned it down:
+  // its endpoint (hex), or '' for the account itself. The others stop ringing; that one goes on.
+  | { id: string; kind: 'end'; reason: CallEnd; by?: string };
 
 /** Longest session description sent: it must fit in one message with room to spare. */
 export const MAX_SDP = 12_000;
 
-const ENDS: CallEnd[] = ['hangup', 'decline', 'busy', 'missed', 'failed'];
+const ENDS: CallEnd[] = ['hangup', 'decline', 'busy', 'missed', 'failed', 'taken'];
+const isBy = (v: unknown): v is string => typeof v === 'string' && (v === '' || /^[0-9a-f]{64}$/.test(v));
 
 export function isCallId(value: unknown): value is string {
   return typeof value === 'string' && /^[0-9a-f]{16}$/.test(value);
@@ -50,7 +57,10 @@ export function decodeCall(value: unknown): CallSignal | null {
     case 'ringing':
       return { id, kind: 'ringing' };
     case 'end':
-      return ENDS.includes(v.reason as CallEnd) ? { id, kind: 'end', reason: v.reason as CallEnd } : null;
+      if (!ENDS.includes(v.reason as CallEnd)) return null;
+      // One answered elsewhere says where; without it, it says nothing.
+      if (v.reason === 'taken' && !isBy(v.by)) return null;
+      return { id, kind: 'end', reason: v.reason as CallEnd, ...(isBy(v.by) ? { by: v.by } : {}) };
     default:
       return null;
   }

@@ -3221,8 +3221,7 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   escrevem, leem e aquilo a que reagem chega, e o que você escreve vai. Se o celular fica desligado tanto tempo que a
   fila dele no relay enche (1000 mensagens), o que eles escrevem e leem ainda chega ao computador, uma mensagem de voz
   longa inteira; aquilo a que reagem, o que fixam, votam ou apagam, e as chamadas deles, não passam até o celular estar
-  ligado de novo. Para contatos em versões mais antigas, grupos, chamadas, adicionar um contato e mensagens enviadas
-  para mais tarde, **o celular precisa estar ligado** e alcançar o relay: o que o computador escreve nesse meio-tempo
+  ligado de novo. Para contatos em versões mais antigas, grupos e adicionar um contato, **o celular precisa estar ligado** e alcançar o relay: o que o computador escreve nesse meio-tempo
   espera no relay, e vai assim que o celular volta. Dois ou mais dispositivos conectados também se alcançam direto:
   com o celular desligado, cada um ainda mostra o que os outros escrevem, leem e aquilo a que reagem, e as mudanças que
   fazem nos contatos; um que perdeu a primeira mensagem de outro recebe uma nova um dia ou mais depois. Um computador
@@ -3249,9 +3248,14 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   passam um ao outro o que muda direto ali, também sem internet; o relay recebe mesmo assim a cópia dele, que então
   não muda mais nada. Só os do espaço: as conexões das conversas ocultas vão pelo relay.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
-  atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
-  celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só
-  precisa ficar ligado para estabelecê-la.
+  atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. Com um contato nesta versão, o
+  computador liga e recebe chamadas sozinho, com o celular desligado também; com um contato numa versão mais antiga
+  ele liga pelo celular, que só precisa ficar ligado para estabelecer a chamada. Nos dois casos a chamada em si vai
+  direto entre o computador e o contato, criptografada entre eles.
+- **Enviar mais tarde** funciona no computador também. Para um contato nesta versão o computador mesmo entrega a
+  mensagem ao relay, com uma cópia para cada dispositivo dele, então ela sai na hora certa com o seu celular desligado
+  e chega aos dispositivos dele com o celular dele desligado; para um contato numa versão mais antiga ela vai pelo
+  celular. Cada dispositivo seu a mostra como agendada, e apagá-la em qualquer um antes da hora a cancela em todos.
 - **Grupos** também estão no computador, com as mensagens, fotos, arquivos e mensagens de voz deles. Escreva neles,
   responda, reaja, vote, fixe, apague as suas para todos, adicione e tire membros, renomeie um ou saia dele, ali como
   no celular: o celular faz isso pelo computador, como se fosse seu. Uma foto ou arquivo que o celular guarda vai para

@@ -98,6 +98,8 @@ export type Contact = {
    *  missing while what they send says nothing of devices (an Erevos before, or a chat of theirs
    *  moved into or out of hidden chats), and with one this chat says nothing of devices to. */
   dv?: number;
+  /** Their account takes a call's signals copied to and from its endpoints, and copies its own to this chat's (`cl`, lib/e2e.ts): a call rings on each of their devices, and any of them calls with the phone off. */
+  calls?: true;
   /** Their account's device list as last checked here, against `bundle`. */
   list?: TheirList;
   /** A way to each endpoint their list names, devices and the places that fill it alike. */
@@ -258,6 +260,10 @@ export const MAX_BLOCKED = 200;
  * which there is nothing to drop.
  */
 export type Undropped = { id: string; relay: string; at: number };
+
+/** A copy of a message sent for later that a relay holds for an endpoint of a contact's account
+ *  (lib/fanout.ts): for contact `c`, of the message `t`, till `at`. Taken back with that message. */
+export type HeldCopy = Undropped & { c: string; t: string };
 
 /** An invite given from here (lib/welcome.ts): its secret said back (`hi`, 32 hex) makes whoever
  *  says it a contact at once, named `name`, until it is used or `until` (ms). */
@@ -544,6 +550,8 @@ export type E2EData = {
   blocked?: Blocked[];
   /** What a relay still holds for later for those deleted or blocked here. Saved with their removal. Missing when none. */
   undropped?: Undropped[];
+  /** What relays hold for later for the endpoints of contacts' accounts, by message (HeldCopy). Missing when none. */
+  heldCopies?: HeldCopy[];
   /** Invites given from here and not used yet (lib/welcome.ts). Missing when none. */
   invited?: Invited[];
   /** The name this phone gave itself in its last invite, offered again for the next. */
@@ -644,6 +652,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),
     ...(isCount(v.dv) ? { dv: v.dv } : {}),
+    ...(v.calls === true ? { calls: true as const } : {}),
     ...(checkedTheirList(v.list) ? { list: checkedTheirList(v.list)! } : {}),
     ...(Array.isArray(v.endpoints) ? { endpoints: v.endpoints.map(checkedWay).filter((w): w is Way => w !== null).slice(0, MAX_REAL) } : {}),
     ...(checkedWay(v.direct) ? { direct: checkedWay(v.direct)! } : {}),
@@ -713,6 +722,12 @@ const HELD_ID = /^[0-9a-f]{32}(?:,[0-9a-f]{32}){0,63}$/;
 function checkedUndropped(value: unknown): Undropped | null {
   const v = (value ?? {}) as Partial<Record<keyof Undropped, unknown>>;
   return typeof v.id === 'string' && HELD_ID.test(v.id) && typeof v.relay === 'string' && isRelayAddress(v.relay) && isTime(v.at) ? { id: v.id, relay: v.relay, at: v.at } : null;
+}
+
+function checkedHeldCopy(value: unknown): HeldCopy | null {
+  const v = (value ?? {}) as Partial<Record<keyof HeldCopy, unknown>>;
+  const held = checkedUndropped(value);
+  return held && typeof v.c === 'string' && /^[0-9a-f]{64}$/.test(v.c) && typeof v.t === 'string' && /^[0-9a-f]{12}$/.test(v.t) ? { ...held, c: v.c, t: v.t } : null;
 }
 
 const isCount = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0;
@@ -856,6 +871,7 @@ function checked(value: unknown): E2EData {
     ...(isTime(v.moveDue) && v.moveDue > 0 ? { moveDue: v.moveDue } : {}),
     ...(Array.isArray(v.blocked) ? { blocked: v.blocked.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : {}),
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
+    ...(Array.isArray(v.heldCopies) && v.heldCopies.length > 0 ? { heldCopies: v.heldCopies.map(checkedHeldCopy).filter((u): u is HeldCopy => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),
     ...(Array.isArray(v.lines) && v.lines.length > 0 ? { lines: v.lines.map(checkedLine).filter((l): l is InviteLine => l !== null).slice(-MAX_LINES) } : {}),

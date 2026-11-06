@@ -22,7 +22,8 @@ import { sealedFile, type Holder } from './sealed-file';
  * `mark`, it is the last packet of a message someone reads, and tells the relay so (lib/relay.ts,
  * Mark), as what went to the account does; without it, quiet.
  */
-export type Copy = { n: number; c: string; w: string; p: string; at: number; first?: true; mark?: 'message' };
+/** `due` and `t`: a message sent for later (its time, and its tag), held by the relay till then (lib/fanout.ts). */
+export type Copy = { n: number; c: string; w: string; p: string; at: number; first?: true; mark?: 'message' | 'ring'; due?: number; t?: string };
 
 export type FanoutData = { copies: Copy[]; next: number };
 
@@ -51,7 +52,7 @@ const isCount = (v: unknown): v is number => Number.isSafeInteger(v) && (v as nu
 function checkedCopy(value: unknown): Copy | null {
   const v = (value ?? {}) as Partial<Record<keyof Copy, unknown>>;
   if (!isCount(v.n) || !isHex(v.c, 64) || !isHex(v.w, 64) || !isBase64(v.p) || !isCount(v.at)) return null;
-  return { n: v.n, c: v.c, w: v.w, p: v.p, at: v.at, ...(v.first === true ? { first: true as const } : {}), ...(v.mark === 'message' ? { mark: 'message' as const } : {}) };
+  return { n: v.n, c: v.c, w: v.w, p: v.p, at: v.at, ...(v.first === true ? { first: true as const } : {}), ...(v.mark === 'message' || v.mark === 'ring' ? { mark: v.mark } : {}), ...(isCount(v.due) && isHex(v.t, 12) ? { due: v.due, t: v.t } : {}) };
 }
 
 function checked(value: unknown): FanoutData {

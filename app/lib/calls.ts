@@ -34,6 +34,8 @@ export type CallPlace = {
   /** Video added to a voice call, both ways (lib/xmpp-calls.ts): as Call's events have them. */
   addMedia?(identity: string, id: string, sdp: string): Promise<string>;
   answerMedia?(identity: string, id: string, sdp: string | null): Promise<void>;
+  /** Which of the account's devices this is, as contacts know it: its endpoint (hex) on a linked device, '' on the phone. */
+  me?(): Promise<string>;
 };
 
 /** A peer's identity: what comes after `contact:`, or after `xmpp:` for an XMPP address. */
@@ -131,12 +133,29 @@ export function startCall(place: CallPlace, peer: string, video: boolean, relay:
  * message request, which hears nothing back, so it does not ring either. Says what to tell the
  * user, if anything.
  */
-export async function callSignal(place: CallPlace, peer: string, signal: CallSignal, request: boolean, rtc: Rtc): Promise<string | null> {
+export async function callSignal(place: CallPlace, peer: string, signal: CallSignal, request: boolean, rtc: Rtc, from = ''): Promise<string | null> {
   const ours = currentCall();
+  const identity = identityOf(peer);
   if (signal.kind !== 'offer') {
-    if (ours?.peer === peer && ours.id === signal.id) ours.receive(signal);
-    // Their hang-up read before its offer rang here: the offer is not rung.
-    else if (signal.kind === 'end') endedBefore.set(callKey(peer, signal.id), Date.now());
+    const mine = ours?.peer === peer && ours.id === signal.id;
+    // The caller says which of this account's devices answered or turned it down: that one goes on,
+    // the others stop ringing (docs/multi-device.md, Calls).
+    if (signal.kind === 'end' && signal.by !== undefined) {
+      if (signal.by === ((await place.me?.().catch(() => '')) ?? '')) return null;
+      if (mine && !ours.outgoing) ours.endedElsewhere(signal.reason === 'decline');
+      else if (!mine) endedBefore.set(callKey(peer, signal.id), Date.now());
+      return null;
+    }
+    if (!mine) {
+      // Their hang-up read before its offer rang here: the offer is not rung.
+      if (signal.kind === 'end') endedBefore.set(callKey(peer, signal.id), Date.now());
+      return null;
+    }
+    const waiting = ours.outgoing && (ours.state === 'calling' || ours.state === 'ringing');
+    ours.receive(signal);
+    // Ours, answered or turned down on one of their devices: the others are told, so they stop ringing.
+    if (waiting && signal.kind === 'answer' && ours.state === 'connecting') place.send(identity, { id: signal.id, kind: 'end', reason: 'taken', by: from }).catch(() => undefined);
+    else if (waiting && signal.kind === 'end' && signal.reason === 'decline' && from) place.send(identity, { id: signal.id, kind: 'end', reason: 'decline', by: from }).catch(() => undefined);
     return null;
   }
   if (ours?.id === signal.id) return null;
@@ -147,7 +166,6 @@ export async function callSignal(place: CallPlace, peer: string, signal: CallSig
     place.line(peer, false, `Missed ${kind}`, signal.id);
     return null;
   }
-  const identity = identityOf(peer);
   const busy = () => {
     place.send(identity, { id: signal.id, kind: 'end', reason: 'busy' }).catch(() => undefined);
     place.line(peer, false, `Missed ${kind}, while in another call`, signal.id);

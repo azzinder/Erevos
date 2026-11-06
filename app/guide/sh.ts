@@ -3118,7 +3118,7 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   čitaju i na šta reaguju, a ide ono što vi pišete. Ako telefon ostane isključen toliko dugo da se njegov red na
   relayu napuni (1000 poruka), ono što pišu i čitaju i dalje stiže na računar, dugačka glasovna poruka cijela; ono na
   šta reaguju, što prikvače, za šta glasaju ili što obrišu, kao i njihovi pozivi, ne prolazi dok se telefon ponovo ne
-  uključi. Za kontakte sa starijim verzijama, grupe, pozive, dodavanje kontakta i poruke poslane za kasnije **telefon
+  uključi. Za kontakte sa starijim verzijama, grupe i dodavanje kontakta **telefon
   mora biti uključen** i dosezati relay: ono što računar u međuvremenu napiše čeka na relayu i odlazi kad se telefon
   vrati. Dva ili više povezanih uređaja dosežu i jedni druge direktno: kad je telefon isključen, svaki i dalje
   prikazuje ono što drugi pišu, čitaju i na šta reaguju, i promjene koje prave na kontaktima; onaj koji je propustio
@@ -3145,9 +3145,14 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   daju jedno drugom ono što se mijenja direktno tamo, i bez interneta; relej ipak dobija svoju kopiju, koja tada ništa
   više ne mijenja. Samo prostora: veze skrivenih razgovora idu preko releja.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
-  prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
-  poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga
-  uspostavi.
+  prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. S kontaktom s ovom verzijom računar sam
+  zove i prima pozive, i kad je telefon isključen; s kontaktom sa starijom verzijom zove preko telefona, koji mora
+  ostati uključen samo da uspostavi poziv. U oba slučaja sam poziv ide direktno između računara i kontakta, šifriran
+  između njih.
+- **Pošalji kasnije** radi i na računaru. Kontaktu s ovom verzijom računar sam predaje poruku relayu, uz kopiju za
+  svaki njegov uređaj, pa ona ode u svoje vrijeme i kad je vaš telefon isključen, a stigne na njegove uređaje i kad je
+  njegov telefon isključen; kontaktu sa starijom verzijom ide preko telefona. Svaki vaš uređaj je pokazuje kao
+  zakazanu, a ako je obrišete na bilo kojem prije njenog vremena, povlači se svuda.
 - **Grupe** su i na računaru, s njihovim porukama, fotografijama, datotekama i glasovnim porukama. Pišite u njima,
   odgovarajte, reagujte, glasajte, prikvačujte, brišite svoje poruke za sve, dodajte i uklanjajte članove,
   preimenujte grupu ili je napustite, tamo kao i na telefonu: telefon to radi za računar, kao svoje. Fotografija ili

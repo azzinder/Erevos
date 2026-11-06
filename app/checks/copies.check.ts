@@ -1093,7 +1093,7 @@ t('a voice message is copied whole, however long and whatever waits for that end
   assert.equal(carol.e2e.copies().length, MAX_COPIES_EACH);
 });
 
-t('what a message sent for later or a call\'s offer says was read goes to every endpoint, and what it says came back only the way it came, as marks alone', async () => {
+t('a message sent for later goes to every endpoint whole, held till its time, and what a call\'s offer says was read goes to every endpoint, what came back only the way it came', async () => {
   const { carol, mallory, ends: [x, y] } = await withEndpoints(2);
   const [atX, atY] = [reader(x), reader(y)];
   await write(carol, mallory.id, 'hello');
@@ -1108,23 +1108,26 @@ t('what a message sent for later or a call\'s offer says was read goes to every 
   await carol.e2e.hold(mallory.id, 'read', [one]);
   await carol.e2e.hold(mallory.id, 'got', [two]);
 
-  // She sends one for later: it goes to Mallory's account only, but what it says was read goes to
-  // each endpoint, and what came to x only, as marks alone, quiet.
-  const later = await write(carol, mallory.id, 'for later', { due: Date.now() + 3600_000 });
+  // She sends one for later: Mallory's chat takes those from its endpoints (`cl`), so it goes to
+  // each whole too, with its time, to be held by the relay till then (lib/fanout.ts), and what it
+  // says was read with it, and what came to x only.
+  assert.equal(carol.e2e.record(mallory.id)?.calls, true);
+  const due = Date.now() + 3600_000;
+  const later = await write(carol, mallory.id, 'for later', { due });
   const marks = carol.e2e.copies();
-  assert.deepEqual(marks.map((c) => [c.w, c.mark ?? 'quiet']).sort(), [[x.id, 'quiet'], [y.id, 'quiet']].sort());
+  assert.deepEqual(marks.map((c) => [c.w, c.mark ?? 'quiet', c.due, c.t]).sort(), [[x.id, 'message', due, later.tag], [y.id, 'message', due, later.tag]].sort());
   const ofMarks = (m: Record<string, unknown> | null) => [m?.text, m?.got ?? [], m?.read ?? [], m?.due ?? 0];
-  assert.deepEqual((await atX.open(marks)).map(ofMarks), [['', [two], [one], 0]]);
-  assert.deepEqual((await atY.open(marks)).map(ofMarks), [['', [], [one], 0]]);
+  assert.deepEqual((await atX.open(marks)).map(ofMarks), [['for later', [two], [one], due]]);
+  assert.deepEqual((await atY.open(marks)).map(ofMarks), [['for later', [], [one], due]]);
   const atMallory = await mallory.e2e.receive(later.packet);
   assert.deepEqual(atMallory.kind === 'message' && [atMallory.text, atMallory.read, atMallory.got], ['for later', [one], []]);
   await carol.e2e.copiesSent(marks);
 
-  // And with a call's offer, which rings on their account only.
+  // And with a call's offer, which goes to each whole too, and rings there.
   await carol.e2e.hold(mallory.id, 'read', [three]);
   await write(carol, mallory.id, '', { call: { id: 'abc', kind: 'offer', video: false, sdp: 'x', at: Date.now() } as never });
   const offer = carol.e2e.copies();
   assert.deepEqual((await atX.open(offer)).map(ofMarks), [['', [], [three], 0]]);
   assert.deepEqual((await atY.open(offer)).map(ofMarks), [['', [], [three], 0]]);
-  assert.ok(offer.every((c) => !c.mark));
+  assert.ok(offer.length === 2 && offer.every((c) => c.mark === 'ring'));
 });

@@ -381,3 +381,58 @@ test('the line a call we made leaves', async () => {
   assert.equal(callClock(3_725_000), '1:02:05');
   assert.equal(callClock(42_000), '0:42');
 });
+
+test('a call rings on every device of the account it calls: the first to answer has it, the others are told, and stop ringing there', async () => {
+  const { rtc, connections } = fakeRtc();
+  const DELL = 'd'.repeat(64);
+  // The caller: answered on the computer, it tells the account's devices which one has it.
+  const caller = place();
+  const call = startCall(caller.calls, 'contact:b', false, TURN, rtc);
+  await settle();
+  await callSignal(caller.calls, 'contact:b', { id: call.id, kind: 'ringing' }, false, rtc, '');
+  await callSignal(caller.calls, 'contact:b', { id: call.id, kind: 'answer', sdp: 'v=0\r\nanswer' }, false, rtc, DELL);
+  assert.equal(call.state, 'connecting');
+  assert.deepEqual(caller.sent.at(-1), { identity: 'b', signal: { id: call.id, kind: 'end', reason: 'taken', by: DELL } });
+  // A second answer, from the phone too late, changes nothing and says nothing more.
+  const said = caller.sent.length;
+  await callSignal(caller.calls, 'contact:b', { id: call.id, kind: 'answer', sdp: 'v=0\r\nlate' }, false, rtc, '');
+  assert.equal(caller.sent.length, said);
+  connections[0].connect(new FakeStream([new FakeTrack('audio')]));
+  assert.equal(call.state, 'connected');
+  call.hangUp();
+  closeCall(call);
+
+  // On the account's phone, where it rang: stops, answered on another device; on the computer that has it, nothing.
+  const offer = { id: '0123456789abcdef', kind: 'offer' as const, video: false, sdp: 'v=0\r\noffer', at: Date.now() };
+  const phone = place();
+  await callSignal(phone.calls, 'contact:a', offer, false, rtc);
+  const ringing = shownCall()!.call;
+  await callSignal(phone.calls, 'contact:a', { id: offer.id, kind: 'end', reason: 'taken', by: DELL }, false, rtc);
+  assert.deepEqual([ringing.state, ringing.ended?.elsewhere], ['ended', true]);
+  closeCall(ringing);
+  const computer = place();
+  computer.calls.me = async () => DELL;
+  await callSignal(computer.calls, 'contact:a', { ...offer, id: '1111111111111111' }, false, rtc);
+  const there = shownCall()!.call;
+  await callSignal(computer.calls, 'contact:a', { id: '1111111111111111', kind: 'end', reason: 'taken', by: DELL }, false, rtc);
+  assert.equal(there.state, 'incoming');
+  there.hangUp();
+  closeCall(there);
+
+  // Turned down on one device: turned down on the others.
+  const decliner = place();
+  const outgoing = startCall(decliner.calls, 'contact:c', false, TURN, rtc);
+  await settle();
+  await callSignal(decliner.calls, 'contact:c', { id: outgoing.id, kind: 'end', reason: 'decline' }, false, rtc, DELL);
+  assert.equal(outgoing.state, 'ended');
+  assert.deepEqual(decliner.sent.at(-1), { identity: 'c', signal: { id: outgoing.id, kind: 'end', reason: 'decline', by: DELL } });
+  closeCall(outgoing);
+});
+
+test('an end that says which device has the call is read only so', () => {
+  assert.deepEqual(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken', by: 'a'.repeat(64) }), { id: '0123456789abcdef', kind: 'end', reason: 'taken', by: 'a'.repeat(64) });
+  assert.deepEqual(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken', by: '' }), { id: '0123456789abcdef', kind: 'end', reason: 'taken', by: '' });
+  assert.equal(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken' }), null);
+  assert.equal(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'taken', by: 'xyz' }), null);
+  assert.deepEqual(decodeCall({ id: '0123456789abcdef', kind: 'end', reason: 'hangup', by: 7 }), { id: '0123456789abcdef', kind: 'end', reason: 'hangup' });
+});

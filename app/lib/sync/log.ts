@@ -80,6 +80,8 @@ export const KINDS: Record<string, Writer> = {
   account: 'any',
   place: 'any',
   collection: 'any',
+  // What the account sent for later, held by a relay (S4, lib/sync/later.ts).
+  later: 'any',
   // Groups as the device that holds them says they are (S6). Which device that is, the log does
   // not judge: the groups' own keys (MLS) do, and only the holder has them.
   group: 'any',
