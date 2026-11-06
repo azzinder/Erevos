@@ -783,29 +783,42 @@ resta a **✓**. I gruppi pubblici non hanno segni. Un computer collegato a ques
   qualsiasi altra 45 secondi, una parte di un file 2 minuti) conta come fallita e viene ripetuta, così una connessione
   morta per strada, come quando la rete del telefono va in sospensione o cambia, non blocca nulla.
 
-### Online, e apparire offline
+### Online, ultimo accesso, e apparire offline
 
 Mentre la chat di un contatto è aperta sul tuo schermo, Erevos chiede ogni tanto al suo telefono se è aperta, e dice
 che la tua lo è. Se la sua lo è, la chat dice **Online** sotto il suo nome con un punto verde, e la schermata
 principale mostra il punto sulla sua immagine. Anche scrivere a qualcuno ti mostra online per due minuti. Tutto questo
 passa dentro la crittografia, solo tra te e quel contatto: il relay vede un messaggio ogni tanto, come con qualsiasi
-chat. Non c’è un «ultimo accesso».
+chat.
+
+Quando un contatto non è online, la sua chat dice quando ha avuto Erevos aperto l’ultima volta, al minuto: **ultimo
+accesso oggi alle 14:32**. Il tuo telefono dice il tuo ai tuoi contatti nello stesso modo, dentro quello che va
+comunque a loro (un messaggio, o che ne è arrivato uno), e una volta quando uno apre la tua chat mentre Erevos è
+chiuso sul tuo telefono, solo se è stato aperto da quando gli è stato detto l’ultima volta. È attivo finché non lo
+disattivi, in **Impostazioni** → **Privacy e sicurezza** → **Ultimo accesso**, o nei dettagli di una chat qualsiasi.
+Vale in entrambe le direzioni: disattivato, nessuno vede il tuo, e tu non vedi quello di nessuno; chi lo vedeva lo
+perde con il tuo messaggio successivo. Si imposta per tutto lo spazio e i suoi dispositivi collegati, ogni spazio per
+conto suo. Ogni luogo di chat nascoste ha un interruttore proprio, nei dettagli di una chat di lì, e un’ora propria:
+finché sono aperte, solo loro contano come aperte, non lo spazio.
 
 Mentre scrivi a un contatto che appare online, la sua chat mostra **sta scrivendo…** sotto il tuo nome per qualche
 secondo, e la tua sotto il suo quando scrive. Viene detto al massimo ogni pochi secondi, solo mentre appare online, mai
 a una richiesta di messaggio, e non nei gruppi.
 
-**Perché:** essere online viene detto solo tra te e un contatto la cui chat è aperta, dentro la crittografia, quindi il
-relay non vede più di un messaggio ogni tanto tra due persone che parlano, e non ne viene conservato nulla: così non
-c’è nessun «ultimo accesso» da mostrare. Qualcuno che ha solo il tuo link, e scrive come richiesta di messaggio, non
-riceve nulla finché non accetti: né che hai letto, né che sei online o stai scrivendo.
+**Perché:** essere online viene detto solo tra te e un contatto la cui chat è aperta, dentro la crittografia, quindi
+il relay non vede più di un messaggio ogni tanto tra due persone che parlano. L’ora del tuo ultimo accesso viaggia
+dentro quegli stessi messaggi, crittografata end-to-end: il relay non la conosce mai. Dice però ai tuoi contatti
+quando dormi o lavori, e di due contatti visti nello stesso minuto si può supporre che parlino tra loro: disattivalo
+se ti importa. Qualcuno che ha solo il tuo link, e scrive come richiesta di messaggio, non riceve nulla finché non
+accetti: né che hai letto, né che sei online o stai scrivendo, né quando hai fatto l’ultimo accesso.
 
 Per nasconderlo a un contatto, apri la sua chat, tocca il suo nome e poi **Mostrati offline**. Con questo attivo:
 
 - **Non ti vede online**, né che stai scrivendo, e il tuo telefono non gli invia nulla mentre leggi.
 - **I suoi messaggi restano ✓** sul suo telefono, non ✓✓ o ✓✓✓, mentre li leggi.
 - **Quando gli scrivi**, appari online per due minuti, e ogni suo messaggio che leggi diventa subito ✓✓✓.
-- **Nemmeno tu lo vedi online**, perché il tuo telefono non lo chiede.
+- **Nemmeno tu lo vedi online**, perché il tuo telefono non lo chiede, né il suo ultimo accesso; e non riceve nessun
+  orario da te.
 
 Si imposta per ogni chat, solo su questo telefono. Disattivalo di nuovo e vedrà quello che hai letto al tuo prossimo
 controllo del relay.
@@ -3238,11 +3251,11 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   ne va dagli altri. La foto o il file di una nota va come copia sul relay, eliminata da lì una volta presa, o, per
   due dispositivi o più, lasciata lì finché scade (14 giorni). Le note delle chat nascoste vanno solo nel loro
   collegamento, più sotto.
-- **Impostazioni:** la lingua e l’aspetto (lo stile, i colori, la dimensione del testo) sono gli stessi su ogni
-  dispositivo dello spazio: cambiati su uno, cambiano anche sugli altri. Una foto dietro le schermate resta sul
-  dispositivo dove è stata scelta, come tutto ciò che riguarda un solo dispositivo: password, PIN e codice di panico,
-  il tempo del blocco, la vibrazione, il relay e Tor, i moduli, il nome del dispositivo. Un dispositivo che deve
-  tenere le sue: **Impostazioni** → **Dati e dispositivi** → **Dispositivi collegati** → **Stesse impostazioni su
+- **Impostazioni:** la lingua, l’aspetto (lo stile, i colori, la dimensione del testo) e **Ultimo accesso** sono gli
+  stessi su ogni dispositivo dello spazio: cambiati su uno, cambiano anche sugli altri. Una foto dietro le schermate
+  resta sul dispositivo dove è stata scelta, come tutto ciò che riguarda un solo dispositivo: password, PIN e codice
+  di panico, il tempo del blocco, la vibrazione, il relay e Tor, i moduli, il nome del dispositivo. Un dispositivo che
+  deve tenere le sue: **Impostazioni** → **Dati e dispositivi** → **Dispositivi collegati** → **Stesse impostazioni su
   tutti i dispositivi** disattivato. Riattivato, prende subito quelle degli altri. Le chat nascoste tengono le loro.
 - **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
   che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer

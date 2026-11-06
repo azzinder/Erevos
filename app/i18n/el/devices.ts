@@ -142,6 +142,6 @@ export const devices: Record<string, string> = {
     'Μόλις αποσυνδεθεί αυτή η συσκευή, βγαίνει από τους λογαριασμούς που έφερε από το τηλέφωνο.',
   'Send the accounts': 'Στείλε τους λογαριασμούς',
   'Same settings on every device': 'Ίδιες ρυθμίσεις σε όλες τις συσκευές',
-  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
-    'Η γλώσσα και η εμφάνιση αλλάζουν και στις άλλες συσκευές. Μια φωτογραφία πίσω από τις οθόνες, οι κωδικοί, τα PIN και ό,τι αφορά μόνο αυτή τη συσκευή μένουν όπως είναι στην καθεμία.',
+  'The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    'Η γλώσσα, η εμφάνιση και η Τελευταία φορά ενεργός αλλάζουν και στις άλλες συσκευές. Μια φωτογραφία πίσω από τις οθόνες, οι κωδικοί, τα PIN και ό,τι αφορά μόνο αυτή τη συσκευή μένουν όπως είναι στην καθεμία.',
 };

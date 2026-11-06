@@ -10,8 +10,10 @@ import type { Json } from './log';
 
 // The settings the account's devices share through the space's log (lib/sync/log.ts, docs/sync.md,
 // phase S2): each a record of kind `setting` by its id, its value in field `v`. Only those that
-// mean the same on every device go: the language and the space's look (but a photo behind the
-// screens, which stays on the device it was chosen on). What is about this device alone stays: its
+// mean the same on every device go: the language, the space's look (but a photo behind the
+// screens, which stays on the device it was chosen on), and whether the space's contacts see when
+// it was last open (lib/last-seen.ts), as one device telling them while another says it tells none
+// would have them forget it and learn it again. What is about this device alone stays: its
 // passwords, PINs and panic code, the lock's time, vibration, battery, LoRa and BLE, its modules
 // and permissions, its name, its relay and Tor.
 //
@@ -21,7 +23,7 @@ import type { Json } from './log';
 // log, so a device just linked takes the phone's settings, and does not give it its own.
 
 /** The settings that go. */
-export const SHARED_SETTINGS = ['language', 'look'] as const;
+export const SHARED_SETTINGS = ['language', 'look', 'lastSeen'] as const;
 export type SharedSetting = (typeof SHARED_SETTINGS)[number];
 
 const KEY = 'erevos.share-settings';

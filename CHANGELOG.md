@@ -18,7 +18,15 @@ On main, not released yet:
   choice to make (the switch **Matrix, XMPP and Nostr accounts too** is gone), and they follow as they change on the
   phone: one you sign out of there, or replace with another, goes from the devices too. Hidden chats' own accounts go
   the same way to their own linked places. See [Linked devices](#devices).
-- **Same settings on your linked devices**: the language and the look (style, colours, text size) changed on the phone
+- **Last seen**: when a contact is not online, their chat says when they last had Erevos open, to the minute (**last
+  seen today at 14:32**). It rides end-to-end encrypted inside what goes to them anyway, never to the relay, and a phone
+  whose Erevos is closed answers one who opens its chat once, only with a newer time. On unless turned off, and both
+  ways: off in **Settings** → **Privacy and security** → **Last seen** (or a chat's details), no one sees yours, nor you
+  theirs, and those who saw it lose it with your next message. One setting for the space and its linked devices; each
+  place of hidden chats has its own switch and its own time (while they are open, only they count as open). Never to a
+  chat that appears offline or a message request. See
+  [Chat through a relay](#relay).
+- **Same settings on your linked devices**: the language, the look (style, colours, text size) and **Last seen** changed on the phone
   or on a computer change on the others too. A photo behind the screens stays on the device it was chosen on, and so
   does what is about one device alone: passwords, PINs, the panic code, the lock's time, vibration, the relay and Tor,
   the modules, its name. **Same settings on every device** in **Linked devices** lets a device keep its own; turned on
@@ -55,6 +63,13 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Last seen** (`lib/last-seen.ts`): each message to a contact of the space's own chat says `ls`, when that space
+  was last shown on the screen (kept per space, in memory only), or 0 once turned off (`SpaceData.lastSeen`, on by
+  default; shared with linked devices through the account's log as setting `lastSeen`), and the same for each hidden
+  place with its own `lastSeen` and its own time (while its chats are open, its space does not count as shown). The
+  contact keeps the latest as `Contact.seenAt`, never later than its own clock, and 0 forgets it. A chat that appears
+  offline and a message request are told none. An `ask` that comes while the app is away is answered
+  only when the space was shown since that contact was last told. An Erevos before ignores `ls`.
 - **The account's log, first part** (`lib/sync/`, `docs/sync.md`): one way for the account's own devices to share what
   they change, in place of a kind of message for each thing. Stamps that stay in order whatever a device's clock says,
   records that end the same on every device whatever order changes came in, and devices that say how far they are and
@@ -82,7 +97,7 @@ On main, not released yet:
   **Messages**, **Everything**, and asks **Turn Tor on?** going from **Nothing** to either of the others.
   `checks/nostr.check.ts` has a check that with Tor off nothing opens through Tor, and that the connections follow the
   way as it changes.
-- **Settings through the account's log** (`lib/sync/settings.ts`): the language and the look are records of kind
+- **Settings through the account's log** (`lib/sync/settings.ts`): the language, the look and last seen are records of kind
   `setting` in the space's log, written as they change on a device, never as they come from it, and put in place on
   the others; the phone writes those it has into a log that has none yet, so a device just linked takes the phone's.
   Each device can stop sharing them (`erevos.share-settings`). `checks/sync-settings.check.ts`.

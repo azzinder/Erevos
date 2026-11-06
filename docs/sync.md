@@ -93,7 +93,9 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
 - The settings that mean the same on every device go as records of kind `setting`, field `v`
   (lib/sync/settings.ts `SHARED_SETTINGS`): `language`, and `look`, the open space's look without
   its photo behind the screens (`lookToShare`). A look that comes keeps this device's own photo,
-  should it have one, else takes the style's own ground (`lookFrom`).
+  should it have one, else takes the style's own ground (`lookFrom`). And `lastSeen`, the open
+  space's SpaceData.lastSeen (lib/space-chats.ts shareLastSeen), so no device tells contacts a time
+  while another says it tells none. A hidden place's own `lastSeen` does not go: places keep theirs.
 - What stays on each device: passwords, PINs, the panic code, the lock's time, vibration, battery,
   LoRa and BLE, the modules and permissions, the device's name, its relay and Tor (where its queue
   is), the SMS Shield (the phone's alone).

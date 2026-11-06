@@ -9,6 +9,8 @@ import { E2E } from './e2e';
 import { sweepPieces, type PiecePlace } from './nostr-pieces';
 import type { SpaceChats } from './space-chats';
 import { VoiceAssembler } from './voice';
+import { placeSeenKey, shownAt } from './last-seen';
+import { loadHiddenData, updateHiddenData } from '../lock/space-data';
 
 // A hidden place's chats, opened once while they are open or receive while closed
 // (lib/place-receiver.ts): its account and contacts, its messages and the voice messages still
@@ -47,6 +49,10 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
     const kept = await placeQueues(space, pocket, key).load();
     if (kept.moved > 0) e2e.setQueueAge(kept.moved, kept.now?.queue.senderHex);
     if (kept.now) e2e.setLinkOwn(!kept.link);
+    // Whether its contacts are told when the place was last open, and it is shown theirs: its own
+    // setting and its own time, never its space's (lib/last-seen.ts).
+    const lastSeen = (await loadHiddenData(space, pocket, key).catch(() => null))?.lastSeen ?? true;
+    e2e.setLastSeen({ on: lastSeen, at: () => shownAt(placeSeenKey(space, pocket)) });
     const pieces: PiecePlace = { holder: hiddenHolder(pocket), space, key: key.slice() };
     // What waited too long among the pieces of photos it keeps goes.
     void sweepPieces(pieces).catch(() => undefined);
@@ -72,6 +78,13 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
 /** The chats of the hidden place in `pocket` of `space` if they are open already, or null. */
 export function placeChatsNow(space: number, pocket: number): SpaceChats | null {
   return opened.get(at(space, pocket))?.ready ?? null;
+}
+
+/** Turns "last seen" on or off for the hidden place in `pocket` of `space`, open with `key`: kept, and its chats tell and show it, or no longer. */
+export async function setPlaceLastSeen(space: number, pocket: number, key: Uint8Array, on: boolean): Promise<void> {
+  await updateHiddenData(space, pocket, key, { lastSeen: on });
+  const was = opened.get(at(space, pocket));
+  if (was && sameKey(was.key, key)) (await was.chats).e2e.setLastSeen({ on, at: () => shownAt(placeSeenKey(space, pocket)) });
 }
 
 const forgets = new Set<(space?: number, pocket?: number) => void>();

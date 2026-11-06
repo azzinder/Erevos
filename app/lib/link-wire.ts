@@ -792,7 +792,7 @@ const OWN_KEYS = ['pk', 'ak', 'dv', 'dl', 'acct', 'to'];
 // What a message carries that is not worth telling the account's other devices on its own: it says
 // that messages came, that a phone is open or someone types, or asks, with the chat's timer, which
 // the contacts carry.
-const QUIET_KEYS = new Set([...PLACE_KEYS, ...OWN_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'quiet', 'due', 'typing']);
+const QUIET_KEYS = new Set([...PLACE_KEYS, ...OWN_KEYS, 'text', 'tag', 'timer', 'timerAt', 'lasts', 'got', 'on', 'onAt', 'ask', 'ls', 'quiet', 'due', 'typing']);
 
 /** Whether a message is a call's or a group's signal: not kept in the history, and not told of as other messages are. */
 export function isSignal(m: Json): boolean {

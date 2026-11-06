@@ -401,7 +401,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     if (next && links) await links.takeSettings().catch(() => undefined);
   }
 
-  // The space's own, never hidden chats': its language and look, on every device of the account.
+  // The space's own, never hidden chats': its language, look and last seen, on every device of the account.
   const sharing =
     !place && (role === 'linked' || devices.length > 0) ? (
       <Card>
@@ -409,7 +409,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
           <View style={{ flex: 1 }}>
             <Text variant="bodyStrong">{t('Same settings on every device')}</Text>
             <Text variant="caption" tone="muted">
-              {t('The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.')}
+              {t('The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.')}
             </Text>
           </View>
           <Toggle on={shared} />

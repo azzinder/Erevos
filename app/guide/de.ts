@@ -838,23 +838,36 @@ Markierungen.
   45 Sekunden, ein Teil einer Datei 2 Minuten) gilt als fehlgeschlagen und wird erneut gestellt, sodass eine
   Verbindung, die unterwegs abgerissen ist, etwa wenn das Netz des Telefons schläft oder wechselt, nichts aufhält.
 
-### Online, und offline erscheinen
+### Online, zuletzt online und offline erscheinen
 
 Solange der Chat eines Kontakts auf deinem Bildschirm offen ist, fragt Erevos sein Telefon ab und zu, ob es offen ist,
 und sagt, dass deines es ist. Wenn seines es ist, sagt der Chat **Online** unter seinem Namen, mit einem grünen Punkt,
 und der Startbildschirm zeigt den Punkt auf seinem Bild. Jemandem zu schreiben zeigt dich ihm auch für zwei Minuten
 als online. All das geht innerhalb der Verschlüsselung, nur zwischen dir und diesem Kontakt: Das Relay sieht ab und zu
-eine Nachricht, wie bei jedem Chat. Es gibt kein „zuletzt online“.
+eine Nachricht, wie bei jedem Chat.
+
+Wenn ein Kontakt nicht online ist, sagt sein Chat, wann er Erevos zuletzt offen hatte, auf die Minute genau: **zuletzt
+online heute um 14:32**. Dein Telefon sagt deinen Kontakten deine Zeit auf dieselbe Weise, innerhalb dessen, was
+ohnehin an sie geht (eine Nachricht oder dass eine angekommen ist), und einmal, wenn einer deinen Chat öffnet, während
+Erevos auf deinem Telefon geschlossen ist, nur wenn es offen war, seit ihm zuletzt Bescheid gegeben wurde. Es ist an,
+solange du es nicht ausschaltest, unter **Einstellungen** → **Datenschutz und Sicherheit** → **Zuletzt online** oder
+in den Details eines beliebigen Chats. Es gilt in beide Richtungen: Ist es aus, sieht niemand deine, und du siehst
+auch niemandes; wer sie sah, verliert sie mit deiner nächsten Nachricht. Es wird für den ganzen Bereich und seine
+verknüpften Geräte eingestellt, jeder Bereich für sich. Jeder Ort mit versteckten Chats hat seinen eigenen Schalter,
+in den Details eines Chats dort, und seine eigene Zeit: Solange sie offen sind, zählen nur sie als offen, nicht der
+Bereich.
 
 Während du einem Kontakt schreibst, der online erscheint, zeigt sein Chat **schreibt…** unter deinem Namen für ein
 paar Sekunden, und deiner unter seinem, wenn er schreibt. Das wird höchstens alle paar Sekunden gesagt, nur solange er
 online erscheint, nie an eine Nachrichtenanfrage und nicht in Gruppen.
 
 **Warum:** Online-Sein wird nur zwischen dir und einem Kontakt gesagt, dessen Chat offen ist, innerhalb der
-Verschlüsselung, also sieht das Relay nicht mehr als ab und zu eine Nachricht zwischen zwei Leuten, die reden, und
-nichts davon wird aufbewahrt: Deshalb gibt es kein „zuletzt online“ zu zeigen. Jemand, der nur deinen Link hat und als
-Nachrichtenanfrage schreibt, hört nichts zurück, bis du annimmst: weder dass du liest noch dass du online bist oder
-schreibst.
+Verschlüsselung, also sieht das Relay nicht mehr als ab und zu eine Nachricht zwischen zwei Leuten, die reden. Die
+Zeit, zu der du zuletzt online warst, reist in denselben Nachrichten mit, Ende-zu-Ende-verschlüsselt: Das Relay
+erfährt sie nie. Sie verrät deinen Kontakten aber, wann du schläfst oder arbeitest, und bei zwei Kontakten, die in
+derselben Minute gesehen wurden, kann man vermuten, dass sie miteinander reden: Schalte sie aus, wenn dir das wichtig
+ist. Jemand, der nur deinen Link hat und als Nachrichtenanfrage schreibt, hört nichts zurück, bis du annimmst: weder
+dass du liest noch dass du online bist, schreibst oder zuletzt online warst.
 
 Um es vor einem Kontakt zu verbergen, öffne seinen Chat, tippe auf seinen Namen und dann auf **Offline erscheinen**.
 Wenn es an ist:
@@ -864,7 +877,8 @@ Wenn es an ist:
 - **Seine Nachrichten bleiben ✓** auf seinem Telefon, nicht ✓✓ oder ✓✓✓, während du sie liest.
 - **Wenn du ihm schreibst**, erscheinst du zwei Minuten lang online, und jede seiner Nachrichten, die du gelesen hast,
   wird sofort ✓✓✓.
-- **Du siehst ihn auch nicht online**, da dein Telefon nicht fragt.
+- **Du siehst ihn auch nicht online**, da dein Telefon nicht fragt, und nicht, wann er zuletzt online war; und er
+  bekommt keine Zeit von dir.
 
 Es wird für jeden Chat eingestellt, nur auf diesem Telefon. Schalte es wieder aus, und er sieht, was du gelesen hast,
 wenn du das nächste Mal beim Relay nachsiehst.
@@ -3429,12 +3443,13 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   auf einem gesehen, verschwindet sie von den anderen. Das Foto oder die Datei einer Notiz geht als Kopie über das
   Relay und wird dort gelöscht, sobald sie geholt wurde, oder bleibt, bei zwei Geräten oder mehr, dort, bis sie
   abläuft (14 Tage). Die Notizen versteckter Chats gehen nur innerhalb ihrer eigenen Verknüpfung, siehe unten.
-- **Einstellungen:** Sprache und Aussehen (der Stil, die Farben, die Textgröße) sind auf allen Geräten des Bereichs
-  gleich: auf einem geändert, ändern sie sich auch auf den anderen. Ein Foto hinter den Bildschirmen bleibt auf dem
-  Gerät, auf dem es gewählt wurde, ebenso alles, was nur ein Gerät betrifft: Passwörter, PINs und der Paniccode, die
-  Sperrzeit, die Vibration, das Relay und Tor, die Module, der Gerätename. Ein Gerät, das seine eigenen behalten soll:
-  **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte** → **Gleiche Einstellungen auf allen Geräten** aus.
-  Wieder eingeschaltet, übernimmt es sofort die der anderen. Versteckte Chats behalten ihre eigenen.
+- **Einstellungen:** Sprache, Aussehen (der Stil, die Farben, die Textgröße) und **Zuletzt online** sind auf allen
+  Geräten des Bereichs gleich: auf einem geändert, ändern sie sich auch auf den anderen. Ein Foto hinter den
+  Bildschirmen bleibt auf dem Gerät, auf dem es gewählt wurde, ebenso alles, was nur ein Gerät betrifft: Passwörter,
+  PINs und der Paniccode, die Sperrzeit, die Vibration, das Relay und Tor, die Module, der Gerätename. Ein Gerät, das
+  seine eigenen behalten soll: **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte** → **Gleiche
+  Einstellungen auf allen Geräten** aus. Wieder eingeschaltet, übernimmt es sofort die der anderen. Versteckte Chats
+  behalten ihre eigenen.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
   beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und

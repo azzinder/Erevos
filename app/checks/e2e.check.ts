@@ -802,6 +802,76 @@ t('a chat timer travels with the messages, the later setting wins, and old messa
   await assert.rejects(alice.e2e.setTimer('00'.repeat(32), 60));
 });
 
+t('last seen goes inside messages, both ways, and is forgotten once turned off', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const hello = message(await bob.e2e.receive(alice.e2e.pending()[0].first));
+  const aliceId = hello.identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+
+  // A chat that never set it, as hidden chats, says nothing and keeps nothing.
+  const none = message(await bob.e2e.receive((await alice.e2e.seal(bobId, 'a', alice.from)).packet));
+  assert.equal(none.seen, false);
+  assert.equal(bob.e2e.lastSeen(aliceId), 0);
+
+  // On, both: the time goes, and is kept, sealed, across launches.
+  let aliceAt = Date.now() - 60_000;
+  let bobAt = 0;
+  alice.e2e.setLastSeen({ on: true, at: () => aliceAt });
+  bob.e2e.setLastSeen({ on: true, at: () => bobAt });
+  assert.equal(alice.e2e.seenNews(bobId), true);
+  const said = message(await bob.e2e.receive((await alice.e2e.seal(bobId, 'b', alice.from)).packet));
+  assert.equal(said.seen, true);
+  assert.equal(bob.e2e.lastSeen(aliceId), aliceAt);
+  assert.equal(alice.e2e.seenNews(bobId), false);
+  const again = await E2E.open('space', 1, bob.key);
+  assert.equal(again.lastSeen(aliceId), 0);
+  again.setLastSeen({ on: true, at: () => 0 });
+  assert.equal(again.lastSeen(aliceId), aliceAt);
+
+  // An older time does not go back; one ahead of this clock counts as now.
+  const was = aliceAt;
+  aliceAt = was - 5_000;
+  message(await bob.e2e.receive((await alice.e2e.seal(bobId, '', alice.from, { got: [] })).packet));
+  assert.equal(bob.e2e.lastSeen(aliceId), was);
+  aliceAt = Date.now() + 3_600_000;
+  message(await bob.e2e.receive((await alice.e2e.seal(bobId, 'c', alice.from)).packet));
+  assert.ok(bob.e2e.lastSeen(aliceId) <= Date.now());
+  assert.ok(bob.e2e.lastSeen(aliceId) > was);
+  // Shown again since: one who asks while the app is away is told once.
+  aliceAt = Date.now() + 7_200_000;
+  assert.equal(alice.e2e.seenNews(bobId), true);
+
+  // Not known since the start: Bob's says nothing, and Alice keeps none.
+  message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'd', bob.from)).packet));
+  assert.equal(alice.e2e.lastSeen(bobId), 0);
+  bobAt = Date.now() - 1_000;
+  message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'e', bob.from)).packet));
+  assert.equal(alice.e2e.lastSeen(bobId), bobAt);
+
+  // Bob turns it off: he sees Alice's no more, and his next message makes Alice forget his.
+  bob.e2e.setLastSeen({ on: false, at: () => bobAt });
+  assert.equal(bob.e2e.lastSeen(aliceId), 0);
+  assert.equal(bob.e2e.seenNews(aliceId), false);
+  const off = message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'f', bob.from)).packet));
+  assert.equal(off.seen, true);
+  assert.equal(alice.e2e.lastSeen(bobId), 0);
+  assert.equal(alice.e2e.contacts().length, 1);
+
+  // A chat that appears offline tells none, and shows none.
+  bob.e2e.setLastSeen({ on: true, at: () => bobAt });
+  await alice.e2e.setHidden(bobId, true);
+  const hid = message(await bob.e2e.receive((await alice.e2e.seal(bobId, '', alice.from, { got: [] })).packet));
+  assert.equal(hid.seen, false);
+  message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'g', bob.from)).packet));
+  assert.equal(alice.e2e.lastSeen(bobId), 0);
+  assert.equal(alice.e2e.seenNews(bobId), false);
+  await alice.e2e.setHidden(bobId, false);
+  assert.equal(alice.e2e.lastSeen(bobId), bobAt);
+});
+
 t('a phone says it is open when it writes or answers, and a chat that appears offline holds its marks', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

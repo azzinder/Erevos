@@ -782,29 +782,43 @@ marcas. Un ordenador vinculado a este teléfono muestra las mismas marcas.
   hacer, así que una conexión que murió por el camino, como cuando la red del teléfono se duerme o cambia, no retiene
   nada.
 
-### En línea, y aparecer sin conexión
+### En línea, última vez, y aparecer sin conexión
 
 Mientras el chat de un contacto está abierto en tu pantalla, Erevos pregunta de vez en cuando a su teléfono si está
 abierto, y dice que el tuyo lo está. Si el suyo lo está, el chat dice **En línea** bajo su nombre con un punto verde, y
 la pantalla de inicio muestra el punto en su imagen. Escribirle a alguien también te muestra en línea para esa persona
 durante dos minutos. Todo va dentro del cifrado, solo entre tú y ese contacto: el relay ve un mensaje de vez en cuando,
-como con cualquier chat. No hay «última vez».
+como con cualquier chat.
+
+Cuando un contacto no está en línea, su chat dice cuándo tuvo Erevos abierto por última vez, al minuto: **última vez
+hoy a las 14:32**. Tu teléfono les dice la tuya a tus contactos de la misma manera, dentro de lo que ya les va de
+todos modos (un mensaje, o que ha llegado uno), y una vez cuando uno abre tu chat mientras Erevos está cerrado en tu
+teléfono, solo si estuvo abierto desde la última vez que se les dijo. Está activada salvo que la desactives, en
+**Ajustes** → **Privacidad y seguridad** → **Última vez**, o en los detalles de cualquier chat. Va en los dos
+sentidos: desactivada, nadie ve la tuya, y tú tampoco ves la de nadie; quienes la veían la pierden con tu siguiente
+mensaje. Se ajusta para todo el espacio y sus dispositivos vinculados, cada espacio por separado. Cada lugar de chats
+ocultos tiene su propio interruptor, en los detalles de un chat de allí, y su propia hora: mientras están abiertos,
+solo ellos cuentan como abiertos, no el espacio.
 
 Mientras escribes a un contacto que aparece en línea, su chat muestra **escribiendo…** bajo tu nombre durante unos
 segundos, y el tuyo bajo el suyo cuando escribe. Se dice como mucho cada pocos segundos, solo mientras aparece en línea,
 nunca a una solicitud de mensaje, y no en los grupos.
 
 **Por qué:** estar en línea solo se dice entre tú y un contacto cuyo chat está abierto, dentro del cifrado, así que el
-relay no ve más que un mensaje de vez en cuando entre dos personas que hablan, y no se guarda nada de ello: por eso no
-hay «última vez» que mostrar. Alguien que solo tiene tu enlace, y te escribe como solicitud de mensaje, no recibe nada
-de vuelta hasta que aceptes: ni que has leído, ni que estás en línea o escribiendo.
+relay no ve más que un mensaje de vez en cuando entre dos personas que hablan. La hora en que estuviste por última vez
+viaja dentro de esos mismos mensajes, cifrada de extremo a extremo: el relay nunca la conoce. Sí les dice a tus
+contactos cuándo duermes o trabajas, y de dos contactos vistos en el mismo minuto se puede suponer que hablan entre
+sí: desactívala si eso te importa. Alguien que solo tiene tu enlace, y te escribe como solicitud de mensaje, no recibe
+nada de vuelta hasta que aceptes: ni que has leído, ni que estás en línea o escribiendo, ni cuándo estuviste por
+última vez.
 
 Para ocultarlo a un contacto, abre su chat, toca su nombre y luego **Aparecer sin conexión**. Con eso activado:
 
 - **No te ve en línea**, ni que estás escribiendo, y tu teléfono no le envía nada mientras lees.
 - **Sus mensajes se quedan en ✓** en su teléfono, no en ✓✓ ni ✓✓✓, mientras los lees.
 - **Cuando le escribes**, apareces en línea durante dos minutos, y cada mensaje suyo que lees pasa a ✓✓✓ al instante.
-- **Tú tampoco lo ves en línea**, ya que tu teléfono no pregunta.
+- **Tú tampoco lo ves en línea**, ya que tu teléfono no pregunta, ni cuándo estuvo en línea por última vez; y no
+  recibe ninguna hora tuya.
 
 Se ajusta para cada chat, solo en este teléfono. Desactívalo de nuevo y verá lo que leíste en tu siguiente consulta al
 relay.
@@ -3222,10 +3236,10 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   archivo de una nota va como copia en el relay, eliminada de ahí en cuanto se recoge, o, con dos dispositivos o más,
   se deja ahí hasta que caduca (14 días). Las notas de los chats ocultos van solo dentro de su propio vínculo, más
   abajo.
-- **Ajustes:** el idioma y el aspecto (el estilo, los colores, el tamaño del texto) son los mismos en todos los
-  dispositivos del espacio: cambiados en uno, cambian también en los otros. Una foto detrás de las pantallas se queda
-  en el dispositivo donde se eligió, igual que todo lo que atañe a un solo dispositivo: contraseñas, PIN y el código
-  de pánico, el tiempo del bloqueo, la vibración, el relay y Tor, los módulos, el nombre del dispositivo. Un
+- **Ajustes:** el idioma, el aspecto (el estilo, los colores, el tamaño del texto) y **Última vez** son los mismos en
+  todos los dispositivos del espacio: cambiados en uno, cambian también en los otros. Una foto detrás de las pantallas
+  se queda en el dispositivo donde se eligió, igual que todo lo que atañe a un solo dispositivo: contraseñas, PIN y el
+  código de pánico, el tiempo del bloqueo, la vibración, el relay y Tor, los módulos, el nombre del dispositivo. Un
   dispositivo que deba guardar los suyos: **Ajustes** → **Datos y dispositivos** → **Dispositivos vinculados** → **Los
   mismos ajustes en todos los dispositivos** desactivado. Activado de nuevo, toma enseguida los de los otros. Los
   chats ocultos guardan los suyos.

@@ -205,6 +205,10 @@ type Message = {
    *  whether it asks for a bell on the relay too (`b`); '' to say it no longer reads there. Absent
    *  says nothing of it. An Erevos before ignores it, and sends through the relay. */
   ns?: NostrTo | '';
+  /** When the sender's space was last open on its screen (ms, its clock: lib/last-seen.ts), or 0 to
+   *  say it tells none, and wants none of it kept. Absent says nothing of it: an Erevos before, hidden
+   *  chats, a chat that appears offline, or a time not known since the app started. */
+  ls?: number;
 };
 
 /** What else a message can carry. */
@@ -267,7 +271,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi, ns }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, dl, acct, to, qa, hi, ns, ls }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -298,6 +302,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(dl ? { dl } : {}),
       ...(acct ? { acct } : {}),
       ...(to ? { to } : {}),
+      ...(ls !== undefined ? { ls } : {}),
       ...(from && qa ? { qa } : {}),
       ...(hi ? { hi } : {}),
       ...(ns !== undefined ? { ns } : {}),
@@ -422,6 +427,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(value.to !== undefined ? { to: typeof value.to === 'string' && /^[0-9a-f]{64}$/.test(value.to) ? value.to : '' } : {}),
       ...(isTime(value.qa) && value.qa > 0 ? { qa: value.qa } : {}),
       ...(isHi(value.hi) ? { hi: value.hi } : {}),
+      ...(isTime(value.ls) ? { ls: value.ls } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -490,6 +496,8 @@ export type Received =
       online: number;
       // They ask whether this phone is open.
       ask: boolean;
+      // They said when their Erevos was last open, or that they tell none (lib/last-seen.ts).
+      seen: boolean;
       // Setting up or ending a call.
       call: CallSignal | null;
       // Bringing a contact into a group (lib/groups.ts).
@@ -751,6 +759,11 @@ export class E2E {
   // Only in memory: none of it is kept.
   private readonly online = new Map<string, number>();
   private readonly told = new Map<string, number>();
+  // Whether this chat says when its space was last open, and is shown its contacts' (lib/last-seen.ts):
+  // null, as for hidden chats, says nothing and shows nothing. And the time last said to each
+  // contact, only in memory, so one who asks while the app is away is answered only with a newer one.
+  private seenWay: { on: boolean; at: () => number } | null = null;
+  private readonly seenTold = new Map<string, number>();
   // This chat's backup queue (lib/spare.ts), said in every message that says where its queue is.
   private ownSpare: Spare | null = null;
   // When this chat's own queue was made (`qa`, lib/queue-move.ts), said with it; 0 while not known.
@@ -1364,6 +1377,54 @@ export class E2E {
   onlineUntil(identity: string, now = Date.now()): number {
     const until = this.online.get(identity) ?? 0;
     return until > now ? until : 0;
+  }
+
+  /**
+   * Says whether this chat tells its contacts when its space was last open (`on`), with when that was
+   * (`at`), and is shown theirs: the space's own chat only (lib/last-seen.ts). Null, as hidden chats
+   * keep it, says nothing and shows nothing.
+   */
+  setLastSeen(way: { on: boolean; at: () => number } | null): void {
+    this.seenWay = way;
+  }
+
+  /** When a contact's Erevos was last open, as they said (ms), or 0: not said, not shown here, or a chat that appears offline. */
+  lastSeen(identity: string): number {
+    if (!this.seenWay?.on) return 0;
+    const contact = this.find(identity);
+    return contact && !contact.hide && !contact.request ? (contact.seenAt ?? 0) : 0;
+  }
+
+  /** Whether a contact who asks while the app is away is told when its space was last open: it was open since they were last told. */
+  seenNews(identity: string): boolean {
+    const way = this.seenWay;
+    if (!way?.on) return false;
+    const contact = this.find(identity);
+    return !!contact && !contact.hide && !contact.request && way.at() > (this.seenTold.get(identity) ?? 0);
+  }
+
+  // What a message to a contact says of when this space was last open: nothing from hidden chats, to
+  // a chat that appears offline, or to a request not accepted; 0 once turned off; else the time, once known.
+  private saysSeen(contact: Contact): { ls?: number } {
+    const way = this.seenWay;
+    if (!way || contact.hide || contact.request) return {};
+    if (!way.on) return { ls: 0 };
+    const at = way.at();
+    if (at <= 0) return {};
+    this.seenTold.set(contact.identity, Math.max(at, this.seenTold.get(contact.identity) ?? 0));
+    return { ls: at };
+  }
+
+  // A contact's message, as it says when their Erevos was last open: kept, the latest, never later
+  // than now; 0 forgets it; absent leaves it. Only by a chat that shows it.
+  private seenIn(contact: Contact, message: Message, now = Date.now()): Contact {
+    if (message.ls === undefined || !this.seenWay) return contact;
+    if (message.ls === 0) {
+      const { seenAt: _seenAt, ...rest } = contact;
+      return rest;
+    }
+    const at = Math.min(message.ls, now);
+    return at > (contact.seenAt ?? 0) ? { ...contact, seenAt: at } : contact;
   }
 
   /** When this phone last said to a contact that it is open, milliseconds, or 0. */
@@ -2171,6 +2232,7 @@ export class E2E {
         got: first ? tags([...message.got, ...contact.heldGot.filter((tag) => !contact.heldRead.includes(tag))]) : message.got,
         read: first ? tags([...message.read, ...contact.heldRead]) : message.read,
         ...(leaving ? {} : this.saysDevices(contact)),
+        ...this.saysSeen(contact),
       };
     });
     // A linked device's chats restored from its backup have no conversation to write in (lib/devices.ts, copied).
@@ -2996,7 +3058,7 @@ export class E2E {
       ...(known?.verified ? { verified: known.verified } : {}),
     };
     const learned = this.partOf(contact) ? await this.heardOf(contact, message) : {};
-    const { contact: next, twice } = tookIn({ ...contact, ...learned }, message, this.link?.through === true);
+    const { contact: next, twice } = tookIn(this.seenIn({ ...contact, ...learned }, message), message, this.link?.through === true);
     const kept = { ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN) };
     if (welcomed) {
       const invited = (kept.invited ?? []).filter((i) => i.hi !== welcomed.hi);
@@ -3066,7 +3128,7 @@ export class E2E {
   private async tookFirst(contact: Contact, was: Contact, opened: core.Opened, message: Message, id: string, from: string, packet: string): Promise<Received> {
     const timing = timerOf(message, contact);
     const learned = from ? {} : await this.heardOf(contact, message);
-    const { contact: next, twice } = tookIn({ ...contact, ...learned, timer: timing.timer, timerAt: timing.timerAt }, message, this.link?.through === true);
+    const { contact: next, twice } = tookIn(this.seenIn({ ...contact, ...learned, timer: timing.timer, timerAt: timing.timerAt }, message), message, this.link?.through === true);
     const unverified = this.data.unverified?.filter((u) => u.packet !== packet);
     await this.save({ ...this.withContact(next), seen: [...this.data.seen, id].slice(-MAX_SEEN), ...(unverified ? { unverified } : {}) });
     if (next.list && next.list.n !== was.list?.n) await this.retryUnverified(next.identity);
@@ -3147,7 +3209,8 @@ export class E2E {
     const re = message.re ?? '';
     const react = message.react ?? null;
     const more = message.more ?? {};
-    return { kind: 'message', identity, text, tag, added, request, erase, got, read, voice, file, online, ask, call, group, quiet, due, re, react, more, from, twice, ...timing };
+    const seen = message.ls !== undefined && !!this.seenWay;
+    return { kind: 'message', identity, text, tag, added, request, erase, got, read, voice, file, online, ask, seen, call, group, quiet, due, re, react, more, from, twice, ...timing };
   }
 
   // A contact's newer prekeys (`ak`), given in their conversation: kept, and a new conversation
@@ -3263,7 +3326,7 @@ export class E2E {
     const account = !given && (!way || direct);
     const renewed = account && !way ? await this.startedAgain(updated, message) : null;
     const learned = account && this.partOf(updated) ? await this.heardOf(updated, message) : null;
-    const { contact: took, twice } = tookIn({ ...updated, ...renewed, ...learned }, message, this.link?.through === true);
+    const { contact: took, twice } = tookIn(this.seenIn({ ...updated, ...renewed, ...learned }, message), message, this.link?.through === true);
     const next = cameThrough(took, message);
     await this.save(this.withContact(next));
     if (next.list && next.list.n !== contact.list?.n) await this.retryUnverified(contact.identity);

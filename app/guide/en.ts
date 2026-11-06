@@ -727,28 +727,39 @@ message stays at **✓**. Public groups have no marks. A computer linked to this
   anything else 45 seconds, a part of a file 2 minutes) counts as failed and is asked again, so a connection that
   died on the way, as when the phone's network sleeps or changes, holds nothing back.
 
-### Online, and appearing offline
+### Online, last seen, and appearing offline
 
 While a contact's chat is open on your screen, Erevos asks their phone now and then whether it is open, and says yours
 is. If theirs is, the chat says **Online** under their name with a green dot, and the home screen shows the dot on
 their picture. Writing to someone also shows you online to them for two minutes. All of it goes inside the encryption,
-only between you and that contact: the relay sees a message now and then, as with any chat. There is no "last seen".
+only between you and that contact: the relay sees a message now and then, as with any chat.
+
+When they are not online, the chat says when they last had Erevos open, to the minute: **last seen today at 14:32**. Your
+phone tells your contacts yours the same way, inside what goes to them anyway (a message, or that one came), and once
+when one opens your chat while Erevos is closed on your phone, only if it was open since they were last told. It is on
+unless you turn it off, in **Settings** → **Privacy and security** → **Last seen**, or in any chat's details. It goes both
+ways: turned off, no one sees yours, and you see no one's either; those who saw it lose it with your next message. It is
+set for the whole space and its linked devices, each space on its own. Each place of hidden chats has its own switch,
+in a chat's details there, and its own time: while they are open, only they count as open, not the space.
 
 While you type to a contact who shows online, their chat shows **typing…** under your name for a few seconds, and
 yours under theirs when they type. It is said every few seconds at most, only while they show online, never to a
 message request, and not in groups.
 
 **Why:** being online is said only between you and a contact whose chat is open, inside the encryption, so the relay
-sees no more than a message now and then between two people talking, and nothing of it is kept: so there is no "last
-seen" to show. Someone who only has your link, writing as a message request, hears nothing back until you accept: not
-that you read, nor that you are online or typing.
+sees no more than a message now and then between two people talking. The time you were last seen rides inside the same
+messages, end-to-end encrypted: the relay never learns it. It does tell your contacts when you sleep or work, and two
+contacts seen at the same minute may be guessed to talk: turn it off if that matters to you. Someone who only has your
+link, writing as a message request, hears nothing back until you accept: not that you read, nor that you are online,
+typing or last seen.
 
 To hide it from one contact, open their chat, tap its name and then **Appear offline**. With it on:
 
 - **They do not see you online**, nor that you are typing, and your phone sends them nothing while you read.
 - **Their messages stay ✓** on their phone, not ✓✓ or ✓✓✓, while you read them.
 - **When you write to them**, you show online for two minutes, and every message of theirs you read turns ✓✓✓ at once.
-- **You do not see them online either**, since your phone does not ask.
+- **You do not see them online either**, since your phone does not ask, nor when they were last seen; and they get
+  no time of yours.
 
 It is set for each chat, on this phone only. Turn it off again and they see what you read with your next look at the relay.
 
@@ -2960,8 +2971,8 @@ The chats then come to the computer, and after them the messages chosen.
   at its time, and seen on one it goes from the others. A note's photo or file goes as a copy on the relay, deleted
   there once taken, or, for two devices or more, left there until it expires (14 days). Hidden chats' notes go only
   within their own link, below.
-- **Settings:** the language and the look (the style, the colours, the size of the text) are the same on every device
-  of the space: changed on one, they change on the others too. A photo behind the screens stays on the device it was
+- **Settings:** the language, the look (the style, the colours, the size of the text) and **Last seen** are the same on
+  every device of the space: changed on one, they change on the others too. A photo behind the screens stays on the device it was
   chosen on, and so does all that is about one device alone: passwords, PINs and the panic code, the lock's time,
   vibration, the relay and Tor, the modules, the device's name. A device that should keep its own: **Settings** →
   **Data and devices** → **Linked devices** → **Same settings on every device** off. Turned on again, it takes the

@@ -777,22 +777,35 @@ este celular mostra as mesmas marcas.
   feita de novo, para que uma conexão que morreu no caminho, como quando a rede do celular dorme ou muda, não segure
   nada.
 
-### Online, e aparecer offline
+### Online, visto por último, e aparecer offline
 
 Enquanto a conversa de um contato está aberta na sua tela, o Erevos pergunta de vez em quando ao celular da pessoa se
 ela está aberta lá, e diz que a sua está. Se a dela estiver, a conversa diz **Online** abaixo do nome dela com um ponto
 verde, e a tela inicial mostra o ponto na imagem dela. Escrever para alguém também mostra você online para essa pessoa
 por dois minutos. Tudo isso vai dentro da criptografia, só entre você e esse contato: o relay vê uma mensagem de vez em
-quando, como em qualquer conversa. Não há "visto por último".
+quando, como em qualquer conversa.
+
+Quando um contato não está online, a conversa dele diz quando ele esteve com o Erevos aberto pela última vez, até o
+minuto: **visto por último hoje às 14:32**. O seu celular diz o seu aos seus contatos do mesmo jeito, dentro do que já
+vai para eles de qualquer forma (uma mensagem, ou que uma chegou), e uma vez quando um deles abre a sua conversa
+enquanto o Erevos está fechado no seu celular, só se ele esteve aberto desde a última vez que foi dito. Fica ativado,
+a menos que você desative, em **Configurações** → **Privacidade e segurança** → **Visto por último**, ou nos detalhes
+de qualquer conversa. Vale nos dois sentidos: desativado, ninguém vê o seu, e você também não vê o de ninguém; quem o
+via o perde com a sua próxima mensagem. É definido para todo o espaço e seus dispositivos conectados, cada espaço
+separadamente. Cada lugar de conversas ocultas tem o seu próprio interruptor, nos detalhes de uma conversa de lá, e a
+sua própria hora: enquanto estão abertas, só elas contam como abertas, não o espaço.
 
 Enquanto você digita para um contato que aparece online, a conversa dele mostra **digitando…** abaixo do seu nome por
 alguns segundos, e a sua abaixo do nome dele quando ele digita. Isso é dito no máximo a cada poucos segundos, só
 enquanto ele aparece online, nunca para uma solicitação de mensagem, e não nos grupos.
 
 **Por quê:** estar online só é dito entre você e um contato cuja conversa está aberta, dentro da criptografia, então o
-relay não vê mais do que uma mensagem de vez em quando entre duas pessoas conversando, e nada disso é guardado: por isso
-não há "visto por último" para mostrar. Alguém que só tem o seu link, escrevendo como solicitação de mensagem, não
-recebe nada de volta até você aceitar: nem que você leu, nem que está online ou digitando.
+relay não vê mais do que uma mensagem de vez em quando entre duas pessoas conversando. A hora em que você foi visto
+por último viaja dentro dessas mesmas mensagens, criptografada de ponta a ponta: o relay nunca a conhece. Ela conta
+aos seus contatos quando você dorme ou trabalha, e de dois contatos vistos no mesmo minuto dá para supor que conversam
+entre si: desative se isso importa para você. Alguém que só tem o seu link, escrevendo como solicitação de mensagem,
+não recebe nada de volta até você aceitar: nem que você leu, nem que está online ou digitando, nem quando foi visto
+por último.
 
 Para esconder isso de um contato, abra a conversa dele, toque no nome dela e depois em **Aparecer offline**. Com isso
 ativado:
@@ -801,7 +814,8 @@ ativado:
 - **As mensagens dele ficam ✓** no celular dele, não ✓✓ nem ✓✓✓, enquanto você as lê.
 - **Quando você escreve para ele**, você aparece online por dois minutos, e todas as mensagens dele que você leu viram
   ✓✓✓ na hora.
-- **Você também não o vê online**, já que o seu celular não pergunta.
+- **Você também não o vê online**, já que o seu celular não pergunta, nem quando ele foi visto por último; e ele não
+  recebe nenhum horário seu.
 
 É definido para cada conversa, só neste celular. Desative de novo e ele vê o que você leu na sua próxima olhada no
 relay.
@@ -3197,12 +3211,13 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   Um lembrete aparece em cada dispositivo no horário dele, e visto em um sai dos outros. A foto ou o arquivo de uma
   nota vai como cópia no relay, apagada de lá assim que é pega, ou, para dois dispositivos ou mais, deixada lá até
   expirar (14 dias). As notas das conversas ocultas vão só dentro da própria conexão delas, mais abaixo.
-- **Configurações:** o idioma e a aparência (o estilo, as cores, o tamanho do texto) são os mesmos em todos os
-  dispositivos do espaço: mudados em um, mudam também nos outros. Uma foto atrás das telas fica no dispositivo onde
-  foi escolhida, assim como tudo o que diz respeito a um só dispositivo: senhas, PINs e o código de pânico, o tempo do
-  bloqueio, a vibração, o relay e o Tor, os módulos, o nome do dispositivo. Um dispositivo que deve manter as suas:
-  **Configurações** → **Dados e dispositivos** → **Dispositivos conectados** → **As mesmas configurações em todos os
-  dispositivos** desligado. Ligado de novo, pega na hora as dos outros. As conversas ocultas mantêm as suas.
+- **Configurações:** o idioma, a aparência (o estilo, as cores, o tamanho do texto) e **Visto por último** são os
+  mesmos em todos os dispositivos do espaço: mudados em um, mudam também nos outros. Uma foto atrás das telas fica no
+  dispositivo onde foi escolhida, assim como tudo o que diz respeito a um só dispositivo: senhas, PINs e o código de
+  pânico, o tempo do bloqueio, a vibração, o relay e o Tor, os módulos, o nome do dispositivo. Um dispositivo que deve
+  manter as suas: **Configurações** → **Dados e dispositivos** → **Dispositivos conectados** → **As mesmas
+  configurações em todos os dispositivos** desligado. Ligado de novo, pega na hora as dos outros. As conversas ocultas
+  mantêm as suas.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
   atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
   celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só

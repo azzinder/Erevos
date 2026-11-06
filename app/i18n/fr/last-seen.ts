@@ -1,0 +1,28 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+// The French of "last seen" (lib/last-seen.ts): the chat's header and details (app/chat.tsx), and its
+// part of Settings → Privacy and security (app/security.tsx, lib/settings.ts) (i18n/fr/index.ts).
+export const lastSeen: Record<string, string> = {
+  'last seen today at {time}': 'vu pour la dernière fois aujourd’hui à {time}',
+  'last seen yesterday at {time}': 'vu pour la dernière fois hier à {time}',
+  'last seen {date} at {time}': 'vu pour la dernière fois le {date} à {time}',
+  'Last seen': 'Vu pour la dernière fois',
+  'Who sees when you last had Erevos open: on, unless changed':
+    'Qui voit quand tu as eu Erevos ouvert pour la dernière fois : activé, sauf si tu le changes',
+  'Your contacts see the exact time you last had Erevos open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. In all chats of this space; hidden chats have their own switch.':
+    'Tes contacts voient l’heure exacte à laquelle tu as eu Erevos ouvert pour la dernière fois, et tu vois la leur. Elle part chiffrée de bout en bout vers eux seuls, jamais vers le relais. Dans toutes les discussions de cet espace ; les discussions masquées ont leur propre interrupteur.',
+  'Your contacts here see the exact time you last had these hidden chats open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. Only in these hidden chats, with a time of their own: the space’s chats have their own switch.':
+    'Tes contacts d’ici voient l’heure exacte à laquelle tu as eu ces discussions masquées ouvertes, et tu vois la leur. Elle part chiffrée de bout en bout vers eux seuls, jamais vers le relais. Seulement dans ces discussions masquées, avec une heure à part : les discussions de l’espace ont leur propre interrupteur.',
+  'No one here sees when you last had these hidden chats open, and you see no one’s here either. Those who saw it lose it with your next message.':
+    'Personne ici ne voit quand tu as eu ces discussions masquées ouvertes, et tu ne vois celle de personne ici. Ceux qui la voyaient la perdent avec ton message suivant.',
+  'No one sees when you last had Erevos open, and you see no one’s either. Those who saw it lose it with your next message.':
+    'Personne ne voit quand tu as eu Erevos ouvert pour la dernière fois, et tu ne vois celle de personne. Ceux qui la voyaient la perdent avec ton message suivant.',
+  'On: your contacts see the exact time you last had Erevos open, and you see theirs.':
+    'Activé : tes contacts voient l’heure exacte à laquelle tu as eu Erevos ouvert pour la dernière fois, et tu vois la leur.',
+  'Off: no one sees when you last had Erevos open, and you see no one’s either.':
+    'Désactivé : personne ne voit quand tu as eu Erevos ouvert pour la dernière fois, et tu ne vois celle de personne.',
+  'It goes end-to-end encrypted, inside what goes to your contacts anyway, never to the relay. Only for the chats of this space: hidden chats have their own switch, in a chat’s details there. Whether you are online now has its own switch in each chat: Appear offline.':
+    'Elle part chiffrée de bout en bout, à l’intérieur de ce qui part de toute façon vers tes contacts, jamais vers le relais. Seulement pour les discussions de cet espace : les discussions masquées ont leur propre interrupteur, dans les détails d’une discussion de là-bas. Savoir si tu es en ligne maintenant a son propre interrupteur dans chaque discussion : Apparaître hors ligne.',
+};

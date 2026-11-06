@@ -179,8 +179,8 @@ import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } 
 import { onPiece } from '../lib/nostr-pieces';
 import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
-import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, spaceChats, type SpaceChats } from '../lib/space-chats';
-import { placeChats } from '../lib/place-chats';
+import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, spaceChats, type SpaceChats } from '../lib/space-chats';
+import { placeChats, setPlaceLastSeen } from '../lib/place-chats';
 import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
@@ -196,6 +196,7 @@ import { ScreenBackdrop } from '../components/backdrop';
 import { AppearanceEditor } from './appearance';
 import { press, tap } from '../lib/haptics';
 import { t, plural, mark, locale, useLang } from '../lib/i18n';
+import { lastSeenText } from '../lib/last-seen';
 
 // Chat with contacts, end-to-end encrypted (lib/e2e.ts), through the relay and, while their phone
 // is near, over the radio link too (lib/nearby.ts), where phones nearby may also carry a message
@@ -580,6 +581,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [lanOn, setLanOn] = useState(true);
   // Whether this phone makes the preview of a link it sends, in the space's chats (SpaceData.previews).
   const [previews, setPreviews] = useState(false);
+  // Whether the space's contacts see when it was last open, and it sees theirs (SpaceData.lastSeen).
+  const [lastSeenOn, setLastSeenOn] = useState(true);
   // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
   const [watched, setWatched] = useState(false);
   // Whether these hidden chats receive while closed, as the space's chats do (lock/hidden-keep.ts).
@@ -1038,6 +1041,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   function changePreviews(on: boolean) {
     setPreviews(on);
     (hiddenKey ? updateHiddenData(currentSpace().space, pocket, hiddenKey, { previews: on }) : updateCurrentSpaceData({ previews: on })).catch((error) => setNote(errorText(error)));
+  }
+
+  // Tells the space's contacts when it was last open, and shows theirs, or neither (lib/last-seen.ts).
+  function changeLastSeen(on: boolean) {
+    setLastSeenOn(on);
+    (hiddenKey ? setPlaceLastSeen(currentSpace().space, pocket, hiddenKey, on) : setLastSeen(on))
+      .then(() => setNow(Date.now()))
+      .catch((error) => setNote(errorText(error)));
   }
 
   // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
@@ -1565,6 +1576,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setViaUrl(data.via);
         setViaToken(data.viaToken);
         setPreviews(data.previews);
+        setLastSeenOn(data.lastSeen);
         if (hiddenKey) setPlaceSign(data.sign);
         setHomeUrl(data.spare.url);
         setHomeToken(data.spare.token);
@@ -2268,7 +2280,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       });
     }
     if (received.group) void (placeGroups ? placeGroups.signal(received.identity, received.group, received.request) : takeGroupSignal(received.identity, received.group, received.request)).catch(() => undefined);
-    if (received.online) setNow(Date.now());
+    if (received.online || received.seen) setNow(Date.now());
     const hidden = e2e.contacts().some((c) => c.identity === received.identity && c.hide);
     if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(received.identity))) answers.current.add(peer);
     // What else it is: an answer to one of the chat's messages, a sticker.
@@ -5371,6 +5383,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const selectedOnline = !!selectedIdentity && !selectedHidden && !!e2e && e2e.onlineUntil(selectedIdentity, now) > 0;
   const selectedNearby = !!selectedIdentity && (hiddenKey ? !!nearHeard.current?.isNear(selectedIdentity) : nearby.isNear(selectedIdentity));
   const selectedTyping = !!selected && !selectedHidden && (typing[selected] ?? 0) > Date.now();
+  // When they were last open, as they said, while they do not show online (lib/last-seen.ts).
+  const selectedSeen = !!selectedIdentity && !!e2e && !selectedOnline ? e2e.lastSeen(selectedIdentity) : 0;
   const subtitle = selectedContact
     ? selectedTyping
       ? t('typing…')
@@ -5380,6 +5394,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           : t('Online')
         : selectedNearby
           ? t('Nearby · end-to-end encrypted')
+          : selectedSeen
+            ? lastSeenText(selectedSeen, now)
           : selectedTimer
             ? t('End-to-end encrypted · {time} after read', { time: timerLabel(selectedTimer) })
             : t('End-to-end encrypted')
@@ -5395,7 +5411,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         : t('Online')
       : selectedNearby
         ? t('Nearby')
-        : t('Encrypted');
+        : selectedSeen
+          ? lastSeenText(selectedSeen, now)
+          : t('Encrypted');
 
   // What "+" opens under the message bar: what can be sent, as tiles, then how the next message
   // goes, as rows. "Send as SMS" (a chat whose contact has a phone number linked) goes last of the
@@ -5901,6 +5919,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                           {selectedHidden
                             ? t('They do not see when you are online, nor that their messages came or were read, until you write. You do not see when they are online either.')
                             : t('They see when you are online, and which of their messages you read.')}
+                        </Text>
+                        <View style={styles.rule} />
+                        <DetailRow title={t('Last seen')} checked={lastSeenOn} onPress={() => changeLastSeen(!lastSeenOn)} />
+                        <Text variant="caption" tone="muted" style={styles.rowMore}>
+                          {lastSeenOn && hiddenKey
+                            ? t('Your contacts here see the exact time you last had these hidden chats open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. Only in these hidden chats, with a time of their own: the space’s chats have their own switch.')
+                            : lastSeenOn
+                              ? t('Your contacts see the exact time you last had Erevos open, and you see theirs. It goes end-to-end encrypted to them only, never to the relay. In all chats of this space; hidden chats have their own switch.')
+                              : hiddenKey
+                                ? t('No one here sees when you last had these hidden chats open, and you see no one’s here either. Those who saw it lose it with your next message.')
+                                : t('No one sees when you last had Erevos open, and you see no one’s either. Those who saw it lose it with your next message.')}
                         </Text>
                         {!hiddenKey ? (
                           <>

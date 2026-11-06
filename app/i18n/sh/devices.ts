@@ -147,6 +147,6 @@ export const devices: Record<string, string> = {
     'Kad se ovaj uređaj odvoji, odjavljuje se s računa koje je prenio s telefona.',
   'Send the accounts': 'Pošalji račune',
   'Same settings on every device': 'Iste postavke na svim uređajima',
-  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
-    'Jezik i izgled mijenjaju se i na drugim uređajima. Fotografija iza ekrana, lozinke, PIN-ovi i ono što se tiče samo ovog uređaja ostaju kakvi jesu na svakom.',
+  'The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    'Jezik, izgled i Posljednji put viđen mijenjaju se i na drugim uređajima. Fotografija iza ekrana, lozinke, PIN-ovi i ono što se tiče samo ovog uređaja ostaju kakvi jesu na svakom.',
 };

@@ -147,6 +147,6 @@ export const devices: Record<string, string> = {
     'Depois que este dispositivo for desconectado, ele sai das contas que trouxe do celular.',
   'Send the accounts': 'Enviar as contas',
   'Same settings on every device': 'As mesmas configurações em todos os dispositivos',
-  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
-    'O idioma e a aparência mudam também nos outros dispositivos. Uma foto atrás das telas, as senhas, os PINs e o que diz respeito só a este dispositivo ficam como estão em cada um.',
+  'The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    'O idioma, a aparência e Visto por último mudam também nos outros dispositivos. Uma foto atrás das telas, as senhas, os PINs e o que diz respeito só a este dispositivo ficam como estão em cada um.',
 };

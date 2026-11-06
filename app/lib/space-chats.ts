@@ -14,6 +14,9 @@ import { VoiceAssembler } from './voice';
 import { sweepPieces, type PiecePlace } from './nostr-pieces';
 import { keepPiecesFile } from '../lock/nostr-pieces-data';
 import { t } from './i18n';
+import { shownAt, spaceSeenKey } from './last-seen';
+import { loadSpaceData, updateSpaceData } from '../lock/space-data';
+import { onSettingCame, onSettingNow, settingChanged } from './sync/settings';
 
 // The open space's chats through the relay, opened once while the space is: its account and
 // contacts (lib/e2e.ts), the messages it keeps (lock/history.ts), and the voice messages still
@@ -26,6 +29,8 @@ import { t } from './i18n';
 export type SpaceChats = { e2e: E2E; history: History; voiceParts: VoiceAssembler; pieces?: PiecePlace };
 
 let opened: { of: object; chats: Promise<SpaceChats> } | null = null;
+// Whether the open space says when it was last open (SpaceData.lastSeen), once its chats opened.
+let lastSeenNow: { of: object; on: boolean } | null = null;
 // The same once open, for what must know at once (lib/chat-notices.ts).
 let ready: SpaceChats | null = null;
 // What joins the space's chats as they open, before anything uses them: the links to the account's
@@ -44,6 +49,10 @@ export function spaceChats(): Promise<SpaceChats> {
     const chats = (async () => {
       const history = await History.open('space', current.space, current.key);
       const e2e = await E2E.open('space', current.space, current.key);
+      // Whether its contacts are told when it was last open, and it is shown theirs (lib/last-seen.ts).
+      const lastSeen = (await loadSpaceData(current.space, current.key).catch(() => null))?.lastSeen ?? true;
+      e2e.setLastSeen({ on: lastSeen, at: () => shownAt(spaceSeenKey(current.space)) });
+      lastSeenNow = { of: current, on: lastSeen };
       const pieces: PiecePlace = { holder: 'space', space: current.space, key: current.key };
       // The space's value among the pieces' (lock/nostr-pieces-data.ts), so the file is there
       // whichever place waits for pieces, and what waited too long goes.
@@ -63,6 +72,37 @@ export function spaceChats(): Promise<SpaceChats> {
     });
   }
   return opened.chats;
+}
+
+/**
+ * Turns "last seen" on or off for the open space (SpaceData.lastSeen): kept, and its chats tell
+ * and show it, or no longer, from their next message on (lib/last-seen.ts).
+ */
+export async function setLastSeen(on: boolean): Promise<void> {
+  const current = currentSpace();
+  await updateSpaceData(current.space, current.key, { lastSeen: on });
+  lastSeenNow = { of: current, on };
+  // To the account's other devices too, as they share the settings (lib/sync/settings.ts).
+  settingChanged('lastSeen', on);
+  if (opened?.of === current) (await opened.chats).e2e.setLastSeen({ on, at: () => shownAt(spaceSeenKey(current.space)) });
+}
+
+/** Whether the open space says when it was last open, once its chats opened; else null. */
+export function lastSeenOn(): boolean | null {
+  return lastSeenNow && lastSeenNow.of === opened?.of ? lastSeenNow.on : null;
+}
+
+/** "Last seen" goes as it is set, and comes as another device of the account set it. Once, at start. */
+export function shareLastSeen(): () => void {
+  const stopNow = onSettingNow('lastSeen', () => lastSeenOn() ?? undefined);
+  const stopCame = onSettingCame('lastSeen', async (value) => {
+    if (typeof value !== 'boolean' || lastSeenOn() === null || lastSeenOn() === value) return;
+    await setLastSeen(value);
+  });
+  return () => {
+    stopNow();
+    stopCame();
+  };
 }
 
 /** The open space's chats if they are open already, or null. */

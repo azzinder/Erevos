@@ -18,6 +18,7 @@ import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
 import { PUSH_AVAILABLE } from '../lib/web-push';
+import { setLastSeen } from '../lib/space-chats';
 import {
   askBattery,
   askFullScreen,
@@ -51,6 +52,7 @@ const PARTS = {
   lock: mark('Lock and second password'),
   hidden: mark('Hidden chats'),
   screen: mark('Screenshots'),
+  lastseen: mark('Last seen'),
   background: mark('In the background'),
   web: mark('This web app'),
   push: mark('Notifications while closed'),
@@ -78,12 +80,20 @@ export default function Security() {
 
   // Whether this phone keeps a locked space out of screenshots (lib/screen-privacy.ts).
   const [screenPrivate, setScreenPrivate] = useState<boolean | null>(null);
+  // Whether the space's contacts see when it was last open, and it sees theirs (lib/last-seen.ts).
+  const [lastSeen, setLastSeenShown] = useState<boolean | null>(null);
 
   const reload = async () => {
     setConfig(await loadLockConfig());
     setBiometric(biometricSealer.available() ? await biometricOn(biometricSealer) : null);
     setScreenPrivate(await loadScreenPrivacy());
+    setLastSeenShown((await loadCurrentSpaceData().catch(() => null))?.lastSeen ?? null);
   };
+
+  async function changeLastSeen(on: boolean) {
+    await setLastSeen(on);
+    setLastSeenShown(on);
+  }
 
   async function setScreenPrivacy(on: boolean) {
     await saveScreenPrivacy(on);
@@ -262,6 +272,23 @@ export default function Security() {
             </Text>
             <Row wrap>
               <Button title={screenPrivate ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void setScreenPrivacy(!screenPrivate)} />
+            </Row>
+          </Card>
+        </>
+      ) : null}
+
+      {lastSeen !== null && shows('lastseen') ? (
+        <>
+          {part ? null : <SectionTitle title={t('Last seen')} />}
+          <Card>
+            <Text variant="caption" tone="muted" style={hint}>
+              {lastSeen
+                ? t('On: your contacts see the exact time you last had Erevos open, and you see theirs.')
+                : t('Off: no one sees when you last had Erevos open, and you see no one’s either.')}{' '}
+              {t('It goes end-to-end encrypted, inside what goes to your contacts anyway, never to the relay. Only for the chats of this space: hidden chats have their own switch, in a chat’s details there. Whether you are online now has its own switch in each chat: Appear offline.')}
+            </Text>
+            <Row wrap>
+              <Button title={lastSeen ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void changeLastSeen(!lastSeen).catch((error) => setNote(String(error?.message ?? error)))} />
             </Row>
           </Card>
         </>

@@ -142,6 +142,6 @@ export const devices: Record<string, string> = {
     'Una volta scollegato questo dispositivo, esce dagli account che ha trasferito dal telefono.',
   'Send the accounts': 'Invia gli account',
   'Same settings on every device': 'Stesse impostazioni su tutti i dispositivi',
-  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
-    "La lingua e l'aspetto cambiano anche sugli altri dispositivi. Una foto dietro le schermate, le password, i PIN e ciò che riguarda solo questo dispositivo restano come sono su ciascuno.",
+  'The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    "La lingua, l'aspetto e Ultimo accesso cambiano anche sugli altri dispositivi. Una foto dietro le schermate, le password, i PIN e ciò che riguarda solo questo dispositivo restano come sono su ciascuno.",
 };

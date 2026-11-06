@@ -93,6 +93,10 @@ export type SpaceData = {
   // chats; for a space whose door is open (lock/doors.ts), on the lock of the other spaces. Off
   // unless set.
   sign: boolean;
+  // Whether the space's contacts are told when this space was last open on the screen, and are
+  // shown when theirs was (lib/last-seen.ts): on unless turned off, and both ways, as one who tells
+  // nothing sees nothing. Only the space's own chats: hidden chats and hidden places never say it.
+  lastSeen: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
@@ -131,6 +135,7 @@ export const EMPTY_SPACE: SpaceData = {
   relayKeys: {},
   stopped: 0,
   sign: false,
+  lastSeen: true,
 };
 
 const BLOCK = 1024;
@@ -204,6 +209,7 @@ function checked(value: unknown): SpaceData {
     relayKeys: checkedRelayKeys(v.relayKeys),
     stopped: typeof v.stopped === 'number' && Number.isFinite(v.stopped) && v.stopped > 0 ? v.stopped : 0,
     sign: v.sign === true,
+    lastSeen: v.lastSeen !== false,
   };
 }
 

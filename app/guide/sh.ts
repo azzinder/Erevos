@@ -763,22 +763,34 @@ ostaje na **✓**. Javne grupe nemaju oznake. Računar povezan s ovim telefonom 
   datoteke 2 minute) računa se kao neuspjelo i postavlja ponovo, pa veza koja je usput prekinuta, kao kad mreža
   telefona zaspi ili se promijeni, ništa ne zadržava.
 
-### Na mreži, i prikazivanje kao da niste na mreži
+### Na mreži, posljednji put viđen, i prikazivanje kao da niste na mreži
 
 Dok je razgovor s kontaktom otvoren na vašem ekranu, Erevos s vremena na vrijeme pita telefon te osobe je li razgovor
 otvoren i javlja da je vaš otvoren. Ako je njen otvoren, razgovor ispod njenog imena kaže **Na mreži** sa zelenom
 tačkom, a početni ekran prikazuje tačku na njenoj slici. Pisanje nekome također vas njemu prikazuje kao da ste na
 mreži dvije minute. Sve to ide unutar šifriranja, samo između vas i tog kontakta: relay s vremena na vrijeme vidi
-poruku, kao i kod svakog razgovora. Nema „posljednji put viđen“.
+poruku, kao i kod svakog razgovora.
+
+Kad kontakt nije na mreži, njegov razgovor kaže kad je posljednji put imao otvoren Erevos, na minut tačno:
+**posljednji put viđen danas u 14:32**. Vaš telefon vaše vrijeme javlja vašim kontaktima na isti način, unutar onoga
+što im ionako ide (poruka, ili da je jedna stigla), i jednom kad neko otvori vaš razgovor dok je Erevos na vašem
+telefonu zatvoren, samo ako je bio otvoren otkako im je posljednji put javljeno. Uključeno je dok ga ne isključite, u
+**Postavke** → **Privatnost i sigurnost** → **Posljednji put viđen**, ili u detaljima bilo kojeg razgovora. Djeluje u
+oba smjera: isključeno, niko ne vidi vaše, a ni vi ne vidite ničije; oni koji su ga vidjeli gube ga s vašom sljedećom
+porukom. Postavlja se za cijeli prostor i njegove povezane uređaje, svaki prostor posebno. Svako mjesto skrivenih
+razgovora ima vlastiti prekidač, u detaljima razgovora tamo, i vlastito vrijeme: dok su otvoreni, samo oni se računaju
+kao otvoreni, a ne prostor.
 
 Dok pišete kontaktu koji je prikazan na mreži, njegov razgovor prikazuje **piše…** ispod vašeg imena nekoliko sekundi,
 a vaš ispod njegovog kad on piše. To se javlja najviše svakih nekoliko sekundi, samo dok je prikazan na mreži, nikad
 zahtjevu za razgovor, i ne u grupama.
 
 **Zašto:** prisutnost na mreži javlja se samo između vas i kontakta čiji je razgovor otvoren, unutar šifriranja, pa
-relay ne vidi ništa više od poruke s vremena na vrijeme između dvoje ljudi koji razgovaraju, i ništa od toga se ne
-čuva: zato nema „posljednji put viđen“ za prikaz. Neko ko ima samo vaš link i piše kao zahtjev za razgovor ne dobija
-nikakav odgovor dok ga ne prihvatite: ni da ste pročitali, ni da ste na mreži ili da pišete.
+relay ne vidi ništa više od poruke s vremena na vrijeme između dvoje ljudi koji razgovaraju. Vrijeme kad ste
+posljednji put viđeni putuje unutar istih poruka, šifrirano s kraja na kraj: relay ga nikad ne saznaje. Ono ipak kaže
+vašim kontaktima kad spavate ili radite, a za dva kontakta viđena istog minuta može se pretpostaviti da razgovaraju:
+isključite ga ako vam je to važno. Neko ko ima samo vaš link i piše kao zahtjev za razgovor ne dobija nikakav odgovor
+dok ga ne prihvatite: ni da ste pročitali, ni da ste na mreži ili da pišete, ni kad ste posljednji put viđeni.
 
 Da to sakrijete od jednog kontakta, otvorite njegov razgovor, dodirnite njegovo ime, a zatim **Prikazuj me kao da
 nisam na mreži**. Kad je to uključeno:
@@ -787,7 +799,8 @@ nisam na mreži**. Kad je to uključeno:
 - **Njegove poruke ostaju ✓** na njegovom telefonu, a ne ✓✓ ili ✓✓✓, dok ih čitate.
 - **Kad mu pišete**, prikazujete se na mreži dvije minute, a svaka njegova poruka koju ste pročitali odmah postaje
   ✓✓✓.
-- **Ni vi ne vidite njega na mreži**, jer vaš telefon ne pita.
+- **Ni vi ne vidite njega na mreži**, jer vaš telefon ne pita, ni kad je posljednji put viđen; a on ne dobija nikakvo
+  vaše vrijeme.
 
 Postavlja se za svaki razgovor posebno, samo na ovom telefonu. Isključite to ponovo i on vidi šta ste pročitali kad
 sljedeći put pogledate relay.
@@ -3097,12 +3110,12 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   Fotografija ili datoteka bilješke ide kao kopija na relayu, tamo obrisana čim je preuzeta, ili, za dva uređaja ili
   više, ostavljena tamo dok ne istekne (14 dana). Bilješke skrivenih razgovora idu samo unutar njihove vlastite veze,
   niže.
-- **Postavke:** jezik i izgled (stil, boje, veličina teksta) isti su na svim uređajima prostora: promijenjeni na
-  jednom, mijenjaju se i na drugima. Fotografija iza ekrana ostaje na uređaju na kojem je izabrana, kao i sve što se
-  tiče samo jednog uređaja: lozinke, PIN-ovi i kod za paniku, vrijeme zaključavanja, vibracija, relej i Tor, moduli,
-  ime uređaja. Uređaj koji treba da zadrži svoje: **Postavke** → **Podaci i uređaji** → **Povezani uređaji** → **Iste
-  postavke na svim uređajima** isključeno. Ponovo uključen, odmah preuzima postavke drugih. Skriveni razgovori
-  zadržavaju svoje.
+- **Postavke:** jezik, izgled (stil, boje, veličina teksta) i **Posljednji put viđen** isti su na svim uređajima
+  prostora: promijenjeni na jednom, mijenjaju se i na drugima. Fotografija iza ekrana ostaje na uređaju na kojem je
+  izabrana, kao i sve što se tiče samo jednog uređaja: lozinke, PIN-ovi i kod za paniku, vrijeme zaključavanja,
+  vibracija, relej i Tor, moduli, ime uređaja. Uređaj koji treba da zadrži svoje: **Postavke** → **Podaci i uređaji**
+  → **Povezani uređaji** → **Iste postavke na svim uređajima** isključeno. Ponovo uključen, odmah preuzima postavke
+  drugih. Skriveni razgovori zadržavaju svoje.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
   prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
   poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga

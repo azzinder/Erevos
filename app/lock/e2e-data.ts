@@ -82,6 +82,9 @@ export type Contact = {
    *  as their message queue (`relay`/`sender`). Empty when they said none, or an older Erevos that
    *  says nothing of a ring queue: then a call to them rings only while their chats are open. */
   ringSender?: string;
+  /** When their Erevos was last open on their screen (ms, their clock, never later than here), as
+   *  they last said (lib/last-seen.ts). Missing while they said none, or said they tell none. */
+  seenAt?: number;
   /** Their prekeys as they last gave them inside their conversation (their bundle, base64), when
    *  newer than their link's: what the conversation started next with them starts with. Missing
    *  until they give some. */
@@ -636,6 +639,7 @@ function checkedContact(value: unknown): Contact | null {
     sealTo: isRelayKey(v.sealTo) ? v.sealTo : '',
     sealsIn: v.sealsIn === true,
     ...(isHex(v.ringSender) && v.ringSender.length === 48 ? { ringSender: v.ringSender } : {}),
+    ...(isTime(v.seenAt) && v.seenAt > 0 ? { seenAt: v.seenAt } : {}),
     ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),

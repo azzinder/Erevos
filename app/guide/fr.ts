@@ -828,23 +828,36 @@ dont l’Erevos est plus ancien que ces marques ne dit rien, donc il reste sous 
   toute autre chose, 45 secondes ; une partie de fichier, 2 minutes) compte comme échouée et est reposée, si bien qu’une
   connexion morte en route, comme quand le réseau du téléphone s’endort ou change, ne retient rien.
 
-### En ligne, et apparaître hors ligne
+### En ligne, vu pour la dernière fois, et apparaître hors ligne
 
 Tant que la discussion d’un contact est ouverte sur ton écran, Erevos demande de temps en temps à son téléphone s’il est
 ouvert, et dit que le tien l’est. Si le sien l’est, la discussion indique **En ligne** sous son nom avec un point vert,
 et l’écran d’accueil montre le point sur son image. Écrire à quelqu’un te montre aussi en ligne pour cette personne
 pendant deux minutes. Tout cela passe à l’intérieur du chiffrement, seulement entre toi et ce contact : le relais voit
-un message de temps en temps, comme pour n’importe quelle discussion. Il n’y a pas de « vu pour la dernière fois ».
+un message de temps en temps, comme pour n’importe quelle discussion.
+
+Quand un contact n’est pas en ligne, sa discussion indique quand il a eu Erevos ouvert pour la dernière fois, à la
+minute près : **vu pour la dernière fois aujourd’hui à 14:32**. Ton téléphone dit la tienne à tes contacts de la même
+façon, à l’intérieur de ce qui leur part de toute façon (un message, ou l’arrivée d’un message), et une fois quand
+l’un d’eux ouvre ta discussion alors qu’Erevos est fermé sur ton téléphone, seulement s’il a été ouvert depuis la
+dernière fois qu’on le lui a dit. C’est activé sauf si tu le désactives, dans **Réglages** → **Confidentialité et
+sécurité** → **Vu pour la dernière fois**, ou dans les détails d’une discussion quelconque. C’est réciproque :
+désactivé, personne ne voit la tienne, et tu ne vois celle de personne ; ceux qui la voyaient la perdent avec ton
+message suivant. C’est réglé pour tout l’espace et ses appareils associés, chaque espace séparément. Chaque lieu de
+discussions masquées a son propre interrupteur, dans les détails d’une discussion de là-bas, et sa propre heure : tant
+qu’elles sont ouvertes, elles seules comptent comme ouvertes, pas l’espace.
 
 Pendant que tu écris à un contact qui apparaît en ligne, sa discussion montre **écrit…** sous ton nom pendant quelques
 secondes, et la tienne sous le sien quand il écrit. C’est dit toutes les quelques secondes au plus, seulement tant qu’il
 apparaît en ligne, jamais à une demande de message, et pas dans les groupes.
 
 **Pourquoi :** être en ligne n’est dit qu’entre toi et un contact dont la discussion est ouverte, à l’intérieur du
-chiffrement, si bien que le relais ne voit pas plus qu’un message de temps en temps entre deux personnes qui se parlent,
-et rien n’en est gardé : il n’y a donc pas de « vu pour la dernière fois » à montrer. Quelqu’un qui n’a que ton lien, et
-qui écrit en tant que demande de message, n’apprend rien en retour tant que tu n’acceptes pas : ni que tu as lu, ni que
-tu es en ligne ou que tu écris.
+chiffrement, si bien que le relais ne voit pas plus qu’un message de temps en temps entre deux personnes qui se
+parlent. L’heure à laquelle tu as été vu pour la dernière fois voyage dans ces mêmes messages, chiffrée de bout en
+bout : le relais ne l’apprend jamais. Elle dit en revanche à tes contacts quand tu dors ou travailles, et on peut
+supposer que deux contacts vus à la même minute se parlent : désactive-la si cela compte pour toi. Quelqu’un qui n’a
+que ton lien, et qui écrit en tant que demande de message, n’apprend rien en retour tant que tu n’acceptes pas : ni
+que tu as lu, ni que tu es en ligne ou que tu écris, ni quand tu as été vu pour la dernière fois.
 
 Pour le cacher à un contact, ouvre sa discussion, appuie sur son nom puis sur **Apparaître hors ligne**. Quand c’est
 activé :
@@ -853,7 +866,8 @@ activé :
 - **Ses messages restent à ✓** sur son téléphone, pas ✓✓ ni ✓✓✓, pendant que tu les lis.
 - **Quand tu lui écris**, tu apparais en ligne pendant deux minutes, et chacun de ses messages que tu as lus passe
   aussitôt à ✓✓✓.
-- **Tu ne le vois pas en ligne non plus**, puisque ton téléphone ne demande pas.
+- **Tu ne le vois pas en ligne non plus**, puisque ton téléphone ne demande pas, ni quand il a été vu pour la dernière
+  fois ; et il ne reçoit aucune heure de toi.
 
 C’est réglé pour chaque discussion, sur ce téléphone seulement. Désactive-le de nouveau et il voit ce que tu as lu à ton
 prochain passage sur le relais.
@@ -3405,13 +3419,13 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   disparaît des autres. La photo ou le fichier d’une note part en copie sur le relais, supprimée de là une fois prise,
   ou, pour deux appareils ou plus, laissée là jusqu’à son expiration (14 jours). Les notes des discussions masquées ne
   partent que dans leur propre association, plus bas.
-- **Réglages :** la langue et l’apparence (le style, les couleurs, la taille du texte) sont les mêmes sur chaque
-  appareil de l’espace : changées sur l’un, elles changent aussi sur les autres. Une photo derrière les écrans reste
-  sur l’appareil où elle a été choisie, comme tout ce qui ne concerne qu’un appareil : mots de passe, codes PIN et
-  code de panique, le délai du verrouillage, la vibration, le relais et Tor, les modules, le nom de l’appareil. Un
-  appareil qui doit garder les siens : **Réglages** → **Données et appareils** → **Appareils associés** → **Mêmes
-  réglages sur tous les appareils** désactivé. Réactivé, il prend aussitôt ceux des autres. Les discussions cachées
-  gardent les leurs.
+- **Réglages :** la langue, l’apparence (le style, les couleurs, la taille du texte) et **Vu pour la dernière fois**
+  sont les mêmes sur chaque appareil de l’espace : changées sur l’un, elles changent aussi sur les autres. Une photo
+  derrière les écrans reste sur l’appareil où elle a été choisie, comme tout ce qui ne concerne qu’un appareil : mots
+  de passe, codes PIN et code de panique, le délai du verrouillage, la vibration, le relais et Tor, les modules, le
+  nom de l’appareil. Un appareil qui doit garder les siens : **Réglages** → **Données et appareils** → **Appareils
+  associés** → **Mêmes réglages sur tous les appareils** désactivé. Réactivé, il prend aussitôt ceux des autres. Les
+  discussions cachées gardent les leurs.
 - Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
   dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
   aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,

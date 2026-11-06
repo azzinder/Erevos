@@ -143,6 +143,6 @@ export const devices: Record<string, string> = {
     'Sobald dieses Gerät getrennt wird, meldet es sich von den Konten ab, die es vom Telefon übernommen hat.',
   'Send the accounts': 'Konten senden',
   'Same settings on every device': 'Gleiche Einstellungen auf allen Geräten',
-  'The language and the look change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
-    'Sprache und Aussehen ändern sich auch auf den anderen Geräten. Ein Foto hinter den Bildschirmen, Passwörter, PINs und was nur dieses Gerät betrifft, bleiben auf jedem, wie sie sind.',
+  'The language, the look and Last seen change on the other devices too. A photo behind the screens, passwords, PINs and what is about this device alone stay as they are on each.':
+    'Sprache, Aussehen und Zuletzt online ändern sich auch auf den anderen Geräten. Ein Foto hinter den Bildschirmen, Passwörter, PINs und was nur dieses Gerät betrifft, bleiben auf jedem, wie sie sind.',
 };

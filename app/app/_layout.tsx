@@ -35,11 +35,13 @@ import { noticeLanguage, noticeSeen } from '../lib/push-notice';
 import { refreshKnownNames, watchKnownNames } from '../lib/known-names';
 import { forgetSpaceMover } from '../lib/queue-move';
 import { setAppShown, startReceiver } from '../lib/receiver';
+import { placeShown, spaceShown } from '../lib/last-seen';
+import { onHiddenPlaceChange, openHiddenPlace } from '../lib/hidden-contacts';
 import { ownerTouched } from '../lib/safety';
 import { stopReleases, watchReleases } from '../lib/release-look';
 import { startSmsLater } from '../lib/sms-later';
 import { forgetSmsLink } from '../lib/sms-relay';
-import { forgetSpaceChats } from '../lib/space-chats';
+import { forgetSpaceChats, shareLastSeen } from '../lib/space-chats';
 import { forgetPlaceChats } from '../lib/place-chats';
 import { startPlaceReceiver } from '../lib/place-receiver';
 import { startShellWatch } from '../lib/shell-watch';
@@ -442,6 +444,7 @@ export default function RootLayout() {
   useEffect(() => {
     void loadSettingsShared().catch(() => undefined);
     const stopLanguage = shareLanguage();
+    const stopLastSeen = shareLastSeen();
     const stopNow = onSettingNow('look', () => (phaseRef.current.kind === 'open' ? lookToShare(lookRef.current) : undefined));
     const stopCame = onSettingCame('look', async (value) => {
       if (phaseRef.current.kind !== 'open') return;
@@ -452,6 +455,7 @@ export default function RootLayout() {
     });
     return () => {
       stopLanguage();
+      stopLastSeen();
       stopNow();
       stopCame();
     };
@@ -814,13 +818,30 @@ function startNostrChats(): () => void {
 
 // The space shows while Erevos does and the password screen is not in front of it.
 function followAppShown(): () => void {
-  const follow = () => setAppShown(AppState.currentState === 'active' && !spaceGated());
+  const follow = () => {
+    const shown = AppState.currentState === 'active' && !spaceGated();
+    setAppShown(shown);
+    // When this space was last open, for its contacts' "last seen" (lib/last-seen.ts).
+    let space: number | null = null;
+    try {
+      space = shown ? currentSpace().space : null;
+    } catch {
+      space = null;
+    }
+    spaceShown(space);
+  };
+  // While a hidden place's chats are open, only the place counts as open (lib/last-seen.ts).
+  const hidden = onHiddenPlaceChange(() => {
+    const open = openHiddenPlace();
+    placeShown(open ? { space: open.space, pocket: open.pocket } : null);
+  });
   follow();
   const subscription = AppState.addEventListener('change', follow);
   const gated = onSpaceGatedChange(follow);
   return () => {
     subscription.remove();
     gated();
+    hidden();
   };
 }
 

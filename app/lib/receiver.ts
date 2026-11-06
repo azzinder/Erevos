@@ -690,8 +690,8 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   // One sent for later that a relay sent too soon shows at its time (lib/later.ts).
   const shows = showsAt(received.due, at);
   const hidden = e2e.contacts().some((contact) => contact.identity === identity && contact.hide);
-  // Their phone says it is open: the home screen shows it.
-  let changed = received.added || received.timerChanged || received.online > 0;
+  // Their phone says it is open, or when it last was: the home screen shows it.
+  let changed = received.added || received.timerChanged || received.online > 0 || received.seen;
   const twice = received.twice || history.has(peer, tag);
   const add = async (message: Partial<Message>) => {
     if (twice) return;
@@ -704,7 +704,9 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
     }
     changed = true;
   };
-  if (received.ask && !received.request && !hidden && answersAsk(e2e.toldAt(identity), at)) answers.add(peer);
+  // While the app is away, one who asks is told only when the space was last open, should it have
+  // been open since they were last told (lib/last-seen.ts): once, not each time they ask.
+  if (received.ask && !received.request && !hidden && (answersAsk(e2e.toldAt(identity), at) || (!appShown() && e2e.seenNews(identity)))) answers.add(peer);
   // A voice message's parts are put together while the history does not hold it, those that came
   // before too: sealed again after only some of it went, its parts are those of the first try
   // (lib/voice.ts voiceIdOf). Kept once whole, unless every part came before, as of one that left
