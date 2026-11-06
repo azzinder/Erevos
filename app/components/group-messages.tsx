@@ -21,6 +21,8 @@ import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn } from '../lib/mentions';
 import { messageLine } from '../lib/message-line';
 import { searchMessages, type Findable } from '../lib/message-search';
+import { CAN_COLLECT, importFromChat } from '../lib/collection-import';
+import { useModules } from '../lib/modules';
 import { keepAsSticker, stickerMeta } from '../lib/own-stickers';
 import { CAN_PLACE } from '../lib/place';
 import { throughTor } from '../lib/relay';
@@ -118,6 +120,7 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
   const out = !info || info.status !== 'in';
   // The stickers made from photos of the space, or of the hidden place the group is in.
   const stickerPlace = useMemo(() => where.stickers(), [where]);
+  const modules = useModules();
   // The last few messages play their sticker as they show.
   const playing = new Set(messages.slice(-PLAYS_LAST).map((m) => m.tag));
 
@@ -299,6 +302,8 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
     if (canEdit(m)) actions.push({ title: t('Edit'), onPress: () => startEditing(m) });
     if (markOf(m)) actions.push({ title: t('Who read it'), onPress: () => setReaders(m) });
     if (m.file?.sticker && !m.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(m.file!) });
+    // A photo or file that is here goes into the Collection of the group's place too: the space's, or the hidden place's the group lives in.
+    if (m.file && !m.file.sticker && !m.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(m.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => remove(m) });
     return actions;
   }
@@ -366,6 +371,16 @@ export function useGroupMessages({ id, info, messages, name, onNote, scroll, at,
       onNote(t('Added to your stickers.'));
     } catch (error) {
       onNote(errorText(error));
+    }
+  }
+
+  // Copies a photo or file of the group, as the same bytes, into the Collection of this group's place.
+  async function saveToCollection(file: FileRef) {
+    try {
+      await importFromChat(stickerPlace, file);
+      onNote(t('Saved to the Collection.'));
+    } catch (error) {
+      onNote(t('Not added. {error}', { error: errorText(error) }));
     }
   }
 
