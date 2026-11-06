@@ -9,25 +9,39 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.os.ParcelFileDescriptor
+import android.os.ProxyFileDescriptorCallback
+import android.os.storage.StorageManager
 import android.provider.OpenableColumns
+import android.system.ErrnoException
+import android.system.OsConstants
 import android.util.Log
+import androidx.annotation.RequiresApi
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.security.SecureRandom
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CopyOnWriteArrayList
 
 /**
  * The files of the Collection handed to another app to open (lib/collection-out.ts), with no
  * plain copy anywhere: each is named by a link, content://<package>.collection/<token>/<name>,
- * whose token is random, and read by the other app through a pipe that this side fills as it
- * decrypts the chunks, one at a time (SealedFile.kt).
+ * whose token is random. From Android 8 on the other app gets a file descriptor that Android serves
+ * from this side (StorageManager.openProxyFileDescriptor): each read it makes, at any place in the
+ * file, decrypts only the chunk that holds it (SealedFile.kt), so it can seek, as a video player
+ * or a PDF reader does. Before Android 8 it gets a pipe that this side fills from start to end,
+ * chunk after chunk.
  *
  * The provider is not exported: another app reaches a link only through the permission Android
  * gives with the intent that opens it (grantUriPermissions), for that link alone. A link works
  * while its token is known here: JavaScript forgets it when the Collection's screen closes, all
  * of them when the space locks or closes, and so does the panic button; nothing is known when
- * Erevos starts, as the tokens and keys are only in memory.
+ * Erevos starts, as the tokens and keys are only in memory. Once a token is forgotten, a read
+ * through a file descriptor already handed out fails (EBADF), and the chunk it held is wiped.
  */
 class CollectionProvider : ContentProvider() {
   override fun onCreate(): Boolean = true
@@ -48,12 +62,68 @@ class CollectionProvider : ContentProvider() {
     if (mode != "r") throw FileNotFoundException("Only reading")
     val open = OpenFiles.find(uri) ?: throw FileNotFoundException("Not open")
     val folder = context?.filesDir ?: throw FileNotFoundException("No folder")
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      val storage = context?.getSystemService(StorageManager::class.java) ?: throw FileNotFoundException("No storage")
+      return try {
+        storage.openProxyFileDescriptor(ParcelFileDescriptor.MODE_READ_ONLY, Served(open, folder), OpenFiles.handler())
+      } catch (e: IOException) {
+        throw FileNotFoundException(e.message ?: "Not served")
+      }
+    }
     val pipe = ParcelFileDescriptor.createReliablePipe()
     Thread({ fill(open.file, folder, pipe[1]) }, "erevos-collection-open").start()
     return pipe[0]
   }
 
-  // Writes the file into the pipe, chunk after chunk, each checked. A chunk that is damaged or
+  /**
+   * One file descriptor handed to another app, read through Android on OpenFiles' own thread:
+   * every read is answered from the chunks it covers, decrypted one at a time. Its reader keeps
+   * the last chunk it decrypted, wiped when the descriptor is let go of or the token forgotten.
+   */
+  @RequiresApi(Build.VERSION_CODES.O)
+  private class Served(private val open: OpenFiles.Open, folder: File) : ProxyFileDescriptorCallback() {
+    private val reader = SealedFile.Reader(open.file, folder)
+    private val wipe = Runnable { reader.close() }
+
+    init {
+      open.readers.add(wipe)
+    }
+
+    override fun onGetSize(): Long {
+      if (open.file.isClosed) throw ErrnoException("onGetSize", OsConstants.EBADF)
+      return open.file.size
+    }
+
+    // Fills what was asked, all of it but at the file's end, as a short read means the end to many
+    // apps. A token forgotten answers EBADF; a chunk damaged or gone, EIO.
+    override fun onRead(offset: Long, size: Int, data: ByteArray): Int {
+      if (open.file.isClosed) {
+        reader.close()
+        throw ErrnoException("onRead", OsConstants.EBADF)
+      }
+      var done = 0
+      try {
+        while (done < size) {
+          val got = reader.read(offset + done, data, done, size - done)
+          if (got <= 0) break
+          done += got
+        }
+      } catch (e: IOException) {
+        reader.close()
+        val forgotten = open.file.isClosed
+        if (!forgotten) Log.i(TAG, "A file opened with another app could not be read")
+        throw ErrnoException("onRead", if (forgotten) OsConstants.EBADF else OsConstants.EIO)
+      }
+      return done
+    }
+
+    override fun onRelease() {
+      open.readers.remove(wipe)
+      reader.close()
+    }
+  }
+
+  // Before Android 8: writes the file into the pipe, chunk after chunk, each checked. A chunk that is damaged or
   // gone, or a key forgotten meanwhile, closes the pipe with an error, so the other app sees that
   // the file did not come whole instead of taking what came for all of it.
   private fun fill(file: SealedFile, folder: File, write: ParcelFileDescriptor) {
@@ -94,10 +164,22 @@ class CollectionProvider : ContentProvider() {
 
 /** The files handed to other apps now, by token: in memory only, so none when Erevos starts. */
 internal object OpenFiles {
-  class Open(val file: SealedFile, val name: String, val mime: String)
+  /** A file handed out, and what wipes the chunks its file descriptors hold (CollectionProvider). */
+  class Open(val file: SealedFile, val name: String, val mime: String) {
+    val readers = CopyOnWriteArrayList<Runnable>()
+  }
 
   private val open = ConcurrentHashMap<String, Open>()
   private val random = SecureRandom()
+  private var reading: Handler? = null
+
+  /** The one thread that answers every read of the files handed out, started when first needed. */
+  @Synchronized
+  fun handler(): Handler {
+    reading?.let { return it }
+    val thread = HandlerThread("erevos-collection-open").also { it.start() }
+    return Handler(thread.looper).also { reading = it }
+  }
 
   /** The provider's authority: the app's package and ".collection" (AndroidManifest.xml). */
   fun authority(packageName: String) = "$packageName.collection"
@@ -118,9 +200,15 @@ internal object OpenFiles {
     return if (segments[1] == found.name && !found.file.isClosed) found else null
   }
 
-  /** Forgets one link and its key; a read going on stops with an error. */
+  /**
+   * Forgets one link and its key; a read going on stops with an error, and the chunks still held
+   * for it are wiped on the reading thread, where they are used.
+   */
   fun forget(token: String) {
-    open.remove(token)?.file?.close()
+    val gone = open.remove(token) ?: return
+    gone.file.close()
+    val wipes = gone.readers.toList()
+    if (wipes.isNotEmpty()) synchronized(this) { reading }?.post { wipes.forEach { it.run() } }
   }
 
   /** Forgets every link and key: the space locked or closed, or the panic button. */
