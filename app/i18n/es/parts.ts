@@ -203,6 +203,7 @@ export const parts: Record<string, string> = {
   'GitHub answered {status}.': 'GitHub ha respondido {status}.',
   "The web app's server answered {status}.": 'El servidor de la app web respondió {status}.',
   'The desktop app answered {status}.': 'La app de escritorio ha respondido {status}.',
+  'There is no room left on this device. Free some space and try again.': 'No queda espacio en este dispositivo. Libera algo de espacio y vuelve a intentarlo.',
   'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Este ordenador no tiene llavero para sellar las claves de Erevos, así que Erevos no guarda ninguna. Inicia un llavero (KWallet, o GNOME Keyring con --password-store=gnome-libsecret), o inicia Erevos con --plain-secrets para guardarlas sin sellar, legibles por tu usuario, y pon un bloqueo con contraseña.',
   'The browser did not open its storage.': 'El navegador no ha abierto su almacenamiento.',
 

@@ -94,6 +94,17 @@ export function showWindow(): void {
 
 export class ShellError extends Error {}
 
+/**
+ * The shell found the disk full (507). Named as a browser names its storage being full, so what
+ * checks for that knows it too (lock/collection-data.ts isStorageFull).
+ */
+export class ShellStorageFullError extends ShellError {
+  constructor() {
+    super(t('There is no room left on this device. Free some space and try again.'));
+    this.name = 'QuotaExceededError';
+  }
+}
+
 // Answers that are not errors: nothing there (404), or too large to give (413).
 const TOLD = [404, 413];
 
@@ -107,6 +118,7 @@ export async function shellFetch(path: string, init: RequestInit = {}): Promise<
       t('This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.'),
     );
   }
+  if (response.status === 507) throw new ShellStorageFullError();
   if (!response.ok && !TOLD.includes(response.status)) throw new ShellError((await response.text()) || t('The desktop app answered {status}.', { status: response.status }));
   return response;
 }

@@ -38,14 +38,13 @@ export class TooLargeToOpenError extends Error {
 }
 
 /**
- * The largest file saved out of the Collection here: a browser and Sailfish OS hold the whole file
- * in memory to give it out, and Sailfish OS's shell takes at most 256 MiB in one request
- * (sailfish/src/shellserver.cpp /__save), so there as much as is opened in memory. The phone
- * writes it out a piece at a time, and the desktop app (`shell` 'electron') has the memory: no
+ * The largest file saved out of the Collection here: a plain browser holds the whole file in
+ * memory to give it out, so there as much as is opened in memory. The phone, the desktop app and
+ * Sailfish OS (`shell`) write it out a piece at a time (lib/save-file.web.ts saveInPieces): no
  * limit. `page` is whether this is the web build.
  */
 export function mostSavedOut(shell: typeof SHELL = SHELL, page: boolean = typeof document !== 'undefined'): number {
-  return page && shell !== 'electron' ? mostInMemory(shell) : Infinity;
+  return page && !shell ? mostInMemory(shell) : Infinity;
 }
 
 export class TooLargeToSaveError extends Error {

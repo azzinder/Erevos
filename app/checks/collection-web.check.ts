@@ -129,13 +129,13 @@ test('what tells a full storage', () => {
   assert.ok(!isStorageFull(null));
 });
 
-test('opened in memory: 1 GB in the desktop app, 256 MB in a browser and on Sailfish OS, below what its shell takes in one request', () => {
+test('opened in memory: 1 GB in the desktop app, 256 MB in a browser and on Sailfish OS; saved out whole, so capped, only in a browser', () => {
   assert.equal(mostInMemory('electron'), 1024 * 1024 * 1024);
   assert.equal(mostInMemory(null), 256 * 1000 * 1000);
   assert.equal(mostInMemory('sailfish'), 256 * 1000 * 1000);
-  // Sailfish OS's shell takes at most 256 MiB in one request (/__save).
-  assert.ok(mostSavedOut('sailfish', true) < 256 * 1024 * 1024);
+  // A plain browser saves a file whole; the shells take it a piece at a time (/__saving).
   assert.equal(mostSavedOut(null, true), mostInMemory(null));
+  assert.equal(mostSavedOut('sailfish', true), Infinity);
   assert.equal(mostSavedOut('electron', true), Infinity);
   // The phone writes it out a piece at a time.
   assert.equal(mostSavedOut(null, false), Infinity);

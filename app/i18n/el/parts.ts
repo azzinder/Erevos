@@ -204,6 +204,7 @@ export const parts: Record<string, string> = {
   'GitHub answered {status}.': 'Το GitHub απάντησε {status}.',
   "The web app's server answered {status}.": 'Ο server της web εφαρμογής απάντησε {status}.',
   'The desktop app answered {status}.': 'Η εφαρμογή υπολογιστή απάντησε {status}.',
+  'There is no room left on this device. Free some space and try again.': 'Δεν έμεινε χώρος σε αυτή τη συσκευή. Ελευθέρωσε λίγο χώρο και δοκίμασε ξανά.',
   'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Αυτός ο υπολογιστής δεν έχει κλειδοθήκη για να κρυπτογραφήσει τα κλειδιά του Erevos, οπότε το Erevos δεν κρατά κανένα. Ξεκίνα μια κλειδοθήκη (KWallet, ή GNOME Keyring με --password-store=gnome-libsecret), ή ξεκίνα το Erevos με --plain-secrets για να τα κρατά χωρίς κρυπτογράφηση, αναγνώσιμα από τον χρήστη σου, και βάλε κλείδωμα με κωδικό.',
   'The browser did not open its storage.': 'Ο browser δεν άνοιξε τον χώρο αποθήκευσής του.',
 

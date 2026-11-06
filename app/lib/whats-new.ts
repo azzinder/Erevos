@@ -48,6 +48,7 @@ export const NEXT: Changes = {
     mark("**Panic tells Fasouli too**: on Android, under Settings → Privacy and security → Panic button → **Tell other apps**, choose the apps Erevos tells as it wipes, as a panic app does: Fasouli then locks itself. Each asks you first. See [Panic button](#panic)."),
   ],
   underTheHood: [
+    mark("**Large files saved from the Collection on Sailfish OS**: **Save to phone** writes a file of any size to Downloads a piece at a time, as the desktop app now does too, and when the disk has no room left Erevos says so and leaves nothing half-written. See [Collection](#collection)."),
     mark("**Backups skip what is on the WebDAV server after a restart too**: that a Collection's copies on its server are complete is kept with it, so a backup made after Erevos starts again still leaves its pieces out, as long as no file was added or deleted since. **The connection works.** now shows in the colour of success, not of a warning. See [Collection](#collection)."),
     mark("**Moving a chat to a space with no relay**: **Move to another space** stopped there, as that space had no relay of its own. Now it offers this space's relay, which that space then keeps, and it makes that space's relay queue when it has a relay but no queue yet. See [Second password](#second)."),
   ],

@@ -202,6 +202,7 @@ export const parts: Record<string, string> = {
   'GitHub answered {status}.': 'GitHub je odgovorio: {status}.',
   "The web app's server answered {status}.": 'Server web-aplikacije je odgovorio: {status}.',
   'The desktop app answered {status}.': 'Aplikacija za računar je odgovorila: {status}.',
+  'There is no room left on this device. Free some space and try again.': 'Na ovom uređaju više nema slobodnog prostora. Oslobodite malo i pokušajte ponovo.',
   'This computer has no keyring to seal Erevos’s keys with, so Erevos keeps none. Start a keyring (KWallet, or GNOME Keyring with --password-store=gnome-libsecret), or start Erevos with --plain-secrets to keep them unsealed, readable by your user, and set a password lock.': 'Ovaj računar nema keyring kojim bi zapečatio ključeve Erevosa, pa Erevos ne čuva nijedan. Pokrenite keyring (KWallet ili GNOME Keyring s --password-store=gnome-libsecret) ili pokrenite Erevos s --plain-secrets da ih čuva nezapečaćene, čitljive vašem korisniku, i postavite zaključavanje lozinkom.',
   'The browser did not open its storage.': 'Preglednik nije otvorio svoj prostor za podatke.',
 

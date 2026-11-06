@@ -23,7 +23,14 @@
  *   /__picked?id=&at=&length=  GET reads that many bytes of such a file from `at` (16 MB at most),
  *                              DELETE forgets it; only a file the owner picked, until the page
  *                              forgets it or the panic button
- *   /__save?name=…             asks where to save a photo or file from a chat and writes it there
+ *   /__save?name=…             asks where to save a photo or file from a chat and writes it there;
+ *                              with &pieces=1 (a file of the Collection, up to some GB) only asks,
+ *                              and gives an id to write it by, a piece at a time
+ *   /__saving?id=&at=          PUT adds a piece (16 MB at most) at `at`, which must be where the
+ *                              file has got to; POST ?done=1 puts the file in its place, under the
+ *                              name chosen, and gives its path; DELETE drops it. Until done it is a
+ *                              hidden .erevos-part beside that name, deleted if Erevos quits first.
+ * A write that finds the disk full answers 507, which the page says as such (app/lib/shell.ts).
  *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
  *                              it, POST ?link=… sends the body on a link, GET ?after=… gives what
  *                              happened since, waiting a while for something
@@ -383,8 +390,52 @@ async function save(request, url) {
   const name = path.basename(url.searchParams.get('name') || 'file');
   const result = await dialog.showSaveDialog(window, { defaultPath: path.join(app.getPath('downloads'), name) });
   if (result.canceled || !result.filePath) return new Response('', { status: 404 });
+  if (url.searchParams.get('pieces') === '1') {
+    const id = crypto.randomBytes(16).toString('hex');
+    // Beside the name chosen, so it takes that name in one step at the end, on the same disk.
+    const part = path.join(path.dirname(result.filePath), `.${path.basename(result.filePath)}.${id.slice(0, 8)}.erevos-part`);
+    fs.writeFileSync(part, '', { flag: 'wx' });
+    saving.set(id, { target: result.filePath, part, size: 0 });
+    return Response.json({ id });
+  }
   fs.writeFileSync(result.filePath, Buffer.from(await request.arrayBuffer()));
   return Response.json({ path: result.filePath });
+}
+
+// Files being saved a piece at a time (/__saving), by the id /__save gave: where each goes, its
+// hidden part file there, and how much of it is written. Only in memory: on quit, or with the
+// panic button, the unfinished parts are deleted (dropSaving).
+const saving = new Map();
+
+async function savingPiece(request, url) {
+  const id = url.searchParams.get('id') ?? '';
+  const entry = saving.get(id);
+  if (!entry) return new Response('', { status: 404 });
+  if (request.method === 'DELETE') {
+    saving.delete(id);
+    fs.rmSync(entry.part, { force: true });
+    return new Response(null, { status: 204 });
+  }
+  if (request.method === 'POST' && url.searchParams.get('done') === '1') {
+    saving.delete(id);
+    fs.renameSync(entry.part, entry.target);
+    return Response.json({ path: entry.target });
+  }
+  if (request.method !== 'PUT') return new Response('', { status: 405 });
+  const at = Number(url.searchParams.get('at'));
+  // Pieces come in order, each where the last one ended: anything else is a piece lost or sent twice.
+  if (at !== entry.size) return new Response('', { status: 409 });
+  const piece = Buffer.from(await request.arrayBuffer());
+  if (piece.length > PIECE_MOST) return new Response('', { status: 413 });
+  await fs.promises.appendFile(entry.part, piece);
+  entry.size += piece.length;
+  return new Response(null, { status: 204 });
+}
+
+/** Deletes the parts of files not saved to the end: Erevos quits, or the panic button. */
+function dropSaving() {
+  for (const entry of saving.values()) fs.rmSync(entry.part, { force: true });
+  saving.clear();
 }
 
 // Erevos on the same Wi-Fi, while the page wants it: what happens waits here for the page to ask.
@@ -660,6 +711,7 @@ async function wipe(request, url) {
   lan?.stop();
   lan = null;
   picked.clear();
+  dropSaving();
   const where = url.searchParams.get('folder');
   let left = 0;
   if (url.searchParams.get('backups') === '1' && where && chosenFolders().includes(where)) {
@@ -732,6 +784,7 @@ function handle(request) {
     if (url.pathname === '/__pick') return pick(url);
     if (url.pathname === '/__picked') return pickedPiece(request, url);
     if (url.pathname === '/__save') return save(request, url);
+    if (url.pathname === '/__saving') return savingPiece(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
     if (url.pathname === '/__chunks') return chunksRequest(request, url);
     if (url.pathname === '/__latest') return latest();
@@ -741,6 +794,16 @@ function handle(request) {
     return new Response('', { status: 404 });
   }
   return serveFile(url.pathname);
+}
+
+/** As handle, but a write that found the disk full (or the user's quota used up) answers 507. */
+async function answer(request) {
+  try {
+    return await handle(request);
+  } catch (error) {
+    if (error && (error.code === 'ENOSPC' || error.code === 'EDQUOT')) return new Response('The disk is full.', { status: 507 });
+    throw error;
+  }
 }
 
 function createWindow() {
@@ -831,6 +894,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     quitting = true;
   });
+  app.on('will-quit', dropSaving);
   app.whenReady().then(() => {
     // The microphone, for voice messages, while Voice is held, and the notice that messages came
     // (app/lib/desktop.ts); the camera only for Element Call's frame, for a Matrix video call;
@@ -863,7 +927,7 @@ if (!app.requestSingleInstanceLock()) {
     session.defaultSession.on('will-download', (event, item) => {
       if (item.getURL().startsWith('blob:')) event.preventDefault();
     });
-    protocol.handle('app', handle);
+    protocol.handle('app', answer);
     createWindow();
     followTray();
   });

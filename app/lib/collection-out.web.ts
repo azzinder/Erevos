@@ -15,7 +15,7 @@ import type { SharedFile } from './share-in';
 // sent; a photo is made ready in memory as every photo sent from a computer is (lib/pick-photo.web.ts,
 // at the photo quality chosen), never written out. Saving a plain copy is lib/save-file.web.ts,
 // after the screen's warning: in the desktop app through its own save dialog, on Sailfish OS into
-// Downloads, in a browser to its downloads or the share sheet; outside the desktop app up to 256 MB
+// Downloads, a piece at a time, in a browser to its downloads or the share sheet, there up to 256 MB
 // (lib/collection-memory.ts mostSavedOut). Opening with another app is not offered here: it would
 // need a plain copy on the disk for the other app to read.
 

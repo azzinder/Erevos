@@ -22,6 +22,7 @@
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
+#include <QStorageInfo>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QUrl>
@@ -38,6 +39,9 @@ const QByteArray Csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
     "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
+
+// The largest piece of a file saved a piece at a time (/__saving), as the desktop app's.
+const qint64 SavePieceMost = 16LL * 1024 * 1024;
 
 // The most a list of queues for erevos-watch may be: 2048 queues and the words, with room.
 const int MostWatchList = 512 * 1024;
@@ -93,6 +97,29 @@ bool writeWhole(const QString &path, const QByteArray &data)
     return file.commit();
 }
 
+/** Why a write of `need` bytes at `path` failed: the disk is full (507), or anything else (500). */
+int failedWrite(const QString &path, qint64 need)
+{
+    const QStorageInfo disk(QFileInfo(path).absolutePath());
+    return disk.isValid() && disk.bytesAvailable() < need + 1024 * 1024 ? 507 : 500;
+}
+
+/** Where a file saved to Downloads goes: its name, with a number when that is taken, as nothing is written over. */
+QString freeDownload(const QString &name)
+{
+    QString base = QFileInfo(name).fileName();
+    if (base.isEmpty() || base.startsWith('.')) base = QStringLiteral("file");
+    const QDir downloads(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
+    QDir().mkpath(downloads.absolutePath());
+    const QFileInfo info(base);
+    QString target = downloads.filePath(base);
+    for (int n = 2; QFileInfo::exists(target); ++n) {
+        const QString suffix = info.suffix().isEmpty() ? QString() : '.' + info.suffix();
+        target = downloads.filePath(QStringLiteral("%1 (%2)%3").arg(info.completeBaseName()).arg(n).arg(suffix));
+    }
+    return target;
+}
+
 QByteArray statusText(int status)
 {
     switch (status) {
@@ -102,8 +129,10 @@ QByteArray statusText(int status)
     case 403: return "Forbidden";
     case 404: return "Not Found";
     case 405: return "Method Not Allowed";
+    case 409: return "Conflict";
     case 413: return "Payload Too Large";
     case 502: return "Bad Gateway";
+    case 507: return "Insufficient Storage";
     default: return "Internal Server Error";
     }
 }
@@ -116,6 +145,13 @@ ShellServer::ShellServer(const QString &webRoot, const QString &dataRoot, WatchL
     QDir().mkpath(dataRoot);
     QFile::setPermissions(dataRoot, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
     connect(&m_server, &QTcpServer::newConnection, this, &ShellServer::accept);
+    // What was being saved when Erevos last closed without ending it.
+    dropSaving();
+}
+
+ShellServer::~ShellServer()
+{
+    dropSaving();
 }
 
 bool ShellServer::listen(quint16 port)
@@ -250,7 +286,8 @@ void ShellServer::shell(QTcpSocket *socket, const Request &request, const QUrlQu
         answer.insert(QStringLiteral("path"), folder);
         respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
     } else if (path == "/__backup") backup(socket, request, query);
-    else if (path == "/__save") save(socket, request, value("name"));
+    else if (path == "/__save") save(socket, request, value("name"), value("pieces") == QLatin1String("1"));
+    else if (path == "/__saving") saving(socket, request, query);
     else if (path == "/__latest") latest(socket);
     else if (path == "/__watch") watch(socket, request);
     else if (path == "/__lan") lan(socket, request, query);
@@ -273,7 +310,7 @@ void ShellServer::secret(QTcpSocket *socket, const Request &request, const QStri
         if (!file.open(QIODevice::ReadOnly)) respond(socket, 204, QByteArray(), QByteArray(), store);
         else respond(socket, 200, file.readAll(), "text/plain; charset=utf-8", store);
     } else if (request.method == "PUT") {
-        respond(socket, writeWhole(path, request.body) ? 204 : 500, QByteArray(), QByteArray(), store);
+        respond(socket, writeWhole(path, request.body) ? 204 : failedWrite(path, request.body.size()), QByteArray(), QByteArray(), store);
     } else if (request.method == "DELETE") {
         QFile::remove(path);
         respond(socket, 204, QByteArray(), QByteArray(), store);
@@ -294,7 +331,7 @@ void ShellServer::file(QTcpSocket *socket, const Request &request, const QString
         if (!file.open(QIODevice::ReadOnly)) respond(socket, 204);
         else respond(socket, 200, file.readAll(), "application/octet-stream");
     } else if (request.method == "PUT") {
-        respond(socket, writeWhole(path, request.body) ? 204 : 500);
+        respond(socket, writeWhole(path, request.body) ? 204 : failedWrite(path, request.body.size()));
     } else if (request.method == "DELETE") {
         QFile::remove(path);
         respond(socket, 204);
@@ -337,7 +374,7 @@ void ShellServer::backup(QTcpSocket *socket, const Request &request, const QUrlQ
         return;
     }
     if (!writeWhole(dir.filePath(name), request.body)) {
-        respond(socket, 500, "The backup could not be written.");
+        respond(socket, failedWrite(dir.filePath(name), request.body.size()), "The backup could not be written.");
         return;
     }
     // As app/lock/backup.ts staleBackups says: the older backups go with their parts, and the parts
@@ -363,31 +400,93 @@ void ShellServer::backup(QTcpSocket *socket, const Request &request, const QUrlQ
     respond(socket, 204);
 }
 
-void ShellServer::save(QTcpSocket *socket, const Request &request, const QString &name)
+void ShellServer::save(QTcpSocket *socket, const Request &request, const QString &name, bool pieces)
 {
     if (request.method != "POST") {
         respond(socket, 405);
         return;
     }
-    QString base = QFileInfo(name).fileName();
-    if (base.isEmpty() || base.startsWith('.')) base = QStringLiteral("file");
-    const QDir downloads(QStandardPaths::writableLocation(QStandardPaths::DownloadLocation));
-    QDir().mkpath(downloads.absolutePath());
-    // A name already there gets a number: nothing is written over.
-    const QFileInfo info(base);
-    QString target = downloads.filePath(base);
-    for (int n = 2; QFileInfo::exists(target); ++n) {
-        const QString suffix = info.suffix().isEmpty() ? QString() : '.' + info.suffix();
-        target = downloads.filePath(QStringLiteral("%1 (%2)%3").arg(info.completeBaseName()).arg(n).arg(suffix));
+    if (pieces) {
+        // Written in the app's own folder first, and moved to Downloads only once it is whole.
+        const QString id = QString::fromLatin1(randomToken());
+        const QString part = m_data.filePath(QStringLiteral("saving/") + id);
+        QDir().mkpath(QFileInfo(part).absolutePath());
+        QFile file(part);
+        if (!file.open(QIODevice::WriteOnly)) {
+            respond(socket, failedWrite(part, 0), "The file could not be saved.");
+            return;
+        }
+        m_saving.insert(id, Saving{name, part, 0});
+        QJsonObject answer;
+        answer.insert(QStringLiteral("id"), id);
+        respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
+        return;
     }
+    const QString target = freeDownload(name);
     QFile file(target);
-    if (!file.open(QIODevice::WriteOnly) || file.write(request.body) != request.body.size()) {
-        respond(socket, 500, "The file could not be saved.");
+    if (!file.open(QIODevice::WriteOnly) || file.write(request.body) != request.body.size() || !file.flush()) {
+        const int status = failedWrite(target, request.body.size());
+        file.remove();
+        respond(socket, status, "The file could not be saved.");
         return;
     }
     QJsonObject answer;
     answer.insert(QStringLiteral("path"), target);
     respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
+}
+
+void ShellServer::saving(QTcpSocket *socket, const Request &request, const QUrlQuery &query)
+{
+    const QString id = query.queryItemValue(QStringLiteral("id"));
+    if (!m_saving.contains(id)) {
+        respond(socket, 404);
+        return;
+    }
+    const Saving entry = m_saving.value(id);
+    if (request.method == "DELETE") {
+        m_saving.remove(id);
+        QFile::remove(entry.part);
+        respond(socket, 204);
+    } else if (request.method == "POST" && query.queryItemValue(QStringLiteral("done")) == QLatin1String("1")) {
+        m_saving.remove(id);
+        const QString target = freeDownload(entry.name);
+        if (!QFile::rename(entry.part, target)) {
+            const int status = failedWrite(target, entry.size);
+            QFile::remove(entry.part);
+            respond(socket, status, "The file could not be saved.");
+            return;
+        }
+        QJsonObject answer;
+        answer.insert(QStringLiteral("path"), target);
+        respond(socket, 200, QJsonDocument(answer).toJson(QJsonDocument::Compact), "application/json");
+    } else if (request.method == "PUT") {
+        // Pieces come in order, each where the last one ended: anything else is a piece lost or sent twice.
+        bool number = false;
+        const qint64 at = query.queryItemValue(QStringLiteral("at")).toLongLong(&number);
+        if (!number || at != entry.size) {
+            respond(socket, 409);
+            return;
+        }
+        if (request.body.size() > SavePieceMost) {
+            respond(socket, 413);
+            return;
+        }
+        QFile file(entry.part);
+        if (!file.open(QIODevice::Append) || file.write(request.body) != request.body.size() || !file.flush()) {
+            respond(socket, failedWrite(entry.part, request.body.size()), "The file could not be saved.");
+            return;
+        }
+        m_saving[id].size += request.body.size();
+        respond(socket, 204);
+    } else {
+        respond(socket, 405);
+    }
+}
+
+void ShellServer::dropSaving()
+{
+    m_saving.clear();
+    QDir(m_data.filePath(QStringLiteral("saving"))).removeRecursively();
 }
 
 void ShellServer::latest(QTcpSocket *socket)
@@ -455,6 +554,7 @@ void ShellServer::wipe(QTcpSocket *socket, const Request &request, const QUrlQue
     }
     // Nothing waits at the relay for it any more, and the same Wi-Fi stops.
     m_watch->takeBack();
+    dropSaving();
     if (m_lan) {
         m_lan->stop();
         m_lan->deleteLater();

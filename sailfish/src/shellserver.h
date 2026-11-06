@@ -32,7 +32,12 @@ class WatchLink;
 //   /__folder         the folder for backups: Documents/Erevos
 //   /__backup?…       writes a backup's file there, its own or a part's, keeping the newest
 //                     backups with their parts
-//   /__save?name=…    saves a photo or file from a chat in Downloads
+//   /__save?name=…    saves a photo or file from a chat in Downloads; with &pieces=1 (a file of
+//                     the Collection, up to some GB) gives an id to write it by, a piece at a time:
+//   /__saving?id=&at= PUT adds a piece (16 MB at most) at `at`, where the file has got to; POST
+//                     ?done=1 moves it to Downloads, under a name free then, and gives its path;
+//                     DELETE drops it. Until done it is in the app's own folder (saving/), deleted
+//                     when Erevos closes or starts, and with the panic button
 //   /__latest         the latest release's version.json (app/lib/updates.ts), asked for here:
 //                     GitHub's downloads do not answer a page's own requests
 //   /__watch          the open space's queues, for erevos-watch to wait on while Erevos is not in
@@ -46,6 +51,7 @@ class WatchLink;
 //                     closes Erevos
 //   /__open?url=…     PUT: a link that leaves Erevos, opened by the system (the browser for a web
 //                     page), as Sailfish WebView opens no window of its own
+// A write that finds the disk full answers 507, which the page says as such (app/lib/shell.ts).
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -53,6 +59,7 @@ class ShellServer : public QObject
 
 public:
     ShellServer(const QString &webRoot, const QString &dataRoot, WatchLink *watch, QObject *parent = nullptr);
+    ~ShellServer() override;
 
     bool listen(quint16 port);
     /** The address the WebView opens, with the token. */
@@ -78,7 +85,9 @@ private:
     void file(QTcpSocket *socket, const Request &request, const QString &name);
     void files(QTcpSocket *socket, const QString &prefix);
     void backup(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
-    void save(QTcpSocket *socket, const Request &request, const QString &name);
+    void save(QTcpSocket *socket, const Request &request, const QString &name, bool pieces);
+    void saving(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
+    void dropSaving();
     void latest(QTcpSocket *socket);
     void watch(QTcpSocket *socket, const Request &request);
     void lan(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
@@ -97,6 +106,15 @@ private:
     QDir m_data;
     QByteArray m_token;
     QHash<QTcpSocket *, QByteArray> m_buffers;
+
+    // Files being saved a piece at a time (/__saving), by their id: the name asked for, the part
+    // file in saving/, and how much of it is written.
+    struct Saving {
+        QString name;
+        QString part;
+        qint64 size;
+    };
+    QHash<QString, Saving> m_saving;
 
     // The same Wi-Fi: the link while it is on, what happened on it lately, numbered, and the pages
     // waiting to hear of it.
