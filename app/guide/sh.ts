@@ -278,7 +278,7 @@ mijenja odmah.
 
 Erevos se sastoji od dijelova, svojih modula: samog **Erevosa** (njegovi vlastiti razgovori, grupe i pozivi, šifrirani
 s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora s **Nostr**, **Matrix** i **XMPP**
-aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon, SMS i Zbirka postoje samo na Androidu. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
+aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu i u aplikaciji za računar. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
 Pri sasvim prvom pokretanju, prije nego se otvori njegov prvi prostor, Erevos se postavlja kao instalater, u nekoliko
@@ -2634,7 +2634,7 @@ skrivene razgovore.
 
 ## Zbirka {#collection}
 
-Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom prostoru i u svakom skrivenom mjestu, svako sa svojom: ona prostora otvara se samo u prostoru, ona skrivenog mjesta samo u tom skrivenom mjestu, i ništa na telefonu ne govori da neko mjesto ima Zbirku. Njena ikona, dvije slike s sitnom lokotom, nalazi se na početnom ekranu lijevo od lokota i na vrhu razgovora skrivenog mjesta. To je modul, samo na Androidu: **Postavke** → **Općenito** → **Moduli**.
+Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom prostoru i u svakom skrivenom mjestu, svako sa svojom: ona prostora otvara se samo u prostoru, ona skrivenog mjesta samo u tom skrivenom mjestu, i ništa na telefonu ne govori da neko mjesto ima Zbirku. Njena ikona, dvije slike s sitnom lokotom, nalazi se na početnom ekranu lijevo od lokota i na vrhu razgovora skrivenog mjesta. To je modul, na Androidu i u aplikaciji za računar: **Postavke** → **Općenito** → **Moduli**.
 
 - **Unutra:** folderi na vrhu, zatim **Fotografije** u mreži po mjesecima i **Fajlovi** u popisu. **+** snima fotografiju kamerom, koja ide direktno ovamo i nikad u galeriju, donosi datoteku iz datoteka telefona ili pravi novi folder. Dugo pritisnite da odaberete više, da ih premjestite, pošaljete ili izbrišete; dugo pritisnite folder da ga preimenujete ili izbrišete, čime njegove datoteke ostaju.
 - **Šifrirana:** svaka datoteka je šifrirana vlastitim ključem, u dijelovima sa slučajnim nazivima među dijelovima razgovora, pa ništa na telefonu ne razlikuje datoteku Zbirke od fotografije iz razgovora. Samo vlastiti katalog Zbirke, zapečaćen kao razgovori, kaže šta je šta. Zbirka ostaje izvan snimaka ekrana i zatvara se kad se prostor zaključa.
@@ -2643,6 +2643,7 @@ Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom p
 - **Sigurnosne kopije:** sigurnosna kopija sadrži Zbirku s ostatkom telefona. **Postavke** → **Podaci i uređaji** → **Zbirka**, ili tri tačke u Zbirci, mogu ostaviti tu Zbirku izvan kopija napravljenih dok je otvorena: svaka Zbirka ima svoj izbor.
 - **Muzika, video i PDF:** PDF se čita stranicu po stranicu unutar Erevosa (Android 11 i noviji), dešifriran samo u memoriji. Muzika i video se reproduciraju direktno iz svojih šifriranih dijelova, nikad iz kopije: video preko cijelog ekrana, muzika sa sljedećima iz foldera, i nastavlja s ugašenim ekranom, s reprodukcijom, pauzom, sljedećim i prethodnim u obavještenju i na zaključanom ekranu telefona, i tamo samo s tim. Popis nastavlja nakon što se prostor zaključa, osim ako je u postavkama Zbirke uključeno **Zaustavi reprodukciju kad se prostor zaključa**; **Zaustavi** i dugme za paniku ga završavaju. Obavještenje pokazuje samo **Reprodukcija**, osim ako je uključeno **Prikaži naslov u obavještenju**. **Otvori drugom aplikacijom** predaje datoteku dok se dešifrira, bez kopije na telefonu, dok ne izađete iz Zbirke; druga aplikacija može zadržati svoju.
 - **Originali u galeriji:** s uključenim **Izbriši original iz galerije nakon uvoza**, fotografija ili video izabran iz datoteka telefona briše se iz galerije čim je u Zbirci, nakon što Android zatraži da potvrdite. Potreban je Android 11 ili noviji. Fotografija iz kamere nikad ne ide u galeriju.
+- **U aplikaciji za računar:** na Linuxu, macOS-u i Windowsu Zbirka radi i tamo, s datotekama šifriranim u Erevosovom vlastitom folderu na računaru. **+** donosi datoteku s računara, šifriranu dio po dio; kamere nema. Fotografije, tekstovi, PDF-ovi (u ugrađenom pregledniku PDF-a), muzika i video otvaraju se samo u memoriji Erevosa, nikad kao nešifrirana kopija na disku, do 512 MB svaki; datoteka se zatvara, a muzika ili video staje, kad se prostor zaključa ili dugmetom za paniku. **Spremi na računar** prvo pita, kao na telefonu; **Otvori drugom aplikacijom** tu nema. Web aplikacija u pregledniku i Sailfish OS nemaju Zbirku.
 
 **Zašto:** neke fotografije i datoteke, pasoš, ugovor, slika, ne smiju ni stajati u galeriji da ih čita svaka aplikacija ni putovati u razgovoru. Zbirka ih čuva istim šifriranjem kao razgovore, odvojeno od njih. Kad se datoteka spremi na telefon ili otvori drugom aplikacijom, ona je izvan Erevosa, nešifrirana.
 

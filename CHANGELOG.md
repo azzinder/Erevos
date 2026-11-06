@@ -62,6 +62,14 @@ On main, not released yet:
   decrypted, with no plain copy left on the phone. **Delete the original from the gallery after importing** works on
   Android 11 and later: a photo or video picked from the phone's files is deleted from the gallery once it is in the
   Collection, after Android asks you to confirm. See [Collection](#collection).
+- **The Collection on a computer**: the Collection is a module of the desktop app for Linux, macOS and Windows too,
+  its files encrypted in Erevos's own folder on the computer, as the chats' are. **+** brings in a file from the
+  computer, encrypted a piece at a time, so a large one is never held whole. Photos (with arrows and the arrow keys),
+  text, PDFs in the built-in PDF viewer, music and videos open in Erevos's memory only, never as a plain copy on the
+  disk, up to 512 MB each; the file closes and music or a video stops when the space locks or with the panic button.
+  **Send to a chat** works as on the phone, **Save to the computer** asks first with the same warning, and **Open with
+  another app** is not offered there. The web app in a browser and Sailfish OS have no Collection. See
+  [Collection](#collection).
 
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
