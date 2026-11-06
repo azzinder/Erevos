@@ -104,6 +104,9 @@ On main, not released yet:
   from there as it opens, keeping only those that open with the file's key. While everything is copied, backups made
   while the place is open leave its pieces out. See [Collection](#collection).
 
+- **Chats open at their end**: a long chat, or one with imported messages, could open at a message read long ago,
+  often a photo. Now it opens at the newest message, and the arrow to where you left off is there when new ones came.
+
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
   A space you already have keeps its choice, under **Settings** → **Relay and networks** → **Tor**, where the choices
@@ -135,6 +138,13 @@ On main, not released yet:
   `end{taken, by}` once one answers. Sent for later, a copy for each endpoint is held by the relay too (`Copy.due`), and
   where each is held is kept to take back with the message. What is held is record `later` in the place's log, so every
   device shows it and can take it back (docs/sync.md, S4).
+- **A chat that opened at an old message**: as a chat opened, its thread went to its end animated, and on the way
+  passed the top of what it showed, where scrolling draws earlier messages and keeps in place what was read there: so
+  a chat of more than 100 messages, or with imported ones, could stay at one of its oldest drawn, often a photo. Now
+  the thread's own way to its end (`lib/thread-follow.ts`, `checks/thread-follow.check.ts`) draws nothing and does
+  not leave the end, the first one in a chat goes there at once, and a chat opened after another starts at its end
+  again rather than keep the other's scroll state.
+
 - **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
   queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
   with this space's relay**, which that space then keeps (the relay can then tell that both spaces are on one phone), and

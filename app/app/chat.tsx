@@ -58,6 +58,7 @@ import { canDial, DialTile } from '../components/dial-tile';
 import { CollectionSign, PhoneSign, ShortcutTile, VideoSign } from '../components/shortcut-tile';
 import { AVATAR_COLORS, AVATAR_SIGNS, KeyFace } from '../components/key-face';
 import { ThreadArrows, useThreadAway } from '../components/thread-arrows';
+import { ThreadFollow } from '../lib/thread-follow';
 import { Button, Chip, Field, Input, Page, Row, Sheet, Text, TextButton, Toggle } from '../components/ui';
 import { useGlassBlur } from '../components/glass';
 import { LaterPicker } from '../components/later-picker';
@@ -790,6 +791,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Set while more is drawn as the thread nears an end of what shows, or while an arrow goes to an
   // end: nothing more is asked for until the thread has grown.
   const growing = useRef(false);
+  // Whether the thread is going to its end by itself (lib/thread-follow.ts), so its scrolling on the
+  // way draws no earlier messages; and whether it was at the end once since the chat opened, after
+  // which it goes there animated as it grows.
+  const follow = useRef(new ThreadFollow());
+  const endShown = useRef(false);
   // The next message disappears, this long (seconds) after it is read: the stopwatch in the bar.
   const [vanishing, setVanishing] = useState(false);
   const [vanishFor, setVanishFor] = useState(3600);
@@ -1780,6 +1786,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setImportedShown(IMPORTED_PAGE);
     setThreadShown(THREAD_PAGE);
     setStretch(null);
+    // It opens at its end, whatever was done in the chat before: kept, a scroll held for earlier
+    // messages that never came, or the end left there, made it open at a message long read.
+    atEnd.current = true;
+    holdScroll.current = false;
+    above.current = null;
+    growing.current = false;
+    endShown.current = false;
     importedPlaced.current.clear();
     photoAt.current.clear();
     setNearPhotos([]);
@@ -5303,6 +5316,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     const index = lines.findIndex((line) => line.kind !== 'sms' && line.message.id === id);
     return index < firstLine || index >= lastLine ? null : (placed.current.get(id) ?? null);
   };
+  // To the thread's end, by itself: on the way it stays at the end and draws nothing more.
+  const toEndBySelf = (animated: boolean) => {
+    follow.current.go();
+    atEnd.current = true;
+    thread.current?.scrollToEnd({ animated });
+  };
   // To the chat's start: the first of what was imported and of the thread are drawn, from the top.
   const toStart = () => {
     growing.current = true;
@@ -5317,14 +5336,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const toEnd = () => {
     growing.current = true;
     setTimeout(() => (growing.current = false), 800);
-    atEnd.current = true;
     holdScroll.current = false;
     if (stretch) {
       setStretch(null);
       setThreadShown(THREAD_PAGE);
       setImportedShown(IMPORTED_PAGE);
     }
-    thread.current?.scrollToEnd({ animated: !stretch });
+    toEndBySelf(!stretch);
   };
   // Read away from the end: more of what came after, and drawn to the end once that reaches it.
   const showLater = () => {
@@ -6897,7 +6915,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             contentContainerStyle={styles.threadContent}
             onLayout={(event) => {
               readAt.current.seen = event.nativeEvent.layout.height;
-              if (atEnd.current) thread.current?.scrollToEnd({ animated: false });
+              if (atEnd.current) toEndBySelf(false);
             }}
             onContentSizeChange={(_, height) => {
               const was = above.current;
@@ -6910,17 +6928,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 holdScroll.current = false;
                 thread.current?.scrollTo({ y: was.offset + height - was.height, animated: false });
               } else if (holdScroll.current) holdScroll.current = false;
-              // Read from its start, it stays where it is read.
-              else if (!stretch) thread.current?.scrollToEnd({ animated: true });
+              // Read from its start, it stays where it is read. Otherwise at its end: at once as the
+              // chat opens, animated after that.
+              else if (!stretch) {
+                toEndBySelf(endShown.current);
+                endShown.current = true;
+              }
             }}
+            onScrollBeginDrag={() => follow.current.take()}
             // Read to the end, the thread stays at its end as the keyboard, the panel under the bar or
             // what the bar shows over the field take room from it.
             onScroll={(event) => {
               const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-              atEnd.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+              const end = contentOffset.y + layoutMeasurement.height >= contentSize.height - 48;
+              // On its own way to the end, it stays at the end and draws nothing more.
+              const person = follow.current.person(end);
+              atEnd.current = person ? end : true;
               awayOnScroll(event);
               readAt.current = { offset: contentOffset.y, height: contentSize.height, seen: layoutMeasurement.height };
               lookNear();
+              if (!person) return;
               // Near the top of what shows, earlier messages come; read from the start, near its
               // bottom, later ones.
               if (contentOffset.y < layoutMeasurement.height) showEarlier();

@@ -23,6 +23,7 @@ export type WhatsNew = Changes & { version: string };
 export const NEXT: Changes = {
   forYou: [
     mark('**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.'),
+    mark('**Chats open at their end**: a long chat, or one with imported messages, could open at a message read long ago, often a photo, as it drew earlier messages on its way to the end. Now it opens at the newest message, and the arrow to where you left off is there when new ones came.'),
     mark("**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor)."),
     mark("**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices)."),
     mark("**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices)."),
