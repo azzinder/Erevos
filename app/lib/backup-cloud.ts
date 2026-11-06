@@ -197,6 +197,11 @@ export function askServer(server: CloudServer, method: HttpMethod, name: string,
   return ask(method, server.url + name, { ...authorization(server), ...headers }, body, most);
 }
 
+/** One request to `url` with no user name, as the sign-in with Nextcloud asks (lib/nextcloud-login.ts); as askServer otherwise. */
+export function askAddress(method: HttpMethod, url: string, headers: Record<string, string> = {}, body?: Uint8Array): Promise<CloudAnswer> {
+  return ask(method, url, headers, body);
+}
+
 export async function loadCloudBackup(): Promise<CloudBackup | null> {
   try {
     const value = JSON.parse((await secureGet(CLOUD)) ?? 'null') as Partial<CloudBackup> | null;

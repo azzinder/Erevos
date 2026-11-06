@@ -46,6 +46,7 @@ export const NEXT: Changes = {
     mark("**Notes from another app**: an app on the phone, as Fasouli for a payment that is coming, can ask to keep a note with its reminder in Chat with myself. Erevos asks you first, in the space you open. See [Getting started](#start)."),
     mark("**Payment requests**: another app, as Fasouli, can ask Erevos to send one to a contact: an amount and what it is for, as a card. They tap **Paid** once they paid, and **Mark in Fasouli** then marks it collected there. Erevos moves no money. See [Chat through a relay](#relay)."),
     mark("**Panic tells Fasouli too**: on Android, under Settings → Privacy and security → Panic button → **Tell other apps**, choose the apps Erevos tells as it wipes, as a panic app does: Fasouli then locks itself. Each asks you first. See [Panic button](#panic)."),
+    mark("**Sign in with Nextcloud**: a Collection's server and the backups' server can now be your Nextcloud, as LPHL's, the one Fasouli syncs with, without typing a password: tap **Sign in with Nextcloud**, sign in in the browser and grant access. Erevos gets an app password of its own and its own folder there, Erevos/Collection or Erevos/Backups. See [Collection](#collection)."),
   ],
   underTheHood: [
     mark("**Large files saved from the Collection on Sailfish OS**: **Save to phone** writes a file of any size to Downloads a piece at a time, as the desktop app now does too, and when the disk has no room left Erevos says so and leaves nothing half-written. See [Collection](#collection)."),

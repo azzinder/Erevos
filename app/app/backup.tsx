@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { MIN_BACKUP_PASSWORD, PasswordSheet } from '../components/PasswordSheet';
+import { NextcloudSignIn } from '../components/nextcloud-sign-in';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text } from '../components/ui';
 import { ask, choose as chooseOne, confirm } from '../lib/alert';
 import { locale, mark, plural, t } from '../lib/i18n';
@@ -320,6 +321,11 @@ export default function Backups() {
   // The fields of a server: its folder's address, user name and password.
   const serverFields = (
     <>
+      <NextcloudSignIn folder="backups" disabled={busy} onSigned={(server) => {
+        setAddress(server.url);
+        setUser(server.user);
+        setSecret(server.password);
+      }} />
       <Field label={t('Folder address (WebDAV)')} hint={t('In Nextcloud: Files → Files settings → WebDAV gives the start; add a folder you made for backups, like …/remote.php/dav/files/NAME/Backups')}>
         <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
       </Field>

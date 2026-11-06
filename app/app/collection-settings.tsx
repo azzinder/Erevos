@@ -6,6 +6,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
 
+import { NextcloudSignIn } from '../components/nextcloud-sign-in';
 import { Button, Card, Field, Input, Page, Row, Text, Toggle } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { cloudLabel, loadCloudBackup } from '../lib/backup-cloud';
@@ -290,6 +291,11 @@ function ServerCard({ place }: { place: CollectionPlace }) {
       ) : null}
       {form ? (
         <>
+          <NextcloudSignIn folder="collection" disabled={busy} onSigned={(next) => {
+            setAddress(next.url);
+            setUser(next.user);
+            setSecret(next.password);
+          }} />
           <Field label={t('Folder address (WebDAV)')}>
             <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
           </Field>

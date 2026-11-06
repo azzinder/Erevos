@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Sign in with Nextcloud**: a Collection's server and the backups' server can be a Nextcloud, as LPHL's, the
+  one Fasouli syncs with, through Nextcloud's Login Flow v2 in the browser (through Authentik or however it signs in),
+  with no password typed. Erevos gets an app password of its own and its own folder, `Erevos/Collection` or
+  `Erevos/Backups`, made if missing; nothing of Fasouli's is read. Then **Connect** as before.
 - **Panic tells Fasouli too** (Android): under Settings → Privacy and security → Panic button → Tell other apps,
   choose apps that take a panic app's request, as Fasouli. When the panic code or button wipes Erevos, it tells them
   first, and Fasouli locks itself. Only apps you choose are told, and only while they are signed as when you chose them.
