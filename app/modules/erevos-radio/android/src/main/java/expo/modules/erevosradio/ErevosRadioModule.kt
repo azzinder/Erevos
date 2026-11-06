@@ -23,6 +23,9 @@ class ErevosRadioModule : Module() {
   private var direct: WifiDirectLink? = null
   private var quiet = false
   private var mesh: MeshtasticLink? = null
+  // The chunks of large files to and from the account's devices on the same Wi-Fi (ChunkChannel).
+  private var chunks: ChunkChannel? = null
+  private val chunkTakers = java.util.concurrent.ConcurrentHashMap<String, ChunkChannel.Taker>()
 
   override fun definition() = ModuleDefinition {
     Name("ErevosRadio")
@@ -163,6 +166,41 @@ class ErevosRadioModule : Module() {
       bytes != null && mesh?.send(bytes) == true
     }
 
+    // Gives chunks from the app's files (on) or stops: answers the port and this phone's addresses.
+    AsyncFunction("chunksServe") { on: Boolean ->
+      if (!on) {
+        chunks?.stop()
+        chunks = null
+        for (t in chunkTakers.values) t.close()
+        chunkTakers.clear()
+        return@AsyncFunction mapOf("port" to 0, "hosts" to emptyList<String>())
+      }
+      val channel = chunkChannel()
+      mapOf("port" to channel.start(), "hosts" to ChunkChannel.addresses())
+    }
+
+    Function("chunksAllow") { key: String, ids: List<String> ->
+      chunks?.allow(key, ids)
+    }
+
+    Function("chunksForget") { key: String ->
+      chunks?.forget(key)
+    }
+
+    // Takes one chunk into the app's files, kept only once it opens: true, false when the other does
+    // not have it whole; rejects when cut off.
+    AsyncFunction("chunksTake") { hosts: List<String>, port: Int, key: String, id: String, n: Double, fileKey: String, size: Int ->
+      val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+      val at = "${hosts.joinToString(",")} $port $key"
+      try {
+        val taker = chunkTakers[at] ?: chunkChannel().open(hosts, port, key).also { chunkTakers[at] = it }
+        taker.take(context.filesDir, id, n.toLong(), fileKey, size)
+      } catch (e: java.io.IOException) {
+        chunkTakers.remove(at)?.close()
+        throw e
+      }
+    }
+
     Function("sendText") { peer: String, text: String ->
       val bytes = text.toByteArray(Charsets.UTF_8)
       if (peer.startsWith(BleLink.LINK_PREFIX)) {
@@ -182,7 +220,15 @@ class ErevosRadioModule : Module() {
       lan = null
       mesh?.disconnect()
       mesh = null
+      chunks?.stop()
+      chunks = null
     }
+  }
+
+  private fun chunkChannel(): ChunkChannel {
+    chunks?.let { return it }
+    val context = appContext.reactContext ?: throw IllegalStateException("No app context")
+    return ChunkChannel(context.filesDir).also { chunks = it }
   }
 
   private fun meshLink(): MeshtasticLink {

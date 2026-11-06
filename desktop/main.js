@@ -27,6 +27,9 @@
  *   /__lan                     Erevos on the same Wi-Fi (lan.js): PUT ?on=1 or 0 starts or stops
  *                              it, POST ?link=… sends the body on a link, GET ?after=… gives what
  *                              happened since, waiting a while for something
+ *   /__chunks                  chunks of large files between the account's devices on the same
+ *                              Wi-Fi (chunks.js): PUT ?on=1 or 0 gives or stops giving, answering
+ *                              the port and addresses; POST ?op=allow|forget|take with JSON
  *   /__latest                  the latest release's version.json (app/lib/updates.ts), asked for
  *                              here: GitHub's downloads do not answer a page's own requests
  *   /__webdav?method=&url=     one request to the WebDAV server automatic backups go to, or are
@@ -79,6 +82,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { backupRequest, isBackupFile } = require('./backups');
+const { ChunkServer, ChunkTaker, addresses: chunkAddresses } = require('./chunks');
 const { Lan } = require('./lan');
 
 const ORIGIN = 'app://erevos';
@@ -385,6 +389,54 @@ async function save(request, url) {
 
 // Erevos on the same Wi-Fi, while the page wants it: what happens waits here for the page to ask.
 let lan = null;
+
+// The chunks of large files to and from the account's devices on the same Wi-Fi (chunks.js).
+let chunkServer = null;
+const chunkTakers = new Map();
+
+async function chunksRequest(request, url) {
+  if (request.method === 'PUT') {
+    if (url.searchParams.get('on') === '1') {
+      chunkServer ??= new ChunkServer({ folder: dataPath('files') });
+      const port = await chunkServer.start();
+      return Response.json({ port, hosts: chunkAddresses() });
+    }
+    chunkServer?.stop();
+    chunkServer = null;
+    for (const taker of chunkTakers.values()) taker.close();
+    chunkTakers.clear();
+    return new Response(null, { status: 204 });
+  }
+  if (request.method !== 'POST') return new Response('', { status: 405 });
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response('bad', { status: 400 });
+  }
+  const op = url.searchParams.get('op');
+  if (op === 'allow' && chunkServer && Array.isArray(body.ids)) chunkServer.allow(String(body.key), body.ids.map(String));
+  else if (op === 'forget') chunkServer?.forget(String(body.key));
+  else if (op === 'take') {
+    const { hosts, port, key, id, n, fileKey, size } = body;
+    if (!Array.isArray(hosts) || !Number.isInteger(port)) return new Response('bad', { status: 400 });
+    const at = `${hosts.join(',')} ${port} ${key}`;
+    try {
+      let taker = chunkTakers.get(at);
+      if (!taker) {
+        taker = await ChunkTaker.open(hosts.map(String), port, String(key));
+        chunkTakers.set(at, taker);
+      }
+      return Response.json({ kept: (await taker.take(dataPath('files'), String(id), n, String(fileKey), size)) === 'kept' });
+    } catch {
+      chunkTakers.get(at)?.close();
+      chunkTakers.delete(at);
+      // Cut off, or not reachable: the app tries another way, or later.
+      return new Response('cut off', { status: 502 });
+    }
+  } else return new Response('bad', { status: 400 });
+  return new Response(null, { status: 204 });
+}
 let lanSeq = 0;
 let lanEvents = [];
 let lanWaiting = [];
@@ -681,6 +733,7 @@ function handle(request) {
     if (url.pathname === '/__picked') return pickedPiece(request, url);
     if (url.pathname === '/__save') return save(request, url);
     if (url.pathname === '/__lan') return lanRequest(request, url);
+    if (url.pathname === '/__chunks') return chunksRequest(request, url);
     if (url.pathname === '/__latest') return latest();
     if (url.pathname === '/__webdav') return webdav(request, url);
     if (url.pathname === '/__window') return windowRequest(request, url);

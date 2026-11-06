@@ -26,7 +26,17 @@ export type Wanted = { id: string; key: Uint8Array; chunk: number; count: number
  * A way to bring a chunk: the `n`th of the file `id` as it is kept there, null when it does not
  * have it. Throws when it cannot be reached, or is cut off while it answers.
  */
-export type ChunkWay = { name: string; get(id: string, n: number): Promise<Uint8Array | null> };
+export type ChunkWay = {
+  name: string;
+  get(id: string, n: number): Promise<Uint8Array | null>;
+  /**
+   * A way that keeps the chunk here itself as it comes, opened with the file's key before it is kept
+   * under its name (the fast way on the same Wi-Fi, desktop/chunks.js and ChunkChannel.kt, so the
+   * chunk never goes through the app): true once kept, false when the other does not have it whole.
+   * Throws as `get` does. Used in place of `get` when there.
+   */
+  keep?(want: Wanted, n: number): Promise<boolean>;
+};
 
 /** Where the chunks are kept here (lock/attachment-files.ts in the app). */
 export type ChunkStore = {
@@ -114,12 +124,19 @@ export class ChunkFetch {
         continue;
       }
       let got: Uint8Array | null = null;
+      let kept = false;
       let reached = false;
       for (const way of ways) {
         if (this.stopped.has(want.id)) return end('stopped');
         let sealed: Uint8Array | null;
         try {
           asked++;
+          if (way.keep) {
+            kept = await way.keep(want, n);
+            reached = true;
+            if (kept) break;
+            continue;
+          }
           sealed = await way.get(want.id, n);
         } catch {
           // Cut off, or not reachable: the next way, if any.
@@ -133,8 +150,8 @@ export class ChunkFetch {
         }
       }
       if (this.stopped.has(want.id)) return end('stopped');
-      if (!got) return end(reached ? 'missing' : 'cut');
-      await this.store.save(want.id, n, got);
+      if (!got && !kept) return end(reached ? 'missing' : 'cut');
+      if (got) await this.store.save(want.id, n, got);
       // Deleted while it was kept: what came goes too.
       if (this.stopped.has(want.id)) return end('stopped');
       have++;

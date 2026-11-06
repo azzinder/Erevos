@@ -20,7 +20,7 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
       <configuration><jvmTarget>17</jvmTarget><args><arg>-Werror</arg></args></configuration>
     </plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version>
-      <configuration><systemPropertyVariables><echo.script>${echoScript}</echo.script></systemPropertyVariables></configuration></plugin>
+      <configuration><systemPropertyVariables><echo.script>${echoScript}</echo.script><chunks.script>${chunksScript}</chunks.script></systemPropertyVariables></configuration></plugin>
     </plugins>
     <testSourceDirectory>src/test/kotlin</testSourceDirectory>
   </build>

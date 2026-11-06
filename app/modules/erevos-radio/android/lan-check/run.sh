@@ -12,8 +12,8 @@ here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/src/main/kotlin" "$work/src/test/kotlin"
-cp "$here/../src/main/java/expo/modules/erevosradio/LanLink.kt" "$here/../src/main/java/expo/modules/erevosradio/Framing.kt" "$work/src/main/kotlin/"
-cp "$here/LanInteropTest.kt" "$work/src/test/kotlin/"
+cp "$here/../src/main/java/expo/modules/erevosradio/LanLink.kt" "$here/../src/main/java/expo/modules/erevosradio/Framing.kt" "$here/../src/main/java/expo/modules/erevosradio/ChunkChannel.kt" "$work/src/main/kotlin/"
+cp "$here/LanInteropTest.kt" "$here/ChunkInteropTest.kt" "$work/src/test/kotlin/"
 cp "$here/pom.xml" "$work/"
-cd "$work" && mvn -q -B test -DechoScript="$here/echo.cjs"
-echo "LanLink and desktop/lan.js linked and talked."
+cd "$work" && mvn -q -B test -DechoScript="$here/echo.cjs" -DchunksScript="$here/chunks.cjs"
+echo "LanLink and desktop/lan.js linked and talked; ChunkChannel and desktop/chunks.js handed each other chunks."
