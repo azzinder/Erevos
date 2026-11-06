@@ -265,4 +265,5 @@ export const parts: Record<string, string> = {
   'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Μόνο {given} από τα {all} αρχεία πήγαν στις λήψεις, οπότε δεν αποθηκεύτηκαν όλα.',
   'Save the files': 'Αποθήκευση των αρχείων',
   '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} από τα {all} αρχεία πήγαν στις λήψεις. Πάτα Αποθήκευση για το επόμενο: {name}',
+  "The browser did not keep it.": "Ο browser δεν το κράτησε.",
 };

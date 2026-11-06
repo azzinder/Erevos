@@ -263,4 +263,5 @@ export const parts: Record<string, string> = {
   'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Samo {given} od {all} datoteka otišlo je u preuzimanja, pa nisu sve sačuvane.',
   'Save the files': 'Sačuvaj datoteke',
   '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} od {all} datoteka otišlo je u preuzimanja. Dodirnite Sačuvaj za sljedeću: {name}',
+  "The browser did not keep it.": "Preglednik to nije sačuvao.",
 };

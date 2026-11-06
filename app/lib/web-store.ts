@@ -73,8 +73,18 @@ async function get<T>(name: string, key: string): Promise<T | undefined> {
   return done((await store(name, 'readonly')).get(key)) as Promise<T | undefined>;
 }
 
+// Done once its transaction is: a browser that has no room left (QuotaExceededError) may take the
+// put and say so only when the transaction aborts, so a full storage is told to the one who wrote.
 async function put(name: string, key: string, value: unknown): Promise<void> {
-  await done((await store(name, 'readwrite')).put(value, key));
+  const objects = await store(name, 'readwrite');
+  const transaction = objects.transaction;
+  await new Promise<void>((resolve, reject) => {
+    const failed = () => reject(transaction.error ?? request.error ?? new DOMException(t('The browser did not keep it.'), 'AbortError'));
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = failed;
+    transaction.onerror = failed;
+    const request = objects.put(value, key);
+  });
 }
 
 async function remove(name: string, key: string): Promise<void> {

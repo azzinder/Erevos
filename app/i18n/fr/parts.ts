@@ -265,4 +265,5 @@ export const parts: Record<string, string> = {
   'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Seuls {given} des {all} fichiers sont allés dans les téléchargements : ils ne sont donc pas tous enregistrés.',
   'Save the files': 'Enregistrer les fichiers',
   '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} des {all} fichiers sont allés dans les téléchargements. Touche Enregistrer pour le suivant : {name}',
+  "The browser did not keep it.": "Le navigateur ne l’a pas gardé.",
 };

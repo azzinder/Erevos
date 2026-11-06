@@ -264,4 +264,5 @@ export const parts: Record<string, string> = {
   'Only {given} of the {all} files went to the downloads, so they are not all saved.': 'Solo {given} dei {all} file sono andati nei download, quindi non sono tutti salvati.',
   'Save the files': 'Salva i file',
   '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} dei {all} file sono andati nei download. Tocca Salva per il prossimo: {name}',
+  "The browser did not keep it.": "Il browser non l’ha conservato.",
 };
