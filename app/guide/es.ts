@@ -284,7 +284,7 @@ propio nombre: **Ελληνικά**, **English**, **Deutsch**, **Español**, **F
 
 Erevos se compone de partes, sus módulos: **Erevos** mismo (sus propios chats, grupos y llamadas, cifrados de extremo a
 extremo, con los chats ocultos), el **Teléfono**, los **SMS** y los chats con apps de **Nostr**, **Matrix** y **XMPP**.
-La **Colección** (tus fotos y archivos, cifrados) también es un módulo. El Teléfono y los SMS solo existen en Android, la Colección en Android y en la aplicación de escritorio. Cualquiera puede estar activado, también Erevos mismo, uno o varios, al
+La **Colección** (tus fotos y archivos, cifrados) también es un módulo. El Teléfono y los SMS solo existen en Android, la Colección en Android, en la aplicación de escritorio, en la app web y en Sailfish OS. Cualquiera puede estar activado, también Erevos mismo, uno o varios, al
 menos uno: **Ajustes** → **General** → **Módulos** activa o desactiva cada uno en cualquier momento.
 
 La primera vez que se inicia, antes de que se abra su primer espacio, Erevos se configura como lo hace un instalador,

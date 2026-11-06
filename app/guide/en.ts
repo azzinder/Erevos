@@ -270,7 +270,7 @@ at once.
 ## Modules {#modules}
 
 Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups and calls, end-to-end encrypted, with
-the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android and in the desktop app. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
+the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The **Collection** (your photos and files, encrypted) is a module too. The Phone and the SMS are only on Android, the Collection on Android, in the desktop app, in the web app and on Sailfish OS. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
 **General** → **Modules** turns each on or off at any time.
 
 The very first time Erevos starts, before its first space opens, it sets itself up as an installer does, in a few

@@ -298,7 +298,7 @@ Dans les autres langues, les deux portent le nom dans cette langue et en anglais
 
 Erevos est fait de parties, ses modules : **Erevos** lui-même (ses propres discussions, groupes et appels, chiffrés de
 bout en bout, avec les discussions masquées), le **Téléphone**, les **SMS**, et les discussions avec des apps **Nostr**,
-**Matrix** et **XMPP**. La **Collection** (tes photos et tes fichiers, chiffrés) est aussi un module. Le Téléphone et les SMS n’existent que sur Android, la Collection sur Android et dans l’application de bureau. N’importe lesquels peuvent être activés,
+**Matrix** et **XMPP**. La **Collection** (tes photos et tes fichiers, chiffrés) est aussi un module. Le Téléphone et les SMS n’existent que sur Android, la Collection sur Android, dans l’application de bureau, dans l’app web et sur Sailfish OS. N’importe lesquels peuvent être activés,
 Erevos lui-même aussi, un ou plusieurs, au moins un : **Réglages** → **Général** → **Modules** active ou désactive
 chacun à tout moment.
 

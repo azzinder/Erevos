@@ -281,7 +281,7 @@ mijenja odmah.
 
 Erevos se sastoji od dijelova, svojih modula: samog **Erevosa** (njegovi vlastiti razgovori, grupe i pozivi, šifrirani
 s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora s **Nostr**, **Matrix** i **XMPP**
-aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu i u aplikaciji za računar. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
+aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon i SMS postoje samo na Androidu, Zbirka na Androidu, u aplikaciji za računar, u web aplikaciji i na Sailfish OS-u. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
 Pri sasvim prvom pokretanju, prije nego se otvori njegov prvi prostor, Erevos se postavlja kao instalater, u nekoliko

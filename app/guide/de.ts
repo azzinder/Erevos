@@ -298,7 +298,7 @@ sich sofort.
 
 Erevos besteht aus Teilen, seinen Modulen: **Erevos** selbst (seine eigenen Chats, Gruppen und Anrufe,
 Ende-zu-Ende-verschlüsselt, mit den versteckten Chats), das **Telefon**, die **SMS** und die Chats mit **Nostr**-,
-**Matrix**- und **XMPP**-Apps. Die **Sammlung** (deine Fotos und Dateien, verschlüsselt) ist auch ein Modul. Das Telefon und die SMS gibt es nur auf Android, die Sammlung auf Android und in der Desktop-App. Jedes davon kann an sein, auch Erevos
+**Matrix**- und **XMPP**-Apps. Die **Sammlung** (deine Fotos und Dateien, verschlüsselt) ist auch ein Modul. Das Telefon und die SMS gibt es nur auf Android, die Sammlung auf Android, in der Desktop-App, in der Web-App und auf Sailfish OS. Jedes davon kann an sein, auch Erevos
 selbst, eines oder mehrere, mindestens eines: **Einstellungen** → **Allgemein** → **Module** schaltet jedes jederzeit
 ein oder aus.
 

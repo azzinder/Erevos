@@ -285,7 +285,7 @@ subito.
 
 Erevos è fatto di parti, i suoi moduli: **Erevos** stesso (le sue chat, i suoi gruppi e le sue chiamate,
 crittografati end-to-end, con le chat nascoste), il **Telefono**, gli **SMS** e le chat con app **Nostr**, **Matrix** e
-**XMPP**. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono e gli SMS ci sono solo su Android, la Raccolta su Android e nell’app per computer. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
+**XMPP**. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono e gli SMS ci sono solo su Android, la Raccolta su Android, nell’app per computer, nella web app e su Sailfish OS. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
 più, almeno uno: **Impostazioni** → **Generali** → **Moduli** attiva o disattiva ciascuno in qualsiasi momento.
 
 La primissima volta che si avvia, prima che si apra il suo primo spazio, Erevos si configura come fa un installer, in
