@@ -128,7 +128,8 @@ export function relayFor(url: string, token: string, via: string, viaToken: stri
     url: address,
     token: token.trim() || undefined,
     via: through,
-    backup: spare && !sameRelay(spare, address) ? { url: spare, token: backup?.token?.trim() || undefined, via: through } : undefined,
+    // A backup relay reached only through Tor stays so (lib/spare.ts, Relay.tor).
+    backup: spare && !sameRelay(spare, address) ? { url: spare, token: backup?.token?.trim() || undefined, via: through, ...(backup?.tor ? { tor: true } : {}) } : undefined,
   };
 }
 
@@ -136,11 +137,13 @@ export function relayFor(url: string, token: string, via: string, viaToken: stri
 // when it is the same relay, otherwise sealed for theirs and handed to ours (or the second relay).
 function reach(hop: Relay, where: { relay: string; relayKey: string }, home: string): Relay {
   const relay = where.relay || home;
-  if (sameRelay(relay, hop.url)) return { url: hop.url, token: hop.token, via: hop.via };
+  // A hop reached only through Tor (Relay.tor) stays so, straight or as the second relay.
+  const tor = hop.tor ? { tor: true } : {};
+  if (sameRelay(relay, hop.url)) return { url: hop.url, token: hop.token, via: hop.via, ...tor };
   // Our own relay, through the backup: its key is the one it gave this run.
-  if (sameRelay(relay, home) && !where.relayKey) return { url: relay, via: hop.via ?? { url: hop.url, token: hop.token } };
+  if (sameRelay(relay, home) && !where.relayKey) return { url: relay, via: hop.via ?? { url: hop.url, token: hop.token, ...tor } };
   if (!where.relayKey) throw new Error(t('That contact uses the relay at {relay}, and its link has no key for it. Ask them for a new link.', { relay }));
-  return { url: relay, key: fromBase64Url(where.relayKey), via: hop.via ?? { url: hop.url, token: hop.token } };
+  return { url: relay, key: fromBase64Url(where.relayKey), via: hop.via ?? { url: hop.url, token: hop.token, ...tor } };
 }
 
 /**

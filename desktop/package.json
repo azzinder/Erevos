@@ -30,6 +30,7 @@
       "main.js",
       "lan.js",
       "backups.js",
+      "chunks.js",
       "icon.png",
       "web/**/*"
     ],

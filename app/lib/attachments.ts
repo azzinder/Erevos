@@ -319,27 +319,45 @@ export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progr
   const { at, via } = fileWay(own, from.relay);
   const key = fromHex(ref.key);
   const ids = Array.from({ length: ref.count }, (_, n) => fromHex(from.ids.slice(n * ID_HEX, (n + 1) * ID_HEX)));
+  // Every chunk already here and whole, from a take the app did not get to record before it
+  // ended: nothing to fetch, and nothing to throw away when the relay no longer has them.
+  const kept = await keptWhole(ref, key);
   const session = await RelaySession.open(at, true);
   try {
     let size = 0;
-    for (let n = 0; n < ref.count; n++) {
+    for (let n = 0; n < ref.count && !kept; n++) {
       const sealed = await getChunk(session, ids[n], via);
       if (!sealed) throw new FileGoneError();
       size += openChunk(key, n, sealed, ref.chunk).length;
       await saveChunk(ref.id, n, sealed);
       progress?.(n + 1, ref.count);
     }
-    if (size !== ref.size) throw new FileDamagedError();
+    if (!kept && size !== ref.size) throw new FileDamagedError();
     // Taken: the relay need not keep it. One it cannot delete expires there.
     if (!left) for (const id of ids) await deleteChunk(session, id, via).catch(() => false);
   } catch (error) {
-    await deleteChunks(ref.id, ref.count).catch(() => undefined);
+    if (!kept) await deleteChunks(ref.id, ref.count).catch(() => undefined);
     throw error;
   } finally {
     session.close();
   }
   watch?.taken(from, left);
   return taken;
+}
+
+// Whether every chunk of `ref` is kept here, each one opening to its size: a file taken before.
+async function keptWhole(ref: FileRef, key: Uint8Array): Promise<boolean> {
+  let size = 0;
+  for (let n = 0; n < ref.count; n++) {
+    const sealed = await readChunk(ref.id, n).catch(() => null);
+    if (!sealed) return false;
+    try {
+      size += openChunk(key, n, sealed, ref.chunk).length;
+    } catch {
+      return false;
+    }
+  }
+  return size === ref.size;
 }
 
 /** The photo's pieces have not all come through Nostr yet: `have` of `count`. They are taken when they have. */

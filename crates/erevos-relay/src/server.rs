@@ -904,7 +904,7 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         }
         Err(unauthorized())
     };
-    let mut socket = tungstenite::accept_hdr(stream, check).map_err(to_io)?;
+    let mut socket = tungstenite::accept_hdr_with_config(stream, check, Some(socket_config())).map_err(to_io)?;
     let timed = socket.get_mut();
     timed.deadline = None;
     timed.stream.set_read_timeout(Some(limits.idle))?;
@@ -1005,6 +1005,19 @@ fn handle_ws(stream: TcpStream, store: &Shared, token: Option<&str>) -> io::Resu
         };
         socket.send(Message::Binary(reply.into())).map_err(to_io)?;
     }
+}
+
+/// The most a WebSocket message or frame may hold, each way: the largest request, a chunk of a
+/// file (`MAX_CHUNK`) or a request held for later (`MAX_HELD_REQUEST`), with room for a channel's
+/// seal and its framing. Without it a connection with no token, or a relay this one forwards to,
+/// could make this relay hold the library's default of 64 MiB for each message.
+pub const MAX_SOCKET_MESSAGE: usize = 2 * 1024 * 1024;
+const _: () = assert!(MAX_SOCKET_MESSAGE > MAX_CHUNK + 1024 && MAX_SOCKET_MESSAGE > MAX_HELD_REQUEST + 1024);
+
+fn socket_config() -> tungstenite::protocol::WebSocketConfig {
+    tungstenite::protocol::WebSocketConfig::default()
+        .max_message_size(Some(MAX_SOCKET_MESSAGE))
+        .max_frame_size(Some(MAX_SOCKET_MESSAGE))
 }
 
 /// The token at the start of a channel's first message: a 2-byte length, then
@@ -2229,7 +2242,7 @@ fn call_relay(
         .set_read_timeout(Some(timeout))
         .and_then(|()| stream.set_write_timeout(Some(timeout)))
         .map_err(|e| io_failed("the connection could not be set up", &e))?;
-    let (mut socket, _) = tungstenite::client_tls(url, stream).map_err(|e| match e {
+    let (mut socket, _) = tungstenite::client_tls_with_config(url, stream, Some(socket_config()), None).map_err(|e| match e {
         tungstenite::HandshakeError::Failure(e) => ws_failed("its WebSocket did not open", &e),
         tungstenite::HandshakeError::Interrupted(_) => {
             Cow::Borrowed("its WebSocket did not open (timed out)")

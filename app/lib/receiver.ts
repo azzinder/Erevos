@@ -680,7 +680,7 @@ export function cameBefore({ history, voiceParts }: SpaceChats, received: Receiv
 // Keeps what one message brought, as the chat's own handling does. Says whether anything changed.
 // One that came already, from their account and again from one of their endpoints, or through the
 // phone and again directly (docs/multi-device.md), is kept once, and said to have come once.
-async function keep(chats: SpaceChats, received: Received, state: State, nostr = false, route?: Route): Promise<boolean> {
+async function keep(chats: SpaceChats, received: Received, state: State, nostr = false, route?: Route, ofPlace = false): Promise<boolean> {
   const { e2e, history, voiceParts } = chats;
   const { receipts, answers } = state;
   if (received.kind === 'refused') return false;
@@ -728,7 +728,9 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   // They paid one of our payment requests (lib/pay.ts), as they marked it: once.
   if (received.more.settled && (await history.paid(peer, received.more.settled.tag, false, at))) changed = true;
   // An invite to their relay: kept for the chat, which takes it by itself when it opens (lib/relay-offer.ts).
-  const offer = twice ? null : offerOf(received);
+  // Never from a hidden place's contact: the offer is kept in the space's settings, and taking it
+  // would put the space on a relay its hidden contact chose, which ties the two together.
+  const offer = twice || ofPlace ? null : offerOf(received);
   if (offer) await keepOffer(offer).catch(() => undefined);
   // A step of an introduction (lib/intros.ts): kept, answered by what follows, the contact it gives added.
   if (received.more.intro && !twice) {
@@ -751,7 +753,7 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
 
 /** Keeps what one message brought as the receiver does, in chats with their own run of looks (`state`): a hidden place's; `nostr` when it came there. Says whether anything changed. */
 export function keepWith(chats: SpaceChats, received: Received, state: ReceiveState, nostr = false, route?: Route): Promise<boolean> {
-  return keep(chats, received, state, nostr, route);
+  return keep(chats, received, state, nostr, route, true);
 }
 
 /** Keeps what one message brought as the receiver does, with what is to be said back (`receipts`), as the checks do. */

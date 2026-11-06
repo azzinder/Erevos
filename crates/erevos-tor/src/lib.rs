@@ -666,14 +666,19 @@ fn http_answer(raw: &[u8]) -> Result<(u16, Vec<u8>)> {
     let mut body = Vec::new();
     let mut at = 0;
     loop {
-        let line_end = rest[at..].windows(2).position(|w| w == b"\r\n").ok_or("a broken answer from the server")? + at;
+        // A chunk's size line, or the chunk itself, may be missing when the server cuts the
+        // answer short: then it is an error, never a slice past the end.
+        let line_end = rest.get(at..).and_then(|r| r.windows(2).position(|w| w == b"\r\n")).ok_or("a broken answer from the server")? + at;
         let size_text = std::str::from_utf8(&rest[at..line_end]).map_err(|_| "a broken answer from the server")?;
         let size = usize::from_str_radix(size_text.split(';').next().unwrap_or_default().trim(), 16).map_err(|_| "a broken answer from the server")?;
         at = line_end + 2;
         if size == 0 {
             return Ok((status, body));
         }
-        let piece = rest.get(at..at + size).ok_or("the answer was cut short")?;
+        let piece = rest.get(at..at.checked_add(size).ok_or("a broken answer from the server")?).ok_or("the answer was cut short")?;
+        if body.len() + size > MOST_HTTP {
+            return Err("the answer is too large".to_string());
+        }
         body.extend_from_slice(piece);
         at += size + 2;
     }
@@ -942,6 +947,9 @@ mod tests {
         assert_eq!(http_answer(chunked).unwrap(), (404, b"Wikipedia".to_vec()));
         assert_eq!(http_answer(b"HTTP/1.1 204 No Content\r\n\r\n").unwrap(), (204, vec![]));
         assert!(http_answer(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n9\r\nWiki").is_err());
+        // A chunk cut off right after its bytes, with no line end: an error, no slice past the end.
+        assert!(http_answer(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n4\r\nWiki").is_err());
+        assert!(http_answer(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n4\r\nWiki\r").is_err());
         assert!(http_answer(b"garbage").is_err());
     }
 
