@@ -60,4 +60,5 @@ export const collectionText: Record<string, string> = {
   "Whether your photos and files go into the backups": "Αν οι φωτογραφίες και τα αρχεία σου μπαίνουν στα αντίγραφα ασφαλείας",
   "Which folder?": "Σε ποιον φάκελο;",
   "Encrypted · only in this space": "Κρυπτογραφημένη · αυτού του χώρου",
+  "The files go as soon as the chat or group you pick opens. Only the chats of this hidden place are listed.": "Τα αρχεία στέλνονται μόλις ανοίξει η συνομιλία ή η ομάδα που διαλέγεις. Εμφανίζονται μόνο οι συνομιλίες αυτού του κρυφού μέρους.",
 };

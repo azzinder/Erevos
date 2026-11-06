@@ -60,4 +60,5 @@ export const collectionText: Record<string, string> = {
   "Whether your photos and files go into the backups": "Si tes photos et tes fichiers entrent dans les sauvegardes",
   "Which folder?": "Dans quel dossier ?",
   "Encrypted · only in this space": "Chiffrée · seulement dans cet espace",
+  "The files go as soon as the chat or group you pick opens. Only the chats of this hidden place are listed.": "Les fichiers partent dès que la discussion ou le groupe que tu choisis s’ouvre. Seules les discussions de ce lieu caché sont listées.",
 };

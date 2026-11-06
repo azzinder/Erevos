@@ -15,6 +15,7 @@ import { choose, confirm } from '../lib/alert';
 import { CAN_COLLECT, importFromCamera, importFromFiles } from '../lib/collection-import';
 import { dropOpened, openWithOtherApp } from '../lib/collection-out';
 import { useCollectionPlace } from '../lib/collection-place';
+import { enterHiddenScreen } from '../lib/hidden-contacts';
 import { fileLook, folderTiles, gridEntries, inFolder, isPhoto, search, type FileLook, type GridEntry } from '../lib/collection-view';
 import { locale, t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
@@ -91,6 +92,8 @@ export default function CollectionScreen() {
   const { hidden } = useLocalSearchParams<{ hidden?: string }>();
   const inHidden = hidden === '1';
   const place = useCollectionPlace(inHidden);
+  // Counted among the screens over the hidden chats, to go back to them from a picker opened here.
+  useEffect(() => (inHidden ? enterHiddenScreen() : undefined), [inHidden]);
   const [data, setData] = useState<Collection | null>(null);
   const [tab, setTab] = useState<Tab>('photos');
   const [folder, setFolder] = useState<string>('');
@@ -222,10 +225,11 @@ export default function CollectionScreen() {
     await change(() => deleteItems(place, ids));
   }
 
+  // A hidden place's files go to that place's own chats only, through a picker of their own.
   function send(ids: string[]) {
     setViewing(null);
     setChosen(new Set());
-    router.push(`/share?collection=${ids.join(',')}`);
+    router.push(`${inHidden ? '/collection-send' : '/share'}?collection=${ids.join(',')}`);
   }
 
   async function saveToPhone(item: CollectionItem) {
@@ -479,11 +483,9 @@ export default function CollectionScreen() {
           <ActionTile label={t('Move')} onPress={() => setMoving([...chosen])}>
             <MoveIcon color={colors.text} size={22} />
           </ActionTile>
-          {!inHidden ? (
-            <ActionTile label={t('Send')} onPress={() => send([...chosen])}>
-              <SendIcon color={colors.text} cut={colors.sheet} size={22} />
-            </ActionTile>
-          ) : null}
+          <ActionTile label={t('Send')} onPress={() => send([...chosen])}>
+            <SendIcon color={colors.text} cut={colors.sheet} size={22} />
+          </ActionTile>
           <ActionTile label={t('Delete')} danger onPress={() => void removeItems([...chosen])}>
             <TrashIcon color={colors.danger} size={22} />
           </ActionTile>
@@ -589,18 +591,16 @@ export default function CollectionScreen() {
               }}
               colors={colors}
             />
-            {!inHidden ? (
-              <AddRow
-                icon={<SendIcon color={colors.primary} cut={colors.popover} size={22} />}
-                title={t('Send')}
-                onPress={() => {
-                  const i = menu.item!;
-                  setMenu(null);
-                  send([i.id]);
-                }}
-                colors={colors}
-              />
-            ) : null}
+            <AddRow
+              icon={<SendIcon color={colors.primary} cut={colors.popover} size={22} />}
+              title={t('Send')}
+              onPress={() => {
+                const i = menu.item!;
+                setMenu(null);
+                send([i.id]);
+              }}
+              colors={colors}
+            />
             <AddRow
               icon={<FileIcon color={colors.primary} size={22} />}
               title={t('Rename')}
@@ -628,7 +628,7 @@ export default function CollectionScreen() {
       <CollectionViewer
         items={tab === 'photos' ? photos : files}
         start={viewing}
-        canSend={!inHidden}
+        canSend
         onClose={() => setViewing(null)}
         onSend={(item) => send([item.id])}
         onSave={(item) => void saveToPhone(item)}

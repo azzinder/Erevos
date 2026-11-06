@@ -642,6 +642,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [awareOn, setAwareOn] = useState(!SAMSUNG);
   const [contacts, setContacts] = useState<ContactInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(initial);
+  // Counts the times a hidden place's chat was opened from outside, so what was handed to it goes even if it was open already.
+  const [arrival, setArrival] = useState(0);
   // A chat locked with a PIN of its own (lock/chat-pin.ts) shows only once its PIN is typed, until
   // another chat shows, this one closes, or Erevos was away more than RELOCK_MS. Meanwhile nothing
   // is read or told from it. None asks in hidden chats.
@@ -1715,7 +1717,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const peer = `${CONTACT_PREFIX}${identity}`;
         pendingCall.current = call ? { peer, video: call === 'video' } : null;
         setDetails(false);
+        setShownGroup(null);
         setSelected(peer);
+        setArrival((n) => n + 1);
+      },
+      groups: async () => {
+        if (!placeGroups || !canGroup()) return [];
+        const groups = await placeGroups.groups();
+        return groups.list().filter((g) => g.status === 'in').map((g) => ({ id: g.id, name: g.name }));
+      },
+      // Shown anew, so a group that is open already takes what was handed to it as it opens.
+      openGroup: (id) => {
+        setDetails(false);
+        setShownGroup(null);
+        setTimeout(() => setShownGroup(id), 0);
       },
       // Once they have closed, nothing: their chats would save from a copy no screen uses any more.
       takeName: async (identity, name) => {
@@ -1734,7 +1749,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setOpenHiddenPlace(null);
       hiddenPlaceOpen(collection, false);
     };
-  }, [hiddenKey, loaded, e2e]);
+  }, [hiddenKey, loaded, e2e, placeGroups]);
   // The call asked for starts once its chat is open.
   useEffect(() => {
     const wanted = pendingCall.current;
@@ -2864,6 +2879,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       sending = sending.then(() => sendAttachment(isSharedPhoto(one) ? 'photo' : 'file', () => readShared(one), initial));
     }
   }, [e2e]);
+
+  // Files of these hidden chats' Collection handed over for a contact's chat (lib/hidden-send.ts), sent one after the other once the chat shows.
+  useEffect(() => {
+    if (!hiddenKey || !e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
+    const peer = selected;
+    let sending = Promise.resolve();
+    for (let shared = takeShared(peer); shared; shared = takeShared(peer)) {
+      const one = shared;
+      sending = sending.then(() => sendAttachment(isSharedPhoto(one) ? 'photo' : 'file', () => readShared(one), peer));
+    }
+  }, [e2e, selected, arrival]);
 
   // Forwards a message to a group, then shows the group once it went.
   async function forwardToGroupChat(message: Message, id: string) {

@@ -60,4 +60,5 @@ export const collectionText: Record<string, string> = {
   "Whether your photos and files go into the backups": "Ulaze li vaše fotografije i datoteke u sigurnosne kopije",
   "Which folder?": "U koji folder?",
   "Encrypted · only in this space": "Šifrirana · samo u ovom prostoru",
+  "The files go as soon as the chat or group you pick opens. Only the chats of this hidden place are listed.": "Datoteke se šalju čim se otvori razgovor ili grupa koju izaberete. Prikazani su samo razgovori ovog skrivenog mjesta.",
 };
