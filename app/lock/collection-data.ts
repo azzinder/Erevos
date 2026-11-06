@@ -37,6 +37,12 @@ import { sealedFile, type Holder } from './sealed-file';
 // deleted there (lib/collection-import.ts, which Android has the owner confirm), whether the list
 // playing stops when the space locks, and whether the notice of the list playing shows a file's
 // name (lib/collection-play.ts).
+//
+// And whether its chunks are copied to a folder on a WebDAV server (`server`, CollectionServer;
+// lib/collection-webdav.ts): off until the owner gives a server, kept here with its user name and
+// password, so sealed with the place and in its backups, never in plain storage. While a place's
+// copies there are whole (serverWhole), a backup made while it is open may leave its chunks out
+// too: they are on the server, and the restored catalogue fetches them from there.
 
 export type CollectionPlace = { holder: Holder; space: number; key: Uint8Array };
 
@@ -44,6 +50,14 @@ export type CollectionPlace = { holder: Holder; space: number; key: Uint8Array }
 export type CollectionItem = { id: string; file: FileRef; thumb?: FileRef; folder: string; added: number; at: number };
 
 export type CollectionFolder = { id: string; name: string; at: number };
+
+/**
+ * A folder on a WebDAV server the place's chunks are copied to: the folder's address the owner
+ * gave (https, ending in /), the user name and password for it, the random name of the subfolder
+ * the chunks go in, whether it is on, and when the copies there were last whole (milliseconds, 0
+ * if never).
+ */
+export type CollectionServer = { on: boolean; url: string; user: string; password: string; folder: string; last: number };
 
 /** What was deleted, and when. */
 export type Gone = { id: string; at: number };
@@ -61,6 +75,8 @@ export type Collection = {
   stopOnLock?: boolean;
   /** The notice of the list playing shows the file's name. */
   showTitle?: boolean;
+  /** The server the chunks are copied to, when the owner gave one. */
+  server?: CollectionServer;
 };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
@@ -83,6 +99,14 @@ const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 const ID = /^[0-9a-f]{32}$/;
 const newId = () => toHex(randomBytes(16));
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
+const SERVER_FOLDER = /^[0-9a-f]{24}$/;
+
+function serverOf(value: unknown): CollectionServer | null {
+  const v = value as Partial<CollectionServer> | null;
+  if (!v || typeof v.url !== 'string' || !/^https:\/\/\S+\/$/.test(v.url) || v.url.length > 2048) return null;
+  if (typeof v.user !== 'string' || typeof v.password !== 'string' || typeof v.folder !== 'string' || !SERVER_FOLDER.test(v.folder)) return null;
+  return { on: v.on === true, url: v.url, user: v.user, password: v.password, folder: v.folder, last: isTime(v.last) ? v.last : 0 };
+}
 
 /** A file as the Collection keeps it: on this phone only, without a message's marks. */
 function kept(value: unknown): FileRef | null {
@@ -122,7 +146,8 @@ function checked(value: unknown): Collection {
   }
   const on: Partial<Record<CollectionOption, true>> = {};
   for (const option of OPTIONS) if (v?.[option] === true) on[option] = true;
-  return { items, folders, gone: gone.slice(-MAX_GONE), backup: v?.backup !== false, ...on };
+  const server = serverOf(v?.server);
+  return { items, folders, gone: gone.slice(-MAX_GONE), backup: v?.backup !== false, ...on, ...(server ? { server } : {}) };
 }
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
@@ -130,13 +155,62 @@ const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
 // Changes to a place's Collection run one after another, each on what the one before left.
 const changes = new Map<string, Promise<unknown>>();
 
-function change<T>({ holder, space, key }: CollectionPlace, run: (now: Collection) => Promise<{ next: Collection | null; result: T }>): Promise<T> {
-  const name = `${holder}/${space}`;
+const placeName = ({ holder, space }: Pick<CollectionPlace, 'holder' | 'space'>) => `${holder}/${space}`;
+
+/** What happened to a place: its Collection changed, or it opened or closed. */
+export type PlaceEvent = 'changed' | 'opened' | 'closed';
+const watchers = new Set<(place: CollectionPlace, event: PlaceEvent) => void>();
+
+/** Tells `watch` of every change to a Collection, and of hidden places opening and closing (hiddenPlaceOpen). Returns how to stop. */
+export function watchCollections(watch: (place: CollectionPlace, event: PlaceEvent) => void): () => void {
+  watchers.add(watch);
+  return () => watchers.delete(watch);
+}
+
+function tell(place: CollectionPlace, event: PlaceEvent): void {
+  for (const watch of watchers) {
+    try {
+      watch(place, event);
+    } catch {
+      // A watcher's trouble is its own.
+    }
+  }
+}
+
+// How many times each place's Collection changed since Erevos started, and at which of them its
+// copies on the server were last whole (serverWhole): only in memory.
+const generations = new Map<string, number>();
+const wholeAt = new Map<string, number>();
+
+/** How many times the place's Collection changed since Erevos started: to tell, after copying it to a server, whether it changed meanwhile. */
+export function collectionGeneration(place: CollectionPlace): number {
+  return generations.get(placeName(place)) ?? 0;
+}
+
+/** The place's copies on the server were whole as its Collection was at `generation` (collectionGeneration). */
+export function serverWhole(place: CollectionPlace, generation: number): void {
+  wholeAt.set(placeName(place), generation);
+}
+
+/** Whether the place's copies on the server are whole as its Collection is now. */
+export function isServerWhole(place: CollectionPlace): boolean {
+  return wholeAt.get(placeName(place)) === collectionGeneration(place);
+}
+
+function change<T>(place: CollectionPlace, run: (now: Collection) => Promise<{ next: Collection | null; result: T }>, quiet = false): Promise<T> {
+  const { holder, space, key } = place;
+  const name = placeName(place);
   const next = (changes.get(name) ?? Promise.resolve())
     .catch(() => undefined)
     .then(async () => {
       const { next, result } = await run(await store.load(holder, space, key));
-      if (next) await store.save(holder, space, key, next);
+      if (next) {
+        await store.save(holder, space, key, next);
+        if (!quiet) {
+          generations.set(name, (generations.get(name) ?? 0) + 1);
+          tell(place, 'changed');
+        }
+      }
       return result;
     });
   changes.set(name, next);
@@ -320,12 +394,41 @@ export function setCollectionOption(place: CollectionPlace, option: CollectionOp
   });
 }
 
-/** The names of the chunk files a backup made now leaves out: those of the open places whose Collection stays out of backups. */
+/** Gives the place's Collection a server to copy its chunks to, or changes it; null forgets it. */
+export function setCollectionServer(place: CollectionPlace, server: CollectionServer | null): Promise<void> {
+  return change(place, async (c) => {
+    const { server: _was, ...rest } = c;
+    return { next: server ? { ...rest, server } : rest, result: undefined };
+  });
+}
+
+/** Keeps when the place's copies on its server were last whole, if it still has that server: no change to tell of. */
+export function noteServerWhole(place: CollectionPlace, folder: string, last: number): Promise<void> {
+  return change(
+    place,
+    async (c) => ({ next: c.server && c.server.folder === folder ? { ...c, server: { ...c.server, last } } : null, result: undefined }),
+    true,
+  );
+}
+
+/** The chunk files of the place's Collection, each with its size: its files' and their small pictures'. */
+export function chunkFiles(collection: Pick<Collection, 'items'>): Map<string, number> {
+  const files = new Map<string, number>();
+  for (const item of collection.items)
+    for (const ref of item.thumb ? [item.file, item.thumb] : [item.file])
+      for (let n = 0; n < ref.count; n++) files.set(`${PREFIX}${ref.id}-${n}`, ref.chunk);
+  return files;
+}
+
+/**
+ * The names of the chunk files a backup made now leaves out: those of the open places whose
+ * Collection stays out of backups, or whose copies on their server are whole now.
+ */
 export async function backupSkips(places: CollectionPlace[]): Promise<Set<string>> {
   const skip = new Set<string>();
   for (const place of places) {
-    const { items, backup } = await loadCollection(place);
-    if (backup) continue;
+    const { items, backup, server } = await loadCollection(place);
+    if (backup && !(server?.on && isServerWhole(place))) continue;
     for (const item of items)
       for (const ref of item.thumb ? [item.file, item.thumb] : [item.file])
         for (let n = 0; n < ref.count; n++) skip.add(`${PREFIX}${ref.id}-${n}`);
@@ -339,28 +442,57 @@ const openHidden = new Map<string, CollectionPlace>();
 
 /** A hidden place opened, or closed (`open` false). */
 export function hiddenPlaceOpen(place: CollectionPlace, open: boolean): void {
-  const name = `${place.holder}/${place.space}`;
+  const name = placeName(place);
   if (open && place.holder !== 'space') openHidden.set(name, place);
   else openHidden.delete(name);
+  if (place.holder !== 'space') tell(place, open ? 'opened' : 'closed');
 }
 
-/** What a backup made now leaves out: the chunks of the open space's Collection and of the open hidden places', those the owner keeps out of backups. */
-export async function openCollectionSkips(): Promise<Set<string>> {
+/** The places open now: the open space's and the open hidden places'. */
+export function openPlaces(): CollectionPlace[] {
   let space: { space: number; key: Uint8Array } | null = null;
   try {
     space = currentSpace();
   } catch {
-    // No space is open: nothing is known to leave out.
+    // No space is open.
   }
-  const places = [...(space ? [{ holder: 'space' as Holder, ...space }] : []), ...openHidden.values()];
-  return backupSkips(places).catch(() => new Set<string>());
+  return [...(space ? [{ holder: 'space' as Holder, ...space }] : []), ...openHidden.values()];
 }
 
-/** A file's bytes, whole, or null when its chunks are gone (as after a backup restored without them). */
-export const openItem = (item: CollectionItem): Promise<Uint8Array | null> => readFile(item.file);
+const sameKey = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+/** Whether `place` is open now, with this key. */
+export function placeIsOpen(place: CollectionPlace): boolean {
+  return openPlaces().some((open) => open.holder === place.holder && open.space === place.space && sameKey(open.key, place.key));
+}
+
+/** What a backup made now leaves out: the chunks of the open space's Collection and of the open hidden places', those the owner keeps out of backups. */
+export async function openCollectionSkips(): Promise<Set<string>> {
+  return backupSkips(openPlaces()).catch(() => new Set<string>());
+}
+
+// What fetches a file's missing chunks from its place's server (lib/collection-webdav.ts): whether
+// it did, so the file opens now.
+let filler: ((item: CollectionItem) => Promise<boolean>) | null = null;
+
+/** Sets what fetches a file's missing chunks when it is opened (null for nothing). */
+export function setMissingFiller(fill: ((item: CollectionItem) => Promise<boolean>) | null): void {
+  filler = fill;
+}
+
+// The file `ref` of `item`, read; when its chunks are not here, fetched first from the place's
+// server, if it has one.
+async function readOrFill(item: CollectionItem, ref: FileRef): Promise<Uint8Array | null> {
+  const bytes = await readFile(ref);
+  if (bytes || !filler) return bytes;
+  return (await filler(item).catch(() => false)) ? readFile(ref) : null;
+}
+
+/** A file's bytes, whole, or null when its chunks are gone (as after a backup restored without them) and its place's server has them not. */
+export const openItem = (item: CollectionItem): Promise<Uint8Array | null> => readOrFill(item, item.file);
 
 /** A file's small picture, or null when it has none or it is gone. */
-export const openThumb = (item: CollectionItem): Promise<Uint8Array | null> => (item.thumb ? readFile(item.thumb) : Promise.resolve(null));
+export const openThumb = (item: CollectionItem): Promise<Uint8Array | null> => (item.thumb ? readOrFill(item, item.thumb) : Promise.resolve(null));
 
 /** A file read a piece at a time, as it is decrypted, for a large one. */
 export const itemSource = (item: CollectionItem): Source => refSource(item.file);

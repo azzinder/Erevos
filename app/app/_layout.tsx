@@ -82,6 +82,7 @@ import { loadSettingsShared, lookFrom, lookToShare, onSettingCame, onSettingNow,
 import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
 import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
 import { collectionLockAfter, collectionLocked } from '../lib/collection-play';
+import { collectionServerOpened, stopCollectionServers } from '../lib/collection-webdav';
 import { PhoneView } from './phone';
 
 setupCrypto();
@@ -185,6 +186,8 @@ export default function RootLayout() {
       setPhase({ kind: 'open', space, passwordLock, only });
       saveLockScreenLook(kept).catch(() => undefined);
       setTimeout(() => void runAutoBackup().catch(() => undefined), BACKUP_AFTER_MS);
+      // The Collection copied to its server, when it has one (lib/collection-webdav.ts).
+      collectionServerOpened();
       // A new Erevos is told at the top of the chats (lib/release-look.ts).
       watchReleases();
     },
@@ -247,6 +250,7 @@ export default function RootLayout() {
       setSpaceGated(true);
       clearKnownNames();
       collectionLocked();
+      stopCollectionServers();
       lockingKeepsLink();
       // Asked for again with only the SMS or the Contacts open: the password then opens all.
       wantsAll.current = link !== undefined;
@@ -281,6 +285,7 @@ export default function RootLayout() {
         forgetKnownNamesAfter(-1);
         void refreshKnownNames();
         setPhase({ kind: 'open', space, passwordLock: true, only });
+        collectionServerOpened();
         return;
       }
       if (behind !== undefined) closeSpace();
@@ -849,6 +854,7 @@ function followAppShown(): () => void {
 // what was read of it go.
 function closeSpace(): void {
   collectionLocked();
+  stopCollectionServers();
   stopSpaceRunning();
   setCurrentSpace(null);
   forgetSpaceChats();

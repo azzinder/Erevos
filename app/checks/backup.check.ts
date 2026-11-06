@@ -736,7 +736,7 @@ test('in a browser, a server that does not let the web app in says so', async ()
 test("the desktop app's shell sends only WebDAV's requests for backups, over https, with no cookies and no redirects", () => {
   const shell = readFileSync(join(import.meta.dirname, '../../desktop/main.js'), 'utf8');
   const webdav = shell.slice(shell.indexOf('async function webdav('), shell.indexOf('// Whether Erevos keeps running'));
-  assert.match(shell, /const WEBDAV_METHODS = new Set\(\['PROPFIND', 'PUT', 'GET', 'DELETE'\]\);/);
+  assert.match(shell, /const WEBDAV_METHODS = new Set\(\['PROPFIND', 'PUT', 'GET', 'DELETE', 'MKCOL'\]\);/);
   assert.match(shell, /const WEBDAV_HEADERS = \['authorization', 'depth', 'content-type'\];/);
   assert.match(webdav, /target\.protocol !== 'https:'/);
   assert.match(webdav, /credentials: 'omit', redirect: 'error'/);

@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 import { collectionNative } from '../modules/erevos-collection';
 import { device, type PanicState } from '../modules/erevos-device';
 import { dropCollectionMemory } from './collection-memory';
+import { stopCollectionServers } from './collection-webdav';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
 import { webWipe } from './web-store';
@@ -92,6 +93,7 @@ export function panicFolderChanged(folder: string): void {
 export async function wipeNow(backupsIn = ''): Promise<void> {
   collectionNative?.panic();
   dropCollectionMemory();
+  stopCollectionServers();
   if (CAN_PANIC_APP && device?.wipeNow?.()) return;
   if (Platform.OS !== 'web') throw new Error(t('Erevos cannot wipe itself here.'));
   if (SHELL) {

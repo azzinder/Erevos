@@ -26,7 +26,7 @@ import { throughTor, torFor } from './relay';
 /** The most bytes any answer may have, unless its caller asks for less: 100 MB. */
 export const HTTP_MOST = 100 * 1024 * 1024;
 
-export type HttpMethod = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PROPFIND';
+export type HttpMethod = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PROPFIND' | 'MKCOL';
 export type HttpAnswer = { status: number; bytes: Uint8Array; reason?: string };
 export type Http = (method: HttpMethod, url: string, headers: Record<string, string>, body?: Uint8Array, most?: number) => Promise<HttpAnswer>;
 

@@ -162,8 +162,8 @@ function authorization(cloud: Pick<CloudServer, 'user' | 'password'>): Record<st
   };
 }
 
-// What the server's status says, in words; null when all went well.
-function statusText(status: number): string | null {
+/** What the server's status says, in words; null when all went well. */
+export function cloudStatusText(status: number): string | null {
   if (status >= 200 && status < 300) return null;
   if (status === 401 || status === 403) return t('The server did not take that user name and password.');
   if (status === 404 || status === 409) return t('That folder is not on the server. Make it there first.');
@@ -185,6 +185,16 @@ async function ask(method: HttpMethod, url: string, headers: Record<string, stri
       }),
     );
   }
+}
+
+/**
+ * One request to `name` in the server's folder ('' for the folder itself), with its user name and
+ * password: the server's answer, whatever its status (cloudStatusText says it in words). Goes
+ * through Tor as backups do. Throws CloudError when the server cannot be reached. The Collection's
+ * copies on a server (lib/collection-webdav.ts) ask theirs so too.
+ */
+export function askServer(server: CloudServer, method: HttpMethod, name: string, { headers = {}, body, most }: { headers?: Record<string, string>; body?: Uint8Array; most?: number } = {}): Promise<CloudAnswer> {
+  return ask(method, server.url + name, { ...authorization(server), ...headers }, body, most);
 }
 
 export async function loadCloudBackup(): Promise<CloudBackup | null> {
@@ -220,7 +230,7 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
  */
 export async function startCloudBackup(address: string, user: string, password: string): Promise<CloudBackup> {
   const url = cloudFolder(address);
-  const said = statusText(
+  const said = cloudStatusText(
     (
       await ask('PROPFIND', url, {
         ...authorization({ user, password }),
@@ -253,7 +263,7 @@ export async function stopCloudBackup(): Promise<void> {
 
 // Sends `bytes` to the server as `name`. Throws CloudError with why not.
 async function put(cloud: CloudBackup, name: string, bytes: Uint8Array): Promise<void> {
-  const said = statusText((await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes)).status);
+  const said = cloudStatusText((await ask('PUT', cloud.url + name, { ...authorization(cloud), 'Content-Type': 'application/octet-stream' }, bytes)).status);
   if (said) throw new CloudError(said);
 }
 
@@ -263,7 +273,7 @@ async function gone(cloud: CloudBackup, name: string): Promise<boolean> {
     (answer) => answer.status,
     () => 0,
   );
-  return status === 404 || !statusText(status);
+  return status === 404 || !cloudStatusText(status);
 }
 
 // Deletes a backup's parts on the server: whether all of them are gone now.
@@ -376,6 +386,11 @@ export async function listCloud(server: CloudServer): Promise<CloudFile[]> {
   return backupsListed(await listing(server));
 }
 
+/** The files in the server's folder whose names are of `kind`, newest first, with their sizes. Throws CloudError with why not. */
+export async function listFolder(server: CloudServer, kind: (name: string) => boolean): Promise<CloudFile[]> {
+  return listed(await listing(server), kind);
+}
+
 // The folder's WebDAV listing. Throws CloudError with why not.
 async function listing(server: CloudServer): Promise<string> {
   const answer = await ask(
@@ -384,7 +399,7 @@ async function listing(server: CloudServer): Promise<string> {
     { ...authorization(server), Depth: '1', 'Content-Type': 'application/xml; charset=utf-8' },
     utf8Encode(LISTING),
   );
-  const said = statusText(answer.status);
+  const said = cloudStatusText(answer.status);
   if (said) throw new CloudError(said);
   return utf8Decode(answer.bytes);
 }
@@ -402,7 +417,7 @@ export async function cloudParts(server: CloudServer): Promise<{ missing(names: 
       if (!PART_NAME.test(name) || !there.has(name)) return null;
       const answer = await ask('GET', server.url + name, authorization(server), undefined, CLOUD_RESTORE_MOST);
       if (answer.status === 404) return null;
-      const said = statusText(answer.status);
+      const said = cloudStatusText(answer.status);
       if (said) throw new CloudError(said);
       return answer.bytes;
     },
@@ -449,7 +464,7 @@ export async function fetchFromCloud(server: CloudServer, name: string, most: nu
   if (!isBackupName(name)) throw new CloudError(t('That file is not an Erevos backup.'));
   const cap = Math.min(most, CLOUD_RESTORE_MOST);
   const answer = await ask('GET', server.url + name, authorization(server), undefined, cap);
-  const said = statusText(answer.status);
+  const said = cloudStatusText(answer.status);
   if (said) throw new CloudError(said);
   if (answer.bytes.length > cap) throw new CloudError(tooLargeText(cap));
   return answer.bytes;

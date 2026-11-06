@@ -32,7 +32,8 @@
  *   /__webdav?method=&url=     one request to the WebDAV server automatic backups go to, or are
  *                              restored from (app/lib/backup-cloud.ts), asked for here: such
  *                              servers do not answer a page's own requests (CORS). Only https,
- *                              only PROPFIND, PUT, GET and DELETE, only the headers Authorization,
+ *                              only PROPFIND, PUT, GET, DELETE and MKCOL (the Collection's folder
+ *                              there, app/lib/collection-webdav.ts), only the headers Authorization,
  *                              Depth and Content-Type, no cookies, no redirects; answers 200 with
  *                              the server's status in X-Erevos-Status and its body, 413 when that
  *                              body is larger than 100 MB (read as it comes and stopped there),
@@ -450,7 +451,7 @@ async function latest() {
 
 // What /__webdav sends on, and how much it takes back: a backup, which the app takes from a server
 // up to 100 MB, as any download (app/lib/net-http.ts HTTP_MOST).
-const WEBDAV_METHODS = new Set(['PROPFIND', 'PUT', 'GET', 'DELETE']);
+const WEBDAV_METHODS = new Set(['PROPFIND', 'PUT', 'GET', 'DELETE', 'MKCOL']);
 const WEBDAV_HEADERS = ['authorization', 'depth', 'content-type'];
 const WEBDAV_MOST = 100 * 1024 * 1024;
 
