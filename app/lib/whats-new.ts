@@ -33,6 +33,7 @@ export const NEXT: Changes = {
     mark("**One Public feed**: the new **Public** chip on the home screen shows the public posts of the Nostr people you follow and the public Matrix rooms you are in as one feed, as in Amethyst, with photos inside the posts and a card for a link. Answer, share again, like, share and write new posts with photos; for Matrix, answer, react and share. **Photos** chooses whether photos come at once, only through Tor or on a tap. The **Nostr** chip shows only the Nostr chats again. See [Chats with other Nostr apps](#nostr-chats)."),
     mark("**The Collection on a computer**: in the desktop app for Linux, macOS and Windows the Collection keeps your photos and files encrypted too. Photos, PDFs, music and videos open in memory only, never as a plain copy on the disk, and close when the space locks. **Save to the computer** asks first. See [Collection](#collection)."),
     mark("**Files up to 4 GB in the Collection**: on Android a file picked from the phone's files is encrypted as it is read, with no plain copy first, so it comes in faster and needs no room twice. In the desktop app music and videos up to 1 GB play. See [Collection](#collection)."),
+    mark("**The Collection on a WebDAV server**: each space and hidden place can copy its Collection, still encrypted, to a folder on a server you choose, Nextcloud, ownCloud or any that speaks WebDAV, so big files are not only on the phone. Only what is new goes, and a phone that lacks a file fetches it from there. See [Collection](#collection)."),
   ],
   underTheHood: [],
 };

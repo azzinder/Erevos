@@ -6,14 +6,18 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Card, Page, Text, Toggle } from '../components/ui';
+import { Button, Card, Field, Input, Page, Row, Text, Toggle } from '../components/ui';
+import { fileSize } from '../lib/attachments';
+import { cloudLabel, loadCloudBackup } from '../lib/backup-cloud';
+import { CAN_CLOUD_BACKUP } from '../lib/backup-place';
 import { CAN_DELETE_ORIGINALS } from '../lib/collection-import';
 import { useCollectionPlace } from '../lib/collection-place';
 import { PLAY_CHOICES, stopOnLockChanged } from '../lib/collection-play';
+import { connectCollectionServer, scheduleServerCopy, serverStatus, testCollectionServer, turnCollectionServer, watchServerStatus, type ServerStatus } from '../lib/collection-webdav';
 import { SHELL } from '../lib/shell';
 import { tap } from '../lib/haptics';
-import { t } from '../lib/i18n';
-import { loadCollection, setCollectionBackup, setCollectionOption, type Collection, type CollectionOption } from '../lock/collection-data';
+import { locale, t } from '../lib/i18n';
+import { loadCollection, setCollectionBackup, setCollectionOption, type Collection, type CollectionOption, type CollectionPlace, type CollectionServer } from '../lock/collection-data';
 import { space } from '../theme/colors';
 import { useColors } from '../theme/context';
 
@@ -26,6 +30,9 @@ import { useColors } from '../theme/context';
 // the space locks, and whether Android's notice shows the file's name. In the desktop app only the
 // backups' choice shows: it has no gallery, and its player always stops when the space locks, with
 // no notice (lib/collection-play.ts); the other choices stay kept for the phone.
+// Where backups can go to a server, the place's Collection can be copied to a WebDAV server too
+// (lib/collection-webdav.ts): its address, user name and password, kept sealed with the place,
+// first those of the backups' server if there is one, with how the copying goes.
 
 const DESK = SHELL === 'electron';
 
@@ -109,6 +116,7 @@ export default function CollectionSettingsScreen() {
           </Text>
         ) : null}
       </Card>
+      {place && CAN_CLOUD_BACKUP ? <ServerCard place={place} /> : null}
       {DESK ? null : (
         <Card>
           <Switch
@@ -153,5 +161,141 @@ function Switch({ title, text, on, disabled, onPress }: { title: string; text: s
       </View>
       <Toggle on={on} />
     </Pressable>
+  );
+}
+
+const whenText = (ms: number) => new Date(ms).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+function statusText(server: CollectionServer, status: ServerStatus | null): string {
+  if (status?.running) return t('Copying… {done} of {total}', { done: fileSize(status.done), total: fileSize(status.total) });
+  const parts: string[] = [];
+  if (status && status.total) parts.push(t('Uploaded {done} of {total}.', { done: fileSize(status.done), total: fileSize(status.total) }));
+  const last = Math.max(status?.last ?? 0, server.last);
+  parts.push(last ? t('Last copied {when}.', { when: whenText(last) }) : t('Not copied yet.'));
+  if (status?.error) parts.push(t('It did not go: {error}', { error: status.error }));
+  return parts.join(' ');
+}
+
+// The place's server: on or off, its address, user name and password, and how the copying goes.
+function ServerCard({ place }: { place: CollectionPlace }) {
+  const colors = useColors();
+  const [server, setServer] = useState<CollectionServer | null | undefined>(undefined);
+  const [status, setStatus] = useState<ServerStatus | null>(() => serverStatus(place));
+  const [form, setForm] = useState(false);
+  const [address, setAddress] = useState('');
+  const [user, setUser] = useState('');
+  const [secret, setSecret] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void loadCollection(place)
+      .then((c) => active && setServer(c.server ?? null))
+      .catch(() => active && setServer(null));
+    setStatus(serverStatus(place));
+    const stop = watchServerStatus(place, (next) => active && setStatus(next));
+    return () => {
+      active = false;
+      stop();
+    };
+  }, [place]);
+
+  // The form, filled with this place's server, or else the backups' own.
+  async function openForm() {
+    setNote('');
+    if (server) {
+      setAddress(server.url);
+      setUser(server.user);
+      setSecret(server.password);
+    } else {
+      const cloud = await loadCloudBackup().catch(() => null);
+      setAddress(cloud?.url ?? '');
+      setUser(cloud?.user ?? '');
+      setSecret(cloud?.password ?? '');
+    }
+    setForm(true);
+  }
+
+  async function turn() {
+    if (server === undefined || busy) return;
+    tap();
+    if (!server) return void openForm();
+    const next = !server.on;
+    setServer({ ...server, on: next });
+    try {
+      await turnCollectionServer(place, next);
+    } catch (error) {
+      setServer(server);
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function test() {
+    setBusy(true);
+    setNote('');
+    try {
+      await testCollectionServer(address, user, secret);
+      setNote(t('The connection works.'));
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function connect() {
+    setBusy(true);
+    setNote('');
+    try {
+      setServer(await connectCollectionServer(place, address, user, secret));
+      setForm(false);
+      setSecret('');
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const ready = !!address.trim() && !!user.trim() && !!secret;
+  return (
+    <Card>
+      <Switch title={t('Also on a WebDAV server')} text={t('This Collection’s files are copied, still encrypted, to a folder on a server you choose: Nextcloud, ownCloud or any that speaks WebDAV. The server cannot open them. A phone that lacks a file fetches it from there. Copies go while this space or hidden place is open.')} on={server?.on === true} disabled={server === undefined || busy} onPress={() => void turn()} />
+      {server && !form ? (
+        <>
+          <Text variant="caption" tone="muted">
+            {cloudLabel(server)} · {statusText(server, status)}
+          </Text>
+          <Row wrap>
+            {server.on ? <Button title={t('Copy now')} kind="secondary" compact onPress={() => scheduleServerCopy(place, 0)} disabled={status?.running === true} /> : null}
+            <Button title={t('Change the server')} kind="secondary" compact onPress={() => void openForm()} />
+          </Row>
+        </>
+      ) : null}
+      {form ? (
+        <>
+          <Field label={t('Folder address (WebDAV)')}>
+            <Input value={address} onChangeText={setAddress} autoCapitalize="none" autoCorrect={false} keyboardType="url" placeholder="https://" accessibilityLabel={t('Folder address (WebDAV)')} />
+          </Field>
+          <Field label={t('User name')}>
+            <Input value={user} onChangeText={setUser} autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('User name')} />
+          </Field>
+          <Field label={t('Password')} hint={t("Best an app password made for Erevos alone, in the server's security settings: you can take it back there without changing your own.")}>
+            <Input value={secret} onChangeText={setSecret} secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('Password')} />
+          </Field>
+          <Row wrap>
+            <Button title={busy ? t('One moment…') : t('Connect')} compact loading={busy} onPress={() => void connect()} disabled={busy || !ready} />
+            <Button title={t('Test the connection')} kind="secondary" compact onPress={() => void test()} disabled={busy || !ready} />
+            <Button title={t('Cancel')} kind="secondary" compact onPress={() => setForm(false)} disabled={busy} />
+          </Row>
+        </>
+      ) : null}
+      {note ? (
+        <Text variant="caption" color={colors.warning}>
+          {note}
+        </Text>
+      ) : null}
+    </Card>
   );
 }

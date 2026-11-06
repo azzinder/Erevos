@@ -75,6 +75,16 @@ On main, not released yet:
 - **Files up to 4 GB in the Collection**: a file of the Collection can be up to 4 GB. On Android a file picked from the
   phone's files is encrypted as it is read, straight from where it lies, with no plain copy in Erevos's cache first:
   it comes in faster and needs no room for it twice. See [Collection](#collection).
+- **The Collection on a WebDAV server**: each space and hidden place can copy its Collection to a folder on a server
+  you choose, Nextcloud, ownCloud or any that speaks WebDAV (**Settings** → **Data and devices** → **Collection** →
+  **Also on a WebDAV server**), off until you turn it on. Its pieces go as they lie on the phone, already encrypted,
+  under the same random names, into a subfolder with a random name, so the server can open none of them. The address,
+  user name and app password are kept sealed with that place, and the backups' server is offered first. Only what is
+  missing there goes, a piece at a time, while the place is open, tried again when the network drops and going on
+  where it stopped; a piece there of the wrong size goes again, a file deleted here is deleted there, and nothing else
+  in the folder is touched. A phone that lacks a file, as after a backup restored on a new phone, fetches its pieces
+  from there as it opens, keeping only those that open with the file's key. While everything is copied, backups made
+  while the place is open leave its pieces out. See [Collection](#collection).
 
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
