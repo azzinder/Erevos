@@ -131,12 +131,13 @@ cryptography. Do not rely on it to protect anyone yet.
 - **Erevos's own way through Nostr**, for when there is no relay between two contacts (Android): a
   phone with no relay taps **Start without a relay**, and its contact link and QR code say where it
   reads on Nostr. Texts, stickers, reactions, edits and the marks go through public Nostr relays
-  (three unless changed, five at most) over Tor, sealed once more for a key made for that chat
-  alone, so the relays see neither who wrote nor to whom. A voice message goes the same way, in as
+  (three unless changed, five at most), through Tor when the space's Tor is on and straight when it
+  is off, sealed once more for a key made for that chat alone, so the relays see neither who wrote
+  nor to whom. A voice message goes the same way, in as
   many wraps as it takes. A photo up to 3 MB goes in pieces of 32 KB, each in a wrap, which the
   other phone keeps four days at most until all have come. A bigger photo, a video or any other
-  file, up to 20 MB, goes as one blob, encrypted on the phone, to a Blossom file server through Tor,
-  which keeps only what it cannot read. Calls and groups still need a relay or the phone nearby.
+  file, up to 20 MB, goes as one blob, encrypted on the phone, to a Blossom file server, through Tor as the
+  space's Tor choice says, which keeps only what it cannot read. Calls and groups still need a relay or the phone nearby.
   When your contact has a relay that lets them invite, their Erevos sends yours an invite to it by
   itself, once. With a relay, texts go through Nostr too unless turned off, to a contact whose
   Erevos reads on Nostr as well (not on an iPhone or a computer), and the relay is the backup if a
@@ -162,10 +163,11 @@ cryptography. Do not rely on it to protect anyone yet.
   photos, files, voice messages, reactions, marks and calls never go so; they wait. Both phones
   need Erevos as the SMS app, each SMS costs what your plan says, and the phone company sees which
   number wrote to which, when, and how many SMS, never what. Never in hidden chats.
-- **Tor** (Android only), per space: what you write goes through Tor by default (**Messages**),
-  or everything, or nothing, with bridges (obfs4, Snowflake and others) for where Tor is blocked.
-  The same choice carries Nostr relays and file servers, Matrix, XMPP, and backups sent to your own
-  server. With **Messages** a message never waits for Tor: while Tor starts, it goes straight.
+- **Tor** (Android only), per space: off unless you turn it on (**Nothing**), as it makes messages
+  slower, and turning it on asks first. Then what you write goes through Tor (**Messages**), or
+  everything, with bridges (obfs4, Snowflake and others) for where Tor is blocked. The same choice
+  carries Nostr relays and file servers, Matrix, XMPP, and backups sent to your own server. With
+  **Messages** a message never waits for Tor: while Tor starts, it goes straight.
 - **Phone, SMS and contacts** (Android): Erevos can be the phone's SMS app (SMS and MMS, with a spam
   filter you can set), its phone app and its contacts app, with a home-screen widget.
 - **Backups**: sealed with their own password, holding every space with its photos, files and
@@ -208,8 +210,8 @@ cryptography. Do not rely on it to protect anyone yet.
 - **Delete me from everywhere**: under **Settings** → **Privacy and security**, one tap deletes what
   the servers keep for the open space and stops it; the phone keeps everything. It deletes every
   queue the space and its hidden places keep on the relays with the messages in them, the messages
-  a relay holds for you to send later, files waiting there, and invites nobody used, and, through
-  Tor, asks the Nostr relays to forget the keys your chats read on (NIP-62); on request it also
+  a relay holds for you to send later, files waiting there, and invites nobody used, and asks
+  the Nostr relays to forget the keys your chats read on (NIP-62), through Tor when it is on; on request it also
   signs out of Matrix and XMPP and deletes the Nostr account made here. The space reaches no relay
   until **Start again**, which makes new queues and tells contacts quietly. It cannot reach your
   contacts' phones, Nostr relays that do not do as asked, files sent through a file server, or
@@ -330,9 +332,11 @@ cryptography. Do not rely on it to protect anyone yet.
 
 - Tor (Arti, inside the app) carries the connections to relays and, by the same choice, to Nostr
   relays and file servers, Matrix and XMPP servers, and the WebDAV server of backups; only on
-  Android. With **Everything** there is no falling back to a direct connection. With **Messages**,
-  the default, files and voice messages go straight, and a message never waits for Tor: while Tor
-  starts, or for a minute after it could not reach the relay, it goes straight.
+  Android. A new space has Tor off (**Nothing**), and then the relay and the Nostr relays see the
+  phone's address; a space made before keeps its choice. With **Everything** there is no falling
+  back to a direct connection. With **Messages**, files and voice messages go straight, and a
+  message never waits for Tor: while Tor starts, or for a minute after it could not reach the
+  relay, it goes straight.
 - Calls do not go through Tor. Calls go direct or through the call relay (for Matrix, through the
   media server the Matrix server names). Link previews are not made while everything goes through
   Tor, and the update check refuses to run then.

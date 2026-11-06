@@ -35,6 +35,7 @@ import { MOST_NOSTR } from '../lib/contact-code';
 import { bytesSource, chunkPlan, FileDamagedError, FileTooLargeError, offerRef, PiecesMissingError, readFile, readOffer, takeFile } from '../lib/attachments';
 import { sha256Bytes } from '../lib/crypto';
 import { setNostrHttp } from '../lib/nostr-files';
+import { setNostrOpen, type NostrOpen } from '../lib/nostr-dm-net';
 import { dropPieces, heldPieces, piecesCame, type PiecePlace } from '../lib/nostr-pieces';
 import { offerOnNostr } from '../lib/nostr-send-files';
 import { isFileRef } from '../lock/attachment-files';
@@ -78,6 +79,11 @@ class NostrRelays {
   readonly down = new Set<string>();
   readonly refusing = new Set<string>();
   readonly lines = new Map<number, Line>();
+  // How many connections were opened through Tor (the core's torTextOpen), and how many straight
+  // (lib/nostr-dm-net.ts setNostrOpen, as a WebSocket of the phone's own would be).
+  throughTor = 0;
+  straight = 0;
+  readonly straightIds = new Set<number>();
   private made = 0;
 
   keptAt(url: string): Wrap[] {
@@ -100,15 +106,41 @@ class NostrRelays {
     return (!filter.kinds || filter.kinds.includes(wrap.kind)) && (!filter['#p'] || filter['#p'].includes(p)) && wrap.created_at >= (filter.since ?? 0);
   }
 
+  private open(url: string): Uint8Array {
+    if (this.down.has(url)) throw new Error('Tor took too long to reach the relay');
+    const id = ++this.made;
+    this.lines.set(id, { url, frames: [], waiter: null, closed: false, subs: new Map() });
+    const out = new Uint8Array(8);
+    new DataView(out.buffer).setUint32(4, id);
+    return out;
+  }
+
+  /** The same relays reached straight, never through Tor. */
+  opener(): NostrOpen {
+    const core = this.core() as Required<Pick<Core, 'torTextSend' | 'torTextNext' | 'torTextClose'>>;
+    return async (url) => {
+      this.straight++;
+      const id = this.open(url);
+      this.straightIds.add(number(id));
+      return {
+        tor: false,
+        send: async (frame) => void (await core.torTextSend(id, JSON.stringify(frame))),
+        next: async (ms) => {
+          const wait = new Uint8Array(8);
+          new DataView(wait.buffer).setUint32(4, Math.max(1, ms));
+          const frame = await core.torTextNext(id, wait);
+          return frame === '' ? null : (JSON.parse(frame) as unknown[]);
+        },
+        close: () => void core.torTextClose(id).catch(() => undefined),
+      };
+    };
+  }
+
   core(): Partial<Core> {
     return {
       torTextOpen: async (url) => {
-        if (this.down.has(url)) throw new Error('Tor took too long to reach the relay');
-        const id = ++this.made;
-        this.lines.set(id, { url, frames: [], waiter: null, closed: false, subs: new Map() });
-        const out = new Uint8Array(8);
-        new DataView(out.buffer).setUint32(4, id);
-        return out;
+        this.throughTor++;
+        return this.open(url);
       },
       torTextSend: async (id, frame) => {
         const line = this.line(id);
@@ -255,6 +287,7 @@ afterEach(() => {
   setNostr(null);
   setThroughTor('off');
   setTorReady(false);
+  setNostrOpen(null);
 });
 
 // With `needsRelay`, a relay of its own, started before Tor is ready: until it answers, the
@@ -323,24 +356,24 @@ async function tell(from: Chat, identity: string, to: Chat) {
   return to.e2e.receive(keys.packet);
 }
 
-t("the Nostr setting is on unless changed, with the first three relays, and reads nowhere with Tor off or in a build without Nostr", async () => {
+t("the Nostr setting is on unless changed, with the first three relays, whatever the Tor way, and reads nowhere in a build without Nostr", async () => {
   assert.deepEqual(NOSTR_DEFAULT, { on: true, relays: NOSTR_RELAYS });
   assert.equal(NOSTR_RELAYS.length, 3);
   assert.deepEqual(checkedNostr(undefined), NOSTR_DEFAULT);
   assert.deepEqual(checkedNostr({ on: false, relays: [ONE, 'https://not.a.relay', ONE, 'ws://plain.example.org', 'ws://x.onion'] }), { on: false, relays: [ONE] });
   const onion = `ws://${'a'.repeat(56)}.onion`;
   assert.deepEqual(checkedNostr({ on: true, relays: [onion] }).relays, [onion], 'without TLS only to an onion address');
-  assert.deepEqual(nostrOf('messages', NOSTR_DEFAULT), NOSTR_RELAYS);
-  assert.deepEqual(nostrOf('all', NOSTR_DEFAULT), NOSTR_RELAYS);
-  assert.equal(nostrOf('off', NOSTR_DEFAULT), null);
-  assert.equal(nostrOf('messages', { on: false, relays: NOSTR_RELAYS }), null);
-  assert.equal(nostrOf('messages', { on: true, relays: [] }), null);
+  assert.deepEqual(nostrOf(NOSTR_DEFAULT), NOSTR_RELAYS);
+  assert.equal(nostrOf({ on: false, relays: NOSTR_RELAYS }), null);
+  assert.equal(nostrOf({ on: true, relays: [] }), null);
   assert.equal(canNostr(), true);
   setNostr([ONE, 'http://not.a.relay', ONE, TWO]);
   assert.deepEqual(nostrRelays(), [ONE, TWO]);
   assert.equal(nostrReady(), true);
   setTorReady(false);
   assert.equal(nostrReady(), false, 'texts never wait for Tor');
+  setThroughTor('off');
+  assert.equal(nostrReady(), true, 'with Tor off, they go straight');
   setNostr(null);
   assert.equal(nostrRelays(), null);
   // A build without Nostr reads nowhere, whatever the space says.
@@ -699,6 +732,55 @@ t('with no relay between the two, the first message and texts go through Nostr, 
     const offered = offerOf(came.find((m) => m.more.ri)!);
     assert.deepEqual(offered, { relayUrl: 'wss://relay.example.org', code: code64, from: toAlice, request: false });
     assert.equal(offerOf(message(await bob.e2e.receive((await alice.e2e.seal(toBob, '', '', { more: { ri: { r: 'ws://relay.example.org', c: code64 } } })).packet))), null, 'in the clear across the internet: none');
+  } finally {
+    stop();
+  }
+});
+
+t("with Tor off, the space's texts go to the Nostr relays and are read there straight, never through Tor; as Tor goes on or off, the connections open again the new way", async () => {
+  setThroughTor('off');
+  setNostrOpen(relays.opener());
+  setNostr([ONE]);
+  const bob = await chat('space', 1);
+  const alice = await chat('space', 0);
+  const bobsLink = (await bob.e2e.linkNostr())!;
+  const code = parseContact(contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(bob.e2e.bundle), nostr: bobsLink }))!;
+  const { identity: toBob } = await alice.e2e.addContact(code, '');
+  const came: string[] = [];
+  const stop = readNostr(
+    nostrReaderOf(
+      () => bob.e2e,
+      async (packet) => {
+        const received = await bob.e2e.receive(packet);
+        if (received.kind === 'message') came.push(received.text);
+      },
+    ),
+  );
+  const open = (straight: boolean) => [...relays.lines.keys()].filter((id) => relays.straightIds.has(id) === straight).length;
+  const send = async (text: string) => {
+    const sealed = await alice.e2e.seal(toBob, text, '', {});
+    assert.equal(await nostrOnlyWay(alice.e2e, toBob, sealed, [sealed.packet])!(), 'nostr');
+    await until(() => came.includes(text));
+  };
+  try {
+    assert.equal(nostrReady(), true, 'with Tor off, Nostr does not wait for Tor');
+    await send('straight');
+    assert.equal(relays.throughTor, 0, 'nothing through Tor');
+    assert.ok(relays.straight >= 2, 'one connection that reads, one that sends');
+
+    // Tor on: the straight connections close, and those that read and send open through Tor.
+    setThroughTor('messages');
+    await until(() => open(true) === 0 && open(false) >= 1);
+    const straight = relays.straight;
+    await send('through Tor');
+    assert.equal(relays.straight, straight, 'none straight any more');
+    assert.ok(relays.throughTor >= 2);
+
+    // Off again: back straight, none through Tor.
+    setThroughTor('off');
+    await until(() => open(false) === 0 && open(true) >= 1);
+    await send('straight again');
+    assert.equal(open(false), 0);
   } finally {
     stop();
   }

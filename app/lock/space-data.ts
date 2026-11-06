@@ -53,14 +53,15 @@ export type SpaceData = {
   // Null until the look is changed in this space: it then takes the look last used. Hidden chats
   // keep none, as they show in the look of their space.
   look: Look | null;
-  // Which of the space's relay requests go through Tor (lib/tor.ts): 'messages' unless changed. A
-  // space from before the ways, when only all or none could, keeps all as 'all', and goes from none
-  // to 'messages'.
+  // Which of the space's relay requests go through Tor (lib/tor.ts): none ('off') in a new space,
+  // as Tor makes messages slower. A space made before keeps the way it had, 'messages' unless
+  // changed then; one from before the ways, when only all or none could, keeps all as 'all', and
+  // goes from none to 'messages'.
   tor: TorWay;
   // The bridges Tor goes through, for where it is blocked (lib/bridges.ts). None unless chosen.
   bridges: Bridges;
   // Whether the space's texts go through Nostr, and the Nostr relays it reads on (lib/nostr.ts):
-  // on, on NOSTR_RELAYS, unless changed. Only through Tor: with Tor off, none go there.
+  // on, on NOSTR_RELAYS, unless changed. Through Tor as the Tor way says, straight with it off.
   nostr: NostrSetting;
   // A backup relay (one at home, say) with a queue of its own, which contacts write to while the
   // relay cannot be reached (lib/spare.ts). Its address is empty when there is none. `more`: up to
@@ -118,7 +119,7 @@ export const EMPTY_SPACE: SpaceData = {
   ringQueue: null,
   routes: {},
   look: null,
-  tor: 'messages',
+  tor: 'off',
   bridges: NO_BRIDGES,
   nostr: NOSTR_DEFAULT,
   spare: NO_SPARE,

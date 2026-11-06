@@ -4,8 +4,9 @@
 
 // The Tor ways (lib/relay.ts setThroughTor, lib/tor.ts). 'all': every relay request goes to the
 // core's Tor and never to a WebSocket of the phone's own, and a build without Tor fails the request
-// rather than going around it. 'messages', the first way: those of messages go to Tor while it is
-// ready, and straight while it is not or just failed; those of files always straight. With bridges
+// rather than going around it. 'messages', the first way of a space made before Tor was off
+// unless changed: those of messages go to Tor while it is ready, and straight while it is not or
+// just failed; those of files always straight. 'off', a new space's: nothing. With bridges
 // (lib/bridges.ts), Tor is given them, or stopped when none is usable. Tor itself
 // (crates/erevos-tor) is not run here.
 // Run with: npm run check
@@ -289,8 +290,8 @@ test("bridges none usable: the way 'messages' stops Tor and sends straight", asy
   assert.equal(straight, 1);
 });
 
-test("a space's Tor way: 'messages' unless changed; from before the ways, all stays all", () => {
-  assert.equal(EMPTY_SPACE.tor, 'messages');
+test("a space's Tor way: none in a new space, the way of one made before kept; from before the ways, all stays all", () => {
+  assert.equal(EMPTY_SPACE.tor, 'off', 'Tor makes messages slower: a new space sends nothing through it');
   assert.equal(torWayOf(true), 'all');
   assert.equal(torWayOf(false), 'messages');
   assert.equal(torWayOf(undefined), 'messages');

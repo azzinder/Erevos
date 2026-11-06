@@ -304,10 +304,22 @@ let torWay: TorWay = 'off';
 let torReady = false;
 let torRestUntil = 0;
 
+const torWayListeners = new Set<() => void>();
+
 /** Sends the relay requests the way says through Tor from now on. */
 export function setThroughTor(way: TorWay): void {
+  const was = torWay;
   torWay = way;
   torRestUntil = 0;
+  if (way !== was) torWayListeners.forEach((listener) => listener());
+}
+
+/** Calls `listener` each time the way changes, as the connections it chose may now go the wrong way. Returns how to stop. */
+export function onTorWay(listener: () => void): () => void {
+  torWayListeners.add(listener);
+  return () => {
+    torWayListeners.delete(listener);
+  };
 }
 
 const torReadyListeners = new Set<() => void>();
@@ -347,6 +359,11 @@ export function waitForTor(ms: number): Promise<void> {
 /** Whether every relay request goes through Tor, files too (the way 'all'). */
 export function throughTor(): boolean {
   return torWay === 'all';
+}
+
+/** Whether nothing of the space goes through Tor (the way 'off', the default of a new space). */
+export function torOff(): boolean {
+  return torWay === 'off';
 }
 
 /** Whether a request goes through Tor now; `files` for one of files. */

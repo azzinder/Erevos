@@ -5,21 +5,21 @@
 import { useEffect, useState } from 'react';
 
 import { Button, Card, Chip, Input, Page, Row, SectionTitle, Text } from '../components/ui';
+import { confirm } from '../lib/alert';
 import { BRIDGE_CHOICES, NO_BRIDGES, readBridgeLines, type BridgeChoice, type Bridges } from '../lib/bridges';
 import { canTor } from '../lib/core';
 import { mark, plural, t } from '../lib/i18n';
 import type { TorWay } from '../lib/relay';
-import { nostrOf, setNostr } from '../lib/nostr';
 import { applyTor, NoBridgesError, torStatus, type TorStatus } from '../lib/tor';
 import { loadCurrentSpaceData, updateCurrentSpaceData } from '../lock/space-data';
 
-// What of the space goes through Tor (lib/tor.ts): its messages unless changed, everything, or
-// nothing; how far Tor is, and the bridges it goes through where it is blocked (lib/bridges.ts),
-// none unless chosen.
+// What of the space goes through Tor (lib/tor.ts): nothing unless changed, its messages, or
+// everything, asked first when Tor goes on, as it makes messages slower; how far Tor is, and the
+// bridges it goes through where it is blocked (lib/bridges.ts), none unless chosen.
 
 const LOOK_EVERY = 2000;
 
-const WAYS: TorWay[] = ['messages', 'all', 'off'];
+const WAYS: TorWay[] = ['off', 'messages', 'all'];
 const WAY_LABELS: Record<TorWay, string> = {
   messages: mark('Messages'),
   all: mark('Everything'),
@@ -91,12 +91,23 @@ export default function TorScreen() {
   }
 
   async function choose(next: TorWay) {
+    if (next === way) return;
     setNote('');
+    // Tor going on: slower, so asked first.
+    if (way === 'off') {
+      const ok = await confirm(
+        t('Turn Tor on?'),
+        next === 'all'
+          ? t('Messages and files then come and go slower, and the first start of Tor takes a while. Until Tor is ready, nothing goes: messages wait for it.')
+          : t('Messages then come and go slower, and the first start of Tor takes a while. Until Tor is ready, messages go straight, as now.'),
+        t('Turn on'),
+      );
+      if (!ok) return;
+    }
     try {
       await updateCurrentSpaceData({ tor: next });
       setWay(next);
-      // Texts go through Nostr only through Tor (lib/nostr.ts).
-      setNostr(nostrOf(next, (await loadCurrentSpaceData()).nostr));
+      // The Nostr connections open again the new way as it changes (lib/nostr.ts).
       await applyTor(next, bridges);
     } catch (error) {
       setNote(shown(error));
@@ -145,7 +156,7 @@ export default function TorScreen() {
                 )
               : way === 'all'
                 ? t('Everything goes through Tor, files too, and nothing goes to a relay without it: when Tor cannot reach the relay, the message waits.')
-                : t("Nothing goes through Tor: the relay sees this phone's internet address.")}
+                : t("Nothing goes through Tor, the way a new space starts: messages go fastest, and the relay and the Nostr relays see this phone's internet address.")}
           </Text>
         ) : null}
         <Text tone="muted">

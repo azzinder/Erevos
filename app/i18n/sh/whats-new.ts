@@ -14,6 +14,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
     '**Podržite Erevos**: svaki način sada ima svoj QR kôd, i Liberapay i PayPal, a PayPal se otvara u pregledniku.',
+  "**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor).":
+    "**Tor je isključen dok ga ne uključiš**: novi prostor ne šalje ništa preko Tora, pa poruke idu najbrže, a uključivanje Tora prvo pita, jer ih usporava. Prostor koji već imaš zadržava svoj izbor, u Postavke → Relay i mreže → Tor. Tekstovi preko Nostra sada idu i bez Tora: tada Nostr relayi vide IP adresu tvog telefona, nikad tko je kome pisao. Vidi [Preko Tora](#tor).",
   // 6.0.0-rc.2
   "**Home's buttons stay at the bottom**: after the password, home's **Remind me** and **New chat** could float halfway up the screen, over the chats, with the list ending above them, until Erevos went away and came back. Now the screen asks Android at once whether a keyboard is open. See [Password lock](#lock).":
     "**Dugmad početnog ekrana ostaju dolje**: nakon lozinke, **Podsjeti me** i **Novi razgovor** mogli su lebdjeti na pola ekrana, preko razgovora, a lista se završavala iznad njih, dok se Erevos ne napusti i ponovo otvori. Sada ekran odmah pita Android da li je tastatura otvorena. Vidi [Zaključavanje lozinkom](#lock).",

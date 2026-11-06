@@ -168,11 +168,12 @@ export default function RootLayout() {
       const data = await loadSpaceData(space, key);
       // A stopped space reaches no relay, nor Nostr, until it starts again (lib/forget-me.ts).
       setRelayStopped(data.stopped > 0);
-      // Tor starts in the background, through the space's bridges if it has any; until it is
-      // ready, the way 'messages' sends straight, and the way 'all' waits for it.
+      // Tor starts in the background, unless the space's way is Nothing (the default), through
+      // the space's bridges if it has any; until it is ready, the way 'messages' sends straight,
+      // and the way 'all' waits for it.
       applyTor(data.tor, data.bridges).catch(() => undefined);
-      // Its texts go through Nostr, through Tor, unless it says not (lib/nostr.ts).
-      setNostr(nostrOf(data.tor, data.nostr));
+      // Its texts go through Nostr unless it says not, the way its Tor way says (lib/nostr.ts).
+      setNostr(nostrOf(data.nostr));
       const kept = data.look ?? (await loadLockScreenLook());
       await show(kept);
       setPhase({ kind: 'open', space, passwordLock, only });

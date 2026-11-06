@@ -41,15 +41,16 @@ Notes:
   did not seal, nor one opened twice. Marks go back through the relay or Nostr only. Hidden chats
   never use it.
 - **The Android app uses no push service.** It waits at the relay itself.
-- **Tor** is on Android only, per space, and carries only relay and Nostr relay connections. Calls,
+- **Tor** is on Android only, per space, off unless the person turns it on, and carries only relay and Nostr relay connections. Calls,
   through the call relay or direct, never go through Tor. Link previews are not made while Tor is
   on, and the update check refuses to run.
-- **Nostr relays** (Android, only through Tor) carry texts to contacts whose Erevos reads there, each
-  gift-wrapped (NIP-59) by a key made for that message alone, for a key the contact made for that
-  chat alone and told only in the chat. A Nostr relay sees a Tor exit, the size (padded), a time
-  backdated by up to an hour, and that key, so it can tell which wraps go to the same chat, not who
-  is in it. It sees the reading phone ask for its chats' keys together, from one Tor circuit, so it
-  can tell that those chats are read by one phone. A text not said to have come in five minutes
+- **Nostr relays** (Android; through Tor when the space's Tor is on, straight otherwise) carry texts to
+  contacts whose Erevos reads there, each gift-wrapped (NIP-59) by a key made for that message alone,
+  for a key the contact made for that chat alone and told only in the chat. A Nostr relay sees a Tor
+  exit, or with Tor off the phone's IP address, the size (padded), a time backdated by up to an hour,
+  and that key, so it can tell which wraps go to the same chat, not who is in it. It sees the reading
+  phone ask for its chats' keys together, from one Tor circuit (from one connection with Tor off), so
+  it can tell that those chats are read by one phone. A text not said to have come in five minutes
   goes through the relay too, and hidden chats' contacts also get a bell in their relay queue, so
   the relay operator still sees that something came, as before.
 - **A queue for each contact** (lib/contact-queues.ts), at a relay that reads queues on its `/read`

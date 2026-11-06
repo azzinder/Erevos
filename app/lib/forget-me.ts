@@ -25,7 +25,7 @@ import { chatCore } from './nostr-dm';
 import { NostrRelay, nostrChatsThroughTor, type NostrEvent } from './nostr-dm-net';
 import { nostrDmForget } from './nostr-dm-store';
 import { placeChats } from './place-chats';
-import { deleteQueue, dropLater, fromHex, isQueueNotFound, listInvites, relayStopped, sameRelay, setRelayStopped, takeBackInvite, whileClearing, type Relay } from './relay';
+import { deleteQueue, dropLater, fromHex, isQueueNotFound, listInvites, relayStopped, sameRelay, setRelayStopped, takeBackInvite, torOff, whileClearing, type Relay } from './relay';
 import { serverQueues, type KeptPlace, type ServerQueue } from './server-queues';
 import { spaceChats } from './space-chats';
 import { restartSpaceRunning } from './space-running';
@@ -46,8 +46,9 @@ import { xmppSignOut } from './xmpp-store';
 //    off by those who take them; the others expire on the relay after 14 days: no list of them is
 //    kept here to delete.
 // 4. the invites made here and not used yet. One used is left: taking it back cuts that phone off.
-// 5. through Nostr, through Tor only, a request to vanish (NIP-62, kind 62, every relay) signed by
-//    each key the chats read on there, so a relay that keeps them drops the wraps for those keys.
+// 5. through Nostr, the space's way (through Tor while it is ready, straight with Tor off), a
+//    request to vanish (NIP-62, kind 62, every relay) signed by each key the chats read on there,
+//    so a relay that keeps them drops the wraps for those keys.
 //    Relays need not do as asked: the screen says so.
 // 6. only when chosen: the space's Matrix and XMPP accounts signed out (the accounts stay on their
 //    servers, which are theirs), and the space's Nostr account made here asked to vanish too and
@@ -61,7 +62,7 @@ import { xmppSignOut } from './xmpp-store';
 /** How many of something went, were gone already, or could not be asked. */
 export type Count = { done: number; gone: number; failed: number };
 
-/** Why the Nostr requests did not go: Tor is not ready (or off), or this build cannot sign them. */
+/** Why the Nostr requests did not go: Tor is on but not ready, or this build cannot sign them. */
 export type NostrSkip = 'tor' | 'core' | null;
 
 export type ForgetReport = {
@@ -211,6 +212,10 @@ async function askRelays(relays: string[], events: NostrEvent[], count: Count): 
   count.failed += events.length - took.size;
 }
 
+// Whether the Nostr requests can go now: through Tor while it is ready, or straight with Tor off.
+// With Tor on but not ready they wait, rather than go straight.
+const nostrGoes = () => nostrChatsThroughTor() || torOff();
+
 async function vanishKeys(places: Place[], count: Count & { skipped: NostrSkip }): Promise<void> {
   const each = places.map((place) => ({ relays: place.kept.data.nostr.relays, keys: nostrKeysOf(place.kept.e2e) })).filter((p) => p.keys.length > 0 && p.relays.length > 0);
   if (each.length === 0) return;
@@ -218,7 +223,7 @@ async function vanishKeys(places: Place[], count: Count & { skipped: NostrSkip }
     count.skipped = 'core';
     return;
   }
-  if (!nostrChatsThroughTor()) {
+  if (!nostrGoes()) {
     count.skipped = 'tor';
     return;
   }
@@ -292,7 +297,7 @@ async function signOutAccounts(space: number, key: Uint8Array, report: ForgetRep
     return;
   }
   try {
-    if (!canNostrChat() || !nostrChatsThroughTor()) throw new Error('no way');
+    if (!canNostrChat() || !nostrGoes()) throw new Error('no way');
     const count = zero();
     await askRelays(nostr.inbox, [await vanishEvent(nostr.secret)], count);
     if (count.done === 0) throw new Error('not taken');
@@ -318,7 +323,7 @@ export async function startAgain(): Promise<void> {
   await updateSpaceData(space, key, { stopped: 0 });
   const data = await loadSpaceData(space, key);
   setRelayStopped(false);
-  setNostr(nostrOf(data.tor, data.nostr));
+  setNostr(nostrOf(data.nostr));
   restartSpaceRunning();
 }
 
