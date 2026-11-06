@@ -75,4 +75,6 @@ export const collectionText: Record<string, string> = {
   "Previous": "Anterior",
   "Pause": "Pausar",
   "This build of Erevos cannot do this. Update Erevos for it.": "Esta versão do Erevos não consegue fazer isso. Atualize o Erevos para isso.",
+  "This file is too large to open here: at most {size}. Save it to the computer to open it with another app.": "Este arquivo é grande demais para abrir aqui: no máximo {size}. Salve-o no computador para abri-lo com outro aplicativo.",
+  "This PDF could not be shown here.": "Não foi possível mostrar este PDF aqui.",
 };

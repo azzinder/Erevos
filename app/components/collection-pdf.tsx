@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { useEffect, useState } from 'react';
+import { createElement, useEffect, useState } from 'react';
 import { FlatList, Image, PixelRatio, StyleSheet, View } from 'react-native';
 
+import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, releaseMemoryUri } from '../lib/collection-memory';
 import { sealedRef } from '../lib/collection-play';
 import { t } from '../lib/i18n';
-import type { CollectionItem } from '../lock/collection-data';
+import { SHELL } from '../lib/shell';
+import { openItem, type CollectionItem } from '../lock/collection-data';
 import { collectionNative } from '../modules/erevos-collection';
 import { space } from '../theme/colors';
 import { Button, Text } from './ui';
@@ -17,13 +19,71 @@ import { Button, Text } from './ui';
 // when it is far (modules/erevos-collection, PdfPages.kt). The PDF is decrypted into memory only,
 // never onto the disk; Android before 11 cannot do that, so there it is opened with another app,
 // after the screen asks. The Collection's screen keeps all of it out of screenshots.
+//
+// In the desktop app Chromium's own PDF viewer shows it, in a frame, from a blob: address of its
+// bytes decrypted into the page's memory (lib/collection-memory.ts, MOST_IN_MEMORY at most), let go
+// of when the PDF closes or the space locks; never a file on the disk. The shell lets such a frame
+// be shown and keeps the viewer's own Save from writing a plain copy (desktop/main.js).
+
+const DESK = SHELL === 'electron';
 
 /** Whether a PDF can be shown here. */
-export const CAN_SHOW_PDF = !!collectionNative?.pdfAvailable();
+export const CAN_SHOW_PDF = DESK || !!collectionNative?.pdfAvailable();
 
 type Props = { item: CollectionItem; width: number; top: number; bottom: number; ink: string; muted: string; onOpenWith: () => void };
 
-export function CollectionPdf({ item, width, top, bottom, ink, muted, onOpenWith }: Props) {
+export function CollectionPdf(props: Props) {
+  return DESK ? <DeskPdf {...props} /> : <PhonePdf {...props} />;
+}
+
+// The desktop app's: Chromium's viewer in a frame, from memory.
+function DeskPdf({ item, top, bottom, muted }: Props) {
+  const [uri, setUri] = useState<string | null>(null);
+  const [failed, setFailed] = useState('');
+  useEffect(() => {
+    let active = true;
+    let made: string | null = null;
+    setUri(null);
+    setFailed('');
+    if (item.file.size > MOST_IN_MEMORY) {
+      setFailed(new TooLargeToOpenError().message);
+      return;
+    }
+    openItem(item)
+      .then((bytes) => {
+        if (!active) return;
+        if (!bytes) {
+          setFailed(t('This file is not here any more. A backup restored without it leaves its name behind.'));
+          return;
+        }
+        made = memoryUri(bytes, 'application/pdf');
+        setUri(made);
+      })
+      .catch(() => active && setFailed(t('This PDF could not be shown here.')));
+    return () => {
+      active = false;
+      if (made) releaseMemoryUri(made);
+      setUri(null);
+    };
+  }, [item.id]);
+  if (failed || !uri) {
+    return (
+      <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
+        <Text color={muted} style={styles.centered}>
+          {failed || t('Opening the PDF…')}
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <View style={{ flex: 1, paddingTop: top, paddingBottom: bottom }}>
+      {createElement('iframe', { src: uri, title: item.file.name, style: { flex: 1, width: '100%', height: '100%', border: 0, background: '#FFFFFF' } })}
+    </View>
+  );
+}
+
+// The phone's: Android draws its pages.
+function PhonePdf({ item, width, top, bottom, ink, muted, onOpenWith }: Props) {
   const [doc, setDoc] = useState<{ handle: string; pages: number } | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {

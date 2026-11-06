@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import { collectionNative } from '../modules/erevos-collection';
 import { device, type PanicState } from '../modules/erevos-device';
+import { dropCollectionMemory } from './collection-memory';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
 import { webWipe } from './web-store';
@@ -31,7 +32,10 @@ export type { PanicState };
 // On a computer and on Sailfish OS the app's shell does it (desktop/main.js, sailfish/src/
 // shellserver.cpp, /__wipe): its keystore, its sealed files, the page's own storage and the rest
 // of its data folder, and, when chosen, the automatic backups in their folder; then Erevos starts
-// again as new on a computer, and closes on Sailfish OS. A panic app exists only on Android.
+// again as new on a computer, and closes on Sailfish OS. A panic app exists only on Android. In the
+// desktop app the Collection's files lie in files/ with the chats', so the shell's wipe takes them;
+// before it, what the Collection holds decrypted in the page's memory goes (lib/collection-memory.ts):
+// the music or video playing stops, and every blob: address of a photo, PDF or file shown is let go of.
 
 /** Whether a panic app can be set: Android, in a build with the panic button. */
 export const CAN_PANIC_APP = Platform.OS === 'android' && !!device?.panicState;
@@ -87,6 +91,7 @@ export function panicFolderChanged(folder: string): void {
  */
 export async function wipeNow(backupsIn = ''): Promise<void> {
   collectionNative?.panic();
+  dropCollectionMemory();
   if (CAN_PANIC_APP && device?.wipeNow?.()) return;
   if (Platform.OS !== 'web') throw new Error(t('Erevos cannot wipe itself here.'));
   if (SHELL) {

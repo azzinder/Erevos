@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { useEffect, useRef } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { attachDeskVideo } from '../lib/collection-desk-player';
 import { nextPlaying, pausePlaying, playingFile, playTime, previousPlaying, resumePlaying, stopPlaying } from '../lib/collection-play';
 import { t } from '../lib/i18n';
+import { SHELL } from '../lib/shell';
 import { collectionVideoView, type PlayerState } from '../modules/erevos-collection';
 import { space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -16,7 +19,11 @@ import { Button, Text } from './ui';
 // The Collection's player (lib/collection-play.ts) as its screens show it: the controls of the list
 // playing under a file of music (components/collection-viewer.tsx), a bar on the Collection's screen
 // while music plays (app/collection.tsx), and a video over the whole screen with Media3's own
-// controls (modules/erevos-collection, VideoView.kt). Stop ends the list, and its keys go.
+// controls (modules/erevos-collection, VideoView.kt). Stop ends the list, and its keys go. In the
+// desktop app the video is the page's own player (lib/collection-desk-player.ts), with Chromium's
+// controls, shown in a box over the whole window.
+
+const DESK = SHELL === 'electron';
 
 /** Previous, play or pause, next and stop, with which file of the list plays and how far it is. */
 export function PlayerControls({ state, ink, muted }: { state: PlayerState; ink: string; muted: string }) {
@@ -68,7 +75,22 @@ export function NowPlaying({ state }: { state: PlayerState | null }) {
 /** The video of the list playing, over the whole screen; Back stops it. */
 export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
-  const Video = collectionVideoView();
+  const Video = DESK ? null : collectionVideoView();
+  // On a computer, the box (a <div> in the page) the player is put in while the screen shows.
+  const box = useRef<View>(null);
+  useEffect(() => {
+    if (!DESK || !visible) return;
+    let detach: (() => void) | null = null;
+    // The box is in the page once the Modal has drawn it.
+    const timer = setTimeout(() => {
+      const element = box.current as unknown as HTMLElement | null;
+      if (element) detach = attachDeskVideo(element);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      detach?.();
+    };
+  }, [visible]);
   const close = () => {
     void stopPlaying();
     onClose();
@@ -77,6 +99,7 @@ export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: (
     <Modal visible={visible} animationType="fade" onRequestClose={close} statusBarTranslucent navigationBarTranslucent supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
       <View style={styles.video}>
         {Video ? <Video style={StyleSheet.absoluteFill} /> : null}
+        {DESK ? <View ref={box} style={StyleSheet.absoluteFill} /> : null}
         <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Back')} hitSlop={8} style={[styles.back, { top: Math.max(space.sm, insets.top) }]}>
           <BackIcon color="#FFFFFF" size={24} />
         </Pressable>

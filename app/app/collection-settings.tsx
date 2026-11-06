@@ -9,7 +9,8 @@ import { Pressable, View } from 'react-native';
 import { Card, Page, Text, Toggle } from '../components/ui';
 import { CAN_DELETE_ORIGINALS } from '../lib/collection-import';
 import { useCollectionPlace } from '../lib/collection-place';
-import { CAN_PLAY, stopOnLockChanged } from '../lib/collection-play';
+import { PLAY_CHOICES, stopOnLockChanged } from '../lib/collection-play';
+import { SHELL } from '../lib/shell';
 import { tap } from '../lib/haptics';
 import { t } from '../lib/i18n';
 import { loadCollection, setCollectionBackup, setCollectionOption, type Collection, type CollectionOption } from '../lock/collection-data';
@@ -22,7 +23,11 @@ import { useColors } from '../theme/context';
 // from the phone's gallery is deleted there once it is in the Collection, which Android has the
 // owner confirm each time (Android 11 and later; before, the switch shows but cannot be turned
 // on); and, for its music and videos (lib/collection-play.ts), whether the list playing stops when
-// the space locks, and whether Android's notice shows the file's name.
+// the space locks, and whether Android's notice shows the file's name. In the desktop app only the
+// backups' choice shows: it has no gallery, and its player always stops when the space locks, with
+// no notice (lib/collection-play.ts); the other choices stay kept for the phone.
+
+const DESK = SHELL === 'electron';
 
 export default function CollectionSettingsScreen() {
   const colors = useColors();
@@ -104,16 +109,18 @@ export default function CollectionSettingsScreen() {
           </Text>
         ) : null}
       </Card>
-      <Card>
-        <Switch
-          title={t('Delete the original from the gallery after importing')}
-          text={CAN_DELETE_ORIGINALS ? t('Only a photo or video picked from the phone’s files. Android asks you to confirm each time. Photos taken with the camera never go to the gallery.') : t('Android 11 or later is needed for this.')}
-          on={CAN_DELETE_ORIGINALS && options?.deleteOriginals === true}
-          disabled={!CAN_DELETE_ORIGINALS || !options}
-          onPress={() => void turn('deleteOriginals')}
-        />
-      </Card>
-      {CAN_PLAY ? (
+      {DESK ? null : (
+        <Card>
+          <Switch
+            title={t('Delete the original from the gallery after importing')}
+            text={CAN_DELETE_ORIGINALS ? t('Only a photo or video picked from the phone’s files. Android asks you to confirm each time. Photos taken with the camera never go to the gallery.') : t('Android 11 or later is needed for this.')}
+            on={CAN_DELETE_ORIGINALS && options?.deleteOriginals === true}
+            disabled={!CAN_DELETE_ORIGINALS || !options}
+            onPress={() => void turn('deleteOriginals')}
+          />
+        </Card>
+      )}
+      {PLAY_CHOICES ? (
         <Card>
           <Switch
             title={t('Stop playing when the space locks')}
