@@ -108,4 +108,6 @@ export const collectionText: Record<string, string> = {
   "No photos yet. Add one with +.": "Καμία φωτογραφία ακόμη. Πρόσθεσε μία με το +.",
   "No files yet. Add one with +.": "Κανένα αρχείο ακόμη. Πρόσθεσε ένα με το +.",
   "To open it with another app, save it first. That copy is not encrypted.": "Για να το ανοίξεις με άλλη εφαρμογή, αποθήκευσέ το πρώτα. Εκείνο το αντίγραφο δεν είναι κρυπτογραφημένο.",
+  "Chats take files up to 100 MB: this one can go only to the Collection.": "Οι συνομιλίες δέχονται αρχεία ως 100 MB: αυτό μπορεί να πάει μόνο στη Συλλογή.",
+  "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Οι συνομιλίες δέχονται αρχεία ως 100 MB: αυτό μπορεί να πάει μόνο στη Συλλογή. Ενεργοποίησε τη Συλλογή στις Ρυθμίσεις → Γενικά → Ενότητες.",
 };

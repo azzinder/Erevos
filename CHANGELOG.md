@@ -149,7 +149,8 @@ On main, not released yet:
   on. See [Home relay](#home-relay).
 - **Shared into the Collection with no plain copy**: a photo or file another app shares with Erevos is encrypted as it
   comes in, before **Send to** opens, so on its way into the Collection it never lies unencrypted on the phone; a chat
-  it goes to instead reads it from those encrypted pieces. See [Collection](#collection).
+  it goes to instead reads it from those encrypted pieces. It can be up to 4 GB on its way into the Collection; a
+  chat still takes 100 MB at most, so **Send to** offers a larger one only to the Collection. See [Collection](#collection).
 - **See a file come from the WebDAV server**: a file of the Collection that is not on this device, as after a backup
   restored on a new phone, shows how much of it has come from the server, and **Cancel** stops it; what came stays,
   and the next time only the rest comes. Music, videos, PDFs and **Open with another app** fetch it first too,

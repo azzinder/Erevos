@@ -187,8 +187,10 @@ class ShareActivity : Activity() {
   private companion object {
     // As an Erevos before this named its plain copies, and lib/collection-out.ts names a photo's.
     const val OLD_COPY = "erevos-shared-"
-    // As a chat sends at most (lib/attachments.ts MAX_FILE), and the words a message holds.
-    const val MOST_FILE = 100L * 1000 * 1000
+    // As the Collection keeps at most (MOST_CHUNKS chunks of 1 MiB, lib/collection-data.ts
+    // MAX_COLLECTION_FILE), and the words a message holds. A chat sends at most 100 MB
+    // (lib/attachments.ts MAX_FILE): Send to offers a larger file only to the Collection.
+    val MOST_FILE = SealedFile.MOST_CHUNKS.toLong() * SealedFile.room(1 shl 20)
     const val MOST_TEXT = 64 * 1024
     // As lib/collection-import.ts THUMB_SIDE and isPhotoType.
     const val THUMB_SIDE = 256

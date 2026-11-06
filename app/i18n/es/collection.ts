@@ -108,4 +108,6 @@ export const collectionText: Record<string, string> = {
   "No photos yet. Add one with +.": "Aún no hay fotos. Añade una con +.",
   "No files yet. Add one with +.": "Aún no hay archivos. Añade uno con +.",
   "To open it with another app, save it first. That copy is not encrypted.": "Para abrirlo con otra aplicación, guárdalo antes. Esa copia no está cifrada.",
+  "Chats take files up to 100 MB: this one can go only to the Collection.": "Los chats aceptan archivos de hasta 100 MB: este solo puede ir a la Colección.",
+  "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Los chats aceptan archivos de hasta 100 MB: este solo puede ir a la Colección. Activa la Colección en Ajustes → General → Módulos.",
 };

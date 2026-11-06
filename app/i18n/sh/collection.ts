@@ -108,4 +108,6 @@ export const collectionText: Record<string, string> = {
   "No photos yet. Add one with +.": "Još nema fotografija. Dodajte jednu sa +.",
   "No files yet. Add one with +.": "Još nema datoteka. Dodajte jednu sa +.",
   "To open it with another app, save it first. That copy is not encrypted.": "Da je otvorite drugom aplikacijom, prvo je spremite. Ta kopija nije šifrirana.",
+  "Chats take files up to 100 MB: this one can go only to the Collection.": "Razgovori primaju datoteke do 100 MB: ova može ići samo u Zbirku.",
+  "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Razgovori primaju datoteke do 100 MB: ova može ići samo u Zbirku. Uključi Zbirku u Postavke → Općenito → Moduli.",
 };

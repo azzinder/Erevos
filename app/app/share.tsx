@@ -21,6 +21,7 @@ import { handPay, payAmount, type Pay } from '../lib/pay';
 import { dropShared, handShared, isSharedPhoto, sharedFileOf, type SharedFile } from '../lib/share-in';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
+import { MAX_FILE } from '../lib/attachments';
 import { addFolder, loadCollection, type Collection, type CollectionItem } from '../lock/collection-data';
 import { loadInboxCache } from '../lock/inbox-cache';
 import { currentSpace } from '../lock/keys';
@@ -147,7 +148,9 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
         : t('A file: {name}', { name: file.name })
       : text;
   const q = plain(query.trim());
-  const shown = (targets ?? []).filter((target) => (asked ? target.kind === 'chat' : !withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
+  // Larger than a chat takes (100 MB): only the Collection may keep it.
+  const onlyCollection = !!file?.sealed && file.sealed.size > MAX_FILE;
+  const shown = (onlyCollection ? [] : targets ?? []).filter((target) => (asked ? target.kind === 'chat' : !withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
   // The Collection takes a photo or file shared in, on the phone, when it is on.
   const toCollection = !!file && !fromCollection && CAN_COLLECT && Platform.OS !== 'web' && modules.has('collection');
   const kindOf = (target: Target) => (target.kind === 'group' ? t('Group') : target.kind === 'sms' ? t('SMS') : t('Erevos chat'));
@@ -216,7 +219,12 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
   return (
     <Page>
       <Text variant="title">{t('Send to')}</Text>
-      {large ? <Text tone="muted">{t('Not sent. Files can be 100 MB at most.')}</Text> : null}
+      {large ? <Text tone="muted">{t('This file is too large for the Collection.')}</Text> : null}
+      {onlyCollection ? (
+        <Text tone="muted">
+          {toCollection ? t('Chats take files up to 100 MB: this one can go only to the Collection.') : t('Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.')}
+        </Text>
+      ) : null}
       {note ? <Text color={colors.warning}>{note}</Text> : null}
       {what ? (
         <Text numberOfLines={4} tone="muted">
@@ -229,14 +237,18 @@ export function SendTo({ pay }: { pay?: Pay | null }) {
       ) : null}
       {what ? (
         <>
-          <Input value={query} onChangeText={setQuery} placeholder={t('Search chats')} accessibilityLabel={t('Search chats')} />
-          <Text variant="caption" tone="muted">
-            {asked
-              ? t('The chat you pick asks before the request goes. Only Erevos chats, never hidden chats.')
-              : withFile
-              ? t('The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.')
-              : t('It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.')}
-          </Text>
+          {onlyCollection ? null : (
+            <>
+            <Input value={query} onChangeText={setQuery} placeholder={t('Search chats')} accessibilityLabel={t('Search chats')} />
+            <Text variant="caption" tone="muted">
+              {asked
+                ? t('The chat you pick asks before the request goes. Only Erevos chats, never hidden chats.')
+                : withFile
+                ? t('The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.')
+                : t('It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.')}
+            </Text>
+            </>
+          )}
           {toCollection ? (
             <Pressable
               onPress={() => void openFolders()}
