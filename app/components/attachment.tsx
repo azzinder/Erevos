@@ -261,7 +261,7 @@ type Touch = { pageX: number; pageY: number };
 // A photo filling where it is, zoomed and moved by touch (lib/photo-zoom.ts). It is decoded no
 // bigger than about twice the screen (resizeMethod "resize"), so a 50-megapixel photo opens as a
 // small one does, still sharp when zoomed in.
-function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: number; onTap: () => void }) {
+export function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: number; onTap: () => void }) {
   const scale = useRef(new Animated.Value(1)).current;
   const x = useRef(new Animated.Value(0)).current;
   const y = useRef(new Animated.Value(0)).current;

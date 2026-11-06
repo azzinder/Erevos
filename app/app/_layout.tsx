@@ -579,6 +579,8 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
         <Stack.Screen name="group" options={{ headerShown: false }} />
         {/* Chat with myself draws its own bar too. */}
         <Stack.Screen name="myself" options={{ headerShown: false }} />
+        {/* The Collection draws its own bar too, with its back arrow and search. */}
+        <Stack.Screen name="collection" options={{ headerShown: false }} />
       </Stack>
       <OpenLink key={`link-${phase.space}-${lang}`} />
       <Receiver space={phase.space} />
@@ -591,7 +593,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
 }
 
 // The screens that draw their own bar, so have no header (below).
-const HEADERLESS = new Set(['index', 'chat', 'group', 'myself']);
+const HEADERLESS = new Set(['index', 'chat', 'group', 'myself', 'collection']);
 
 // How long before Erevos goes to the background a call made on the locked Phone may be, for it to
 // be what took Erevos there.
