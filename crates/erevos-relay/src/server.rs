@@ -54,6 +54,28 @@
 //!   servers push to (see `xmpp_push.rs`): a space asks its XMPP server to
 //!   push there, with a queue's sender id in hex as the node. `NOT_FOUND` if
 //!   the relay takes no XMPP pushes. Older relays close the connection.
+//! - `COUPON_KEY`: no fields, on a connection whose token is a phone's own
+//!   (see `coupons.rs`). Reply: `OK` and, to the end, the public key the
+//!   relay signs coupons with (SubjectPublicKeyInfo DER); `NOT_FOUND` when it
+//!   signs none, or not for this token. Older relays close the connection.
+//! - `COUPON_SIGN`: a 2-byte length and a blinded coupon, on a connection
+//!   whose token is a phone's own. Reply: `OK` and the blind signature to the
+//!   end; `FULL` when the phone, or the relay, had all it may signed today;
+//!   `FAILED` when it is not a blinded message for the key; `NOT_FOUND` as for
+//!   `COUPON_KEY`.
+//! - `COUPON_KEYS`: on the `/join` path, no fields. Reply: `OK`, a 1-byte
+//!   count, and the SHA-256 of each issuer's key whose coupons the relay
+//!   takes; `NOT_FOUND` when it takes none.
+//! - `COUPON_REDEEM`: on the `/join` path, the SHA-256 of the issuer's key
+//!   (32 bytes), the coupon's nonce and message randomizer (32 bytes each),
+//!   a 2-byte length and its signature, and the SHA-256 of the token the
+//!   phone made for itself (32 bytes). The relay adds a line for that token
+//!   to the file of tokens, which lasts `coupons::COUPON_DAYS`. Reply: the
+//!   name on the line, to the end; the same again for the same coupon and
+//!   token; `WRONG` when the coupon was taken with another token; `FULL` when
+//!   the relay has all the lines from coupons it may; `NOT_FOUND` when the
+//!   coupon is not one it takes; `FAILED` when the line could not be written,
+//!   or the file has a line for that token already.
 //! - `TIME`: no fields. Reply: `OK` and the relay's clock, 8-byte Unix
 //!   milliseconds. A phone measures how far its own clock is off by it, so a
 //!   call stamped by one phone is judged fresh or old by the other with the
@@ -301,6 +323,7 @@ use tungstenite::protocol::CloseFrame;
 use tungstenite::Message;
 
 use crate::connect;
+use crate::coupons::{self, Coupons, SignError};
 use crate::files::{ChunkId, FileError, FileStore, MAX_CHUNK};
 use crate::invites::{InviteError, Invites, OwnError, RedeemError, MAX_TYPED};
 use crate::later::{Held, HeldError, HeldId, MAX_AHEAD};
@@ -338,6 +361,9 @@ pub struct Shared {
     /// Signing in with a provider for a token of a phone's own, if the
     /// operator set one up (set once, after start).
     pub signin: std::sync::OnceLock<SignIn>,
+    /// Coupons signed for this relay's phones and taken from other relays',
+    /// if the operator turned either on (set once, after start).
+    pub coupons: std::sync::OnceLock<Coupons>,
     /// The XMPP push app server, if the operator set one up (set once,
     /// after start).
     pub xmpp_push: std::sync::OnceLock<Arc<XmppPush>>,
@@ -477,6 +503,7 @@ impl Shared {
             tokens: std::sync::OnceLock::new(),
             invites: std::sync::OnceLock::new(),
             signin: std::sync::OnceLock::new(),
+            coupons: std::sync::OnceLock::new(),
             xmpp_push: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
@@ -541,6 +568,10 @@ pub const WAIT_ANY: u8 = 29;
 pub const NEWS_ANY: u8 = 30;
 pub const TIME: u8 = 31;
 pub const XMPP_PUSH: u8 = 32;
+pub const COUPON_KEY: u8 = 33;
+pub const COUPON_SIGN: u8 = 34;
+pub const COUPON_KEYS: u8 = 35;
+pub const COUPON_REDEEM: u8 = 36;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -1020,11 +1051,13 @@ fn respond(
         Err(e) => return Err(e),
     }
     let allowed = match access {
-        Access::All | Access::Phone(_) => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM | OWN),
-        Access::Shared => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM),
+        Access::All | Access::Phone(_) => {
+            !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM | OWN | COUPON_KEYS | COUPON_REDEEM)
+        }
+        Access::Shared => !matches!(op[0], BORROW | REDEEM | SIGN_IN | CLAIM | COUPON_KEYS | COUPON_REDEEM),
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
-        Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM),
+        Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM | COUPON_KEYS | COUPON_REDEEM),
         Access::Read => matches!(op[0], RECEIVE | WAIT | NEWS | WAIT_ANY | NEWS_ANY | TIME),
         Access::Ticket(..) => matches!(op[0], KEY | BORROW),
         Access::Lent(_) => matches!(
@@ -1523,6 +1556,70 @@ fn respond(
                 _ => vec![NOT_FOUND],
             }
         }
+        COUPON_KEY => match coupons_of(shared, access) {
+            Some((coupons, _)) => match coupons.issuer_key() {
+                Some(key) => {
+                    let mut out = vec![OK];
+                    out.extend_from_slice(key);
+                    out
+                }
+                None => vec![NOT_FOUND],
+            },
+            None => vec![NOT_FOUND],
+        },
+        COUPON_SIGN => {
+            let blinded = read_short_bytes(r, coupons::MAX_SIGNATURE)?;
+            match coupons_of(shared, access) {
+                Some((coupons, phone)) => match coupons.sign(&phone, &blinded, system_now()) {
+                    Ok(signature) => {
+                        let mut out = vec![OK];
+                        out.extend_from_slice(&signature);
+                        out
+                    }
+                    Err(SignError::Off) => vec![NOT_FOUND],
+                    Err(SignError::Full) => vec![FULL],
+                    Err(SignError::Bad) => vec![FAILED],
+                },
+                None => vec![NOT_FOUND],
+            }
+        }
+        COUPON_KEYS => match shared.coupons.get().filter(|coupons| coupons.takes()) {
+            Some(coupons) => {
+                let ids = coupons.trusted_ids();
+                let mut out = vec![OK, ids.len() as u8];
+                for id in ids {
+                    out.extend_from_slice(&id);
+                }
+                out
+            }
+            None => vec![NOT_FOUND],
+        },
+        COUPON_REDEEM => {
+            let mut fixed = [0u8; 96];
+            r.read_exact(&mut fixed)?;
+            let signature = read_short_bytes(r, coupons::MAX_SIGNATURE)?;
+            let mut line = [0u8; 32];
+            r.read_exact(&mut line)?;
+            let issuer: [u8; 32] = fixed[..32].try_into().expect("32 bytes");
+            let nonce: [u8; 32] = fixed[32..64].try_into().expect("32 bytes");
+            let randomizer: [u8; 32] = fixed[64..].try_into().expect("32 bytes");
+            match (shared.coupons.get().filter(|coupons| coupons.takes()), shared.tokens.get()) {
+                (Some(coupons), Some(tokens)) => {
+                    match coupons.redeem(&issuer, &nonce, &randomizer, &signature, &line, tokens, system_now()) {
+                        Ok(name) => {
+                            let mut out = vec![OK];
+                            out.extend_from_slice(name.as_bytes());
+                            out
+                        }
+                        Err(coupons::RedeemError::NotFound) => vec![NOT_FOUND],
+                        Err(coupons::RedeemError::Used) => vec![WRONG],
+                        Err(coupons::RedeemError::Full) => vec![FULL],
+                        Err(coupons::RedeemError::Storage) => vec![FAILED],
+                    }
+                }
+                _ => vec![NOT_FOUND],
+            }
+        }
         SIGN_IN => match shared.signin.get() {
             Some(signin) => {
                 let name = signin.name().as_bytes();
@@ -1580,9 +1677,36 @@ fn invites_of(shared: &Shared, access: Access) -> Option<(&Invites, Phone)> {
     let Access::Phone(hash) = access else {
         return None;
     };
+    // A line a coupon made is no one's to answer for: it invites no one.
+    if shared.coupons.get().is_some_and(|coupons| coupons.made(&hash)) {
+        return None;
+    }
     let invites = shared.invites.get().filter(|invites| invites.on())?;
     let name = shared.tokens.get()?.name_of(&hash)?;
     Some((invites, Phone { hash, name }))
+}
+
+/// The coupons, for a connection whose token is a phone's own, with that
+/// token's SHA-256: a line a coupon made has none signed.
+fn coupons_of(shared: &Shared, access: Access) -> Option<(&Coupons, [u8; 32])> {
+    let Access::Phone(hash) = access else {
+        return None;
+    };
+    let coupons = shared.coupons.get().filter(|coupons| coupons.signs())?;
+    (!coupons.made(&hash)).then_some((coupons, hash))
+}
+
+/// Bytes after their 2-byte length, at most `most`.
+fn read_short_bytes(r: &mut impl Read, most: usize) -> io::Result<Vec<u8>> {
+    let mut len = [0u8; 2];
+    r.read_exact(&mut len)?;
+    let len = usize::from(u16::from_be_bytes(len));
+    if len > most {
+        return Err(io::Error::new(ErrorKind::InvalidData, "too long"));
+    }
+    let mut out = vec![0u8; len];
+    r.read_exact(&mut out)?;
+    Ok(out)
 }
 
 /// A name after its 1-byte length, at most `MAX_TYPED` bytes of UTF-8.
@@ -1845,6 +1969,9 @@ pub fn sweep(shared: &Shared) {
     shared.files().expire();
     if let (Some(invites), Some(tokens)) = (shared.invites.get(), shared.tokens.get()) {
         invites.sweep(tokens, system_now());
+    }
+    if let (Some(coupons), Some(tokens)) = (shared.coupons.get(), shared.tokens.get()) {
+        coupons.sweep(tokens, system_now());
     }
 }
 
@@ -2733,6 +2860,99 @@ mod tests {
         let token: Option<Arc<str>> = Some(Arc::from(token));
         thread::spawn(move || serve_ws(listener, store, token));
         addr
+    }
+
+    /// A relay whose phones in `tokens` may have coupons signed with `issuer`,
+    /// and which takes the coupons of `trusted`, with invites on too.
+    fn start_ws_coupons(
+        tokens: std::path::PathBuf,
+        issuer: Option<erevos_core::coupon::Issuer>,
+        trusted: Vec<Vec<u8>>,
+    ) -> SocketAddr {
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let store = Shared::new(Store::default(), FileStore::default(), None, None, Limits::default());
+        let _ = store.tokens.set(Tokens::new(tokens));
+        let _ = store.invites.set(Invites::in_memory());
+        let _ = store
+            .coupons
+            .set(Coupons::open(issuer, trusted, None, coupons::MAX_LINES).unwrap());
+        thread::spawn(move || serve_ws(listener, store, None));
+        addr
+    }
+
+    #[test]
+    fn a_member_of_one_relay_takes_a_token_on_another_with_a_coupon() {
+        use erevos_core::coupon;
+        use sha2::Digest;
+        let dir = std::env::temp_dir();
+        let first_list = dir.join(format!("erevos-coupon-first-{}", std::process::id()));
+        let second_list = dir.join(format!("erevos-coupon-second-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        std::fs::write(&first_list, format!("{pixel_line}\n")).unwrap();
+        std::fs::write(&second_list, "").unwrap();
+        let issuer = coupon::Issuer::generate().unwrap();
+        let key = issuer.public_spki().to_vec();
+        let first = start_ws_coupons(first_list.clone(), Some(issuer), vec![]);
+        let second = start_ws_coupons(second_list.clone(), None, vec![key.clone()]);
+
+        // The second relay says which issuers it takes, to anyone on /join.
+        let (mut join, _) = tungstenite::connect(format!("ws://{second}{JOIN_PATH}")).unwrap();
+        let r = ws_call(&mut join, vec![COUPON_KEYS]);
+        assert_eq!(&r[..2], &[OK, 1]);
+        assert_eq!(&r[2..], &coupon::key_id(&key));
+        // The first says its key to its own phones only, and signs for them.
+        let (mut stranger, _) = tungstenite::connect(format!("ws://{first}{JOIN_PATH}")).unwrap();
+        assert!(refused(&mut stranger, vec![COUPON_KEY]));
+        let mut ws = connect_with_token(first, "", &pixel);
+        let r = ws_call(&mut ws, vec![COUPON_KEY]);
+        assert_eq!((r[0], &r[1..]), (OK, &key[..]));
+        let nonce = [4u8; 32];
+        let blinded = coupon::blind(&key, &nonce).unwrap();
+        let mut req = vec![COUPON_SIGN];
+        req.extend_from_slice(&(blinded.message.len() as u16).to_be_bytes());
+        req.extend_from_slice(&blinded.message);
+        let r = ws_call(&mut ws, req.clone());
+        assert_eq!(r[0], OK);
+        let signature = coupon::finalize(&key, &r[1..], &blinded.secret, &blinded.randomizer, &nonce).unwrap();
+        // The first relay takes none itself, the second signs none.
+        let (mut first_join, _) = tungstenite::connect(format!("ws://{first}{JOIN_PATH}")).unwrap();
+        assert_eq!(ws_call(&mut first_join, vec![COUPON_KEYS]), vec![NOT_FOUND]);
+
+        // The phone makes a token for the second relay and takes a line there with the coupon.
+        let (spare, _) = crate::tokens::new_token("");
+        let redeem = |token: &str, signature: &[u8]| {
+            let mut req = vec![COUPON_REDEEM];
+            req.extend_from_slice(&coupon::key_id(&key));
+            req.extend_from_slice(&nonce);
+            req.extend_from_slice(&blinded.randomizer);
+            req.extend_from_slice(&(signature.len() as u16).to_be_bytes());
+            req.extend_from_slice(signature);
+            req.extend_from_slice(&sha2::Sha256::digest(token.as_bytes()));
+            req
+        };
+        let mut bent = signature.clone();
+        bent[0] ^= 1;
+        assert_eq!(ws_call(&mut join, redeem(&spare, &bent)), vec![NOT_FOUND]);
+        let reply = ws_call(&mut join, redeem(&spare, &signature));
+        assert_eq!((reply[0], &reply[1..]), (OK, &b"spare"[..]));
+        assert_eq!(ws_call(&mut join, redeem(&spare, &signature)), reply);
+        assert_eq!(ws_call(&mut join, redeem("another", &signature)), vec![WRONG]);
+        let written = std::fs::read_to_string(&second_list).unwrap();
+        assert!(written.contains(&format!(
+            "{} spare # came with a coupon on ",
+            to_hex(&sha2::Sha256::digest(spare.as_bytes()))
+        )));
+
+        // With it the phone uses the second relay; that token invites no one, nor has coupons signed.
+        let mut there = connect_with_token(second, "", &spare);
+        ws_create(&mut there);
+        assert_eq!(ws_call(&mut there, invite_request("anna")), vec![NOT_FOUND]);
+        assert_eq!(ws_call(&mut there, vec![COUPON_KEY]), vec![NOT_FOUND]);
+        // A phone's own token asks on its own path, not /join.
+        assert!(refused(&mut ws, redeem(&spare, &signature)));
+        let _ = std::fs::remove_file(&first_list);
+        let _ = std::fs::remove_file(&second_list);
     }
 
     fn invite_request(name: &str) -> Vec<u8> {

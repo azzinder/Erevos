@@ -52,6 +52,16 @@ pub fn bundle_bound(bundle: &[u8], signature: &[u8]) -> Result<Vec<u8>, JsError>
     js(crate::bundle_bound(bundle, signature))
 }
 
+#[wasm_bindgen(js_name = couponBlind)]
+pub fn coupon_blind(spki: &[u8], nonce: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::coupon_blind(spki, nonce))
+}
+
+#[wasm_bindgen(js_name = couponFinalize)]
+pub fn coupon_finalize(spki: &[u8], blind_signature: &[u8], secret: &[u8], randomizer: &[u8], nonce: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::coupon_finalize(spki, blind_signature, secret, randomizer, nonce))
+}
+
 #[wasm_bindgen(js_name = conversationStart)]
 pub fn conversation_start(account: &[u8], bundle: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::conversation_start(account, bundle, plaintext))

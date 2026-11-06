@@ -13,6 +13,7 @@
 //!
 //! Not audited.
 
+use erevos_core::coupon;
 use erevos_core::conversation::{self, Account, Conversation, Kind};
 use erevos_core::pqxdh::{PrekeyBundle, Prekeys};
 
@@ -94,6 +95,29 @@ pub fn bundle_verify(bundle: &[u8], context: &[u8], message: &[u8], signature: &
 /// own (erevos_core::bind), for contacts to check with `bundle_bound`.
 pub fn account_bind(account: &[u8]) -> Result<Vec<u8>> {
     Ok(Account::from_secret_bytes(account).map_err(fail)?.bind().to_vec())
+}
+
+/// Blinds the coupon of `nonce` (32 bytes) for the issuer whose public key is
+/// `spki` (erevos_core::coupon): the blinded message, then the secret, each
+/// after a 2-byte length, then the 32-byte message randomizer.
+pub fn coupon_blind(spki: &[u8], nonce: &[u8]) -> Result<Vec<u8>> {
+    let nonce: [u8; coupon::NONCE] = nonce.try_into().map_err(|_| "malformed input".to_string())?;
+    let blinded = coupon::blind(spki, &nonce).map_err(fail)?;
+    let mut out = Vec::with_capacity(4 + blinded.message.len() + blinded.secret.len() + coupon::RANDOMIZER);
+    for part in [&blinded.message, &blinded.secret] {
+        out.extend_from_slice(&(part.len() as u16).to_be_bytes());
+        out.extend_from_slice(part);
+    }
+    out.extend_from_slice(&blinded.randomizer);
+    Ok(out)
+}
+
+/// Unblinds the issuer's blind signature of a coupon: its signature, checked
+/// against the issuer's key.
+pub fn coupon_finalize(spki: &[u8], blind_signature: &[u8], secret: &[u8], randomizer: &[u8], nonce: &[u8]) -> Result<Vec<u8>> {
+    let nonce: [u8; coupon::NONCE] = nonce.try_into().map_err(|_| "malformed input".to_string())?;
+    let randomizer: [u8; coupon::RANDOMIZER] = randomizer.try_into().map_err(|_| "malformed input".to_string())?;
+    coupon::finalize(spki, blind_signature, secret, &randomizer, &nonce).map_err(fail)
 }
 
 /// Checks a bundle, then that its X25519 identity said its Ed25519 key is its
@@ -755,6 +779,24 @@ mod tests {
             rest = &rest[4 + len..];
         }
         out
+    }
+
+    #[test]
+    fn a_coupon_goes_round_through_the_calls() {
+        let issuer = coupon::Issuer::generate().unwrap();
+        let nonce = [9u8; 32];
+        let packed = coupon_blind(issuer.public_spki(), &nonce).unwrap();
+        let len = |at: usize| u16::from_be_bytes([packed[at], packed[at + 1]]) as usize;
+        let message = &packed[2..2 + len(0)];
+        let at = 2 + message.len();
+        let secret = &packed[at + 2..at + 2 + len(at)];
+        let randomizer = &packed[at + 2 + secret.len()..];
+        assert_eq!(randomizer.len(), 32);
+        let signed = issuer.sign(message).unwrap();
+        let signature = coupon_finalize(issuer.public_spki(), &signed, secret, randomizer, &nonce).unwrap();
+        coupon::verify(issuer.public_spki(), &signature, randomizer.try_into().unwrap(), &nonce).unwrap();
+        assert!(coupon_finalize(issuer.public_spki(), &signed, secret, randomizer, &[1u8; 32]).is_err());
+        assert!(coupon_blind(issuer.public_spki(), &[0u8; 31]).is_err());
     }
 
     #[test]

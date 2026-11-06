@@ -69,6 +69,20 @@
 //! client secret; a line named `<name>:` with no record there is said at
 //! start. Off unless set.
 //!
+//! Coupons (see `coupons.rs`) give a phone of one relay a token on another,
+//! through Tor, without either relay knowing which phone it is: a backup
+//! relay for a space that never learns whose space it is. Set
+//! `EREVOS_RELAY_COUPON_KEY` to the file of a key made with
+//! `erevos-relay new-coupon-key FILE` (readable by the relay's user alone),
+//! and the phones with tokens of their own here may each have 4 coupons a day
+//! signed, blind. Set `EREVOS_RELAY_COUPON_ISSUERS` to a file with the public
+//! keys of the relays whose coupons this one takes, one on each line as
+//! `new-coupon-key` writes it in `FILE.pub` (it needs `EREVOS_RELAY_TOKENS`
+//! too): a phone with one gets a line `spare` in the file of tokens, which
+//! lasts 90 days, at most `EREVOS_RELAY_MAX_COUPONS` of them at once (500
+//! unless set). Each coupon is taken once, kept in `<file>.coupons`. Both are
+//! read at start. Off unless set.
+//!
 //! Each connection has a thread of its own, so the relay takes at most
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
 //! together, and of those at most `EREVOS_RELAY_MAX_TOKENLESS_CONNECTIONS`
@@ -173,6 +187,7 @@ macro_rules! elog {
 }
 
 mod connect;
+mod coupons;
 mod files;
 mod invites;
 mod journal;
@@ -242,6 +257,52 @@ fn load_key(path: &Path) -> io::Result<RelayKey> {
         }
         Err(e) => Err(e),
     }
+}
+
+/// `erevos-relay new-coupon-key FILE`: makes a key for coupons in `FILE`,
+/// readable by its owner alone, and its public key in hex in `FILE.pub`, for
+/// the `EREVOS_RELAY_COUPON_ISSUERS` file of the relays that take its coupons.
+/// Never writes over a file that is there.
+fn new_coupon_key(path: Option<String>) -> ExitCode {
+    let Some(path) = path.filter(|p| !p.trim().is_empty()) else {
+        elog!("erevos-relay: new-coupon-key needs the file to write the key to, as in erevos-relay new-coupon-key /var/lib/erevos-relay/coupon.key");
+        return ExitCode::FAILURE;
+    };
+    let public = format!("{path}.pub");
+    for file in [&path, &public] {
+        if Path::new(file).exists() {
+            elog!("erevos-relay: {file} is there already; the relay never writes over a key");
+            return ExitCode::FAILURE;
+        }
+    }
+    let (pem, hex) = match coupons::new_key() {
+        Ok(made) => made,
+        Err(e) => {
+            elog!("erevos-relay: cannot make a key: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let written = (|| -> io::Result<()> {
+        use std::io::Write as _;
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let mut file = options.open(&path)?;
+        file.write_all(pem.as_bytes())?;
+        file.sync_all()?;
+        fs::write(&public, format!("{hex}\n"))
+    })();
+    if let Err(e) = written {
+        elog!("erevos-relay: cannot write the key: {e}");
+        return ExitCode::FAILURE;
+    }
+    println!("The key for coupons is in {path}: set EREVOS_RELAY_COUPON_KEY={path} on this relay.");
+    println!("Its public key is in {public}: add its line to the EREVOS_RELAY_COUPON_ISSUERS file of each relay that takes this relay's coupons.");
+    ExitCode::SUCCESS
 }
 
 /// `erevos-relay free-line NAME`: drops the invite that made the line named
@@ -356,6 +417,9 @@ fn main() -> ExitCode {
     }
     if env::args().nth(1).as_deref() == Some("free-line") {
         return free_line(&env::args().skip(2).collect::<Vec<_>>().join(" "));
+    }
+    if env::args().nth(1).as_deref() == Some("new-coupon-key") {
+        return new_coupon_key(env::args().nth(2));
     }
     // Before any thread starts, so that every one has them blocked.
     let signals = stop::block();
@@ -688,6 +752,54 @@ fn main() -> ExitCode {
             "erevos-relay: EREVOS_RELAY_OIDC_ISSUER is set but no EREVOS_RELAY_TOKENS, nobody may sign in"
         ),
         (_, None) => {}
+    }
+    let Some(most_coupons) = number("EREVOS_RELAY_MAX_COUPONS", coupons::MAX_LINES as u64, 1) else {
+        return ExitCode::FAILURE;
+    };
+    let issuer = match env::var("EREVOS_RELAY_COUPON_KEY").ok().filter(|v| !v.trim().is_empty()) {
+        Some(path) => match coupons::read_issuer(Path::new(&path)) {
+            Ok(issuer) => Some(issuer),
+            Err(e) => {
+                elog!("erevos-relay: cannot use the key for coupons: {e}");
+                return ExitCode::FAILURE;
+            }
+        },
+        None => None,
+    };
+    let trusted = match env::var("EREVOS_RELAY_COUPON_ISSUERS").ok().filter(|v| !v.trim().is_empty()) {
+        Some(_) if phones.is_none() => {
+            elog!("erevos-relay: EREVOS_RELAY_COUPON_ISSUERS is set but no EREVOS_RELAY_TOKENS, no coupon is taken");
+            Vec::new()
+        }
+        Some(path) => match coupons::read_issuers(Path::new(&path)) {
+            Ok(keys) => keys,
+            Err(e) => {
+                elog!("erevos-relay: cannot read the issuers of coupons: {e}");
+                return ExitCode::FAILURE;
+            }
+        },
+        None => Vec::new(),
+    };
+    if issuer.is_some() || !trusted.is_empty() {
+        let kept = phones.as_ref().map(|path| PathBuf::from(format!("{path}.coupons")));
+        let signs = issuer.is_some();
+        let takes = trusted.len();
+        let most = most_coupons.try_into().unwrap_or(usize::MAX);
+        match coupons::Coupons::open(issuer, trusted, kept.as_deref(), most) {
+            Ok(coupons) => {
+                if signs {
+                    elog!("erevos-relay: phones with tokens of their own may have coupons signed, for a token on another relay");
+                }
+                if takes > 0 {
+                    elog!("erevos-relay: coupons of {takes} issuers are taken, {most} lines from coupons at most");
+                }
+                let _ = store.coupons.set(coupons);
+            }
+            Err(e) => {
+                elog!("erevos-relay: cannot read the coupons: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
     }
     let lending = match lend::wanted(env::var("EREVOS_RELAY_LEND").ok().as_deref()) {
         Ok(on) => on,

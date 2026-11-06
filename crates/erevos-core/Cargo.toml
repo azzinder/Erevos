@@ -9,6 +9,12 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+# Coupons for a second relay (src/coupon.rs): RFC 9474 blind RSA signatures.
+blind-rsa-signatures = { version = "=0.18.0", default-features = false }
+# Held at the versions it was released with: later release candidates of rsa
+# and pkcs1 no longer build with it.
+rsa = { version = "=0.10.0-rc.18", default-features = false }
+pkcs1 = { version = "=0.8.0-rc.4", default-features = false }
 chacha20poly1305 = "0.10"
 curve25519-dalek = "4.1.3"
 ed25519-dalek = { version = "2", features = ["rand_core"] }

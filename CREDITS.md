@@ -706,7 +706,7 @@ Electron, which the computer app runs on, and the packages it needs (`desktop/pa
 
 ### Rust crates
 
-The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 635 crates.
+The core of the app, the relay and the Tor connection are written in Rust. Every crate in `Cargo.lock` but Erevos's own. 645 crates.
 
 | Crate | Version | Licence |
 | --- | --- | --- |
@@ -750,6 +750,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [bitvec](https://github.com/bitvecto-rs/bitvec) | 1.1.1 | MIT |
 | [blake2](https://github.com/RustCrypto/hashes) | 0.10.6 | MIT OR Apache-2.0 |
 | [blanket](https://github.com/althonos/blanket) | 0.3.0 | MIT |
+| [blind-rsa-signatures](https://github.com/jedisct1/rust-blind-rsa-signatures) | 0.18.0 | MIT |
 | [block-buffer](https://github.com/RustCrypto/utils) | 0.10.4 | MIT OR Apache-2.0 |
 | [block-buffer](https://github.com/RustCrypto/utils) | 0.12.1 | MIT OR Apache-2.0 |
 | [block-padding](https://github.com/RustCrypto/utils) | 0.4.2 | MIT OR Apache-2.0 |
@@ -795,8 +796,11 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [crossbeam-queue](https://github.com/crossbeam-rs/crossbeam) | 0.3.14 | MIT OR Apache-2.0 |
 | [crossbeam-utils](https://github.com/crossbeam-rs/crossbeam) | 0.8.23 | MIT OR Apache-2.0 |
 | [crypto-bigint](https://github.com/RustCrypto/crypto-bigint) | 0.5.5 | Apache-2.0 OR MIT |
+| [crypto-bigint](https://github.com/RustCrypto/crypto-bigint) | 0.7.5 | Apache-2.0 OR MIT |
 | [crypto-common](https://github.com/RustCrypto/traits) | 0.1.7 | MIT OR Apache-2.0 |
 | [crypto-common](https://github.com/RustCrypto/traits) | 0.2.2 | MIT OR Apache-2.0 |
+| [crypto-primes](https://github.com/entropyxyz/crypto-primes) | 0.7.0 | Apache-2.0 OR MIT |
+| [ct-codecs](https://github.com/jedisct1/rust-ct-codecs) | 1.1.8 | MIT |
 | [ctr](https://github.com/RustCrypto/block-modes) | 0.9.2 | MIT OR Apache-2.0 |
 | [ctr](https://github.com/RustCrypto/block-modes) | 0.10.1 | MIT OR Apache-2.0 |
 | [ctutils](https://github.com/RustCrypto/utils) | 0.4.5 | Apache-2.0 OR MIT |
@@ -822,6 +826,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [deranged](https://github.com/jhpratt/deranged) | 0.5.9 | MIT OR Apache-2.0 |
 | [derive-deftly](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
 | [derive-deftly-macros](https://gitlab.torproject.org/Diziet/rust-derive-deftly) | 1.12.1 | MIT |
+| [derive-new](https://github.com/nrc/derive-new) | 0.7.0 | MIT |
 | [derive_builder_core_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
 | [derive_builder_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
 | [derive_builder_macro_fork_arti](https://github.com/ijackson/rust-derive-builder) | 0.11.2 | MIT OR Apache-2.0 |
@@ -902,6 +907,8 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [hkdf](https://github.com/RustCrypto/KDFs) | 0.13.0 | MIT OR Apache-2.0 |
 | [hmac](https://github.com/RustCrypto/MACs) | 0.12.1 | MIT OR Apache-2.0 |
 | [hmac](https://github.com/RustCrypto/MACs) | 0.13.0 | MIT OR Apache-2.0 |
+| [hmac-sha256](https://github.com/jedisct1/rust-hmac-sha256) | 1.1.15 | ISC |
+| [hmac-sha512](https://github.com/jedisct1/rust-hmac-sha512) | 1.1.13 | ISC |
 | [hostname-validator](https://github.com/pop-os/hostname-validator) | 1.1.1 | MIT |
 | [hpke](https://github.com/rozbb/rust-hpke) | 0.14.1 | MIT OR Apache-2.0 |
 | [hpke-rs](https://github.com/celabshq/libcrux) | 0.7.0 | MPL-2.0 |
@@ -1037,6 +1044,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [paste](https://github.com/dtolnay/paste) | 1.0.15 | MIT OR Apache-2.0 |
 | [pastey](https://github.com/as1100k/pastey) | 0.2.3 | MIT OR Apache-2.0 |
 | [pem-rfc7468](https://github.com/RustCrypto/formats/tree/master/pem-rfc7468) | 0.7.0 | Apache-2.0 OR MIT |
+| [pem-rfc7468](https://github.com/RustCrypto/formats) | 1.0.0 | Apache-2.0 OR MIT |
 | [percent-encoding](https://github.com/servo/rust-url) | 2.3.2 | MIT OR Apache-2.0 |
 | [phf](https://github.com/rust-phf/rust-phf) | 0.14.0 | MIT |
 | [phf_generator](https://github.com/rust-phf/rust-phf) | 0.14.0 | MIT |
@@ -1046,6 +1054,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [pin-project-internal](https://github.com/taiki-e/pin-project) | 1.1.13 | Apache-2.0 OR MIT |
 | [pin-project-lite](https://github.com/taiki-e/pin-project-lite) | 0.2.17 | Apache-2.0 OR MIT |
 | [pkcs1](https://github.com/RustCrypto/formats/tree/master/pkcs1) | 0.7.5 | Apache-2.0 OR MIT |
+| [pkcs1](https://github.com/RustCrypto/formats) | 0.8.0-rc.4 | Apache-2.0 OR MIT |
 | [pkcs8](https://github.com/RustCrypto/formats/tree/master/pkcs8) | 0.10.2 | Apache-2.0 OR MIT |
 | [pkcs8](https://github.com/RustCrypto/formats) | 0.11.0 | Apache-2.0 OR MIT |
 | [pkg-config](https://github.com/rust-lang/pkg-config-rs) | 0.3.34 | MIT OR Apache-2.0 |
@@ -1096,6 +1105,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [rfc6979](https://github.com/RustCrypto/signatures/tree/master/rfc6979) | 0.4.0 | Apache-2.0 OR MIT |
 | [ring](https://github.com/briansmith/ring) | 0.17.14 | Apache-2.0 AND ISC |
 | [rsa](https://github.com/RustCrypto/RSA) | 0.9.10 | MIT OR Apache-2.0 |
+| [rsa](https://github.com/RustCrypto/RSA) | 0.10.0-rc.18 | MIT OR Apache-2.0 |
 | rsqlite-vfs | 0.1.1 | MIT |
 | [rusqlite](https://github.com/rusqlite/rusqlite) | 0.40.2 | MIT |
 | [rustc-hash](https://github.com/rust-lang/rustc-hash) | 2.1.3 | Apache-2.0 OR MIT |
