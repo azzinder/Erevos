@@ -6,18 +6,37 @@ import { startActivityAsync } from 'expo-intent-launcher';
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 
 import { itemSource, type CollectionItem } from '../lock/collection-data';
+import { collectionNative } from '../modules/erevos-collection';
 import { eachPiece } from './attachments';
+import { sealedRef } from './collection-play';
 import { randomBytes, toHex } from './crypto';
+import { t } from './i18n';
 import { isSharedPhoto, type SharedFile } from './share-in';
 
 // Taking a file out of the Collection, on the phone: to send it to a chat, as a file another app
-// shared is sent (lib/share-in.ts; only a photo has a plain copy, deleted once read), and to open it with another
-// app, which Android lets read it through a link (the copy is deleted when the screen closes, and
-// any left behind with the next start). The copy is written a piece at a time. Saving to the
-// phone's own folders is lib/save-file.ts. On a computer, collection-out.web.ts.
+// shared is sent (lib/share-in.ts; only a photo has a plain copy, deleted once read), and to open
+// it with another app, which reads it through a link of Erevos's own (modules/erevos-collection,
+// CollectionProvider.kt) that streams it as it is decrypted, with no copy anywhere. The link works
+// until the Collection's screen closes, or the space locks or closes. Saving to the phone's own
+// folders is lib/save-file.ts. On a computer, collection-out.web.ts.
 
+// Where an Erevos before this kept the plain copies it opened files from: deleted once, if any are left.
 const OPENING = 'erevos-open-';
 const FLAG_GRANT_READ_URI_PERMISSION = 1;
+
+let oldCopiesGone = false;
+
+function dropOldCopies(): void {
+  if (oldCopiesGone) return;
+  oldCopiesGone = true;
+  try {
+    for (const entry of Paths.cache.list()) {
+      if (entry instanceof Directory && entry.name.startsWith(OPENING)) entry.delete();
+    }
+  } catch {
+    // Tried again with the next start.
+  }
+}
 
 async function writePieces(item: CollectionItem, file: File): Promise<void> {
   file.create();
@@ -48,28 +67,21 @@ export async function copyToSend(item: CollectionItem): Promise<SharedFile> {
   return { file: name, name: item.file.name, mime: item.file.mime };
 }
 
-/** Deletes the copies made to open files with another app. */
+/** Forgets the links handed to other apps from the Collection's screen, and closes its PDFs: the screen closed. */
 export function dropOpened(): void {
-  try {
-    for (const entry of Paths.cache.list()) {
-      if (entry instanceof Directory && entry.name.startsWith(OPENING)) entry.delete();
-    }
-  } catch {
-    // Tried again with the next one.
-  }
+  dropOldCopies();
+  collectionNative?.forgetAll();
 }
 
-/** Opens the file with the app Android offers for its type, from a plain copy in the cache that stays until `dropOpened`. */
+/** Opens the file with the app Android offers for its type, by a link that streams it decrypted until `dropOpened`. */
 export async function openWithOtherApp(item: CollectionItem): Promise<void> {
-  dropOpened();
-  const folder = new Directory(Paths.cache, `${OPENING}${toHex(randomBytes(8))}`);
-  folder.create();
-  const copy = new File(folder, item.file.name);
+  dropOldCopies();
+  if (!collectionNative) throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  const { token, uri } = collectionNative.openWith(sealedRef(item.file), item.file.name, item.file.mime);
   try {
-    await writePieces(item, copy);
-    await startActivityAsync('android.intent.action.VIEW', { data: copy.contentUri, type: item.file.mime, flags: FLAG_GRANT_READ_URI_PERMISSION });
+    await startActivityAsync('android.intent.action.VIEW', { data: uri, type: item.file.mime, flags: FLAG_GRANT_READ_URI_PERMISSION });
   } catch (error) {
-    if (folder.exists) folder.delete();
+    collectionNative.forget(token);
     throw error;
   }
 }

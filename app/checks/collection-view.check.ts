@@ -3,14 +3,14 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // How the Collection's screen lays out its files (lib/collection-view.ts): folders, photos by
-// month, search and the kind of each file.
+// month, search, the kind of each file, and which files play and in what list.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Collection, CollectionItem } from '../lock/collection-data';
-import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, search } from '../lib/collection-view';
+import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, playKind, playListOf, search } from '../lib/collection-view';
 
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12).getTime();
 const item = (id: string, name: string, kind: 'photo' | 'file', added: number, folder = '', mime = 'application/octet-stream'): CollectionItem => ({
@@ -75,4 +75,28 @@ test('each file has its kind: a photo, a PDF, text, an archive or another', () =
   assert.equal(look('a.docx', 'application/octet-stream'), 'other');
   assert.equal(fileLook(item('x', 'p.jpg', 'photo', 0)), 'photo');
   assert.equal(isText(item('x', 'data.json', 'file', 0, '', 'application/json')), true);
+});
+
+test('music and videos play, each with their own kind, in the order shown', () => {
+  const song = item('s1', 'Τραγούδι.mp3', 'file', at(2026, 11, 1), '', 'audio/mpeg');
+  const tagged = item('s2', 'voice.opus', 'file', at(2026, 11, 2));
+  const film = item('v1', 'clip.mp4', 'file', at(2026, 11, 3), '', 'video/mp4');
+  const pdf = item('d', 'Συμβόλαιο.pdf', 'file', at(2026, 11, 1), '', 'application/pdf');
+  const picture = item('p', 'movie.mp4', 'photo', at(2026, 11, 1), '', 'image/jpeg');
+  assert.equal(playKind(song), 'audio');
+  assert.equal(playKind(tagged), 'audio');
+  assert.equal(playKind(film), 'video');
+  assert.equal(playKind(pdf), null);
+  assert.equal(playKind(picture), null);
+  const shown = [film, song, pdf, tagged];
+  assert.deepEqual(
+    playListOf(shown, tagged).list.map((i) => i.id),
+    ['s1', 's2'],
+  );
+  assert.equal(playListOf(shown, tagged).start, 1);
+  assert.deepEqual(
+    playListOf(shown, film).list.map((i) => i.id),
+    ['v1'],
+  );
+  assert.deepEqual(playListOf(shown, pdf), { list: [], start: 0 });
 });

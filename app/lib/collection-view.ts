@@ -6,7 +6,8 @@ import type { Collection, CollectionFolder, CollectionItem } from '../lock/colle
 
 // How the Collection's screen (app/collection.tsx) lays out what lock/collection-data.ts keeps:
 // what lies in a folder, the photos by month, the files, and what a search finds. Kept apart from
-// the screen so it can be checked.
+// the screen so it can be checked. Also which files play (music and videos), and the list a file
+// starts playing (lib/collection-play.ts).
 
 /** A photo is shown in the grid, anything else in the list of files. */
 export const isPhoto = (item: CollectionItem) => item.file.kind === 'photo';
@@ -105,3 +106,27 @@ export function isText(item: CollectionItem): boolean {
 
 /** The largest text file shown in the Collection; a larger one is opened with another app. */
 export const MOST_TEXT = 1000 * 1000;
+
+const AUDIO_ENDINGS = new Set(['mp3', 'm4a', 'aac', 'ogg', 'oga', 'opus', 'flac', 'wav']);
+const VIDEO_ENDINGS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv', '3gp']);
+
+/** Whether a file plays here, and how: as music, as a video, or not (null). */
+export function playKind(item: CollectionItem): 'audio' | 'video' | null {
+  const { mime, name, kind } = item.file;
+  if (kind === 'photo') return null;
+  const ending = fileEnding(name);
+  if (mime.startsWith('video/') || (mime === 'application/octet-stream' && VIDEO_ENDINGS.has(ending))) return 'video';
+  if (mime.startsWith('audio/') || (mime === 'application/octet-stream' && AUDIO_ENDINGS.has(ending))) return 'audio';
+  return null;
+}
+
+/**
+ * The list that playing `item` starts: the files of `items` that play as it does (music with
+ * music, videos with videos), in the order shown, and where it is in them.
+ */
+export function playListOf(items: CollectionItem[], item: CollectionItem): { list: CollectionItem[]; start: number } {
+  const kind = playKind(item);
+  if (!kind) return { list: [], start: 0 };
+  const list = items.filter((i) => playKind(i) === kind);
+  return { list, start: Math.max(0, list.findIndex((i) => i.id === item.id)) };
+}

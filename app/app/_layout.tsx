@@ -79,6 +79,7 @@ import { ensureStyleFonts } from '../theme/fonts';
 import { loadSettingsShared, lookFrom, lookToShare, onSettingCame, onSettingNow, settingChanged, shareLanguage } from '../lib/sync/settings';
 import { DEFAULT_LOOK, loadLockScreenLook, saveLockScreenLook, type Look } from '../theme/look';
 import { keepPrivate, loadScreenPrivacy } from '../lib/screen-privacy';
+import { collectionLockAfter, collectionLocked } from '../lib/collection-play';
 import { PhoneView } from './phone';
 
 setupCrypto();
@@ -118,7 +119,9 @@ let left: { space: number; passwordLock: boolean; look: Look; at: number; gated:
 // (lib/space-running.ts): its screens go, and with them the hidden chats. Its password shows it
 // again; another space's closes it first. A password given for the SMS (their icon, the widget's
 // SMS button, an SMS notice) or the Contacts (their icon, the widget's button) shows only them; any
-// other screen asks for it again, and then shows.
+// other screen asks for it again, and then shows. What the Collection has open in Android (links
+// other apps read its files by, PDFs, lib/collection-play.ts) goes when the space locks or closes,
+// even while Erevos is in the background; its music plays on unless the owner chose otherwise.
 export default function RootLayout() {
   const [phase, setPhase] = useState<Phase>({ kind: 'loading' });
   const [look, setLook] = useState<Look>(DEFAULT_LOOK);
@@ -241,6 +244,7 @@ export default function RootLayout() {
     async (space: number, link?: string) => {
       setSpaceGated(true);
       clearKnownNames();
+      collectionLocked();
       lockingKeepsLink();
       // Asked for again with only the SMS or the Contacts open: the password then opens all.
       wantsAll.current = link !== undefined;
@@ -290,7 +294,10 @@ export default function RootLayout() {
     async (was: NonNullable<typeof left>) => {
       await show(was.look);
       if (was.passwordLock && Date.now() - was.at > RELOCK_AFTER_MS) relockAfterCall.current = true;
-      else if (was.passwordLock) forgetKnownNamesAfter(-1);
+      else if (was.passwordLock) {
+        forgetKnownNamesAfter(-1);
+        collectionLockAfter(-1);
+      }
       setPhase({ kind: 'open', space: was.space, passwordLock: was.passwordLock, only: was.only });
     },
     [show],
@@ -369,8 +376,12 @@ export default function RootLayout() {
         backgroundAt.current = Date.now();
         // What was read here is no longer new on the widget.
         refreshWidget();
-        // The names of the space's contacts go when it would lock, even if the app does not run then.
-        if (current.kind === 'open' && current.passwordLock) forgetKnownNamesAfter(RELOCK_AFTER_MS);
+        // The names of the space's contacts go when it would lock, even if the app does not run
+        // then; so does what the Collection has open, in Android.
+        if (current.kind === 'open' && current.passwordLock) {
+          forgetKnownNamesAfter(RELOCK_AFTER_MS);
+          collectionLockAfter(RELOCK_AFTER_MS);
+        }
       }
       if (state !== 'active' || backgroundAt.current === null) return;
       const away = Date.now() - backgroundAt.current;
@@ -378,6 +389,7 @@ export default function RootLayout() {
       if (current.kind !== 'open' || !current.passwordLock) return;
       if (away <= RELOCK_AFTER_MS) {
         forgetKnownNamesAfter(-1);
+        collectionLockAfter(-1);
         return;
       }
       // A call that rang in the background, or goes on, would lose its screen behind the password:
@@ -815,6 +827,7 @@ function followAppShown(): () => void {
 // Nothing of the space that was open stays in memory: what goes on for it stops, and its key and
 // what was read of it go.
 function closeSpace(): void {
+  collectionLocked();
   stopSpaceRunning();
   setCurrentSpace(null);
   forgetSpaceChats();

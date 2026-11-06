@@ -4,6 +4,7 @@
 
 import { Platform } from 'react-native';
 
+import { collectionNative } from '../modules/erevos-collection';
 import { device, type PanicState } from '../modules/erevos-device';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
@@ -20,7 +21,9 @@ export type { PanicState };
 // messages, the lock, the Matrix, XMPP and Nostr accounts, the relay's tokens, automatic backups'
 // key and settings, the backup server's address and password, and the keys Erevos keeps in the
 // Android Keystore; then Android stops Erevos, with its notices. When the owner chose it, the
-// automatic backups in their folder are deleted first.
+// automatic backups in their folder are deleted first. Before that, what the Collection has open
+// (modules/erevos-collection) stops at once and its keys go: the music or video playing, the links
+// other apps read files by, the PDFs shown.
 //
 // In the web app, the browser's whole Erevos database goes, with the key that sealed its secrets,
 // and its Web Push subscription; the page then starts as new.
@@ -83,6 +86,7 @@ export function panicFolderChanged(folder: string): void {
  * computer or Sailfish OS, `backupsIn` is the automatic backups' folder when they go too.
  */
 export async function wipeNow(backupsIn = ''): Promise<void> {
+  collectionNative?.panic();
   if (CAN_PANIC_APP && device?.wipeNow?.()) return;
   if (Platform.OS !== 'web') throw new Error(t('Erevos cannot wipe itself here.'));
   if (SHELL) {

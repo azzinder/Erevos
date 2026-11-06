@@ -7,6 +7,7 @@ package expo.modules.erevosdevice
 import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -28,7 +29,9 @@ import java.security.MessageDigest
  * accounts, the relay's tokens, automatic backups' key and settings, the backup server's address
  * and password, and the keys Erevos keeps in the Android Keystore, which Android deletes with the
  * data. Android then stops Erevos, with its notices and alarms. When the owner chose it, the
- * automatic backups in their folder go first (erevos-backup-*, the names Erevos gives them).
+ * automatic backups in their folder go first (erevos-backup-*, the names Erevos gives them). The
+ * Collection's music or video playing (modules/erevos-collection, PlayerService) is stopped first
+ * too, so it does not play on for the moment the wipe takes.
  *
  * What stays: backups elsewhere (copied away, on a server: their password still guards them), what
  * a relay holds for this phone until it expires, what contacts' phones keep, and Erevos itself,
@@ -56,6 +59,8 @@ internal object Panic {
   private const val REFUSED_KEY = "refused-key"
   // The names Erevos gives backups (lock/backup.ts BACKUP_PREFIX).
   private const val BACKUP_PREFIX = "erevos-backup-"
+  // The Collection's player service (modules/erevos-collection), named by its class, so this module does not depend on that one.
+  private const val COLLECTION_PLAYER = "expo.modules.erevoscollection.PlayerService"
 
   // PanicKit's intents (info.guardianproject.panic.Panic).
   const val ACTION_TRIGGER = "info.guardianproject.panic.action.TRIGGER"
@@ -192,6 +197,7 @@ internal object Panic {
     Thread {
       Log.i(TAG, "Wiping")
       val prefs = prefs(app)
+      runCatching { app.stopService(Intent().setClassName(app, COLLECTION_PLAYER)) }
       if (prefs.getBoolean(BACKUPS, false)) deleteBackups(app, prefs.getString(FOLDER, null).orEmpty())
       runCatching { app.getSystemService(NotificationManager::class.java)?.cancelAll() }
       val cleared = runCatching { app.getSystemService(ActivityManager::class.java)?.clearApplicationUserData() == true }.getOrDefault(false)
