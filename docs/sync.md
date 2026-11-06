@@ -132,9 +132,16 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   it), up to 64 MB, and hears it as the whole log. One that cannot be taken now is let be: the
   device asks again (every 10 minutes) and is given it again.
 
+## Phase S3, second part: over the links nearby
+
+- A packet between the account's devices that came on a link nearby (the same Wi-Fi or hotspot,
+  lib/nearby.ts) has that device heard there; what goes to it is handed on that link first, each
+  packet once, so the log (and all the rest) goes with no internet too. The relay still gets its
+  copy, which opens nothing the second time. The space's links only.
+
 ## Next
 
-Phase S3, second part: device to device over the same Wi-Fi/LAN, by chunks (the bytes of large
+Phase S3, third part: device to device over the same Wi-Fi/LAN, by chunks (the bytes of large
 files, for the Collection up to 4096 chunks of 1 MiB): only the chunk ids missing are asked, each
 checked by its GCM tag and kept, a cut one dropped; a file shows only once all its chunks are there.
 A file deleted mid-way stops, and the chunks that came are deleted.

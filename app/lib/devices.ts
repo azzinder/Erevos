@@ -821,9 +821,23 @@ export class Links implements Link, TakenFiles {
 
   // ---- What the chat calls (lib/e2e.ts, Link) ----
 
-  open(packet: Uint8Array): ReturnType<Link['open']> {
+  open(packet: Uint8Array, near?: string): ReturnType<Link['open']> {
     if (!this.data.primary && this.data.devices.length === 0 && !this.data.offer) return Promise.resolve(null);
     return this.run(async () => {
+      const taken = await this.openNow(packet);
+      // Came on a link nearby (the same Wi-Fi, lib/nearby.ts): what goes to that device goes there
+      // first from now on. The space's links only: a hidden place's stay on the relay.
+      if (taken && near && this.pocket === null && this.openedFrom) nearby.heardOn(`device:${this.openedFrom}`, near);
+      this.openedFrom = null;
+      return taken;
+    });
+  }
+
+  // Who the packet open just opened came from, a link's peer or another device: for open, above.
+  private openedFrom: string | null = null;
+
+  private async openNow(packet: Uint8Array): ReturnType<Link['open']> {
+    {
       const peers = this.data.primary ? [this.data.primary] : this.data.devices;
       const siblings = this.siblingList();
       if (isSealedPacket(packet)) {
@@ -834,6 +848,7 @@ export class Links implements Link, TakenFiles {
         const sibling = peer ? undefined : siblings.find(marked);
         const inner = peer ?? sibling ? openPacket(this.keysOf((peer ?? sibling)!.key!), packet) : null;
         if (!inner || (await core.packetKind(inner)) !== 'following') return null;
+        this.openedFrom = (peer ?? sibling)!.id;
         return peer ? this.openFrom(peer, inner) : this.openFromSibling(sibling!, inner);
       }
       const kind = await core.packetKind(packet);
@@ -841,14 +856,20 @@ export class Links implements Link, TakenFiles {
       if (kind !== 'following') return null;
       for (const peer of peers) {
         const taken = await this.openFrom(peer, packet);
-        if (taken) return taken;
+        if (taken) {
+          this.openedFrom = peer.id;
+          return taken;
+        }
       }
       for (const sibling of siblings) {
         const taken = await this.openFromSibling(sibling, packet);
-        if (taken) return taken;
+        if (taken) {
+          this.openedFrom = sibling.id;
+          return taken;
+        }
       }
       return null;
-    });
+    }
   }
 
   // A packet that continues a link's conversation, in the turn, or null if it does not.
@@ -2830,7 +2851,7 @@ export class Links implements Link, TakenFiles {
     await this.sendOut(here, peer.at, peer.outbox, async (sent) => {
       const now = find();
       if (now) await this.keepPeer(withoutSent(now, sent));
-    }, peer.marks);
+    }, peer.marks, id);
   }
 
   // What waits for another device, to where it reads once that is known.
@@ -2842,12 +2863,19 @@ export class Links implements Link, TakenFiles {
       const now = find();
       const outbox = now?.outbox.filter((p) => !sent.has(p));
       if (now && outbox) await this.keepSibling({ ...now, outbox, behind: outbox.length > 0 ? now.behind : 0 });
-    });
+    }, undefined, id);
   }
 
   // Sends what waits in an outbox to the queue at `at`, oldest first, each quiet but as `marks`
   // says; `went` takes what went out of it, in the turn.
-  private async sendOut(here: Here, at: Place, outbox: string[], went: (sent: Set<string>) => Promise<void>, marks?: Record<string, OutMark>): Promise<void> {
+  // A device heard on a link nearby (the same Wi-Fi) is handed them there first, each once, so they
+  // come with no internet too; the relay's copy still goes, as the outbox keeps them until it took
+  // them, and the one that comes second is let be.
+  private async sendOut(here: Here, at: Place, outbox: string[], went: (sent: Set<string>) => Promise<void>, marks?: Record<string, OutMark>, near?: string): Promise<void> {
+    if (near && this.pocket === null) {
+      const fresh = outbox.filter((p) => !this.nearGiven.has(p));
+      if (fresh.length > 0 && nearby.toHeard(`device:${near}`, fresh.map((p) => fromBase64(p)))) for (const p of fresh) this.nearGiven.add(p);
+    }
     const to = contactTarget(here.sends, at);
     const sent = new Set<string>();
     try {
@@ -2857,9 +2885,13 @@ export class Links implements Link, TakenFiles {
         sent.add(packet);
       }
     } finally {
+      for (const p of sent) this.nearGiven.delete(p);
       if (sent.size > 0) await this.run(() => went(sent));
     }
   }
+
+  // What was handed to a device nearby already, until the relay took it too.
+  private readonly nearGiven = new Set<string>();
 
   // A device the outbox had no room for, once it drained: the contacts again, and the history from when it fell behind.
   private async catchUp(): Promise<void> {

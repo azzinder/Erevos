@@ -458,7 +458,7 @@ async function openHere(link: string | null, packet: Uint8Array, nostr = false):
   const chats = await spaceChats();
   let received: Received;
   try {
-    received = await chats.e2e.receive(packet);
+    received = await chats.e2e.receive(packet, link && link !== SMS_LINK ? { near: link } : {});
   } catch {
     if (!link) nearby.dropHeld(packet);
     return;

@@ -3137,6 +3137,9 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   vibracija, relej i Tor, moduli, ime uređaja. Uređaj koji treba da zadrži svoje: **Postavke** → **Podaci i uređaji**
   → **Povezani uređaji** → **Iste postavke na svim uređajima** isključeno. Ponovo uključen, odmah preuzima postavke
   drugih. Skriveni razgovori zadržavaju svoje.
+- **Na istom Wi-Fiju:** telefon i računar na istom Wi-Fiju ili hotspotu (s uključenim **Pronađi Erevos na istoj Wi-Fi mreži**)
+  daju jedno drugom ono što se mijenja direktno tamo, i bez interneta; relej ipak dobija svoju kopiju, koja tada ništa
+  više ne mijenja. Samo prostora: veze skrivenih razgovora idu preko releja.
 - **Pozivi** zvone na telefonu i na računaru. Javite se na bilo kojem: drugi prestaje zvoniti i kaže da je poziv
   prihvaćen na drugom uređaju. Odbijanje poziva na jednom odbija ga na oba. Računar zove također preko telefona; sam
   poziv tada ide direktno između računara i kontakta, šifriran između njih, a telefon mora ostati uključen samo da ga

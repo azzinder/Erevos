@@ -2999,6 +2999,9 @@ The chats then come to the computer, and after them the messages chosen.
   vibration, the relay and Tor, the modules, the device's name. A device that should keep its own: **Settings** →
   **Data and devices** → **Linked devices** → **Same settings on every device** off. Turned on again, it takes the
   others' at once. Hidden chats keep their own.
+- **On the same Wi-Fi:** the phone and a computer on the same Wi-Fi or hotspot (with **Find Erevos on the same Wi-Fi** on)
+  give each other what changes straight there, with no internet too; the relay still gets its copy, which then changes
+  nothing more. Only the space's: hidden chats' links go through the relay.
 - **Calls** ring on the phone and on the computer. Answer on either: the other stops ringing, and says it was
   answered on another device. Turning a call down on one turns it down on both. The computer calls through the phone
   too; the call itself then goes straight between the computer and the contact, encrypted between them, and the phone

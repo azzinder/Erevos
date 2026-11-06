@@ -3449,6 +3449,9 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   nom de l’appareil. Un appareil qui doit garder les siens : **Réglages** → **Données et appareils** → **Appareils
   associés** → **Mêmes réglages sur tous les appareils** désactivé. Réactivé, il prend aussitôt ceux des autres. Les
   discussions cachées gardent les leurs.
+- **Sur le même Wi-Fi :** le téléphone et un ordinateur sur le même Wi-Fi ou point d’accès (avec **Trouver Erevos sur le même Wi-Fi** activé) se donnent ce qui change directement là, sans internet aussi ; le relais reçoit quand même sa copie,
+  qui ne change alors plus rien. Seulement ceux de l’espace : les associations des discussions cachées passent par le
+  relais.
 - Les **appels** sonnent sur le téléphone et sur l’ordinateur. Réponds sur l’un ou l’autre : l’autre cesse de sonner, et
   dit qu’on a répondu sur un autre appareil. Refuser un appel sur l’un le refuse sur les deux. L’ordinateur appelle
   aussi par le téléphone ; l’appel lui-même passe alors directement entre l’ordinateur et le contact, chiffré entre eux,

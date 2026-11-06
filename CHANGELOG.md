@@ -14,6 +14,8 @@ On main, not released yet:
 
 ### For you
 
+- **Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what
+  changes straight there, with no internet too. See [Linked devices](#devices).
 - **Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no
   choice to make (the switch **Matrix, XMPP and Nostr accounts too** is gone), and they follow as they change on the
   phone: one you sign out of there, or replace with another, goes from the devices too. Hidden chats' own accounts go
@@ -133,6 +135,10 @@ On main, not released yet:
   once larger than one packet holds (12 KB), it goes as a file on the sender's relay queue, encrypted with a key of
   its own that only the envelope carries, and is taken once and deleted there (`snapshot` and `syncHeard` in
   `lib/devices.ts`). One that cannot be taken is let be: the device asks again within 10 minutes.
+- **Links between your devices over the links nearby**: a link packet that came on a link nearby (`near`, through
+  `e2e.receive` and `Link.open`) has that device heard there (`device:<id>` in `lib/nearby.ts`), and what goes to it
+  is handed there first (`toHeard`, only to the link it was heard on, never spread), each packet once; the outbox
+  keeps it until the relay took it too, and the copy that comes second opens nothing. The space's links only.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

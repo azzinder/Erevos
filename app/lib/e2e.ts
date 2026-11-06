@@ -539,7 +539,8 @@ export interface Link {
    * `taken` for the link's own, with how the contacts change, and on a linked device who is
    * blocked on the phone (`blocked`); null for a packet that is not one.
    */
-  open(packet: Uint8Array): Promise<{ kind: 'message'; identity: string; plaintext: Uint8Array } | { kind: 'taken'; contacts?: (contacts: Contact[]) => Contact[]; blocked?: Blocked[] } | null>;
+  /** `near`: the link nearby it came on (lib/nearby.ts), when it came on one. */
+  open(packet: Uint8Array, near?: string): Promise<{ kind: 'message'; identity: string; plaintext: Uint8Array } | { kind: 'taken'; contacts?: (contacts: Contact[]) => Contact[]; blocked?: Blocked[] } | null>;
   /** On a linked device: a message for a contact, sealed for the primary. */
   wrap(identity: string, plaintext: Uint8Array): Promise<Uint8Array>;
   /** On a linked device: asks the primary to add the contact of a link (`identity`), and gives the contact to keep meanwhile. */
@@ -2897,9 +2898,9 @@ export class E2E {
    * contact queue it came to (lib/contact-queues.ts), read cheaply as `old`: one of that contact's
    * there says they write to it (Mine.heard).
    */
-  receive(packet: Uint8Array, { onOwn = '', old = false, onMine = '' }: { onOwn?: string; old?: boolean; onMine?: string } = {}): Promise<Received> {
+  receive(packet: Uint8Array, { onOwn = '', old = false, onMine = '', near }: { onOwn?: string; old?: boolean; onMine?: string; near?: string } = {}): Promise<Received> {
     return this.run(async () => {
-      const received = await this.receiveNow(packet, onOwn, old || !!onMine);
+      const received = await this.receiveNow(packet, onOwn, old || !!onMine, near);
       if (onMine && received.kind === 'message') await this.heardOnMine(received.identity, onMine);
       return received;
     });
@@ -2913,12 +2914,12 @@ export class E2E {
     await this.save(this.withContact({ ...contact, mine: { ...contact.mine, heard: true } }));
   }
 
-  private async receiveNow(packet: Uint8Array, onOwn: string, old: boolean): Promise<Received> {
+  private async receiveNow(packet: Uint8Array, onOwn: string, old: boolean, near?: string): Promise<Received> {
     {
       const heard = !!onOwn && !old && onOwn === this.ownFrom;
       // One between the account's devices, first (lib/devices.ts): what it says of the contacts
       // changes them here, and a contact's message the primary passed on opens as theirs.
-      const linked = this.link ? await this.link.open(packet).catch(() => null) : null;
+      const linked = this.link ? await this.link.open(packet, near).catch(() => null) : null;
       if (linked?.kind === 'taken') {
         // On a linked device, who is blocked as the phone keeps them: their link is not added here either until unblocked.
         if (linked.blocked && this.link?.through) {

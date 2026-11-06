@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
+    "**Dispositivos conectados no mesmo Wi-Fi**: o celular e um computador no mesmo Wi-Fi ou hotspot passam um ao outro o que muda direto ali, também sem internet. Veja [Dispositivos conectados](#devices).",
   "**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices).":
     "**Suas contas Matrix, XMPP e Nostr em cada dispositivo conectado**: cada dispositivo conectado as recebe sozinho, sem nada para escolher, e elas seguem as mudanças no celular: a conta da qual você sai lá, ou troca por outra, sai também dos dispositivos. Veja [Dispositivos conectados](#devices).",
   "**Same settings on your linked devices**: the language, the look and Last seen changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":

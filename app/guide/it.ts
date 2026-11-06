@@ -3279,6 +3279,9 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   di panico, il tempo del blocco, la vibrazione, il relay e Tor, i moduli, il nome del dispositivo. Un dispositivo che
   deve tenere le sue: **Impostazioni** → **Dati e dispositivi** → **Dispositivi collegati** → **Stesse impostazioni su
   tutti i dispositivi** disattivato. Riattivato, prende subito quelle degli altri. Le chat nascoste tengono le loro.
+- **Sullo stesso Wi-Fi:** il telefono e un computer sullo stesso Wi-Fi o hotspot (con **Trova Erevos sulla stessa rete Wi-Fi**
+  attivo) si passano ciò che cambia direttamente lì, anche senza internet; il relay riceve comunque la sua copia, che
+  allora non cambia più nulla. Solo quelli dello spazio: i collegamenti delle chat nascoste passano dal relay.
 - **Le chiamate** squillano sul telefono e sul computer. Rispondi su uno dei due: l’altro smette di squillare, e dice
   che si è risposto su un altro dispositivo. Rifiutare una chiamata su uno la rifiuta su entrambi. Anche il computer
   chiama tramite il telefono; la chiamata stessa va poi direttamente tra il computer e il contatto, crittografata tra

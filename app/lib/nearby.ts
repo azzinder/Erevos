@@ -358,6 +358,19 @@ export class Nearby {
     return this.links.has(link);
   }
 
+  /**
+   * Hands packets to the one heard on a link nearby that is still up, and not a slow one: the
+   * account's own device (lib/devices.ts), as `device:<id>`. Never to the others nearby. Says
+   * whether the link took them.
+   */
+  toHeard(identity: string, packets: Uint8Array[]): boolean {
+    const link = this.heard.get(identity);
+    if (!link || isSlow(link) || !this.links.has(link)) return false;
+    const frames = packets.map((packet) => framesOf(packet));
+    if (frames.some((f) => f === null)) return false;
+    return this.sendOn(link, frames as string[][]);
+  }
+
   /** Whether a contact was heard on a link that is still up, and not a slow one. */
   isNear(identity: string): boolean {
     const link = this.heard.get(identity);

@@ -3474,6 +3474,9 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   seine eigenen behalten soll: **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte** → **Gleiche
   Einstellungen auf allen Geräten** aus. Wieder eingeschaltet, übernimmt es sofort die der anderen. Versteckte Chats
   behalten ihre eigenen.
+- **Im selben WLAN:** Telefon und Computer im selben WLAN oder Hotspot (mit **Erevos im selben WLAN finden** an) geben
+  einander, was sich ändert, direkt dort, auch ohne Internet; das Relay bekommt trotzdem seine Kopie, die dann nichts
+  mehr ändert. Nur die des Bereichs: die Verknüpfungen versteckter Chats gehen über das Relay.
 - **Anrufe** klingeln auf dem Telefon und auf dem Computer. Nimm auf einem von beiden an: Das andere hört auf zu
   klingeln und sagt, dass auf einem anderen Gerät angenommen wurde. Einen Anruf auf einem abzulehnen, lehnt ihn auf
   beiden ab. Der Computer ruft auch über das Telefon an; der Anruf selbst geht dann direkt zwischen dem Computer und

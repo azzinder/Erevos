@@ -3240,6 +3240,9 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   manter as suas: **Configurações** → **Dados e dispositivos** → **Dispositivos conectados** → **As mesmas
   configurações em todos os dispositivos** desligado. Ligado de novo, pega na hora as dos outros. As conversas ocultas
   mantêm as suas.
+- **No mesmo Wi-Fi:** o celular e um computador no mesmo Wi-Fi ou hotspot (com **Encontrar Erevos na mesma rede Wi-Fi** ligado)
+  passam um ao outro o que muda direto ali, também sem internet; o relay recebe mesmo assim a cópia dele, que então
+  não muda mais nada. Só os do espaço: as conexões das conversas ocultas vão pelo relay.
 - **Chamadas** tocam no celular e no computador. Atenda em qualquer um: o outro para de tocar, e diz que ela foi
   atendida em outro dispositivo. Recusar uma chamada num deles a recusa nos dois. O computador também liga pelo
   celular; a chamada em si então vai direto entre o computador e o contato, criptografada entre eles, e o celular só

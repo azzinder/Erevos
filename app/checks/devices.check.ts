@@ -109,6 +109,7 @@ import { EMPTY_SPACE, loadSpaceData, saveHiddenData, saveSpaceData, type Queue }
 import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
+import { nearby } from '../lib/nearby';
 import { contactsIn } from '../lib/sync/contacts';
 import { valueOf as syncValueOf, whole as syncWhole, type Json as SyncJson } from '../lib/sync/log';
 import { onSettingCame } from '../lib/sync/settings';
@@ -544,6 +545,42 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   assert.deepEqual(many.map((id) => syncValueOf(deviceLog, 'place', id, 'v')), many.map(() => 'x'.repeat(300)));
   // Taken once: the file is no longer on the relay.
   assert.equal(await deviceSide.syncHeard(deviceSide.data.account, snap!).catch(() => null), null);
+
+  // On the same Wi-Fi (lib/nearby.ts): a device heard on a link nearby is handed what goes to it
+  // there first, so it comes with no internet too; the relay's copy, second, changes nothing more.
+  const lan: { link: string; text: string }[] = [];
+  const stopLan = nearby.start((link, text) => (lan.push({ link, text }), true));
+  nearby.linkUp('lan-dell');
+  const languages: unknown[] = [];
+  const stopLanguage = onSettingCame('language', (value) => void languages.push(value));
+  changeOn(dell, 'language', 'fr');
+  await dell.links.settled();
+  await until(async () => {
+    for (;;) {
+      const bytes = await receiveMessage(relay, fromHex(pixel.queue.recipientHex));
+      if (!bytes) break;
+      await pixel.chats.e2e.receive(bytes, { near: 'lan-dell' });
+    }
+    await pixel.links.settled();
+    return languages.includes('fr');
+  });
+  lan.length = 0;
+  changeOn(pixel, 'look', { style: 'classic', wallpaper: 'grid' });
+  await pixel.links.settled();
+  await until(() => lan.some((l) => l.link === 'lan-dell'));
+  let looks = 0;
+  const stopLook = onSettingCame('look', () => void looks++);
+  for (const { text } of lan.filter((l) => l.link === 'lan-dell')) {
+    const packet = nearby.frameIn('lan-pixel', text);
+    if (packet) await dell.chats.e2e.receive(packet, { near: 'lan-pixel' });
+  }
+  await dell.links.settled();
+  assert.equal(looks, 1);
+  await take(dell);
+  assert.equal(looks, 1);
+  stopLook();
+  stopLanguage();
+  stopLan();
 
   // Unlinked on the phone: the computer is told, and the account's chats leave it.
   assert.equal(await pixel.links.unlink(pixel.links.devices()[0].id), true);

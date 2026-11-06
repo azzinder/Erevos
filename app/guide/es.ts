@@ -3267,6 +3267,8 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   dispositivo que deba guardar los suyos: **Ajustes** → **Datos y dispositivos** → **Dispositivos vinculados** → **Los
   mismos ajustes en todos los dispositivos** desactivado. Activado de nuevo, toma enseguida los de los otros. Los
   chats ocultos guardan los suyos.
+- **En la misma Wi-Fi:** el teléfono y un ordenador en la misma Wi-Fi o punto de acceso (con **Buscar Erevos en la misma Wi-Fi** activado) se dan lo que cambia directamente allí, también sin internet; el relay recibe igualmente su copia,
+  que entonces ya no cambia nada. Solo los del espacio: los vínculos de los chats ocultos van por el relay.
 - **Las llamadas** suenan en el teléfono y en el ordenador. Responde en cualquiera de los dos: el otro deja de sonar, y
   dice que se respondió en otro dispositivo. Rechazar una llamada en uno la rechaza en los dos. El ordenador también
   llama a través del teléfono; la llamada en sí va entonces directamente entre el ordenador y el contacto, cifrada entre
