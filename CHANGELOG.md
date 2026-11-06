@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Panic tells Fasouli too** (Android): under Settings → Privacy and security → Panic button → Tell other apps,
+  choose apps that take a panic app's request, as Fasouli. When the panic code or button wipes Erevos, it tells them
+  first, and Fasouli locks itself. Only apps you choose are told, and only while they are signed as when you chose them.
 - **Payment requests**: another app, as Fasouli, can ask Erevos to send one to a contact
   (`erevos://pay?a=…&d=…&c=…&w=…&r=…`): Send to opens with only Erevos chats, and the chat asks before it goes. It
   shows as a card with the amount and what it is for; the contact taps **Paid** once they paid (it cannot be taken

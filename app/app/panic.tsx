@@ -10,7 +10,7 @@ import { Button, Card, Chip, Page, Row, SectionTitle, Text } from '../components
 import { confirm } from '../lib/alert';
 import { folderLabel, loadAutoBackup, type AutoBackup } from '../lib/backup-folder';
 import { t } from '../lib/i18n';
-import { allowPanicApp, CAN_PANIC_APP, CAN_WIPE, forgetPanicApp, panicState, refusePanicApp, renewPanicApp, seenPanicRefused, setPanic, wipeNow, WIPE_BACKUPS_HERE, type PanicState } from '../lib/panic';
+import { allowPanicApp, CAN_PANIC_APP, CAN_WIPE, forgetPanicApp, panicResponders, panicState, refusePanicApp, tellPanicApp, renewPanicApp, seenPanicRefused, setPanic, wipeNow, WIPE_BACKUPS_HERE, type PanicResponder, type PanicState } from '../lib/panic';
 import { isPasswordLocked, loadLockConfig, removePanicPassword, setPanicPassword } from '../lock/config';
 import { useTheme } from '../theme/context';
 
@@ -41,7 +41,12 @@ export default function Panic() {
   const [locked, setLocked] = useState(false);
   const [settingPanic, setSettingPanic] = useState(false);
 
-  const reload = () => setState(panicState());
+  // The apps Erevos tells as it wipes, as Fasouli, which locks itself then.
+  const [responders, setResponders] = useState<PanicResponder[]>(() => panicResponders());
+  const reload = () => {
+    setState(panicState());
+    setResponders(panicResponders());
+  };
   useEffect(() => {
     void loadAutoBackup().then(setAuto);
     void loadLockConfig().then((config) => setLocked(isPasswordLocked(config)), () => setLocked(false));
@@ -64,6 +69,12 @@ export default function Panic() {
   function toggleBackups() {
     if (!state) return;
     setPanic(state.on, !state.backups, folder);
+    reload();
+  }
+
+  function tellApp(app: PanicResponder) {
+    if (!tellPanicApp(app.pkg, !app.told)) say(t('{app} is not installed.', { app: app.label }), true);
+    else say(app.told ? t('{app} is no longer told when Erevos wipes.', { app: app.label }) : t('{app} is told when Erevos wipes. If it asks, say yes there too.', { app: app.label }));
     reload();
   }
 
@@ -243,6 +254,26 @@ export default function Panic() {
         <Text variant="caption" tone="muted" style={hint}>
           {t('This build of Erevos cannot be wiped by a panic app. Update Erevos for it.')}
         </Text>
+      ) : null}
+
+      {CAN_PANIC_APP ? (
+        <>
+          <SectionTitle title={t('Tell other apps')} />
+          <Card>
+            <Text tone="muted" style={hint}>
+              {t('As Erevos wipes, from the button, the panic password or a panic app, it can tell the apps you choose here, as a panic app does: Fasouli then locks itself. Each app decides what it does, and asks you first whether Erevos may.')}
+            </Text>
+            {responders.length === 0 ? (
+              <Text tone="muted">{t("No app on this phone takes a panic app's request.")}</Text>
+            ) : (
+              <Row wrap>
+                {responders.map((app) => (
+                  <Chip key={app.pkg} label={app.label} selected={app.told} onPress={() => tellApp(app)} />
+                ))}
+              </Row>
+            )}
+          </Card>
+        </>
       ) : null}
 
       {note ? (

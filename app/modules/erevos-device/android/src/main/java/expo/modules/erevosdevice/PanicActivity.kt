@@ -22,7 +22,8 @@ import android.os.Bundle
  *   screen (erevos://panic), after the password, where the owner says yes or no.
  * - DISCONNECT: the trusted app lets go; from any other, nothing.
  * Nothing is shown and nothing is said back beyond the result, so a request from anyone else
- * learns nothing, not even whether a panic app is set.
+ * learns nothing, not even whether a panic app is set. As it wipes, Erevos tells the apps the owner
+ * chose in turn (Panic.kt, tellAll), as Fasouli.
  */
 class PanicActivity : Activity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,7 +33,7 @@ class PanicActivity : Activity() {
     when (intent?.action) {
       Panic.ACTION_TRIGGER -> if (caller != null && Panic.trusted(this, caller)) {
         result = RESULT_OK
-        Panic.wipe(this)
+        Panic.wipe(this, this)
       }
       Panic.ACTION_CONNECT -> if (caller != null) {
         Panic.ask(this, caller)

@@ -2944,6 +2944,9 @@ no Sailfish OS.
   não abre nada.
 - **O que ele não pode esconder:** no telefone, sem a senha, ainda dá para ver que o Erevos está instalado e que um
   app de pânico pode apagá-lo, mas não o que havia nele.
+- **Avisar outros apps (Android):** em **Avisar outros apps** você escolhe os apps que o Erevos avisa ao apagar, como
+  um app de pânico, pelo botão, pela senha de pânico ou por um app de pânico. Cada um pergunta antes se o Erevos pode.
+  O Fasouli então se bloqueia: fecha e pede de novo o seu bloqueio ao abrir.
 
 **Por quê:** numa fronteira ou numa prisão pode não haver tempo de abrir cada conversa. Um toque, ou o gesto de um app
 de pânico, não deixa nada para abrir.

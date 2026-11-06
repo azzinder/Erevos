@@ -41,4 +41,9 @@ export const panic: Record<string, string> = {
   "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "Am {when} wollte {app} Erevos löschen, und Erevos hat abgelehnt: Der Schalter unten war aus.",
   "Got it": "Verstanden",
   "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "{app} ist installiert, aber mit einem anderen Schlüssel signiert, und kann Erevos daher nicht löschen. Wenn du es selbst aktualisiert hast, vertraue ihm erneut so, wie es jetzt ist.",
+  '{app} is no longer told when Erevos wipes.': '{app} wird nicht mehr benachrichtigt, wenn Erevos löscht.',
+  '{app} is told when Erevos wipes. If it asks, say yes there too.': '{app} wird benachrichtigt, wenn Erevos löscht. Fragt die App, sag dort auch Ja.',
+  'Tell other apps': 'Andere Apps benachrichtigen',
+  'As Erevos wipes, from the button, the panic password or a panic app, it can tell the apps you choose here, as a panic app does: Fasouli then locks itself. Each app decides what it does, and asks you first whether Erevos may.': 'Wenn Erevos löscht, über die Taste, das Panik-Passwort oder eine Panik-App, kann es die Apps benachrichtigen, die du hier wählst, wie eine Panik-App: Fasouli sperrt sich dann. Jede App entscheidet selbst, was sie tut, und fragt dich zuerst, ob Erevos darf.',
+  "No app on this phone takes a panic app's request.": 'Keine App auf diesem Telefon nimmt die Anfrage einer Panik-App an.',
 };

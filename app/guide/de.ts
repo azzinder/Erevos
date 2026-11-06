@@ -3162,6 +3162,9 @@ Computer und auf Sailfish OS.
   was er versiegelt hat, ist weg, er öffnet also nichts.
 - **Was es nicht verbergen kann:** Auf dem Telefon sieht man auch ohne Passwort, dass Erevos installiert ist und dass
   eine Panik-App es löschen darf, aber nicht, was darin war.
+- **Andere Apps benachrichtigen (Android):** Unter **Andere Apps benachrichtigen** wählst du die Apps, die Erevos beim
+  Löschen benachrichtigt, wie eine Panik-App, über die Taste, das Panik-Passwort oder eine Panik-App. Jede fragt dich
+  zuerst, ob Erevos darf. Fasouli sperrt sich dann: Es schließt sich und fragt beim Öffnen wieder nach seiner Sperre.
 
 **Warum:** An einer Grenze oder bei einer Festnahme bleibt vielleicht keine Zeit, jeden Chat zu öffnen. Ein Tippen,
 oder die Geste einer Panik-App, lässt nichts zum Öffnen zurück.

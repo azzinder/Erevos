@@ -178,8 +178,19 @@ class ErevosDeviceModule : Module() {
 
     Function("wipeNow") {
       val app = context?.applicationContext ?: return@Function false
-      Panic.wipe(app)
+      Panic.wipe(app, appContext.currentActivity)
       true
+    }
+
+    // The apps Erevos tells as it wipes (Panic.kt), as Fasouli: those on the phone, and choosing one.
+    Function("panicResponders") {
+      val app = context?.applicationContext ?: return@Function emptyList<Map<String, Any>>()
+      Panic.responders(app)
+    }
+
+    Function("tellPanicApp") { pkg: String, on: Boolean ->
+      val activity = appContext.currentActivity ?: return@Function false
+      Panic.tell(activity, pkg, on)
     }
 
     // Erevos to a phone nearby with no internet (NearbyApk.kt): giving this one over the Wi-Fi or

@@ -4,6 +4,7 @@
 
 package expo.modules.erevosdevice
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
@@ -44,6 +45,11 @@ import java.security.MessageDigest
  * trusted), the one that asked last to be it, until the owner says yes or no, and when the
  * trusted app last asked to wipe and was refused (signed otherwise, or the switch off). They say
  * that the owner set a panic app, and which; nothing more.
+ *
+ * Erevos is a trigger too: the apps the owner chose to tell (`tell`, each with the SHA-256 of its
+ * signing certificate, as above), as Fasouli, which locks itself, get PanicKit's TRIGGER as Erevos
+ * wipes, from the panic button, the panic code or a panic app, just before the wipe. Choosing one
+ * sends it CONNECT, so it can ask its owner whether Erevos may; letting it go, DISCONNECT.
  */
 internal object Panic {
   private const val TAG = "ErevosDevice"
@@ -57,6 +63,9 @@ internal object Panic {
   private const val FOLDER = "folder"
   private const val REFUSED = "refused"
   private const val REFUSED_KEY = "refused-key"
+  private const val TELL = "tell"
+  // How long the wipe waits for the apps told to get TRIGGER before Android stops Erevos.
+  private const val TELL_MS = 600L
   // The names Erevos gives backups (lock/backup.ts BACKUP_PREFIX).
   private const val BACKUP_PREFIX = "erevos-backup-"
   // The Collection's player service (modules/erevos-collection), named by its class, so this module does not depend on that one.
@@ -188,14 +197,75 @@ internal object Panic {
     )
   }
 
+  // The apps to tell, as kept: package to certificate.
+  private fun told(context: Context): Map<String, String> =
+    (prefs(context).getStringSet(TELL, emptySet()) ?: emptySet()).mapNotNull { entry ->
+      val at = entry.indexOf('|')
+      if (at <= 0) null else entry.substring(0, at) to entry.substring(at + 1)
+    }.toMap()
+
+  private fun keepTold(context: Context, told: Map<String, String>) {
+    prefs(context).edit().putStringSet(TELL, told.map { (pkg, cert) -> "$pkg|$cert" }.toSet()).apply()
+  }
+
+  /** The apps on the phone that take PanicKit's TRIGGER, but Erevos, with their names and whether Erevos tells them. */
+  fun responders(context: Context): List<Map<String, Any>> {
+    val pm = context.packageManager
+    val told = told(context)
+    val found = runCatching { pm.queryIntentActivities(Intent(ACTION_TRIGGER), 0) }.getOrDefault(emptyList())
+      .mapNotNull { it.activityInfo?.packageName }
+      .filter { it != context.packageName }
+      .distinct()
+    return found.map { pkg ->
+      mapOf(
+        "pkg" to pkg,
+        "label" to labelOf(context, pkg),
+        "told" to (told[pkg]?.let { signedAsTrusted(context, pkg, it) } ?: false),
+      )
+    }.sortedBy { it["label"] as String }
+  }
+
+  /**
+   * Tells `pkg` as Erevos wipes, or (`on` false) no longer: CONNECT or DISCONNECT goes to it from
+   * `activity`, so Android names Erevos to it. False when it is not installed.
+   */
+  fun tell(activity: Activity, pkg: String, on: Boolean): Boolean {
+    val told = told(activity).toMutableMap()
+    if (on) {
+      val cert = certOf(activity, pkg) ?: return false
+      told[pkg] = cert
+    } else told.remove(pkg)
+    keepTold(activity, told)
+    val ask = Intent(if (on) ACTION_CONNECT else ACTION_DISCONNECT).setPackage(pkg)
+    runCatching { activity.startActivityForResult(ask, 0) }.onFailure { Log.i(TAG, "A panic app could not be told") }
+    return true
+  }
+
+  /**
+   * Sends TRIGGER to each app the owner chose, still signed as then, from `activity`, so Android
+   * names Erevos to it; with none, from no activity, as PanicKit sends to apps not connected.
+   * Says whether any was told.
+   */
+  private fun tellAll(context: Context, activity: Activity?): Boolean {
+    val told = told(context).filter { (pkg, cert) -> signedAsTrusted(context, pkg, cert) }.keys
+    if (told.isEmpty() || activity == null) return false
+    activity.runOnUiThread {
+      for (pkg in told) runCatching { activity.startActivityForResult(Intent(ACTION_TRIGGER).setPackage(pkg), 0) }
+    }
+    return true
+  }
+
   /**
    * Wipes everything Erevos keeps, on a thread of its own, as said above; Android then stops
-   * Erevos. Nothing is asked and nothing is told.
+   * Erevos. The apps the owner chose (`tell`) are told first, from `activity`; nothing else is
+   * asked or told.
    */
-  fun wipe(context: Context) {
+  fun wipe(context: Context, activity: Activity? = null) {
     val app = context.applicationContext
+    val telling = runCatching { tellAll(app, activity) }.getOrDefault(false)
     Thread {
       Log.i(TAG, "Wiping")
+      if (telling) runCatching { Thread.sleep(TELL_MS) }
       val prefs = prefs(app)
       runCatching { app.stopService(Intent().setClassName(app, COLLECTION_PLAYER)) }
       if (prefs.getBoolean(BACKUPS, false)) deleteBackups(app, prefs.getString(FOLDER, null).orEmpty())

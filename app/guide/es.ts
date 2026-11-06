@@ -2966,6 +2966,9 @@ pánico**: toca **Borrarlo todo ahora** y di **Borrar**. En Android, en la app w
   así que no abre nada.
 - **Lo que no puede ocultar:** en el teléfono, sin la contraseña, aún se ve que Erevos está instalado y que una app de
   pánico puede borrarlo, pero no lo que contenía.
+- **Avisar a otras apps (Android):** en **Avisar a otras apps** eliges las apps que Erevos avisa al borrar, como una
+  app de pánico, desde el botón, la contraseña de pánico o una app de pánico. Cada una te pregunta primero si Erevos
+  puede. Fasouli entonces se bloquea: se cierra y pide su bloqueo de nuevo al abrirse.
 
 **Por qué:** en una frontera o en una detención puede no haber tiempo para abrir cada chat. Un toque, o el gesto de una
 app de pánico, no deja nada que abrir.

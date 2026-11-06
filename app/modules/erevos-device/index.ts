@@ -16,6 +16,9 @@ export type DeviceEvents = {
  * asked to wipe and was refused (ms, 0 for never), and `refusedKey` whether for its signature;
  * missing in a build before them.
  */
+/** An app that takes PanicKit's TRIGGER, as Fasouli: told as Erevos wipes when `told`. */
+export type PanicResponder = { pkg: string; label: string; told: boolean };
+
 export type PanicState = {
   on: boolean;
   backups: boolean;
@@ -72,6 +75,10 @@ type Device = {
   seenPanicRefused?(): void;
   /** Wipes everything Erevos keeps; Android then stops Erevos. */
   wipeNow?(): boolean;
+  /** The apps on the phone that take PanicKit's TRIGGER, and whether Erevos tells them as it wipes (Panic.kt). Missing in a build before it. */
+  panicResponders?(): PanicResponder[];
+  /** Tells `pkg` as Erevos wipes, or no longer; it is sent CONNECT or DISCONNECT. False when it is not installed. */
+  tellPanicApp?(pkg: string, on: boolean): boolean;
   /** Starts giving this Erevos's APK to a phone nearby (NearbyApk.kt), its page in these words. Missing in a build before it. */
   giveAppStart?(words: Record<string, string>): Promise<GivingApp | { error: 'split' | 'network' | 'unsigned' }>;
   /** Stops giving it. */

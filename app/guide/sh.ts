@@ -2847,6 +2847,9 @@ dodirnite **Obriši sve sada** i potvrdite s **Obriši**. Na Androidu, u web apl
   ništa.
 - **Što ne može sakriti:** na telefonu se i bez lozinke i dalje vidi da je Erevos instaliran i da ga aplikacija za
   paniku smije obrisati, ali ne i što je u njemu bilo.
+- **Obavještavanje drugih aplikacija (Android):** pod **Obavijesti druge aplikacije** biraš aplikacije koje Erevos
+  obavještava kad briše, kao panik aplikacija, dugmetom, panik lozinkom ili panik aplikacijom. Svaka te prvo pita smije
+  li Erevos. Fasouli se tada zaključa: zatvori se i pri otvaranju ponovo traži svoje zaključavanje.
 
 **Zašto:** na granici ili pri uhićenju možda nema vremena otvoriti svaki razgovor. Jedan dodir, ili pokret aplikacije
 za paniku, ne ostavlja ništa za otvoriti.

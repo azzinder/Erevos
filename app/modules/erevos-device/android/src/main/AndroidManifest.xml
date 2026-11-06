@@ -15,6 +15,14 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+  <!-- The panic apps Erevos tells as it wipes (Panic.kt, tellAll), as Fasouli: the apps that take
+       PanicKit's TRIGGER, which Android 11 and later show only to an app that says so. -->
+  <queries>
+    <intent>
+      <action android:name="info.guardianproject.panic.action.TRIGGER" />
+    </intent>
+  </queries>
+
   <application>
     <!-- The panic button (Panic.kt, PanicActivity.kt): PanicKit's requests from a panic app the
          owner chose. Exported, as panic apps must reach it; it trusts only the app the owner said

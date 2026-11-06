@@ -3134,6 +3134,10 @@ ordinateur et sur Sailfish OS.
   ordinateur, mais ce qu’il scellait a disparu, il n’ouvre donc plus rien.
 - **Ce qu’il ne peut cacher :** sur le téléphone, sans le mot de passe, on voit encore qu’Erevos est installé et
   qu’une app de panique peut l’effacer, mais pas ce qu’il contenait.
+- **Prévenir d’autres applis (Android) :** sous **Prévenir d’autres applis**, choisis les applis qu’Erevos prévient
+  quand il efface, comme une appli de panique, depuis le bouton, le mot de passe de panique ou une appli de panique.
+  Chacune te demande d’abord si Erevos peut. Fasouli se verrouille alors : il se ferme, et redemande son verrou à
+  l’ouverture.
 
 **Pourquoi :** à une frontière ou lors d’une arrestation, il n’y a peut-être pas le temps d’ouvrir chaque discussion.
 Un toucher, ou le geste d’une app de panique, ne laisse rien à ouvrir.

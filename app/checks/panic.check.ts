@@ -68,8 +68,11 @@ test('panic apps reach one activity, exported for PanicKit and showing nothing',
   assert.match(activity, /android:excludeFromRecents="true"/);
   assert.match(activity, /Theme\.Translucent/);
   for (const action of ['TRIGGER', 'CONNECT', 'DISCONNECT']) assert.ok(activity.includes(`<action android:name="info.guardianproject.panic.action.${action}" />`), action);
-  // No other component answers PanicKit, so nothing else can be made to wipe.
-  assert.equal(manifest.split('info.guardianproject.panic.action.TRIGGER').length, 2);
+  // No other component answers PanicKit, so nothing else can be made to wipe. The <queries> only
+  // let Erevos see the apps it tells as it wipes (Panic.kt, tellAll): an intent, no component.
+  const queries = /<queries>([\s\S]*?)<\/queries>/.exec(manifest);
+  assert.ok(queries && !/<(activity|receiver|service|provider|package)\b/.test(queries[1]));
+  assert.equal(manifest.replace(/<queries>[\s\S]*?<\/queries>/, '').split('info.guardianproject.panic.action.TRIGGER').length, 2);
 });
 
 test('only the app trusted, named by Android and signed as when trusted, may wipe', () => {

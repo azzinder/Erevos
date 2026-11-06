@@ -5,14 +5,14 @@
 import { Platform } from 'react-native';
 
 import { collectionNative } from '../modules/erevos-collection';
-import { device, type PanicState } from '../modules/erevos-device';
+import { device, type PanicResponder, type PanicState } from '../modules/erevos-device';
 import { dropCollectionMemory } from './collection-memory';
 import { stopCollectionServers } from './collection-webdav';
 import { t } from './i18n';
 import { SHELL, shellFetch } from './shell';
 import { webWipe } from './web-store';
 
-export type { PanicState };
+export type { PanicResponder, PanicState };
 
 // The panic button (app/panic.tsx): everything Erevos keeps on this device wiped at once, from its
 // own Settings or, on Android, from a panic app the owner trusts (PanicKit, Panic.kt and
@@ -78,6 +78,16 @@ export function renewPanicApp(): boolean {
 /** The owner saw that the trusted panic app's wipe was refused. */
 export function seenPanicRefused(): void {
   device?.seenPanicRefused?.();
+}
+
+/** The apps that take a panic app's request, as Fasouli, which Erevos can tell as it wipes: none where it cannot. */
+export function panicResponders(): PanicResponder[] {
+  return CAN_PANIC_APP ? (device?.panicResponders?.() ?? []) : [];
+}
+
+/** Tells `pkg` as Erevos wipes (it then asks its owner whether Erevos may), or no longer. */
+export function tellPanicApp(pkg: string, on: boolean): boolean {
+  return device?.tellPanicApp?.(pkg, on) ?? false;
 }
 
 /** Automatic backups went to another folder, or stopped (''): a wipe that deletes them looks there. */

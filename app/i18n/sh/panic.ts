@@ -41,4 +41,9 @@ export const panic: Record<string, string> = {
   "On {when} {app} asked to wipe Erevos, and Erevos refused: the switch below was off.": "{when} je {app} tražila da obriše Erevos, a Erevos je odbio: prekidač ispod je bio isključen.",
   "Got it": "U redu",
   "{app} is installed but signed with another key, so it cannot wipe Erevos. If you updated it yourself, trust it again as it is now.": "{app} je instalirana, ali potpisana drugim ključem, pa ne može obrisati Erevos. Ako si je sam ažurirao, ponovo joj vjeruj ovakvoj kakva je sada.",
+  '{app} is no longer told when Erevos wipes.': '{app} više ne dobija obavijest kad Erevos briše.',
+  '{app} is told when Erevos wipes. If it asks, say yes there too.': '{app} dobija obavijest kad Erevos briše. Ako pita, reci da i tamo.',
+  'Tell other apps': 'Obavijesti druge aplikacije',
+  'As Erevos wipes, from the button, the panic password or a panic app, it can tell the apps you choose here, as a panic app does: Fasouli then locks itself. Each app decides what it does, and asks you first whether Erevos may.': 'Kad Erevos briše, dugmetom, panik lozinkom ili panik aplikacijom, može obavijestiti aplikacije koje ovdje izabereš, kao što to radi panik aplikacija: Fasouli se tada zaključa. Svaka aplikacija sama odlučuje šta radi, i prvo te pita smije li Erevos.',
+  "No app on this phone takes a panic app's request.": 'Nijedna aplikacija na ovom telefonu ne prima zahtjev panik aplikacije.',
 };

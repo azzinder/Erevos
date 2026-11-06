@@ -2982,6 +2982,9 @@ Sailfish OS.
   apre niente.
 - **Cosa non può nascondere:** sul telefono, senza la password, si vede ancora che Erevos è installato e che un’app di
   panico può cancellarlo, ma non cosa conteneva.
+- **Avvisare altre app (Android):** in **Avvisa altre app** scegli le app che Erevos avvisa quando cancella, come
+  un’app di panico, dal pulsante, dalla password di panico o da un’app di panico. Ognuna ti chiede prima se Erevos può.
+  Fasouli allora si blocca: si chiude, e chiede di nuovo il suo blocco quando si apre.
 
 **Perché:** a una frontiera o in un arresto può non esserci il tempo di aprire ogni chat. Un tocco, o il gesto di
 un’app di panico, non lascia niente da aprire.

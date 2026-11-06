@@ -2722,6 +2722,9 @@ button**: tap **Wipe everything now** and say **Wipe**. On Android, in the web a
   OS it closes. The keyring's item for Erevos stays on a computer, but what it sealed is gone, so it opens nothing.
 - **What it cannot hide:** on the phone, without the password, one can still see that Erevos is installed, and that a
   panic app may wipe it, though not what was in it.
+- **Telling other apps (Android):** under **Tell other apps**, choose the apps Erevos tells as it wipes, as a panic
+  app does, from the button, the panic password or a panic app. Each one asks you first whether Erevos may. Fasouli
+  then locks itself: it closes, and asks for its lock again when it opens.
 
 **Why:** at a border or in an arrest there may be no time to open each chat. One tap, or the gesture of a panic app,
 leaves nothing to open.
