@@ -23,6 +23,7 @@ import { cryptoReady, setupCrypto } from '../lib/crypto-setup';
 import { forgetLinks } from '../lib/devices';
 import { endGroupCall } from '../lib/group-calls';
 import { hiddenAnswerEndsAt, hiddenRingHoldsLock, onHiddenRingingChange } from '../lib/hidden-ring';
+import { tellShareTexts } from '../lib/share-texts';
 import { loadLang, t, useLang, type Lang } from '../lib/i18n';
 import { iconNumberOn, onIconNumberChange } from '../lib/icon-number';
 import { startIntegrityAlarm } from '../lib/integrity';
@@ -140,6 +141,10 @@ export default function RootLayout() {
   // once the screens of the one that closed are gone.
   const switching = useRef<Unlocked | null>(null);
   const lang = useLang();
+  // The words of Send to's encrypting screen follow the language (lib/share-texts.ts).
+  useEffect(() => {
+    if (Platform.OS === 'android') tellShareTexts();
+  }, [lang]);
 
   useEffect(() => {
     phaseRef.current = phase;

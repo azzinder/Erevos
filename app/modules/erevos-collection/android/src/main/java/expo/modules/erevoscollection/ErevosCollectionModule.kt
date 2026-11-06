@@ -306,6 +306,12 @@ class ErevosCollectionModule : Module() {
       context?.let { SharedIn.drop(it, id) }
     }
 
+    // The words Send to's encrypting screen shows (ShareActivity.kt), in the language Erevos is in:
+    // kept on the phone, as that screen shows before any space is open. Words only, nothing secret.
+    Function("setShareTexts") { texts: Map<String, String> ->
+      context?.let { ShareActivity.keepTexts(it, texts) }
+    }
+
     // The video of the list playing (VideoView.kt).
     View(VideoView::class) {}
   }

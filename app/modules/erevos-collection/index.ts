@@ -84,6 +84,8 @@ type Native = {
   sharedKeep?(id: string): void;
   /** The shared file was sent or left: its chunks and key go. */
   sharedDrop?(id: string): void;
+  /** The words of Send to's encrypting screen, in Erevos's language (`encrypting`, `cancel`). Not in builds before it. */
+  setShareTexts?(texts: { encrypting: string; cancel: string }): void;
   addListener(event: 'onPlayer', listener: (state: PlayerState) => void): EventSubscription;
   addListener(event: 'onSeal', listener: (event: { job: string; done: number; count: number }) => void): EventSubscription;
 };
