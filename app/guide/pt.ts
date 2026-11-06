@@ -3159,8 +3159,7 @@ Para conectar um computador:
 2. No celular, escaneie o código com a câmera: o Erevos abre em **Dispositivos conectados** com ele. Ou copie o código
    no computador, cole-o no celular em **Código do computador** e toque em **Avançar**.
 3. O celular mostra o nome do computador e um código de quatro grupos de cinco dígitos. Escolha o que do histórico vai
-   (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos também** e **Contas
-   Matrix, XMPP e Nostr também**, depois toque em **Conectar**.
+   (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos também**, depois toque em **Conectar**.
 4. O computador também mostra um código. Se for o do celular, toque em **São iguais**. Se não, toque em **São
    diferentes**: outra pessoa pode ter lido o código QR dele, e nada foi para ela.
 
@@ -3225,8 +3224,7 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   posição passa a ter uma conexão própria, com chaves próprias e sua própria lista de dispositivos, assinada pela
   própria conta dela, então os contatos dela nesta versão escrevem diretamente para a posição do computador. As
   mensagens, contatos, grupos, chamadas, fotos e arquivos e a Conversa comigo dela vão entre as duas posições como os do
-  espaço entre dispositivos conectados, e também as próprias contas Matrix, XMPP e Nostr dela, com **Contas Matrix, XMPP
-  e Nostr também** ou **Enviar as contas**. Nada disso aparece no espaço, nas telas dele ou nos dispositivos conectados
+  espaço entre dispositivos conectados, e também as próprias contas Matrix, XMPP e Nostr dela, sempre, e de novo quando mudam. Nada disso aparece no espaço, nas telas dele ou nos dispositivos conectados
   dele, e a conexão do espaço nunca leva nada de uma posição: o que uma posição guarda da conexão dela é criptografado
   com a própria chave dela, entre valores feitos para nada para as outras posições, num arquivo do mesmo tamanho haja
   posição conectada ou nenhuma. A conexão funciona enquanto a posição está aberta, e também fechada se **Receber quando
@@ -3243,7 +3241,7 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   conversas ocultas. Um espaço que uma segunda senha abre só conecta de dentro dele, a dispositivos próprios.
 - **Trazer as mensagens de novo**, no celular, envia de novo um período do histórico, com as reações, fixações, votos
   e estrelas dele; o que o computador já tem não é guardado duas vezes.
-- **Matrix, XMPP e Nostr**: com **Contas Matrix, XMPP e Nostr também** (ligado no início), o computador entra nas
+- **Matrix, XMPP e Nostr**: todos os dispositivos conectados as recebem, e elas seguem as mudanças no celular: uma conta da qual se sai lá, ou trocada por outra, sai também dos dispositivos. O computador entra nas
   contas Matrix e XMPP deste espaço e leva a chave das conversas Nostr dele, cada uma como um novo dispositivo
   próprio: o celular fica com o seu. Para um computador já conectado, toque em **Enviar as contas** embaixo dele no
   celular. XMPP e Nostr chegam sozinhos. Um servidor Matrix raramente deixa o celular fazer entrar um novo

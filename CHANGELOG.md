@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no
+  choice to make (the switch **Matrix, XMPP and Nostr accounts too** is gone), and they follow as they change on the
+  phone: one you sign out of there, or replace with another, goes from the devices too. Hidden chats' own accounts go
+  the same way to their own linked places. See [Linked devices](#devices).
 - **Same settings on your linked devices**: the language and the look (style, colours, text size) changed on the phone
   or on a computer change on the others too. A photo behind the screens stays on the device it was chosen on, and so
   does what is about one device alone: passwords, PINs, the panic code, the lock's time, vibration, the relay and Tor,
@@ -74,6 +78,12 @@ On main, not released yet:
   `setting` in the space's log, written as they change on a device, never as they come from it, and put in place on
   the others; the phone writes those it has into a log that has none yet, so a device just linked takes the phone's.
   Each device can stop sharing them (`erevos.share-settings`). `checks/sync-settings.check.ts`.
+- **Accounts through the account's log**: the phone writes who each of its Matrix, XMPP and Nostr accounts is (the
+  user, the address, the key's public half) as records of kind `account` (`followAccounts` in `lib/devices.ts`, once a
+  minute while a device is linked, `who` in `lib/linked-accounts.ts`), and gives the accounts again to every linked
+  device as one appears or changes. A device lets go of an account it brought once the log removes it
+  (`accountsFrom`), and of the one it brought before once another of that network comes in its place; one the log never
+  named stays, and so does one of the device's own. Secrets still go only in the `accounts` envelope, never in the log.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

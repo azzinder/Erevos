@@ -127,7 +127,6 @@ export const devices: Record<string, string> = {
     'Δεν στάλθηκε τίποτα: αυτός ο χώρος δεν έχει λογαριασμό Matrix, XMPP ή Nostr, ή περιμένουν ήδη πάρα πολλά για εκείνη τη συσκευή.',
   'Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.':
     'Δεν στάλθηκε τίποτα: αυτές οι κρυφές συνομιλίες δεν έχουν δικό τους λογαριασμό Matrix, XMPP ή Nostr, ή περιμένουν ήδη πάρα πολλά για εκείνη τη συσκευή.',
-  'Matrix, XMPP and Nostr accounts too': 'Και λογαριασμοί Matrix, XMPP και Nostr',
   'Accounts from the phone': 'Λογαριασμοί από το τηλέφωνο',
   'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, συνδέθηκε εδώ ως νέα συσκευή.',
   'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':

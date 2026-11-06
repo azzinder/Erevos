@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices).":
+    "**Tus cuentas de Matrix, XMPP y Nostr en cada dispositivo vinculado**: cada dispositivo vinculado las recibe solo, sin nada que elegir, y siguen los cambios del teléfono: la que cierres allí, o cambies por otra, se va también de los dispositivos. Ver [Dispositivos vinculados](#devices).",
   "**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":
     "**Los mismos ajustes en tus dispositivos vinculados**: el idioma y el aspecto cambiados en el teléfono o en un ordenador cambian también en los otros. Una foto detrás de las pantallas, las contraseñas, los PIN y lo que atañe a un solo dispositivo se quedan en cada uno. Un dispositivo puede guardar los suyos: **Los mismos ajustes en todos los dispositivos** en Dispositivos vinculados. Ver [Dispositivos vinculados](#devices).",
   "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":

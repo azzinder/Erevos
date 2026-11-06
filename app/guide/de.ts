@@ -3387,8 +3387,7 @@ So verknüpfst du einen Computer:
 2. Scanne den Code auf dem Telefon mit der Kamera: Erevos öffnet sich damit bei **Verknüpfte Geräte**. Oder kopiere
    den Code auf dem Computer, füge ihn auf dem Telefon unter **Code vom Computer** ein und tippe auf **Weiter**.
 3. Das Telefon zeigt den Namen des Computers und einen Code aus vier Gruppen von fünf Ziffern. Wähle, was vom Verlauf
-   übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**), ob **Auch Fotos und Dateien**
-   und ob **Auch Matrix-, XMPP- und Nostr-Konten**, und tippe dann auf **Verknüpfen**.
+   übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**), ob **Auch Fotos und Dateien**, und tippe dann auf **Verknüpfen**.
 4. Der Computer zeigt auch einen Code. Wenn es der des Telefons ist, tippe auf **Stimmen überein**. Wenn nicht, tippe
    auf **Stimmen nicht überein**: Jemand anderes hat vielleicht seinen QR-Code gelesen, und nichts ist an ihn gegangen.
 
@@ -3459,8 +3458,7 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   Schlüsseln und einer eigenen Liste seiner Geräte, von seinem eigenen Konto signiert, sodass seine Kontakte mit dieser
   Version direkt an den Platz des Computers schreiben. Seine Nachrichten, Kontakte, Gruppen, Anrufe, Fotos und Dateien
   und sein Chat mit mir selbst gehen zwischen den beiden Plätzen, wie die des Bereichs zwischen verknüpften Geräten, und
-  ebenso seine eigenen Matrix-, XMPP- und Nostr-Konten, mit **Auch Matrix-, XMPP- und Nostr-Konten** oder **Konten
-  senden**. Nichts davon zeigt sich im Bereich, auf seinen Bildschirmen oder auf seinen verknüpften Geräten, und die
+  ebenso seine eigenen Matrix-, XMPP- und Nostr-Konten, immer, und erneut, wenn sie sich ändern. Nichts davon zeigt sich im Bereich, auf seinen Bildschirmen oder auf seinen verknüpften Geräten, und die
   Verknüpfung des Bereichs trägt nie etwas von einem Platz: Was ein Platz von seiner Verknüpfung bewahrt, ist mit seinem
   eigenen Schlüssel verschlüsselt, zwischen Werten, die für die anderen Plätze für nichts angelegt sind, in einer Datei
   derselben Größe, ob ein Platz verknüpft ist oder keiner. Die Verknüpfung läuft, solange der Platz offen ist, und auch
@@ -3478,7 +3476,7 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   versteckte Chats ging. Ein Bereich, den ein zweites Passwort öffnet, verknüpft nur von innen, mit eigenen Geräten.
 - **Nachrichten erneut übertragen**, auf dem Telefon, sendet einen Zeitraum des Verlaufs erneut, mit seinen Reaktionen,
   Anheftungen, Stimmen und Sternen; was der Computer schon hat, wird nicht doppelt aufbewahrt.
-- **Matrix, XMPP und Nostr**: Mit **Auch Matrix-, XMPP- und Nostr-Konten** (zunächst an) meldet sich der Computer bei
+- **Matrix, XMPP und Nostr**: Jedes verknüpfte Gerät bekommt sie, und sie folgen den Änderungen auf dem Telefon: ein Konto, von dem es sich dort abmeldet oder das durch ein anderes ersetzt wird, geht auch von den Geräten. Der Computer meldet sich bei
   den Matrix- und XMPP-Konten dieses Bereichs an und übernimmt den Schlüssel seiner Nostr-Chats, jeweils als neues
   Gerät mit eigenen Schlüsseln: Das Telefon behält seine. Bei einem Computer, der schon verknüpft ist, tippe auf dem
   Telefon unter ihm auf **Konten senden**. XMPP und Nostr kommen von selbst. Ein Matrix-Server lässt das Telefon nur

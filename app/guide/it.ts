@@ -3196,8 +3196,7 @@ Per collegare un computer:
 2. Sul telefono, scansiona il codice con la fotocamera: Erevos si apre su **Dispositivi collegati** con quel codice.
    Oppure copia il codice sul computer, incollalo sul telefono sotto **Codice dal computer**, e tocca **Avanti**.
 3. Il telefono mostra il nome del computer e un codice di quattro gruppi di cinque cifre. Scegli quanta cronologia passa
-   (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**), se **Anche foto e file** e se **Anche account
-   Matrix, XMPP e Nostr**, poi tocca **Collega**.
+   (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**), se **Anche foto e file**, poi tocca **Collega**.
 4. Anche il computer mostra un codice. Se è quello del telefono, tocca **Coincidono**. Se no, tocca **Sono diversi**:
    qualcun altro potrebbe aver letto il suo codice QR, e non gli è arrivato nulla.
 
@@ -3267,7 +3266,7 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   allora un collegamento suo, con chiavi sue e un suo elenco di dispositivi, firmato dal suo account, così i suoi
   contatti con questa versione scrivono direttamente al posto del computer. I suoi messaggi, contatti, gruppi, chiamate,
   foto e file e la sua Chat con me stesso vanno tra i due posti come quelli dello spazio tra dispositivi collegati, e
-  così i suoi account Matrix, XMPP e Nostr, con **Anche account Matrix, XMPP e Nostr** o **Invia gli account**. Niente
+  così i suoi account Matrix, XMPP e Nostr, sempre, e di nuovo quando cambiano. Niente
   di tutto questo si vede nello spazio, nelle sue schermate o sui suoi dispositivi collegati, e il collegamento dello
   spazio non porta mai niente di un posto: quello che un posto tiene del suo collegamento è crittografato con la sua
   chiave, tra valori fatti per niente per gli altri posti, in un file della stessa dimensione che un posto sia collegato
@@ -3286,7 +3285,7 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 - **Trasferisci di nuovo i messaggi**, sul telefono, invia di nuovo un periodo della cronologia, con le sue reazioni,
   i messaggi fissati, i voti e quelli segnati come importanti; quello che il computer ha già non viene conservato due
   volte.
-- **Matrix, XMPP e Nostr**: con **Anche account Matrix, XMPP e Nostr** (attivo all’inizio), il computer accede agli
+- **Matrix, XMPP e Nostr**: ogni dispositivo collegato li riceve, e seguono i cambiamenti sul telefono: un account da cui si esce lì, o sostituito da un altro, se ne va anche dai dispositivi. Il computer accede agli
   account Matrix e XMPP di questo spazio e prende la chiave delle sue chat Nostr, ciascuno come nuovo dispositivo a
   sé: il telefono tiene il suo. Per un computer già collegato, tocca **Invia gli account** sotto di esso sul telefono.
   XMPP e Nostr arrivano da soli. Un server Matrix di rado lascia che il telefono faccia accedere un nuovo dispositivo:

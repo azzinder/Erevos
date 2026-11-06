@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices).":
+    "**Οι λογαριασμοί σου Matrix, XMPP και Nostr σε κάθε συνδεδεμένη συσκευή**: κάθε συνδεδεμένη συσκευή τους παίρνει μόνη της, χωρίς επιλογή, και ακολουθούν τις αλλαγές στο τηλέφωνο: όποιον βγεις από εκεί, ή αλλάξεις με άλλον, φεύγει και από τις συσκευές. Δες [Συνδεδεμένες συσκευές](#devices).",
   "**Same settings on your linked devices**: the language and the look changed on the phone or a computer change on the others too. A photo behind the screens, passwords, PINs and what is about one device alone stay on each. A device can keep its own: **Same settings on every device** in Linked devices. See [Linked devices](#devices).":
     "**Ίδιες ρυθμίσεις στις συνδεδεμένες συσκευές**: η γλώσσα και η εμφάνιση που αλλάζεις στο τηλέφωνο ή σε έναν υπολογιστή αλλάζουν και στις άλλες. Μια φωτογραφία πίσω από τις οθόνες, οι κωδικοί, τα PIN και ό,τι αφορά μία μόνο συσκευή μένουν στην καθεμία. Μια συσκευή μπορεί να κρατά τις δικές της: **Ίδιες ρυθμίσεις σε όλες τις συσκευές** στις Συνδεδεμένες συσκευές. Δες [Συνδεδεμένες συσκευές](#devices).",
   "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":

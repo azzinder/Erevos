@@ -31,8 +31,8 @@ import { space } from '../theme/colors';
 // Nothing goes anywhere until Link is tapped on the phone, and the chats only once They match is
 // tapped on the computer. On a computer or in a browser Link to my phone comes first, with LPHL's
 // relay filled in and its sign-in under the token, so a token never has to be copied over. The
-// space's Matrix, XMPP and Nostr accounts go with the link when chosen, or later with Send the
-// accounts (lib/linked-accounts.ts); the linked device says which it has from the phone, and asks
+// space's Matrix, XMPP and Nostr accounts go with every link, follow as they change, or go again
+// with Send the accounts (lib/linked-accounts.ts); the linked device says which it has from the phone, and asks
 // for the Matrix sign-in when the homeserver gave no token for it.
 //
 // Opened from hidden chats (`hidden=1`, or a code the camera opened while they are open beneath,
@@ -99,7 +99,6 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const [asked, setAsked] = useState<{ name: string; code: string } | null>(null);
   const [period, setPeriod] = useState<Period>('all');
   const [files, setFiles] = useState(true);
-  const [accounts, setAccounts] = useState(true);
   const [again, setAgain] = useState<string | null>(null);
   // Whether this device has the same settings as the account's other devices (lib/sync/settings.ts).
   const [shared, setShared] = useState(settingsShared);
@@ -237,7 +236,7 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const link = () =>
     run(async () => {
       if (!links || !asked) return;
-      await links.link({ since: sinceOf(period), files, accounts }, t('Phone'));
+      await links.link({ since: sinceOf(period), files }, t('Phone'));
       setAsked(null);
       setPasted('');
       setNote(t('Now the computer shows a code too. If it is {code}, tap They match there.', { code: asked.code }));
@@ -312,7 +311,6 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
       </Field>
       <Row wrap>
         <Chip label={t('Photos and files too')} selected={files} onPress={() => setFiles(!files)} />
-        {!again ? <Chip label={t('Matrix, XMPP and Nostr accounts too')} selected={accounts} onPress={() => setAccounts(!accounts)} /> : null}
       </Row>
     </>
   );

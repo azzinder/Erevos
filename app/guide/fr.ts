@@ -3363,7 +3363,7 @@ Pour associer un ordinateur :
    **Suivant**.
 3. Le téléphone affiche le nom de l’ordinateur et un code de quatre groupes de cinq chiffres. Choisis ce qui part de
    l’historique (**Tout**, **Le dernier mois**, **La dernière semaine** ou **Aucun**), si **Les photos et fichiers
-   aussi** et si **Les comptes Matrix, XMPP et Nostr aussi**, puis appuie sur **Associer**.
+   aussi**, puis appuie sur **Associer**.
 4. L’ordinateur affiche aussi un code. Si c’est celui du téléphone, appuie sur **Ils correspondent**. Sinon, appuie sur
    **Ils sont différents** : quelqu’un d’autre a peut-être lu son code QR, et rien ne lui est parvenu.
 
@@ -3435,8 +3435,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   alors sa propre association, avec ses propres clés et sa propre liste d’appareils, signée par son propre compte, si
   bien que ses contacts sur cette version écrivent directement à l’emplacement de l’ordinateur. Ses messages, contacts,
   groupes, appels, photos et fichiers et sa Discussion avec moi-même vont entre les deux emplacements comme ceux de
-  l’espace entre appareils associés, et de même ses propres comptes Matrix, XMPP et Nostr, avec **Les comptes Matrix,
-  XMPP et Nostr aussi** ou **Envoyer les comptes**. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses
+  l’espace entre appareils associés, et de même ses propres comptes Matrix, XMPP et Nostr, toujours, et à nouveau quand ils changent. Rien de cela ne se voit dans l’espace, sur ses écrans ou sur ses
   appareils associés, et l’association de l’espace n’emporte jamais rien d’un emplacement : ce qu’un emplacement garde
   de son association est chiffré avec sa propre clé, parmi des valeurs faites pour rien pour les autres emplacements,
   dans un fichier de même taille qu’un emplacement soit associé ou aucun. L’association fonctionne tant que
@@ -3456,7 +3455,7 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   lui.
 - **Transférer de nouveau les messages**, sur le téléphone, renvoie une période de l’historique, avec ses réactions,
   épingles, votes et étoiles ; ce que l’ordinateur a déjà n’est pas gardé deux fois.
-- **Matrix, XMPP et Nostr** : avec **Les comptes Matrix, XMPP et Nostr aussi** (activé au départ), l’ordinateur se
+- **Matrix, XMPP et Nostr** : chaque appareil associé les reçoit, et ils suivent les changements du téléphone : un compte déconnecté là-bas, ou remplacé par un autre, part aussi des appareils. L’ordinateur se
   connecte aux comptes Matrix et XMPP de cet espace et prend la clé de ses discussions Nostr, chacun comme un nouvel
   appareil à lui : le téléphone garde le sien. Pour un ordinateur déjà associé, appuie sur **Envoyer les comptes**
   sous lui, sur le téléphone. XMPP et Nostr arrivent d’eux-mêmes. Un serveur Matrix laisse rarement le téléphone

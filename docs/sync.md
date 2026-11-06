@@ -108,6 +108,20 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
 - The notes of Chat with myself stay on their own way: a voice message or file is far beyond what a
   value of the log may hold (16 KB).
 
+## Phase S2, second part: the accounts on other networks
+
+- Every linked device gets the space's Matrix, XMPP and Nostr accounts (a hidden place's: its own),
+  always (the owner's choice, 2026-11-06): once the codes match, and again as they change.
+- The phone follows who they are (`followAccounts`, once a minute while a device is linked): a
+  record of kind `account` for each network (`matrix`, `xmpp`, `nostr`), who it is in field `v`
+  (the user, the address, the Nostr key's public half). One that appears or changes gives the
+  accounts again to every device, in the `accounts` envelope as before: the secrets never go into
+  the log, which every device keeps.
+- One signed out of on the phone is removed from the log, and each device lets go of the one it
+  brought of it (`accountsFrom`). One given in place of another of the same network replaces the one
+  brought before (lib/linked-accounts.ts `take`, `had`). A device's own account stays, and so does
+  one the log never named (a phone that has not followed them yet).
+
 ## Next
 
-The accounts on other networks (Matrix, XMPP, Nostr) onto the log, the rest of phase S2.
+Phase S3: a snapshot of the log for a device new or long away, and the log over the LAN.

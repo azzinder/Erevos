@@ -127,7 +127,6 @@ export const devices: Record<string, string> = {
     'No se envió nada: este espacio no tiene ninguna cuenta de Matrix, XMPP ni Nostr, o ya hay demasiado esperando a ese dispositivo.',
   'Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.':
     'No se envió nada: estos chats ocultos no tienen cuenta propia de Matrix, XMPP ni Nostr, o ya espera demasiado para ese dispositivo.',
-  'Matrix, XMPP and Nostr accounts too': 'También cuentas de Matrix, XMPP y Nostr',
   'Accounts from the phone': 'Cuentas del teléfono',
   'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, con la sesión iniciada aquí como un dispositivo nuevo.',
   'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':

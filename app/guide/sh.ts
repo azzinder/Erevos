@@ -3060,8 +3060,7 @@ Da povežete računar:
 2. Na telefonu skenirajte kod kamerom: Erevos se otvara na **Povezani uređaji** s njim. Ili kopirajte kod na
    računaru, zalijepite ga na telefonu pod **Kod s računara** i dodirnite **Dalje**.
 3. Telefon prikazuje ime računara i kod od četiri grupe po pet cifara. Izaberite koji dio historije ide (**Sve**,
-   **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**), da li **I fotografije i datoteke** i da li **I računi
-   Matrix, XMPP i Nostr**, a zatim dodirnite **Poveži**.
+   **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**), da li **I fotografije i datoteke**, a zatim dodirnite **Poveži**.
 4. I računar prikazuje kod. Ako je isti kao na telefonu, dodirnite **Podudaraju se**. Ako nije, dodirnite **Razlikuju
    se**: neko drugi je možda pročitao njegov QR kod, a njemu ništa nije otišlo.
 
@@ -3124,8 +3123,7 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   drugo, jednostavno nestane, a **Poveži s mojim telefonom** počinje ispočetka na računaru. Mjesto tada ima vlastitu vezu, s vlastitim ključevima i vlastitim
   popisom uređaja, koji potpisuje njegov vlastiti račun, pa njegovi kontakti s ovom verzijom pišu izravno na mjesto
   računara. Njegove poruke, kontakti, grupe, pozivi, fotografije i datoteke i njegov Razgovor sa sobom idu između dva
-  mjesta kao oni prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, s **I računi
-  Matrix, XMPP i Nostr** ili **Pošalji račune**. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na
+  mjesta kao oni prostora između povezanih uređaja, a tako i njegovi vlastiti računi Matrix, XMPP i Nostr, uvijek, i ponovo kad se promijene. Ništa od toga se ne vidi u prostoru, na njegovim ekranima ni na
   njegovim povezanim uređajima, a veza prostora nikad ne nosi ništa od nekog mjesta: ono što mjesto čuva o svojoj vezi
   šifrirano je njegovim vlastitim ključem, među vrijednostima napravljenim ni za šta za ostala mjesta, u datoteci iste
   veličine bilo da je neko mjesto povezano ili nijedno. Veza radi dok je mjesto otvoreno, i dok je zatvoreno ako je
@@ -3142,7 +3140,7 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   uređajima.
 - **Ponovo prenesi poruke**, na telefonu, ponovo šalje dio historije, s njegovim reakcijama, prikvačenim porukama,
   glasovima i zvjezdicama; ono što računar već ima ne čuva se dvaput.
-- **Matrix, XMPP i Nostr**: s **I računi Matrix, XMPP i Nostr** (isprva uključeno) računar se prijavljuje na Matrix i
+- **Matrix, XMPP i Nostr**: dobija ih svaki povezani uređaj, i prate promjene na telefonu: račun iz kojeg se tamo odjavi, ili zamijenjen drugim, nestaje i s uređaja. Računar se prijavljuje na Matrix i
   XMPP račune ovog prostora i uzima ključ njegovih Nostr razgovora, svaki kao novi uređaj za sebe: telefon zadržava
   svoj. Za računar koji je već povezan dodirnite na telefonu **Pošalji račune** ispod njega. XMPP i Nostr stižu sami.
   Matrix server rijetko dopušta da telefon prijavi novi uređaj: tada to kaže **Povezani uređaji** na računaru, a

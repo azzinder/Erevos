@@ -8,7 +8,7 @@ import { loadNostrDm } from '../lock/nostr-dm-data';
 import { hiddenHolder } from '../lock/sealed-file';
 import { loadXmpp } from '../lock/xmpp-data';
 import { canMatrix, canNostrChat, canXmpp } from './core';
-import { handAccounts, placeLinksNow, spaceLinks } from './devices';
+import { handAccounts, placeLinksNow, spaceLinks, type AccountsWho } from './devices';
 import { openHiddenPlace } from './hidden-contacts';
 import type { GivenAccounts, GivenMatrix } from './link-wire';
 import { loginToken } from './matrix-account';
@@ -59,14 +59,39 @@ async function give(space: number, key: Uint8Array, pocket: number | null): Prom
   return given;
 }
 
+// Who each account of the space (or of its hidden place) is, for the phone to follow in the log:
+// the Matrix user, the XMPP address, the Nostr key's public half; none where there is no account.
+// The Nostr key's public half is known only while its account runs: else it is left unsaid.
+async function who(space: number, key: Uint8Array, pocket: number | null): Promise<AccountsWho> {
+  const holder = pocket === null ? 'space' : hiddenHolder(pocket);
+  const [matrix, xmpp, nostr] = await Promise.all([loadMatrix(space, key, holder), loadXmpp(space, key, holder), loadNostrDm(space, key, holder)]);
+  const nostrPublic = nostr ? await nostrDmPublicOf(space, placeOf(key, pocket)).catch(() => null) : null;
+  return {
+    matrix: matrix?.userId ?? null,
+    xmpp: xmpp?.jid ?? null,
+    ...(nostr && !nostrPublic ? {} : { nostr: nostrPublic }),
+  };
+}
+
 const why = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
-async function take(space: number, key: Uint8Array, given: GivenAccounts, pocket: number | null): Promise<{ left: GivenAccounts; brought: Brought; problems: string[] }> {
+async function take(space: number, key: Uint8Array, given: GivenAccounts, pocket: number | null, had: Brought = {}): Promise<{ left: GivenAccounts; brought: Brought; gone: (keyof Brought)[]; problems: string[] }> {
   const place = placeOf(key, pocket);
   const left: GivenAccounts = {};
   const brought: Brought = {};
+  const gone: (keyof Brought)[] = [];
   const problems: string[] = [];
   const { xmpp, nostr, matrix } = given;
+  // An account the phone gave before, and now another of that network in its place: the one brought
+  // from it goes first, so the new one comes in its place. One of this device's own stays.
+  if (xmpp && had.xmpp && had.xmpp !== xmpp.jid && canXmpp()) {
+    await xmppLetGo(space, had.xmpp, place).catch(() => undefined);
+    gone.push('xmpp');
+  }
+  if (matrix && had.matrix && had.matrix.userId !== matrix.userId && canMatrix()) {
+    await matrixLetGo(space, had.matrix, place).catch(() => undefined);
+    gone.push('matrix');
+  }
   // A build without the network keeps it, for one that has it.
   if (xmpp && !canXmpp()) left.xmpp = xmpp;
   else if (xmpp) {
@@ -82,7 +107,13 @@ async function take(space: number, key: Uint8Array, given: GivenAccounts, pocket
   if (nostr && !canNostrChat()) left.nostr = nostr;
   else if (nostr) {
     try {
-      const done = await nostrDmTake(space, nostr, place);
+      let done = await nostrDmTake(space, nostr, place);
+      // Another key here: the one brought from the phone before, which goes for the new one.
+      if (done === 'other' && had.nostr) {
+        await nostrDmLetGo(space, had.nostr, place).catch(() => undefined);
+        gone.push('nostr');
+        done = await nostrDmTake(space, nostr, place);
+      }
       if (done === null) left.nostr = nostr;
       const publicKey = done === 'brought' ? await nostrDmPublicOf(space, place) : undefined;
       if (publicKey) brought.nostr = publicKey;
@@ -112,7 +143,7 @@ async function take(space: number, key: Uint8Array, given: GivenAccounts, pocket
       problems.push(`Matrix: ${why(error)}`);
     }
   }
-  return { left, brought, problems };
+  return { left, brought, gone, problems };
 }
 
 async function letGo(space: number, key: Uint8Array, brought: Brought, pocket: number | null): Promise<void> {
@@ -122,7 +153,7 @@ async function letGo(space: number, key: Uint8Array, brought: Brought, pocket: n
   if (brought.matrix && canMatrix()) await matrixLetGo(space, brought.matrix, place).catch(() => undefined);
 }
 
-handAccounts({ give, take, letGo });
+handAccounts({ give, who, take, letGo });
 
 /** On a linked device: the Matrix account the phone gave, while it waits to be signed in to here by hand. */
 export function matrixWaiting(given: GivenAccounts | undefined): GivenMatrix | null {

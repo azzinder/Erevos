@@ -47,7 +47,7 @@ import { acceptConversation, accountBundle, accountIdentity, newAccount, open as
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
-import { handAccounts, Links, type HistoryChoice } from '../lib/devices';
+import { handAccounts, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -110,7 +110,7 @@ import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
 import { contactsIn } from '../lib/sync/contacts';
-import type { Json as SyncJson } from '../lib/sync/log';
+import { valueOf as syncValueOf, type Json as SyncJson } from '../lib/sync/log';
 import { onSettingCame } from '../lib/sync/settings';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
@@ -627,7 +627,7 @@ test('the accounts a device is given: only what each is, as said and as kept', (
   assert.deepEqual(back?.k === 'accounts' ? back.xmpp : null, said.xmpp);
 });
 
-test('the space\'s Matrix, XMPP and Nostr accounts go to a device linked with them, are brought there as far as it can, and go once it is unlinked', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+test('the space\'s Matrix, XMPP and Nostr accounts go to every device linked, are brought there as far as it can, follow as they change, and go once it is unlinked', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
   const { phone, take, linkUp, reopen } = await setup();
   const pixel = await phone(0);
   const dell = await phone(1);
@@ -639,11 +639,15 @@ test('the space\'s Matrix, XMPP and Nostr accounts go to a device linked with th
     nostr: { secret: 'ab'.repeat(32), inbox: ['wss://relay.example.org'], name: 'Nek' },
   };
   const took: { space: number; given: GivenAccounts }[] = [];
+  const tookBy = (space: number) => took.filter((t) => t.space === space);
   const gone: { space: number; brought: Brought }[] = [];
+  // Who the phone's accounts are, as it follows them: not known until said.
+  let who: AccountsWho = {};
   // The Matrix account waits for its sign-in on the computer; XMPP and Nostr come at once.
   let signedIn = false;
   handAccounts({
     give: async (space) => (space === 0 ? given : {}),
+    who: async () => who,
     take: async (space, _key, said) => {
       took.push({ space, given: said });
       if (signedIn) return { left: {}, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' } }, problems: [] };
@@ -653,24 +657,25 @@ test('the space\'s Matrix, XMPP and Nostr accounts go to a device linked with th
       gone.push({ space, brought });
     },
   });
+  const follow = (p: Phone) => (p.links as unknown as { followAccounts(): Promise<void> }).followAccounts();
   try {
-    // Linked without them: none go.
+    // Linked, chosen or not: they go once the codes match, and each device brings them.
     await linkUp(pixel, lap, { since: null, files: false });
-    // Linked with them: they go once the codes match, and the computer brings them.
     await linkUp(pixel, dell, { since: null, files: false, accounts: true });
     await until(async () => {
       await pixel.links.settled();
       await take(dell);
-      return took.length > 0;
+      await take(lap);
+      return tookBy(1).length > 0 && tookBy(2).length > 0;
     });
-    await take(lap);
-    assert.deepEqual(took, [{ space: 1, given }]);
-    assert.deepEqual(dell.links.accountsHere(), { left: { matrix: { ...given.matrix, waited: true } }, brought: { xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) }, problems: ['Matrix: waits'] });
-    assert.equal(lap.links.accountsHere(), null);
+    assert.deepEqual([tookBy(1), tookBy(2)], [[{ space: 1, given }], [{ space: 2, given }]]);
+    const waiting = { left: { matrix: { ...given.matrix, waited: true } }, brought: { xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) }, problems: ['Matrix: waits'] };
+    assert.deepEqual(dell.links.accountsHere(), waiting);
+    assert.deepEqual(lap.links.accountsHere(), waiting);
     // What is still to bring is kept, and tried again as the space opens: once signed in to Matrix there, its keys go.
     signedIn = true;
     await reopen(dell);
-    assert.deepEqual(took[1], { space: 1, given: { matrix: { ...given.matrix, waited: true } } });
+    assert.deepEqual(tookBy(1)[1], { space: 1, given: { matrix: { ...given.matrix, waited: true } } });
     assert.deepEqual(dell.links.accountsHere(), { left: {}, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' }, xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) }, problems: [] });
 
     // Sent again from the phone, to that device only.
@@ -682,15 +687,55 @@ test('the space\'s Matrix, XMPP and Nostr accounts go to a device linked with th
     assert.deepEqual(await dell.links.giveAccounts(dellId), []);
     await until(async () => {
       await take(dell);
-      return took.length === 3;
+      return tookBy(1).length === 3;
     });
     await take(lap);
-    assert.equal(took.length, 3);
+    assert.equal(tookBy(2).length, 1);
+
+    // The phone follows who they are in the log: named the first time, so given to every device
+    // again; the same again, given to none.
+    who = { matrix: '@nek:example.org', xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) };
+    await follow(pixel);
+    await until(async () => {
+      await pixel.links.settled();
+      await take(dell);
+      await take(lap);
+      return tookBy(1).length === 4 && tookBy(2).length === 2;
+    });
+    const logged = (await pixel.links.syncLog())!;
+    assert.deepEqual(['matrix', 'xmpp', 'nostr'].map((n) => syncValueOf(logged, 'account', n, 'v')), ['@nek:example.org', 'nek@example.org', 'cd'.repeat(32)]);
+    await follow(pixel);
+    await pixel.links.settled();
+    await take(dell);
+    await take(lap);
+    assert.deepEqual([tookBy(1).length, tookBy(2).length], [4, 2]);
+
+    // Signed out of XMPP on the phone: each device lets go of the one it brought, and keeps the rest.
+    who = { ...who, xmpp: null };
+    await follow(pixel);
+    await until(async () => {
+      await pixel.links.settled();
+      await take(dell);
+      await take(lap);
+      await dell.links.settled();
+      await lap.links.settled();
+      return gone.length === 2;
+    });
+    assert.deepEqual(
+      [...gone].sort((a, b) => a.space - b.space),
+      [
+        { space: 1, brought: { xmpp: 'nek@example.org' } },
+        { space: 2, brought: { xmpp: 'nek@example.org' } },
+      ],
+    );
+    assert.equal(dell.links.accountsHere()?.brought.xmpp, undefined);
+    assert.equal(dell.links.accountsHere()?.brought.nostr, 'cd'.repeat(32));
+    gone.length = 0;
 
     // Unlinked: the computer lets go of what it brought, and keeps nothing of it.
     await dell.links.unlink();
     await dell.links.settled();
-    assert.deepEqual(gone, [{ space: 1, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' }, xmpp: 'nek@example.org', nostr: 'cd'.repeat(32) } }]);
+    assert.deepEqual(gone, [{ space: 1, brought: { matrix: { userId: '@nek:example.org', deviceId: 'DELL' }, nostr: 'cd'.repeat(32) } }]);
     assert.equal(dell.links.accountsHere(), null);
     const kept = await loadDevicesData(1, dell.key);
     assert.deepEqual([kept.given, kept.brought], [undefined, undefined]);
@@ -3686,6 +3731,7 @@ test('a hidden place links on its own: its own link and list, messages both ways
   const gone: { space: number; pocket: number | null; brought: Brought }[] = [];
   handAccounts({
     give: async (space, _key, pocket) => (space === 0 && pocket === 2 ? given : {}),
+    who: async () => ({}),
     take: async (space, _key, said, pocket) => {
       took.push({ space, pocket, given: said });
       return { left: {}, brought: { xmpp: said.xmpp!.jid }, problems: [] };

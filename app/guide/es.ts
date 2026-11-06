@@ -3180,8 +3180,7 @@ Para vincular un ordenador:
 2. En el teléfono, escanea el código con la cámara: Erevos se abre en **Dispositivos vinculados** con él. O copia el
    código en el ordenador, pégalo en el teléfono en **Código del ordenador**, y toca **Siguiente**.
 3. El teléfono muestra el nombre del ordenador y un código de cuatro grupos de cinco dígitos. Elige qué parte del
-   historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**), si **También fotos y archivos** y
-   si **También cuentas de Matrix, XMPP y Nostr**, y luego toca **Vincular**.
+   historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**), si **También fotos y archivos**, y luego toca **Vincular**.
 4. El ordenador también muestra un código. Si es el del teléfono, toca **Coinciden**. Si no, toca **No coinciden**:
    puede que otra persona leyera su código QR, y no le llegó nada.
 
@@ -3252,8 +3251,7 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   entonces un vínculo propio, con claves propias y su propia lista de dispositivos, firmada por su propia cuenta, así
   que sus contactos con esta versión escriben directamente al lugar del ordenador. Sus mensajes, contactos, grupos,
   llamadas, fotos y archivos y su Chat conmigo van entre los dos lugares como los del espacio entre dispositivos
-  vinculados, y también sus propias cuentas de Matrix, XMPP y Nostr, con **También cuentas de Matrix, XMPP y Nostr** o
-  **Enviar las cuentas**. Nada de esto se ve en el espacio, en sus pantallas ni en sus dispositivos vinculados, y el
+  vinculados, y también sus propias cuentas de Matrix, XMPP y Nostr, siempre, y de nuevo cuando cambian. Nada de esto se ve en el espacio, en sus pantallas ni en sus dispositivos vinculados, y el
   vínculo del espacio nunca lleva nada de un lugar: lo que un lugar guarda de su vínculo va cifrado con su propia clave,
   entre valores hechos para nada para los demás lugares, en un archivo del mismo tamaño se vincule algún lugar o
   ninguno. El vínculo funciona mientras el lugar está abierto, y también cerrado si **Recibir estando cerrados** está
@@ -3270,7 +3268,7 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   segunda contraseña solo se vincula desde dentro, a dispositivos propios.
 - **Volver a traer los mensajes**, en el teléfono, vuelve a enviar un periodo del historial, con sus reacciones,
   mensajes fijados, votos y estrellas; lo que el ordenador ya tiene no se guarda dos veces.
-- **Matrix, XMPP y Nostr**: con **También cuentas de Matrix, XMPP y Nostr** (activado al principio), el ordenador
+- **Matrix, XMPP y Nostr**: todos los dispositivos vinculados las reciben, y siguen los cambios del teléfono: una cuenta cerrada allí, u otra en su lugar, se va también de los dispositivos. El ordenador
   inicia sesión en las cuentas de Matrix y XMPP de este espacio y toma la clave de sus chats de Nostr, cada una como
   un dispositivo nuevo propio: el teléfono conserva el suyo. Para un ordenador ya vinculado, toca **Enviar las
   cuentas** bajo él en el teléfono. XMPP y Nostr llegan solos. Un servidor de Matrix rara vez deja que el teléfono

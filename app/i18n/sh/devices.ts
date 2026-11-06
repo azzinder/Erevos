@@ -132,7 +132,6 @@ export const devices: Record<string, string> = {
     'Ništa nije poslano: ovaj prostor nema Matrix, XMPP ni Nostr račun, ili za taj uređaj već čeka previše.',
   'Nothing went: these hidden chats have no Matrix, XMPP or Nostr account of their own, or too much waits for that device already.':
     'Ništa nije poslano: ovi skriveni razgovori nemaju vlastiti Matrix, XMPP ili Nostr račun, ili za taj uređaj već čeka previše.',
-  'Matrix, XMPP and Nostr accounts too': 'I računi Matrix, XMPP i Nostr',
   'Accounts from the phone': 'Računi s telefona',
   'Matrix: {id}, signed in here as a new device.': 'Matrix: {id}, prijavljen ovdje kao novi uređaj.',
   'Matrix: sign in to {id} here once, with its password. Its keys come from the phone, so no Security Key or check by emoji is needed.':

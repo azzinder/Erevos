@@ -2924,8 +2924,7 @@ To link a computer:
 2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
    computer, paste it on the phone under **Code from the computer**, and tap **Next**.
 3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes
-   (**All of it**, **The last month**, **The last week** or **None**), whether **Photos and files too** and whether
-   **Matrix, XMPP and Nostr accounts too**, then tap **Link**.
+   (**All of it**, **The last month**, **The last week** or **None**), whether **Photos and files too**, then tap **Link**.
 4. The computer shows a code too. If it is the phone's, tap **They match**. If not, tap **They differ**: someone else
    may have read its QR code, and nothing went to them.
 
@@ -2986,7 +2985,7 @@ The chats then come to the computer, and after them the messages chosen.
   place then has a link of its own, with keys of its own and its own list of devices, signed by its own account, so its
   contacts on this version write to the computer's place directly. Its messages, contacts, groups, calls, photos and
   files and its Chat with myself go between the two places as the space's go between linked devices, and so do its own
-  Matrix, XMPP and Nostr accounts, with **Matrix, XMPP and Nostr accounts too** or **Send the accounts**. Nothing of it
+  Matrix, XMPP and Nostr accounts, always, and again as they change. Nothing of it
   shows in the space, on its screens or on its linked devices, and the space's link never carries anything of a place:
   what a place keeps of its link is encrypted with its own key, among values made for nothing for the other places, in a
   file of the same size whether any place links or none. The link runs while the place is open, and while it is closed
@@ -3002,7 +3001,7 @@ The chats then come to the computer, and after them the messages chosen.
   space a second password opens links only from inside it, to devices of its own.
 - **Bring over messages again**, on the phone, sends a period of the history again, with its reactions, pins, votes
   and stars; what the computer has already is not kept twice.
-- **Matrix, XMPP and Nostr**: with **Matrix, XMPP and Nostr accounts too** (on at first), the computer signs in to
+- **Matrix, XMPP and Nostr**: every device linked gets them, and they follow as they change on the phone: an account signed out of there, or another in its place, goes from the devices too. The computer signs in to
   this space's Matrix and XMPP accounts and takes the key of its Nostr chats, each as a new device of its own: the
   phone keeps its own. For a computer linked already, tap **Send the accounts** under it on the phone. XMPP and Nostr
   come by themselves. A Matrix server seldom lets the phone sign a new device in: then **Linked devices** on the

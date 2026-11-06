@@ -142,7 +142,7 @@ import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './wai
 import { blockedFromLog, changesFor, checkedLookOf, setsFromLog, syncChangesOf } from './sync/contacts';
 import { SyncLinks, type SyncHeard, type Who } from './sync/links';
 import { onSettingChanged, settingCame, settingsNow } from './sync/settings';
-import { valueOf as syncValueOf, type Change as SyncChange, type Json as SyncJson, type Log as SyncLog } from './sync/log';
+import { isThere as isThereInLog, valueOf as syncValueOf, type Change as SyncChange, type Json as SyncJson, type Log as SyncLog } from './sync/log';
 import type { Said as SyncSaid } from './sync/wire';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
@@ -228,8 +228,10 @@ import type { Said as SyncSaid } from './sync/wire';
 // quiet, as it goes to the account's own queue (lib/space-chats.ts, sentMark); what it writes to a
 // contact itself goes to them marked as the phone's own would.
 //
-// The phone gives a device the space's own Matrix, XMPP and Nostr accounts too, once the codes
-// match when that was chosen, or when asked again later (`accounts`); a hidden place's links give
+// The phone gives every device the space's own Matrix, XMPP and Nostr accounts too, once the codes
+// match, again as they change (followAccounts, as the log's records of kind `account` say who each
+// is), or when asked again later (`accounts`); one the log no longer names, the devices let go of
+// (accountsFrom). A hidden place's links give
 // the place's own, never the space's. lib/linked-accounts.ts gives and brings them, and registers
 // itself here (handAccounts), so this file need not know the networks: the device signs in as a
 // new device of each, never a copy of the phone's, and lets go of what it brought once unlinked,
@@ -265,6 +267,8 @@ const ENDED_LASTS = 2 * 60_000;
 const DRAIN_EVERY = 60 * 60_000;
 // How often each side says how far it has the account's log (lib/sync/), besides each change.
 const SYNC_EVERY = 10 * 60_000;
+// How often the phone looks whether the accounts on other networks changed, for the devices.
+const ACCOUNTS_EVERY = 60_000;
 const DRAIN_MOST = 1000;
 // After the phone's queue moved for a contact deleted or blocked, a new device list at most this often.
 const RESIGN_EVERY = 60 * 60_000;
@@ -287,7 +291,7 @@ export type DeviceInfo = { id: string; name: string; since: number; heard: numbe
 /** What the links changed in the history: messages deleted, of a chat (`peer`) or one of its messages (`tag`). */
 export type LinkedChange = { gone: { peer: string; tag?: string }[] };
 
-/** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not; and whether the space's Matrix, XMPP and Nostr accounts go too. */
+/** What of the history a device is brought over: from `since` (milliseconds, 0 for all), or none (null), with photos and files or not. `accounts` is of before: the accounts go always now. */
 export type HistoryChoice = { since: number | null; files: boolean; accounts?: boolean };
 
 /**
@@ -298,9 +302,18 @@ export type HistoryChoice = { since: number | null; files: boolean; accounts?: b
  */
 export type AccountsHand = {
   give(space: number, key: Uint8Array, pocket: number | null): Promise<GivenAccounts>;
-  take(space: number, key: Uint8Array, given: GivenAccounts, pocket: number | null): Promise<{ left: GivenAccounts; brought: Brought; problems: string[] }>;
+  /** On the primary: who each account is, as the log follows them: none (null) where there is none, unsaid where not known now. */
+  who(space: number, key: Uint8Array, pocket: number | null): Promise<AccountsWho>;
+  /** `had`: those brought from the phone before, which one given in its place replaces. */
+  take(space: number, key: Uint8Array, given: GivenAccounts, pocket: number | null, had?: Brought): Promise<{ left: GivenAccounts; brought: Brought; gone?: (keyof Brought)[]; problems: string[] }>;
   letGo(space: number, key: Uint8Array, brought: Brought, pocket: number | null): Promise<void>;
 };
+
+/** Who the accounts on other networks are (AccountsHand.who): the Matrix user, the XMPP address, the Nostr key's public half. */
+export type AccountsWho = { matrix?: string | null; xmpp?: string | null; nostr?: string | null };
+
+/** The networks whose accounts the log follows, each a record of kind `account` by its name, who it is in field `v`. */
+const NETWORKS = ['matrix', 'xmpp', 'nostr'] as const;
 
 let hand: AccountsHand | null = null;
 
@@ -466,6 +479,8 @@ export class Links implements Link, TakenFiles {
   // linked device, what went wrong last bringing them.
   private accounts: Promise<unknown> = Promise.resolve();
   private accountsProblems: string[] = [];
+  // When the phone last looked who the accounts are (followAccounts); none yet, so the first tick does.
+  private accountsLooked = 0;
   // On a linked device: the contacts deleted (1) or blocked (2) here, until the phone is told.
   private readonly deletions = new Map<string, Deleted>();
   // The space's groups, and which of them go to the devices; on the primary, whether telling them is
@@ -1426,7 +1441,7 @@ export class Links implements Link, TakenFiles {
   // and the work after brings it the history chosen, up to now.
   private async ready(peer: Peer, name: string): Promise<void> {
     const now = Date.now();
-    const { accounts, ...linking } = peer;
+    const { accounts: _chosen, ...linking } = peer;
     await this.sendChanges(
       this.chats.e2e.contacts().map((c) => syncedOf(this.chats.e2e.record(c.identity)!)),
       peer.id,
@@ -1444,8 +1459,8 @@ export class Links implements Link, TakenFiles {
     await this.save({ ...this.data, devices: this.data.devices.map((d) => (d.id === peer.id ? linked : d)), link });
     // The contacts go now, with no history to wait for.
     void this.flush().catch(() => undefined);
-    // The accounts, if chosen, apart from the history, which may be long to go.
-    if (accounts) void this.aside(() => this.giveAccounts(peer.id));
+    // The accounts always go, apart from the history, which may be long to go.
+    void this.aside(() => this.giveAccounts(peer.id));
     this.act(() => this.bringHistory(peer.id));
     // The notes of Chat with myself, once it says it takes them.
     void this.noting(() => this.tellNotes());
@@ -1529,6 +1544,64 @@ export class Links implements Link, TakenFiles {
     if (log) this.settingsFrom({ log, took: [], whole: true });
   }
 
+  // On the primary: who the accounts on other networks are now, into the log should it say
+  // otherwise; and one there now that was not, or another in its place, given to every device linked,
+  // so each has all of them, as they change. One gone is removed from the log, and the devices let go
+  // of what they brought of it. What cannot be read now is left as the log says.
+  private async followAccounts(): Promise<void> {
+    if (!hand || this.data.primary || this.linked().length === 0) return;
+    const who = await hand.who(this.space, this.key, this.pocket).catch(() => null);
+    if (!who) return;
+    let give = false;
+    await this.syncs.writeFrom((log) => {
+      const changes: SyncChange[] = [];
+      for (const n of NETWORKS) {
+        const now = who[n];
+        if (now === undefined) continue;
+        const there = isThereInLog(log, 'account', n) ? syncValueOf(log, 'account', n, 'v') : null;
+        if (now === there) continue;
+        if (now === null) changes.push({ k: 'account', id: n, x: 'del' });
+        else {
+          if (!isThereInLog(log, 'account', n)) changes.push({ k: 'account', id: n, x: 'add' });
+          changes.push({ k: 'account', id: n, f: 'v', v: now });
+          give = true;
+        }
+      }
+      return changes;
+    });
+    if (give) for (const d of this.linked()) void this.aside(() => this.giveAccounts(d.id));
+  }
+
+  // On a linked device: an account the log no longer names, or names as another, lets go of the one
+  // brought from the phone for it. One of this device's own stays.
+  private accountsFrom({ log, took, whole }: SyncHeard): void {
+    const brought = this.data.brought;
+    if (!hand || !brought) return;
+    const ids = whole ? [...NETWORKS] : [...new Set(took.filter((op) => op.k === 'account').map((op) => op.id))];
+    const gone: Brought = {};
+    for (const n of NETWORKS) {
+      const had = brought[n];
+      // One the log never named (a phone that has not followed them yet) stays as it is.
+      if (!had || !ids.includes(n) || !log.data.account?.[n]) continue;
+      const there = isThereInLog(log, 'account', n) ? syncValueOf(log, 'account', n, 'v') : null;
+      const same = n === 'matrix' ? there === brought.matrix?.userId : there === had;
+      if (same) continue;
+      // Another in its place is brought as it comes, and replaces this one then.
+      if (there !== null && there !== undefined) continue;
+      Object.assign(gone, { [n]: had });
+    }
+    if (isEmpty(gone)) return;
+    void this.aside(async () => {
+      await hand?.letGo(this.space, this.key, gone, this.pocket).catch(() => undefined);
+      await this.run(async () => {
+        const kept: Brought = { ...this.data.brought };
+        for (const n of Object.keys(gone) as (keyof Brought)[]) delete kept[n];
+        await this.save({ ...this.data, brought: isEmpty(kept) ? undefined : kept });
+      });
+      this.announce();
+    });
+  }
+
   // The settings another device changed, as the space's log took them, put in place here.
   private settingsFrom({ log, took, whole }: SyncHeard): void {
     if (this.pocket !== null) return;
@@ -1547,6 +1620,7 @@ export class Links implements Link, TakenFiles {
     const none: Taken = { kind: 'taken', ...(place ? { contacts: place } : {}) };
     if (!heard || !this.data.primary) return none;
     this.settingsFrom(heard);
+    this.accountsFrom(heard);
     const { log, took, whole } = heard;
     const ids = whole ? [...new Set([...Object.keys(log.data.contact ?? {}), ...Object.keys(this.data.synced)])] : [...new Set(took.filter((op) => op.k === 'contact').map((op) => op.id))];
     const fns: ((contacts: Contact[]) => Contact[])[] = place ? [place] : [];
@@ -1761,12 +1835,14 @@ export class Links implements Link, TakenFiles {
   private async bringGiven(): Promise<void> {
     const given = this.data.given;
     if (!hand || !given || !this.data.primary || this.closed) return;
-    const { left, brought, problems } = await hand.take(this.space, this.key, given, this.pocket);
+    const { left, brought, gone, problems } = await hand.take(this.space, this.key, given, this.pocket, this.data.brought);
     this.accountsProblems = problems;
     const unlinked = await this.run(async () => {
       if (!this.data.primary) return true;
       const next = this.data.given === given ? left : this.data.given;
-      const all = { ...this.data.brought, ...brought };
+      const kept: Brought = { ...this.data.brought };
+      for (const n of gone ?? []) delete kept[n];
+      const all = { ...kept, ...brought };
       await this.save({ ...this.data, given: isEmpty(next) ? undefined : next, brought: isEmpty(all) ? undefined : all });
       return false;
     });
@@ -2786,6 +2862,10 @@ export class Links implements Link, TakenFiles {
     if (Date.now() - this.syncSaid >= SYNC_EVERY) {
       this.syncSaid = Date.now();
       void this.syncs.ask().catch(() => undefined);
+    }
+    if (!this.data.primary && Date.now() - this.accountsLooked >= ACCOUNTS_EVERY) {
+      this.accountsLooked = Date.now();
+      void this.followAccounts().catch(() => undefined);
     }
     // As notes are still to be told, or a device met since was not said to that this side takes them.
     if (this.notesLeft || this.notesTargets().some((target) => !this.notesTarget(target)?.notesSaid)) void this.noting(() => this.tellNotes());
