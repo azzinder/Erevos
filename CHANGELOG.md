@@ -99,8 +99,17 @@ On main, not released yet:
   text, PDFs in the built-in PDF viewer, music and videos open in Erevos's memory only, never as a plain copy on the
   disk, up to 1 GB each; the file closes and music or a video stops when the space locks or with the panic button.
   **Send to a chat** works as on the phone, **Save to the computer** asks first with the same warning, and **Open with
-  another app** is not offered there. The web app in a browser and Sailfish OS have no Collection. See
-  [Collection](#collection).
+  another app** is not offered there. See [Collection](#collection).
+- **The Collection in the browser and on Sailfish OS**: the web app, on an iPhone's home screen too, and Erevos on
+  Sailfish OS have the Collection module as well. **+** brings in a file with the browser's own picker, read a slice at
+  a time and encrypted as it is read, so a large one is never held whole. Its pieces go where the app's other files go:
+  in a browser its storage (IndexedDB), one write a piece; on Sailfish OS Erevos's own folder, one file a piece. When
+  the browser has no room left, the pieces already written are deleted, the catalogue stays as it was, and Erevos says
+  so. Photos, text, music and videos open in memory only, up to 256 MB each, made from the decrypted pieces without a
+  second copy, and let go of when the space locks. A PDF is not shown there, as the page may not frame it: it is saved
+  to be read with another app. **Save to this device** (**Save to phone** on Sailfish OS) asks first and takes files up
+  to 256 MB. The WebDAV copy is offered where backups can go to a server: in a browser, a server that lets the web app
+  in, and not on Sailfish OS. See [Collection](#collection).
 - **Files up to 4 GB in the Collection**: a file of the Collection can be up to 4 GB. On Android a file picked from the
   phone's files is encrypted as it is read, straight from where it lies, with no plain copy in Erevos's cache first:
   it comes in faster and needs no room for it twice. See [Collection](#collection).
