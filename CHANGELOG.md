@@ -123,9 +123,33 @@ On main, not released yet:
   relay, whoever runs both could guess by the times alone). The token comes within the hour, lasts 90 days, and Erevos
   takes a new coupon by itself on a random day between day 30 and day 60. Needs a build with Tor (Android), and relays whose operators turned coupons
   on. See [Home relay](#home-relay).
+- **Shared into the Collection with no plain copy**: a photo or file another app shares with Erevos is encrypted as it
+  comes in, before **Send to** opens, so on its way into the Collection it never lies unencrypted on the phone; a chat
+  it goes to instead reads it from those encrypted pieces. See [Collection](#collection).
+- **See a file come from the WebDAV server**: a file of the Collection that is not on this device, as after a backup
+  restored on a new phone, shows how much of it has come from the server, and **Cancel** stops it; what came stays,
+  and the next time only the rest comes. Music, videos, PDFs and **Open with another app** fetch it first too,
+  instead of failing. See [Collection](#collection).
 
 ### Under the hood
 
+- **Shares encrypted as they come** (`modules/erevos-collection`, `ShareActivity.kt`, `SharedIn.kt`): Send to's
+  Android screen moves from `erevos-device` to the Collection's module, beside the Sealer, and encrypts a shared photo
+  or file into the Collection's chunks while Android lets it be read, with a random key held in memory only; its
+  link says only the file's id (`sealed`). A photo's size and small picture are drawn there in memory. The Collection
+  takes the chunks as they are (`importShared`, `addSealedToCollection`); a chat reads them as it sends, a photo from
+  a plain copy deleted once read, as before. The next share, the panic button, or leaving Send to deletes them; a note
+  in the cache names chunks left by an Erevos that stopped first. `checks/share-in.check.ts`.
+- **Fetching a file's missing chunks says how far it is** (`lock/collection-data.ts` `FillOptions`, `fillItemHere`;
+  `lib/collection-webdav.ts` `fetchMissingChunks`): chunks here of all and bytes, with an `AbortSignal` that stops it
+  between chunks (`FillStoppedError`) and keeps what came; which chunks are here comes from one list of the folder,
+  none read. The viewer, the PDF reader, the player and Open with another app show it, with Cancel and Go on
+  (`components/collection-fetch.tsx`).
+- **Backups skip what is on the WebDAV server after a restart too**: the server record keeps a mark of the chunks the
+  catalogue named when its copies were last complete (`whole`, a SHA-256 of their names and sizes, `wholeMark`),
+  saved without counting as a change; on load the copies count as complete when the catalogue still names those very
+  chunks (`serverHoldsAll`). Any file added or deleted changes the mark. **The connection works.** in a Collection's
+  settings is now in the colour of success, not of a warning. `checks/collection-webdav.check.ts`.
 - **A holder of the groups that moves (sync phase S6)**: the account's one MLS state moves between the phone and a
   linked device in two steps: wiped where it was and kept as it went in one save (lib/groups.ts `moveOut`,
   `GroupData.handed`), put on the relay as a file (`hold`), and let go of only once the other side says it took it
