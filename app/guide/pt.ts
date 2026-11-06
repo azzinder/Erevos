@@ -274,7 +274,7 @@ toque no idioma, cada um com o nome na própria língua: **Ελληνικά**, *
 
 O Erevos é feito de partes, seus módulos: o **Erevos** em si (as próprias conversas, grupos e chamadas, criptografados
 de ponta a ponta, com as conversas ocultas), o **Telefone**, os **SMS** e as conversas com apps **Nostr**, **Matrix** e
-**XMPP**. O Telefone e os SMS só existem no Android. Qualquer um pode ficar ativado, o próprio Erevos também, um ou
+**XMPP**. A **Coleção** (suas fotos e arquivos, criptografados) também é um módulo. O Telefone, os SMS e a Coleção só existem no Android. Qualquer um pode ficar ativado, o próprio Erevos também, um ou
 mais, pelo menos um: **Configurações** → **Geral** → **Módulos** ativa ou desativa cada um a qualquer momento.
 
 Na primeiríssima vez que inicia, antes de abrir o primeiro espaço, o Erevos se configura como um instalador faz, em
@@ -2684,6 +2684,19 @@ PIN só é guardado como Argon2id dele, para que não possa ser lido do celular,
 É um bloqueio na tela, não uma chave própria: as mensagens da conversa continuam criptografadas com o resto do espaço,
 e quem copiar o que o celular guarda enquanto o espaço está aberto ainda poderia lê-las. Para uma conversa que não
 deve nem ser vista, use as conversas ocultas.
+
+## Coleção {#collection}
+
+A Coleção é um lugar criptografado para suas fotos, arquivos e pastas, em cada espaço e em cada lugar oculto, cada um com a sua: a do espaço só abre no espaço, a de um lugar oculto só nesse lugar oculto, e nada no telefone diz que um lugar tem uma. O ícone dela, duas imagens com um minúsculo cadeado, fica na tela inicial à esquerda do cadeado e no alto das conversas de um lugar oculto. É um módulo, só no Android: **Configurações** → **Geral** → **Módulos**.
+
+- **Dentro:** as pastas no alto, depois as **Fotos** em uma grade por mês e os **Arquivos** em uma lista. O **+** tira uma foto com a câmera, que vai direto para cá e nunca para a galeria, traz um arquivo dos arquivos do telefone ou cria uma pasta nova. Toque e segure para escolher vários, para movê-los, enviá-los ou apagá-los; toque e segure uma pasta para renomeá-la ou apagá-la, o que mantém os arquivos dela.
+- **Criptografada:** cada arquivo é criptografado com uma chave própria, em pedaços com nomes aleatórios entre os pedaços das conversas, de modo que nada no telefone distingue um arquivo da Coleção de uma foto de uma conversa. Só o catálogo próprio da Coleção, selado como as conversas, diz qual é qual. A Coleção fica fora das capturas de tela e fecha quando o espaço bloqueia.
+- **De uma conversa ou de outro app:** toque e segure uma foto ou um arquivo numa conversa e depois **Salvar na Coleção**: ele é copiado para a Coleção do lugar dessa conversa. Pelo Compartilhar de outro app, o **Enviar para** tem a **Coleção** primeiro e pergunta em qual pasta; a cópia que o Android deu ao Erevos é apagada assim que é criptografada.
+- **Fora da Coleção:** uma foto abre em tela cheia, para deslizar e dar zoom, com **Enviar para uma conversa**, **Salvar no telefone**, **Informações** e **Apagar**. Salvar no telefone ou abrir um arquivo com outro app o tira sem criptografia, e o Erevos avisa antes. Enviar para uma conversa deixa a cópia da Coleção onde está. A Coleção de um lugar oculto não envia para conversas por aqui.
+- **Backups:** um backup guarda a Coleção com o resto do telefone. **Configurações** → **Dados e dispositivos** → **Coleção**, ou os três pontos dentro da Coleção, podem deixar essa Coleção fora dos backups feitos enquanto ela está aberta: cada Coleção tem a sua escolha.
+- **Ainda não:** apagar o original da galeria depois de importar chega em uma versão posterior.
+
+**Por quê:** algumas fotos e arquivos, um passaporte, um contrato, uma imagem, não devem ficar na galeria para qualquer app ler nem viajar numa conversa. A Coleção os guarda com a mesma criptografia das conversas, separados delas. Quando um arquivo é salvo no telefone ou aberto com outro app, ele está fora do Erevos, sem criptografia.
 
 ## Backups {#backup}
 

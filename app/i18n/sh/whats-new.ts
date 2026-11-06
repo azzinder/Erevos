@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":
+    "**Zbirka**: šifrirano mjesto u svakom prostoru i skrivenom mjestu za fotografije, datoteke i foldere, s ikonom pored lokota. Uključite je u Modulima. Pogledajte [Zbirku](#collection).",
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
     '**Podržite Erevos**: svaki način sada ima svoj QR kôd, i Liberapay i PayPal, a PayPal se otvara u pregledniku.',
   "**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor).":

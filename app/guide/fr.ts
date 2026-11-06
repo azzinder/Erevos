@@ -288,7 +288,7 @@ Dans les autres langues, les deux portent le nom dans cette langue et en anglais
 
 Erevos est fait de parties, ses modules : **Erevos** lui-même (ses propres discussions, groupes et appels, chiffrés de
 bout en bout, avec les discussions masquées), le **Téléphone**, les **SMS**, et les discussions avec des apps **Nostr**,
-**Matrix** et **XMPP**. Le Téléphone et les SMS n’existent que sur Android. N’importe lesquels peuvent être activés,
+**Matrix** et **XMPP**. La **Collection** (tes photos et tes fichiers, chiffrés) est aussi un module. Le Téléphone, les SMS et la Collection n’existent que sur Android. N’importe lesquels peuvent être activés,
 Erevos lui-même aussi, un ou plusieurs, au moins un : **Réglages** → **Général** → **Modules** active ou désactive
 chacun à tout moment.
 
@@ -2853,6 +2853,19 @@ téléphone. Le code PIN n’est gardé que sous forme d’Argon2id, si bien qu�
 essais sont lents. C’est un verrou sur l’écran, pas une clé à part : les messages de la discussion restent chiffrés avec
 le reste de l’espace, et celui qui copie ce que garde le téléphone pendant que l’espace est ouvert pourrait quand même
 les lire. Pour une discussion qui ne doit même pas être vue, utilise les discussions masquées.
+
+## Collection {#collection}
+
+La Collection est un endroit chiffré pour tes photos, tes fichiers et tes dossiers, dans chaque espace et chaque lieu caché, chacun avec la sienne : celle de l’espace ne s’ouvre que dans l’espace, celle d’un lieu caché que dans ce lieu caché, et rien sur le téléphone ne dit qu’un lieu en a une. Son icône, deux images avec un minuscule cadenas, est sur l’écran d’accueil à gauche du cadenas, et en haut des discussions d’un lieu caché. C’est un module, seulement sur Android : **Réglages** → **Général** → **Modules**.
+
+- **Dedans :** les dossiers en haut, puis les **Photos** en grille par mois et les **Fichiers** en liste. **+** prend une photo avec l’appareil photo, qui va directement ici et jamais dans la galerie, apporte un fichier depuis les fichiers du téléphone ou crée un nouveau dossier. Un appui long permet d’en choisir plusieurs, pour les déplacer, les envoyer ou les supprimer ; un appui long sur un dossier pour le renommer ou le supprimer, ce qui garde ses fichiers.
+- **Chiffrée :** chaque fichier est chiffré avec une clé à lui, en morceaux nommés au hasard parmi les morceaux des discussions, si bien que rien sur le téléphone ne distingue un fichier de la Collection d’une photo d’une discussion. Seul le catalogue propre à la Collection, scellé comme les discussions, dit lequel est lequel. La Collection reste hors des captures d’écran et se ferme quand l’espace se verrouille.
+- **Depuis une discussion ou une autre app :** appuie longuement sur une photo ou un fichier d’une discussion, puis **Enregistrer dans la Collection** : il est copié dans la Collection du lieu de cette discussion. Depuis Partager d’une autre app, **Envoyer à** a la **Collection** en premier et demande dans quel dossier ; la copie qu’Android a donnée à Erevos est supprimée dès qu’elle est chiffrée.
+- **Hors de la Collection :** une photo s’ouvre en plein écran, pour balayer et zoomer, avec **Envoyer à une discussion**, **Enregistrer sur le téléphone**, **Informations** et **Supprimer**. Enregistrer sur le téléphone ou ouvrir un fichier avec une autre app le sort non chiffré, et Erevos le dit d’abord. Envoyer à une discussion laisse la copie de la Collection où elle est. La Collection d’un lieu caché n’envoie pas aux discussions d’ici.
+- **Sauvegardes :** une sauvegarde contient la Collection avec le reste du téléphone. **Réglages** → **Données et appareils** → **Collection**, ou les trois points dans la Collection, peuvent laisser cette Collection hors des sauvegardes faites pendant qu’elle est ouverte : chaque Collection a son propre choix.
+- **Pas encore :** supprimer l’original de la galerie après l’importation viendra dans une version ultérieure.
+
+**Pourquoi :** certaines photos et certains fichiers, un passeport, un contrat, une image, ne doivent ni rester dans la galerie pour que n’importe quelle app les lise, ni voyager dans une discussion. La Collection les garde avec le même chiffrement que les discussions, à part d’elles. Dès qu’un fichier est enregistré sur le téléphone ou ouvert avec une autre app, il est hors d’Erevos, non chiffré.
 
 ## Sauvegardes {#backup}
 

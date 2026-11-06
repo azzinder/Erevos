@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Collection**: an encrypted place in every space and hidden place for photos, files and folders, with its icon next to the lock. Turn it on in Modules. See [Collection](#collection).":
+    "**Coleção**: um lugar criptografado em cada espaço e em cada lugar oculto para fotos, arquivos e pastas, com o ícone dela ao lado do cadeado. Ative-a em Módulos. Veja [Coleção](#collection).",
   '**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.':
     '**Apoiar o Erevos**: cada forma tem agora o seu código QR, também o Liberapay e o PayPal, e o PayPal abre no navegador.',
   "**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor).":

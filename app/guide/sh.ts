@@ -272,7 +272,7 @@ mijenja odmah.
 
 Erevos se sastoji od dijelova, svojih modula: samog **Erevosa** (njegovi vlastiti razgovori, grupe i pozivi, šifrirani
 s kraja na kraj, sa skrivenim razgovorima), **Telefona**, **SMS-a** i razgovora s **Nostr**, **Matrix** i **XMPP**
-aplikacijama. Telefon i SMS postoje samo na Androidu. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
+aplikacijama. **Zbirka** (vaše fotografije i datoteke, šifrirane) također je modul. Telefon, SMS i Zbirka postoje samo na Androidu. Bilo koji može biti uključen, i sam Erevos, jedan ili više,
 barem jedan: **Postavke** → **Općenito** → **Moduli** uključuje ili isključuje svaki u bilo koje vrijeme.
 
 Pri sasvim prvom pokretanju, prije nego se otvori njegov prvi prostor, Erevos se postavlja kao instalater, u nekoliko
@@ -2598,6 +2598,19 @@ telefon. PIN se čuva samo kao njegov Argon2id, pa se ne može pročitati s tele
 na ekranu, a ne vlastiti ključ: poruke razgovora ostaju šifrirane s ostatkom prostora, a onaj ko kopira ono što
 telefon čuva dok je prostor otvoren i dalje bi ih mogao pročitati. Za razgovor koji se ne smije ni vidjeti, koristite
 skrivene razgovore.
+
+## Zbirka {#collection}
+
+Zbirka je šifrirano mjesto za vaše fotografije, datoteke i foldere, u svakom prostoru i u svakom skrivenom mjestu, svako sa svojom: ona prostora otvara se samo u prostoru, ona skrivenog mjesta samo u tom skrivenom mjestu, i ništa na telefonu ne govori da neko mjesto ima Zbirku. Njena ikona, dvije slike s sitnom lokotom, nalazi se na početnom ekranu lijevo od lokota i na vrhu razgovora skrivenog mjesta. To je modul, samo na Androidu: **Postavke** → **Općenito** → **Moduli**.
+
+- **Unutra:** folderi na vrhu, zatim **Fotografije** u mreži po mjesecima i **Fajlovi** u popisu. **+** snima fotografiju kamerom, koja ide direktno ovamo i nikad u galeriju, donosi datoteku iz datoteka telefona ili pravi novi folder. Dugo pritisnite da odaberete više, da ih premjestite, pošaljete ili izbrišete; dugo pritisnite folder da ga preimenujete ili izbrišete, čime njegove datoteke ostaju.
+- **Šifrirana:** svaka datoteka je šifrirana vlastitim ključem, u dijelovima sa slučajnim nazivima među dijelovima razgovora, pa ništa na telefonu ne razlikuje datoteku Zbirke od fotografije iz razgovora. Samo vlastiti katalog Zbirke, zapečaćen kao razgovori, kaže šta je šta. Zbirka ostaje izvan snimaka ekrana i zatvara se kad se prostor zaključa.
+- **Iz razgovora ili druge aplikacije:** dugo pritisnite fotografiju ili datoteku u razgovoru, pa **Spremi u Zbirku**: kopira se u Zbirku mjesta tog razgovora. Iz Dijeljenja druge aplikacije, **Pošalji u** ima **Zbirku** prvu i pita u koji folder; kopija koju je Android dao Erevosu briše se čim se šifrira.
+- **Iz Zbirke van:** fotografija se otvara preko cijelog ekrana, za listanje i zumiranje, s **Pošalji u razgovor**, **Spremi na telefon**, **Informacije** i **Izbriši**. Spremanje na telefon ili otvaranje datoteke drugom aplikacijom izvodi je nešifriranu, a Erevos to kaže unaprijed. Slanje u razgovor ostavlja kopiju u Zbirci. Zbirka skrivenog mjesta odavde ne šalje u razgovore.
+- **Sigurnosne kopije:** sigurnosna kopija sadrži Zbirku s ostatkom telefona. **Postavke** → **Podaci i uređaji** → **Zbirka**, ili tri tačke u Zbirci, mogu ostaviti tu Zbirku izvan kopija napravljenih dok je otvorena: svaka Zbirka ima svoj izbor.
+- **Još ne:** brisanje originala iz galerije nakon uvoza stiže u kasnijoj verziji.
+
+**Zašto:** neke fotografije i datoteke, pasoš, ugovor, slika, ne smiju ni stajati u galeriji da ih čita svaka aplikacija ni putovati u razgovoru. Zbirka ih čuva istim šifriranjem kao razgovore, odvojeno od njih. Kad se datoteka spremi na telefon ili otvori drugom aplikacijom, ona je izvan Erevosa, nešifrirana.
 
 ## Rezervne kopije {#backup}
 

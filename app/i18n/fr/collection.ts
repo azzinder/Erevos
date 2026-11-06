@@ -41,7 +41,7 @@ export const collectionText: Record<string, string> = {
   "Rename the folder": "Renommer le dossier",
   "Folder name": "Nom du dossier",
   "Delete the folder": "Supprimer le dossier",
-  "Send to a chat": "Envoyer à une conversation",
+  "Send to a chat": "Envoyer à une discussion",
   "Save to phone": "Enregistrer sur le téléphone",
   "Information": "Informations",
   "Type": "Type",

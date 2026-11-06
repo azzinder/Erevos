@@ -17,6 +17,15 @@ On main, not released yet:
 - **Support Erevos**: every way has its QR code now, Liberapay and PayPal too, besides the Monero and Bitcoin
   addresses. PayPal opens in the browser: its old link only handed over to the PayPal app, so it failed without it.
   The page `site/donate` has the same QR codes.
+- **Collection**: an encrypted place in every space and every hidden place for photos, files and folders, kept apart
+  from the chats and out of screenshots. Its icon, two pictures with a tiny padlock, is on the home screen left of the
+  lock and at the top of a hidden place's chats, and a hidden place's Collection shows only there. Folders, the photos
+  as a grid by month, the files as a list, a full-screen photo viewer, text files read in the app, and **Send to a
+  chat**, **Save to phone** and **Open with another app**, each asking first, since the file leaves the Collection
+  unencrypted. A photo from the camera goes straight in and never to the gallery; **Save to the Collection** in a
+  chat's message menu, and **Send to** from other apps, which has the Collection first. It is a module, on Android
+  only (**Settings** → **General** → **Modules**), with its own settings for leaving it out of backups. Deleting the
+  original from the gallery after importing comes later.
 
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.

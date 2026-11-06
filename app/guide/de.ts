@@ -288,7 +288,7 @@ sich sofort.
 
 Erevos besteht aus Teilen, seinen Modulen: **Erevos** selbst (seine eigenen Chats, Gruppen und Anrufe,
 Ende-zu-Ende-verschlüsselt, mit den versteckten Chats), das **Telefon**, die **SMS** und die Chats mit **Nostr**-,
-**Matrix**- und **XMPP**-Apps. Das Telefon und die SMS gibt es nur auf Android. Jedes davon kann an sein, auch Erevos
+**Matrix**- und **XMPP**-Apps. Die **Sammlung** (deine Fotos und Dateien, verschlüsselt) ist auch ein Modul. Das Telefon, die SMS und die Sammlung gibt es nur auf Android. Jedes davon kann an sein, auch Erevos
 selbst, eines oder mehrere, mindestens eines: **Einstellungen** → **Allgemein** → **Module** schaltet jedes jederzeit
 ein oder aus.
 
@@ -2886,6 +2886,19 @@ Hand hat. Die PIN wird nur als ihr Argon2id aufbewahrt, sodass sie sich nicht vo
 langsam ist. Sie ist eine Sperre auf dem Bildschirm, kein eigener Schlüssel: Die Nachrichten des Chats bleiben mit dem
 Rest des Bereichs verschlüsselt, und wer kopiert, was das Telefon aufbewahrt, während der Bereich offen ist, könnte sie
 trotzdem lesen. Für einen Chat, der nicht einmal gesehen werden darf, nutze versteckte Chats.
+
+## Sammlung {#collection}
+
+Die Sammlung ist ein verschlüsselter Ort für deine Fotos, Dateien und Ordner, in jedem Bereich und jedem versteckten Ort, jeweils mit einer eigenen: die des Bereichs öffnet sich nur im Bereich, die eines versteckten Ortes nur in diesem versteckten Ort, und nichts auf dem Telefon verrät, dass ein Ort eine hat. Ihr Symbol, zwei Bilder mit einem winzigen Vorhängeschloss, steht auf dem Startbildschirm links vom Schloss und oben in den Chats eines versteckten Ortes. Sie ist ein Modul, nur auf Android: **Einstellungen** → **Allgemein** → **Module**.
+
+- **Darin:** oben die Ordner, dann die **Fotos** als Raster nach Monaten und die **Dateien** als Liste. **+** nimmt ein Foto mit der Kamera auf, das direkt hierher geht und nie in die Galerie, holt eine Datei aus den Dateien des Telefons oder legt einen neuen Ordner an. Gedrückt halten wählt mehrere aus, zum Verschieben, Senden oder Löschen; einen Ordner gedrückt halten, um ihn umzubenennen oder zu löschen, wobei seine Dateien bleiben.
+- **Verschlüsselt:** jede Datei ist mit einem eigenen Schlüssel verschlüsselt, in zufällig benannten Stücken zwischen den Stücken der Chats, sodass nichts auf dem Telefon eine Datei der Sammlung von einem Foto eines Chats unterscheidet. Nur der eigene Katalog der Sammlung, versiegelt wie die Chats, sagt, was was ist. Die Sammlung bleibt aus Screenshots heraus und schließt sich, wenn der Bereich sperrt.
+- **Aus einem Chat oder einer anderen App:** ein Foto oder eine Datei in einem Chat gedrückt halten, dann **In der Sammlung speichern**: sie wird in die Sammlung des Ortes dieses Chats kopiert. Beim Teilen aus einer anderen App hat **Senden an** die **Sammlung** zuerst und fragt nach dem Ordner; die Kopie, die Android Erevos gab, wird gelöscht, sobald sie verschlüsselt ist.
+- **Aus der Sammlung heraus:** ein Foto öffnet sich auf dem ganzen Bildschirm, zum Wischen und Zoomen, mit **An einen Chat senden**, **Auf dem Telefon speichern**, **Informationen** und **Löschen**. Auf dem Telefon speichern oder eine Datei mit einer anderen App öffnen bringt sie unverschlüsselt heraus, und Erevos sagt das vorher. Beim Senden an einen Chat bleibt die Kopie in der Sammlung. Die Sammlung eines versteckten Ortes sendet von hier aus nicht an Chats.
+- **Sicherungen:** eine Sicherung enthält die Sammlung mit dem Rest des Telefons. **Einstellungen** → **Daten und Geräte** → **Sammlung**, oder die drei Punkte in der Sammlung, können diese Sammlung aus den Sicherungen lassen, die gemacht werden, während sie geöffnet ist: jede Sammlung hat ihre eigene Wahl.
+- **Noch nicht:** das Original nach dem Import aus der Galerie zu löschen kommt in einer späteren Version.
+
+**Warum:** manche Fotos und Dateien, ein Pass, ein Vertrag, ein Bild, sollen weder in der Galerie für jede App lesbar liegen noch in einem Chat reisen. Die Sammlung hält sie mit derselben Verschlüsselung wie die Chats, getrennt von ihnen. Sobald eine Datei auf dem Telefon gespeichert oder mit einer anderen App geöffnet ist, liegt sie außerhalb von Erevos, unverschlüsselt.
 
 ## Backups {#backup}
 

@@ -276,7 +276,7 @@ subito.
 
 Erevos è fatto di parti, i suoi moduli: **Erevos** stesso (le sue chat, i suoi gruppi e le sue chiamate,
 crittografati end-to-end, con le chat nascoste), il **Telefono**, gli **SMS** e le chat con app **Nostr**, **Matrix** e
-**XMPP**. Il Telefono e gli SMS ci sono solo su Android. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
+**XMPP**. La **Raccolta** (le tue foto e i tuoi file, cifrati) è anch’essa un modulo. Il Telefono, gli SMS e la Raccolta ci sono solo su Android. Uno qualsiasi può essere attivo, anche Erevos stesso, uno o
 più, almeno uno: **Impostazioni** → **Generali** → **Moduli** attiva o disattiva ciascuno in qualsiasi momento.
 
 La primissima volta che si avvia, prima che si apra il suo primo spazio, Erevos si configura come fa un installer, in
@@ -2720,6 +2720,19 @@ PIN è conservato solo come suo Argon2id, quindi non si può leggere dal telefon
 sullo schermo, non una chiave a sé: i messaggi della chat restano crittografati con il resto dello spazio, e chi copia
 quello che il telefono conserva mentre lo spazio è aperto potrebbe comunque leggerli. Per una chat che non deve
 nemmeno essere vista, usa le chat nascoste.
+
+## Raccolta {#collection}
+
+La Raccolta è un posto cifrato per le tue foto, i tuoi file e le tue cartelle, in ogni spazio e in ogni luogo nascosto, ciascuno con la sua: quella dello spazio si apre solo nello spazio, quella di un luogo nascosto solo in quel luogo nascosto, e nulla sul telefono dice che un luogo ne ha una. La sua icona, due immagini con un minuscolo lucchetto, è nella schermata iniziale a sinistra del lucchetto e in cima alle chat di un luogo nascosto. È un modulo, solo su Android: **Impostazioni** → **Generali** → **Moduli**.
+
+- **Dentro:** le cartelle in alto, poi le **Foto** in una griglia per mesi e i **File** in un elenco. **+** scatta una foto con la fotocamera, che va direttamente qui e mai nella galleria, porta un file dai file del telefono o crea una nuova cartella. Tieni premuto per sceglierne più d’uno, per spostarli, inviarli o eliminarli; tieni premuta una cartella per rinominarla o eliminarla, e i suoi file restano.
+- **Cifrata:** ogni file è cifrato con una chiave propria, in pezzi con nomi casuali tra i pezzi delle chat, così nulla sul telefono distingue un file della Raccolta da una foto di una chat. Solo il catalogo proprio della Raccolta, sigillato come le chat, dice qual è quale. La Raccolta resta fuori dagli screenshot e si chiude quando lo spazio si blocca.
+- **Da una chat o da un’altra app:** tieni premuta una foto o un file in una chat, poi **Salva nella Raccolta**: viene copiato nella Raccolta del luogo di quella chat. Dalla Condivisione di un’altra app, **Invia a** ha per prima la **Raccolta** e chiede in quale cartella; la copia che Android ha dato a Erevos viene eliminata appena è cifrata.
+- **Fuori dalla Raccolta:** una foto si apre a schermo intero, per scorrere e ingrandire, con **Invia a una chat**, **Salva sul telefono**, **Informazioni** ed **Elimina**. Salvare sul telefono o aprire un file con un’altra app lo porta fuori non cifrato, e Erevos lo dice prima. Inviare a una chat lascia la copia della Raccolta dov’è. La Raccolta di un luogo nascosto da qui non invia alle chat.
+- **Backup:** un backup contiene la Raccolta insieme al resto del telefono. **Impostazioni** → **Dati e dispositivi** → **Raccolta**, o i tre puntini nella Raccolta, possono lasciare quella Raccolta fuori dai backup fatti mentre è aperta: ogni Raccolta ha la sua scelta.
+- **Non ancora:** eliminare l’originale dalla galleria dopo l’importazione arriverà in una versione successiva.
+
+**Perché:** certe foto e certi file, un passaporto, un contratto, un’immagine, non devono stare nella galleria per essere letti da qualunque app né viaggiare in una chat. La Raccolta li tiene con la stessa cifratura delle chat, a parte. Quando un file è salvato sul telefono o aperto con un’altra app, è fuori da Erevos, non cifrato.
 
 ## Backup {#backup}
 

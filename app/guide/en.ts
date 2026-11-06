@@ -261,8 +261,7 @@ at once.
 ## Modules {#modules}
 
 Erevos is made of parts, its modules: **Erevos** itself (its own chats, groups and calls, end-to-end encrypted, with
-the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The Phone and
-the SMS are only on Android. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
+the hidden chats), the **Phone**, the **SMS**, and the chats with **Nostr**, **Matrix** and **XMPP** apps. The **Collection** (your photos and files, encrypted) is a module too. The Phone, the SMS and the Collection are only on Android. Any of them can be on, Erevos itself too, one or more, at least one: **Settings** →
 **General** → **Modules** turns each on or off at any time.
 
 The very first time Erevos starts, before its first space opens, it sets itself up as an installer does, in a few
@@ -2485,6 +2484,19 @@ its PIN.
 only as Argon2id of it, so it cannot be read from the phone, and guesses are slow. It is a lock on the screen, not a
 key of its own: the chat's messages stay encrypted with the rest of the space, and whoever copies what the phone keeps
 while the space is open could still read them. For a chat that must not even be seen, use hidden chats.
+
+## Collection {#collection}
+
+The Collection is an encrypted place for your photos, files and folders, in every space and in every hidden place, each with its own: the space's opens only in the space, a hidden place's only in that hidden place, and nothing on the phone tells that a place has one. Its icon, two pictures with a tiny padlock, is on the home screen left of the lock, and at the top of a hidden place's chats. It is a module, on Android only: **Settings** → **General** → **Modules**.
+
+- **Inside:** folders across the top, then **Photos** as a grid by month and **Files** as a list. **+** takes a photo with the camera, which goes straight here and never to the gallery, brings in a file from the phone's files, or makes a new folder. Press and hold to choose several, to move, send or delete them; press and hold a folder to rename or delete it, which keeps its files.
+- **Encrypted:** each file is encrypted with a key of its own, in pieces named at random lying among the chats' pieces, so nothing on the phone tells a file of the Collection from a photo of a chat. Only the Collection's own catalogue, sealed as the chats are, says which is which. The Collection stays out of screenshots, and closes when the space locks.
+- **From a chat or another app:** press and hold a photo or file in a chat, then **Save to the Collection**: it is copied into the Collection of that chat's place. From another app's Share, **Send to** has the **Collection** first, and asks which folder; the copy Android gave Erevos is deleted once it is encrypted.
+- **Out of the Collection:** a photo opens on the whole screen, to swipe and zoom, with **Send to a chat**, **Save to phone**, **Information** and **Delete**. Saving to the phone, or opening a file with another app, takes it out unencrypted, and Erevos says so first. Sending to a chat leaves the Collection's copy where it is. A hidden place's Collection does not send to chats from here.
+- **Backups:** a backup holds the Collection with the rest of the phone. **Settings** → **Data and devices** → **Collection**, or the three dots in the Collection, can leave that Collection out of the backups made while it is open: each Collection has its own choice.
+- **Not yet:** deleting the original from the gallery after importing comes in a later version.
+
+**Why:** some photos and files, a passport, a contract, a picture, should neither sit in the gallery for any app to read nor travel in a chat. The Collection keeps them with the same encryption as the chats, apart from them. Once a file is saved to the phone or opened with another app, it is outside Erevos, not encrypted.
 
 ## Backups {#backup}
 

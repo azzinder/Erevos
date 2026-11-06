@@ -275,7 +275,7 @@ propio nombre: **Ελληνικά**, **English**, **Deutsch**, **Español**, **F
 
 Erevos se compone de partes, sus módulos: **Erevos** mismo (sus propios chats, grupos y llamadas, cifrados de extremo a
 extremo, con los chats ocultos), el **Teléfono**, los **SMS** y los chats con apps de **Nostr**, **Matrix** y **XMPP**.
-El Teléfono y los SMS solo existen en Android. Cualquiera puede estar activado, también Erevos mismo, uno o varios, al
+La **Colección** (tus fotos y archivos, cifrados) también es un módulo. El Teléfono, los SMS y la Colección solo existen en Android. Cualquiera puede estar activado, también Erevos mismo, uno o varios, al
 menos uno: **Ajustes** → **General** → **Módulos** activa o desactiva cada uno en cualquier momento.
 
 La primera vez que se inicia, antes de que se abra su primer espacio, Erevos se configura como lo hace un instalador,
@@ -2702,6 +2702,19 @@ solo se guarda como su Argon2id, así que no se puede leer del teléfono, y los 
 bloqueo en la pantalla, no una clave propia: los mensajes del chat siguen cifrados con el resto del espacio, y quien
 copie lo que guarda el teléfono mientras el espacio está abierto todavía podría leerlos. Para un chat que ni siquiera
 debe verse, usa los chats ocultos.
+
+## Colección {#collection}
+
+La Colección es un lugar cifrado para tus fotos, archivos y carpetas, en cada espacio y en cada lugar oculto, cada uno con la suya: la del espacio solo se abre en el espacio, la de un lugar oculto solo en ese lugar oculto, y nada en el teléfono dice que un lugar tiene una. Su icono, dos imágenes con un diminuto candado, está en la pantalla de inicio a la izquierda del candado y arriba en los chats de un lugar oculto. Es un módulo, solo en Android: **Ajustes** → **General** → **Módulos**.
+
+- **Dentro:** las carpetas arriba, y luego las **Fotos** en una cuadrícula por meses y los **Archivos** en una lista. **+** hace una foto con la cámara, que va directa aquí y nunca a la galería, trae un archivo de los archivos del teléfono o crea una carpeta nueva. Mantén pulsado para elegir varios, para moverlos, enviarlos o borrarlos; mantén pulsada una carpeta para renombrarla o borrarla, lo que conserva sus archivos.
+- **Cifrada:** cada archivo se cifra con una clave propia, en trozos con nombres al azar entre los trozos de los chats, de modo que nada en el teléfono distingue un archivo de la Colección de una foto de un chat. Solo el catálogo propio de la Colección, sellado como los chats, dice cuál es cuál. La Colección queda fuera de las capturas de pantalla y se cierra cuando el espacio se bloquea.
+- **Desde un chat u otra app:** mantén pulsada una foto o un archivo de un chat y luego **Guardar en la Colección**: se copia en la Colección del lugar de ese chat. Desde Compartir de otra app, **Enviar a** tiene primero la **Colección** y pregunta en qué carpeta; la copia que Android dio a Erevos se borra en cuanto se cifra.
+- **Fuera de la Colección:** una foto se abre a pantalla completa, para deslizar y hacer zoom, con **Enviar a un chat**, **Guardar en el teléfono**, **Información** y **Borrar**. Guardar en el teléfono o abrir un archivo con otra app lo saca sin cifrar, y Erevos lo avisa antes. Enviar a un chat deja la copia de la Colección donde está. La Colección de un lugar oculto no envía a chats desde aquí.
+- **Copias de seguridad:** una copia guarda la Colección con el resto del teléfono. **Ajustes** → **Datos y dispositivos** → **Colección**, o los tres puntos dentro de la Colección, pueden dejar esa Colección fuera de las copias que se hacen mientras está abierta: cada Colección tiene su propia elección.
+- **Todavía no:** borrar el original de la galería tras importarlo llegará en una versión posterior.
+
+**Por qué:** algunas fotos y archivos, un pasaporte, un contrato, una imagen, no deben estar en la galería para que cualquier app los lea ni viajar en un chat. La Colección los guarda con el mismo cifrado que los chats, aparte de ellos. Cuando un archivo se guarda en el teléfono o se abre con otra app, está fuera de Erevos, sin cifrar.
 
 ## Copias de seguridad {#backup}
 
