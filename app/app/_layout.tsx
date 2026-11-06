@@ -61,6 +61,7 @@ import { forgetSigns } from '../lib/unread-signs';
 import { runXmpp, stopXmpp } from '../lib/xmpp-store';
 import { runNostrDm, stopNostrDm } from '../lib/nostr-dm-store';
 import { startLinkedAccounts } from '../lib/linked-accounts';
+import { startChunkChannel } from '../lib/chunk-channel';
 import { followModuleIcons } from '../lib/module-icons';
 import { loadModules, moduleOn, modulesChosen, onModulesChange, screenModule, setModules, useModules, type Module } from '../lib/modules';
 import { watchPlaceNetworks } from '../lib/place-networks';
@@ -783,7 +784,7 @@ function Receiver({ space }: { space: number }) {
       const relays = !erevos ? [] : relayStopped() ? [watchStoppedPlaces()] : [startReceiver(), startPlaceReceiver(), startPublicDoors(), startShellWatch()];
       return [
         ...relays,
-        ...(erevos ? [startNearbyLinks(), startSmsWay(), startLinkedAccounts(), watchPlaceNetworks()] : []),
+        ...(erevos ? [startNearbyLinks(), startSmsWay(), startLinkedAccounts(), startChunkChannel(), watchPlaceNetworks()] : []),
         ...(moduleOn('sms') ? [startSmsLater()] : []),
         ...(moduleOn('phone') ? [watchKnownNames()] : []),
         // Receiving and ringing in the background, for what brings messages and calls; the phone's

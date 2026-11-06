@@ -154,6 +154,11 @@ On main, not released yet:
   or damaged is never kept; a file is whole only once every chunk is; one deleted while it comes keeps no chunk. For
   the Collection's files between devices (up to 4 GB), used by nothing yet. `checks/sync-chunks.check.ts` cuts the
   network off in the middle.
+- **A fast way for those chunks on the same Wi-Fi** (`desktop/chunks.js`, `ChunkChannel.kt`, `lib/sync/lan-chunks.ts`):
+  a TCP channel of its own beside the links nearby, so a chunk never goes through the app. Each linked device gets a
+  key of its own inside their encrypted link, for the files it may take only; both sides show they hold it before
+  anything else, and each chunk is kept only once it opens with the file's key. Unlinked, the key is let go. Not on
+  the web app or Sailfish OS. `checks/chunk-channel.check.ts` cuts the Wi-Fi at chunk 17 of 40.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

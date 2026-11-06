@@ -18,6 +18,7 @@ import { after, test } from 'node:test';
 import { room, sealChunk } from '../lib/attachments';
 import { randomBytes, toHex } from '../lib/crypto';
 import { ChunkFetch, type ChunkStore, type ChunkWay, type Wanted } from '../lib/sync/chunks';
+import { checkedOffer, ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from '../lib/sync/lan-chunks';
 
 const require = createRequire(import.meta.url);
 type Taker = { take(folder: string, id: string, n: number, fileKey: string, size: number): Promise<'kept' | 'none'>; close(): void };
@@ -26,6 +27,38 @@ const { ChunkServer, ChunkTaker } = require('../../desktop/chunks.js') as {
   ChunkServer: new (o: { folder: string }) => Server;
   ChunkTaker: { open(hosts: string[], port: number, key: string): Promise<Taker> };
 };
+
+// A device's channel as lib/chunk-channel.ts reaches it, here desktop/chunks.js giving from `there` and keeping in `here`.
+function channelOf(there: string, here: string): ChunkChannel & { server: Server | null } {
+  const takers = new Map<string, Taker>();
+  const channel = {
+    server: null as Server | null,
+    serve: async (on: boolean) => {
+      if (!on) {
+        channel.server?.stop();
+        channel.server = null;
+        return null;
+      }
+      channel.server ??= new ChunkServer({ folder: there });
+      return { port: await channel.server.start(), hosts: ['127.0.0.1'] };
+    },
+    allow: (key: string, ids: string[]) => channel.server?.allow(key, ids),
+    forget: (key: string) => channel.server?.forget(key),
+    take: async (offer: ChunkOffer, want: Wanted, n: number) => {
+      const at = `${offer.port} ${offer.key}`;
+      try {
+        const taker = takers.get(at) ?? (await ChunkTaker.open(offer.hosts, offer.port, offer.key));
+        takers.set(at, taker);
+        return (await taker.take(here, want.id, n, toHex(want.key), want.chunk)) === 'kept';
+      } catch (error) {
+        takers.get(at)?.close();
+        takers.delete(at);
+        throw error;
+      }
+    },
+  };
+  return channel;
+}
 
 const CHUNK = 64 * 1024;
 const folders: string[] = [];
@@ -143,5 +176,42 @@ test('cut off in the middle of a large file: what came is kept, nothing half, an
   } finally {
     (taker as Taker | null)?.close();
     server.stop();
+  }
+});
+
+test('a key of its own to each linked device, told inside their link: it brings only what it may, and nothing once unlinked', async () => {
+  const there = folder();
+  const here = folder();
+  const want = fileIn(there, 3);
+  const other = fileIn(there, 2);
+  const giving = channelOf(there, here);
+  const giver = new ChunkGiver(giving);
+  const offer = (await giver.offer('device-a', [want.id]))!;
+  assert.ok(offer);
+  // As it goes in the link envelope, and only so.
+  assert.deepEqual(checkedOffer(JSON.parse(JSON.stringify(offer))), offer);
+  assert.equal(checkedOffer({ ...offer, key: 'ab' }), null);
+  assert.equal(checkedOffer({ ...offer, port: 0 }), null);
+  assert.equal(checkedOffer({ ...offer, hosts: ['example.org'] }), null);
+  assert.deepEqual(checkedOffer({ ...offer, hosts: ['10.0.0.300', '127.0.0.1'] })?.hosts, ['127.0.0.1']);
+  // Another device has a key of its own; the same device keeps its key as what it may take changes.
+  const b = (await giver.offer('device-b', [other.id]))!;
+  assert.notEqual(b.key, offer.key);
+  try {
+    const fetch = new ChunkFetch(storeIn(here));
+    const way = lanWay(giving, offer);
+    assert.equal((await fetch.bring(want, [way])).end, 'done');
+    assert.equal((await fetch.bring(other, [way])).end, 'missing');
+    assert.equal((await giver.offer('device-a', [want.id, other.id]))!.key, offer.key);
+    assert.equal((await fetch.bring(other, [way])).end, 'done');
+    // Unlinked: its key lets in no more; the other device's still does.
+    await giver.forget('device-a');
+    await assert.rejects(ChunkTaker.open(offer.hosts, offer.port, offer.key));
+    (await ChunkTaker.open(b.hosts, b.port, b.key)).close();
+    // No one left: it stops listening.
+    await giver.forget('device-b');
+    assert.equal(giving.server, null);
+  } finally {
+    giving.server?.stop();
   }
 });

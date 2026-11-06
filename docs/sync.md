@@ -151,7 +151,30 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
 - `stop` (the file deleted while it comes) ends it after the chunk under way and deletes every
   chunk of it, also one kept just then.
 
+## Phase S3, fourth part: a fast way for chunks on the same Wi-Fi
+
+The links nearby carry frames of 16 KB through the app, too slow for files of up to 4 GB. So the
+chunks have a TCP channel of their own: desktop/chunks.js on a computer (the shell answers it at
+`/__chunks`), ChunkChannel.kt on Android (modules/erevos-radio), the same protocol, `EVC1`:
+
+- A device that has chunks to give listens, and tells a linked device, inside their end-to-end
+  encrypted link (envelope `chunks`: its addresses, the port, a key), where to find it. The key is
+  32 random bytes for that one device (`ChunkGiver`, lib/sync/lan-chunks.ts), and may take only
+  the files it was allowed.
+- On connecting, both show they hold the key (HMAC-SHA256 over a challenge from each side): who
+  holds none is cut off before anything else.
+- Each chunk goes as it is kept, encrypted with the file's own key, and the one taking keeps it
+  only once it opens with that key (written beside it, then moved in place). The chunks never go
+  through the app's JavaScript; to ChunkFetch it is a `ChunkWay` with `keep` (`Links.chunkWays`).
+- Unlinked, a device's key is let go and its connections are cut; with no one left, the device
+  stops listening. The web app and Sailfish OS have no such channel: their files come by the
+  other ways.
+
+Checked: chunk-channel.check.ts (the key, what it may take, a damaged chunk, a cut at chunk 17 of
+40 going on from 17), devices.check.ts (the offer inside the link), and the phone's Kotlin against
+desktop/chunks.js (modules/erevos-radio/android/lan-check).
+
 ## Next
 
-A fast way over the same Wi-Fi for chunks (today's links nearby carry frames of 16 KB), then the
-Collection's catalog on the log (S7), which brings its files with ChunkFetch.
+The Collection's catalog on the log (S7), which brings its files with ChunkFetch, the fast way
+first (`Links.offerChunks` for the files a device may take), then the file server.

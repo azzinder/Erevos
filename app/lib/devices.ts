@@ -144,6 +144,8 @@ import { SyncLinks, type SyncHeard, type Who } from './sync/links';
 import { onSettingChanged, settingCame, settingsNow } from './sync/settings';
 import { isThere as isThereInLog, valueOf as syncValueOf, type Change as SyncChange, type Json as SyncJson, type Log as SyncLog } from './sync/log';
 import type { Said as SyncSaid } from './sync/wire';
+import type { ChunkWay } from './sync/chunks';
+import { ChunkGiver, lanWay, type ChunkChannel, type ChunkOffer } from './sync/lan-chunks';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -321,6 +323,16 @@ const NETWORKS = ['matrix', 'xmpp', 'nostr'] as const;
 
 let hand: AccountsHand | null = null;
 
+// This device's fast channel for the chunks of large files on the same Wi-Fi (lib/chunk-channel.ts), none until set.
+let chunkHand: ChunkChannel | null = null;
+let giver: ChunkGiver | null = null;
+
+/** Has `channel` give and take the chunks of large files on the same Wi-Fi (set once where there is one). */
+export function handChunks(channel: ChunkChannel | null): void {
+  chunkHand = channel;
+  giver = channel ? new ChunkGiver(channel) : null;
+}
+
 /** Has `next` give and bring the accounts (lib/linked-accounts.ts sets it once). */
 export function handAccounts(next: AccountsHand | null): void {
   hand = next;
@@ -485,6 +497,8 @@ export class Links implements Link, TakenFiles {
   private accountsProblems: string[] = [];
   // When the phone last looked who the accounts are (followAccounts); none yet, so the first tick does.
   private accountsLooked = 0;
+  // Where each linked device gives the chunks of large files on the same Wi-Fi, as it last said (`chunks`).
+  private readonly chunkOffers = new Map<string, ChunkOffer>();
   // On a linked device: the contacts deleted (1) or blocked (2) here, until the phone is told.
   private readonly deletions = new Map<string, Deleted>();
   // The space's groups, and which of them go to the devices; on the primary, whether telling them is
@@ -1021,6 +1035,9 @@ export class Links implements Link, TakenFiles {
         this.passOn(peer, { ...said, ...(others && files ? { keep: true as const } : {}) });
         break;
       }
+      case 'chunks':
+        this.chunkOffers.set(peer.id, { hosts: said.hosts, port: said.port, key: said.key });
+        break;
       case 'sync':
         if (peer.endpoint) {
           const heard = await this.syncHeard(peer.endpoint.id, said.s).catch(() => null);
@@ -1033,6 +1050,7 @@ export class Links implements Link, TakenFiles {
         this.act(() => this.chats.e2e.unblock(said.c));
         break;
       case 'bye':
+        this.chunksGone(peer.id);
         await this.save({ ...this.data, devices: this.data.devices.filter((d) => d.id !== peer.id) });
         this.act(() => this.letGo(peer.id, null));
         this.callSteps(this.calls.unlinked(peer.id));
@@ -1123,6 +1141,9 @@ export class Links implements Link, TakenFiles {
         await this.heardNotes({ id: primary.id, sibling: false });
         void this.noting(() => this.notesFrom(said, said.keep === true));
         break;
+      case 'chunks':
+        this.chunkOffers.set(primary.id, { hosts: said.hosts, port: said.port, key: said.key });
+        break;
       case 'sync':
         return this.syncOnDevice(await this.syncHeard(this.data.account, said.s).catch(() => null), place);
       case 'move':
@@ -1141,6 +1162,7 @@ export class Links implements Link, TakenFiles {
         break;
       }
       case 'bye':
+        this.chunksGone(primary.id);
         this.act(() => this.forget());
         break;
       default:
@@ -1921,6 +1943,33 @@ export class Links implements Link, TakenFiles {
    * to it, nor is anything opened from it. It is told, if the relay takes it now. On a linked device
    * the account's chats go from here, and the accounts it brought from the phone.
    */
+  /**
+   * Lets the linked device `id` (the phone, on a linked device) take the chunks of the files `ids`
+   * on the same Wi-Fi, in place of what it could before, and tells it where and with which key,
+   * inside their link: whether it was told. Not where this device has no channel, or no address.
+   */
+  async offerChunks(id: string, ids: string[]): Promise<boolean> {
+    const peer = this.data.primary ?? this.data.devices.find((d) => d.id === id);
+    if (!giver || !peer || (!this.data.primary && peer.id !== id)) return false;
+    const offer = await giver.offer(peer.id, ids);
+    if (!offer) return false;
+    await this.say({ k: 'chunks', ...offer }, peer.id);
+    return true;
+  }
+
+  /** The fast ways to bring chunks from the linked devices on the same Wi-Fi that said where they give them. */
+  chunkWays(): ChunkWay[] {
+    if (!chunkHand) return [];
+    const known = new Set([this.data.primary?.id, ...this.data.devices.map((d) => d.id)]);
+    return [...this.chunkOffers].filter(([id]) => known.has(id)).map(([, offer]) => lanWay(chunkHand!, offer));
+  }
+
+  // A device unlinked: what it could take, and where it gave, go.
+  private chunksGone(id: string): void {
+    this.chunkOffers.delete(id);
+    void giver?.forget(id);
+  }
+
   async unlink(id = ''): Promise<boolean> {
     const peer = this.data.primary ?? this.data.devices.find((d) => d.id === id);
     if (!peer) return true;
@@ -1940,6 +1989,7 @@ export class Links implements Link, TakenFiles {
     } catch {
       // Not told: it gets nothing more all the same.
     }
+    this.chunksGone(peer.id);
     if (this.data.primary) await this.forget();
     else {
       await this.run(async () => {

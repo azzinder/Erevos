@@ -47,7 +47,7 @@ import { acceptConversation, accountBundle, accountIdentity, newAccount, open as
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
-import { handAccounts, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
+import { handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
 import { sendGroupFile, takeGroupFile } from '../lib/group-media';
@@ -3584,6 +3584,39 @@ test('a computer linked anew is told who is blocked on the phone', { skip: !core
   await take(dell);
   assert.equal(dell.chats.e2e.isBlocked(someone), true);
   for (const p of [pixel, dell]) p.links.close();
+});
+
+test('the fast way on the same Wi-Fi: each side tells the other inside their link where it gives chunks and the key for it alone; unlinked, the key is let go', { skip: !coreReady || !relayReady, timeout: 60_000 }, async () => {
+  const allowed = new Map<string, string[]>();
+  const forgot: string[] = [];
+  handChunks({
+    serve: async (on) => (on ? { port: 40123, hosts: ['192.168.1.20', 'not an address'] } : null),
+    allow: (key, ids) => void allowed.set(key, ids),
+    forget: (key) => void forgot.push(key),
+    take: async () => true,
+  });
+  try {
+    const { phone, take, linkUp } = await setup();
+    const pixel = await phone(0);
+    const dell = await phone(1);
+    await linkUp(pixel, dell);
+    await take(dell);
+    const id = 'ab'.repeat(16);
+    assert.equal(await pixel.links.offerChunks(pixel.links.devices()[0].id, [id]), true);
+    assert.equal(await pixel.links.offerChunks('cd'.repeat(32), [id]), false);
+    await until(async () => (await take(dell), dell.links.chunkWays().length > 0));
+    const ways = dell.links.chunkWays();
+    assert.equal(ways.length, 1);
+    assert.equal(ways[0].name, 'lan');
+    assert.deepEqual([...allowed.values()], [[id]]);
+    // Unlinked from the phone: the key goes, and the computer has no way there left.
+    await pixel.links.unlink(pixel.links.devices()[0].id);
+    assert.deepEqual(forgot, [...allowed.keys()]);
+    await until(async () => (await take(dell), dell.links.chunkWays().length === 0));
+    for (const p of [pixel, dell]) p.links.close();
+  } finally {
+    handChunks(null);
+  }
 });
 
 test('Chat with myself goes between the phone and a linked computer: words, reminders, photos and voice messages, both ways, and deleting', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {

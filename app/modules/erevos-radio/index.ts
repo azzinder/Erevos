@@ -49,6 +49,10 @@ type NativeRadio = {
   meshDisconnect?(): void;
   meshSend?(data: string): boolean;
   sendText(peer: string, text: string): boolean;
+  chunksServe?(on: boolean): Promise<{ port: number; hosts: string[] }>;
+  chunksAllow?(key: string, ids: string[]): void;
+  chunksForget?(key: string): void;
+  chunksTake?(hosts: string[], port: number, key: string, id: string, n: number, fileKey: string, size: number): Promise<boolean>;
   addListener<Name extends keyof RadioEvents>(name: Name, listener: RadioEvents[Name]): EventSubscription;
 };
 
@@ -122,6 +126,30 @@ export function meshSend(data: string): boolean {
 /** Sends text to a link id from an `onPeer` event with kind `wifi-aware`, `ble-link` or `lan`. */
 export function sendText(peer: string, text: string): boolean {
   return native ? native.sendText(peer, text) : false;
+}
+
+/**
+ * Gives the chunks of large files to the account's devices on the same Wi-Fi (ChunkChannel.kt), or
+ * stops: the port and this phone's addresses, null when this build cannot.
+ */
+export async function chunksServe(on: boolean): Promise<{ port: number; hosts: string[] } | null> {
+  return native?.chunksServe ? native.chunksServe(on) : null;
+}
+
+/** Lets `key` (hex) take the chunks of the files `ids`, in place of what it could before. */
+export function chunksAllow(key: string, ids: string[]): void {
+  native?.chunksAllow?.(key, ids);
+}
+
+/** `key` takes nothing more, and its connections are cut. */
+export function chunksForget(key: string): void {
+  native?.chunksForget?.(key);
+}
+
+/** Takes one chunk into the app's files, kept only once it opens: true, false when not there whole; rejects when cut off. */
+export async function chunksTake(hosts: string[], port: number, key: string, id: string, n: number, fileKey: string, size: number): Promise<boolean> {
+  if (!native?.chunksTake) throw new Error('no chunk channel');
+  return native.chunksTake(hosts, port, key, id, n, fileKey, size);
 }
 
 export function onRadioEvent<Name extends keyof RadioEvents>(

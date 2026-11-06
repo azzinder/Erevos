@@ -14,6 +14,7 @@ import { bodyOf, checkedList, MAX_LISTED, type DeviceList } from './device-list'
 import { waysFor, withRoutes } from './endpoints';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId } from './group-signal';
+import { checkedOffer, type ChunkOffer } from './sync/lan-chunks';
 
 // What goes between the devices of one account (lib/devices.ts), inside the conversation of their
 // link: JSON, one envelope in each packet, each saying what kind it is (`k`) and where its sender
@@ -96,6 +97,7 @@ export type Envelope =
   | { k: 'notes'; list: NoteSaid[]; gone: { id: string; v: number }[]; keep?: true }
   | { k: 'here' }
   | { k: 'sync'; s: Json }
+  | ({ k: 'chunks' } & ChunkOffer)
   | { k: 'move' }
   | { k: 'bye' };
 
@@ -492,6 +494,11 @@ function checkedEnvelope(v: Json): Envelope | null {
     case 'sync':
       // The account's log (lib/sync/wire.ts), checked in full where it is taken.
       return isObject(v.s) ? { k: 'sync', s: v.s } : null;
+    case 'chunks': {
+      // Where the device gives the chunks of large files on the same Wi-Fi, and the key for this one (lib/sync/lan-chunks.ts).
+      const offer = checkedOffer(v);
+      return offer ? { k: 'chunks', ...offer } : null;
+    }
     case 'here':
     case 'move':
     case 'bye':
