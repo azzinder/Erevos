@@ -1194,6 +1194,10 @@ Sticker):
   Wahl. Tippe auf eine Option, um sie zu wählen, noch einmal, um sie zurückzunehmen; jede Option zeigt, wie viele sie
   gewählt haben, und wer. Stimmen reisen innerhalb der Verschlüsselung, wie Reaktionen. Ein Erevos von vor dieser
   Funktion zeigt die Frage und ihre Optionen als Worte, um in Worten zu antworten.
+- **Zahlungsanfrage** (aus einer anderen App, wie Fasouli): ein Betrag und wofür, als Karte. Wer gefragt wird, tippt
+  **Bezahlt**, sobald bezahlt ist; dein Telefon erfährt es, und es lässt sich nicht zurücknehmen. Dann vermerkt **In
+  Fasouli vermerken** auf Android sie dort als eingenommen. Erevos bewegt kein Geld und kennt keine Bank: Die Karte sagt
+  nur, was erbeten wurde. Nur in Chats mit einem Kontakt, nie in versteckten. Ein älteres Erevos zeigt den Betrag als Text.
 
 **Warum:** Ein aus dem Internet geholtes Sticker-Paket würde einem Server sagen, dass dieses Telefon Erevos hat, also
 sind die Sticker eingebaut und nur ihre Namen reisen. Deine eigenen sind in einem versiegelten Wert gleicher Größe für

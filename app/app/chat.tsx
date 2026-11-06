@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { AppState, Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AppState, Image, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +70,7 @@ import { SwipeBack } from '../components/swipe-back';
 import { PlaceCard, Pinned, PreviewCard, Quote, Reactions } from '../components/message-parts';
 import { PhotoSticker, PLAYS_LAST, StickerPicker, StickerView } from '../components/stickers';
 import { PlaceSheet } from '../components/place-sheet';
+import { PayCard } from '../components/pay-card';
 import { PollCard, PollSheet } from '../components/poll';
 import { acts, checkedChoices, choose as chooseOption, contentOf, editableWords, placeWords, pollWords, previewAfterEdit, stillEditable, withoutPreview, type Carried, type Content, type Place, type Poll } from '../lib/chat-parts';
 import { firstLink, fitPreview } from '../lib/link-preview';
@@ -86,6 +87,7 @@ import { messageLine } from '../lib/message-line';
 import { canPick, laterLabel, showsAt } from '../lib/later';
 import { inTurn, SAFETY_HOURS, safetyDue, stopSafety } from '../lib/safety';
 import { ask, choose } from '../lib/alert';
+import { fasouliPaidLink, payAmount, takePay, type Pay } from '../lib/pay';
 import { contactLink, contactLinkName, offerFor, onContactOffered, parseContact, type ContactCode, type NostrCode, type Offer } from '../lib/contact-code';
 import { onInviteOffered, parseInvite, type Invite } from '../lib/relay-invite';
 import { forgetOffer, keepOffer, keptOffer, offerOf, takesOffer } from '../lib/relay-offer';
@@ -2376,6 +2378,19 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       );
       history.current?.vote(peer, vote.tag, false, vote.chose).catch(() => undefined);
     }
+    // They paid one of our payment requests, as they marked it (lib/pay.ts): once.
+    const { settled } = received.more;
+    if (settled) {
+      const at = Date.now();
+      history.current
+        ?.paid(peer, settled.tag, false, at)
+        .then((changed) => {
+          if (!changed) return;
+          setMessages((list) => list.map((m) => (m.peer === peer && m.tag === settled.tag && m.mine && m.pay ? { ...m, paid: at } : m)));
+          setNote(t('{name} marked your payment request paid.', { name: label(peer, e2e.contacts()) }));
+        })
+        .catch(() => undefined);
+    }
     // New words for one of theirs, as only they change their own: shown as edited.
     const { edit } = received.more;
     if (edit) {
@@ -2896,7 +2911,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       await sendAttachment(file.kind, async () => ({ name: file.name, mime: file.mime, source: refSource(file), w: file.w, h: file.h, sticker: file.sticker }), peer, true);
       return;
     }
-    await send(0, false, { ...contentOf(message), forwarded: true, text: message.text }, peer);
+    // A payment request goes on as its words only: it is asked of the one it was sent to.
+    const { pay: _request, ...content } = contentOf(message);
+    await send(0, false, { ...content, forwarded: true, text: message.text }, peer);
   }
 
   // A group's message handed over to forward here (lib/forward.ts), or a photo or file shared from
@@ -2905,6 +2922,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e || !initial) return;
     const message = takeForward(initial);
     if (message) void forwardTo(message, initial);
+    const pay = takePay(initial);
+    if (pay) void sendPay(pay, initial);
     // Each one after the other, in the order handed over.
     let sending = Promise.resolve();
     for (let shared = takeShared(initial); shared; shared = takeShared(initial)) {
@@ -2960,6 +2979,39 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     history.current?.vote(message.peer, message.tag, true, chose).catch(() => {
       // Shown, but gone when the chat next opens.
     });
+  }
+
+  // Marks their payment request paid, on both phones, once it is said: it cannot be taken back.
+  async function markPaid(message: Message) {
+    if (!message.pay || message.mine || message.paid) return;
+    const pay = message.pay;
+    const sure = await choose(t('Mark it paid?'), t('{name} is told that you paid {amount}. It cannot be taken back.', { name: label(message.peer, e2e?.contacts() ?? []), amount: payAmount(pay, locale()) }), t('Cancel'), t('Paid'));
+    if (!sure) return;
+    try {
+      await sendToContact(relayTarget(), message.peer.slice(CONTACT_PREFIX.length), '', { more: { settled: { tag: message.tag } } });
+    } catch (error) {
+      setNote(notSent(error));
+      return;
+    }
+    const at = Date.now();
+    setMessages((list) => list.map((m) => (m.peer === message.peer && m.tag === message.tag ? { ...m, paid: at } : m)));
+    history.current?.paid(message.peer, message.tag, true, at).catch(() => {
+      // Shown, but gone when the chat next opens; their phone knows.
+    });
+  }
+
+  // Our request paid: Fasouli marks its transaction collected, after it asks there.
+  function toFasouli(message: Message) {
+    const link = message.pay ? fasouliPaidLink(message.pay) : null;
+    if (link) Linking.openURL(link).catch(() => setNote(t('Fasouli is not installed on this phone.')));
+  }
+
+  // Sends a payment request another app asked for (lib/pay.ts), once the owner says yes here.
+  async function sendPay(pay: Pay, peer: string) {
+    const amount = payAmount(pay, locale());
+    const sure = await choose(t('Send this payment request?'), t('{name} is asked to pay {amount}{what}. Erevos moves no money: the request only says it.', { name: label(peer, e2e?.contacts() ?? []), amount, what: pay.w ? ` · ${pay.w}` : '' }), t('Cancel'), t('Send'));
+    if (!sure) return;
+    await send(0, false, { text: t('Payment request: {amount}{what}', { amount, what: pay.w ? ` · ${pay.w}` : '' }), pay }, peer);
   }
 
   // Sends the place found, with where it is as its words for an Erevos from before.
@@ -4040,7 +4092,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const marked = left.map((m) => {
           const there = m.tag ? byTag.get(`${m.peer}|${m.tag}`) : undefined;
           if (!there) return m;
-          // What was done to it on another device, or through one: reactions, a pin, votes, a star, new words.
+          // What was done to it on another device, or through one: reactions, a pin, votes, a star, new words, paid.
           const done = {
             myReaction: there.myReaction,
             theirReaction: there.theirReaction,
@@ -4048,6 +4100,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
             starred: there.starred,
             myVote: there.myVote,
             theirVote: there.theirVote,
+            paid: there.paid,
             text: there.text,
             edited: there.edited,
             preview: there.preview,
@@ -5021,6 +5074,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     menu: (message) => history.current && setMenuFor(message),
     goTo,
     vote: (message, option) => history.current && void vote(message, option),
+    paid: (message) => history.current && void markPaid(message),
+    fasouli: toFasouli,
     placed: (message, y) => {
       placed.current.set(message.id, y);
       if (message.file?.kind === 'photo') photoAt.current.set(message.file.id, y);
@@ -7433,6 +7488,8 @@ type RowActs = {
   menu: (message: Message) => void;
   goTo: (peer: string, tag: string) => void;
   vote: (message: Message, option: number) => void;
+  paid: (message: Message) => void;
+  fasouli: (message: Message) => void;
   placed: (message: Message, y: number) => void;
   smsAgain: (sms: SmsMessage) => void;
   smsMenu: (sms: SmsMessage) => void;
@@ -7453,6 +7510,8 @@ function steadyActs(latest: RefObject<RowActs | null>): RowActs {
     menu: (message) => now().menu(message),
     goTo: (peer, tag) => now().goTo(peer, tag),
     vote: (message, option) => now().vote(message, option),
+    paid: (message) => now().paid(message),
+    fasouli: (message) => now().fasouli(message),
     placed: (message, y) => now().placed(message, y),
     smsAgain: (sms) => now().smsAgain(sms),
     smsMenu: (sms) => now().smsMenu(sms),
@@ -7531,6 +7590,15 @@ const MessageLine = memo(function MessageLine({ message, quoted, name, newDay, t
           <PhotoSticker uri={photo} status={comingText(message.file, taking)} />
         ) : message.place ? (
           <PlaceCard place={message.place} ink={ink} />
+        ) : message.pay ? (
+          <PayCard
+            pay={message.pay}
+            mine={message.mine}
+            paid={message.paid}
+            onPaid={canAnswer ? () => acts.paid(message) : undefined}
+            onFasouli={message.pay.r ? () => acts.fasouli(message) : undefined}
+            ink={ink}
+          />
         ) : message.poll ? (
           <PollCard
             poll={message.poll}

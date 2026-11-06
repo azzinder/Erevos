@@ -956,7 +956,7 @@ export function readPack(bytes: Uint8Array): PackEntry[] {
 
 /** What a chat's message is or carries beyond its words, and what was done to it, as kept (lock/history.ts), each checked or left out. */
 export function chatPartsOf(v: Json): ChatParts {
-  const { sticker, place, poll, preview, forwarded } = carriedOf(v);
+  const { sticker, place, poll, preview, forwarded, pay } = carriedOf(v);
   const vote = (chose: unknown) => {
     const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
     return checked && checked.length > 0 ? checked : null;
@@ -976,6 +976,8 @@ export function chatPartsOf(v: Json): ChatParts {
     ...(preview ? { preview } : {}),
     ...(forwarded ? { forwarded: true } : {}),
     ...(isTime(v.edited) && v.edited > 0 ? { edited: v.edited } : {}),
+    ...(pay ? { pay } : {}),
+    ...(pay && isTime(v.paid) && v.paid > 0 ? { paid: v.paid } : {}),
   };
 }
 

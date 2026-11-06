@@ -1081,6 +1081,10 @@ Pod **+** ima više za slanje od fotografija i datoteka (smajli na kraju polja z
   njih. Dodirnite opciju da je izaberete, a ponovo da povučete izbor; svaka opcija pokazuje koliko ju je izabralo, i
   ko. Glasovi putuju unutar šifriranja, kao i reakcije. Erevos od prije ovoga prikazuje pitanje i njegove opcije kao
   riječi, na koje se odgovara riječima.
+- **Zahtjev za plaćanje** (iz druge aplikacije, kao Fasouli): iznos i za šta, kao kartica. Onaj od koga se traži dodirne
+  **Plaćeno** kad plati, i tvoj telefon to sazna; ne može se poništiti. Zatim **Označi u Fasouliju**, na Androidu, ga
+  tamo označi naplaćenim. Erevos ne prenosi novac i ne zna ni za jednu banku: kartica samo kaže šta je traženo. Samo u
+  razgovorima s kontaktom, nikad u skrivenim. Stariji Erevos pokazuje iznos kao tekst.
 
 **Zašto:** paket naljepnica preuzet s interneta otkrio bi serveru da ovaj telefon ima Erevos, pa su naljepnice
 ugrađene i putuju samo njihova imena. Vaše vlastite navedene su u jednoj zapečaćenoj vrijednosti iste veličine za

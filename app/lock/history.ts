@@ -5,6 +5,7 @@
 import { checkedChoices, checkedPlace, checkedPoll, checkedPreview, editableWords, isStickerName, previewAfterEdit, type Place, type Poll, type Preview } from '../lib/chat-parts';
 import { decryptBytes, encryptBytes, randomBytes, toHex, utf8Decode, utf8Encode } from '../lib/crypto';
 import { deleteFile, readBytes, writeBytes } from '../lib/files';
+import { checkedPay, type Pay } from '../lib/pay';
 import { isRelayAddress, type HeldAt } from '../lib/relay';
 import { isSafetyHours } from '../lib/safety';
 
@@ -78,9 +79,10 @@ export type Kept = [
  * text asks it), with `a`, the options we chose, and `b`, theirs; `w`, the preview of the link in
  * its words, as its sender made it; `d` 1 when it was forwarded from another chat; `t` 1 when it
  * came or went through Nostr (lib/nostr-chats.ts), on this phone only; `e`, when its words were
- * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr.
+ * last edited (this phone's clock); `v`, the way it went or came, where that was not Nostr; `m`, the
+ * payment request it is (lib/pay.ts; its text says it), with `u`, when it was marked paid.
  */
-type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend };
+type More = { h?: string; r?: string; g?: string; q?: 1; p?: string; y?: string; o?: string; n?: number; f?: 1; s?: string; l?: Place; k?: Poll; a?: number[]; b?: number[]; w?: Preview; d?: 1; t?: 1; e?: number; v?: Route; z?: number; c?: Resend; m?: Pay; u?: number };
 
 /**
  * A safety message as sealed once (lib/safety.ts): the packets and where they go (the contact's
@@ -173,12 +175,15 @@ export type Parts = {
   safety?: number;
   /** Ours, a safety message as sealed once, to hold anew as it is. */
   resend?: Resend;
+  /** The payment request it is (lib/pay.ts), and when it was marked paid: by us, theirs, or by them, ours. */
+  pay?: Pay;
+  paid?: number;
 };
 
 type Fields = Omit<Message, 'peer'>;
 
 // A message's Parts as kept in More, and back.
-function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety, resend }: Parts): More {
+function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place, poll, myVote, theirVote, preview, forwarded, nostr, route, edited, safety, resend, pay, paid }: Parts): More {
   return {
     ...(re ? { p: re } : {}),
     ...(myReaction ? { y: myReaction } : {}),
@@ -197,6 +202,8 @@ function moreOf({ re, myReaction, theirReaction, pinned, starred, sticker, place
     ...(edited ? { e: edited } : {}),
     ...(safety ? { z: safety } : {}),
     ...(safety && resend ? { c: resend } : {}),
+    ...(pay ? { m: pay } : {}),
+    ...(pay && paid ? { u: paid } : {}),
   };
 }
 
@@ -219,6 +226,8 @@ function partsOf(more: More | undefined): Parts {
     ...(more?.e ? { edited: more.e } : {}),
     ...(more?.z ? { safety: more.z } : {}),
     ...(more?.z && more.c ? { resend: more.c } : {}),
+    ...(more?.m ? { pay: more.m } : {}),
+    ...(more?.m && more.u ? { paid: more.u } : {}),
   };
 }
 
@@ -255,11 +264,12 @@ const QUEUE_ID = /^[0-9a-f]{48}$/;
 
 // What is said of ours only is kept of ours only.
 function checkedMore(value: unknown, mine: boolean): More | undefined {
-  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown } | null;
+  const v = value as { h?: unknown; r?: unknown; g?: unknown; q?: unknown; p?: unknown; y?: unknown; o?: unknown; n?: unknown; f?: unknown; s?: unknown; l?: unknown; k?: unknown; a?: unknown; b?: unknown; w?: unknown; d?: unknown; t?: unknown; e?: unknown; v?: unknown; z?: unknown; c?: unknown ; m?: unknown; u?: unknown } | null;
   if (!v || typeof v !== 'object') return undefined;
   const place = checkedPlace(v.l);
   const poll = checkedPoll(v.k);
   const preview = checkedPreview(v.w);
+  const pay = checkedPay(v.m);
   const votes = (chose: unknown) => (poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null);
   const [ours, theirs] = [votes(v.a), votes(v.b)];
   const held = mine && typeof v.h === 'string' && HELD_ID.test(v.h) && typeof v.r === 'string' && isRelayAddress(v.r);
@@ -282,6 +292,7 @@ function checkedMore(value: unknown, mine: boolean): More | undefined {
     ...(isRoute(v.v) ? { v: v.v } : {}),
     ...(count(v.e) ? { e: count(v.e) } : {}),
     ...(mine && isSafetyHours(v.z) ? { z: v.z, ...(isResend(v.c) ? { c: v.c } : {}) } : {}),
+    ...(pay ? { m: pay, ...(count(v.u) ? { u: count(v.u) } : {}) } : {}),
   };
   return Object.keys(more).length > 0 ? more : undefined;
 }
@@ -606,6 +617,18 @@ export class History {
     const checked = poll ? checkedChoices(chose, poll.o.length, !!poll.m) : null;
     if (!checked) return Promise.resolve(false);
     return this.change(peer, tag, ours ? { myVote: checked } : { theirVote: checked });
+  }
+
+  /**
+   * Marks a chat's payment request, by its tag, paid `at` (milliseconds): theirs by us (`ours`), or
+   * ours by them, as only the one asked marks it. Once: false if the message is gone, is not a
+   * request of the other side's, or is marked already.
+   */
+  paid(peer: string, tag: string, ours: boolean, at: number): Promise<boolean> {
+    const kept = this.data.chats[peer]?.find((m) => m[3] === tag);
+    const m = kept ? unpack(kept) : null;
+    if (!m?.pay || m.mine === ours || m.paid || !(at > 0)) return Promise.resolve(false);
+    return this.change(peer, tag, { paid: Math.round(at) });
   }
 
   /**

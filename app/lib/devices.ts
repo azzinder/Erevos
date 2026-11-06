@@ -4300,9 +4300,9 @@ export class Links implements Link, TakenFiles {
         if (mark && have.mine && (have.mark ?? 0) < mark) await history.mark(peer, true, mark, now, [tag]);
       } else {
         const lasts = typeof m.lasts === 'number' && m.lasts > 0 ? m.lasts : typeof m.timer === 'number' ? m.timer : 0;
-        // With what it answers, and what it is beyond words (lib/chat-parts.ts): a sticker, a place, a poll, a preview.
-        const { sticker, place, poll, preview, forwarded } = carriedOf(m);
-        const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
+        // With what it answers, and what it is beyond words (lib/chat-parts.ts): a sticker, a place, a poll, a payment request, a preview.
+        const { sticker, place, poll, preview, forwarded, pay } = carriedOf(m);
+        const parts = { ...(isTag(m.re) ? { re: m.re } : {}), ...(sticker ? { sticker } : {}), ...(place ? { place } : {}), ...(poll ? { poll } : {}), ...(pay ? { pay } : {}), ...(preview ? { preview } : {}), ...(forwarded ? { forwarded } : {}) };
         const base: Message = { peer, text: '', mine: true, at: now, tag, lasts, mark: mark ?? 0, ...parts };
         const voice = voiceOf(m.voice);
         const offer = isObject(m.file) ? readOffer(m.file) : null;
@@ -4317,15 +4317,16 @@ export class Links implements Link, TakenFiles {
   }
 
   // What a message sealed for a contact says of one of the chat's messages, kept as this side's own,
-  // as the chat keeps what it sends: a reaction, a pin, a vote, new words for one of ours.
+  // as the chat keeps what it sends: a reaction, a pin, a vote, new words for one of ours, a request paid.
   private async marksAsOwn(peer: string, m: Json, now: number): Promise<void> {
     const { history } = this.chats;
     const react = isObject(m.react) && isTag(m.react.tag) && (m.react.emoji === '' || isReactionEmoji(m.react.emoji)) ? { tag: m.react.tag, emoji: m.react.emoji as string } : null;
     if (react) await history.react(peer, react.tag, true, react.emoji);
-    const { pin, vote, edit } = carriedOf(m);
+    const { pin, vote, edit, settled } = carriedOf(m);
     if (pin) await history.pin(peer, pin.tag, pin.on ? now : 0);
     if (vote) await history.vote(peer, vote.tag, true, vote.chose);
     if (edit) await history.edit(peer, edit.tag, true, edit.text, now);
+    if (settled) await history.paid(peer, settled.tag, true, now);
   }
 
   // Packs of the history the phone put on the relay: each taken, opened and kept, then deleted.

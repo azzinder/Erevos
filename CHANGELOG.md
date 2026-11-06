@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **Payment requests**: another app, as Fasouli, can ask Erevos to send one to a contact
+  (`erevos://pay?a=…&d=…&c=…&w=…&r=…`): Send to opens with only Erevos chats, and the chat asks before it goes. It
+  shows as a card with the amount and what it is for; the contact taps **Paid** once they paid (it cannot be taken
+  back), and the sender's **Mark in Fasouli** opens `lphlchrima://paid?r=…` to mark it collected there. Erevos moves no
+  money. An Erevos from before shows the request as words.
 - **Notes from another app**: an app on the phone, as Fasouli for a payment that is coming, can ask to keep a note
   with its reminder in Chat with myself (`erevos://myself?note=…&due=…`). It opens after the password, in the space
   you open, and Erevos asks first, showing the words and the time; nothing goes back to the app.

@@ -14,9 +14,10 @@ import { copyToSend } from '../lib/collection-out';
 import { spaceCollection } from '../lib/collection-place';
 import { canGroup, hasCore } from '../lib/core';
 import { forwardTo } from '../lib/forward';
-import { t } from '../lib/i18n';
+import { locale, t } from '../lib/i18n';
 import { shownName } from '../lib/inbox';
 import { useModules } from '../lib/modules';
+import { handPay, payAmount, type Pay } from '../lib/pay';
 import { dropShared, handShared, isSharedPhoto, sharedFileOf, type SharedFile } from '../lib/share-in';
 import { spaceChats } from '../lib/space-chats';
 import { spaceGroups } from '../lib/space-groups';
@@ -55,11 +56,20 @@ function smsTarget(address: string, name: string, at: number): Target {
 }
 
 export default function ShareScreen() {
+  return <SendTo />;
+}
+
+/**
+ * Send to, as share.tsx opens it, or (`pay`) for a payment request another app asks for
+ * (app/pay.tsx, lib/pay.ts): then only Erevos chats, and the chat picked asks before it sends.
+ */
+export function SendTo({ pay }: { pay?: Pay | null }) {
   const params = useLocalSearchParams<{ text?: string; file?: string; sealed?: string; name?: string; mime?: string; large?: string; collection?: string }>();
+  const asked = pay !== undefined;
   const colors = useColors();
   const modules = useModules();
   const text = (params.text ?? '').trim();
-  const file = useMemo(() => sharedFileOf(params), [params.file, params.sealed, params.name, params.mime]);
+  const file = useMemo(() => (asked ? null : sharedFileOf(params)), [asked, params.file, params.sealed, params.name, params.mime]);
   const large = params.large === '1';
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [query, setQuery] = useState('');
@@ -70,7 +80,7 @@ export default function ShareScreen() {
   const [naming, setNaming] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
-  const fromCollection = typeof params.collection === 'string' && params.collection.length > 0;
+  const fromCollection = !asked && typeof params.collection === 'string' && params.collection.length > 0;
   // Whether the photo or file was handed on: if not, it goes as Send to closes.
   const handed = useRef(false);
 
@@ -125,7 +135,11 @@ export default function ShareScreen() {
   }, []);
 
   const withFile = !!file || fromCollection;
-  const what = fromCollection
+  const what = asked
+    ? pay
+      ? `💶 ${t('Payment request')}: ${payAmount(pay, locale())}${pay.w ? ` · ${pay.w}` : ''}`
+      : ''
+    : fromCollection
     ? (sending ?? []).map((i) => i.file.name).join(', ')
     : file
       ? isSharedPhoto(file)
@@ -133,12 +147,18 @@ export default function ShareScreen() {
         : t('A file: {name}', { name: file.name })
       : text;
   const q = plain(query.trim());
-  const shown = (targets ?? []).filter((target) => (!withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
+  const shown = (targets ?? []).filter((target) => (asked ? target.kind === 'chat' : !withFile || target.kind !== 'sms') && (!q || plain(target.name).includes(q)));
   // The Collection takes a photo or file shared in, on the phone, when it is on.
   const toCollection = !!file && !fromCollection && CAN_COLLECT && Platform.OS !== 'web' && modules.has('collection');
   const kindOf = (target: Target) => (target.kind === 'group' ? t('Group') : target.kind === 'sms' ? t('SMS') : t('Erevos chat'));
 
   async function choose(target: Target) {
+    if (asked) {
+      if (!pay || target.kind !== 'chat') return;
+      handPay(target.to, pay);
+      router.replace(target.open);
+      return;
+    }
     if (text) forwardTo(target.to, { text, photo: null });
     if (file) {
       handed.current = true;
@@ -202,6 +222,8 @@ export default function ShareScreen() {
         <Text numberOfLines={4} tone="muted">
           {what}
         </Text>
+      ) : asked ? (
+        <Text tone="muted">{t('This payment request cannot be read.')}</Text>
       ) : !large ? (
         <Text tone="muted">{t('Nothing came to send.')}</Text>
       ) : null}
@@ -209,7 +231,9 @@ export default function ShareScreen() {
         <>
           <Input value={query} onChangeText={setQuery} placeholder={t('Search chats')} accessibilityLabel={t('Search chats')} />
           <Text variant="caption" tone="muted">
-            {withFile
+            {asked
+              ? t('The chat you pick asks before the request goes. Only Erevos chats, never hidden chats.')
+              : withFile
               ? t('The photo or file goes as soon as the chat or group you pick opens. Never to hidden chats, nor as an SMS.')
               : t('It opens in the chat, group or SMS conversation you pick, in the message field, to read and send there. Never in hidden chats.')}
           </Text>

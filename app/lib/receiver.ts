@@ -725,6 +725,8 @@ async function keep(chats: SpaceChats, received: Received, state: State, nostr =
   if (vote && (await history.vote(peer, vote.tag, false, vote.chose))) changed = true;
   // New words for one of theirs: only their own changes, and it shows as edited.
   if (edit && (await history.edit(peer, edit.tag, false, edit.text, at))) changed = true;
+  // They paid one of our payment requests (lib/pay.ts), as they marked it: once.
+  if (received.more.settled && (await history.paid(peer, received.more.settled.tag, false, at))) changed = true;
   // An invite to their relay: kept for the chat, which takes it by itself when it opens (lib/relay-offer.ts).
   const offer = twice ? null : offerOf(received);
   if (offer) await keepOffer(offer).catch(() => undefined);

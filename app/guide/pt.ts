@@ -1106,6 +1106,10 @@ figurinhas):
   escolher. Toque numa opção para escolhê-la, de novo para retirá-la; cada opção mostra quantos a escolheram, e quem.
   Os votos viajam dentro da criptografia, como as reações. Um Erevos de antes disso mostra a pergunta e as opções dela
   como palavras, para responder com palavras.
+- **Pedido de pagamento** (pedido por outro app, como o Fasouli): um valor e para quê, como cartão. Quem recebe toca
+  **Pago** quando pagar, e o seu telefone fica sabendo; não dá para desfazer. Depois **Marcar no Fasouli**, no Android,
+  marca como recebido lá. O Erevos não move dinheiro nem conhece bancos: o cartão só diz o que foi pedido. Só em
+  conversas com um contato, nunca nas ocultas. Um Erevos anterior mostra o valor como texto.
 
 **Por quê:** um pacote de figurinhas baixado da internet diria a um servidor que este celular tem o Erevos, então as
 figurinhas são embutidas e só os nomes delas viajam. As suas próprias são listadas num único valor selado do mesmo

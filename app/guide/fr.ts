@@ -1178,6 +1178,11 @@ stickers) :
   d’une à choisir. Appuie sur une option pour la choisir, de nouveau pour la retirer ; chaque option montre combien
   l’ont choisie, et qui. Les votes voyagent à l’intérieur du chiffrement, comme les réactions. Un Erevos d’avant cela
   affiche la question et ses options en mots, pour répondre en mots.
+- **Demande de paiement** (demandée depuis une autre appli, comme Fasouli) : un montant et pour quoi, en carte. Celui
+  qui la reçoit touche **Payé** une fois payé, et ton téléphone le sait ; impossible de revenir en arrière. Puis **Noter
+  dans Fasouli**, sur Android, la marque encaissée là-bas. Erevos ne déplace pas d’argent et ne connaît aucune banque :
+  la carte dit seulement ce qui a été demandé. Seulement avec un contact, jamais en caché. Un Erevos plus ancien montre le
+  montant en texte.
 
 **Pourquoi :** un pack de stickers chargé depuis internet dirait à un serveur que ce téléphone a Erevos, donc les
 stickers sont intégrés et seuls leurs noms voyagent. Les tiens sont listés dans une seule valeur scellée de même taille

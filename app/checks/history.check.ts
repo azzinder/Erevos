@@ -312,6 +312,29 @@ t('keeps a poll and the votes on it, ours and theirs, as the poll allows', async
   assert.equal((await History.open('space', 0, key)).messages()[0].myVote, undefined);
 });
 
+t('keeps a payment request, and that it was paid, once, by the one asked', async () => {
+  const key = randomBytes(32);
+  const history = await History.open('space', 0, key);
+  const [ours, theirs] = [newTag(), newTag()];
+  const pay = { a: 4500, d: 2, c: 'EUR', w: 'Rent', r: 'tx-17' };
+  await history.add({ peer: 'contact:aa', text: 'Payment request: €45.00 · Rent', mine: true, at: 1, tag: ours, pay });
+  await history.add({ peer: 'contact:aa', text: 'Payment request: €5.00', mine: false, at: 2, tag: theirs, pay: { a: 500, d: 2, c: 'EUR', w: '' } });
+  // Ours is marked by them, theirs by us: never the other way round.
+  assert.equal(await history.paid('contact:aa', ours, true, 10), false);
+  assert.equal(await history.paid('contact:aa', theirs, false, 10), false);
+  assert.equal(await history.paid('contact:aa', ours, false, 10), true);
+  assert.equal(await history.paid('contact:aa', ours, false, 20), false);
+  assert.equal(await history.paid('contact:aa', theirs, true, 30), true);
+  assert.equal(await history.paid('contact:aa', newTag(), true, 30), false);
+  const [one, two] = (await History.open('space', 0, key)).messages();
+  assert.deepEqual([one.pay, one.paid, two.paid], [pay, 10, 30]);
+  // One kept with a request that is not of its shape keeps none.
+  const before = sealedFile<unknown>({ name: FILE, empty: {}, checked: (v) => v, block: SIZE, fixed: true });
+  await before.save('space', 1, key, { chats: { 'contact:aa': [[1, 0, 'x', newTag(), 0, 0, 0, 0, 0, { m: { a: -1, d: 2, c: 'EUR', w: '' }, u: 5 }]] } });
+  const [bad] = (await History.open('space', 1, key)).messages();
+  assert.deepEqual([bad.pay, bad.paid], [undefined, undefined]);
+});
+
 t('deletes the messages of one chat and keeps the others', async () => {
   const key = randomBytes(32);
   const history = await History.open('space', 0, key);

@@ -1032,6 +1032,10 @@ stickers too):
   Tap an option to choose it, again to take it back; each option shows how many chose it, and who. Votes travel inside
   the encryption, as reactions do. An Erevos from before this shows the question and its options as words, to answer in
   words.
+- **Payment request** (asked from another app, as Fasouli): an amount and what it is for, as a card. The one asked
+  taps **Paid** once they paid, which tells your phone, and cannot be taken back; then **Mark in Fasouli**, on Android,
+  marks it collected there. Erevos moves no money and knows of no bank: the card only says what was asked. Only in
+  chats with a contact, never in hidden chats. An Erevos from before this shows the amount as words.
 
 **Why:** a sticker pack fetched from the internet would tell a server that this phone has Erevos, so the stickers are
 built in and only their names travel. Your own are listed in one sealed value of the same size for every space and
