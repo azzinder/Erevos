@@ -26,9 +26,13 @@ app/lib/sync/ holds it, used by nothing yet, so nothing changes for anyone.
   any device's, for the newer devices that know it.
 - **Talking** (lib/sync/wire.ts): `have` says how far a device has each device's ops; the other
   gives what it lacks in `ops`, 200 at most at once, or the `whole` log when it lacks ops no longer
-  kept; taking them, it says `have` again. Two devices that have the same say nothing more. A device
-  is never given its own ops back; one that has fewer of its own than another has of it (put back
-  from a backup) takes the whole log, and numbers its next op after the last it made.
+  kept. A device that changed something gives each other device at once what it has not given it
+  yet. Nothing thanks for ops taken, so a change costs one packet to each other device: now and then
+  (every 10 minutes while the space is open) a device asks one that may lack its ops, or that it
+  never heard from, how far it is (`have` with `ask`), and that one says it. Two devices that have all
+  of each other's ops say nothing. A device is never given its own ops back; one that has fewer of
+  its own than another has of it (put back from a backup) takes the whole log, and numbers its next
+  op after the last it made.
 - **Letting go.** An op goes once every device said it has it; past 5000 the oldest go anyway, and a
   device behind them takes the whole log. A removed record goes once every device has its removal
   and nothing made before it can still come.
@@ -52,8 +56,22 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
 - The `whole` log is trusted as it comes from one of the account's own devices, over a link whose
   code was compared: it can say it has more of a third device's ops than it has.
 
+## Phase S1, first part: the phone writes, the devices keep
+
+- lock/sync-data.ts keeps each space's log, and each hidden place's that links on its own, sealed
+  with its key in `erevos-sync`, out of backups like the links (lock/devices-data.ts): a device put
+  back from a backup has no log and takes the whole of it. Unlinked, a device lets go of its log.
+- The log goes in the links as the envelope `sync` (lib/link-wire.ts), which a version from before
+  leaves alone: between the phone and each linked device that has an endpoint, and between devices
+  the phone named to each other (lib/siblings.ts). In the log the phone is the account's identity,
+  each device its endpoint's (lib/sync/links.ts, lib/devices.ts `syncWho`).
+- The phone writes its contacts (name, timer, request, look, hidden) and those it blocked into the
+  log as they change (lib/sync/contacts.ts), and all of them once a device first says its endpoint.
+  The devices keep it. Nothing reads it yet: the envelopes of before (`contacts`, `set`, `blocked`)
+  still carry the contacts, so nothing changes for anyone.
+
 ## Next
 
-S1 keeps the log sealed with the space's key, sends it in the devices' conversations
-(lib/siblings.ts and the phone's links), and moves contacts, blocked, requests and notes onto it,
-still writing the envelopes of before for devices of the 6 series.
+The second part of S1: the devices write their own changes to the contacts into the log, and the
+contacts as the log says them replace what `contacts` and `set` say, between devices of this
+version; then notes. The envelopes of before go on for devices of the 6 series.

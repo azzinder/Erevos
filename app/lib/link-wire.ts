@@ -95,6 +95,7 @@ export type Envelope =
   | ({ k: 'accounts' } & GivenAccounts)
   | { k: 'notes'; list: NoteSaid[]; gone: { id: string; v: number }[]; keep?: true }
   | { k: 'here' }
+  | { k: 'sync'; s: Json }
   | { k: 'move' }
   | { k: 'bye' };
 
@@ -488,6 +489,9 @@ function checkedEnvelope(v: Json): Envelope | null {
         : [];
       return { k: 'notes', list, gone, ...(v.keep === true ? { keep: true as const } : {}) };
     }
+    case 'sync':
+      // The account's log (lib/sync/wire.ts), checked in full where it is taken.
+      return isObject(v.s) ? { k: 'sync', s: v.s } : null;
     case 'here':
     case 'move':
     case 'bye':

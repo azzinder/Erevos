@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { answer, isOp, isVector, isWhole, MAX_BATCH, take, takeWhole, whole, type Log, type Op, type Whole } from './log';
+import { answer, isOp, isVector, isWhole, lackOf, MAX_BATCH, take, takeWhole, whole, type Answer, type Log, type Op, type Whole } from './log';
 
 // What the account's devices say to each other of their log (lib/sync/log.ts, docs/sync.md), the
 // way Briar's sync does: each says how far it has every device's ops (`have`); the other gives what
-// it lacks (`ops`), or the whole log when it lacks ops no longer kept (`whole`), and says `have`
-// again once it took them, which is also its thanks. Nothing here says which way it goes: the
+// it lacks (`ops`), or the whole log when it lacks ops no longer kept (`whole`). A device that
+// changed something gives each other device what it has not given it yet, at once. Nothing thanks
+// for ops taken: now and then (`asking`) a device asks one that may lack its ops how far it is
+// (`ask`), and that one says it; so two devices that have all of each other's ops say nothing. Nothing here says which way it goes: the
 // devices' own conversations carry it, sealed end to end (lib/siblings.ts, the phone's links), over
 // the relay, nearby or whatever reaches the other, and a space and each hidden place each have their
 // own log, said in their own links only. Self-contained, so it runs under plain Node for checks.
 
 export type Said =
-  | { k: 'have'; vv: Record<string, number> }
+  | { k: 'have'; vv: Record<string, number>; ask?: true }
   | { k: 'ops'; ops: Op[]; more?: true }
   | ({ k: 'whole' } & Whole);
 
@@ -22,7 +24,11 @@ export function readSaid(x: unknown): Said | null {
   if (typeof x !== 'object' || x === null) return null;
   const m = x as Record<string, unknown>;
   const keys = Object.keys(m).sort().join();
-  if (m.k === 'have') return keys === 'k,vv' && isVector(m.vv) ? { k: 'have', vv: m.vv } : null;
+  if (m.k === 'have') {
+    if (!isVector(m.vv)) return null;
+    if (keys === 'k,vv') return { k: 'have', vv: m.vv };
+    return keys === 'ask,k,vv' && m.ask === true ? { k: 'have', vv: m.vv, ask: true } : null;
+  }
   if (m.k === 'ops') {
     if (!Array.isArray(m.ops) || m.ops.length > MAX_BATCH || !m.ops.every(isOp)) return null;
     if (keys === 'k,ops') return { k: 'ops', ops: m.ops };
@@ -35,9 +41,9 @@ export function readSaid(x: unknown): Said | null {
   return null;
 }
 
-/** What to say first, and whenever this device changed something or a link comes up. */
-export function have(log: Log): Said {
-  return { k: 'have', vv: { ...log.vv } };
+/** How far this device is; with `ask`, asking the other to say how far it is too. */
+export function have(log: Log, ask = false): Said {
+  return ask ? { k: 'have', vv: { ...log.vv }, ask: true } : { k: 'have', vv: { ...log.vv } };
 }
 
 /** Whether `theirs` has an op that `log` lacks: never one of its own, which it alone makes. */
@@ -45,24 +51,49 @@ function ahead(theirs: Record<string, number>, log: Log): boolean {
   return Object.entries(theirs).some(([d, n]) => d !== log.me && n > (log.vv[d] ?? 0));
 }
 
+/** What a log's Answer says, as said. */
+function said(log: Log, a: Answer): Said[] {
+  if ('whole' in a) return [{ k: 'whole', ...whole(log) }];
+  if (a.ops.length === 0) return [];
+  return [a.more ? { k: 'ops', ops: a.ops, more: true } : { k: 'ops', ops: a.ops }];
+}
+
+/** The later of each device's number in two vectors. */
+export function upTo(a: Record<string, number> | undefined, b: Record<string, number> | undefined): Record<string, number> {
+  const out: Record<string, number> = { ...(a ?? {}) };
+  for (const [d, n] of Object.entries(b ?? {})) out[d] = Math.max(out[d] ?? 0, n);
+  return out;
+}
+
+/**
+ * What to give `peer` now, after a change here: what it lacks beyond what it said it has and what
+ * was given it since (`given`). Nothing when it lacks nothing.
+ */
+export function push(log: Log, peer: string, given?: Record<string, number>): Said[] {
+  return said(log, lackOf(log, peer, upTo(log.seen[peer], given)));
+}
+
+/** Whether `peer` may lack ops this device has (not its own): what it said it has is behind, or it said nothing. */
+export function asking(log: Log, peer: string): boolean {
+  const theirs = log.seen[peer] ?? {};
+  return Object.entries(log.vv).some(([d, n]) => d !== peer && n > (theirs[d] ?? 0));
+}
+
 /**
  * What this device says back to what `from`, another of the account's devices, said: nothing when
- * there is nothing more to say, so two devices that have the same stop there.
+ * there is nothing more to say.
  */
 export function heard(log: Log, from: string, x: unknown, now: number): Said[] {
-  const said = readSaid(x);
-  if (said === null || from === log.me || !log.peers.includes(from)) return [];
-  if (said.k === 'have') {
-    const out: Said[] = [];
-    const a = answer(log, from, said.vv);
-    if ('whole' in a) out.push({ k: 'whole', ...whole(log) });
-    else if (a.ops.length > 0) out.push(a.more ? { k: 'ops', ops: a.ops, more: true } : { k: 'ops', ops: a.ops });
-    if (ahead(said.vv, log)) out.push(have(log));
+  const m = readSaid(x);
+  if (m === null || from === log.me || !log.peers.includes(from)) return [];
+  if (m.k === 'have') {
+    const out = said(log, answer(log, from, m.vv));
+    if (m.ask || ahead(m.vv, log)) out.push(have(log));
     return out;
   }
-  if (said.k === 'ops') {
-    take(log, said.ops, now);
-    return [have(log)];
+  if (m.k === 'ops') {
+    take(log, m.ops, now);
+    return m.more ? [have(log)] : [];
   }
-  return takeWhole(log, from, { vv: said.vv, data: said.data }) ? [have(log)] : [];
+  return takeWhole(log, from, { vv: m.vv, data: m.data }) ? [have(log)] : [];
 }

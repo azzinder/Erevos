@@ -255,6 +255,11 @@ export function answer(log: Log, peer: string, theirs: Record<string, number>): 
     log.seen[peer] = { ...theirs };
     compact(log);
   }
+  return lackOf(log, peer, theirs);
+}
+
+/** What `peer` lacks if it has `theirs`, as `answer` gives it, keeping nothing of what it said. */
+export function lackOf(log: Log, peer: string, theirs: Record<string, number>): Answer {
   // A device that has fewer of its own ops than this one has of it was put back from a backup: it
   // takes the whole log, and numbers its next op after the last one it made, never again one used.
   if ((theirs[peer] ?? 0) < (log.vv[peer] ?? 0)) return { whole: true };
@@ -448,4 +453,29 @@ export function isWhole(x: unknown): x is Whole {
   return Object.entries(w.data).every(([k, entries]) =>
     NAME.test(k) && typeof entries === 'object' && entries !== null &&
     Object.entries(entries).every(([id, e]) => isId(id) && isEntry(e)));
+}
+
+/** A log as this device kept it, checked in full; null for anything else, as for none. */
+export function checkedLog(x: unknown): Log | null {
+  if (typeof x !== 'object' || x === null) return null;
+  const l = x as Record<string, unknown>;
+  if (!isDevice(l.me) || !isDevice(l.primary) || (l.clock !== undefined && !isStamp(l.clock))) return null;
+  if (!isVector(l.vv) || !isVector(l.cut)) return null;
+  if (!Array.isArray(l.peers) || !l.peers.every(isDevice) || !Array.isArray(l.ops) || !Array.isArray(l.held)) return null;
+  if (typeof l.gone !== 'object' || l.gone === null || !Object.entries(l.gone).every(([d, s]) => isDevice(d) && isStamp(s))) return null;
+  if (typeof l.seen !== 'object' || l.seen === null || !Object.entries(l.seen).every(([d, v]) => isDevice(d) && isVector(v))) return null;
+  if (!isWhole({ vv: l.vv, data: l.data })) return null;
+  return {
+    me: l.me,
+    primary: l.primary,
+    ...(l.clock !== undefined ? { clock: l.clock as Stamp } : {}),
+    vv: l.vv,
+    peers: l.peers,
+    gone: l.gone as Record<string, Stamp>,
+    data: l.data as Log['data'],
+    ops: l.ops.filter(isOp).slice(-MAX_OPS),
+    cut: l.cut,
+    held: l.held.filter(isOp).slice(-MAX_HELD),
+    seen: l.seen as Log['seen'],
+  };
 }

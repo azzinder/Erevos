@@ -17,6 +17,8 @@ import {
   answer, change, compact, emptyLog, idsOf, isOp, isThere, MAX_OPS, setPeers, take, takeWhole, valueOf, whole,
   type Change, type Log, type Op,
 } from '../lib/sync/log';
+import { blockedIn, changesFor, contactsIn } from '../lib/sync/contacts';
+import { SyncLinks } from '../lib/sync/links';
 import { have, heard, readSaid, type Said } from '../lib/sync/wire';
 
 const PHONE = 'a1'.repeat(32);
@@ -298,4 +300,83 @@ test('the clock moves a ms on once its counter is full', () => {
   let s: Stamp | undefined;
   for (let i = 0; i < 70_000; i++) s = tick(s, T0, PHONE);
   assert.ok(s!.t > T0 && s!.t < T0 + DAY);
+});
+
+// Devices with their links as lib/devices.ts gives them: what each says goes to the other's inbox.
+function linked(): { phone: SyncLinks; dell: SyncLinks; said: { to: string; from: string; m: Said }[]; deliver: () => Promise<number> } {
+  const said: { to: string; from: string; m: Said }[] = [];
+  const kept: Record<string, Log | null> = {};
+  const make = (me: string) =>
+    new SyncLinks(
+      {
+        load: async () => (kept[me] ? structuredClone(kept[me]) : null),
+        save: async (log) => {
+          kept[me] = log && structuredClone(log);
+        },
+        send: (to, m) => said.push({ to, from: me, m: JSON.parse(JSON.stringify(m)) as Said }),
+        who: () => ({ me, primary: PHONE, peers: [PHONE, DELL] }),
+      },
+      () => T0,
+    );
+  const links: Record<string, SyncLinks> = { [PHONE]: make(PHONE), [DELL]: make(DELL) };
+  const deliver = async () => {
+    let n = 0;
+    while (said.length > 0) {
+      const { to, from, m } = said.shift()!;
+      n++;
+      await links[to].heard(from, m);
+    }
+    return n;
+  };
+  return { phone: links[PHONE], dell: links[DELL], said, deliver };
+}
+
+const carol = { identity: 'e5'.repeat(32), name: 'Carol', timer: 0, request: false, look: null, hide: false };
+
+test('the phone writes the contacts into the log, and a device takes them with nothing said back', async () => {
+  const { phone, dell, deliver } = linked();
+  assert.equal(await phone.writeFrom((log) => changesFor(log, [carol], [{ identity: OTHER, name: 'Spam' }])), true);
+  assert.equal(await deliver(), 1, 'one ops, and no thanks for it');
+  const log = (await dell.read())!;
+  assert.deepEqual(contactsIn(log), [carol]);
+  assert.deepEqual(blockedIn(log), [{ identity: OTHER, name: 'Spam' }]);
+  // The same again writes nothing, and says nothing.
+  assert.equal(await phone.writeFrom((l) => changesFor(l, [carol], [{ identity: OTHER, name: 'Spam' }])), false);
+  assert.equal(await deliver(), 0);
+  // A change goes alone: what was given before does not go again.
+  await phone.writeFrom((l) => changesFor(l, [{ ...carol, timer: 3600 }], []));
+  assert.equal(await deliver(), 1);
+  const next = (await dell.read())!;
+  assert.equal(contactsIn(next)[0].timer, 3600);
+  assert.deepEqual(blockedIn(next), []);
+  assert.equal(next.vv[PHONE], 10, 'eight ops, then the timer and the one no longer blocked');
+});
+
+test('now and then the phone asks a device that may lack its ops, and the device says how far it is, once', async () => {
+  const { phone, dell, said, deliver } = linked();
+  await phone.writeFrom((log) => changesFor(log, [carol], []));
+  // Lost on the way.
+  said.length = 0;
+  await phone.ask();
+  assert.equal(await deliver(), 3, 'asked, told how far, given what it lacked');
+  assert.deepEqual(contactsIn((await dell.read())!), [carol]);
+  // Asked again: it says it has all, and from then nothing is asked.
+  await phone.ask();
+  assert.equal(await deliver(), 2);
+  await phone.ask();
+  await dell.ask();
+  assert.equal(await deliver(), 0, 'two devices that have all of each other say nothing');
+});
+
+test('a device unlinked forgets the log, and starts a new one when linked again', async () => {
+  const { phone, dell, deliver } = linked();
+  await phone.writeFrom((log) => changesFor(log, [carol], []));
+  await deliver();
+  await dell.forget();
+  const log = (await dell.read())!;
+  assert.deepEqual(log.data, {});
+  await dell.ask();
+  await phone.ask();
+  await deliver();
+  assert.deepEqual(contactsIn((await dell.read())!), [carol]);
 });

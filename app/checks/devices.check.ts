@@ -109,6 +109,7 @@ import { EMPTY_SPACE, loadSpaceData, saveHiddenData, saveSpaceData, type Queue }
 import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
+import { contactsIn } from '../lib/sync/contacts';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
 import { store as secureStore } from './secure-memory';
@@ -440,6 +441,10 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   // Said once, they do not go back and forth.
   await dell.links.settled();
   assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
+  // The account's log (lib/sync/) holds the same, as the phone wrote it there: nothing reads it yet.
+  const logged = contactsIn((await dell.links.syncLog())!);
+  assert.deepEqual(logged.map((c) => [c.identity, c.timer]), [[carolId, 3600]]);
+  assert.deepEqual(contactsIn((await pixel.links.syncLog())!), logged);
 
   // What it carries beyond words goes with it: here a sticker, answering the computer's message.
   const sticker = await pixel.chats.e2e.seal(carolId, '🌝', pixel.queue.senderHex, { at: where, re: fromDell, more: { sticker: 'moon-smile' } });

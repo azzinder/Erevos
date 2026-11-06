@@ -9,6 +9,7 @@ import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, t
 import type { Group, GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
 import { currentSpace } from '../lock/keys';
+import { keepSyncFile, loadSyncData, saveSyncData } from '../lock/sync-data';
 import { placeQueues, spaceQueues } from '../lock/queues-data';
 import { hiddenHolder, type Holder } from '../lock/sealed-file';
 import { loadHiddenData, loadSpaceData } from '../lock/space-data';
@@ -138,6 +139,10 @@ import { spaceGroups, spaceGroupTransport } from './space-groups';
 import { spareCode } from './spare';
 import { isVoicePart, VoiceAssembler, type VoicePart } from './voice';
 import { dropHeld, heldAfter, heldFor, sendWaiting, type SendPlace } from './waiting';
+import { changesFor } from './sync/contacts';
+import { SyncLinks, type Who } from './sync/links';
+import type { Json as SyncJson, Log as SyncLog } from './sync/log';
+import type { Said as SyncSaid } from './sync/wire';
 
 // The account's other devices (docs/linked-devices.md): the phone that holds the account (the
 // primary) relays for a computer or a browser linked to it, and contacts see nothing new. Each link
@@ -257,6 +262,8 @@ const LEFT_LASTS = 15 * 24 * 60 * 60_000;
 const ENDED_LASTS = 2 * 60_000;
 // How often the primary empties the queues of the places that fill its device list, and the most it takes from one at a time.
 const DRAIN_EVERY = 60 * 60_000;
+// How often each side says how far it has the account's log (lib/sync/), besides each change.
+const SYNC_EVERY = 10 * 60_000;
 const DRAIN_MOST = 1000;
 // After the phone's queue moved for a contact deleted or blocked, a new device list at most this often.
 const RESIGN_EVERY = 60 * 60_000;
@@ -500,6 +507,9 @@ export class Links implements Link, TakenFiles {
   // sealed with its own key, and of which nothing goes to the space or its devices.
   private readonly holder: Holder;
   private readonly pocket: number | null;
+  // The account's log (lib/sync/, docs/sync.md), said in these links; when it was last told.
+  private readonly syncs: SyncLinks;
+  private syncSaid = Date.now();
 
   private constructor(space: number, key: Uint8Array, chats: SpaceChats, data: DevicesData, pocket: number | null) {
     this.space = space;
@@ -508,6 +518,12 @@ export class Links implements Link, TakenFiles {
     this.data = data;
     this.pocket = pocket;
     this.holder = pocket === null ? 'space' : hiddenHolder(pocket);
+    this.syncs = new SyncLinks({
+      load: () => loadSyncData(space, key, this.holder).then((d) => d.log),
+      save: (log) => saveSyncData(space, key, { log }, this.holder),
+      send: (to, said) => this.sendSync(to, said),
+      who: () => this.syncWho(),
+    });
   }
 
   /**
@@ -520,6 +536,7 @@ export class Links implements Link, TakenFiles {
     const data = await loadDevicesData(space, key, holder);
     // The space's value in the file, so the file is there whichever space or place links.
     if (pocket === null) await keepDevicesFile(space, key, data).catch(() => undefined);
+    if (pocket === null) await keepSyncFile(space, key, await loadSyncData(space, key)).catch(() => undefined);
     const links = new Links(space, key, chats, data, pocket);
     // A space that is no linked device has no endpoint: one there is a linked device's backup put
     // back elsewhere, without its link, and goes before anything is sealed, so two never seal as one.
@@ -935,6 +952,8 @@ export class Links implements Link, TakenFiles {
         break;
       case 'endpoint':
         if (core.canSign()) await this.endpointFrom(peer.id, said.bundle, said.ek);
+        // The log names it from now: what it lacks of it goes, the contacts first written should none be.
+        this.syncContacts(this.contactsKept(), this.chats.e2e.blocked());
         break;
       case 'out':
         // What the device wrote to a contact itself: this phone's own too, and the devices that do
@@ -956,6 +975,9 @@ export class Links implements Link, TakenFiles {
         this.passOn(peer, { ...said, ...(others && files ? { keep: true as const } : {}) });
         break;
       }
+      case 'sync':
+        if (peer.endpoint) void this.syncs.heard(peer.endpoint.id, said.s).catch(() => undefined);
+        break;
       case 'unblock':
         // Unblocked on the device, as it asked when their link was added there: so here too, before what it says next.
         this.act(() => this.chats.e2e.unblock(said.c));
@@ -1050,6 +1072,9 @@ export class Links implements Link, TakenFiles {
       case 'notes':
         await this.heardNotes({ id: primary.id, sibling: false });
         void this.noting(() => this.notesFrom(said, said.keep === true));
+        break;
+      case 'sync':
+        void this.syncs.heard(this.data.account, said.s).catch(() => undefined);
         break;
       case 'move':
         // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
@@ -1192,6 +1217,7 @@ export class Links implements Link, TakenFiles {
   blockedChanged(blocked: readonly Blocked[]): void {
     if (this.data.primary || !this.data.devices.some((d) => d.linked)) return;
     void this.say({ k: 'blocked', list: [...blocked] }).catch(() => undefined);
+    this.syncContacts(this.contactsKept(), blocked);
   }
 
   unblocked(identity: string): void {
@@ -1203,6 +1229,7 @@ export class Links implements Link, TakenFiles {
     const role = this.role();
     if (!role) return;
     const now = contacts.map(syncedOf);
+    if (!this.data.primary) this.syncContacts(contacts, this.chats.e2e.blocked());
     void this.run(async () => {
       if (this.data.primary) await this.tellChanges(now);
       else {
@@ -1410,6 +1437,60 @@ export class Links implements Link, TakenFiles {
     // The notes of Chat with myself, once it says it takes them.
     void this.noting(() => this.tellNotes());
     this.announce();
+  }
+
+  // ---- The account's log (lib/sync/, docs/sync.md) ----
+
+  /** The account's log as this side keeps it (lib/sync/log.ts); null while it takes no part. */
+  syncLog(): Promise<SyncLog | null> {
+    return this.syncs.read();
+  }
+
+  // Who is who in the log: on a linked device, its endpoint, the account and the others the phone
+  // named; on the primary, the account and each linked device that has an endpoint. None while
+  // nothing is linked, or this device has no endpoint yet.
+  private syncWho(): Who | null {
+    const { e2e } = this.chats;
+    if (this.data.primary) {
+      const own = e2e.endpoint()?.id;
+      const account = this.data.account;
+      if (!own || !account) return null;
+      return { me: own, primary: account, peers: (this.data.siblings?.list ?? []).map((s) => s.id) };
+    }
+    const devices = this.data.devices.filter((d) => d.linked && d.endpoint?.ek);
+    if (devices.length === 0) return null;
+    const me = e2e.identityHex();
+    return { me, primary: me, peers: devices.map((d) => d.endpoint!.id) };
+  }
+
+  // Says something of the log to one of the account's devices, by its id in the log, in its link.
+  private sendSync(to: string, said: SyncSaid): void {
+    const envelope: Envelope = { k: 'sync', s: said as unknown as Json };
+    if (this.data.primary) {
+      if (to === this.data.account) {
+        void this.say(envelope).catch(() => undefined);
+        return;
+      }
+      void this.run(async () => {
+        if (!this.data.siblings?.list.some((s) => s.id === to)) return;
+        await this.save({ ...this.data, siblings: await this.sealSiblings(envelope, [to]) });
+      })
+        .then(() => this.flush())
+        .catch(() => undefined);
+      return;
+    }
+    const device = this.data.devices.find((d) => d.linked && d.endpoint?.id === to);
+    if (device) void this.say(envelope, device.id).catch(() => undefined);
+  }
+
+  // On the primary (phase S1, first part): the contacts and those blocked, as this phone has them,
+  // written into the log, which the devices keep. Nothing reads them from it yet: the envelopes of
+  // before still carry them (contacts, set, blocked).
+  private syncContacts(contacts: readonly Contact[], blocked: readonly Blocked[]): void {
+    if (this.data.primary) return;
+    const logged = contacts.map((c) => ({ identity: c.identity, name: c.name, timer: c.timer, request: c.request, look: (c.look ?? null) as SyncJson, hide: c.hide }));
+    const kept = blocked.map((b) => ({ identity: b.identity, name: b.name }));
+    void this.syncs.writeFrom((log) => changesFor(log, logged, kept)).catch(() => undefined);
   }
 
   // ---- Linking ----
@@ -1654,6 +1735,7 @@ export class Links implements Link, TakenFiles {
     // The accounts brought from the phone go with the chats.
     if (brought && hand) await hand.letGo(this.space, this.key, brought, this.pocket).catch(() => undefined);
     await e2e.dropEndpoint().catch(() => undefined);
+    await this.syncs.forget().catch(() => undefined);
     await e2e.forgetBlocked().catch(() => undefined);
     const gone = e2e.contacts().map((c) => c.identity);
     for (const identity of gone) await e2e.removeContact(identity).catch(() => undefined);
@@ -2157,6 +2239,7 @@ export class Links implements Link, TakenFiles {
     if (said.k === 'out') this.act(() => this.ownFrom(said.c, said.m, said.mark));
     else if (said.k === 'came') this.act(() => this.cameHere(said.c, said.got));
     else if (said.k === 'set') return this.setFrom(said);
+    else if (said.k === 'sync') void this.syncs.heard(sibling.id, said.s).catch(() => undefined);
     else if (said.k === 'notes') {
       await this.heardNotes({ id: sibling.id, sibling: true });
       void this.noting(() => this.notesFrom(said, said.keep === true));
@@ -2610,6 +2693,10 @@ export class Links implements Link, TakenFiles {
       }).catch(() => undefined);
     }
     if (!this.role()) return;
+    if (Date.now() - this.syncSaid >= SYNC_EVERY) {
+      this.syncSaid = Date.now();
+      void this.syncs.ask().catch(() => undefined);
+    }
     // As notes are still to be told, or a device met since was not said to that this side takes them.
     if (this.notesLeft || this.notesTargets().some((target) => !this.notesTarget(target)?.notesSaid)) void this.noting(() => this.tellNotes());
     if (this.noteFilesLeft) void this.noting(() => this.takeNoteFiles());
