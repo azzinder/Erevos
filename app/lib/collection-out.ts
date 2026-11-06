@@ -18,7 +18,10 @@ import { isSharedPhoto, type SharedFile } from './share-in';
 // it with another app, which reads it through a link of Erevos's own (modules/erevos-collection,
 // CollectionProvider.kt) that streams it as it is decrypted, with no copy anywhere. The link works
 // until the Collection's screen closes, or the space locks or closes. Saving to the phone's own
-// folders is lib/save-file.ts. On a computer, collection-out.web.ts.
+// folders is lib/save-file.ts. In the desktop app, collection-out.web.ts.
+
+/** Whether a file of the Collection can be opened with another app from here. */
+export const CAN_OPEN_WITH = true;
 
 // Where an Erevos before this kept the plain copies it opened files from: deleted once, if any are left.
 const OPENING = 'erevos-open-';

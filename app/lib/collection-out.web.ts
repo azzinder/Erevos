@@ -2,12 +2,36 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import type { CollectionItem } from '../lock/collection-data';
+import { itemSource, openItem, type CollectionItem } from '../lock/collection-data';
+import { bytesSource } from './attachments';
+import { t } from './i18n';
+import { photoToSend } from './pick-photo.web';
+import { loadPhotoQuality } from './photo-quality';
 import type { SharedFile } from './share-in';
 
-// Taking a file out of the Collection (collection-out.ts), on a computer: the Collection is a
-// module of the phone for now (lib/modules.ts), so nothing is taken out here.
+// Taking a file out of the Collection (collection-out.ts), in the desktop app. Sent to a chat, a
+// file goes as one the chat picked (lib/share-in.web.ts), read from its encrypted chunks as it is
+// sent; a photo is made ready in memory as every photo sent from a computer is (lib/pick-photo.web.ts,
+// at the photo quality chosen), never written out. Saving a plain copy to the computer is lib/
+// save-file.web.ts, through the shell's own save dialog, after the screen's warning. Opening with
+// another app is not offered here: it would need a plain copy on the disk for the other app to read.
 
-export const copyToSend = (_item: CollectionItem): Promise<SharedFile> => Promise.reject(new Error('The Collection is on the phone only.'));
+/** Whether a file of the Collection can be opened with another app from here: not on a computer. */
+export const CAN_OPEN_WITH = false;
+
+const PHOTOS = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+/** The file to hand to a chat (lib/share-in.web.ts), held in memory, never on the disk. */
+export async function copyToSend(item: CollectionItem): Promise<SharedFile> {
+  if (item.file.kind !== 'photo' || !PHOTOS.has(item.file.mime)) return { file: '', name: item.file.name, mime: item.file.mime, held: itemSource(item) };
+  const bytes = await openItem(item);
+  if (!bytes) throw new Error(t('This file is not here any more. A backup restored without it leaves its name behind.'));
+  const quality = await loadPhotoQuality().catch(() => 'original' as const);
+  const photo = await photoToSend(new Blob([bytes as BlobPart], { type: item.file.mime }), quality);
+  return { file: '', name: photo.name, mime: photo.mime, held: bytesSource(photo.bytes), w: photo.w ?? item.file.w, h: photo.h ?? item.file.h };
+}
+
+/** The Collection's screen closed: nothing was handed to other apps here. */
 export const dropOpened = (): void => undefined;
-export const openWithOtherApp = (_item: CollectionItem): Promise<void> => Promise.reject(new Error('The Collection is on the phone only.'));
+
+export const openWithOtherApp = (_item: CollectionItem): Promise<void> => Promise.reject(new Error(t('This build of Erevos cannot do this. Update Erevos for it.')));

@@ -76,5 +76,12 @@ export const collectionText: Record<string, string> = {
   "Pause": "Pausar",
   "This build of Erevos cannot do this. Update Erevos for it.": "Esta versão do Erevos não consegue fazer isso. Atualize o Erevos para isso.",
   "This file is too large to open here: at most {size}. Save it to the computer to open it with another app.": "Este arquivo é grande demais para abrir aqui: no máximo {size}. Salve-o no computador para abri-lo com outro aplicativo.",
+  "The file picked is not there any more.": "O arquivo escolhido não está mais lá.",
+  "Save to the computer?": "Salvar no computador?",
+  "No photos yet. Click + to add one.": "Ainda não há fotos. Clique em + para adicionar uma.",
+  "No files yet. Click + to add one.": "Ainda não há arquivos. Clique em + para adicionar um.",
+  "From the computer’s files": "Dos arquivos do computador",
+  "Save to the computer": "Salvar no computador",
+  "To open it with another app, save it to the computer first. That copy is not encrypted.": "Para abri-lo com outro aplicativo, salve-o primeiro no computador. Essa cópia não é criptografada.",
   "This PDF could not be shown here.": "Não foi possível mostrar este PDF aqui.",
 };

@@ -7,7 +7,8 @@ import { cleanJpeg, cleanPng, isJpeg, isPng, photoSize } from './photo';
 import { t } from './i18n';
 
 // A photo to send, as pick-photo.ts, on a computer: from the computer's files, no camera. A new
-// JPEG at 90% or 75% is drawn by the browser, turned upright.
+// JPEG at 90% or 75% is drawn by the browser, turned upright. A photo of the Collection sent to a
+// chat in the desktop app is made ready the same way (photoToSend, lib/collection-out.web.ts).
 
 export type PhotoQuality = 'original' | 90 | 75;
 
@@ -43,6 +44,11 @@ async function reencode(file: Blob, quality: number): Promise<PickedPhoto> {
 export async function pickPhoto(_from: 'photos' | 'camera', quality: PhotoQuality): Promise<PickedPhoto | null> {
   const file = await choose();
   if (!file) return null;
+  return photoToSend(file, quality);
+}
+
+/** A photo made ready to send at `quality`: as it is, cleaned of what it says besides its picture, or drawn anew as a JPEG. */
+export async function photoToSend(file: Blob, quality: PhotoQuality): Promise<PickedPhoto> {
   if (quality !== 'original') return reencode(file, quality);
   const bytes = new Uint8Array(await file.arrayBuffer());
   try {

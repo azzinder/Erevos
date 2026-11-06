@@ -22,9 +22,10 @@ import { preparePhoto } from './pick-photo';
 
 /**
  * A photo or file shared, as its copy in Erevos's cache (`file`, its name there); or a file of the
- * Collection sent to a chat (`held`), read from its encrypted chunks as it goes, with no copy.
+ * Collection sent to a chat (`held`), read from its encrypted chunks as it goes, with no copy, with
+ * a photo's size when it is known (`w`, `h`; in the desktop app, share-in.web.ts).
  */
-export type SharedFile = { file: string; name: string; mime: string; held?: Source };
+export type SharedFile = { file: string; name: string; mime: string; held?: Source; w?: number; h?: number };
 
 /** A shared photo or file read to send: close it once sent, and its copy goes. */
 export type SharedSource = { name: string; mime: string; source: Source; w?: number; h?: number; close(): void };
@@ -89,7 +90,7 @@ export function takeShared(to: string, now = Date.now()): SharedFile | null {
 
 /** Reads a shared photo, made ready at the photo quality chosen (lib/photo-quality.ts), or a file as it is, a piece at a time. */
 export async function readShared(shared: SharedFile): Promise<SharedSource> {
-  if (shared.held) return { name: shared.name, mime: shared.mime, source: shared.held, close: () => undefined };
+  if (shared.held) return { name: shared.name, mime: shared.mime, source: shared.held, w: shared.w, h: shared.h, close: () => undefined };
   const copy = new File(Paths.cache, shared.file);
   if (isSharedPhoto(shared)) {
     const quality = await loadPhotoQuality().catch(() => 'original' as const);

@@ -25,11 +25,12 @@ import { collectionNative } from '../modules/erevos-collection';
 // deleteOriginals), a photo or video picked from the phone's gallery is then deleted there:
 // Android asks the owner to confirm, in a dialog of its own, and does it (Android 11 and later,
 // modules/erevos-collection). A photo taken with the camera never goes to the gallery at all, and a
-// file that is not the gallery's is never touched. On a computer nothing is brought in (collection-
-// import.web.ts).
+// file that is not the gallery's is never touched. In the desktop app, collection-import.web.ts.
 
 /** Whether this device can bring files into the Collection. */
 export const CAN_COLLECT = true;
+/** Whether a photo can be taken with the camera straight into the Collection. */
+export const CAN_TAKE_PHOTO = true;
 
 /** The side of a photo's small picture, its shorter side, in points. */
 export const THUMB_SIDE = 256;

@@ -76,5 +76,12 @@ export const collectionText: Record<string, string> = {
   "Pause": "Παύση",
   "This build of Erevos cannot do this. Update Erevos for it.": "Αυτή η έκδοση του Erevos δεν μπορεί να το κάνει. Ενημέρωσε το Erevos γι’ αυτό.",
   "This file is too large to open here: at most {size}. Save it to the computer to open it with another app.": "Αυτό το αρχείο είναι πολύ μεγάλο για να ανοίξει εδώ: έως {size}. Αποθήκευσέ το στον υπολογιστή για να το ανοίξεις με άλλη εφαρμογή.",
+  "The file picked is not there any more.": "Το αρχείο που επέλεξες δεν υπάρχει πια.",
+  "Save to the computer?": "Αποθήκευση στον υπολογιστή;",
+  "No photos yet. Click + to add one.": "Καμία φωτογραφία ακόμη. Κάνε κλικ στο + για να προσθέσεις μία.",
+  "No files yet. Click + to add one.": "Κανένα αρχείο ακόμη. Κάνε κλικ στο + για να προσθέσεις ένα.",
+  "From the computer’s files": "Από τα αρχεία του υπολογιστή",
+  "Save to the computer": "Αποθήκευση στον υπολογιστή",
+  "To open it with another app, save it to the computer first. That copy is not encrypted.": "Για να το ανοίξεις με άλλη εφαρμογή, αποθήκευσέ το πρώτα στον υπολογιστή. Εκείνο το αντίγραφο δεν είναι κρυπτογραφημένο.",
   "This PDF could not be shown here.": "Αυτό το PDF δεν μπόρεσε να εμφανιστεί εδώ.",
 };

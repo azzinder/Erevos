@@ -3,15 +3,17 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize } from '../lib/attachments';
+import { MOST_IN_MEMORY, memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
+import { CAN_OPEN_WITH } from '../lib/collection-out';
 import { CAN_PLAY, playItems, playingFile, usePlayer } from '../lib/collection-play';
 import { fileLook, isText, MOST_TEXT, playKind, playListOf } from '../lib/collection-view';
 import { utf8Decode } from '../lib/crypto';
 import { locale, t } from '../lib/i18n';
-import { photoUri, releaseUri } from '../lib/photo-uri';
+import { SHELL } from '../lib/shell';
 import { openItem, type CollectionItem } from '../lock/collection-data';
 import { device } from '../modules/erevos-device';
 import { space, withAlpha } from '../theme/colors';
@@ -19,7 +21,7 @@ import { useColors } from '../theme/context';
 import { ZoomPhoto } from './attachment';
 import { CollectionPdf } from './collection-pdf';
 import { PlayerControls, VideoScreen } from './collection-player';
-import { BackIcon, DownloadIcon, FileIcon, InfoIcon, SendIcon, TrashIcon } from './icons';
+import { BackIcon, ChevronIcon, DownloadIcon, FileIcon, InfoIcon, SendIcon, TrashIcon } from './icons';
 import { Button, Sheet, Text } from './ui';
 
 // One file of the Collection looked at on its own (app/collection.tsx): a photo fills the screen,
@@ -31,6 +33,12 @@ import { Button, Sheet, Text } from './ui';
 // Collection unencrypted. A photo is read into memory to show, never written out, and let go of
 // once it is no longer near. Under it: send it to a chat, save it to the phone, its information,
 // and delete it.
+//
+// In the desktop app the same, each held decrypted in the page's memory only, as a blob: address
+// (lib/collection-memory.ts) let go of when it closes: a photo, with arrows and the arrow keys to
+// go to the next; a PDF in Chromium's own viewer; music and videos in the page's player (lib/
+// collection-desk-player.ts), up to MOST_IN_MEMORY. Saving goes to the computer, and nothing is
+// opened with another app. When the space locks the player stops and the viewer closes.
 
 type Props = {
   /** The files that can be swiped between, in the order shown. */
@@ -50,6 +58,10 @@ type Props = {
 
 /** The day and time a file came, as the phone writes them. */
 export const addedText = (at: number) => new Date(at).toLocaleString(locale(), { day: 'numeric', month: 'short', year: 'numeric' });
+
+const DESK = SHELL === 'electron';
+// A pointer has no swipe: the photos have arrows on a computer.
+const ARROWS = Platform.OS === 'web';
 
 export function CollectionViewer({ items, start, canSend, onClose, onSend, onSave, onDelete, onOpenWith, playOptions }: Props) {
   const colors = useColors();
@@ -84,6 +96,23 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   }, [shown, photo]);
 
   const pager = useRef<FlatList<CollectionItem>>(null);
+  // What was held in memory went (the space locked): no video stays over the window.
+  useEffect(() => onCollectionMemoryDropped(() => setVideo(false)), []);
+  // To the photo before or after, by the arrows or the arrow keys.
+  const goTo = (to: number) => {
+    if (to < 0 || to >= items.length) return;
+    setIndex(to);
+    pager.current?.scrollToIndex({ index: to, animated: true });
+  };
+  useEffect(() => {
+    if (!ARROWS || !shown || !photo || typeof window === 'undefined') return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowLeft') goTo(at - 1);
+      else if (event.key === 'ArrowRight') goTo(at + 1);
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [shown, photo, at, items.length]);
 
   // Music plays with the music shown after it; a video with the videos, over the whole screen.
   async function play(from: CollectionItem) {
@@ -125,12 +154,27 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
               keyExtractor={(i) => i.id}
               onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
+              {...(ARROWS ? { onScroll: (event: { nativeEvent: { contentOffset: { x: number } } }) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width)), scrollEventThrottle: 100 } : {})}
               windowSize={3}
               renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={() => setBars((b) => !b)} />}
             />
           ) : (
             <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => onOpenWith(item)} onPlay={() => void play(item)} note={playNote} />
           )}
+          {photo && ARROWS && bars ? (
+            <>
+              {at > 0 ? (
+                <Pressable onPress={() => goTo(at - 1)} accessibilityRole="button" accessibilityLabel={t('Previous')} style={[styles.arrow, { left: space.md }]}>
+                  <BackIcon color="#FFFFFF" size={24} />
+                </Pressable>
+              ) : null}
+              {at < items.length - 1 ? (
+                <Pressable onPress={() => goTo(at + 1)} accessibilityRole="button" accessibilityLabel={t('Next')} style={[styles.arrow, { right: space.md }]}>
+                  <ChevronIcon color="#FFFFFF" size={24} />
+                </Pressable>
+              ) : null}
+            </>
+          ) : null}
           {bars || !photo ? (
             <View style={[styles.top, { paddingTop: Math.max(space.sm, insets.top), backgroundColor: photo ? withAlpha('#000000', 0.55) : 'transparent' }]}>
               <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('Back')} hitSlop={8} style={styles.back}>
@@ -154,7 +198,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               ]}
             >
               {canSend ? act(<SendIcon color={ink} cut={photo ? '#000000' : colors.sheet} size={22} />, t('Send to a chat'), () => onSend(item)) : null}
-              {act(<DownloadIcon color={ink} size={22} />, t('Save to phone'), () => onSave(item))}
+              {act(<DownloadIcon color={ink} size={22} />, DESK ? t('Save to the computer') : t('Save to phone'), () => onSave(item))}
               {act(<InfoIcon color={ink} size={22} />, t('Information'), () => setInfo(true))}
               {act(<TrashIcon color={colors.danger} size={22} />, t('Delete'), () => onDelete(item), true)}
             </View>
@@ -200,13 +244,13 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
           setGone(true);
           return;
         }
-        made = photoUri(bytes, item.file.mime);
+        made = memoryUri(bytes, item.file.mime);
         setUri(made);
       })
       .catch(() => active && setGone(true));
     return () => {
       active = false;
-      if (made) releaseUri(made);
+      if (made) releaseMemoryUri(made);
       setUri(null);
     };
   }, [near, item.id]);
@@ -226,7 +270,7 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
 }
 
 // A file that is not a photo: its text if it is text, its pages if a PDF, the player if it plays,
-// else what it is, to open with another app.
+// else what it is, to open with another app (on a computer, to save first to open it elsewhere).
 function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: CollectionItem; ink: string; muted: string; onOpenWith: () => void; onPlay: () => void; note: string }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -280,7 +324,13 @@ function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: Collec
               {note}
             </Text>
           ) : null}
-          <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
+          {CAN_OPEN_WITH ? (
+            <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
+          ) : !plays || item.file.size > MOST_IN_MEMORY ? (
+            <Text tone="muted" style={styles.centered}>
+              {t('To open it with another app, save it to the computer first. That copy is not encrypted.')}
+            </Text>
+          ) : null}
         </>
       )}
     </View>
@@ -299,4 +349,5 @@ const styles = StyleSheet.create({
   action: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 2 },
   actionText: { textAlign: 'center' },
   infoRow: { gap: 2, paddingVertical: 2 },
+  arrow: { position: 'absolute', top: '50%', marginTop: -22, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
 });

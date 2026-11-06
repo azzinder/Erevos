@@ -13,16 +13,17 @@ import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveI
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
-import { CAN_COLLECT, importFromCamera, importFromFiles } from '../lib/collection-import';
+import { CAN_COLLECT, CAN_TAKE_PHOTO, importFromCamera, importFromFiles } from '../lib/collection-import';
+import { memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
 import { dropOpened, openWithOtherApp } from '../lib/collection-out';
 import { usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
 import { enterHiddenScreen } from '../lib/hidden-contacts';
 import { fileLook, folderTiles, gridEntries, inFolder, isPhoto, search, type FileLook, type GridEntry } from '../lib/collection-view';
 import { locale, t } from '../lib/i18n';
-import { photoUri, releaseUri } from '../lib/photo-uri';
 import { saveFile } from '../lib/save-file';
 import { keepPrivate } from '../lib/screen-privacy';
+import { SHELL } from '../lib/shell';
 import {
   addFolder,
   deleteFolder,
@@ -48,6 +49,14 @@ import { useColors, useStyles } from '../theme/context';
 // Collection plays (lib/collection-play.ts), a bar at the bottom shows it. The screen keeps out of
 // screenshots, and closes with the space: its keys go with it, and so do the links that let
 // another app read a file (lib/collection-out.ts).
+//
+// In the desktop app (SHELL 'electron') + brings in a file from the computer, read a piece at a
+// time as it is encrypted (lib/collection-import.web.ts); there is no camera, saving goes to the
+// computer through its own save dialog, and nothing opens with another app. What is shown is held
+// decrypted in the page's memory only (lib/collection-memory.ts): when the space locks or the panic
+// button is pressed it all goes, the file open closes and the small pictures are opened again.
+
+const DESK = SHELL === 'electron';
 
 type Tab = 'photos' | 'files';
 type Naming = { what: 'folder' | 'rename-folder' | 'rename-file'; id: string; text: string } | null;
@@ -58,7 +67,7 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 // open, so a grid scrolled again does not open them again, and let go of when it closes.
 const thumbs = new Map<string, string>();
 function dropThumbs() {
-  for (const uri of thumbs.values()) releaseUri(uri);
+  for (const uri of thumbs.values()) releaseMemoryUri(uri);
   thumbs.clear();
 }
 
@@ -71,7 +80,7 @@ function Thumb({ item, size }: { item: CollectionItem; size: number }) {
     openThumb(item)
       .then((bytes) => {
         if (!bytes) return;
-        const made = photoUri(bytes, 'image/jpeg');
+        const made = memoryUri(bytes, 'image/jpeg');
         thumbs.set(item.id, made);
         if (active) setUri(made);
       })
@@ -111,6 +120,8 @@ export default function CollectionScreen() {
   const [viewing, setViewing] = useState<number | null>(null);
   const [busy, setBusy] = useState<{ done: number; count: number } | null>(null);
   const [note, setNote] = useState('');
+  // Counts each time what was held in memory went (the space locked), so the small pictures open again.
+  const [fresh, setFresh] = useState(0);
   const player = usePlayer();
   const musicBar = !!player?.active && !player.video;
 
@@ -119,6 +130,16 @@ export default function CollectionScreen() {
     keepPrivate('collection', true);
     return () => keepPrivate('collection', false);
   }, []);
+  // Everything held in memory went (the space locked, in the desktop app): the file open closes.
+  useEffect(
+    () =>
+      onCollectionMemoryDropped(() => {
+        thumbs.clear();
+        setViewing(null);
+        setFresh((n) => n + 1);
+      }),
+    [],
+  );
   // The pictures, and the links that let other apps read files, go as the screen closes.
   useEffect(
     () => () => {
@@ -241,7 +262,7 @@ export default function CollectionScreen() {
 
   async function saveToPhone(item: CollectionItem) {
     // What is saved is outside the Collection, in the open.
-    if (!(await choose(t('Save to the phone?'), t('The file leaves the Collection without encryption, and other apps will see it. Continue?'), t('Cancel'), t('Save')))) return;
+    if (!(await choose(DESK ? t('Save to the computer?') : t('Save to the phone?'), t('The file leaves the Collection without encryption, and other apps will see it. Continue?'), t('Cancel'), t('Save')))) return;
     try {
       const saved = await saveFile(item.file);
       if (saved) setNote(t('Saved as {name}. It is outside Erevos now: anyone who has the folder can read it.', { name: saved }));
@@ -444,11 +465,12 @@ export default function CollectionScreen() {
       {header}
       {tab === 'photos' ? (
         <FlatList
+          key={`photos-${fresh}`}
           data={entries}
           keyExtractor={(e) => (e.kind === 'month' ? e.month : e.key)}
           renderItem={renderEntry}
           ListHeaderComponent={top}
-          ListEmptyComponent={empty(t('No photos yet. Tap + to take one.'))}
+          ListEmptyComponent={empty(CAN_TAKE_PHOTO ? t('No photos yet. Tap + to take one.') : t('No photos yet. Click + to add one.'))}
           contentContainerStyle={{ paddingBottom: bottomRoom }}
           keyboardShouldPersistTaps="handled"
           windowSize={7}
@@ -459,7 +481,7 @@ export default function CollectionScreen() {
           data={files}
           keyExtractor={(i) => i.id}
           ListHeaderComponent={top}
-          ListEmptyComponent={empty(t('No files yet. Tap + to add one.'))}
+          ListEmptyComponent={empty(DESK ? t('No files yet. Click + to add one.') : t('No files yet. Tap + to add one.'))}
           contentContainerStyle={{ paddingBottom: bottomRoom }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
@@ -515,8 +537,10 @@ export default function CollectionScreen() {
       )}
 
       <Sheet visible={adding} onClose={() => setAdding(false)} title={t('Add to the Collection')}>
-        <AddRow icon={<CameraIcon color={colors.primary} size={22} />} title={t('Camera')} text={t('The photo goes straight here, never to the gallery.')} onPress={() => void bringIn((p) => importFromCamera(place!, folder, p))} colors={colors} />
-        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
+        {CAN_TAKE_PHOTO ? (
+          <AddRow icon={<CameraIcon color={colors.primary} size={22} />} title={t('Camera')} text={t('The photo goes straight here, never to the gallery.')} onPress={() => void bringIn((p) => importFromCamera(place!, folder, p))} colors={colors} />
+        ) : null}
+        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={DESK ? t('From the computer’s files') : t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
         <AddRow
           icon={<FolderIcon color={colors.primary} size={22} />}
           title={t('New folder')}
