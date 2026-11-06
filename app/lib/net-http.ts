@@ -119,3 +119,15 @@ export const netHttp: Http = async (method, url, headers, body, most = HTTP_MOST
     return straight(method, url, headers, body, cap);
   }
 };
+
+/** Whether a request through netHttp goes through Tor now. */
+export const netThroughTor = (): boolean => canTorHttp() && torFor(false);
+
+/**
+ * As netHttp, through Tor only: an error when it does not go through Tor now, and none straight
+ * when Tor fails (the public feed's photos with "Only through Tor", lib/public-fetch.ts).
+ */
+export const torOnlyHttp: Http = async (method, url, headers, body, most = HTTP_MOST) => {
+  if (!netThroughTor()) throw new Error(t('Tor is not ready.'));
+  return viaTor(method, url, headers, body, Math.min(most, HTTP_MOST));
+};

@@ -118,10 +118,16 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   markiert, und wer dich hinzufügen möchte oder dich in eine Gruppe einlädt, steht oben. Der Chip **XMPP** zeigt nur
   sie, und dort beginnt **Neuer Chat** einen XMPP-Chat: siehe [XMPP](#xmpp).
 - **Nostr-Chats** stehen, sobald der Bereich einen Nostr-Schlüssel hat, genauso in der Liste, jeder mit **Nostr**
-  markiert. Unter dem Chip **Nostr** gibt es zwei weitere: **Beiträge**, zuerst, die öffentlichen Beiträge der
-  Menschen, denen dein Nostr-Schlüssel folgt, das Neueste zuerst, wie in Amethyst oder einem Telegram-Kanal, und
-  **Chats**, nur die Nostr-Chats, mit der Zahl der ungelesenen Nachrichten. Dort öffnet **Neuer Chat** den Bildschirm
-  der Nostr-Chats: siehe [Chats mit anderen Nostr-Apps](#nostr-chats).
+  markiert. Der Chip **Nostr** zeigt nur sie, mit der Zahl der ungelesenen Nachrichten, und dort öffnet **Neuer Chat**
+  den Bildschirm der Nostr-Chats: siehe [Chats mit anderen Nostr-Apps](#nostr-chats).
+- **Der öffentliche Feed** ist, sobald der Bereich einen Nostr-Schlüssel hat oder in einem öffentlichen Matrix-Raum
+  ist, ein weiterer Chip, **Öffentlich**: ein Feed wie in Amethyst, mit den öffentlichen Beiträgen der Menschen, denen
+  dein Nostr-Schlüssel folgt, und den Nachrichten der öffentlichen Matrix-Räume, in denen du bist, das Neueste zuerst.
+  Jeder zeigt, wer ihn geschrieben hat (ein kleines N oder M nennt das Netz), wann, seinen Text, seine Fotos im Beitrag
+  und eine Karte für seinen Link. Sind beide an, wählen **Alle**, **Nostr** und **Matrix** über dem Feed, was zu sehen
+  ist, und **Fotos** wählt, wie Fotos und Karten geholt werden. Unter einem Beitrag: antworten, erneut teilen, liken
+  und teilen; unter einer Matrix-Nachricht: antworten, reagieren und teilen. **Neuer Beitrag**, der Stift unten,
+  schreibt einen öffentlichen Beitrag mit bis zu vier Fotos. Siehe [Chats mit anderen Nostr-Apps](#nostr-chats).
 - **Neuer Chat**, unten, öffnet die Relay-Einstellungen und das Hinzufügen eines Kontakts. **Erinnern**, die orange
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den
@@ -2082,7 +2088,7 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Relays, auf denen dein Schlüssel schreibt), mit ihren Namen: Tippe eine Person an, um ihr zu schreiben. Findet es
   niemanden, sagt es, warum, wessen Liste es gesucht hat und wie jedes Relay geantwortet hat. Nichts wird geladen,
   bevor du darauf tippst, und es werden keine Profilbilder geladen. Die Chats stehen auch in der Liste auf dem
-  Startbildschirm, jeder mit **Nostr** markiert; unter dem Chip **Nostr** zeigt **Chats** nur sie, und dort öffnet
+  Startbildschirm, jeder mit **Nostr** markiert; zeigt der Chip **Nostr** nur sie, und dort öffnet
   **Neuer Chat** diesen Bildschirm. **Hier benennen** gibt einem Chat einen Namen, den nur du siehst.
 - **Gruppen:** **Neue Gruppe** erstellt eine aus zwei oder mehr der Menschen, mit denen du chattest, höchstens zwanzig,
   mit einem Namen, wenn du willst. Nostr-Gruppen haben keine Admins: Eine Gruppe sind die Menschen, die ihre Nachrichten
@@ -2143,19 +2149,36 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
   Ein Beitrag mit Inhaltswarnung zeigt seinen Text nach einem Tipp auf **Zeigen**. Ein Konto, das nur für alle
   veröffentlicht, etwa das eines Projekts, sendet keine privaten Nachrichten: Sein Chat bleibt leer, und seine Beiträge
   sind hier.
-- **Beiträge der Menschen, denen du folgst:** Auf dem Startbildschirm zeigt **Beiträge**, unter dem Chip **Nostr**,
-  was die Menschen, denen dein Nostr-Schlüssel folgt, für alle veröffentlichen und was sie weitergeteilt haben, das
-  Neueste zuerst, wie in Amethyst oder einem Telegram-Kanal: wer jeden Beitrag geschrieben hat, mit dem Namen, den die
-  Person sich selbst gegeben hat, und Anfang und Ende ihres npub, wann, und was er sagt. Weitere kommen, wenn du bis
-  zum Ende scrollst, oder mit **Ältere Beiträge**; zieh die Liste nach unten für das Neueste (im Browser
-  **Erneut suchen**). Tippe an, wer einen Beitrag geschrieben hat, für **Öffentliche Beiträge** dieser Person, oder auf
-  **Nachricht schreiben**, um einen Chat zu beginnen. Es ist nur zum Lesen, wie oben: Hier lässt sich nichts
-  veröffentlichen, beantworten oder mit einer Reaktion versehen, und niemandem folgen; dafür nimm eine andere Nostr-App
-  mit demselben Schlüssel. Deine Folgeliste, wo die Menschen darin schreiben (ihre NIP-65-Listen), und ihre Beiträge
-  werden nur abgefragt, solange **Beiträge** zu sehen ist, auf den Relays, die für Abfragen dienen, auf denen, die
-  Listen sammeln, und auf denen, auf die sie schreiben, so, wie es die Tor-Wahl dieses Bereichs sagt; Namen nur für die
-  Beiträge, die zu sehen sind. Nichts davon wird gespeichert, und Bilder oder Links werden nicht geöffnet. Es ist immer
-  der Schlüssel dieses Bereichs, nie der eigene der versteckten Chats.
+- **Der öffentliche Feed:** Auf dem Startbildschirm zeigt der Chip **Öffentlich** einen Feed mit dem, was die Menschen,
+  denen dein Nostr-Schlüssel folgt, für alle veröffentlichen, und was sie weitergeteilt haben, und mit den Nachrichten
+  der öffentlichen Matrix-Räume, in denen du bist (Räume, denen jeder beitreten darf), das Neueste zuerst, wie in
+  Amethyst: das Gesicht dessen, der schrieb, mit einem kleinen **N** oder **M**, der Name, wann, der Text, die Fotos im
+  Beitrag (eines in voller Breite, zwei bis vier als Raster) und für den ersten Link eine Karte mit Bild, Seite, Titel
+  und einer Zeile. Bei Matrix nennt die Zeile unter dem Namen den Raum und seinen Server; tippe darauf, um den Raum zu
+  öffnen. Weitere kommen, wenn du bis zum Ende scrollst, oder mit **Ältere Beiträge**; zieh die Liste nach unten für
+  das Neueste (im Browser **Erneut suchen**). Menschen zu folgen geschieht weiter in einer anderen Nostr-App mit
+  demselben Schlüssel. Deine Folgeliste, wo die Menschen darin schreiben (ihre NIP-65-Listen) und ihre Beiträge werden
+  nur abgefragt, solange der Feed zu sehen ist, auf den Relays, die für Abfragen dienen, auf denen, die Listen
+  sammeln, und auf denen, auf die sie schreiben, so, wie es die Tor-Wahl dieses Bereichs sagt; Namen nur für die
+  Beiträge, die zu sehen sind. Nichts wird gespeichert.
+  **Fotos** über dem Feed ist die Wahl, auf die es für die Privatsphäre ankommt. Ein Foto oder eine Linkkarte kommt von
+  dem Server, auf den es der Verfasser des Beitrags gelegt hat, und dieser Server sieht die Adresse, von der es geholt
+  wurde, über Tor die eines Tor-Ausgangs, und dass jemand es geöffnet hat. **Immer** zeigt sie sofort, über Tor, wenn
+  Tor in diesem Bereich an ist; **Nur über Tor** zeigt sie nur, wenn Tor an ist, sonst beim Antippen; **Beim Antippen**
+  holt keines, bevor du es antippst. **Linkvorschau** schaltet die Karten. Solange der Feed nicht zu sehen ist, wird
+  nichts geholt, ein Foto wird nur gehalten, solange sein Beitrag zu sehen ist, und keines wird gespeichert; ein Foto,
+  das nicht kommt, zeigt **Das Foto zeigen** zum erneuten Versuch. Geholt werden nur Adressen im Internet, nie eine
+  dieses Telefons oder deines Heimnetzes.
+  Unter einem Nostr-Beitrag: **Antworten** schreibt eine Antwort, **Erneut teilen** zeigt den Beitrag deinen Followern
+  (es fragt vorher), das Herz liket ihn, und der Pfeil teilt einen Link dazu. Seine drei Punkte: **Text kopieren**, die
+  **Öffentlichen Beiträge** des Verfassers, **Nachricht schreiben** und **Zurückziehen** bei einem eigenen Beitrag.
+  Tippe einen Beitrag an, um ihn mit der Zahl der Likes und Weiterteilungen und seinen Antworten zu öffnen. **Neuer
+  Beitrag**, der Stift, schreibt einen öffentlichen Beitrag mit bis zu vier Fotos. Antworten, erneutes Teilen, Likes und
+  Beiträge sind öffentlich und mit dem Nostr-Schlüssel dieses Bereichs signiert: Jeder kann sie lesen, und sie zeigen,
+  dass sie von dir sind; ein Foto, das du hinzufügst, kommt unverschlüsselt auf den Dateiserver des Bereichs, wie es bei
+  einem öffentlichen Beitrag sein muss. Unter einer Matrix-Nachricht: **Antworten**, **Reagieren** (eine Auswahl von
+  sechs) und Teilen (ein matrix.to-Link), und in ihren drei Punkten **Text kopieren** und **Den Raum öffnen**. Es ist
+  immer der Schlüssel und das Konto dieses Bereichs, nie die eigenen der versteckten Chats.
 - **Markierungen:** ein Häkchen, sobald eines ihrer Relays die Nachricht angenommen hat. NIP-17 meldet nichts zurück:
   weder wann ihre App sie hat, noch wann sie sie lesen. Liest du hier einen Chat, erfährt es niemand.
 - **Nicht anonym:** Dein Schlüssel ist für alle gleich, denen du schreibst, und wer ein npub hat, kann ihm schreiben.

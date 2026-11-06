@@ -157,6 +157,9 @@ export type MatrixRoom = {
   tags?: { favourite?: true; low?: true };
   /** A space (m.space): a room that holds other rooms, not a chat. */
   space?: true;
+  /** Who may join it (m.room.join_rules): anyone ('public'), or only those asked or let in
+   *  ('other'). Not known yet for a room joined before Erevos kept it (lib/public-feed.ts asks). */
+  joins?: 'public' | 'other';
   /** What it is about (m.room.topic), and the address it is known by (m.room.canonical_alias). */
   topic?: string;
   alias?: string;
@@ -783,6 +786,9 @@ function takeState(room: MatrixRoom, event: Json): void {
     }
     case 'm.room.create':
       if (content.type === 'm.space') room.space = true;
+      break;
+    case 'm.room.join_rules':
+      room.joins = content.join_rule === 'public' ? 'public' : 'other';
       break;
     case 'm.room.topic':
       if (typeof content.topic === 'string' && content.topic.trim()) room.topic = content.topic.trim().slice(0, 500);

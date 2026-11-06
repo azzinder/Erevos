@@ -118,8 +118,6 @@ export const nostrChats: Record<string, string> = {
   "An answer to another post": "Odgovor na drugu objavu",
   "Content warning: {reason}": "Upozorenje o sadržaju: {reason}",
   "Content warning": "Upozorenje o sadržaju",
-  "Posts": "Objave",
-  "The public posts of the people you follow, newest first. Read only, and not kept.": "Javne objave ljudi koje pratite, najnovije prvo. Samo za čitanje, i ne čuvaju se.",
   "This space has no Nostr key yet. Make one, or bring the one of your other Nostr app, under Nostr chats.": "Ovaj prostor još nema Nostr ključ. Izradite ga ili donesite ključ svoje druge Nostr aplikacije, u Nostr razgovorima.",
   "Your Nostr key follows no one yet. Follow people with it in another Nostr app, such as Amethyst or Primal, and their posts show here.": "Vaš Nostr ključ još nikoga ne prati. Pratite ljude njime u drugoj Nostr aplikaciji, poput Amethysta ili Primala, i njihove objave će se pojaviti ovdje.",
   "Shared by {name}": "Podijelio/la {name}",

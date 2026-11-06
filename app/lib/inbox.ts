@@ -161,18 +161,20 @@ function preview(message: Pick<InboxMessage, 'text' | 'voice' | 'file'> | undefi
 }
 
 /** Which of the list shows (app/index.tsx): all of it, the SMS, the Erevos chats, or one other network's. */
-export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix' | 'xmpp' | 'nostr';
+export type InboxShow = 'all' | 'sms' | 'erevos' | 'matrix' | 'xmpp' | 'nostr' | 'public';
 
 /**
  * Whether a row shows in that part of the list. The SMS are the SMS conversations, and the chats
  * whose last message was an SMS; the Erevos chats are every contact's and every group's, whatever
  * came last, so a contact whose number's SMS came after stays among them; the Matrix chats are the
  * Matrix rooms, the XMPP chats the XMPP people, and the Nostr chats the people on other Nostr apps.
+ * The public feed (components/public-feed.tsx) is no row of the list: none shows in it.
  */
 export function showsIn(row: Pick<InboxRow, 'sms' | 'lastSms' | 'network'>, show: InboxShow): boolean {
   if (show === 'sms') return row.sms !== '' || row.lastSms;
   if (show === 'erevos') return row.sms === '' && !row.network;
   if (show === 'matrix' || show === 'xmpp' || show === 'nostr') return row.network === show;
+  if (show === 'public') return false;
   return true;
 }
 
@@ -197,13 +199,15 @@ export function tabUnread(rows: Pick<InboxRow, 'unread' | 'muted' | 'sms' | 'las
 }
 
 /** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's,
- *  XMPP's and Nostr's whenever the space is signed in to them, even with no chat yet. */
-export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false, nostr = false): InboxShow[] {
+ *  XMPP's and Nostr's whenever the space is signed in to them, even with no chat yet, and the
+ *  public feed's (`feed`) when the space has a Nostr key or a public Matrix room. */
+export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false, nostr = false, feed = false): InboxShow[] {
   const parts: InboxShow[] = [];
   if (rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
   if (rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
   if (matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
   if (xmpp || rows.some((row) => row.network === 'xmpp')) parts.push('xmpp');
+  if (feed) parts.push('public');
   if (nostr || rows.some((row) => row.network === 'nostr')) parts.push('nostr');
   return parts;
 }

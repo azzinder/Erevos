@@ -112,11 +112,17 @@ abertas.
 - **As conversas do XMPP**, depois que você entra no XMPP, ficam na lista do mesmo jeito, cada uma marcada **XMPP**, e
   quem pede para adicionar você, ou um grupo que convida você, aparece no topo. O chip **XMPP** mostra só elas, e ali
   **Nova conversa** começa uma conversa no XMPP: veja [XMPP](#xmpp).
-- **As conversas Nostr**, quando o espaço tem uma chave Nostr, ficam na lista do mesmo jeito, cada uma marcada
-  **Nostr**. Sob o botão **Nostr** há mais dois: **Publicações**, primeiro, as publicações públicas das pessoas que a
-  sua chave Nostr segue, das mais recentes às mais antigas, como no Amethyst ou num canal do Telegram, e **Conversas**,
-  só as conversas Nostr, com quantas mensagens não foram lidas. Ali **Nova conversa** abre a tela das conversas Nostr:
-  veja [Conversas com outros apps Nostr](#nostr-chats).
+- **As conversas Nostr**, quando o espaço tem uma chave Nostr, ficam na lista da mesma forma, cada uma marcada
+  **Nostr**. O botão **Nostr** mostra só elas, com quantas mensagens não foram lidas, e ali **Nova conversa** abre a
+  tela das conversas Nostr: veja [Conversas com outros apps Nostr](#nostr-chats).
+- **O feed público**, quando o espaço tem uma chave Nostr ou está numa sala Matrix pública, é mais um botão,
+  **Público**: um só feed, como no Amethyst, com as publicações públicas das pessoas que a sua chave Nostr segue e as
+  mensagens das salas Matrix públicas em que você está, das mais recentes às mais antigas. Cada uma mostra quem a
+  escreveu (um pequeno N ou M diz a rede), quando, suas palavras, suas fotos dentro da publicação e um cartão para o seu
+  link. Com ambas ligadas, **Todas**, **Nostr** e **Matrix**, acima do feed, escolhem o que aparece, e **Fotos** escolhe
+  como as fotos e os cartões são buscados. Sob uma publicação: responder, compartilhar de novo, curtir e compartilhar;
+  sob uma mensagem Matrix: responder, reagir e compartilhar. **Nova publicação**, a caneta embaixo, escreve uma
+  publicação pública, com até quatro fotos. Veja [Conversas com outros apps Nostr](#nostr-chats).
 - **Nova conversa**, embaixo, abre as configurações do relay e a adição de um contato. **Lembrar-me**, o sino laranja
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
@@ -1938,8 +1944,7 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   segue (a lista pública dela, procurada também em relays que reúnem essas listas e nos relays onde a sua chave
   escreve), com os nomes: toque numa para escrever para ela. Quando não encontra ninguém, diz por quê, de quem procurou
   a lista e como cada relay respondeu. Nada é carregado até você tocar nesse botão, nem fotos de perfil. As conversas
-  também ficam na lista da tela inicial, cada uma marcada **Nostr**; sob o botão **Nostr**, **Conversas** mostra só
-  elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que só você vê.
+  também ficam na lista da tela inicial, cada uma marcada **Nostr**; o botão **Nostr** mostra só elas, e ali **Nova conversa** abre esta tela. **Dar um nome aqui** dá a uma conversa um nome que só você vê.
 - **Grupos:** **Novo grupo** cria um com duas ou mais das pessoas com quem você conversa, vinte no máximo, com um nome
   se quiser. Grupos Nostr não têm administradores: um grupo são as pessoas que suas mensagens nomeiam, cada mensagem vai
   para cada uma, criptografada para cada uma, e ninguém pode ser adicionado ou removido depois; um grupo com outras
@@ -1991,18 +1996,34 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   link é aberto: eles aparecem como endereços, que podem ser copiados. Uma publicação com aviso de conteúdo mostra as
   palavras dela depois de um toque em **Mostrar**. Uma conta que só publica para todos, como a de um projeto, não manda
   mensagens privadas: a conversa dela fica vazia, e as publicações dela estão aqui.
-- **Publicações das pessoas que você segue:** na tela inicial, **Publicações**, sob o botão **Nostr**, mostra o que as
-  pessoas que a sua chave Nostr segue publicam para todos, e o que elas compartilharam de novo, das mais recentes às
-  mais antigas, como no Amethyst ou num canal do Telegram: quem escreveu cada publicação, com o nome que a pessoa se
-  deu e o começo e o fim do npub dela, quando, e o que diz. Chegam mais quando você rola até o fim, ou com
-  **Publicações mais antigas**; puxe a lista para baixo para ver as mais recentes (num navegador,
-  **Procurar de novo**). Toque em quem escreveu uma publicação para ver as **Publicações públicas** dessa pessoa, ou em
-  **Enviar mensagem** para começar uma conversa. É somente leitura, como acima: aqui não dá para publicar, responder
-  nem reagir, nem seguir ninguém; para isso, use outro app Nostr com a mesma chave. A sua lista de quem você segue,
-  onde as pessoas dela escrevem (as listas NIP-65 delas) e as publicações delas são buscadas só enquanto
-  **Publicações** aparece, nos relays usados para buscas, nos que reúnem listas e naqueles em que elas escrevem, como
-  diz a escolha do Tor deste espaço; os nomes, só para as publicações que aparecem. Nada disso é guardado, e nenhuma
-  imagem ou link é aberto. É sempre a chave deste espaço, nunca a própria das conversas ocultas.
+- **O feed público:** na tela inicial, o botão **Público** mostra um só feed com o que as pessoas que a sua chave Nostr
+  segue publicam para todos, e o que compartilharam de novo, e com as mensagens das salas Matrix públicas em que você
+  está (salas em que qualquer pessoa pode entrar), das mais recentes às mais antigas, como no Amethyst: o rosto de quem
+  escreveu, com um pequeno **N** ou **M**, o nome, quando, as palavras, as fotos dentro da publicação (uma na largura
+  toda, de duas a quatro numa grade) e, para o primeiro link, um cartão com imagem, site, título e uma linha. No Matrix,
+  a linha sob o nome diz a sala e o seu servidor: toque nela para abrir a sala. Vêm mais ao chegar ao fim, ou com
+  **Publicações mais antigas**; puxe a lista para baixo para as mais recentes (num navegador, **Procurar de novo**).
+  Seguir pessoas continua a se fazer em outro app Nostr com a mesma chave. Sua lista de quem você segue, onde elas
+  escrevem (suas listas NIP-65) e suas publicações são buscadas só enquanto o feed aparece, nos relays das buscas, nos
+  que reúnem listas e nos que elas escrevem, como diz a escolha de Tor do espaço; os nomes só para as publicações que
+  aparecem. Nada é guardado.
+  **Fotos**, acima do feed, é a escolha que importa para a privacidade. Uma foto ou um cartão de link vem do servidor
+  onde quem escreveu a publicação a colocou, e esse servidor vê o endereço de onde ela foi buscada, pelo Tor o de uma
+  saída do Tor, e que alguém a abriu. **Sempre** as mostra na hora, pelo Tor quando o Tor está ligado neste espaço;
+  **Só pelo Tor** as mostra só quando o Tor está ligado, e senão com um toque; **Com um toque** não busca nenhuma antes
+  de você tocá-la. **Prévias de links** liga ou desliga os cartões. Nada é buscado enquanto o feed não aparece, uma foto
+  é mantida só enquanto a sua publicação aparece, e nenhuma é guardada; a que não vem mostra **Mostrar a foto** para
+  tentar de novo. Só endereços na internet são buscados, nunca um deste telefone ou da sua rede doméstica.
+  Sob uma publicação Nostr: **Responder** escreve uma resposta, **Compartilhar de novo** a mostra aos seus seguidores
+  (pergunta antes), o coração a curte, e a seta compartilha um link para ela. Seus três pontos: **Copiar texto**, as
+  **Publicações públicas** de quem a escreveu, **Enviar mensagem**, e **Revogar** para uma publicação sua. Toque numa
+  publicação para abri-la com quantos a curtiram e a compartilharam de novo, e as respostas a ela. **Nova publicação**,
+  a caneta, escreve uma publicação pública, com até quatro fotos. As respostas, os compartilhamentos, as curtidas e as
+  publicações são públicos e assinados com a chave Nostr do espaço: qualquer pessoa pode lê-los, e eles mostram que são
+  seus; uma foto que você adiciona é posta sem criptografia no servidor de arquivos do espaço, como deve ser numa
+  publicação pública. Sob uma mensagem Matrix: **Responder**, **Reagir** (uma escolha de seis) e compartilhar (um link
+  matrix.to), e nos seus três pontos **Copiar texto** e **Abrir a sala**. É sempre a chave e a conta deste espaço, nunca
+  as próprias das conversas ocultas.
 - **Marcas:** um ✓ assim que um dos relays da pessoa aceitou a mensagem. O NIP-17 não devolve nada: nem quando o app
   dela a tem, nem quando ela lê. Ler uma conversa aqui não avisa ninguém.
 - **Não anônimo:** sua chave é a mesma para todos com quem você fala, e qualquer um que tenha um npub pode escrever para

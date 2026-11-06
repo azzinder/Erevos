@@ -11,10 +11,10 @@ import { ChatRow, MyselfRow } from '../components/chat-row';
 import { NewSmsSheet } from '../components/new-sms-sheet';
 import { FoundRow } from '../components/found-row';
 import { gradientStyle } from '../components/glass';
-import { BellIcon, GearIcon, MoreIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
+import { BellIcon, GearIcon, MoreIcon, PencilIcon, PinIcon, PlusIcon, SearchIcon } from '../components/icons';
 import { LaterPicker } from '../components/later-picker';
 import { KeyboardPaddedView } from '../components/keyboard';
-import { isFeedPost, NostrParts, useNostrFeed, type NostrPart } from '../components/nostr-feed';
+import { usePublicFeed } from '../components/public-feed';
 import { CollectionSign, LockSign, PersonSign, PhoneSign, ShortcutTile } from '../components/shortcut-tile';
 import { SmsActions, type SmsTarget } from '../components/sms-actions';
 import { SmsHome } from '../components/sms-home';
@@ -33,10 +33,10 @@ import { CURRENT_BUILD } from '../lib/release-look';
 import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-notice';
 import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
-import { matrixNow, onMatrixChange } from '../lib/matrix-store';
+import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
-import type { FeedPost } from '../lib/nostr-feed';
+import { isPublicItem, isPublicRoom, type PublicItem } from '../lib/public-feed';
 import { foundAt, foundName, groupFindables, searchMessages, type Findable } from '../lib/message-search';
 import { checksOffered, offerChecks } from '../lib/permissions';
 import { HAS_LINKS, HAS_RADIO } from '../lib/radio';
@@ -97,11 +97,12 @@ const trashLooked = new Set<number>();
 
 // Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats, the
 // Matrix ones, the XMPP ones or the Nostr ones (lib/inbox.ts, showsIn), each with its chip once the
-// list has two of them.
+// list has two of them; and the Public feed (components/public-feed.tsx), with its chip when the
+// space has a Nostr key or a public Matrix room.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
-const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' ? show : 'all');
-const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr' };
+const showOf = (show: unknown): InboxShow => (show === 'sms' || show === 'erevos' || show === 'matrix' || show === 'xmpp' || show === 'nostr' || show === 'public' ? show : 'all');
+const SHOW_LABELS: Record<InboxShow, () => string> = { all: () => t('All messages'), sms: () => t('SMS'), erevos: () => 'Erevos', matrix: () => 'Matrix', xmpp: () => 'XMPP', nostr: () => 'Nostr', public: () => t('Public') };
 
 // How long New chat is held down before it asks for a PIN of hidden chats, in milliseconds: a little
 // longer than a hold anywhere else, so an ordinary one does not open it. A short buzz says it opened.
@@ -132,7 +133,8 @@ function Home() {
   const params = useLocalSearchParams<{ show?: string; opened?: string }>();
   const [chosenShow, setShow] = useState<InboxShow>(showOf(params.show));
   // A part whose module is off (an icon or the widget may still name it) shows all.
-  const show: InboxShow = chosenShow === 'all' || modules.has(chosenShow) ? chosenShow : 'all';
+  // The public feed is of the Nostr and the Matrix parts: with both off it shows all too.
+  const show: InboxShow = chosenShow === 'all' || (chosenShow === 'public' ? modules.has('nostr') || modules.has('matrix') : modules.has(chosenShow)) ? chosenShow : 'all';
   useEffect(() => {
     if (typeof params.show === 'string') setShow(showOf(params.show));
   }, [params.show, params.opened]);
@@ -450,14 +452,18 @@ function Home() {
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
   // The choice shows once the list has two networks' chats, or while one of them is chosen.
-  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr);
+  const publicRooms = !!matrix && Object.values(matrix.rooms).some((room) => isPublicRoom(matrix, room));
+  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr, !!nostr || publicRooms);
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Where New chat goes: on Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one
   // (app/xmpp.tsx); on Nostr's, one with another Nostr app (app/nostr-chats.tsx); otherwise an
-  // Erevos chat, or, with Erevos off, the first other part on, a new SMS last. None without chats.
+  // Erevos chat, or, with Erevos off, the first other part on, a new SMS last. None without chats,
+  // and none on the Public part, which has New post instead, for a space with a Nostr key.
   const newChat: Href | 'sms' | null =
-    show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : show === 'sms' && !erevosOn ? 'sms' : erevosOn ? '/chat?setup=1' : modules.has('matrix') ? '/matrix' : modules.has('xmpp') ? '/xmpp' : modules.has('nostr') ? '/nostr-chats' : modules.has('sms') ? 'sms' : null;
+    show === 'public' ? null : show === 'matrix' ? '/matrix' : show === 'xmpp' ? '/xmpp' : show === 'nostr' ? '/nostr-chats' : show === 'sms' && !erevosOn ? 'sms' : erevosOn ? '/chat?setup=1' : modules.has('matrix') ? '/matrix' : modules.has('xmpp') ? '/xmpp' : modules.has('nostr') ? '/nostr-chats' : modules.has('sms') ? 'sms' : null;
+  // New post, on the Public part, for a space with a Nostr key: its public posts are signed with it.
+  const newPost = show === 'public' && !!nostr;
   const [writingSms, setWritingSms] = useState(false);
   // The chips' line: where each tab's chip sits in it, and how far it is scrolled.
   const strip = useRef<ScrollView>(null);
@@ -473,12 +479,15 @@ function Home() {
   }, [show]);
   // Names, once there are SMS conversations: they unlock the names of their numbers.
   const hasSmsRows = (everyRow ?? []).some((row) => row.sms !== '');
-  // The Nostr tab's two parts (components/nostr-feed.tsx): the posts of the people its key follows,
-  // first, and its chats. A search shows the chats it finds, as in every tab.
-  const [nostrPart, setNostrPart] = useState<NostrPart>('posts');
-  const nostrParts = show === 'nostr' && canNostrChat() && !query.trim();
-  const feedShown = nostrParts && nostrPart === 'posts';
-  const feed = useNostrFeed(!nostrAccount.loaded ? 'loading' : nostr ? 'ready' : 'none', feedShown);
+  // The Public tab (components/public-feed.tsx): the posts of the people the space's Nostr key
+  // follows and the messages of its public Matrix rooms, in one list. A search shows the chats it finds, as in every tab.
+  const feedShown = show === 'public' && !query.trim();
+  const feed = usePublicFeed(!nostrAccount.loaded ? 'loading' : nostr ? 'ready' : 'none', publicRooms, feedShown);
+  // Which Matrix rooms are public is learned once, so the Public chip is there with them.
+  const matrixAccount = !!matrix;
+  useEffect(() => {
+    if (matrixAccount) void matrixLearnJoins().catch(() => 0);
+  }, [matrixAccount]);
 
   // Turns the names of SMS numbers on, as under Settings → Phone and SMS → SMS (Android asks first), or off.
   async function toggleNames() {
@@ -599,7 +608,6 @@ function Home() {
           {hasSmsRows ? <Chip label={t('Names')} selected={smsShown.current.names} onPress={() => void toggleNames()} /> : null}
         </ScrollView>
       ) : null}
-      {nostrParts ? <NostrParts part={nostrPart} onChange={setNostrPart} unread={tabUnread(everyRow ?? [], 'nostr')} /> : null}
       {feedShown ? feed.intro : null}
       {folders.archived + folders.spam + folders.trash > 0 ? (
         <Row wrap>
@@ -617,20 +625,20 @@ function Home() {
   // The list ends above the keyboard while the search is typed in, and New chat floats above it.
   return (
     <KeyboardPaddedView inset={insets.bottom} style={styles.container}>
-      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Nostr), on the rows too:
+      {/* A swipe to the side goes to the chip beside (All messages, SMS, Erevos, Matrix, XMPP, Public, Nostr), on the rows too:
           an SMS conversation is archived or deleted by holding it down. */}
       <SwipeTabs tabs={mixed ? tabs : []} current={show} onChange={setShow}>
-        <FlatList<InboxRow | FeedPost>
-          // The Nostr tab's posts are rows of the same list, so the search above them stays as it is.
-          data={feedShown ? feed.posts : shown}
+        <FlatList<InboxRow | PublicItem>
+          // The Public tab's posts are rows of the same list, so the search above them stays as it is.
+          data={feedShown ? feed.items : shown}
           // Android's clipping of rows off the screen closed Erevos on Fabric (a row added twice).
           removeClippedSubviews={false}
-          keyExtractor={(item) => (isFeedPost(item) ? `post:${item.id}` : item.identity)}
+          keyExtractor={(item) => (isPublicItem(item) ? item.id : item.identity)}
           ListHeaderComponent={header}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 120 }]}
           renderItem={({ item }) =>
-            isFeedPost(item) ? (
+            isPublicItem(item) ? (
               feed.render(item)
             ) : item.sms ? (
               <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
@@ -711,7 +719,7 @@ function Home() {
       </SwipeTabs>
       {/* Remind me, named where there is room for it beside New chat: Remind me only with Erevos, as it
           goes in Chat with myself, and New chat with any part that has chats (lib/modules.ts). */}
-      {newChat ? (
+      {newChat || newPost ? (
         <View style={[styles.fabs, { bottom: insets.bottom + space.xl }]}>
           {erevosOn ? (
             <Pressable
@@ -728,33 +736,47 @@ function Home() {
               ) : null}
             </Pressable>
           ) : null}
-          <Pressable
-            onPress={() => (newChat === 'sms' ? setWritingSms(true) : newChat && router.push(newChat))}
-            onLongPress={() => {
-              // The PIN of hidden chats, which are Erevos's own.
-              if (!moduleOn('erevos')) return;
-              try {
-                Vibration.vibrate(DOOR_BUZZ);
-              } catch {
-                // A phone without a vibrator: nothing to feel.
-              }
-              setDoor(true);
-            }}
-            delayLongPress={DOOR_HOLD}
-            accessibilityRole="button"
-            accessibilityLabel={t('New chat')}
-            style={({ pressed }) => [
-              styles.fab,
-              // Neon and Matrix: lit, so it glows.
-              shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
-              pressed && styles.fabPressed,
-            ]}
-          >
-            <PlusIcon color={colors.onPrimary} size={20} />
-            <Text variant="label" color={colors.onPrimary}>
-              {newChat === 'sms' ? t('New SMS') : t('New chat')}
-            </Text>
-          </Pressable>
+          {newPost ? (
+            <Pressable
+              onPress={feed.post}
+              accessibilityRole="button"
+              accessibilityLabel={t('New post')}
+              style={({ pressed }) => [styles.fab, shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` }, pressed && styles.fabPressed]}
+            >
+              <PencilIcon color={colors.onPrimary} size={20} />
+              <Text variant="label" color={colors.onPrimary}>
+                {t('New post')}
+              </Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={() => (newChat === 'sms' ? setWritingSms(true) : newChat && router.push(newChat))}
+              onLongPress={() => {
+                // The PIN of hidden chats, which are Erevos's own.
+                if (!moduleOn('erevos')) return;
+                try {
+                  Vibration.vibrate(DOOR_BUZZ);
+                } catch {
+                  // A phone without a vibrator: nothing to feel.
+                }
+                setDoor(true);
+              }}
+              delayLongPress={DOOR_HOLD}
+              accessibilityRole="button"
+              accessibilityLabel={t('New chat')}
+              style={({ pressed }) => [
+                styles.fab,
+                // Neon and Matrix: lit, so it glows.
+                shape.glow && { boxShadow: `0px 0px 18px ${withAlpha(colors.primary, 0.6)}` },
+                pressed && styles.fabPressed,
+              ]}
+            >
+              <PlusIcon color={colors.onPrimary} size={20} />
+              <Text variant="label" color={colors.onPrimary}>
+                {newChat === 'sms' ? t('New SMS') : t('New chat')}
+              </Text>
+            </Pressable>
+          )}
         </View>
       ) : null}
       <NewSmsSheet visible={writingSms} onClose={() => setWritingSms(false)} />

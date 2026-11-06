@@ -52,7 +52,7 @@ import { backUpKeys, recoveryInfo, restoreLocked, setUpRecovery, takeGiven, unlo
 import { fetchFile, fetchPicture, sendFile, uploadPicture, type OutgoingFile } from './matrix-media';
 import { listDevices, register, renameDevice, signOutDevices, type AccountDevice, type AuthAsk } from './matrix-account';
 import { pollShown, previewContent } from './matrix-parts';
-import { leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
+import { learnJoins, leaveAndForget, pinMessage, publicRooms, spaceRooms, tagRoom, type FoundRoom } from './matrix-rooms';
 import type { Place, Poll, Preview } from './chat-parts';
 import type { GivenMatrix } from './link-wire';
 import {
@@ -707,6 +707,16 @@ export function matrixTag(roomId: string, tag: 'favourite' | 'low' | null): Prom
 export function matrixForget(roomId: string): Promise<void> {
   const it = need();
   return changeAccount(it, () => leaveAndForget(it.state, roomId));
+}
+
+/** Learns who may join the space's rooms not known yet (lib/matrix-rooms.ts learnJoins), for the
+ *  public feed (components/public-feed.tsx); answers how many it learned. Never a hidden place's. */
+export function matrixLearnJoins(): Promise<number> {
+  const it = live;
+  if (!it?.state || it.stopped) return Promise.resolve(0);
+  const state = it.state;
+  if (!Object.values(state.rooms).some((room) => room.joins === undefined && !room.direct && !room.space && !room.invitedBy)) return Promise.resolve(0);
+  return changeAccount(it, () => learnJoins(state));
 }
 
 /** The public rooms of our homeserver, or of `server`, with `term` in them. */

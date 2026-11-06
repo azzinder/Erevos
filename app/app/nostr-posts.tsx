@@ -20,7 +20,7 @@ import { space } from '../theme/colors';
 // nostrDmPosts), as the space's Tor way says, and never kept. Nothing is fetched for them: a
 // picture or a link is its address, as written, which can be selected and copied but not opened
 // from here. A post with a content warning shows its words only when tapped. Opened from the Nostr
-// tab's posts (components/nostr-feed.tsx), it is someone the space's key follows, with the name
+// Public tab's posts (components/public-feed.tsx), it is someone the space's key follows, with the name
 // they gave themselves there (`name`) when this space has none for them.
 
 export default function NostrPostsScreen() {

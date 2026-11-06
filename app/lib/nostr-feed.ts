@@ -5,7 +5,7 @@
 import { postParts, POSTS_AT_ONCE, verified, type NostrPost } from './nostr-dm';
 import { isEvent, type NostrEvent } from './nostr-dm-net';
 
-// The feed of the Nostr tab on home (components/nostr-feed.tsx, docs/nostr-chats.md), as Amethyst's
+// The feed of the Public tab on home (components/public-feed.tsx, docs/nostr-chats.md), as Amethyst's
 // home or a Telegram channel shows one: the public posts (kind 1) of the people the space's Nostr
 // key follows, and the posts they shared again (kind 6, NIP-18), newest first, a page at a time.
 // This is what is worked out from what the relays sent: which relays to ask for whose posts, and
@@ -24,6 +24,9 @@ export type FeedPost = NostrPost & {
   /** The post that shows: its own id, or, for a share, the id of the post shared, so that a post
    *  shows once however many people shared it. */
   note: string;
+  /** The post that shows, as it came, checked: to answer it, share it again or like it, and for
+   *  the photos it names (lib/public-media.ts). Held while it shows, never kept. */
+  event?: NostrEvent;
 };
 
 const bare = (url: string) => url.replace(/\/+$/, '');
@@ -115,7 +118,7 @@ export async function feedPage(
     if (event.kind === 1) {
       if (notes.has(event.id)) continue;
       notes.add(event.id);
-      posts.push({ id: event.id, note: event.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(event) });
+      posts.push({ id: event.id, note: event.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(event), event });
       continue;
     }
     let inner: unknown;
@@ -126,7 +129,7 @@ export async function feedPage(
     }
     if (!isEvent(inner) || inner.kind !== 1 || notes.has(inner.id) || !(await check(inner))) continue;
     notes.add(inner.id);
-    posts.push({ id: event.id, note: inner.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(inner), sharedFrom: inner.pubkey });
+    posts.push({ id: event.id, note: inner.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(inner), sharedFrom: inner.pubkey, event: inner });
   }
   const asked = until ?? latest;
   const next = posts.length ? Math.floor(posts[posts.length - 1].at / 1000) : horizon > 0 && horizon < asked ? horizon : asked - 1;

@@ -12,7 +12,7 @@
 // messages are readable only here, so only what this phone keeps is looked through.
 
 import { t } from './i18n';
-import { call, enc, request, type Json, type MatrixMessage, type MatrixRoom, type MatrixState } from './matrix';
+import { call, enc, MatrixError, request, type Json, type MatrixMessage, type MatrixRoom, type MatrixState } from './matrix';
 
 /** A room as a list of rooms to join shows it. */
 export type FoundRoom = {
@@ -160,4 +160,31 @@ export function findMessages(state: MatrixState, term: string, roomId?: string):
     }
   }
   return found.sort((a, b) => b.message.ts - a.message.ts).slice(0, MOST_FOUND);
+}
+
+/** The most rooms whose join rule one look asks the homeserver for. */
+export const JOINS_AT_ONCE = 20;
+
+/**
+ * Asks the homeserver who may join the rooms we are in whose join rule (m.room.join_rules) this
+ * phone does not know: rooms joined before Erevos kept it, as a sync tells it only when it
+ * changes. JOINS_AT_ONCE at most; a room with none is open only to those asked. Answers how many
+ * it learned; one the homeserver did not answer for is asked again the next time.
+ */
+export async function learnJoins(state: MatrixState, most = JOINS_AT_ONCE): Promise<number> {
+  const rooms = Object.values(state.rooms).filter((room) => room.joins === undefined && !room.direct && !room.space && !room.invitedBy).slice(0, most);
+  let learned = 0;
+  for (const room of rooms) {
+    try {
+      const content = await call(state, 'GET', `/rooms/${enc(room.id)}/state/m.room.join_rules/`);
+      room.joins = content.join_rule === 'public' ? 'public' : 'other';
+      learned += 1;
+    } catch (error) {
+      if (error instanceof MatrixError && error.status === 404) {
+        room.joins = 'other';
+        learned += 1;
+      }
+    }
+  }
+  return learned;
 }

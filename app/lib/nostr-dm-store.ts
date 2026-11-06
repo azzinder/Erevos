@@ -7,6 +7,7 @@ import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
 import type { Holder } from '../lock/sealed-file';
 import { canNostrChat } from './core';
+import { sha256Bytes, toHex } from './crypto';
 import { fileCache } from './file-cache';
 import { t } from './i18n';
 import { addNetwork, hearing } from './network-notices';
@@ -35,6 +36,7 @@ import {
   oldFilters,
   otherInboxes,
   POSTS_AT_ONCE,
+  postParts,
   postsOf,
   profileEvent,
   profileFieldsOf,
@@ -46,8 +48,10 @@ import {
   sameRelays,
   setInbox,
   shortNpub,
+  signed,
   signedOnce,
   takeWrap,
+  verified,
   wrapMessage,
   writesOf,
   type NostrDmMessage,
@@ -974,7 +978,7 @@ export async function nostrDmPosts(key: string, before?: number): Promise<{ post
   return { posts, answered, older: posts.length >= POSTS_AT_ONCE };
 }
 
-// The feed of the Nostr tab on home (components/nostr-feed.tsx, lib/nostr-feed.ts): whom the
+// The feed of the Public tab on home (components/public-feed.tsx, lib/nostr-feed.ts): whom the
 // space's key follows, where they write (their NIP-65 lists) and the names of those its pages
 // showed, as looked up while it shows, for its next pages; forgotten as it goes from the screen
 // (nostrDmFeedDone) or the space closes, and never kept. The space's key only: home never shows a
@@ -1109,6 +1113,166 @@ export async function nostrDmFeed(until?: number, shown: readonly FeedPost[] = [
 export function nostrDmFeedDone(): void {
   feedShowing += 1;
   feedKnown = null;
+}
+
+// What the public feed (components/public-feed.tsx) does with a post besides reading it, as other
+// Nostr apps do: answer it, share it again (NIP-18), like it (NIP-25), write a post of one's own,
+// with photos, and take one's own back (NIP-09). These are public and signed with the space's
+// key: anyone may read them, and they say they are of this key. They go to the relays the key
+// writes on (its NIP-65 list), or to PUBLIC_RELAYS when it names none, and to the relays the post's
+// writer writes on, a few, so that they see it; as the space's Tor way says. Always the space's
+// own key, never a hidden place's.
+
+/** Where a post goes when the key names no relays it writes on: widely read ones that take any. */
+export const PUBLIC_RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.primal.net'];
+/** How many relays of a post's writer a post about it goes to besides ours. */
+const THEIRS_MOST = 3;
+/** The most people an answer names (p tags): those of the post answered, and its writer. */
+const NAMED_MOST = 20;
+
+// What this space's key did with posts while Erevos runs (liked, shared again), to show it; never kept.
+const doneWith = { liked: new Set<string>(), shared: new Set<string>() };
+
+/** Whether the space's key liked, or shared again, this post while Erevos runs. */
+export function nostrDmDoneWith(note: string): { liked: boolean; shared: boolean } {
+  return { liked: doneWith.liked.has(note), shared: doneWith.shared.has(note) };
+}
+
+function spaceLive(): Live & { state: NostrDmState } {
+  const it = live;
+  if (!it?.state || it.stopped) throw new Error(t('There are no Nostr chats in this space.'));
+  return it as Live & { state: NostrDmState };
+}
+
+// The relays a key writes on: as found for the feed or its posts, or looked up now.
+async function writesFor(it: Live, key: string): Promise<string[]> {
+  const known = (feedKnown?.of === it ? feedKnown.writes.get(key) : undefined) ?? writesKnown.get(key);
+  if (known) return known;
+  const found = await lookUp(it, [...LOOKUP_RELAYS, ...FOLLOWS_RELAYS.slice(0, 2)], [{ kinds: [10002], authors: [key] }]).catch(() => [] as NostrEvent[]);
+  const writes = await writesOf(key, found);
+  if (writes.length) writesKnown.set(key, writes);
+  return writes;
+}
+
+/**
+ * Signs a public event with the space's key and sends it to where its posts go, and to a few of
+ * the relays `about` (the writer of the post it is about) writes on. Answers it; throws when no
+ * relay took it.
+ */
+async function postPublic(kind: number, tags: string[][], content: string, about?: string): Promise<NostrEvent> {
+  const it = spaceLive();
+  const state = it.state;
+  const ours = await writesFor(it, state.public);
+  const theirs = about && about !== state.public ? (await writesFor(it, about)).slice(0, THEIRS_MOST) : [];
+  const where = [...new Set([...(ours.length ? ours : PUBLIC_RELAYS), ...theirs].map((url) => url.replace(/\/+$/, '')))];
+  const event = await signed(state, kind, tags, content);
+  const took = await publish(it, where, event);
+  if (!took) throw new Error(t('No Nostr relay took it. Try again in a while.'));
+  return event;
+}
+
+/** A photo to put in a public post: its bytes, as lib/pick-photo.ts made them (its metadata taken out). */
+export type PublicPhoto = { bytes: Uint8Array; mime: string; w?: number; h?: number };
+
+/** The tags of a post answering `to` (NIP-10): the thread's first post, the one answered, and the people in it. */
+export function answerTags(to: NostrEvent, me: string): string[][] {
+  const root = to.tags.find((tag) => tag[0] === 'e' && tag[3] === 'root' && /^[0-9a-f]{64}$/.test(tag[1] ?? ''))?.[1];
+  const tags: string[][] = root && root !== to.id ? [['e', root, '', 'root'], ['e', to.id, '', 'reply']] : [['e', to.id, '', 'root']];
+  const people = [to.pubkey, ...to.tags.filter((tag) => tag[0] === 'p' && /^[0-9a-f]{64}$/.test(tag[1] ?? '')).map((tag) => tag[1])];
+  for (const key of [...new Set(people)].filter((key) => key !== me).slice(0, NAMED_MOST)) tags.push(['p', key]);
+  return tags;
+}
+
+/**
+ * Writes a public post (kind 1) with `text` and, put on the space's file server unencrypted as a
+ * public post's are (BUD-02), `photos`, their addresses at its end with imeta tags (NIP-92); as an
+ * answer to `to` when given. Answers the post.
+ */
+export async function nostrDmWritePost(text: string, photos: PublicPhoto[] = [], to?: NostrEvent): Promise<NostrEvent> {
+  const it = spaceLive();
+  const words = text.trim();
+  const tags = to ? answerTags(to, it.state.public) : [];
+  const urls: string[] = [];
+  for (const photo of photos) {
+    if (photo.bytes.length > NOSTR_FILE_MOST) throw new NostrFileTooLargeError();
+    const url = await uploadBlob(it.state.files?.length ? it.state.files : FILE_SERVERS, photo.bytes, (kind, signTags, content) => signedOnce(kind, signTags, content));
+    urls.push(url);
+    tags.push(['imeta', `url ${url}`, `m ${photo.mime}`, ...(photo.w && photo.h ? [`dim ${photo.w}x${photo.h}`] : []), `x ${toHex(sha256Bytes(photo.bytes))}`]);
+  }
+  const content = [words, ...urls].filter(Boolean).join('\n');
+  if (!content) throw new Error(t('Write something first.'));
+  return postPublic(1, tags, content, to?.pubkey);
+}
+
+/** Likes a post (NIP-25, "+"). */
+export async function nostrDmLike(post: NostrEvent): Promise<void> {
+  await postPublic(7, [['e', post.id], ['p', post.pubkey], ['k', String(post.kind)]], '+', post.pubkey);
+  doneWith.liked.add(post.id);
+  told();
+}
+
+/** Shares a post again (NIP-18, kind 6), with the post in it. */
+export async function nostrDmRepost(post: NostrEvent): Promise<void> {
+  await postPublic(6, [['e', post.id, ''], ['p', post.pubkey]], JSON.stringify(post), post.pubkey);
+  doneWith.shared.add(post.id);
+  told();
+}
+
+/** Asks the relays to take back a post of the space's key (NIP-09): those that keep it then drop it. */
+export async function nostrDmTakeBack(post: NostrEvent): Promise<void> {
+  const it = spaceLive();
+  if (post.pubkey !== it.state.public) return;
+  await postPublic(5, [['e', post.id], ['k', String(post.kind)]], '');
+}
+
+/** What is said under a post, as its screen shows it (app/public-post.tsx). */
+export type PostTalk = {
+  /** The answers to it, oldest first, checked, as posts of the feed show. */
+  answers: FeedPost[];
+  likes: number;
+  shares: number;
+  names: Record<string, string>;
+  answered: boolean;
+};
+
+/** The most answers a post's screen shows. */
+const ANSWERS_MOST = 200;
+
+/**
+ * The answers to a post (kind 1 naming it, NIP-10), and how many liked it and shared it again,
+ * looked up now on the relays used for look-ups and those its writer writes on, with the names of
+ * those who answered. Public, and never kept.
+ */
+export async function nostrDmPostTalk(post: NostrEvent): Promise<PostTalk> {
+  const it = spaceLive();
+  const state = it.state;
+  const where = [...new Set([...LOOKUP_RELAYS.filter((url) => !GATHERERS.includes(url)), ...(await writesFor(it, post.pubkey)).slice(0, THEIRS_MOST)].map((url) => url.replace(/\/+$/, '')))];
+  const found = await lookUpEach(it, where, [{ kinds: [1], '#e': [post.id], limit: ANSWERS_MOST }, { kinds: [6, 7], '#e': [post.id], limit: 500 }]);
+  const seen = new Set<string>();
+  const answers: FeedPost[] = [];
+  const likers = new Set<string>();
+  const sharers = new Set<string>();
+  const latest = seconds() + 600;
+  for (const event of found.events.sort((a, b) => a.created_at - b.created_at)) {
+    if (seen.has(event.id) || event.created_at > latest || !event.tags.some((tag) => tag[0] === 'e' && tag[1] === post.id)) continue;
+    if (!(await verified(event))) continue;
+    seen.add(event.id);
+    if (event.kind === 7) {
+      if (reactionOf(event.content) !== '👎') likers.add(event.pubkey);
+    } else if (event.kind === 6) sharers.add(event.pubkey);
+    else if (answers.length < ANSWERS_MOST) answers.push({ id: event.id, note: event.id, by: event.pubkey, at: event.created_at * 1000, ...postParts(event), event });
+  }
+  if (likers.has(state.public)) doneWith.liked.add(post.id);
+  if (sharers.has(state.public)) doneWith.shared.add(post.id);
+  const people = [...new Set(answers.map((answer) => answer.by))];
+  const names: Record<string, string> = {};
+  const unnamed = people.filter((key) => key !== state.public && !(feedKnown?.names.has(key)));
+  const profiles = unnamed.length ? byAuthor(await lookUpBatched(it, GATHERERS, unnamed, (batch) => ({ kinds: [0], authors: batch }), Date.now() + 30_000), 0) : new Map<string, NostrEvent[]>();
+  for (const key of people) {
+    const name = key === state.public ? t('You') : (!state.chats[key]?.members && state.chats[key]?.name) || feedKnown?.names.get(key) || (await nameIn(key, profiles.get(key) ?? [])) || state.people[key]?.name;
+    if (name) names[key] = name;
+  }
+  return { answers, likes: likers.size, shares: sharers.size, names, answered: found.relays.some((relay) => relay.how === 'all') };
 }
 
 /** Looks up the name and inbox of `key` again when it is a week old or never was. */

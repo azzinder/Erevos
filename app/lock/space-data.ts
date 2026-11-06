@@ -6,6 +6,7 @@ import { checkedBridges, NO_BRIDGES, type Bridges } from '../lib/bridges';
 import { isNostrRelay, MAX_NOSTR_RELAYS } from './e2e-data';
 import { decryptText, encryptText, fromHex, randomBytes, toHex } from '../lib/crypto';
 import { onRelayKey, pinRelay, relayHome, type TorWay } from '../lib/relay';
+import { PUBLIC_IMAGES, type PublicImages } from '../lib/public-media';
 import { NO_OWN_TOKEN, type OwnToken } from '../lib/relay-signin';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 
@@ -97,6 +98,11 @@ export type SpaceData = {
   // shown when theirs was (lib/last-seen.ts): on unless turned off, and both ways, as one who tells
   // nothing sees nothing. Only the space's own chats: hidden chats and hidden places never say it.
   lastSeen: boolean;
+  // How the public feed (components/public-feed.tsx) fetches the photos of posts and the cards of
+  // their links, from wherever a post says (lib/public-fetch.ts): 'always' unless changed.
+  publicImages: PublicImages;
+  // Whether a post's first link shows as a card with the page's title and picture. On unless set.
+  publicCards: boolean;
 };
 
 export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[] };
@@ -136,6 +142,8 @@ export const EMPTY_SPACE: SpaceData = {
   stopped: 0,
   sign: false,
   lastSeen: true,
+  publicImages: 'always',
+  publicCards: true,
 };
 
 const BLOCK = 1024;
@@ -210,6 +218,8 @@ function checked(value: unknown): SpaceData {
     stopped: typeof v.stopped === 'number' && Number.isFinite(v.stopped) && v.stopped > 0 ? v.stopped : 0,
     sign: v.sign === true,
     lastSeen: v.lastSeen !== false,
+    publicImages: PUBLIC_IMAGES.includes(v.publicImages as PublicImages) ? (v.publicImages as PublicImages) : 'always',
+    publicCards: v.publicCards !== false,
   };
 }
 

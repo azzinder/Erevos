@@ -218,14 +218,20 @@ post's words until **Show**; an answer (an `e` tag that is not a mention, NIP-10
 
 ## The posts of the people followed
 
-The home list's Nostr tab has two parts (`components/nostr-feed.tsx`): **Posts**, first, as the home
-of Amethyst or a Telegram channel shows them, and **Chats**, one tap away, with how many are not read.
-**Posts** are the public posts (kind 1) and shares (kind 6) of the people the space's key follows,
+The home list's **Public** chip (`components/public-feed.tsx`) shows one feed, as the home of Amethyst
+or a Telegram channel shows it, of the public posts of the people the space's key follows and the
+messages of the public Matrix rooms the space is in (`app/lib/public-feed.ts`); the **Nostr** chip
+shows only the chats. The Nostr part of the feed is the public posts (kind 1) and shares (kind 6) of the people the space's key follows,
 newest first, `FEED_AT_ONCE` (30) a page, more as the list comes to its end (or **Older posts**), the
 newest again when it is pulled down (**Look again** in a browser). Each shows who wrote it, by the
 name they gave themselves (kind 0) or one given here, with the start and end of their npub, its time
-and its words; a share says who shared it. Tapping who wrote one offers their **Public posts** and
-**Write to them** (a chat). Read only, as the posts of one person are.
+and its words, its photos inside it and a card for its link, fetched only as the space's **Photos**
+choice says (`app/lib/public-fetch.ts`); a share says who shared it. Tapping who wrote one offers
+their **Public posts** and **Write to them** (a chat). Under a post: answer (NIP-10), share again
+(kind 6), like (kind 7), share a link, and take back one's own (kind 5); **New post** writes one, with
+photos put on the space's file server unencrypted (NIP-92 `imeta` tags). These are signed with the
+space's key and public (`nostrDmWritePost` and its kin in `app/lib/nostr-dm-store.ts`); tapping a post
+opens `app/public-post.tsx` with its answers, likes and shares.
 
 - Who: the space's newest follow list (kind 3), looked up as **Show the people you follow** does
   (`followListOf` in `app/lib/nostr-dm-store.ts`), each time the newest page is asked; where each of
@@ -281,8 +287,8 @@ and its words; a share says who shared it. Tapping who wrote one offers their **
 - The home list (`nostrInboxRows` in `app/lib/inbox.ts`): each chat is a row, `network: 'nostr'` with
   `nostr:` and the key's hex as its identity, named as given here, or as they call themselves, or by
   the start and end of their npub, in a Nostr chip of its own. The chip shows once the space has a
-  key. Under it, **Posts** and **Chats** (above): the posts are rows of the same list, so the search
-  over it stays as it is, and a search shows the chats it finds.
+  key; it shows only the chats. The **Public** chip's feed (above) is rows of the same list, so the
+  search over it stays as it is, and a search shows the chats it finds.
 
 ## Notices
 

@@ -154,7 +154,7 @@ const SCREENS: Record<Module, readonly string[]> = {
   erevos: ['chat', 'group', 'myself', 'new-group', 'public-group', 'public-groups', 'join', 'c', 'i', 'link', 'welcome', 'text-invite', 'relay', 'relay-invite', 'home-relay', 'devices', 'imported', 'lora', 'radio', 'starred', 'nostr'],
   phone: ['phone', 'phone-settings'],
   sms: ['sms', 'sms-folder', 'sms-settings'],
-  nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts'],
+  nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts', 'public-post'],
   matrix: ['matrix', 'matrix-chat', 'matrix-sso'],
   xmpp: ['xmpp', 'xmpp-chat'],
   collection: ['collection', 'collection-settings', 'collection-send'],

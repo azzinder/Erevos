@@ -118,8 +118,6 @@ export const nostrChats: Record<string, string> = {
   "An answer to another post": "Απάντηση σε άλλη ανάρτηση",
   "Content warning: {reason}": "Προειδοποίηση περιεχομένου: {reason}",
   "Content warning": "Προειδοποίηση περιεχομένου",
-  "Posts": "Αναρτήσεις",
-  "The public posts of the people you follow, newest first. Read only, and not kept.": "Οι δημόσιες αναρτήσεις όσων ακολουθείς, οι πιο πρόσφατες πρώτες. Μόνο για ανάγνωση, και δεν αποθηκεύονται.",
   "This space has no Nostr key yet. Make one, or bring the one of your other Nostr app, under Nostr chats.": "Αυτός ο χώρος δεν έχει ακόμα κλειδί Nostr. Φτιάξε ένα, ή φέρε αυτό της άλλης σου εφαρμογής Nostr, στις Συνομιλίες Nostr.",
   "Your Nostr key follows no one yet. Follow people with it in another Nostr app, such as Amethyst or Primal, and their posts show here.": "Το κλειδί Nostr σου δεν ακολουθεί ακόμα κανέναν. Ακολούθησε ανθρώπους με αυτό σε άλλη εφαρμογή Nostr, όπως το Amethyst ή το Primal, και οι αναρτήσεις τους θα εμφανίζονται εδώ.",
   "Shared by {name}": "{name} το αναδημοσίευσε",

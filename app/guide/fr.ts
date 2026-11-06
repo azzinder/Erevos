@@ -120,10 +120,16 @@ que tant que leur code PIN les tient ouvertes.
   **XMPP**, et une personne qui demande à t’ajouter, ou un groupe qui t’invite, s’affiche en haut. La puce **XMPP** ne
   montre qu’elles, et là **Nouvelle discussion** commence une discussion XMPP : voir [XMPP](#xmpp).
 - **Les discussions Nostr**, une fois que l’espace a une clé Nostr, sont dans la liste de la même façon, chacune
-  marquée **Nostr**. Sous le bouton **Nostr**, il y en a deux autres : **Publications**, d’abord, les publications
-  publiques des personnes que suit ta clé Nostr, les plus récentes d’abord, comme dans Amethyst ou une chaîne Telegram,
-  et **Discussions**, seulement les discussions Nostr, avec le nombre de messages non lus. Là, **Nouvelle discussion**
-  ouvre l’écran des discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
+  marquée **Nostr**. Le bouton **Nostr** n’affiche qu’elles, avec le nombre de messages non lus, et là **Nouvelle
+  discussion** ouvre l’écran des discussions Nostr : voir [Discussions avec d’autres applis Nostr](#nostr-chats).
+- **Le fil public**, une fois que l’espace a une clé Nostr ou est dans un salon Matrix public, est un bouton de plus,
+  **Public** : un seul fil, comme dans Amethyst, avec les publications publiques des personnes que suit ta clé Nostr et
+  les messages des salons Matrix publics où tu es, les plus récents d’abord. Chacune montre qui l’a écrite (un petit N
+  ou M dit le réseau), quand, ses mots, ses photos dans la publication et une carte pour son lien. Quand les deux sont
+  activés, **Tous**, **Nostr** et **Matrix**, au-dessus du fil, choisissent ce qui s’affiche, et **Photos** choisit
+  comment les photos et les cartes sont récupérées. Sous une publication : répondre, partager à nouveau, aimer et
+  partager ; sous un message Matrix : répondre, réagir et partager. **Nouvelle publication**, le stylo en bas, écrit une
+  publication publique, avec jusqu’à quatre photos. Voir [Discussions avec d’autres applis Nostr](#nostr-chats).
 - **Nouvelle discussion**, en bas, ouvre les réglages du relais et l’ajout d’un contact. **Me rappeler**, la cloche
   orange à côté, t’écrit un rappel.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
@@ -2055,7 +2061,7 @@ discussions propres à Erevos.
   et sur les relais où écrit ta clé), avec leurs noms : touches-en une pour lui écrire. Quand il ne trouve personne, il
   dit pourquoi, de qui il a cherché la liste et comment chaque relais a répondu. Rien n’est chargé avant que tu appuies
   dessus, et aucune photo de profil. Les discussions sont aussi dans la liste de l’accueil, chacune marquée **Nostr** ;
-  sous le bouton **Nostr**, **Discussions** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran.
+  le bouton **Nostr** n’affiche qu’elles, et là **Nouvelle discussion** ouvre cet écran.
   **Lui donner un nom ici** donne à une discussion un nom que toi seul vois.
 - **Groupes :** **Nouveau groupe** en crée un avec deux personnes ou plus parmi celles avec qui tu discutes, vingt au
   plus, avec un nom si tu veux. Les groupes Nostr n’ont pas d’administrateurs : un groupe, ce sont les personnes que
@@ -2114,19 +2120,35 @@ discussions propres à Erevos.
   copiées. Une publication avec un avertissement de contenu montre ses mots après un appui sur **Afficher**. Un compte
   qui ne publie que pour tous, comme celui d’un projet, n’envoie pas de messages privés : sa discussion reste vide, et
   ses publications sont ici.
-- **Publications des personnes que tu suis :** sur l’écran d’accueil, **Publications**, sous le bouton **Nostr**,
-  montre ce que publient pour tous les personnes que suit ta clé Nostr, et ce qu’elles ont repartagé, les plus récentes
-  d’abord, comme dans Amethyst ou une chaîne Telegram : qui a écrit chaque publication, sous le nom que la personne
-  s’est donné avec le début et la fin de son npub, quand, et ce qu’elle dit. D’autres arrivent quand tu fais défiler
-  jusqu’au bout, ou avec **Publications plus anciennes** ; tire la liste vers le bas pour les plus récentes (dans un
-  navigateur, **Chercher de nouveau**). Touche qui a écrit une publication pour ses **Publications publiques**, ou
-  **Lui écrire** pour commencer une discussion. C’est en lecture seule, comme plus haut : ici, on ne peut ni publier,
-  ni répondre, ni réagir, ni suivre quelqu’un ; pour cela, prends une autre appli Nostr avec la même clé. Ta liste de
-  personnes suivies, où écrivent les personnes qui y sont (leurs listes NIP-65) et leurs publications sont cherchées
-  seulement tant que **Publications** s’affiche, sur les relais utilisés pour les recherches, sur ceux qui rassemblent
-  des listes et sur ceux où elles écrivent, comme le dit le choix de Tor de cet espace ; les noms, seulement pour les
-  publications affichées. Rien n’en est gardé, et aucune image ni aucun lien n’est ouvert. C’est toujours la clé de cet
-  espace, jamais celle des discussions masquées.
+- **Le fil public :** sur l’écran d’accueil, le bouton **Public** montre un seul fil avec ce que les personnes que suit
+  ta clé Nostr publient pour tout le monde, et ce qu’elles ont partagé à nouveau, et avec les messages des salons Matrix
+  publics où tu es (des salons que n’importe qui peut rejoindre), les plus récents d’abord, comme dans Amethyst : le
+  visage de qui a écrit, avec un petit **N** ou **M**, son nom, quand, les mots, les photos dans la publication (une en
+  pleine largeur, de deux à quatre en grille) et, pour le premier lien, une carte avec son image, son site, son titre et
+  une ligne. Pour Matrix, la ligne sous le nom dit le salon et son serveur : touche-la pour ouvrir le salon. D’autres
+  viennent quand tu arrives au bout, ou avec **Publications plus anciennes** ; tire la liste vers le bas pour les plus
+  récentes (dans un navigateur, **Chercher de nouveau**). Suivre des gens se fait toujours dans une autre appli Nostr
+  avec la même clé. Ta liste de suivis, où ils écrivent (leurs listes NIP-65) et leurs publications ne sont cherchés que
+  tant que le fil s’affiche, sur les relais des recherches, sur ceux qui rassemblent des listes et sur ceux où ils
+  écrivent, comme le dit le choix Tor de l’espace ; les noms seulement pour les publications affichées. Rien n’est gardé.
+  **Photos**, au-dessus du fil, est le choix qui compte pour la vie privée. Une photo ou une carte de lien vient du
+  serveur où la personne qui a écrit la publication l’a mise, et ce serveur voit l’adresse d’où elle a été récupérée, par
+  Tor celle d’une sortie de Tor, et que quelqu’un l’a ouverte. **Toujours** les affiche tout de suite, par Tor quand Tor
+  est activé dans cet espace ; **Seulement par Tor** les affiche seulement quand Tor est activé, et sinon sur appui ;
+  **Sur appui** n’en récupère aucune avant que tu l’appuies. **Aperçus des liens** active ou coupe les cartes. Rien n’est
+  récupéré tant que le fil ne s’affiche pas, une photo n’est gardée que tant que sa publication s’affiche, et aucune
+  n’est enregistrée ; celle qui ne vient pas montre **Afficher la photo** pour réessayer. Seules sont récupérées des
+  adresses sur internet, jamais une de ce téléphone ni de ton réseau domestique.
+  Sous une publication Nostr : **Répondre** écrit une réponse, **Partager à nouveau** la montre à tes abonnés (il demande
+  d’abord), le cœur l’aime, et la flèche partage un lien vers elle. Ses trois points : **Copier le texte**, les
+  **Publications publiques** de qui l’a écrite, **Lui écrire**, et **Reprendre** pour une publication de toi. Touche une
+  publication pour l’ouvrir avec le nombre de personnes qui l’ont aimée et partagée, et ses réponses. **Nouvelle
+  publication**, le stylo, écrit une publication publique, avec jusqu’à quatre photos. Les réponses, les partages, les
+  « J’aime » et les publications sont publics et signés avec la clé Nostr de l’espace : n’importe qui peut les lire, et
+  ils montrent qu’ils sont de toi ; une photo que tu ajoutes est mise non chiffrée sur le serveur de fichiers de
+  l’espace, comme doit l’être celle d’une publication publique. Sous un message Matrix : **Répondre**, **Réagir** (un
+  choix de six) et partager (un lien matrix.to), et dans ses trois points **Copier le texte** et **Ouvrir le salon**.
+  C’est toujours la clé et le compte de cet espace, jamais ceux des discussions masquées.
 - **Marques :** un ✓ dès qu’un de ses relais a accepté le message. NIP-17 ne renvoie rien : ni quand son appli l’a, ni
   quand la personne le lit. Lire une discussion ici ne le dit à personne.
 - **Pas anonyme :** ta clé est la même pour tous ceux à qui tu écris, et quiconque a un npub peut lui écrire. Les relais

@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildInbox, filterInbox, groupRows, mergeRows, rowTime, shownName, tabUnread, type InboxRow, type InboxShow } from '../lib/inbox';
+import { buildInbox, filterInbox, groupRows, inboxParts, mergeRows, rowTime, shownName, showsIn, tabUnread, type InboxRow, type InboxShow } from '../lib/inbox';
 import { randomBytes } from '../lib/crypto';
 import { kept, LAST, loadInboxCache, ROWS, saveInboxCache } from '../lock/inbox-cache';
 import { files } from './files-memory';
@@ -120,9 +120,11 @@ test("counts the messages not read in each part of the list for its chip, a mute
       row({ identity: 'nostr:aa', network: 'nostr', unread: 2 }),
     ],
   );
-  const counts = (['all', 'sms', 'erevos', 'matrix', 'xmpp', 'nostr'] as InboxShow[]).map((show) => tabUnread(rows, show));
+  const counts = (['all', 'sms', 'erevos', 'matrix', 'xmpp', 'nostr', 'public'] as InboxShow[]).map((show) => tabUnread(rows, show));
   // A contact whose last message is an SMS is among the SMS and the Erevos chats alike (showsIn).
-  assert.deepEqual(counts, [2 + 3 + 3 + 4 + 7 + 1 + 2, 2 + 1 + 3, 2 + 1 + 2 + 4, 7, 1, 2]);
+  assert.deepEqual(counts, [2 + 3 + 3 + 4 + 7 + 1 + 2, 2 + 1 + 3, 2 + 1 + 2 + 4, 7, 1, 2, 0]);
+  assert.equal(showsIn(row({ identity: 'matrix:!a', network: 'matrix' }), 'public'), false);
+  assert.deepEqual(inboxParts([], false, false, false, true), ['public']);
   assert.equal(tabUnread([], 'all'), 0);
 });
 

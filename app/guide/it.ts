@@ -114,11 +114,17 @@ mentre il loro PIN le tiene aperte.
 - **Le chat XMPP**, una volta che hai fatto l’accesso a XMPP, sono nell’elenco allo stesso modo, ognuna segnata
   **XMPP**, e chi chiede di aggiungerti, o un gruppo che ti invita, compare in cima. Il chip **XMPP** mostra solo loro,
   e lì **Nuova chat** avvia una chat XMPP: vedi [XMPP](#xmpp).
-- **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata
-  **Nostr**. Sotto il pulsante **Nostr** ce ne sono altri due: **Post**, per primo, i post pubblici delle persone che
-  la tua chiave Nostr segue, dai più recenti, come in Amethyst o in un canale Telegram, e **Chat**, solo le chat Nostr,
-  con quanti messaggi non sono letti. Lì **Nuova chat** apre la schermata delle chat Nostr: vedi
-  [Chat con altre app Nostr](#nostr-chats).
+- **Le chat Nostr**, quando lo spazio ha una chiave Nostr, sono nella lista allo stesso modo, ognuna segnata **Nostr**.
+  Il pulsante **Nostr** mostra solo loro, con quanti messaggi non sono letti, e lì **Nuova chat** apre la schermata
+  delle chat Nostr: vedi [Chat con altre app Nostr](#nostr-chats).
+- **Il feed pubblico**, quando lo spazio ha una chiave Nostr o è in una stanza Matrix pubblica, è un pulsante in più,
+  **Pubblico**: un solo feed, come in Amethyst, con i post pubblici delle persone che la tua chiave Nostr segue e i
+  messaggi delle stanze Matrix pubbliche in cui sei, dai più recenti. Ognuno mostra chi l’ha scritto (una piccola N o M
+  dice la rete), quando, le sue parole, le sue foto dentro il post e una scheda per il suo link. Con entrambe attive,
+  **Tutto**, **Nostr** e **Matrix**, sopra il feed, scelgono cosa si vede, e **Foto** sceglie come si prendono foto e
+  schede. Sotto un post: rispondere, condividere di nuovo, mettere Mi piace e condividere; sotto un messaggio Matrix:
+  rispondere, reagire e condividere. **Nuovo post**, la penna in basso, scrive un post pubblico, con fino a quattro
+  foto. Vedi [Chat con altre app Nostr](#nostr-chats).
 - **Nuova chat**, in basso, apre le impostazioni del relay e l’aggiunta di un contatto. **Ricordamelo**, la campanella
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori
@@ -1965,8 +1971,7 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   segue (la sua lista pubblica dei seguiti, cercata anche su relay che raccolgono tali liste e sui relay dove scrive la
   tua chiave), con i loro nomi: tocca una persona per scriverle. Quando non trova nessuno, dice perché, di chi ha
   cercato la lista e come ha risposto ogni relay. Non viene caricato nulla finché non lo tocchi, e nessuna foto del
-  profilo. Le chat sono anche nella lista della home, ognuna segnata **Nostr**; sotto il pulsante **Nostr**, **Chat**
-  mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi
+  profilo. Le chat sono anche nella lista della home, ognuna segnata **Nostr**; il pulsante **Nostr** mostra solo loro, e lì **Nuova chat** apre questa schermata. **Dagli un nome qui** dà a una chat un nome che vedi
   solo tu.
 - **Gruppi:** **Nuovo gruppo** ne crea uno con due o più delle persone con cui chatti, al massimo venti, con un nome se
   vuoi. I gruppi Nostr non hanno amministratori: un gruppo sono le persone che i suoi messaggi nominano, ogni messaggio
@@ -2020,17 +2025,33 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   possono copiare. Un post con un avviso di contenuto mostra le sue parole dopo un tocco su **Mostra**. Un account che
   pubblica solo per tutti, come quello di un progetto, non manda messaggi privati: la sua chat resta vuota, e i suoi
   post sono qui.
-- **Post delle persone che segui:** nella schermata principale, **Post**, sotto il pulsante **Nostr**, mostra quello
-  che pubblicano per tutti le persone che la tua chiave Nostr segue, e quello che hanno condiviso di nuovo, dal più
-  recente, come in Amethyst o in un canale Telegram: chi ha scritto ogni post, con il nome che si è dato e l’inizio e
-  la fine del suo npub, quando, e cosa dice. Ne arrivano altri quando scorri fino in fondo, o con
-  **Post meno recenti**; tira giù la lista per i più recenti (in un browser, **Cerca di nuovo**). Tocca chi ha scritto
-  un post per i suoi **Post pubblici**, o **Invia un messaggio** per iniziare una chat. È in sola lettura, come sopra:
-  qui non si può pubblicare, rispondere né reagire, né seguire nessuno; per questo usa un’altra app Nostr con la stessa
-  chiave. La tua lista dei seguiti, dove scrivono le persone che ci sono (le loro liste NIP-65) e i loro post vengono
-  cercati solo mentre **Post** è in vista, sui relay usati per le ricerche, su quelli che raccolgono liste e su quelli
-  dove scrivono, come dice la scelta Tor di questo spazio; i nomi solo per i post in vista. Nulla viene conservato, e
-  non vengono aperte immagini né link. È sempre la chiave di questo spazio, mai quella delle chat nascoste.
+- **Il feed pubblico:** nella schermata principale, il pulsante **Pubblico** mostra un solo feed con ciò che le persone
+  che la tua chiave Nostr segue pubblicano per tutti, e ciò che hanno condiviso di nuovo, e con i messaggi delle stanze
+  Matrix pubbliche in cui sei (stanze a cui può unirsi chiunque), dai più recenti, come in Amethyst: il volto di chi ha
+  scritto, con una piccola **N** o **M**, il nome, quando, le parole, le foto dentro il post (una a tutta larghezza, da
+  due a quattro in una griglia) e, per il primo link, una scheda con immagine, sito, titolo e una riga. Per Matrix, la
+  riga sotto il nome dice la stanza e il suo server: toccala per aprire la stanza. Ne arrivano altri arrivando in fondo,
+  o con **Post meno recenti**; tira la lista verso il basso per i più recenti (in un browser, **Cerca di nuovo**).
+  Seguire le persone si fa ancora in un’altra app Nostr con la stessa chiave. La tua lista di seguiti, dove scrivono (le
+  loro liste NIP-65) e i loro post si cercano solo finché il feed si vede, sui relay delle ricerche, su quelli che
+  raccolgono liste e su quelli su cui scrivono, come dice la scelta Tor dello spazio; i nomi solo per i post che si
+  vedono. Non si conserva nulla.
+  **Foto**, sopra il feed, è la scelta che conta per la privacy. Una foto o una scheda di link arriva dal server dove l’ha
+  messa chi ha scritto il post, e quel server vede l’indirizzo da cui è stata presa, tramite Tor quello di un’uscita Tor,
+  e che qualcuno l’ha aperta. **Sempre** le mostra subito, tramite Tor quando Tor è attivo in questo spazio; **Solo
+  tramite Tor** le mostra solo quando Tor è attivo, altrimenti con un tocco; **Con un tocco** non ne prende nessuna prima
+  che la tocchi. **Anteprime dei link** attiva o disattiva le schede. Non si prende nulla finché il feed non si vede, una
+  foto è tenuta solo finché si vede il suo post, e nessuna è salvata; quella che non arriva mostra **Mostra la foto** per
+  riprovare. Si prendono solo indirizzi su internet, mai uno di questo telefono o della tua rete di casa.
+  Sotto un post Nostr: **Rispondi** scrive una risposta, **Condividi di nuovo** lo mostra ai tuoi follower (chiede
+  prima), il cuore gli mette Mi piace, e la freccia condivide un link ad esso. I suoi tre puntini: **Copia il testo**, i
+  **Post pubblici** di chi l’ha scritto, **Invia un messaggio**, e **Ritira** per un tuo post. Tocca un post per aprirlo
+  con quanti hanno messo Mi piace e l’hanno condiviso di nuovo, e le sue risposte. **Nuovo post**, la penna, scrive un
+  post pubblico, con fino a quattro foto. Le risposte, le condivisioni, i Mi piace e i post sono pubblici e firmati con
+  la chiave Nostr dello spazio: chiunque può leggerli, e si vede che sono tuoi; una foto che aggiungi viene messa non
+  cifrata sul server dei file dello spazio, come deve essere per un post pubblico. Sotto un messaggio Matrix:
+  **Rispondi**, **Reagisci** (a scelta tra sei) e condividi (un link matrix.to), e nei suoi tre puntini **Copia il testo**
+  e **Apri la stanza**. È sempre la chiave e l’account di questo spazio, mai quelli propri delle chat nascoste.
 - **Segni:** un ✓ appena uno dei suoi relay ha accettato il messaggio. NIP-17 non rimanda niente: né quando la sua app
   lo ha, né quando lo legge. Leggere una chat qui non lo dice a nessuno.
 - **Non anonimo:** la tua chiave è la stessa per tutti quelli a cui scrivi, e chiunque abbia un npub può scrivergli. I

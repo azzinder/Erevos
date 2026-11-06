@@ -118,8 +118,6 @@ export const nostrChats: Record<string, string> = {
   "An answer to another post": "Eine Antwort auf einen anderen Beitrag",
   "Content warning: {reason}": "Inhaltswarnung: {reason}",
   "Content warning": "Inhaltswarnung",
-  "Posts": "Beiträge",
-  "The public posts of the people you follow, newest first. Read only, and not kept.": "Die öffentlichen Beiträge der Menschen, denen du folgst, die neuesten zuerst. Nur zum Lesen, und nichts davon wird gespeichert.",
   "This space has no Nostr key yet. Make one, or bring the one of your other Nostr app, under Nostr chats.": "Dieser Bereich hat noch keinen Nostr-Schlüssel. Erstelle einen oder bring den deiner anderen Nostr-App mit, unter Nostr-Chats.",
   "Your Nostr key follows no one yet. Follow people with it in another Nostr app, such as Amethyst or Primal, and their posts show here.": "Dein Nostr-Schlüssel folgt noch niemandem. Folge mit ihm Menschen in einer anderen Nostr-App, etwa Amethyst oder Primal, dann erscheinen ihre Beiträge hier.",
   "Shared by {name}": "Geteilt von {name}",

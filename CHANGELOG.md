@@ -26,6 +26,17 @@ On main, not released yet:
   place of hidden chats has its own switch and its own time (while they are open, only they count as open). Never to a
   chat that appears offline or a message request. See
   [Chat through a relay](#relay).
+- **One Public feed**: the new **Public** chip on the home screen shows the public posts (kind 1) of the Nostr people your
+  key follows, and what they shared again, together with the messages of the public Matrix rooms you are in, as one feed,
+  newest first, as in Amethyst: each post with its writer's face (a small N or M says the network), name and time, its
+  words, its photos inside the post and a card with the picture, site and title of its link. Under a Nostr post: answer,
+  share again (it asks first), like and share, and in its menu copy the text, the writer's public posts, write to them
+  and take back your own; tap a post to see how many liked it and shared it, and the answers. Under a Matrix message:
+  answer, react and share. **New post** writes a public post with up to four photos. Answers, shares, likes and posts are
+  public and signed with the space's Nostr key. **Photos** chooses how photos and link cards are fetched: **Always**, **Only
+  through Tor** or **On a tap**, since the server of a photo sees the address it was fetched from, through Tor a Tor
+  exit's; **Link previews** switches the cards. Nothing is fetched while the feed is not shown. The **Nostr** chip shows
+  only the Nostr chats again, as before its posts moved here. See [Chats with other Nostr apps](#nostr-chats).
 - **Same settings on your linked devices**: the language, the look (style, colours, text size) and **Last seen** changed on the phone
   or on a computer change on the others too. A photo behind the screens stays on the device it was chosen on, and so
   does what is about one device alone: passwords, PINs, the panic code, the lock's time, vibration, the relay and Tor,

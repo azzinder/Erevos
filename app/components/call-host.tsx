@@ -28,6 +28,7 @@ import { elementCall } from '../lib/element-call-window';
 import { answerMatrixCall, declineMatrixCall, inMatrixCall, onMatrixCallChange, shownMatrixCall, watchMatrixCalls, type MatrixCall } from '../lib/matrix-calls';
 import { matrixCallAccount, matrixNow } from '../lib/matrix-store';
 import { t } from '../lib/i18n';
+import { forgetPublicMedia } from '../lib/public-fetch';
 import { CallScreen } from './call-screen';
 import { GroupCallScreen } from './group-call-screen';
 import { MatrixRingScreen } from './matrix-ring';
@@ -134,6 +135,7 @@ export function watchCalls(): () => void {
     endGroupCall();
     // After the call's end, which still goes to the other person.
     stopXmpp();
+    forgetPublicMedia();
     stopVoip();
     audio(() => callAudio?.stopRinging?.());
     audio(() => callAudio?.stop());

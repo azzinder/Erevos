@@ -107,10 +107,16 @@ same whether a space has any or not: their messages can be read only while their
 - **XMPP chats**, once you sign in to XMPP, are in the list the same way, each marked **XMPP**, and a person who asks to
   add you, or a group that invites you, shows at the top. The **XMPP** chip shows only them, and there **New chat**
   starts an XMPP chat: see [XMPP](#xmpp).
-- **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. Under the
-  **Nostr** chip are two more: **Posts**, first, the public posts of the people your Nostr key follows, newest first,
-  as in Amethyst or a Telegram channel, and **Chats**, only the Nostr chats, with how many are not read. There
-  **New chat** opens the Nostr chats screen: see [Chats with other Nostr apps](#nostr-chats).
+- **Nostr chats**, once the space has a Nostr key, are in the list the same way, each marked **Nostr**. The **Nostr**
+  chip shows only them, with how many are not read, and there **New chat** opens the Nostr chats screen: see
+  [Chats with other Nostr apps](#nostr-chats).
+- **The Public feed**, once the space has a Nostr key or is in a public Matrix room, is one more chip, **Public**: one
+  feed, as in Amethyst, of the public posts of the people your Nostr key follows and the messages of the public Matrix
+  rooms you are in, newest first. Each shows who wrote it (a small N or M says the network), when, its words, its
+  photos inside the post and a card for its link. With both on, **All**, **Nostr** and **Matrix** above the feed
+  choose what shows, and **Photos** chooses how photos and cards are fetched. Under a post: answer, share again, like
+  and share; under a Matrix message: answer, react and share. **New post**, the pen at the bottom, writes a public
+  post, with up to four photos. See [Chats with other Nostr apps](#nostr-chats).
 - **New chat**, at the bottom, opens the relay settings and adding a contact. **Remind me**, the orange bell beside it,
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
@@ -1800,7 +1806,7 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   public follow list, looked for also on relays that gather such lists and on the relays your key writes on), with
   their names: tap one to write to them. When it finds no one, it says why, whose list it looked for and how each relay
   answered. Nothing is loaded until you tap it, and no profile pictures. The chats are in the home list too, each
-  marked **Nostr**; under the **Nostr** chip, **Chats** shows only them, and there **New chat** opens this screen.
+  marked **Nostr**; the **Nostr** chip shows only them, and there **New chat** opens this screen.
   **Name them here** gives a chat a name that only you see.
 - **Groups:** **New group** makes one from two or more of the people you chat with, twenty at most, with a name if you
   like. Nostr groups have no admins: a group is the people its messages name, each message goes to each of them,
@@ -1849,16 +1855,31 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   kept. No pictures or links are opened: they show as their addresses, which can be copied. A post with a content
   warning shows its words after a tap on **Show**. An account that only posts for everyone, such as a project's, sends
   no private messages: its chat stays empty, and its posts are here.
-- **Posts of the people you follow:** on the home screen, **Posts**, under the **Nostr** chip, shows what the people
-  your Nostr key follows post for everyone, and what they shared again, newest first, as in Amethyst or a Telegram
-  channel: who wrote each post, by the name they gave themselves with the start and end of their npub, when, and its
-  words. More come as you scroll to the end, or with **Older posts**; pull the list down for the newest (in a browser,
-  **Look again**). Tap who wrote a post for their **Public posts**, or **Write to them** to start a chat. It is read
-  only, as above: nothing can be posted, answered or reacted to here, and nobody followed: use another Nostr app with
-  the same key for that. Your follow list, where the people in it write (their NIP-65 lists) and their posts are looked
-  up only while **Posts** shows, on the relays used for look-ups, on those that gather lists and on those they write
-  on, as the space's Tor way says; names only for the posts that show. Nothing of it is kept, and no pictures or links
-  are opened. It is always this space's key, never the hidden chats' own.
+- **The Public feed:** on the home screen, the **Public** chip shows one feed of what the people your Nostr key follows
+  post for everyone, and what they shared again, and the messages of the public Matrix rooms you are in (rooms anyone
+  may join), newest first, as in Amethyst: the face of who wrote it with a small **N** or **M**, their name, when, the
+  words, the photos inside the post (one at the full width, two to four in a grid) and, for the first link, a card with
+  its picture, site, title and a line. For Matrix, the line under the name says the room and its server: tap it to open
+  the room. More come as you scroll to the end, or with **Older posts**; pull the list down for the newest (in a
+  browser, **Look again**). Following people is still done in another Nostr app with the same key. Your follow list,
+  where the people in it write (their NIP-65 lists) and their posts are looked up only while the feed shows, on the
+  relays used for look-ups, on those that gather lists and on those they write on, as the space's Tor way says; names
+  only for the posts that show. Nothing is kept.
+  **Photos**, above the feed, is the choice that matters for privacy. A photo or a link card comes from the server where
+  whoever wrote the post put it, and that server sees the address it was fetched from, through Tor a Tor exit's, and
+  that someone opened it. **Always** shows them at once, through Tor when Tor is on in this space; **Only through
+  Tor** shows them only when Tor is on, and otherwise on a tap; **On a tap** fetches none before you tap it. **Link
+  previews** switches the cards. Nothing is fetched while the feed is not shown, a photo is held only while its post
+  shows, and none is kept; one that does not come shows **Show the photo** to try again. Only addresses out on the
+  internet are fetched, never one of this phone or your home network.
+  Under a Nostr post: **Answer** writes an answer, **Share again** shows the post to your followers (it asks first),
+  the heart likes it, and the arrow shares a link to it. Its three dots: **Copy text**, the writer's **Public posts**,
+  **Write to them**, and **Take back** for a post of your own. Tap a post to open it with how many liked it and shared
+  it again, and the answers to it. **New post**, the pen, writes a public post, with up to four photos. Answers,
+  sharing again, likes and posts are public and signed with this space's Nostr key: anyone can read them, and they show
+  they are yours; a photo you add is put on the space's file server unencrypted, as a public post's must be. Under a
+  Matrix message: **Answer**, **React** (a choice of six) and share (a matrix.to link), and in its three dots **Copy
+  text** and **Open the room**. It is always this space's key and account, never the hidden chats' own.
 - **Marks:** one tick once one of their relays took the message. NIP-17 sends nothing back: not when their app has it,
   nor when they read it. Reading a chat here tells no one.
 - **Not anonymous:** your key is the same to everyone you write to, and anyone who has an npub can write to it. The
