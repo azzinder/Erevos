@@ -20,6 +20,11 @@ On main, not released yet:
 
 ### Under the hood
 
+- **The account's log, first part** (`lib/sync/`, `docs/sync.md`): one way for the account's own devices to share what
+  they change, in place of a kind of message for each thing. Stamps that stay in order whatever a device's clock says,
+  records that end the same on every device whatever order changes came in, and devices that say how far they are and
+  give each other what is missing, or the whole log to one far behind. Used by nothing yet: the next part moves
+  contacts and notes onto it. `checks/sync.check.ts`.
 - **QR codes of Liberapay and PayPal**: Liberapay's holds its link, PayPal's its link with `&source=qr` at the end
   (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
   coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and
