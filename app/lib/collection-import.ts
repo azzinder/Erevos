@@ -6,13 +6,13 @@ import { File, Paths } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 
-import { addToCollection, MAX_COLLECTION_FILE, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
+import { addSealedToCollection, addToCollection, CollectionFileTooLargeError, MAX_COLLECTION_FILE, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import { cleanFileName, cleanMime, mimeOf, type FileRef } from '../lock/attachment-files';
 import { bytesSource, readFile, refSource } from './attachments';
-import { randomBytes, toHex } from './crypto';
+import { fromBase64, randomBytes, toHex } from './crypto';
 import { NoCameraError, preparePhoto } from './pick-photo';
 import { photoSize } from './photo';
-import { pickSource } from './pick-file';
+import { pickLink, pickSource } from './pick-file';
 import { whilePicking } from './picking';
 import { isSharedPhoto, readShared, type SharedFile } from './share-in';
 import { collectionNative } from '../modules/erevos-collection';
@@ -20,8 +20,10 @@ import { collectionNative } from '../modules/erevos-collection';
 // Bringing photos and files into the Collection (lock/collection-data.ts), on the phone: a photo
 // taken with the camera, a file picked from the phone's files, a photo or file another app shared,
 // and a photo or file of a chat. Each goes straight into the Collection, encrypted a piece at a
-// time, with a small picture of a photo; the copies that Android or the picker leave in the app's
-// cache are deleted as soon as they are read. When the owner chose it (lock/collection-data.ts
+// time, with a small picture of a photo. A file picked from the phone's files is read from
+// Android's link by modules/erevos-collection and encrypted as it is read, with no copy anywhere,
+// up to the Collection's 4 GB; in a build without that, and for the camera and a share, the
+// copies that Android or the picker leave in the app's cache are deleted as soon as they are read. When the owner chose it (lock/collection-data.ts
 // deleteOriginals), a photo or video picked from the phone's gallery is then deleted there:
 // Android asks the owner to confirm, in a dialog of its own, and does it (Android 11 and later,
 // modules/erevos-collection). A photo taken with the camera never goes to the gallery at all, and a
@@ -114,22 +116,69 @@ export const isGalleryType = (mime: string) => mime.startsWith('image/') || mime
  * once it is safely in the Collection and the owner confirms in Android's dialog; nothing else is.
  */
 export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, { deleteOriginal = false } = {}): Promise<CollectionItem | null> {
-  const picked = await pickSource(MAX_COLLECTION_FILE);
-  if (!picked) return null;
   let added: CollectionItem;
-  try {
-    const name = cleanFileName(picked.name);
-    const said = cleanMime(picked.mime);
-    const mime = said === 'application/octet-stream' ? mimeOf(name) : said;
-    added = await keepSource(place, folder, { name, mime, source: picked.source }, progress);
-  } finally {
-    picked.close();
+  let uri: string | undefined;
+  if (canSealLinks()) {
+    // Read straight from Android's link and encrypted as it is read: no copy in the cache.
+    const picked = await pickLink(MAX_COLLECTION_FILE);
+    if (!picked) return null;
+    uri = picked.uri;
+    added = await keepLink(place, folder, { ...picked, ...typed(picked) }, progress);
+  } else {
+    const picked = await pickSource(MAX_COLLECTION_FILE);
+    if (!picked) return null;
+    uri = picked.uri;
+    try {
+      added = await keepSource(place, folder, { ...typed(picked), source: picked.source }, progress);
+    } finally {
+      picked.close();
+    }
   }
-  if (deleteOriginal && CAN_DELETE_ORIGINALS && picked.uri && isGalleryType(added.file.mime)) {
+  if (deleteOriginal && CAN_DELETE_ORIGINALS && uri && isGalleryType(added.file.mime)) {
     // Android says whether it deleted it; the file is in the Collection either way.
-    await collectionNative?.deleteFromGallery([picked.uri]).catch(() => undefined);
+    await collectionNative?.deleteFromGallery([uri]).catch(() => undefined);
   }
   return added;
+}
+
+// A picked file's clean name, and its type: the one the phone said, else the one its name says.
+function typed(picked: { name: string; mime: string }): { name: string; mime: string } {
+  const name = cleanFileName(picked.name);
+  const said = cleanMime(picked.mime);
+  return { name, mime: said === 'application/octet-stream' ? mimeOf(name) : said };
+}
+
+// Whether this build's Android part encrypts a picked file from its link (builds before it do not).
+const canSealLinks = () => typeof collectionNative?.sealFromUri === 'function' && typeof collectionNative.readHead === 'function';
+
+// Enough of a photo's start to hold its header, where its size is (lib/photo.ts photoSize).
+const PHOTO_HEAD = 256 * 1024;
+
+// A file read from Android's link by modules/erevos-collection, encrypted into chunks as it goes
+// (Sealer.kt). A photo's size comes from the first bytes of it alone, and its small picture is
+// drawn from the link; neither leaves a copy of the photo. Cancelled with the panic button.
+async function keepLink(place: CollectionPlace, folder: string, file: { name: string; mime: string; size: number; uri: string }, progress?: Progress): Promise<CollectionItem> {
+  const native = collectionNative!;
+  const photo = isPhotoType(file.mime);
+  let thumb: Uint8Array | undefined;
+  let size: { w: number; h: number } | null = null;
+  if (photo && file.size <= MOST_THUMBED) {
+    size = await native.readHead!(file.uri, PHOTO_HEAD)
+      .then((head) => photoSize(fromBase64(head)))
+      .catch(() => null);
+    thumb = await thumbAt(file.uri, size);
+  }
+  const job = toHex(randomBytes(8));
+  const subscription = progress ? native.addListener('onSeal', (e) => e.job === job && progress(e.done, e.count)) : null;
+  let sealed;
+  try {
+    sealed = await native.sealFromUri!(file.uri, file.size, job);
+  } catch (error) {
+    throw (error as { code?: string }).code === 'ERR_TOO_LARGE' ? new CollectionFileTooLargeError() : error;
+  } finally {
+    subscription?.remove();
+  }
+  return addSealedToCollection(place, sealed, { name: file.name, mime: file.mime, kind: photo ? 'photo' : 'file', w: size?.w, h: size?.h }, { folder, thumb });
 }
 
 // A file read from `source`: a photo gets its small picture, read whole for the purpose.

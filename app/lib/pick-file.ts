@@ -40,6 +40,19 @@ export class TooLargeError extends Error {}
  */
 export type PickedSource = { name: string; mime: string; source: Source; close(): void; uri?: string };
 
+/**
+ * A file picked, not read nor copied: its name, its type if the phone knows it, its size as the
+ * phone says it, and its link, for what reads it straight from there (the Collection's import on
+ * Android, modules/erevos-collection). Null if the owner went back; TooLargeError above `most`.
+ */
+export async function pickLink(most: number): Promise<{ name: string; mime: string; size: number; uri: string } | null> {
+  const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
+  if (picked.canceled) return null;
+  const file = picked.result;
+  if (file.size > most) throw new TooLargeError();
+  return { name: fileName(file.uri), mime: file.type, size: file.size, uri: file.uri };
+}
+
 /** A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. */
 export async function pickSource(most: number): Promise<PickedSource | null> {
   const picked = await whilePicking(() => File.pickFileAsync({ mimeTypes: ['*/*'] }));
