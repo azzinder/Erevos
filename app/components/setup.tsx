@@ -38,6 +38,8 @@ export function Setup({ onDone }: { onDone: (chosen: Module[]) => void }) {
   const [chosen, setChosen] = useState<ReadonlySet<Module>>(() => new Set(here));
   const [languages, setLanguages] = useState(false);
   const list = here.filter((m) => chosen.has(m));
+  // The Collection alone leaves no chat to open (lib/modules.ts).
+  const nothing = list.every((m) => m === 'collection');
   const steps: Step[] = HAS_CHECKS ? ['welcome', 'modules', 'permissions'] : ['welcome', 'modules'];
   const at = steps.indexOf(step);
 
@@ -115,7 +117,7 @@ export function Setup({ onDone }: { onDone: (chosen: Module[]) => void }) {
                 </Card>
               </Pressable>
             ))}
-            {list.length === 0 ? (
+            {nothing ? (
               <Text variant="caption" color={colors.danger}>
                 {t('Choose at least one.')}
               </Text>
@@ -128,7 +130,7 @@ export function Setup({ onDone }: { onDone: (chosen: Module[]) => void }) {
           {at > 0 ? <Button title={t('Back')} kind="ghost" compact onPress={() => setStep(steps[at - 1])} /> : <View />}
           <Button
             title={at + 1 < steps.length ? t('Next') : t('Start Erevos')}
-            disabled={step === 'modules' && list.length === 0}
+            disabled={step === 'modules' && nothing}
             onPress={next}
           />
         </Row>

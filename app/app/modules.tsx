@@ -32,7 +32,7 @@ export default function ModulesScreen() {
   async function turn(module: Module) {
     tap();
     if (on.has(module)) {
-      if (on.size === 1) {
+      if ([...on].filter((m) => m !== 'collection').length === 1 && module !== 'collection') {
         ask(t('At least one part stays on'), t('Turn another one on first, then this one off.'), [{ text: t('OK') }]);
         return;
       }

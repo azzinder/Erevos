@@ -30,8 +30,8 @@ import {
 const ANDROID = modulesHere('android');
 const ELSEWHERE = modulesHere('ios');
 
-test('the phone and the SMS only on Android; every other module everywhere', () => {
-  assert.deepEqual(ANDROID, ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp']);
+test('the phone, the SMS and the Collection only on Android; every other module everywhere', () => {
+  assert.deepEqual(ANDROID, ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp', 'collection']);
   assert.deepEqual(ELSEWHERE, ['erevos', 'nostr', 'matrix', 'xmpp']);
   assert.deepEqual(modulesHere('web'), ELSEWHERE);
 });
@@ -43,6 +43,8 @@ test('nothing kept, or nothing usable, is every module on', () => {
   assert.equal(parseModules('{"erevos":true}', ANDROID), null);
   assert.equal(parseModules('[]', ANDROID), null);
   assert.equal(parseModules('["fax"]', ANDROID), null);
+  // The Collection alone leaves no chat to open.
+  assert.equal(parseModules('["collection"]', ANDROID), null);
   // The phone kept on Android, read on a computer from a backup: nothing this device runs.
   assert.equal(parseModules('["phone","sms"]', ELSEWHERE), null);
 });
@@ -53,6 +55,8 @@ test('what is kept is read back, in the modules order, only those this device ru
   assert.equal(keptModules(['xmpp', 'erevos'], ANDROID), '["erevos","xmpp"]');
   assert.equal(keptModules(['phone'], ELSEWHERE), null);
   assert.equal(keptModules([], ANDROID), null);
+  assert.equal(keptModules(['collection'], ANDROID), null);
+  assert.equal(keptModules(['collection', 'sms'], ANDROID), '["sms","collection"]');
 });
 
 test('Erevos itself can be off; at least one stays on', async () => {
@@ -108,6 +112,10 @@ test('each permission is asked for only by the modules that use it', () => {
   assert.equal(checkWanted('calls', only('xmpp')), true);
   assert.equal(checkWanted('contacts', only('sms')), true);
   assert.equal(checkWanted('contacts', only('nostr')), false);
+  // The Collection takes photos with the camera and keeps files; it waits for nothing in the background.
+  assert.equal(checkWanted('camera', only('collection')), true);
+  assert.equal(checkWanted('storage', only('collection')), true);
+  assert.equal(checkWanted('battery', only('collection')), false);
 });
 
 test('each screen belongs to its module; contacts, settings and the guide to none', () => {
@@ -115,6 +123,7 @@ test('each screen belongs to its module; contacts, settings and the guide to non
   assert.equal(screenModule('sms-folder'), 'sms');
   assert.equal(screenModule('matrix-chat'), 'matrix');
   assert.equal(screenModule('xmpp'), 'xmpp');
+  assert.equal(screenModule('collection'), 'collection');
   assert.equal(screenModule('nostr-chats'), 'nostr');
   assert.equal(screenModule('chat'), 'erevos');
   assert.equal(screenModule('group'), 'erevos');

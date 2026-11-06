@@ -24,6 +24,8 @@ export function moduleName(module: Module): string {
       return 'Matrix';
     case 'xmpp':
       return 'XMPP';
+    case 'collection':
+      return t('Collection');
   }
 }
 
@@ -47,6 +49,8 @@ export function moduleAbout(module: Module): string {
       return t('Chats in Matrix rooms, with Element and the other Matrix apps.');
     case 'xmpp':
       return t('Chats with XMPP apps, such as Conversations.');
+    case 'collection':
+      return t('An encrypted place in every space and hidden place for photos, files and folders.');
   }
 }
 
@@ -59,6 +63,8 @@ export function moduleOffNote(module: Module): string {
       return t('The Phone and its icon go. Nothing is deleted.');
     case 'sms':
       return t('The SMS leave the list, and their icon goes. Nothing is deleted.');
+    case 'collection':
+      return t('The Collection and its icon go. Nothing is deleted: your photos and files are there again when you turn it on.');
     case 'nostr':
     case 'matrix':
     case 'xmpp':

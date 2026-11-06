@@ -9,17 +9,18 @@ import { secureGet, secureSet } from './secure';
 
 // The parts of Erevos the owner uses (Settings → General → Modules, and the first start's setup,
 // components/setup.tsx): Erevos's own end-to-end encrypted chats and calls, the phone, the SMS,
-// and the chats with Nostr, Matrix and XMPP apps. Any of them, Erevos's own too, at least one.
+// the chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files (Android only
+// for now). Any of them, Erevos's own too, at least one that is not the Collection alone.
 // One that is off does not start (app/_layout.tsx Receiver) and shows nowhere: not on the home
 // screen, in its menu, in Settings, nor its icon among the phone's apps; so Erevos is lighter,
 // starts faster and uses less battery. Nothing of it is deleted: its chats, contacts and settings
 // are there again when it is on again. On the device, outside every space, as the icons and the
 // phone app are, and read before the password, as the Phone may open without it.
 
-export type Module = 'erevos' | 'phone' | 'sms' | 'nostr' | 'matrix' | 'xmpp';
+export type Module = 'erevos' | 'phone' | 'sms' | 'nostr' | 'matrix' | 'xmpp' | 'collection';
 
 /** Every module, in the order the setup and Settings show them. */
-export const MODULES: readonly Module[] = ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp'];
+export const MODULES: readonly Module[] = ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp', 'collection'];
 
 const KEY = 'erevos.modules';
 
@@ -33,10 +34,13 @@ function platform(): string {
   }
 }
 
-/** The modules this device can run: the phone and the SMS only on Android. */
+/** The modules this device can run: the phone, the SMS and the Collection only on Android. */
 export function modulesHere(os: string = platform()): Module[] {
-  return MODULES.filter((m) => (m === 'phone' || m === 'sms' ? os === 'android' : true));
+  return MODULES.filter((m) => (m === 'phone' || m === 'sms' || m === 'collection' ? os === 'android' : true));
 }
+
+// The Collection is part of a space, not a way to chat: on its own it would leave nothing to open.
+const usable = (list: Iterable<Module>) => [...list].some((m) => m !== 'collection');
 
 /**
  * The modules kept as `raw` (a JSON list), those this device can run; null when nothing usable is
@@ -48,7 +52,7 @@ export function parseModules(raw: string | null, here: readonly Module[] = modul
     const list: unknown = JSON.parse(raw);
     if (!Array.isArray(list)) return null;
     const chosen = new Set(here.filter((m) => list.includes(m)));
-    return chosen.size > 0 ? chosen : null;
+    return usable(chosen) ? chosen : null;
   } catch {
     return null;
   }
@@ -58,7 +62,7 @@ export function parseModules(raw: string | null, here: readonly Module[] = modul
 export function keptModules(chosen: Iterable<Module>, here: readonly Module[] = modulesHere()): string | null {
   const wanted = new Set(chosen);
   const list = here.filter((m) => wanted.has(m));
-  return list.length > 0 ? JSON.stringify(list) : null;
+  return usable(list) ? JSON.stringify(list) : null;
 }
 
 // Every module is on until the owner chooses, as for everyone before modules came.
@@ -153,6 +157,7 @@ const SCREENS: Record<Module, readonly string[]> = {
   nostr: ['nostr-chats', 'nostr-chat', 'nostr-posts'],
   matrix: ['matrix', 'matrix-chat', 'matrix-sso'],
   xmpp: ['xmpp', 'xmpp-chat'],
+  collection: ['collection'],
 };
 
 /** The module the screen `route` (its route's name) is part of; null for a screen of every module. */
@@ -186,7 +191,7 @@ const NEEDS: Record<CheckId, readonly Module[] | 'any'> = {
   dnd: ['erevos', 'matrix', 'xmpp'],
   ringer: ['erevos', 'matrix', 'xmpp'],
   saver: MESSAGES,
-  camera: MESSAGES,
+  camera: [...MESSAGES, 'collection'],
   nearby: ['erevos'],
   contacts: ['erevos', 'phone', 'sms'],
   alarms: ['erevos'],
