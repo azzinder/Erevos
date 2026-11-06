@@ -649,9 +649,10 @@ export async function syncApply(state: MatrixState, news: MatrixNews): Promise<b
       : await takeToDevice(state, event);
     if (changed) seen = true;
   }
-  const lists = news.device_lists as { changed?: string[]; left?: string[] } | undefined;
-  for (const user of lists?.changed ?? []) if (!state.outdated.includes(user)) state.outdated.push(user);
-  for (const user of lists?.left ?? []) delete state.devices[user];
+  const lists = news.device_lists as { changed?: unknown; left?: unknown } | undefined;
+  const users = (list: unknown) => (Array.isArray(list) ? list.filter((u): u is string => typeof u === 'string') : []);
+  for (const user of users(lists?.changed)) if (!state.outdated.includes(user)) state.outdated.push(user);
+  for (const user of users(lists?.left)) delete state.devices[user];
   const direct = directRooms(news);
   const rooms = (news.rooms as Json | undefined) ?? {};
   for (const [id, room] of Object.entries((rooms.join as Record<string, Json> | undefined) ?? {})) {
@@ -673,7 +674,8 @@ export async function syncApply(state: MatrixState, news: MatrixNews): Promise<b
   // Only the latest indexes are needed against replays: older ones go, so the state stays small.
   const seenKeys = Object.keys(state.seen);
   if (seenKeys.length > KEEP_SEEN) for (const key of seenKeys.slice(0, seenKeys.length - KEEP_SEEN)) delete state.seen[key];
-  state.since = String(news.next_batch);
+  // A sync answer without the next batch's token (never from a homeserver) leaves it where it was.
+  if (typeof news.next_batch === 'string' && news.next_batch) state.since = news.next_batch;
   return seen;
 }
 
@@ -1194,6 +1196,16 @@ function shownOf(content: Json | undefined): Pick<MatrixMessage, 'text' | 'file'
   return { text, file };
 }
 
+/** `text` parsed as a JSON object, or null when it is none. */
+function jsonObject(text: string): Json | null {
+  try {
+    const value: unknown = JSON.parse(text);
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Json) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The content of a room message under the room's Megolm keys, or null without the key. */
 async function openMegolm(state: MatrixState, roomId: string, eventId: string, locked: NonNullable<MatrixMessage['locked']>): Promise<{ type: string; content: Json } | null> {
   const key = `${roomId} ${locked.sessionId}`;
@@ -1209,8 +1221,10 @@ async function openMegolm(state: MatrixState, roomId: string, eventId: string, l
   const seenKey = `${locked.sessionId} ${opened.index}`;
   if (state.seen[seenKey] && state.seen[seenKey] !== eventId) return null;
   state.seen[seenKey] = eventId;
-  const payload = JSON.parse(opened.plaintext) as Json;
-  if (payload.room_id !== roomId) return null;
+  // What opened has to be an event: one that is not (a client's doing) is let go of, not thrown
+  // on, which would stop the whole sync at this batch for good.
+  const payload = jsonObject(opened.plaintext);
+  if (!payload || payload.room_id !== roomId) return null;
   return { type: String(payload.type), content: (payload.content as Json) ?? {} };
 }
 
@@ -1236,7 +1250,8 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   state.account = opened.account;
   const sessions = (state.olm[senderKey] ?? []).filter((_, i) => i !== opened.index);
   state.olm[senderKey] = [opened.session, ...sessions].slice(0, 5);
-  const payload = JSON.parse(opened.plaintext) as Json;
+  const payload = jsonObject(opened.plaintext);
+  if (!payload) return false;
   // The payload has to say it is from the sender and for us, as Matrix asks to check.
   if (payload.sender !== event.sender || payload.recipient !== state.userId) return false;
   if ((payload.recipient_keys as Json | undefined)?.ed25519 !== ours.ed25519) return false;

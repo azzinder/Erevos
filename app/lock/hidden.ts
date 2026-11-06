@@ -151,9 +151,15 @@ export async function searchOpens(space: number, text: string, places = true, no
 export async function setHiddenPassword(space: number, pocket: number, password: string, key: Uint8Array | null, now = Date.now()): Promise<Uint8Array> {
   await assertNotLockedOut(now);
   const own = (await loadLockConfig()).slots[space];
-  if (own && (await trySlot(own, password))) throw new SamePasswordError();
+  const ownOpens = !!own && (await trySlot(own, password));
   const other = await tryPockets(space, password);
-  if (other && other.pocket !== pocket) throw new SamePasswordError();
+  if (ownOpens || (other && other.pocket !== pocket)) {
+    // That the PIN opens something else is told, so each time it is told counts as a wrong try,
+    // as a guess at the search does: from a decoy place, the PIN of another could be found by
+    // typing guesses here otherwise, with nothing to slow them.
+    await recordWrongPassword(now);
+    throw new SamePasswordError();
+  }
   const hiddenKey = key ?? newSpaceKey();
   // What was there before reminds of nothing more: found while its key still opens it.
   const open = key ? null : openSpace(space);

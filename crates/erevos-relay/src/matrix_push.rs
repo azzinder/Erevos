@@ -260,7 +260,8 @@ fn read_chunked(stream: &mut impl Read, mut data: Vec<u8>) -> io::Result<Vec<u8>
         if size == 0 {
             return Ok(body);
         }
-        if body.len() + size > MAX_BODY {
+        // The size first, alone: a made-up one near usize::MAX would overflow the sums.
+        if size > MAX_BODY || body.len() + size > MAX_BODY {
             return Err(invalid("too long"));
         }
         while data.len() < end + 2 + size + 2 {

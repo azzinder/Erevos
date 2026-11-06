@@ -11,8 +11,10 @@ import { t } from '../lib/i18n';
 import { FILE as ARCHIVE } from './archive';
 import { PREFIX as ATTACHMENT } from './attachment-files';
 import { ITER, PANIC_KEY } from './config';
+import { FILE as COLLECTION } from './collection-data';
 import { FILE as CONTACTS } from './contacts-data';
 import { prepareDoors } from './doors';
+import { FILE as DEVICES } from './devices-data';
 import { FILE as E2E } from './e2e-data';
 import { FILE as FANOUT } from './fanout-data';
 import { FILE as GROUPS } from './group-data';
@@ -30,6 +32,7 @@ import { markRestore, phoneId, thisPhone } from './restored';
 import { POCKETS } from './sealed-file';
 import { FILE as SMS, ORDER_FILE as SMS_ORDER, smsDataChanged } from './sms-data';
 import { FILE as STICKERS } from './sticker-data';
+import { FILE as SYNC } from './sync-data';
 import { PREFIX as AVATAR } from './avatar-photos';
 import { PREFIX as VOICE } from './voice-clips';
 import { FILE as XMPP } from './xmpp-data';
@@ -106,7 +109,8 @@ import { FILE as XMPP } from './xmpp-data';
 // Erevos write in, what the permissions check saw (lib/permissions.ts), the packets carried for
 // strangers with their key (lib/carried-store.ts), and when and that a backup was restored here
 // (lock/restored.ts). Nor the inbox's list (lock/inbox-cache.ts), made again from the chats, nor,
-// for now, linked devices (lock/devices-data.ts).
+// for now, linked devices (lock/devices-data.ts) and the account's log (lock/sync-data.ts), which
+// a restore deletes (PHONE_FILES).
 //
 // When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
@@ -190,8 +194,14 @@ const LATER_KEYS = [PANIC_KEY, ...SETTINGS, AUTO, CLOUD];
 // restored, a Nostr key goes on as it was, an XMPP account as a new device of itself, and a Matrix
 // one is let go of, to sign in again (lib/xmpp-store.ts, lib/matrix-store.ts). An older Erevos
 // leaves them out of what it restores. So are the pieces of photos that came through Nostr and
-// wait for their message, each place's (lock/nostr-pieces-data.ts), with their pages.
-const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES];
+// wait for their message, each place's (lock/nostr-pieces-data.ts), with their pages. And the
+// Collections' catalogues (lock/collection-data.ts), which name their files among the chunks:
+// without them a restored phone would hold the chunks and nothing to open them by.
+const TEXT_FILES = [E2E, HISTORY, ARCHIVE, GROUPS, PUBLIC_GROUPS, SMS_ORDER, CONTACTS, STICKERS, MYSELF, MATRIX, XMPP, NOSTR_DM, NOSTR_PIECES, COLLECTION];
+// The sealed files no backup holds, whose values may lie in pages too: the linked devices and the
+// account's log (lock/devices-data.ts, lock/sync-data.ts). Restoring deletes every page the backup
+// does not hold, theirs among them, so they go with their pages: a restored space links anew.
+const PHONE_FILES = [DEVICES, SYNC];
 // Those a backup holds from PARTS on, the copies and carried packets first (see above); restoring
 // one deletes those it does not hold.
 const LATER_FILES = [FANOUT, CARRIED, SMS, PHONE];
@@ -726,7 +736,7 @@ export async function restoreBackup(
   // Without some of its parts, the phone's own photos, files and voice messages all stay: which of
   // them those parts held, and the backup's messages show, nothing says.
   const own = left.length > 0;
-  for (const name of [...TEXT_FILES, ...(own ? [] : await listFiles(VOICE)), ...(await listFiles(AVATAR)), ...(await listFiles(PAGE))]) {
+  for (const name of [...TEXT_FILES, ...PHONE_FILES, ...(own ? [] : await listFiles(VOICE)), ...(await listFiles(AVATAR)), ...(await listFiles(PAGE))]) {
     if (!keep.has(name)) await deleteFile(name);
   }
   // A backup from before parts holds no photos and files, nor these: the phone's stay as they are.

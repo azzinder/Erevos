@@ -30,10 +30,12 @@ class PanicActivity : Activity() {
     super.onCreate(savedInstanceState)
     val caller = callingActivity?.packageName?.takeIf { it != packageName }
     var result = RESULT_CANCELED
+    // Whether other apps were told (tellAll): they start in this task, so it has to stay for them.
+    var told = false
     when (intent?.action) {
       Panic.ACTION_TRIGGER -> if (caller != null && Panic.trusted(this, caller)) {
         result = RESULT_OK
-        Panic.wipe(this, this)
+        told = Panic.wipe(this, this)
       }
       Panic.ACTION_CONNECT -> if (caller != null) {
         Panic.ask(this, caller)
@@ -47,6 +49,6 @@ class PanicActivity : Activity() {
       }
     }
     setResult(result)
-    if (result == RESULT_OK && intent?.action == Panic.ACTION_TRIGGER) finishAndRemoveTask() else finish()
+    if (result == RESULT_OK && intent?.action == Panic.ACTION_TRIGGER && !told) finishAndRemoveTask() else finish()
   }
 }

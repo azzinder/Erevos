@@ -118,7 +118,7 @@ export function forgetSpaceChats(): void {
 
 /** A relay to send to, with the second relay to go through when one is set, and the space's
  *  backup relay (lib/spare.ts) for when it cannot be reached. Null without an address. */
-export function relayFor(url: string, token: string, via: string, viaToken: string, backup?: { url: string; token?: string }): Relay | null {
+export function relayFor(url: string, token: string, via: string, viaToken: string, backup?: { url: string; token?: string; tor?: boolean }): Relay | null {
   const address = url.trim();
   if (!address) return null;
   const second = via.trim();

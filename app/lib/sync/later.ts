@@ -98,8 +98,13 @@ export function laterChanges(log: Log, here: readonly Scheduled[], now = Date.no
   }
   for (const id of Object.keys(log.data[KIND] ?? {})) {
     if (!isThere(log, KIND, id)) continue;
-    const at = log.data[KIND]![id].f.at?.v;
-    if (typeof at !== 'number' || at < now - DAY) changes.push({ k: KIND, id, x: 'del' });
+    const e = log.data[KIND]![id];
+    const at = e.f.at?.v;
+    // One past its time by a day goes. One with no time yet is still coming: its ops come in
+    // batches (MAX_BATCH), and its `at` may follow its `add` in the next; only one a day old
+    // without it was never whole.
+    const gone = typeof at === 'number' ? at < now - DAY : (e.add?.t ?? now) < now - DAY;
+    if (gone) changes.push({ k: KIND, id, x: 'del' });
   }
   return changes;
 }

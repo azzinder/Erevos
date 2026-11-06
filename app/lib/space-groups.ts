@@ -270,9 +270,12 @@ export function groupCalls(groups: () => Promise<PublicGroups>, transport: Group
       const { own } = await settings();
       return soon(callRelay(own), 4000, null);
     },
-    async me() {
-      const { e2e } = await chats();
-      return toHex(e2e.identity);
+    async me(group) {
+      // In a public group each member goes by the key made for it (lib/public-groups.ts aboutAs), and
+      // a call's signals name members by that: so this phone's seat there, else its identity.
+      const [made, { e2e }] = await Promise.all([groups(), chats()]);
+      const own = (await made.members(group).catch(() => [])).find((m) => m.me)?.about?.id;
+      return own || toHex(e2e.identity);
     },
     line(group, text) {
       void groups()

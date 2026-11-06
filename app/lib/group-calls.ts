@@ -19,8 +19,8 @@ export type GroupCallPlace = {
   send(group: string, signal: GroupCallSignal): Promise<void>;
   /** The call relay beside our relay, or null if it has none. */
   callRelay(): Promise<CallRelay | null>;
-  /** This phone's identity in the group, hex. */
-  me(): Promise<string>;
+  /** This phone's identity in the group, hex: its key there in a public group, else its own. */
+  me(group: string): Promise<string>;
   /** Keeps a line in the group. */
   line(group: string, text: string): void;
   /** The group's name, and the contacts its members are named by, for the call screen. */
@@ -111,7 +111,7 @@ function events(place: GroupCallPlace, group: string) {
 
 /** Starts a call in a group. Throws if a call is already in progress, or it could not start. */
 export async function startGroupCall(place: GroupCallPlace, group: string, video: boolean, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
-  const me = await place.me();
+  const me = await place.me(group);
   const call = await GroupCall.start({ group, video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) });
   show(call, place);
   return call;
@@ -121,7 +121,7 @@ export async function startGroupCall(place: GroupCallPlace, group: string, video
 export async function joinGroupCall(place: GroupCallPlace, group: string, relay: CallRelay | null, rtc: Rtc): Promise<GroupCall> {
   const going = groupCallGoingOn(group);
   if (!going) throw new Error(t('The call has ended.'));
-  const me = await place.me();
+  const me = await place.me(group);
   const call = await GroupCall.join(going.id, going.startedBy, { group, video: going.video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) });
   show(call, place);
   return call;
@@ -170,7 +170,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     shown = null;
     ours.hangUp();
     const relay = await place.callRelay().catch(() => null);
-    const me = await place.me();
+    const me = await place.me(group);
     show(await GroupCall.join(signal.id, from, { group, video: signal.video, me, relay, rtc, relayAlways: place.relayAlways, events: events(place, group) }), place);
     return;
   }
@@ -179,7 +179,7 @@ export async function groupCallSignal(place: GroupCallPlace, group: string, from
     return;
   }
   const relay = await place.callRelay().catch(() => null);
-  const me = await place.me();
+  const me = await place.me(group);
   // Everyone left it while the call relay was asked (their `leave` came in the same look): nothing to ring for.
   if (goingOn.get(group)?.id !== signal.id) {
     place.line(group, `${CALL_LINE}Missed ${kind}`);

@@ -159,6 +159,21 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Fixes from a review of all the code before 7**: one draft per chat in the chat screen (`app/chat.tsx`), so what was
+  typed in one chat, a PIN-locked one too, never shows in another; `lib/screen-privacy.ts` counts who asks for a
+  private screen, so a locked chat under a locked group stays out of screenshots when the group closes; the
+  Collection's catalogue (`erevos-collection`) goes into backups, and a restore deletes the linked devices' and the
+  log's files (`erevos-devices`, `erevos-sync`) with their pages instead of leaving them without them; a call signal
+  in a public group is for this phone by its key in the group, not its identity (`lib/groups.ts`, `GroupCallPlace.me`);
+  Matrix's sync lets go of an event whose plaintext is no JSON object, and keeps `since` when `next_batch` is missing;
+  XMPP refuses a SCRAM success without the server's proof, and asks for stale device lists once, not for ever, when
+  their server cannot be reached; a hidden place's new password is refused when it opens another pocket or the own
+  space; the log's ids skip `Object.prototype`'s names, a `whole` taken stamps only what is taken now, and a `later`
+  record whose `at` is still coming in the next batch is not deleted; the groups handed to a device that stopped
+  between taking them and saying so are taken as held when the offer comes again (`lib/devices.ts`); the relay's
+  Matrix push reader refuses a chunk size that would overflow; the computer app's Wi-Fi link refuses a port past
+  65535 and forgets settled file queues; Send to takes only `content://` streams and keeps its job when the phone
+  turns; and the panic button's TRIGGER finishes without removing the task when it told other apps, so they start.
 - **Shares encrypted as they come** (`modules/erevos-collection`, `ShareActivity.kt`, `SharedIn.kt`): Send to's
   Android screen moves from `erevos-device` to the Collection's module, beside the Sealer, and encrypts a shared photo
   or file into the Collection's chunks while Android lets it be read, with a random key held in memory only; its

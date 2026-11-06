@@ -1547,7 +1547,9 @@ export class Groups {
       }
       if (said.t === 'call') {
         const signal = said.call;
-        if ('to' in signal && signal.to !== (await this.me()).id) return;
+        // One for a member it names: this phone by what it says of itself in the group (its key
+        // there in a public group, lib/public-groups.ts aboutAs), as `call` sends it (above).
+        if ('to' in signal && signal.to !== ((await this.membersIn(id)).find((m) => m.me)?.about?.id ?? (await this.me()).id)) return;
         this.callListeners.forEach((listener) => listener(id, from, signal));
         return;
       }

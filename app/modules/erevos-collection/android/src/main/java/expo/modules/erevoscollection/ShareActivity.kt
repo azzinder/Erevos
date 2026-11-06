@@ -81,6 +81,9 @@ class ShareActivity : Activity() {
     // A page from the browser: its address, and its title if the address alone was shared.
     link.appendQueryParameter("text", if (text.isBlank()) subject.take(MOST_TEXT) else text)
     val stream = streamOf(intent) ?: return link.build()
+    // Only what a content provider gives: a file:// path could name Erevos's own private files, which
+    // another app may not read, but would have Erevos read for it into the Collection.
+    if (stream.scheme != "content") return link.build()
     clearOld()
     var name = ""
     var size = -1L

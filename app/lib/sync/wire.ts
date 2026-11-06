@@ -102,7 +102,7 @@ export function hear(log: Log, from: string, x: unknown, now: number): Heard {
     const { taken } = take(log, m.ops, now);
     return { back: m.more ? [have(log)] : [], took: taken, whole: false };
   }
-  return takeWhole(log, from, { vv: m.vv, data: m.data }) ? { back: [have(log)], took: [], whole: true } : none;
+  return takeWhole(log, from, { vv: m.vv, data: m.data }, now) ? { back: [have(log)], took: [], whole: true } : none;
 }
 
 /** What to say back to what `from` said, as `hear` says. */

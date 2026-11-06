@@ -161,6 +161,8 @@ class Lan {
     heard.at = now;
     this.heard.set(nonce, heard);
     if (this.linkTo(nonce) || this.dialing.has(nonce) || this.links.size + this.dialing.size >= MAX_LINKS) return;
+    // A port no socket can take (0, or past 65535) would throw out of the whole listener.
+    if (Number(port) < 1 || Number(port) > 65535) return;
     if (this.nonce < nonce || now - heard.first > DIAL_ANYWAY_AFTER) this.dial(nonce, address, Number(port));
   }
 

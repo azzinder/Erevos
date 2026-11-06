@@ -236,7 +236,12 @@ function readJson(file, empty) {
 const queues = new Map();
 function inTurn(name, run) {
   const next = (queues.get(name) ?? Promise.resolve()).then(run);
-  queues.set(name, next.catch(() => undefined));
+  const settled = next.catch(() => undefined);
+  queues.set(name, settled);
+  // Forgotten once nothing waits on it any more, so the names (each chunk's) do not pile up.
+  void settled.then(() => {
+    if (queues.get(name) === settled) queues.delete(name);
+  });
   return next;
 }
 

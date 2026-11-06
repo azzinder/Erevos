@@ -283,7 +283,7 @@ export function whole(log: Log): Whole {
  * so taking it twice, or after its ops, changes nothing. From a device other than the primary, the
  * records only the primary writes are left as they are here.
  */
-export function takeWhole(log: Log, from: string, w: Whole): boolean {
+export function takeWhole(log: Log, from: string, w: Whole, now = Date.now()): boolean {
   if (!isWhole(w) || !log.peers.includes(from) || from === log.me) return false;
   for (const [k, entries] of Object.entries(w.data)) {
     const writer = writerOf(log, k);
@@ -308,8 +308,10 @@ export function takeWhole(log: Log, from: string, w: Whole): boolean {
       log.cut[d] = Math.max(log.cut[d] ?? 0, n);
     }
   }
+  // The clock sees their stamps as it sees an op's: not one too far ahead (clock.ts MAX_AHEAD),
+  // or one device's clock once far ahead would set every other device's forward for good.
   for (const e of Object.values(w.data).flatMap((k) => Object.values(k))) {
-    for (const s of [e.add, e.del, ...Object.values(e.f).map((f) => f.at)]) if (s) log.clock = saw(log.clock, s, log.me);
+    for (const s of [e.add, e.del, ...Object.values(e.f).map((f) => f.at)]) if (s && takenNow(s, now)) log.clock = saw(log.clock, s, log.me);
   }
   log.held = log.held.filter((op) => op.s > (log.vv[op.d] ?? 0));
   return true;
@@ -392,8 +394,10 @@ export function idsOf(log: Log, kind: string): string[] {
 
 const NAME = /^[a-z][a-z0-9-]{0,31}$/;
 
+// A record's id names a key of a plain object: never one the object has already (`__proto__`,
+// `constructor`, `toString`...), with which a device's op would reach into every object here.
 function isId(x: unknown): x is string {
-  return typeof x === 'string' && x.length > 0 && x.length <= 128;
+  return typeof x === 'string' && x.length > 0 && x.length <= 128 && !(x in Object.prototype);
 }
 
 function isValue(x: unknown): x is Json {

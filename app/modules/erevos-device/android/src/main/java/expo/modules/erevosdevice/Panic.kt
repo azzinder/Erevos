@@ -260,7 +260,7 @@ internal object Panic {
    * Erevos. The apps the owner chose (`tell`) are told first, from `activity`; nothing else is
    * asked or told.
    */
-  fun wipe(context: Context, activity: Activity? = null) {
+  fun wipe(context: Context, activity: Activity? = null): Boolean {
     val app = context.applicationContext
     val telling = runCatching { tellAll(app, activity) }.getOrDefault(false)
     Thread {
@@ -277,6 +277,7 @@ internal object Panic {
         Process.killProcess(Process.myPid())
       }
     }.start()
+    return telling
   }
 
   // The automatic backups in their folder (a tree Android's folder picker gave, lib/backup-place.ts).

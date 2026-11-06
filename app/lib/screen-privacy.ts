@@ -18,12 +18,17 @@ const KEY = 'erevos.screen-private';
 /** Whether this phone can keep Erevos out of screenshots. */
 export const CAN_KEEP_PRIVATE = typeof device?.setSecure === 'function';
 
-const reasons = new Set<string>();
+// How many ask for each reason: screens lie over one another (a locked chat under a locked group it
+// forwards to), and the one under stays private while the one over goes. The lock is a setting,
+// on or off, not a screen.
+const reasons = new Map<string, number>();
 
 /** Keeps the screen private while any reason asks for it: `why` asks, or no longer. Said again on
  *  every change, so a screen made anew (Erevos swiped away and opened) gets it too. */
 export function keepPrivate(why: 'lock' | 'hidden' | 'chat' | 'collection', on: boolean): void {
-  if (on) reasons.add(why);
+  const was = reasons.get(why) ?? 0;
+  const now = why === 'lock' ? (on ? 1 : 0) : Math.max(0, was + (on ? 1 : -1));
+  if (now) reasons.set(why, now);
   else reasons.delete(why);
   device?.setSecure?.(reasons.size > 0);
 }

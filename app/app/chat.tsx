@@ -675,6 +675,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [messages, setMessages] = useState<Message[]>([]);
   // A message passed on from an SMS conversation (lib/forward.ts) starts in the field.
   const { draft, empty: nothingTyped } = useDraft(() => (initial ? (forwardedTo(initial)?.text ?? '') : ''));
+  // What was typed in each chat and not sent, while this screen is up: a chat left keeps its words
+  // for when it opens again, and another chat never starts with them (a PIN-locked one's least of all).
+  const drafts = useRef(new Map<string, string>());
+  const draftOf = useRef(selected);
   const [note, setNote] = useState('');
   // With no chat open, New chat's parts (components/connect-cards.tsx): which way in shows what it
   // needs, for a phone with no relay yet; and what opens under Nearby, Blocked contacts and For
@@ -1784,6 +1788,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // Another chat starts with its latest imported messages and pinned message, and answers nothing yet.
   // The offer to connect a contact just added stays with its own chat only.
   useEffect(() => {
+    if (draftOf.current !== selected) {
+      // A message being edited is not a draft: its words stay with it.
+      if (draftOf.current) drafts.current.set(draftOf.current, editing ? '' : draft.text());
+      draftOf.current = selected;
+      draft.set((selected && drafts.current.get(selected)) || '');
+    }
     setConnecting((c) => (c && selected === `${CONTACT_PREFIX}${c}` ? c : null));
     setImportedShown(IMPORTED_PAGE);
     setThreadShown(THREAD_PAGE);
@@ -1800,7 +1810,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     setNearPhotos([]);
     smsAsked.current = null;
     setReplying(null);
-    if (editing) stopEditing();
+    if (editing) setEditing(null);
     setPinShown(0);
     setSearching(null);
     setAttaching(false);

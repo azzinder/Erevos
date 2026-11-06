@@ -4,7 +4,7 @@
 
 import { deleteChunks, type FileRef } from '../lock/attachment-files';
 import { loadNotes, mergeNotes, notesSince, onNotesWritten, setNoteFile, stampOf as noteStamp, type Note, type NoteCame, type NotesChanges, type NotesPlace } from '../lock/myself-data';
-import { keepDevicesFile, loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer } from '../lock/devices-data';
+import { keepDevicesFile, loadDevicesData, MAX_LEFT, MAX_OUTBOX, saveDevicesData, type Brought, type DevicesData, type Left, type OutMark, type Peer, type Told } from '../lock/devices-data';
 import { againAfter, type Blocked, type Contact, type OldFiller, type OwnList, type Route } from '../lock/e2e-data';
 import { checkedGroupData, MAX_HELD_GROUPS, type Group, type GroupMessage } from '../lock/group-data';
 import { isReactionEmoji, isTag, WAITING, type Mark, type Message } from '../lock/history';
@@ -3742,6 +3742,15 @@ export class Links implements Link, TakenFiles {
       return;
     }
     if (this.holdsGroups()) return;
+    // Taken in before, and Erevos stopped before this file said so (below): theirs now, as it
+    // would be; else the same offer would come again and again, refused each time, for good.
+    if (shared.groups.hasState()) {
+      await this.heldNow(f, from, Object.fromEntries((await this.groupMirrors()).map(({ group, mark }) => [group.id, { meta: mark, last: lastKey(group), at: group.messages[group.messages.length - 1]?.at ?? 0, marks: this.marksNow(group).digest }])));
+      await answer('held');
+      this.announce();
+      this.groupsAgain();
+      return;
+    }
     let held: HeldGroups;
     try {
       if (offer.size > MAX_HELD_GROUPS) throw new HeldError();
@@ -3762,7 +3771,17 @@ export class Links implements Link, TakenFiles {
     }
     await shared.groups.moveIn(held);
     const told = Object.fromEntries((await this.groupMirrors()).map(({ group, mark }) => [group.id, { meta: mark, last: lastKey(group), at: group.messages[group.messages.length - 1]?.at ?? 0, marks: this.marksNow(group).digest }]));
-    const next = await this.run(async () => {
+    const next = await this.heldNow(f, from, told);
+    await answer('held');
+    this.announce();
+    this.groupsAgain();
+    if (next && next !== from.id) await this.handGroups(next).catch((error: unknown) => this.movedWrong(error));
+  }
+
+  // Keeps that the groups are held here, taken with the offer marked `f` from `from`, with what
+  // each is at (`told`); on a device, gives back where they go next (moveTo), if anywhere.
+  private heldNow(f: string, from: Peer, told: Record<string, Told>): Promise<string | null> {
+    return this.run(async () => {
       if (this.data.primary) {
         await this.save({ ...this.data, holds: true, tookHold: f, primary: { ...this.data.primary, groups: told } });
         return null;
@@ -3771,10 +3790,6 @@ export class Links implements Link, TakenFiles {
       await this.save({ ...rest, tookHold: f, devices: this.data.devices.map((d) => (d.id === from.id ? { ...d, groups: told } : d)) });
       return moveTo || null;
     });
-    await answer('held');
-    this.announce();
-    this.groupsAgain();
-    if (next && next !== from.id) await this.handGroups(next).catch((error: unknown) => this.movedWrong(error));
   }
 
   // The other device said what it did with the groups handed to it (`held`, or `nohold`: they are

@@ -300,6 +300,9 @@ export class XmppConnection {
       const sasl = startSasl(mechanism, local, state.password);
       await link.send(render(el('auth', { xmlns: NS.sasl, mechanism }, sasl.first || '=')));
       let answered = false;
+      // Whether the server proved it knows the password (SCRAM's last step): a success without it
+      // is refused, as whoever took the server's place could send one.
+      let proved = false;
       for (;;) {
         const step = await expect(link, 'challenge', 'success', 'failure');
         if (step.name === 'failure') {
@@ -310,6 +313,7 @@ export class XmppConnection {
           // A last challenge carries the server's proof, before an empty success.
           if (answered) {
             sasl.finish(textOf(step).trim());
+            proved = true;
             await link.send(render(el('response', { xmlns: NS.sasl })));
             continue;
           }
@@ -318,8 +322,11 @@ export class XmppConnection {
           continue;
         }
         const last = textOf(step).trim();
-        if (mechanism !== 'PLAIN' && last && last !== '=') sasl.finish(last);
-        else if (mechanism !== 'PLAIN' && !answered) throw new XmppError(t('The XMPP server did not prove it knows the password: it may not be the real one.'));
+        if (mechanism !== 'PLAIN' && !proved && last && last !== '=') {
+          sasl.finish(last);
+          proved = true;
+        }
+        if (mechanism !== 'PLAIN' && !proved) throw new XmppError(t('The XMPP server did not prove it knows the password: it may not be the real one.'));
         break;
       }
       await link.open(domain);
@@ -1511,7 +1518,7 @@ type Target = { jid: string; id: string; two: boolean };
  * The devices a message to `peers` is encrypted for: theirs and our others, each in OMEMO 2 when
  * it has it, else in OMEMO 0.3. Throws NoOmemoError when none of them has any (`name` saying who).
  */
-async function targetsFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, only?: { id: number; two: boolean }): Promise<Target[]> {
+async function targetsFor(state: XmppState, connection: XmppConnection, peers: string[], name: string, only?: { id: number; two: boolean }, fetched = false): Promise<Target[]> {
   for (const peer of peers) await devicesFor(state, connection, peer).catch(() => undefined);
   await devicesFor(state, connection, state.jid);
   await sessionsFor(state, connection, [...peers, state.jid]);
@@ -1529,10 +1536,12 @@ async function targetsFor(state: XmppState, connection: XmppConnection, peers: s
   }
   if (!targets.some((d) => d.jid !== state.jid)) {
     // Lists fetched a while ago may be out of date: once more, freshly.
+    // Once: a fetch that fails (their server unreachable) leaves the list as old as it was, and
+    // asking again at once would ask for ever.
     const stale = peers.filter((peer) => Date.now() - (state.people[peer]?.fetchedAt ?? 0) > 60_000);
-    if (only === undefined && stale.length) {
+    if (only === undefined && stale.length && !fetched) {
       for (const peer of stale) await devicesFor(state, connection, peer, true).catch(() => undefined);
-      return targetsFor(state, connection, peers, name, only);
+      return targetsFor(state, connection, peers, name, only, true);
     }
     throw new NoOmemoError(name);
   }
