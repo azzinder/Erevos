@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 // - asking Android to delete a photo or video from the phone's gallery once it is in the
 //   Collection, which Android has the owner confirm (Android 11 and later);
 // - bringing a picked file in, encrypted into chunks as it is read from Android's link, with no
-//   plain copy in the cache first (Sealer.kt).
+//   plain copy in the cache first (Sealer.kt);
+// - a photo or file another app shared, encrypted the same way as it came (ShareActivity.kt,
+//   SharedIn.kt), handed to Send to, which keeps it in the Collection or sends it to a chat.
 // A file comes from JavaScript as the catalogue keeps it: its id, its key in hex, its chunk size,
 // how many chunks and its size. JavaScript's string of the key cannot be zeroed; the bytes made
 // from it here are kept only as long as the file is open, and zeroed then.
@@ -119,8 +121,9 @@ class ErevosCollectionModule : Module() {
       OpenFiles.forgetAll()
       PdfPages.closeAll()
       Playing.onMain { Playing.stop(context) }
-      // A file being brought in stops, and what it wrote goes.
+      // A file being brought in stops, and what it wrote goes; so does a file shared, waiting.
       for (cancel in sealing.values) cancel.set(true)
+      context?.let { SharedIn.panic(it) }
     }
 
     // Whether a PDF can be shown here: Android 11 and later, which have memory files.
@@ -273,6 +276,34 @@ class ErevosCollectionModule : Module() {
         }
       } ?: throw IOException("Cannot read the file")
       Base64.encodeToString(buffer.copyOf(at), Base64.NO_WRAP)
+    }
+
+    // The photo or file another app shared, waiting encrypted (SharedIn.kt), by the id its link
+    // gave: as the catalogue keeps a file (its key in hex), with a photo's size as it shows and its
+    // small picture (base64 JPEG, "" if none); null when it is not the one waiting.
+    Function("sharedFile") { id: String ->
+      SharedIn.get(id)?.let { file ->
+        mapOf(
+          "id" to file.id,
+          "key" to file.key.joinToString("") { "%02x".format(it) },
+          "chunk" to file.chunk,
+          "count" to file.count,
+          "size" to file.size.toDouble(),
+          "w" to file.w,
+          "h" to file.h,
+          "thumb" to (file.thumb?.let { Base64.encodeToString(it, Base64.NO_WRAP) } ?: ""),
+        )
+      }
+    }
+
+    // The Collection takes the shared file's chunks as its own: its key here goes, the chunks stay.
+    Function("sharedKeep") { id: String ->
+      context?.let { SharedIn.keep(it, id) }
+    }
+
+    // The shared file was sent, or left: its chunks and key go.
+    Function("sharedDrop") { id: String ->
+      context?.let { SharedIn.drop(it, id) }
     }
 
     // The video of the list playing (VideoView.kt).

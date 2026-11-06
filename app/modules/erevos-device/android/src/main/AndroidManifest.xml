@@ -16,22 +16,6 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
   <application>
-    <!-- Erevos in other apps' Share (ShareActivity.kt): words, a link, a photo or a file, handed to
-         Erevos by a link, in a task of its own (taskAffinity ""), so it shows Send to, not Erevos
-         as it was left. -->
-    <activity
-      android:name="expo.modules.erevosdevice.ShareActivity"
-      android:taskAffinity=""
-      android:exported="true"
-      android:excludeFromRecents="true"
-      android:noHistory="true"
-      android:theme="@android:style/Theme.Translucent.NoTitleBar">
-      <intent-filter>
-        <action android:name="android.intent.action.SEND" />
-        <category android:name="android.intent.category.DEFAULT" />
-        <data android:mimeType="*/*" />
-      </intent-filter>
-    </activity>
     <!-- The panic button (Panic.kt, PanicActivity.kt): PanicKit's requests from a panic app the
          owner chose. Exported, as panic apps must reach it; it trusts only the app the owner said
          yes to, as Android names it, and shows nothing. -->

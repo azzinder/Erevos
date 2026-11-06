@@ -33,8 +33,9 @@ import { useColors } from '../theme/context';
 // goes there at once. An SMS conversation takes only words.
 //
 // With the Collection on (lib/modules.ts), a photo or file has the Collection first, before the
-// chats: a sheet asks which of its folders, and the file is encrypted into it as soon as that is
-// answered, its copy in the cache deleted. Opened from the Collection itself (`collection`, the
+// chats: a sheet asks which of its folders, and the file goes into it as soon as that is answered,
+// as it is: Android encrypted it as it came (modules/erevos-collection, ShareActivity.kt), so no
+// plain copy of it is ever on the disk. Opened from the Collection itself (`collection`, the
 // ids of the files), it sends those to the chat picked, as a photo or file picked there goes.
 
 type Target = { key: string; name: string; kind: 'chat' | 'group' | 'sms'; at: number; to: string; open: string };
@@ -54,11 +55,11 @@ function smsTarget(address: string, name: string, at: number): Target {
 }
 
 export default function ShareScreen() {
-  const params = useLocalSearchParams<{ text?: string; file?: string; name?: string; mime?: string; large?: string; collection?: string }>();
+  const params = useLocalSearchParams<{ text?: string; file?: string; sealed?: string; name?: string; mime?: string; large?: string; collection?: string }>();
   const colors = useColors();
   const modules = useModules();
   const text = (params.text ?? '').trim();
-  const file = useMemo(() => sharedFileOf(params), [params.file, params.name, params.mime]);
+  const file = useMemo(() => sharedFileOf(params), [params.file, params.sealed, params.name, params.mime]);
   const large = params.large === '1';
   const [targets, setTargets] = useState<Target[] | null>(null);
   const [query, setQuery] = useState('');
@@ -70,7 +71,7 @@ export default function ShareScreen() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const fromCollection = typeof params.collection === 'string' && params.collection.length > 0;
-  // Whether the photo or file was handed on: if not, its copy goes as Send to closes.
+  // Whether the photo or file was handed on: if not, it goes as Send to closes.
   const handed = useRef(false);
 
   useEffect(() => {

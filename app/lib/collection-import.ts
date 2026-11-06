@@ -22,8 +22,10 @@ import { collectionNative } from '../modules/erevos-collection';
 // and a photo or file of a chat. Each goes straight into the Collection, encrypted a piece at a
 // time, with a small picture of a photo. A file picked from the phone's files is read from
 // Android's link by modules/erevos-collection and encrypted as it is read, with no copy anywhere,
-// up to the Collection's 4 GB; in a build without that, and for the camera and a share, the
-// copies that Android or the picker leave in the app's cache are deleted as soon as they are read. When the owner chose it (lock/collection-data.ts
+// up to the Collection's 4 GB. A photo or file another app shared comes already encrypted the same
+// way (modules/erevos-collection, ShareActivity.kt), with no copy either. In a build without that,
+// and for the camera, the copies that Android or the picker leave in the app's cache are deleted
+// as soon as they are read. When the owner chose it (lock/collection-data.ts
 // deleteOriginals), a photo or video picked from the phone's gallery is then deleted there:
 // Android asks the owner to confirm, in a dialog of its own, and does it (Android 11 and later,
 // modules/erevos-collection). A photo taken with the camera never goes to the gallery at all, and a
@@ -194,8 +196,25 @@ async function keepSource(place: CollectionPlace, folder: string, file: { name: 
   return addToCollection(place, file.source, { name: file.name, mime: file.mime, kind: photo ? 'photo' : 'file', w: size?.w, h: size?.h }, { folder, thumb, progress });
 }
 
-/** Brings a photo or file another app shared into the Collection (lib/share-in.ts); its copy in the cache is deleted once read. */
+/**
+ * Brings a photo or file another app shared into the Collection (lib/share-in.ts): one encrypted
+ * as it came is taken as it is, its chunks and its small picture, with no plain copy anywhere;
+ * a copy in the cache is deleted once read.
+ */
 export async function importShared(place: CollectionPlace, shared: SharedFile, folder: string, progress?: Progress): Promise<CollectionItem> {
+  if (shared.sealed) {
+    const sealed = shared.sealed;
+    // Android lets go of its key first: should the catalogue not take it, addSealedToCollection deletes the chunks.
+    try {
+      collectionNative?.sharedKeep?.(sealed.id);
+    } catch {
+      // Its key is let go of with the next share.
+    }
+    const photo = isPhotoType(shared.mime);
+    const thumb = photo ? shared.thumb : undefined;
+    progress?.(sealed.count, sealed.count);
+    return addSealedToCollection(place, sealed, { name: shared.name, mime: shared.mime, kind: photo ? 'photo' : 'file', w: photo ? shared.w : undefined, h: photo ? shared.h : undefined }, { folder, thumb });
+  }
   const read = await readShared(shared);
   try {
     // A shared photo comes ready as bytes (cleaned of what it said besides its picture).

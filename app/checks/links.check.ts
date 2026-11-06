@@ -51,13 +51,13 @@ test('a link that opens Erevos names one of its screens, with its details', () =
   assert.deepEqual(linkParts('/sms?to=%E0%A4'), { path: '/sms', params: { to: '%E0%A4' } });
 });
 
-test("another app's Share opens Send to with its words, and a photo or file by the name of its copy", () => {
+test("another app's Share opens Send to with its words, and a photo or file by the id it was encrypted under", () => {
   // As ShareActivity.kt makes it: Android's Uri.Builder writes a space as %20 and + as %2B.
-  const href = linkHref('erevos://share?text=https%3A%2F%2Fexample.org%2Fa%3Fb%3D1%2B2%20%CE%B5&file=erevos-shared-0123456789abcdef&name=IMG%201.jpg&mime=image%2Fjpeg');
+  const href = linkHref('erevos://share?text=https%3A%2F%2Fexample.org%2Fa%3Fb%3D1%2B2%20%CE%B5&sealed=0123456789abcdef0123456789abcdef&name=IMG%201.jpg&mime=image%2Fjpeg');
   assert.equal(linkMove(href, { path: '/', hidden: false }), 'push');
   assert.deepEqual(linkParts(href), {
     path: '/share',
-    params: { text: 'https://example.org/a?b=1+2 ε', file: 'erevos-shared-0123456789abcdef', name: 'IMG 1.jpg', mime: 'image/jpeg' },
+    params: { text: 'https://example.org/a?b=1+2 ε', sealed: '0123456789abcdef0123456789abcdef', name: 'IMG 1.jpg', mime: 'image/jpeg' },
   });
   assert.equal(linkMove(linkHref('erevos://share?large=1'), { path: '/share', hidden: false }), 'params');
 });
