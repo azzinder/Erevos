@@ -18,6 +18,9 @@ On main, not released yet:
   addresses. PayPal opens in the browser: its old link only handed over to the PayPal app, so it failed without it.
   The page `site/donate` has the same QR codes.
 
+- **Chats open at their end**: a long chat, or one with imported messages, could open at a message read long ago,
+  often a photo. Now it opens at the newest message, and the arrow to where you left off is there when new ones came.
+
 - **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
   asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
   A space you already have keeps its choice, under **Settings** → **Relay and networks** → **Tor**, where the choices
@@ -28,6 +31,13 @@ On main, not released yet:
   straight when Tor is off. See [Through Tor](#tor).
 
 ### Under the hood
+
+- **A chat that opened at an old message**: as a chat opened, its thread went to its end animated, and on the way
+  passed the top of what it showed, where scrolling draws earlier messages and keeps in place what was read there: so
+  a chat of more than 100 messages, or with imported ones, could stay at one of its oldest drawn, often a photo. Now
+  the thread's own way to its end (`lib/thread-follow.ts`, `checks/thread-follow.check.ts`) draws nothing and does
+  not leave the end, the first one in a chat goes there at once, and a chat opened after another starts at its end
+  again rather than keep the other's scroll state.
 
 - **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
   queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
