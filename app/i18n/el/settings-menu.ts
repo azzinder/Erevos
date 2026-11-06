@@ -48,5 +48,5 @@ export const settingsMenu: Record<string, string> = {
   "A short buzz when you tap a key of the keypad, Send, Enter or a switch, and when a menu opens. Never while you scroll. For every space on this phone.": "Μια σύντομη δόνηση όταν πατάς ένα πλήκτρο του πληκτρολογίου κλήσεων, την Αποστολή, το Enter ή έναν διακόπτη, και όταν ανοίγει ένα μενού. Ποτέ όταν κάνεις κύλιση. Ισχύει για κάθε χώρο αυτού του τηλεφώνου.",
   "Touches make no buzz.": "Τα αγγίγματα δεν κάνουν δόνηση.",
   'Modules': 'Ενότητες',
-  'Erevos, Phone, SMS, Nostr, Matrix and XMPP: the ones you use': 'Erevos, Τηλέφωνο, SMS, Nostr, Matrix και XMPP: όσα χρησιμοποιείς',
+  'Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use': 'Erevos, Τηλέφωνο, SMS, Nostr, Matrix, XMPP και Συλλογή: όσα χρησιμοποιείς',
 };

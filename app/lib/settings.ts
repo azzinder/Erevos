@@ -72,7 +72,7 @@ export const SETTINGS: SettingsGroup[] = [
       // Its detail is the language chosen, by its own name.
       { id: 'language', title: mark('Language'), detail: '', language: true },
       // Which parts of Erevos are on (lib/modules.ts).
-      { id: 'modules', title: mark('Modules'), detail: mark('Erevos, Phone, SMS, Nostr, Matrix and XMPP: the ones you use'), href: '/modules' },
+      { id: 'modules', title: mark('Modules'), detail: mark('Erevos, Phone, SMS, Nostr, Matrix, XMPP and the Collection: the ones you use'), href: '/modules' },
       { id: 'updates', title: mark('Updates'), detail: mark('This version, and Check for updates'), href: '/updates' },
       { id: 'give-app', title: mark('Give Erevos to a phone nearby'), detail: mark('Over Wi-Fi or a hotspot, with no internet'), href: '/give-app', when: phone },
       // What each version changed, by its number (lib/whats-new.ts).

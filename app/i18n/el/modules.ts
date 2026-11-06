@@ -44,8 +44,8 @@ export const modulesText: Record<string, string> = {
     'Οι συνομιλίες του φεύγουν από τη λίστα, και τα μηνύματά τους δεν έρχονται όσο είναι ανενεργό. Τίποτα δεν σβήνεται: ο λογαριασμός και οι συνομιλίες είναι πάλι εκεί όταν το ενεργοποιήσεις.',
   'Setting up Erevos · step {n} of {m}': 'Ρύθμιση του Erevos · βήμα {n} από {m}',
   'Welcome to Erevos': 'Καλώς ήρθες στο Erevos',
-  "Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos's own chats, the Phone, the SMS, and chats with Nostr, Matrix and XMPP apps.":
-    'Το Erevos φέρνει τις συνομιλίες και τις κλήσεις σου σε μία εφαρμογή, κρυπτογραφημένες από άκρο σε άκρο όπου γίνεται. Αποτελείται από ενότητες: τις δικές του συνομιλίες του Erevos, το Τηλέφωνο, τα SMS, και τις συνομιλίες με εφαρμογές Nostr, Matrix και XMPP.',
+  "Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos's own chats, the Phone, the SMS, chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files.":
+    'Το Erevos φέρνει τις συνομιλίες και τις κλήσεις σου σε μία εφαρμογή, κρυπτογραφημένες από άκρο σε άκρο όπου γίνεται. Αποτελείται από ενότητες: τις δικές του συνομιλίες του Erevos, το Τηλέφωνο, τα SMS, τις συνομιλίες με εφαρμογές Nostr, Matrix και XMPP, και τη Συλλογή φωτογραφιών και αρχείων.',
   'Choose only the parts you use. The others do not start at all, so Erevos is lighter, opens faster and uses less battery. You can change them any time in Settings → General → Modules, and nothing of a part is deleted while it is off.':
     'Διάλεξε μόνο τις ενότητες που χρησιμοποιείς. Οι άλλες δεν ξεκινούν καθόλου, έτσι το Erevos γίνεται πιο ελαφρύ, ανοίγει πιο γρήγορα και καταναλώνει λιγότερη μπαταρία. Μπορείς να τις αλλάξεις όποτε θέλεις στις Ρυθμίσεις → Γενικά → Ενότητες, και τίποτα από μια ενότητα δεν σβήνεται όσο είναι ανενεργή.',
   'Choose the parts you use': 'Διάλεξε τις ενότητες που χρησιμοποιείς',

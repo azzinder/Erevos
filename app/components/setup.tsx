@@ -79,7 +79,7 @@ export function Setup({ onDone }: { onDone: (chosen: Module[]) => void }) {
             </View>
             <Card>
               <Text style={hint}>
-                {t('Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos\'s own chats, the Phone, the SMS, and chats with Nostr, Matrix and XMPP apps.')}
+                {t('Erevos brings your chats and calls into one app, end-to-end encrypted wherever it can be. It is made of parts: Erevos\'s own chats, the Phone, the SMS, chats with Nostr, Matrix and XMPP apps, and the Collection of photos and files.')}
               </Text>
               <Text tone="muted" style={hint}>
                 {t('Choose only the parts you use. The others do not start at all, so Erevos is lighter, opens faster and uses less battery. You can change them any time in Settings → General → Modules, and nothing of a part is deleted while it is off.')}
