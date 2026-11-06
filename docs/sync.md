@@ -139,9 +139,19 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   packet once, so the log (and all the rest) goes with no internet too. The relay still gets its
   copy, which opens nothing the second time. The space's links only.
 
+## Phase S3, third part: large files, chunk by chunk
+
+- lib/sync/chunks.ts brings a file's chunks as they are kept (lock/attachment-files.ts) by a list
+  of ways (`ChunkWay`: the same Wi-Fi, a file server such as the Collection's WebDAV mirror, the
+  relay for small ones), each chunk from the first way that has it whole.
+- Only what is missing here is asked: a transfer cut off goes on from the missing chunk. Each chunk
+  is opened with the file's key before it is kept (its tag, and its place in the file), so a chunk
+  cut short, damaged, of another file or in another place is let go and asked of the next way.
+- `whole` says a file is there only once every chunk is and opens; until then it shows as coming.
+- `stop` (the file deleted while it comes) ends it after the chunk under way and deletes every
+  chunk of it, also one kept just then.
+
 ## Next
 
-Phase S3, third part: device to device over the same Wi-Fi/LAN, by chunks (the bytes of large
-files, for the Collection up to 4096 chunks of 1 MiB): only the chunk ids missing are asked, each
-checked by its GCM tag and kept, a cut one dropped; a file shows only once all its chunks are there.
-A file deleted mid-way stops, and the chunks that came are deleted.
+A fast way over the same Wi-Fi for chunks (today's links nearby carry frames of 16 KB), then the
+Collection's catalog on the log (S7), which brings its files with ChunkFetch.

@@ -139,6 +139,11 @@ On main, not released yet:
   `e2e.receive` and `Link.open`) has that device heard there (`device:<id>` in `lib/nearby.ts`), and what goes to it
   is handed there first (`toHeard`, only to the link it was heard on, never spread), each packet once; the outbox
   keeps it until the relay took it too, and the copy that comes second opens nothing. The space's links only.
+- **Large files from another device, chunk by chunk** (`lib/sync/chunks.ts`, `ChunkFetch`): only the chunks missing are
+  asked for, by whichever way answers first; each is opened with the file's key before it is kept, so one cut short
+  or damaged is never kept; a file is whole only once every chunk is; one deleted while it comes keeps no chunk. For
+  the Collection's files between devices (up to 4 GB), used by nothing yet. `checks/sync-chunks.check.ts` cuts the
+  network off in the middle.
 
 ## 6.0.0-rc.2 (2026-11-04)
 
