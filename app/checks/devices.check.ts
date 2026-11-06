@@ -110,7 +110,7 @@ import { hiddenHolder } from '../lock/sealed-file';
 import { setCurrentSpace } from '../lock/keys';
 import { forgetSpaceMover, spaceMover } from '../lib/queue-move';
 import { contactsIn } from '../lib/sync/contacts';
-import { valueOf as syncValueOf, type Json as SyncJson } from '../lib/sync/log';
+import { valueOf as syncValueOf, whole as syncWhole, type Json as SyncJson } from '../lib/sync/log';
 import { onSettingCame } from '../lib/sync/settings';
 import { fakeRtc } from './fake-rtc';
 import { blobs, files } from './files-memory';
@@ -521,6 +521,29 @@ test('a computer linked to the phone: codes, history, messages both ways, contac
   await until(async () => (await take(dell), settingsCame.length > 1));
   assert.deepEqual(settingsCame[1], ['look', { style: 'nocturne', wallpaper: 'dots' }]);
   for (const stop of stops) stop();
+
+  // The whole log, once larger than a packet holds, goes as a file on the relay, encrypted with a
+  // key of its own the envelope carries; taken, it is heard as the whole log, and the file is gone.
+  type Snapping = {
+    syncs: { write(changes: { k: string; id: string; f?: string; v?: SyncJson; x?: 'add' }[]): Promise<boolean> };
+    snapshot(said: unknown): Promise<SyncJson | null>;
+    syncHeard(from: string, s: SyncJson): Promise<{ whole: boolean } | null>;
+    data: { account: string };
+  };
+  const phoneSide = pixel.links as unknown as Snapping;
+  const deviceSide = dell.links as unknown as Snapping;
+  const many = Array.from({ length: 60 }, (_, n) => `place-${n}`);
+  await phoneSide.syncs.write(many.flatMap((id) => [{ k: 'place', id, x: 'add' as const }, { k: 'place', id, f: 'v', v: 'x'.repeat(300) }]));
+  const phoneLog = (await pixel.links.syncLog())!;
+  const snap = await phoneSide.snapshot({ k: 'whole', ...syncWhole(phoneLog) });
+  assert.equal((snap as { k?: string } | null)?.k, 'snap');
+  assert.ok(JSON.stringify(snap).length < 2048);
+  const heardSnap = await deviceSide.syncHeard(deviceSide.data.account, snap!);
+  assert.equal(heardSnap?.whole, true);
+  const deviceLog = (await dell.links.syncLog())!;
+  assert.deepEqual(many.map((id) => syncValueOf(deviceLog, 'place', id, 'v')), many.map(() => 'x'.repeat(300)));
+  // Taken once: the file is no longer on the relay.
+  assert.equal(await deviceSide.syncHeard(deviceSide.data.account, snap!).catch(() => null), null);
 
   // Unlinked on the phone: the computer is told, and the account's chats leave it.
   assert.equal(await pixel.links.unlink(pixel.links.devices()[0].id), true);

@@ -124,6 +124,17 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   brought before (lib/linked-accounts.ts `take`, `had`). A device's own account stays, and so does
   one the log never named (a phone that has not followed them yet).
 
+## Phase S3, first part: the whole log as a file
+
+- `whole` once its JSON is over 12 KB (more than one packet) goes as a snapshot: a file on the
+  sender's relay queue (lib/attachments.ts `sendFile`), encrypted with a key of its own, and the
+  envelope says `{k:'snap', offer}` where it waits. The receiver takes it once (the relay deletes
+  it), up to 64 MB, and hears it as the whole log. One that cannot be taken now is let be: the
+  device asks again (every 10 minutes) and is given it again.
+
 ## Next
 
-Phase S3: a snapshot of the log for a device new or long away, and the log over the LAN.
+Phase S3, second part: device to device over the same Wi-Fi/LAN, by chunks (the bytes of large
+files, for the Collection up to 4096 chunks of 1 MiB): only the chunk ids missing are asked, each
+checked by its GCM tag and kept, a cut one dropped; a file shows only once all its chunks are there.
+A file deleted mid-way stops, and the chunks that came are deleted.

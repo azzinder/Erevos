@@ -267,6 +267,10 @@ const ENDED_LASTS = 2 * 60_000;
 const DRAIN_EVERY = 60 * 60_000;
 // How often each side says how far it has the account's log (lib/sync/), besides each change.
 const SYNC_EVERY = 10 * 60_000;
+// The whole log goes as a file on the relay once larger than this (more than one packet), and is
+// taken back up to this size.
+const SNAP_OVER = 12 * 1024;
+const SNAP_MOST = 64 * 1024 * 1024;
 // How often the phone looks whether the accounts on other networks changed, for the devices.
 const ACCOUNTS_EVERY = 60_000;
 const DRAIN_MOST = 1000;
@@ -998,7 +1002,7 @@ export class Links implements Link, TakenFiles {
       }
       case 'sync':
         if (peer.endpoint) {
-          const heard = await this.syncs.heard(peer.endpoint.id, said.s).catch(() => null);
+          const heard = await this.syncHeard(peer.endpoint.id, said.s).catch(() => null);
           if (heard) this.act(() => this.syncOnPrimary(heard));
           if (heard) this.settingsFrom(heard);
         }
@@ -1099,7 +1103,7 @@ export class Links implements Link, TakenFiles {
         void this.noting(() => this.notesFrom(said, said.keep === true));
         break;
       case 'sync':
-        return this.syncOnDevice(await this.syncs.heard(this.data.account, said.s).catch(() => null), place);
+        return this.syncOnDevice(await this.syncHeard(this.data.account, said.s).catch(() => null), place);
       case 'move':
         // The phone's queue moved for a contact deleted or blocked: this device's moves with its next look (lib/queue-move.ts).
         this.act(() => this.chats.e2e.moveSoon());
@@ -1493,6 +1497,47 @@ export class Links implements Link, TakenFiles {
 
   // Says something of the log to one of the account's devices, by its id in the log, in its link.
   private sendSync(to: string, said: SyncSaid): void {
+    // The whole log, once it is more than one packet holds: put on the relay as a file, encrypted
+    // with a key of its own that goes in the envelope, and the envelope says where it waits.
+    if (said.k === 'whole' && JSON.stringify(said).length > SNAP_OVER) {
+      void this.snapshot(said)
+        .then((snap) => this.sendSyncNow(to, snap ?? said))
+        .catch(() => this.sendSyncNow(to, said));
+      return;
+    }
+    this.sendSyncNow(to, said);
+  }
+
+  // The whole log as a file on this device's relay queue (lib/attachments.ts), as the history's
+  // packs go: null with no relay to put it on.
+  private async snapshot(said: SyncSaid): Promise<Json | null> {
+    const here = await this.here();
+    if (!here) return null;
+    const { ref, offer } = await sendFile(here.own, bytesSource(utf8Encode(JSON.stringify(said))), { name: 'sync.json', mime: 'application/json', kind: 'file' });
+    await deleteChunks(ref.id, ref.count).catch(() => undefined);
+    return { k: 'snap', offer } as unknown as Json;
+  }
+
+  // What another device said in the log's way (lib/sync/wire.ts), as the links heard it: a snapshot
+  // on the relay is taken first, and heard as the whole log it holds. One that cannot be taken now
+  // is let be: the device asks again (SYNC_EVERY), and is given the whole log again.
+  private async syncHeard(from: string, s: Json): Promise<SyncHeard | null> {
+    let said: unknown = s;
+    if (typeof s === 'object' && s !== null && !Array.isArray(s) && s.k === 'snap') {
+      const offer = readOffer(s.offer);
+      const here = offer && (await this.here());
+      if (!offer || !here) return null;
+      const ref = await takeFile(here.own, offerRef(offer), undefined, false);
+      const bytes = await readFile(ref);
+      await deleteChunks(ref.id, ref.count).catch(() => undefined);
+      if (!bytes || bytes.length > SNAP_MOST) return null;
+      said = JSON.parse(utf8Decode(bytes)) as unknown;
+      if (typeof said !== 'object' || said === null || (said as { k?: unknown }).k !== 'whole') return null;
+    }
+    return this.syncs.heard(from, said);
+  }
+
+  private sendSyncNow(to: string, said: SyncSaid | Json): void {
     const envelope: Envelope = { k: 'sync', s: said as unknown as Json };
     if (this.data.primary) {
       if (to === this.data.account) {
@@ -2405,7 +2450,7 @@ export class Links implements Link, TakenFiles {
     if (said.k === 'out') this.act(() => this.ownFrom(said.c, said.m, said.mark));
     else if (said.k === 'came') this.act(() => this.cameHere(said.c, said.got));
     else if (said.k === 'set') return this.setFrom(said);
-    else if (said.k === 'sync') return this.syncOnDevice(await this.syncs.heard(sibling.id, said.s).catch(() => null), null);
+    else if (said.k === 'sync') return this.syncOnDevice(await this.syncHeard(sibling.id, said.s).catch(() => null), null);
     else if (said.k === 'notes') {
       await this.heardNotes({ id: sibling.id, sibling: true });
       void this.noting(() => this.notesFrom(said, said.keep === true));

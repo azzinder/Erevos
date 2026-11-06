@@ -126,6 +126,10 @@ On main, not released yet:
   device as one appears or changes. A device lets go of an account it brought once the log removes it
   (`accountsFrom`), and of the one it brought before once another of that network comes in its place; one the log never
   named stays, and so does one of the device's own. Secrets still go only in the `accounts` envelope, never in the log.
+- **The whole log as a file**: a device new, put back from a backup or long away is given the account's log whole;
+  once larger than one packet holds (12 KB), it goes as a file on the sender's relay queue, encrypted with a key of
+  its own that only the envelope carries, and is taken once and deleted there (`snapshot` and `syncHeard` in
+  `lib/devices.ts`). One that cannot be taken is let be: the device asks again within 10 minutes.
 
 ## 6.0.0-rc.2 (2026-11-04)
 
