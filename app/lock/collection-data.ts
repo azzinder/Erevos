@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { bytesSource, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
+import { bytesSource, eachPiece, FileMissingError, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
 import { randomBytes, sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { listFiles } from '../lib/files';
 import { t } from '../lib/i18n';
@@ -255,6 +255,19 @@ export class NoSuchFolderError extends Error {
   }
 }
 
+/** The device has no room left for a file brought in (a browser's storage is full): nothing of it was kept. */
+export class CollectionStorageFullError extends Error {
+  constructor() {
+    super(t('There is no room left here for this file. Nothing of it was kept: free some space, or delete files from the Collection, and try again.'));
+  }
+}
+
+/** Whether `error` says the storage is full: a browser's IndexedDB (QuotaExceededError; NS_ERROR_DOM_QUOTA_REACHED in older Gecko, as on Sailfish OS). */
+export function isStorageFull(error: unknown): boolean {
+  const e = error as { name?: unknown; code?: unknown } | null;
+  return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22);
+}
+
 export type NewItem = { name: string; mime: string; kind: FileKind; w?: number; h?: number };
 
 /**
@@ -269,8 +282,14 @@ export async function addToCollection(
   { folder = '', thumb, progress, now = Date.now() }: { folder?: string; thumb?: Uint8Array; progress?: Progress; now?: number } = {},
 ): Promise<CollectionItem> {
   if (source.size > MAX_COLLECTION_FILE) throw new CollectionFileTooLargeError();
-  const file = await keepFile(source, metaOf(item), progress, MAX_COLLECTION_FILE);
-  return catalogued(place, file, { folder, thumb, now });
+  // keepFile deletes the chunks it wrote when one cannot be, and catalogued all of it when the
+  // catalogue cannot be saved: a storage that fills up midway leaves nothing, and the catalogue as it was.
+  try {
+    const file = await keepFile(source, metaOf(item), progress, MAX_COLLECTION_FILE);
+    return await catalogued(place, file, { folder, thumb, now });
+  } catch (error) {
+    throw isStorageFull(error) ? new CollectionStorageFullError() : error;
+  }
 }
 
 export class CollectionFileDamagedError extends Error {}
@@ -576,11 +595,25 @@ async function fillMissing(item: CollectionItem, options?: FillOptions): Promise
   return false;
 }
 
-// The file `ref` of `item`, read; when its chunks are not here, fetched first.
-async function readOrFill(item: CollectionItem, ref: FileRef, options?: FillOptions): Promise<Uint8Array | null> {
-  const bytes = await readFile(ref);
+// The file `ref` of `item`, read by `read`; when its chunks are not here, fetched first.
+async function readOrFill<T>(item: CollectionItem, ref: FileRef, read: (ref: FileRef) => Promise<T | null>, options?: FillOptions): Promise<T | null> {
+  const bytes = await read(ref);
   if (bytes) return bytes;
-  return (await fillMissing(item, options)) ? readFile(ref) : null;
+  return (await fillMissing(item, options)) ? read(ref) : null;
+}
+
+// The file's pieces, each chunk's opened, in order; null when a chunk is not here.
+async function readPieces(ref: FileRef): Promise<Uint8Array[] | null> {
+  const pieces: Uint8Array[] = [];
+  try {
+    await eachPiece(ref, (piece) => {
+      pieces.push(piece);
+    });
+  } catch (error) {
+    if (error instanceof FileMissingError) return null;
+    throw error;
+  }
+  return pieces;
 }
 
 /**
@@ -588,10 +621,17 @@ async function readOrFill(item: CollectionItem, ref: FileRef, options?: FillOpti
  * them) and neither its place's server nor another device has them. Those fetched are told to
  * `progress`; `signal` stops the fetch (FillStoppedError), keeping what came.
  */
-export const openItem = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => readOrFill(item, item.file, options);
+export const openItem = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => readOrFill(item, item.file, readFile, options);
+
+/**
+ * A file's bytes as the list of its chunks' pieces, never put together into one array: a page
+ * makes a Blob of them (lib/collection-memory.ts), so the file is not held twice. Missing chunks
+ * are fetched first, as openItem fetches them, told to `progress` and stopped by `signal`.
+ */
+export const openItemPieces = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array[] | null> => readOrFill(item, item.file, readPieces, options);
 
 /** A file's small picture, or null when it has none or it is gone. */
-export const openThumb = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => (item.thumb ? readOrFill(item, item.thumb, options) : Promise.resolve(null));
+export const openThumb = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => (item.thumb ? readOrFill(item, item.thumb, readFile, options) : Promise.resolve(null));
 
 /**
  * Makes sure every chunk of a file is here before it is read from them as it goes (played, opened

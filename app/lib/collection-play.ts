@@ -11,7 +11,6 @@ import { deskItem, deskNext, deskPause, deskPlay, deskPrevious, deskResume, desk
 import { dropCollectionMemory } from './collection-memory';
 import { playKind } from './collection-view';
 import { t } from './i18n';
-import { SHELL } from './shell';
 
 // The Collection's music and videos, played on the phone by its Android part
 // (modules/erevos-collection, Playing.kt) straight from their encrypted chunks. One list plays at a
@@ -24,13 +23,14 @@ import { SHELL } from './shell';
 // What the space's locking, closing and the panic button do to what the Collection opened here is
 // told from here too: links to open files with other apps, PDFs shown, and the list.
 //
-// In the desktop app they play in the page instead (lib/collection-desk-player.ts), each file
-// decrypted into memory; there is no notice nor lock screen, so the place's two choices for them do
-// not apply: the list always stops when the space locks or closes, and everything the Collection
-// held in memory to show is let go of then (lib/collection-memory.ts).
+// In the web build (the desktop app, a browser, Sailfish OS) they play in the page instead (lib/
+// collection-desk-player.ts), each file decrypted into memory; there is no notice nor lock screen,
+// so the place's two choices for them do not apply: the list always stops when the space locks or
+// closes, and everything the Collection held in memory to show is let go of then (lib/
+// collection-memory.ts).
 
-// The desktop app's own player, in the page.
-const DESK = SHELL === 'electron';
+// The page's own player: the web build's (no Android part, and a page to play in).
+const DESK = !collectionNative && typeof document !== 'undefined';
 
 /** Whether this device plays the Collection's music and videos. */
 export const CAN_PLAY = !!collectionNative || DESK;

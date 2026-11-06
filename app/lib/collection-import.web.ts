@@ -9,19 +9,22 @@ import { bitmapOf } from './bitmap.web';
 import { photoSize } from './photo';
 import { pickPieces } from './pick-file.web';
 import type { SharedFile } from './share-in';
-import { SHELL } from './shell';
 
 // Bringing files into the Collection (collection-import.ts), on a computer. In the desktop app
 // (SHELL 'electron'), a file picked in the computer's own file dialog, read a piece at a time
 // through the shell as it is encrypted (lib/pick-file.web.ts pickPieces), so even a file of some
 // GB is never held whole; and a photo or file of a chat, as on the phone. A photo's small picture
 // is drawn by the page on a canvas, a new JPEG, so nothing the photo said besides its picture is in
-// it. There is no camera, no gallery to delete from and nothing shared in from other apps. In a
-// plain browser and on Sailfish OS the Collection is not a module (lib/modules.ts): nothing is
-// brought in.
+// it. There is no camera, no gallery to delete from and nothing shared in from other apps.
+//
+// In a browser (an iPhone's home-screen app too) and on Sailfish OS the same, from the browser's own
+// file picker: the file picked is read a slice at a time (File.slice), so it is never held whole
+// either. Its chunks go where every file of the app goes (lib/files.ts): the browser's storage,
+// one chunk a write, or the Sailfish shell's folder, one file a chunk. A browser that has no room
+// left for one keeps none of them (lock/collection-data.ts CollectionStorageFullError).
 
-/** Whether this device can bring files into the Collection: the desktop app. */
-export const CAN_COLLECT = SHELL === 'electron';
+/** Whether this device can bring files into the Collection: in the web build, everywhere it runs. */
+export const CAN_COLLECT = true;
 /** Whether a photo can be taken with a camera straight into the Collection: not on a computer. */
 export const CAN_TAKE_PHOTO = false;
 export const CAN_DELETE_ORIGINALS = false;
@@ -36,7 +39,7 @@ export type Progress = (done: number, count: number) => void;
 export const isPhotoType = (mime: string) => PHOTOS.has(mime);
 export const isGalleryType = (mime: string) => mime.startsWith('image/') || mime.startsWith('video/');
 
-const unavailable = () => Promise.reject(new Error('Not in the desktop app.'));
+const unavailable = () => Promise.reject(new Error('Not in the web build.'));
 
 // The photo drawn anew with its shorter side THUMB_SIDE pixels (never larger than it is), turned
 // upright, as a JPEG; and how large the photo is as it shows. Undefined where it cannot be drawn.
@@ -71,9 +74,8 @@ export async function thumbOf(bytes: Uint8Array): Promise<Uint8Array | undefined
 
 export const importFromCamera = (_place: CollectionPlace, _folder: string, _progress?: Progress): Promise<CollectionItem | null> => unavailable();
 
-/** Picks a file from the computer into the Collection, in `folder`, or returns null if the owner cancelled. */
+/** Picks a file from the computer, or the phone's files, into the Collection, in `folder`, or returns null if the owner cancelled. */
 export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, _options: { deleteOriginal?: boolean } = {}): Promise<CollectionItem | null> {
-  if (!CAN_COLLECT) return unavailable();
   const picked = await pickPieces(MAX_COLLECTION_FILE);
   if (!picked) return null;
   try {
@@ -104,7 +106,6 @@ export const importShared = (_place: CollectionPlace, _shared: SharedFile, _fold
 
 /** Copies a photo or file of a chat into the Collection, as the same bytes, encrypted anew with a key of its own. */
 export async function importFromChat(place: CollectionPlace, ref: FileRef, folder = '', progress?: Progress): Promise<CollectionItem> {
-  if (!CAN_COLLECT) return unavailable();
   const photo = ref.kind === 'photo';
   const thumb = photo && ref.size <= MOST_THUMBED ? await readFile(ref).then((bytes) => (bytes ? thumbOf(bytes) : undefined)) : undefined;
   return addToCollection(place, refSource(ref), { name: ref.name, mime: ref.mime, kind: ref.kind, w: ref.w, h: ref.h }, { folder, thumb, progress });

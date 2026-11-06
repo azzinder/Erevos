@@ -7,7 +7,7 @@ import { FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindow
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize } from '../lib/attachments';
-import { MOST_IN_MEMORY, memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
+import { MOST_IN_MEMORY, onCollectionMemoryDropped, openItemUri, releaseMemoryUri } from '../lib/collection-memory';
 import { CAN_OPEN_WITH } from '../lib/collection-out';
 import { CAN_PLAY, playItems, playingFile, usePlayer } from '../lib/collection-play';
 import { fileLook, isText, MOST_TEXT, playKind, playListOf } from '../lib/collection-view';
@@ -39,7 +39,8 @@ import { Button, Sheet, Text } from './ui';
 // (lib/collection-memory.ts) let go of when it closes: a photo, with arrows and the arrow keys to
 // go to the next; a PDF in Chromium's own viewer; music and videos in the page's player (lib/
 // collection-desk-player.ts), up to MOST_IN_MEMORY. Saving goes to the computer, and nothing is
-// opened with another app. When the space locks the player stops and the viewer closes.
+// opened with another app. When the space locks the player stops and the viewer closes. In a
+// browser and on Sailfish OS the same, up to 256 MB, but a PDF is saved to be read elsewhere.
 //
 // A file whose chunks are not all on this device has them fetched first from its place's server,
 // before it shows, plays or opens with another app, with how far that is and Cancel
@@ -65,6 +66,8 @@ type Props = {
 export const addedText = (at: number) => new Date(at).toLocaleString(locale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
 const DESK = SHELL === 'electron';
+// A browser, an iPhone's or a computer's: saving goes to this device, whichever it is.
+const BROWSER = Platform.OS === 'web' && !SHELL;
 // A pointer has no swipe: the photos have arrows on a computer.
 const ARROWS = Platform.OS === 'web';
 
@@ -230,7 +233,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               ]}
             >
               {canSend ? act(<SendIcon color={ink} cut={photo ? '#000000' : colors.sheet} size={22} />, t('Send to a chat'), () => onSend(item)) : null}
-              {act(<DownloadIcon color={ink} size={22} />, DESK ? t('Save to the computer') : t('Save to phone'), () => onSave(item))}
+              {act(<DownloadIcon color={ink} size={22} />, DESK ? t('Save to the computer') : BROWSER ? t('Save to this device') : t('Save to phone'), () => onSave(item))}
               {act(<InfoIcon color={ink} size={22} />, t('Information'), () => setInfo(true))}
               {act(<TrashIcon color={colors.danger} size={22} />, t('Delete'), () => onDelete(item), true)}
             </View>
@@ -273,14 +276,19 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
     let active = true;
     let made: string | null = null;
     fetching
-      .run((options) => openItem(item, options), () => setRound((r) => r + 1))
-      .then((opened) => {
-        if (!active || opened === 'stopped') return;
-        if (!opened.value) {
+      .run((options) => openItemUri(item, item.file.mime, undefined, options), () => setRound((r) => r + 1))
+      .then((result) => {
+        if (result === 'stopped') return;
+        const opened = result.value;
+        if (!active) {
+          if (opened) releaseMemoryUri(opened);
+          return;
+        }
+        if (!opened) {
           setGone(true);
           return;
         }
-        made = memoryUri(opened.value, item.file.mime);
+        made = opened;
         setUri(made);
       })
       .catch(() => active && setGone(true));
@@ -397,7 +405,7 @@ function FilePage({
             <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
           ) : !plays || item.file.size > MOST_IN_MEMORY ? (
             <Text tone="muted" style={styles.centered}>
-              {t('To open it with another app, save it to the computer first. That copy is not encrypted.')}
+              {DESK ? t('To open it with another app, save it to the computer first. That copy is not encrypted.') : t('To open it with another app, save it first. That copy is not encrypted.')}
             </Text>
           ) : null}
         </>

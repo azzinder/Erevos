@@ -4,7 +4,7 @@
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BackHandler, FlatList, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { BackHandler, FlatList, Image, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NowPlaying } from '../components/collection-player';
@@ -14,7 +14,7 @@ import { Button, Chip, Input, Sheet, Text } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
 import { CAN_COLLECT, CAN_TAKE_PHOTO, importFromCamera, importFromFiles } from '../lib/collection-import';
-import { memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
+import { TooLargeToSaveError, memoryUri, mostSavedOut, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
 import { dropOpened, openWithOtherApp } from '../lib/collection-out';
 import { usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
@@ -55,8 +55,21 @@ import { useColors, useStyles } from '../theme/context';
 // computer through its own save dialog, and nothing opens with another app. What is shown is held
 // decrypted in the page's memory only (lib/collection-memory.ts): when the space locks or the panic
 // button is pressed it all goes, the file open closes and the small pictures are opened again.
+//
+// In a browser (an iPhone's home-screen app too) and on Sailfish OS the same, with the browser's own
+// file picker, each piece of the file read as it is encrypted (File.slice), its chunks kept in the
+// browser's storage or the shell's folder. A browser that runs out of room keeps nothing of the
+// file (lock/collection-data.ts CollectionStorageFullError). What is opened or saved out is held
+// whole in memory, so there at most 256 MB (lib/collection-memory.ts).
 
 const DESK = SHELL === 'electron';
+// A browser, an iPhone's or a computer's: this device, whichever it is.
+const BROWSER = Platform.OS === 'web' && !SHELL;
+// Where picking a file may never say it was cancelled (Sailfish OS's browser engine): the screen
+// shows its progress once the file is read, not while the picker is open.
+const BUSY_AT_ONCE = Platform.OS !== 'web';
+// The largest file saved out from here.
+const MOST_SAVED_OUT = mostSavedOut();
 
 type Tab = 'photos' | 'files';
 type Naming = { what: 'folder' | 'rename-folder' | 'rename-file'; id: string; text: string } | null;
@@ -218,7 +231,7 @@ export default function CollectionScreen() {
     if (!place || busy) return;
     setAdding(false);
     setNote('');
-    setBusy({ done: 0, count: 1 });
+    if (BUSY_AT_ONCE) setBusy({ done: 0, count: 1 });
     try {
       const added = await get((done, count) => setBusy({ done, count }));
       if (added) setTab(added.file.kind === 'photo' ? 'photos' : 'files');
@@ -261,8 +274,12 @@ export default function CollectionScreen() {
   }
 
   async function saveToPhone(item: CollectionItem) {
+    if (item.file.size > MOST_SAVED_OUT) {
+      setNote(new TooLargeToSaveError().message);
+      return;
+    }
     // What is saved is outside the Collection, in the open.
-    if (!(await choose(DESK ? t('Save to the computer?') : t('Save to the phone?'), t('The file leaves the Collection without encryption, and other apps will see it. Continue?'), t('Cancel'), t('Save')))) return;
+    if (!(await choose(DESK ? t('Save to the computer?') : BROWSER ? t('Save to this device?') : t('Save to the phone?'), t('The file leaves the Collection without encryption, and other apps will see it. Continue?'), t('Cancel'), t('Save')))) return;
     try {
       const saved = await saveFile(item.file);
       if (saved) setNote(t('Saved as {name}. It is outside Erevos now: anyone who has the folder can read it.', { name: saved }));
@@ -470,7 +487,7 @@ export default function CollectionScreen() {
           keyExtractor={(e) => (e.kind === 'month' ? e.month : e.key)}
           renderItem={renderEntry}
           ListHeaderComponent={top}
-          ListEmptyComponent={empty(CAN_TAKE_PHOTO ? t('No photos yet. Tap + to take one.') : t('No photos yet. Click + to add one.'))}
+          ListEmptyComponent={empty(CAN_TAKE_PHOTO ? t('No photos yet. Tap + to take one.') : DESK ? t('No photos yet. Click + to add one.') : t('No photos yet. Add one with +.'))}
           contentContainerStyle={{ paddingBottom: bottomRoom }}
           keyboardShouldPersistTaps="handled"
           windowSize={7}
@@ -481,7 +498,7 @@ export default function CollectionScreen() {
           data={files}
           keyExtractor={(i) => i.id}
           ListHeaderComponent={top}
-          ListEmptyComponent={empty(DESK ? t('No files yet. Click + to add one.') : t('No files yet. Tap + to add one.'))}
+          ListEmptyComponent={empty(DESK ? t('No files yet. Click + to add one.') : BROWSER ? t('No files yet. Add one with +.') : t('No files yet. Tap + to add one.'))}
           contentContainerStyle={{ paddingBottom: bottomRoom }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
@@ -540,7 +557,7 @@ export default function CollectionScreen() {
         {CAN_TAKE_PHOTO ? (
           <AddRow icon={<CameraIcon color={colors.primary} size={22} />} title={t('Camera')} text={t('The photo goes straight here, never to the gallery.')} onPress={() => void bringIn((p) => importFromCamera(place!, folder, p))} colors={colors} />
         ) : null}
-        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={DESK ? t('From the computer’s files') : t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
+        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={DESK ? t('From the computer’s files') : BROWSER ? t('From this device’s files') : t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
         <AddRow
           icon={<FolderIcon color={colors.primary} size={22} />}
           title={t('New folder')}

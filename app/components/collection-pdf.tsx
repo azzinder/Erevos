@@ -3,13 +3,13 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { createElement, useEffect, useState } from 'react';
-import { FlatList, Image, PixelRatio, StyleSheet, View } from 'react-native';
+import { FlatList, Image, PixelRatio, Platform, StyleSheet, View } from 'react-native';
 
-import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, releaseMemoryUri } from '../lib/collection-memory';
+import { TooLargeToOpenError, openItemUri, releaseMemoryUri } from '../lib/collection-memory';
 import { sealedRef } from '../lib/collection-play';
 import { t } from '../lib/i18n';
 import { SHELL } from '../lib/shell';
-import { fillItemHere, openItem, type CollectionItem } from '../lock/collection-data';
+import { fillItemHere, type CollectionItem } from '../lock/collection-data';
 import { collectionNative } from '../modules/erevos-collection';
 import { space } from '../theme/colors';
 import { FetchNote, useFetching, type Fetching } from './collection-fetch';
@@ -24,12 +24,16 @@ import { Button, Text } from './ui';
 // In the desktop app Chromium's own PDF viewer shows it, in a frame, from a blob: address of its
 // bytes decrypted into the page's memory (lib/collection-memory.ts, MOST_IN_MEMORY at most), let go
 // of when the PDF closes or the space locks; never a file on the disk. The shell lets such a frame
-// be shown and keeps the viewer's own Save from writing a plain copy (desktop/main.js).
+// be shown and keeps the viewer's own Save from writing a plain copy (desktop/main.js). A browser
+// and Sailfish OS do not let the page show a blob: address in a frame (their Content Security
+// Policy, pwa/sw.js and sailfish/src/shellserver.cpp): there a PDF is saved to be opened elsewhere.
 //
-// On the phone, chunks of the PDF not on this device are fetched first from its place's server,
-// with how far that is and Cancel (components/collection-fetch.tsx).
+// Chunks of the PDF not on this device are fetched first from its place's server, with how far
+// that is and Cancel (components/collection-fetch.tsx).
 
 const DESK = SHELL === 'electron';
+// The web build outside the desktop app: nothing opens with another app either.
+const PAGE = Platform.OS === 'web' && !DESK;
 
 /** Whether a PDF can be shown here. */
 export const CAN_SHOW_PDF = DESK || !!collectionNative?.pdfAvailable();
@@ -51,41 +55,51 @@ export function CollectionPdf(props: Props) {
 }
 
 // The desktop app's: Chromium's viewer in a frame, from memory.
-function DeskPdf({ item, top, bottom, muted }: Props) {
+function DeskPdf({ item, top, bottom, ink, muted }: Props) {
   const [uri, setUri] = useState<string | null>(null);
   const [failed, setFailed] = useState('');
+  // Its chunks fetched first when they are not here, with Cancel; Go on opens it again (`round`).
+  const opening = useFetching();
+  const [round, setRound] = useState(0);
   useEffect(() => {
     let active = true;
     let made: string | null = null;
     setUri(null);
     setFailed('');
-    if (item.file.size > MOST_IN_MEMORY) {
-      setFailed(new TooLargeToOpenError().message);
-      return;
-    }
-    openItem(item)
-      .then((bytes) => {
-        if (!active) return;
-        if (!bytes) {
+    opening
+      .run((options) => openItemUri(item, 'application/pdf', undefined, options), () => setRound((r) => r + 1))
+      .then((result) => {
+        if (result === 'stopped') return;
+        const opened = result.value;
+        if (!active) {
+          if (opened) releaseMemoryUri(opened);
+          return;
+        }
+        if (!opened) {
           setFailed(t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.'));
           return;
         }
-        made = memoryUri(bytes, 'application/pdf');
+        made = opened;
         setUri(made);
       })
-      .catch(() => active && setFailed(t('This PDF could not be shown here.')));
+      .catch((error: unknown) => active && setFailed(error instanceof TooLargeToOpenError ? error.message : t('This PDF could not be shown here.')));
     return () => {
       active = false;
+      opening.reset();
       if (made) releaseMemoryUri(made);
       setUri(null);
     };
-  }, [item.id]);
+  }, [item.id, round]);
   if (failed || !uri) {
     return (
       <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
-        <Text color={muted} style={styles.centered}>
-          {failed || t('Opening the PDF…')}
-        </Text>
+        {!failed && (opening.progress || opening.stopped) ? (
+          <FetchNote fetching={opening} ink={ink} muted={muted} />
+        ) : (
+          <Text color={muted} style={styles.centered}>
+            {failed || t('Opening the PDF…')}
+          </Text>
+        )}
       </View>
     );
   }
@@ -130,6 +144,15 @@ function PhonePdf({ item, width, top, bottom, ink, muted, onOpenWith, fetching }
     };
   }, [item.id, round]);
 
+  if (PAGE) {
+    return (
+      <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
+        <Text color={muted} style={styles.centered}>
+          {t('PDFs are not shown here. To open it with another app, save it first. That copy is not encrypted.')}
+        </Text>
+      </View>
+    );
+  }
   if (gone) {
     return (
       <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>

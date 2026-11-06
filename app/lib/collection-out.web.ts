@@ -9,14 +9,17 @@ import { photoToSend } from './pick-photo.web';
 import { loadPhotoQuality } from './photo-quality';
 import type { SharedFile } from './share-in';
 
-// Taking a file out of the Collection (collection-out.ts), in the desktop app. Sent to a chat, a
+// Taking a file out of the Collection (collection-out.ts), in the web build: the desktop app, a
+// browser, Sailfish OS. Sent to a chat, a
 // file goes as one the chat picked (lib/share-in.web.ts), read from its encrypted chunks as it is
 // sent; a photo is made ready in memory as every photo sent from a computer is (lib/pick-photo.web.ts,
-// at the photo quality chosen), never written out. Saving a plain copy to the computer is lib/
-// save-file.web.ts, through the shell's own save dialog, after the screen's warning. Opening with
-// another app is not offered here: it would need a plain copy on the disk for the other app to read.
+// at the photo quality chosen), never written out. Saving a plain copy is lib/save-file.web.ts,
+// after the screen's warning: in the desktop app through its own save dialog, on Sailfish OS into
+// Downloads, in a browser to its downloads or the share sheet; outside the desktop app up to 256 MB
+// (lib/collection-memory.ts mostSavedOut). Opening with another app is not offered here: it would
+// need a plain copy on the disk for the other app to read.
 
-/** Whether a file of the Collection can be opened with another app from here: not on a computer. */
+/** Whether a file of the Collection can be opened with another app from here: not in the web build. */
 export const CAN_OPEN_WITH = false;
 
 const PHOTOS = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);

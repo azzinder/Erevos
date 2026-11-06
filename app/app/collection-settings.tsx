@@ -4,7 +4,7 @@
 
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 
 import { Button, Card, Field, Input, Page, Row, Text, Toggle } from '../components/ui';
 import { fileSize } from '../lib/attachments';
@@ -14,7 +14,6 @@ import { CAN_DELETE_ORIGINALS } from '../lib/collection-import';
 import { useCollectionPlace } from '../lib/collection-place';
 import { PLAY_CHOICES, stopOnLockChanged } from '../lib/collection-play';
 import { connectCollectionServer, scheduleServerCopy, serverStatus, testCollectionServer, turnCollectionServer, watchServerStatus, type ServerStatus } from '../lib/collection-webdav';
-import { SHELL } from '../lib/shell';
 import { tap } from '../lib/haptics';
 import { locale, t } from '../lib/i18n';
 import { loadCollection, setCollectionBackup, setCollectionOption, type Collection, type CollectionOption, type CollectionPlace, type CollectionServer } from '../lock/collection-data';
@@ -27,14 +26,14 @@ import { useColors } from '../theme/context';
 // from the phone's gallery is deleted there once it is in the Collection, which Android has the
 // owner confirm each time (Android 11 and later; before, the switch shows but cannot be turned
 // on); and, for its music and videos (lib/collection-play.ts), whether the list playing stops when
-// the space locks, and whether Android's notice shows the file's name. In the desktop app only the
-// backups' choice shows: it has no gallery, and its player always stops when the space locks, with
+// the space locks, and whether Android's notice shows the file's name. In the web build (the desktop
+// app, a browser, Sailfish OS) only the backups' choice shows: it has no gallery, and its player always stops when the space locks, with
 // no notice (lib/collection-play.ts); the other choices stay kept for the phone.
 // Where backups can go to a server, the place's Collection can be copied to a WebDAV server too
 // (lib/collection-webdav.ts): its address, user name and password, kept sealed with the place,
 // first those of the backups' server if there is one, with how the copying goes.
 
-const DESK = SHELL === 'electron';
+const DESK = Platform.OS === 'web';
 
 export default function CollectionSettingsScreen() {
   const colors = useColors();

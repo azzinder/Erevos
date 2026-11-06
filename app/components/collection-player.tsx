@@ -3,13 +3,12 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { attachDeskVideo } from '../lib/collection-desk-player';
 import { nextPlaying, pausePlaying, playingFile, playTime, previousPlaying, resumePlaying, stopPlaying } from '../lib/collection-play';
 import { t } from '../lib/i18n';
-import { SHELL } from '../lib/shell';
 import { collectionVideoView, type PlayerState } from '../modules/erevos-collection';
 import { space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
@@ -20,10 +19,10 @@ import { Button, Text } from './ui';
 // playing under a file of music (components/collection-viewer.tsx), a bar on the Collection's screen
 // while music plays (app/collection.tsx), and a video over the whole screen with Media3's own
 // controls (modules/erevos-collection, VideoView.kt). Stop ends the list, and its keys go. In the
-// desktop app the video is the page's own player (lib/collection-desk-player.ts), with Chromium's
-// controls, shown in a box over the whole window.
+// web build (the desktop app, a browser, Sailfish OS) the video is the page's own player (lib/
+// collection-desk-player.ts), with the browser's controls, shown in a box over the whole window.
 
-const DESK = SHELL === 'electron';
+const DESK = Platform.OS === 'web';
 
 /** Previous, play or pause, next and stop, with which file of the list plays and how far it is. */
 export function PlayerControls({ state, ink, muted }: { state: PlayerState; ink: string; muted: string }) {

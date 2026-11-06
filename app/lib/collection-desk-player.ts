@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { openItem, type CollectionItem } from '../lock/collection-data';
+import type { CollectionItem } from '../lock/collection-data';
 import type { PlayerState } from '../modules/erevos-collection';
-import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, onCollectionMemoryDropped, releaseMemoryUri } from './collection-memory';
+import { MOST_IN_MEMORY, TooLargeToOpenError, onCollectionMemoryDropped, openItemUri, releaseMemoryUri } from './collection-memory';
 
-// The Collection's music and videos in the desktop app (lib/collection-play.ts plays them through
-// here there): one HTML media element, which plays a file of the list from a blob: address of its
-// bytes, decrypted whole into memory (lib/collection-memory.ts), never onto the disk. Only the file
+// The Collection's music and videos in the web build: the desktop app, a browser (an iPhone's
+// home-screen app too) and Sailfish OS (lib/collection-play.ts plays them through here there): one
+// HTML media element, which plays a file of the list from a blob: address of its bytes, decrypted
+// whole into memory (lib/collection-memory.ts, a Blob of its chunks' pieces), never onto the disk. Only the file
 // playing is held; the next is opened as it starts, and the one before let go of. A file larger
 // than MOST_IN_MEMORY is not played. The element is shown only for a video, on the whole window
-// (components/collection-player.tsx attachDeskVideo), with Chromium's own controls; music plays
+// (components/collection-player.tsx attachDeskVideo), with the browser's own controls; music plays
 // with it out of sight. There is no notice and no lock screen: the list stops when the space locks
 // or closes, and with the panic button (dropCollectionMemory lets go of everything). Its state is
 // told in the same shape as the Android player's (modules/erevos-collection PlayerState).
@@ -111,21 +112,24 @@ async function open(at: number): Promise<void> {
   ended = false;
   buffering = true;
   tell();
-  let bytes: Uint8Array | null = null;
+  let uri: string | null = null;
   try {
-    bytes = await openItem(item);
+    uri = await openItemUri(item, item.file.mime || 'application/octet-stream');
   } catch {
-    bytes = null;
+    uri = null;
   }
-  if (mine !== turn) return;
+  if (mine !== turn) {
+    if (uri) releaseMemoryUri(uri);
+    return;
+  }
   buffering = false;
-  if (!bytes) {
+  if (!uri) {
     error = 'FILE_GONE';
     tell();
     return;
   }
   const m = element();
-  shown = memoryUri(bytes, item.file.mime || 'application/octet-stream');
+  shown = uri;
   m.src = shown;
   try {
     await m.play();
