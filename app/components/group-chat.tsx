@@ -162,8 +162,11 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
 
   // A photo or file shared from another app goes as the group opens (lib/share-in.ts).
   useEffect(() => {
-    const shared = takeShared(`group:${id}`);
-    if (shared) media.sendShared(shared);
+    let sending = Promise.resolve();
+    for (let shared = takeShared(`group:${id}`); shared; shared = takeShared(`group:${id}`)) {
+      const one = shared;
+      sending = sending.then(() => media.sendShared(one));
+    }
   }, [id]);
 
   const opened = useRef(false);

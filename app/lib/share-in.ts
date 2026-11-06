@@ -59,21 +59,28 @@ export function dropShared(shared: SharedFile): void {
   }
 }
 
-let handed: { to: string; shared: SharedFile; until: number } | null = null;
+let handed: { to: string; shared: SharedFile[]; until: number } | null = null;
 
-/** Hands a shared photo or file to the screen of `to` about to open: `contact:` and a contact's identity, or `group:` and a group's id. */
-export function handShared(to: string, shared: SharedFile, now = Date.now()): void {
-  handed = { to, shared, until: now + FRESH };
+/**
+ * Hands a shared photo or file to the screen of `to` about to open: `contact:` and a contact's identity, or `group:` and a group's id.
+ * Several (as when files of the Collection are sent) are taken one after another.
+ */
+export function handShared(to: string, shared: SharedFile | SharedFile[], now = Date.now()): void {
+  handed = { to, shared: Array.isArray(shared) ? [...shared] : [shared], until: now + FRESH };
 }
 
-/** The photo or file handed to `to`, once: it is let go as it is read, so it goes only once. */
+/** The next photo or file handed to `to`, once each: it is let go as it is read, so it goes only once. */
 export function takeShared(to: string, now = Date.now()): SharedFile | null {
   const kept = handed;
   if (!kept || kept.to !== to) return null;
-  handed = null;
-  if (kept.until > now) return kept.shared;
-  dropShared(kept.shared);
-  return null;
+  if (kept.until <= now) {
+    handed = null;
+    kept.shared.forEach(dropShared);
+    return null;
+  }
+  const next = kept.shared.shift() ?? null;
+  if (kept.shared.length === 0) handed = null;
+  return next;
 }
 
 /** Reads a shared photo, made ready at the photo quality chosen (lib/photo-quality.ts), or a file as it is, a piece at a time. */

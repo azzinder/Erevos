@@ -2844,8 +2844,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!e2e || !initial) return;
     const message = takeForward(initial);
     if (message) void forwardTo(message, initial);
-    const shared = takeShared(initial);
-    if (shared) void sendAttachment(isSharedPhoto(shared) ? 'photo' : 'file', () => readShared(shared), initial);
+    // Each one after the other, in the order handed over.
+    let sending = Promise.resolve();
+    for (let shared = takeShared(initial); shared; shared = takeShared(initial)) {
+      const one = shared;
+      sending = sending.then(() => sendAttachment(isSharedPhoto(one) ? 'photo' : 'file', () => readShared(one), initial));
+    }
   }, [e2e]);
 
   // Forwards a message to a group, then shows the group once it went.

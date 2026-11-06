@@ -22,7 +22,7 @@ export function isSharedPhoto(_shared: SharedFile): boolean {
 
 export function dropShared(_shared: SharedFile): void {}
 
-export function handShared(_to: string, _shared: SharedFile, _now = Date.now()): void {}
+export function handShared(_to: string, _shared: SharedFile | SharedFile[], _now = Date.now()): void {}
 
 export function takeShared(_to: string, _now = Date.now()): SharedFile | null {
   return null;

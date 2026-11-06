@@ -205,7 +205,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
 
   // A photo or file shared from another app (lib/share-in.ts), sent as the group opens.
   function sendShared(shared: SharedFile) {
-    void sendPicked(isSharedPhoto(shared) ? 'photo' : 'file', () => readShared(shared));
+    return sendPicked(isSharedPhoto(shared) ? 'photo' : 'file', () => readShared(shared));
   }
 
   // Starts recording while the microphone is held. Letting go sends it; a minute sends it anyway.

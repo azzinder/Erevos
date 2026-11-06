@@ -621,3 +621,74 @@ export function GlobeIcon({ color, size = 24 }: Props) {
     </Grid>
   );
 }
+
+/** A folder with its tab: a folder of the Collection. */
+export function FolderIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2, y: 5, w: 9, h: 5 }), { borderWidth: 2 * k, borderColor: color, borderTopLeftRadius: 2.5 * k, borderTopRightRadius: 2.5 * k, borderBottomWidth: 0 }]} />
+      <View style={[box(k, { x: 2, y: 7.5, w: 20, h: 13 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 2.5 * k, borderTopLeftRadius: 0 }]} />
+    </Grid>
+  );
+}
+
+/** An arrow down into a tray: save to the phone. */
+export function DownloadIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={11} y={3} w={2} h={11} />
+      <View style={[box(k, { x: 7.2, y: 7.2, w: 9.6, h: 9.6 }), { borderRightWidth: 2 * k, borderBottomWidth: 2 * k, borderColor: color, transform: [{ rotate: '45deg' }] }]} />
+      <View style={[box(k, { x: 3.5, y: 15, w: 17, h: 6 }), { borderWidth: 2 * k, borderTopWidth: 0, borderColor: color, borderBottomLeftRadius: 2.5 * k, borderBottomRightRadius: 2.5 * k }]} />
+    </Grid>
+  );
+}
+
+/** A circled i: information. */
+export function InfoIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2.5, y: 2.5, w: 19, h: 19 }), { borderWidth: 2 * k, borderColor: color, borderRadius: 20 * k }]} />
+      <Dot k={k} color={color} x={10.8} y={6.6} d={2.4} />
+      <Bar k={k} color={color} x={10.9} y={10.4} w={2.2} h={7} />
+    </Grid>
+  );
+}
+
+/** A bin: delete. */
+export function TrashIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <Bar k={k} color={color} x={3.5} y={5.5} w={17} h={2} />
+      <View style={[box(k, { x: 9, y: 2.5, w: 6, h: 3 }), { borderWidth: 2 * k, borderBottomWidth: 0, borderColor: color, borderTopLeftRadius: 1.5 * k, borderTopRightRadius: 1.5 * k }]} />
+      <View style={[box(k, { x: 5.5, y: 7.5, w: 13, h: 14 }), { borderWidth: 2 * k, borderTopWidth: 0, borderColor: color, borderBottomLeftRadius: 3 * k, borderBottomRightRadius: 3 * k }]} />
+      <Bar k={k} color={color} x={10} y={11} w={1.8} h={6.5} />
+      <Bar k={k} color={color} x={12.4} y={11} w={1.8} h={6.5} />
+    </Grid>
+  );
+}
+
+/** A folder with an arrow into it: move to a folder. */
+export function MoveIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <FolderIcon color={color} size={size} />
+      <Bar k={k} color={color} x={8} y={13} w={8} h={2} />
+      <View style={[box(k, { x: 11.2, y: 11, w: 5, h: 5 }), { borderTopWidth: 2 * k, borderRightWidth: 2 * k, borderColor: color, transform: [{ rotate: '45deg' }] }]} />
+    </Grid>
+  );
+}
+
+/** A tick: chosen. */
+export function CheckIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 7, y: 3.5, w: 6.5, h: 12.5 }), { borderRightWidth: 2.4 * k, borderBottomWidth: 2.4 * k, borderColor: color, transform: [{ rotate: '40deg' }] }]} />
+    </Grid>
+  );
+}
