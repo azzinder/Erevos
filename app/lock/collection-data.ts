@@ -29,6 +29,12 @@ import { sealedFile, type Holder } from './sealed-file';
 // place, whose owner said its Collection stays out of backups (`backup` false) names its chunks
 // to a backup made while it is open (backupSkips), and only that backup leaves them out. Those of
 // spaces that are closed go in, sealed as they are.
+//
+// Each place keeps its own choices for its Collection besides backups (CollectionOption), all off
+// until the owner turns them on: whether a photo or video picked from the phone's gallery is then
+// deleted there (lib/collection-import.ts, which Android has the owner confirm), whether the list
+// playing stops when the space locks, and whether the notice of the list playing shows a file's
+// name (lib/collection-play.ts).
 
 export type CollectionPlace = { holder: Holder; space: number; key: Uint8Array };
 
@@ -42,7 +48,22 @@ export type Gone = { id: string; at: number };
 
 type Progress = (done: number, count: number) => void;
 
-export type Collection = { items: CollectionItem[]; folders: CollectionFolder[]; gone: Gone[]; backup: boolean };
+export type Collection = {
+  items: CollectionItem[];
+  folders: CollectionFolder[];
+  gone: Gone[];
+  backup: boolean;
+  /** A photo or video picked from the gallery is deleted there once it is in the Collection. */
+  deleteOriginals?: boolean;
+  /** The list playing stops when the space locks. */
+  stopOnLock?: boolean;
+  /** The notice of the list playing shows the file's name. */
+  showTitle?: boolean;
+};
+
+/** The place's own choices for its Collection, besides backups: each off until turned on. */
+export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle';
+const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle'];
 
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;
@@ -95,7 +116,9 @@ function checked(value: unknown): Collection {
     const x = g as Partial<Gone> | null;
     if (typeof x?.id === 'string' && ID.test(x.id) && isTime(x.at)) gone.push({ id: x.id, at: x.at });
   }
-  return { items, folders, gone: gone.slice(-MAX_GONE), backup: v?.backup !== false };
+  const on: Partial<Record<CollectionOption, true>> = {};
+  for (const option of OPTIONS) if (v?.[option] === true) on[option] = true;
+  return { items, folders, gone: gone.slice(-MAX_GONE), backup: v?.backup !== false, ...on };
 }
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
@@ -252,6 +275,15 @@ export function deleteFolder(place: CollectionPlace, id: string, now = Date.now(
 /** Whether the place's Collection goes into backups made while it is open. */
 export function setCollectionBackup(place: CollectionPlace, on: boolean): Promise<void> {
   return change(place, async (c) => ({ next: c.backup === on ? null : { ...c, backup: on }, result: undefined }));
+}
+
+/** Turns one of the place's own choices for its Collection on or off. */
+export function setCollectionOption(place: CollectionPlace, option: CollectionOption, on: boolean): Promise<void> {
+  return change(place, async (c) => {
+    if ((c[option] === true) === on) return { next: null, result: undefined };
+    const { [option]: _was, ...rest } = c;
+    return { next: on ? { ...rest, [option]: true } : rest, result: undefined };
+  });
 }
 
 /** The names of the chunk files a backup made now leaves out: those of the open places whose Collection stays out of backups. */

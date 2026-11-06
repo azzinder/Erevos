@@ -4,7 +4,8 @@
 
 // The Collection (lock/collection-data.ts): each space's and hidden place's own files and folders,
 // kept as a chat's files are so nothing tells them apart, seen only with their place's key, and
-// left out only of a backup made while their place is open and its owner keeps them out.
+// left out only of a backup made while their place is open and its owner keeps them out, and each
+// place's own choices for it.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -32,6 +33,7 @@ import {
   renameFolder,
   renameItem,
   setCollectionBackup,
+  setCollectionOption,
   type CollectionPlace,
 } from '../lock/collection-data';
 import { setCurrentSpace } from '../lock/keys';
@@ -163,6 +165,27 @@ t('only an open place that keeps its Collection out of backups names its chunks 
   assert.deepEqual(await openCollectionSkips(), new Set([...names, `${PREFIX}${secret.file.id}-0`]));
   hiddenPlaceOpen(hidden, false);
   assert.deepEqual(await openCollectionSkips(), new Set(names));
+});
+
+t('each place keeps its own choices for its Collection, all off until turned on', async () => {
+  const space = place('space', 0);
+  const hidden = place(hiddenHolder(1), 0);
+  const off = await loadCollection(space);
+  assert.equal(off.deleteOriginals, undefined);
+  assert.equal(off.stopOnLock, undefined);
+  assert.equal(off.showTitle, undefined);
+  await setCollectionOption(space, 'showTitle', true);
+  await setCollectionOption(space, 'deleteOriginals', true);
+  const on = await loadCollection(space);
+  assert.equal(on.showTitle, true);
+  assert.equal(on.deleteOriginals, true);
+  assert.equal(on.stopOnLock, undefined);
+  assert.equal(on.backup, true);
+  // The hidden place's own are its own.
+  assert.equal((await loadCollection(hidden)).showTitle, undefined);
+  await setCollectionOption(space, 'showTitle', false);
+  assert.equal((await loadCollection(space)).showTitle, undefined);
+  assert.equal((await loadCollection(space)).deleteOriginals, true);
 });
 
 t('a catalogue naming chunks that are gone says so', async () => {
