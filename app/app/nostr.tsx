@@ -39,7 +39,7 @@ function stateLines(state: NostrRelayState | undefined, ours: boolean): string[]
 
 export default function NostrScreen() {
   const [setting, setSetting] = useState<NostrSetting | null>(null);
-  const [tor, setTor] = useState<TorWay>('messages');
+  const [tor, setTor] = useState<TorWay | null>(null);
   const [draft, setDraft] = useState('');
   const [note, setNote] = useState('');
   const [states, setStates] = useState(nostrStates);
@@ -69,7 +69,7 @@ export default function NostrScreen() {
     try {
       await updateCurrentSpaceData({ nostr: next });
       setSetting(next);
-      setNostr(nostrOf(tor, next));
+      setNostr(nostrOf(next));
       setNote(said || t('Saved.'));
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
@@ -106,14 +106,20 @@ export default function NostrScreen() {
         <Text variant="bodyStrong">{t('Texts through Nostr')}</Text>
         <Text tone="muted">
           {t(
-            'What you write to a contact whose Erevos reads on Nostr too goes through public Nostr relays, through Tor, instead of through your relay. It is end-to-end encrypted as always, and sealed once more for a key your contact gave this chat alone, by a key made for that message alone: the Nostr relays see neither who wrote it nor to whom, and your relay does not see it at all.',
+            'What you write to a contact whose Erevos reads on Nostr too goes through public Nostr relays instead of through your relay. It is end-to-end encrypted as always, and sealed once more for a key your contact gave this chat alone, by a key made for that message alone: the Nostr relays see neither who wrote it nor to whom, and your relay does not see it at all.',
           )}
         </Text>
         <Row wrap>
           <Chip label={t('On')} selected={setting?.on === true} onPress={() => setting && void keep({ ...setting, on: true })} />
           <Chip label={t('Off')} selected={setting?.on === false} onPress={() => setting && void keep({ ...setting, on: false })} />
         </Row>
-        {tor === 'off' ? <Text tone="muted">{t('Tor is off for this space, so texts go through your relay. Nostr is used only through Tor.')}</Text> : null}
+        {tor ? (
+          <Text tone="muted">
+            {tor === 'off'
+              ? t("Tor is off for this space, so Erevos reaches the Nostr relays straight: they see this phone's internet address, as your relay does, but still neither who wrote a text nor to whom.")
+              : t("Tor is on for this space, so Erevos reaches the Nostr relays through Tor: they do not see this phone's internet address.")}
+          </Text>
+        ) : null}
         <Text tone="muted">
           {t(
             "Should your contact's phone not say within five minutes that it came, it goes through your relay as well, and they see it once. While Tor starts, or when no Nostr relay takes it, it goes through your relay at once.",

@@ -54,8 +54,8 @@ export function connectReach(c: Connection): { reach: Reach; title: string; line
       reach: 'part',
       title: t('Through Nostr, with no relay'),
       line: c.hidden
-        ? t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.')
-        : t('Texts, stickers and reactions go through Nostr, over Tor. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
+        ? t('Texts, stickers and reactions go through Nostr. Photos, voice messages and calls need a relay: type its address under For advanced users, then create their queue.')
+        : t('Texts, stickers and reactions go through Nostr. Photos, voice messages, calls and groups need a relay: choose a way in below.'),
     };
   }
   if (c.hidden) return { reach: 'none', title: t('No relay yet'), line: t('Hidden chats need a relay: type its address under For advanced users, then create their queue.') };

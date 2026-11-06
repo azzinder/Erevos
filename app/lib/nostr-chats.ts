@@ -6,7 +6,8 @@
 // with the relay as its backup, and how what comes there is read, as from the relay.
 //
 // A text whose contact said they read on Nostr (lib/e2e.ts seal, `nostr`) goes to their Nostr
-// relays while Tor is ready, and is kept: should their phone not say it came within
+// relays while it can (lib/nostr.ts nostrReady: straight with Tor off, through Tor while it is
+// ready), and is kept: should their phone not say it came within
 // NOSTR_BACKUP_MS, it goes through our relay as well (sendNostrBackups, with each look at the
 // relay), and their phone, which may have it from both, shows it once. Should no Nostr relay take
 // it, it goes through our relay at once, as it would have. To a contact that asked for a bell

@@ -1278,7 +1278,7 @@ Versteckte Chats und Computer haben das nicht.
   Warteschlangen bei seinem Relay außerhalb seines Passworts auf, darunter die, in die jeder seiner Kontakte schreibt,
   für bis zu 64 Kontakte, nie seine Schlüssel, wer seine Kontakte sind, oder seine Nachrichten, und fragt das Relay nur,
   wie viele kamen, nie nach ihnen selbst: Sie bleiben dort, bis sich der Bereich öffnet. Ein Bereich, der über Tor geht
-  (**Nachrichten**, die Voreinstellung, oder **Alles**, unter **Was über Tor geht**), wird nur über Tor abgefragt: Solange der
+  (**Nachrichten** oder **Alles**, unter **Was über Tor geht**), wird nur über Tor abgefragt: Solange der
   offene Bereich Tor aus hat oder sein Tor gerade startet oder eben gescheitert ist, sagt der geschlossene Bereich
   nichts, und was kam, wird gemeldet, sobald Tor dort bereit ist.
 
@@ -1619,12 +1619,16 @@ an seine Relays über das Tor-Netz gehen. Jeder Bereich hat seine eigene Wahl:
 
 | Wahl | Was über Tor geht |
 | --- | --- |
-| **Nachrichten** | Sofern du es nicht änderst. Was du schreibst, und was deinen Kontakten etwas mitteilt, etwa dass eine Nachricht gelesen wurde. Bilder, Dateien und Sprachnachrichten gehen direkt, was schneller ist: Für sie sieht das Relay die IP-Adresse deines Telefons. |
+| **Nichts** | Sofern du es nicht änderst. Das Relay und die Nostr-Relays sehen bei allem die IP-Adresse deines Telefons. |
+| **Nachrichten** | Was du schreibst, und was deinen Kontakten etwas mitteilt, etwa dass eine Nachricht gelesen wurde. Bilder, Dateien und Sprachnachrichten gehen direkt, was schneller ist: Für sie sieht das Relay die IP-Adresse deines Telefons. |
 | **Alles** | Auch Dateien. Nichts geht ohne Tor an ein Relay. |
-| **Nichts** | Das Relay sieht bei allem die IP-Adresse deines Telefons. |
 
-**Warum:** Mit **Nachrichten** wird, was du schreibst, von Tor verborgen und wartet nie darauf, während Bilder, Dateien
+**Warum:** Ein neuer Bereich beginnt mit **Nichts**, da Tor Nachrichten langsamer macht; ein Bereich von früher behält
+seine Wahl. Mit **Nachrichten** wird, was du schreibst, von Tor verborgen und wartet nie darauf, während Bilder, Dateien
 und Sprachnachrichten, die groß sind, direkt und damit schneller gehen.
+
+- **Tor einschalten:** Von **Nichts** auf **Nachrichten** oder **Alles** fragt Erevos zuerst **Tor einschalten?** und
+  sagt, dass Nachrichten langsamer werden; **Abbrechen** behält **Nichts**.
 
 - **Was es verbirgt:** Das Relay sieht nicht mehr die IP-Adresse deines Telefons, nur einen Tor-Ausgang (oder nichts,
   bei einem Relay mit \`.onion\`-Adresse). Deine Telefongesellschaft oder das WLAN sieht nur, dass du Tor nutzt, nicht
@@ -1665,19 +1669,22 @@ nur, solange etwas über Tor geht.
 ## Über Nostr {#nostr}
 
 Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte über Nostr** auf **An**, sofern du es nicht
-änderst. Dann geht, was du einem Kontakt schreibst, dessen Erevos auch auf Nostr liest, über öffentliche Nostr-Relays,
-über Tor, statt über dein Relay. Jeder Bereich hat seine eigene Wahl und seine eigenen Nostr-Relays.
+änderst. Dann geht, was du einem Kontakt schreibst, dessen Erevos auch auf Nostr liest, über öffentliche Nostr-Relays statt
+über dein Relay. Jeder Bereich hat seine eigene Wahl und seine eigenen Nostr-Relays.
 
 - **Wie es versiegelt wird:** Ende-zu-Ende-verschlüsselt wie immer, dann noch einmal versiegelt für einen Schlüssel,
   den dein Kontakt nur diesem Chat gegeben hat, und signiert mit einem Schlüssel, der nur für diesen einen Text
   gemacht wurde (ein NIP-59 Gift Wrap). Die Nostr-Relays sehen, dass jemand an einen Schlüssel geschrieben hat, der
   niemanden nennt, wann und wie groß; nicht, wer es geschrieben hat, noch an wen. Dein Relay sieht es überhaupt nicht.
-- **Was die Nostr-Relays erkennen können:** Dein Telefon fragt jedes von ihnen auf einmal nach all seinen Schlüsseln,
-  über Tor: Ein Relay kann erkennen, dass diese Schlüssel zusammen gelesen werden, nie von wo. Jedes Relay wird über
+- **Was die Nostr-Relays erkennen können:** Dein Telefon fragt jedes von ihnen auf einmal nach all seinen Schlüsseln:
+  Ein Relay kann erkennen, dass diese Schlüssel zusammen gelesen werden. Über Tor nie von wo: Jedes Relay wird über
   eigene Tor-Circuits erreicht, sodass kein Tor-Ausgang trägt, was an zwei von ihnen geht, und keines erkennen kann,
-  dass es von einem Telefon ist. Manche Relays lehnen manche Tor-Ausgänge ab, und manche Ausgänge können ein Relay
+  dass es von einem Telefon ist. Mit **Nichts** geht es direkt, also sehen sie die IP-Adresse deines Telefons, noch
+  immer nicht, wer wem geschrieben hat. Manche Relays lehnen manche Tor-Ausgänge ab, und manche Ausgänge können ein Relay
   nicht erreichen: Nach einem solchen Fehlschlag geht der nächste Versuch über einen anderen Ausgang.
-- **Nur über Tor:** Mit Tor auf **Nichts**, oder während Tor startet, gehen Texte über dein Relay.
+- **Wie es geht:** Mit **Nichts** gehen Texte direkt an die Nostr-Relays. Mit **Nachrichten** über Tor, sobald Tor
+  bereit ist, und über dein Relay, solange Tor startet. Mit **Alles** nur über Tor. Ändert sich der Weg, schließen sich
+  die Nostr-Verbindungen und öffnen sich auf dem neuen Weg wieder.
 - **Die Relays:** relay.damus.io, nos.lol und relay.primal.net, sofern du sie nicht änderst; du kannst eigene
   hinzufügen, höchstens fünf. Deine Kontakte erfahren die Relays, auf denen du liest, und schreiben dir dort; eines,
   das einen Text annimmt, genügt.
@@ -1693,8 +1700,8 @@ Unter **Einstellungen** → **Relay und Netze** → **Nostr** steht **Texte übe
   und dein Kontakt sieht ihn einmal.
 - **Nur auf Android,** wie Tor.
 
-**Warum:** Die Nostr-Relays sind öffentlich, also erreicht Erevos sie nur über Tor, und sie erfahren nie, wo dein
-Telefon ist. Nur Texte gehen dorthin: Ein Text hat dein Relay als Reserve, falls er nicht ankommt, während die Zeichen,
+**Warum:** Die Nostr-Relays sind öffentlich, also erreicht Erevos sie, wenn Tor für den Bereich an ist, über Tor, und sie erfahren nie, wo dein
+Telefon ist; mit **Nichts** erreicht es sie direkt. Nur Texte gehen dorthin: Ein Text hat dein Relay als Reserve, falls er nicht ankommt, während die Zeichen,
 dass eine Nachricht ankam oder gelesen wurde, keine hätten, und eine für später gesendete Nachricht dein Relay braucht,
 das sie bis zu ihrer Zeit aufbewahrt. Ohne Relay zwischen euch gehen auch Bilder, Dateien und Sprachnachrichten dorthin (siehe Ganz ohne Relay).
 
@@ -1714,10 +1721,10 @@ Ein Telefon ohne Relay, ohne Einladung und ohne LPHL-Konto kann trotzdem anfange
 wo es auf Nostr liest, und das genügt, um zu reden.
 
 - **Anfangen:** Tippe in **Neuer Chat** auf **Ohne Relay anfangen**, dann auf **Meinen QR-Code zeigen** oder
-  **Meinen Kontaktlink teilen**, und gib ihn jemandem, der Erevos nutzt. Wer ihn hinzufügt, schreibt dir über Nostr,
-  über Tor, und erscheint als Nachrichtenanfrage, die du annimmst. Du kannst auch seinen Link oder QR-Code hinzufügen,
+  **Meinen Kontaktlink teilen**, und gib ihn jemandem, der Erevos nutzt. Wer ihn hinzufügt, schreibt dir über Nostr
+  und erscheint als Nachrichtenanfrage, die du annimmst. Du kannst auch seinen Link oder QR-Code hinzufügen,
   auf dieselbe Weise.
-- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde, alles über Nostr; und Fotos, Dateien und Sprachnachrichten. Eine Sprachnachricht geht in Wraps wie ein Text. Ein Foto bis 3 MB geht in Stücken von 32 KB, je ein Wrap, die vor der Nachricht gesendet werden, die es anbietet; das andere Telefon behält sie, verschlüsselt mit dem Rest des Bereichs oder der versteckten Chats, für die sie kamen, bis alle da sind, höchstens vier Tage. Ein größeres Foto, ein Video oder jede andere Datei, bis 20 MB, geht als ein Blob, auf dem Telefon verschlüsselt, an einen Blossom-Dateiserver (blossom.primal.net, blossom.band oder nostr.download), über Tor: Der Server behält nur, was er nicht lesen kann. Anrufe und Gruppen brauchen ein Relay oder das andere Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr (siehe [Versteckte Chats](#hidden)).
+- **Was geht:** Texte, Sticker, Reaktionen, Bearbeitungen und die Zeichen, dass eine Nachricht ankam oder gelesen wurde, alles über Nostr; und Fotos, Dateien und Sprachnachrichten. Eine Sprachnachricht geht in Wraps wie ein Text. Ein Foto bis 3 MB geht in Stücken von 32 KB, je ein Wrap, die vor der Nachricht gesendet werden, die es anbietet; das andere Telefon behält sie, verschlüsselt mit dem Rest des Bereichs oder der versteckten Chats, für die sie kamen, bis alle da sind, höchstens vier Tage. Ein größeres Foto, ein Video oder jede andere Datei, bis 20 MB, geht als ein Blob, auf dem Telefon verschlüsselt, an einen Blossom-Dateiserver (blossom.primal.net, blossom.band oder nostr.download), über Tor, wie die Tor-Wahl des Bereichs sagt (direkt mit **Nichts**): Der Server behält nur, was er nicht lesen kann. Anrufe und Gruppen brauchen ein Relay oder das andere Telefon in der Nähe. Versteckte Chats funktionieren auch so, nur über Nostr (siehe [Versteckte Chats](#hidden)).
 - **Wenn er nicht ankommt:** Die Nostr-Relays bewahren einen Text zwei Tage auf. Bis das Telefon deines Kontakts sagt,
   dass er ankam, gibt Erevos ihn ihm einmal am Tag erneut, zwei Wochen lang.
 - **Ein Relay von selbst:** Wenn dein Kontakt ein Relay hat, das ihn einladen lässt, sendet sein Erevos deinem von
@@ -3124,8 +3131,9 @@ nicht der [Panikknopf](#panic), der das Telefon löscht.
   späteren Senden hält, die Dateien, die angekommen sind und dort warten, und die Einladungen, die du gemacht hast und die
   niemand benutzt hat. Versteckte Chats, die auch geschlossen empfangen, gehen mit dem Bereich; die anderen, wenn du sie
   öffnest, während der Bereich angehalten ist. Die Listen auf dem Bildschirm lassen versteckte Chats aus, damit sie nie zeigen,
-  dass es welche gibt. Über Tor bittet Erevos außerdem jedes Nostr-Relay, die Schlüssel zu vergessen, auf denen deine Chats
-  lesen (eine Bitte zu verschwinden, NIP-62).
+  dass es welche gibt. Erevos bittet außerdem jedes Nostr-Relay, die Schlüssel zu vergessen, auf denen deine Chats
+  lesen (eine Bitte zu verschwinden, NIP-62): über Tor, wenn Tor an ist, direkt, wenn es aus ist. Ist Tor an, aber noch
+  nicht bereit, wird Nostr nicht gefragt; warte, bis es so weit ist, und lösche noch einmal.
 - **Matrix, XMPP, Nostr:** mit **Auch von Matrix und XMPP abmelden und das hier erstellte Nostr-Konto löschen** werden diese
   Konten hier abgemeldet. Die Konten selbst bleiben auf ihren Servern, die ihnen gehören, nicht Erevos. Ein Nostr-Konto aus
   einer anderen App bleibt unberührt.
@@ -3761,9 +3769,9 @@ Erevos sagt offen, was es schützt und was es noch nicht schützt.
 | **Von anderen Telefonen mitgenommene Nachrichten** | Zweimal versiegelt: Ende zu Ende für deinen Kontakt und für sein Relay. Ein Telefon, das eine mitnimmt, sieht, an welches Relay sie geht, wann und wie groß sie ist; nicht, von wem oder für wen sie ist. Sein Relay sieht, an welches Relay sie geht, und jenes Relay sieht das Relay des Überbringers, nicht sein Telefon. Versiegelt auf dem Telefon aufbewahrt, höchstens drei Tage: die für andere in einer Datei des Telefons, deren Größe ungefähr zeigt, wie viele es sind; deine eigenen in deinem Bereich, mit seinem Schlüssel versiegelt. Versteckte Chats werden nie mitgenommen. | |
 | **Nachrichten über LoRa** | Ende-zu-Ende-verschlüsselt, genauso wie über das Relay. Jeder mit einem Funkgerät, kilometerweit entfernt, kann erkennen, dass deines sendet, wann und wie viel, und sein Signal lässt sich bis zu seinem Standort zurückverfolgen. Erevos hält dein Funkgerät davon ab, seinen Namen und seinen Standort zu nennen (Rolle Client hidden, GPS aus, keine feste Position), außer du erlaubst es; einem Funkgerät, das nach seinem Namen fragt, antwortet es trotzdem. Jedes Erevos im Mesh bekommt deine LoRa-Nachrichten, versiegelt. | Den Namen des Funkgeräts aus Erevos festlegen. |
 | **Nachrichten per SMS, wenn sonst nichts geht** | Ende-zu-Ende-verschlüsselt wie über das Relay, in versteckten Daten-SMS. Aus, bis du es einschaltest. Der Mobilfunkanbieter sieht, welche Nummer welcher geschrieben hat, wann und wie viele SMS; nie, was geschrieben wurde. Jede kostet, was eine SMS kostet. | |
-| **Wer mit wem redet** | Das Relay sieht IP-Adressen, Warteschlangen-IDs und wann und wie viel. Mit einem zweiten Relay sieht dein Relay nie deine Adresse. Von einem auf dem Relay eines Kontakts geliehenen Platz aus sieht sie jedes Relay, an das du sendest. [Über Tor](#tor), das Nachrichten trägt, sofern du es nicht änderst, sieht kein Relay sie für das, was du schreibst, und mit **Alles** auch für Bilder und Dateien; mit Brücken, für Orte, an denen Tor blockiert ist, sieht das Netz nur eine Brücke. Der Broker von Snowflake und STUN-Server sehen deine Adresse. | Tor auf einem Computer. |
+| **Wer mit wem redet** | Das Relay sieht IP-Adressen, Warteschlangen-IDs und wann und wie viel. Mit einem zweiten Relay sieht dein Relay nie deine Adresse. Von einem auf dem Relay eines Kontakts geliehenen Platz aus sieht sie jedes Relay, an das du sendest. [Über Tor](#tor), sobald du es einschaltest, sieht mit **Nachrichten** kein Relay sie für das, was du schreibst, und mit **Alles** auch für Bilder und Dateien; mit Brücken, für Orte, an denen Tor blockiert ist, sieht das Netz nur eine Brücke. Der Broker von Snowflake und STUN-Server sehen deine Adresse. | Tor auf einem Computer. |
 | **Die Verbindung zum Relay** | TLS, und darin, sobald der Schlüssel des Relays bekannt ist, ein Kanal zu diesem Schlüssel: Das Relay beweist bei jeder Verbindung, dass es ihn hat, und das Token und jede Anfrage gehen verschlüsselt an ihn, sodass sich jemand dazwischen mit einem Zertifikat für den Namen des Relays nicht als es ausgeben kann. Ein Relay, das seinen Schlüssel einmal bewiesen hat, wird nie wieder ohne ihn erreicht. Ein Relay, das älter ist als diese App, geht wie bisher, und **So bist du jetzt verbunden** sagt es. Der erste Schlüssel kommt beim ersten Fragen vom Relay oder aus einem Kontaktlink: Wer genau bei diesem allerersten Mal dazwischen ist, könnte einen eigenen geben. [Der eigene Schlüssel des Relays](#relay). Nicht geprüft. | Der Schlüssel unseres Relays fest in der App und in Einladungen. |
-| **Texte über Nostr** | Ende-zu-Ende-verschlüsselt wie über ein Relay, dann noch einmal verpackt für einen Schlüssel, den dein Kontakt nur diesem Chat gegeben hat, signiert mit einem nur für diesen Text gemachten Schlüssel. Die Nostr-Relays sehen wann und wie groß, und dass ein Schlüssel, der niemanden nennt, einen Text bekommt; dein Telefon liest all seine Schlüssel über eine Verbindung, über Tor, sodass ein Relay erkennen kann, dass sie zusammen gelesen werden, nie von wo. Dein Relay sieht sie nur als Reserve, und eine Klingel für versteckte Chats. [Über Nostr](#nostr). | |
+| **Texte über Nostr** | Ende-zu-Ende-verschlüsselt wie über ein Relay, dann noch einmal verpackt für einen Schlüssel, den dein Kontakt nur diesem Chat gegeben hat, signiert mit einem nur für diesen Text gemachten Schlüssel. Die Nostr-Relays sehen wann und wie groß, und dass ein Schlüssel, der niemanden nennt, einen Text bekommt; dein Telefon liest all seine Schlüssel über eine Verbindung, über Tor, wenn Tor an ist, sodass ein Relay erkennen kann, dass sie zusammen gelesen werden, und von wo nur mit Tor aus. Dein Relay sieht sie nur als Reserve, und eine Klingel für versteckte Chats. [Über Nostr](#nostr). | |
 | **SMS** | Eine normale SMS liest die Telefongesellschaft, wie jede SMS. An eine mit einem Erevos-Kontakt verknüpfte Nummer geht sie stattdessen über Erevos. Eine versteckte Einladung ist eine weitere kurze SMS, die die Telefongesellschaft sieht. | |
 | **Die Kontakte des Telefons** | In den eigenen Kontakten von Android, nicht von Erevos versiegelt, wie bei jeder Kontakte-App: Jede App, die sie lesen darf, sieht sie, und ein Konto (Google) kann sie synchronisieren. Erevos sendet sie nirgendwohin. Eine daraus gespeicherte .vcf-Datei ist außerhalb von Erevos, nicht versiegelt. Die Anrufe und SMS eines Kontakts werden nur aus der eigenen Anrufliste und den SMS des Telefons gelesen, um seinen Verlauf zu zeigen, und nirgends aufbewahrt. | |
 | **Nur in Erevos gespeicherte Kontakte** | Mit dem Schlüssel des Bereichs versiegelt, oder mit dem der versteckten Chats für deren Kontakte, in einer Datei für jeden Bereich, deren Größe ungefähr zeigt, wie viele es insgesamt sind, nicht wem sie gehören; ihre Fotos jeweils in einer eigenen Datei. Nie in den Kontakten von Android. Eine daraus gespeicherte .vcf-Datei, auch aus versteckten Chats, ist außerhalb von Erevos, nicht verschlüsselt. Anrufe und SMS an sie gehen über das Telefon und erscheinen in seiner Anrufliste und seinen SMS. | |

@@ -18,12 +18,31 @@ On main, not released yet:
   addresses. PayPal opens in the browser: its old link only handed over to the PayPal app, so it failed without it.
   The page `site/donate` has the same QR codes.
 
+- **Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on
+  asks first, as it makes messages slower and the first start of Tor takes a while; **Cancel** keeps **Nothing**.
+  A space you already have keeps its choice, under **Settings** → **Relay and networks** → **Tor**, where the choices
+  now read **Nothing**, **Messages**, **Everything**. Texts through Nostr now go without Tor too: with **Nothing** the
+  Nostr relays see your phone's internet address, never who wrote to whom. With **Messages** they go through Tor once
+  it is ready, and through your relay while it starts; with **Everything** only through Tor. With no relay at all,
+  texts, photos, files and voice messages follow the same way, and **Delete me from everywhere** asks the Nostr relays
+  straight when Tor is off. See [Through Tor](#tor).
+
 ### Under the hood
 
 - **QR codes of Liberapay and PayPal**: Liberapay's holds its link, PayPal's its link with `&source=qr` at the end
   (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
   coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and
   `site/donate/build.mjs` draws the same two for the web page.
+
+- **Tor off in a new space**: `EMPTY_SPACE.tor` is `'off'` (`lock/space-data.ts`); a stored way is left as it is by
+  `torWayOf`, so a space from before keeps its way (**Messages** unless changed). `nostrOf` no longer takes the Tor way.
+  `Line` in `lib/nostr.ts` opens its sockets straight (`openNostrStraight` in `lib/nostr-dm-net.ts`) when `torOff()`,
+  and through Tor otherwise; `onTorWay` in `lib/relay.ts` closes the senders and reopens the readers when the way
+  changes, so the connections follow it. `lib/forget-me.ts` asks the Nostr relays straight with Tor off, through Tor
+  with Tor on, and skips them only while Tor is on but not ready. The Tor screen (`app/tor.tsx`) lists **Nothing**,
+  **Messages**, **Everything**, and asks **Turn Tor on?** going from **Nothing** to either of the others.
+  `checks/nostr.check.ts` has a check that with Tor off nothing opens through Tor, and that the connections follow the
+  way as it changes.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

@@ -1151,7 +1151,7 @@ Skriveni razgovori i računari to nemaju.
   Za to telefon čuva adrese njegovih redova na njegovom relayu izvan njegove lozinke, među njima i red u koji piše
   svaki njegov kontakt, do 64 kontakta, nikad njegove ključeve, ni ko su mu kontakti, ni njegove poruke, i pita relay
   samo koliko ih je stiglo, nikad ne traži same poruke: one ostaju tamo dok se prostor ne otvori. Za prostor koji ide
-  preko Tora (**Poruke**, zadano, ili **Sve**, pod **Što ide preko Tora**) pita se samo preko Tora: dok otvoreni prostor ima
+  preko Tora (**Poruke** ili **Sve**, pod **Što ide preko Tora**) pita se samo preko Tora: dok otvoreni prostor ima
   isključen Tor, ili se njegov Tor pokreće ili je upravo zakazao, zatvoreni prostor ne kaže ništa, a ono što je
   stiglo javlja se kad Tor tamo bude spreman.
 
@@ -1458,12 +1458,16 @@ njegovim relayima idu preko mreže Tor. Svaki prostor ima vlastiti izbor:
 
 | Izbor | Šta ide preko Tora |
 | --- | --- |
-| **Poruke** | Ako to ne promijenite. Ono što pišete i ono što vašim kontaktima nešto javlja, na primjer da je poruka pročitana. Slike, datoteke i glasovne poruke idu direktno, što je brže: za njih relay vidi IP adresu vašeg telefona. |
+| **Ništa** | Ako to ne promijenite. Relay i Nostr relayi vide IP adresu vašeg telefona za sve. |
+| **Poruke** | Ono što pišete i ono što vašim kontaktima nešto javlja, na primjer da je poruka pročitana. Slike, datoteke i glasovne poruke idu direktno, što je brže: za njih relay vidi IP adresu vašeg telefona. |
 | **Sve** | I datoteke. Ništa ne ide na relay bez Tora. |
-| **Ništa** | Relay vidi IP adresu vašeg telefona za sve. |
 
-**Zašto:** s **Poruke**, ono što pišete skriva Tor i nikad ne čeka na njega, dok slike, datoteke i glasovne poruke,
-koje su velike, idu direktno, pa time i brže.
+**Zašto:** novi prostor počinje s **Ništa**, jer Tor usporava poruke; prostor napravljen prije zadržava svoj izbor. S
+**Poruke**, ono što pišete skriva Tor i nikad ne čeka na njega, dok slike, datoteke i glasovne poruke, koje su velike,
+idu direktno, pa time i brže.
+
+- **Uključivanje Tora:** s **Ništa** na **Poruke** ili **Sve**, Erevos prvo pita **Uključiti Tor?** i kaže da će poruke
+  biti sporije; **Otkaži** zadržava **Ništa**.
 
 - **Šta skriva:** relay više ne vidi IP adresu vašeg telefona, samo izlaz iz Tora (ili ništa, za relay s
   \`.onion\` adresom). Vaša telefonska kompanija ili Wi-Fi mreža vide samo da koristite Tor, ali ne i koji relay.
@@ -1503,19 +1507,21 @@ dok nešto ide preko Tora.
 ## Preko Nostra {#nostr}
 
 Pod **Postavke** → **Relay i mreže** → **Nostr**, **Tekstovi preko Nostra** je **Uključeno** dok to ne promijenite.
-Tada ono što pišete kontaktu čiji Erevos također čita na Nostru ide preko javnih Nostr relaya, preko Tora, umjesto
+Tada ono što pišete kontaktu čiji Erevos također čita na Nostru ide preko javnih Nostr relaya umjesto
 preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
 
 - **Kako je zapečaćeno:** šifrirano s kraja na kraj kao i uvijek, zatim zapečaćeno još jednom za ključ koji je vaš
   kontakt dao samo ovom razgovoru, i potpisano ključem napravljenim samo za taj jedan tekst (NIP-59 gift wrap). Nostr
   relayi vide da je neko pisao ključu koji ne imenuje nikoga, kada i koliko veliko; ne vide ko je pisao, ni kome. Vaš
   relay to uopće ne vidi.
-- **Šta Nostr relayi mogu saznati:** vaš telefon traži od svakog od njih sve svoje ključeve odjednom, preko Tora:
-  relay može saznati da se ti ključevi čitaju zajedno, ali nikad odakle. Do svakog relaya dolazi se vlastitim Tor
+- **Šta Nostr relayi mogu saznati:** vaš telefon traži od svakog od njih sve svoje ključeve odjednom:
+  relay može saznati da se ti ključevi čitaju zajedno. Preko Tora nikad odakle: do svakog relaya dolazi se vlastitim Tor
   krugovima, pa nijedan izlaz iz Tora ne prenosi ono što ide do dva relaya, i nijedan ne može saznati da je to od
-  jednog telefona. Neki relayi odbijaju neke izlaze iz Tora, a neki izlazi ne mogu doći do nekog relaya: nakon takvog
+  jednog telefona. S **Ništa** ide izravno, pa vide IP adresu vašeg telefona, ali i dalje ne ko je kome pisao. Neki relayi odbijaju neke izlaze iz Tora, a neki izlazi ne mogu doći do nekog relaya: nakon takvog
   neuspjeha sljedeći pokušaj ide preko drugog izlaza.
-- **Samo preko Tora:** kad je Tor postavljen na **Ništa**, ili dok se Tor pokreće, tekstovi idu preko vašeg relaya.
+- **Kako ide:** s **Ništa**, tekstovi idu izravno do Nostr relaya. S **Poruke**, preko Tora kad je Tor spreman, a preko
+  vašeg relaya dok se Tor pokreće. Sa **Sve**, samo preko Tora. Kad se put promijeni, Nostr veze se zatvore i ponovo
+  otvore novim putem.
 - **Relayi:** relay.damus.io, nos.lol i relay.primal.net, ako ih ne promijenite; možete dodati vlastite, najviše pet.
   Vašim kontaktima se javljaju relayi na kojima čitate, i oni vam tamo pišu; dovoljan je jedan koji preuzme tekst.
 - **Šta ostaje na vašem relayu:** pozivi, reakcije i oznake da je poruka stigla ili pročitana; i ono što pišete kontaktima na iPhoneu ili računaru, koji ne čitaju na Nostru. Slike, datoteke i glasovne poruke idu preko vašeg relaya kad je jedan između vas; bez relaya između vas idu i preko Nostra (pogledajte Bez ikakvog relaya).
@@ -1529,8 +1535,8 @@ preko vašeg relaya. Svaki prostor ima vlastiti izbor i vlastite Nostr relaye.
   nije preuzeo: tekst tada ide i preko vašeg relaya, a vaš kontakt ga vidi jednom.
 - **Samo na Androidu,** kao i Tor.
 
-**Zašto:** Nostr relayi su javni, pa Erevos do njih dolazi samo preko Tora, i oni nikad ne saznaju gdje je vaš
-telefon. Tamo idu samo tekstovi: tekst ima vaš relay kao rezervu, ako ne stigne, dok oznake da je poruka stigla ili
+**Zašto:** Nostr relayi su javni, pa Erevos do njih, kad je Tor uključen za prostor, dolazi preko Tora, i oni nikad ne saznaju gdje je vaš
+telefon; s **Ništa** dolazi do njih izravno. Tamo idu samo tekstovi: tekst ima vaš relay kao rezervu, ako ne stigne, dok oznake da je poruka stigla ili
 pročitana ne bi imale nikakvu, a poruci poslanoj za kasnije potreban je vaš relay da je čuva do njenog vremena. Bez relaya između vas, tamo idu i slike, datoteke i glasovne poruke (pogledajte Bez ikakvog relaya).
 
 > Ako telefon vašeg kontakta u roku od pet minuta ne javi da je tekst stigao, on ide i preko vašeg relaya, a kontakt
@@ -1549,10 +1555,10 @@ Telefon bez relaya, bez pozivnice i bez LPHL naloga ipak može početi: njegov l
 Nostru, i to je dovoljno za razgovor.
 
 - **Da počnete:** u ekranu **Novi razgovor** dodirnite **Počnite bez relaya**, zatim **Prikaži moj QR kod** ili
-  **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda piše vam preko Nostra, preko
-  Tora, i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR kod, na isti
+  **Podijeli moj link za kontakt**, i dajte ga nekome ko koristi Erevos. Onaj ko ga doda piše vam preko Nostra
+  i prikazuje se kao zahtjev za razgovor, koji prihvatate. I vi možete dodati njegov link ili QR kod, na isti
   način.
-- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva, šifrirane s ostatkom prostora ili skrivenih razgovora za koje su stigli, dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora: poslužitelj čuva samo ono što ne može pročitati. Za pozive i grupe potreban je relay, ili drugi telefon u blizini. Skriveni razgovori i tako rade, samo preko Nostra (pogledajte [Skriveni razgovori](#hidden)).
+- **Šta ide:** tekstovi, naljepnice, reakcije, izmjene i oznake da je poruka stigla ili pročitana, sve preko Nostra; i fotografije, datoteke i glasovne poruke. Glasovna poruka ide u wrapovima kao tekst. Fotografija do 3 MB ide u komadima od 32 KB, po jedan wrap, poslanim prije poruke koja je nudi; drugi telefon ih čuva, šifrirane s ostatkom prostora ili skrivenih razgovora za koje su stigli, dok ne stignu svi, najviše četiri dana. Veća fotografija, video ili bilo koja druga datoteka, do 20 MB, ide kao jedan blob, šifriran na telefonu, na Blossom poslužitelj datoteka (blossom.primal.net, blossom.band ili nostr.download), preko Tora kako kaže izbor Tora za prostor (izravno s **Ništa**): poslužitelj čuva samo ono što ne može pročitati. Za pozive i grupe potreban je relay, ili drugi telefon u blizini. Skriveni razgovori i tako rade, samo preko Nostra (pogledajte [Skriveni razgovori](#hidden)).
 - **Kad ne stigne:** Nostr relayi čuvaju tekst dva dana. Dok telefon vašeg kontakta ne javi da je stigao, Erevos mu ga
   ponovo daje jednom dnevno, dvije sedmice.
 - **Relay sam od sebe:** kad vaš kontakt ima relay koji mu dozvoljava da poziva, njegov Erevos sam šalje vašem
@@ -2817,8 +2823,9 @@ briše telefon.
   javnih grupa i povezanih uređaja. Također poruke koje relej drži da ih pošalje kasnije, datoteke koje su stigle i čekaju na
   njemu te pozivnice koje si napravio/napravila a nitko ih nije upotrijebio. Skriveni razgovori koji primaju i dok su zatvoreni
   odlaze s prostorom, ostali kad ih otvoriš dok je prostor zaustavljen. Popisi na ekranu izostavljaju skrivene razgovore, da
-  nikad ne pokažu da ih ima. Preko Tora Erevos traži i od svakog Nostr releja da zaboravi ključeve na kojima tvoji razgovori
-  čitaju (zahtjev da nestane, NIP-62).
+  nikad ne pokažu da ih ima. Erevos traži i od svakog Nostr releja da zaboravi ključeve na kojima tvoji razgovori
+  čitaju (zahtjev da nestane, NIP-62): preko Tora kad je Tor uključen, izravno kad je isključen. Kad je Tor uključen, ali
+  još nije spreman, Nostr se ne pita; pričekaj da bude i obriši ponovo.
 - **Matrix, XMPP, Nostr:** s opcijom **Odjavi se i s Matrixa i XMPP-a te obriši Nostr račun napravljen ovdje** ti se računi
   ovdje odjavljuju. Sami računi ostaju na svojim serverima, koji su njihovi, a ne Erevosovi. Nostr račun donesen iz druge
   aplikacije ostaje kakav jest.
@@ -3403,9 +3410,9 @@ Erevos jasno kaže šta štiti, a šta još ne štiti.
 | **Poruke koje prenose drugi telefoni** | Zapečaćene dvaput: s kraja na kraj za vaš kontakt, i za njegov relay. Telefon koji prenosi poruku vidi na koji relay ide, kada i koliko je velika; ne vidi od koga je ni za koga. Njegov relay vidi na koji relay ide, a taj relay vidi relay prenosioca, ali ne i njegov telefon. Čuvaju se zapečaćene na telefonu, najviše tri dana: one za druge u datoteci telefona, čija veličina otprilike pokazuje koliko ih ima; vaše vlastite u vašem prostoru, zapečaćene njegovim ključem. Skriveni razgovori se nikad ne prenose. | |
 | **Poruke preko LoRa veze** | Šifrirane s kraja na kraj, isto kao preko relaya. Svako s radiom, kilometrima daleko, može saznati da vaš radio šalje, kada i koliko, a njegov signal može se pratiti do mjesta gdje se nalazi. Erevos sprječava da vaš radio javlja svoje ime i lokaciju (uloga Client hidden, GPS isključen, bez fiksne pozicije) osim ako mu to ne dozvolite; i dalje odgovara radiju koji pita za njegovo ime. Svaki Erevos na mesh mreži dobija vaše LoRa poruke, zapečaćene. | Postavljanje imena radija iz Erevosa. |
 | **Poruke SMS-om, kad ništa drugo ne radi** | Šifrirano s kraja na kraj, isto kao preko relaya, u skrivenim podatkovnim SMS-ovima. Isključeno dok ga ne uključite. Mobilni operater vidi koji je broj pisao kojem, kada i koliko SMS-ova; nikad šta je napisano. Svaki košta koliko jedan SMS. | |
-| **Ko s kim razgovara** | Relay vidi IP adrese, identifikatore redova, te kada i koliko. S drugim relayem vaš relay nikad ne vidi vašu adresu. S mjesta posuđenog na relayu kontakta vidi je svaki relay kojem šaljete. [Preko Tora](#tor), koji prenosi poruke ako to ne promijenite, nijedan relay je ne vidi za ono što pišete, a sa **Sve** ni za slike i datoteke; s mostovima, tamo gdje je Tor blokiran, mreža vidi samo most. Snowflakeov posrednik i STUN serveri vide vašu adresu. | Tor na računaru. |
+| **Ko s kim razgovara** | Relay vidi IP adrese, identifikatore redova, te kada i koliko. S drugim relayem vaš relay nikad ne vidi vašu adresu. S mjesta posuđenog na relayu kontakta vidi je svaki relay kojem šaljete. [Preko Tora](#tor), kad ga uključite, s **Poruke** nijedan relay je ne vidi za ono što pišete, a sa **Sve** ni za slike i datoteke; s mostovima, tamo gdje je Tor blokiran, mreža vidi samo most. Snowflakeov posrednik i STUN serveri vide vašu adresu. | Tor na računaru. |
 | **Veza s relayem** | TLS, a unutar njega, kad je ključ relaya poznat, kanal do tog ključa: relay pri svakoj vezi dokazuje da ga ima, a token i svaki zahtjev idu šifrirani za njega, pa neko između s certifikatom za ime relaya ne može da se predstavi kao relay. Relayu koji je jednom dokazao svoj ključ nikad se više ne pristupa bez njega. Relay stariji od ove aplikacije radi kao i prije, a **Kako ste sada povezani** to kaže. Prvi ključ dolazi od relaya prvi put kad ga se pita, ili iz linka za kontakt: onaj ko je između upravo tog prvog puta mogao bi dati svoj. [Vlastiti ključ relaya](#relay). Nije nezavisno provjereno. | Ključ našeg relaya ugrađen u aplikaciju i u pozivnice. |
-| **Tekstovi preko Nostra** | Šifrirani s kraja na kraj kao preko relaya, zatim još jednom umotani za ključ koji je vaš kontakt dao samo tom razgovoru, potpisani ključem napravljenim samo za taj tekst. Nostr relayi vide kada i koliko je veliko, i da ključ koji ne imenuje nikoga dobija tekst; vaš telefon čita sve svoje ključeve na jednoj vezi, preko Tora, pa relay može saznati da se čitaju zajedno, ali nikad odakle. Vaš relay ih vidi samo kao rezervu, i zvono za skrivene razgovore. [Preko Nostra](#nostr). | |
+| **Tekstovi preko Nostra** | Šifrirani s kraja na kraj kao preko relaya, zatim još jednom umotani za ključ koji je vaš kontakt dao samo tom razgovoru, potpisani ključem napravljenim samo za taj tekst. Nostr relayi vide kada i koliko je veliko, i da ključ koji ne imenuje nikoga dobija tekst; vaš telefon čita sve svoje ključeve na jednoj vezi, preko Tora kad je Tor uključen, pa relay može saznati da se čitaju zajedno, a odakle samo kad je Tor isključen. Vaš relay ih vidi samo kao rezervu, i zvono za skrivene razgovore. [Preko Nostra](#nostr). | |
 | **SMS** | Običan SMS čita telefonska kompanija, kao i svaki SMS. Na broj povezan s Erevos kontaktom umjesto toga ide preko Erevosa. Skrivena pozivnica je još jedan kratki SMS koji telefonska kompanija vidi. | |
 | **Kontakti telefona** | U Androidovim vlastitim kontaktima, a Erevos ih ne zapečaćuje, kao i kod svake aplikacije za kontakte: vidi ih svaka aplikacija kojoj je dozvoljeno da ih čita, a nalog (Google) ih može sinhronizovati. Erevos ih nikud ne šalje. .vcf datoteka sačuvana od njih je izvan Erevosa, nezapečaćena. Pozivi i SMS poruke kontakta čitaju se iz vlastitog zapisnika poziva i SMS poruka telefona samo da bi se prikazala njegova historija, i nigdje se ne čuvaju. | |
 | **Kontakti koji se čuvaju samo u Erevosu** | Zapečaćeni ključem prostora, ili ključem skrivenih razgovora za njihove, u jednoj datoteci za svaki prostor čija veličina otprilike pokazuje koliko ih ukupno ima, ali ne i čiji su; njihove fotografije svaka u vlastitoj datoteci. Nikad u Androidovim kontaktima. .vcf datoteka sačuvana od njih, i od onih iz skrivenih razgovora, je izvan Erevosa, nešifrirana. Pozivi i SMS poruke prema njima idu preko telefona i prikazuju se u njegovom zapisniku poziva i SMS porukama. | |

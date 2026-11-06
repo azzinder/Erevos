@@ -3,9 +3,10 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // The Tor way of a space (SpaceData.tor, lib/relay.ts TorWay): what of its relay requests goes
-// through the core's Tor. 'messages' unless changed: what is written and what tells contacts
-// something, but not files, and only while Tor is ready, so messages never wait for it. 'all':
-// everything, files too, and nothing without Tor. Calls never do: their audio and video go straight
+// through the core's Tor. 'off' unless changed: nothing, as Tor makes messages slower; a space made
+// before this keeps its way. 'messages': what is written and what tells contacts something, but
+// not files, and only while Tor is ready, so messages never wait for it. 'all': everything, files
+// too, and nothing without Tor. Calls never do: their audio and video go straight
 // between the phones, or through the call relay. Where Tor is blocked, it goes through the space's
 // bridges (lib/bridges.ts), and then only through them.
 

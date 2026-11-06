@@ -81,7 +81,7 @@ export default function ForgetMe() {
     <Page>
       <Text variant="title">{t('Delete me from everywhere')}</Text>
       <Text variant="caption" tone="muted" style={hint}>
-        {t('This deletes what the servers keep for this space: its queues on the relays, with the messages waiting in them, the messages and files they hold for you, and your invites not used yet. Through Tor, it also asks the Nostr relays to forget the keys your chats read on. Your phone keeps everything it has.')}
+        {t('This deletes what the servers keep for this space: its queues on the relays, with the messages waiting in them, the messages and files they hold for you, and your invites not used yet. It also asks the Nostr relays to forget the keys your chats read on. Your phone keeps everything it has.')}
       </Text>
       <Text variant="caption" tone="muted" style={hint}>
         {t('Then this space is stopped: it receives and sends nothing until you tap Start again. Hidden chats that receive while closed are cleared with it; the others when you open them while the space is stopped.')}
@@ -126,7 +126,7 @@ export default function ForgetMe() {
               <Text key={text}>{text}</Text>
             ))}
             {lines.length === 0 ? <Text tone="muted">{t('Nothing was kept on the servers.')}</Text> : null}
-            {report.nostr.skipped === 'tor' ? <Text tone="muted">{t('Nostr was not asked: Tor is not ready, or the Nostr way is off. Turn Tor on and delete again.')}</Text> : null}
+            {report.nostr.skipped === 'tor' ? <Text tone="muted">{t('Nostr was not asked: Tor is not ready yet. Wait until it is, and delete again.')}</Text> : null}
             {report.nostr.skipped === 'core' ? <Text tone="muted">{t('Nostr was not asked: this build of Erevos cannot.')}</Text> : null}
             {report.matrix !== undefined ? <Text>{report.matrix ? t('Signed out of Matrix.') : t('Could not sign out of Matrix.')}</Text> : null}
             {report.xmpp !== undefined ? <Text>{report.xmpp ? t('Signed out of XMPP.') : t('Could not sign out of XMPP.')}</Text> : null}

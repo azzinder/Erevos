@@ -3,15 +3,18 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 // Nostr for what is written: a text to a contact who said they read on Nostr (lib/e2e.ts, `ns`)
-// goes to the Nostr relays they named, through Tor, instead of through our relay, sealed once more
+// goes to the Nostr relays they named instead of through our relay, sealed once more
 // for the key they gave this chat (a gift wrap, NIP-59, crates/erevos-nostr), signed by a key made
 // for it alone. The relays see neither who wrote it nor to whom: only that someone wrote to a key
 // that names no one, as each chat gives each contact a key of its own. What the wrap carries is
 // the packet our relay would have carried, as it is: Nostr only carries it.
 //
 // Whether a space reads on Nostr, and on which relays (SpaceData.nostr), is set as it opens
-// (setNostr): none with Tor off, or in a build without Nostr (lib/core.ts canNostr). Texts go
-// there only while Tor is ready (lib/relay.ts torFor), as messages never wait for it.
+// (setNostr): none in a build without Nostr (lib/core.ts canNostr). With the space's Tor way
+// Nothing, the default, its connections go straight over WebSocket, and the relays see this
+// phone's internet address; with another way they go through Tor, and texts go there only while
+// Tor is ready (lib/relay.ts torFor), as messages never wait for it. As the way changes, the
+// connections opened the way before close and open again the new way.
 //
 // Sending (publishNostr): the wrap to each of the contact's relays, one connection to each, done
 // once one of them took it. A connection that only sent closes after a minute.
@@ -21,7 +24,7 @@
 // while its chats are), from somewhat over an hour before they last read, as a wrap's time is set
 // back by as much as an hour, then what comes as it comes, and again at once when the keys change.
 // A connection that ends opens again, after a wait that grows, or at once as Tor becomes ready. One subscription for all the keys:
-// a relay sees that they are read together, through Tor, never from where.
+// a relay sees that they are read together; through Tor, never from where.
 
 import { isNostrRelay, MAX_NOSTR_RELAYS, type NostrKey } from '../lock/e2e-data';
 import type { NostrSetting } from '../lock/space-data';
@@ -29,7 +32,8 @@ import { canNostr, coreReason, nostrCore } from './core';
 import { fromHex, randomBytes, toHex } from './crypto';
 import { t } from './i18n';
 import { isPiece, keepPiece, type PiecePlace } from './nostr-pieces';
-import { onTorReady, relayStopped, torFor } from './relay';
+import { openNostrStraight, type NostrLink } from './nostr-dm-net';
+import { onTorReady, onTorWay, relayStopped, torFor, torOff } from './relay';
 
 /** How long after a text went through Nostr it goes through the relay as well, should its contact's phone not have said it came. */
 export const NOSTR_BACKUP_MS = 5 * 60_000;
@@ -160,9 +164,9 @@ export function onNostrStates(listener: () => void): () => void {
   return () => stateListeners.delete(listener);
 }
 
-/** The relays a space reads on (SpaceData.nostr), or null when it does not: off, no relays, or Tor off. */
-export function nostrOf(tor: string, setting: NostrSetting): string[] | null {
-  return tor !== 'off' && setting.on && setting.relays.length > 0 ? setting.relays : null;
+/** The relays a space reads on (SpaceData.nostr), or null when it does not: off, or no relays. */
+export function nostrOf(setting: NostrSetting): string[] | null {
+  return setting.on && setting.relays.length > 0 ? setting.relays : null;
 }
 
 let relays: string[] | null = null;
@@ -183,9 +187,15 @@ export function nostrRelays(): string[] | null {
   return relays;
 }
 
-/** Whether a text can go through Nostr now: the space reads there, and Tor is ready. */
+// Whether Nostr is reached now: straight with the Tor way Nothing, else through Tor while it is
+// ready, as messages never wait for it.
+function nostrNow(): boolean {
+  return torOff() || torFor(false);
+}
+
+/** Whether a text can go through Nostr now: the space reads there, straight with Tor off, or through Tor while it is ready. */
 export function nostrReady(): boolean {
-  return relays !== null && torFor(false);
+  return relays !== null && nostrNow();
 }
 
 // A number as 8 bytes, big-endian, as the core takes times and waits.
@@ -200,27 +210,41 @@ function be8(n: number): Uint8Array {
 
 const seconds = () => Math.floor(Date.now() / 1000);
 
-// One connection to a Nostr relay through Tor (crates/erevos-tor text_open): JSON both ways.
+// One connection to a Nostr relay: through Tor (crates/erevos-tor text_open), or straight over
+// WebSocket when the space's Tor way is Nothing (lib/nostr-dm-net.ts). JSON both ways.
 class Line {
-  private readonly id: Uint8Array;
+  /** Whether it went straight, without Tor: it no longer goes the space's way once that changes. */
+  readonly straight: boolean;
+  private readonly id: Uint8Array | null;
+  private readonly link: NostrLink | null;
 
-  private constructor(id: Uint8Array) {
+  private constructor(id: Uint8Array | null, link: NostrLink | null) {
     this.id = id;
+    this.link = link;
+    this.straight = link !== null;
   }
 
   static async open(url: string): Promise<Line> {
-    return new Line(await nostrCore().torTextOpen(url));
+    if (torOff()) return new Line(null, await openNostrStraight(url));
+    return new Line(await nostrCore().torTextOpen(url), null);
+  }
+
+  /** Whether it goes the way the space's Tor way says now. */
+  goesTheWay(): boolean {
+    return this.straight === torOff();
   }
 
   async send(frame: string): Promise<void> {
-    await nostrCore().torTextSend(this.id, frame);
+    if (this.link) await this.link.send(JSON.parse(frame) as unknown[]);
+    else await nostrCore().torTextSend(this.id!, frame);
   }
 
   /** What the relay says next, or null when it said nothing for `ms`. Throws once the connection ended. */
   async next(ms: number): Promise<unknown[] | null> {
+    if (this.link) return this.link.next(ms);
     const until = Date.now() + ms;
     for (;;) {
-      const frame = await nostrCore().torTextNext(this.id, be8(Math.max(1, until - Date.now())));
+      const frame = await nostrCore().torTextNext(this.id!, be8(Math.max(1, until - Date.now())));
       if (frame === '') return null;
       try {
         const said = JSON.parse(frame) as unknown;
@@ -233,8 +257,12 @@ class Line {
   }
 
   close(): void {
+    if (this.link) {
+      this.link.close();
+      return;
+    }
     nostrCore()
-      .torTextClose(this.id)
+      .torTextClose(this.id!)
       .catch(() => undefined);
   }
 }
@@ -246,6 +274,7 @@ const senders = new Map<string, Sender>();
 function senderFor(url: string): Sender {
   const known = senders.get(url);
   if (known) return known;
+  // Opened the way the space's Tor way says now: those of the way before closed as it changed.
   const sender: Sender = { line: Line.open(url), turn: Promise.resolve(), idle: null };
   sender.line.catch(() => {
     if (senders.get(url) === sender) senders.delete(url);
@@ -324,7 +353,7 @@ function firstOf(tries: Promise<void>[]): Promise<void> {
 }
 
 /**
- * Sends `bytes` to a contact's Nostr key (`k`, hex) on its relays (`r`), through Tor, wrapped for
+ * Sends `bytes` to a contact's Nostr key (`k`, hex) on its relays (`r`), the space's way, wrapped for
  * that key alone: done once one relay took it, the others still trying. Throws when none did.
  */
 export async function publishNostr(to: { k: string; r: string[] }, bytes: Uint8Array): Promise<void> {
@@ -371,6 +400,13 @@ export function nostrKeysChanged(): void {
 // Tor ready: a connection that waited for it, or failed meanwhile, opens again at once.
 onTorReady(() => {
   for (const reading of readings.values()) reading.retry();
+});
+
+// Another Tor way: the connections opened the way before close, those that send once what they
+// send went, those that read at once, and open again the new way (straight, or through Tor).
+onTorWay(() => {
+  closeSenders();
+  for (const reading of readings.values()) reading.reopen();
 });
 
 // A connection to each relay while something reads, none to others.
@@ -443,6 +479,8 @@ class Reading {
   private turn: Promise<void> = Promise.resolve();
   // How long to wait before opening a connection that ended again.
   private wait = RETRY;
+  // Whether the open connection was closed to open again the space's new Tor way (reopen).
+  private reopening = false;
 
   private readonly url: string;
 
@@ -454,6 +492,16 @@ class Reading {
   stop(): void {
     this.stopped = true;
     this.line?.close();
+    this.wake();
+  }
+
+  /** Closes the open connection and opens it again at once, the way the space's Tor way says now. */
+  reopen(): void {
+    this.wait = RETRY;
+    if (this.line) {
+      this.reopening = true;
+      this.line.close();
+    }
     this.wake();
   }
 
@@ -483,7 +531,7 @@ class Reading {
 
   private async run(): Promise<void> {
     while (!this.stopped) {
-      if (!torFor(false) || wanted().of.length === 0) {
+      if (!nostrNow() || wanted().of.length === 0) {
         await this.sleep(IDLE_LOOK);
         continue;
       }
@@ -495,9 +543,12 @@ class Reading {
         ended = await this.read(this.line);
         this.wait = RETRY;
       } catch (error) {
-        said(this.url, { read: { at: Date.now(), reading: false, why: whyOf(error) } });
-        ended = true;
+        if (!this.reopening) {
+          said(this.url, { read: { at: Date.now(), reading: false, why: whyOf(error) } });
+          ended = true;
+        }
       }
+      this.reopening = false;
       this.line?.close();
       this.line = null;
       if (this.stopped) break;
@@ -535,7 +586,7 @@ class Reading {
     this.asking = asking;
     try {
       for (;;) {
-        if (this.stopped || wanted().of.length === 0 || !torFor(false)) return false;
+        if (this.stopped || wanted().of.length === 0 || !nostrNow() || !line.goesTheWay()) return false;
         await this.ask();
         const said = await line.next(FRAME_WAIT);
         if (!said) {

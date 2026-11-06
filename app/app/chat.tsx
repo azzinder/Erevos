@@ -1149,7 +1149,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 })
               : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. Until you both have a relay, you reach each other nearby only.')
             : onNostr
-              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay between you, texts, stickers, reactions, photos, files and voice messages go through Nostr, over Tor; calls need a relay or their phone nearby.')
+              ? t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay between you, texts, stickers, reactions, photos, files and voice messages go through Nostr; calls need a relay or their phone nearby.')
               : lent
                 ? t("Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs. With no relay of your own, you now have a place on theirs, lent through their link.")
                 : t('Contact added. Messages to it are end-to-end encrypted. Compare the safety number with theirs.')
@@ -6525,7 +6525,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                     title={t('Start without a relay')}
                     line={
                       linkNostr
-                        ? t('Give someone who uses Erevos your QR code or link. Texts go through Nostr, over Tor.')
+                        ? t('Give someone who uses Erevos your QR code or link. Texts go through Nostr.')
                         : t('Give someone who uses Erevos your QR code or link. You reach each other when near, over Wi-Fi or Bluetooth.')
                     }
                     open={way === 'own'}

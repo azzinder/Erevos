@@ -155,6 +155,12 @@ function socketLink(url: string): Promise<NostrLink> {
   });
 }
 
+/** A connection to the relay at `url` straight over WebSocket, never through Tor: for the space's
+ *  own Nostr chats (lib/nostr.ts) when its Tor way is Nothing. */
+export function openNostrStraight(url: string): Promise<NostrLink> {
+  return opener ? opener(url) : socketLink(url);
+}
+
 /** Whether the relays are reached through Tor now: on Android, while the space's Tor way says so. */
 export function nostrChatsThroughTor(): boolean {
   return canNostr() && torFor(false);
