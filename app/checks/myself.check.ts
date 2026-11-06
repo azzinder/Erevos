@@ -242,3 +242,21 @@ test("a note's photo that came waits on the relay until taken, then is kept as t
   assert.equal(await setNoteFile(mine, id, from.ids, taken), true);
   assert.deepEqual((await loadNotes(mine))[0].file, taken);
 });
+
+// A note another app asks to add, with erevos://myself?note=…&due=… (lib/note-link.ts).
+test('a note from a link: its words cleaned, its reminder only when it is to come', async () => {
+  const { linkNote, linkNoteKey, MAX_LINK_NOTE } = await import('../lib/note-link');
+  const now = Date.UTC(2026, 10, 6, 12);
+  const hour = 60 * 60_000;
+  assert.equal(linkNote({}, now), null);
+  assert.equal(linkNote({ note: '   ' }, now), null);
+  assert.equal(linkNote({ note: ['a', 'b'] }, now), null);
+  assert.deepEqual(linkNote({ note: ' Fasouli: rent ‮450 €\u0007 ' }, now), { text: 'Fasouli: rent 450 €' });
+  assert.deepEqual(linkNote({ note: 'a\r\n\n\n\nb' }, now), { text: 'a\n\nb' });
+  assert.equal(linkNote({ note: 'x'.repeat(5000) }, now)!.text.length, MAX_LINK_NOTE);
+  assert.deepEqual(linkNote({ note: 'pay', due: String(now + 24 * hour) }, now), { text: 'pay', due: now + 24 * hour });
+  for (const due of [String(now - hour), String(now + 30_000), String(now + 400 * 24 * hour), 'soon', '1e15', '-5', '']) {
+    assert.deepEqual(linkNote({ note: 'pay', due }, now), { text: 'pay' }, due);
+  }
+  assert.notEqual(linkNoteKey({ text: 'pay', due: 1 }), linkNoteKey({ text: 'pay' }));
+});

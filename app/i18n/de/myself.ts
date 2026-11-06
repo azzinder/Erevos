@@ -27,4 +27,7 @@ export const myself: Record<string, string> = {
   'Change the reminder': 'Erinnerung ändern',
   'No reminder': 'Keine Erinnerung',
   'No reminder.': 'Keine Erinnerung.',
+  'Keep this note?': 'Diese Notiz behalten?',
+  'An app on this phone asks to keep this note in Chat with myself, reminding you on {when}:\n\n{text}': 'Eine App auf diesem Telefon möchte diese Notiz im Chat mit mir selbst behalten, mit Erinnerung am {when}:\n\n{text}',
+  'An app on this phone asks to keep this note in Chat with myself:\n\n{text}': 'Eine App auf diesem Telefon möchte diese Notiz im Chat mit mir selbst behalten:\n\n{text}',
 };

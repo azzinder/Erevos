@@ -27,7 +27,7 @@ izabrali, pogledajte [Jezik](#start).
 
 ### Ko ga pravi i zašto
 
-- **Ko:** Erevos, by azzinder: ista osoba koja je napravila FASOULI.
+- **Ko:** Erevos, by azzinder: ista osoba koja je napravila [Fasouli](https://github.com/azzinder/lphl-chrima-releases/releases/latest), privatnu aplikaciju za tvoje finansije.
 - **Gdje:** nije važno. Važno je to što relay i aplikacija za preglednik rade na vlastitom serveru autora
   (lphl.nekten.eu).
 - **Za koga:** za svakoga ko želi razgovarati sa svojim ljudima bez davanja broja telefona, e-maila ili naloga:
@@ -206,6 +206,9 @@ bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
   obavijesti. Novi PIN za mjesto, s kojim ono počinje prazno, ili uklonjeno mjesto, skida njegove podsjetnike s
   telefona. Bilješke skrivenog mjesta idu samo na uređaje povezane s tim mjestom zasebno, nikad na one prostora (vidi
   [Povezani uređaji](#devices)).
+- **Iz druge aplikacije:** aplikacija na telefonu može tražiti da se ovdje zadrži bilješka, kao Fasouli za plaćanje
+  koje dolazi, s podsjetnikom. Erevos otvara Razgovor sa sobom nakon lozinke, u prostoru koji otvoriš, i prvo pita
+  **Zadržati ovu bilješku?**, s tekstom i vremenom; samo **Dodaj** je zadržava. Ništa se ne vraća aplikaciji.
 
 **Zašto:** obavijest se na zaključanom ekranu prikazuje svakome ko drži telefon, zato ono što podsjetnik kaže ostaje
 šifrirano u njegovom prostoru, a Androidu se kaže samo njegovo vrijeme: obavijest nikome ne može reći šta ste htjeli
@@ -2974,7 +2977,7 @@ popis u **Postavke** čuva samo ono što nema kamo drugo. Ništa od toga ionako 
 
 ## Izgled {#appearance}
 
-**Izgled** prati LPHL FASOULI i LPHL stranicu. Nalazi se pod **Postavke** → **Izgled**, u dijelovima od kojih se svaki
+**Izgled** prati Fasouli i LPHL stranicu. Nalazi se pod **Postavke** → **Izgled**, u dijelovima od kojih se svaki
 otvara zasebno: **Stil i boje** (površina, staklo, stil, tema, boje i tekst na obojenim površinama opisani ispod, s
 **Pregled**), **Pozadina**, **Poruke**, a na Androidu i **Ikone u pokretaču** i **Widget**.
 
@@ -3340,7 +3343,7 @@ zapečaćene na isti način.
 
 ## Ažuriranja {#updates}
 
-Erevos pita GitHub za ažuriranja samo kad dodirnete dugme, kao u LPHL FASOULI: redovna provjera bi GitHubu svaki dan
+Erevos pita GitHub za ažuriranja samo kad dodirnete dugme, kao u Fasouli: redovna provjera bi GitHubu svaki dan
 govorila da ovaj telefon ili računar ima Erevos. Na Androidu vam javlja i kad izađe nova verzija, a da ne pita GitHub,
 kao što kaže **Obavijest kad izađe nova verzija** ispod. Da ažurirate:
 

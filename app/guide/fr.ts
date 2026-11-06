@@ -29,7 +29,7 @@ que tu as choisie, voir [Langue](#start).
 
 ### Qui le fait, et pourquoi
 
-- **Qui :** Erevos, by azzinder : la même personne qui a fait FASOULI.
+- **Qui :** Erevos, by azzinder : la même personne qui a fait [Fasouli](https://github.com/azzinder/lphl-chrima-releases/releases/latest), une appli privée pour tes finances.
 - **Où :** cela n’a pas d’importance. Ce qui compte, c’est que le relais et l’app pour le navigateur tournent sur le
   propre serveur de son auteur (lphl.nekten.eu).
 - **Pour qui :** pour quiconque veut parler avec ses proches sans donner de numéro de téléphone, d’e-mail ni de compte :
@@ -221,6 +221,10 @@ fichiers et messages vocaux, comme pour les discussions.
   activé pour cet emplacement, dans la même notification. Un nouveau code PIN pour l’emplacement, qui le recommence
   vide, ou l’emplacement retiré, enlève ses rappels du téléphone. Les notes d’un emplacement masqué ne vont qu’aux
   appareils associés à cet emplacement à part, jamais à ceux de l’espace (voir [Appareils associés](#devices)).
+- **Depuis une autre appli :** une appli du téléphone peut demander de garder ici une note, comme Fasouli pour un
+  paiement à venir, avec son rappel. Erevos ouvre Discussion avec moi-même après le mot de passe, dans l’espace que tu
+  ouvres, et demande d’abord **Garder cette note ?**, avec le texte et l’heure ; seul **Ajouter** la garde. Rien ne
+  retourne à l’appli.
 
 **Pourquoi :** une notification s’affiche sur l’écran verrouillé pour quiconque tient le téléphone, donc ce que dit un
 rappel reste chiffré dans son espace et Android n’apprend que son heure : la notification ne peut dire à personne ce que
@@ -3269,7 +3273,7 @@ n’en quitte le téléphone, dans un cas comme dans l’autre.
 
 ## Apparence {#appearance}
 
-L’**Apparence** suit LPHL FASOULI et le site LPHL. Elle se trouve sous **Réglages** → **Apparence**, en parties qui
+L’**Apparence** suit Fasouli et le site LPHL. Elle se trouve sous **Réglages** → **Apparence**, en parties qui
 s’ouvrent chacune seule : **Style et couleurs** (le rendu, le verre, le style, le thème, les couleurs et le texte sur
 les zones colorées ci-dessous, avec l’**Aperçu**), **Fond d’écran**, **Messages**, et sur Android **Icônes du lanceur**
 et **Widget**.
@@ -3678,7 +3682,7 @@ messages et ses réglages scellés de la même façon.
 
 ## Mises à jour {#updates}
 
-Erevos ne demande les mises à jour à GitHub que quand tu appuies sur le bouton, comme dans LPHL FASOULI : une
+Erevos ne demande les mises à jour à GitHub que quand tu appuies sur le bouton, comme dans Fasouli : une
 vérification régulière dirait à GitHub, chaque jour, que ce téléphone ou cet ordinateur a Erevos. Sur Android, il te
 prévient aussi quand une nouvelle version sort, sans demander à GitHub, comme le dit **Prévenu quand une nouvelle
 version sort** plus bas. Pour mettre à jour :

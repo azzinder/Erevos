@@ -28,7 +28,7 @@ gewählt hast, siehe [Sprache](#start).
 
 ### Wer es macht, und warum
 
-- **Wer:** Erevos, by azzinder: dieselbe Person, die FASOULI gemacht hat.
+- **Wer:** Erevos, by azzinder: dieselbe Person, die [Fasouli](https://github.com/azzinder/lphl-chrima-releases/releases/latest) gemacht hat, eine private App für deine Finanzen.
 - **Wo:** Das spielt keine Rolle. Was zählt, ist, dass das Relay und die App für den Browser auf dem eigenen Server
   dieser Person laufen (lphl.nekten.eu).
 - **Für wen:** für alle, die mit ihren Leuten reden wollen, ohne eine Telefonnummer, eine E-Mail-Adresse oder ein Konto
@@ -218,6 +218,10 @@ Ein Backup nimmt alles davon mit, Notizen, Fotos, Dateien und Sprachnachrichten,
   an ist, in derselben Benachrichtigung. Eine neue PIN für den Platz, die ihn leer beginnt, oder das Entfernen des
   Platzes nimmt seine Erinnerungen vom Telefon. Die Notizen eines versteckten Platzes gehen nur an die Geräte, die mit
   diesem Platz für sich verknüpft sind, nie an die des Bereichs (siehe [Verknüpfte Geräte](#devices)).
+- **Aus einer anderen App:** Eine App auf dem Telefon kann darum bitten, hier eine Notiz zu behalten, wie Fasouli für
+  eine anstehende Zahlung, mit ihrer Erinnerung. Erevos öffnet den Chat mit mir selbst nach dem Passwort, in dem Bereich,
+  den du öffnest, und fragt zuerst **Diese Notiz behalten?**, mit Text und Zeit; nur **Hinzufügen** behält sie. Nichts
+  geht an die App zurück.
 
 **Warum:** Eine Benachrichtigung erscheint auf dem Sperrbildschirm für jeden, der das Telefon in der Hand hat, also
 bleibt der Text einer Erinnerung verschlüsselt in ihrem Bereich, und Android erfährt nur ihre Zeit: Die
@@ -3297,7 +3301,7 @@ davon verlässt so oder so das Telefon.
 
 ## Darstellung {#appearance}
 
-**Darstellung** folgt LPHL FASOULI und der LPHL-Website. Sie ist unter **Einstellungen** → **Darstellung**, in Teilen,
+**Darstellung** folgt Fasouli und der LPHL-Website. Sie ist unter **Einstellungen** → **Darstellung**, in Teilen,
 die sich jeweils einzeln öffnen: **Stil und Farben** (das Aussehen, Glas, Stil, Design, Farben und Text auf farbigen
 Flächen unten, mit der **Vorschau**), **Hintergrund**, **Nachrichten** und auf Android **Startbildschirm-Symbole** und
 **Widget**.
@@ -3703,7 +3707,7 @@ Nachrichten und Einstellungen auf dieselbe Weise versiegelt auf.
 
 ## Updates {#updates}
 
-Erevos fragt GitHub nur dann nach Updates, wenn du auf die Taste tippst, wie in LPHL FASOULI: Eine regelmäßige Prüfung
+Erevos fragt GitHub nur dann nach Updates, wenn du auf die Taste tippst, wie in Fasouli: Eine regelmäßige Prüfung
 würde GitHub jeden Tag sagen, dass dieses Telefon oder dieser Computer Erevos hat. Auf Android sagt es dir außerdem,
 wenn eine neue Version da ist, ohne GitHub zu fragen, wie **Benachrichtigt, wenn eine neue Version da ist** weiter
 unten sagt. Zum Aktualisieren:

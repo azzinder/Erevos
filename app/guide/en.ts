@@ -25,7 +25,7 @@ is in every language of the app, and shows in the one you chose, see [Language](
 
 ### Who makes it, and why
 
-- **Who:** Erevos, by azzinder: the same person who made FASOULI.
+- **Who:** Erevos, by azzinder: the same person who made [Fasouli](https://github.com/azzinder/lphl-chrima-releases/releases/latest), a private app for your money.
 - **Where:** it does not matter. What matters is that the relay and the app for the browser run on the maker's own
   server (lphl.nekten.eu).
 - **For whom:** for anyone who wants to talk with their own people without giving a phone number, an email or an
@@ -197,6 +197,9 @@ with chats.
   time only while **Receive while closed** is on for that place, in the same notice. A new PIN for the place, which
   starts it empty, or the place removed, takes its reminders off the phone. A hidden place's notes go only to the
   devices linked to that place on its own, never to the space's (see [Linked devices](#devices)).
+- **From another app:** an app on the phone can ask to keep a note here, as Fasouli does for a payment that is coming,
+  with its reminder. Erevos opens Chat with myself after the password, in the space you open, and asks **Keep this
+  note?** first, showing the words and the time; only **Add** keeps it. Nothing goes back to the app.
 
 **Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
 space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it
@@ -2843,7 +2846,7 @@ and the list in **Settings** keeps only what has nowhere else to go. Nothing of 
 
 ## Appearance {#appearance}
 
-**Appearance** follows LPHL FASOULI and the LPHL site. It is under **Settings** → **Appearance**, in parts that each
+**Appearance** follows Fasouli and the LPHL site. It is under **Settings** → **Appearance**, in parts that each
 open alone: **Style and colours** (the look, glass, style, theme, colours and text on coloured areas below, with the
 **Preview**), **Wallpaper**, **Messages**, and on Android **Launcher icons** and **Widget**.
 
@@ -3199,7 +3202,7 @@ relay, end-to-end encrypted as on the phone, and keeps its contacts, messages an
 
 ## Updates {#updates}
 
-Erevos asks GitHub for updates only when you tap the button, as in LPHL FASOULI: a regular check would tell GitHub,
+Erevos asks GitHub for updates only when you tap the button, as in Fasouli: a regular check would tell GitHub,
 every day, that this phone or computer has Erevos. On Android it also tells you when a new version is out, without
 asking GitHub, as **Told when a new version is out** below says. To update:
 

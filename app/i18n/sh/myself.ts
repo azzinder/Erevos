@@ -27,4 +27,7 @@ export const myself: Record<string, string> = {
   'Change the reminder': 'Promijeni podsjetnik',
   'No reminder': 'Bez podsjetnika',
   'No reminder.': 'Bez podsjetnika.',
+  'Keep this note?': 'Zadržati ovu bilješku?',
+  'An app on this phone asks to keep this note in Chat with myself, reminding you on {when}:\n\n{text}': 'Aplikacija na ovom telefonu traži da se ova bilješka zadrži u Razgovoru sa sobom, s podsjetnikom {when}:\n\n{text}',
+  'An app on this phone asks to keep this note in Chat with myself:\n\n{text}': 'Aplikacija na ovom telefonu traži da se ova bilješka zadrži u Razgovoru sa sobom:\n\n{text}',
 };

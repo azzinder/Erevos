@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Notes from another app**: an app on the phone, as Fasouli for a payment that is coming, can ask to keep a note
+  with its reminder in Chat with myself (`erevos://myself?note=…&due=…`). It opens after the password, in the space
+  you open, and Erevos asks first, showing the words and the time; nothing goes back to the app.
 - **Groups stay on the device you choose**: on the phone, under Linked devices → Groups stay on, move the groups to a
   linked computer. Their keys go there, never copied, so the groups work there with the phone off and new ones can be
   made there; members see nothing new. A lost computer that holds them can still be unlinked.

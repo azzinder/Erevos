@@ -28,7 +28,7 @@ elegiste, ver [Idioma](#start).
 
 ### Quién lo hace, y por qué
 
-- **Quién:** Erevos, by azzinder: la misma persona que hizo FASOULI.
+- **Quién:** Erevos, by azzinder: la misma persona que hizo [Fasouli](https://github.com/azzinder/lphl-chrima-releases/releases/latest), una app privada para tus finanzas.
 - **Dónde:** no importa. Lo que importa es que el relay y la app para el navegador funcionan en el servidor propio de
   quien lo hace (lphl.nekten.eu).
 - **Para quién:** para cualquiera que quiera hablar con los suyos sin dar un número de teléfono, un email ni una
@@ -210,6 +210,9 @@ todo, notas, fotos, archivos y mensajes de voz, como con los chats.
   nuevo para el lugar, que lo empieza vacío, o quitar el lugar, quita sus recordatorios del teléfono. Las notas de un
   lugar oculto van solo a los dispositivos vinculados a ese lugar por su cuenta, nunca a los del espacio (ver
   [Dispositivos vinculados](#devices)).
+- **Desde otra app:** una app del teléfono puede pedir guardar aquí una nota, como Fasouli para un pago que se acerca,
+  con su recordatorio. Erevos abre el Chat conmigo tras la contraseña, en el espacio que abres, y pregunta primero
+  **¿Guardar esta nota?**, con el texto y la hora; solo **Añadir** la guarda. Nada vuelve a la app.
 
 **Por qué:** un aviso se muestra en la pantalla bloqueada a quien tenga el teléfono, así que lo que dice un recordatorio
 se queda cifrado en su espacio y a Android solo se le dice su hora: el aviso no puede contar a nadie qué querías
@@ -3095,7 +3098,7 @@ caso.
 
 ## Apariencia {#appearance}
 
-**Apariencia** sigue a LPHL FASOULI y al sitio de LPHL. Está en **Ajustes** → **Apariencia**, en partes que se abren
+**Apariencia** sigue a Fasouli y al sitio de LPHL. Está en **Ajustes** → **Apariencia**, en partes que se abren
 cada una por separado: **Estilo y colores** (el acabado, el cristal, el estilo, el tema, los colores y el texto sobre
 zonas de color de abajo, con la **Vista previa**), **Fondo de pantalla**, **Mensajes**, y en Android **Iconos del
 lanzador** y **Widget**.
@@ -3483,7 +3486,7 @@ mensajes y ajustes sellados de la misma manera.
 
 ## Actualizaciones {#updates}
 
-Erevos pregunta a GitHub por actualizaciones solo cuando tocas el botón, como en LPHL FASOULI: una comprobación periódica
+Erevos pregunta a GitHub por actualizaciones solo cuando tocas el botón, como en Fasouli: una comprobación periódica
 le diría a GitHub, cada día, que este teléfono u ordenador tiene Erevos. En Android también te avisa cuando sale una
 versión nueva, sin preguntar a GitHub, como explica **Aviso cuando sale una versión nueva** más abajo. Para actualizar:
 
