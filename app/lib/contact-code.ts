@@ -40,7 +40,8 @@ export const MORE_SPARES = 2;
 export const LINK_MOST = 2550;
 /** Where a link's phone reads on Nostr: the key its link has there (hex), and its relays. */
 export type NostrCode = { k: string; r: string[] };
-export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string; nostr?: NostrCode };
+/** `d`: the link's Erevos takes a new contact's first conversation from one of their linked devices, with their account's word for it (docs/multi-device.md, S5): an Erevos before does not say it. */
+export type ContactCode = { senderHex: string; relayUrl: string; key: string; relayKey?: string; spare?: SpareCode; lend?: string; nostr?: NostrCode; d?: true };
 
 const LINK = 'erevos://contact?';
 /** Where a contact link for a web page goes: the page that offers Erevos, then opens the link (pwa/c/). */
@@ -73,7 +74,8 @@ export function contactLink({ senderHex, relayUrl, key, relayKey, spare, lend, n
   const ticket = lend && relayUrl && TICKET.test(lend) ? `&lend=${lend}` : '';
   const there = nostr ? checkNostr(nostr.k, nostr.r) : null;
   const onNostr = there ? `&nk=${there.k}&nr=${there.r.map(encodeURIComponent).join(',')}` : '';
-  let link = `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}${onNostr}`;
+  // Every link of this version says it takes a new contact from their linked device (`d`).
+  let link = `${LINK}id=${senderHex}&relay=${encodeURIComponent(relayUrl)}${key ? `&key=${key}` : ''}${relayKey ? `&rk=${relayKey}` : ''}${backup}${ticket}${onNostr}${key ? '&d=1' : ''}`;
   // The other home relays, while the link stays short enough for one QR code with an invite around
   // it: the rest are said with the first message anyway (lib/e2e.ts, Spare.more).
   for (const [i, one] of (spare?.more ?? []).slice(0, MORE_SPARES).entries()) {
@@ -138,7 +140,7 @@ export function parseContact(text: string): ContactCode | null {
   const spare = first && more.length > 0 ? { ...first, more } : first;
   const lend = code?.relayUrl && fields.lend && TICKET.test(fields.lend) ? fields.lend : '';
   const nostr = code?.key && fields.nk ? checkNostr(fields.nk, relays) : null;
-  return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}), ...(nostr ? { nostr } : {}) } : code;
+  return code ? { ...code, ...(spare ? { spare } : {}), ...(lend ? { lend } : {}), ...(nostr ? { nostr } : {}), ...(code.key && fields.d === '1' ? { d: true as const } : {}) } : code;
 }
 
 /** The fields of a link for a web page, after #, or null when the text is not one. The server answers /c with /c/, so a link copied from the address bar may read /c/#. */

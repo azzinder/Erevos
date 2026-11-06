@@ -90,6 +90,23 @@ pub fn bundle_verify(bundle: &[u8], context: &[u8], message: &[u8], signature: &
     }
 }
 
+/// The account's X25519 identity saying that its bundle's Ed25519 key is its
+/// own (erevos_core::bind), for contacts to check with `bundle_bound`.
+pub fn account_bind(account: &[u8]) -> Result<Vec<u8>> {
+    Ok(Account::from_secret_bytes(account).map_err(fail)?.bind().to_vec())
+}
+
+/// Checks a bundle, then that its X25519 identity said its Ed25519 key is its
+/// own: the bundle's identity key when it did, nothing when it did not.
+pub fn bundle_bound(bundle: &[u8], signature: &[u8]) -> Result<Vec<u8>> {
+    let bundle = PrekeyBundle::from_bytes(bundle).map_err(fail)?;
+    match bundle.verify_bound(signature) {
+        Ok(()) => Ok(bundle.identity_dh.to_bytes().to_vec()),
+        Err(erevos_core::Error::BadSignature) => Ok(Vec::new()),
+        Err(error) => Err(fail(error)),
+    }
+}
+
 /// Starts a conversation: the conversation, then the first packet.
 pub fn conversation_start(account: &[u8], bundle: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
     let account = Account::from_secret_bytes(account).map_err(fail)?;
@@ -784,6 +801,10 @@ mod tests {
         assert!(bundle_verify(&bundle, b"devices", b"list", &signature[..10]).is_err());
         assert!(bundle_verify(&bundle[..20], b"devices", b"list", &signature).is_err());
         assert!(account_sign(&account, b"", b"list").is_err());
+        let bound = account_bind(&account).unwrap();
+        assert_eq!(bundle_bound(&bundle, &bound).unwrap(), account_identity(&account).unwrap());
+        assert!(bundle_bound(&other, &bound).unwrap().is_empty());
+        assert!(bundle_bound(&bundle, &bound[..10]).is_err());
     }
 
     #[test]

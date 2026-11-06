@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Add someone new on a linked device without the phone**: a computer adds someone whose contact link is from this
+  version by itself, with the phone off, and writes to them at once; they see your account as a request, with the same
+  safety number, and the phone adds them too once it is on.
 - **Calls and Send later on your linked devices without the phone**: with a contact on this version, a computer calls
   and is called by itself, with the phone off too: answered on one device, the others stop ringing; turned down on one,
   it is turned down on all. **Send later** on a computer hands the message to the relay itself, with a copy for each
@@ -109,6 +112,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **A new contact from a linked device (sync phase S5)**: the account's X25519 identity signs (XEdDSA, in the core:
+  `accountBind`, `bundleBound`) that its bundle's signing key is its own; the phone gives that word to its devices with
+  the list, and a pass for each device, signed for 14 days and renewed, which says where the account reads. Contact links
+  say `d=1`; a device adding someone new from one starts the conversation from its endpoint with the word, the list and
+  its pass, which their Erevos checks before taking it, so an unlinked device starts nothing new once its pass ran out
+  (docs/sync.md, S5).
 - **Calls and Send later from the linked devices (sync phase S4)**: every message says `cl: 1`, which lets call signals
   go whole to each endpoint of the other account and a device write its own; the caller ends the others with
   `end{taken, by}` once one answers. Sent for later, a copy for each endpoint is held by the relay too (`Copy.due`), and

@@ -3258,9 +3258,11 @@ Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
   che scrivono, leggono e a cui reagiscono arriva, e quello che scrivi tu parte. Se il telefono resta spento così a
   lungo che la sua coda sul relay si riempie (1000 messaggi), quello che scrivono e leggono raggiunge comunque il
   computer, un lungo messaggio vocale per intero; quello a cui reagiscono, che fissano, votano o eliminano, e le loro
-  chiamate, non passano finché il telefono non è di nuovo acceso. Per i contatti con versioni più vecchie, i gruppi e l’aggiunta di un contatto, **il telefono deve essere acceso** e
+  chiamate, non passano finché il telefono non è di nuovo acceso. Per i contatti con versioni più vecchie (anche aggiungerli) e i gruppi, **il telefono deve essere acceso** e
   raggiungere il relay: quello che il computer scrive nel frattempo aspetta sul relay, e parte appena il telefono
-  torna. Due o più dispositivi collegati si raggiungono anche direttamente: a telefono spento, ognuno mostra comunque
+  torna. Qualcuno di nuovo il cui link di contatto è di questa versione il computer lo aggiunge anche a telefono spento:
+  inizia lui stesso la chat, quella persona vede il tuo account come una richiesta, e il telefono la aggiunge anche lui
+  appena è acceso. Due o più dispositivi collegati si raggiungono anche direttamente: a telefono spento, ognuno mostra comunque
   quello che gli altri scrivono, leggono e a cui reagiscono, e le modifiche che fanno ai contatti; uno che ha perso il
   primo messaggio di un altro ne riceve uno nuovo un giorno o più dopo. Un computer rimasto spento più a lungo di
   quanto il relay conservi i messaggi (14 giorni), o che ha perso il primo messaggio di un contatto, riceve comunque

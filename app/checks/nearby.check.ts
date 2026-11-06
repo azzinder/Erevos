@@ -165,7 +165,7 @@ test('two phones with no relay add each other by QR and talk nearby, end-to-end 
   // Bob has no relay queue: his link has only his keys.
   const bobLink = contactLink({ senderHex: '', relayUrl: '', key: toBase64Url(bob.bundle) });
   const code = parseContact(bobLink)!;
-  assert.deepEqual(code, { senderHex: '', relayUrl: '', key: toBase64Url(bob.bundle) });
+  assert.deepEqual(code, { senderHex: '', relayUrl: '', key: toBase64Url(bob.bundle), d: true });
   assert.equal(parseContact('erevos://contact?id=&relay='), null, 'no keys, no contact');
   const { identity: bobId } = await alice.addContact(code, '');
   assert.deepEqual(alice.pending(), [], 'nothing waits for a relay');

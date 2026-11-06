@@ -57,7 +57,7 @@ export function welcomeOf(fields: Record<string, string | string[] | undefined>)
   const hi = one('hi').trim().toLowerCase();
   if (!/^[0-9a-f]{32}$/.test(hi)) return null;
   // The contact link's own fields, read as it reads them.
-  const own = ['id', 'relay', 'key', 'rk', 'sid', 'srelay', 'srk', 'sid2', 'srelay2', 'srk2', 'sid3', 'srelay3', 'srk3', 'lend']
+  const own = ['id', 'relay', 'key', 'rk', 'sid', 'srelay', 'srk', 'sid2', 'srelay2', 'srk2', 'sid3', 'srelay3', 'srk3', 'lend', 'd']
     .filter((name) => one(name))
     .map((name) => `${name}=${encodeURIComponent(one(name))}`)
     .join('&');

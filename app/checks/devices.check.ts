@@ -47,7 +47,7 @@ import { acceptConversation, accountBundle, accountIdentity, newAccount, open as
 import { fromBase64, randomBytes, utf8Decode, utf8Encode } from '../lib/crypto';
 import { bytesSource, FileGoneError, keepFile, offerRef, readFile, sendFile, takeFile, watchTakenFiles, type FileOffer } from '../lib/attachments';
 import { addToCollection, deleteItems, loadCollection, setCollectionOption } from '../lock/collection-data';
-import { bodyOf, nextList, signList, verifyList, type Body } from '../lib/device-list';
+import { bodyOf, nextList, readPass, signList, signPass, verifyList, type Body } from '../lib/device-list';
 import { handAccounts, handChunks, Links, type AccountsWho, type HistoryChoice } from '../lib/devices';
 import { BlockedContactError, E2E, fromBase64Url, toBase64Url, type Received, type Where } from '../lib/e2e';
 import { sendCopies } from '../lib/fanout';
@@ -1667,7 +1667,10 @@ test('each linked device has an endpoint of its own, named in a list the phone s
   assert.deepEqual([first.real, first.body.a, first.body.d.length, names(first, endpoint.id)], [[endpoint.id], account, 4, true]);
   // Not the key of its link, which the phone knows it by.
   assert.notEqual(endpoint.id, pixel.links.devices()[0].id);
-  assert.deepEqual(dell.chats.e2e.own(), { identity: account, bundle: toBase64Url(pixel.chats.e2e.bundle), list: { b: first.b, s: first.s, n: first.n, real: [endpoint.id] } });
+  const { ab, ap, ...ownKept } = dell.chats.e2e.own()!;
+  assert.deepEqual(ownKept, { identity: account, bundle: toBase64Url(pixel.chats.e2e.bundle), list: { b: first.b, s: first.s, n: first.n, real: [endpoint.id] } });
+  // With the account's word for its bundle, and a pass for this device's endpoint (S5).
+  assert.ok(ab && ap && readPass(ap)?.i === endpoint.id);
   assert.ok(await verifyList(pixel.chats.e2e.bundle, account, first));
   await dell.links.settled();
   assert.equal(await receiveMessage(relay, fromHex(pixel.queue.recipientHex)), null);
@@ -2331,6 +2334,63 @@ test('calls on the devices: a contact on this version copies a call to every end
   for (const p of [pixel, dell]) p.links.close();
 });
 
+test('someone new added on a linked device with the phone off: the device starts its own conversation with the account\'s word for its bundle, she takes the account as a request from its endpoint, they write both ways, and the phone adds her later, not as a request', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { relay, url, where, phone, take, write, linkUp, reopen } = await setup();
+  const pixel = await phone(0);
+  const dell = await phone(1);
+  const erin = await phone(2);
+  const account = pixel.chats.e2e.identityHex();
+  const erinId = erin.chats.e2e.identityHex();
+  await linkUp(pixel, dell);
+  await until(async () => {
+    await take(pixel);
+    await take(dell);
+    const list = pixel.chats.e2e.signedList();
+    return !!list && dell.chats.e2e.own()?.list?.n === list.n && !!dell.chats.e2e.own()?.ap;
+  });
+  await pixel.links.settled();
+  const dells = dell.chats.e2e.endpoint()!;
+  pixel.links.close();
+
+  // Her link says her Erevos takes a conversation a device starts (`d`).
+  const added = await dell.chats.e2e.addContact({ senderHex: erin.queue.senderHex, key: toBase64Url(erin.chats.e2e.bundle), relayUrl: url, d: true }, dell.queue.senderHex, where);
+  assert.equal(added.added, true);
+  assert.equal(dell.chats.e2e.record(erinId)?.direct?.sender, erin.queue.senderHex);
+  await write(dell, erinId, 'hello from the computer');
+  assert.ok(!dell.chats.e2e.record(erinId)?.direct?.first);
+  const came = await take(erin);
+  assert.deepEqual(came.filter((m) => m.text).map((m) => [m.identity, m.text, m.from]), [[account, 'hello from the computer', dells.id]]);
+  assert.ok(came.every((m) => m.identity === account && m.from === dells.id));
+  const her = erin.chats.e2e.record(account)!;
+  assert.equal(her.request, true);
+  assert.ok(her.endpoints?.some((w) => w.id === dells.id));
+  assert.equal(her.sender, pixel.queue.senderHex);
+
+  // She answers: the computer takes it from its endpoint, the phone still off.
+  await erin.chats.e2e.acceptRequest(account);
+  await write(erin, account, 'hello back');
+  await sendCopies(erin.chats.e2e, relay);
+  const back = await takeKept(relay, dell);
+  assert.deepEqual(back.filter((m) => m.text).map((m) => [m.identity, m.text]), [[erinId, 'hello back']]);
+  assert.ok(dell.chats.e2e.record(erinId)?.direct?.conversations[0]);
+
+  // The phone back: it adds her, as the computer asked, and not as a request; the computer keeps its way to her.
+  await reopen(pixel);
+  await until(async () => {
+    await take(pixel);
+    await take(dell);
+    const c = pixel.chats.e2e.record(erinId);
+    return !!c && !c.request;
+  });
+  assert.equal(dell.chats.e2e.record(erinId)?.direct?.sender, erin.queue.senderHex);
+  await write(dell, erinId, 'still direct');
+  const again = await take(erin);
+  assert.deepEqual(again.filter((m) => m.text).map((m) => [m.identity, m.text, m.from]), [[account, 'still direct', dells.id]]);
+  // The account's own first word came with it: no new start, and so gone.
+  assert.equal(erin.chats.e2e.record(account)?.byDevice, undefined);
+  for (const p of [pixel, dell, erin]) p.links.close();
+});
+
 test('sent for later from a device: held for the contact and copied to each endpoint, shown as scheduled on the phone, taken back there, and with the phone off it goes from the device', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
   const { relay, url, where, phone, take, write, linkUp } = await setup();
   const pixel = await phone(0);
@@ -2697,6 +2757,64 @@ test('a contact takes a list only as their account signed it for them, an accoun
   assert.equal(carol.chats.e2e.copies().length, 0);
 
   for (const p of [carol, mallory, olga, laptop]) p.links.close();
+});
+
+test('someone new takes a conversation a device starts only with its account\'s own word for the bundle, a list that account signed naming that device, for them, and a pass from that account for that device, good now, which says where the account reads; and never from someone blocked', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {
+  const { url, phone } = await setup();
+  const erin = await phone(0);
+  const mallory = await phone(1);
+  const olga = await phone(2);
+  const erinId = erin.chats.e2e.identityHex();
+  const malloryId = mallory.chats.e2e.identityHex();
+  const secret = await newAccount();
+  const m = { secret, i: toHex(await accountIdentity(secret)), b: toBase64Url(await accountBundle(secret)) };
+  const other = await newAccount();
+  const x = toBase64Url(await accountBundle(other));
+  const xi = toHex(await accountIdentity(other));
+  const signed = (by: Phone, a: string, n: number, d: { i: string; b: string }[]) => signList((context, message) => by.chats.e2e.sign(context, message), { a, n, d: d.map(({ i, b }) => ({ i, b, f: 1 })) });
+  const ak = toBase64Url(mallory.chats.e2e.bundle);
+  const ab = await mallory.chats.e2e.binding();
+  assert.equal(fromBase64Url(ab).length, 64);
+  const list = await signed(mallory, malloryId, 5, [m]);
+  const pass = (by: Phone, a: string, i: string, u: number) => signPass((context, message) => by.chats.e2e.sign(context, message), { a, i, s: 'ab'.repeat(24), r: url, k: '', u });
+  const day = 24 * 60 * 60_000;
+  const fine = { from: mallory.queue.senderHex, relay: url, text: 'hello', tag: 'bbbbbbbbbbbb', dv: 0, cl: 1, to: erinId, acct: malloryId, ak, ab, dl: list, ap: await pass(mallory, malloryId, m.i, Date.now() + day) };
+  const opening = async (say: object) => (await startConversation(m.secret, erin.chats.e2e.bundle, utf8Encode(JSON.stringify({ ...fine, ...say })))).packet;
+  const refused = async (say: object) => {
+    const received = await erin.chats.e2e.receive(await opening(say));
+    assert.equal(received.kind, 'refused', JSON.stringify(Object.keys(say)));
+    assert.ok(!erin.chats.e2e.record(malloryId));
+  };
+  // Another account's word, a word made up, and another account's bundle with its own word.
+  await refused({ ab: await olga.chats.e2e.binding() });
+  await refused({ ab: toBase64Url(randomBytes(64)) });
+  await refused({ ak: toBase64Url(olga.chats.e2e.bundle), ab: await olga.chats.e2e.binding() });
+  // For someone else; a list not naming this device, or signed as another account's, or by another; no list; nowhere the account reads.
+  await refused({ to: olga.chats.e2e.identityHex() });
+  await refused({ dl: await signed(mallory, malloryId, 6, [{ i: xi, b: x }]) });
+  await refused({ dl: await signed(mallory, olga.chats.e2e.identityHex(), 7, [m]) });
+  await refused({ dl: await signed(olga, malloryId, 8, [m]) });
+  await refused({ dl: undefined });
+  // No pass; one run out, or good for far longer than one lasts; for another endpoint, another account, or signed by another.
+  await refused({ ap: undefined });
+  await refused({ ap: await pass(mallory, malloryId, m.i, Date.now() - 1000) });
+  await refused({ ap: await pass(mallory, malloryId, m.i, Date.now() + 30 * day) });
+  await refused({ ap: await pass(mallory, malloryId, xi, Date.now() + day) });
+  await refused({ ap: await pass(mallory, olga.chats.e2e.identityHex(), m.i, Date.now() + day) });
+  await refused({ ap: await pass(olga, malloryId, m.i, Date.now() + day) });
+  // A pass not in the one form the account signs.
+  const good = await pass(mallory, malloryId, m.i, Date.now() + day);
+  await refused({ ap: { ...good, b: toBase64Url(utf8Encode(utf8Decode(fromBase64Url(good.b)).replace('{', '{ '))) } });
+  // All of it holding: Mallory's account, as a request, from that device.
+  const took = await erin.chats.e2e.receive(await opening({}));
+  assert.deepEqual(took.kind === 'message' && [took.identity, took.text, took.from, took.request], [malloryId, 'hello', m.i, true]);
+  assert.deepEqual([erin.chats.e2e.record(malloryId)?.sender, erin.chats.e2e.record(malloryId)?.list?.n, erin.chats.e2e.record(malloryId)?.byDevice], ['ab'.repeat(24), 5, true]);
+  // The same again is a replay; blocked, none is taken.
+  await erin.chats.e2e.deleteContact(malloryId, { block: true });
+  const blocked = await erin.chats.e2e.receive(await opening({ tag: 'cccccccccccc' }));
+  assert.equal(blocked.kind === 'refused' && blocked.reason, 'blocked');
+  assert.ok(!erin.chats.e2e.record(malloryId));
+  for (const p of [erin, mallory, olga]) p.links.close();
 });
 
 test('a contact, a phone and a device on an Erevos from before endpoints: everything goes through the phone, as before', { skip: !coreReady || !relayReady, timeout: 90_000 }, async () => {

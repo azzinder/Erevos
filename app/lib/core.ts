@@ -49,6 +49,8 @@ export interface Core {
    *  linked devices that work with the primary off (docs/multi-device.md). */
   accountSign?(account: Uint8Array, context: Uint8Array, message: Uint8Array): Promise<Uint8Array>;
   bundleVerify?(bundle: Uint8Array, context: Uint8Array, message: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
+  accountBind?(account: Uint8Array): Promise<Uint8Array>;
+  bundleBound?(bundle: Uint8Array, signature: Uint8Array): Promise<Uint8Array>;
   /** Group chats (crates/erevos-group): missing in a build made before them. */
   groupNew?(about: Uint8Array): Promise<Uint8Array>;
   groupKeyPackage?(state: Uint8Array): Promise<Uint8Array>;
@@ -413,6 +415,30 @@ export async function bundleVerify(bundle: Uint8Array, context: string, message:
   const it = need();
   if (!it.bundleVerify) throw new NoCoreError();
   const identity = await it.bundleVerify(bundle, utf8(context), message, signature).catch(() => null);
+  return identity?.length === 32 ? identity : null;
+}
+
+/** Whether the core can say an account's bundle is its own identity's, and check that (docs/multi-device.md, S5): a core from before cannot. */
+export function canBind(): boolean {
+  return typeof core?.accountBind === 'function' && typeof core?.bundleBound === 'function';
+}
+
+/** The account's X25519 identity saying that its bundle's signing key is its own (XEdDSA), for a contact link or a linked device to give with the bundle. */
+export function accountBind(account: Uint8Array): Promise<Uint8Array> {
+  const it = need();
+  if (!it.accountBind) throw new NoCoreError();
+  return it.accountBind(account);
+}
+
+/**
+ * The identity key of the bundle, when its X25519 identity said its signing key is its own
+ * (`accountBind`), or null when it did not or the bundle does not hold. With this, a bundle that
+ * did not come inside a conversation with its identity is that identity's all the same.
+ */
+export async function bundleBound(bundle: Uint8Array, signature: Uint8Array): Promise<Uint8Array | null> {
+  const it = need();
+  if (!it.bundleBound) throw new NoCoreError();
+  const identity = await it.bundleBound(bundle, signature).catch(() => null);
   return identity?.length === 32 ? identity : null;
 }
 

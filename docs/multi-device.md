@@ -229,8 +229,12 @@ Older versions ignore an unknown `k`.
    drop the ways no longer listed, conversations and all, so nothing the device seals for them
    opens, and a first packet from it waits for a list that names it.
 
-Adding a new contact needs the account's own handshake, so the primary must be on once for each
-new contact. A device can still ask for one to be added (`Links.add`), as today.
+Someone new whose link says `d=1` a device adds with the phone off: its endpoint starts the
+conversation with the account's X25519 word that the bundle signing the list is its own, the
+list naming it, and a pass for it the account signed, good for 14 days and renewed by the phone
+(docs/sync.md, phase S5). Their Erevos checks both and starts the account's own
+conversation itself. A link from before needs the account's own handshake, so the primary must be
+on once for each such contact. A device asks for each to be added (`Links.add`) either way.
 
 ### What goes where
 
@@ -569,7 +573,7 @@ made is known by its own identity again, and each side gives the other its list 
 ## Costs and what still needs the primary
 
 - Still needs the primary: contacts on older versions (and their calls and what is sent them for
-  later), adding each new contact once, linking and unlinking, groups (until phase 6).
+  later, and adding them), linking and unlinking, groups (until phase 6).
 - A lost primary cannot unlink a stolen device until a list is signed again (the primary or its
   backup). A primary taken over can add a device without the safety number changing, as in Signal:
   contact details show the list's last change (under the safety number, the day of its `n`).

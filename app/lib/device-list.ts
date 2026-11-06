@@ -187,3 +187,71 @@ export function checkedList(value: unknown): DeviceList | null {
   }
   return { b: v.b, s: v.s, ...(Object.keys(routes).length > 0 ? { r: routes } : {}) };
 }
+
+// A device's pass (docs/sync.md, phase S5): the account, with the key that signs its lists, says for
+// a while that one endpoint of its list speaks for it to someone new, and where the account reads,
+// for them to answer it there. The phone gives each linked device one, and a new one well before it
+// runs out, so a device unlinked, lost or stolen starts nothing with anyone new for longer than
+// PASS_LASTS: the list it holds may name it still, its pass does not stay good.
+
+/** What the account signs a pass as (lib/core.ts accountSign). */
+export const PASS_CONTEXT = 'pass';
+/** How long a pass is good for. */
+export const PASS_LASTS = 14 * 24 * 60 * 60_000;
+/** How long before it runs out the phone gives a device a new one, and so for how long a device unlinked and never told still has one. */
+export const PASS_RENEW = 7 * 24 * 60 * 60_000;
+/** How long before it runs out a device no longer uses one: someone new takes it a while after it was sent. */
+export const PASS_MARGIN = 24 * 60 * 60_000;
+// A clock ahead a little on the phone: a pass good for a while past PASS_LASTS is taken still.
+const PASS_AHEAD = 24 * 60 * 60_000;
+const MAX_PASS = 2048;
+
+/** What a pass says: whose (`a`), for which endpoint (`i`), where the account reads (`s`, its queue's sender id; `r`, its relay; `k`, that relay's key or empty), and until when (`u`, ms). */
+export type PassBody = { a: string; i: string; s: string; r: string; k: string; u: number };
+
+/** A pass as it travels: its body and the account's signature of it, base64url. */
+export type Pass = { b: string; s: string };
+
+/** A pass's body as the account signs it: one form only, keys in their order. */
+export function passBytes({ a, i, s, r, k, u }: PassBody): Uint8Array {
+  return utf8Encode(JSON.stringify({ t: 'erevos pass', v: 1, a, i, s, r, k, u }));
+}
+
+/** Signs a pass with the account's key (`sign`, as lib/e2e.ts E2E.sign). */
+export async function signPass(sign: (context: string, message: Uint8Array) => Promise<Uint8Array>, body: PassBody): Promise<Pass> {
+  const bytes = passBytes(body);
+  return { b: toBase64Url(bytes), s: toBase64Url(await sign(PASS_CONTEXT, bytes)) };
+}
+
+/** What a pass says, its shape and form checked (not its signature): null when it is not one. */
+export function readPass(pass: Pick<Pass, 'b'>): PassBody | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(utf8Decode(fromBase64Url(pass.b)));
+  } catch {
+    return null;
+  }
+  const v = (value ?? {}) as Partial<Record<'t' | 'v' | keyof PassBody, unknown>>;
+  if (v.t !== 'erevos pass' || v.v !== 1 || !isHex(v.a, 64) || !isHex(v.i, 64) || !isHex(v.s, 48) || !isRelay(v.r) || !(v.k === '' || isRelayKey(v.k)) || !Number.isSafeInteger(v.u) || (v.u as number) <= 0) return null;
+  const body: PassBody = { a: v.a, i: v.i, s: v.s, r: v.r, k: v.k as string, u: v.u as number };
+  // In the one form the account signs only.
+  return toBase64Url(passBytes(body)) === pass.b ? body : null;
+}
+
+/** A pass as said, its shape checked (not its signature): null when it is not one. */
+export function checkedPass(value: unknown): Pass | null {
+  const v = (value ?? {}) as Partial<Record<keyof Pass, unknown>>;
+  return isBase64Url(v.b, MAX_PASS) && isBase64Url(v.s, 128) && readPass({ b: v.b }) ? { b: v.b, s: v.s } : null;
+}
+
+/**
+ * Checks a pass against the bundle of the account it should be of (`identity`, hex), a bundle
+ * already known to be that identity's (lib/core.ts bundleBound): the bundle's key signed it, it is
+ * that account's, for `endpoint`, and good at `now`, and not for far longer than a pass lasts.
+ */
+export async function verifyPass(bundle: Uint8Array, identity: string, pass: Pass, endpoint: string, now = Date.now()): Promise<PassBody | null> {
+  const body = readPass(pass);
+  if (!body || body.a !== identity || body.i !== endpoint || body.u <= now || body.u > now + PASS_LASTS + PASS_AHEAD) return null;
+  const signer = await core.bundleVerify(bundle, PASS_CONTEXT, fromBase64Url(pass.b), fromBase64Url(pass.s)).catch(() => null);
+  return signer && toHex(signer) === identity ? body : null;
+}

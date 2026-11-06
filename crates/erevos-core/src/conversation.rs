@@ -107,6 +107,13 @@ impl Account {
         Ok(self.identity.signing.sign(&pqxdh::signed_statement(context, message)?).to_bytes())
     }
 
+    /// This account's X25519 identity saying that its Ed25519 key is its own
+    /// (crate::bind), for those who take its bundle from a contact link or a
+    /// linked device to check with [`PrekeyBundle::verify_bound`].
+    pub fn bind(&self) -> [u8; 64] {
+        self.identity.bind()
+    }
+
     pub fn to_secret_bytes(&self) -> Zeroizing<Vec<u8>> {
         let identity = self.identity.to_secret_bytes();
         let prekeys = self.prekeys.to_secret_bytes();

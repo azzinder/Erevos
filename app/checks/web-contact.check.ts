@@ -32,6 +32,7 @@ const FULL: ContactCode = {
   senderHex: 'ab'.repeat(24),
   relayUrl: 'wss://erevos.example',
   key: KEY,
+  d: true,
   relayKey: 'k'.repeat(43),
   spare: { senderHex: 'cd'.repeat(24), relayUrl: 'wss://home.example:7879', relayKey: 'h'.repeat(43) },
   lend: `ticket.${'0f'.repeat(40)}`,
@@ -54,7 +55,7 @@ test('the app takes a link for a website as the contact link it came from, with 
 });
 
 test('a link with no relay queue yet, only keys and Nostr, still makes one', () => {
-  const bare: ContactCode = { senderHex: '', relayUrl: '', key: KEY, nostr: FULL.nostr };
+  const bare: ContactCode = { senderHex: '', relayUrl: '', key: KEY, nostr: FULL.nostr, d: true };
   const page = contactPageLink(contactLink(bare))!;
   assert.deepEqual(parseContact(page), bare);
   assert.equal(contactPageLink(contactLink({ senderHex: 'ab'.repeat(24), relayUrl: 'wss://erevos.example', key: '' })), null);

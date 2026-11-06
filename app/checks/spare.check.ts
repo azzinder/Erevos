@@ -46,9 +46,9 @@ const hex = (bytes: number) => toHex(randomBytes(bytes));
 
 test('a contact link carries the backup queue, and one that does not read is left out', () => {
   const spare = { senderHex: hex(24), relayUrl: 'wss://home.example.org/erevos', relayKey: KEY };
-  const code = { senderHex: hex(24), relayUrl: 'wss://relay.example.org', key: 'abc', relayKey: KEY, spare };
+  const code = { senderHex: hex(24), relayUrl: 'wss://relay.example.org', key: 'abc', relayKey: KEY, d: true as const, spare };
   assert.deepEqual(parseContact(contactLink(code)), code);
-  const plain = { senderHex: code.senderHex, relayUrl: code.relayUrl, key: 'abc', relayKey: KEY };
+  const plain = { senderHex: code.senderHex, relayUrl: code.relayUrl, key: 'abc', relayKey: KEY, d: true as const };
   assert.deepEqual(parseContact(`${contactLink(plain)}&sid=nothex&srelay=wss%3A%2F%2Fhome`), plain);
   assert.deepEqual(parseContact(`${contactLink(plain)}&sid=${hex(24)}&srelay=http%3A%2F%2Fhome`), plain);
   assert.deepEqual(parseContact(contactLink({ ...code, spare: { senderHex: spare.senderHex, relayUrl: spare.relayUrl } })), {
@@ -61,7 +61,7 @@ test('a contact link carries a list of home relays, in order, each once, and an 
   const first = { senderHex: hex(24), relayUrl: 'wss://home.example.org/erevos', relayKey: KEY };
   const second = { senderHex: hex(24), relayUrl: 'wss://friend.example.net', relayKey: KEY };
   const third = { senderHex: hex(24), relayUrl: 'ws://192.168.1.10:7879' };
-  const code = { senderHex: hex(24), relayUrl: 'wss://relay.example.org', key: 'abc', relayKey: KEY, spare: { ...first, more: [second, third] } };
+  const code = { senderHex: hex(24), relayUrl: 'wss://relay.example.org', key: 'abc', relayKey: KEY, d: true as const, spare: { ...first, more: [second, third] } };
   const link = contactLink(code);
   assert.match(link, /&sid2=.*&srelay2=.*&srk2=.*&sid3=.*&srelay3=/);
   assert.deepEqual(parseContact(link), code);
@@ -88,6 +88,7 @@ test('a contact link with every home relay, Nostr and a ticket still fits one QR
     relayUrl: long('relay'),
     // An account bundle is about 1800 characters.
     key: 'A'.repeat(1800),
+    d: true as const,
     relayKey: KEY,
     spare: { senderHex: hex(24), relayUrl: long('home'), relayKey: KEY, more: [1, 2].map((n) => ({ senderHex: hex(24), relayUrl: long(`home${n}`), relayKey: KEY })) },
     lend: `ticket.${'a'.repeat(80)}`,

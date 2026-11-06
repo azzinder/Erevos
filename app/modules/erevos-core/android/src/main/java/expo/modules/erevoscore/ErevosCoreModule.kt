@@ -28,6 +28,12 @@ class ErevosCoreModule : Module() {
     AsyncFunction("bundleVerify") { bundle: ByteArray, context: ByteArray, message: ByteArray, signature: ByteArray ->
       ErevosCoreNative.bundleVerify(bundle, context, message, signature)
     }
+    AsyncFunction("accountBind") { account: ByteArray ->
+      ErevosCoreNative.accountBind(account)
+    }
+    AsyncFunction("bundleBound") { bundle: ByteArray, signature: ByteArray ->
+      ErevosCoreNative.bundleBound(bundle, signature)
+    }
     AsyncFunction("conversationStart") { account: ByteArray, bundle: ByteArray, plaintext: ByteArray ->
       ErevosCoreNative.conversationStart(account, bundle, plaintext)
     }
@@ -184,6 +190,8 @@ internal object ErevosCoreNative {
   @JvmStatic external fun bundleIdentity(bundle: ByteArray): ByteArray
   @JvmStatic external fun accountSign(account: ByteArray, context: ByteArray, message: ByteArray): ByteArray
   @JvmStatic external fun bundleVerify(bundle: ByteArray, context: ByteArray, message: ByteArray, signature: ByteArray): ByteArray
+  @JvmStatic external fun accountBind(account: ByteArray): ByteArray
+  @JvmStatic external fun bundleBound(bundle: ByteArray, signature: ByteArray): ByteArray
   @JvmStatic external fun conversationStart(account: ByteArray, bundle: ByteArray, plaintext: ByteArray): ByteArray
   @JvmStatic external fun conversationAccept(account: ByteArray, packet: ByteArray): ByteArray
   @JvmStatic external fun conversationAcceptAny(account: ByteArray, prekeys: ByteArray, packet: ByteArray): ByteArray

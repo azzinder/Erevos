@@ -6,6 +6,7 @@
 //!
 //! Not audited. Do not rely on it to protect anyone yet.
 
+pub mod bind;
 pub mod conversation;
 pub mod frame;
 pub mod keep;

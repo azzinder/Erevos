@@ -42,6 +42,16 @@ pub fn bundle_verify(bundle: &[u8], context: &[u8], message: &[u8], signature: &
     js(crate::bundle_verify(bundle, context, message, signature))
 }
 
+#[wasm_bindgen(js_name = accountBind)]
+pub fn account_bind(account: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::account_bind(account))
+}
+
+#[wasm_bindgen(js_name = bundleBound)]
+pub fn bundle_bound(bundle: &[u8], signature: &[u8]) -> Result<Vec<u8>, JsError> {
+    js(crate::bundle_bound(bundle, signature))
+}
+
 #[wasm_bindgen(js_name = conversationStart)]
 pub fn conversation_start(account: &[u8], bundle: &[u8], plaintext: &[u8]) -> Result<Vec<u8>, JsError> {
     js(crate::conversation_start(account, bundle, plaintext))

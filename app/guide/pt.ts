@@ -3221,8 +3221,10 @@ Então as conversas chegam ao computador, e depois delas as mensagens escolhidas
   escrevem, leem e aquilo a que reagem chega, e o que você escreve vai. Se o celular fica desligado tanto tempo que a
   fila dele no relay enche (1000 mensagens), o que eles escrevem e leem ainda chega ao computador, uma mensagem de voz
   longa inteira; aquilo a que reagem, o que fixam, votam ou apagam, e as chamadas deles, não passam até o celular estar
-  ligado de novo. Para contatos em versões mais antigas, grupos e adicionar um contato, **o celular precisa estar ligado** e alcançar o relay: o que o computador escreve nesse meio-tempo
-  espera no relay, e vai assim que o celular volta. Dois ou mais dispositivos conectados também se alcançam direto:
+  ligado de novo. Para contatos em versões mais antigas (adicioná-los também) e grupos, **o celular precisa estar ligado** e alcançar o relay: o que o computador escreve nesse meio-tempo
+  espera no relay, e vai assim que o celular volta. Alguém novo cujo link de contato é desta versão o computador adiciona também com o
+  celular desligado: ele mesmo começa a conversa, a pessoa vê sua conta como uma solicitação, e o celular a adiciona
+  também assim que liga. Dois ou mais dispositivos conectados também se alcançam direto:
   com o celular desligado, cada um ainda mostra o que os outros escrevem, leem e aquilo a que reagem, e as mudanças que
   fazem nos contatos; um que perdeu a primeira mensagem de outro recebe uma nova um dia ou mais depois. Um computador
   que ficou desligado por mais tempo do que o relay guarda mensagens (14 dias), ou que perdeu a primeira mensagem de

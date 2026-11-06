@@ -79,6 +79,10 @@ export type Peer = {
   /** On the primary: the `n` of the device list it was last told, and where the other devices it names read, as told with it (JSON). */
   listed?: number;
   routed?: string;
+  /** On the primary: until when the pass it was last given with the list is good (ms, lib/device-list.ts Pass), with the account's word that its bundle is its own (`ab`, S5). */
+  passed?: number;
+  /** On the primary: where that pass says the account reads (JSON), so a new one goes once that moves. */
+  passTo?: string;
   /** The key this side gave it for the packets it sends here, and the one it gave this side (lib/sealed-packet.ts), base64url. Missing while not said: a version from before says none, and is sealed nothing. */
   key?: string;
   sealTo?: string;
@@ -230,6 +234,8 @@ function checkedPeer(value: unknown, unmarked = false): Peer | null {
     ...(endpoint ? { endpoint } : {}),
     ...(isTime(v.listed) && v.listed > 0 ? { listed: v.listed } : {}),
     ...(isText(v.routed) ? { routed: v.routed } : {}),
+    ...(isTime(v.passed) && v.passed > 0 ? { passed: v.passed } : {}),
+    ...(typeof v.passTo === 'string' && v.passTo.length <= 1024 ? { passTo: v.passTo } : {}),
     ...(isRelayKey(v.key) ? { key: v.key } : {}),
     ...(isRelayKey(v.sealTo) ? { sealTo: v.sealTo } : {}),
     ...(checkedWays(v.ways) ? { ways: checkedWays(v.ways)! } : {}),

@@ -100,6 +100,8 @@ export type Contact = {
   dv?: number;
   /** Their account takes a call's signals copied to and from its endpoints, and copies its own to this chat's (`cl`, lib/e2e.ts): a call rings on each of their devices, and any of them calls with the phone off. */
   calls?: true;
+  /** Someone new whose linked device started the chat with its account's word for it (S5, lib/e2e.ts acceptBound): their account's own first message after is no new start, and the ways to its endpoints stay. Gone with that message. */
+  byDevice?: true;
   /** Their account's device list as last checked here, against `bundle`. */
   list?: TheirList;
   /** A way to each endpoint their list names, devices and the places that fill it alike. */
@@ -506,7 +508,14 @@ export const MAX_OLD_FILLERS = 16;
 export type Route = { s: string; relay: string; rk: string; pk?: string };
 
 /** On a linked device: its account as the phone said it over the link (identity, hex; bundle, base64url), and the account's list as last checked. */
-export type Own = { identity: string; bundle: string; list: OwnList | null };
+/** `ab`: the account's X25519 identity saying `bundle`'s signing key is its own (lib/core.ts accountBind), base64url, as the phone gave it: what a new contact checks a conversation this device starts by (docs/multi-device.md, S5). */
+// A linked device's pass from the phone (lib/device-list.ts Pass), its shape only.
+function checkedOwnPass(value: unknown): { b: string; s: string } | null {
+  const v = (value ?? null) as Record<string, unknown> | null;
+  return v && typeof v === 'object' && typeof v.b === 'string' && /^[A-Za-z0-9_-]{1,2048}$/.test(v.b) && typeof v.s === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(v.s) ? { b: v.b, s: v.s } : null;
+}
+
+export type Own = { identity: string; bundle: string; list: OwnList | null; ab?: string; ap?: { b: string; s: string } };
 
 /** A linked device's own endpoint (docs/multi-device.md) as others know it: its identity, hex, and its bundle, base64url. */
 /** A linked device's endpoint: its identity (hex) and bundle (base64url), and what the key each contact seals what they send it with for the relay is drawn from (`ek`, base64url, lib/sealed-packet.ts entryKey), which a device from before does not say. */
@@ -550,6 +559,10 @@ export type E2EData = {
   blocked?: Blocked[];
   /** What a relay still holds for later for those deleted or blocked here. Saved with their removal. Missing when none. */
   undropped?: Undropped[];
+  /** On the primary: this account's X25519 identity saying its bundle's signing key is its own
+   *  (lib/core.ts accountBind), base64url, made once and given to its linked devices with the list.
+   *  Missing until made, and with a core that cannot. */
+  bound?: string;
   /** What relays hold for later for the endpoints of contacts' accounts, by message (HeldCopy). Missing when none. */
   heldCopies?: HeldCopy[];
   /** Invites given from here and not used yet (lib/welcome.ts). Missing when none. */
@@ -653,6 +666,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),
     ...(isCount(v.dv) ? { dv: v.dv } : {}),
     ...(v.calls === true ? { calls: true as const } : {}),
+    ...(v.byDevice === true ? { byDevice: true as const } : {}),
     ...(checkedTheirList(v.list) ? { list: checkedTheirList(v.list)! } : {}),
     ...(Array.isArray(v.endpoints) ? { endpoints: v.endpoints.map(checkedWay).filter((w): w is Way => w !== null).slice(0, MAX_REAL) } : {}),
     ...(checkedWay(v.direct) ? { direct: checkedWay(v.direct)! } : {}),
@@ -847,7 +861,7 @@ function checkedOldFiller(value: unknown): OldFiller | null {
 function checkedOwn(value: unknown): Own | null {
   const v = (value ?? {}) as Partial<Record<keyof Own, unknown>>;
   if (!isHex(v.identity) || v.identity.length !== 64 || !isBase64Url(v.bundle, MAX_BUNDLE)) return null;
-  return { identity: v.identity, bundle: v.bundle, list: checkedList(v.list) };
+  return { identity: v.identity, bundle: v.bundle, list: checkedList(v.list), ...(typeof v.ab === 'string' && /^[A-Za-z0-9_-]{86}$/.test(v.ab) ? { ab: v.ab } : {}), ...(checkedOwnPass(v.ap) ? { ap: checkedOwnPass(v.ap)! } : {}) };
 }
 
 /** What was stored, with anything of the wrong shape left out. */
@@ -871,6 +885,7 @@ function checked(value: unknown): E2EData {
     ...(isTime(v.moveDue) && v.moveDue > 0 ? { moveDue: v.moveDue } : {}),
     ...(Array.isArray(v.blocked) ? { blocked: v.blocked.map(checkedBlocked).filter((b): b is Blocked => b !== null).slice(-MAX_BLOCKED) } : {}),
     ...(Array.isArray(v.undropped) ? { undropped: v.undropped.map(checkedUndropped).filter((u): u is Undropped => u !== null).slice(-MAX_UNDROPPED) } : {}),
+    ...(typeof v.bound === 'string' && /^[A-Za-z0-9_-]{86}$/.test(v.bound) ? { bound: v.bound } : {}),
     ...(Array.isArray(v.heldCopies) && v.heldCopies.length > 0 ? { heldCopies: v.heldCopies.map(checkedHeldCopy).filter((u): u is HeldCopy => u !== null).slice(-MAX_UNDROPPED) } : {}),
     ...(Array.isArray(v.invited) ? { invited: v.invited.map(checkedInvited).filter((i): i is Invited => i !== null).slice(-MAX_INVITED) } : {}),
     ...(isText(v.invitedAs) && cleanName(v.invitedAs) ? { invitedAs: cleanName(v.invitedAs) } : {}),

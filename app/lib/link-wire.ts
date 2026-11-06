@@ -10,7 +10,7 @@ import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachment
 import { carriedOf, checkedChoices, editableWords, MAX_EDIT, previewAfterEdit } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
 import { fromBase64, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { bodyOf, checkedList, MAX_LISTED, type DeviceList } from './device-list';
+import { bodyOf, checkedList, checkedPass, MAX_LISTED, type DeviceList, type Pass } from './device-list';
 import { waysFor, withRoutes } from './endpoints';
 import { groupPartsOf, markedOf, type Marked } from './group-parts';
 import { cleanGroupName, isGroupId } from './group-signal';
@@ -90,7 +90,7 @@ export type Envelope =
   | { k: 'group'; id: string; ask: GroupAsk }
   | { k: 'changed'; chats: ChatChange[]; groups: GroupChange[]; whole: WholeGroup[] }
   | { k: 'endpoint'; bundle: string; ek?: string }
-  | { k: 'list'; list: DeviceList; ak: string; real?: string[]; routes?: Record<string, Place> }
+  | { k: 'list'; list: DeviceList; ak: string; real?: string[]; routes?: Record<string, Place>; ab?: string; ap?: Pass }
   | { k: 'way'; c: string; dv?: number; list?: DeviceList }
   | { k: 'came'; c: string; got: string[] }
   | ({ k: 'accounts' } & GivenAccounts)
@@ -477,7 +477,11 @@ function checkedEnvelope(v: Json): Envelope | null {
           if (checked) routes[id] = checked;
         }
       }
-      return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}), ...(Object.keys(routes).length > 0 ? { routes } : {}) };
+      // And the account's word that `ak`'s signing key is its own, for the device to give a new contact (S5).
+      // And the device's pass, which says for a while that it speaks for the account to someone new.
+      const ab = typeof v.ab === 'string' && /^[A-Za-z0-9_-]{86}$/.test(v.ab) ? v.ab : undefined;
+      const ap = ab ? checkedPass(v.ap) : null;
+      return { k: 'list', list, ak: v.ak, ...(real ? { real } : {}), ...(Object.keys(routes).length > 0 ? { routes } : {}), ...(ab ? { ab } : {}), ...(ap ? { ap } : {}) };
     }
     case 'way': {
       if (!isHex(v.c, 64)) return null;

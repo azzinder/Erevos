@@ -3118,9 +3118,10 @@ Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
   čitaju i na šta reaguju, a ide ono što vi pišete. Ako telefon ostane isključen toliko dugo da se njegov red na
   relayu napuni (1000 poruka), ono što pišu i čitaju i dalje stiže na računar, dugačka glasovna poruka cijela; ono na
   šta reaguju, što prikvače, za šta glasaju ili što obrišu, kao i njihovi pozivi, ne prolazi dok se telefon ponovo ne
-  uključi. Za kontakte sa starijim verzijama, grupe i dodavanje kontakta **telefon
+  uključi. Za kontakte sa starijim verzijama (i njihovo dodavanje) i grupe **telefon
   mora biti uključen** i dosezati relay: ono što računar u međuvremenu napiše čeka na relayu i odlazi kad se telefon
-  vrati. Dva ili više povezanih uređaja dosežu i jedni druge direktno: kad je telefon isključen, svaki i dalje
+  vrati. Nekoga novog čiji je link kontakta iz ove verzije računar dodaje i kad je telefon isključen: sam započinje
+  razgovor s njim, ta osoba vidi tvoj račun kao zahtjev, a telefon je dodaje i sam čim se uključi. Dva ili više povezanih uređaja dosežu i jedni druge direktno: kad je telefon isključen, svaki i dalje
   prikazuje ono što drugi pišu, čitaju i na šta reaguju, i promjene koje prave na kontaktima; onaj koji je propustio
   prvu poruku drugog dobija novu dan ili više kasnije. Računar koji je bio isključen duže nego što relay čuva poruke
   (14 dana), ili je propustio prvu poruku kontakta njemu, ipak dobija ono što taj kontakt napiše kasnije: njegov

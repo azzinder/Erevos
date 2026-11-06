@@ -3453,9 +3453,11 @@ Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichte
   aus, dass seine Warteschlange auf dem Relay voll wird (1000 Nachrichten), erreicht, was sie schreiben und lesen,
   trotzdem den Computer, eine lange Sprachnachricht vollständig; worauf sie reagieren, was sie anheften, worüber sie
   abstimmen oder was sie löschen, und ihre Anrufe, kommen erst durch, wenn das Telefon wieder an ist. Für Kontakte mit
-  älteren Versionen, Gruppen und das Hinzufügen eines Kontakts **muss das
+  älteren Versionen (auch sie hinzuzufügen) und Gruppen **muss das
   Telefon an sein** und das Relay erreichen: Was der Computer inzwischen schreibt, wartet auf dem Relay und geht,
-  sobald das Telefon zurück ist. Zwei oder mehr verknüpfte Geräte erreichen sich auch direkt: Bei ausgeschaltetem
+  sobald das Telefon zurück ist. Jemanden Neuen, dessen Kontaktlink von dieser Version ist, fügt der Computer auch bei
+  ausgeschaltetem Telefon hinzu: Er beginnt den Chat selbst, die Person sieht dein Konto als Anfrage, und das Telefon
+  fügt sie ebenfalls hinzu, sobald es an ist. Zwei oder mehr verknüpfte Geräte erreichen sich auch direkt: Bei ausgeschaltetem
   Telefon zeigt jedes trotzdem, was die anderen schreiben, lesen und worauf sie reagieren, und die Änderungen, die sie
   an Kontakten machen; eines, das die erste Nachricht eines anderen verpasst hat, bekommt einen Tag oder später eine
   neue. Ein Computer, der länger aus war, als das Relay Nachrichten aufbewahrt (14 Tage), oder die erste Nachricht

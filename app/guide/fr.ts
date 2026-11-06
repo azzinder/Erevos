@@ -3428,8 +3428,10 @@ Les discussions arrivent alors sur l’ordinateur, et après elles les messages 
   éteint si longtemps que sa file d’attente sur le relais se remplit (1000 messages), ce qu’ils écrivent et lisent
   atteint toujours l’ordinateur, un long message vocal en entier ; ce à quoi ils réagissent, ce qu’ils épinglent, ce
   pour quoi ils votent ou ce qu’ils suppriment, et leurs appels, ne passent pas avant que le téléphone soit de nouveau
-  allumé. Pour les contacts sur des versions plus anciennes, les groupes et l’ajout d’un contact, **le téléphone doit être allumé** et joindre le relais : ce que l’ordinateur écrit
-  entre-temps attend sur le relais, et part une fois le téléphone revenu. Deux appareils associés ou plus se joignent
+  allumé. Pour les contacts sur des versions plus anciennes (leur ajout aussi) et les groupes, **le téléphone doit être allumé** et joindre le relais : ce que l’ordinateur écrit
+  entre-temps attend sur le relais, et part une fois le téléphone revenu. Quelqu’un de nouveau dont le lien de contact vient de cette version, l’ordinateur
+  l’ajoute aussi téléphone éteint : il commence lui-même la discussion, la personne voit ton compte comme une demande, et
+  le téléphone l’ajoute aussi une fois allumé. Deux appareils associés ou plus se joignent
   aussi directement : téléphone éteint, chacun montre toujours ce que les autres écrivent, lisent et ce à quoi ils
   réagissent, et les changements qu’ils font aux contacts ; celui qui a manqué le premier message d’un autre en reçoit
   un nouveau un jour ou plus après. Un ordinateur resté éteint plus longtemps que le relais ne garde les messages (14

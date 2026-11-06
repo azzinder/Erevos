@@ -211,6 +211,30 @@ desktop/chunks.js (modules/erevos-radio/android/lan-check).
   it anew should the contact's queue move; a safety message stays the sending device's own. A record goes a day after
   its time.
 
+## Phase S5: a new contact from a device
+
+- The account's X25519 identity says, with an XEdDSA signature, that its bundle's signing key is its own
+  (crates/erevos-core/src/bind.rs, over `erevos signed v1\0bind\0 ‖ x25519 ‖ ed25519`; strict on the way back: sign
+  bit 0, canonical `s`, no small-order points). The phone makes it once (`E2EData.bound`) and gives it to each device
+  with the list (`ab`, `Peer.bound`), which keeps it with its own (`Own.ab`) once it holds for the account's bundle.
+- A contact link of this version says `d=1`: its Erevos takes a conversation one of the adder's devices starts. A device
+  adding someone new from such a link starts a conversation from its endpoint to their bundle (E2E `startBound`), whose
+  first message says whom it is for (`to`), the account (`acct`), its bundle (`ak`) and the word for it (`ab`), the list
+  that bundle signed (`dl`) and this device's pass (`ap`). It writes to them itself from then on.
+- A pass (lib/device-list.ts) is the account's signature, with the key that signs its lists (context `pass`), of
+  whose it is, the endpoint it is for, where the account reads, and until when (14 days). The phone gives each device
+  whose endpoint the list names one with the list, and a new one once less than 7 days are left (`Peer.passed`); a
+  device uses one only while more than a day is left. So a device unlinked, lost or stolen starts nothing with anyone
+  new for longer than its pass, though an old list names it, and cannot say where the account reads but as the
+  account said it.
+- Their Erevos (`acceptBound`) takes it only when the word holds for that bundle and `acct`, the list holds for that
+  account and names the endpoint that opened the conversation, the pass holds for that account and endpoint and is good
+  now (and not for far longer than one lasts), `to` is this chat, and the account is neither blocked nor known by
+  another identity. They then start the account's own conversation, to where the pass says, and have it as a request.
+- The device still asks the phone to add them (`Links.add`). The account's own first message, once the phone is on, is
+  no new start (`Contact.byDevice`): the ways to the endpoints stay.
+- A link from before, or a core that cannot make or check the word, goes through the phone as before.
+
 ## Next
 
-S5 (a new contact from a device), S6 (a holder of the groups that moves).
+S6 (a holder of the groups that moves).

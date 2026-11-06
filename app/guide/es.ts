@@ -3245,8 +3245,10 @@ Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
   que escriben, leen y a lo que reaccionan llega, y lo que escribes sale. Si el teléfono sigue apagado tanto tiempo que
   su cola en el relay se llena (1000 mensajes), lo que escriben y leen sigue llegando al ordenador, un mensaje de voz
   largo entero; aquello a lo que reaccionan, fijan, votan o eliminan, y sus llamadas, no pasa hasta que el teléfono se
-  vuelve a encender. Para los contactos con versiones más antiguas, los grupos y añadir un contacto, **el teléfono tiene que estar encendido** y llegar al
-  relay: lo que el ordenador escribe mientras tanto espera en el relay, y sale en cuanto vuelve el teléfono. Dos o más
+  vuelve a encender. Para los contactos con versiones más antiguas (también añadirlos) y los grupos, **el teléfono tiene que estar encendido** y llegar al
+  relay: lo que el ordenador escribe mientras tanto espera en el relay, y sale en cuanto vuelve el teléfono. A alguien nuevo cuyo enlace de contacto es de esta versión el ordenador lo añade
+  también con el teléfono apagado: empieza él mismo el chat, esa persona ve tu cuenta como una solicitud, y el teléfono
+  la añade también en cuanto se enciende. Dos o más
   dispositivos vinculados también se comunican directamente: con el teléfono apagado, cada uno sigue mostrando lo que
   los otros escriben, leen y a lo que reaccionan, y los cambios que hacen en los contactos; uno que se perdió el primer
   mensaje de otro recibe uno nuevo un día o más después. Un ordenador que estuvo apagado más tiempo del que el relay

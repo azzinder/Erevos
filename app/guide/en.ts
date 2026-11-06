@@ -2981,8 +2981,10 @@ The chats then come to the computer, and after them the messages chosen.
   read and react to comes, and what you write goes. If the phone stays off so long that its queue on the relay fills
   (1000 messages), what they write and read still reaches the computer, a long voice message whole; what they react
   to, pin, vote on or delete, and their calls, do not go through until the phone is on again. For contacts on older
-  versions, groups and adding a contact, **the phone has to be on** and reach the
-  relay: what the computer writes meanwhile waits on the relay, and goes once the phone is back. Two or more linked
+  versions (adding them too) and groups, **the phone has to be on** and reach the
+  relay: what the computer writes meanwhile waits on the relay, and goes once the phone is back. Someone new whose contact link is from this version the computer adds with the phone off
+  too: it starts the chat with them itself, they see your account as a request, and the phone adds them too once it is
+  on. Two or more linked
   devices also reach each other directly: with the phone off, each still shows what the others write, read and react
   to, and the changes they make to contacts; one that missed the first message of another gets a new one a day or more
   later. A computer that was off for longer than the relay keeps messages (14 days), or missed a contact's first

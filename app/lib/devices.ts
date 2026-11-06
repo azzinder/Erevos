@@ -39,7 +39,7 @@ import { carriedOf } from './chat-parts';
 import { contactLink, type ContactCode } from './contact-code';
 import * as core from './core';
 import { fromBase64, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
-import { bodyOf, flagsHold, MAX_LISTED, nextList, signList, verifyList, type DeviceList } from './device-list';
+import { bodyOf, flagsHold, MAX_LISTED, nextList, PASS_LASTS, PASS_RENEW, signList, signPass, verifyList, verifyPass, type DeviceList } from './device-list';
 import { fromBase64Url, OwnCodeError, toBase64Url, type Link, type Where } from './e2e';
 import { isCopied, waysFor } from './endpoints';
 import { currentGroupCall } from './group-call';
@@ -774,6 +774,13 @@ export class Links implements Link, TakenFiles {
 
   // The account's contact link, as the primary's chat shows it: the queue the link names, not the
   // one contacts write to; and while that is the own queue, its backup queue, which moves with it.
+  // On the primary: where the account reads first messages, as its contact link says: for a pass (S5).
+  private accountReads(): { sender: string; relay: string; relayKey: string } | null {
+    if (!this.at || this.data.primary) return null;
+    const sender = this.linkSender || this.at.sender;
+    return sender && this.at.relay ? { sender, relay: this.at.relay, relayKey: this.at.relayKey } : null;
+  }
+
   private ownLink(): string {
     if (!this.at) return '';
     const { sender, relay, relayKey: rk } = this.at;
@@ -2418,17 +2425,26 @@ export class Links implements Link, TakenFiles {
     const list = this.chats.e2e.signedList();
     if (!list || this.data.primary) return;
     const ak = toBase64Url(this.chats.e2e.bundle);
+    // And the account's word that the bundle is its own, with a pass for each device whose
+    // endpoint the list names, for it to start a chat with someone new (S5): given anew well before
+    // it runs out.
+    const ab = await this.chats.e2e.binding().catch(() => '');
+    const at = this.accountReads();
     const told = await this.run(async () => {
       const devices: Peer[] = [];
+      const now = Date.now();
       for (const d of this.data.devices) {
         const routes = this.routesFor(d);
         const routed = JSON.stringify(routes);
-        if (!d.linked || (d.listed === list.n && (!d.endpoint || d.routed === routed))) {
+        const passes = !!ab && !!at && !!d.endpoint && list.real.includes(d.endpoint.id);
+        if (!d.linked || (d.listed === list.n && (!d.endpoint || d.routed === routed) && (!passes || ((d.passed ?? 0) - now > PASS_RENEW && d.passTo === JSON.stringify(at))))) {
           devices.push(d);
           continue;
         }
-        const sealed = await this.seal(d, { k: 'list', list: { b: list.b, s: list.s }, ak, real: list.real, ...(Object.keys(routes).length > 0 ? { routes } : {}) });
-        devices.push(sealed.outbox.length > d.outbox.length ? { ...sealed, listed: list.n, ...(d.endpoint ? { routed } : {}) } : sealed);
+        const u = now + PASS_LASTS;
+        const ap = passes ? await signPass((context, message) => this.chats.e2e.sign(context, message), { a: this.chats.e2e.identityHex(), i: d.endpoint!.id, s: at!.sender, r: at!.relay, k: at!.relayKey, u }) : null;
+        const sealed = await this.seal(d, { k: 'list', list: { b: list.b, s: list.s }, ak, real: list.real, ...(Object.keys(routes).length > 0 ? { routes } : {}), ...(ap ? { ab, ap } : {}) });
+        devices.push(sealed.outbox.length > d.outbox.length ? { ...sealed, listed: list.n, ...(d.endpoint ? { routed } : {}), ...(ap ? { passed: u, passTo: JSON.stringify(at) } : {}) } : sealed);
       }
       if (devices.every((d, i) => d === this.data.devices[i])) return false;
       await this.save({ ...this.data, devices });
@@ -2462,16 +2478,22 @@ export class Links implements Link, TakenFiles {
     const held = endpoint && this.data.siblings?.of === endpoint.id ? this.data.siblings : null;
     const body = await verifyList(bundle, account, said.list, Math.max(kept?.n ?? 0, held?.n ?? 0));
     if (!body) return null;
+    // The account's word that this bundle is its own, and this device's pass, kept once both hold
+    // (S5): what someone new takes a conversation this device starts by.
+    const bound = !!said.ab && !!said.ap && !!endpoint && core.canBind() && (await core.bundleBound(bundle, fromBase64Url(said.ab)).then((id) => !!id && toHex(id) === account, () => false));
+    const passed = bound && (await verifyPass(bundle, account, said.ap!, endpoint!.id)) ? { ab: said.ab!, ap: said.ap! } : null;
     const routes = said.routes ?? {};
     let real = kept?.real ?? [];
     if (body !== 'same') {
       real = said.real ? said.real.filter((id) => body.d.some((e) => e.i === id)) : body.d.map((e) => e.i);
       const list = { b: said.list.b, s: said.list.s, n: body.n, real };
       this.act(async () => {
-        await e2e.keepOwn({ identity: account, bundle: said.ak, list });
+        await e2e.keepOwn({ identity: account, bundle: said.ak, list, ...(passed ?? (own?.identity === account && own.ab && own.ap ? { ab: own.ab, ap: own.ap } : {})) });
         if (endpoint && !real.includes(endpoint.id)) await this.tellEndpoint(true);
       });
     }
+    // The same list again, with a new pass: kept with it.
+    if (body === 'same' && passed) this.act(() => e2e.keepPass(account, passed.ab, passed.ap));
     if (!endpoint) return null;
     // The same list again: as kept, unless the one kept is not that one yet (keepOwn, in the work
     // after).
@@ -3127,7 +3149,7 @@ export class Links implements Link, TakenFiles {
     // A device not told the device list as last signed, or where its others read, as one its outbox
     // had no room for.
     const list = !this.data.primary && core.canSign() ? this.chats.e2e.signedList() : null;
-    const untold = (d: Peer) => d.listed !== list?.n || (!!d.endpoint && d.routed !== JSON.stringify(this.routesFor(d)));
+    const untold = (d: Peer) => d.listed !== list?.n || (!!d.endpoint && d.routed !== JSON.stringify(this.routesFor(d))) || (!!d.endpoint && core.canBind() && !!list?.real.includes(d.endpoint.id) && ((d.passed ?? 0) - Date.now() <= PASS_RENEW || d.passTo !== JSON.stringify(this.accountReads())));
     if (list && this.data.devices.some((d) => d.linked && untold(d))) this.act(() => this.tellList());
   }
 

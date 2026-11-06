@@ -86,6 +86,9 @@ t('two chats add each other through a link and talk both ways', async () => {
   const link = contactLink({ senderHex: bob.from, relayUrl: 'ws://relay:7879', key: bob.code.key });
   const code = parseContact(link)!;
   assert.equal(code.key, bob.code.key);
+  // A link of this version says it takes a conversation one of the adder's devices starts (S5); one from before says nothing.
+  assert.equal(code.d, true);
+  assert.equal(parseContact(link.replace('&d=1', ''))!.d, undefined);
 
   const added = await alice.e2e.addContact(code, alice.from);
   assert.equal(added.added, true);
