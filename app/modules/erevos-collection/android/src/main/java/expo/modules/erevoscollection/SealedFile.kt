@@ -153,7 +153,7 @@ class SealedFile(id: String, key: ByteArray, val chunk: Int, val count: Int, val
     const val TAG = 16
     const val SEALING = NONCE + TAG
     const val HEAD = 8
-    const val MOST_CHUNKS = 1000
+    const val MOST_CHUNKS = 4096
     const val PREFIX = "erevos-file-"
     val CHUNK_SIZES = setOf(64 * 1024, 256 * 1024, 1024 * 1024)
     private val ID = Regex("^[0-9a-f]{32}$")

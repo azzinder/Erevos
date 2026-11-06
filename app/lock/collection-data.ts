@@ -13,8 +13,10 @@ import { sealedFile, type Holder } from './sealed-file';
 // The Collection: each space's and each of its hidden places' own photos, files and folders,
 // which the owner keeps apart from the chats. Every file is kept as a message's file is
 // (lock/attachment-files.ts): encrypted with a key of its own, in chunks named at random lying
-// among the chats' chunks, of the same sizes. So nothing on the phone tells a file of the
-// Collection from a photo of a chat, nor whether any space or hidden place has a Collection.
+// among the chats' chunks, of the same sizes, though a file here may have more of them (up to
+// COLLECTION_CHUNKS, about 4 GiB, where a message's has 1000 at most). So nothing on the phone
+// tells a file of the Collection from a photo of a chat, nor whether any space or hidden place has
+// a Collection.
 // Only the catalogue says which chunks are whose, with their names, folders and keys: one sealed
 // value per space and per hidden place in FILE (sealed-file.ts), in pages once it grows, so a
 // hidden place's Collection shows only there, and the space's only in the space.
@@ -68,8 +70,10 @@ const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;
 
-/** The largest file the Collection keeps: as many chunks of the largest size as a file can have. */
-export const MAX_COLLECTION_FILE = 1000 * room(CHUNK_SIZES[CHUNK_SIZES.length - 1]);
+/** The most chunks a file of the Collection has: more than a message's (MOST_CHUNKS), as the owner chose. */
+export const COLLECTION_CHUNKS = 4096;
+/** The largest file the Collection keeps, about 4 GiB: COLLECTION_CHUNKS of the largest size. */
+export const MAX_COLLECTION_FILE = COLLECTION_CHUNKS * room(CHUNK_SIZES[CHUNK_SIZES.length - 1]);
 /** How many deletions are remembered, the newest. */
 export const MAX_GONE = 2000;
 export const MAX_FOLDER_NAME = 60;
@@ -82,7 +86,7 @@ const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isSa
 
 /** A file as the Collection keeps it: on this phone only, without a message's marks. */
 function kept(value: unknown): FileRef | null {
-  if (!isFileRef(value) || value.from) return null;
+  if (!isFileRef(value, COLLECTION_CHUNKS) || value.from) return null;
   const { name, mime, kind, size, w, h, id, key, chunk, count } = value;
   return { name, mime, kind, size, ...(w !== undefined && h !== undefined ? { w, h } : {}), id, key, chunk, count };
 }
@@ -172,8 +176,38 @@ export async function addToCollection(
   { folder = '', thumb, progress, now = Date.now() }: { folder?: string; thumb?: Uint8Array; progress?: Progress; now?: number } = {},
 ): Promise<CollectionItem> {
   if (source.size > MAX_COLLECTION_FILE) throw new CollectionFileTooLargeError();
-  const meta = { name: cleanFileName(item.name), mime: cleanMime(item.mime), kind: item.kind, ...(item.w && item.h ? { w: item.w, h: item.h } : {}) };
-  const file = await keepFile(source, meta, progress, MAX_COLLECTION_FILE);
+  const file = await keepFile(source, metaOf(item), progress, MAX_COLLECTION_FILE);
+  return catalogued(place, file, { folder, thumb, now });
+}
+
+export class CollectionFileDamagedError extends Error {}
+
+/**
+ * Puts into the place's Collection a file already encrypted into chunks here, as keepFile does
+ * (`sealed`: on Android, by modules/erevos-collection as it read the file, with no plain copy).
+ * Its chunks are deleted if it cannot be kept: too large, not as a file of the Collection is, or
+ * the catalogue not saved.
+ */
+export async function addSealedToCollection(
+  place: CollectionPlace,
+  sealed: { id: string; key: string; chunk: number; count: number; size: number },
+  item: NewItem,
+  { folder = '', thumb, now = Date.now() }: { folder?: string; thumb?: Uint8Array; now?: number } = {},
+): Promise<CollectionItem> {
+  const { id, key, chunk, count, size } = sealed;
+  const file = kept({ ...metaOf(item), size, id, key, chunk, count });
+  if (!file || size > MAX_COLLECTION_FILE) {
+    await deleteChunks(id, count).catch(() => undefined);
+    throw size > MAX_COLLECTION_FILE ? new CollectionFileTooLargeError() : new CollectionFileDamagedError();
+  }
+  return catalogued(place, file, { folder, thumb, now });
+}
+
+const metaOf = (item: NewItem) => ({ name: cleanFileName(item.name), mime: cleanMime(item.mime), kind: item.kind, ...(item.w && item.h ? { w: item.w, h: item.h } : {}) });
+
+// A file kept in chunks, with its small picture, written into the catalogue; if any of it cannot
+// be, nothing stays.
+async function catalogued(place: CollectionPlace, file: FileRef, { folder, thumb, now }: { folder: string; thumb?: Uint8Array; now: number }): Promise<CollectionItem> {
   let small: FileRef | null = null;
   try {
     if (thumb) small = await keepFile(bytesSource(thumb), { name: 'thumb.jpg', mime: 'image/jpeg', kind: 'photo' });

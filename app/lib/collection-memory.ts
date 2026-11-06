@@ -13,11 +13,11 @@ import { photoUri, releaseUri } from './photo-uri';
 // close what showed it. Nothing of it is ever written to the disk.
 
 /** The largest file the desktop app opens in memory to play or show: the whole file is held there. */
-export const MOST_IN_MEMORY = 512 * 1024 * 1024;
+export const MOST_IN_MEMORY = 1024 * 1024 * 1024;
 
 export class TooLargeToOpenError extends Error {
   constructor() {
-    super(t('This file is too large to open here: at most {size}. Save it to the computer to open it with another app.', { size: '512 MB' }));
+    super(t('This file is too large to open here: at most {size}. Save it to the computer to open it with another app.', { size: '1 GB' }));
   }
 }
 

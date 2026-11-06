@@ -11,13 +11,16 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { bytesSource } from '../lib/attachments';
+import { bytesSource, keepFile, room } from '../lib/attachments';
 import { randomBytes } from '../lib/crypto';
-import { CHUNK_SIZES, PREFIX } from '../lock/attachment-files';
+import { CHUNK_SIZES, isFileRef, PREFIX } from '../lock/attachment-files';
 import {
   addFolder,
+  addSealedToCollection,
   addToCollection,
   backupSkips,
+  COLLECTION_CHUNKS,
+  CollectionFileDamagedError,
   CollectionFileTooLargeError,
   deleteFolder,
   deleteItems,
@@ -132,6 +135,39 @@ t('moving and deleting files', async () => {
   assert.deepEqual(after.gone, [{ id: one.id, at: 8 }]);
   await deleteItems(p, [two.id]);
   assert.deepEqual(chunkNames(), []);
+});
+
+t('a file of the Collection may be about 4 GiB, 4096 chunks; a message keeps its 1000', async () => {
+  assert.equal(COLLECTION_CHUNKS, 4096);
+  assert.equal(MAX_COLLECTION_FILE, 4096 * room(CHUNK_SIZES[CHUNK_SIZES.length - 1]));
+  assert.ok(MAX_COLLECTION_FILE > 4 * 1000 * 1000 * 1000 && MAX_COLLECTION_FILE < 4 * 1024 * 1024 * 1024);
+  const p = place();
+  // A file Android encrypted as it read it (modules/erevos-collection), as large as there may be:
+  // the catalogue takes it, and keeps it when loaded again.
+  const big = { id: 'ab'.repeat(16), key: 'cd'.repeat(32), chunk: CHUNK_SIZES[2], count: COLLECTION_CHUNKS, size: MAX_COLLECTION_FILE };
+  const item = await addSealedToCollection(p, big, { name: 'film.mkv', mime: 'video/x-matroska', kind: 'file' });
+  assert.deepEqual((await loadCollection(p)).items.map((i) => [i.file.name, i.file.count]), [['film.mkv', COLLECTION_CHUNKS]]);
+  assert.equal(item.file.size, MAX_COLLECTION_FILE);
+  // A message's file is held to 1000 chunks still.
+  assert.equal(isFileRef({ ...item.file, count: 1000, size: 1000 * room(CHUNK_SIZES[2]) }), true);
+  assert.equal(isFileRef(item.file), false);
+  assert.equal(isFileRef(item.file, COLLECTION_CHUNKS), true);
+  // One chunk more is refused, and its chunks deleted.
+  await assert.rejects(addSealedToCollection(p, { ...big, id: 'ef'.repeat(16), count: COLLECTION_CHUNKS + 1, size: MAX_COLLECTION_FILE + 1 }, photo), CollectionFileTooLargeError);
+  await assert.rejects(addSealedToCollection(p, { ...big, id: 'ef'.repeat(16), key: 'no' }, photo), CollectionFileDamagedError);
+  assert.equal((await loadCollection(p)).items.length, 1);
+});
+
+t('a file encrypted into chunks elsewhere goes in, and comes out whole', async () => {
+  const p = place();
+  const bytes = randomBytes(700 * 1024);
+  const { id, key, chunk, count, size } = await keepFile(bytesSource(bytes), { name: 'x', mime: 'application/octet-stream', kind: 'file' });
+  const item = await addSealedToCollection(p, { id, key, chunk, count, size }, { name: 'notes.pdf', mime: 'application/pdf', kind: 'file' }, { folder: '', thumb: randomBytes(100) });
+  assert.equal(item.file.name, 'notes.pdf');
+  assert.deepEqual(await openItem(item), bytes);
+  // A folder that is not there: nothing of it stays, its chunks neither.
+  await assert.rejects(addSealedToCollection(p, await keepFile(bytesSource(bytes), { name: 'x', mime: 'application/octet-stream', kind: 'file' }), photo, { folder: 'ab'.repeat(16) }), NoSuchFolderError);
+  assert.equal(chunkNames().length, count + 1);
 });
 
 t('a file too large is refused, and nothing of it stays', async () => {

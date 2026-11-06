@@ -124,10 +124,14 @@ export function isFileMeta(value: unknown): value is FileMeta {
   );
 }
 
-export function isFileRef(value: unknown): value is FileRef {
+/** The most chunks a file of a message has; the Collection's may have more (lock/collection-data.ts). */
+export const MOST_CHUNKS = 1000;
+
+/** Whether `value` is a well-formed FileRef of `mostChunks` chunks at most. */
+export function isFileRef(value: unknown, mostChunks = MOST_CHUNKS): value is FileRef {
   const v = value as Partial<FileRef> | null;
   if (!v || !isFileMeta(value) || typeof v.id !== 'string' || !ID.test(v.id) || typeof v.key !== 'string' || !KEY.test(v.key)) return false;
-  if (!(CHUNK_SIZES.includes(v.chunk as number) || v.chunk === NOSTR_PIECE) || !whole(v.count, 1000) || v.count === 0) return false;
+  if (!(CHUNK_SIZES.includes(v.chunk as number) || v.chunk === NOSTR_PIECE) || !whole(v.count, mostChunks) || v.count === 0) return false;
   if (v.from === undefined) return true;
   const from = v.from as Partial<FileFrom> | null;
   if (typeof from?.relay !== 'string' || typeof from.ids !== 'string' || !IDS.test(from.ids) || from.ids.length !== 48 * v.count) return false;

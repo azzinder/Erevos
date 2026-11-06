@@ -61,7 +61,7 @@ const isText = (v: unknown): v is string => typeof v === 'string';
 const isIdentity = (v: unknown): v is string => isText(v) && /^[0-9a-f]{64}$/.test(v);
 const isMessage = (m: unknown): m is ArchivedMessage =>
   Array.isArray(m) &&
-  (m.length === 4 || (m.length === 5 && Array.isArray(m[4]) && m[4].every(isFileRef))) &&
+  (m.length === 4 || (m.length === 5 && Array.isArray(m[4]) && m[4].every((f) => isFileRef(f)))) &&
   typeof m[0] === 'number' &&
   isText(m[1]) &&
   isText(m[2]) &&
