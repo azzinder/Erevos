@@ -8,7 +8,8 @@ import { requireNativeViewManager, requireOptionalNativeModule, type EventSubscr
 
 // The Collection's own part of Android (ErevosCollectionModule.kt): its files read where they lie,
 // encrypted, to open with another app, to show a PDF, and to play music and videos with the screen
-// off; and the gallery's originals deleted once brought in. Null on the web, on a computer and in
+// off; a picked file brought in, encrypted as it is read; and the gallery's originals deleted
+// once brought in. Null on the web, on a computer and in
 // an Android build before it: then the Collection does without.
 
 /** A file of the Collection as the catalogue keeps it (lock/attachment-files.ts FileRef): where its chunks are, and its key, hex. */
@@ -62,7 +63,18 @@ type Native = {
   canDeleteFromGallery(): boolean;
   /** Android's own dialog asks the owner to delete these from the gallery. */
   deleteFromGallery(uris: string[]): Promise<'deleted' | 'kept' | 'none' | 'unavailable'>;
+  /**
+   * Encrypts the file a content:// link names into the Collection's chunks as it is read, with no
+   * plain copy (Sealer.kt); `expected` is the size the picker said, for the progress only, told as
+   * onSeal events of `job`. Rejects ERR_CANCELLED, ERR_TOO_LARGE or ERR_SEAL, leaving nothing.
+   * Not in builds before it.
+   */
+  sealFromUri?(uri: string, expected: number, job: string): Promise<SealedRef>;
+  sealCancel?(job: string): void;
+  /** The first `length` bytes of the file a content:// link names, base64 (1 MiB at most). */
+  readHead?(uri: string, length: number): Promise<string>;
   addListener(event: 'onPlayer', listener: (state: PlayerState) => void): EventSubscription;
+  addListener(event: 'onSeal', listener: (event: { job: string; done: number; count: number }) => void): EventSubscription;
 };
 
 export const collectionNative = requireOptionalNativeModule<Native>('ErevosCollection');

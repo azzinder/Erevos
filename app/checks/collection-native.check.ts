@@ -7,7 +7,9 @@
 // This holds the layout and the arithmetic it relies on, mirrored here in plain TypeScript and
 // checked against sealChunk and openChunk, so a change on either side shows. With EREVOS_VECTORS
 // set to a folder, the check also writes a file's chunks and what ranges of it must read as, for
-// the Kotlin reader to be run on them (it was, when the reader was written).
+// the Kotlin reader to be run on them (it was, when the reader was written). The Kotlin sealer
+// (Sealer.kt), which brings a picked file in on Android, is held to the same layout and to
+// chunkPlan's sizes; with EREVOS_SEALED set to a folder of files it sealed, they are opened here.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -15,9 +17,10 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { FileDamagedError, openChunk, room, sealChunk } from '../lib/attachments';
-import { aesGcmSeal, toHex } from '../lib/crypto';
+import { chunkPlan, FileDamagedError, openChunk, room, sealChunk } from '../lib/attachments';
+import { aesGcmSeal, fromHex, toHex } from '../lib/crypto';
 import { CHUNK_SIZES, PREFIX } from '../lock/attachment-files';
+import { COLLECTION_CHUNKS } from '../lock/collection-data';
 
 // The layout of a chunk of `chunk` bytes (lib/crypto.ts encryptBytes, lib/attachments.ts):
 const NONCE = 12; // bytes 0..12: the nonce
@@ -147,4 +150,70 @@ test('the vectors for the Kotlin reader are written when asked', { skip: !out &&
     lines.push(`range ${at} ${length} ${toHex(plain.subarray(at, at + length))}`);
   }
   writeFileSync(join(dir, 'vector.txt'), lines.join('\n') + '\n');
+});
+
+// The Kotlin sealer (Sealer.kt), which brings a picked file into the Collection on Android as it
+// is read: its chunks must be keepFile's, so that openChunk and SealedFile.kt open them alike. It
+// does not trust the size the link says, and chooses the chunk size after its first read of up to
+// one full chunk of the largest size: mirrored here, it chooses as chunkPlan does for every size.
+function sealerPlan(size: number): { chunk: number; count: number } {
+  const big = CHUNK_SIZES[CHUNK_SIZES.length - 1];
+  const first = Math.min(size, room(big));
+  if (first < room(big)) return { chunk: CHUNK_SIZES.slice(0, -1).find((c) => first <= room(c)) ?? big, count: 1 };
+  // Full chunks one after another; a read that comes back empty ends the file.
+  return { chunk: big, count: Math.max(1, Math.ceil(size / room(big))) };
+}
+
+test('the Kotlin sealer chooses the chunk size and count as chunkPlan does', () => {
+  const big = CHUNK_SIZES[CHUNK_SIZES.length - 1];
+  const sizes = [0, 1, ...CHUNK_SIZES.flatMap((c) => [room(c) - 1, room(c), room(c) + 1]), 3 * room(big) + 5, COLLECTION_CHUNKS * room(big)];
+  for (const size of sizes) assert.deepEqual(sealerPlan(size), chunkPlan(size), String(size));
+});
+
+const SEALER = '../modules/erevos-collection/android/src/main/java/expo/modules/erevoscollection/Sealer.kt';
+
+test('the Kotlin sealer writes the layout openChunk reads, and leaves nothing on a failure', () => {
+  const kotlin = readFileSync(join(import.meta.dirname, SEALER), 'utf8');
+  assert.match(kotlin, /Cipher\.getInstance\("AES\/GCM\/NoPadding"\)/);
+  assert.match(kotlin, /GCMParameterSpec\(SealedFile\.TAG \* 8, nonce\)/);
+  // A nonce of its own for every chunk, at random, first in the chunk.
+  assert.match(kotlin, /val nonce = ByteArray\(SealedFile\.NONCE\)\.also\(random::nextBytes\)/);
+  assert.match(kotlin, /System\.arraycopy\(nonce, 0, out, 0, SealedFile\.NONCE\)/);
+  // What is sealed: the place, the length, the bytes, zeros to chunk - 28.
+  assert.match(kotlin, /val plain = ByteArray\(chunk - SealedFile\.SEALING\)/);
+  assert.match(kotlin, /System\.arraycopy\(data, 0, plain, SealedFile\.HEAD, length\)/);
+  assert.match(kotlin, /File\(folder, SealedFile\.chunkName\(id, n\)\)/);
+  // A key of 32 random bytes, and an id of 16.
+  assert.match(kotlin, /val key = ByteArray\(32\)\.also\(random::nextBytes\)/);
+  assert.match(kotlin, /val id = ByteArray\(16\)\.also\(random::nextBytes\)/);
+  // On any failure every chunk written goes, the one being written too, and the key is zeroed.
+  assert.match(kotlin, /for \(i in 0\.\.written\) File\(folder, SealedFile\.chunkName\(id, i\)\)\.delete\(\)/);
+  assert.match(kotlin, /key\.fill\(0\)/);
+  const reader = readFileSync(join(import.meta.dirname, '../modules/erevos-collection/android/src/main/java/expo/modules/erevoscollection/SealedFile.kt'), 'utf8');
+  assert.match(reader, new RegExp(`const val MOST_CHUNKS = ${COLLECTION_CHUNKS}\\b`));
+});
+
+// Files the Kotlin sealer wrote, when EREVOS_SEALED names their folder (it was, when the sealer
+// was written): lines of `sealed id key chunk count size`, each file's bytes those of plainOf(size).
+const plainOf = (size: number) => Uint8Array.from({ length: size }, (_, i) => (i * 7 + (i >> 8)) & 255);
+const sealedBy = process.env.EREVOS_SEALED;
+test('files the Kotlin sealer wrote open with openChunk, whole', { skip: !sealedBy && 'EREVOS_SEALED is not set' }, () => {
+  const dir = sealedBy as string;
+  const lines = readFileSync(join(dir, 'sealed.txt'), 'utf8').trim().split('\n');
+  assert.ok(lines.length >= 5);
+  for (const line of lines) {
+    const [word, id, key, chunk, count, size] = line.split(' ');
+    assert.equal(word, 'sealed');
+    const plan = chunkPlan(Number(size));
+    assert.deepEqual({ chunk: Number(chunk), count: Number(count) }, plan, line);
+    const got = new Uint8Array(Number(size));
+    let at = 0;
+    for (let n = 0; n < plan.count; n++) {
+      const piece = openChunk(fromHex(key), n, new Uint8Array(readFileSync(join(dir, `${PREFIX}${id}-${n}`))), plan.chunk);
+      got.set(piece, at);
+      at += piece.length;
+    }
+    assert.equal(at, Number(size));
+    assert.deepEqual(got, plainOf(Number(size)), line);
+  }
 });

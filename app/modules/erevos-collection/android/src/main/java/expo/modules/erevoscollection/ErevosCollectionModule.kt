@@ -13,10 +13,14 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.util.Base64
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.functions.Queues
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 // What the Collection (lock/collection-data.ts) asks of Android itself, reading its files where
 // they lie, encrypted (SealedFile.kt), never from a plain copy:
@@ -25,7 +29,9 @@ import expo.modules.kotlin.modules.ModuleDefinition
 // - playing music and videos with Media3, the list going on with the screen off (Playing.kt,
 //   PlayerService.kt), and the video shown in a view of its own (VideoView.kt);
 // - asking Android to delete a photo or video from the phone's gallery once it is in the
-//   Collection, which Android has the owner confirm (Android 11 and later).
+//   Collection, which Android has the owner confirm (Android 11 and later);
+// - bringing a picked file in, encrypted into chunks as it is read from Android's link, with no
+//   plain copy in the cache first (Sealer.kt).
 // A file comes from JavaScript as the catalogue keeps it: its id, its key in hex, its chunk size,
 // how many chunks and its size. JavaScript's string of the key cannot be zeroed; the bytes made
 // from it here are kept only as long as the file is open, and zeroed then.
@@ -37,6 +43,9 @@ class ErevosCollectionModule : Module() {
 
   // The gallery's delete waiting for the owner's answer in Android's dialog.
   private var deleting: Promise? = null
+
+  // The files being encrypted now (sealFromUri), by job, each with its cancel.
+  private val sealing = ConcurrentHashMap<String, AtomicBoolean>()
 
   // The space locks a while after Erevos leaves the screen (app/_layout.tsx): then what it opened
   // here goes, even if JavaScript does not run then.
@@ -51,8 +60,9 @@ class ErevosCollectionModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("ErevosCollection")
 
-    // The player's state as it changes (Playing.state): never a file's name.
-    Events("onPlayer")
+    // The player's state as it changes (Playing.state): never a file's name. And how far a file
+    // being encrypted has come (sealFromUri).
+    Events("onPlayer", "onSeal")
 
     OnCreate {
       Playing.onState = { state -> runCatching { sendEvent("onPlayer", state) } }
@@ -109,6 +119,8 @@ class ErevosCollectionModule : Module() {
       OpenFiles.forgetAll()
       PdfPages.closeAll()
       Playing.onMain { Playing.stop(context) }
+      // A file being brought in stops, and what it wrote goes.
+      for (cancel in sealing.values) cancel.set(true)
     }
 
     // Whether a PDF can be shown here: Android 11 and later, which have memory files.
@@ -203,6 +215,66 @@ class ErevosCollectionModule : Module() {
       }
     }.runOnQueue(Queues.MAIN)
 
+    // Encrypts the file a link names (a content:// link the file picker gave) into the
+    // Collection's chunks as it is read, with no plain copy (Sealer.kt), on a thread of its own, as
+    // a file can take minutes. `expected` is the size the picker said, only for the progress, told
+    // as "onSeal" events with `job`. Resolves with the file as the catalogue keeps it: its id, its
+    // key in hex, its chunk size, how many chunks and its size; the key's bytes are zeroed here
+    // then. Rejects ERR_CANCELLED (sealCancel), ERR_TOO_LARGE or ERR_SEAL, with nothing left.
+    AsyncFunction("sealFromUri") { uri: String, expected: Double, job: String, promise: Promise ->
+      val app = context ?: throw IllegalStateException("No app")
+      val link = Uri.parse(uri)
+      if (link.scheme != "content") throw IllegalArgumentException("Only a content link")
+      val cancel = AtomicBoolean(false)
+      if (sealing.putIfAbsent(job, cancel) != null) throw IllegalStateException("That job runs already")
+      Thread({
+        try {
+          val input = app.contentResolver.openInputStream(link) ?: throw IOException("Cannot read the file")
+          var told = 0L
+          val sealed = input.use {
+            Sealer(app.filesDir).seal(it, expected.toLong(), { done, count ->
+              val now = System.currentTimeMillis()
+              if (now - told >= PROGRESS_EVERY_MS || done == count) {
+                told = now
+                runCatching { sendEvent("onSeal", mapOf("job" to job, "done" to done, "count" to count)) }
+              }
+            }, { cancel.get() })
+          }
+          val key = Sealer.handOver(sealed.key)
+          promise.resolve(mapOf("id" to sealed.id, "key" to key, "chunk" to sealed.chunk, "count" to sealed.count, "size" to sealed.size.toDouble()))
+        } catch (e: Sealer.Cancelled) {
+          promise.reject("ERR_CANCELLED", "Cancelled", e)
+        } catch (e: Sealer.TooLarge) {
+          promise.reject("ERR_TOO_LARGE", e.message, e)
+        } catch (e: Throwable) {
+          promise.reject("ERR_SEAL", e.message ?: "The file could not be read", e)
+        } finally {
+          sealing.remove(job)
+        }
+      }, "erevos-collection-seal").start()
+    }
+
+    // Stops a sealFromUri before its next chunk; what it wrote is deleted.
+    Function("sealCancel") { job: String -> sealing[job]?.set(true) }
+
+    // The first `length` bytes of the file a content:// link names (1 MiB at most), base64: enough
+    // of a photo's header to tell its size (lib/photo.ts photoSize), without reading the rest.
+    AsyncFunction("readHead") { uri: String, length: Int ->
+      val app = context ?: throw IllegalStateException("No app")
+      val link = Uri.parse(uri)
+      if (link.scheme != "content") throw IllegalArgumentException("Only a content link")
+      val buffer = ByteArray(length.coerceIn(0, MOST_HEAD))
+      var at = 0
+      app.contentResolver.openInputStream(link)?.use { input ->
+        while (at < buffer.size) {
+          val got = input.read(buffer, at, buffer.size - at)
+          if (got < 0) break
+          at += got
+        }
+      } ?: throw IOException("Cannot read the file")
+      Base64.encodeToString(buffer.copyOf(at), Base64.NO_WRAP)
+    }
+
     // The video of the list playing (VideoView.kt).
     View(VideoView::class) {}
   }
@@ -236,5 +308,7 @@ class ErevosCollectionModule : Module() {
 
   companion object {
     private const val DELETE_REQUEST = 0x4572
+    private const val PROGRESS_EVERY_MS = 100L
+    private const val MOST_HEAD = 1024 * 1024
   }
 }
