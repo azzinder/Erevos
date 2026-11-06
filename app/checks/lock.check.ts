@@ -63,9 +63,13 @@ const oldSlot = async (password: string | null, key = randomBytes(32)) => {
   return { salt: toBase64(salt), iter: 200_000, check: toBase64(password === null ? randomBytes(32) : sha256Bytes(k)), key: encryptText(k, toHex(key)) };
 };
 
-// How many times Argon2id runs in `fn`.
+// How many times Argon2id runs in `fn`, or -1 without the core: `fn` runs either way, as what else
+// it does is counted too.
 const hardCalls = async (fn: () => Promise<unknown>) => {
-  if (!core) return -1;
+  if (!core) {
+    await fn();
+    return -1;
+  }
   let calls = 0;
   setCore({ ...core, hardKey: (...args) => { calls++; return core.hardKey!(...args); } });
   try {
