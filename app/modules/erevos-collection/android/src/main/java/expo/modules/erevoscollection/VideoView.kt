@@ -16,7 +16,7 @@ import expo.modules.kotlin.views.ExpoView
 
 /**
  * The video of the list playing (Playing.kt), shown inside Erevos over the whole screen by
- * components/collection-video.tsx, with Media3's own controls: play, pause, the time bar, next
+ * components/collection-player.tsx, with Media3's own controls: play, pause, the time bar, next
  * and previous. It shows whatever the player plays, and nothing once the list stops.
  *
  * The Collection's screen keeps Erevos's window out of screenshots (FLAG_SECURE); the video is

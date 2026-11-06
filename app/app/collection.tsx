@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { BackHandler, FlatList, Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NowPlaying } from '../components/collection-player';
 import { CollectionViewer, addedText } from '../components/collection-viewer';
 import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon } from '../components/icons';
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
@@ -14,6 +15,7 @@ import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
 import { CAN_COLLECT, importFromCamera, importFromFiles } from '../lib/collection-import';
 import { dropOpened, openWithOtherApp } from '../lib/collection-out';
+import { usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
 import { enterHiddenScreen } from '../lib/hidden-contacts';
 import { fileLook, folderTiles, gridEntries, inFolder, isPhoto, search, type FileLook, type GridEntry } from '../lib/collection-view';
@@ -41,8 +43,11 @@ import { useColors, useStyles } from '../theme/context';
 // kept encrypted apart from the chats (lock/collection-data.ts). Folders across the top, then two
 // tabs: the photos as a grid by month, and the files as a list. A tap opens one (components/
 // collection-viewer.tsx); held down it starts choosing, to move, send or delete several; + brings
-// in a photo from the camera or a file from the phone (lib/collection-import.ts). The screen keeps
-// out of screenshots, and closes with the space: its keys go with it.
+// in a photo from the camera or a file from the phone (lib/collection-import.ts), and deletes a
+// photo or video picked from the gallery there when the owner chose so. While music of the
+// Collection plays (lib/collection-play.ts), a bar at the bottom shows it. The screen keeps out of
+// screenshots, and closes with the space: its keys go with it, and so do the links that let
+// another app read a file (lib/collection-out.ts).
 
 type Tab = 'photos' | 'files';
 type Naming = { what: 'folder' | 'rename-folder' | 'rename-file'; id: string; text: string } | null;
@@ -106,13 +111,15 @@ export default function CollectionScreen() {
   const [viewing, setViewing] = useState<number | null>(null);
   const [busy, setBusy] = useState<{ done: number; count: number } | null>(null);
   const [note, setNote] = useState('');
+  const player = usePlayer();
+  const musicBar = !!player?.active && !player.video;
 
   // Always out of screenshots and the recent apps preview while it is shown.
   useEffect(() => {
     keepPrivate('collection', true);
     return () => keepPrivate('collection', false);
   }, []);
-  // The pictures and any plain copy made to open a file go as the screen closes.
+  // The pictures, and the links that let other apps read files, go as the screen closes.
   useEffect(
     () => () => {
       dropThumbs();
@@ -139,7 +146,7 @@ export default function CollectionScreen() {
 
   const searching = query !== null;
   const choosing = chosen.size > 0;
-  const there = data ?? { items: [], folders: [], gone: [], backup: true };
+  const there: Collection = data ?? { items: [], folders: [], gone: [], backup: true };
   const folderNow = there.folders.find((f) => f.id === folder);
   // A folder deleted, or moved out from under the screen, is the top again.
   useEffect(() => {
@@ -244,7 +251,7 @@ export default function CollectionScreen() {
   }
 
   async function openWith(item: CollectionItem) {
-    if (!(await choose(t('Open with another app?'), t('The file goes to another app, outside the Collection and without encryption, and a plain copy stays on the phone until you leave the Collection. Continue?'), t('Cancel'), t('Open')))) return;
+    if (!(await choose(t('Open with another app?'), t('The file goes to another app, outside the Collection and without encryption, and that app may keep a copy of it. Continue?'), t('Cancel'), t('Open')))) return;
     try {
       await openWithOtherApp(item);
     } catch (error) {
@@ -478,6 +485,12 @@ export default function CollectionScreen() {
         </View>
       ) : null}
 
+      {!choosing && musicBar ? (
+        <View style={{ paddingBottom: insets.bottom }}>
+          <NowPlaying state={player} />
+        </View>
+      ) : null}
+
       {choosing ? (
         <View style={[styles.actions, { paddingBottom: Math.max(space.md, insets.bottom) }]}>
           <ActionTile label={t('Move')} onPress={() => setMoving([...chosen])}>
@@ -495,7 +508,7 @@ export default function CollectionScreen() {
           onPress={() => setAdding(true)}
           accessibilityRole="button"
           accessibilityLabel={t('Add to the Collection')}
-          style={({ pressed }) => [styles.fab, { bottom: Math.max(space.lg, insets.bottom + space.sm) }, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [styles.fab, { bottom: Math.max(space.lg, insets.bottom + space.sm) + (musicBar ? 72 : 0) }, pressed && { opacity: 0.85 }]}
         >
           <PlusIcon color={colors.onPrimary} size={26} />
         </Pressable>
@@ -503,7 +516,7 @@ export default function CollectionScreen() {
 
       <Sheet visible={adding} onClose={() => setAdding(false)} title={t('Add to the Collection')}>
         <AddRow icon={<CameraIcon color={colors.primary} size={22} />} title={t('Camera')} text={t('The photo goes straight here, never to the gallery.')} onPress={() => void bringIn((p) => importFromCamera(place!, folder, p))} colors={colors} />
-        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p))} colors={colors} />
+        <AddRow icon={<FileIcon color={colors.primary} size={22} />} title={t('From the phone’s files')} text={t('Photos and files, encrypted as they come in.')} onPress={() => void bringIn((p) => importFromFiles(place!, folder, p, { deleteOriginal: there.deleteOriginals === true }))} colors={colors} />
         <AddRow
           icon={<FolderIcon color={colors.primary} size={22} />}
           title={t('New folder')}
@@ -634,6 +647,7 @@ export default function CollectionScreen() {
         onSave={(item) => void saveToPhone(item)}
         onDelete={(item) => void deleteOne(item)}
         onOpenWith={(item) => void openWith(item)}
+        playOptions={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
       />
     </View>
   );

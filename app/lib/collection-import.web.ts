@@ -10,6 +10,7 @@ import type { SharedFile } from './share-in';
 // module of the phone for now (lib/modules.ts), so nothing is brought in here.
 
 export const CAN_COLLECT = false;
+export const CAN_DELETE_ORIGINALS = false;
 export const THUMB_SIDE = 256;
 
 export type Progress = (done: number, count: number) => void;
@@ -19,6 +20,7 @@ const unavailable = () => Promise.reject(new Error('The Collection is on the pho
 export const isPhotoType = (mime: string) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mime);
 export const thumbOf = (_bytes: Uint8Array): Promise<Uint8Array | undefined> => Promise.resolve(undefined);
 export const importFromCamera = (_place: CollectionPlace, _folder: string, _progress?: Progress): Promise<CollectionItem | null> => unavailable();
-export const importFromFiles = (_place: CollectionPlace, _folder: string, _progress?: Progress): Promise<CollectionItem | null> => unavailable();
+export const isGalleryType = (mime: string) => mime.startsWith('image/') || mime.startsWith('video/');
+export const importFromFiles = (_place: CollectionPlace, _folder: string, _progress?: Progress, _options: { deleteOriginal?: boolean } = {}): Promise<CollectionItem | null> => unavailable();
 export const importShared = (_place: CollectionPlace, _shared: SharedFile, _folder: string, _progress?: Progress): Promise<CollectionItem> => unavailable();
 export const importFromChat = (_place: CollectionPlace, _ref: FileRef, _folder = '', _progress?: Progress): Promise<CollectionItem> => unavailable();

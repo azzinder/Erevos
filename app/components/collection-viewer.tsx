@@ -7,7 +7,8 @@ import { FlatList, Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fileSize } from '../lib/attachments';
-import { fileLook, isText, MOST_TEXT } from '../lib/collection-view';
+import { CAN_PLAY, playItems, playingFile, usePlayer } from '../lib/collection-play';
+import { fileLook, isText, MOST_TEXT, playKind, playListOf } from '../lib/collection-view';
 import { utf8Decode } from '../lib/crypto';
 import { locale, t } from '../lib/i18n';
 import { photoUri, releaseUri } from '../lib/photo-uri';
@@ -16,15 +17,20 @@ import { device } from '../modules/erevos-device';
 import { space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 import { ZoomPhoto } from './attachment';
+import { CollectionPdf } from './collection-pdf';
+import { PlayerControls, VideoScreen } from './collection-player';
 import { BackIcon, DownloadIcon, FileIcon, InfoIcon, SendIcon, TrashIcon } from './icons';
 import { Button, Sheet, Text } from './ui';
 
 // One file of the Collection looked at on its own (app/collection.tsx): a photo fills the screen,
 // to swipe to the next and to zoom (the chat's own photo zoom, components/attachment.tsx); a text
-// file is read here; any other file shows what it is, to open with another app, which the screen
-// asks about first, as the file leaves the Collection unencrypted. A photo is read into memory to
-// show, never written out, and let go of once it is no longer near. Under it: send it to a chat,
-// save it to the phone, its information, and delete it.
+// file is read here; a PDF is read here a page at a time (components/collection-pdf.tsx); music
+// plays here, with the other music shown after it, and a video plays over the whole screen
+// (components/collection-player.tsx), all from the encrypted chunks. Any other file shows what it
+// is, to open with another app, which the screen asks about first, as the file leaves the
+// Collection unencrypted. A photo is read into memory to show, never written out, and let go of
+// once it is no longer near. Under it: send it to a chat, save it to the phone, its information,
+// and delete it.
 
 type Props = {
   /** The files that can be swiped between, in the order shown. */
@@ -38,18 +44,22 @@ type Props = {
   onSave: (item: CollectionItem) => void;
   onDelete: (item: CollectionItem) => void;
   onOpenWith: (item: CollectionItem) => void;
+  /** The place's own choices for its list playing (lock/collection-data.ts). */
+  playOptions: { showTitle: boolean; stopOnLock: boolean };
 };
 
 /** The day and time a file came, as the phone writes them. */
 export const addedText = (at: number) => new Date(at).toLocaleString(locale(), { day: 'numeric', month: 'short', year: 'numeric' });
 
-export function CollectionViewer({ items, start, canSend, onClose, onSend, onSave, onDelete, onOpenWith }: Props) {
+export function CollectionViewer({ items, start, canSend, onClose, onSend, onSave, onDelete, onOpenWith, playOptions }: Props) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [index, setIndex] = useState(start ?? 0);
   const [bars, setBars] = useState(true);
   const [info, setInfo] = useState(false);
+  const [video, setVideo] = useState(false);
+  const [playNote, setPlayNote] = useState('');
   const shown = start !== null;
   useEffect(() => {
     if (start !== null) {
@@ -74,6 +84,18 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   }, [shown, photo]);
 
   const pager = useRef<FlatList<CollectionItem>>(null);
+
+  // Music plays with the music shown after it; a video with the videos, over the whole screen.
+  async function play(from: CollectionItem) {
+    setPlayNote('');
+    const { list, start: at } = playListOf(items, from);
+    try {
+      await playItems(list, at, playOptions);
+      if (playKind(from) === 'video') setVideo(true);
+    } catch (error) {
+      setPlayNote(error instanceof Error ? error.message : String(error));
+    }
+  }
   const ink = photo ? '#FFFFFF' : colors.text;
   const faint = photo ? 'rgba(255,255,255,0.7)' : colors.textMuted;
 
@@ -107,7 +129,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={() => setBars((b) => !b)} />}
             />
           ) : (
-            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => onOpenWith(item)} />
+            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => onOpenWith(item)} onPlay={() => void play(item)} note={playNote} />
           )}
           {bars || !photo ? (
             <View style={[styles.top, { paddingTop: Math.max(space.sm, insets.top), backgroundColor: photo ? withAlpha('#000000', 0.55) : 'transparent' }]}>
@@ -137,6 +159,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               {act(<TrashIcon color={colors.danger} size={22} />, t('Delete'), () => onDelete(item), true)}
             </View>
           ) : null}
+          <VideoScreen visible={video} onClose={() => setVideo(false)} />
           <Sheet visible={info} onClose={() => setInfo(false)} title={t('Information')}>
             <InfoRow label={t('Name')} value={item.file.name} />
             <InfoRow label={t('Type')} value={item.file.mime} />
@@ -202,11 +225,15 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
   );
 }
 
-// A file that is not a photo: its text if it is text, else what it is, to open with another app.
-function FilePage({ item, ink, muted, onOpenWith }: { item: CollectionItem; ink: string; muted: string; onOpenWith: () => void }) {
+// A file that is not a photo: its text if it is text, its pages if a PDF, the player if it plays,
+// else what it is, to open with another app.
+function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: CollectionItem; ink: string; muted: string; onOpenWith: () => void; onPlay: () => void; note: string }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const readable = isText(item) && item.file.size <= MOST_TEXT;
+  const plays = CAN_PLAY ? playKind(item) : null;
+  const player = usePlayer(plays !== null);
   const [text, setText] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
   useEffect(() => {
@@ -220,6 +247,9 @@ function FilePage({ item, ink, muted, onOpenWith }: { item: CollectionItem; ink:
     };
   }, [item.id, readable]);
   const pad = { paddingTop: Math.max(space.sm, insets.top) + 64, paddingBottom: 96 + insets.bottom };
+  if (fileLook(item) === 'pdf') return <CollectionPdf item={item} width={width} top={pad.paddingTop} bottom={pad.paddingBottom} ink={ink} muted={muted} onOpenWith={onOpenWith} />;
+  // The music playing now is this file: its controls.
+  const playingThis = !!player?.active && !player.video && playingFile(player.index)?.id === item.id;
   if (readable && text !== null) {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={[styles.text, pad]}>
@@ -243,7 +273,15 @@ function FilePage({ item, ink, muted, onOpenWith }: { item: CollectionItem; ink:
           {t('This file is not here any more. A backup restored without it leaves its name behind.')}
         </Text>
       ) : (
-        <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
+        <>
+          {playingThis && player ? <PlayerControls state={player} ink={ink} muted={muted} /> : plays ? <Button title={t('Play')} compact onPress={onPlay} /> : null}
+          {note ? (
+            <Text color={colors.danger} style={styles.centered}>
+              {note}
+            </Text>
+          ) : null}
+          <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
+        </>
       )}
     </View>
   );

@@ -15,12 +15,17 @@ import { photoSize } from './photo';
 import { pickSource } from './pick-file';
 import { whilePicking } from './picking';
 import { isSharedPhoto, readShared, type SharedFile } from './share-in';
+import { collectionNative } from '../modules/erevos-collection';
 
 // Bringing photos and files into the Collection (lock/collection-data.ts), on the phone: a photo
 // taken with the camera, a file picked from the phone's files, a photo or file another app shared,
 // and a photo or file of a chat. Each goes straight into the Collection, encrypted a piece at a
 // time, with a small picture of a photo; the copies that Android or the picker leave in the app's
-// cache are deleted as soon as they are read. On a computer nothing is brought in (collection-
+// cache are deleted as soon as they are read. When the owner chose it (lock/collection-data.ts
+// deleteOriginals), a photo or video picked from the phone's gallery is then deleted there:
+// Android asks the owner to confirm, in a dialog of its own, and does it (Android 11 and later,
+// modules/erevos-collection). A photo taken with the camera never goes to the gallery at all, and a
+// file that is not the gallery's is never touched. On a computer nothing is brought in (collection-
 // import.web.ts).
 
 /** Whether this device can bring files into the Collection. */
@@ -96,18 +101,34 @@ function stamped(name: string, now = new Date()): string {
   return `IMG_${now.getFullYear()}${two(now.getMonth() + 1)}${two(now.getDate())}_${two(now.getHours())}${two(now.getMinutes())}${two(now.getSeconds())}${ending}`;
 }
 
-/** Picks a file from the phone's files into the Collection, in `folder`, or returns null if the owner went back. */
-export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress): Promise<CollectionItem | null> {
+/** Whether this phone can delete a photo or video from the gallery once it is in the Collection: Android 11 and later. */
+export const CAN_DELETE_ORIGINALS = !!collectionNative?.canDeleteFromGallery();
+
+/** Whether a file of this type may be deleted from the gallery once in the Collection: a photo or a video. */
+export const isGalleryType = (mime: string) => mime.startsWith('image/') || mime.startsWith('video/');
+
+/**
+ * Picks a file from the phone's files into the Collection, in `folder`, or returns null if the
+ * owner went back. With `deleteOriginal`, a photo or video the gallery has is then deleted there,
+ * once it is safely in the Collection and the owner confirms in Android's dialog; nothing else is.
+ */
+export async function importFromFiles(place: CollectionPlace, folder: string, progress?: Progress, { deleteOriginal = false } = {}): Promise<CollectionItem | null> {
   const picked = await pickSource(MAX_COLLECTION_FILE);
   if (!picked) return null;
+  let added: CollectionItem;
   try {
     const name = cleanFileName(picked.name);
     const said = cleanMime(picked.mime);
     const mime = said === 'application/octet-stream' ? mimeOf(name) : said;
-    return await keepSource(place, folder, { name, mime, source: picked.source }, progress);
+    added = await keepSource(place, folder, { name, mime, source: picked.source }, progress);
   } finally {
     picked.close();
   }
+  if (deleteOriginal && CAN_DELETE_ORIGINALS && picked.uri && isGalleryType(added.file.mime)) {
+    // Android says whether it deleted it; the file is in the Collection either way.
+    await collectionNative?.deleteFromGallery([picked.uri]).catch(() => undefined);
+  }
+  return added;
 }
 
 // A file read from `source`: a photo gets its small picture, read whole for the purpose.

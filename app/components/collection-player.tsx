@@ -1,0 +1,95 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { nextPlaying, pausePlaying, playingFile, playTime, previousPlaying, resumePlaying, stopPlaying } from '../lib/collection-play';
+import { t } from '../lib/i18n';
+import { collectionVideoView, type PlayerState } from '../modules/erevos-collection';
+import { space, withAlpha } from '../theme/colors';
+import { useColors } from '../theme/context';
+import { BackIcon } from './icons';
+import { Button, Text } from './ui';
+
+// The Collection's player (lib/collection-play.ts) as its screens show it: the controls of the list
+// playing under a file of music (components/collection-viewer.tsx), a bar on the Collection's screen
+// while music plays (app/collection.tsx), and a video over the whole screen with Media3's own
+// controls (modules/erevos-collection, VideoView.kt). Stop ends the list, and its keys go.
+
+/** Previous, play or pause, next and stop, with which file of the list plays and how far it is. */
+export function PlayerControls({ state, ink, muted }: { state: PlayerState; ink: string; muted: string }) {
+  const file = playingFile(state.index);
+  return (
+    <View style={styles.controls}>
+      <Text variant="bodyStrong" color={ink} numberOfLines={1} style={styles.centered}>
+        {file?.name ?? t('Playing')}
+      </Text>
+      <Text variant="caption" color={muted} style={styles.centered}>
+        {t('{n} of {count}', { n: state.index + 1, count: state.count })} · {playTime(state.position)} / {playTime(state.duration)}
+      </Text>
+      {state.error ? (
+        <Text variant="caption" color={muted} style={styles.centered}>
+          {t('This file could not be played.')}
+        </Text>
+      ) : null}
+      <View style={styles.row}>
+        <Button title={t('Previous')} kind="ghost" compact onPress={() => void previousPlaying()} />
+        {state.playing ? <Button title={t('Pause')} kind="secondary" compact onPress={() => void pausePlaying()} /> : <Button title={t('Play')} kind="primary" compact onPress={() => void resumePlaying()} />}
+        <Button title={t('Next')} kind="ghost" compact onPress={() => void nextPlaying()} disabled={state.index >= state.count - 1} />
+      </View>
+      <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
+    </View>
+  );
+}
+
+/** A bar with the file of music playing, to pause, play on or stop it, on the Collection's screen. */
+export function NowPlaying({ state }: { state: PlayerState | null }) {
+  const colors = useColors();
+  if (!state?.active || state.video) return null;
+  const file = playingFile(state.index);
+  return (
+    <View style={[styles.bar, { backgroundColor: colors.sheet, borderTopColor: withAlpha(colors.text, 0.12) }]}>
+      <View style={{ flex: 1 }}>
+        <Text variant="bodyStrong" numberOfLines={1}>
+          {file?.name ?? t('Playing')}
+        </Text>
+        <Text variant="caption" tone="muted">
+          {t('{n} of {count}', { n: state.index + 1, count: state.count })} · {playTime(state.position)}
+        </Text>
+      </View>
+      {state.playing ? <Button title={t('Pause')} kind="secondary" compact onPress={() => void pausePlaying()} /> : <Button title={t('Play')} kind="secondary" compact onPress={() => void resumePlaying()} />}
+      <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
+    </View>
+  );
+}
+
+/** The video of the list playing, over the whole screen; Back stops it. */
+export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const insets = useSafeAreaInsets();
+  const Video = collectionVideoView();
+  const close = () => {
+    void stopPlaying();
+    onClose();
+  };
+  return (
+    <Modal visible={visible} animationType="fade" onRequestClose={close} statusBarTranslucent navigationBarTranslucent supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
+      <View style={styles.video}>
+        {Video ? <Video style={StyleSheet.absoluteFill} /> : null}
+        <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Back')} hitSlop={8} style={[styles.back, { top: Math.max(space.sm, insets.top) }]}>
+          <BackIcon color="#FFFFFF" size={24} />
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  controls: { alignSelf: 'stretch', alignItems: 'center', gap: space.sm },
+  centered: { textAlign: 'center' },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm, borderTopWidth: StyleSheet.hairlineWidth },
+  video: { flex: 1, backgroundColor: '#000000' },
+  back: { position: 'absolute', left: space.md, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
+});

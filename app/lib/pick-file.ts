@@ -33,8 +33,12 @@ function clearLeftovers(): void {
 
 export class TooLargeError extends Error {}
 
-/** A file picked to send: its name, its type if the phone knows it, and where to read it from. Close it when done. */
-export type PickedSource = { name: string; mime: string; source: Source; close(): void };
+/**
+ * A file picked to send: its name, its type if the phone knows it, and where to read it from.
+ * Close it when done. `uri` is the link Android gave for it, where the phone says one (the
+ * Collection asks the gallery to delete a photo picked from it, lib/collection-import.ts).
+ */
+export type PickedSource = { name: string; mime: string; source: Source; close(): void; uri?: string };
 
 /** A file to send, or null if the owner went back. Throws TooLargeError above `most` bytes. */
 export async function pickSource(most: number): Promise<PickedSource | null> {
@@ -66,7 +70,7 @@ export async function pickSource(most: number): Promise<PickedSource | null> {
     handle.close();
     done();
   };
-  return { name: fileName(file.uri), mime: file.type, source: { size: copy.size, read }, close };
+  return { name: fileName(file.uri), mime: file.type, source: { size: copy.size, read }, close, uri: file.uri };
 }
 
 /** The file's name and bytes, or null if the owner went back. Throws TooLargeError above `most` bytes. */
