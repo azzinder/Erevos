@@ -1,0 +1,26 @@
+// SPDX-FileCopyrightText: 2026 azzinder
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.erevoscollection'
+version = '0.0.1'
+
+android {
+  namespace 'expo.modules.erevoscollection'
+
+  defaultConfig {
+    versionCode 1
+    versionName '0.0.1'
+  }
+}
+
+dependencies {
+  // Playing the Collection's music and videos (Playing.kt, PlayerService.kt, VideoView.kt):
+  // AndroidX Media3, Google's open-source player, with its media session and its video view.
+  implementation 'androidx.media3:media3-exoplayer:1.8.0'
+  implementation 'androidx.media3:media3-session:1.8.0'
+  implementation 'androidx.media3:media3-ui:1.8.0'
+}

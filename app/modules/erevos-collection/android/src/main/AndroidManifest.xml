@@ -1,0 +1,35 @@
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- The Collection's list plays on with the screen off (PlayerService.kt): a media playback
+       service in the foreground, and the phone kept awake enough to read the next chunks. The
+       notice's permission is asked for elsewhere (lib/permissions.ts). -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+  <application>
+    <!-- A file of the Collection opened with another app (CollectionProvider.kt): streamed from
+         its encrypted chunks, by a link that only the app it was handed to may read. -->
+    <provider
+      android:name="expo.modules.erevoscollection.CollectionProvider"
+      android:authorities="${applicationId}.collection"
+      android:exported="false"
+      android:grantUriPermissions="true" />
+    <!-- The Collection's music and videos with the screen off, on the lock screen and from a
+         headset (PlayerService.kt). Not exported: only Erevos and Android's own media controls
+         reach it. -->
+    <service
+      android:name="expo.modules.erevoscollection.PlayerService"
+      android:exported="false"
+      android:foregroundServiceType="mediaPlayback">
+      <intent-filter>
+        <action android:name="androidx.media3.session.MediaSessionService" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>
