@@ -1779,9 +1779,9 @@ export async function redeemCoupon(url: string, tor: boolean, coupon: Coupon, to
     joinOf(url, tor),
     Uint8Array.of(COUPON_REDEEM, ...issuer, ...nonce, ...randomizer, signature.length >> 8, signature.length & 0xff, ...signature, ...sha256Bytes(utf8Encode(token))),
   );
-  if (reply[0] === NOT_FOUND) throw new RelayError(t('The backup relay does not take coupons from your relay.'), NOT_FOUND);
+  if (reply[0] === NOT_FOUND) throw new RelayError(t('The home relay does not take coupons from your relay.'), NOT_FOUND);
   if (reply[0] === WRONG) throw new RelayError(t('This coupon was taken already.'), WRONG);
-  if (reply[0] === FULL) throw new RelayError(t('The backup relay gives no more tokens for coupons now.'), FULL);
+  if (reply[0] === FULL) throw new RelayError(t('The home relay gives no more tokens for coupons now.'), FULL);
   check(reply, 'coupon');
   return utf8Decode(reply.slice(1));
 }

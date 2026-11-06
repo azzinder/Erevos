@@ -1620,8 +1620,18 @@ vertraust. Es ist optional.
 - **Wie du es einrichtest:** Betreibe ein Relay wie in [Ein eigenes Relay betreiben](#own-relay), gib seine Adresse
   ein (und sein Token, falls es eines hat) und wähle **Speichern**. Kontakte erfahren es mit deiner nächsten Nachricht
   an sie oder über deinen neuen Kontaktlink.
-- **Was es sieht:** was dein Relay sieht, die Adresse dieses Telefons, wenn es Nachrichten holt, und wann und wie viel
-  ankommt. Versteckte Chats nutzen es nicht.
+- **Was es sieht:** was dein Relay sieht, die Adresse dieses Telefons, wenn es Nachrichten holt (nicht aber, wenn es nur
+  über Tor erreicht wird), und wann und wie viel ankommt. Versteckte Chats nutzen es nicht.
+- **Nur über Tor:** ein Schalter für jedes Heim-Relay. Dieses Relay sieht nie die Adresse dieses Telefons, egal was für
+  den Rest bei Tor eingestellt ist. Ohne eingegebenes Token gibt es ein Token für einen Gutschein: Dein Relay, das des
+  Bereichs selbst, signiert den Gutschein blind, sodass keines der beiden Relays erkennen kann, wem das Token gehört.
+  Der Gutschein wird 5 bis 60 Minuten nach dem Signieren eingelöst, zufällig, sodass die Zeiten, die die beiden Relays
+  gesehen haben, nicht zusammenpassen, und das Token kommt innerhalb einer Stunde vom Heim-Relay. Das Token gilt 90
+  Tage, und Erevos holt ab Tag 45 von selbst einen neuen Gutschein. Eine Grenze: Hat ein Relay nur wenige Telefone,
+  könnte, wer beide betreibt, allein an den Zeiten noch raten. So können zwei Bereiche (siehe
+  [Zweites Passwort](#second)) jeweils das Relay des anderen als Heim-Relay nutzen, und kein Relay verbindet sie
+  miteinander. Beide Relays müssen Gutscheine eingeschaltet haben, und es braucht einen Build mit Tor, auf Android
+  (siehe [Über Tor](#tor)).
 - **Für versteckte Chats:** Jeder versteckte Platz kann ein eigenes Heim-Relay haben, unter **Für Fortgeschrittene**
   auf seinem Bildschirm ohne gewählten Chat, solange er offen ist. Es wird nur bei diesem Platz aufbewahrt, versiegelt
   mit seiner PIN, sodass der Bereich nichts davon weiß, und es wird abgefragt, solange der Platz offen ist. Nutze ein

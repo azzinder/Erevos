@@ -154,7 +154,7 @@ export default function HomeRelay() {
             ) : null}
             {line.tor && !line.token.trim() && line.got === 'pending' ? (
               <Text variant="caption" tone="faint">
-                {t('A coupon is signed. The token comes from the backup relay within the hour.')}
+                {t('A coupon is signed. The token comes from the home relay within the hour.')}
               </Text>
             ) : null}
           </View>

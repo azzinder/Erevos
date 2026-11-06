@@ -38,7 +38,7 @@ const bytesOf = (hex: string) => Uint8Array.from(hex.match(/../g) ?? [], (pair) 
 /** The coupon is signed and is taken on the home relay later; until then the home relay has no token. */
 export class CouponWaitError extends RelayError {
   constructor() {
-    super(t('Your relay signed a coupon for the backup relay. Its token comes from there within the hour: the wait keeps the two relays from telling by the time that it is yours.'));
+    super(t('Your relay signed a coupon for the home relay. Its token comes from there within the hour: the wait keeps the two relays from telling by the time that it is yours.'));
   }
 }
 
@@ -107,12 +107,12 @@ async function step(spare: SpareRelay, primary: Relay | null, now: number, rando
   const issuers = await couponIssuers(url, tor);
   // A home relay that takes no coupons: as it is, with no token, or the one typed.
   if (issuers.length === 0) return { next: null, waits: false };
-  if (!primary?.url.trim()) throw new RelayError(t('This backup relay gives its token for a coupon from your relay: set your relay first.'));
-  if (!canCoupons()) throw new RelayError(t('This version of Erevos cannot make coupons. Update it, or type a token for the backup relay.'));
+  if (!primary?.url.trim()) throw new RelayError(t('This home relay gives its token for a coupon from your relay: set your relay first.'));
+  if (!canCoupons()) throw new RelayError(t('This version of Erevos cannot make coupons. Update it, or type a token for the home relay.'));
   const key = await couponKey(primary);
-  if (!key) throw new RelayError(t('Your relay signs no coupons for this phone. Type a token for the backup relay instead.'));
+  if (!key) throw new RelayError(t('Your relay signs no coupons for this phone. Type a token for the home relay instead.'));
   const id = sha256Bytes(key);
-  if (!issuers.some((one) => toHex(one) === toHex(id))) throw new RelayError(t('The backup relay does not take coupons from your relay.'));
+  if (!issuers.some((one) => toHex(one) === toHex(id))) throw new RelayError(t('The home relay does not take coupons from your relay.'));
   const nonce = randomBytes(32);
   const blinded = await couponBlind(key, nonce);
   const signature = await couponFinalize(key, await signCoupon(primary, blinded.message), blinded, nonce);

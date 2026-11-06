@@ -1503,8 +1503,17 @@ própria: um em casa, num Raspberry Pi ou num computador velho, ou qualquer outr
 - **Como configurar:** rode um relay como em [Rodar o seu próprio relay](#own-relay), digite o endereço dele (e o
   token, se ele tiver um) e escolha **Salvar**. Os contatos ficam sabendo dele pela sua próxima mensagem para eles, ou
   pelo seu novo link de contato.
-- **O que ele vê:** o mesmo que o seu relay vê, o endereço deste celular quando ele pega mensagens, e quando e quanto
-  chega. As conversas ocultas não o usam.
+- **O que ele vê:** o mesmo que o seu relay vê, o endereço deste celular quando ele pega mensagens (mas não quando ele
+  só é alcançado pelo Tor), e quando e quanto chega. As conversas ocultas não o usam.
+- **Só por Tor:** um interruptor para cada relay de casa. Esse relay nunca vê o endereço deste celular, seja qual for a
+  configuração do Tor para o resto. Sem token digitado, ele dá um token por um cupom: o seu relay, o do próprio espaço,
+  assina o cupom às cegas, então nenhum dos dois relays consegue saber de quem é o token. O cupom é usado de 5 a 60
+  minutos depois de assinado, ao acaso, de modo que os horários que os dois relays viram não combinam, e o token vem do
+  relay de casa dentro de uma hora. O token dura 90 dias, e o Erevos pega um cupom novo sozinho a partir do dia 45. Um
+  limite: com poucos celulares em um relay, quem cuida dos dois ainda poderia adivinhar só pelos horários. Assim, dois
+  espaços (veja [Segunda senha](#second)) podem usar cada um o relay do outro como relay de casa, e nenhum relay os liga
+  entre si. Os dois relays precisam ter os cupons ativados, e é preciso uma versão com Tor, no Android (veja
+  [Pelo Tor](#tor)).
 - **Para as conversas ocultas:** cada posição oculta pode ter um relay de casa próprio, em **Para usuários avançados**
   na tela dela sem nenhuma conversa escolhida, enquanto ela está aberta. Ele fica guardado só com aquela posição,
   selado com o PIN dela, então o espaço não sabe nada dele, e é consultado enquanto a posição está aberta. Use um
@@ -2010,7 +2019,7 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
   **Fotos**, acima do feed, é a escolha que importa para a privacidade. Uma foto ou um cartão de link vem do servidor
   onde quem escreveu a publicação a colocou, e esse servidor vê o endereço de onde ela foi buscada, pelo Tor o de uma
   saída do Tor, e que alguém a abriu. **Sempre** as mostra na hora, pelo Tor quando o Tor está ligado neste espaço;
-  **Só pelo Tor** as mostra só quando o Tor está ligado, e senão com um toque; **Com um toque** não busca nenhuma antes
+  **Só por Tor** as mostra só quando o Tor está ligado, e senão com um toque; **Com um toque** não busca nenhuma antes
   de você tocá-la. **Prévias de links** liga ou desliga os cartões. Nada é buscado enquanto o feed não aparece, uma foto
   é mantida só enquanto a sua publicação aparece, e nenhuma é guardada; a que não vem mostra **Mostrar a foto** para
   tentar de novo. Só endereços na internet são buscados, nunca um deste telefone ou da sua rede doméstica.

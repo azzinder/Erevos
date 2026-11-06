@@ -566,6 +566,9 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_MAX_QUEUES` | 100000 | Queues the relay holds. |
 | `EREVOS_RELAY_QUEUE_DAYS` | 180 | Days a queue lasts once its phone stops using it. |
 | `EREVOS_RELAY_LEND` | `off` | `on` lends places to phones that have no relay. |
+| `EREVOS_RELAY_COUPON_KEY` | none | This relay's key for coupons, from `erevos-relay new-coupon-key` (see [Coupons for a second relay](#coupons-for-a-second-relay)). Needs `EREVOS_RELAY_TOKENS`. |
+| `EREVOS_RELAY_COUPON_ISSUERS` | none | The file of the public keys of the relays whose coupons this one takes, one on each line. Needs `EREVOS_RELAY_TOKENS` in a folder the relay may write in. |
+| `EREVOS_RELAY_MAX_COUPONS` | 500 | Lines from coupons, all together. |
 | `EREVOS_RELAY_LEND_REVOKED` | `relay.key.revoked` beside the key | The file of revoked tickets. |
 | `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
 | `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
@@ -827,6 +830,58 @@ made stay until they expire unused. Lines that start with `#` are left out, so
 you can note why. Taking a line out gives the places back. The relay must be
 able to read the file: if its log says it cannot, run
 `sudo chmod 644 /var/lib/private/erevos-relay/relay.key.revoked`.
+
+## Coupons for a second relay
+
+With two relays, each space can use one as its own relay, reached straight,
+and the other as its home relay, reached **only through Tor**. A phone then
+takes its token on the home relay with a coupon from its own relay, and
+neither relay can tell whose that token is: the first signs the coupon blind
+(it sees a scrambled message only), the second takes the coupon through Tor,
+with no token and no address, and gives a token for it. Each coupon is taken
+once. The phone takes it some minutes after it was signed, at random within
+the hour, so the two relays' times do not match; still, with few phones, whoever
+runs both relays could guess by the times alone.
+
+A token from a coupon lasts 90 days, on a line named `spare`; the phone takes a
+new one from day 45. It may do what a phone with a token of its own does, but
+it may not invite phones or have coupons signed. The relay takes 500 such lines
+at most (`EREVOS_RELAY_MAX_COUPONS`) and removes each one at its end. A phone
+with a token of its own may have 4 coupons signed a day, and the relay signs
+1,000 a day at most.
+
+On each relay, with the relay stopped, make its key for coupons in the folder
+of the service (see [Invites](#invites) for why there):
+
+    sudo systemctl stop erevos-relay
+    sudo erevos-relay new-coupon-key /var/lib/private/erevos-relay/coupon.key
+
+It writes the key, readable by its owner alone, and its public key, one line of
+hex, in `coupon.key.pub` beside it. It never writes over a key already there.
+Then put the **other** relay's `coupon.key.pub` line into a file of issuers on
+this one, such as `/var/lib/private/erevos-relay/coupon.issuers` (one key on
+each line, `#` starting a note, 16 at most). The public key is no secret: copy
+it as you like. In `/etc/erevos-relay.env`:
+
+    EREVOS_RELAY_COUPON_KEY=/var/lib/erevos-relay/coupon.key
+    EREVOS_RELAY_COUPON_ISSUERS=/var/lib/erevos-relay/coupon.issuers
+
+Both need `EREVOS_RELAY_TOKENS`, in the folder of the service as for invites,
+since the relay writes the lines of coupons into that file. Then
+`sudo systemctl start erevos-relay`; its log says that phones may have coupons
+signed and how many issuers' coupons it takes. Which coupons were taken, and
+till when their lines last, are kept in `phones.tokens.coupons` beside the
+file of tokens.
+
+A relay may have only one of the two: the key alone signs coupons for another
+relay, the issuers alone take them. A new key makes the coupons already signed,
+and not yet taken, useless where the old public key is taken out; the tokens
+already given last their days. To stop taking a relay's coupons, take its line
+out of the issuers file and restart; to take back one token, delete its line
+from the file of tokens.
+
+In the app, under **Settings → Relay and networks → Home relay**, the home relay is
+set with **Only through Tor** on and no token typed.
 
 ## What the server can see
 

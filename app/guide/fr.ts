@@ -1595,8 +1595,17 @@ confiance. C’est facultatif.
 - **Comment le configurer :** fais tourner un relais comme dans [Faire tourner ton propre relais](#own-relay), tape son
   adresse (et son jeton, s’il en a un) et choisis **Enregistrer**. Tes contacts l’apprennent par ton prochain message,
   ou par ton nouveau lien de contact.
-- **Ce qu’il voit :** ce que voit ton relais, l’adresse de ce téléphone quand il prend des messages, et quand et combien
-  arrive. Les discussions masquées ne l’utilisent pas.
+- **Ce qu’il voit :** ce que voit ton relais, l’adresse de ce téléphone quand il prend des messages (mais pas quand il
+  est joint seulement par Tor), et quand et combien arrive. Les discussions masquées ne l’utilisent pas.
+- **Seulement par Tor :** un interrupteur pour chaque relais d’attache. Ce relais ne voit jamais l’adresse de ce
+  téléphone, quel que soit le réglage de Tor pour le reste. Sans jeton tapé, il donne un jeton contre un coupon : ton
+  relais, celui de l’espace, signe le coupon en aveugle, si bien qu’aucun des deux relais ne peut savoir à qui est le
+  jeton. Le coupon est pris de 5 à 60 minutes après sa signature, au hasard, si bien que les heures vues par les deux
+  relais ne correspondent pas, et le jeton vient du relais d’attache dans l’heure. Le jeton dure 90 jours, et Erevos
+  prend de lui-même un nouveau coupon dès le jour 45. Une limite : avec peu de téléphones sur un relais, qui gère les
+  deux pourrait encore deviner par les heures seules. Ainsi, deux espaces (voir [Second mot de passe](#second)) peuvent
+  chacun utiliser le relais de l’autre comme relais d’attache, et aucun relais ne les relie. Les deux relais doivent
+  avoir les coupons activés, et il faut une version avec Tor, sur Android (voir [Par Tor](#tor)).
 - **Pour les discussions masquées :** chaque emplacement masqué peut avoir son propre relais d’attache, sous **Pour les
   utilisateurs avancés** sur son écran sans discussion choisie, tant qu’il est ouvert. Il est gardé avec cet emplacement
   seul, scellé avec son code PIN, si bien que l’espace n’en sait rien, et il est consulté tant que l’emplacement est

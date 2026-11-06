@@ -1524,8 +1524,17 @@ uno a casa, su un Raspberry Pi o un vecchio computer, o qualsiasi altro relay di
 - **Come configurarlo:** fai girare un relay come in [Gestire un relay tuo](#own-relay), scrivi il suo indirizzo (e il
   token, se ne ha uno) e scegli **Salva**. I contatti lo conoscono dal tuo prossimo messaggio, o dal tuo nuovo link di
   contatto.
-- **Che cosa vede:** quello che vede il tuo relay, l’indirizzo di questo telefono quando prende i messaggi, e quando e
-  quanto arriva. Le chat nascoste non lo usano.
+- **Che cosa vede:** quello che vede il tuo relay, l’indirizzo di questo telefono quando prende i messaggi (ma non
+  quando è raggiunto solo tramite Tor), e quando e quanto arriva. Le chat nascoste non lo usano.
+- **Solo tramite Tor:** un interruttore per ogni relay di casa. Quel relay non vede mai l’indirizzo di questo telefono,
+  qualunque cosa sia impostata per Tor per il resto. Senza token scritto, dà un token in cambio di un coupon: il tuo
+  relay, quello dello spazio stesso, firma il coupon alla cieca, così nessuno dei due relay può capire di chi è il
+  token. Il coupon viene preso da 5 a 60 minuti dopo che è stato firmato, a caso, così gli orari visti dai due relay non
+  coincidono, e il token arriva dal relay di casa entro un’ora. Il token dura 90 giorni, ed Erevos prende da solo un
+  nuovo coupon dal giorno 45. Un limite: con pochi telefoni su un relay, chi gestisce entrambi potrebbe ancora
+  indovinare dai soli orari. Così due spazi (vedi [Seconda password](#second)) possono usare ciascuno il relay
+  dell’altro come relay di casa, e nessun relay li lega tra loro. Entrambi i relay devono avere i coupon attivati, e
+  serve una versione con Tor, su Android (vedi [Tramite Tor](#tor)).
 - **Per le chat nascoste:** ogni posto nascosto può avere un suo relay di casa, in **Per utenti esperti** nella sua
   schermata senza nessuna chat scelta, mentre è aperto. È conservato solo con quel posto, sigillato con il suo PIN,
   così lo spazio non ne sa nulla, e viene controllato mentre il posto è aperto. Usa un relay diverso da quello dello

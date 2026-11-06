@@ -1517,8 +1517,17 @@ en casa, en una Raspberry Pi o en un ordenador viejo, o cualquier otro relay en 
 - **Cómo configurarlo:** ejecuta un relay como en [Tener tu propio relay](#own-relay), escribe su dirección (y su
   token, si tiene) y elige **Guardar**. Los contactos lo conocen con tu siguiente mensaje, o con tu nuevo enlace de
   contacto.
-- **Lo que ve:** lo que ve tu relay, la dirección de este teléfono cuando recoge mensajes, y cuándo y cuánto llega. Los
-  chats ocultos no lo usan.
+- **Lo que ve:** lo que ve tu relay, la dirección de este teléfono cuando recoge mensajes (pero no cuando es solo por
+  Tor), y cuándo y cuánto llega. Los chats ocultos no lo usan.
+- **Solo por Tor:** un interruptor para cada relay de casa. Ese relay nunca ve la dirección de este teléfono, sea cual
+  sea el ajuste de Tor para el resto. Sin token escrito, da un token a cambio de un cupón: tu relay, el del propio
+  espacio, firma el cupón a ciegas, así que ninguno de los dos relays puede saber de quién es el token. El cupón se usa
+  entre 5 y 60 minutos después de firmarse, al azar, de modo que las horas que vieron los dos relays no coinciden, y el
+  token llega del relay de casa en menos de una hora. El token dura 90 días, y Erevos toma un cupón nuevo por sí solo a
+  partir del día 45. Un límite: con pocos teléfonos en un relay, quien gestione los dos aún podría adivinar solo por las
+  horas. Así, dos espacios (mira [Segunda contraseña](#second)) pueden usar cada uno el relay del otro como relay de
+  casa, y ningún relay los relaciona. Los dos relays deben tener los cupones activados, y hace falta una versión con
+  Tor, en Android (mira [A través de Tor](#tor)).
 - **Para los chats ocultos:** cada lugar oculto puede tener un relay de casa propio, en **Para usuarios avanzados** de
   su pantalla sin ningún chat elegido, mientras está abierto. Se guarda solo con ese lugar, sellado con su PIN, así que
   el espacio no sabe nada de él, y se consulta mientras el lugar está abierto. Usa un relay distinto del del espacio: un

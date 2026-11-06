@@ -1458,8 +1458,16 @@ kuće, na Raspberry Piju ili starom računaru, ili bilo koji drugi relay kojem v
   vaš vlastiti relay ne radi.
 - **Kako ga postaviti:** pokrenite relay kao u [Vlastiti relay](#own-relay), upišite njegovu adresu (i token, ako ga
   ima) i izaberite **Sačuvaj**. Kontakti ga saznaju iz vaše sljedeće poruke ili iz vašeg novog linka za kontakt.
-- **Šta vidi:** ono što vidi vaš relay, adresu ovog telefona kad preuzima poruke, te kada i koliko stiže. Skriveni
-  razgovori ga ne koriste.
+- **Šta vidi:** ono što vidi vaš relay, adresu ovog telefona kad preuzima poruke (ali ne kad mu se pristupa samo preko
+  Tora), te kada i koliko stiže. Skriveni razgovori ga ne koriste.
+- **Samo preko Tora:** prekidač za svaki kućni relay. Taj relay nikad ne vidi adresu ovog telefona, bez obzira na to šta
+  je za ostalo postavljeno u Toru. Bez upisanog tokena daje token za kupon: vaš relay, relay samog prostora, potpisuje
+  kupon naslijepo, pa nijedan relay ne može znati čiji je token. Kupon se uzima 5 do 60 minuta nakon što je potpisan,
+  nasumično, pa se vremena koja su vidjela dva relaya ne poklapaju, a token stiže od kućnog relaya u roku od sat
+  vremena. Token traje 90 dana, a Erevos sam uzima novi kupon od 45. dana. Ograničenje: kad na relayu ima malo telefona,
+  onaj ko vodi oba mogao bi i dalje pogađati samo po vremenima. Tako dva prostora (vidi [Druga lozinka](#second)) mogu
+  koristiti jedan drugome relay kao kućni relay, a nijedan relay ih ne povezuje. Oba relaya moraju imati uključene
+  kupone, a treba verzija s Torom, na Androidu (vidi [Preko Tora](#tor)).
 - **Za skrivene razgovore:** svako skriveno mjesto može imati vlastiti kućni relay, pod **Za napredne korisnike** na
   svom ekranu kad nije izabran nijedan razgovor, dok je otvoreno. Čuva se samo s tim mjestom, zapečaćen njegovim
   PIN-om, pa prostor ne zna ništa o njemu, a gleda se dok je mjesto otvoreno. Koristite drugi relay, a ne relay

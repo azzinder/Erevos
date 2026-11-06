@@ -115,6 +115,14 @@ On main, not released yet:
   it is ready, and through your relay while it starts; with **Everything** only through Tor. With no relay at all,
   texts, photos, files and voice messages follow the same way, and **Delete me from everywhere** asks the Nostr relays
   straight when Tor is off. See [Through Tor](#tor).
+- **A home relay only through Tor**: switch a home relay to **Only through Tor** (Settings → Relay and networks → Home
+  relay) and it never sees your phone's address, whatever Tor is set to for the rest. With no token typed, it gives you
+  one for a coupon that your relay signs blind, so neither relay can tell whose it is: two spaces (second password) can
+  each use the other's relay as their home relay, with no relay tying them together. Erevos takes the coupon 5 to 60
+  minutes after it was signed, at random, so the times the two relays saw do not match (still, with few phones on a
+  relay, whoever runs both could guess by the times alone). The token comes within the hour, lasts 90 days, and Erevos
+  takes a new coupon by itself from day 45. Needs a build with Tor (Android), and relays whose operators turned coupons
+  on. See [Home relay](#home-relay).
 
 ### Under the hood
 
@@ -216,6 +224,15 @@ On main, not released yet:
   since the log last said them; a file goes elsewhere only by the log's removal. Chunks come by ChunkFetch: the fast
   Wi-Fi way, the place's server, or the relay on asking a device that has them (envelopes `cfetch`, `cfile`).
   `checks/sync-collection.check.ts`, `checks/collection-links.check.ts`.
+- **Coupons for a home relay's token (blind RSA)**: a home relay reached only through Tor (`SpareRelay.tor`,
+  `Relay.tor`, `ensureTor`) gets its token for a coupon the space's relay signs blind: RFC 9474
+  RSABSSA-SHA384-PSS-Randomized, with blind-rsa-signatures 0.18 (lib/coupons.ts, crates/erevos-relay coupons.rs). Relay
+  ops `COUPON_KEY` (the public key to blind with), `COUPON_SIGN` (blind-signs with the phone's token, 4 a day per
+  phone), `COUPON_KEYS` (the SHA-256 of each issuer key it takes) and `COUPON_REDEEM` (takes a coupon, once, for a line
+  for the token). A relay turns them on with `EREVOS_RELAY_COUPON_KEY` (signing) and `EREVOS_RELAY_COUPON_ISSUERS`
+  (taking). The lines it makes are named spare and last 90 days, 500 at most (`EREVOS_RELAY_MAX_COUPONS`); a coupon line
+  neither invites nor has coupons signed. The coupon is taken 5 to 60 minutes after it was signed, at random, through
+  Tor, so the two relays' times do not match; the token is renewed from 45 days on.
 
 ## 6.0.0-rc.2 (2026-11-04)
 

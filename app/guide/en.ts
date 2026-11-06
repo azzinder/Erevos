@@ -1393,8 +1393,16 @@ one at home, on a Raspberry Pi or an old computer, or any other relay you trust.
   when your own relay is down.
 - **How to set it up:** run a relay as in [Running your own relay](#own-relay), type its address (and token, if it
   has one) and choose **Save**. Contacts learn it from your next message to them, or from your new contact link.
-- **What it sees:** what your relay sees, this phone's address when it takes messages, and when and how much comes.
-  Hidden chats do not use it.
+- **What it sees:** what your relay sees, this phone's address when it takes messages (but not when it is only through
+  Tor), and when and how much comes. Hidden chats do not use it.
+- **Only through Tor:** a switch for each home relay. That relay never sees this phone's address, whatever Tor is set to
+  for the rest. With no token typed, it gives a token for a coupon: your relay, the space's own, signs the coupon blind,
+  so neither relay can tell whose the token is. The coupon is taken 5 to 60 minutes after it was signed, at random, so
+  the times the two relays saw do not match, and the token comes from the home relay within the hour. The token lasts 90
+  days, and Erevos takes a new coupon by itself from day 45. A limit: with few phones on a relay, whoever runs both
+  could still guess by the times alone. So two spaces (see [Second password](#second)) can each use the other's relay as
+  their home relay, and no relay ties them together. Both relays must have coupons turned on, and it needs a build with
+  Tor, on Android (see [Through Tor](#tor)).
 - **For hidden chats:** each hidden place can have a home relay of its own, under **For advanced users** on its
   screen with no chat picked, while it is open. It is kept with that place only, sealed with its PIN, so the space knows nothing of it, and it is looked
   at while the place is open. Use another relay than the space's: one relay seeing both queues would tie them
