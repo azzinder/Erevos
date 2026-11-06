@@ -20,8 +20,11 @@ import { preparePhoto } from './pick-photo';
 // the next share. What is handed to the next screen is held in memory only, for a minute at most.
 // On a computer nothing is shared in (share-in.web.ts).
 
-/** A photo or file shared, as its copy in Erevos's cache (`file`, its name there). */
-export type SharedFile = { file: string; name: string; mime: string };
+/**
+ * A photo or file shared, as its copy in Erevos's cache (`file`, its name there); or a file of the
+ * Collection sent to a chat (`held`), read from its encrypted chunks as it goes, with no copy.
+ */
+export type SharedFile = { file: string; name: string; mime: string; held?: Source };
 
 /** A shared photo or file read to send: close it once sent, and its copy goes. */
 export type SharedSource = { name: string; mime: string; source: Source; w?: number; h?: number; close(): void };
@@ -51,6 +54,7 @@ export function isSharedPhoto(shared: SharedFile): boolean {
 
 /** Deletes the copy of a shared photo or file. */
 export function dropShared(shared: SharedFile): void {
+  if (shared.held) return;
   try {
     const copy = new File(Paths.cache, shared.file);
     if (copy.exists) copy.delete();
@@ -85,6 +89,7 @@ export function takeShared(to: string, now = Date.now()): SharedFile | null {
 
 /** Reads a shared photo, made ready at the photo quality chosen (lib/photo-quality.ts), or a file as it is, a piece at a time. */
 export async function readShared(shared: SharedFile): Promise<SharedSource> {
+  if (shared.held) return { name: shared.name, mime: shared.mime, source: shared.held, close: () => undefined };
   const copy = new File(Paths.cache, shared.file);
   if (isSharedPhoto(shared)) {
     const quality = await loadPhotoQuality().catch(() => 'original' as const);

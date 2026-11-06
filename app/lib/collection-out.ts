@@ -5,14 +5,13 @@
 import { startActivityAsync } from 'expo-intent-launcher';
 import { Directory, File, FileMode, Paths } from 'expo-file-system';
 
-import type { CollectionItem } from '../lock/collection-data';
+import { itemSource, type CollectionItem } from '../lock/collection-data';
 import { eachPiece } from './attachments';
 import { randomBytes, toHex } from './crypto';
-import type { SharedFile } from './share-in';
+import { isSharedPhoto, type SharedFile } from './share-in';
 
-// Taking a file out of the Collection, on the phone, in the two ways that leave a plain copy in
-// the app's cache for a while: to send it to a chat, as a file another app shared is sent
-// (lib/share-in.ts, whose copy is deleted once the chat has read it), and to open it with another
+// Taking a file out of the Collection, on the phone: to send it to a chat, as a file another app
+// shared is sent (lib/share-in.ts; only a photo has a plain copy, deleted once read), and to open it with another
 // app, which Android lets read it through a link (the copy is deleted when the screen closes, and
 // any left behind with the next start). The copy is written a piece at a time. Saving to the
 // phone's own folders is lib/save-file.ts. On a computer, collection-out.web.ts.
@@ -30,8 +29,14 @@ async function writePieces(item: CollectionItem, file: File): Promise<void> {
   }
 }
 
-/** A plain copy of the file in the cache, named as Send to names the copies of what is shared (lib/share-in.ts), to hand to a chat; the chat deletes it once read. */
+/**
+ * The file to hand to a chat (lib/share-in.ts). A file other than a photo is read from its
+ * encrypted chunks as the chat sends it, and never lies plain on the disk. A photo is made ready
+ * as every photo sent is (lib/photo-quality.ts), which reads it from a file: a plain copy in the
+ * cache, named as Send to names the copies of what is shared, deleted as soon as it was read.
+ */
 export async function copyToSend(item: CollectionItem): Promise<SharedFile> {
+  if (!isSharedPhoto({ file: '', name: item.file.name, mime: item.file.mime })) return { file: '', name: item.file.name, mime: item.file.mime, held: itemSource(item) };
   const name = `erevos-shared-${toHex(randomBytes(8))}`;
   const copy = new File(Paths.cache, name);
   try {
