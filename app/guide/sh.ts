@@ -2419,6 +2419,8 @@ postoje.
   u pretrazi: pogrešna, ili lozinka otvorenog prostora, ne premješta ništa. Razgovor s nekim s kim drugi prostor već ima
   svoj razgovor ostaje gdje jest. Tko pročita drugi prostor forenzičkim alatom mogao bi vidjeti da je razgovor došao
   odnekud drugdje: njegov kontakt ga i dalje zna po ključu ovog prostora.
+  Ako taj prostor još nema relay, Erevos nudi relay ovog prostora: **Premjesti s relayem ovog prostora** premješta
+  razgovor i daje tom prostoru ovaj relay da ga zadrži, a relay tada može znati da su oba prostora na jednom telefonu.
 - **Diskrecija:** radi privatnosti, aplikacija nikad ne pokazuje je li postavljena druga lozinka. U web-aplikaciji s
   uključenim obavijestima dok je Erevos zatvoren, broj na ikoni Erevosa ostaje dok je Erevos zatvoren: ako se ne slaže
   s prostorom koji otvarate, može nagovijestiti drugi (**Broj na ikoni** to isključuje).

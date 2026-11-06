@@ -25,7 +25,9 @@ export const NEXT: Changes = {
     mark('**Support Erevos**: every way has its QR code now, Liberapay and PayPal too, and PayPal opens in the browser.'),
     mark("**Tor off unless you turn it on**: a new space sends nothing through Tor, so messages go fastest, and turning Tor on asks first, as it makes them slower. A space you already have keeps its choice, under Settings → Relay and networks → Tor. Texts through Nostr now go without Tor too: then the Nostr relays see your phone's internet address, never who wrote to whom. See [Through Tor](#tor)."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Moving a chat to a space with no relay**: **Move to another space** stopped there, as that space had no relay of its own. Now it offers this space's relay, which that space then keeps, and it makes that space's relay queue when it has a relay but no queue yet. See [Second password](#second)."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

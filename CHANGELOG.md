@@ -29,6 +29,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Moving a chat to a space with no relay**: **Move to another space** stopped with "That space's chats have no relay
+  queue yet" when the other space had no relay of its own. Now it offers this space's relay with a second tap, **Move
+  with this space's relay**, which that space then keeps (the relay can then tell that both spaces are on one phone), and
+  it makes that space's relay queue itself when it has a relay but no queue yet. See [Second password](#second).
 - **QR codes of Liberapay and PayPal**: Liberapay's holds its link, PayPal's its link with `&source=qr` at the end
   (`LIBERAPAY_QR` and `PAYPAL_QR` in `lib/donate.ts`); the **Open PayPal** button opens the link without it, and the
   coins' QR codes still hold only the bare address. `checks/donate.check.ts` holds all of them, and
