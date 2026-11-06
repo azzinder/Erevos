@@ -1522,9 +1522,8 @@ en casa, en una Raspberry Pi o en un ordenador viejo, o cualquier otro relay en 
 - **Solo por Tor:** un interruptor para cada relay de casa. Ese relay nunca ve la dirección de este teléfono, sea cual
   sea el ajuste de Tor para el resto. Sin token escrito, da un token a cambio de un cupón: tu relay, el del propio
   espacio, firma el cupón a ciegas, así que ninguno de los dos relays puede saber de quién es el token. El cupón se usa
-  entre 5 y 60 minutos después de firmarse, al azar, de modo que las horas que vieron los dos relays no coinciden, y el
-  token llega del relay de casa en menos de una hora. El token dura 90 días, y Erevos toma un cupón nuevo por sí solo a
-  partir del día 45. Un límite: con pocos teléfonos en un relay, quien gestione los dos aún podría adivinar solo por las
+  hasta una hora después de firmarse, en un momento al azar, de modo que las horas que vieron los dos relays no coinciden, y el
+  token llega del relay de casa en menos de una hora. El token dura 90 días, y Erevos toma un cupón nuevo por sí solo un día al azar entre el día 30 y el día 60. Un límite: con pocos teléfonos en un relay, quien gestione los dos aún podría adivinar solo por las
   horas. Así, dos espacios (mira [Segunda contraseña](#second)) pueden usar cada uno el relay del otro como relay de
   casa, y ningún relay los relaciona. Los dos relays deben tener los cupones activados, y hace falta una versión con
   Tor, en Android (mira [A través de Tor](#tor)).

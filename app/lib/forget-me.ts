@@ -116,13 +116,15 @@ async function spaceOf(space: number, key: Uint8Array): Promise<Place> {
 function relayAt(data: SpaceData, url: string, token = ''): Relay {
   const kept = [{ url: data.url, token: data.token }, data.spare, ...(data.spare.more ?? [])].find((r) => r.url.trim() && sameRelay(r.url, url));
   const use = token.trim() || kept?.token.trim() || '';
-  return { url, ...(use ? { token: use } : {}) };
+  // A home relay reached only through Tor is reached so here too, never straight.
+  const tor = (kept as { tor?: boolean } | undefined)?.tor === true;
+  return { url, ...(use ? { token: use } : {}), ...(tor ? { tor: true } : {}) };
 }
 
 async function deleteQueues(queues: ServerQueue[], count: Count, unreached: Set<string>): Promise<void> {
   for (const q of queues) {
     try {
-      await deleteQueue({ url: q.url, ...(q.token ? { token: q.token } : {}) }, fromHex(q.recipientHex));
+      await deleteQueue({ url: q.url, ...(q.token ? { token: q.token } : {}), ...(q.tor ? { tor: true } : {}) }, fromHex(q.recipientHex));
       count.done += 1;
     } catch (error) {
       if (isQueueNotFound(error)) count.gone += 1;

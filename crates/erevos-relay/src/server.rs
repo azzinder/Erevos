@@ -1617,7 +1617,8 @@ fn respond(
                         Err(coupons::RedeemError::Storage) => vec![FAILED],
                     }
                 }
-                _ => vec![NOT_FOUND],
+                // Not set up for coupons (now): the phone keeps its coupon for later, as NOT_FOUND would have it let go.
+                _ => vec![FAILED],
             }
         }
         SIGN_IN => match shared.signin.get() {

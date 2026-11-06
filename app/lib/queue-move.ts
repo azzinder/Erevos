@@ -125,7 +125,7 @@ export type MoveLook = {
 /** What a look did: the own queue it moved to, if it moved, and what to say. */
 export type MoveNews = { queue: Queue | null; notes: string[] };
 
-type Here = { url: string; token: string };
+type Here = { url: string; token: string; tor?: boolean };
 // Why the own queue moves: a deletion or block, junk on it, the relay lost it, or a new contact link.
 type Why = MoveReason;
 
@@ -141,7 +141,7 @@ const adding = (d: Pick<QueuesData, 'was' | 'early'>, old: OldQueue): Pick<Queue
 // The `qa` of an own queue a move makes now.
 const movedAge = (d: QueuesData, now: number) => queueAge(d.moved, now, d.offset, randomHours(QUEUE_JITTER));
 const queueOf = (ids: { recipientId: Uint8Array; senderId: Uint8Array }): Queue => ({ recipientHex: toHex(ids.recipientId), senderHex: toHex(ids.senderId) });
-const relayOf = (k: Here): Relay => ({ url: k.url, token: k.token || undefined });
+const relayOf = (k: Here): Relay => ({ url: k.url, token: k.token || undefined, ...(k.tor === true ? { tor: true } : {}) });
 
 /** The queue the contact link names: the link's own, or the own queue while it is the link's. */
 export function linkOf(queues: QueuesData, own: Queue): Queue {
@@ -532,7 +532,7 @@ export class QueueMove {
     const store = this.at.data;
     const { spare } = await store.load();
     if (!spare.url.trim() || !spare.queue) return;
-    const was: OldQueue = { queue: spare.queue, url: spare.url.trim(), token: spare.token.trim(), kind: 'spare', until: Date.now() + GRACE };
+    const was: OldQueue = { queue: spare.queue, url: spare.url.trim(), token: spare.token.trim(), kind: 'spare', until: Date.now() + GRACE, ...(spare.tor === true ? { tor: true } : {}) };
     await this.at.queues.update((d) => ({ ...d, ...adding(d, was) }));
     await store.update({ spare: { ...spare, queue: null } });
     forgetSpare(store);

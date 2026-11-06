@@ -1462,9 +1462,8 @@ kuće, na Raspberry Piju ili starom računaru, ili bilo koji drugi relay kojem v
   Tora), te kada i koliko stiže. Skriveni razgovori ga ne koriste.
 - **Samo preko Tora:** prekidač za svaki kućni relay. Taj relay nikad ne vidi adresu ovog telefona, bez obzira na to šta
   je za ostalo postavljeno u Toru. Bez upisanog tokena daje token za kupon: vaš relay, relay samog prostora, potpisuje
-  kupon naslijepo, pa nijedan relay ne može znati čiji je token. Kupon se uzima 5 do 60 minuta nakon što je potpisan,
-  nasumično, pa se vremena koja su vidjela dva relaya ne poklapaju, a token stiže od kućnog relaya u roku od sat
-  vremena. Token traje 90 dana, a Erevos sam uzima novi kupon od 45. dana. Ograničenje: kad na relayu ima malo telefona,
+  kupon naslijepo, pa nijedan relay ne može znati čiji je token. Kupon se uzima do sat vremena nakon što je potpisan, u nasumično vrijeme, pa se vremena koja su vidjela dva relaya ne poklapaju, a token stiže od kućnog relaya u roku od sat
+  vremena. Token traje 90 dana, a Erevos sam uzima novi kupon nasumičnog dana između 30. i 60. dana. Ograničenje: kad na relayu ima malo telefona,
   onaj ko vodi oba mogao bi i dalje pogađati samo po vremenima. Tako dva prostora (vidi [Druga lozinka](#second)) mogu
   koristiti jedan drugome relay kao kućni relay, a nijedan relay ih ne povezuje. Oba relaya moraju imati uključene
   kupone, a treba verzija s Torom, na Androidu (vidi [Preko Tora](#tor)).

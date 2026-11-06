@@ -378,6 +378,15 @@ export function torFor(files: boolean, now = Date.now()): boolean {
   return torWay === 'messages' && !files && torReady && now >= torRestUntil;
 }
 
+// The circuits a request to `relay` goes on: for one reached only through Tor (Relay.tor), circuits
+// of its own host alone, so that its requests never share a circuit, and so an exit, with those of
+// the space's relay or of another home relay; `way` within them, when given.
+function torWayOf(relay: Relay, way?: string): string | undefined {
+  if (relay.tor !== true) return way;
+  const host = relay.url.replace(/^wss?:\/\//i, '').split('/')[0].toLowerCase();
+  return `home ${host}${way ? ` ${way}` : ''}`;
+}
+
 // Whether a request to `relay` goes through Tor now: always for one reached only through Tor
 // (Relay.tor), else as the space's way says.
 function torTo(relay: Relay, files: boolean): boolean {
@@ -745,7 +754,8 @@ class TorLine implements Line {
   }
 
   /** On the circuits named `way`, when given and this build can (canTorWays). */
-  static async open(relay: Relay, channel: boolean, way?: string): Promise<TorLine> {
+  static async open(relay: Relay, channel: boolean, given?: string): Promise<TorLine> {
+    const way = torWayOf(relay, given);
     const token = channel ? '' : (relay.token ?? '');
     const open = () =>
       way && canTorWays() ? torOpenOn(relay.url, token, way, channel) : channel ? torOpenChannel(relay.url) : tor().torOpen(relay.url, token);
@@ -900,8 +910,9 @@ function plainRequest(relay: Relay, bytes: Uint8Array, signal?: AbortSignal, way
   if (relay.torOnly && !torFor(false)) return Promise.reject(new RelayUnreachableError(t('Tor is not ready.')));
   const within = answerWithin(bytes);
   if (torTo(relay, false)) {
+    // TorLine.open names the circuits as torWayOf says.
     const reply =
-      way && canTorWays()
+      torWayOf(relay, way) && canTorWays()
         ? TorLine.open(relay, false, way).then((line) =>
             line.call(bytes, within).finally(() => line.close()),
           )
@@ -1775,9 +1786,12 @@ export type Coupon = { issuer: Uint8Array; nonce: Uint8Array; randomizer: Uint8A
  */
 export async function redeemCoupon(url: string, tor: boolean, coupon: Coupon, token: string): Promise<string> {
   const { issuer, nonce, randomizer, signature } = coupon;
+  // On circuits of its own, new each time: none the token is used on later, nor any other coupon's.
   const reply = await request(
     joinOf(url, tor),
     Uint8Array.of(COUPON_REDEEM, ...issuer, ...nonce, ...randomizer, signature.length >> 8, signature.length & 0xff, ...signature, ...sha256Bytes(utf8Encode(token))),
+    undefined,
+    tor ? `coupon ${toHex(randomBytes(8))}` : undefined,
   );
   if (reply[0] === NOT_FOUND) throw new RelayError(t('The home relay does not take coupons from your relay.'), NOT_FOUND);
   if (reply[0] === WRONG) throw new RelayError(t('This coupon was taken already.'), WRONG);

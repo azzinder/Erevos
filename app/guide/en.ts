@@ -1397,9 +1397,9 @@ one at home, on a Raspberry Pi or an old computer, or any other relay you trust.
   Tor), and when and how much comes. Hidden chats do not use it.
 - **Only through Tor:** a switch for each home relay. That relay never sees this phone's address, whatever Tor is set to
   for the rest. With no token typed, it gives a token for a coupon: your relay, the space's own, signs the coupon blind,
-  so neither relay can tell whose the token is. The coupon is taken 5 to 60 minutes after it was signed, at random, so
+  so neither relay can tell whose the token is. The coupon is taken up to an hour after it was signed, at a random time, so
   the times the two relays saw do not match, and the token comes from the home relay within the hour. The token lasts 90
-  days, and Erevos takes a new coupon by itself from day 45. A limit: with few phones on a relay, whoever runs both
+  days, and Erevos takes a new coupon by itself on a random day between day 30 and day 60. A limit: with few phones on a relay, whoever runs both
   could still guess by the times alone. So two spaces (see [Second password](#second)) can each use the other's relay as
   their home relay, and no relay ties them together. Both relays must have coupons turned on, and it needs a build with
   Tor, on Android (see [Through Tor](#tor)).

@@ -108,10 +108,11 @@ export type SpaceData = {
 /**
  * A home relay (lib/spare.ts). `tor`: reached only through Tor, files too, whatever the space's way,
  * so it never sees this phone's address. `coupon`: when its token came with a coupon (ms), which
- * the space's relay signed blind (lib/coupons.ts), so it is taken again before it ends. `pending`:
+ * the space's relay signed blind (lib/coupons.ts), so it is taken again before it ends, from
+ * `renew` (ms, picked at random so the two relays cannot tell the phone by its turn). `pending`:
  * a coupon signed and not taken there yet, with the token made for it, taken from `after` (ms).
  */
-export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[]; tor?: boolean; coupon?: number; pending?: PendingCoupon };
+export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[]; tor?: boolean; coupon?: number; renew?: number; pending?: PendingCoupon };
 /** A coupon signed and not taken yet (lib/coupons.ts): hex, but the token as it is. */
 export type PendingCoupon = { issuer: string; nonce: string; randomizer: string; signature: string; token: string; after: number };
 /** The most home relays a space has besides the first (SpareRelay.more): a contact link says each. */
@@ -180,6 +181,7 @@ function checkedSpareRelay(value: unknown, inner = false): SpareRelay {
     ...(more.length > 0 ? { more } : {}),
     ...(v.tor === true ? { tor: true } : {}),
     ...(typeof v.coupon === 'number' && Number.isFinite(v.coupon) && v.coupon > 0 ? { coupon: v.coupon } : {}),
+    ...(typeof v.renew === 'number' && Number.isFinite(v.renew) && v.renew > 0 ? { renew: v.renew } : {}),
     ...(pending ? { pending } : {}),
   };
 }

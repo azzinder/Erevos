@@ -1625,9 +1625,9 @@ vertraust. Es ist optional.
 - **Nur über Tor:** ein Schalter für jedes Heim-Relay. Dieses Relay sieht nie die Adresse dieses Telefons, egal was für
   den Rest bei Tor eingestellt ist. Ohne eingegebenes Token gibt es ein Token für einen Gutschein: Dein Relay, das des
   Bereichs selbst, signiert den Gutschein blind, sodass keines der beiden Relays erkennen kann, wem das Token gehört.
-  Der Gutschein wird 5 bis 60 Minuten nach dem Signieren eingelöst, zufällig, sodass die Zeiten, die die beiden Relays
+  Der Gutschein wird bis zu einer Stunde nach dem Signieren eingelöst, zu einem zufälligen Zeitpunkt, sodass die Zeiten, die die beiden Relays
   gesehen haben, nicht zusammenpassen, und das Token kommt innerhalb einer Stunde vom Heim-Relay. Das Token gilt 90
-  Tage, und Erevos holt ab Tag 45 von selbst einen neuen Gutschein. Eine Grenze: Hat ein Relay nur wenige Telefone,
+  Tage, und Erevos holt an einem zufälligen Tag zwischen Tag 30 und Tag 60 von selbst einen neuen Gutschein. Eine Grenze: Hat ein Relay nur wenige Telefone,
   könnte, wer beide betreibt, allein an den Zeiten noch raten. So können zwei Bereiche (siehe
   [Zweites Passwort](#second)) jeweils das Relay des anderen als Heim-Relay nutzen, und kein Relay verbindet sie
   miteinander. Beide Relays müssen Gutscheine eingeschaltet haben, und es braucht einen Build mit Tor, auf Android

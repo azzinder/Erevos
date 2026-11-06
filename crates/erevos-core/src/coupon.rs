@@ -21,7 +21,9 @@
 //! the RFC asks. The phone takes the issuer's public key from the second
 //! relay's list of the issuers it trusts (by `key_id`), not from the first
 //! alone, so the first cannot give each phone a key of its own to tell them
-//! apart. Not audited.
+//! apart, unless the second lists those keys too: a relay lists a few at
+//! most (the relay's `MAX_ISSUERS`), which bounds how many groups two relays
+//! working together could split phones into. Not audited.
 
 use blind_rsa_signatures::{
     BlindSignature, BlindingResult, DefaultRng, MessageRandomizer, PublicKeySha384PSSRandomized,

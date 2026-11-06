@@ -208,7 +208,7 @@ export const screens: Record<string, string> = {
   'The home relay does not take coupons from your relay.': 'Kućni relay ne prima kupone od vašeg relaya.',
   'This coupon was taken already.': 'Ovaj kupon je već iskorišten.',
   'The home relay gives no more tokens for coupons now.': 'Kućni relay trenutno ne daje više tokena za kupone.',
-  'Your relay signed a coupon for the home relay. Its token comes from there within the hour: the wait keeps the two relays from telling by the time that it is yours.': 'Vaš relay je potpisao kupon za kućni relay. Njegov token stiže odatle u roku od sat vremena: čekanje sprečava da dva relaya po vremenu zaključe da je vaš.',
+  'The home relay’s token comes with a coupon from your relay within the hour: the wait keeps the two relays from telling by the time that it is yours.': 'Token kućnog relaya stiže s kuponom od vašeg relaya u roku od sat vremena: čekanje sprečava da dva relaya po vremenu zaključe da je vaš.',
   'This home relay gives its token for a coupon from your relay: set your relay first.': 'Ovaj kućni relay daje svoj token za kupon od vašeg relaya: prvo postavite svoj relay.',
   'This version of Erevos cannot make coupons. Update it, or type a token for the home relay.': 'Ova verzija Erevosa ne može praviti kupone. Ažurirajte je ili upišite token za kućni relay.',
   'Your relay signs no coupons for this phone. Type a token for the home relay instead.': 'Vaš relay ne potpisuje kupone za ovaj telefon. Umjesto toga upišite token za kućni relay.',

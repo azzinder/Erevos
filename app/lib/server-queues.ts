@@ -72,7 +72,8 @@ export const QUEUE_MAKERS: Record<string, readonly Source[]> = {
 };
 
 /** A queue on a relay, to delete there with the token kept for that relay. */
-export type ServerQueue = { source: Source; url: string; token: string; recipientHex: string };
+/** `tor`: on a home relay reached only through Tor (SpareRelay.tor), deleted so too. */
+export type ServerQueue = { source: Source; url: string; token: string; recipientHex: string; tor?: boolean };
 
 /** What a space or a hidden place keeps that names queues. Only a space has public groups, and the pockets' watch and ring queues. */
 export type KeptPlace = {
@@ -101,12 +102,15 @@ export function serverQueues(kept: KeptPlace): ServerQueue[] {
   for (const k of [queues.now, queues.link, queues.group, queues.public, ...queues.was, ...queues.early]) if (k) know(k.url, k.token);
   for (const w of [...(kept.watch ?? []), ...(kept.rings ?? [])]) if (w) know(w.url, w.token);
   const tokenAt = (url: string) => tokens.find((k) => sameRelay(k.url, url))?.token ?? '';
+  // The home relays reached only through Tor: any queue there is reached so too, never straight.
+  const torOnly = [data.spare, ...(data.spare.more ?? [])].filter((spare) => spare.tor === true && spare.url.trim());
+  const torAt = (url: string) => torOnly.some((spare) => sameRelay(spare.url, url));
 
   const out: ServerQueue[] = [];
   const add = (source: Source, url: string, recipientHex: string | undefined, token?: string) => {
     if (!url.trim() || !recipientHex || !isQueueId(recipientHex)) return;
     if (out.some((q) => q.recipientHex === recipientHex && sameRelay(q.url, url))) return;
-    out.push({ source, url: url.trim(), token: (token ?? '').trim() || tokenAt(url), recipientHex });
+    out.push({ source, url: url.trim(), token: (token ?? '').trim() || tokenAt(url), recipientHex, ...(torAt(url) ? { tor: true } : {}) });
   };
 
   add('own', data.url, data.ownQueue?.recipientHex, data.token);

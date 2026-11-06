@@ -568,7 +568,7 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_LEND` | `off` | `on` lends places to phones that have no relay. |
 | `EREVOS_RELAY_COUPON_KEY` | none | This relay's key for coupons, from `erevos-relay new-coupon-key` (see [Coupons for a second relay](#coupons-for-a-second-relay)). Needs `EREVOS_RELAY_TOKENS`. |
 | `EREVOS_RELAY_COUPON_ISSUERS` | none | The file of the public keys of the relays whose coupons this one takes, one on each line. Needs `EREVOS_RELAY_TOKENS` in a folder the relay may write in. |
-| `EREVOS_RELAY_MAX_COUPONS` | 500 | Lines from coupons, all together. |
+| `EREVOS_RELAY_MAX_COUPONS` | 2000 | Lines from coupons, all together. |
 | `EREVOS_RELAY_LEND_REVOKED` | `relay.key.revoked` beside the key | The file of revoked tickets. |
 | `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
 | `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
@@ -844,11 +844,11 @@ the hour, so the two relays' times do not match; still, with few phones, whoever
 runs both relays could guess by the times alone.
 
 A token from a coupon lasts 90 days, on a line named `spare`; the phone takes a
-new one from day 45. It may do what a phone with a token of its own does, but
-it may not invite phones or have coupons signed. The relay takes 500 such lines
+new one on a day picked at random between day 30 and day 60. It may do what a phone with a token of its own does, but
+it may not invite phones or have coupons signed. The relay takes 2,000 such lines
 at most (`EREVOS_RELAY_MAX_COUPONS`) and removes each one at its end. A phone
-with a token of its own may have 4 coupons signed a day, and the relay signs
-1,000 a day at most.
+with a token of its own may have 2 coupons signed a day and 6 in 30 days (counted
+while the relay runs), and the relay signs 1,000 a day at most.
 
 On each relay, with the relay stopped, make its key for coupons in the folder
 of the service (see [Invites](#invites) for why there):
@@ -860,7 +860,7 @@ It writes the key, readable by its owner alone, and its public key, one line of
 hex, in `coupon.key.pub` beside it. It never writes over a key already there.
 Then put the **other** relay's `coupon.key.pub` line into a file of issuers on
 this one, such as `/var/lib/private/erevos-relay/coupon.issuers` (one key on
-each line, `#` starting a note, 16 at most). The public key is no secret: copy
+each line, `#` starting a note, 4 at most). The public key is no secret: copy
 it as you like. In `/etc/erevos-relay.env`:
 
     EREVOS_RELAY_COUPON_KEY=/var/lib/erevos-relay/coupon.key

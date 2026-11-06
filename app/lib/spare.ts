@@ -121,7 +121,7 @@ function keptFor(was: SpareRelay | undefined, given: { url: string; token: strin
     token: fromCoupon ? was.token : token,
     queue: same ? was.queue : null,
     ...(tor ? { tor: true } : {}),
-    ...(fromCoupon ? { coupon: was.coupon } : {}),
+    ...(fromCoupon ? { coupon: was.coupon, ...(was.renew !== undefined ? { renew: was.renew } : {}) } : {}),
     ...(same && tor && was.tor === true && !token && was.pending ? { pending: was.pending } : {}),
   };
 }
@@ -164,12 +164,31 @@ export async function readySpare(store: SpareStore = spaceSpare()): Promise<bool
   return any;
 }
 
+// The prepares under way for each store, by home relay: one at a time, so that two looks never have
+// two coupons signed, nor one write over the other's.
+const busy = new WeakMap<object, Map<string, Promise<Ready | null>>>();
+
 // The backup queue on the home relay at `at`, made the first time, and what to say of it: its
 // sender id, the relay and the relay's key. Null when there is no relay there.
-async function prepare(store: SpareStore, at: number, given: SpareRelay): Promise<Ready | null> {
-  let spare = given;
-  const url = spare.url.trim();
-  if (!url) return null;
+function prepare(store: SpareStore, at: number, given: SpareRelay): Promise<Ready | null> {
+  const url = given.url.trim();
+  if (!url) return Promise.resolve(null);
+  const mine = busy.get(store.of) ?? new Map<string, Promise<Ready | null>>();
+  busy.set(store.of, mine);
+  const before = mine.get(url);
+  const run = (before ?? Promise.resolve(null)).catch(() => null).then(() => prepareNow(store, at, given, !!before));
+  mine.set(url, run);
+  const done = () => {
+    if (mine.get(url) === run) mine.delete(url);
+  };
+  run.then(done, done);
+  return run;
+}
+
+async function prepareNow(store: SpareStore, at: number, given: SpareRelay, waited: boolean): Promise<Ready | null> {
+  const url = given.url.trim();
+  // After another's turn, as that one left it.
+  let spare = waited ? (homeRelays((await store.load()).spare).find((one) => one.url.trim() === url) ?? given) : given;
   const known = ready.get(store.of)?.get(at);
   const coupon = wantsCoupon(spare);
   if (!coupon && known && known.url === url && known.queue.recipientHex === spare.queue?.recipientHex && (known.relay.token ?? '') === spare.token.trim()) return known;

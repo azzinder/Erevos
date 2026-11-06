@@ -12,8 +12,9 @@
 //!   `erevos-relay new-coupon-key FILE`, readable by its owner alone): a
 //!   phone with a token of its own here (a line of the file of tokens, not a
 //!   line a coupon made) has a blinded coupon signed (`COUPON_SIGN`), at most
-//!   `MAX_SIGNED_A_DAY` a day, and the relay at most `MAX_SIGNED_ALL` a day
-//!   for all of them. The relay sees the blinded message only, which tells
+//!   `MAX_SIGNED_A_DAY` a day and `MAX_SIGNED_A_MONTH` in 30 days (counted
+//!   while the relay runs), and the relay at most `MAX_SIGNED_ALL` a day for
+//!   all of them: one phone cannot fill another relay's lines from coupons. The relay sees the blinded message only, which tells
 //!   nothing of the coupon the phone takes away, and says its public key to
 //!   whoever asks (`COUPON_KEY`).
 //! - Taking (`EREVOS_RELAY_COUPON_ISSUERS`, a file with the public keys of
@@ -38,7 +39,7 @@
 //!
 //! Not audited.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::{self, ErrorKind};
 use std::path::{Path, PathBuf};
@@ -55,20 +56,23 @@ use crate::tokens::{to_hex, Tokens};
 /// How long a line a coupon made lasts, days: the phone takes a new coupon
 /// before it ends (the app does at half of it).
 pub const COUPON_DAYS: u64 = 90;
-/// Coupons one phone may have signed a day.
-pub const MAX_SIGNED_A_DAY: u32 = 4;
+/// Coupons one phone may have signed a day, and in 30 days: the app takes
+/// one every 30 to 60 days, and a few more when one is lost.
+pub const MAX_SIGNED_A_DAY: usize = 2;
+pub const MAX_SIGNED_A_MONTH: usize = 6;
 /// Coupons the relay signs a day, for all its phones together.
 pub const MAX_SIGNED_ALL: u32 = 1000;
 /// Lines from coupons that stand at once, unless `EREVOS_RELAY_MAX_COUPONS`
 /// says otherwise.
-pub const MAX_LINES: usize = 500;
+pub const MAX_LINES: usize = 2000;
 /// Coupons taken that are kept, standing or not, so none is taken twice:
 /// past this, no more are taken until the operator makes the issuers new keys.
 pub const MAX_KEPT: usize = 200_000;
 /// The longest blinded message or signature: a 4096-bit key's.
 pub const MAX_SIGNATURE: usize = 512;
-/// Issuers taken at most.
-pub const MAX_ISSUERS: usize = 16;
+/// Issuers taken at most: few, as a relay that is let give its phones keys
+/// of their own, all taken here, could tell them apart by the key.
+pub const MAX_ISSUERS: usize = 4;
 const DAY: u64 = 24 * 60 * 60;
 const HEADER: &[u8; 8] = b"EREVOSC1";
 const COUPONS_LOCK: &str = "lock of the coupons";
@@ -86,6 +90,8 @@ struct Taken {
 struct State {
     // By the SHA-256 of each coupon's nonce.
     taken: HashMap<[u8; 32], Taken>,
+    // The lines of `taken` still in the file of tokens, to tell at once.
+    lines: HashSet<[u8; 32]>,
 }
 
 impl State {
@@ -110,7 +116,7 @@ impl State {
         }
         let mut state = State::default();
         for entry in rest.as_chunks::<72>().0 {
-            state.taken.insert(
+            state.insert(
                 entry[..32].try_into().expect("32 bytes"),
                 Taken {
                     line: entry[32..64].try_into().expect("32 bytes"),
@@ -119,6 +125,15 @@ impl State {
             );
         }
         Some(state)
+    }
+
+    fn insert(&mut self, nonce: [u8; 32], taken: Taken) {
+        if let Some(was) = self.taken.insert(nonce, taken) {
+            self.lines.remove(&was.line);
+        }
+        if taken.line != [0; 32] {
+            self.lines.insert(taken.line);
+        }
     }
 
     fn standing(&self, now: u64) -> usize {
@@ -155,8 +170,16 @@ pub struct Coupons {
     state: Mutex<State>,
     path: Option<PathBuf>,
     most: usize,
-    // The day, the coupons each phone had signed on it, and all of them.
-    signed: Mutex<(u64, HashMap<[u8; 32], u32>, u32)>,
+    signed: Mutex<Signed>,
+}
+
+// The coupons signed: when, for each phone, in the last 30 days; and how many
+// today, for all of them.
+#[derive(Default)]
+struct Signed {
+    day: u64,
+    all: u32,
+    by: HashMap<[u8; 32], Vec<u64>>,
 }
 
 /// The issuer's key from its file, which only its owner may read.
@@ -252,7 +275,7 @@ impl Coupons {
             state: Mutex::new(state),
             path: path.map(Path::to_path_buf),
             most,
-            signed: Mutex::new((0, HashMap::new(), 0)),
+            signed: Mutex::new(Signed::default()),
         })
     }
 
@@ -277,7 +300,7 @@ impl Coupons {
     /// Whether the token whose SHA-256 is `line` came with a coupon, past its
     /// days too while its line is not out of the file yet.
     pub fn made(&self, line: &[u8; 32]) -> bool {
-        line != &[0; 32] && lock(&self.state, COUPONS_LOCK).taken.values().any(|t| &t.line == line)
+        line != &[0; 32] && lock(&self.state, COUPONS_LOCK).lines.contains(line)
     }
 
     /// Signs `blinded` for the phone whose token's SHA-256 is `phone`.
@@ -287,17 +310,25 @@ impl Coupons {
             return Err(SignError::Off);
         }
         let mut signed = lock(&self.signed, SIGNED_LOCK);
-        if signed.0 != now / DAY {
-            *signed = (now / DAY, HashMap::new(), 0);
+        if signed.day != now / DAY {
+            signed.day = now / DAY;
+            signed.all = 0;
+            // A phone's times past 30 days count no more.
+            signed.by.retain(|_, times| {
+                times.retain(|&at| at + 30 * DAY > now);
+                !times.is_empty()
+            });
         }
-        let mine = signed.1.get(phone).copied().unwrap_or(0);
-        if mine >= MAX_SIGNED_A_DAY || signed.2 >= MAX_SIGNED_ALL {
+        let times = signed.by.get(phone).map(Vec::as_slice).unwrap_or(&[]);
+        let today = times.iter().filter(|&&at| at / DAY == now / DAY).count();
+        let month = times.iter().filter(|&&at| at + 30 * DAY > now).count();
+        if today >= MAX_SIGNED_A_DAY || month >= MAX_SIGNED_A_MONTH || signed.all >= MAX_SIGNED_ALL {
             return Err(SignError::Full);
         }
         let signature = issuer.sign(blinded).map_err(|_| SignError::Bad)?;
         // Counted once signed: a bad one costs the phone nothing but its connection.
-        signed.1.insert(*phone, mine + 1);
-        signed.2 += 1;
+        signed.by.entry(*phone).or_default().push(now);
+        signed.all += 1;
         Ok(signature)
     }
 
@@ -347,13 +378,18 @@ impl Coupons {
         }
         let ends = now + COUPON_DAYS * DAY;
         let mut next = state.clone();
-        next.taken.insert(spent, Taken { line: *line, ends });
+        next.insert(spent, Taken { line: *line, ends });
         self.save(&next).map_err(|_| RedeemError::Storage)?;
         let note = format!("came with a coupon on {}, until {}", date(now), date(ends));
         match tokens.add(line, "spare", true, &note, None) {
             Ok(name) => {
                 *state = next;
                 Ok(name)
+            }
+            // Written all the same (the error came after): taken, so never again.
+            Err(_) if tokens.holds(line) => {
+                *state = next;
+                Err(RedeemError::Storage)
             }
             Err(_) => {
                 if let Err(e) = self.save(&state) {
@@ -384,7 +420,7 @@ impl Coupons {
             let taken = next.taken[&nonce];
             match tokens.remove(&taken.line) {
                 Ok(_) => {
-                    next.taken.insert(nonce, Taken { line: [0; 32], ends: 0 });
+                    next.insert(nonce, Taken { line: [0; 32], ends: 0 });
                 }
                 Err(e) => elog!("erevos-relay: cannot take out the line of an old coupon: {e}"),
             }
@@ -520,8 +556,13 @@ mod tests {
             both.sign(&phone, &blinded.message, NOW).unwrap();
         }
         assert_eq!(both.sign(&phone, &blinded.message, NOW), Err(SignError::Full));
-        // The next day again.
+        // The next day again, until the 30 days' most.
         both.sign(&phone, &blinded.message, NOW + DAY).unwrap();
+        both.sign(&phone, &blinded.message, NOW + 2 * DAY).unwrap();
+        both.sign(&phone, &blinded.message, NOW + 2 * DAY).unwrap();
+        both.sign(&phone, &blinded.message, NOW + 3 * DAY).unwrap();
+        assert_eq!(both.sign(&phone, &blinded.message, NOW + 4 * DAY), Err(SignError::Full));
+        both.sign(&phone, &blinded.message, NOW + 30 * DAY).unwrap();
         assert_eq!(both.sign(&[2u8; 32], &[1u8; 3], NOW), Err(SignError::Bad));
         // A line a coupon made has none signed.
         let tokens = tokens_in(&dir);

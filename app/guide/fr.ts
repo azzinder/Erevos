@@ -1600,9 +1600,9 @@ confiance. C’est facultatif.
 - **Seulement par Tor :** un interrupteur pour chaque relais d’attache. Ce relais ne voit jamais l’adresse de ce
   téléphone, quel que soit le réglage de Tor pour le reste. Sans jeton tapé, il donne un jeton contre un coupon : ton
   relais, celui de l’espace, signe le coupon en aveugle, si bien qu’aucun des deux relais ne peut savoir à qui est le
-  jeton. Le coupon est pris de 5 à 60 minutes après sa signature, au hasard, si bien que les heures vues par les deux
+  jeton. Le coupon est pris jusqu’à une heure après sa signature, à un moment au hasard, si bien que les heures vues par les deux
   relais ne correspondent pas, et le jeton vient du relais d’attache dans l’heure. Le jeton dure 90 jours, et Erevos
-  prend de lui-même un nouveau coupon dès le jour 45. Une limite : avec peu de téléphones sur un relais, qui gère les
+  prend de lui-même un nouveau coupon un jour au hasard entre le jour 30 et le jour 60. Une limite : avec peu de téléphones sur un relais, qui gère les
   deux pourrait encore deviner par les heures seules. Ainsi, deux espaces (voir [Second mot de passe](#second)) peuvent
   chacun utiliser le relais de l’autre comme relais d’attache, et aucun relais ne les relie. Les deux relais doivent
   avoir les coupons activés, et il faut une version avec Tor, sur Android (voir [Par Tor](#tor)).

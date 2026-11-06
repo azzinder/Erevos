@@ -31,7 +31,8 @@ export type QueueKind = 'own' | 'link' | 'group' | 'public' | 'spare';
  * queue that took an own one's place was made (QueuesData.moved), so it goes sooner once every
  * kept contact was heard on that one or a later one.
  */
-export type OldQueue = KeptQueue & { kind: QueueKind; until: number; by?: number };
+/** `tor`: a home relay's queue reached only through Tor (SpareRelay.tor), read and deleted so too. */
+export type OldQueue = KeptQueue & { kind: QueueKind; until: number; by?: number; tor?: boolean };
 
 /** The queues that move for junk on them. */
 export type MovingKind = Exclude<QueueKind, 'spare'>;
@@ -116,7 +117,7 @@ function checkedOld(value: unknown): OldQueue | null {
   const kept = checkedKept(value);
   const v = (value ?? {}) as Partial<Record<keyof OldQueue, unknown>>;
   if (!kept || !KINDS.includes(v.kind as QueueKind) || !isTime(v.until)) return null;
-  return { ...kept, kind: v.kind as QueueKind, until: v.until, ...(isTime(v.by) && v.by > 0 ? { by: v.by } : {}) };
+  return { ...kept, kind: v.kind as QueueKind, until: v.until, ...(isTime(v.by) && v.by > 0 ? { by: v.by } : {}), ...(v.tor === true ? { tor: true } : {}) };
 }
 
 function checkedTimes(value: unknown): Partial<Record<MovingKind, number>> {

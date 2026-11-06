@@ -1507,9 +1507,8 @@ própria: um em casa, num Raspberry Pi ou num computador velho, ou qualquer outr
   só é alcançado pelo Tor), e quando e quanto chega. As conversas ocultas não o usam.
 - **Só por Tor:** um interruptor para cada relay de casa. Esse relay nunca vê o endereço deste celular, seja qual for a
   configuração do Tor para o resto. Sem token digitado, ele dá um token por um cupom: o seu relay, o do próprio espaço,
-  assina o cupom às cegas, então nenhum dos dois relays consegue saber de quem é o token. O cupom é usado de 5 a 60
-  minutos depois de assinado, ao acaso, de modo que os horários que os dois relays viram não combinam, e o token vem do
-  relay de casa dentro de uma hora. O token dura 90 dias, e o Erevos pega um cupom novo sozinho a partir do dia 45. Um
+  assina o cupom às cegas, então nenhum dos dois relays consegue saber de quem é o token. O cupom é usado até uma hora depois de assinado, num momento ao acaso, de modo que os horários que os dois relays viram não combinam, e o token vem do
+  relay de casa dentro de uma hora. O token dura 90 dias, e o Erevos pega um cupom novo sozinho num dia ao acaso entre o dia 30 e o dia 60. Um
   limite: com poucos celulares em um relay, quem cuida dos dois ainda poderia adivinhar só pelos horários. Assim, dois
   espaços (veja [Segunda senha](#second)) podem usar cada um o relay do outro como relay de casa, e nenhum relay os liga
   entre si. Os dois relays precisam ter os cupons ativados, e é preciso uma versão com Tor, no Android (veja

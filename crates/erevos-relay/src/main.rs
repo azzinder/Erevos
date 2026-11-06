@@ -74,12 +74,12 @@
 //! relay for a space that never learns whose space it is. Set
 //! `EREVOS_RELAY_COUPON_KEY` to the file of a key made with
 //! `erevos-relay new-coupon-key FILE` (readable by the relay's user alone),
-//! and the phones with tokens of their own here may each have 4 coupons a day
-//! signed, blind. Set `EREVOS_RELAY_COUPON_ISSUERS` to a file with the public
+//! and the phones with tokens of their own here may each have 2 coupons a day,
+//! and 6 in 30 days, signed, blind. Set `EREVOS_RELAY_COUPON_ISSUERS` to a file with the public
 //! keys of the relays whose coupons this one takes, one on each line as
 //! `new-coupon-key` writes it in `FILE.pub` (it needs `EREVOS_RELAY_TOKENS`
 //! too): a phone with one gets a line `spare` in the file of tokens, which
-//! lasts 90 days, at most `EREVOS_RELAY_MAX_COUPONS` of them at once (500
+//! lasts 90 days, at most `EREVOS_RELAY_MAX_COUPONS` of them at once (2000
 //! unless set). Each coupon is taken once, kept in `<file>.coupons`. Both are
 //! read at start. Off unless set.
 //!

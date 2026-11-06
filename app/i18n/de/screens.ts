@@ -207,7 +207,7 @@ export const screens: Record<string, string> = {
   'The home relay does not take coupons from your relay.': 'Das Heim-Relay nimmt keine Gutscheine von deinem Relay an.',
   'This coupon was taken already.': 'Dieser Gutschein wurde schon eingelöst.',
   'The home relay gives no more tokens for coupons now.': 'Das Heim-Relay gibt gerade keine weiteren Token für Gutscheine aus.',
-  'Your relay signed a coupon for the home relay. Its token comes from there within the hour: the wait keeps the two relays from telling by the time that it is yours.': 'Dein Relay hat einen Gutschein für das Heim-Relay signiert. Sein Token kommt von dort innerhalb einer Stunde: Das Warten verhindert, dass die beiden Relays an der Uhrzeit erkennen, dass es deins ist.',
+  'The home relay’s token comes with a coupon from your relay within the hour: the wait keeps the two relays from telling by the time that it is yours.': 'Das Token des Heim-Relays kommt innerhalb einer Stunde mit einem Gutschein von deinem Relay: Das Warten verhindert, dass die beiden Relays an der Uhrzeit erkennen, dass es deins ist.',
   'This home relay gives its token for a coupon from your relay: set your relay first.': 'Dieses Heim-Relay gibt sein Token gegen einen Gutschein von deinem Relay: Richte zuerst dein Relay ein.',
   'This version of Erevos cannot make coupons. Update it, or type a token for the home relay.': 'Diese Version von Erevos kann keine Gutscheine erstellen. Aktualisiere sie oder gib ein Token für das Heim-Relay ein.',
   'Your relay signs no coupons for this phone. Type a token for the home relay instead.': 'Dein Relay signiert keine Gutscheine für dieses Telefon. Gib stattdessen ein Token für das Heim-Relay ein.',
