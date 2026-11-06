@@ -5,6 +5,8 @@
 // The Serbo-Croatian of the Collection (lock/collection-data.ts, app/collection.tsx and the screens that
 // send to it) (i18n/sh/index.ts).
 export const collectionText: Record<string, string> = {
+  "Save to the Collection": "Spremi u Zbirku",
+  "Saved to the Collection.": "Spremljeno u Zbirku.",
   "Collection": "Zbirka",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Šifrirano mjesto u svakom prostoru i skrivenom mjestu za fotografije, datoteke i mape.",
   "The Collection and its icon go. Nothing is deleted: your photos and files are there again when you turn it on.": "Zbirka i njezina ikona nestaju. Ništa se ne briše: vaše fotografije i datoteke vraćaju se kad je ponovo uključite.",
@@ -49,4 +51,6 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Ove datoteke više nema. Sigurnosna kopija vraćena bez nje ostavlja samo njen naziv.",
   "Open with another app": "Otvori drugom aplikacijom",
   "Encrypted collection": "Šifrirana",
+  "Which folder?": "U koju mapu?",
+  "Encrypted · only in this space": "Šifrirana · samo u ovom prostoru",
 };

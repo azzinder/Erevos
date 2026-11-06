@@ -5,6 +5,8 @@
 // The German of the Collection (lock/collection-data.ts, app/collection.tsx and the screens that
 // send to it) (i18n/de/index.ts).
 export const collectionText: Record<string, string> = {
+  "Save to the Collection": "In der Sammlung speichern",
+  "Saved to the Collection.": "In der Sammlung gespeichert.",
   "Collection": "Sammlung",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Ein verschlüsselter Ort in jedem Bereich und jedem versteckten Ort für Fotos, Dateien und Ordner.",
   "The Collection and its icon go. Nothing is deleted: your photos and files are there again when you turn it on.": "Die Sammlung und ihr Symbol verschwinden. Nichts wird gelöscht: Deine Fotos und Dateien sind wieder da, wenn du sie einschaltest.",
@@ -49,4 +51,6 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Diese Datei ist nicht mehr da. Eine Sicherung, die ohne sie wiederhergestellt wurde, lässt nur ihren Namen zurück.",
   "Open with another app": "Mit einer anderen App öffnen",
   "Encrypted collection": "Verschlüsselt",
+  "Which folder?": "In welchen Ordner?",
+  "Encrypted · only in this space": "Verschlüsselt · nur in diesem Bereich",
 };

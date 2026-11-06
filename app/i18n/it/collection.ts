@@ -5,6 +5,8 @@
 // The Italian of the Collection (lock/collection-data.ts, app/collection.tsx and the screens that
 // send to it) (i18n/it/index.ts).
 export const collectionText: Record<string, string> = {
+  "Save to the Collection": "Salva nella Raccolta",
+  "Saved to the Collection.": "Salvato nella Raccolta.",
   "Collection": "Raccolta",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Un posto cifrato in ogni spazio e in ogni luogo nascosto per foto, file e cartelle.",
   "The Collection and its icon go. Nothing is deleted: your photos and files are there again when you turn it on.": "La Raccolta e la sua icona spariscono. Non viene cancellato nulla: le tue foto e i tuoi file tornano quando la riattivi.",
@@ -49,4 +51,6 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Questo file non c’è più. Un backup ripristinato senza di esso ne lascia solo il nome.",
   "Open with another app": "Apri con un’altra app",
   "Encrypted collection": "Cifrata",
+  "Which folder?": "In quale cartella?",
+  "Encrypted · only in this space": "Cifrata · solo di questo spazio",
 };

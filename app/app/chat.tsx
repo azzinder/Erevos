@@ -115,6 +115,7 @@ import { MIN_PIN, openHidden, searchOpens, setHiddenPassword, type HiddenPlace }
 import { loadWatched, rewatchLost, unwatchPocket, wasWatchedQueue, watchPocket } from '../lock/hidden-watch';
 import { keepPlace, keepsPlace } from '../lock/hidden-keep';
 import { isRingedQueue, loadRinged, moveRingPocket, ringPocket, unringPocket } from '../lock/hidden-ring';
+import { CAN_COLLECT, importFromChat } from '../lib/collection-import';
 import { useModules } from '../lib/modules';
 import { hiddenPlaceOpen } from '../lock/collection-data';
 import { hiddenHolder, POCKETS } from '../lock/sealed-file';
@@ -2691,8 +2692,20 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (CAN_COPY && message.text && !message.sticker && !message.place && !message.poll && !isCallLine(message.text)) actions.push({ title: t('Copy'), onPress: () => void copy(shownLine(message.text)) });
     if (canEdit(message)) actions.push({ title: t('Edit'), onPress: () => startEditing(message) });
     if (message.file?.sticker && !message.file.from) actions.push({ title: t('Add to my stickers'), onPress: () => void addToStickers(message.file!) });
+    // A photo or file that is here goes into this chat's own Collection too: the space's, or these hidden chats'.
+    if (message.file && !message.file.sticker && !message.file.from && CAN_COLLECT && modules.has('collection')) actions.push({ title: t('Save to the Collection'), onPress: () => void saveToCollection(message.file!) });
     actions.push({ title: t('Delete'), danger: true, onPress: () => deleteMessage(message) });
     return actions;
+  }
+
+  // Copies a photo or file of the chat, as the same bytes, into the Collection of this chat's place.
+  async function saveToCollection(file: FileRef) {
+    try {
+      await importFromChat(stickerPlace, file);
+      setNote(t('Saved to the Collection.'));
+    } catch (error) {
+      setNote(t('Not added. {error}', { error: errorText(error) }));
+    }
   }
 
   // What can be done with an imported message, held down: it is only to read, so it is copied, or

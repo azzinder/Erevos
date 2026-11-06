@@ -5,6 +5,8 @@
 // The Greek of the Collection (lock/collection-data.ts, app/collection.tsx and the screens that
 // send to it) (i18n/el/index.ts).
 export const collectionText: Record<string, string> = {
+  "Save to the Collection": "Αποθήκευση στη Συλλογή",
+  "Saved to the Collection.": "Αποθηκεύτηκε στη Συλλογή.",
   "Collection": "Συλλογή",
   "An encrypted place in every space and hidden place for photos, files and folders.": "Ένας κρυπτογραφημένος χώρος σε κάθε χώρο και κάθε κρυφό μέρος για φωτογραφίες, αρχεία και φακέλους.",
   "The Collection and its icon go. Nothing is deleted: your photos and files are there again when you turn it on.": "Η Συλλογή και το εικονίδιό της φεύγουν. Δεν διαγράφεται τίποτα: οι φωτογραφίες και τα αρχεία σου είναι εκεί ξανά όταν την ενεργοποιήσεις.",
@@ -49,4 +51,6 @@ export const collectionText: Record<string, string> = {
   "This file is not here any more. A backup restored without it leaves its name behind.": "Αυτό το αρχείο δεν υπάρχει πια. Ένα αντίγραφο ασφαλείας που επαναφέρθηκε χωρίς αυτό αφήνει πίσω μόνο το όνομά του.",
   "Open with another app": "Άνοιγμα με άλλη εφαρμογή",
   "Encrypted collection": "Κρυπτογραφημένη",
+  "Which folder?": "Σε ποιον φάκελο;",
+  "Encrypted · only in this space": "Κρυπτογραφημένη · αυτού του χώρου",
 };
