@@ -195,7 +195,13 @@ function ServerCard({ place }: { place: CollectionPlace }) {
   const [user, setUser] = useState('');
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState('');
+  const [note, setNoteText] = useState('');
+  // Whether the note says the connection works: in the colour of what went well, not of a warning.
+  const [works, setWorks] = useState(false);
+  const setNote = (text: string) => {
+    setNoteText(text);
+    setWorks(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -246,6 +252,7 @@ function ServerCard({ place }: { place: CollectionPlace }) {
     try {
       await testCollectionServer(address, user, secret);
       setNote(t('The connection works.'));
+      setWorks(true);
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
     } finally {
@@ -301,7 +308,7 @@ function ServerCard({ place }: { place: CollectionPlace }) {
         </>
       ) : null}
       {note ? (
-        <Text variant="caption" color={colors.warning}>
+        <Text variant="caption" color={works ? colors.success : colors.warning}>
           {note}
         </Text>
       ) : null}

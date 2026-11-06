@@ -96,4 +96,6 @@ export const collectionText: Record<string, string> = {
   "Last copied {when}.": "Dernière copie {when}.",
   "Not copied yet.": "Pas encore copiée.",
   "It did not go: {error}": "Cela n’a pas marché : {error}",
+  "Fetching from the server: {done} of {total}": "Récupération depuis le serveur : {done} sur {total}",
+  "Stopped. What came stays on this device; the rest comes when you go on.": "Arrêté. Ce qui est arrivé reste sur cet appareil ; le reste viendra quand tu continueras.",
 };

@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { randomBytes, toHex } from '../lib/crypto';
-import { deleteFile, readBytes, writeBytes } from '../lib/files';
+import { deleteFile, listFiles, readBytes, writeBytes } from '../lib/files';
 
 // The photos and files of messages, each in chunks in the app's folder, exactly as they went
 // through the relay: encrypted with the file's own key (lib/attachments.ts). The key, the file's
@@ -151,6 +151,18 @@ export function saveChunk(id: string, n: number, sealed: Uint8Array): Promise<vo
 /** One chunk as it was kept, or null when it is gone. */
 export function readChunk(id: string, n: number): Promise<Uint8Array | null> {
   return readBytes(chunkName(id, n));
+}
+
+/** Which chunks of the file `id` are here, by their place in it: from the folder's list, none read. */
+export async function chunksHere(id: string): Promise<Set<number>> {
+  const here = new Set<number>();
+  if (!ID.test(id)) return here;
+  const start = `${PREFIX}${id}-`;
+  for (const name of await listFiles(start)) {
+    const n = name.slice(start.length);
+    if (/^\d+$/.test(n)) here.add(Number(n));
+  }
+  return here;
 }
 
 export async function deleteChunks(id: string, count: number): Promise<void> {

@@ -9,9 +9,10 @@ import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, releaseMemoryUri } from
 import { sealedRef } from '../lib/collection-play';
 import { t } from '../lib/i18n';
 import { SHELL } from '../lib/shell';
-import { openItem, type CollectionItem } from '../lock/collection-data';
+import { fillItemHere, openItem, type CollectionItem } from '../lock/collection-data';
 import { collectionNative } from '../modules/erevos-collection';
 import { space } from '../theme/colors';
+import { FetchNote, useFetching, type Fetching } from './collection-fetch';
 import { Button, Text } from './ui';
 
 // A PDF of the Collection read inside Erevos (components/collection-viewer.tsx): its pages one
@@ -24,13 +25,26 @@ import { Button, Text } from './ui';
 // bytes decrypted into the page's memory (lib/collection-memory.ts, MOST_IN_MEMORY at most), let go
 // of when the PDF closes or the space locks; never a file on the disk. The shell lets such a frame
 // be shown and keeps the viewer's own Save from writing a plain copy (desktop/main.js).
+//
+// On the phone, chunks of the PDF not on this device are fetched first from its place's server,
+// with how far that is and Cancel (components/collection-fetch.tsx).
 
 const DESK = SHELL === 'electron';
 
 /** Whether a PDF can be shown here. */
 export const CAN_SHOW_PDF = DESK || !!collectionNative?.pdfAvailable();
 
-type Props = { item: CollectionItem; width: number; top: number; bottom: number; ink: string; muted: string; onOpenWith: () => void };
+type Props = {
+  item: CollectionItem;
+  width: number;
+  top: number;
+  bottom: number;
+  ink: string;
+  muted: string;
+  onOpenWith: () => void;
+  /** The viewer's fetch before it opens with another app, to show how far it is. */
+  fetching?: Fetching;
+};
 
 export function CollectionPdf(props: Props) {
   return DESK ? <DeskPdf {...props} /> : <PhonePdf {...props} />;
@@ -83,19 +97,27 @@ function DeskPdf({ item, top, bottom, muted }: Props) {
 }
 
 // The phone's: Android draws its pages.
-function PhonePdf({ item, width, top, bottom, ink, muted, onOpenWith }: Props) {
+function PhonePdf({ item, width, top, bottom, ink, muted, onOpenWith, fetching }: Props) {
   const [doc, setDoc] = useState<{ handle: string; pages: number } | null>(null);
   const [failed, setFailed] = useState(false);
+  const [gone, setGone] = useState(false);
+  // Its chunks fetched first when they are not here, with Cancel; Go on opens it again (`round`).
+  const opening = useFetching();
+  const [round, setRound] = useState(0);
   useEffect(() => {
     const native = collectionNative;
-    if (!native) return;
+    if (!native || !CAN_SHOW_PDF) return;
     let active = true;
     let handle: string | null = null;
     setDoc(null);
     setFailed(false);
-    native
-      .pdfOpen(sealedRef(item.file))
-      .then((opened) => {
+    setGone(false);
+    opening
+      .run((options) => fillItemHere(item, options), () => setRound((r) => r + 1))
+      .then(async (here) => {
+        if (!active || here === 'stopped') return;
+        if (!here.value) return setGone(true);
+        const opened = await native.pdfOpen(sealedRef(item.file));
         handle = opened.handle;
         if (active) setDoc(opened);
         else native.pdfClose(opened.handle);
@@ -103,24 +125,35 @@ function PhonePdf({ item, width, top, bottom, ink, muted, onOpenWith }: Props) {
       .catch(() => active && setFailed(true));
     return () => {
       active = false;
+      opening.reset();
       if (handle) native.pdfClose(handle);
     };
-  }, [item.id]);
+  }, [item.id, round]);
 
+  if (gone) {
+    return (
+      <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
+        <Text color={muted} style={styles.centered}>
+          {t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.')}
+        </Text>
+      </View>
+    );
+  }
   if (!CAN_SHOW_PDF || failed) {
     return (
       <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
         <Text color={muted} style={styles.centered}>
           {CAN_SHOW_PDF ? t('This PDF could not be shown. Open it with another app instead.') : t('PDFs can be shown here from Android 11 on. Open it with another app instead.')}
         </Text>
+        {fetching ? <FetchNote fetching={fetching} ink={ink} muted={muted} /> : null}
         <Button title={t('Open with another app')} kind="secondary" compact onPress={onOpenWith} />
       </View>
     );
   }
   if (!doc) {
     return (
-      <View style={styles.center}>
-        <Text color={muted}>{t('Opening the PDF…')}</Text>
+      <View style={[styles.center, { paddingTop: top, paddingBottom: bottom }]}>
+        {opening.progress || opening.stopped ? <FetchNote fetching={opening} ink={ink} muted={muted} /> : <Text color={muted}>{t('Opening the PDF…')}</Text>}
       </View>
     );
   }

@@ -96,4 +96,6 @@ export const collectionText: Record<string, string> = {
   "Last copied {when}.": "Τελευταία αντιγραφή {when}.",
   "Not copied yet.": "Δεν έχει αντιγραφεί ακόμα.",
   "It did not go: {error}": "Δεν έγινε: {error}",
+  "Fetching from the server: {done} of {total}": "Λήψη από τον server: {done} από {total}",
+  "Stopped. What came stays on this device; the rest comes when you go on.": "Σταμάτησε. Ό,τι ήρθε μένει σε αυτή τη συσκευή· τα υπόλοιπα έρχονται όταν συνεχίσεις.",
 };

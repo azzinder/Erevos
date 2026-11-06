@@ -14,11 +14,12 @@ import { fileLook, isText, MOST_TEXT, playKind, playListOf } from '../lib/collec
 import { utf8Decode } from '../lib/crypto';
 import { locale, t } from '../lib/i18n';
 import { SHELL } from '../lib/shell';
-import { openItem, type CollectionItem } from '../lock/collection-data';
+import { fillItemHere, itemsWhole, openItem, type CollectionItem } from '../lock/collection-data';
 import { device } from '../modules/erevos-device';
 import { space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 import { ZoomPhoto } from './attachment';
+import { FetchNote, useFetching, type Fetching } from './collection-fetch';
 import { CollectionPdf } from './collection-pdf';
 import { PlayerControls, VideoScreen } from './collection-player';
 import { BackIcon, ChevronIcon, DownloadIcon, FileIcon, InfoIcon, SendIcon, TrashIcon } from './icons';
@@ -39,6 +40,10 @@ import { Button, Sheet, Text } from './ui';
 // go to the next; a PDF in Chromium's own viewer; music and videos in the page's player (lib/
 // collection-desk-player.ts), up to MOST_IN_MEMORY. Saving goes to the computer, and nothing is
 // opened with another app. When the space locks the player stops and the viewer closes.
+//
+// A file whose chunks are not all on this device has them fetched first from its place's server,
+// before it shows, plays or opens with another app, with how far that is and Cancel
+// (components/collection-fetch.tsx): what came stays, and the next time only the rest comes.
 
 type Props = {
   /** The files that can be swiped between, in the order shown. */
@@ -72,6 +77,8 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   const [info, setInfo] = useState(false);
   const [video, setVideo] = useState(false);
   const [playNote, setPlayNote] = useState('');
+  // Fetching what is missing of the file before it plays or opens with another app.
+  const fetching = useFetching();
   const shown = start !== null;
   useEffect(() => {
     if (start !== null) {
@@ -114,10 +121,35 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
     return () => window.removeEventListener('keydown', key);
   }, [shown, photo, at, items.length]);
 
+  // Another file, or the viewer closed: a fetch for the one before stops, and what came stays.
+  useEffect(() => fetching.reset, [item?.id, shown]);
+
+  // The file's chunks all here, those missing fetched first, with how far it is: whether it is whole now.
+  async function whenHere(file: CollectionItem, again: () => void): Promise<boolean> {
+    setPlayNote('');
+    try {
+      const done = await fetching.run((options) => fillItemHere(file, options), again);
+      if (done === 'stopped') return false;
+      if (!done.value) setPlayNote(t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.'));
+      return done.value;
+    } catch (error) {
+      setPlayNote(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  }
+
+  // Opened with another app, which reads it from its chunks: they are fetched first.
+  async function openWith(file: CollectionItem) {
+    if (DESK || (await whenHere(file, () => void openWith(file)))) onOpenWith(file);
+  }
+
   // Music plays with the music shown after it; a video with the videos, over the whole screen.
+  // The one to play is fetched first if it is not here; others not here are left out of the list.
   async function play(from: CollectionItem) {
     setPlayNote('');
-    const { list, start: at } = playListOf(items, from);
+    if (!DESK && !(await whenHere(from, () => void play(from)))) return;
+    const whole = DESK ? items : await itemsWhole(items).catch(() => [from]);
+    const { list, start: at } = playListOf(whole.some((i) => i.id === from.id) ? whole : [...whole, from], from);
     try {
       await playItems(list, at, playOptions);
       if (playKind(from) === 'video') setVideo(true);
@@ -159,7 +191,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={() => setBars((b) => !b)} />}
             />
           ) : (
-            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => onOpenWith(item)} onPlay={() => void play(item)} note={playNote} />
+            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => void openWith(item)} onPlay={() => void play(item)} note={playNote} fetching={fetching} />
           )}
           {photo && ARROWS && bars ? (
             <>
@@ -233,36 +265,45 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: number; near: boolean; onTap: () => void }) {
   const [uri, setUri] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
+  // Fetched from the server when it is not here, with Cancel; Go on opens it again (`round`).
+  const fetching = useFetching();
+  const [round, setRound] = useState(0);
   useEffect(() => {
     if (!near) return;
     let active = true;
     let made: string | null = null;
-    openItem(item)
-      .then((bytes) => {
-        if (!active) return;
-        if (!bytes) {
+    fetching
+      .run((options) => openItem(item, options), () => setRound((r) => r + 1))
+      .then((opened) => {
+        if (!active || opened === 'stopped') return;
+        if (!opened.value) {
           setGone(true);
           return;
         }
-        made = memoryUri(bytes, item.file.mime);
+        made = memoryUri(opened.value, item.file.mime);
         setUri(made);
       })
       .catch(() => active && setGone(true));
     return () => {
       active = false;
+      fetching.reset();
       if (made) releaseMemoryUri(made);
       setUri(null);
     };
-  }, [near, item.id]);
+  }, [near, item.id, round]);
   return (
     <View style={{ width, flex: 1 }}>
       {uri ? (
         <ZoomPhoto uri={uri} w={item.file.w} h={item.file.h} onTap={onTap} />
       ) : (
         <View style={styles.center}>
-          <Text color="#FFFFFF" style={styles.centered}>
-            {gone ? t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.') : t('Opening the photo…')}
-          </Text>
+          {fetching.progress || fetching.stopped ? (
+            <FetchNote fetching={fetching} ink="#FFFFFF" muted="rgba(255,255,255,0.7)" />
+          ) : (
+            <Text color="#FFFFFF" style={styles.centered}>
+              {gone ? t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.') : t('Opening the photo…')}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -271,7 +312,24 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
 
 // A file that is not a photo: its text if it is text, its pages if a PDF, the player if it plays,
 // else what it is, to open with another app (on a computer, to save first to open it elsewhere).
-function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: CollectionItem; ink: string; muted: string; onOpenWith: () => void; onPlay: () => void; note: string }) {
+function FilePage({
+  item,
+  ink,
+  muted,
+  onOpenWith,
+  onPlay,
+  note,
+  fetching,
+}: {
+  item: CollectionItem;
+  ink: string;
+  muted: string;
+  onOpenWith: () => void;
+  onPlay: () => void;
+  note: string;
+  /** The fetch before it plays or opens with another app. */
+  fetching: Fetching;
+}) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -280,18 +338,27 @@ function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: Collec
   const player = usePlayer(plays !== null);
   const [text, setText] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
+  // A text file fetched from the server when it is not here, with Cancel; Go on reads it again (`round`).
+  const reading = useFetching();
+  const [round, setRound] = useState(0);
   useEffect(() => {
     if (!readable) return;
     let active = true;
-    openItem(item)
-      .then((bytes) => (active ? (bytes ? setText(utf8Decode(bytes)) : setGone(true)) : undefined))
+    reading
+      .run((options) => openItem(item, options), () => setRound((r) => r + 1))
+      .then((opened) => {
+        if (!active || opened === 'stopped') return;
+        if (opened.value) setText(utf8Decode(opened.value));
+        else setGone(true);
+      })
       .catch(() => active && setGone(true));
     return () => {
       active = false;
+      reading.reset();
     };
-  }, [item.id, readable]);
+  }, [item.id, readable, round]);
   const pad = { paddingTop: Math.max(space.sm, insets.top) + 64, paddingBottom: 96 + insets.bottom };
-  if (fileLook(item) === 'pdf') return <CollectionPdf item={item} width={width} top={pad.paddingTop} bottom={pad.paddingBottom} ink={ink} muted={muted} onOpenWith={onOpenWith} />;
+  if (fileLook(item) === 'pdf') return <CollectionPdf item={item} width={width} top={pad.paddingTop} bottom={pad.paddingBottom} ink={ink} muted={muted} onOpenWith={onOpenWith} fetching={fetching} />;
   // The music playing now is this file: its controls.
   const playingThis = !!player?.active && !player.video && playingFile(player.index)?.id === item.id;
   if (readable && text !== null) {
@@ -312,6 +379,8 @@ function FilePage({ item, ink, muted, onOpenWith, onPlay, note }: { item: Collec
       <Text tone="muted" style={styles.centered}>
         {fileLook(item) === 'pdf' ? 'PDF' : item.file.mime} · {fileSize(item.file.size)}
       </Text>
+      <FetchNote fetching={reading} ink={ink} muted={muted} />
+      <FetchNote fetching={fetching} ink={ink} muted={muted} />
       {gone ? (
         <Text color={colors.danger} style={styles.centered}>
           {t('This file is not on this device. It comes from your other devices while one of them has it; a backup restored without it leaves only its name.')}

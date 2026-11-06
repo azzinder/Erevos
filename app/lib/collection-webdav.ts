@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { PREFIX, readChunk, saveChunk, type FileRef } from '../lock/attachment-files';
+import { PREFIX, chunksHere, readChunk, saveChunk, type FileRef } from '../lock/attachment-files';
 import {
   chunkFiles,
   collectionGeneration,
+  FillStoppedError,
   loadCollection,
   noteServerWhole,
   openPlaces,
@@ -14,9 +15,11 @@ import {
   setCollectionServer,
   setMissingFiller,
   watchCollections,
+  wholeMark,
   type CollectionItem,
   type CollectionPlace,
   type CollectionServer,
+  type FillOptions,
 } from '../lock/collection-data';
 
 import { openChunk } from './attachments';
@@ -234,7 +237,8 @@ export async function copyToServer(place: CollectionPlace, signal?: AbortSignal,
     }
     const last = now();
     serverWhole(place, generation);
-    await noteServerWhole(place, server.folder, last).catch(() => undefined);
+    // Kept with the server, for after Erevos starts again: the chunks of the catalogue copied.
+    await noteServerWhole(place, server.folder, last, wholeMark(collection)).catch(() => undefined);
     status = { ...status, running: false, last };
   } catch (error) {
     status = { ...status, running: false, error: error instanceof Stopped ? '' : errorText(error) };
@@ -257,35 +261,65 @@ export async function fetchChunk(folder: CloudServer, ref: FileRef, n: number): 
   return answer.bytes;
 }
 
-/** Fetches from the server's folder `folder` the chunks of `ref` not on this phone, keeping each that opens: how many are still missing. */
-export async function fetchMissingChunks(folder: CloudServer, ref: FileRef, signal?: AbortSignal): Promise<number> {
+/**
+ * Fetches from the server's folder `folder` the chunks of `ref` not on this phone, keeping each
+ * that opens: how many are still missing. How far it is goes to `progress`, the chunks here
+ * already counted as done; `signal` stops it (FillStoppedError) between chunks, and what came
+ * stays, so the next fetch goes on from there.
+ */
+export async function fetchMissingChunks(folder: CloudServer, ref: FileRef, { signal, progress }: FillOptions = {}): Promise<number> {
+  const here = await chunksHere(ref.id);
+  let done = 0;
+  for (let n = 0; n < ref.count; n++) if (here.has(n)) done++;
+  const tell = () => progress?.({ done, total: ref.count, bytes: Math.min(ref.size, Math.round((ref.size * done) / ref.count)), size: ref.size });
+  tell();
   let missing = 0;
-  for (let n = 0; n < ref.count; n++) {
-    if (signal?.aborted) throw new Stopped();
-    if ((await readChunk(ref.id, n)) !== null) continue;
-    const bytes = await retried(() => fetchChunk(folder, ref, n), signal);
-    if (bytes) await saveChunk(ref.id, n, bytes);
-    else missing++;
+  try {
+    for (let n = 0; n < ref.count; n++) {
+      if (signal?.aborted) throw new FillStoppedError();
+      if (here.has(n)) continue;
+      const bytes = await retried(() => fetchChunk(folder, ref, n), signal);
+      if (signal?.aborted) throw new FillStoppedError();
+      if (!bytes) {
+        missing++;
+        continue;
+      }
+      await saveChunk(ref.id, n, bytes);
+      done++;
+      tell();
+    }
+  } catch (error) {
+    throw error instanceof Stopped ? new FillStoppedError() : error;
   }
   return missing;
 }
 
-/** Fetches from the place's server the chunks of `item` (and of its small picture) not on this phone: whether the file is whole here now. False when the place has no server on. */
-export async function fillItem(place: CollectionPlace, item: CollectionItem, signal?: AbortSignal): Promise<boolean> {
+/**
+ * Fetches from the place's server the chunks of `item` (and of its small picture) not on this
+ * phone: whether the file is whole here now. False when the place has no server on. How far the
+ * file is goes to `progress`; `signal` stops it, keeping what came.
+ */
+export async function fillItem(place: CollectionPlace, item: CollectionItem, options: FillOptions = {}): Promise<boolean> {
   const collection = await loadCollection(place);
   const server = collection.server;
   const kept = collection.items.find((i) => i.id === item.id && i.file.id === item.file.id);
   if (!server?.on || !kept) return false;
   const folder = serverFolder(server);
-  const missing = await fetchMissingChunks(folder, kept.file, signal);
-  if (kept.thumb) await fetchMissingChunks(folder, kept.thumb, signal).catch(() => 0);
+  const missing = await fetchMissingChunks(folder, kept.file, options);
+  if (kept.thumb) await fetchMissingChunks(folder, kept.thumb, { signal: options.signal }).catch(() => 0);
   return missing === 0;
 }
 
-// When a file opened is not here (lock/collection-data.ts openItem): fetched from the server of
-// the open place whose file it is.
-setMissingFiller(async (item) => {
-  for (const place of openPlaces()) if (await fillItem(place, item).catch(() => false)) return true;
+// When a file opened is not here (lock/collection-data.ts openItem, fillItemHere): fetched from
+// the server of the open place whose file it is; one stopped stops there.
+setMissingFiller(async (item, options) => {
+  for (const place of openPlaces()) {
+    try {
+      if (await fillItem(place, item, options)) return true;
+    } catch (error) {
+      if (error instanceof FillStoppedError) throw error;
+    }
+  }
   return false;
 });
 

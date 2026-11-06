@@ -5,8 +5,9 @@
 // The Collection on a WebDAV server (lib/collection-webdav.ts): each place's chunks copied as they
 // are to a random subfolder there, only what is missing, going on after a failure, deletions
 // copied too, nothing else there touched; a file missing on the phone fetched back from there,
-// only chunks that open with its key; and a backup made while the copies are whole leaving the
-// chunks out.
+// only chunks that open with its key, with how far it is, stopped and gone on with; and a backup
+// made while the copies are whole leaving the chunks out, also after Erevos starts again, until
+// the catalogue names other chunks.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -17,7 +18,20 @@ import { setCloudHttp } from '../lib/backup-cloud';
 import { connectCollectionServer, copyToServer, fillItem, serverFolder, serverStatus, setServerRetry, testCollectionServer, turnCollectionServer } from '../lib/collection-webdav';
 import { randomBytes } from '../lib/crypto';
 import { PREFIX } from '../lock/attachment-files';
-import { addToCollection, backupSkips, deleteItems, loadCollection, openItem, openThumb, type CollectionPlace } from '../lock/collection-data';
+import {
+  addToCollection,
+  backupSkips,
+  deleteItems,
+  fillItemHere,
+  FillStoppedError,
+  forgetCollectionRuns,
+  loadCollection,
+  openItem,
+  openThumb,
+  renameItem,
+  type CollectionPlace,
+  type FillProgress,
+} from '../lock/collection-data';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
 
@@ -300,4 +314,107 @@ t('a copy stopped as it runs sends no more, and says no error', async () => {
   assert.equal(stopped.running, false);
   assert.equal(stopped.error, '');
   assert.equal((await chunksThere(dav, p)).size, 1);
+});
+
+t('after Erevos starts again, the copies are still whole for the same chunks; any file added or deleted takes them into backups again', async () => {
+  const dav = davServer();
+  const p = place();
+  await connectCollectionServer(p, ROOT, 'me', 'app-pass');
+  const a = await addToCollection(p, bytesSource(randomBytes(2000)), photo, { thumb: randomBytes(300) });
+  await copyToServer(p);
+  const all = new Set(localChunks().keys());
+  assert.deepEqual(await backupSkips([p]), all);
+  // The mark is kept sealed with the server, not in plain storage.
+  assert.match((await loadCollection(p)).server?.whole ?? '', /^[0-9a-f]{64}$/);
+  // As after a restart: nothing in memory, the catalogue as it was.
+  forgetCollectionRuns();
+  assert.deepEqual(await backupSkips([p]), all);
+  // A rename names the same chunks: still whole.
+  await renameItem(p, a.id, 'renamed.jpg');
+  forgetCollectionRuns();
+  assert.deepEqual(await backupSkips([p]), all);
+  // A file added: not whole, in memory nor after a restart.
+  const b = await addToCollection(p, bytesSource(randomBytes(2000)), { ...photo, name: 'b.jpg' });
+  assert.equal((await backupSkips([p])).size, 0);
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, 0);
+  await copyToServer(p);
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, localChunks().size);
+  // A file deleted: not whole until copied again.
+  await deleteItems(p, [b.id]);
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, 0);
+  await copyToServer(p);
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, localChunks().size);
+  // Turned off: taken again; the server given anew: not whole until copied.
+  await turnCollectionServer(p, false);
+  assert.equal((await backupSkips([p])).size, 0);
+  await turnCollectionServer(p, true);
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, localChunks().size);
+  await connectCollectionServer(p, ROOT, 'me', 'app-pass');
+  forgetCollectionRuns();
+  assert.equal((await backupSkips([p])).size, 0);
+  assert.ok(dav.there.size > 0);
+});
+
+t('a file fetched from the server says how far it is; stopped, it keeps what came and goes on from there', async () => {
+  const dav = davServer();
+  const p = place();
+  setCurrentSpace(0, p.key);
+  await connectCollectionServer(p, ROOT, 'me', 'app-pass');
+  const bytes = randomBytes(4 * 1024 * 1024 + 5000);
+  const item = await addToCollection(p, bytesSource(bytes), { ...photo, name: 'film.mp4', mime: 'video/mp4', kind: 'file' });
+  const count = item.file.count;
+  assert.ok(count >= 5);
+  await copyToServer(p);
+  blobs.clear();
+  assert.equal(await fillItemHere(item, {}).then(() => blobs.size > 0), true);
+  blobs.clear();
+
+  // Stopped once two chunks came.
+  const stop = new AbortController();
+  const heard: FillProgress[] = [];
+  await assert.rejects(
+    fillItemHere(item, {
+      signal: stop.signal,
+      progress: (progress) => {
+        heard.push(progress);
+        if (progress.done === 2) stop.abort();
+      },
+    }),
+    FillStoppedError,
+  );
+  assert.deepEqual(
+    heard.map((h) => h.done),
+    [0, 1, 2],
+  );
+  assert.ok(heard.every((h) => h.total === count && h.size === item.file.size));
+  assert.equal(heard[0].bytes, 0);
+  assert.ok(heard[2].bytes > heard[1].bytes);
+  const kept = [...blobs.keys()].filter((name) => name.includes(item.file.id));
+  assert.equal(kept.length, 2);
+
+  // Gone on with: only the rest is asked of the server, counted from where it stopped.
+  dav.asked.length = 0;
+  const again: FillProgress[] = [];
+  assert.equal(await fillItemHere(item, { progress: (progress) => again.push(progress) }), true);
+  assert.equal(again[0].done, 2);
+  assert.equal(again[again.length - 1].done, count);
+  assert.equal(again[again.length - 1].bytes, item.file.size);
+  assert.equal(dav.asked.filter((a) => a.startsWith('GET')).length, count - 2);
+  assert.deepEqual(await openItem(item), bytes);
+
+  // All here: nothing is asked.
+  dav.asked.length = 0;
+  assert.equal(await fillItemHere(item), true);
+  assert.equal(dav.asked.length, 0);
+
+  // openItem is stopped the same way, and says so.
+  blobs.clear();
+  const early = new AbortController();
+  early.abort();
+  await assert.rejects(openItem(item, { signal: early.signal }), FillStoppedError);
 });

@@ -3,10 +3,11 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { bytesSource, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
-import { randomBytes, toHex } from '../lib/crypto';
+import { randomBytes, sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
+import { listFiles } from '../lib/files';
 import { t } from '../lib/i18n';
 
-import { CHUNK_SIZES, PREFIX, cleanFileName, cleanMime, deleteChunks, freeName, isFileRef, readChunk, type FileKind, type FileRef } from './attachment-files';
+import { CHUNK_SIZES, PREFIX, chunksHere, cleanFileName, cleanMime, deleteChunks, freeName, isFileRef, readChunk, type FileKind, type FileRef } from './attachment-files';
 import { currentSpace } from './keys';
 import { sealedFile, type Holder } from './sealed-file';
 
@@ -42,7 +43,10 @@ import { sealedFile, type Holder } from './sealed-file';
 // lib/collection-webdav.ts): off until the owner gives a server, kept here with its user name and
 // password, so sealed with the place and in its backups, never in plain storage. While a place's
 // copies there are whole (serverWhole), a backup made while it is open may leave its chunks out
-// too: they are on the server, and the restored catalogue fetches them from there.
+// too: they are on the server, and the restored catalogue fetches them from there. That they were
+// whole is kept with the server too (`whole`, wholeMark), so it holds after Erevos starts again,
+// as long as the catalogue names the very chunks it named then: any file added or deleted since
+// changes the mark, and the chunks go into backups again until the next copy is whole.
 
 export type CollectionPlace = { holder: Holder; space: number; key: Uint8Array };
 
@@ -55,9 +59,9 @@ export type CollectionFolder = { id: string; name: string; at: number };
  * A folder on a WebDAV server the place's chunks are copied to: the folder's address the owner
  * gave (https, ending in /), the user name and password for it, the random name of the subfolder
  * the chunks go in, whether it is on, and when the copies there were last whole (milliseconds, 0
- * if never).
+ * if never), with the mark of the chunks the catalogue named then (`whole`, wholeMark).
  */
-export type CollectionServer = { on: boolean; url: string; user: string; password: string; folder: string; last: number };
+export type CollectionServer = { on: boolean; url: string; user: string; password: string; folder: string; last: number; whole?: string };
 
 /** What was deleted, and when. */
 export type Gone = { id: string; at: number };
@@ -102,12 +106,14 @@ const ID = /^[0-9a-f]{32}$/;
 const newId = () => toHex(randomBytes(16));
 const isTime = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const SERVER_FOLDER = /^[0-9a-f]{24}$/;
+const MARK = /^[0-9a-f]{64}$/;
 
 function serverOf(value: unknown): CollectionServer | null {
   const v = value as Partial<CollectionServer> | null;
   if (!v || typeof v.url !== 'string' || !/^https:\/\/\S+\/$/.test(v.url) || v.url.length > 2048) return null;
   if (typeof v.user !== 'string' || typeof v.password !== 'string' || typeof v.folder !== 'string' || !SERVER_FOLDER.test(v.folder)) return null;
-  return { on: v.on === true, url: v.url, user: v.user, password: v.password, folder: v.folder, last: isTime(v.last) ? v.last : 0 };
+  const whole = typeof v.whole === 'string' && MARK.test(v.whole) ? { whole: v.whole } : {};
+  return { on: v.on === true, url: v.url, user: v.user, password: v.password, folder: v.folder, last: isTime(v.last) ? v.last : 0, ...whole };
 }
 
 /** A file as the Collection keeps it: on this phone only, without a message's marks. */
@@ -197,6 +203,12 @@ export function collectionGeneration(place: CollectionPlace): number {
 /** The place's copies on the server were whole as its Collection was at `generation` (collectionGeneration). */
 export function serverWhole(place: CollectionPlace, generation: number): void {
   wholeAt.set(placeName(place), generation);
+}
+
+/** For the checks: forgets what this run of Erevos knew of the Collections' changes, as after Erevos starts again. */
+export function forgetCollectionRuns(): void {
+  generations.clear();
+  wholeAt.clear();
 }
 
 /** Whether the place's copies on the server are whole as its Collection is now. */
@@ -427,13 +439,37 @@ export function setCollectionServer(place: CollectionPlace, server: CollectionSe
   });
 }
 
-/** Keeps when the place's copies on its server were last whole, if it still has that server: no change to tell of. */
-export function noteServerWhole(place: CollectionPlace, folder: string, last: number): Promise<void> {
+/**
+ * Keeps when the place's copies on its server were last whole, and the mark of the chunks they
+ * were whole for (`whole`, wholeMark of the catalogue the copy began with), if it still has that
+ * server: no change to tell of, nor to copy.
+ */
+export function noteServerWhole(place: CollectionPlace, folder: string, last: number, whole?: string): Promise<void> {
   return change(
     place,
-    async (c) => ({ next: c.server && c.server.folder === folder ? { ...c, server: { ...c.server, last } } : null, result: undefined }),
+    async (c) => {
+      if (!c.server || c.server.folder !== folder) return { next: null, result: undefined };
+      const { whole: _was, ...server } = c.server;
+      return { next: { ...c, server: { ...server, last, ...(whole ? { whole } : {}) } }, result: undefined };
+    },
     true,
   );
+}
+
+/** The mark of the chunks a catalogue names, with their sizes (chunkFiles): the same for the same chunks, another for any other. */
+export function wholeMark(collection: Pick<Collection, 'items'>): string {
+  const names = [...chunkFiles(collection)].map(([name, size]) => `${name} ${size}`).sort();
+  return toHex(sha256Bytes(utf8Encode(names.join('\n'))));
+}
+
+/**
+ * Whether the copies of `collection` on its server are whole: copied whole as it is now since
+ * Erevos started (isServerWhole), or, kept with the server, for the very chunks it names now.
+ */
+export function serverHoldsAll(place: CollectionPlace, collection: Pick<Collection, 'items' | 'server'>): boolean {
+  const server = collection.server;
+  if (!server?.on) return false;
+  return isServerWhole(place) || (!!server.whole && server.whole === wholeMark(collection));
 }
 
 /** The chunk files of the place's Collection, each with its size: its files' and their small pictures'. */
@@ -452,8 +488,9 @@ export function chunkFiles(collection: Pick<Collection, 'items'>): Map<string, n
 export async function backupSkips(places: CollectionPlace[]): Promise<Set<string>> {
   const skip = new Set<string>();
   for (const place of places) {
-    const { items, backup, server } = await loadCollection(place);
-    if (backup && !(server?.on && isServerWhole(place))) continue;
+    const collection = await loadCollection(place);
+    const { items, backup } = collection;
+    if (backup && !serverHoldsAll(place, collection)) continue;
     for (const item of items)
       for (const ref of item.thumb ? [item.file, item.thumb] : [item.file])
         for (let n = 0; n < ref.count; n++) skip.add(`${PREFIX}${ref.id}-${n}`);
@@ -496,36 +533,89 @@ export async function openCollectionSkips(): Promise<Set<string>> {
   return backupSkips(openPlaces()).catch(() => new Set<string>());
 }
 
+/** How far fetching a file's missing chunks has come: its chunks here of all it has, and about how many of its bytes. */
+export type FillProgress = { done: number; total: number; bytes: number; size: number };
+
+/** What a fetch of missing chunks is told: `signal` stops it, keeping what came (the next one goes on from there); `progress` hears how far it is. */
+export type FillOptions = { signal?: AbortSignal; progress?: (progress: FillProgress) => void };
+
+/** Fetching a file's missing chunks was stopped (FillOptions signal): what came stays. */
+export class FillStoppedError extends Error {
+  constructor() {
+    super('Stopped');
+  }
+}
+
+type Filler = (item: CollectionItem, options?: FillOptions) => Promise<boolean>;
+
 // What fetches a file's missing chunks from its place's server (lib/collection-webdav.ts), and
 // from the account's other devices (lib/collection-links.ts): whether it did, so the file opens now.
-let filler: ((item: CollectionItem) => Promise<boolean>) | null = null;
-const fillers = new Set<(item: CollectionItem) => Promise<boolean>>();
+let filler: Filler | null = null;
+const fillers = new Set<Filler>();
 
 /** Sets what fetches a file's missing chunks from its server when it is opened (null for nothing). */
-export function setMissingFiller(fill: ((item: CollectionItem) => Promise<boolean>) | null): void {
+export function setMissingFiller(fill: Filler | null): void {
   filler = fill;
 }
 
 /** Adds a way to fetch a file's missing chunks when it is opened, tried after the server: returns how to take it away. */
-export function addMissingFiller(fill: (item: CollectionItem) => Promise<boolean>): () => void {
+export function addMissingFiller(fill: Filler): () => void {
   fillers.add(fill);
   return () => fillers.delete(fill);
 }
 
-// The file `ref` of `item`, read; when its chunks are not here, fetched first from the place's
-// server, if it has one, else from the account's other devices.
-async function readOrFill(item: CollectionItem, ref: FileRef): Promise<Uint8Array | null> {
-  const bytes = await readFile(ref);
-  if (bytes) return bytes;
-  for (const fill of [...(filler ? [filler] : []), ...fillers]) if (await fill(item).catch(() => false)) return readFile(ref);
-  return null;
+// Fetches the missing chunks of `item` from the place's server, if it has one, else from the
+// account's other devices: whether it did. Throws FillStoppedError once stopped.
+async function fillMissing(item: CollectionItem, options?: FillOptions): Promise<boolean> {
+  for (const fill of [...(filler ? [filler] : []), ...fillers]) {
+    if (options?.signal?.aborted) throw new FillStoppedError();
+    const done = await fill(item, options).catch(() => false);
+    if (options?.signal?.aborted) throw new FillStoppedError();
+    if (done) return true;
+  }
+  return false;
 }
 
-/** A file's bytes, whole, or null when its chunks are gone (as after a backup restored without them) and its place's server has them not. */
-export const openItem = (item: CollectionItem): Promise<Uint8Array | null> => readOrFill(item, item.file);
+// The file `ref` of `item`, read; when its chunks are not here, fetched first.
+async function readOrFill(item: CollectionItem, ref: FileRef, options?: FillOptions): Promise<Uint8Array | null> {
+  const bytes = await readFile(ref);
+  if (bytes) return bytes;
+  return (await fillMissing(item, options)) ? readFile(ref) : null;
+}
+
+/**
+ * A file's bytes, whole, or null when its chunks are gone (as after a backup restored without
+ * them) and neither its place's server nor another device has them. Those fetched are told to
+ * `progress`; `signal` stops the fetch (FillStoppedError), keeping what came.
+ */
+export const openItem = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => readOrFill(item, item.file, options);
 
 /** A file's small picture, or null when it has none or it is gone. */
-export const openThumb = (item: CollectionItem): Promise<Uint8Array | null> => (item.thumb ? readOrFill(item, item.thumb) : Promise.resolve(null));
+export const openThumb = (item: CollectionItem, options?: FillOptions): Promise<Uint8Array | null> => (item.thumb ? readOrFill(item, item.thumb, options) : Promise.resolve(null));
+
+/**
+ * Makes sure every chunk of a file is here before it is read from them as it goes (played, opened
+ * with another app, sent): those missing are fetched as openItem fetches them, told to
+ * `progress`, stopped by `signal`. Whether the file is whole here now.
+ */
+export async function fillItemHere(item: CollectionItem, options?: FillOptions): Promise<boolean> {
+  if ((await missingOf(item.file)) === 0) return true;
+  return fillMissing(item, options);
+}
+
+/** Of `items`, those whose every chunk is here: from one list of the folder, none read. */
+export async function itemsWhole(items: CollectionItem[]): Promise<CollectionItem[]> {
+  const here = new Set(await listFiles(PREFIX));
+  return items.filter(({ file }) => Array.from({ length: file.count }, (_, n) => `${PREFIX}${file.id}-${n}`).every((name) => here.has(name)));
+}
+
+/** How many chunks of `ref` are not here. */
+export async function missingOf(ref: FileRef): Promise<number> {
+  const here = await chunksHere(ref.id);
+  let missing = 0;
+  for (let n = 0; n < ref.count; n++) if (!here.has(n)) missing++;
+  return missing;
+}
 
 /** A file read a piece at a time, as it is decrypted, for a large one. */
 export const itemSource = (item: CollectionItem): Source => refSource(item.file);

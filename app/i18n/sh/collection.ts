@@ -96,4 +96,6 @@ export const collectionText: Record<string, string> = {
   "Last copied {when}.": "Posljednja kopija {when}.",
   "Not copied yet.": "Još nije kopirano.",
   "It did not go: {error}": "Nije uspjelo: {error}",
+  "Fetching from the server: {done} of {total}": "Preuzimanje sa servera: {done} od {total}",
+  "Stopped. What came stays on this device; the rest comes when you go on.": "Zaustavljeno. Ono što je stiglo ostaje na ovom uređaju; ostatak dolazi kad nastaviš.",
 };
