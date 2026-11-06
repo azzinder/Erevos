@@ -138,7 +138,7 @@ class ErevosCollectionModule : Module() {
 
     // Plays the list from `start`: each item a file as above with its name, type and whether it
     // is a video. `showTitle`: the notice shows the file's name, else `neutral`. `stopOnLock`:
-    // the list stops when the space locks.
+    // the list stops when the space locks. `stopLabel`: the word on the notice's Stop.
     AsyncFunction("playList") { list: List<Map<String, Any?>>, start: Int, options: Map<String, Any?> ->
       val app = context ?: throw IllegalStateException("No app")
       val items = mutableListOf<Playing.Item>()
@@ -153,6 +153,7 @@ class ErevosCollectionModule : Module() {
         throw e
       }
       Playing.stopOnLock = options["stopOnLock"] == true
+      Playing.stopLabel = options["stopLabel"] as? String ?: ""
       Playing.play(app, items, start, options["showTitle"] == true, options["neutral"] as? String ?: "")
       Playing.state()
     }.runOnQueue(Queues.MAIN)

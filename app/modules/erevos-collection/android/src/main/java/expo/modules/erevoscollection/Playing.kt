@@ -40,7 +40,7 @@ import java.util.concurrent.ConcurrentHashMap
  * button. As the owner chose, the list goes on after the space locks, unless he turned on Stop
  * playing when the space locks (stopOnLock); with the screen off or the space locked only play,
  * pause, next and previous within the list work, from the notice and the lock screen
- * (PlayerService.kt, ShownPlayer).
+ * (PlayerService.kt, ShownPlayer), and Stop, which ends the list as stop() does.
  *
  * The notice and the lock screen show the file's name only when the owner turned that on
  * (showTitle); otherwise a plain word JavaScript gives (`neutral`). What a file says of itself
@@ -68,6 +68,9 @@ internal object Playing {
 
   /** Whether the list stops when the space locks (the owner's setting, told with playList). */
   @Volatile var stopOnLock = false
+
+  /** The word on the notice's Stop, in Erevos' language (told with playList). */
+  @Volatile var stopLabel = ""
 
   /** Told the state whenever it changes, on the main thread: the module's event. */
   var onState: ((Map<String, Any?>) -> Unit)? = null

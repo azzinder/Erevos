@@ -37,7 +37,7 @@ export async function playItems(list: CollectionItem[], start: number, { showTit
   names = list.map((i) => i.file.name);
   ids = list.map((i) => i.id);
   const items = list.map((i) => ({ ...sealedRef(i.file), name: showTitle ? i.file.name : '', mime: i.file.mime, video: playKind(i) === 'video' }));
-  await collectionNative.playList(items, start, { showTitle, neutral: t('Playing'), stopOnLock });
+  await collectionNative.playList(items, start, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
 }
 
 /** The name of the file at `index` in the list playing, and its id in the Collection. */

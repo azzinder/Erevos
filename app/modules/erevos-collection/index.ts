@@ -49,7 +49,7 @@ type Native = {
   /** One page `width` pixels wide, base64 PNG (or JPEG), and its size in pixels. */
   pdfPage(handle: string, index: number, width: number, format: 'png' | 'jpeg'): Promise<{ data: string; width: number; height: number }>;
   pdfClose(handle: string): void;
-  playList(items: PlayItem[], start: number, options: { showTitle: boolean; neutral: string; stopOnLock: boolean }): Promise<PlayerState>;
+  playList(items: PlayItem[], start: number, options: { showTitle: boolean; neutral: string; stopOnLock: boolean; stopLabel: string }): Promise<PlayerState>;
   pause(): Promise<void>;
   resume(): Promise<void>;
   next(): Promise<void>;
