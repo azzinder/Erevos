@@ -83,6 +83,12 @@ On main, not released yet:
   WAV, AMR, MKA, MP4, MKV, WebM, 3GP and MOV (lib/collection-view.ts playKind). On Android Media3 reads them all by
   their first bytes, and an MP3 or AAC file with no table of its seconds is sought in as if at a constant bitrate
   (Playing.kt). The page's player is told the type the ending says, for a file that came without one.
+- **Music of the Collection goes on with the screen off**: on Android (seen on a Pixel with Android 16) music could
+  stop a while after the screen went off. The player's service was only started (startService), and was not always
+  made a foreground service, so Android froze Erevos with the cached apps after a while, its wake lock
+  notwithstanding. The player now keeps a Media3 controller of its own connected to the service's session for as long
+  as the list plays (Playing.kt bind), Media3's own way: the service is bound, and Media3 starts it in the foreground
+  as soon as the player plays.
 
 ### Under the hood
 

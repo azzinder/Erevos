@@ -4,6 +4,7 @@
 
 package expo.modules.erevoscollection
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -25,6 +26,9 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
 import java.io.File
 import java.io.FileNotFoundException
 import java.security.SecureRandom
@@ -139,6 +143,7 @@ internal object Playing {
     // player; otherwise it starts, while Erevos shows.
     val running = service
     if (running != null) running.usePlayer(made) else runCatching { appContext.startService(Intent(appContext, PlayerService::class.java)) }
+    bind(appContext)
     onPlayer.toList().forEach { it(made) }
     // The list before goes only now, so the session never holds a player already let go of.
     if (before != null) release(before)
@@ -200,10 +205,10 @@ internal object Playing {
     for (item in items) item.file.close()
     items = emptyList()
     val ctx = context?.applicationContext ?: app
+    unbind()
     // The service is let go of now: a list played before it is gone starts a new one.
-    val running = service
     service = null
-    if (!fromService && ctx != null && running != null) runCatching { ctx.stopService(Intent(ctx, PlayerService::class.java)) }
+    if (!fromService && ctx != null) runCatching { ctx.stopService(Intent(ctx, PlayerService::class.java)) }
     app = null
     if (p != null) tell()
   }
@@ -212,6 +217,28 @@ internal object Playing {
     p.removeListener(listener)
     runCatching { p.stop() }
     runCatching { p.release() }
+  }
+
+  // A controller of Erevos' own, connected to the service's session while a list plays: Media3's
+  // own way to keep a MediaSessionService. Started with startService alone, the service was not
+  // always made a foreground service once the screen went off (the owner's music stopped a while
+  // after, on Android 16), and Android then freezes Erevos with the rest of the cached apps, the
+  // wake lock notwithstanding. Bound by a controller, the service lives as long as the list, and
+  // Media3 starts it in the foreground (startForegroundService, then startForeground) as soon as
+  // the player plays, and keeps it there while it plays or waits for audio focus to come back.
+  private var controller: ListenableFuture<MediaController>? = null
+
+  private fun bind(context: Context) {
+    if (controller != null) return
+    controller = runCatching {
+      MediaController.Builder(context, SessionToken(context, ComponentName(context, PlayerService::class.java))).buildAsync()
+    }.getOrNull()
+  }
+
+  private fun unbind() {
+    val future = controller ?: return
+    controller = null
+    runCatching { MediaController.releaseFuture(future) }
   }
 
   /** The service running now, told by the service itself, and let go of by stop(). */

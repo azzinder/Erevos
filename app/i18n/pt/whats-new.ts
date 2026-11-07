@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":
+    "**A música da Coleção continua com a tela desligada**: no Android, a música podia parar um tempo depois de a tela apagar. Agora o player fica em primeiro plano enquanto a lista toca. Veja [Coleção](#collection).",
   "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":
     "**Mais formatos de música e vídeo na Coleção**: no Android tocam MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM e 3GP, também um arquivo que chegou sem tipo, reconhecido pelo final do nome, e pular para um ponto funciona também num MP3 sem tabela dos seus segundos. Veja [Coleção](#collection).",
   "**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules).":

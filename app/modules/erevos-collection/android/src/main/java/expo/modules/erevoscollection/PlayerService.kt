@@ -25,7 +25,8 @@ import com.google.common.util.concurrent.ListenableFuture
  * background, as a media playback service in the foreground, and gives Android its media session:
  * the notice with play, pause, next, previous and Stop, the same on the lock screen, and a
  * headset's buttons. Media3 shows the notice and moves the service to the foreground while it
- * plays.
+ * plays; Playing keeps a controller of its own connected to the session for as long as the list
+ * plays (Playing.bind), so the service is bound and Media3 promotes it as soon as it plays.
  *
  * Not exported. Every controller, Android's own included, may only play, pause, go to the next
  * or previous file of the list (ShownPlayer) and stop; and sees only the title Playing set: the

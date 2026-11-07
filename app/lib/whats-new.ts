@@ -35,6 +35,7 @@ export const NEXT: Changes = {
     mark("**A small contact QR code**: **Show my QR code** now shows your contact link in short, so any camera reads it, and **Share my contact link** sends a link any app lets you tap. Whoever scans it while it shows is your contact at once; later, they write a message request first. **Large QR code, for no internet** shows the whole one, for near with no internet. See [Chat through a relay](#relay)."),
     mark("**Links open Erevos**: on Android, an invite or contact link tapped in any app opens Erevos, which asks before it takes it, once the web server and a new Erevos are both out. See [Chat through a relay](#relay)."),
     mark("**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection)."),
+    mark("**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection)."),
   ],
   underTheHood: [
     mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),
