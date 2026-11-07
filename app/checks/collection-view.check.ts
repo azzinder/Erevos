@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Collection, CollectionItem } from '../lock/collection-data';
-import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, playKind, playListOf, search } from '../lib/collection-view';
+import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, playKind, playListOf, playType, search } from '../lib/collection-view';
 
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12).getTime();
 const item = (id: string, name: string, kind: 'photo' | 'file', added: number, folder = '', mime = 'application/octet-stream'): CollectionItem => ({
@@ -99,4 +99,22 @@ test('music and videos play, each with their own kind, in the order shown', () =
     ['v1'],
   );
   assert.deepEqual(playListOf(shown, pdf), { list: [], start: 0 });
+});
+
+test('every format the phone plays is known by its type, and by its ending when the type says nothing', () => {
+  const kind = (name: string, mime = 'application/octet-stream') => playKind(item('x', name, 'file', 0, '', mime));
+  for (const name of ['a.mp3', 'a.aac', 'a.m4a', 'a.flac', 'a.ogg', 'a.opus', 'a.wav', 'a.amr', 'a.mka', 'A.MP3']) assert.equal(kind(name), 'audio', name);
+  for (const name of ['a.mp4', 'a.mkv', 'a.webm', 'a.3gp', 'a.mov', 'a.m4v']) assert.equal(kind(name), 'video', name);
+  // No type at all, or one that is no help, as files from other apps often have.
+  assert.equal(kind('song.flac', ''), 'audio');
+  assert.equal(kind('film.mkv', 'binary/octet-stream'), 'video');
+  assert.equal(kind('song.ogg', 'application/ogg'), 'audio');
+  assert.equal(kind('film.mkv', 'application/x-matroska'), 'video');
+  // The type wins over the ending.
+  assert.equal(kind('clip.mp3', 'video/mp4'), 'video');
+  assert.equal(kind('notes.txt'), null);
+  assert.equal(kind('subs.srt'), null);
+  assert.equal(playType(item('x', 'song.opus', 'file', 0)), 'audio/ogg');
+  assert.equal(playType(item('x', 'song.mp3', 'file', 0, '', 'audio/x-custom')), 'audio/x-custom');
+  assert.equal(playType(item('x', 'blob', 'file', 0)), 'application/octet-stream');
 });

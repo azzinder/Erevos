@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":
+    "**Mais formatos de música e vídeo na Coleção**: no Android tocam MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM e 3GP, também um arquivo que chegou sem tipo, reconhecido pelo final do nome, e pular para um ponto funciona também num MP3 sem tabela dos seus segundos. Veja [Coleção](#collection).",
   "**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules).":
     "**Módulos novos ativados após uma atualização**: onde os módulos foram escolhidos antes de a Coleção chegar, como num celular ou computador atualizado da 6, a Coleção ficava desativada. Agora ela fica ativada lá, como qualquer módulo que chegar depois, até você desativá-la em Configurações → Geral → Módulos. Veja [Módulos](#modules).",
   "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":

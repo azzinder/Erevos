@@ -5,6 +5,7 @@
 import type { CollectionItem } from '../lock/collection-data';
 import type { PlayerState } from '../modules/erevos-collection';
 import { MOST_IN_MEMORY, TooLargeToOpenError, onCollectionMemoryDropped, openItemUri, releaseMemoryUri } from './collection-memory';
+import { playType } from './collection-view';
 
 // The Collection's music and videos in the web build: the desktop app, a browser (an iPhone's
 // home-screen app too) and Sailfish OS (lib/collection-play.ts plays them through here there): one
@@ -114,7 +115,7 @@ async function open(at: number): Promise<void> {
   tell();
   let uri: string | null = null;
   try {
-    uri = await openItemUri(item, item.file.mime || 'application/octet-stream');
+    uri = await openItemUri(item, playType(item));
   } catch {
     uri = null;
   }

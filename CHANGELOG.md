@@ -78,6 +78,11 @@ On main, not released yet:
   offerSignInCode), which claims with it at once. The digits claim nothing without the claim secret, which never leaves
   the phone that started, so an app that took the link gets nothing; the code to type stays on the page. Needs the
   relay updated; an older relay ignores `to=app`.
+- **More music and video formats in the Collection**: a file plays by its type, and when the type says nothing (often
+  application/octet-stream, or none, from another app or a chat) by its name's ending: MP3, AAC, M4A, FLAC, Ogg, Opus,
+  WAV, AMR, MKA, MP4, MKV, WebM, 3GP and MOV (lib/collection-view.ts playKind). On Android Media3 reads them all by
+  their first bytes, and an MP3 or AAC file with no table of its seconds is sought in as if at a constant bitrate
+  (Playing.kt). The page's player is told the type the ending says, for a file that came without one.
 
 ### Under the hood
 

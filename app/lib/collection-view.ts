@@ -107,17 +107,60 @@ export function isText(item: CollectionItem): boolean {
 /** The largest text file shown in the Collection; a larger one is opened with another app. */
 export const MOST_TEXT = 1000 * 1000;
 
-const AUDIO_ENDINGS = new Set(['mp3', 'm4a', 'aac', 'ogg', 'oga', 'opus', 'flac', 'wav']);
-const VIDEO_ENDINGS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv', '3gp']);
+// What plays, by the name's ending: files often come as application/octet-stream, from another
+// app, a chat or a server, so the ending decides whenever the type does not say music or video.
+// Every format AndroidX Media3 reads on the phone (Playing.kt): MP3, AAC (ADTS and in MP4), FLAC,
+// Ogg (Vorbis, Opus), WAV, AMR, Matroska and WebM, MP4 and 3GP. A computer's page plays what
+// Chromium does of them (no 3GP nor AMR); a browser what it can.
+const AUDIO_ENDINGS = new Set(['mp3', 'm4a', 'm4b', 'aac', 'adts', 'ogg', 'oga', 'opus', 'flac', 'wav', 'wave', 'amr', 'mka', 'weba']);
+const VIDEO_ENDINGS = new Set(['mp4', 'm4v', 'mov', 'webm', 'mkv', '3gp', '3g2', 'ogv']);
+// Types that say music or video without saying audio/ or video/.
+const AUDIO_TYPES = new Set(['application/ogg', 'application/x-ogg', 'application/flac', 'application/x-flac']);
+const VIDEO_TYPES = new Set(['application/mp4', 'application/x-matroska']);
 
-/** Whether a file plays here, and how: as music, as a video, or not (null). */
+/** Whether a file plays here, and how: as music, as a video, or not (null): by its type, else by its name's ending. */
 export function playKind(item: CollectionItem): 'audio' | 'video' | null {
   const { mime, name, kind } = item.file;
   if (kind === 'photo') return null;
+  const type = mime.toLowerCase();
+  if (type.startsWith('video/') || VIDEO_TYPES.has(type)) return 'video';
+  if (type.startsWith('audio/') || AUDIO_TYPES.has(type)) return 'audio';
   const ending = fileEnding(name);
-  if (mime.startsWith('video/') || (mime === 'application/octet-stream' && VIDEO_ENDINGS.has(ending))) return 'video';
-  if (mime.startsWith('audio/') || (mime === 'application/octet-stream' && AUDIO_ENDINGS.has(ending))) return 'audio';
+  if (VIDEO_ENDINGS.has(ending)) return 'video';
+  if (AUDIO_ENDINGS.has(ending)) return 'audio';
   return null;
+}
+
+const TYPES_BY_ENDING: Record<string, string> = {
+  mp3: 'audio/mpeg',
+  m4a: 'audio/mp4',
+  m4b: 'audio/mp4',
+  aac: 'audio/aac',
+  adts: 'audio/aac',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/ogg',
+  flac: 'audio/flac',
+  wav: 'audio/wav',
+  wave: 'audio/wav',
+  amr: 'audio/amr',
+  mka: 'audio/x-matroska',
+  weba: 'audio/webm',
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska',
+  '3gp': 'video/3gpp',
+  '3g2': 'video/3gpp2',
+  ogv: 'video/ogg',
+};
+
+/** The type a player is told the file is: its own when it says, else the one its name's ending says. */
+export function playType(item: CollectionItem): string {
+  const mime = item.file.mime.toLowerCase();
+  if (mime && mime !== 'application/octet-stream' && mime !== 'binary/octet-stream') return mime;
+  return TYPES_BY_ENDING[fileEnding(item.file.name)] ?? 'application/octet-stream';
 }
 
 /**

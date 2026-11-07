@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":
+    "**Περισσότερες μορφές μουσικής και βίντεο στη Συλλογή**: στο Android παίζουν MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM και 3GP, και ένα αρχείο που ήρθε χωρίς τύπο, από την κατάληξη του ονόματός του, και η μετάβαση σε σημείο δουλεύει και σε MP3 χωρίς πίνακα των δευτερολέπτων του. Δες [Συλλογή](#collection).",
   "**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules).":
     "**Νέες ενότητες ενεργές μετά από ενημέρωση**: όπου οι ενότητες είχαν διαλεχτεί πριν έρθει η Συλλογή, όπως σε ένα τηλέφωνο ή υπολογιστή που ενημερώθηκε από την 6, η Συλλογή έμενε ανενεργή. Τώρα είναι ενεργή εκεί, όπως και κάθε ενότητα που έρχεται αργότερα, μέχρι να την απενεργοποιήσεις στις Ρυθμίσεις → Γενικά → Ενότητες. Δες [Ενότητες](#modules).",
   "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":

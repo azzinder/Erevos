@@ -24,6 +24,7 @@ import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.extractor.DefaultExtractorsFactory
 import java.io.File
 import java.io.FileNotFoundException
 import java.security.SecureRandom
@@ -123,7 +124,7 @@ internal object Playing {
     }
     val video = list.any { it.video }
     val made = ExoPlayer.Builder(appContext)
-      .setMediaSourceFactory(ProgressiveMediaSource.Factory(DataSource.Factory { SealedDataSource(folder) }))
+      .setMediaSourceFactory(ProgressiveMediaSource.Factory(DataSource.Factory { SealedDataSource(folder) }, extractors()))
       .setAudioAttributes(
         AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(if (video) C.AUDIO_CONTENT_TYPE_MOVIE else C.AUDIO_CONTENT_TYPE_MUSIC).build(),
         true,
@@ -147,6 +148,15 @@ internal object Playing {
     made.play()
     tell()
   }
+
+  /**
+   * Every container Media3 reads (MP3, AAC, FLAC, Ogg with Vorbis or Opus, WAV, AMR, MP4, 3GP,
+   * Matroska and WebM), each told by its first bytes, not by a name or type, which the player never
+   * has. An MP3 or AAC file with no table of where its seconds lie is sought in as if at a constant
+   * bitrate, so seeking works in it too, if only roughly in one whose bitrate varies.
+   */
+  fun extractors(): DefaultExtractorsFactory =
+    DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
 
   fun pause() {
     player?.pause()
