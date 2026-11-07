@@ -163,3 +163,25 @@ test('the invited phone takes the first message of whoever sent it, with the nam
   assert.deepEqual((await SmsLink.open(0, key)).answeredFor(sender), { number: '', name: '' });
   assert.equal((await SmsLink.open(0, key)).state.got.length, 1);
 });
+
+test('an invite shown as a QR code has no number, lasts its own days, and takes a name later', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  const code = 'ab'.repeat(32);
+  const secret = randomBytes(32);
+  await link.textInvited('', secret, code, '', 7);
+  const kept = await SmsLink.open(0, key);
+  const [sent] = kept.state.sent;
+  assert.deepEqual([sent.number, sent.days, sent.name], ['', 7, undefined]);
+  assert.ok(kept.textInviteWaits(sent.secret));
+  // Over only 7 days after it was made, not 2 as one by plain SMS.
+  const twoDays = 2 * 24 * 3600 * 1000;
+  assert.deepEqual(kept.textInvitesDue(Date.now() - twoDays + 3 * twoDays), []);
+  assert.equal(kept.textInvitesDue(Date.now() + 5 * 24 * 3600 * 1000 + 1000).length, 1);
+  await kept.nameTextInvite(sent.secret, '  Μαρία ');
+  assert.equal((await SmsLink.open(0, key)).state.sent[0].name, 'Μαρία');
+  await kept.nameTextInvite(sent.secret, '');
+  assert.equal((await SmsLink.open(0, key)).state.sent[0].name, undefined);
+  assert.ok(!kept.textInviteWaits('x'));
+});

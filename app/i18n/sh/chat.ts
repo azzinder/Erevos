@@ -376,4 +376,6 @@ export const chat: Record<string, string> = {
   'The relay keeps it and sends it then by itself, even if this phone is lost, off or taken. Each time you open Erevos, past its password, it moves on that long again. Erevos running in the background does not move it. Delete it in the chat to stop it.': 'Relay je čuva i tada šalje sam, čak i ako je ovaj telefon izgubljen, isključen ili oduzet. Svaki put kad otvorite Erevos, nakon njegove lozinke, pomjera se ponovo za toliko. Erevos koji radi u pozadini je ne pomjera. Obrišite je u razgovoru da biste je zaustavili.',
   "Hidden photo": "Skrivena fotografija",
   "Hidden photo · tap to see it": "Skrivena fotografija · dodirni da je vidiš",
+  '{name} took your invite and is your contact now: what you write to each other is end-to-end encrypted.': 'Vaša pozivnica je prihvaćena: {name} je sada vaš kontakt. Ono što pišete jedno drugom šifrovano je s kraja na kraj.',
+  'Someone took your invite and is your contact now: what you write to each other is end-to-end encrypted.': 'Neko je prihvatio vašu pozivnicu i sada je vaš kontakt: ono što pišete jedno drugom šifrovano je s kraja na kraj.',
 };

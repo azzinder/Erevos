@@ -142,12 +142,43 @@ export function answerTextInvite(invite: TextInvite, name: string): void {
  * when this phone has no relay of its own to invite to, or its relay lets it invite no one.
  */
 export async function makeTextInvite(number: string, name: string): Promise<string> {
+  return textInviteLink((await shortInvite(number, name, TEXT_INVITE_DAYS)).invite);
+}
+
+/** How long an invite shown as a QR code or shared as a link lasts (Invite someone). */
+export const QR_INVITE_DAYS = 7;
+
+/** An invite made here as a short link (lib/text-invite.ts): the link's fields, `secret` to name
+ *  it later (nameShortInvite) or see whether it still waits, and `line`, its invite to the relay's name there. */
+export type ShortInvite = { invite: TextInvite; secret: string; line: string };
+
+/**
+ * Invite someone, as a QR code or a link small enough for any camera, and for an SMS: the same
+ * invite as one by plain SMS, with no number, for QR_INVITE_DAYS. Its answer adds whoever took it
+ * as a contact, named `name` (which may come later, nameShortInvite). Throws as makeTextInvite does,
+ * and then the long invite (lib/welcome.ts) is what is left.
+ */
+export function makeShortInvite(name: string): Promise<ShortInvite> {
+  return shortInvite('', name, QR_INVITE_DAYS);
+}
+
+/** Names whom a short invite made here is for: the name its contact takes once it answers. */
+export async function nameShortInvite(secret: string, name: string): Promise<void> {
+  await (await spaceSmsLink()).nameTextInvite(secret, name);
+}
+
+/** Whether a short invite made here still waits for its answer. */
+export async function shortInviteWaits(secret: string): Promise<boolean> {
+  return (await spaceSmsLink()).textInviteWaits(secret);
+}
+
+async function shortInvite(number: string, name: string, days: number): Promise<ShortInvite> {
   const data = await loadCurrentSpaceData();
   if (!data.url || !data.ownQueue) throw new Error(t('An invite by SMS needs a relay: your phone has none yet.'));
   const relay: Relay = { url: data.url, token: data.token || undefined };
   // The relay has a name of random letters for them, never their number; the name stays here (lib/e2e.ts lineFor).
   const chats = await spaceChats().catch(() => null);
-  const line = chats ? await chats.e2e.lineFor(name.trim() || plainNumber(number)) : randomLineName();
+  const line = chats ? await chats.e2e.lineFor(name.trim() || (number ? plainNumber(number) : '')) : randomLineName();
   const access = relay.token ? await makeInvite(relay, line) : null;
   if (!access) {
     throw new Error(t('Your relay does not let this phone invite anyone, so an invite by SMS could not let them in. Invite them with a QR code instead, from New chat.'));
@@ -167,10 +198,10 @@ export async function makeTextInvite(number: string, name: string): Promise<stri
     relay: data.url,
     relayKey: key,
     name: as,
-    expires: Math.min(Date.now() + TEXT_INVITE_DAYS * DAY, access.expires),
+    expires: Math.min(Date.now() + days * DAY, access.expires),
   };
-  await (await spaceSmsLink()).textInvited(number, secret, access.code, name);
-  return textInviteLink(invite);
+  await (await spaceSmsLink()).textInvited(number, secret, access.code, name, days);
+  return { invite, secret: toBase64Url(secret), line };
 }
 
 /**

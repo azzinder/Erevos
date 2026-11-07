@@ -12,6 +12,8 @@ import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { makeInvite, type Relay } from '../lib/relay';
 import { oldToken } from '../lib/relay-signin';
+import { makeShortInvite, nameShortInvite, shortInviteWaits, type ShortInvite } from '../lib/sms-relay';
+import { textInviteLink } from '../lib/text-invite';
 import { welcomeLink } from '../lib/welcome';
 import { MAX_NAME } from '../lock/e2e-data';
 import { currentSpace } from '../lock/keys';
@@ -31,7 +33,9 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 /** How long the invite last made shows again when the sheet opens, while no one took it. */
 const SHOWN_AGAIN_MS = 15 * 60_000;
 
-type Made = { link: string; hi: string; line: string; code: string | null; until: number; access: boolean; at: number };
+// A short invite (lib/sms-relay.ts makeShortInvite, `short`), small enough for any camera, or,
+// where the relay lets this phone make none, the long one (lib/welcome.ts), with its secret `hi`.
+type Made = { link: string; hi: string; line: string; code: string | null; until: number; access: boolean; at: number; short?: ShortInvite };
 
 // The invite last made while Erevos runs, by space and contact link: never kept anywhere else.
 let lastMade: { key: string; made: Made; name: string } | null = null;
@@ -64,17 +68,30 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
     const as = e2e?.invitedAs() ?? '';
     setAs(as);
     const again = lastMade;
-    if (again && again.key === key && e2e?.inviteWaits(again.made.hi) && Date.now() - again.made.at < SHOWN_AGAIN_MS) {
-      setName(again.name);
-      setMade({ ...again.made, link: linkFor(again.made, as) });
-      return;
-    }
-    setName('');
-    setMade(null);
-    void make(as);
+    let on = true;
+    void (async () => {
+      const waits = again && again.key === key && Date.now() - again.made.at < SHOWN_AGAIN_MS
+        ? again.made.short
+          ? await shortInviteWaits(again.made.short.secret).catch(() => false)
+          : !!e2e?.inviteWaits(again.made.hi)
+        : false;
+      if (!on) return;
+      if (again && waits) {
+        setName(again.name);
+        setMade({ ...again.made, link: linkFor(again.made, as) });
+        return;
+      }
+      setName('');
+      setMade(null);
+      void make(as);
+    })();
+    return () => {
+      on = false;
+    };
   }, [visible, e2e, contactLink]);
 
   function linkFor(invite: Made, as: string): string {
+    if (invite.short) return textInviteLink({ ...invite.short.invite, name: as.trim() });
     return contactLink ? welcomeLink(contactLink, { code: invite.code, hi: invite.hi, name: as.trim() }) : invite.link;
   }
 
@@ -84,6 +101,16 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
     setBusy(true);
     setFailed('');
     try {
+      // The short invite first, as an invite by plain SMS is (lib/sms-relay.ts): a QR code any camera
+      // reads, and a link that fits an SMS. The long one only where the relay lets this phone make none.
+      const short = await makeShortInvite('').catch(() => null);
+      if (short) {
+        const invite: Made = { link: '', hi: '', line: short.line, code: short.invite.code, until: short.invite.expires, access: true, at: Date.now(), short };
+        invite.link = linkFor(invite, as);
+        lastMade = { key, made: invite, name: '' };
+        setMade(invite);
+        return;
+      }
       // Access of their own to the relay, when it lets this phone invite; good for as long as both last.
       // The relay has a name of random letters for them; who it is for is named here, now or later (lib/e2e.ts lineFor).
       let line = relay?.token ? await e2e.lineFor('') : '';
@@ -122,6 +149,7 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
     const who = name.trim();
     if (lastMade?.made.hi === made.hi) lastMade = { ...lastMade, name: who };
     void e2e.nameInvite(made.hi, who, made.line).catch((error) => onNote(errorText(error)));
+    if (made.short) void nameShortInvite(made.short.secret, who).catch((error) => onNote(errorText(error)));
   }
 
   // The name this phone gives itself goes in the link: the QR code shows it at once.

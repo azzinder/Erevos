@@ -32,8 +32,9 @@ export type { Holder };
 
 /** An invite sent to `number`, with the secret that opens its answer. One by plain SMS (lib/text-invite.ts)
  *  also has its invite to the relay (`code`), until it is over or a phone used it, and the name of the
- *  phone's contact it went to, for the contact its answer adds. */
-export type SentInvite = { number: string; secret: string; at: number; code?: string; name?: string };
+ *  phone's contact it went to, for the contact its answer adds. One shown as a QR code or shared as a
+ *  link (Invite someone, components/welcome-invite.tsx) has no number (''), and lasts `days`. */
+export type SentInvite = { number: string; secret: string; at: number; code?: string; name?: string; days?: number };
 /** An invite answered here, from `number` ('' for one by plain SMS, whose number the link does not
  *  say), whose chat writes from `sender`; `name`, the name that invite gave its phone. */
 export type GotInvite = { number: string; sender: string; at: number; name?: string };
@@ -162,8 +163,15 @@ function checked(value: unknown): SmsData {
   return {
     invites: v.invites !== false,
     sent: list(v.sent, (s) =>
-      isNumber(s.number) && isText(s.secret) && /^[A-Za-z0-9_-]{43}$/.test(s.secret) && isTime(s.at)
-        ? { number: s.number, secret: s.secret, at: s.at, ...(isText(s.code) && /^[0-9a-f]{64}$/.test(s.code) ? { code: s.code } : {}), ...(isName(s.name) ? { name: s.name } : {}) }
+      (s.number === '' || isNumber(s.number)) && isText(s.secret) && /^[A-Za-z0-9_-]{43}$/.test(s.secret) && isTime(s.at)
+        ? {
+            number: s.number as string,
+            secret: s.secret,
+            at: s.at,
+            ...(isText(s.code) && /^[0-9a-f]{64}$/.test(s.code) ? { code: s.code } : {}),
+            ...(isName(s.name) ? { name: s.name } : {}),
+            ...(Number.isInteger(s.days) && (s.days as number) >= 1 && (s.days as number) <= 30 ? { days: s.days as number } : {}),
+          }
         : null,
     ),
     got: list(v.got, (g) =>

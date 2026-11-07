@@ -2042,7 +2042,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         const invited = hiddenKey ? null : await takeInviteAnswer(e2e, bytes, ownSender, here()).catch(() => null);
         if (invited) {
           if (active) setContacts(e2e.contacts());
-          if (active) setNote(t('{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.', { number: invited.number }));
+          if (active) {
+            // An invite shown as a QR code or shared as a link has no number: whoever took it joined.
+            const name = invited.number ? '' : (e2e.contacts().find((c) => c.identity === invited.identity)?.name ?? '');
+            setNote(
+              invited.number
+                ? t('{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.', { number: invited.number })
+                : name
+                  ? t('{name} took your invite and is your contact now: what you write to each other is end-to-end encrypted.', { name })
+                  : t('Someone took your invite and is your contact now: what you write to each other is end-to-end encrypted.'),
+            );
+          }
           return { junk: false };
         }
         // Taken from the relay, so kept even if the chat closed meanwhile.
@@ -5061,7 +5071,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     try {
       const text = await readQrPhoto(from);
       if (text === null) return;
-      if (text && (parseContact(text) || parseInvite(text) || parseWelcome(text))) addContact(text);
+      if (text && (parseContact(text) || parseInvite(text) || parseWelcome(text) || parseTextInvite(text))) addContact(text);
       else setNote(text ? t('That QR code holds no Erevos ID.') : t('No QR code was found in the photo. Take it again closer, with all of the code in it.'));
     } catch (error) {
       setNote(errorText(error));

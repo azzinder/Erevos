@@ -42,6 +42,12 @@ On main, not released yet:
   or never (E2E.nameInvite). Opened again within 15 minutes, it shows the same invite while it waits, as a relay lets
   a phone make only a few a day; **Invite someone else** makes another. The empty home screen has an **Invite
   someone** button too (components/welcome-invite.tsx).
+- **Smaller invite QR codes**: **Invite someone** makes the short invite an invite by plain SMS is
+  (lib/sms-relay.ts makeShortInvite, lib/text-invite.ts), with no number and for 7 days: a link of about 270
+  characters to Erevos's invite page instead of about 2000, so its QR code has about eight times fewer modules and
+  simpler cameras read it. Its answer adds whoever took it as a contact, named as typed then or later
+  (SmsLink.nameTextInvite). A scanned or pasted short invite is taken in New chat too. Where the relay lets the phone
+  make no invite, the long one (lib/welcome.ts) is still made.
 
 ### Under the hood
 

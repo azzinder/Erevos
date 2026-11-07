@@ -15,6 +15,9 @@ import { fresh, LATER_TEXT, loadSmsData, MAX_LATER, MAX_PINS, MAX_SMS_WAY, MAX_T
 import { smsSpamFilter, type Sim } from '../modules/erevos-sms';
 import { sameAddress, sameConversation, smsAddress, smsNumbers } from './sms-group';
 import { senderRule } from './sms-folders';
+import { TEXT_INVITE_DAYS } from './text-invite';
+
+const DAY_MS = 24 * 3600 * 1000;
 
 /** Where this chat can be reached, for an invite. */
 export type Own = { senderHex: string; relay: string; relayKey: string };
@@ -319,14 +322,40 @@ export class SmsLink {
 
   /** Keeps an invite by plain SMS sent to `number`, a contact of the phone's named `name`: the secret
    *  that opens its answer, and its invite to the relay, to take back once it is over unused. */
-  textInvited(number: string, secret: Uint8Array, code: string, name: string): Promise<void> {
-    const sent: SentInvite = { number: plainNumber(number), secret: toBase64Url(secret), at: Date.now(), code, ...(name.trim() ? { name: name.trim() } : {}) };
+  textInvited(number: string, secret: Uint8Array, code: string, name: string, days = TEXT_INVITE_DAYS): Promise<void> {
+    const sent: SentInvite = {
+      number: number ? plainNumber(number) : '',
+      secret: toBase64Url(secret),
+      at: Date.now(),
+      code,
+      ...(name.trim() ? { name: name.trim() } : {}),
+      ...(days !== TEXT_INVITE_DAYS ? { days } : {}),
+    };
     return this.update((d) => ({ ...d, sent: [...d.sent, sent] }));
   }
 
-  /** The invites by plain SMS sent here at `before` or earlier whose invite to the relay is still kept. */
+  /** Names, or names again, whom an invite sent here and still waiting is for: the name its answer's contact takes. */
+  nameTextInvite(secret: string, name: string): Promise<void> {
+    const named = name.trim();
+    return this.update((d) => ({
+      ...d,
+      sent: d.sent.map((s) => {
+        if (s.secret !== secret) return s;
+        const { name: _name, ...rest } = s;
+        return named ? { ...rest, name: named } : rest;
+      }),
+    }));
+  }
+
+  /** Whether the invite sent here whose secret is `secret` still waits for its answer. */
+  textInviteWaits(secret: string): boolean {
+    return this.data.sent.some((s) => s.secret === secret);
+  }
+
+  /** The invites by plain SMS sent here at `before` or earlier whose invite to the relay is still kept:
+   *  `before` is TEXT_INVITE_DAYS ago, and an invite that lasts longer (`days`) is over that much later. */
   textInvitesDue(before: number): SentInvite[] {
-    return this.data.sent.filter((s) => s.code && s.at <= before);
+    return this.data.sent.filter((s) => s.code && s.at + ((s.days ?? TEXT_INVITE_DAYS) - TEXT_INVITE_DAYS) * DAY_MS <= before);
   }
 
   /** An invite by plain SMS is over: `forget` drops it, as nothing can answer it; otherwise only its

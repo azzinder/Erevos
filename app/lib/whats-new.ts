@@ -28,6 +28,7 @@ export const NEXT: Changes = {
     mark("**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay)."),
     mark("**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back."),
     mark("**Invite at one tap**: on the home screen, **Invite** beside the relay's line shows an invite's QR code at once, with nothing to type: who it is for and your name for them can be typed below it, or never. See [Chat through a relay](#relay)."),
+    mark("**Smaller invite QR codes**: the QR code of **Invite someone** now holds about eight times less, so simpler and older cameras read it too, and its link is short enough for an SMS. It opens Erevos's page for invites, which offers Erevos and then opens the invite in it. Where your relay lets this phone make no invite, the long one is still made. See [Chat through a relay](#relay)."),
   ],
   underTheHood: [
     mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),

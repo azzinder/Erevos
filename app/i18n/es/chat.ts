@@ -375,4 +375,6 @@ export const chat: Record<string, string> = {
   'The relay keeps it and sends it then by itself, even if this phone is lost, off or taken. Each time you open Erevos, past its password, it moves on that long again. Erevos running in the background does not move it. Delete it in the chat to stop it.': 'El relay lo guarda y lo envía entonces por sí solo, aunque este teléfono se pierda, esté apagado o te lo quiten. Cada vez que abres Erevos, pasada su contraseña, se retrasa de nuevo ese tiempo. Erevos en segundo plano no lo retrasa. Elimínalo en el chat para detenerlo.',
   "Hidden photo": "Foto oculta",
   "Hidden photo · tap to see it": "Foto oculta · toca para verla",
+  '{name} took your invite and is your contact now: what you write to each other is end-to-end encrypted.': '{name} aceptó tu invitación y ya es tu contacto: lo que os escribáis está cifrado de extremo a extremo.',
+  'Someone took your invite and is your contact now: what you write to each other is end-to-end encrypted.': 'Alguien aceptó tu invitación y ya es tu contacto: lo que os escribáis está cifrado de extremo a extremo.',
 };
