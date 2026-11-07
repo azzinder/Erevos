@@ -41,6 +41,20 @@ const STATE = '/__erevos/state';
 const CHECK_EVERY_MS = 6 * 3600 * 1000;
 // Refusals kept to show.
 const REFUSALS = 10;
+// A worker for the notices of one space alone (app/lib/web-push.web.ts): this same file, registered
+// for a scope of its own under PUSH_SCOPE, where no page of the app is. A browser has one push
+// address for each registration, so each space that turns notifications on has its own, and no
+// relay is given the address of another space. Such a worker keeps no release and serves nothing:
+// it shows the notices, with the count every worker of the app keeps together (NOTICE_STATE), and
+// sends a page asked of it to the app's.
+const PUSH_SCOPE = '/__erevos/push/';
+const PUSH_ONLY = (() => {
+  try {
+    return new URL(self.registration.scope).pathname.startsWith(PUSH_SCOPE);
+  } catch {
+    return false;
+  }
+})();
 
 const TYPES = {
   html: 'text/html; charset=utf-8',
@@ -311,6 +325,11 @@ function check() {
 }
 
 self.addEventListener('install', (event) => {
+  // Nothing to fetch for the notices: it takes over at once.
+  if (PUSH_ONLY) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   event.waitUntil(
     (async () => {
       const now = await readState();
@@ -338,6 +357,8 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  // The releases are the app's worker's to take and let go of.
+  if (PUSH_ONLY) return;
   event.waitUntil(
     (async () => {
       state = null;
@@ -387,6 +408,13 @@ async function open(event) {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  if (PUSH_ONLY) {
+    // No page of the app is here: one asked for goes to the app's, served by the app's worker.
+    if (url.origin === self.location.origin) {
+      event.respondWith(event.request.mode === 'navigate' ? Response.redirect(`${self.location.origin}/`, 302) : new Response('', { status: 404 }));
+    }
+    return;
+  }
   // Relays and everything else elsewhere: as the page asked.
   if (url.origin !== self.location.origin) {
     if (ON_CALL_ORIGIN && refusedToCall(url)) event.respondWith(new Response('', { status: 403 }));
@@ -429,6 +457,12 @@ async function knownLoader(hash) {
 self.addEventListener('message', (event) => {
   const ask = event.data?.erevos;
   const answer = (value) => event.ports[0]?.postMessage(value);
+  // A space's worker for its notices takes only this: Erevos is open again, and its notices go
+  // (the app's worker starts the count again, 'seen').
+  if (PUSH_ONLY) {
+    if (ask === 'close') event.waitUntil(closeNotices().then(() => true, () => false).then(answer));
+    return;
+  }
   if (ask === 'status') event.waitUntil(status().then(answer));
   else if (ask === 'check') event.waitUntil(check().then(status).then(answer));
   else if (ask === 'lang') event.waitUntil(noticeLanguage(event.data.lang).then(() => true, () => false).then(answer));
@@ -585,12 +619,19 @@ function telling(told, streams) {
   return next.slice(0, STREAMS);
 }
 
+// The count as last read or written here: what is used when the cache cannot be read. Otherwise it
+// is read from the cache each time, as the workers of the spaces' notices (PUSH_ONLY) change it too.
 let notice = null;
 
 async function readNotice() {
-  if (notice) return notice;
-  const kept = await (await caches.open(META)).match(NOTICE_STATE);
-  const read = kept ? await kept.json().catch(() => null) : null;
+  let read;
+  try {
+    const kept = await (await caches.open(META)).match(NOTICE_STATE);
+    read = kept ? await kept.json().catch(() => null) : null;
+  } catch (error) {
+    if (notice) return notice;
+    throw error;
+  }
   // Kept by a worker from before the counts: `count` was its pushes.
   const pushes = whole(read?.pushes ?? read?.count);
   const exact = typeof read?.exact === 'boolean' ? read.exact : pushes === 0;
@@ -641,11 +682,14 @@ async function writeNotice(next) {
 }
 
 // One change of the count at a time: two pushes, or a push and 'seen', must not both read the old
-// count and the later write undo the other.
+// count and the later write undo the other. In this worker by its turns, and with the other workers
+// of the app (the spaces' notices) by a lock they all take, where the browser has locks.
 let noticeTurn = Promise.resolve();
+const NOTICE_LOCK = 'erevos-notice';
 
 function inTurn(work) {
-  const run = noticeTurn.then(work);
+  const locks = self.navigator?.locks;
+  const run = noticeTurn.then(() => (typeof locks?.request === 'function' ? locks.request(NOTICE_LOCK, () => work()) : work()));
   noticeTurn = run.catch(() => undefined);
   return run;
 }
@@ -823,7 +867,8 @@ self.addEventListener('push', (event) => {
 
 // The browser changed its push address, or dropped it: the app, if open, gives the relay the new
 // one (lib/web-push.web.ts), else it does when it next opens. The worker cannot: the queues it is
-// for are the app's, sealed. Nothing is kept.
+// for are the app's, sealed. Nothing is kept: the address is the one of this registration, so of
+// the space it is for.
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(tell('push-changed'));
 });

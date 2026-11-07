@@ -71,6 +71,10 @@ export type SpaceData = {
   push: boolean;
   // Turned off while the relay could not be told: it is told when the space next opens.
   pushLeft: boolean;
+  // The name of the scope this space registered the web app's worker for, for a push address of its
+  // own in this browser while notifications are on (lib/web-push.web.ts): 32 hex digits, at random.
+  // Empty when there is none.
+  pushScope: string;
   // Whether this phone makes the preview of a link it sends (lib/make-preview.ts). Off unless set.
   previews: boolean;
   // The ticket our contact link gives for a place on our relay (lib/relay.ts, lendTicket), and
@@ -125,6 +129,7 @@ export const EMPTY_SPACE: SpaceData = {
   spare: NO_SPARE,
   push: false,
   pushLeft: false,
+  pushScope: '',
   previews: false,
   lend: NO_LENDING,
   offered: NO_OFFER,
@@ -198,6 +203,7 @@ function checked(value: unknown): SpaceData {
     spare: checkedSpareRelay(v.spare),
     push: v.push === true,
     pushLeft: v.pushLeft === true,
+    pushScope: typeof v.pushScope === 'string' && /^[0-9a-f]{32}$/.test(v.pushScope) ? v.pushScope : '',
     previews: v.previews === true,
     lend: checkedLending(v.lend),
     offered: checkedOffered(v.offered),

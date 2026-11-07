@@ -3525,15 +3525,17 @@ reçoit l’ordre, pourrait envoyer du code modifié. Erevos ne prend pas ce cod
   **Notifications** → **Nombre sur l’icône** le désactive. Les notifications passent par le service push d’Apple, celui
   de Google (Chrome, ainsi qu’Edge sur Android, Brave et Opera), celui de Mozilla (Firefox) et celui de Microsoft (Edge
   sur Windows) : un navigateur qui en utilise un autre ne peut pas les activer, sauf si la personne qui gère ton relais
-  autorise son service push. Les espaces sur des relais différents partagent les notifications du navigateur : seul
-  celui ouvert en dernier les reçoit. Une demande de message de quelqu’un de nouveau, par ton lien de contact, peut ne
-  s’afficher qu’à l’ouverture d’Erevos. Le nombre sur l’icône s’affiche aussi sur un Mac avec « Ajouter au Dock » de
-  Safari, et dans l’app web installée depuis Chrome ou Edge sous Windows, macOS ou ChromeOS. Aucune bannière **Nouveau
-  message** ne s’affiche par-dessus Erevos tant qu’il est ouvert à l’écran. L’écran **Notifications quand l’app est
-  fermée** dit quand le navigateur ou le téléphone ne les autorise pas et, après que tu les as désactivées, quand ton
-  relais n’a pas encore pu être prévenu et peut encore en envoyer : Erevos le lui dit dès qu’il peut l’atteindre.
-  Quand le navigateur change d’adresse push, ou que son service push la laisse tomber, Erevos donne tout seul la
-  nouvelle à ton relais quand il revient à l’écran.
+  autorise son service push. Chaque espace qui les active a sa propre adresse push, donc aucun relais ne reçoit jamais
+  celle d’un autre espace, et l’adresse ne relie pas tes espaces entre eux. Pour cela, chacun de ces espaces a son
+  propre service worker dans le navigateur : qui peut voir les réglages du navigateur peut les compter, et donc combien
+  d’espaces ont les notifications activées. Une demande de message de quelqu’un de nouveau, par ton lien de contact,
+  peut ne s’afficher qu’à l’ouverture d’Erevos. Le nombre sur l’icône s’affiche aussi sur un Mac avec « Ajouter au Dock
+  » de Safari, et dans l’app web installée depuis Chrome ou Edge sous Windows, macOS ou ChromeOS. Aucune bannière
+  **Nouveau message** ne s’affiche par-dessus Erevos tant qu’il est ouvert à l’écran. L’écran **Notifications quand
+  l’app est fermée** dit quand le navigateur ou le téléphone ne les autorise pas et, après que tu les as désactivées,
+  quand ton relais n’a pas encore pu être prévenu et peut encore en envoyer : Erevos le lui dit dès qu’il peut
+  l’atteindre. Quand le navigateur change d’adresse push, ou que son service push la laisse tomber, Erevos donne tout
+  seul la nouvelle à ton relais quand il revient à l’écran.
 - **Autorisations :** dans Erevos, **Réglages** → **Général** → **Autorisations** montre ce que le navigateur permet à
   Erevos : s’il fonctionne depuis l’écran d’accueil, les notifications quand l’app est fermée (nécessaires une fois que
   cet espace les a activées), le micro pour les appels, l’appareil photo pour les appels vidéo, et si le navigateur

@@ -28,6 +28,7 @@ export const NEXT: Changes = {
   ],
   underTheHood: [
     mark("**Moving a chat to a space with no relay**: **Move to another space** stopped there, as that space had no relay of its own. Now it offers this space's relay, which that space then keeps, and it makes that space's relay queue when it has a relay but no queue yet. See [Second password](#second)."),
+    mark("**Web app and Sailfish OS fixes from the review**: in the web app, each space that turns notifications on gets a push address of its own, from a service worker of its own, so a relay is never given another space's address and it never ties two spaces together; the browser's settings then list one service worker for each such space. A check for a new release that was slow to answer no longer brings back the release just replaced. On Sailfish OS, another app on the phone can no longer make Erevos hold on to memory, nor give orders to the helper that waits at the relay while Erevos is out of sight. See [On an iPhone](#iphone)."),
   ],
 };
 

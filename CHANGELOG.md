@@ -64,6 +64,23 @@ On main, not released yet:
   `checks/nostr.check.ts` has a check that with Tor off nothing opens through Tor, and that the connections follow the
   way as it changes.
 
+- **Web app and Sailfish OS fixes from the review before 7**: each space has a push address of its own
+  (`lib/web-push.web.ts`): a space that turns notifications on registers the app's worker again for a scope of its own,
+  `/__erevos/push/<32 hex digits at random>/`, kept in its encrypted data (`SpaceData.pushScope`), and subscribes there,
+  so no relay is given the address another space gave its relay; turned off, that registration goes, and the panic
+  button removes them all. In such a scope `pwa/sw.js` only shows notices: it keeps no release, sends a page asked of it
+  to the app's, and answers only `close`; the count all the workers keep together is read again each time, under a Web
+  Lock where the browser has them. A space whose notifications were on before has the app's first address, which other
+  spaces may share: it makes its own as it opens, and that one is never given again. The browser lists each
+  registration, so its settings show how many spaces have notifications on (the maintainer's choice). The worker's state
+  changes one change at a time, from what is stored (`changeState`), so a check still waiting on the server no longer
+  writes back the release a promote just let go of (`checks/web-update.check.ts`, `checks/web-push.check.ts`,
+  `checks/web-notice.check.ts`). On Sailfish OS the shell's local server checks the host and the token, in constant
+  time, before it takes any body, takes a body only on the shell's paths, keeps at most 32 connections still arriving
+  and closes one silent for 30 seconds (`sailfish/src/shellserver.cpp`); `erevos-watch` takes calls only from Erevos's
+  own program, by the caller's process (`watch/src/watcher.cpp`), and Erevos tells the helper only once the name is held
+  by the `erevos-watch` beside it (`sailfish/src/watchlink.cpp`).
+
 ## 6.0.0-rc.2 (2026-11-04)
 
 ### For you

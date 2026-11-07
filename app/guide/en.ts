@@ -3057,12 +3057,14 @@ send changed code. Erevos does not take that code on trust:
   are per space, never for hidden chats, and your relay must be set up to send them. They come for each contact's own
   queue too: your relay then has one push address for all your contacts' queues, and Apple gets one push for each
   contact who wrote, 15 seconds apart, so from such a run it can guess how many wrote at once, never who. Erevos's
-  icon on the home screen then shows a number too: the messages not read in the space you had open, which stays
-  once Erevos is closed, and those that came since (what came with no number counts as one), never a hidden chat's.
+  icon on the home screen then shows a number too: the messages not read in the space you had open, which stays once
+  Erevos is closed, and those that came since (what came with no number counts as one), never a hidden chat's.
   **Settings** → **Notifications** → **Number on the icon** turns it off. Notifications work through Apple's push
   service, Google's (Chrome, and Edge on Android, Brave and Opera), Mozilla's (Firefox) and Microsoft's (Edge on
   Windows): a browser that uses another cannot turn them on, unless whoever runs your relay allows its push service.
-  Spaces on different relays share the browser's notifications: only the one opened last gets them. A message
+  Each space that turns them on has a push address of its own, so no relay is ever given another space's, and the
+  address does not tie your spaces together. For it each such space has a service worker of its own in the browser:
+  whoever can look into the browser's settings can count them, and so how many spaces have notifications on. A message
   request from someone new, through your contact link, may show only once Erevos opens. The number on the icon shows
   also on a Mac with Safari's Add to Dock, and in the web app installed from Chrome or Edge on Windows, macOS or
   ChromeOS. No **New message** banner shows over Erevos while it is open on the screen. The **Notifications while

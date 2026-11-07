@@ -3548,15 +3548,17 @@ Glauben:
   sie aus. Benachrichtigungen laufen über den Push-Dienst von Apple, den von Google (Chrome sowie Edge auf Android,
   Brave und Opera), den von Mozilla (Firefox) und den von Microsoft (Edge auf Windows): Ein Browser, der einen anderen
   nutzt, kann sie nicht einschalten, es sei denn, wer dein Relay betreibt, lässt den Push-Dienst dieses Browsers zu.
-  Bereiche auf verschiedenen Relays teilen sich die Benachrichtigungen des Browsers: Nur der zuletzt geöffnete bekommt
-  sie. Eine Nachrichtenanfrage von jemand Neuem über deinen Kontaktlink erscheint vielleicht erst, wenn Erevos
-  geöffnet wird. Die Zahl auf dem Symbol erscheint auch auf einem Mac mit „Zum Dock hinzufügen“ von Safari und in der
-  Web-App, die aus Chrome oder Edge auf Windows, macOS oder ChromeOS installiert wurde. Über Erevos erscheint kein
-  Banner **Neue Nachricht**, solange es auf dem Bildschirm offen ist. Der Bildschirm **Benachrichtigungen, wenn
-  geschlossen** zeigt an, wenn der Browser oder das Telefon sie nicht erlaubt und, nachdem du sie ausgeschaltet hast,
-  wenn dein Relay noch nicht davon erfahren konnte und vielleicht noch eine schickt: Erevos sagt es ihm, sobald es
-  dein Relay erreicht. Wechselt der Browser seine Push-Adresse oder verwirft sein Push-Dienst sie, gibt Erevos deinem
-  Relay die neue von selbst, sobald es wieder auf dem Bildschirm ist.
+  Jeder Bereich, der sie einschaltet, hat eine eigene Push-Adresse, sodass kein Relay je die eines anderen Bereichs
+  bekommt und die Adresse deine Bereiche nicht miteinander verbindet. Dafür hat jeder solche Bereich einen eigenen
+  Service Worker im Browser: Wer in die Einstellungen des Browsers sehen kann, kann sie zählen und so, wie viele
+  Bereiche Benachrichtigungen eingeschaltet haben. Eine Nachrichtenanfrage von jemand Neuem über deinen Kontaktlink
+  erscheint vielleicht erst, wenn Erevos geöffnet wird. Die Zahl auf dem Symbol erscheint auch auf einem Mac mit „Zum
+  Dock hinzufügen“ von Safari und in der Web-App, die aus Chrome oder Edge auf Windows, macOS oder ChromeOS installiert
+  wurde. Über Erevos erscheint kein Banner **Neue Nachricht**, solange es auf dem Bildschirm offen ist. Der Bildschirm
+  **Benachrichtigungen, wenn geschlossen** zeigt an, wenn der Browser oder das Telefon sie nicht erlaubt und, nachdem
+  du sie ausgeschaltet hast, wenn dein Relay noch nicht davon erfahren konnte und vielleicht noch eine schickt: Erevos
+  sagt es ihm, sobald es dein Relay erreicht. Wechselt der Browser seine Push-Adresse oder verwirft sein Push-Dienst
+  sie, gibt Erevos deinem Relay die neue von selbst, sobald es wieder auf dem Bildschirm ist.
 - **Berechtigungen:** In Erevos zeigt **Einstellungen** → **Allgemein** → **Berechtigungen**, was der Browser Erevos
   erlaubt: ob es vom Home-Bildschirm aus läuft, Benachrichtigungen, wenn geschlossen (nötig, sobald dieser Bereich sie
   eingeschaltet hat), das Mikrofon für Anrufe, die Kamera für Videoanrufe und ob der Browser die Daten von Erevos

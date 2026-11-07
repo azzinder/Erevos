@@ -3188,29 +3188,30 @@ to naređeno, mogao poslati izmijenjen kôd. Erevos tom kodu ne vjeruje na rije�
   se samo obavijest „Poziv“, ako su obavijesti uključene. Apple web-aplikaciji ne dopušta ništa više; da zvoni kao
   telefon, trebala bi aplikacija iz App Storea.
 - **Obavijesti** dok je Erevos zatvoren isključene su dok ih ne uključite: u Erevosu, **Postavke** → **Obavijesti** →
-  **Obavijesti dok je Erevos zatvoren** → **Uključi** (iOS 16.4 ili noviji, s početnog ekrana). Kad stignu poruke,
-  ili zazvoni poziv, vaš relay šalje push preko Applea, a Erevos prikazuje koliko je poruka stiglo otkako ste ga
+  **Obavijesti dok je Erevos zatvoren** → **Uključi** (iOS 16.4 ili noviji, s početnog ekrana). Kad stignu poruke, ili
+  zazvoni poziv, vaš relay šalje push preko Applea, a Erevos prikazuje koliko je poruka stiglo otkako ste ga
   posljednji put otvorili (**3 nove poruke**), ili **Poziv** kad je samo zazvonio poziv, na jeziku aplikacije, ništa
   više. Broj je šifriran za vaš iPhone: Apple vidi kada nešto stigne za vaš iPhone i da on koristi Erevos, ali nikad
   šta ni od koga. S relayem ili Erevosom pošiljaoca starijim od 2.0.0, ili s porukom koju su drugi telefoni prenijeli
   do relaya, nema broja: Erevos prikazuje **Nova poruka**, ili **Nove poruke** kad ih je stiglo više, dok ga ne
-  otvorite. Obavijesti su po prostoru, nikad za skrivene razgovore, a vaš relay mora biti podešen da ih šalje.
-  Stižu i za vlastiti red svakog kontakta: vaš relay tada ima jednu push adresu za redove svih vaših kontakata, a
-  Apple dobija po jedan push za svaki kontakt koji je pisao, u razmaku od 15 sekundi, pa iz takvog niza može
-  pretpostaviti koliko ih je pisalo odjednom, ali nikad ko. Ikona Erevosa na početnom ekranu tada pokazuje i broj:
-  nepročitane poruke u prostoru koji je bio otvoren, koje ostaju u broju i kad se Erevos zatvori, i one koje su
-  stigle poslije (ono što je stiglo bez broja broji se kao jedna), nikad iz skrivenog razgovora. **Postavke** →
-  **Obavijesti** → **Broj na ikoni** to isključuje. Obavijesti rade preko push servisa Applea, Googlea (Chrome, kao i
-  Edge na Androidu, Brave i Opera), Mozille (Firefox) i Microsofta (Edge na Windowsu): preglednik koji koristi neki
-  drugi ne može ih uključiti, osim ako onaj ko vodi vaš relay dozvoli njegov push servis. Prostori na različitim
-  relayima dijele obavijesti preglednika: dobija ih samo onaj koji je posljednji otvoren. Zahtjev za razgovor od
-  nekoga novog, preko vašeg linka za kontakt, možda će se prikazati tek kad se Erevos otvori. Broj na ikoni prikazuje
-  se i na Macu uz Safarijevo „Dodaj u Dock“, i u web-aplikaciji instaliranoj iz Chromea ili Edgea na Windowsu, macOS-u
-  ili ChromeOS-u. Nikakav natpis **Nova poruka** ne prikazuje se preko Erevosa dok je otvoren na ekranu. Ekran
-  **Obavijesti dok je Erevos zatvoren** kaže kad preglednik ili telefon ne dopuštaju obavijesti i, nakon što ih
-  isključite, kad vaš relay još nije mogao biti obaviješten i možda još šalje poneku: Erevos mu to kaže čim ga može
-  dohvatiti. Kad preglednik promijeni svoju push adresu, ili je push servis odbaci, Erevos sam daje vašem relayu novu
-  kad se vrati na ekran.
+  otvorite. Obavijesti su po prostoru, nikad za skrivene razgovore, a vaš relay mora biti podešen da ih šalje. Stižu i
+  za vlastiti red svakog kontakta: vaš relay tada ima jednu push adresu za redove svih vaših kontakata, a Apple dobija
+  po jedan push za svaki kontakt koji je pisao, u razmaku od 15 sekundi, pa iz takvog niza može pretpostaviti koliko
+  ih je pisalo odjednom, ali nikad ko. Ikona Erevosa na početnom ekranu tada pokazuje i broj: nepročitane poruke u
+  prostoru koji je bio otvoren, koje ostaju u broju i kad se Erevos zatvori, i one koje su stigle poslije (ono što je
+  stiglo bez broja broji se kao jedna), nikad iz skrivenog razgovora. **Postavke** → **Obavijesti** → **Broj na
+  ikoni** to isključuje. Obavijesti rade preko push servisa Applea, Googlea (Chrome, kao i Edge na Androidu, Brave i
+  Opera), Mozille (Firefox) i Microsofta (Edge na Windowsu): preglednik koji koristi neki drugi ne može ih uključiti,
+  osim ako onaj ko vodi vaš relay dozvoli njegov push servis. Svaki prostor koji ih uključi ima svoju push adresu, pa
+  nijedan relay nikad ne dobija adresu drugog prostora, i adresa ne povezuje vaše prostore. Za to svaki takav prostor
+  ima svoj service worker u pregledniku: ko može vidjeti postavke preglednika može ih prebrojati, a time i koliko
+  prostora ima uključene obavijesti. Zahtjev za razgovor od nekoga novog, preko vašeg linka za kontakt, možda će se
+  prikazati tek kad se Erevos otvori. Broj na ikoni prikazuje se i na Macu uz Safarijevo „Dodaj u Dock“, i u
+  web-aplikaciji instaliranoj iz Chromea ili Edgea na Windowsu, macOS-u ili ChromeOS-u. Nikakav natpis **Nova poruka**
+  ne prikazuje se preko Erevosa dok je otvoren na ekranu. Ekran **Obavijesti dok je Erevos zatvoren** kaže kad
+  preglednik ili telefon ne dopuštaju obavijesti i, nakon što ih isključite, kad vaš relay još nije mogao biti
+  obaviješten i možda još šalje poneku: Erevos mu to kaže čim ga može dohvatiti. Kad preglednik promijeni svoju push
+  adresu, ili je push servis odbaci, Erevos sam daje vašem relayu novu kad se vrati na ekran.
 - **Dozvole:** u Erevosu, **Postavke** → **Općenito** → **Dozvole** prikazuje šta preglednik dozvoljava Erevosu: radi
   li s početnog ekrana, obavijesti dok je zatvoren (potrebne kad ih je ovaj prostor uključio), mikrofon za pozive,
   kameru za videopozive i čuva li preglednik Erevosove podatke trajno. Bez toga Safari može obrisati podatke kad na

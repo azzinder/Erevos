@@ -12,7 +12,7 @@ import type { Check, CheckId } from './permission-checks';
 import { secureGet, secureSet } from './secure';
 import { SHELL } from './shell';
 import { browserOf, webChecksFrom, webOfferFor, type Answer, type Browser } from './web-permission-checks';
-import { PUSH_AVAILABLE, turnOnPush } from './web-push';
+import { PUSH_AVAILABLE, pushSubscribed, turnOnPush } from './web-push';
 
 // The permissions check in the web app (app/permissions.tsx): what the browser lets Erevos do,
 // read again after each new signed release (pwa/), since a browser, or the owner in its settings,
@@ -67,17 +67,6 @@ async function persisted(): Promise<boolean | null> {
   }
 }
 
-/** Whether the browser keeps a push address for Erevos, as lib/web-push.web.ts gave the relay. */
-async function subscribed(): Promise<boolean | null> {
-  if (!PUSH_AVAILABLE) return null;
-  try {
-    const registration = await navigator.serviceWorker.getRegistration();
-    return registration ? (await registration.pushManager.getSubscription()) !== null : null;
-  } catch {
-    return null;
-  }
-}
-
 /** Every check that applies to this browser, for what the modules `of` use (lib/modules.ts), those on unless given; none in the shells. */
 export async function readChecks(of: Iterable<Module> = modulesOn()): Promise<Check[]> {
   if (!HAS_CHECKS || !BROWSER) return [];
@@ -86,7 +75,7 @@ export async function readChecks(of: Iterable<Module> = modulesOn()): Promise<Ch
     answer('microphone'),
     answer('camera'),
     persisted(),
-    subscribed(),
+    pushSubscribed(),
     loadCurrentSpaceData().then(
       (data) => data.push,
       () => false,

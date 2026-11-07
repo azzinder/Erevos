@@ -6,6 +6,7 @@ import { currentSpace } from '../lock/keys';
 import { spaceQueues } from '../lock/queues-data';
 import { loadCurrentSpaceData, loadSpaceData, updateSpaceData, type Queue } from '../lock/space-data';
 
+import { randomBytes } from './crypto';
 import { WEB_APP } from './integrity';
 import { leftAt, pushedQueues } from './push-queues';
 import { useForMoves } from './queue-move';
@@ -30,6 +31,15 @@ import { t } from './i18n';
 // is made again: the relay is asked as Erevos shows again, every ASK_EVERY at most. Turned off when
 // the relay cannot be told, it is told while the space stays open, every little while, or when it
 // next opens.
+//
+// Each space has a push address of its own. A browser has one for each registration of a service
+// worker, so a space that turns notifications on registers the app's worker again (pwa/sw.js) for a
+// scope of its own, under PUSH_SCOPE with a random name kept in its encrypted data (pushScope),
+// where the worker only shows notices. No relay is ever given the address another space gave its
+// relay, so the address does not tie spaces together. The browser lists each registration: whoever
+// can see its settings can count the spaces with notifications on. Turned off, the space's
+// registration goes. A space whose notifications were on before has the browser's first address,
+// which other spaces may share: it makes its own as it opens, and that one is never given again.
 
 const supported = typeof window !== 'undefined' && 'PushManager' in window && 'Notification' in window && 'serviceWorker' in navigator;
 
@@ -41,9 +51,69 @@ function same(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
   return bytes.every((byte, i) => byte === b[i]);
 }
 
-/** This browser's push address for `key`, made if there is none, it was made for another key, or it is `gone`. */
-async function subscription(key: Uint8Array, gone = false): Promise<PushSubscription> {
-  const registration = await navigator.serviceWorker.ready;
+const PUSH_SCOPE = '/__erevos/push/';
+const scopeOf = (name: string) => new URL(`${PUSH_SCOPE}${name}/`, location.origin).href;
+
+/** The space a registration is for: the one open when it began. */
+type Mine = { space: number; key: Uint8Array };
+
+/** The registration of the space's notices, by the name it keeps (pushScope), if there is one. */
+async function spaceRegistration(name: string): Promise<ServiceWorkerRegistration | null> {
+  if (!name) return null;
+  const found = await navigator.serviceWorker.getRegistration(scopeOf(name));
+  // One for a wider scope, the app's, is not the space's.
+  return found?.scope === scopeOf(name) ? found : null;
+}
+
+// How long a new registration's worker is waited for, in milliseconds.
+const STARTS_WITHIN = 30_000;
+
+/** The registration once its worker is active: the browser makes a push address only then. */
+function started(registration: ServiceWorkerRegistration): Promise<ServiceWorkerRegistration> {
+  if (registration.active) return Promise.resolve(registration);
+  const worker = registration.installing ?? registration.waiting;
+  const failed = () => new Error('The service worker for notifications did not start.');
+  if (!worker) return Promise.reject(failed());
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const changed = () => {
+      if (worker.state === 'activated') done();
+      else if (worker.state === 'redundant') done(failed());
+    };
+    const done = (error?: Error) => {
+      clearTimeout(timer);
+      worker.removeEventListener('statechange', changed);
+      if (error) reject(error);
+      else resolve(registration);
+    };
+    timer = setTimeout(() => done(failed()), STARTS_WITHIN);
+    worker.addEventListener('statechange', changed);
+    changed();
+  });
+}
+
+/** The space's registration for its notices, registered if it has none, with a new name. */
+async function ownRegistration(mine: Mine): Promise<ServiceWorkerRegistration> {
+  let name = (await loadSpaceData(mine.space, mine.key)).pushScope;
+  const found = await spaceRegistration(name);
+  if (found) return started(found);
+  if (!name) {
+    name = toHex(randomBytes(16));
+    await updateSpaceData(mine.space, mine.key, { pushScope: name });
+  }
+  return started(await navigator.serviceWorker.register('/sw.js', { scope: scopeOf(name), updateViaCache: 'none' }));
+}
+
+/** The space's registration goes, its push address with it: the push service then takes nothing for it, and the browser no longer lists it. */
+async function dropRegistration(name: string): Promise<void> {
+  const registration = await spaceRegistration(name);
+  await (await registration?.pushManager.getSubscription())?.unsubscribe();
+  await registration?.unregister();
+}
+
+/** The space's push address for `key`, made if there is none, it was made for another key, or it is `gone`. */
+async function subscription(mine: Mine, key: Uint8Array, gone = false): Promise<PushSubscription> {
+  const registration = await ownRegistration(mine);
   const kept = await registration.pushManager.getSubscription();
   if (kept && !gone && same(kept.options.applicationServerKey, key)) return kept;
   if (kept) await kept.unsubscribe();
@@ -110,10 +180,11 @@ function taken(queues: string[]): void {
 // (a contact's it lost, one made ahead that ran out unused) is left out, and the rest still take it.
 // Those it could not be given are asked again the next time (keepPush). When the relay says the push
 // service no longer takes the address, the browser makes a new one, and they are given it, once.
-async function register(own: Relay, queues: string[], needed = 0): Promise<string | null> {
+// The address is the space's own, `mine`'s.
+async function register(own: Relay, queues: string[], mine: Mine, needed = 0): Promise<string | null> {
   const key = await pushKey(own);
   if (!key) return t('Your relay does not send notifications. It needs a newer version, set up with a push key.');
-  if (await give(own, queues, needed, await subscription(key))) await give(own, queues, needed, await subscription(key, true), true);
+  if (await give(own, queues, needed, await subscription(mine, key))) await give(own, queues, needed, await subscription(mine, key, true), true);
   return null;
 }
 
@@ -166,9 +237,14 @@ export async function turnOnPush(): Promise<string | null> {
   const queue = data.ownQueue;
   try {
     const queues = await pushed(own, queue);
-    const problem = await inLine(() => register(own, queues, 1));
+    const problem = await inLine(() => register(own, queues, { space, key }, 1));
     if (problem) return problem;
   } catch (error) {
+    // Not on: the browser keeps no registration for it.
+    if (!data.push) {
+      await inLine(async () => dropRegistration((await loadSpaceData(space, key)).pushScope)).catch(() => undefined);
+      await updateSpaceData(space, key, { pushScope: '' }).catch(() => undefined);
+    }
     return t('Notifications could not be turned on: {reason}', { reason: error instanceof Error ? error.message : String(error) });
   }
   await updateSpaceData(space, key, { push: true, pushLeft: false });
@@ -204,7 +280,8 @@ export async function turnOffPush(): Promise<void> {
   const relayed = Boolean(data.url.trim() && data.ownQueue);
   // Kept until the relay is told, so a turn-off cut short (Erevos closed meanwhile) is told when
   // the space next opens.
-  await updateSpaceData(space, key, { push: false, pushLeft: relayed });
+  await updateSpaceData(space, key, { push: false, pushLeft: relayed, pushScope: '' });
+  await inLine(() => dropRegistration(data.pushScope)).catch(() => undefined);
   if (!data.url.trim() || !data.ownQueue) return;
   const own = spaceRelay(data.url, data.token);
   const queue = data.ownQueue;
@@ -255,10 +332,11 @@ async function tellLeft(own: Relay, queue: Queue, wait = LEFT_AGAIN): Promise<vo
 export async function keepPush(own: Relay, queue: Queue): Promise<void> {
   const at = opened();
   if (!(await pushOn())) return opened() === at ? tellLeft(own, queue) : undefined;
+  const mine = currentSpace();
   await inLine(async () => {
     const queues = await pushed(own, queue);
     // Not if notifications were turned off, or another space opened, while it waited its turn.
-    if (opened() === at && (await pushOn())) await register(own, queues);
+    if (opened() === at && (await pushOn())) await register(own, queues, mine);
   }).catch(() => undefined);
 }
 
@@ -267,8 +345,9 @@ export async function keepPush(own: Relay, queue: Queue): Promise<void> {
 export async function addPush(own: Relay, queues: string[]): Promise<void> {
   const at = opened();
   if (queues.length === 0 || !(await pushOn())) return;
+  const mine = currentSpace();
   await inLine(async () => {
-    if (opened() === at && (await pushOn())) await register(own, queues);
+    if (opened() === at && (await pushOn())) await register(own, queues, mine);
   }).catch(() => undefined);
   // A new address made meanwhile goes to the space's other queues too.
   await healPush();
@@ -296,7 +375,9 @@ export async function healPush(changed = false): Promise<void> {
   // Looked at after a registration under way, which may give it.
   const stale = await inLine(async () => {
     if (changed) given.clear();
-    const sub = changed ? null : await (await navigator.serviceWorker.ready).pushManager.getSubscription();
+    // The space's own, or none yet: one from before is the browser's first, which keepPush replaces.
+    const registration = changed ? null : await spaceRegistration(data.pushScope);
+    const sub = registration ? await registration.pushManager.getSubscription() : null;
     if (!sub) return true;
     const keys = keysOf(sub);
     const done = givenAt(own, sub.endpoint, keys);
@@ -317,6 +398,26 @@ export async function dropPush(own: Relay, queue: Queue): Promise<void> {
   if (!PUSH_AVAILABLE) return;
   taken([queue.recipientHex]);
   await setPush(own, fromHex(queue.recipientHex), '').catch(() => undefined);
+}
+
+/** Whether the open space's own push address is kept by the browser, as its relay was given it: null when that cannot be told. */
+export async function pushSubscribed(): Promise<boolean | null> {
+  if (!PUSH_AVAILABLE) return null;
+  try {
+    const registration = await spaceRegistration((await loadCurrentSpaceData()).pushScope);
+    return registration ? (await registration.pushManager.getSubscription()) !== null : false;
+  } catch {
+    return null;
+  }
+}
+
+/** Erevos is open again: the spaces' workers close the notices they showed (pwa/sw.js, 'close'). */
+export async function closeSpaceNotices(): Promise<void> {
+  if (!PUSH_AVAILABLE) return;
+  const registrations = await navigator.serviceWorker.getRegistrations().catch(() => []);
+  for (const registration of registrations) {
+    if (new URL(registration.scope).pathname.startsWith(PUSH_SCOPE)) registration.active?.postMessage({ erevos: 'close' });
+  }
 }
 
 useForMoves({ push: { keep: keepPush, drop: dropPush, add: addPush } });

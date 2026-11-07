@@ -11,7 +11,7 @@ import { onNetworkMessage, onNetworkRead } from './network-notices';
 import { onReceived } from './receiver';
 import { lastTakenAt } from './relay';
 import { spaceUnread } from './unread';
-import { healPush, notificationsOn } from './web-push';
+import { closeSpaceNotices, healPush, notificationsOn } from './web-push';
 
 // The notice the service worker shows while the web app is closed counts the pushes since Erevos
 // was last open, in the app's language (pwa/sw.js). The worker cannot read the app's settings, so
@@ -54,6 +54,8 @@ export function noticeSeen(): void {
   // The computer's app has a notice of its own, while its window is closed or behind another (lib/desktop.ts).
   followDesktop();
   if (!WEB_APP) return;
+  // The notices the spaces' own workers showed go too, as the app's worker's do.
+  void closeSpaceNotices().catch(() => undefined);
   follow();
   icon.seen();
   if (document.visibilityState === 'visible') void healPush();

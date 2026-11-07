@@ -3351,15 +3351,17 @@ ordinato, potrebbe inviare codice modificato. Erevos non prende quel codice sull
   conta per uno), mai quelli di una chat nascosta. **Impostazioni** → **Notifiche** → **Numero sull’icona** lo
   disattiva. Le notifiche funzionano tramite il servizio push di Apple, quello di Google (Chrome, ed Edge su Android,
   Brave e Opera), quello di Mozilla (Firefox) e quello di Microsoft (Edge su Windows): un browser che ne usa un altro
-  non può attivarle, a meno che chi gestisce il tuo relay non consenta il servizio push di quel browser. Gli spazi su
-  relay diversi condividono le notifiche del browser: solo quello aperto per ultimo le riceve. Una richiesta di
-  messaggio da qualcuno di nuovo, tramite il tuo link di contatto, potrebbe comparire solo quando Erevos si apre. Il
-  numero sull’icona compare anche su un Mac con «Aggiungi al Dock» di Safari, e nella web app installata da Chrome o
-  Edge su Windows, macOS o ChromeOS. Nessun banner **Nuovo messaggio** compare sopra Erevos mentre è aperto sullo
-  schermo. La schermata **Notifiche ad app chiusa** dice quando il browser o il telefono non le consentono e, dopo che
-  le hai disattivate, quando il tuo relay non ha ancora potuto essere avvisato e potrebbe ancora inviarne una: Erevos
-  glielo dice appena riesce a raggiungerlo. Quando il browser cambia il suo indirizzo push, o il servizio push lo
-  lascia cadere, Erevos dà da solo al tuo relay il nuovo quando torna sullo schermo.
+  non può attivarle, a meno che chi gestisce il tuo relay non consenta il servizio push di quel browser. Ogni spazio che
+  le attiva ha un proprio indirizzo push, quindi nessun relay riceve mai quello di un altro spazio, e l’indirizzo non
+  lega i tuoi spazi tra loro. Per questo ognuno di quegli spazi ha un proprio service worker nel browser: chi può vedere
+  le impostazioni del browser può contarli, e quindi quanti spazi hanno le notifiche attive. Una richiesta di messaggio
+  da qualcuno di nuovo, tramite il tuo link di contatto, potrebbe comparire solo quando Erevos si apre. Il numero
+  sull’icona compare anche su un Mac con «Aggiungi al Dock» di Safari, e nella web app installata da Chrome o Edge su
+  Windows, macOS o ChromeOS. Nessun banner **Nuovo messaggio** compare sopra Erevos mentre è aperto sullo schermo. La
+  schermata **Notifiche ad app chiusa** dice quando il browser o il telefono non le consentono e, dopo che le hai
+  disattivate, quando il tuo relay non ha ancora potuto essere avvisato e potrebbe ancora inviarne una: Erevos glielo
+  dice appena riesce a raggiungerlo. Quando il browser cambia il suo indirizzo push, o il servizio push lo lascia
+  cadere, Erevos dà da solo al tuo relay il nuovo quando torna sullo schermo.
 - **Autorizzazioni:** in Erevos, **Impostazioni** → **Generali** → **Autorizzazioni** mostra che cosa il browser
   permette a Erevos di fare: se funziona dalla schermata Home, le notifiche ad app chiusa (necessarie una volta che
   questo spazio le ha attivate), il microfono per le chiamate, la fotocamera per le videochiamate, e se il browser

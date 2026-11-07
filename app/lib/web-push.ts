@@ -34,3 +34,11 @@ export function dropPush(_own: Relay, _queue: Queue): Promise<void> {
 export function healPush(_changed?: boolean): Promise<void> {
   return Promise.resolve();
 }
+
+export function pushSubscribed(): Promise<boolean | null> {
+  return Promise.resolve(null);
+}
+
+export function closeSpaceNotices(): Promise<void> {
+  return Promise.resolve();
+}
