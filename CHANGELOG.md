@@ -22,6 +22,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
+  also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
+  now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).
+
 ## 7.0.0-rc.1 (2026-11-07)
 
 ### For you

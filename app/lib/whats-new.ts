@@ -24,7 +24,9 @@ export const NEXT: Changes = {
   forYou: [
     mark("**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back."),
   ],
-  underTheHood: [],
+  underTheHood: [
+    mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),
+  ],
 };
 
 export const VERSIONS: WhatsNew[] = [

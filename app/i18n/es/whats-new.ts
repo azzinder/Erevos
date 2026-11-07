@@ -14,6 +14,8 @@ export const whatsNew: Record<string, string> = {
   // Not out yet.
   "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
     "**Un chip para cada parte activada**: encima de los chats, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** tienen cada uno su chip siempre que estén activados en Módulos, también sin ningún chat aún. Antes, en un espacio con solo SMS por ahora, elegir **Todos** después de que el icono de Erevos abriera sus chats ocultaba los chips, sin forma de volver.",
+  "**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**.":
+    "**Relay de casa**: la pantalla ya no dice que quien gestiona un relay de casa ve la dirección de este teléfono cuando está en **Solo por Tor**.",
   // 7.0.0-rc.1
   "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
     "**Dispositivos vinculados en la misma Wi-Fi**: el teléfono y un ordenador en la misma Wi-Fi o punto de acceso se dan lo que cambia directamente allí, también sin internet. Ver [Dispositivos vinculados](#devices).",

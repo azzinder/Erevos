@@ -103,9 +103,13 @@ export default function HomeRelay() {
           )}
         </Text>
         <Text tone="muted">
-          {t(
-            "Whoever runs it sees what your relay sees: this phone's address when it takes messages, and when and how much comes. Hidden chats do not use it: each hidden place can have its own, set while it is open.",
-          )}
+          {canTor()
+            ? t(
+                "Whoever runs it sees what your relay sees: this phone's address when it takes messages, unless it is set to Only through Tor below, and when and how much comes. Hidden chats do not use it: each hidden place can have its own, set while it is open.",
+              )
+            : t(
+                "Whoever runs it sees what your relay sees: this phone's address when it takes messages, and when and how much comes. Hidden chats do not use it: each hidden place can have its own, set while it is open.",
+              )}
         </Text>
         {lines.map((line, at) => (
           <View key={at}>
