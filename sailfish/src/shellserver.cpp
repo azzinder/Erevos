@@ -39,6 +39,13 @@ const QByteArray Csp =
     "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
 
+// Any app on the phone can reach 127.0.0.1, so none may make Erevos hold sockets or bytes for
+// long: at most this many connections still sending their request's head, the oldest let go of
+// for a new one (the page's own send theirs at once), each given SilentMs for its head, and as
+// long between two parts of its body.
+const int MostArriving = 32;
+const int SilentMs = 30 * 1000;
+
 // The most a list of queues for erevos-watch may be: 2048 queues and the words, with room.
 const int MostWatchList = 512 * 1024;
 
@@ -71,6 +78,15 @@ QByteArray typeOf(const QString &path)
     if (ext == "ttf") return "font/ttf";
     if (ext == "woff2") return "font/woff2";
     return "application/octet-stream";
+}
+
+/** Whether `given` is `token`, in a time that does not say how much of it was right. */
+bool sameToken(const QByteArray &given, const QByteArray &token)
+{
+    if (given.size() != token.size()) return false;
+    unsigned char differ = 0;
+    for (int i = 0; i < token.size(); ++i) differ |= static_cast<unsigned char>(given[i] ^ token[i]);
+    return differ == 0;
 }
 
 QByteArray randomToken()
@@ -132,12 +148,29 @@ QString ShellServer::address() const
 void ShellServer::accept()
 {
     while (QTcpSocket *socket = m_server.nextPendingConnection()) {
+        m_arriving.append(socket);
+        if (m_arriving.size() > MostArriving) m_arriving.takeFirst()->abort();
+        // Until its request is all there.
+        QTimer *silent = new QTimer(socket);
+        silent->setObjectName(QStringLiteral("silent"));
+        silent->setSingleShot(true);
+        silent->setInterval(SilentMs);
+        connect(silent, &QTimer::timeout, socket, &QTcpSocket::abort);
+        silent->start();
         connect(socket, &QTcpSocket::readyRead, this, &ShellServer::read);
         connect(socket, &QTcpSocket::disconnected, this, [this, socket]() {
             m_buffers.remove(socket);
+            m_arriving.removeOne(socket);
             socket->deleteLater();
         });
     }
+}
+
+void ShellServer::taken(QTcpSocket *socket)
+{
+    m_buffers.remove(socket);
+    disconnect(socket, &QTcpSocket::readyRead, this, &ShellServer::read);
+    delete socket->findChild<QTimer *>(QStringLiteral("silent"));
 }
 
 void ShellServer::read()
@@ -151,6 +184,11 @@ void ShellServer::read()
         if (buffer.size() > 64 * 1024) socket->abort();
         return;
     }
+    if (end > 64 * 1024) {
+        socket->abort();
+        return;
+    }
+    m_arriving.removeOne(socket);
     Request request;
     const QList<QByteArray> lines = buffer.left(end).split('\n');
     const QList<QByteArray> first = lines.value(0).trimmed().split(' ');
@@ -167,15 +205,29 @@ void ShellServer::read()
         const int colon = lines[i].indexOf(':');
         if (colon > 0) request.headers.insert(lines[i].left(colon).trimmed().toLower(), lines[i].mid(colon + 1).trimmed());
     }
+    // Before any of the body is waited for: only this server's own pages, a shell path only with
+    // the token, and a body only for a shell path. So another app on the phone, which has no
+    // token, cannot make Erevos hold up to MostBody for it.
+    const QByteArray host = "127.0.0.1:" + QByteArray::number(m_server.serverPort());
+    const bool shellPath = QUrl::fromPercentEncoding(request.path).toUtf8().startsWith("/__");
+    if (request.headers.value("host") != host || (shellPath && !sameToken(request.headers.value("x-erevos-token"), m_token))) {
+        taken(socket);
+        respond(socket, 403);
+        return;
+    }
     const qint64 length = request.headers.value("content-length", "0").toLongLong();
-    if (length < 0 || length > MostBody) {
+    if (length < 0 || length > MostBody || (!shellPath && length > 0)) {
+        taken(socket);
         respond(socket, 413);
         return;
     }
-    if (buffer.size() - (end + 4) < length) return; // the rest of the body is on its way
+    if (buffer.size() - (end + 4) < length) {
+        // The rest of the body is on its way.
+        if (QTimer *silent = socket->findChild<QTimer *>(QStringLiteral("silent"))) silent->start();
+        return;
+    }
     request.body = buffer.mid(end + 4, int(length));
-    m_buffers.remove(socket);
-    disconnect(socket, &QTcpSocket::readyRead, this, &ShellServer::read);
+    taken(socket);
     handle(socket, request);
 }
 
@@ -202,7 +254,7 @@ void ShellServer::handle(QTcpSocket *socket, const Request &request)
     }
     const QByteArray path = QUrl::fromPercentEncoding(request.path).toUtf8();
     if (path.startsWith("/__")) {
-        if (request.headers.value("x-erevos-token") != m_token) {
+        if (!sameToken(request.headers.value("x-erevos-token"), m_token)) {
             respond(socket, 403);
             return;
         }

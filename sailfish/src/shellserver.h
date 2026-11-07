@@ -46,6 +46,9 @@ class WatchLink;
 //                     closes Erevos
 //   /__open?url=…     PUT: a link that leaves Erevos, opened by the system (the browser for a web
 //                     page), as Sailfish WebView opens no window of its own
+// Any app on the phone can reach 127.0.0.1: a request for a shell path without the token, or with
+// a body for anything else, is refused before its body is read; at most 32 connections may still be
+// sending their request's head, and each has 30 seconds for it, and as long between parts of a body.
 class ShellServer : public QObject
 {
     Q_OBJECT
@@ -72,6 +75,8 @@ private:
     };
 
     void handle(QTcpSocket *socket, const Request &request);
+    /** The request on `socket` is all there, or refused: nothing more is read from it. */
+    void taken(QTcpSocket *socket);
     void shell(QTcpSocket *socket, const Request &request, const QUrlQuery &query);
     void serveFile(QTcpSocket *socket, const QByteArray &path);
     void secret(QTcpSocket *socket, const Request &request, const QString &key);
@@ -97,6 +102,8 @@ private:
     QDir m_data;
     QByteArray m_token;
     QHash<QTcpSocket *, QByteArray> m_buffers;
+    // Connections still sending their request's head, oldest first.
+    QList<QTcpSocket *> m_arriving;
 
     // The same Wi-Fi: the link while it is on, what happened on it lately, numbered, and the pages
     // waiting to hear of it.

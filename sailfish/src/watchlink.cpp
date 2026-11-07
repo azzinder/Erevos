@@ -4,22 +4,50 @@
 
 #include "watchlink.h"
 
+#include <QCoreApplication>
 #include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
+#include <QDBusReply>
+#include <QFileInfo>
+#include <QRegularExpression>
 
 namespace {
 const char Helper[] = "app.erevos.watch";
 const char HelperPath[] = "/app/erevos/watch";
 const char HelperInterface[] = "app.erevos.Watch";
+
+/** The program process `pid` runs, as /proc says, without the " (deleted)" of one replaced since it started. */
+QString programOf(uint pid)
+{
+    QString running = QFileInfo(QStringLiteral("/proc/%1/exe").arg(pid)).symLinkTarget();
+    running.remove(QRegularExpression(QStringLiteral(" \\(deleted\\)$")));
+    return running;
+}
+
+/** The unique name on the bus of the process holding `service`, if it runs `program`; empty if not. */
+QString heldBy(const QString &service, const QString &program)
+{
+    QDBusConnectionInterface *bus = QDBusConnection::sessionBus().interface();
+    if (!bus) return QString();
+    const QDBusReply<QString> owner = bus->serviceOwner(service);
+    if (!owner.isValid()) return QString();
+    const QDBusReply<uint> pid = bus->servicePid(owner.value());
+    return pid.isValid() && programOf(pid.value()) == program ? owner.value() : QString();
+}
 }
 
 WatchLink::WatchLink(QObject *parent)
     : QObject(parent)
     , m_helper(QString::fromLatin1(Helper), QDBusConnection::sessionBus(), QDBusServiceWatcher::WatchForUnregistration)
 {
-    // The helper ended: given again the next time Erevos goes out of sight.
-    connect(&m_helper, &QDBusServiceWatcher::serviceUnregistered, this, [this]() { m_given = false; });
+    // The helper ended: given again the next time Erevos goes out of sight, to the one then running.
+    connect(&m_helper, &QDBusServiceWatcher::serviceUnregistered, this, [this]() {
+        m_given = false;
+        m_owner.clear();
+    });
 }
 
 bool WatchLink::offer()
@@ -65,8 +93,38 @@ void WatchLink::show()
 
 void WatchLink::call(const QString &method, const QVariantList &arguments)
 {
-    QDBusMessage message = QDBusMessage::createMethodCall(QString::fromLatin1(Helper), QString::fromLatin1(HelperPath),
-                                                          QString::fromLatin1(HelperInterface), method);
-    message.setArguments(arguments);
-    QDBusConnection::sessionBus().asyncCall(message);
+    m_calls.append(qMakePair(method, arguments));
+    if (!m_owner.isEmpty()) {
+        send();
+        return;
+    }
+    if (m_starting) return;
+    m_starting = true;
+    // D-Bus starts the helper when it is not running; then whoever holds its name must run it.
+    QDBusMessage start = QDBusMessage::createMethodCall(QStringLiteral("org.freedesktop.DBus"), QStringLiteral("/org/freedesktop/DBus"),
+                                                        QStringLiteral("org.freedesktop.DBus"), QStringLiteral("StartServiceByName"));
+    start << QString::fromLatin1(Helper) << uint(0);
+    auto *started = new QDBusPendingCallWatcher(QDBusConnection::sessionBus().asyncCall(start), this);
+    connect(started, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *answer) {
+        answer->deleteLater();
+        m_starting = false;
+        m_owner = heldBy(QString::fromLatin1(Helper), QCoreApplication::applicationDirPath() + QStringLiteral("/erevos-watch"));
+        if (m_owner.isEmpty()) {
+            qWarning("erevos: app.erevos.watch is not erevos-watch: nothing is given to it");
+            m_calls.clear();
+            m_given = false;
+            return;
+        }
+        send();
+    });
+}
+
+void WatchLink::send()
+{
+    for (const auto &waiting : m_calls) {
+        QDBusMessage message = QDBusMessage::createMethodCall(m_owner, QString::fromLatin1(HelperPath), QString::fromLatin1(HelperInterface), waiting.first);
+        message.setArguments(waiting.second);
+        QDBusConnection::sessionBus().asyncCall(message);
+    }
+    m_calls.clear();
 }
