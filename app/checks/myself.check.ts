@@ -260,3 +260,40 @@ test('a note from a link: its words cleaned, its reminder only when it is to com
   }
   assert.notEqual(linkNoteKey({ text: 'pay', due: 1 }), linkNoteKey({ text: 'pay' }));
 });
+
+test('a reminder that comes again moves to its next time once seen, and a link can ask for one', async () => {
+  const { nextDue, everyOfText } = await import('../lib/note-repeat');
+  const { linkNote, linkNoteKey } = await import('../lib/note-link');
+  const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 9, 0).getTime();
+  // Monthly from 31 January: the last day of a shorter month, then the 31st again.
+  assert.equal(nextDue(at(2027, 1, 31), { u: 'm', n: 1 }, at(2027, 2, 1)), at(2027, 2, 28));
+  assert.equal(nextDue(at(2027, 1, 31), { u: 'm', n: 1 }, at(2027, 2, 28)), at(2027, 3, 31));
+  // Seen late: the first time after now, on the same clock time.
+  assert.equal(nextDue(at(2027, 1, 15), { u: 'w', n: 2 }, at(2027, 2, 20)), at(2027, 2, 26));
+  assert.equal(nextDue(at(2027, 1, 15), { u: 'y', n: 1 }, at(2027, 1, 16)), at(2028, 1, 15));
+  assert.deepEqual(everyOfText('3m'), { u: 'm', n: 3 });
+  for (const bad of ['0m', '1h', 'm', '1000d', 7]) assert.equal(everyOfText(bad), null);
+
+  const now = Date.now();
+  const due = now + 3_600_000;
+  assert.deepEqual(linkNote({ note: 'rent', due: String(due), every: '1m' }, now), { text: 'rent', due, every: { u: 'm', n: 1 } });
+  // Without a reminder, or with nonsense, it is a plain note or reminder.
+  assert.deepEqual(linkNote({ note: 'rent', every: '1m' }, now), { text: 'rent' });
+  assert.deepEqual(linkNote({ note: 'rent', due: String(due), every: 'often' }, now), { text: 'rent', due });
+  assert.notEqual(linkNoteKey({ text: 'rent', due }), linkNoteKey({ text: 'rent', due, every: { u: 'm', n: 1 } }));
+
+  files.clear();
+  const mine = place();
+  const past = Date.now() - 1000;
+  const rent = await addNote(mine, note('rent', past - 1000, { due: past, every: { u: 'd', n: 1 } }));
+  const once = await addNote(mine, note('once', past - 1000, { due: past }));
+  const again = await markTold(mine, [rent.id, once.id]);
+  assert.deepEqual(again.map((n) => n.id), [rent.id]);
+  const [r, o] = await loadNotes(mine);
+  assert.equal(r.due, nextDue(past, { u: 'd', n: 1 }, past));
+  assert.ok(isWaiting(r) && !r.told);
+  assert.ok(o.told);
+  // Taking the reminder away takes the repeating away too.
+  await changeNote(mine, rent.id, { due: null });
+  assert.equal((await loadNotes(mine))[0].every, undefined);
+});

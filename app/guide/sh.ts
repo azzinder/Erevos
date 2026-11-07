@@ -209,7 +209,7 @@ bilješke, fotografije, datoteke i glasovne poruke, kao i kod razgovora.
   [Povezani uređaji](#devices)).
 - **Iz druge aplikacije:** aplikacija na telefonu može tražiti da se ovdje zadrži bilješka, kao Fasouli za plaćanje
   koje dolazi, s podsjetnikom. Erevos otvara Razgovor sa sobom nakon lozinke, u prostoru koji otvoriš, i prvo pita
-  **Zadržati ovu bilješku?**, s tekstom i vremenom; samo **Dodaj** je zadržava. Ništa se ne vraća aplikaciji.
+  **Zadržati ovu bilješku?**, s tekstom i vremenom; samo **Dodaj** je zadržava. Ništa se ne vraća aplikaciji. Za zakazano plaćanje podsetnik dolazi ponovo, svakog meseca ili kako se plaćanje ponavlja: čim ga vidiš, prelazi na sledeći put.
 
 **Zašto:** obavijest se na zaključanom ekranu prikazuje svakome ko drži telefon, zato ono što podsjetnik kaže ostaje
 šifrirano u njegovom prostoru, a Androidu se kaže samo njegovo vrijeme: obavijest nikome ne može reći šta ste htjeli

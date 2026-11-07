@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Reminders that come again**: `erevos://myself?…&every=1m` (or `Nd`, `Nw`, `Nm`, `Ny`) keeps a note whose reminder
+  repeats, as Fasouli asks for a scheduled payment. Once seen it moves to its next time (lib/note-repeat.ts), on the
+  same clock time, a month's last day kept for the 29th to 31st; it goes to linked devices with the note.
 - **New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or
   computer updated from 6, the Collection stayed off after the update, as the choice was kept as a bare list of the
   modules on (lib/modules.ts). The choice is now kept with the modules there were when it was made, and any module

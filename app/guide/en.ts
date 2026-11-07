@@ -200,7 +200,7 @@ with chats.
   devices linked to that place on its own, never to the space's (see [Linked devices](#devices)).
 - **From another app:** an app on the phone can ask to keep a note here, as Fasouli does for a payment that is coming,
   with its reminder. Erevos opens Chat with myself after the password, in the space you open, and asks **Keep this
-  note?** first, showing the words and the time; only **Add** keeps it. Nothing goes back to the app.
+  note?** first, showing the words and the time; only **Add** keeps it. Nothing goes back to the app. For a scheduled payment the reminder comes again, every month or as the payment repeats: once you see it, it moves to its next time.
 
 **Why:** a notice shows on the locked screen to whoever holds the phone, so what a reminder says stays encrypted in its
 space and Android is told only its time: the notice cannot tell anyone what you wanted to remember, nor which space it

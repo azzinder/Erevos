@@ -222,7 +222,7 @@ Ein Backup nimmt alles davon mit, Notizen, Fotos, Dateien und Sprachnachrichten,
 - **Aus einer anderen App:** Eine App auf dem Telefon kann darum bitten, hier eine Notiz zu behalten, wie Fasouli für
   eine anstehende Zahlung, mit ihrer Erinnerung. Erevos öffnet den Chat mit mir selbst nach dem Passwort, in dem Bereich,
   den du öffnest, und fragt zuerst **Diese Notiz behalten?**, mit Text und Zeit; nur **Hinzufügen** behält sie. Nichts
-  geht an die App zurück.
+  geht an die App zurück. Bei einer geplanten Zahlung kommt die Erinnerung wieder, jeden Monat oder wie sich die Zahlung wiederholt: Sobald du sie gesehen hast, rückt sie zum nächsten Termin vor.
 
 **Warum:** Eine Benachrichtigung erscheint auf dem Sperrbildschirm für jeden, der das Telefon in der Hand hat, also
 bleibt der Text einer Erinnerung verschlüsselt in ihrem Bereich, und Android erfährt nur ihre Zeit: Die

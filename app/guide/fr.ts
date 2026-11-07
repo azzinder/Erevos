@@ -225,7 +225,7 @@ fichiers et messages vocaux, comme pour les discussions.
 - **Depuis une autre appli :** une appli du téléphone peut demander de garder ici une note, comme Fasouli pour un
   paiement à venir, avec son rappel. Erevos ouvre Discussion avec moi-même après le mot de passe, dans l’espace que tu
   ouvres, et demande d’abord **Garder cette note ?**, avec le texte et l’heure ; seul **Ajouter** la garde. Rien ne
-  retourne à l’appli.
+  retourne à l’appli. Pour un paiement planifié, le rappel revient, chaque mois ou selon la répétition du paiement : dès que tu l’as vu, il passe à sa prochaine fois.
 
 **Pourquoi :** une notification s’affiche sur l’écran verrouillé pour quiconque tient le téléphone, donc ce que dit un
 rappel reste chiffré dans son espace et Android n’apprend que son heure : la notification ne peut dire à personne ce que

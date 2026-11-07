@@ -213,7 +213,7 @@ todo, notas, fotos, archivos y mensajes de voz, como con los chats.
   [Dispositivos vinculados](#devices)).
 - **Desde otra app:** una app del teléfono puede pedir guardar aquí una nota, como Fasouli para un pago que se acerca,
   con su recordatorio. Erevos abre el Chat conmigo tras la contraseña, en el espacio que abres, y pregunta primero
-  **¿Guardar esta nota?**, con el texto y la hora; solo **Añadir** la guarda. Nada vuelve a la app.
+  **¿Guardar esta nota?**, con el texto y la hora; solo **Añadir** la guarda. Nada vuelve a la app. Para un pago programado el recordatorio vuelve, cada mes o según se repita el pago: en cuanto lo ves, pasa a su próxima vez.
 
 **Por qué:** un aviso se muestra en la pantalla bloqueada a quien tenga el teléfono, así que lo que dice un recordatorio
 se queda cifrado en su espacio y a Android solo se le dice su hora: el aviso no puede contar a nadie qué querías

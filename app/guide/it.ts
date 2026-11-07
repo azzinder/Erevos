@@ -213,7 +213,7 @@ foto, file e messaggi vocali, come per le chat.
   (vedi [Dispositivi collegati](#devices)).
 - **Da un’altra app:** un’app del telefono può chiedere di tenere qui una nota, come Fasouli per un pagamento in
   arrivo, con il suo promemoria. Erevos apre Chat con me stesso dopo la password, nello spazio che apri, e chiede prima
-  **Tenere questa nota?**, con il testo e l’ora; solo **Aggiungi** la tiene. Niente torna all’app.
+  **Tenere questa nota?**, con il testo e l’ora; solo **Aggiungi** la tiene. Niente torna all’app. Per un pagamento programmato il promemoria torna, ogni mese o come si ripete il pagamento: appena lo vedi, passa alla volta successiva.
 
 **Perché:** una notifica appare sullo schermo bloccato a chiunque abbia in mano il telefono, quindi quello che dice un
 promemoria resta crittografato nel suo spazio e ad Android viene detta solo la sua ora: la notifica non può dire a

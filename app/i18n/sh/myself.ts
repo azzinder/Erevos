@@ -30,4 +30,12 @@ export const myself: Record<string, string> = {
   'Keep this note?': 'Zadržati ovu bilješku?',
   'An app on this phone asks to keep this note in Chat with myself, reminding you on {when}:\n\n{text}': 'Aplikacija na ovom telefonu traži da se ova bilješka zadrži u Razgovoru sa sobom, s podsjetnikom {when}:\n\n{text}',
   'An app on this phone asks to keep this note in Chat with myself:\n\n{text}': 'Aplikacija na ovom telefonu traži da se ova bilješka zadrži u Razgovoru sa sobom:\n\n{text}',
+  'Every day.': 'Svaki dan.',
+  'Every {n} days.': 'Svaki {n} dan. | Svaka {n} dana. | Svakih {n} dana.',
+  'Every week.': 'Svake sedmice.',
+  'Every {n} weeks.': 'Svake {n} sedmice. | Svake {n} sedmice. | Svakih {n} sedmica.',
+  'Every month.': 'Svaki mesec.',
+  'Every {n} months.': 'Svaki {n} mesec. | Svaka {n} meseca. | Svakih {n} meseci.',
+  'Every year.': 'Svake godine.',
+  'Every {n} years.': 'Svake {n} godine. | Svake {n} godine. | Svakih {n} godina.',
 };

@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Reminders that come again**: a note Fasouli keeps for a scheduled payment now reminds you each time it is due, every month or as the payment repeats, and shows how often. Once you see it, it moves to its next time. See [Getting started](#start)."),
     mark("**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules)."),
     mark("**Photos of the Collection one after the other**: in a photo, the arrows (on a phone too, while the bars show) or a swipe go to the next or the one before, and **Slideshow** shows them by themselves, one every 4 seconds, till a tap. On a computer, in a browser and on Sailfish OS a photo opens again instead of staying at **Opening the photo…**. See [Collection](#collection)."),
     mark("**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay)."),

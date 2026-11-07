@@ -4,6 +4,8 @@
 
 import { device } from '../modules/erevos-device';
 import { currentSpace } from '../lock/keys';
+import { plural } from './i18n';
+import { type Every } from './note-repeat';
 import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, onNotesCame, removeNote, type Note, type NotesPlace } from '../lock/myself-data';
 
 // Chat with myself and its reminders (app/myself.tsx, and Remind me on the home screen): the open
@@ -91,8 +93,10 @@ export async function remindAt(id: string, due: number | null, at = spaceNotes()
 export async function seenReminders(notes: Note[], now = Date.now(), at = spaceNotes()): Promise<void> {
   const due = notes.filter((note) => isDue(note, now)).map((note) => note.id);
   if (due.length === 0) return;
-  await markTold(at.place, due);
+  const again = await markTold(at.place, due);
   device?.seenReminders?.(due);
+  // Those that come again wait for their next time.
+  if (at.arm) for (const note of again) device?.remind?.(note.id, note.due!);
   changed();
 }
 
@@ -100,4 +104,13 @@ export async function deleteNote(id: string, at = spaceNotes()): Promise<void> {
   device?.forgetReminder?.(id);
   await removeNote(at.place, id);
   changed();
+}
+
+/** How often a reminder comes again, in words: "Every month.", "Every 2 weeks.", … */
+export function everyLabel(every: Every): string {
+  const { n } = every;
+  if (every.u === 'd') return plural(n, 'Every day.', 'Every {n} days.');
+  if (every.u === 'w') return plural(n, 'Every week.', 'Every {n} weeks.');
+  if (every.u === 'm') return plural(n, 'Every month.', 'Every {n} months.');
+  return plural(n, 'Every year.', 'Every {n} years.');
 }

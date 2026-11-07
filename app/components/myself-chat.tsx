@@ -13,7 +13,7 @@ import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
-import { armReminders, deleteNote, isDue, isWaiting, myNotes, onNotesChanged, remindAt, seenReminders, writeNote, type Note, type NotesAt } from '../lib/myself';
+import { armReminders, deleteNote, everyLabel, isDue, isWaiting, myNotes, onNotesChanged, remindAt, seenReminders, writeNote, type Note, type NotesAt } from '../lib/myself';
 import { appShown, onAppShown } from '../lib/receiver';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -510,6 +510,7 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
                       <BellIcon color={(ink.color as string | undefined) ?? colors.text} size={14} />
                       <Text style={[ink, styles.reminderText]}>
                         {due ? t('Reminded you on {when}.', { when: laterLabel(note.due) }) : t('Reminds you on {when}.', { when: laterLabel(note.due) })}
+                        {note.every ? ` ${everyLabel(note.every)}` : ''}
                       </Text>
                     </View>
                   ) : null}

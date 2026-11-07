@@ -6,6 +6,7 @@ import { checkedAvatar, checkedBlocked, checkedSpare, cleanName, isNostrRelay, i
 import { MAX_GROUP_MESSAGES, type Group, type GroupMarks, type GroupMessage, type GroupParts } from '../lock/group-data';
 import { isReactionEmoji, isTag, type Mark, type Parts as ChatParts } from '../lock/history';
 import { checkedLook, type Look } from '../theme/look';
+import { isEvery, type Every } from './note-repeat';
 import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
 import { carriedOf, checkedChoices, editableWords, MAX_EDIT, previewAfterEdit } from './chat-parts';
 import { checkContact, checkSpare, type ContactCode } from './contact-code';
@@ -121,7 +122,7 @@ export type Envelope =
  * waits on the relay, or its voice message's sound, base64. With `keep` on the envelope, the photos
  * and files stay on the relay for the other devices that take them too, until they expire there.
  */
-export type NoteSaid = { id: string; at: number; v: number; text: string; due?: number; told?: true; file?: FileOffer; voice?: { ms: number; data: string } };
+export type NoteSaid = { id: string; at: number; v: number; text: string; due?: number; every?: Every; told?: true; file?: FileOffer; voice?: { ms: number; data: string } };
 
 /** The most notes, and deletions, one envelope says. */
 export const MAX_NOTES_SAID = 5000;
@@ -143,6 +144,7 @@ function checkedNoteSaid(value: unknown): NoteSaid | null {
     v: v.v,
     text: v.text,
     ...(isTime(v.due) ? { due: v.due } : {}),
+    ...(isTime(v.due) && isEvery(v.every) ? { every: { u: v.every.u, n: v.every.n } } : {}),
     ...(v.told === true ? { told: true as const } : {}),
     ...(file ? { file } : voice ? { voice } : {}),
   };

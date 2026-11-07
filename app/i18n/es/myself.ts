@@ -30,4 +30,12 @@ export const myself: Record<string, string> = {
   'Keep this note?': '¿Guardar esta nota?',
   'An app on this phone asks to keep this note in Chat with myself, reminding you on {when}:\n\n{text}': 'Una app de este teléfono pide guardar esta nota en el Chat conmigo, con un recordatorio el {when}:\n\n{text}',
   'An app on this phone asks to keep this note in Chat with myself:\n\n{text}': 'Una app de este teléfono pide guardar esta nota en el Chat conmigo:\n\n{text}',
+  'Every day.': 'Cada día.',
+  'Every {n} days.': 'Cada {n} días.',
+  'Every week.': 'Cada semana.',
+  'Every {n} weeks.': 'Cada {n} semanas.',
+  'Every month.': 'Cada mes.',
+  'Every {n} months.': 'Cada {n} meses.',
+  'Every year.': 'Cada año.',
+  'Every {n} years.': 'Cada {n} años.',
 };

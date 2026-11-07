@@ -213,7 +213,7 @@ conversas.
   do espaço (veja [Dispositivos conectados](#devices)).
 - **De outro app:** um app do telefone pode pedir para guardar aqui uma nota, como o Fasouli para um pagamento que
   está chegando, com o seu lembrete. O Erevos abre a Conversa comigo depois da senha, no espaço que você abre, e
-  pergunta antes **Guardar esta nota?**, com o texto e a hora; só **Adicionar** a guarda. Nada volta para o app.
+  pergunta antes **Guardar esta nota?**, com o texto e a hora; só **Adicionar** a guarda. Nada volta para o app. Para um pagamento agendado o lembrete volta, todo mês ou como o pagamento se repete: assim que você o vê, ele passa para a próxima vez.
 
 **Por quê:** um aviso aparece na tela bloqueada para quem estiver com o celular, então o que um lembrete diz fica
 criptografado no espaço dele e o Android só fica sabendo o horário: o aviso não pode contar a ninguém o que você queria

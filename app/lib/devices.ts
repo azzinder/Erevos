@@ -2951,7 +2951,7 @@ export class Links implements Link, TakenFiles {
   // for one whose photo, file or voice message is not here (not in a backup) and has no words;
   // 'later' while the relay cannot take it.
   private async noteSaid(note: Note, offers: Map<string, FileOffer | null>, here: () => Promise<Here | null>): Promise<NoteSaid | null | 'later'> {
-    const said: NoteSaid = { id: note.id, at: note.at, v: noteStamp(note), text: note.text, ...(note.due !== undefined ? { due: note.due } : {}), ...(note.told ? { told: true as const } : {}) };
+    const said: NoteSaid = { id: note.id, at: note.at, v: noteStamp(note), text: note.text, ...(note.due !== undefined ? { due: note.due } : {}), ...(note.every ? { every: note.every } : {}), ...(note.told ? { told: true as const } : {}) };
     if (note.file) {
       let offer = offers.get(note.id);
       if (offer === undefined) {
@@ -2982,7 +2982,7 @@ export class Links implements Link, TakenFiles {
   private async notesFrom(said: Extract<Envelope, { k: 'notes' }>, leave: boolean): Promise<void> {
     const came = said.list.map(
       (n): NoteCame => ({
-        note: { id: n.id, at: n.at, v: n.v, text: n.text, ...(n.due !== undefined ? { due: n.due } : {}), ...(n.told ? { told: true as const } : {}) },
+        note: { id: n.id, at: n.at, v: n.v, text: n.text, ...(n.due !== undefined ? { due: n.due } : {}), ...(n.every ? { every: n.every } : {}), ...(n.told ? { told: true as const } : {}) },
         make: async () => {
           if (n.file) return { file: offerRef(n.file) };
           if (!n.voice) return {};

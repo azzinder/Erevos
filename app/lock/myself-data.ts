@@ -4,6 +4,7 @@
 
 import { randomBytes, toHex } from '../lib/crypto';
 import { t } from '../lib/i18n';
+import { isEvery, nextDue, type Every } from '../lib/note-repeat';
 
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
@@ -24,6 +25,8 @@ import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
 /**
  * A note: when it was written, its words, and a photo, a file or a voice message with them. `due`:
  * when it reminds; `told` once that time came while the space was open, or it was read after.
+ * `every`: it reminds again, so once seen it moves to its next time instead of being told
+ * (lib/note-repeat.ts).
  */
 export type Note = {
   id: string;
@@ -32,6 +35,7 @@ export type Note = {
   file?: FileRef;
   voice?: VoiceRef;
   due?: number;
+  every?: Every;
   told?: true;
   /** When it was last changed, by this device's count (`last`); one from before has none, and counts as written (`at`). */
   v?: number;
@@ -79,6 +83,7 @@ function isNote(value: unknown): value is Note {
     (v.file === undefined || isFileRef(v.file)) &&
     (v.voice === undefined || isVoiceRef(v.voice)) &&
     (v.due === undefined || time(v.due)) &&
+    (v.every === undefined || isEvery(v.every)) &&
     (v.told === undefined || v.told === true) &&
     (v.v === undefined || time(v.v)) &&
     (v.o === undefined || v.o === true)
@@ -86,7 +91,7 @@ function isNote(value: unknown): value is Note {
 }
 
 /** Only a note's own fields, those it has. */
-function clean({ id, at, text, file, voice, due, told, v, o }: Note): Note {
+function clean({ id, at, text, file, voice, due, every, told, v, o }: Note): Note {
   return {
     id,
     at,
@@ -94,6 +99,7 @@ function clean({ id, at, text, file, voice, due, told, v, o }: Note): Note {
     ...(file ? { file } : {}),
     ...(voice ? { voice } : {}),
     ...(due !== undefined ? { due } : {}),
+    ...(due !== undefined && every ? { every: { u: every.u, n: every.n } } : {}),
     ...(told ? { told } : {}),
     ...(v !== undefined ? { v } : {}),
     ...(o ? { o } : {}),
@@ -182,7 +188,10 @@ export function changeNote(place: NotesPlace, id: string, { due, told }: { due?:
     if (at < 0) return null;
     const v = stampNow(data);
     const note: Note = { ...notes[at], v, o: true };
-    if (due === null) delete note.due;
+    if (due === null) {
+      delete note.due;
+      delete note.every;
+    }
     else if (due !== undefined) note.due = due;
     if (due !== undefined) delete note.told;
     if (told === true) note.told = true;
@@ -195,19 +204,26 @@ export function changeNote(place: NotesPlace, id: string, { due, told }: { due?:
   });
 }
 
-/** Marks the notes told, at once. */
-export function markTold(place: NotesPlace, ids: string[]): Promise<void> {
+/** Marks the notes told, at once; those that come again move to their next time instead, and are returned. */
+export function markTold(place: NotesPlace, ids: string[]): Promise<Note[]> {
   return change(place, async () => {
     const { holder, space, key } = place;
     const data = await store.load(holder, space, key);
     const { notes } = data;
     const marked = new Set(ids.filter((id) => notes.some((note) => note.id === id && !note.told)));
-    if (marked.size === 0) return;
+    if (marked.size === 0) return [];
     // Each its own stamp, so the devices told stop between two only.
     let v = stampNow(data) - 1;
-    const next = notes.map((note): Note => (marked.has(note.id) ? { ...note, told: true, v: ++v, o: true } : note));
+    const now = Date.now();
+    const next = notes.map((note): Note => {
+      if (!marked.has(note.id)) return note;
+      // One that comes again moves to its next time, waiting again.
+      if (note.every && note.due !== undefined) return { ...note, due: nextDue(note.due, note.every, now), v: ++v, o: true };
+      return { ...note, told: true, v: ++v, o: true };
+    });
     await store.save(holder, space, key, { ...data, notes: next, last: v });
     written(place);
+    return next.filter((note) => marked.has(note.id) && !note.told);
   });
 }
 
@@ -306,7 +322,7 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
       const at = notes.findIndex((n) => n.id === note.id);
       const kept = at >= 0 ? notes[at] : null;
       if (kept && stampOf(kept) >= note.v) continue;
-      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, told: note.told, v: note.v };
+      const words = { text: note.text.slice(0, MAX_NOTE_TEXT), due: note.due, every: note.every, told: note.told, v: note.v };
       if (kept) {
         const { o: _o, ...rest } = kept;
         const next = clean({ ...rest, ...words });
