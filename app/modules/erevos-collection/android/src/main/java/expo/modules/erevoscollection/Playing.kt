@@ -101,6 +101,8 @@ internal object Playing {
   private val durations = HashMap<Int, Long>()
   // The files of the list that started where they were left already: they do not twice.
   private val resumed = HashSet<Int>()
+  // The file of the list whose failed read was tried again already (onPlayerError), until another plays.
+  private var retried = -1
 
   /** Told the state whenever it changes, on the main thread: the module's event. */
   var onState: ((Map<String, Any?>) -> Unit)? = null
@@ -126,14 +128,25 @@ internal object Playing {
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
       val p = player ?: return
       val index = p.currentMediaItemIndex
+      if (index != retried) retried = -1
       val item = items.getOrNull(index) ?: return
       if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT || item.resume <= 0L || !resumed.add(index)) return
       p.seekTo(index, item.resume)
     }
 
     override fun onPlayerError(error: PlaybackException) {
-      // A damaged chunk or a key forgotten: this file cannot play; the next one is tried.
       val p = player ?: return
+      // A read that failed once (the phone's storage slow to answer with the screen off) is tried
+      // again where it stopped, once for each file; the player then waits no more for it.
+      val index = p.currentMediaItemIndex
+      if (retried != index) {
+        retried = index
+        p.prepare()
+        p.play()
+        tell(error.errorCodeName)
+        return
+      }
+      // A damaged chunk or a key forgotten: this file cannot play; the next one is tried.
       if (p.hasNextMediaItem()) {
         p.seekToNextMediaItem()
         p.prepare()
@@ -163,6 +176,7 @@ internal object Playing {
     positions.clear()
     durations.clear()
     resumed.clear()
+    retried = -1
     val folder = appContext.filesDir
     // No title in the items themselves: what is shown is made by ShownPlayer, and what the player
     // reports of the file (getMediaMetadata) is then only what the file says.

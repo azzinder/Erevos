@@ -111,6 +111,9 @@ On main, not released yet:
   data source by a token of its own, the player now made with DefaultMediaSourceFactory; on a computer, in a browser
   and on Sailfish OS it is converted from SubRip to WebVTT in memory and given to the page's player as a <track> of a
   blob: address, let go of with the rest. A button at the top of the video turns them off and on.
+- **A read of the Collection's music that fails once is tried again** (Playing.kt onPlayerError): where it stopped, once
+  for each file, before the player goes to the next file; at the list's last file it used to stop there, with its
+  notice still shown.
 
 ### Under the hood
 
