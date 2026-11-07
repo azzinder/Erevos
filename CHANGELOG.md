@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.1 (2026-11-07)
+
+### For you
+
 - **Sign in with Nextcloud**: a Collection's server and the backups' server can be a Nextcloud, as LPHL's, the
   one Fasouli syncs with, through Nextcloud's Login Flow v2 in the browser (through Authentik or however it signs in),
   with no password typed. Erevos gets an app password of its own and its own folder, `Erevos/Collection` or

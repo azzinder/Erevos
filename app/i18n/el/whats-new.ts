@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 7.0.0-rc.1
   "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
     "**Συνδεδεμένες συσκευές στο ίδιο Wi-Fi**: το τηλέφωνο και ένας υπολογιστής στο ίδιο Wi-Fi ή hotspot δίνουν ο ένας στον άλλον ό,τι αλλάζει απευθείας εκεί, και χωρίς internet. Δες [Συνδεδεμένες συσκευές](#devices).",
   "**Your Matrix, XMPP and Nostr accounts on every linked device**: each device linked gets them by itself, with no choice to make, and they follow as they change on the phone: one you sign out of there, or replace with another, goes from the devices too. See [Linked devices](#devices).":
