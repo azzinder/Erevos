@@ -149,6 +149,28 @@ write(
     .replace('__EREVOS_CALL_ORIGIN__', withoutCalls ? '' : callOrigin),
 );
 
+// Android App Links (app/app.json, autoVerify for /i and /c): Android opens a tapped invite or
+// contact link in Erevos straight away only if this site says the app may, for the app signed with
+// the release key (the keystore on the DELL). Its certificate's SHA-256, as the release APKs carry
+// it in their signing block (read from 7.0.0-rc.1's). Android fetches the file itself, not through
+// the worker, and wants it as JSON with no redirect.
+const RELEASE_CERTIFICATE = '49:F0:D9:BE:60:09:2F:02:CF:27:C5:24:67:52:55:01:93:A6:7B:81:21:29:BF:53:41:79:53:B7:C8:79:8E:69';
+if (fs.existsSync(path.join(out, '.well-known'))) fail(`${from} has a .well-known/ of its own, where Android's App Links file goes.`);
+fs.mkdirSync(path.join(out, '.well-known'));
+write(
+  '.well-known/assetlinks.json',
+  `${JSON.stringify(
+    [
+      {
+        relation: ['delegate_permission/common.handle_all_urls'],
+        target: { namespace: 'android_app', package_name: 'app.erevos', sha256_cert_fingerprints: [RELEASE_CERTIFICATE] },
+      },
+    ],
+    null,
+    2,
+  )}\n`,
+);
+
 // The icons are the artwork in brand/, as they are.
 const brand = (name) => fs.readFileSync(path.join(here, '..', 'brand', 'png', name));
 write('favicon.png', brand('web/icon-32.png'));

@@ -60,6 +60,9 @@ On main, not released yet:
 
 - **An invite that opened Erevos for the first time** opens once the first start's setup is done, however long the
   setup took; before, after five minutes on the setup screens it was lost and had to be scanned again (lib/open-link.ts).
+- **The web app's site says which app may open its links**: every web release now has
+  `/.well-known/assetlinks.json`, naming `app.erevos` signed with the release key, which Android needs before it
+  opens a tapped invite or contact link in Erevos instead of the browser (pwa/build.mjs).
 - **Sailfish OS, notices while Erevos is closed**: since 7.0.0-rc.1 the helper erevos-watch takes the queues to wait
   on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
   on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and

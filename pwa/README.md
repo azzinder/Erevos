@@ -143,6 +143,17 @@ As with `/i/`, the first time the page comes straight from the server, unchecked
 broken into could send a page that adds someone else in the link's place, under the same name; the
 chat's **Safety number**, compared with the person it was meant for, tells.
 
+## Opening links in the app (Android App Links)
+
+Every release also has `/.well-known/assetlinks.json` (`pwa/build.mjs`): it says that `app.erevos`
+signed with the release key, by its certificate's SHA-256, may open this site's links. With it,
+Android opens a tapped `/i` or `/c` link in Erevos straight away, for the paths the app claims with
+`autoVerify` (`app/app.json`); without it, or with no Erevos, the link opens the page in the
+browser, as above. Android reads it straight from the server, with no redirect and as
+`application/json`, which Apache gives a `.json` file; it checks it when the app is installed or
+updated, so a site that gets it later is taken at the app's next update. A new release key needs
+its certificate here first.
+
 ## Matrix calls
 
 A Matrix call opens Element Call (Element's call app, AGPL-3.0, from the npm package
