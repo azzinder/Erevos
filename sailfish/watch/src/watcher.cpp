@@ -8,7 +8,13 @@
 #include "awake.h"
 #include "relayline.h"
 
+#include <QCoreApplication>
+#include <QDBusConnection>
+#include <QDBusConnectionInterface>
+#include <QDBusMessage>
+#include <QDBusReply>
 #include <QDateTime>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -275,8 +281,30 @@ Watcher::Watcher(Alerts *alerts, QObject *parent)
     });
 }
 
+bool Watcher::fromErevos()
+{
+    if (!calledFromDBus()) return true;
+    const QString caller = message().service();
+    if (m_callers.contains(caller)) return true;
+    QString erevos = QCoreApplication::applicationDirPath() + QStringLiteral("/erevos");
+#ifdef EREVOS_WATCH_TEST
+    // The check on a computer calls it from its own program.
+    if (qEnvironmentVariableIsSet("EREVOS_WATCH_TEST_CALLER")) erevos = QString::fromLocal8Bit(qgetenv("EREVOS_WATCH_TEST_CALLER"));
+#endif
+    const QDBusReply<uint> pid = connection().interface()->servicePid(caller);
+    QString running = pid.isValid() ? QFileInfo(QStringLiteral("/proc/%1/exe").arg(pid.value())).symLinkTarget() : QString();
+    running.remove(QRegularExpression(QStringLiteral(" \\(deleted\\)$")));
+    if (!running.isEmpty() && running == erevos) {
+        m_callers.insert(caller);
+        return true;
+    }
+    sendErrorReply(QDBusError::AccessDenied, QStringLiteral("Only Erevos gives erevos-watch what to wait on."));
+    return false;
+}
+
 bool Watcher::watch(const QString &json)
 {
+    if (!fromErevos()) return false;
     QJsonParseError error;
     const QJsonDocument document = QJsonDocument::fromJson(json.toUtf8(), &error);
     if (error.error != QJsonParseError::NoError || !document.isObject()) return false;
@@ -339,6 +367,7 @@ bool Watcher::watch(const QString &json)
 
 void Watcher::front(bool inFront)
 {
+    if (!fromErevos()) return;
     if (inFront == m_front) return;
     m_front = inFront;
     if (!inFront) {
@@ -358,6 +387,7 @@ void Watcher::front(bool inFront)
 
 void Watcher::stop()
 {
+    if (!fromErevos()) return;
     for (Wait *wait : m_waits) {
         wait->halt();
         wait->deleteLater();

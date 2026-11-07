@@ -8,8 +8,10 @@
 #define EREVOS_WATCH_WATCHER_H
 
 #include <QByteArray>
+#include <QDBusContext>
 #include <QList>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QTimer>
 
@@ -99,8 +101,10 @@ private:
 
 // The helper's D-Bus object (app.erevos.watch, /app/erevos/watch): the app gives it the queues of
 // its open space to wait on while it is not in front, with the words to say, and nothing else: no
-// key, no token, no name. Nothing is ever given back.
-class Watcher : public QObject
+// key, no token, no name. Nothing is ever given back. Only Erevos may call it: any app of the
+// phone can call a name on the session bus, so a call is taken only from a process that runs
+// erevos, beside this helper, as D-Bus and /proc say (fromErevos).
+class Watcher : public QObject, protected QDBusContext
 {
     Q_OBJECT
     Q_CLASSINFO("D-Bus Interface", "app.erevos.Watch")
@@ -134,7 +138,11 @@ private slots:
 
 private:
     void startAll();
+    /** Whether the D-Bus call being answered comes from Erevos; if not, it is answered AccessDenied. */
+    bool fromErevos();
 
+    // The callers on the bus seen to be Erevos (a unique name is never used again on a bus).
+    QSet<QString> m_callers;
     Alerts *m_alerts;
     Awake *m_awake;
     QNetworkConfigurationManager *m_network;
