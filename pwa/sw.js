@@ -113,18 +113,40 @@ async function fingerprint() {
 class RefusedError extends Error {}
 
 // What the worker remembers between starts: the release in use, one waiting to be used, refusals.
+// `state` is the last one read or written, for reading; every change goes through changeState.
 let state = null;
 
-async function readState() {
-  if (state) return state;
+async function loadState() {
   const kept = await (await caches.open(META)).match(STATE);
-  state = kept ? await kept.json() : { current: null, pending: null, refused: [], checked: 0, error: '' };
+  return kept ? await kept.json() : { current: null, pending: null, refused: [], checked: 0, error: '' };
+}
+
+async function readState() {
+  if (!state) {
+    const loaded = await loadState();
+    state ??= loaded;
+  }
   return state;
 }
 
-async function writeState(next) {
-  state = next;
-  await (await caches.open(META)).put(STATE, new Response(JSON.stringify(next), { headers: { 'Content-Type': 'application/json' } }));
+let changes = Promise.resolve();
+
+/**
+ * Changes the state, one change at a time, each made on the state as it is kept right then, read
+ * again from the cache (a new worker, installing, writes it too), never on a copy taken before an
+ * await: a check that waited on the network does not undo a promote made meanwhile, which would put
+ * back a release whose cache sweep had deleted. `change` edits the state it is given; when it gives
+ * false, nothing is written. Gives the state as it is after.
+ */
+function changeState(change) {
+  const done = changes.then(async () => {
+    const next = await loadState();
+    if (change(next) === false) return (state = next);
+    await (await caches.open(META)).put(STATE, new Response(JSON.stringify(next), { headers: { 'Content-Type': 'application/json' } }));
+    return (state = next);
+  });
+  changes = done.catch(() => undefined);
+  return done;
 }
 
 function shapeOf(release) {
@@ -196,25 +218,43 @@ async function tell(message) {
   for (const client of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) client.postMessage({ erevos: message });
 }
 
-async function refuse(next, reason, version) {
-  next.refused = [{ at: Date.now(), reason, version: version ?? null }, ...next.refused].slice(0, REFUSALS);
-  await writeState(next);
+/** Keeps a refusal to show (with `also`, any other change to make with it), and says so to the windows. */
+async function refuse(reason, version, also = () => undefined) {
+  await changeState((next) => {
+    also(next);
+    next.refused = [{ at: Date.now(), reason, version: version ?? null }, ...next.refused].slice(0, REFUSALS);
+  });
   await tell({ kind: 'refused', reason });
 }
 
-/** Removes the caches of releases neither in use nor waiting. */
+// The release whose files check is putting in its cache now, which the state names only after.
+let storing = null;
+
+/** Removes the caches of releases neither in use, nor waiting, nor being stored. */
 async function sweep(next) {
-  const keep = new Set([next.current, next.pending].filter(Boolean).map((r) => cacheName(r.version)));
+  const keep = new Set([next.current, next.pending, storing].filter(Boolean).map((r) => cacheName(r.version)));
   for (const name of await caches.keys()) if (name.startsWith('erevos-r') && !keep.has(name)) await caches.delete(name);
 }
 
 /** Takes the waiting release into use. */
 async function promote() {
-  const now = await readState();
-  if (!now.pending) return;
-  const next = { ...now, current: now.pending, pending: null };
-  await writeState(next);
-  await sweep(next);
+  let moved = false;
+  const next = await changeState((now) => {
+    if (!now.pending) return false;
+    now.current = now.pending;
+    now.pending = null;
+    moved = true;
+  });
+  if (moved) await sweep(next);
+}
+
+/** Names `release` as the one to use, or to use next when one is in use; false if one as new or newer is named already. */
+function nameRelease(now, release) {
+  const base = now.pending ?? now.current;
+  if (base && base.version >= release.version) return false;
+  if (now.current) now.pending = release;
+  else now.current = release;
+  return true;
 }
 
 let checking = null;
@@ -222,37 +262,48 @@ let checking = null;
 /** Looks for a newer release, and gets it ready if it is one. */
 function check() {
   checking ??= (async () => {
-    const now = await readState();
-    const next = { ...now, checked: Date.now(), error: '' };
+    const checked = Date.now();
+    // Each change is made on the state as it is when it is written (changeState), not as it was
+    // when this began: a promote while the server was asked stays.
+    const noted =
+      (error = '') =>
+      (next) => {
+        next.checked = checked;
+        next.error = error;
+      };
     let release;
     try {
       release = await fetchRelease();
     } catch (error) {
-      if (error instanceof RefusedError) return refuse(next, error.message);
-      next.error = `Could not reach the server: ${error.message}`;
-      return writeState(next);
+      if (error instanceof RefusedError) return refuse(error.message, undefined, noted());
+      return changeState(noted(`Could not reach the server: ${error.message}`));
     }
-    const base = next.pending ?? next.current;
+    const now = await readState();
+    const base = now.pending ?? now.current;
     if (base && release.version < base.version) {
-      return refuse(next, `The server offered release ${release.version}, older than ${base.version} in use. An older release may have faults fixed since, so it is refused.`, release.version);
+      return refuse(`The server offered release ${release.version}, older than ${base.version} in use. An older release may have faults fixed since, so it is refused.`, release.version, noted());
     }
     if (base && release.version === base.version) {
-      if (JSON.stringify(release.files) !== JSON.stringify(base.files)) return refuse(next, `The server offered a second, different release ${release.version}.`, release.version);
-      return writeState(next);
+      if (JSON.stringify(release.files) !== JSON.stringify(base.files)) return refuse(`The server offered a second, different release ${release.version}.`, release.version, noted());
+      return changeState(noted());
     }
+    storing = release;
     try {
-      await store(release, next.current);
+      await store(release, now.current);
     } catch (error) {
       await caches.delete(cacheName(release.version));
-      if (error instanceof RefusedError) return refuse(next, error.message, release.version);
-      next.error = `Could not fetch release ${release.version}: ${error.message}`;
-      return writeState(next);
+      if (error instanceof RefusedError) return refuse(error.message, release.version, noted());
+      return changeState(noted(`Could not fetch release ${release.version}: ${error.message}`));
+    } finally {
+      storing = null;
     }
-    if (next.current) next.pending = release;
-    else next.current = release;
-    await writeState(next);
+    let named = false;
+    const next = await changeState((then) => {
+      noted()(then);
+      named = nameRelease(then, release);
+    });
     await sweep(next);
-    await tell({ kind: 'update-ready', version: release.version });
+    if (named) await tell({ kind: 'update-ready', version: release.version });
   })().finally(() => {
     checking = null;
   });
@@ -269,10 +320,12 @@ self.addEventListener('install', (event) => {
         if (base && release.version < base.version) throw new RefusedError(`Release ${release.version} is older than ${base.version}.`);
         if (!base || release.version > base.version) {
           await store(release, now.current);
-          const next = { ...now, checked: Date.now(), error: '' };
-          if (next.current) next.pending = release;
-          else next.current = release;
-          await writeState(next);
+          // On the state as it is now: the worker in use may have changed it while this fetched.
+          await changeState((next) => {
+            if (!nameRelease(next, release)) return false;
+            next.checked = Date.now();
+            next.error = '';
+          });
         }
       } catch (error) {
         await tell({ kind: 'install-failed', reason: error.message });
@@ -386,10 +439,10 @@ self.addEventListener('message', (event) => {
       knownLoader(String(event.data.hash)).then(async (known) => {
         // Kept to show; the page that asked raises the alarm itself.
         if (!known) {
-          const next = { ...(await readState()) };
           const reason = 'The server sent a new service worker that no signed release lists. It may take over when Erevos next opens.';
-          next.refused = [{ at: Date.now(), reason, version: null }, ...next.refused].slice(0, REFUSALS);
-          await writeState(next);
+          await changeState((next) => {
+            next.refused = [{ at: Date.now(), reason, version: null }, ...next.refused].slice(0, REFUSALS);
+          });
         }
         answer({ known });
       }),
