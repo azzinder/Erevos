@@ -23,7 +23,8 @@ import { PollCard } from './poll';
 import { Button, Row, Text } from './ui';
 
 // A message in a Matrix chat (app/matrix-chat.tsx): its bubble with what it answers, its words, photo,
-// file or voice message, when it was written and changed, and the reactions to it under it. A photo
+// file or voice message, when it was written and changed, whether its key's sender is not known for
+// sure (Not verified, lib/matrix.ts openMegolm), and the reactions to it under it. A photo
 // or file is fetched only when asked for, so the homeserver does not learn which were looked at
 // merely by scrolling; a voice message is fetched when played.
 
@@ -67,7 +68,7 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   const colors = useColors();
   const mine = message.sender === me;
   const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', mark ?? ''].filter(Boolean).join('  ·  ');
+  const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', message.unverified ? t('Not verified') : '', mark ?? ''].filter(Boolean).join('  ·  ');
   const side = mine ? 'flex-end' : 'flex-start';
   const shownPoll = message.poll && !message.deleted ? pollShown(message.poll) : null;
   const ended = message.poll ? pollOver(message.poll) : false;

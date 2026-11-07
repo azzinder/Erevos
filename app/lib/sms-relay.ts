@@ -99,6 +99,9 @@ export async function linkInviter(e2e: E2E, identity: string): Promise<{ number:
 export async function answerInvites(e2e: E2E, linkSender: string, here: Where, sends: Relay): Promise<void> {
   if (!canSealOpen()) return;
   const link = await spaceSmsLink();
+  // Invites turned off: this phone sends none, and answers none either, so no one becomes a
+  // contact from a phone number alone. What came waits; turned on again, it is answered.
+  if (!link.invites) return;
   // Taken off the list at once: one added meanwhile waits for the next look.
   const queued = unanswered;
   unanswered = [];

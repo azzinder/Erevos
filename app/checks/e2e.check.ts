@@ -365,6 +365,56 @@ t('an old first packet sent again is refused even once the space has seen many o
   assert.equal(message(await alice.e2e.receive(after.packet)).text, 'still here');
 });
 
+t('an old first packet whose id is no longer kept never becomes the conversation the chat sends in', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity } = await alice.e2e.addContact(bob.code, alice.from);
+  const first = alice.e2e.pending()[0].first;
+  const hello = message(await bob.e2e.receive(first));
+  await alice.e2e.firstSent(identity);
+  message(await alice.e2e.receive((await bob.e2e.seal(hello.identity, 'hi', bob.from)).packet));
+  // As many first packets came since as either list keeps: both have forgotten it.
+  const kept = await loadE2EData('space', 1, bob.key);
+  const before = kept.contacts.find((c) => c.identity === hello.identity)!;
+  assert.ok(before.firstAt && before.firstAt > 0);
+  await saveE2EData('space', 1, bob.key, { ...kept, seen: [], contacts: kept.contacts.map((c) => ({ ...c, seen: [] })) });
+  const later = await E2E.open('space', 1, bob.key);
+  // Taken again, it shows nothing new, and the conversation sent in stays the live one.
+  message(await later.receive(first));
+  const after = (await loadE2EData('space', 1, bob.key)).contacts.find((c) => c.identity === hello.identity)!;
+  assert.equal(after.conversations[0], before.conversations[0]);
+  assert.equal(after.conversations.length, 2);
+  assert.equal(after.firstAt, before.firstAt);
+  assert.equal(message(await alice.e2e.receive((await later.seal(hello.identity, 'still here', bob.from)).packet)).text, 'still here');
+});
+
+t('replay lists keep many first packets: 1000 in all, 64 for each contact', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  await alice.e2e.addContact(bob.code, alice.from);
+  const first = alice.e2e.pending()[0].first;
+  message(await bob.e2e.receive(first));
+  const id = (n: number) => n.toString(16).padStart(32, '0');
+  const kept = await loadE2EData('space', 1, bob.key);
+  const own = kept.seen.at(-1)!;
+  // Many others since: the lists still hold it, and keep 1000 and 64 at most.
+  await saveE2EData('space', 1, bob.key, {
+    ...kept,
+    seen: [own, ...Array.from({ length: 998 }, (_, n) => id(n))],
+    contacts: kept.contacts.map((c) => ({ ...c, seen: [own, ...Array.from({ length: 63 }, (_, n) => id(n))] })),
+  });
+  const reloaded = await loadE2EData('space', 1, bob.key);
+  assert.equal(reloaded.seen.length, 999);
+  assert.equal(reloaded.contacts[0].seen.length, 64);
+  const later = await E2E.open('space', 1, bob.key);
+  assert.deepEqual(await later.receive(first), { kind: 'refused', reason: 'replay' });
+  // One more first packet from someone new: the space's list keeps the latest 1000.
+  const carol = await chat('space', 2);
+  await carol.e2e.addContact(bob.code, carol.from);
+  message(await later.receive(carol.e2e.pending()[0].first));
+  assert.equal((await loadE2EData('space', 1, bob.key)).seen.length, 1000);
+});
+
 t('once each has said its key, packets come sealed for the relay, and a few that come unsealed are still read', async () => {
   const alice = await chat('space', 0);
   const bob = await chat('space', 1);

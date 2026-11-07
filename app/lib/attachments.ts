@@ -17,7 +17,7 @@
 
 import { decryptBytes, encryptBytes, fromHex, randomBytes, sha256Bytes, toHex } from './crypto';
 import { gcm } from '@noble/ciphers/aes.js';
-import { deleteChunk, getChunk, isLentToken, putChunk, RelaySession, relayPath, sameRelay, type Relay } from './relay';
+import { deleteChunk, getChunk, isLentToken, putChunk, RelaySession, relayPath, sameRelay, torFor, type Relay } from './relay';
 import {
   CHUNK_SIZES,
   cleanFileName,
@@ -35,12 +35,14 @@ import {
 } from '../lock/attachment-files';
 import { dropPieces, piecesCame, readPieces, type PiecePlace } from './nostr-pieces';
 import { downloadBlob, NOSTR_FILE_MOST } from './nostr-files';
+import { netThroughTor } from './net-http';
 import { t } from './i18n';
 
 /** The largest file that can be sent. */
 export const MAX_FILE = 100 * 1000 * 1000;
 
-/** Photos and files that came, up to this size, are taken from the relay as soon as they come. */
+/** Photos and files that came, up to this size, are taken from the relay as soon as they come
+ *  (as takesItself says). */
 export const AUTO_TAKE = 16 * 1000 * 1000;
 
 /** Where a file that came waits on the relay until taken: the relay, and its chunks' ids (hex, one after another). */
@@ -296,8 +298,28 @@ export async function uploadFile(own: Relay, ref: FileRef, progress?: Progress, 
 // relay's /files path.
 function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
   if (sameRelay(relay, own.url)) return { at: { url: own.url, token: own.token } };
-  if (isLentToken(own.token)) return { at: relayPath(relay, '/files') };
+  if (lentAway(own, relay)) return { at: relayPath(relay, '/files') };
   return { at: { url: own.url, token: own.token }, via: relay };
+}
+
+// Whether a file at `relay` is taken, from a place lent on ours, straight from that relay.
+const lentAway = (own: Relay, relay: string): boolean => !sameRelay(relay, own.url) && isLentToken(own.token);
+
+/**
+ * Whether a file that came is taken by itself (up to AUTO_TAKE), as it shows, through our relay
+ * (`own`). The sender chose where it is: a file server's address, or a relay that, from a place
+ * lent on ours, the phone connects to itself. Taken from there straight, that place would learn
+ * the phone's address, as a contact's relay never does. So such a file is taken by itself only
+ * while that fetch goes through Tor, as the space's Tor way says now (a file from a lent place only
+ * with Everything, as files go); otherwise it waits for a tap, as larger ones do, and the owner
+ * chooses. One on our relay, one ours fetches from the relay it is on, and a photo whose pieces
+ * came through Nostr are taken by themselves.
+ */
+export function takesItself(own: Relay | null, from: FileFrom): boolean {
+  if (from.via === 'nostr') return true;
+  if (from.via === 'blossom') return netThroughTor();
+  if (!own) return false;
+  return !lentAway(own, from.relay) || torFor(true);
 }
 
 /**
@@ -309,10 +331,12 @@ function fileWay(own: Relay, relay: string): { at: Relay; via?: string } {
  * Returns where it is now kept. If any chunk is missing or was changed, nothing is kept. A photo
  * that came in pieces through Nostr is taken from those `place` keeps, the chat's own.
  */
-export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean | TakenFiles, place: PiecePlace | null = null): Promise<FileRef> {
+export async function takeFile(own: Relay | null, ref: FileRef, progress?: Progress, leave?: boolean | TakenFiles, place: PiecePlace | null = null, itself = false): Promise<FileRef> {
   const { from, ...taken } = ref;
   if (!from) return ref;
-  if (!onRelay(from)) return takeSent(ref, from, progress, place);
+  // Taken by itself (`itself`), never from where its sender chose straight: see takesItself.
+  if (itself && !takesItself(own, from)) throw new FileMissingError();
+  if (!onRelay(from)) return takeSent(ref, from, progress, place, itself);
   if (!own) throw new FileMissingError();
   const watch = leave === undefined ? takenFiles : typeof leave === 'object' ? leave : null;
   const left = (typeof leave === 'boolean' ? leave : watch?.leave(from)) ?? false;
@@ -383,7 +407,7 @@ export function sealBlob(key: Uint8Array, bytes: Uint8Array): { blob: Uint8Array
 
 // Takes a file that came in Nostr wraps (pieces kept by lib/nostr-pieces.ts, in `place`, the chat's
 // own storage) or from a file server, and keeps it here as a file that went through the relay would be.
-async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null): Promise<FileRef> {
+async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undefined, place: PiecePlace | null, itself: boolean): Promise<FileRef> {
   const key = fromHex(ref.key);
   const { name, mime, kind, w, h, sticker, hidden } = ref;
   const meta = { name, mime, kind, ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}), ...(sticker ? { sticker } : {}), ...(hidden ? { hidden } : {}) };
@@ -417,7 +441,8 @@ async function takeSent(ref: FileRef, from: FileFrom, progress: Progress | undef
     return taken;
   }
   if (!from.url || !from.x) throw new FileMissingError();
-  const blob = await downloadBlob(from.url);
+  // Taken by itself, through Tor alone: never straight should Tor fail on the way.
+  const blob = await downloadBlob(from.url, itself);
   if (toHex(sha256Bytes(blob)) !== from.x) throw new FileDamagedError();
   let bytes: Uint8Array;
   try {

@@ -4,7 +4,7 @@
 
 import { deleteChunks, type FileMeta, type FileRef } from '../lock/attachment-files';
 import type { GroupMessage, GroupParts } from '../lock/group-data';
-import { AUTO_TAKE, sendFile, takeFile, type Source } from './attachments';
+import { AUTO_TAKE, sendFile, takeFile, type Source, takesItself } from './attachments';
 import type { GroupTransport, Groups } from './groups';
 import type { Relay } from './relay';
 
@@ -47,20 +47,22 @@ export async function sendGroupFile(
  * keeps it here, leaving it on the relay for the other members. Returns where it is kept, or null
  * if its message went meanwhile, and then nothing is kept.
  */
-export async function takeGroupFile(groups: Groups, id: string, own: Relay, ref: FileRef, progress?: Progress): Promise<FileRef | null> {
-  const taken = await takeFile(own, ref, progress, true);
+export async function takeGroupFile(groups: Groups, id: string, own: Relay, ref: FileRef, progress?: Progress, itself = false): Promise<FileRef | null> {
+  const taken = await takeFile(own, ref, progress, true, null, itself);
   if (await groups.setFile(id, taken)) return taken;
   await deleteChunks(taken.id, taken.count).catch(() => undefined);
   return null;
 }
 
 /**
- * The files of messages to take by themselves: still on the relay, up to AUTO_TAKE, and not tried
- * yet (by file id). One of this phone's own is there only when another device of the account sent
- * it, or the phone put it there for this one (lib/devices.ts).
+ * The files of messages to take by themselves: still on the relay, up to AUTO_TAKE, not tried
+ * yet (by file id), and from where a take by itself may go (lib/attachments.ts takesItself): a
+ * member's relay reached straight from a lent place would see this phone's address, so such a
+ * file waits for a tap. One of this phone's own is there only when another device of the account
+ * sent it, or the phone put it there for this one (lib/devices.ts).
  */
-export function filesToTake(messages: GroupMessage[], tried: Set<string>): FileRef[] {
-  return messages.flatMap((m) => (m.file?.from && m.file.size <= AUTO_TAKE && !tried.has(m.file.id) ? [m.file] : []));
+export function filesToTake(messages: GroupMessage[], tried: Set<string>, own: Relay | null = null): FileRef[] {
+  return messages.flatMap((m) => (m.file?.from && m.file.size <= AUTO_TAKE && !tried.has(m.file.id) && (own === null || takesItself(own, m.file.from)) ? [m.file] : []));
 }
 
 /** The type of a voice message's sound, from how it starts: AAC from a phone, Opus from a computer. */

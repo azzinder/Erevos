@@ -73,6 +73,12 @@ export type OmemoDevice = {
   session?: unknown;
   /** Its identity key changed since it was first seen: said beside its key in the chat's devices, to compare. */
   changed?: boolean;
+  /** The other identity key it last came with, and the session under it, kept aside while the
+   *  person has not accepted it in the chat's devices: the first key and its session stay, and
+   *  nothing is encrypted to the device meanwhile (lib/xmpp.ts). */
+  pending?: { identity: string; session: unknown };
+  /** New in a list that came after the first: the next chat written to says so, once. */
+  unsaid?: true;
   /** Its bundle could not be had: tried again later. */
   failedAt?: number;
   /** In the device list the account last published. */

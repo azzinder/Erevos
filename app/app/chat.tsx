@@ -25,7 +25,7 @@ import { rtc } from '../lib/webrtc';
 import { clearLeftovers, playVoice, useVoiceRecorder } from '../lib/audio';
 import { MAX_VOICE_MS, MIN_VOICE_MS, VoiceAssembler, voiceDuration } from '../lib/voice';
 import { deleteClip, loadClip, saveClip, type VoiceRef } from '../lock/voice-clips';
-import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
+import { AUTO_TAKE, FileGoneError, keepFile, MAX_FILE, offerRef, onRelay, PiecesMissingError, readFile, sendFile, takeFile, takesItself, bytesSource, refSource, type FileOffer, type Source } from '../lib/attachments';
 import { canRingInBackground, loadMessageNotices, loadRingInBackground, messageCameAt, messageGone, screenOfChat, screenOfHidden, showOnScreen } from '../lib/background';
 import { cleanFileName, cleanMime, deleteChunks, mimeOf, type FileKind, type FileMeta, type FileRef } from '../lock/attachment-files';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
@@ -4038,8 +4038,9 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
 
   const takingNow = useRef(new Set<string>());
 
-  // Takes a photo or file that came, from the relay it is on through ours, and keeps it here.
-  async function take(own: Relay | null, peer: string, tag: string, ref: FileRef) {
+  // Takes a photo or file that came, from the relay it is on through ours, and keeps it here; by
+  // itself (`itself`), never straight from where its sender chose (lib/attachments.ts takesItself).
+  async function take(own: Relay | null, peer: string, tag: string, ref: FileRef, itself = false) {
     const key = `${peer}|${tag}`;
     if (takingNow.current.has(key) || !ref.from) return;
     takingNow.current.add(key);
@@ -4049,7 +4050,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       // What hidden chats take stays on the relay only while their own devices still take it (lib/devices.ts),
       // which the space's never hear of; with none, it goes from the relay at once.
       // A photo that came in pieces through Nostr is taken from those this place keeps (lib/nostr-pieces.ts).
-      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? (placeLinked() ?? false) : undefined, contactsPlace);
+      const taken = await takeFile(own, ref, (done, count) => setTaking((now) => ({ ...now, [key]: `${Math.floor((done / count) * 100)}%` })), hiddenKey ? (placeLinked() ?? false) : undefined, contactsPlace, itself);
       setMessages((list) => list.map((m) => (m.peer === peer && m.tag === tag ? { ...m, file: taken } : m)));
       // Deleted while it came: its chunks go too.
       if (history.current && !(await history.current.setFile(peer, tag, taken))) await deleteChunks(taken.id, taken.count);
@@ -4080,9 +4081,10 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     if (!loaded) return;
     for (const m of messages) {
       if (!m.file?.from || m.file.size > AUTO_TAKE || tried.current.has(`${m.peer}|${m.tag}`)) continue;
-      // Only a file on a relay needs ours.
-      if (!own && onRelay(m.file.from)) continue;
-      void take(own, m.peer, m.tag, m.file);
+      // Only a file on a relay needs ours. One from where its sender chose, which would be fetched
+      // straight, waits for a tap, as larger ones do, unless Tor takes it now.
+      if (!takesItself(own, m.file.from)) continue;
+      void take(own, m.peer, m.tag, m.file, true);
     }
   }, [loaded, relayUrl, relayToken, messages, pieceTick]);
 

@@ -521,6 +521,24 @@ t('hidden chats open from a search with their PIN, and a wrong one is only a sea
   assert.deepEqual((await searchHidden(0, 'pin-0', now + 7 * 24 * 3600_000))?.key, key);
 });
 
+t('wrong searches are forgotten after a quarter of an hour, and never make a search wait more than five minutes', async () => {
+  await setLockPassword(0, 'real-1111', real);
+  await prepareHidden();
+  const key = await setHiddenPassword(0, 3, 'pin-0', null);
+  const now = Date.now();
+  // Four that found nothing, then a quarter of an hour: the next four are free again.
+  for (let i = 0; i < FREE_TRIES - 1; i++) assert.equal(await searchHidden(0, `search ${i}`, now + i), null);
+  const later = now + 16 * 60_000;
+  for (let i = 0; i < FREE_TRIES - 1; i++) assert.equal(await searchHidden(0, `again ${i}`, later + i), null);
+  await assertNotLockedOut(later + FREE_TRIES, SEARCH_TRIES);
+  assert.deepEqual((await searchHidden(0, 'pin-0', later + FREE_TRIES + 1))?.key, key);
+  // Many in a row: the wait grows, to five minutes at most, then a quarter of an hour clears them.
+  const at = later + 60_000;
+  for (let i = 0; i < 20; i++) assert.equal(await searchHidden(0, `more ${i}`, at + i), null);
+  await assert.rejects(assertNotLockedOut(at + 20, SEARCH_TRIES), (e: LockedOutError) => e.until <= at + 19 + 5 * 60_000);
+  assert.deepEqual((await searchHidden(0, 'pin-0', at + 20 + 16 * 60_000))?.key, key);
+});
+
 t('another space opens from a search with its password; the open one\'s own, or the panic password, is only a search', async () => {
   await setLockPassword(0, 'real-1111', real);
   await setLockPassword(1, 'decoy-2222', decoy);

@@ -157,7 +157,10 @@ phone.
   with delivery and read marks, each call's line, a locked message that could not be opened here, a photo or
   file with **Show photo**, **Play** (a sound) and **Save** (`components/network-file.tsx`, as Nostr chats have it),
   **Photo** and **File** under the message box, and below the chat the fingerprints of the person's devices, with a note for a key that
-  changed. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
+  changed. A device that comes with another identity keeps its old identity and session: the new
+  pair waits as `pending`, the chat says a device changed its key, and nothing goes to that device
+  until **Accept** in the device sheet (`acceptXmppDevice`); its messages under the new key still
+  open. A device that appears in a later list is written to, and the chat says a new device came, once. A person with no OMEMO gets nothing until the chat chooses **Write without encryption**
   (`plain` in `XmppChat`); **Encrypt again** goes back. **Remove this chat** removes it here only.
   A group (`room` in `XmppChat`) is the same screen with its own words, and call tiles only in a private group the
   account is in (group calls, below): its name and address, a line

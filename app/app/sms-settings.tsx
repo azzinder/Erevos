@@ -323,7 +323,7 @@ export default function SmsSettings() {
           {part ? null : <SectionTitle title={t('Find Erevos on a number')} />}
           <Card>
             <Text tone="muted">
-              {t('With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone company sees one more short SMS. Each number is asked once a month at most.')}
+              {t('With the first SMS to a number that is not a contact, Erevos also sends a hidden invite. A phone without Erevos shows nothing. A phone with Erevos answers through the relay, and the two become contacts. The phone company sees one more short SMS. Each number is asked once a month at most. Turned off, Erevos sends no invites and answers none that come: no one becomes a contact from your number alone.')}
             </Text>
             <Button title={invites ? t('Turn invites off') : t('Turn invites on')} kind="secondary" onPress={() => void toggleInvites()} />
             <Text variant="caption" tone="faint">

@@ -56,6 +56,15 @@
 // the screen also says so when it takes its messages (receiveMessage): finding the queue empty
 // then, the relay drops a push still waiting, which would tell of messages already read.
 //
+// Taken to keep (receiveMessage, receiveOnRead): the phone asks the relay to keep each message it
+// hands over until the phone says it has it, which it says with its next take from that queue, once
+// what took the message before has kept it, or at the end of a look (ackTaken). So a message whose
+// reply was lost with the connection, through Tor or as the network changed, comes again rather
+// than being lost; one kept and then handed over again, after a restart say, opens in no
+// conversation the second time (a message key is never used twice, lib/e2e.ts) and shows once. A
+// relay from before it reads no further than the mark, and hands over and deletes as before, which
+// its reply says.
+//
 // Through Tor (setThroughTor, lib/tor.ts): the space's way says which requests go through the
 // core's Tor (crates/erevos-tor) instead of the phone's own connection.
 // - 'messages', the first way: all but those of files (RelaySession.open with `files`), while Tor
@@ -119,10 +128,15 @@ const COUPON_KEY = 33;
 const COUPON_SIGN = 34;
 const COUPON_KEYS = 35;
 const COUPON_REDEEM = 36;
+const ACK = 37;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
 const SHOWN = 1;
+// After the mark of a RECEIVE: keep the message until it is acknowledged; and the flag of a reply
+// that hands over one kept so, with its number.
+const HOLD = 1;
+const HELD = 2;
 
 const OK = 0;
 const NOT_FOUND = 1;
@@ -1232,28 +1246,71 @@ export function lastTakenAt(): number {
 }
 
 /**
- * Takes the oldest message from the queue, or returns null if it is empty. The relay then forgets
- * it. `shown`: taken on the screen (see Marks above).
+ * Takes the oldest message from the queue, or returns null if it is empty. A relay that keeps it
+ * until it is acknowledged (see Taken to keep above) is told, with this phone's next take from the
+ * queue, that the one before was kept: so call it again only once the message it gave is kept. An
+ * older relay forgets it at once. `shown`: taken on the screen (see Marks above).
  */
 export async function receiveMessage(relay: Relay, recipientId: Uint8Array, shown = onScreen()): Promise<Uint8Array | null> {
-  const taken = receivedOf(await request(relay, receiveBytes(recipientId, shown)));
+  const key = heldKey(relay, recipientId);
+  const taken = receivedOf(await request(relay, receiveBytes(recipientId, shown, held.get(key))), key);
   lastTaken = Date.now();
   return taken;
 }
 
-function receiveBytes(recipientId: Uint8Array, shown: boolean): Uint8Array {
-  const bytes = new Uint8Array(1 + 24 + (shown ? 1 : 0));
+// The number of the message each queue handed over last and still keeps, by relay and queue: kept
+// by now, and said so with the next take or ackTaken. In memory only: after a restart the message
+// comes again.
+const held = new Map<string, Uint8Array>();
+
+const heldKey = (relay: Relay, recipientId: Uint8Array) => `${relayHome(relay.url)} ${toHex(recipientId)}`;
+
+/**
+ * Tells the relay that the message the queue handed over last is kept, so it is deleted there now
+ * rather than with the next take: at the end of a look, and before a wait on the queue, which the
+ * message would end at once. With `way`, on the relay's `/read` path through Tor as receiveOnRead.
+ * Nothing when none waits to be told, as from an older relay. Throws when the relay cannot be
+ * reached; told again then with the next take.
+ */
+export async function ackTaken(relay: Relay, recipientId: Uint8Array, way?: string): Promise<void> {
+  const key = heldKey(relay, recipientId);
+  const number = held.get(key);
+  if (!number) return;
+  const bytes = new Uint8Array(1 + 24 + 8);
+  bytes[0] = ACK;
+  bytes.set(recipientId, 1);
+  bytes.set(number, 25);
+  const reply = way === undefined ? await request(relay, bytes) : await readRequest(relay, bytes, way);
+  if (reply === null || reply === 'ended') return;
+  if (reply[0] !== NOT_FOUND) check(reply, 'receive');
+  if (held.get(key) === number) held.delete(key);
+}
+
+/** Forgets which messages were handed over and are not acknowledged yet, as a restart does: they come again. */
+export function forgetTaken(): void {
+  held.clear();
+}
+
+function receiveBytes(recipientId: Uint8Array, shown: boolean, kept?: Uint8Array): Uint8Array {
+  const bytes = new Uint8Array(1 + 24 + 2 + (kept?.length ?? 0));
   bytes[0] = RECEIVE;
   bytes.set(recipientId, 1);
-  if (shown) bytes[25] = SHOWN;
+  bytes[25] = shown ? SHOWN : 0;
+  bytes[26] = HOLD;
+  if (kept) bytes.set(kept, 27);
   return bytes;
 }
 
-function receivedOf(reply: Uint8Array): Uint8Array | null {
+function receivedOf(reply: Uint8Array, key: string): Uint8Array | null {
+  // No such queue: nothing of it is kept any more. Otherwise, answered: the one before was kept.
+  if (reply[0] === OK || reply[0] === NOT_FOUND) held.delete(key);
   check(reply, 'receive');
   if (reply[1] === 0) return null;
-  const length = new DataView(reply.buffer, reply.byteOffset, reply.byteLength).getUint32(2);
-  return reply.slice(6, 6 + length);
+  const read = new DataView(reply.buffer, reply.byteOffset, reply.byteLength);
+  if (reply[1] !== HELD) return reply.slice(6, 6 + read.getUint32(2));
+  if (reply.length < 14) throw new RelayError(`receive: unexpected reply of ${reply.length} bytes`, reply[0]);
+  held.set(key, reply.slice(2, 10));
+  return reply.slice(14, 14 + read.getUint32(10));
 }
 
 // A relay from before a request closes the connection, as for any request it does not know; but so
@@ -1278,9 +1335,11 @@ export function canWaitAt(relay: Relay): boolean {
  * one is, false when none came in that time, the wait was ended (`signal`), or the relay cannot
  * wait. A relay from before it closes the connection, as for any request it does not know: then
  * one that answers a plain request is not asked to wait again for a while, unless it waited this
- * run, as then its connection died on the way. Throws when the relay cannot be reached.
+ * run, as then its connection died on the way. Throws when the relay cannot be reached. The message
+ * the queue handed over last is said to be kept first, as one waits only once it is.
  */
 export async function waitForMessage(relay: Relay, recipientId: Uint8Array, seconds: number, signal?: AbortSignal): Promise<boolean> {
+  await ackTaken(relay, recipientId).catch(() => undefined);
   const bytes = new Uint8Array(1 + 24 + 1);
   bytes[0] = WAIT;
   bytes.set(recipientId, 1);
@@ -1428,9 +1487,10 @@ export async function readsManyAt(relay: Relay, way: string): Promise<boolean> {
  * the relay has no such path. Throws when the relay cannot be reached, or has no such queue.
  */
 export async function receiveOnRead(relay: Relay, recipientId: Uint8Array, way: string, shown = onScreen()): Promise<Uint8Array | null> {
-  const reply = await readRequest(relay, receiveBytes(recipientId, shown), way);
+  const key = heldKey(relay, recipientId);
+  const reply = await readRequest(relay, receiveBytes(recipientId, shown, held.get(key)), way);
   if (reply === null || reply === 'ended') return null;
-  const taken = receivedOf(reply);
+  const taken = receivedOf(reply, key);
   lastTaken = Date.now();
   return taken;
 }
@@ -1475,12 +1535,14 @@ async function readRequest(relay: Relay, bytes: Uint8Array, way: string, signal?
 
 /**
  * Waits until a message is in one of `recipients` (1 to MAX_ANY queues), `seconds` at most (60),
- * without taking any, on the relay's `/read` path through Tor on the circuits named `way`: what each
+ * without taking any (the message each handed over last said to be kept first, as for
+ * waitForMessage), on the relay's `/read` path through Tor on the circuits named `way`: what each
  * queue was then, in the same order. All 'none' when the wait was ended (`signal`). Null when the
  * relay cannot (canReadManyAt). Throws when the relay cannot be reached.
  */
 export async function waitForAny(relay: Relay, recipients: Uint8Array[], seconds: number, way: string, signal?: AbortSignal): Promise<AnyFound[] | null> {
   if (recipients.length < 1 || recipients.length > MAX_ANY) throw new RangeError(`waitForAny: ${recipients.length} queues`);
+  for (const id of recipients) await ackTaken(relay, id, way).catch(() => undefined);
   const bytes = new Uint8Array(2 + 24 * recipients.length + 1);
   bytes[0] = WAIT_ANY;
   bytes[1] = recipients.length;

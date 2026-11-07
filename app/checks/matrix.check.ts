@@ -827,6 +827,9 @@ test('a Security Key set up on one device opens the cross-signing keys and earli
   const unlocked = await unlockRecovery(frank2, words);
   assert.deepEqual(unlocked, { crossSigning: true, backup: true, opened: 1 });
   assert.equal(frank2.rooms[room.id].messages.find((m) => m.text === 'before the new phone')?.sender, frank.userId);
+  // Nothing in the backup proves who gave a key: what opens with one is marked not verified.
+  assert.equal(frank2.rooms[room.id].messages.find((m) => m.text === 'before the new phone')?.unverified, true);
+  assert.ok(Object.values(frank2.inbound).some((inbound) => inbound.backup));
   assert.equal(frank2.crossSigning!.master, frank.crossSigning!.master);
   // The new device signed itself with the account's self-signing key, so Element trusts it.
   assert.equal(Object.keys(server.deviceKeys.get(frank.userId)!.get(frank2.deviceId)!.signatures[frank.userId]).length, 2);

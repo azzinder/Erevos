@@ -121,4 +121,5 @@ export const matrix: Record<string, string> = {
   "The browser came back without a sign-in. Start it again.": "Preglednik se vratio bez prijave. Počnite ponovo.",
   "This sign-in is not the one Erevos started, or it took too long. Start it again.": "Ovo nije prijava koju je Erevos započeo, ili je trajala predugo. Počnite ponovo.",
   "This space is signed in to Matrix already.": "Ovaj prostor je već prijavljen na Matrix.",
+  "Not verified": "Nije provjereno",
 };

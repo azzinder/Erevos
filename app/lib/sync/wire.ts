@@ -12,7 +12,9 @@ import { answer, isOp, isVector, isWhole, lackOf, MAX_BATCH, take, takeWhole, wh
 // (`ask`), and that one says it; so two devices that have all of each other's ops say nothing. Nothing here says which way it goes: the
 // devices' own conversations carry it, sealed end to end (lib/siblings.ts, the phone's links), over
 // the relay, nearby or whatever reaches the other, and a space and each hidden place each have their
-// own log, said in their own links only. Self-contained, so it runs under plain Node for checks.
+// own log, said in their own links only. Who said it is who the link says: the primary passes on
+// every device's ops, a device only its own (lib/sync/log.ts). Self-contained, so it runs under plain
+// Node for checks.
 
 export type Said =
   | { k: 'have'; vv: Record<string, number>; ask?: true }
@@ -46,9 +48,12 @@ export function have(log: Log, ask = false): Said {
   return ask ? { k: 'have', vv: { ...log.vv }, ask: true } : { k: 'have', vv: { ...log.vv } };
 }
 
-/** Whether `theirs` has an op that `log` lacks: never one of its own, which it alone makes. */
-function ahead(theirs: Record<string, number>, log: Log): boolean {
-  return Object.entries(theirs).some(([d, n]) => d !== log.me && n > (log.vv[d] ?? 0));
+/**
+ * Whether `theirs`, said by `from`, has an op that `log` lacks and `from` would give it: never one of
+ * its own, which it alone makes, and from a device other than the primary only that device's own.
+ */
+function ahead(theirs: Record<string, number>, log: Log, from: string): boolean {
+  return Object.entries(theirs).some(([d, n]) => d !== log.me && (from === log.primary || d === from) && n > (log.vv[d] ?? 0));
 }
 
 /** What a log's Answer says, as said. */
@@ -76,10 +81,17 @@ export function push(log: Log, peer: string, given?: Record<string, number>): Sa
   return said(log, lackOf(log, peer, theirs));
 }
 
-/** Whether `peer` may lack ops this device has (not its own): what it said it has is behind, or it said nothing. */
+/**
+ * Whether `peer` may lack ops this device has (not its own) and would give it: what it said it has
+ * is behind, or it said nothing. A device other than the primary gives only its own; and it asks the
+ * primary while the primary last named a device gone, so it hears when to let that one go too.
+ */
 export function asking(log: Log, peer: string): boolean {
   const theirs = log.seen[peer] ?? {};
-  return Object.entries(log.vv).some(([d, n]) => d !== peer && n > (theirs[d] ?? 0));
+  const primary = log.me === log.primary;
+  return Object.entries(log.vv).some(([d, n]) =>
+    d !== peer && (primary || d === log.me) && n > (theirs[d] ?? 0)) ||
+    (!primary && peer === log.primary && Object.keys(theirs).some((d) => !log.peers.includes(d)));
 }
 
 /** What hearing something did: what to say back, the ops taken, whether a whole log was taken. */
@@ -95,11 +107,11 @@ export function hear(log: Log, from: string, x: unknown, now: number): Heard {
   if (m === null || from === log.me || !log.peers.includes(from)) return none;
   if (m.k === 'have') {
     const back = said(log, answer(log, from, m.vv));
-    if (m.ask || ahead(m.vv, log)) back.push(have(log));
+    if (m.ask || ahead(m.vv, log, from)) back.push(have(log));
     return { ...none, back };
   }
   if (m.k === 'ops') {
-    const { taken } = take(log, m.ops, now);
+    const { taken } = take(log, m.ops, now, from);
     return { back: m.more ? [have(log)] : [], took: taken, whole: false };
   }
   return takeWhole(log, from, { vv: m.vv, data: m.data }, now) ? { back: [have(log)], took: [], whole: true } : none;

@@ -27,8 +27,11 @@ import {
   refSource,
   room,
   sealChunk,
+  sealBlob,
   sendFile,
   takeFile,
+  takesItself,
+  BLOB_CHUNK,
   type FileOffer,
 } from '../lib/attachments';
 import { gcm } from '@noble/ciphers/aes.js';
@@ -37,7 +40,9 @@ import { decryptBytes, DecryptError, decryptText, encryptBytes, encryptText, nod
 import { cleanJpeg, cleanPng, photoSize } from '../lib/photo';
 import { cleanFileName, freeName, isFileRef, PREFIX } from '../lock/attachment-files';
 import { History } from '../lock/history';
-import { RelaySession, getChunk } from '../lib/relay';
+import { RelaySession, getChunk, setThroughTor, setTorReady } from '../lib/relay';
+import { setCore, type Core } from '../lib/core';
+import { setNostrHttp } from '../lib/nostr-files';
 
 test('a file takes one small chunk, one middle one, or 1 MiB chunks', () => {
   assert.deepEqual(chunkPlan(0), { chunk: 64 * 1024, count: 1 });
@@ -291,4 +296,79 @@ test('a native AES-GCM is used only when it seals as the JavaScript one does', (
   sealed[100] ^= 1;
   assert.throws(() => decryptBytes(key, sealed), DecryptError);
   assert.throws(() => decryptBytes(key, sealed.subarray(0, 20)), DecryptError);
+});
+
+test('a file from where its sender chose is taken by itself only through Tor; one through our relay always', () => {
+  const own = { url: 'wss://own.example' };
+  const lent = { url: 'wss://own.example', token: `lent.${'ab'.repeat(48)}` };
+  const ids = 'cd'.repeat(24);
+  const there = { relay: 'wss://theirs.example', ids };
+  const blossom = { relay: 'blossom', ids, via: 'blossom' as const, url: 'https://files.example/x', x: 'cd'.repeat(32) };
+  try {
+    // Our relay, or one ours fetches from: by itself. With none, a file on a relay waits.
+    assert.equal(takesItself(own, { relay: own.url, ids }), true);
+    assert.equal(takesItself(own, there), true);
+    assert.equal(takesItself(lent, { relay: own.url, ids }), true);
+    assert.equal(takesItself(null, there), false);
+    assert.equal(takesItself(null, { relay: 'nostr', ids, via: 'nostr' }), true);
+    // From a lent place, their relay is reached straight: it waits for a tap, unless files go through Tor.
+    assert.equal(takesItself(lent, there), false);
+    setThroughTor('messages');
+    setTorReady(true);
+    assert.equal(takesItself(lent, there), false);
+    setThroughTor('all');
+    assert.equal(takesItself(lent, there), true);
+    // A file server's address: only while the space's requests go through Tor now.
+    setThroughTor('off');
+    assert.equal(takesItself(own, blossom), false);
+    setCore({ torRequest: async () => new Uint8Array(0), torHttp: async () => new Uint8Array([0, 200]) } as unknown as Core);
+    assert.equal(takesItself(own, blossom), false);
+    setThroughTor('messages');
+    assert.equal(takesItself(own, blossom), true);
+    setTorReady(false);
+    assert.equal(takesItself(own, blossom), false);
+  } finally {
+    setThroughTor('off');
+    setTorReady(false);
+    setCore(null);
+  }
+});
+
+test('a file on a file server is fetched by itself through Tor alone, and never straight without it', async () => {
+  const key = randomBytes(32);
+  const bytes = randomBytes(5000);
+  const { blob, x } = sealBlob(key, bytes);
+  const offer: FileOffer = { name: 'a.bin', mime: 'application/octet-stream', kind: 'file', size: bytes.length, relay: 'blossom', ids: x.slice(0, 48), key: Buffer.from(key).toString('hex'), chunk: BLOB_CHUNK, via: 'blossom', url: 'https://files.example/blob', x };
+  const asked: string[] = [];
+  const straight: string[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    straight.push(String(url));
+    return new Response(null, { status: 500 });
+  }) as typeof fetch;
+  setNostrHttp(null);
+  try {
+    // Tor off: by itself it is not fetched at all.
+    await assert.rejects(takeFile({ url: 'wss://own.example' }, offerRef(offer), undefined, false, null, true), FileMissingError);
+    assert.deepEqual(straight, []);
+    // Tor on for the space: through it, and it is kept.
+    setCore({
+      torRequest: async () => new Uint8Array(0),
+      torHttp: async (head: string) => {
+        asked.push((JSON.parse(head) as { url: string }).url);
+        return new Uint8Array([0, 200, ...blob]);
+      },
+    } as unknown as Core);
+    setThroughTor('messages');
+    setTorReady(true);
+    const taken = await takeFile({ url: 'wss://own.example' }, offerRef(offer), undefined, false, null, true);
+    assert.deepEqual(await readFile(taken), bytes);
+    assert.deepEqual(asked, [offer.url]);
+    assert.deepEqual(straight, []);
+  } finally {
+    globalThis.fetch = realFetch;
+    setThroughTor('off');
+    setTorReady(false);
+    setCore(null);
+  }
 });

@@ -23,7 +23,14 @@ import { after, isDevice, isStamp, later, saw, takenNow, tick, type Stamp } from
 // What is kept of the ops is only what some device may still ask for: once every device said it has
 // an op, it goes (`compact`), and so does a removed record once no op from before its removal can
 // still come. A device unlinked is cut off by its links first (nothing it seals is opened any more);
-// what another device passes on of it, stamped after this one knew it left, is refused.
+// what the phone passes on of it, stamped after this one knew it left, is refused. Once every device
+// has all it wrote, the phone forgets it was ever counted (`prune`), and each device after it, so the
+// vectors hold the devices of now and not every one ever linked.
+//
+// Nothing signs an op: who made it is what the link it came in says. So only the primary passes on
+// ops of other devices; a device gives its own alone, and what it gives in another's name, or of a
+// kind only the primary writes, is refused (`take`, `takeWhole`). Otherwise one device could write
+// as the phone, or take a number of the phone's before the phone's own op of it came.
 //
 // The functions change the log they are given, and say what changed. Self-contained, so it runs
 // under plain Node for checks; lib/sync/store.ts (later) keeps it sealed with the space's key.
@@ -121,6 +128,8 @@ export const MAX_HELD = 500;
 export const MAX_BATCH = 200;
 /** The longest value of a field, as JSON. */
 export const MAX_VALUE = 16 * 1024;
+/** The most devices a vector said by another device names: those of now, and those gone not yet let go. */
+export const MAX_DEVICES = 256;
 
 export function emptyLog(me: string, primary: string): Log {
   const peers = me === primary ? [me] : [primary, me];
@@ -199,12 +208,15 @@ function judge(log: Log, op: Op, now: number): 'take' | 'old' | 'wait' | 'no' | 
   return 'take';
 }
 
-/** Takes ops from another device, in any order; those that can follow later are held. */
-export function take(log: Log, ops: unknown[], now: number): Taken {
+/**
+ * Takes ops from another device, in any order; those that can follow later are held. From a device
+ * other than the primary (`from`), only its own: another's it may not pass on.
+ */
+export function take(log: Log, ops: unknown[], now: number, from?: string): Taken {
   const out: Taken = { taken: [], held: 0, refused: 0 };
   const queue: Op[] = [];
   for (const o of ops) {
-    if (isOp(o)) queue.push(o);
+    if (isOp(o) && (from === undefined || from === log.primary || o.d === from)) queue.push(o);
     else out.refused++;
   }
   const waiting = [...log.held, ...queue];
@@ -262,6 +274,13 @@ export function answer(log: Log, peer: string, theirs: Record<string, number>): 
 
 /** What `peer` lacks if it has `theirs`, as `answer` gives it, keeping nothing of what it said. */
 export function lackOf(log: Log, peer: string, theirs: Record<string, number>): Answer {
+  // A device other than the primary gives its own ops alone, as no other takes another's from it;
+  // and the whole log only for them, as that is all of it the other takes.
+  if (log.me !== log.primary) {
+    if ((theirs[log.me] ?? 0) < (log.cut[log.me] ?? 0)) return { whole: true };
+    const own = log.ops.filter((op) => op.d === log.me && op.s > (theirs[log.me] ?? 0));
+    return { ops: own.slice(0, MAX_BATCH), more: own.length > MAX_BATCH };
+  }
   // A device that has fewer of its own ops than this one has of it was put back from a backup: it
   // takes the whole log, and numbers its next op after the last one it made, never again one used.
   if ((theirs[peer] ?? 0) < (log.vv[peer] ?? 0)) return { whole: true };
@@ -280,28 +299,35 @@ export function whole(log: Log): Whole {
 
 /**
  * Takes another device's whole log: each record joined with this one's, each field its later value,
- * so taking it twice, or after its ops, changes nothing. From a device other than the primary, the
- * records only the primary writes are left as they are here.
+ * so taking it twice, or after its ops, changes nothing. From a device other than the primary, only
+ * what that device stamped itself, and how far it is with its own ops: what it says of others,
+ * nothing shows it had from them, and the primary gives those itself. So the records only the
+ * primary writes are left as they are here too.
  */
 export function takeWhole(log: Log, from: string, w: Whole, now = Date.now()): boolean {
   if (!isWhole(w) || !log.peers.includes(from) || from === log.me) return false;
+  const all = from === log.primary;
+  const its = (s: Stamp | undefined) => (s !== undefined && (all || s.d === from) ? s : undefined);
   for (const [k, entries] of Object.entries(w.data)) {
     const writer = writerOf(log, k);
     if (writer !== null && writer !== from) continue;
     const kind = (log.data[k] ??= {});
     for (const [id, theirs] of Object.entries(entries)) {
       const e = (kind[id] ??= { f: {} });
-      e.add = later(e.add, theirs.add);
-      if (theirs.del !== undefined && after(theirs.del, e.del)) {
-        e.del = theirs.del;
+      e.add = later(e.add, its(theirs.add));
+      const del = its(theirs.del);
+      if (del !== undefined && after(del, e.del)) {
+        e.del = del;
         e.by = theirs.by;
       }
-      for (const [name, field] of Object.entries(theirs.f)) if (after(field.at, e.f[name]?.at)) e.f[name] = field;
+      for (const [name, field] of Object.entries(theirs.f)) if (its(field.at) && after(field.at, e.f[name]?.at)) e.f[name] = field;
       dropBefore(e);
       if (e.add === undefined && e.del === undefined && Object.keys(e.f).length === 0) delete kind[id];
     }
+    if (Object.keys(kind).length === 0) delete log.data[k];
   }
   for (const [d, n] of Object.entries(w.vv)) {
+    if (!all && d !== from) continue;
     if (n > (log.vv[d] ?? 0)) {
       // Those ops are in the records now, but not kept one by one: a device behind takes the whole log.
       log.vv[d] = n;
@@ -311,7 +337,7 @@ export function takeWhole(log: Log, from: string, w: Whole, now = Date.now()): b
   // The clock sees their stamps as it sees an op's: not one too far ahead (clock.ts MAX_AHEAD),
   // or one device's clock once far ahead would set every other device's forward for good.
   for (const e of Object.values(w.data).flatMap((k) => Object.values(k))) {
-    for (const s of [e.add, e.del, ...Object.values(e.f).map((f) => f.at)]) if (s && takenNow(s, now)) log.clock = saw(log.clock, s, log.me);
+    for (const s of [e.add, e.del, ...Object.values(e.f).map((f) => f.at)]) if (its(s) && takenNow(s!, now)) log.clock = saw(log.clock, s!, log.me);
   }
   log.held = log.held.filter((op) => op.s > (log.vv[op.d] ?? 0));
   return true;
@@ -328,6 +354,10 @@ export function setPeers(log: Log, devices: string[], now: number): void {
     log.gone[d] = tick(log.clock, now, log.me);
     log.clock = log.gone[d];
     delete log.seen[d];
+    // What the primary said before this device knew it left says nothing of whether it let it go:
+    // only what it says from now on (`prune`).
+    const phone = log.seen[log.primary];
+    if (log.me !== log.primary && phone) phone[d] = Math.max(phone[d] ?? 0, log.vv[d] ?? 0, 1);
   }
   for (const d of next) delete log.gone[d];
   log.peers = next;
@@ -363,6 +393,40 @@ export function compact(log: Log): void {
       if (stable(log, e.by.d, e.by.s)) delete entries[id];
     }
     if (Object.keys(entries).length === 0) delete log.data[k];
+  }
+  prune(log);
+}
+
+/**
+ * Forgets the devices gone for good, so a vector names the devices of now and not each one ever
+ * linked (each link is a new endpoint): the primary once none of its ops is kept and every device
+ * said it has them all; a device once the primary, since this one knew it left, said a vector that
+ * no longer names it. A number missing is 0, so what comes later reads the same.
+ */
+function prune(log: Log): void {
+  const ids = new Set([...Object.keys(log.vv), ...Object.keys(log.cut), ...Object.keys(log.gone)]);
+  const others = log.peers.filter((p) => p !== log.me);
+  for (const d of ids) {
+    if (d === log.me || d === log.primary || log.peers.includes(d)) continue;
+    if (log.me === log.primary) {
+      if (log.ops.some((op) => op.d === d)) continue;
+      if (!others.every((p) => (log.seen[p]?.[d] ?? 0) >= (log.vv[d] ?? 0))) continue;
+      // Its records stay, but nothing counts it any more: a device that comes with none of the
+      // primary's ops takes the whole log, and them with it. Never while the primary wrote none.
+      if ((log.vv[d] ?? 0) > 0) {
+        if ((log.vv[log.me] ?? 0) === 0) continue;
+        log.cut[log.me] = Math.max(log.cut[log.me] ?? 0, 1);
+      }
+    } else {
+      const phone = log.seen[log.primary];
+      if (phone === undefined || d in phone) continue;
+    }
+    delete log.vv[d];
+    delete log.cut[d];
+    delete log.gone[d];
+    for (const v of Object.values(log.seen)) delete v[d];
+    log.ops = log.ops.filter((op) => op.d !== d);
+    log.held = log.held.filter((op) => op.d !== d);
   }
 }
 
@@ -446,32 +510,40 @@ function isEntry(x: unknown): x is Entry {
   return Object.entries(e.f).every(([name, f]) => NAME.test(name) && typeof f === 'object' && f !== null && isStamp((f as Field).at) && isValue((f as Field).v));
 }
 
-export function isVector(x: unknown): x is Record<string, number> {
+export function isVector(x: unknown, most = MAX_DEVICES): x is Record<string, number> {
   return typeof x === 'object' && x !== null && !Array.isArray(x) &&
-    Object.entries(x).length <= 64 &&
+    Object.entries(x).length <= most &&
     Object.entries(x).every(([d, n]) => isDevice(d) && Number.isSafeInteger(n) && (n as number) >= 0);
 }
 
 export function isWhole(x: unknown): x is Whole {
   if (typeof x !== 'object' || x === null) return false;
   const w = x as Record<string, unknown>;
-  if (!isVector(w.vv) || typeof w.data !== 'object' || w.data === null) return false;
-  return Object.entries(w.data).every(([k, entries]) =>
+  return isVector(w.vv) && isData(w.data);
+}
+
+function isData(x: unknown): x is Whole['data'] {
+  return typeof x === 'object' && x !== null && Object.entries(x).every(([k, entries]) =>
     NAME.test(k) && typeof entries === 'object' && entries !== null &&
     Object.entries(entries).every(([id, e]) => isId(id) && isEntry(e)));
 }
 
-/** A log as this device kept it, checked in full; null for anything else, as for none. */
+/**
+ * A log as this device kept it, checked in full; null for anything else, as for none. Its vectors may
+ * name more devices than one said by another may (kept before the gone were let go): it is taken all
+ * the same, and those gone for good are let go at once, as starting anew would number the phone's
+ * ops again from 1.
+ */
 export function checkedLog(x: unknown): Log | null {
   if (typeof x !== 'object' || x === null) return null;
   const l = x as Record<string, unknown>;
   if (!isDevice(l.me) || !isDevice(l.primary) || (l.clock !== undefined && !isStamp(l.clock))) return null;
-  if (!isVector(l.vv) || !isVector(l.cut)) return null;
+  if (!isVector(l.vv, Infinity) || !isVector(l.cut, Infinity)) return null;
   if (!Array.isArray(l.peers) || !l.peers.every(isDevice) || !Array.isArray(l.ops) || !Array.isArray(l.held)) return null;
   if (typeof l.gone !== 'object' || l.gone === null || !Object.entries(l.gone).every(([d, s]) => isDevice(d) && isStamp(s))) return null;
-  if (typeof l.seen !== 'object' || l.seen === null || !Object.entries(l.seen).every(([d, v]) => isDevice(d) && isVector(v))) return null;
-  if (!isWhole({ vv: l.vv, data: l.data })) return null;
-  return {
+  if (typeof l.seen !== 'object' || l.seen === null || !Object.entries(l.seen).every(([d, v]) => isDevice(d) && isVector(v, Infinity))) return null;
+  if (!isData(l.data)) return null;
+  const log: Log = {
     me: l.me,
     primary: l.primary,
     ...(l.clock !== undefined ? { clock: l.clock as Stamp } : {}),
@@ -484,4 +556,6 @@ export function checkedLog(x: unknown): Log | null {
     held: l.held.filter(isOp).slice(-MAX_HELD),
     seen: l.seen as Log['seen'],
   };
+  compact(log);
+  return log;
 }

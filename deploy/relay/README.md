@@ -565,6 +565,8 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_PRIVATE_PEERS` | `deny` | `allow` lets forwards go to relays at private addresses. |
 | `EREVOS_RELAY_MAX_QUEUES` | 100000 | Queues the relay holds. |
 | `EREVOS_RELAY_QUEUE_DAYS` | 180 | Days a queue lasts once its phone stops using it. |
+| `EREVOS_RELAY_QUEUED_MB` | 1024 | Room for waiting messages, all together, held in memory (see [Queues](#queues)). |
+| `EREVOS_RELAY_QUEUED_PER_PHONE_MB` | 64 | Of that, room for the messages waiting in the queues one phone made with a token of its own or a lent one. |
 | `EREVOS_RELAY_LEND` | `off` | `on` lends places to phones that have no relay. |
 | `EREVOS_RELAY_COUPON_KEY` | none | This relay's key for coupons, from `erevos-relay new-coupon-key` (see [Coupons for a second relay](#coupons-for-a-second-relay)). Needs `EREVOS_RELAY_TOKENS`. |
 | `EREVOS_RELAY_COUPON_ISSUERS` | none | The file of the public keys of the relays whose coupons this one takes, one on each line. Needs `EREVOS_RELAY_TOKENS` in a folder the relay may write in. |
@@ -629,6 +631,28 @@ sent to it do not keep it, so nobody can keep a queue alive by sending to it.
 The relay notes only the day a queue was last used, and writes it down at most
 once a day. Queues already in the journal from before count as used the day
 the new relay first starts.
+
+Waiting messages are held in memory as well as in the journal, so the relay
+holds at most 1024 MB of them (`EREVOS_RELAY_QUEUED_MB`), each counting its
+length and 64 bytes more, and of that at most 64 MB in the queues one phone
+made with a token of its own, from a coupon or an invite say, or a lent one
+(`EREVOS_RELAY_QUEUED_PER_PHONE_MB`), so one phone cannot fill the relay for
+everyone. Past either, a send to such a queue is told the relay is full, as
+for a full queue, and goes again later. Which phone made a queue is kept in
+memory only: queues read back after a restart, and those made with the relay's
+one token, count only in the whole. Give the machine more memory than
+`EREVOS_RELAY_QUEUED_MB`, with room for the rest of the relay. A journal that
+holds more, from before the cap or from a time it
+was set higher, is read back without its oldest messages past it, and the log
+says how many went, so the relay starts instead of running out of memory again
+at every start.
+
+A phone that keeps what it takes asks the relay to keep each message until it
+says it has it (see `RECEIVE` with `HOLD`, and `ACK`, in
+`crates/erevos-relay/src/server.rs`): a message whose reply is lost with its
+connection, through Tor or as the phone's network changes, is handed over again
+at the next look instead of being lost. Older phones take as before, and the
+app takes as before from an older relay.
 
 The journal is now written so that an older relay does not take it: put back
 in place of this one, an older relay stops at start with a line saying the

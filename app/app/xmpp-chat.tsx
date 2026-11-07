@@ -59,6 +59,7 @@ import {
   xmppChange,
   xmppDelete,
   xmppFile,
+  xmppAcceptDevice,
   xmppForgetChat,
   xmppLeaveGroup,
   xmppLookUpKeys,
@@ -83,7 +84,8 @@ import { useColors } from '../theme/context';
 // tells the other person's app when it asked; while it shows, what comes in it only sounds, and it
 // can be muted or given sounds of its own (components/network-chat-notify.tsx). Photo and File send
 // one through the server's HTTP upload, encrypted as the chat is (lib/xmpp-files.ts). The keys of
-// their devices are listed below, to compare with them. The two tiles at the top call them
+// their devices are listed below, to compare with them; one that came with another key has Accept,
+// and nothing is written to it before (lib/xmpp.ts). The two tiles at the top call them
 // (lib/xmpp-calls.ts), on the same call screen as Erevos's own calls. Opened from a hidden place's
 // hidden chats (`hidden=1`) it is the place's own account's chat (lib/network-place.ts), whose
 // calls are that account's, and no notifications, as a place's chats tell nothing outside the
@@ -586,7 +588,7 @@ export default function XmppChatScreen() {
           <SectionTitle title={t('Their keys')} />
           <Card>
             <Text tone="muted">{t('Compare these with what their app shows, by another way than this chat, to be sure nobody sits in between.')}</Text>
-            <Keys devices={devices} />
+            <Keys jid={jid} devices={devices} fail={fail} />
           </Card>
         </>
       ) : null}
@@ -661,8 +663,10 @@ export default function XmppChatScreen() {
 
 type Devices = ReturnType<typeof xmppDevices>;
 
-// A person's devices, each with its key to compare, whether it changed, and whether it is still listed.
-function Keys({ devices }: { devices: Devices }) {
+// A person's devices, each with its key to compare, whether it changed, and whether it is still
+// listed. One that came with another key gets nothing written to it until that key is accepted
+// here, after comparing it (lib/xmpp.ts acceptXmppDevice).
+function Keys({ jid, devices, fail }: { jid: string; devices: Devices; fail: (error: unknown) => void }) {
   return (
     <>
       {devices.map((device) => (
@@ -679,6 +683,11 @@ function Keys({ devices }: { devices: Devices }) {
             <Text variant="caption" tone="muted">
               {t('This key changed since it was first seen.')}
             </Text>
+          ) : null}
+          {device.pending ? (
+            <Row>
+              <Button title={t('Accept')} kind="secondary" compact onPress={() => xmppAcceptDevice(jid, device.id, !!device.two).catch(fail)} />
+            </Row>
           ) : null}
           {!device.listed ? (
             <Text variant="caption" tone="faint">
@@ -788,7 +797,7 @@ function Members({ state, jid, room, fail }: { state: XmppState; jid: string; ro
                 {t('No OMEMO keys found yet: encrypted messages do not reach them.')}
               </Text>
             )}
-            <Keys devices={devices} />
+            <Keys jid={member} devices={devices} fail={fail} />
             {room.admin && room.joined && member !== state.jid ? (
               <Row wrap>
                 {room.owner ? (

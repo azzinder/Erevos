@@ -106,6 +106,9 @@ export type PublicInfo = {
 // A member as the MLS state has it, with the key it signs with and what it says about itself.
 type Seat = { leaf: number; key: string; about: PublicAbout | null; me: boolean };
 
+/** The most let in anew whose old seats still wait to go. */
+const MAX_AGAIN = 32;
+
 const fresh = (id: string, me: string): PublicGroup => ({
   id,
   me,
@@ -120,6 +123,7 @@ const fresh = (id: string, me: string): PublicGroup => ({
   deleted: [],
   epochs: [],
   names: {},
+  again: [],
 });
 
 const ruleDoor = (door: DoorKept): Door => ({ door: door.sender, relay: door.relay, relayKey: door.relayKey, key: door.key });
@@ -428,12 +432,26 @@ export class PublicGroups extends Groups {
   }
 
   // Lets one who asked in. A phone that asks again while still in (its group forgotten there) comes
-  // in anew, in place of the one it was.
+  // in anew, in place of the one it was: but what it says of itself is only its word, and any
+  // member could say another's, to have them taken out. So the old seat stays until the new one
+  // is heard from (heard): its welcome is sealed for the queue and key it claimed, so only the
+  // phone that truly has them can ever speak from the new seat.
   private async admit(id: string, come: Waiting, transport: GroupTransport) {
     const seats = await this.seats(id);
-    const again = seats.filter((s) => !s.me && s.about?.sender === come.about.sender && s.about.seal === come.about.seal).map((s) => s.leaf);
+    const again = seats.filter((s) => !s.me && s.about?.sender === come.about.sender && s.about.seal === come.about.seal);
     if (seats.length - again.length >= MOST_MEMBERS) return this.answer(id, come.about, 'full', transport);
-    await this.commitPublic(id, transport, { add: [come], remove: again });
+    const kept = this.record(id)!;
+    if (again.length && !kept.again.includes(come.key)) await this.keepGroup({ ...kept, again: [...kept.again, come.key].slice(-MAX_AGAIN) });
+    await this.commitPublic(id, transport, { add: [come] });
+  }
+
+  // On the owner's phone, one let in anew spoke: the seats that say the same of themselves, from
+  // before it, go.
+  private async spokeAnew(id: string, from: PublicAbout, transport: GroupTransport) {
+    const kept = this.record(id)!;
+    await this.keepGroup({ ...kept, again: kept.again.filter((k) => k !== from.id) });
+    const old = (await this.seats(id)).filter((s) => !s.me && s.key !== from.id && s.about?.sender === from.sender && s.about.seal === from.seal).map((s) => s.leaf);
+    if (old.length) await this.commitPublic(id, transport, { remove: old });
   }
 
   // The owner's one commit: lets in `add`, takes out `remove` and whoever was taken out or banned,
@@ -569,6 +587,7 @@ export class PublicGroups extends Groups {
       }
       return true;
     }
+    if (kept.again.includes(from.id) && this.find(id)?.admin) await this.spokeAnew(id, from, transport).catch(() => undefined);
     // Nothing from a member who is muted, banned or taken out, nor what was deleted for everyone.
     if (marked(kept.mutes, from.id) || marked(kept.bans, from.id) || kept.outs.includes(from.id)) return true;
     if (typeof said.tag === 'string' && kept.deleted.includes(`${from.id}|${said.tag}`)) return true;

@@ -20,7 +20,8 @@ import { call, core, enc, MatrixError, retryLocked, signWith, type Json, type Ma
 //  - Key backup (m.megolm_backup.v1.curve25519-aes-sha2): every room key, encrypted to the
 //    backup's public key and kept on the homeserver, so a device that signs in later reads what
 //    came before it. This device takes from it the keys of the messages it shows locked, and
-//    puts in it the keys it makes or gets.
+//    puts in it the keys it makes or gets. Anyone with the backup's public key can add to it, so
+//    nothing there says for sure who sent a key: what opens with one shows as not verified.
 //
 // The Security Key is asked for once and never kept: what it opens is, sealed with the space.
 // An account with no secret storage yet gets one here (setUpRecovery), with a new Security Key
@@ -294,7 +295,8 @@ export async function restoreLocked(state: MatrixState, asked = new Set<string>(
         continue;
       }
       if (made.session_id !== sessionId) continue;
-      state.inbound[`${roomId} ${sessionId}`] = { session: made.session, senderKey: String(key.sender_key ?? '') };
+      // Marked as from the backup: nothing in it proves who gave the key (lib/matrix.ts ownerCheck).
+      state.inbound[`${roomId} ${sessionId}`] = { session: made.session, senderKey: String(key.sender_key ?? ''), backup: true };
       backup.backedUp[`${roomId} ${sessionId}`] = 1;
       const before = state.rooms[roomId]?.messages.filter((m) => m.locked).length ?? 0;
       await retryLocked(state, roomId, sessionId);

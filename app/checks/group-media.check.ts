@@ -240,3 +240,15 @@ test('what is taken by itself: still on the relay, small enough, not tried', () 
   assert.equal(voiceMime(Uint8Array.from([0x1a, 0x45, 0xdf, 0xa3, 1])), 'audio/webm');
   assert.equal(voiceMime(new Uint8Array(8)), 'application/octet-stream');
 });
+
+test('a group file on a member\'s relay, reached straight from a lent place, waits for a tap', () => {
+  const ids = 'cd'.repeat(24);
+  const file: FileRef = { id: 'ef'.repeat(16), key: 'ab'.repeat(32), chunk: 1024, count: 1, size: 10, kind: 'file', name: 'a.bin', mime: 'application/octet-stream', from: { relay: 'wss://theirs.example', ids } };
+  const message = { at: 1, from: 'ab'.repeat(32), text: '', tag: 'a'.repeat(12), file } as GroupMessage;
+  const own = { url: 'wss://own.example' };
+  const lent = { url: 'wss://own.example', token: `lent.${'ab'.repeat(48)}` };
+  // Through our own relay it comes by itself; from a lent place their relay would see this phone.
+  assert.deepEqual(filesToTake([message], new Set(), own), [file]);
+  assert.deepEqual(filesToTake([message], new Set(), lent), []);
+  assert.deepEqual(filesToTake([message], new Set()), [file]);
+});

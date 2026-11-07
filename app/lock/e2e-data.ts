@@ -71,6 +71,10 @@ export type Contact = {
   /** Ids of the first messages taken from them, the latest MAX_SEEN_EACH: one a relay sends again
    *  is refused, however many others came since. */
   seen: string[];
+  /** The time (`fa`, their clock) the newest first packet taken from them said it was started. One
+   *  that says no later a time is kept behind the conversation this chat sends in (lib/e2e.ts
+   *  accept). Missing while none said one: an Erevos before, or a chat from before this was kept. */
+  firstAt?: number;
   /** The key this chat gave them for the packets they send it (lib/sealed-packet.ts), base64url,
    *  once made; `sealTo`, the one they gave this chat, once said. `sealsIn`: their packets come
    *  sealed, so one that does not is tried in their conversations only now and then. */
@@ -629,8 +633,9 @@ export const isRelayKey = (v: unknown): v is string => isText(v) && /^[A-Za-z0-9
 /** The most tags held for a contact, of each kind: the latest are kept. */
 export const MAX_HELD = 200;
 const heldTags = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isTag).slice(-MAX_HELD) : []);
-/** The most first-message ids kept for a contact. */
-export const MAX_SEEN_EACH = 16;
+/** The most first-message ids kept for a contact: 16 bytes each, 2 KB as kept. An Erevos before
+ *  kept 16, and keeps the latest 16 of these. */
+export const MAX_SEEN_EACH = 64;
 
 function checkedContact(value: unknown): Contact | null {
   const v = (value ?? {}) as Partial<Record<keyof Contact, unknown>>;
@@ -661,6 +666,7 @@ function checkedContact(value: unknown): Contact | null {
     sealsIn: v.sealsIn === true,
     ...(isHex(v.ringSender) && v.ringSender.length === 48 ? { ringSender: v.ringSender } : {}),
     ...(isTime(v.seenAt) && v.seenAt > 0 ? { seenAt: v.seenAt } : {}),
+    ...(isTime(v.firstAt) && v.firstAt > 0 ? { firstAt: v.firstAt } : {}),
     ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),

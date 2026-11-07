@@ -56,6 +56,13 @@ What stays private is what is written.
     from the token the room keeps in `before`, up to five pages while nothing new comes; `start` is
     set when the room's first message is there. They are opened as the sync's are, so those still
     locked can open from the key backup later. A room then keeps up to `MOST_KEPT` (2000) messages.
+  - A room key is kept with who gave it: the user and the Ed25519 key of the device that sent it
+    through Olm. A message opens with a key only when its sender is that user (`ownerCheck`); a key
+    from a device not known yet is tied to it once the device list says it, or dropped if the device
+    is someone else's. Keys restored from the key backup, and messages the homeserver could have
+    put under another's name, show as **Not verified**. A device that comes back with another key
+    keeps its old keys, is marked changed and gets no room key again, as Element blocks such a
+    device; a device that appears later is given the key, and the chat says so once.
   - A relation that comes before its message, as in an older page, waits in `waiting` (400 at most,
     the oldest dropped) and is put on its message when it comes; none waits once the first message is
     there.

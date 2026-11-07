@@ -16,6 +16,7 @@ import { addNetwork, hearing } from './network-notices';
 import { actingWhere, type NetworkWhere } from './network-place';
 import { PlaceLives, type PlaceKey } from './place-lives';
 import {
+  acceptXmppDevice,
   addCallLine,
   addXmppContact,
   blockXmpp,
@@ -690,6 +691,12 @@ export function xmppSetPlain(jid: string, plain: boolean): Promise<void> {
     const chat = (it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
     chat.plain = plain || undefined;
   });
+}
+
+/** Takes the other key a device of `jid` came with, once the person compared it: what is written goes to it again. */
+export function xmppAcceptDevice(jid: string, id: string, two: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => acceptXmppDevice(it.state, jid, id, two));
 }
 
 /** A chat's own notifications (lock/chat-notify.ts), or the app's again with null. */

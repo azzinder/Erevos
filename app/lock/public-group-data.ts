@@ -61,6 +61,9 @@ export type PublicGroup = {
   epochs: Epoch[];
   /** The names members chose, by key: kept for those who left too, for their messages. */
   names: Record<string, string>;
+  /** On the owner's phone: keys let in anew, each in place of a seat that says the same of itself
+   *  (its phone forgot the group), whose old seat goes once the new one is heard from. */
+  again: string[];
 };
 
 /** A request to join this phone sent: the group, the door it went to, the key made for it, the
@@ -142,6 +145,7 @@ function checkedGroup(value: unknown): PublicGroup | null {
     deleted: list(v.deleted, (i) => (isText(i) && isKey(i.slice(0, 64)) && isTag(i.slice(65)) ? i : null), MAX_LIST),
     epochs: list(v.epochs, checkedEpoch, MAX_EPOCHS),
     names: checkedNames(v.names),
+    again: list(v.again, (i) => (isKey(i) ? i : null), MAX_LIST),
   };
 }
 

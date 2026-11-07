@@ -109,7 +109,8 @@ test('one-to-one with OMEMO: answer, change, react and take back, the server nev
   for (const [who, peer] of [[ben, toAnn], [ann2, toBen], [ann, toBen]] as const) {
     const changed = who.state.chats[peer].messages.find((m) => m.id === first.id)!;
     assert.deepEqual([changed.text, !!changed.edited], ['Πάμε θέατρο;', true]);
-    assert.equal(who.state.chats[peer].messages.length, 2);
+    // Beside the line that says Ann's second device is new, in Ben's chat.
+    assert.equal(who.state.chats[peer].messages.filter((m) => !m.call).length, 2);
   }
   assert.equal(ben.state.chats[toAnn].unread, unread);
   // Ben cannot change Ann's words.

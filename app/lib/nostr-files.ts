@@ -6,7 +6,7 @@ import { gcm } from '@noble/ciphers/aes.js';
 
 import { fromHex, randomBytes, sha256Bytes, toHex, utf8Decode, utf8Encode, aesGcmSeal } from './crypto';
 import { t } from './i18n';
-import { netHttp, type Http, type HttpAnswer } from './net-http';
+import { netHttp, torOnlyHttp, type Http, type HttpAnswer } from './net-http';
 
 // Photos and files in chats with other Nostr apps (docs/nostr-chats.md), as NIP-17 sends them
 // (kind 15): the file is encrypted on the phone with AES-256-GCM, by a key and nonce made for it
@@ -198,9 +198,11 @@ export async function uploadBlob(
  *  tag AES-GCM adds and for other apps' rounding. A server that sends more is stopped. */
 export const NOSTR_BLOB_MOST = NOSTR_FILE_MOST + 64 * 1024;
 
-/** Fetches a file's encrypted bytes from where the message says, NOSTR_BLOB_MOST at most. */
-export async function downloadBlob(url: string): Promise<Uint8Array> {
-  const answer = await http('GET', url, {}, undefined, NOSTR_BLOB_MOST);
+/** Fetches a file's encrypted bytes from where the message says, NOSTR_BLOB_MOST at most; with
+ *  `onlyTor`, through Tor or not at all, never straight when Tor fails (a file taken by itself,
+ *  lib/attachments.ts takesItself). The checks' own way (setNostrHttp) stays theirs. */
+export async function downloadBlob(url: string, onlyTor = false): Promise<Uint8Array> {
+  const answer = await (onlyTor && http === netHttp ? torOnlyHttp : http)('GET', url, {}, undefined, NOSTR_BLOB_MOST);
   if (answer.status < 200 || answer.status >= 300) throw new Error(t('The file could not be fetched ({status}).', { status: String(answer.status) }));
   return answer.bytes;
 }

@@ -39,8 +39,27 @@
 //! Otherwise, after a crash say, a queue with something waiting counts it as
 //! one send that did not say, in a new round: a phone may be told of messages
 //! twice, and never misses one.
+//!
+//! Each message counts its length and `KEEPING` bytes against what the store
+//! holds: at most `max_bytes` in all (1 GiB unless set), and of that at most
+//! `share` (64 MiB unless set) in the queues one phone made with a token of its
+//! own or a lent one, so one phone cannot fill the relay for everyone. Past
+//! either, a send is refused with `Full`, as for a full queue. Which phone made
+//! a queue is kept in memory only, as which phone held a request for later
+//! is: a queue read back from the journal, or made with the relay's own
+//! token, counts in the whole only. A journal that holds more than
+//! `max_bytes`, from before the cap or from a time it was set higher, is read
+//! back without the oldest messages past it, so the relay starts rather than
+//! running out of memory at every start.
+//!
+//! A phone that keeps what it takes (`take`) is handed the oldest message
+//! with its number and the message stays, handed over again at each take,
+//! until the phone says it has it (`ack`). So a message whose reply was lost
+//! with the connection is not lost with it; a phone may be handed one twice,
+//! and its chats take it once. Only the oldest is ever out, so at most one
+//! message a queue waits so for its phone, whatever the connections.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{hash_map, BTreeMap, HashMap, VecDeque};
 use std::io;
 use std::io::{ErrorKind, Read};
 use std::path::{Path, PathBuf};
@@ -56,6 +75,24 @@ pub type QueueId = [u8; 24];
 /// Messages a queue holds before it refuses more, so one sender cannot fill
 /// the relay.
 pub const MAX_QUEUED: usize = 1000;
+
+/// Bytes the store holds in all unless set (`EREVOS_RELAY_QUEUED_MB`).
+pub const DEFAULT_MAX_BYTES: usize = 1024 << 20;
+/// Bytes the queues one phone made hold unless set
+/// (`EREVOS_RELAY_QUEUED_PER_PHONE_MB`).
+pub const DEFAULT_SHARE: usize = 64 << 20;
+/// Bytes each message counts beyond its length: what keeping it costs, so
+/// that a flood of empty messages counts too.
+pub const KEEPING: usize = 64;
+
+/// What a message of `len` bytes counts against the caps.
+fn cost(len: usize) -> usize {
+    len + KEEPING
+}
+
+/// Who made a queue, for its share of the bytes queued: the SHA-256 of a
+/// phone's own token, or what stands for a lent one (see `server.rs`).
+pub type Owner = [u8; 32];
 
 /// How long a message waits for its recipient before it expires.
 pub const DEFAULT_TTL: u64 = 14 * 24 * 60 * 60;
@@ -90,6 +127,96 @@ struct Queue {
     used: u64,
     /// What came since its recipient last found it empty.
     news: News,
+    /// The number of its oldest message, which a phone that keeps what it
+    /// takes gives back to have it deleted (`ack`). Random where the queue
+    /// was made or read back, and one more for each message that goes, so a
+    /// number from before a restart names nothing after it.
+    first: u64,
+    /// Who made it, in memory only: none for a queue read back from the
+    /// journal, or made with the relay's own token.
+    owner: Option<Owner>,
+    /// While the journal is read back only: how many of the messages at its
+    /// front were emptied to keep under `max_bytes`. They keep their places,
+    /// so the records that take them later take the right ones.
+    dropped: usize,
+}
+
+impl Queue {
+    fn new(sender_id: QueueId, used: u64, owner: Option<Owner>) -> Queue {
+        Queue {
+            sender_id,
+            messages: VecDeque::new(),
+            used,
+            news: News::default(),
+            first: rand::rngs::OsRng.next_u64(),
+            owner,
+            dropped: 0,
+        }
+    }
+
+    /// Bytes its messages count against the caps.
+    fn bytes(&self) -> usize {
+        self.messages
+            .iter()
+            .skip(self.dropped)
+            .map(|(_, msg)| cost(msg.len()))
+            .sum()
+    }
+}
+
+/// Bytes held in all, and in the queues of each phone that made some.
+#[derive(Default)]
+struct Usage {
+    total: usize,
+    by_owner: HashMap<Owner, usize>,
+}
+
+impl Usage {
+    fn add(&mut self, owner: Option<Owner>, n: usize) {
+        self.total += n;
+        if let Some(owner) = owner {
+            *self.by_owner.entry(owner).or_default() += n;
+        }
+    }
+
+    fn sub(&mut self, owner: Option<Owner>, n: usize) {
+        self.total = self.total.saturating_sub(n);
+        if let Some(hash_map::Entry::Occupied(mut e)) = owner.map(|o| self.by_owner.entry(o)) {
+            let left = e.get().saturating_sub(n);
+            if left == 0 {
+                e.remove();
+            } else {
+                *e.get_mut() = left;
+            }
+        }
+    }
+
+    fn of(&self, owner: &Owner) -> usize {
+        self.by_owner.get(owner).copied().unwrap_or(0)
+    }
+}
+
+/// Takes the oldest message out of `q`, and what it counted out of `usage`.
+fn pop(usage: &mut Usage, q: &mut Queue) -> Option<Vec<u8>> {
+    let (_, msg) = q.messages.pop_front()?;
+    q.first = q.first.wrapping_add(1);
+    if q.dropped > 0 {
+        q.dropped -= 1;
+    } else {
+        usage.sub(q.owner, cost(msg.len()));
+    }
+    Some(msg)
+}
+
+/// Every message not emptied yet, by the hour it came, for `drop_oldest`.
+fn by_hour(queues: &HashMap<QueueId, Queue>) -> BTreeMap<u64, Vec<QueueId>> {
+    let mut hours: BTreeMap<u64, Vec<QueueId>> = BTreeMap::new();
+    for (id, q) in queues {
+        for (at, _) in q.messages.iter().skip(q.dropped) {
+            hours.entry(*at).or_default().push(*id);
+        }
+    }
+    hours
 }
 
 /// What a send said it carries.
@@ -235,6 +362,13 @@ pub struct Store {
     ttl: u64,
     max_queues: usize,
     queue_ttl: u64,
+    max_bytes: usize,
+    share: usize,
+    usage: Usage,
+    /// While the journal is read back past `max_bytes` only: the messages by
+    /// the hour they came, and how many were emptied.
+    oldest: Option<BTreeMap<u64, Vec<QueueId>>>,
+    dropped: usize,
     clock: fn() -> u64,
 }
 
@@ -247,6 +381,11 @@ impl Default for Store {
             ttl: DEFAULT_TTL,
             max_queues: DEFAULT_MAX_QUEUES,
             queue_ttl: DEFAULT_QUEUE_TTL,
+            max_bytes: DEFAULT_MAX_BYTES,
+            share: DEFAULT_SHARE,
+            usage: Usage::default(),
+            oldest: None,
+            dropped: 0,
             clock: system_now,
         }
     }
@@ -294,20 +433,22 @@ fn log(journal: &mut Option<Journal>, record: &Record) -> Result<(), QueueError>
 impl Store {
     #[cfg(test)]
     pub fn open(path: &Path) -> io::Result<Store> {
-        Store::open_with(path, DEFAULT_TTL)
+        Store::open_with(path, DEFAULT_TTL, DEFAULT_MAX_BYTES)
     }
 
     /// Opens the store kept in the journal at `path`, or starts an empty one
     /// there if the file does not exist yet, with messages expiring after
-    /// `ttl` seconds. The file is rewritten on the way, which drops received
-    /// and expired messages and deleted queues from it.
-    pub fn open_with(path: &Path, ttl: u64) -> io::Result<Store> {
-        Store::open_clocked(path, ttl, system_now)
+    /// `ttl` seconds, holding `max_bytes` at most. The file is rewritten on
+    /// the way, which drops received and expired messages and deleted queues
+    /// from it, and the oldest messages past `max_bytes`.
+    pub fn open_with(path: &Path, ttl: u64, max_bytes: usize) -> io::Result<Store> {
+        Store::open_clocked(path, ttl, max_bytes, system_now)
     }
 
-    fn open_clocked(path: &Path, ttl: u64, clock: fn() -> u64) -> io::Result<Store> {
+    fn open_clocked(path: &Path, ttl: u64, max_bytes: usize, clock: fn() -> u64) -> io::Result<Store> {
         let mut store = Store {
             ttl,
+            max_bytes,
             clock,
             ..Store::default()
         };
@@ -318,6 +459,19 @@ impl Store {
                 path.display()
             );
         }
+        if store.dropped > 0 {
+            elog!(
+                "erevos-relay: {} holds more messages than the {} MiB the relay keeps (EREVOS_RELAY_QUEUED_MB), so its {} oldest were dropped",
+                path.display(),
+                max_bytes >> 20,
+                store.dropped
+            );
+        }
+        for q in store.queues.values_mut() {
+            q.messages.drain(..q.dropped);
+            q.dropped = 0;
+        }
+        store.oldest = None;
         let kept = take_news(path);
         let mut taken = 0;
         for (id, news) in kept {
@@ -348,6 +502,16 @@ impl Store {
         Store {
             max_queues: max,
             queue_ttl: ttl,
+            ..self
+        }
+    }
+
+    /// The same store, holding at most `most` bytes of messages in all, and
+    /// `share` in the queues one phone made.
+    pub fn with_byte_limits(self, most: usize, share: usize) -> Store {
+        Store {
+            max_bytes: most,
+            share,
             ..self
         }
     }
@@ -419,7 +583,15 @@ impl Store {
     fn drop_expired(&mut self) {
         let (now, ttl) = ((self.clock)(), self.ttl);
         for q in self.queues.values_mut() {
-            q.messages.retain(|(at, _)| at.saturating_add(ttl) > now);
+            let owner = q.owner;
+            let usage = &mut self.usage;
+            q.messages.retain(|(at, msg)| {
+                let keep = at.saturating_add(ttl) > now;
+                if !keep {
+                    usage.sub(owner, cost(msg.len()));
+                }
+                keep
+            });
         }
     }
 
@@ -441,7 +613,7 @@ impl Store {
                 },
             )?;
             if let Some(q) = self.queues.get_mut(recipient_id) {
-                q.messages.pop_front();
+                pop(&mut self.usage, q);
             }
         }
     }
@@ -471,15 +643,9 @@ impl Store {
             } => {
                 // A record from before relays noted the day counts from now.
                 let used = if used == 0 { self.today() } else { used };
-                self.queues.insert(
-                    recipient_id,
-                    Queue {
-                        sender_id,
-                        messages: VecDeque::new(),
-                        used,
-                        news: News::default(),
-                    },
-                );
+                if let Some(old) = self.queues.insert(recipient_id, Queue::new(sender_id, used, None)) {
+                    self.usage.sub(old.owner, old.bytes());
+                }
                 self.by_sender.insert(sender_id, recipient_id);
             }
             Record::Used { recipient_id, day } => {
@@ -496,23 +662,74 @@ impl Store {
                 let at = if at == 0 { self.hour() } else { at };
                 if let Some(q) = self.queues.get_mut(&recipient_id) {
                     q.messages.push_back((at, message.to_vec()));
+                    self.usage.add(q.owner, cost(message.len()));
+                    if let Some(hours) = &mut self.oldest {
+                        hours.entry(at).or_default().push(recipient_id);
+                    }
+                    if self.usage.total > self.max_bytes {
+                        self.drop_oldest();
+                    }
                 }
             }
             Record::Receive { recipient_id } => {
                 if let Some(q) = self.queues.get_mut(&recipient_id) {
-                    q.messages.pop_front();
+                    pop(&mut self.usage, q);
                 }
             }
             Record::Delete { recipient_id } => {
                 if let Some(q) = self.queues.remove(&recipient_id) {
+                    self.usage.sub(q.owner, q.bytes());
                     self.by_sender.remove(&q.sender_id);
                 }
             }
         }
     }
 
+    /// While the journal is read back past `max_bytes`: empties the oldest
+    /// messages, by the hour each came, until the rest fit. An emptied message
+    /// keeps its place in its queue until the records are all read, as a
+    /// record that takes it may come later.
+    fn drop_oldest(&mut self) {
+        let hours = self.oldest.get_or_insert_with(|| by_hour(&self.queues));
+        while self.usage.total > self.max_bytes {
+            let Some(mut entry) = hours.first_entry() else {
+                // Each hour was gone through: what is left is listed again
+                // (a clock set back can leave a message behind a newer one).
+                *hours = by_hour(&self.queues);
+                if hours.is_empty() {
+                    return;
+                }
+                continue;
+            };
+            let hour = *entry.key();
+            let id = entry.get_mut().pop();
+            if entry.get().is_empty() {
+                entry.remove();
+            }
+            let Some(q) = id.and_then(|id| self.queues.get_mut(&id)) else {
+                continue;
+            };
+            // Listed for a message taken since, maybe: then only one as old.
+            if let Some((at, msg)) = q.messages.get_mut(q.dropped) {
+                if *at <= hour {
+                    let msg = std::mem::take(msg);
+                    self.usage.sub(q.owner, cost(msg.len()));
+                    q.dropped += 1;
+                    self.dropped += 1;
+                }
+            }
+        }
+    }
+
     /// A new queue, or `Full` when the store holds `max_queues` already.
+    #[cfg(test)]
     pub fn create(&mut self) -> Result<NewQueue, QueueError> {
+        self.create_for(None)
+    }
+
+    /// A new queue made by `owner`, whose share of the bytes queued it counts
+    /// in, or `Full` when the store holds `max_queues` already.
+    pub fn create_for(&mut self, owner: Option<Owner>) -> Result<NewQueue, QueueError> {
         if !self.has_room() {
             return Err(QueueError::Full);
         }
@@ -527,15 +744,8 @@ impl Store {
                 used,
             },
         )?;
-        self.queues.insert(
-            recipient_id,
-            Queue {
-                sender_id,
-                messages: VecDeque::new(),
-                used,
-                news: News::default(),
-            },
-        );
+        self.queues
+            .insert(recipient_id, Queue::new(sender_id, used, owner));
         self.by_sender.insert(sender_id, recipient_id);
         self.tidy();
         Ok(NewQueue {
@@ -566,7 +776,11 @@ impl Store {
         self.expire_queue(&rid)?;
         let at = self.hour();
         let q = self.queues.get_mut(&rid).ok_or(QueueError::NotFound)?;
-        if q.messages.len() >= MAX_QUEUED {
+        let cost = cost(msg.len());
+        if q.messages.len() >= MAX_QUEUED
+            || self.usage.total + cost > self.max_bytes
+            || q.owner.is_some_and(|owner| self.usage.of(&owner) + cost > self.share)
+        {
             return Err(QueueError::Full);
         }
         log(
@@ -578,6 +792,7 @@ impl Store {
             },
         )?;
         q.messages.push_back((at, msg));
+        self.usage.add(q.owner, cost);
         q.news.came(said);
         self.tidy();
         Ok(())
@@ -615,9 +830,62 @@ impl Store {
                 recipient_id: *recipient_id,
             },
         )?;
-        let msg = q.messages.pop_front().map(|(_, msg)| msg);
+        let msg = pop(&mut self.usage, q);
         self.tidy();
         Ok(msg)
+    }
+
+    /// Hands over the oldest message with its number, and keeps it: handed
+    /// over again at each take until the recipient says it has it (`ack`).
+    /// With `kept`, the message of that number is deleted first, as `ack`
+    /// does, so a phone that takes one after another says it has each with
+    /// the next take.
+    pub fn take(
+        &mut self,
+        recipient_id: &QueueId,
+        kept: Option<u64>,
+    ) -> Result<Option<(u64, Vec<u8>)>, QueueError> {
+        if let Some(number) = kept {
+            self.ack(recipient_id, number)?;
+        }
+        self.expire_queue(recipient_id)?;
+        self.touch(recipient_id);
+        let q = self
+            .queues
+            .get_mut(recipient_id)
+            .ok_or(QueueError::NotFound)?;
+        match q.messages.front() {
+            Some((_, msg)) => Ok(Some((q.first, msg.clone()))),
+            None => {
+                // What comes from now on counts from nothing.
+                q.news = News::default();
+                Ok(None)
+            }
+        }
+    }
+
+    /// Deletes the message numbered `number`, which `take` handed over, if
+    /// it is still the oldest in the queue. One that went already, or a
+    /// number from before a restart, leaves the queue as it is: saying it
+    /// twice is harmless.
+    pub fn ack(&mut self, recipient_id: &QueueId, number: u64) -> Result<(), QueueError> {
+        self.expire_queue(recipient_id)?;
+        self.touch(recipient_id);
+        let q = self.queues.get(recipient_id).ok_or(QueueError::NotFound)?;
+        if q.messages.is_empty() || q.first != number {
+            return Ok(());
+        }
+        log(
+            &mut self.journal,
+            &Record::Receive {
+                recipient_id: *recipient_id,
+            },
+        )?;
+        if let Some(q) = self.queues.get_mut(recipient_id) {
+            pop(&mut self.usage, q);
+        }
+        self.tidy();
+        Ok(())
     }
 
     /// Whether a message waits in the queue. Nothing is taken. Asked by the
@@ -685,6 +953,7 @@ impl Store {
             },
         )?;
         if let Some(q) = self.queues.remove(recipient_id) {
+            self.usage.sub(q.owner, q.bytes());
             self.by_sender.remove(&q.sender_id);
         }
         self.tidy();
@@ -1058,7 +1327,7 @@ mod tests {
         // Kept on disk with the hour it came, and expired on the way back in.
         let path = TempPath::new();
         let q = {
-            let mut s = Store::open_clocked(&path.0, 14 * day, fake_now).unwrap();
+            let mut s = Store::open_clocked(&path.0, 14 * day, DEFAULT_MAX_BYTES, fake_now).unwrap();
             let q = s.create().unwrap();
             s.send(&q.sender_id, b"first".to_vec()).unwrap();
             NOW.fetch_add(7 * day, Ordering::SeqCst);
@@ -1066,7 +1335,7 @@ mod tests {
             q
         };
         NOW.fetch_add(8 * day, Ordering::SeqCst);
-        let mut s = Store::open_clocked(&path.0, 14 * day, fake_now).unwrap();
+        let mut s = Store::open_clocked(&path.0, 14 * day, DEFAULT_MAX_BYTES, fake_now).unwrap();
         assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"second");
         assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
 
@@ -1118,7 +1387,7 @@ mod tests {
         old.extend_from_slice(&recipient);
         old.extend_from_slice(&sender);
         std::fs::write(&path.0, &old).unwrap();
-        let s = Store::open_clocked(&path.0, DEFAULT_TTL, fixed_now).unwrap();
+        let s = Store::open_clocked(&path.0, DEFAULT_TTL, DEFAULT_MAX_BYTES, fixed_now).unwrap();
         let day = fixed_now() / DAY * DAY;
         assert_eq!(s.queues[&recipient].used, day);
         drop(s);
@@ -1139,7 +1408,7 @@ mod tests {
     fn queues_their_recipients_leave_unused_expire() {
         let path = TempPath::new();
         let open = || {
-            Store::open_clocked(&path.0, DEFAULT_TTL, queue_now)
+            Store::open_clocked(&path.0, DEFAULT_TTL, DEFAULT_MAX_BYTES, queue_now)
                 .unwrap()
                 .with_queue_limits(DEFAULT_MAX_QUEUES, 180 * DAY)
         };
@@ -1188,6 +1457,167 @@ mod tests {
         QUEUE_NOW.fetch_add(180 * DAY, Ordering::SeqCst);
         assert_eq!(s.expire_queues(), vec![used.recipient_id]);
         assert_eq!(s.has_waiting(&used.recipient_id), Err(QueueError::NotFound));
+    }
+
+    #[test]
+    fn a_message_taken_to_keep_stays_until_acknowledged() {
+        let mut s = Store::default();
+        let q = s.create().unwrap();
+        s.send(&q.sender_id, b"one".to_vec()).unwrap();
+        s.send(&q.sender_id, b"two".to_vec()).unwrap();
+        let (first, msg) = s.take(&q.recipient_id, None).unwrap().unwrap();
+        assert_eq!(msg, b"one");
+        // Not acknowledged: the same one again, never the next, however
+        // often it is asked for, so only one is ever out.
+        for _ in 0..3 {
+            assert_eq!(
+                s.take(&q.recipient_id, None).unwrap(),
+                Some((first, b"one".to_vec()))
+            );
+        }
+        // A number that is not the oldest's deletes nothing.
+        s.ack(&q.recipient_id, first.wrapping_add(1)).unwrap();
+        assert_eq!(s.take(&q.recipient_id, None).unwrap().unwrap().1, b"one");
+        s.ack(&q.recipient_id, first).unwrap();
+        // Said twice: harmless, the next stays.
+        s.ack(&q.recipient_id, first).unwrap();
+        let (second, msg) = s.take(&q.recipient_id, None).unwrap().unwrap();
+        assert_eq!((second, msg), (first.wrapping_add(1), b"two".to_vec()));
+        // Acknowledged with the next take, which then finds it empty.
+        assert_eq!(s.take(&q.recipient_id, Some(second)).unwrap(), None);
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+        assert_eq!(s.ack(&q.sender_id, 0), Err(QueueError::NotFound));
+        assert_eq!(s.usage.total, 0);
+    }
+
+    #[test]
+    fn a_message_not_acknowledged_is_handed_over_again_after_a_restart() {
+        let path = TempPath::new();
+        let (q, before) = {
+            let mut s = Store::open(&path.0).unwrap();
+            let q = s.create().unwrap();
+            s.send(&q.sender_id, b"kept".to_vec()).unwrap();
+            s.send(&q.sender_id, b"next".to_vec()).unwrap();
+            let (number, msg) = s.take(&q.recipient_id, None).unwrap().unwrap();
+            assert_eq!(msg, b"kept");
+            (q, number)
+        };
+        let mut s = Store::open(&path.0).unwrap();
+        let (number, msg) = s.take(&q.recipient_id, None).unwrap().unwrap();
+        assert_eq!(msg, b"kept");
+        // A number from before the restart names nothing now.
+        s.ack(&q.recipient_id, before).unwrap();
+        assert_eq!(s.take(&q.recipient_id, None).unwrap().unwrap().1, b"kept");
+        s.ack(&q.recipient_id, number).unwrap();
+        drop(s);
+        // The acknowledgement was written down.
+        let mut s = Store::open(&path.0).unwrap();
+        assert_eq!(s.receive(&q.recipient_id).unwrap().unwrap(), b"next");
+        assert_eq!(s.receive(&q.recipient_id).unwrap(), None);
+    }
+
+    #[test]
+    fn the_store_holds_so_many_bytes() {
+        let mut s = Store::default().with_byte_limits(3 * cost(100), 100 * cost(100));
+        let a = s.create().unwrap();
+        let b = s.create().unwrap();
+        s.send(&a.sender_id, vec![1; 100]).unwrap();
+        s.send(&b.sender_id, vec![2; 100]).unwrap();
+        s.send(&b.sender_id, vec![3; 100]).unwrap();
+        // Full for every queue, an empty message too, without a crash.
+        assert_eq!(s.send(&a.sender_id, vec![4; 100]), Err(QueueError::Full));
+        assert_eq!(s.send(&b.sender_id, Vec::new()), Err(QueueError::Full));
+        // Room again once one is taken, or its queue deleted.
+        s.receive(&a.recipient_id).unwrap().unwrap();
+        s.send(&a.sender_id, vec![4; 100]).unwrap();
+        assert_eq!(s.send(&a.sender_id, vec![5; 1]), Err(QueueError::Full));
+        s.delete(&b.recipient_id).unwrap();
+        s.send(&a.sender_id, vec![5; 100]).unwrap();
+        assert_eq!(s.usage.total, 2 * cost(100));
+    }
+
+    #[test]
+    fn one_phone_fills_only_its_share() {
+        let (greedy, other) = ([1u8; 32], [2u8; 32]);
+        let mut s = Store::default().with_byte_limits(10 * cost(100), 2 * cost(100));
+        let first = s.create_for(Some(greedy)).unwrap();
+        let second = s.create_for(Some(greedy)).unwrap();
+        s.send(&first.sender_id, vec![0; 100]).unwrap();
+        s.send(&second.sender_id, vec![0; 100]).unwrap();
+        // Its queues together hold its share: each is full now.
+        assert_eq!(s.send(&first.sender_id, vec![0; 100]), Err(QueueError::Full));
+        assert_eq!(s.send(&second.sender_id, vec![0; 1]), Err(QueueError::Full));
+        // Another phone's queue, and one made with the relay's own token,
+        // still take theirs.
+        let theirs = s.create_for(Some(other)).unwrap();
+        let shared = s.create().unwrap();
+        s.send(&theirs.sender_id, vec![0; 100]).unwrap();
+        s.send(&theirs.sender_id, vec![0; 100]).unwrap();
+        for _ in 0..4 {
+            s.send(&shared.sender_id, vec![0; 100]).unwrap();
+        }
+        // Taken, its share has room again.
+        s.receive(&second.recipient_id).unwrap().unwrap();
+        s.send(&first.sender_id, vec![0; 100]).unwrap();
+        assert_eq!(s.usage.of(&greedy), 2 * cost(100));
+        assert_eq!(s.usage.total, 8 * cost(100));
+    }
+
+    static FULL_NOW: AtomicU64 = AtomicU64::new(1_800_000_000);
+    fn full_now() -> u64 {
+        FULL_NOW.load(Ordering::SeqCst)
+    }
+
+    // One test moves this clock, so all of them that use it run in this one.
+    #[test]
+    fn a_journal_past_the_cap_opens_without_its_oldest_messages() {
+        let path = TempPath::new();
+        let big = DEFAULT_MAX_BYTES;
+        let (a, b) = {
+            let mut s = Store::open_clocked(&path.0, DEFAULT_TTL, big, full_now).unwrap();
+            let (a, b) = (s.create().unwrap(), s.create().unwrap());
+            for n in 0..5u8 {
+                s.send(&a.sender_id, vec![n; 300]).unwrap();
+            }
+            FULL_NOW.fetch_add(2 * HOUR, Ordering::SeqCst);
+            s.send(&b.sender_id, vec![10; 300]).unwrap();
+            FULL_NOW.fetch_add(2 * HOUR, Ordering::SeqCst);
+            s.send(&a.sender_id, vec![5; 300]).unwrap();
+            // The first is taken after the others came, so its record comes
+            // after theirs in the journal.
+            assert_eq!(s.receive(&a.recipient_id).unwrap().unwrap(), vec![0; 300]);
+            (a, b)
+        };
+        // Room for three: of the six waiting, the three oldest go, by the
+        // hour they came, whichever queue they are in.
+        let mut s = Store::open_clocked(&path.0, DEFAULT_TTL, 3 * cost(300), full_now).unwrap();
+        assert_eq!(s.usage.total, 3 * cost(300));
+        assert_eq!(s.receive(&a.recipient_id).unwrap().unwrap(), vec![4; 300]);
+        assert_eq!(s.receive(&a.recipient_id).unwrap().unwrap(), vec![5; 300]);
+        assert_eq!(s.receive(&b.recipient_id).unwrap().unwrap(), vec![10; 300]);
+        assert_eq!(s.receive(&a.recipient_id).unwrap(), None);
+        drop(s);
+
+        // A journal much past the cap, as an attack before it left, opens
+        // within it, and the file written back holds no more.
+        {
+            let mut s = Store::open_clocked(&path.0, DEFAULT_TTL, big, full_now).unwrap();
+            for _ in 0..200 {
+                let q = s.create().unwrap();
+                for _ in 0..10 {
+                    s.send(&q.sender_id, vec![7; 4096]).unwrap();
+                }
+            }
+            FULL_NOW.fetch_add(HOUR, Ordering::SeqCst);
+            s.send(&a.sender_id, b"newest".to_vec()).unwrap();
+        }
+        let cap = 64 * cost(4096);
+        let mut s = Store::open_clocked(&path.0, DEFAULT_TTL, cap, full_now).unwrap();
+        assert!(s.usage.total <= cap);
+        assert_eq!(s.usage.total, s.queues.values().map(Queue::bytes).sum::<usize>());
+        assert_eq!(s.receive(&a.recipient_id).unwrap().unwrap(), b"newest");
+        drop(s);
+        assert!(std::fs::metadata(&path.0).unwrap().len() < (cap + 200 * 64) as u64);
     }
 
     #[cfg(unix)]

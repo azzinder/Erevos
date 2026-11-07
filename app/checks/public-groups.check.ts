@@ -220,6 +220,29 @@ test('anyone with the link joins while the owner is away, and reads only from th
   await assert.rejects(bob.groups.ask(link, 'Bob'), /already/);
 });
 
+test('one whose phone forgot the group and asks again keeps the old seat until the new one is heard from', live, async () => {
+  const net = network();
+  const bob = await net.phone('Bob', two);
+  const { alice, id } = await club(net, [bob]);
+  const old = await keyOf(alice, id, 'Bob');
+  await bob.groups.forget(id);
+  await bob.groups.ask(linkOf(alice, id), 'Bob');
+  await net.settle();
+  assert.equal(status(bob, id), 'in');
+  // The new seat only says it is the same phone: the old one stays, as any member could say
+  // another's, to have them taken out.
+  let members = await alice.groups.publicMembers(id);
+  assert.equal(members.length, 3);
+  assert.ok(members.some((m) => m.key === old));
+  // Heard from the new seat, which only the phone whose welcome it was can be, the old one goes.
+  await bob.groups.send(id, 'Back', bob.transport);
+  await net.settle();
+  members = await alice.groups.publicMembers(id);
+  assert.equal(members.length, 2);
+  assert.ok(!members.some((m) => m.key === old));
+  assert.deepEqual(texts(alice, id), ['Back']);
+});
+
 test('with approval on, an admin lets in who asks, and the owner\'s phone does it when it hears', live, async () => {
   const net = network();
   const bob = await net.phone('Bob', two);
@@ -606,6 +629,7 @@ test('what a space keeps for its public groups is sealed, and read back checked'
         deleted: [`${'ef'.repeat(32)}|${'a'.repeat(12)}`],
         epochs: [{ epoch: 3, keeper: 'cd'.repeat(32), admins: [] }],
         names: { ['ef'.repeat(32)]: 'Carol' },
+        again: ['ef'.repeat(32)],
       },
     ],
     asking: [{ group: '12'.repeat(16), door: '03'.repeat(24), key: '34'.repeat(32), name: 'Me', title: 'Other', at: 9 }],

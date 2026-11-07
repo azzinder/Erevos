@@ -7,7 +7,9 @@
 // its server (XEP-0077) with a name and a password, or a form of them, and said not to be made
 // when the server asks for a captcha or makes none here; a new password; the account deleted;
 // the groups a server lists and those the public channel search finds (XEP-0433), without MIX;
-// and a link's preview (XEP-0511), which goes only in a chat without encryption.
+// and a link's preview (XEP-0511), which goes only in a chat without encryption. A device that
+// comes with another key keeps its first session and gets nothing until its new key is accepted,
+// and a device new in a list is written to; the chat says each once.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -16,7 +18,24 @@ import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
 
 import { setCore, type Core } from '../lib/core';
-import { addXmppContact, changeXmppPassword, deleteXmppAccount, registerXmpp, sendXmppText, signInXmpp, startSession, XmppRegisterError, type XmppConnection, type XmppState } from '../lib/xmpp';
+import {
+  acceptXmppDevice,
+  addXmppContact,
+  changeXmppPassword,
+  deleteXmppAccount,
+  publishOmemo,
+  registerXmpp,
+  sendXmppText,
+  signInXmpp,
+  startSession,
+  XmppError,
+  xmppDevices,
+  XmppRegisterError,
+  type XmppConnection,
+  type XmppState,
+} from '../lib/xmpp';
+import { newOwnOmemo, NoOmemoError } from '../lib/xmpp-omemo';
+import { newOwnOmemo2 } from '../lib/xmpp-omemo2';
 import { previewElement, previewOf } from '../lib/xmpp-links';
 import { createXmppGroup, searchChannels, serverChannels } from '../lib/xmpp-muc';
 import { el, parseXml, render } from '../lib/xmpp-xml';
@@ -133,4 +152,69 @@ test('a preview goes beside words not encrypted only, and comes so', { skip: !co
   await settle(people);
   assert.ok(server.seen.some((sent) => sent.includes('ogp.me')));
   assert.deepEqual(ben.state.chats[ann.state.jid].messages.at(-1)?.preview, preview);
+});
+
+test('a device that comes with another key keeps its first session and gets nothing until accepted; a new device is said once', { skip: !coreReady }, async (t) => {
+  const server = new Server();
+  const ann = await person(server, 'ann');
+  const ben = await person(server, 'ben');
+  const people: Person[] = [ann, ben];
+  t.after(() => people.forEach((p) => p.connection.close()));
+  const [toAnn, toBen] = [ann.state.jid, ben.state.jid];
+  await addXmppContact(ann.state, ann.connection, toBen);
+  await settle(people);
+  await addXmppContact(ben.state, ben.connection, toAnn);
+  await settle(people);
+  await sendXmppText(ann.state, ann.connection, toBen, 'πρώτο');
+  await settle(people);
+  await sendXmppText(ben.state, ben.connection, toAnn, 'δεύτερο');
+  await settle(people);
+  const id = String(ben.state.omemo.device);
+  const first = xmppDevices(ann.state, toBen).find((d) => d.id === id && d.identity)!;
+  const kept = (d: { two?: true }) => (d.two ? ann.state.people2! : ann.state.people)[toBen].devices[id];
+  const firstSession = JSON.stringify(kept(first).session);
+
+  // Ben's device comes back under its ID with another identity key (as a server could make it):
+  // what it writes still shows, but Ann's first key and session stay, and the chat says so.
+  const fresh = await newOwnOmemo();
+  ben.state.omemo = { ...fresh, device: Number(id) };
+  ben.state.omemo2 = await newOwnOmemo2(fresh.identity);
+  for (const known of [ben.state.people, ben.state.people2 ?? {}]) for (const person of Object.values(known)) for (const device of Object.values(person.devices)) delete device.session;
+  await publishOmemo(ben.state, ben.connection);
+  await sendXmppText(ben.state, ben.connection, toAnn, 'άλλο κλειδί');
+  await settle(people);
+  await sendXmppText(ben.state, ben.connection, toAnn, 'πάλι');
+  await settle(people);
+  const changedLine = `🔑 A device of ${toBen} changed its key: your messages do not go to it.`;
+  const texts = () => ann.state.chats[toBen].messages.map((m) => m.text);
+  assert.deepEqual(texts().slice(-4).sort(), ['δεύτερο', changedLine, 'άλλο κλειδί', 'πάλι'].sort());
+  const now = xmppDevices(ann.state, toBen).find((d) => d.id === id && d.pending)!;
+  assert.ok(now.changed);
+  assert.equal(now.identity === first.identity, false);
+  assert.equal(kept(now).identity, first.identity);
+  assert.equal(JSON.stringify(kept(now).session), firstSession);
+
+  // Nothing goes to it, and that is no reason to offer writing without encryption.
+  const sent = server.seen.length;
+  await assert.rejects(sendXmppText(ann.state, ann.connection, toBen, 'κρυφό'), (error: unknown) => error instanceof XmppError && !(error instanceof NoOmemoError) && /changed its key/.test(error.message));
+  assert.equal(server.seen.slice(sent).filter((s) => s.includes('<message')).length, 0);
+
+  // Accepted, it is written to under its new key.
+  acceptXmppDevice(ann.state, toBen, id, !!now.two);
+  await sendXmppText(ann.state, ann.connection, toBen, 'δεκτό');
+  await settle(people);
+  assert.equal(ben.state.chats[toAnn].messages.at(-1)?.text, 'δεκτό');
+  assert.equal(xmppDevices(ann.state, toBen).find((d) => d.id === id && d.listed)?.pending, undefined);
+  assert.equal(texts().filter((text) => text === changedLine).length, 1);
+
+  // Ben signs in on a second device: it is written to, and Ann's chat says so once.
+  const ben2 = await person(server, 'ben');
+  people.push(ben2);
+  await settle(people);
+  await sendXmppText(ann.state, ann.connection, toBen, 'και στο νέο');
+  await sendXmppText(ann.state, ann.connection, toBen, 'ξανά');
+  await settle(people);
+  // What came before it stays locked to it.
+  assert.deepEqual(ben2.state.chats[toAnn]?.messages.slice(-2).map((m) => m.text), ['και στο νέο', 'ξανά']);
+  assert.equal(texts().filter((text) => text === `🔑 New device of ${toBen}: your messages go to it too.`).length, 1);
 });

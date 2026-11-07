@@ -7,7 +7,10 @@
 // votes and their end, places and links' previews as Element and Beeper carry them, messages pinned
 // to a room's top, favourites and rooms of low priority, a room left and forgotten, public rooms
 // and what a space holds, looking for words among the messages kept, making an account with the
-// steps a homeserver asks for, and the account's devices, named and signed out.
+// steps a homeserver asks for, and the account's devices, named and signed out. A room message
+// opens only under a key its sender gave, from a device of theirs (one not known yet opens it as
+// not verified until it is); a device that comes back with other keys gets no room key, and one
+// new in a list gets them; the room says each once.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -20,7 +23,7 @@ import { createGroup, joinRoom, sendContent, sendStateEvent, sendInThread, sendL
 import { authFor, isAccountName, listDevices, nameFree, register, renameDevice, signOutDevices } from '../lib/matrix-account';
 import { geoUri, placeOfGeo, pollOfContent, pollShown, previewContent, previewOfContent, threadOf } from '../lib/matrix-parts';
 import { findMessages, leaveAndForget, pinMessage, publicRooms, sortedRooms, spaceRooms, tagRoom } from '../lib/matrix-rooms';
-import { Homeserver, HS, PASSWORD } from './matrix-server';
+import { Homeserver, HS, PASSWORD, type Json } from './matrix-server';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 const coreReady = existsSync(built) && typeof (createRequire(import.meta.url)(built.pathname) as Record<string, unknown>).matrix === 'function';
@@ -251,4 +254,68 @@ test("the account's devices: listed, this one first, named, and others signed ou
   assert.deepEqual(await signOutDevices(phone, [laptop.deviceId], authFor(asked.ask, { userId: 'devices', password: PASSWORD })), { done: true });
   assert.deepEqual(server.signedOut, [laptop.deviceId]);
   assert.deepEqual((await listDevices(phone)).map((d) => d.id), [phone.deviceId]);
+});
+
+test('a room message opens only under its sender’s key; a changed device gets no key, a new one does, each said once', { skip: !coreReady }, async () => {
+  let { alice: ivy, bob: jon, roomId } = await group('@ivy:example.org', '@jon:example.org');
+  const shown = (state: MatrixState) => state.rooms[roomId].messages;
+  const first = await sendText(jon, roomId, 'από τον Jon');
+  const second = await sendText(jon, roomId, 'κι άλλο');
+  // The homeserver says Jon's second is Ivy's: it does not open as hers.
+  server.log.find((l) => l.event.event_id === second.id)!.event.sender = ivy.userId;
+  await sync(ivy, 0);
+  ivy = kept(ivy);
+  const opened = shown(ivy).find((m) => m.id === first.id)!;
+  assert.deepEqual([opened.text, opened.unverified], ['από τον Jon', undefined]);
+  const forged = shown(ivy).find((m) => m.id === second.id)!;
+  assert.deepEqual([forged.sender, forged.text, !!forged.locked], [ivy.userId, '', true]);
+  const session = Object.entries(ivy.inbound).find(([key]) => key.startsWith(roomId) && ivy.inbound[key].sender === jon.userId);
+  assert.ok(session && !session[1].untied && session[1].ed25519 === ivy.devices[jon.userId][jon.deviceId].ed25519);
+
+  // A key that comes while its device cannot be looked up opens as not verified, until it can.
+  const kim = await signIn(HS, '@kim:example.org', PASSWORD);
+  let lea = await signIn(HS, '@lea:example.org', PASSWORD);
+  const other = await createGroup(kim, 'Αυλή', [lea.userId]);
+  await sync(lea, 0);
+  await joinRoom(lea, other.id);
+  await sync(lea, 0);
+  await sync(kim, 0);
+  setMatrixHttp(async (request) => (request.url.includes('/keys/query') && request.token === lea.accessToken ? { status: 502, json: {} } : server.answer(request)));
+  const early = await sendText(kim, other.id, 'νωρίς');
+  await sync(lea, 0);
+  setMatrixHttp(async (request) => server.answer(request));
+  lea = kept(lea);
+  assert.deepEqual([lea.rooms[other.id].messages.find((m) => m.id === early.id)?.text, lea.rooms[other.id].messages.find((m) => m.id === early.id)?.unverified], ['νωρίς', true]);
+  await sendText(lea, other.id, 'τώρα σε ξέρω');
+  const later = await sendText(kim, other.id, 'αργότερα');
+  await sync(lea, 0);
+  assert.equal(lea.rooms[other.id].messages.find((m) => m.id === later.id)?.unverified, undefined);
+  assert.ok(Object.values(lea.inbound).every((inbound) => !inbound.untied));
+
+  // Jon's device comes back with Kim's keys under its ID: Ivy keeps the keys she had and gives it
+  // no room key from now on, and the room says so once.
+  const known = { ...ivy.devices[jon.userId][jon.deviceId] };
+  const kims = server.deviceKeys.get(kim.userId)!.get(kim.deviceId)! as Json;
+  const swapped: Json = { ...kims, user_id: jon.userId, device_id: jon.deviceId, keys: { [`ed25519:${jon.deviceId}`]: kims.keys[`ed25519:${kim.deviceId}`], [`curve25519:${jon.deviceId}`]: kims.keys[`curve25519:${kim.deviceId}`] } };
+  server.deviceKeys.get(jon.userId)!.set(jon.deviceId, swapped);
+  ivy.outdated.push(jon.userId);
+  delete ivy.outbound[roomId];
+  const hidden = await sendText(ivy, roomId, 'όχι για σένα');
+  delete ivy.outbound[roomId];
+  await sendText(ivy, roomId, 'ούτε αυτό');
+  ivy = kept(ivy);
+  const changedLine = `🔑 A device of ${jon.userId} changed its key: your messages do not go to it.`;
+  assert.equal(shown(ivy).filter((m) => m.call && m.text === changedLine).length, 1);
+  assert.deepEqual(ivy.devices[jon.userId][jon.deviceId], { ...known, changed: true });
+  await sync(jon, 0);
+  assert.ok(shown(jon).find((m) => m.id === hidden.id)?.locked);
+
+  // Jon signs in on a second device: it gets the key, and Ivy's room says so once.
+  const jon2 = await signIn(HS, 'jon', PASSWORD);
+  await sync(ivy, 0);
+  await sendText(ivy, roomId, 'και στο νέο');
+  await sendText(ivy, roomId, 'ξανά');
+  await sync(jon2, 0);
+  assert.deepEqual(jon2.rooms[roomId].messages.filter((m) => !m.locked).map((m) => m.text).slice(-2), ['και στο νέο', 'ξανά']);
+  assert.equal(shown(ivy).filter((m) => m.call && m.text === `🔑 New device of ${jon.userId}: your messages go to it too.`).length, 1);
 });

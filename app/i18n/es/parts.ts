@@ -266,4 +266,6 @@ export const parts: Record<string, string> = {
   'Save the files': 'Guardar los archivos',
   '{given} of the {all} files went to the downloads. Tap Save for the next one: {name}': '{given} de los {all} archivos fueron a las descargas. Toca Guardar para el siguiente: {name}',
   "The browser did not keep it.": "El navegador no lo ha guardado.",
+  "New device of {who}: your messages go to it too.": "Nuevo dispositivo de {who}: tus mensajes también van a él.",
+  "A device of {who} changed its key: your messages do not go to it.": "Un dispositivo de {who} cambió su clave: tus mensajes no van a él.",
 };

@@ -24,6 +24,15 @@ app/lib/sync/ holds it, used by nothing yet, so nothing changes for anyone.
   tells them), or the primary only (`holder`: which device holds the groups). An op a device may not
   write is passed over by its number on every device. A kind this version does not know is kept as
   any device's, for the newer devices that know it.
+- **Who passes on.** Nothing signs an op: who made it is what the link it came in says. So the
+  primary passes on every device's ops, and a device gives only its own: from a device, an op in
+  another's name (the phone's or a third device's) is refused, and so is one of a kind only the
+  primary writes, as from anyone. A `whole` from a device gives only what that device stamped itself
+  and how far it is with its own ops; the rest, nothing shows it had from the others, and the primary
+  gives it itself. Otherwise a device could write as the phone, or give another an op numbered as the
+  phone's next before the phone's own came, which that one would then take as had for good. A device
+  answers another's `have` with its own ops, or its `whole` only when the other lacks own ops of it no
+  longer kept; it asks another only for that one's own.
 - **Talking** (lib/sync/wire.ts): `have` says how far a device has each device's ops; the other
   gives what it lacks in `ops`, 200 at most at once, or the `whole` log when it lacks ops no longer
   kept. A device that changed something gives each other device at once what it has not given it
@@ -36,6 +45,14 @@ app/lib/sync/ holds it, used by nothing yet, so nothing changes for anyone.
 - **Letting go.** An op goes once every device said it has it; past 5000 the oldest go anyway, and a
   device behind them takes the whole log. A removed record goes once every device has its removal
   and nothing made before it can still come.
+- **Forgetting the gone.** Each link is a new endpoint, so the vectors would name every device ever
+  linked. The primary forgets one that left (unlinked, or replaced as it was linked again) once none
+  of its ops is kept and every device said it has all of them: its number, its cut and when it left
+  go, its records stay, and from then a device that comes with none of the phone's ops takes the
+  whole log. A device forgets it once a vector the primary said after this device knew it left no
+  longer names it; till then it asks the primary now and then (`have` with `ask`). A number missing
+  counts as 0 everywhere. A vector said by another device names 256 devices at most; a log kept with
+  more (by a version before) still loads, and lets the gone go as it does.
 - **Unlinked.** The device list sets who the account's devices are (`setPeers`). Nothing from a
   device that is not one of them is taken: from one not listed yet it is held (500 at most) until
   it is, and from one unlinked, what it stamped after this device knew it left is refused. Cutting
@@ -53,8 +70,13 @@ JSON), no NaN or other values JSON does not carry. checks/sync.check.ts.
   another (each knows it left from its own clock). It is cut off by its links anyway.
 - A device put back from a backup that writes before it talks to another reuses numbers it already
   used, and what it wrote then is lost on the others. S1 keeps it from writing until it heard one.
-- The `whole` log is trusted as it comes from one of the account's own devices, over a link whose
-  code was compared: it can say it has more of a third device's ops than it has.
+- The `whole` log is trusted as it comes from the primary, over a link whose code was compared: it can
+  say it has more of a device's ops than it has. From a device, only what it stamped itself is taken.
+- With the phone off, a device has from another only what that one wrote, never what the phone wrote
+  that it lacks: that waits for the phone. And a device unlinked before its ops reached the phone
+  leaves them on the devices that had them from it alone.
+- A device that still counts one gone asks the primary every 10 minutes until the primary lets that
+  one go too, which waits for every device to say it has all of it: one device away long keeps it.
 
 ## Phase S1, first part: the phone writes, the devices keep
 

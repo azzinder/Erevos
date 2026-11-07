@@ -159,6 +159,20 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Twelve more fixes from the review before 7**: acknowledged receive at the relay (`RECEIVE` with `HOLD`, new `ACK`
+  opcode; an older relay answers as before and the app takes the old path), so a message is deleted there only once the
+  phone kept it; relay caps `EREVOS_RELAY_QUEUED_MB` (1024) in all and `EREVOS_RELAY_QUEUED_PER_PHONE_MB` (64) per
+  token, refused as `Full`, and a journal over the cap loads without its oldest; a public group's owner removes a seat
+  said to be the same phone only once the new seat is heard from (`again`, `lib/public-groups.ts`); SMS invites that
+  come are not answered while invites are off; the search's wrong tries are forgotten after 15 minutes and wait 5 at
+  most (`lock/tries.ts`); Matrix room keys are tied to the device that gave them, a message opens only as its sender's
+  (`ownerCheck`), backup keys and untied ones show **Not verified**, a device with a new key is kept with its old keys
+  and no longer sent to, and a new device is said once; XMPP keeps the old identity and session when a device's key
+  changes (`pending`, **Accept** in the device sheet) and says new devices once; a file from a sender-chosen place
+  (blossom, a foreign relay from a lent place) is auto-taken only through Tor, else on a tap (`takesItself`), in groups
+  too; first packets carry their time (`fa`), an older one never becomes the sending conversation, replay lists 1000/64;
+  the devices' log takes a device's ops only from that device, devices no longer pass on the phone's ops, gone devices
+  are pruned from the vectors, cap 256 (`docs/sync.md`).
 - **Fixes from a review of all the code before 7**: one draft per chat in the chat screen (`app/chat.tsx`), so what was
   typed in one chat, a PIN-locked one too, never shows in another; `lib/screen-privacy.ts` counts who asks for a
   private screen, so a locked chat under a locked group stays out of screenshots when the group closes; the

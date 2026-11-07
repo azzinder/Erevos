@@ -28,6 +28,12 @@ export const CHAT_TRIES = 'erevos.chat-tries';
 export const FREE_TRIES = 5;
 const FIRST_WAIT_MS = 30_000;
 const MAX_WAIT_MS = 3_600_000;
+/** A search's wrong tries are forgotten after this long without another: a search is typed by
+ *  anyone, for anything, and five searches that found nothing an hour ago are no attack. The
+ *  wait a search brings stays short for the same reason; a PIN is still tried five times at most
+ *  in any such while, which is no way to guess one. */
+const SEARCH_FORGET_MS = 15 * 60_000;
+const SEARCH_MAX_WAIT_MS = 5 * 60_000;
 
 /** The clock the owner cannot set: ms since it started, and which start it is. */
 export type Uptime = { up: number; boot: string };
@@ -56,6 +62,8 @@ export function setUptimeForChecks(clock: (() => Uptime | null) | null): void {
 
 interface Tries {
   fails: number;
+  /** When the last wrong one was tried (ms, the date and time), for the searches' forgetting. */
+  at?: number;
   /** When the wait ends by the date and time (ms): what the lock screen says, and the measure with no clock of the phone's own. */
   until: number;
   /** How long the wait is, from `up` on the clock of start `boot`; 0 with none, or once it is over. */
@@ -75,7 +83,7 @@ export class LockedOutError extends Error {
   }
 }
 
-const waitAfter = (fails: number) => (fails < FREE_TRIES ? 0 : Math.min(MAX_WAIT_MS, FIRST_WAIT_MS * 2 ** (fails - FREE_TRIES)));
+const waitAfter = (fails: number, entry = KEY) => (fails < FREE_TRIES ? 0 : Math.min(entry === SEARCH_TRIES ? SEARCH_MAX_WAIT_MS : MAX_WAIT_MS, FIRST_WAIT_MS * 2 ** (fails - FREE_TRIES)));
 
 async function load(entry = KEY): Promise<Tries> {
   try {
@@ -84,10 +92,10 @@ async function load(entry = KEY): Promise<Tries> {
       const data = JSON.parse(raw) as Partial<Tries>;
       if (typeof data.fails === 'number' && typeof data.until === 'number') {
         // Kept by a build before the clock: its wait, as long as its count makes it.
-        const wait = typeof data.wait === 'number' ? data.wait : data.until > 0 ? waitAfter(data.fails) : 0;
+        const wait = typeof data.wait === 'number' ? data.wait : data.until > 0 ? waitAfter(data.fails, entry) : 0;
         const up = typeof data.up === 'number' ? data.up : 0;
         const boot = typeof data.boot === 'string' ? data.boot : '';
-        return { fails: data.fails, until: data.until, wait, up, boot };
+        return { fails: data.fails, until: data.until, wait, up, boot, ...(typeof data.at === 'number' ? { at: data.at } : {}) };
       }
     }
   } catch {
@@ -126,11 +134,13 @@ export async function assertNotLockedOut(now = Date.now(), entry = KEY): Promise
 
 /** Counts a wrong password; returns when the next check may run (now, while tries are free). */
 export async function recordWrongPassword(now = Date.now(), entry = KEY): Promise<number> {
-  const fails = (await load(entry)).fails + 1;
-  const wait = waitAfter(fails);
+  const before = await load(entry);
+  const forgotten = entry === SEARCH_TRIES && before.at !== undefined && now - before.at > SEARCH_FORGET_MS;
+  const fails = (forgotten ? 0 : before.fails) + 1;
+  const wait = waitAfter(fails, entry);
   const clock = wait ? uptimeNow() : null;
   const until = wait ? now + wait : 0;
-  await save(entry, { fails, until, wait, up: clock?.up ?? 0, boot: clock?.boot ?? '' });
+  await save(entry, { fails, until, wait, up: clock?.up ?? 0, boot: clock?.boot ?? '', ...(entry === SEARCH_TRIES ? { at: now } : {}) });
   return until;
 }
 

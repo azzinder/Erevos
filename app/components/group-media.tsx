@@ -97,7 +97,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   const shown = messages.map((m) => (m.file ? { ...m, file: fileOf(m) } : m));
 
   // Takes a photo, file or voice message that came, from the relay it is on through ours, and keeps it here.
-  async function take(ref: FileRef, voice: boolean) {
+  async function take(ref: FileRef, voice: boolean, itself = false) {
     if (takingNow.current.has(ref.id) || !ref.from) return;
     takingNow.current.add(ref.id);
     tried.current.add(ref.id);
@@ -108,8 +108,13 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
         return;
       }
       setTaking((now) => ({ ...now, [ref.id]: '0%' }));
-      const kept = await takeGroupFile(await groupsAt.groups(), id, relay, ref, (done, count) =>
-        setTaking((now) => ({ ...now, [ref.id]: `${Math.floor((done / count) * 100)}%` })),
+      const kept = await takeGroupFile(
+        await groupsAt.groups(),
+        id,
+        relay,
+        ref,
+        (done, count) => setTaking((now) => ({ ...now, [ref.id]: `${Math.floor((done / count) * 100)}%` })),
+        itself,
       );
       if (kept) setTaken((now) => ({ ...now, [ref.id]: kept }));
       setTaking(({ [ref.id]: _done, ...rest }) => rest);
@@ -125,7 +130,7 @@ export function useGroupMedia(id: string, messages: GroupMessage[], onError: (te
   // Others' up to AUTO_TAKE are taken as soon as they come, or when the group opens.
   useEffect(() => {
     if (!own) return;
-    for (const file of filesToTake(shown, tried.current)) void take(file, messages.find((m) => m.file?.id === file.id)?.ms !== undefined);
+    for (const file of filesToTake(shown, tried.current, own)) void take(file, messages.find((m) => m.file?.id === file.id)?.ms !== undefined, true);
   }, [own, messages]);
 
   function chooseQuality(next: PhotoQuality) {

@@ -19,6 +19,7 @@ import { keepOffer, offerOf } from './relay-offer';
 import { takeIntro, type IntroSend } from './intros';
 import { keepPieceFrom } from './pieces-kept';
 import {
+  ackTaken,
   canReadManyAt,
   canWaitAt,
   carryTo,
@@ -593,6 +594,8 @@ async function lookOnce(state: State, stop: () => boolean): Promise<boolean> {
       found.taken++;
       if ((await take(bytes, 'own')).junk) found.junk++;
     }
+    // The last one taken is kept: the relay may delete it now, not only at the next look.
+    await ackTaken(place.own, recipient);
   } catch (error) {
     failed = error;
   }

@@ -105,9 +105,11 @@ const MAX_CONVERSATIONS = 3;
 export const PREKEYS_EVERY = 30 * 24 * 3600 * 1000;
 // The longest bundle a message may give, in base64url characters (a bundle is about 1,350 bytes).
 const MAX_BUNDLE = 4096;
-// First packets remembered, so the relay cannot replay one to show its message again. A replay
-// of an older one shows its message once more, in a conversation that goes nowhere.
-const MAX_SEEN = 100;
+// First packets remembered, so the relay cannot replay one to show its message again: 16 bytes
+// each, so 1,000 are 32 KB as kept (lock/e2e-data.ts keeps 64 more for each contact). A replay of
+// one older still, from a contact, shows its message once more, and its conversation is kept
+// behind the one this chat sends in (E2E.accept, `fa`): it never becomes that one.
+const MAX_SEEN = 1000;
 // How many packets that came unsealed are tried, in an hour, in the conversations of contacts
 // whose packets come sealed (E2E.mayTryUnsealed).
 const UNSEALED_TRIES = 5;
@@ -142,6 +144,22 @@ const MAX_ON = 600;
 /** How long an invite given from here waits to be used (lib/welcome.ts), as an invite to a relay. */
 export const WELCOME_DAYS = 7;
 const isHi = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{32}$/.test(v);
+
+// The `fa` a first message says: now, but later than the one before it, so two started in the same
+// millisecond still say which came last.
+let lastFirst = 0;
+function firstAt(): number {
+  lastFirst = Math.max(Date.now(), lastFirst + 1);
+  return lastFirst;
+}
+
+// Whether a first packet from a known contact is older than the newest one taken from them: one
+// that says no later a time (`fa`) than that one, or, while they said none, a queue made before the
+// one kept (`qa`, a late copy). It never takes the place of the conversation this chat sends in.
+function staleFirst(message: Message, known: Contact): boolean {
+  if (known.firstAt) return !message.fa || message.fa <= known.firstAt;
+  return !message.fa && !takesPlace(message.qa, known.qa);
+}
 
 // `timer` is null in a message from an Erevos before disappearing messages. `lasts`: seconds this
 // one message lasts, whatever the chat's timer, or 0. `got` and `read`: the tags of the other
@@ -215,6 +233,11 @@ type Message = {
    *  whether it asks for a bell on the relay too (`b`); '' to say it no longer reads there. Absent
    *  says nothing of it. An Erevos before ignores it, and sends through the relay. */
   ns?: NostrTo | '';
+  /** In the first message of a conversation the sender's account starts with a contact's: when it
+   *  started it (ms, its clock, later each time: firstAt). A first packet that says one no later than
+   *  the newest taken from them (`Contact.firstAt`) is a replay or a late copy, never the conversation
+   *  this chat sends in. An Erevos before says none, and ignores it. */
+  fa?: number;
   /** When the sender's space was last open on its screen (ms, its clock: lib/last-seen.ts), or 0 to
    *  say it tells none, and wants none of it kept. Absent says nothing of it: an Erevos before, hidden
    *  chats, a chat that appears offline, or a time not known since the app started. */
@@ -281,7 +304,7 @@ function decodeVoice(value: unknown): VoicePart | null {
   return isVoicePart(part) ? part : null;
 }
 
-function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls }: Message): Uint8Array {
+function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, timerAt, lasts, got, read, voice, file, on, onAt, ask, call, group, quiet, due, re, react, more, pk, ak, rf, dv, cl, dl, acct, to, ab, ap, qa, hi, ns, ls, fa }: Message): Uint8Array {
   return utf8Encode(
     JSON.stringify({
       from,
@@ -319,6 +342,7 @@ function encodeMessage({ from, relay, relayKey, spare, text, tag, erase, timer, 
       ...(from && qa ? { qa } : {}),
       ...(hi ? { hi } : {}),
       ...(ns !== undefined ? { ns } : {}),
+      ...(fa ? { fa } : {}),
       ...more,
     }),
   );
@@ -444,6 +468,7 @@ function decodeMessage(bytes: Uint8Array): Message {
       ...(isTime(value.qa) && value.qa > 0 ? { qa: value.qa } : {}),
       ...(isHi(value.hi) ? { hi: value.hi } : {}),
       ...(isTime(value.ls) ? { ls: value.ls } : {}),
+      ...(isTime(value.fa) && value.fa > 0 ? { fa: value.fa } : {}),
       ...(value.ns === '' ? { ns: '' as const } : checkedNostrTo(value.ns) ? { ns: checkedNostrTo(value.ns)! } : {}),
     };
   } catch {
@@ -2072,7 +2097,7 @@ export class E2E {
       const started = await core.startConversation(
         this.account,
         bundle,
-        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...says, ...(isHi(hi) ? { hi } : {}), ...(ns ? { ns } : {}) }),
+        encodeMessage({ ...at, spare: from ? this.ownSpare : null, text: '', tag: '', erase: null, timer: 0, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), ...says, ...(isHi(hi) ? { hi } : {}), ...(ns ? { ns } : {}), fa: firstAt() }),
       );
       const told = nostr ? { nostr, nostrSaid: this.nostrSaid({ nostr } as Contact) } : {};
       await this.save(
@@ -3154,15 +3179,20 @@ export class E2E {
     // named as the invite was, which is used then.
     const welcomed = !known && isHi(message.hi) ? this.waitingInvites(Date.now()).find((i) => i.hi === message.hi) : undefined;
     const timing = timerOf(message, known);
+    // One older than the newest taken from them (a replay, once its id is no longer kept, or a late
+    // copy): its conversation is kept behind the one this chat sends in, which they may have
+    // dropped, and it moves nothing else on, nor starts their endpoints' conversations again. One
+    // they really started with a clock behind becomes that one with the first message they send in it.
+    const stale = !!known && staleFirst(message, known);
     // Where they read, unless they said it before from a queue made later (a late copy).
-    const takes = takesPlace(message.qa, known?.qa);
+    const takes = !stale && takesPlace(message.qa, known?.qa);
     const qa = takes && message.qa ? message.qa : known?.qa;
     const nostrTo = takes && message.ns !== undefined ? message.ns || undefined : known?.nostrTo;
     const contact: Contact = {
       identity,
       sender: (takes && message.from) || known?.sender || message.from || '',
       ...(message.from && takes ? placeOf(message) : { relay: known?.relay ?? '', relayKey: known?.relayKey ?? '', spare: known?.spare ?? null }),
-      conversations: [toBase64(opened.conversation), ...(known?.conversations ?? [])].slice(0, MAX_CONVERSATIONS),
+      conversations: (stale && known.conversations.length > 0 ? [known.conversations[0], toBase64(opened.conversation), ...known.conversations.slice(1)] : [toBase64(opened.conversation), ...(known?.conversations ?? [])]).slice(0, MAX_CONVERSATIONS),
       first: known?.first ?? '',
       name: known?.name ?? welcomed?.name ?? '',
       timer: timing.timer,
@@ -3178,9 +3208,10 @@ export class E2E {
       phone: known?.phone ?? '',
       seen: [...(known?.seen ?? []), id].slice(-MAX_SEEN_EACH),
       packetKey: this.ownPacketKey({ identity, packetKey: known?.packetKey ?? '' }),
-      sealTo: message.pk || known?.sealTo || '',
+      sealTo: (stale ? known.sealTo || message.pk : message.pk || known?.sealTo) || '',
       // A new conversation from them: their phone may have lost this chat's key, so it is said again.
-      sealsIn: false,
+      sealsIn: stale ? known.sealsIn : false,
+      ...(stale ? (known.firstAt ? { firstAt: known.firstAt } : {}) : message.fa ? { firstAt: message.fa } : known?.firstAt ? { firstAt: known.firstAt } : {}),
       ...((takes ? ringSenderOf(message, known) : known?.ringSender) ? { ringSender: takes ? ringSenderOf(message, known) : known?.ringSender } : {}),
       ...(qa ? { qa } : {}),
       ...(known?.told ? { told: known.told } : {}),
@@ -3191,7 +3222,7 @@ export class E2E {
       // its devices started the chat (`byDevice`): its phone adds this chat as that device asked.
       ...(known?.dv !== undefined ? { dv: known.dv } : {}),
       ...(known?.list ? { list: known.list } : {}),
-      ...(known?.endpoints ? { endpoints: message.from && !known.byDevice ? known.endpoints.map(blankAgain) : known.endpoints } : {}),
+      ...(known?.endpoints ? { endpoints: message.from && !known.byDevice && !stale ? known.endpoints.map(blankAgain) : known.endpoints } : {}),
       ...(known?.listSent ? { listSent: known.listSent } : {}),
       ...(known?.listGiven ? { listGiven: known.listGiven } : {}),
       ...(known?.took ? { took: known.took } : {}),
@@ -3329,7 +3360,7 @@ export class E2E {
     const packetKey = this.ownPacketKey({ identity: acct, packetKey: '' });
     // Their account's own conversation, started now, as with newer prekeys (startedAgain): its
     // first message says nothing of where this chat reads, which what goes after it says.
-    const first: Message = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined) };
+    const first: Message = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: packetKey, ...this.saysDevices(undefined), fa: firstAt() };
     const started = await core.startConversation(this.account, bundle, encodeMessage(first));
     const timing = timerOf(message, undefined);
     const contact: Contact = {
@@ -3482,7 +3513,7 @@ export class E2E {
       return null;
     }
     if (toBase64(bundle) === contact.bundle) return null;
-    const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact), ...this.saysDevices(contact) };
+    const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact), ...this.saysDevices(contact), fa: firstAt() };
     const started = await core.startConversation(this.account, bundle, encodeMessage(first));
     const [sending, ...older] = contact.conversations;
     return { bundle: toBase64(bundle), conversations: [sending, toBase64(started.conversation), ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };

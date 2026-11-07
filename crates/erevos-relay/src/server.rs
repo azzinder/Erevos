@@ -17,6 +17,21 @@
 //! - `SEND`: sender id, then a 4-byte length and the message.
 //! - `RECEIVE`: recipient id. Reply: a 1-byte flag, then a length and the
 //!   message if one was waiting. The message is deleted from the relay.
+//!   Over WebSocket, the mark below (`SHOWN` or 0), then `HOLD`, and maybe the
+//!   8-byte number of the message the phone kept last, ask to keep the
+//!   message on the relay until the phone has it: the message of that number
+//!   is deleted first, as `ACK` does, and the reply is `OK`, `HELD`, the
+//!   message's 8-byte number, then a length and the message, which stays,
+//!   handed over again at each `RECEIVE` until it is acknowledged; `OK` and
+//!   0 as before when none waits. So a message whose reply is lost with its
+//!   connection is not lost with it. Only the oldest message is ever out so,
+//!   one a queue whatever the connections. Older relays read no further than
+//!   the mark and answer as before, flag 1, having deleted it.
+//! - `ACK`: recipient id, the 8-byte number of a message a `RECEIVE` with
+//!   `HOLD` handed over. It is deleted if it is still the oldest in the
+//!   queue; one that went already, or a number from before a restart, leaves
+//!   the queue as it is. Reply: `OK`, or `NOT_FOUND` when there is no such
+//!   queue. Older relays close the connection.
 //! - `WAIT`: recipient id, then 1 byte: seconds to wait, at most `MAX_WAIT`.
 //!   Reply: `OK` and 1 as soon as a message waits in the queue, or `OK` and 0
 //!   when none came in that time. Nothing is taken: a `RECEIVE` takes it. A
@@ -229,7 +244,7 @@
 //! `FILE_DELETE`.
 //!
 //! Reading (`/read`): the path needs no token, and takes only `RECEIVE`,
-//! `WAIT`, `NEWS`, `WAIT_ANY` and `NEWS_ANY`, which act only on a queue whose
+//! `ACK`, `WAIT`, `NEWS`, `WAIT_ANY` and `NEWS_ANY`, which act only on a queue whose
 //! recipient id the phone gives, so knowing the id is what lets it read, as
 //! the chunk id guards a chunk on `/files`. A phone with a queue for each
 //! contact reads them there, in groups over connections of their own (each
@@ -266,8 +281,9 @@
 //! every lent token it gave, is refused at the handshake as a wrong token is.
 //!
 //! Reply status: `OK`, `NOT_FOUND` (no such queue or chunk), `FULL` (the
-//! queue holds `MAX_QUEUED` messages, the relay all the queues it may, or the
-//! file store is full), `FAILED`
+//! queue holds `MAX_QUEUED` messages, the relay all the queues it may, or all
+//! the bytes of messages it may, in all or in the queues of the phone that
+//! made this one, see `queue.rs`; or the file store is full), `FAILED`
 //! (the relay could not write the change to its journal or file store, so
 //! nothing changed; try again later), or `UNREACHABLE` (a forward could not
 //! reach the other relay, or it closed without a reply).
@@ -315,6 +331,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use erevos_core::relay_channel::{self, Channel};
 use erevos_core::relay_seal::{RelayKey, OVERHEAD};
+use sha2::Digest;
 
 use tungstenite::handshake::server::{ErrorResponse, Request, Response};
 use tungstenite::http::StatusCode;
@@ -332,7 +349,7 @@ use crate::lock::{lock, wait_timeout};
 use crate::matrix_push;
 use crate::peers;
 use crate::push::{Came, Keys, Push, SetError, AUTH_LEN, MAX_ENDPOINT, P256DH_LEN};
-use crate::queue::{system_now, News, QueueError, QueueId, Said, Store};
+use crate::queue::{system_now, News, Owner, QueueError, QueueId, Said, Store};
 use crate::signin::{self, ClaimError, SignIn};
 use crate::tokens::{to_hex, Phone, Tokens};
 use crate::turn::Turn;
@@ -572,6 +589,7 @@ pub const COUPON_KEY: u8 = 33;
 pub const COUPON_SIGN: u8 = 34;
 pub const COUPON_KEYS: u8 = 35;
 pub const COUPON_REDEEM: u8 = 36;
+pub const ACK: u8 = 37;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -579,6 +597,11 @@ pub const QUIET: u8 = 2;
 pub const RING: u8 = 3;
 /// The mark a `RECEIVE` may end with (see the module's doc).
 pub const SHOWN: u8 = 1;
+/// After that mark: keep the message until the phone acknowledges it.
+pub const HOLD: u8 = 1;
+/// The flag of a reply to a `RECEIVE` with `HOLD` that hands over a message
+/// kept on the relay.
+pub const HELD: u8 = 2;
 
 /// What a send said it carries.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -659,8 +682,8 @@ enum Access {
     Files,
     /// The `/join` path: `REDEEM` only.
     Join,
-    /// The `/read` path: `RECEIVE`, `WAIT`, `NEWS`, `WAIT_ANY` and `NEWS_ANY`
-    /// only.
+    /// The `/read` path: `RECEIVE`, `ACK`, `WAIT`, `NEWS`, `WAIT_ANY` and
+    /// `NEWS_ANY` only.
     Read,
     /// A ticket for a place, which expires then (Unix seconds): `KEY` and
     /// `BORROW` only.
@@ -1071,13 +1094,14 @@ fn respond(
         Access::Sealed => matches!(op[0], KEY | SEALED_SEND),
         Access::Files => matches!(op[0], FILE_GET | FILE_DELETE),
         Access::Join => matches!(op[0], REDEEM | SIGN_IN | CLAIM | COUPON_KEYS | COUPON_REDEEM),
-        Access::Read => matches!(op[0], RECEIVE | WAIT | NEWS | WAIT_ANY | NEWS_ANY | TIME),
+        Access::Read => matches!(op[0], RECEIVE | ACK | WAIT | NEWS | WAIT_ANY | NEWS_ANY | TIME),
         Access::Ticket(..) => matches!(op[0], KEY | BORROW),
         Access::Lent(_) => matches!(
             op[0],
             CREATE
                 | SEND
                 | RECEIVE
+                | ACK
                 | WAIT
                 | NEWS
                 | WAIT_ANY
@@ -1110,7 +1134,7 @@ fn respond(
             vec![FULL]
         }
         CREATE => {
-            let created = shared.store().create();
+            let created = shared.store().create_for(owner_of(access));
             match created {
                 Ok(q) => {
                     let mut out = vec![OK];
@@ -1130,9 +1154,15 @@ fn respond(
         RECEIVE => {
             let recipient = read_id(r)?;
             let shown = read_byte(r, framed)? == Some(SHOWN);
+            let hold = read_byte(r, framed)? == Some(HOLD);
+            let kept = if hold { read_kept(r)? } else { None };
             let got = {
                 let mut store = shared.store();
-                let got = store.receive(&recipient);
+                let got = if hold {
+                    store.take(&recipient, kept)
+                } else {
+                    store.receive(&recipient).map(|got| got.map(|msg| (0, msg)))
+                };
                 if let Some(push) = shared.push.get() {
                     push.shown(&recipient, shown);
                     // Under the lock that found it empty: what is sent after it
@@ -1144,8 +1174,14 @@ fn respond(
                 got
             };
             match got {
-                Ok(Some(msg)) => {
-                    let mut out = vec![OK, 1];
+                Ok(Some((number, msg))) => {
+                    let mut out = vec![OK];
+                    if hold {
+                        out.push(HELD);
+                        out.extend_from_slice(&number.to_be_bytes());
+                    } else {
+                        out.push(1);
+                    }
                     out.extend_from_slice(&(msg.len() as u32).to_be_bytes());
                     out.extend_from_slice(&msg);
                     out
@@ -1153,6 +1189,13 @@ fn respond(
                 Ok(None) => vec![OK, 0],
                 Err(e) => vec![code(e)],
             }
+        }
+        ACK => {
+            let recipient = read_id(r)?;
+            let mut number = [0u8; 8];
+            r.read_exact(&mut number)?;
+            let acked = shared.store().ack(&recipient, u64::from_be_bytes(number));
+            status(acked)
         }
         WAIT => {
             let recipient = read_id(r)?;
@@ -1465,7 +1508,11 @@ fn respond(
                 return Ok(Some(vec![FULL]));
             }
             match lend.borrow(nonce, expires, system_now()) {
-                Some(token) => match store.create() {
+                // Counted as the lent token's own, as those it makes later.
+                Some(token) => match store.create_for(match lend.check(&token, system_now()) {
+                    Some(Pass::Lent(own)) => owner_of(Access::Lent(own)),
+                    _ => None,
+                }) {
                     Ok(q) => {
                         let mut out = vec![OK];
                         out.extend_from_slice(&q.recipient_id);
@@ -1845,6 +1892,33 @@ fn put_short(out: &mut Vec<u8>, bytes: &[u8]) {
 
 fn status(result: Result<(), QueueError>) -> Vec<u8> {
     vec![result.map_or_else(code, |()| OK)]
+}
+
+/// Whose share of the bytes queued a queue made on this connection counts in
+/// (see `queue.rs`): a phone's own token, or a lent one. The relay's own token
+/// is the operator's, and counts in the whole only.
+fn owner_of(access: Access) -> Option<Owner> {
+    match access {
+        Access::Phone(hash) => Some(hash),
+        Access::Lent(nonce) => {
+            let mut hash = sha2::Sha256::new();
+            hash.update(b"erevos-relay lent token");
+            hash.update(nonce);
+            Some(hash.finalize().into())
+        }
+        _ => None,
+    }
+}
+
+/// The number of the message a phone kept, after a `RECEIVE` with `HOLD`, if
+/// it gave one.
+fn read_kept(r: &mut impl Read) -> io::Result<Option<u64>> {
+    let mut number = [0u8; 8];
+    if r.read(&mut number[..1])? == 0 {
+        return Ok(None);
+    }
+    r.read_exact(&mut number[1..])?;
+    Ok(Some(u64::from_be_bytes(number)))
 }
 
 fn code(error: QueueError) -> u8 {
@@ -2700,6 +2774,68 @@ mod tests {
         assert!(closes_for(&mut ws, wait_any_request(&[recipients[0]; MAX_ANY + 1], 30)));
         let mut ws = connect_with_token(addr, "", "");
         assert_eq!(ws_call(&mut ws, wait_any_request(&[recipients[0]; MAX_ANY], 0)), [vec![OK], vec![0; MAX_ANY]].concat());
+    }
+
+    /// A `RECEIVE` that keeps the message until it is acknowledged, saying
+    /// the number of the one kept last if any: the number and the message.
+    fn ws_take(ws: &mut Ws, recipient: &QueueId, kept: Option<u64>) -> Option<(u64, Vec<u8>)> {
+        let mut req = vec![RECEIVE];
+        req.extend_from_slice(recipient);
+        req.extend_from_slice(&[0, HOLD]);
+        if let Some(kept) = kept {
+            req.extend_from_slice(&kept.to_be_bytes());
+        }
+        let r = ws_call(ws, req);
+        assert_eq!(r[0], OK);
+        if r[1] == 0 {
+            return None;
+        }
+        assert_eq!(r[1], HELD);
+        let number = u64::from_be_bytes(r[2..10].try_into().unwrap());
+        assert_eq!(u32::from_be_bytes(r[10..14].try_into().unwrap()) as usize, r.len() - 14);
+        Some((number, r[14..].to_vec()))
+    }
+
+    #[test]
+    fn a_message_taken_to_keep_comes_again_until_acknowledged() {
+        let addr = start_ws(None);
+        let mut ws = connect_with_token(addr, "", "");
+        let (recipient, sender) = ws_create(&mut ws);
+        for msg in [&b"one"[..], b"two", b"three"] {
+            assert_eq!(ws_send(&mut ws, &sender, msg), OK);
+        }
+        let (one, msg) = ws_take(&mut ws, &recipient, None).unwrap();
+        assert_eq!(msg, b"one");
+        // The connection is cut before the phone kept it: on the next, on
+        // /read too, it comes again, and only it.
+        drop(ws);
+        let mut reader = connect_with_token(addr, READ_PATH, "");
+        assert_eq!(ws_take(&mut reader, &recipient, None), Some((one, b"one".to_vec())));
+        assert_eq!(ws_take(&mut reader, &recipient, None), Some((one, b"one".to_vec())));
+        // Kept: said with the next take, which hands over the next.
+        let (two, msg) = ws_take(&mut reader, &recipient, Some(one)).unwrap();
+        assert_eq!(msg, b"two");
+        // Or with ACK, on /read as well, twice harmlessly.
+        let mut ack = vec![ACK];
+        ack.extend_from_slice(&recipient);
+        ack.extend_from_slice(&two.to_be_bytes());
+        assert_eq!(ws_call(&mut reader, ack.clone()), vec![OK]);
+        assert_eq!(ws_call(&mut reader, ack), vec![OK]);
+        // An older phone's RECEIVE takes and deletes as before.
+        let mut ws = connect_with_token(addr, "", "");
+        assert_eq!(ws_receive(&mut ws, &recipient), Some(b"three".to_vec()));
+        assert_eq!(ws_take(&mut ws, &recipient, None), None);
+        let mut ack = vec![ACK];
+        ack.extend_from_slice(&sender);
+        ack.extend_from_slice(&0u64.to_be_bytes());
+        assert_eq!(ws_call(&mut ws, ack), vec![NOT_FOUND]);
+        // Over TCP, which takes no marks, a RECEIVE is as before.
+        let tcp = start();
+        let mut s = TcpStream::connect(tcp).unwrap();
+        let (recipient, sender) = create(&mut s);
+        assert_eq!(send(&mut s, &sender, b"plain"), OK);
+        assert_eq!(receive(&mut s, &recipient), Some(b"plain".to_vec()));
+        assert_eq!(receive(&mut s, &recipient), None);
     }
 
     #[test]

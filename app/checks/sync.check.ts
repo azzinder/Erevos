@@ -6,7 +6,8 @@
 // saw whatever its clock says; the later change wins, a removal drops what came before it and a
 // record added again starts empty; ops in any order, twice or lost and given again, end the same on
 // every device; who may write what; a device far behind takes the whole log; what every device has
-// goes; an unlinked device is cut off; and what comes in any other form is refused.
+// goes; an unlinked device is cut off, and let go of on every device once each has all it wrote; a
+// device passes on no op in another's name; and what comes in any other form is refused.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -14,7 +15,7 @@ import { test } from 'node:test';
 
 import { compare, MAX_AHEAD, tick, type Stamp } from '../lib/sync/clock';
 import {
-  answer, change, compact, emptyLog, idsOf, isOp, isThere, MAX_OPS, setPeers, take, takeWhole, valueOf, whole,
+  answer, change, checkedLog, compact, emptyLog, MAX_DEVICES, idsOf, isOp, isThere, MAX_OPS, setPeers, take, takeWhole, valueOf, whole,
   type Change, type Log, type Op,
 } from '../lib/sync/log';
 import { blockedIn, changesFor, contactsIn } from '../lib/sync/contacts';
@@ -170,12 +171,116 @@ test('only the primary writes what the account decides, and the rest goes on', (
   assert.ok(change(phone, T0 + 3, { k: 'holder', id: 'groups', f: 'd', v: DELL }));
   talk(phone, dell, T0 + 4);
   talk(dell, jolla, T0 + 4);
+  assert.equal(valueOf(jolla, 'holder', 'groups', 'd'), undefined, 'a device passes on no op of the phone');
+  talk(phone, jolla, T0 + 4);
   assert.equal(valueOf(jolla, 'holder', 'groups', 'd'), DELL);
   // Nor does a device's whole log bring in what only the primary writes.
   const fake = whole(dell);
   fake.data.holder = { groups: { f: { d: { v: JOLLA, at: { t: T0 + 99, c: 0, d: DELL } } } } };
   takeWhole(jolla, DELL, fake);
   assert.equal(valueOf(jolla, 'holder', 'groups', 'd'), DELL);
+});
+
+test('a device writes in no one else\'s name: an op of the phone\'s or another device\'s from it is refused, and the real one is taken', () => {
+  const { phone, dell, jolla } = account();
+  const at = { t: T0, c: 0, d: PHONE };
+  const asPhone: Op = { d: PHONE, s: 1, at, k: 'note', id: 'n', f: 'text', v: 'forged' };
+  const holder: Op = { d: PHONE, s: 2, at: { ...at, c: 1 }, k: 'holder', id: 'groups', f: 'd', v: DELL };
+  const asJolla: Op = { d: JOLLA, s: 1, at: { t: T0, c: 0, d: JOLLA }, k: 'note', id: 'j', f: 'text', v: 'forged' };
+  assert.deepEqual(heard(jolla, DELL, { k: 'ops', ops: [asPhone, holder] }, T0 + 1), []);
+  assert.deepEqual(heard(phone, DELL, { k: 'ops', ops: [asJolla] }, T0 + 1), []);
+  assert.equal(jolla.vv[PHONE], undefined, 'no number of the phone\'s taken');
+  assert.equal(valueOf(jolla, 'holder', 'groups', 'd'), undefined);
+  assert.equal(phone.vv[JOLLA], undefined);
+  // Its own of a kind only the phone writes is passed over, as from anyone.
+  const own: Op = { d: DELL, s: 1, at: { t: T0, c: 0, d: DELL }, k: 'holder', id: 'groups', f: 'd', v: DELL };
+  heard(jolla, DELL, { k: 'ops', ops: [own] }, T0 + 1);
+  assert.equal(valueOf(jolla, 'holder', 'groups', 'd'), undefined);
+  assert.equal(jolla.vv[DELL], 1);
+  // The phone's own number 1 is still taken, from the phone.
+  change(phone, T0 + 2, { k: 'note', id: 'n', f: 'text', v: 'real' });
+  talk(phone, jolla, T0 + 3);
+  assert.equal(valueOf(jolla, 'note', 'n', 'text'), 'real');
+  // Nor does a whole log from a device bring in what another stamped.
+  const fake = whole(dell);
+  fake.vv[PHONE] = 99;
+  fake.data.note = { n: { f: { text: { v: 'whole', at: { t: T0 + 50, c: 0, d: PHONE } } } }, d: { add: { t: T0 + 50, c: 0, d: DELL }, f: {} } };
+  assert.ok(takeWhole(jolla, DELL, fake, T0 + 60));
+  assert.equal(valueOf(jolla, 'note', 'n', 'text'), 'real');
+  assert.equal(jolla.vv[PHONE], 1);
+  assert.equal(isThere(jolla, 'note', 'd'), true, 'what it stamped itself is taken');
+});
+
+test('a device gone for good is let go of on every device, once each has all it wrote, and the ops still meet', () => {
+  const { phone, dell, jolla } = account();
+  change(phone, T0, name('maria', 'Maria'));
+  const devices = [PHONE, DELL, JOLLA];
+  let now = T0 + 1;
+  // Linked again and again: each link a new endpoint, which writes, is unlinked and replaced.
+  for (let i = 0; i < 300; i++) {
+    const id = (i + 1).toString(16).padStart(4, '0').repeat(16);
+    const gone = emptyLog(id, PHONE);
+    for (const log of [phone, dell, jolla, gone]) setPeers(log, [...devices, id], now);
+    change(gone, now, { k: 'note', id: `n${i}`, f: 'text', v: `${i}` });
+    talk(gone, phone, now);
+    talk(gone, dell, now);
+    talk(phone, jolla, now);
+    for (const log of [phone, dell, jolla]) setPeers(log, devices, ++now);
+    for (let r = 0; r < 2; r++) {
+      talk(phone, dell, now);
+      talk(phone, jolla, now);
+    }
+    if (i === 0) {
+      for (const log of [phone, dell, jolla]) {
+        assert.equal(log.vv[id], undefined, `let go of on ${log.me.slice(0, 2)}`);
+        assert.equal(log.gone[id], undefined);
+        assert.equal(log.cut[id], undefined);
+      }
+    }
+  }
+  for (const log of [phone, dell, jolla]) {
+    assert.ok(Object.keys(log.vv).length <= devices.length, 'the vectors name the devices of now');
+    assert.equal(Object.keys(log.gone).length, 0);
+    assert.equal(idsOf(log, 'note').length, 0);
+    assert.equal(Object.keys(log.data.note).length, 300, 'what each wrote stays');
+  }
+  assert.equal(records(phone), records(dell));
+  assert.equal(records(dell), records(jolla));
+  // And they go on: a change on a device reaches the others.
+  change(dell, now, name('maria', 'Μαρία'));
+  talk(dell, jolla, now);
+  talk(dell, phone, now);
+  for (const log of [phone, dell, jolla]) assert.equal(valueOf(log, 'contact', 'maria', 'name'), 'Μαρία');
+  // One linked after takes the whole log, those let go of in it.
+  const fresh = emptyLog(OTHER, PHONE);
+  for (const log of [phone, fresh]) setPeers(log, [...devices, OTHER], now);
+  talk(phone, fresh, now);
+  assert.equal(records(fresh), records(phone));
+});
+
+test('a log kept with more devices than a vector may name still loads, lets the gone go, and talks', () => {
+  const { phone, dell } = account();
+  change(phone, T0, name('maria', 'Maria'));
+  talk(phone, dell, T0 + 1);
+  // As a version before kept it: 300 devices once linked and gone, every one of whose ops each has.
+  const kept = structuredClone(phone);
+  for (let i = 0; i < 300; i++) {
+    const id = (i + 1).toString(16).padStart(4, '0').repeat(16);
+    kept.vv[id] = 3;
+    kept.cut[id] = 3;
+    kept.gone[id] = { t: T0, c: 0, d: PHONE };
+    kept.seen[DELL][id] = 3;
+    kept.seen[JOLLA] = { ...kept.seen[JOLLA], [id]: 3 };
+  }
+  assert.ok(Object.keys(kept.vv).length > MAX_DEVICES);
+  assert.equal(readSaid(have(kept)), null, 'too many to say');
+  const loaded = checkedLog(JSON.parse(JSON.stringify(kept)))!;
+  assert.ok(loaded, 'loaded, not started anew');
+  assert.equal(loaded.vv[PHONE], phone.vv[PHONE], 'the phone numbers on from where it was');
+  assert.ok(Object.keys(loaded.vv).length <= 3);
+  change(loaded, T0 + 2, name('maria', 'Mary'));
+  talk(loaded, dell, T0 + 3);
+  assert.equal(valueOf(dell, 'contact', 'maria', 'name'), 'Mary');
 });
 
 test('a stamp too far ahead waits for the clock, and one from no device of the account waits for the list', () => {

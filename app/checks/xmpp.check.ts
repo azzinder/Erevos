@@ -141,7 +141,12 @@ test('two people write encrypted both ways, and a second device reads along', { 
 
   await sendXmppText(ben.state, ben.connection, `ann@${DOMAIN}`, 'Γεια σου Ann');
   await settle([ann, ben, ann2]);
-  assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => [m.text, m.mine]), [['Γεια σου Ben', true], ['Γεια σου Ann', false]]);
+  // Ann's first device wrote to her second as it came: the chat says so.
+  assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => [m.text, m.mine]), [
+    ['Γεια σου Ben', true],
+    [`🔑 New device of ann@${DOMAIN}: your messages go to it too.`, false],
+    ['Γεια σου Ann', false],
+  ]);
   assert.deepEqual(ann2.state.chats[`ben@${DOMAIN}`].messages.map((m) => [m.text, m.mine]), [['Γεια σου Ben', true], ['Γεια σου Ann', false]]);
   // Ann reads it on her second device: her first has it read too.
   assert.equal(ann.state.chats[`ben@${DOMAIN}`].unread, 1);
@@ -269,7 +274,8 @@ test('restored from a backup, the account goes on as a new device of itself, its
     assert.equal(xmppNow().state!.chats[`ann@${DOMAIN}`].messages[1].text, 'μετά');
     await xmppSend(`ann@${DOMAIN}`, 'απάντηση');
     await settle([ann]);
-    assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => m.text), ['πριν', 'μετά', 'απάντηση']);
+    // Restored, Ben goes on as a new device of his, which Ann's chat says once.
+    assert.deepEqual(ann.state.chats[`ben@${DOMAIN}`].messages.map((m) => m.text), ['πριν', 'μετά', `🔑 New device of ben@${DOMAIN}: your messages go to it too.`, 'απάντηση']);
 
     // Loaded again with no new restore, it stays the device it became.
     const device = xmppNow().state!.omemo.device;
@@ -356,7 +362,8 @@ test('OMEMO 2 goes to the apps that have it, OMEMO 0.3 to those that have only t
   assert.ok(ann.state.omemo2?.live && kai.state.omemo2?.live);
   assert.ok(!cid.state.omemo2?.live);
   const last = () => server.seen[server.seen.length - 1];
-  const words = (who: typeof ann, jid: string) => who.state.chats[jid]?.messages.map((m) => [m.text, m.mine]);
+  // Without the lines that say a device is new (Ann's second came after the list with her first).
+  const words = (who: typeof ann, jid: string) => who.state.chats[jid]?.messages.filter((m) => !m.call).map((m) => [m.text, m.mine]);
 
   await sendXmppText(ann.state, ann.connection, `kai@${DOMAIN}`, 'προς το Kaidan');
   assert.ok(last().includes("xmlns='urn:xmpp:omemo:2'") && !last().includes('eu.siacs.conversations.axolotl'));

@@ -1980,8 +1980,9 @@ test('the devices the list names reach each other: started by the lower id, seal
   await take(dell);
   await take(lenovo);
   assert.deepEqual([nameOn(dell), nameOn(lenovo)], ['Carol L', 'Carol L']);
-  // In the account's log of each too, with the phone off: the devices give it each other.
-  for (const p of [dell, lenovo]) assert.equal(contactsIn((await p.links.syncLog())!).find((c) => c.identity === carolId)?.name, 'Carol L');
+  // In the account's log of each too, with the phone off: the devices give each other what they
+  // wrote (what the phone wrote, only the phone gives).
+  for (const p of [dell, lenovo]) assert.equal(syncValueOf((await p.links.syncLog())!, 'contact', carolId, 'name'), 'Carol L');
   // A contact added on one comes to the other; removed there, it goes from both.
   const dave = await phone(4, false);
   const daveId = dave.chats.e2e.identityHex();

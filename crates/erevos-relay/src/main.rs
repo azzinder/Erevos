@@ -109,6 +109,13 @@
 //! for `EREVOS_RELAY_QUEUE_DAYS` (180 unless set) expires, with what waits in
 //! it (see `queue.rs`).
 //!
+//! Waiting messages are held in memory, at most `EREVOS_RELAY_QUEUED_MB`
+//! megabytes of them (1024 unless set), and of that at most
+//! `EREVOS_RELAY_QUEUED_PER_PHONE_MB` (64 unless set) in the queues one phone
+//! made with a token of its own or a lent one; past either, a send is told the
+//! relay is full. A journal that holds more is read back without its oldest
+//! messages past it, said in one line (see `queue.rs`).
+//!
 //! Set `EREVOS_RELAY_KEY` to a file path to give the relay a key for sealed
 //! sends (two-hop sending, see `server.rs`). The file is made on first start
 //! and must be kept: phones put the public key in their contact links.
@@ -483,8 +490,20 @@ fn main() -> ExitCode {
         max_queues.try_into().unwrap_or(usize::MAX),
         queue_days.saturating_mul(queue::DAY),
     );
+    let Some(queued_mb) = number("EREVOS_RELAY_QUEUED_MB", (queue::DEFAULT_MAX_BYTES >> 20) as u64, 1) else {
+        return ExitCode::FAILURE;
+    };
+    let Some(share_mb) = number(
+        "EREVOS_RELAY_QUEUED_PER_PHONE_MB",
+        (queue::DEFAULT_SHARE >> 20) as u64,
+        1,
+    ) else {
+        return ExitCode::FAILURE;
+    };
+    let mb = |n: u64| usize::try_from(n.saturating_mul(1 << 20)).unwrap_or(usize::MAX);
+    let (queued, share) = (mb(queued_mb), mb(share_mb));
     let store = match env::var("EREVOS_RELAY_JOURNAL") {
-        Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl) {
+        Ok(path) if !path.is_empty() => match Store::open_with(Path::new(&path), ttl, queued) {
             Ok(store) => {
                 elog!("erevos-relay: keeping queues in {path}");
                 store
@@ -501,9 +520,14 @@ fn main() -> ExitCode {
             Store::with_ttl(ttl)
         }
     };
-    let store = store.with_queue_limits(max_queues, queue_ttl);
+    let store = store
+        .with_queue_limits(max_queues, queue_ttl)
+        .with_byte_limits(queued, share);
     elog!(
         "erevos-relay: holding {max_queues} queues at most, each until its phone leaves it unused for {queue_days} days"
+    );
+    elog!(
+        "erevos-relay: holding {queued_mb} MB of waiting messages at most, {share_mb} MB in the queues of one phone"
     );
     let key = match env::var("EREVOS_RELAY_KEY") {
         Ok(path) if !path.is_empty() => match load_key(Path::new(&path)) {

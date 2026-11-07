@@ -18,7 +18,11 @@
 //    and, when the account has none yet, its cross-signing keys, signing this device with them.
 //  - Syncs (sync): rooms, members, names, messages, invites, and the keys other devices send.
 //  - Sends a text (sendText): in an encrypted room, it first gives the room's current Megolm key
-//    to every device of every member that does not have it yet, through Olm, then sends.
+//    to every device of every member that does not have it yet, through Olm, then sends. A device
+//    new in someone's list gets it too, and the room says so; one that came back with other keys
+//    gets nothing more.
+//  - Opens a room message only with a key its sender gave, through Olm, from a device of theirs:
+//    one restored from the key backup, or from a device not known yet, opens it as not verified.
 //  - Starts a chat with someone (startChat), joins, leaves, marks as read, signs out.
 //  - Passes the steps of a check by emoji, to-device or in a room, to lib/matrix-verify.ts.
 //  - Passes a call's events to lib/matrix-calls.ts, and a room's events to Element Call while it
@@ -28,6 +32,7 @@
 // lib/matrix-backup.ts's. Not audited.
 
 import type { ChatNotify } from '../lock/chat-notify';
+import { deviceLine } from './call-lines';
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
 import type { MatrixPush } from './matrix-push';
@@ -104,6 +109,9 @@ export type MatrixMessage = {
   thread?: string;
   /** For a thread's first message, how many answers it has, as the homeserver last counted them. */
   threadCount?: number;
+  /** Opened with a key whose sender's device is not known for sure: one restored from the key
+   *  backup, or sent by a device not known yet (openMegolm). */
+  unverified?: true;
 };
 
 /** The key and checks of an encrypted file, as Matrix writes them (EncryptedFile). */
@@ -176,7 +184,19 @@ export const MOST_KEPT = 2000;
 /** The most reactions and changes that wait for their message. */
 const MOST_WAITING = 400;
 
-type Device = { curve25519: string; ed25519: string };
+type Device = {
+  curve25519: string;
+  ed25519: string;
+  /** It came back with other keys than these, which are not taken: nothing goes to it (queryDevices). */
+  changed?: true;
+  /** The next room whose key goes out says it is new, or changed its keys; then this goes. */
+  unsaid?: 'new' | 'changed';
+};
+
+/** A Megolm session we read with, and who gave it: through Olm, the sender and their device's
+ *  Ed25519 key (`untied` while that device was not known yet); or restored from the key backup,
+ *  where nothing says who did. Kept before Erevos noted the sender, only `senderKey`. */
+type Inbound = { session: Json; senderKey: string; sender?: string; ed25519?: string; untied?: true; backup?: true };
 
 type Outbound = { session: Json; sessionId: string; created: number; count: number; sharedWith: string[] };
 
@@ -198,7 +218,7 @@ export type MatrixState = {
   /** Olm sessions by the other device's Curve25519 key, the newest first. */
   olm: Record<string, Json[]>;
   /** Megolm sessions we read with, by `${roomId} ${sessionId}`: the session and who gave it. */
-  inbound: Record<string, { session: Json; senderKey: string }>;
+  inbound: Record<string, Inbound>;
   /** The Megolm session we send with, by room. */
   outbound: Record<string, Outbound>;
   /** Which message index of which session has been read, by `${sessionId} ${index}`, against replays. */
@@ -940,7 +960,7 @@ const inRoom = (roomId: string, event: Json, type: string, content: Json): Verif
  */
 async function takeEvent(state: MatrixState, roomId: string, event: Json, older: boolean): Promise<boolean> {
   const room = roomOf(state, roomId);
-  const base = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
+  const base: { id: string; sender: string; ts: number; unverified?: true } = { id: String(event.event_id), sender: String(event.sender), ts: Number(event.origin_server_ts ?? Date.now()) };
   let type = String(event.type);
   let content = (event.content as Json) ?? {};
   const unsigned = event.unsigned as Json | undefined;
@@ -955,7 +975,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
   if (type === 'm.room.encrypted') {
     if (content.algorithm !== MEGOLM) return false;
     const locked = { sessionId: String(content.session_id), ciphertext: String(content.ciphertext), senderKey: String(content.sender_key ?? '') };
-    const opened = await openMegolm(state, roomId, base.id, locked);
+    const opened = await openMegolm(state, roomId, base.id, base.sender, locked);
     if (!opened) {
       // A reaction or a change that cannot be opened has nothing to show.
       if (relation?.rel_type === 'm.annotation' || relation?.rel_type === 'm.replace' || relation?.rel_type === 'm.reference') return false;
@@ -964,6 +984,7 @@ async function takeEvent(state: MatrixState, roomId: string, event: Json, older:
     type = opened.type;
     content = opened.content;
     if (relation && !content['m.relates_to']) content = { ...content, 'm.relates_to': relation };
+    if (opened.unverified) base.unverified = true;
   }
   if (!older) {
     tap(state, roomId, { ...event, type, content }, true);
@@ -1076,7 +1097,7 @@ function react(room: MatrixRoom, base: { id: string; sender: string }, relation:
 }
 
 /** A message changed by whoever wrote it: its words, or its file, as they are now. */
-function change(room: MatrixRoom, base: { sender: string; ts: number }, relation: Json, content: Json): boolean {
+function change(room: MatrixRoom, base: { sender: string; ts: number; unverified?: true }, relation: Json, content: Json): boolean {
   const target = room.messages.find((m) => m.id === relation.event_id);
   const fresh = content['m.new_content'] as Json | undefined;
   // Only its writer may change it; a change of a change is not one.
@@ -1089,6 +1110,8 @@ function change(room: MatrixRoom, base: { sender: string; ts: number }, relation
   if (shown.preview) target.preview = shown.preview;
   else delete target.preview;
   target.edited = base.ts;
+  // Words now from a key not known for sure are no surer than it.
+  if (base.unverified) target.unverified = true;
   return true;
 }
 
@@ -1206,11 +1229,52 @@ function jsonObject(text: string): Json | null {
   }
 }
 
-/** The content of a room message under the room's Megolm keys, or null without the key. */
-async function openMegolm(state: MatrixState, roomId: string, eventId: string, locked: NonNullable<MatrixMessage['locked']>): Promise<{ type: string; content: Json } | null> {
+/** The device among those known whose Curve25519 key is `curve25519`, and whose it is. */
+function deviceOfKey(state: MatrixState, curve25519: string): { user: string; device: Device } | undefined {
+  for (const [user, devices] of Object.entries(state.devices)) {
+    const device = Object.values(devices).find((d) => d.curve25519 === curve25519);
+    if (device) return { user, device };
+  }
+  return undefined;
+}
+
+/**
+ * Whether an event that the homeserver says `sender` sent may open with `inbound`: only when the
+ * session is theirs, or the homeserver could make any member say anything with a key it has. A
+ * session given through Olm by a device not known then is tied to it once it is, or refused when
+ * that device is someone else's or has other keys; until then what opens with it is not verified.
+ * One restored from the backup is never sure (anyone with the backup's public key can add to it).
+ */
+function ownerCheck(state: MatrixState, inbound: Inbound, sender: string): 'sure' | 'unverified' | 'refused' {
+  const holder = deviceOfKey(state, inbound.senderKey);
+  if (inbound.sender !== undefined) {
+    if (inbound.sender !== sender) return 'refused';
+    if (!inbound.untied) return 'sure';
+    if (!holder) return 'unverified';
+    if (holder.user !== sender || holder.device.ed25519 !== inbound.ed25519) return 'refused';
+    delete inbound.untied;
+    return 'sure';
+  }
+  if (holder && holder.user !== sender) return 'refused';
+  if (inbound.backup || !holder) return 'unverified';
+  // Kept before the sender was noted, from Olm, whose sender key is the device's own.
+  inbound.sender = sender;
+  inbound.ed25519 = holder.device.ed25519;
+  return 'sure';
+}
+
+/** The content of a room message `sender` sent under the room's Megolm keys, and whether it is not
+ *  verified; null without the key, or when the key is not the sender's. */
+async function openMegolm(state: MatrixState, roomId: string, eventId: string, sender: string, locked: NonNullable<MatrixMessage['locked']>): Promise<{ type: string; content: Json; unverified?: true } | null> {
   const key = `${roomId} ${locked.sessionId}`;
   const inbound = state.inbound[key];
   if (!inbound) return null;
+  const owner = ownerCheck(state, inbound, sender);
+  if (owner === 'refused') {
+    // A key whose device turned out not to be its sender's goes, so the right one can still come.
+    if (inbound.untied) delete state.inbound[key];
+    return null;
+  }
   let opened: { session: Json; index: number; plaintext: string };
   try {
     opened = await core('megolm_decrypt', { session: inbound.session, ciphertext: locked.ciphertext });
@@ -1225,7 +1289,7 @@ async function openMegolm(state: MatrixState, roomId: string, eventId: string, l
   // on, which would stop the whole sync at this batch for good.
   const payload = jsonObject(opened.plaintext);
   if (!payload || payload.room_id !== roomId) return null;
-  return { type: String(payload.type), content: (payload.content as Json) ?? {} };
+  return { type: String(payload.type), content: (payload.content as Json) ?? {}, ...(owner === 'unverified' ? { unverified: true as const } : {}) };
 }
 
 /** Takes in one to-device event: a room key sent us through Olm, or a call's. Answers whether a
@@ -1256,7 +1320,7 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   if (payload.sender !== event.sender || payload.recipient !== state.userId) return false;
   if ((payload.recipient_keys as Json | undefined)?.ed25519 !== ours.ed25519) return false;
   const claimed = (payload.keys as Json | undefined)?.ed25519;
-  const known = Object.values(state.devices[String(event.sender)] ?? {}).find((d) => d.curve25519 === senderKey);
+  let known = Object.values(state.devices[String(event.sender)] ?? {}).find((d) => d.curve25519 === senderKey);
   if (known && known.ed25519 !== claimed) return false;
   if (isVerification(payload.type, payload.content as Json)) return passVerification(state, { type: String(payload.type), content: (payload.content as Json) ?? {}, sender: String(event.sender) });
   if (isCallEvent(payload.type)) {
@@ -1269,7 +1333,19 @@ async function takeToDevice(state: MatrixState, event: Json): Promise<boolean> {
   const made = await core<{ session: Json; session_id: string }>('megolm_inbound', { session_key: key.session_key });
   if (made.session_id !== key.session_id) return false;
   const roomId = key.room_id;
-  if (!state.inbound[`${roomId} ${made.session_id}`]) state.inbound[`${roomId} ${made.session_id}`] = { session: made.session, senderKey };
+  const sender = String(event.sender);
+  // A key can come before the device that sent it is known: its list is asked for again, and a
+  // device still not known leaves the session untied, what opens with it not verified (ownerCheck).
+  if (!known) {
+    if (!state.outdated.includes(sender)) state.outdated.push(sender);
+    await queryDevices(state, [sender]).catch(() => undefined);
+    known = Object.values(state.devices[sender] ?? {}).find((d) => d.curve25519 === senderKey);
+    if (known && known.ed25519 !== claimed) return false;
+  }
+  const holder = deviceOfKey(state, senderKey);
+  if (holder && holder.user !== sender) return false;
+  if (typeof claimed !== 'string') return false;
+  if (!state.inbound[`${roomId} ${made.session_id}`]) state.inbound[`${roomId} ${made.session_id}`] = { session: made.session, senderKey, sender, ed25519: claimed, ...(known ? {} : { untied: true as const }) };
   return retryLocked(state, roomId, made.session_id);
 }
 
@@ -1280,9 +1356,10 @@ export async function retryLocked(state: MatrixState, roomId: string, sessionId:
   let any = false;
   for (const message of [...room.messages]) {
     if (message.locked?.sessionId !== sessionId) continue;
-    const opened = await openMegolm(state, roomId, message.id, message.locked);
+    const opened = await openMegolm(state, roomId, message.id, message.sender, message.locked);
     if (!opened) continue;
     any = true;
+    if (opened.unverified) message.unverified = true;
     if (opened.type === 'm.room.message' && (opened.content['m.relates_to'] as Json | undefined)?.rel_type !== 'm.replace') {
       Object.assign(message, shownOf(opened.content));
       delete message.locked;
@@ -1303,7 +1380,14 @@ async function membersOf(state: MatrixState, roomId: string): Promise<string[]> 
   return Object.keys(room.members);
 }
 
-/** Brings the devices of `users` up to date, keeping only those whose keys are signed by themselves. */
+/**
+ * Brings the devices of `users` up to date, keeping only those whose keys are signed by themselves.
+ * The homeserver could add a device to anyone's list, ours too, and it would get the room keys: a
+ * device new in a list that came after the first is still given them, as a member's new phone
+ * should be, but the next room whose key goes out says so (shareRoomKey). A device we knew keeps
+ * its keys: one that comes back with others is kept as it was, marked, and given nothing more, as
+ * Element does.
+ */
 async function queryDevices(state: MatrixState, users: string[]): Promise<void> {
   const need = users.filter((u) => !state.devices[u] || state.outdated.includes(u));
   if (!need.length) return;
@@ -1311,17 +1395,23 @@ async function queryDevices(state: MatrixState, users: string[]): Promise<void> 
   const all = (answer.device_keys as Record<string, Record<string, Json>> | undefined) ?? {};
   for (const user of need) {
     const kept: Record<string, Device> = {};
+    const had = state.devices[user];
     for (const [deviceId, keys] of Object.entries(all[user] ?? {})) {
       if (keys.user_id !== user || keys.device_id !== deviceId) continue;
       const k = (keys.keys as Json) ?? {};
       const ed25519 = String(k[`ed25519:${deviceId}`] ?? '');
       const curve25519 = String(k[`curve25519:${deviceId}`] ?? '');
       if (!ed25519 || !curve25519) continue;
-      // A device we knew keeps its key: one that comes back with another is not taken.
-      const before = state.devices[user]?.[deviceId];
-      if (before && before.ed25519 !== ed25519) continue;
+      const before = had?.[deviceId];
+      if (before && (before.changed || before.ed25519 !== ed25519)) {
+        kept[deviceId] = before.changed ? before : { ...before, changed: true, unsaid: 'changed' };
+        continue;
+      }
       const { ok } = await core<{ ok: boolean }>('verify_json', { json: keys, key: ed25519, user_id: user, key_id: `ed25519:${deviceId}` });
-      if (ok) kept[deviceId] = { curve25519, ed25519 };
+      if (!ok) continue;
+      const ours = user === state.userId && deviceId === state.deviceId;
+      const unsaid = before ? before.unsaid : had && !ours ? 'new' : undefined;
+      kept[deviceId] = { curve25519, ed25519, ...(unsaid ? { unsaid } : {}) };
     }
     state.devices[user] = kept;
     state.outdated = state.outdated.filter((u) => u !== user);
@@ -1337,8 +1427,8 @@ async function outboundFor(state: MatrixState, roomId: string, members: string[]
   const made = await core<{ session: Json; session_id: string; session_key: string }>('megolm_new', {});
   // We read our own messages with it too, as they come back in the sync.
   const own = await core<{ session: Json; session_id: string }>('megolm_inbound', { session_key: made.session_key });
-  const ours = await core<{ curve25519: string }>('account_keys', { account: state.account });
-  state.inbound[`${roomId} ${own.session_id}`] = { session: own.session, senderKey: ours.curve25519 };
+  const ours = await core<{ curve25519: string; ed25519: string }>('account_keys', { account: state.account });
+  state.inbound[`${roomId} ${own.session_id}`] = { session: own.session, senderKey: ours.curve25519, sender: state.userId, ed25519: ours.ed25519 };
   const next: Outbound = { session: made.session, sessionId: made.session_id, created: now, count: 0, sharedWith: [] };
   state.outbound[roomId] = next;
   return next;
@@ -1398,14 +1488,19 @@ async function sealToDevices<T extends Target>(state: MatrixState, targets: T[],
   return { messages, sealed };
 }
 
-/** Gives the room's current Megolm key to every member device that does not have it yet. */
+/** Gives the room's current Megolm key to every member device that does not have it yet, but one
+ *  that changed its keys; the room says first when one is new or changed, once for each. */
 async function shareRoomKey(state: MatrixState, roomId: string, outbound: Outbound, members: string[]): Promise<void> {
   await queryDevices(state, members);
   const targets: Target[] = [];
   for (const user of members) {
     for (const [deviceId, device] of Object.entries(state.devices[user] ?? {})) {
       if (user === state.userId && deviceId === state.deviceId) continue;
-      if (outbound.sharedWith.includes(`${user} ${deviceId}`)) continue;
+      if (device.unsaid) {
+        addMatrixCallLine(state, roomId, user === state.userId, deviceLine(device.unsaid, user), `device ${device.unsaid} ${user} ${deviceId}`);
+        delete device.unsaid;
+      }
+      if (device.changed || outbound.sharedWith.includes(`${user} ${deviceId}`)) continue;
       targets.push({ user, deviceId, device });
     }
   }
@@ -1427,7 +1522,7 @@ export async function sendToDeviceSealed(state: MatrixState, type: string, to: R
   const targets: (Target & { content: Json })[] = [];
   for (const [user, devices] of Object.entries(to)) {
     for (const [deviceId, device] of Object.entries(state.devices[user] ?? {})) {
-      if (user === state.userId && deviceId === state.deviceId) continue;
+      if ((user === state.userId && deviceId === state.deviceId) || device.changed) continue;
       const content = devices[deviceId] ?? devices['*'];
       if (content) targets.push({ user, deviceId, device, content });
     }
