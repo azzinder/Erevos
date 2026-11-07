@@ -18,6 +18,12 @@ On main, not released yet:
   swipe go to the next or the one before, and **Slideshow** shows them by themselves, one every 4 seconds, till a tap. On
   a computer, in a browser and on Sailfish OS a photo opens again instead of staying at **Opening the photo…**. See
   [Collection](#collection).
+- **A home relay by itself**: on Android, when the space's relay names a relay paired with it, a space with no home
+  relay takes that one by itself, only through Tor, with its token from a coupon, so nothing is typed (lib/pair.ts).
+  Only the space's, never a hidden place's. **Automatically from your relay**, a switch on the **Home relay** screen,
+  on unless turned off, turns it off, and so does removing the home relay there by hand. A home relay set so follows
+  the pair when the relay names another, and goes when it became the space's own relay. The relay is asked once a
+  day while Erevos runs, and every phone gets the same answer.
 - **A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each
   have their chip whenever they are on in Modules, also with no chat yet (lib/inbox.ts inboxParts), and the **SMS**
   chip says when Erevos is not the SMS app yet, with a button to make it that. Before, a chip showed only once its
@@ -30,6 +36,10 @@ On main, not released yet:
   on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
   on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and
   told of nothing. Now it also takes a booster that has Erevos's program loaded to run (sailfish/watch/src/watcher.cpp).
+- **The relay names its pair**: `EREVOS_RELAY_PAIR`, the address of a relay that takes this one's coupons (up to 3,
+  apart by spaces), is told to each phone that may have coupons signed here, with the new `PAIR` request (38), and
+  `NOT_FOUND` to every other; an older relay closes the connection, which the app takes as none
+  (crates/erevos-relay coupons.rs, server.rs; deploy/relay/README.md).
 - **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
   also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
   now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).

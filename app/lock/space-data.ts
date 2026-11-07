@@ -68,6 +68,10 @@ export type SpaceData = {
   // relay cannot be reached (lib/spare.ts). Its address is empty when there is none. `more`: up to
   // MORE_SPARES others, each with its own queue, said beside it (a list of home relays).
   spare: SpareRelay;
+  // Whether a space with no home relay takes the one its relay is paired with, only through Tor
+  // (lib/pair.ts): on unless turned off, on the Home relay screen or by removing the home relay
+  // there. Only the space's: a hidden place never does.
+  pairHome: boolean;
   // Whether the web app asks the relay for a push when a message comes (lib/web-push.web.ts).
   push: boolean;
   // Turned off while the relay could not be told: it is told when the space next opens.
@@ -115,8 +119,10 @@ export type SpaceData = {
  * the space's relay signed blind (lib/coupons.ts), so it is taken again before it ends, from
  * `renew` (ms, picked at random so the two relays cannot tell the phone by its turn). `pending`:
  * a coupon signed and not taken there yet, with the token made for it, taken from `after` (ms).
+ * `auto`: Erevos set it by itself, as the space's relay is paired with it (lib/pair.ts), so it
+ * follows the pair.
  */
-export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[]; tor?: boolean; coupon?: number; renew?: number; pending?: PendingCoupon };
+export type SpareRelay = { url: string; token: string; queue: Queue | null; more?: SpareRelay[]; tor?: boolean; coupon?: number; renew?: number; pending?: PendingCoupon; auto?: boolean };
 /** A coupon signed and not taken yet (lib/coupons.ts): hex, but the token as it is. */
 export type PendingCoupon = { issuer: string; nonce: string; randomizer: string; signature: string; token: string; after: number };
 /** The most home relays a space has besides the first (SpareRelay.more): a contact link says each. */
@@ -146,6 +152,7 @@ export const EMPTY_SPACE: SpaceData = {
   bridges: NO_BRIDGES,
   nostr: NOSTR_DEFAULT,
   spare: NO_SPARE,
+  pairHome: true,
   push: false,
   pushLeft: false,
   pushScope: '',
@@ -188,6 +195,7 @@ function checkedSpareRelay(value: unknown, inner = false): SpareRelay {
     ...(typeof v.coupon === 'number' && Number.isFinite(v.coupon) && v.coupon > 0 ? { coupon: v.coupon } : {}),
     ...(typeof v.renew === 'number' && Number.isFinite(v.renew) && v.renew > 0 ? { renew: v.renew } : {}),
     ...(pending ? { pending } : {}),
+    ...(v.auto === true ? { auto: true } : {}),
   };
 }
 
@@ -237,6 +245,7 @@ function checked(value: unknown): SpaceData {
     bridges: checkedBridges(v.bridges),
     nostr: checkedNostr(v.nostr),
     spare: checkedSpareRelay(v.spare),
+    pairHome: v.pairHome !== false,
     push: v.push === true,
     pushLeft: v.pushLeft === true,
     pushScope: typeof v.pushScope === 'string' && /^[0-9a-f]{32}$/.test(v.pushScope) ? v.pushScope : '',

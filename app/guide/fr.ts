@@ -1617,6 +1617,11 @@ confiance. C’est facultatif.
   deux pourrait encore deviner par les heures seules. Ainsi, deux espaces (voir [Second mot de passe](#second)) peuvent
   chacun utiliser le relais de l’autre comme relais d’attache, et aucun relais ne les relie. Les deux relais doivent
   avoir les coupons activés, et il faut une version avec Tor, sur Android (voir [Par Tor](#tor)).
+- **Automatiquement depuis ton relais :** un interrupteur, activé sauf si tu l’éteins, sur Android, où Erevos a Tor.
+  Quand ton relais nomme un relais apparié avec lui (son opérateur le règle), un espace sans relais d’attache prend
+  celui-là de lui-même, seulement par Tor, avec son jeton venu d’un coupon comme plus haut : rien à taper, et rien à
+  faire quand ton relais en nomme un autre. Retirer le relais d’attache à la main le désactive pour cet espace ; un
+  relais d’attache que tu as tapé toi-même reste tel quel. Les emplacements masqués n’en prennent jamais ainsi.
 - **Pour les discussions masquées :** chaque emplacement masqué peut avoir son propre relais d’attache, sous **Pour les
   utilisateurs avancés** sur son écran sans discussion choisie, tant qu’il est ouvert. Il est gardé avec cet emplacement
   seul, scellé avec son code PIN, si bien que l’espace n’en sait rien, et il est consulté tant que l’emplacement est

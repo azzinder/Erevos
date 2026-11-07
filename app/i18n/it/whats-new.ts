@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":
+    "**Un relay di casa da solo**: su Android, quando il tuo relay nomina un relay abbinato a lui, uno spazio senza relay di casa prende quello, solo tramite Tor, con il suo token da un coupon: niente da scrivere. **Automaticamente dal tuo relay**, in Impostazioni → Relay e reti → Relay di casa, lo disattiva. Vedi [Relay di casa](#home-relay).",
   "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
     "**Un chip per ogni parte attiva**: sopra le chat, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** hanno ciascuno il suo chip quando sono attivi in Moduli, anche senza ancora una chat. Prima, in uno spazio con solo SMS finora, scegliere **Tutti** dopo che l’icona di Erevos aveva aperto le sue chat nascondeva i chip, senza modo di tornare.",
   "**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**.":

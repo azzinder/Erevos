@@ -9,6 +9,7 @@ import type { SpareCode } from './contact-code';
 import type { E2E } from './e2e';
 import { toBase64Url } from './e2e';
 import { CouponWaitError, couponStep, wantsCoupon } from './coupons';
+import { takePair } from './pair';
 import { createQueue, fromHex, isQueueNotFound, receiveMessage, relayKey, toHex, type Relay } from './relay';
 import { ensureTor } from './tor';
 
@@ -37,12 +38,13 @@ const BATCH = 50;
 type Ready = { url: string; relay: Relay; queue: Queue; said: Spare };
 
 /** Where a backup relay's settings are kept: the open space's, or a hidden place's. `of` stands for
- *  whose they are while they are open. */
-export type SpareStore = { of: object; load: () => Promise<SpaceData>; update: (patch: Partial<SpaceData>) => Promise<void> };
+ *  whose they are while they are open. `space`: the open space's own, which may take its relay's
+ *  pair as its home relay (lib/pair.ts); never a hidden place's. */
+export type SpareStore = { of: object; load: () => Promise<SpaceData>; update: (patch: Partial<SpaceData>) => Promise<void>; space?: boolean };
 
 /** The open space's. */
 export function spaceSpare(): SpareStore {
-  return { of: currentSpace(), load: loadCurrentSpaceData, update: updateCurrentSpaceData };
+  return { of: currentSpace(), load: loadCurrentSpaceData, update: updateCurrentSpaceData, space: true };
 }
 
 /** A hidden place's, while it is open with its key. */
@@ -116,6 +118,8 @@ function keptFor(was: SpareRelay | undefined, given: { url: string; token: strin
   const tor = given.tor === true;
   const token = given.token.trim();
   const fromCoupon = same && tor && was.tor === true && was.coupon !== undefined && (!token || token === was.token);
+  // One Erevos set from the relay's pair stays so while it is saved as it was: through Tor, with no token typed.
+  const auto = same && was.auto === true && tor && (!token || fromCoupon);
   return {
     url,
     token: fromCoupon ? was.token : token,
@@ -123,6 +127,7 @@ function keptFor(was: SpareRelay | undefined, given: { url: string; token: strin
     ...(tor ? { tor: true } : {}),
     ...(fromCoupon ? { coupon: was.coupon, ...(was.renew !== undefined ? { renew: was.renew } : {}) } : {}),
     ...(same && tor && was.tor === true && !token && was.pending ? { pending: was.pending } : {}),
+    ...(auto ? { auto: true } : {}),
   };
 }
 
@@ -240,6 +245,8 @@ export async function lookAtSpare(
   stop: () => boolean,
   store: SpareStore = spaceSpare(),
 ): Promise<void> {
+  // The space's relay may name the home relay to take (lib/pair.ts): before the look, so it is made ready in it.
+  if (store.space && (await takePair(store).catch(() => false))) forgetSpare(store);
   const data = await store.load();
   const list = homeRelays(data.spare);
   // One no longer in the list, or moved in it, is let go of.

@@ -1475,6 +1475,11 @@ kuće, na Raspberry Piju ili starom računaru, ili bilo koji drugi relay kojem v
   onaj ko vodi oba mogao bi i dalje pogađati samo po vremenima. Tako dva prostora (vidi [Druga lozinka](#second)) mogu
   koristiti jedan drugome relay kao kućni relay, a nijedan relay ih ne povezuje. Oba relaya moraju imati uključene
   kupone, a treba verzija s Torom, na Androidu (vidi [Preko Tora](#tor)).
+- **Automatski od vašeg relaya:** prekidač, uključen dok ga ne isključite, na Androidu, gdje Erevos ima Tor. Kad vaš
+  relay navede relay s kojim je uparen (to podešava onaj ko ga vodi), prostor bez kućnog relaya sam uzima taj, samo
+  preko Tora, s tokenom od kupona kao gore: ništa za upisivanje i ništa za raditi kad vaš relay navede drugi.
+  Uklanjanje kućnog relaya rukom to isključuje za taj prostor; kućni relay koji ste sami upisali ostaje kakav je.
+  Skrivena mjesta nikad ne uzimaju takav.
 - **Za skrivene razgovore:** svako skriveno mjesto može imati vlastiti kućni relay, pod **Za napredne korisnike** na
   svom ekranu kad nije izabran nijedan razgovor, dok je otvoreno. Čuva se samo s tim mjestom, zapečaćen njegovim
   PIN-om, pa prostor ne zna ništa o njemu, a gleda se dok je mjesto otvoreno. Koristite drugi relay, a ne relay

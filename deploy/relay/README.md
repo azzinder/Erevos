@@ -571,6 +571,7 @@ which. The ones below are all optional.
 | `EREVOS_RELAY_COUPON_KEY` | none | This relay's key for coupons, from `erevos-relay new-coupon-key` (see [Coupons for a second relay](#coupons-for-a-second-relay)). Needs `EREVOS_RELAY_TOKENS`. |
 | `EREVOS_RELAY_COUPON_ISSUERS` | none | The file of the public keys of the relays whose coupons this one takes, one on each line. Needs `EREVOS_RELAY_TOKENS` in a folder the relay may write in. |
 | `EREVOS_RELAY_MAX_COUPONS` | 2000 | Lines from coupons, all together. |
+| `EREVOS_RELAY_PAIR` | none | The address of the relay that takes this one's coupons (`wss://…`, up to 3 apart by spaces): this relay's phones take it as their home relay by themselves, only through Tor. Needs `EREVOS_RELAY_COUPON_KEY`. |
 | `EREVOS_RELAY_LEND_REVOKED` | `relay.key.revoked` beside the key | The file of revoked tickets. |
 | `EREVOS_RELAY_PUSH_SUBJECT` | `mailto:erevos-relay@invalid` | Where push services may write about the relay; the installer sets it to `https://<domain>`. One that is not a `mailto:` or `https:` address is not taken, and the log says so. |
 | `EREVOS_RELAY_PUSH_SERVICES` | none | More push services whose addresses are taken (see [Notifications for the web app](#notifications-for-the-web-app)). One that is not an `https:` origin and its `/` is left out, and the log says so. |
@@ -896,6 +897,21 @@ since the relay writes the lines of coupons into that file. Then
 signed and how many issuers' coupons it takes. Which coupons were taken, and
 till when their lines last, are kept in `phones.tokens.coupons` beside the
 file of tokens.
+
+So that each space takes the other relay as its home relay by itself, with
+nothing to type on the phone, name it on this one, in `/etc/erevos-relay.env`:
+
+    EREVOS_RELAY_PAIR=wss://other-relay.example.org
+
+The relay then tells it to each phone that may have coupons signed here, and
+every phone gets the same answer. A space with no home relay takes it as its
+home relay, only through Tor, with its token from a coupon, on Android, where
+Erevos has Tor. **Automatically from your relay**, on the space's **Home
+relay** screen, turns this off; removing the home relay by hand turns it off
+too. A space whose home relay was set so follows the pair when it changes,
+and never takes its own relay as its home relay. Its log says which relays the
+phones are told. Up to 3 relays may be named, apart by spaces; a space takes
+the first that is not its own relay.
 
 A relay may have only one of the two: the key alone signs coupons for another
 relay, the issuers alone take them. A new key makes the coupons already signed,

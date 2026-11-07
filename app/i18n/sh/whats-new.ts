@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":
+    "**Kućni relay sam od sebe**: na Androidu, kad vaš relay navede relay s kojim je uparen, prostor bez kućnog relaya uzima taj, samo preko Tora, s tokenom od kupona: ništa za upisivanje. **Automatski od vašeg relaya**, u Postavke → Relay i mreže → Kućni relay, to isključuje. Pogledajte [Kućni relay](#home-relay).",
   "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
     "**Dugme za svaki uključeni dio**: iznad razgovora, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** imaju svaki svoje dugme kad su uključeni u Modulima, i bez ijednog razgovora zasad. Prije je u prostoru zasad samo sa SMS-ovima biranje **Sve poruke**, nakon što je ikona Erevosa otvorila njegove razgovore, sakrivalo dugmad, bez puta natrag.",
   "**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**.":

@@ -81,7 +81,11 @@
 //! too): a phone with one gets a line `spare` in the file of tokens, which
 //! lasts 90 days, at most `EREVOS_RELAY_MAX_COUPONS` of them at once (2000
 //! unless set). Each coupon is taken once, kept in `<file>.coupons`. Both are
-//! read at start. Off unless set.
+//! read at start. Off unless set. Set `EREVOS_RELAY_PAIR` to the address of
+//! a relay that takes this one's coupons (`wss://…`, or up to 3 apart by
+//! spaces), with `EREVOS_RELAY_COUPON_KEY`: the phones that may have coupons
+//! signed here are told it, and a space of theirs with no home relay takes it
+//! as its home relay by itself, only through Tor (see `coupons.rs`).
 //!
 //! Each connection has a thread of its own, so the relay takes at most
 //! `EREVOS_RELAY_MAX_CONNECTIONS` at once (512 unless set), both front ends
@@ -821,6 +825,25 @@ fn main() -> ExitCode {
             }
             Err(e) => {
                 elog!("erevos-relay: cannot read the coupons: {e}");
+                return ExitCode::FAILURE;
+            }
+        }
+    }
+    if let Some(value) = env::var("EREVOS_RELAY_PAIR").ok().filter(|v| !v.trim().is_empty()) {
+        match coupons::pair_of(&value) {
+            Ok(pair) => {
+                if store.coupons.get().is_some_and(|coupons| coupons.signs()) {
+                    elog!(
+                        "erevos-relay: phones with tokens of their own are told to take {} as their home relay, through Tor",
+                        pair.join(", ")
+                    );
+                } else {
+                    elog!("erevos-relay: EREVOS_RELAY_PAIR is set but no EREVOS_RELAY_COUPON_KEY, no phone is told it");
+                }
+                let _ = store.pair.set(pair);
+            }
+            Err(e) => {
+                elog!("erevos-relay: EREVOS_RELAY_PAIR: {e}");
                 return ExitCode::FAILURE;
             }
         }

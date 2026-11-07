@@ -31,6 +31,13 @@
 //!   this one too in the end. At most `EREVOS_RELAY_MAX_COUPONS` lines from
 //!   coupons stand at once (`MAX_LINES` unless set).
 //!
+//! - The pair (`EREVOS_RELAY_PAIR`, the address of a relay that takes this
+//!   one's coupons, or a few, as `pair_of` reads them): a phone that may
+//!   have coupons signed here is told it (`PAIR`), and a space of its with no
+//!   home relay takes the first as its home relay by itself, only through
+//!   Tor, with its token from a coupon (the app's lib/pair.ts). Nothing of the
+//!   phone is told: every phone that asks gets the same answer.
+//!
 //! What is kept, in `<file of tokens>.coupons` (written whole on each
 //! change): for each coupon taken, the SHA-256 of its nonce, the SHA-256 of
 //! the token it let in, and when that line ends. Nothing ties a line to the
@@ -73,6 +80,11 @@ pub const MAX_SIGNATURE: usize = 512;
 /// Issuers taken at most: few, as a relay that is let give its phones keys
 /// of their own, all taken here, could tell them apart by the key.
 pub const MAX_ISSUERS: usize = 4;
+/// Relays named in `EREVOS_RELAY_PAIR` at most: as many as a space has home
+/// relays.
+pub const MAX_PAIR: usize = 3;
+/// The longest address of a relay in the pair.
+pub const MAX_PAIR_ADDRESS: usize = 255;
 const DAY: u64 = 24 * 60 * 60;
 const HEADER: &[u8; 8] = b"EREVOSC1";
 const COUPONS_LOCK: &str = "lock of the coupons";
@@ -432,10 +444,53 @@ impl Coupons {
     }
 }
 
+/// The relays `EREVOS_RELAY_PAIR` names: addresses (`ws://` or `wss://`, a
+/// host, and maybe a port and path) apart by spaces or commas, each once, at
+/// most `MAX_PAIR`. An error says which one is not an address.
+pub fn pair_of(value: &str) -> Result<Vec<String>, String> {
+    let mut pair: Vec<String> = Vec::new();
+    for address in value.split(|c: char| c == ',' || c.is_whitespace()).filter(|a| !a.is_empty()) {
+        let lower = address.to_ascii_lowercase();
+        let rest = lower.strip_prefix("wss://").or_else(|| lower.strip_prefix("ws://"));
+        let host = rest.map(|rest| rest.split(['/', '?', '#']).next().unwrap_or(""));
+        let fine = address.len() <= MAX_PAIR_ADDRESS
+            && host.is_some_and(|host| !host.is_empty() && !host.starts_with(':'))
+            && !address.contains(['?', '#'])
+            && address.chars().all(|c| c.is_ascii_graphic());
+        if !fine {
+            return Err(format!("{address} is not the address of a relay (ws:// or wss://)"));
+        }
+        let address = address.trim_end_matches('/').to_string();
+        if !pair.iter().any(|known| known.eq_ignore_ascii_case(&address)) {
+            pair.push(address);
+        }
+    }
+    if pair.len() > MAX_PAIR {
+        return Err(format!("{} relays named, {MAX_PAIR} at most", pair.len()));
+    }
+    Ok(pair)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::sync::OnceLock;
+
+    #[test]
+    fn the_pair_is_read_as_addresses_each_once() {
+        assert_eq!(pair_of("wss://relay.example.org").unwrap(), vec!["wss://relay.example.org"]);
+        assert_eq!(
+            pair_of(" wss://a.example/, ws://b.example:7879/x  WSS://A.EXAMPLE ").unwrap(),
+            vec!["wss://a.example", "ws://b.example:7879/x"]
+        );
+        assert!(pair_of("").unwrap().is_empty());
+        assert!(pair_of("https://a.example").is_err());
+        assert!(pair_of("wss://").is_err());
+        assert!(pair_of("wss://:443").is_err());
+        assert!(pair_of("wss://a.example/?x=1").is_err());
+        assert!(pair_of("wss://a.example wss://b.example wss://c.example wss://d.example").is_err());
+        assert!(pair_of(&format!("wss://{}.example", "a".repeat(250))).is_err());
+    }
 
     const NOW: u64 = 1_800_000_000;
 

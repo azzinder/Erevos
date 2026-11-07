@@ -1543,6 +1543,11 @@ uno a casa, su un Raspberry Pi o un vecchio computer, o qualsiasi altro relay di
   indovinare dai soli orari. Così due spazi (vedi [Seconda password](#second)) possono usare ciascuno il relay
   dell’altro come relay di casa, e nessun relay li lega tra loro. Entrambi i relay devono avere i coupon attivati, e
   serve una versione con Tor, su Android (vedi [Tramite Tor](#tor)).
+- **Automaticamente dal tuo relay:** un interruttore, attivo se non lo spegni, su Android, dove Erevos ha Tor. Quando
+  il tuo relay nomina un relay abbinato a lui (lo imposta chi lo gestisce), uno spazio senza relay di casa prende
+  quello da solo, solo tramite Tor, con il suo token da un coupon come sopra: niente da scrivere, e niente da fare
+  quando il tuo relay ne nomina un altro. Togliere a mano il relay di casa lo disattiva per quello spazio; un relay di
+  casa scritto da te resta com’è. I posti nascosti non ne prendono mai così.
 - **Per le chat nascoste:** ogni posto nascosto può avere un suo relay di casa, in **Per utenti esperti** nella sua
   schermata senza nessuna chat scelta, mentre è aperto. È conservato solo con quel posto, sigillato con il suo PIN,
   così lo spazio non ne sa nulla, e viene controllato mentre il posto è aperto. Usa un relay diverso da quello dello

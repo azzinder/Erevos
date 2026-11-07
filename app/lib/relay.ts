@@ -129,6 +129,7 @@ const COUPON_SIGN = 34;
 const COUPON_KEYS = 35;
 const COUPON_REDEEM = 36;
 const ACK = 37;
+const PAIR = 38;
 
 // The marks' bytes (crates/erevos-relay/src/server.rs).
 const MARKS = { message: 1, quiet: 2, ring: 3 } as const;
@@ -1801,6 +1802,40 @@ export async function couponKey(relay: Relay): Promise<Uint8Array | null> {
   if (reply[0] === NOT_FOUND) return null;
   check(reply, 'coupon');
   return reply.slice(1);
+}
+
+/**
+ * The relays `relay` is paired with (crates/erevos-relay coupons.rs, EREVOS_RELAY_PAIR): ones that
+ * take its coupons, which a space with no home relay takes by itself (lib/pair.ts). None when it
+ * names none, signs no coupons for this token, or is from before.
+ */
+export async function relayPair(relay: Relay): Promise<string[]> {
+  let reply: Uint8Array;
+  try {
+    reply = await request(relay, Uint8Array.of(PAIR));
+  } catch (error) {
+    if (await fromBefore(relay, error)) return [];
+    throw error;
+  }
+  if (reply[0] === NOT_FOUND) return [];
+  check(reply, 'pair');
+  return pairOf(reply);
+}
+
+/** The addresses of a reply to PAIR: OK, a count, then each after its 2-byte length; only those
+ *  that are relay addresses (ws:// or wss://). */
+export function pairOf(reply: Uint8Array): string[] {
+  const out: string[] = [];
+  let at = 2;
+  for (let i = 0; i < (reply[1] ?? 0) && at + 2 <= reply.length; i++) {
+    const length = (reply[at] << 8) | reply[at + 1];
+    at += 2;
+    if (at + length > reply.length) break;
+    const url = utf8Decode(reply.slice(at, at + length)).trim();
+    at += length;
+    if (url.length <= 255 && /^wss?:\/\/[^\s/?#]+(\/[^\s?#]*)?$/i.test(url)) out.push(url);
+  }
+  return out;
 }
 
 /** Has `relay` sign a blinded coupon with this phone's token: the blind signature. Throws FULL when

@@ -91,6 +91,13 @@
 //!   the relay has all the lines from coupons it may; `NOT_FOUND` when the
 //!   coupon is not one it takes; `FAILED` when the line could not be written,
 //!   or the file has a line for that token already.
+//! - `PAIR`: no fields, on a connection whose token is a phone's own, as for
+//!   `COUPON_KEY`. Reply: `OK`, a 1-byte count, then each relay the operator
+//!   paired this one with (`EREVOS_RELAY_PAIR`, see `coupons.rs`) as a 2-byte
+//!   length and its address: one that takes this relay's coupons, which a
+//!   space with no home relay takes as its home relay by itself, only
+//!   through Tor. `NOT_FOUND` when it names none, or signs no coupons for
+//!   this token. Older relays close the connection.
 //! - `TIME`: no fields. Reply: `OK` and the relay's clock, 8-byte Unix
 //!   milliseconds. A phone measures how far its own clock is off by it, so a
 //!   call stamped by one phone is judged fresh or old by the other with the
@@ -381,6 +388,9 @@ pub struct Shared {
     /// Coupons signed for this relay's phones and taken from other relays',
     /// if the operator turned either on (set once, after start).
     pub coupons: std::sync::OnceLock<Coupons>,
+    /// The relays this one is paired with (`EREVOS_RELAY_PAIR`), told to the
+    /// phones that may have coupons signed here (set once, after start).
+    pub pair: std::sync::OnceLock<Vec<String>>,
     /// The XMPP push app server, if the operator set one up (set once,
     /// after start).
     pub xmpp_push: std::sync::OnceLock<Arc<XmppPush>>,
@@ -521,6 +531,7 @@ impl Shared {
             invites: std::sync::OnceLock::new(),
             signin: std::sync::OnceLock::new(),
             coupons: std::sync::OnceLock::new(),
+            pair: std::sync::OnceLock::new(),
             xmpp_push: std::sync::OnceLock::new(),
             held: Mutex::new(Held::default()),
             held_changed: Condvar::new(),
@@ -590,6 +601,7 @@ pub const COUPON_SIGN: u8 = 34;
 pub const COUPON_KEYS: u8 = 35;
 pub const COUPON_REDEEM: u8 = 36;
 pub const ACK: u8 = 37;
+pub const PAIR: u8 = 38;
 
 /// The marks a send may end with (see the module's doc).
 pub const MESSAGE: u8 = 1;
@@ -1643,6 +1655,10 @@ fn respond(
                 None => vec![NOT_FOUND],
             }
         }
+        PAIR => match (coupons_of(shared, access), shared.pair.get()) {
+            (Some(_), Some(pair)) if !pair.is_empty() => pair_reply(pair),
+            _ => vec![NOT_FOUND],
+        },
         COUPON_KEYS => match shared.coupons.get().filter(|coupons| coupons.takes()) {
             Some(coupons) => {
                 let ids = coupons.trusted_ids();
@@ -1755,6 +1771,17 @@ fn coupons_of(shared: &Shared, access: Access) -> Option<(&Coupons, [u8; 32])> {
     };
     let coupons = shared.coupons.get().filter(|coupons| coupons.signs())?;
     (!coupons.made(&hash)).then_some((coupons, hash))
+}
+
+/// The answer to `PAIR`: `OK`, how many, and each address after its length.
+fn pair_reply(pair: &[String]) -> Vec<u8> {
+    let pair = &pair[..pair.len().min(coupons::MAX_PAIR)];
+    let mut out = vec![OK, pair.len() as u8];
+    for address in pair {
+        out.extend_from_slice(&(address.len() as u16).to_be_bytes());
+        out.extend_from_slice(address.as_bytes());
+    }
+    out
 }
 
 /// Bytes after their 2-byte length, at most `most`.
@@ -3019,6 +3046,16 @@ mod tests {
         issuer: Option<erevos_core::coupon::Issuer>,
         trusted: Vec<Vec<u8>>,
     ) -> SocketAddr {
+        start_ws_paired(tokens, issuer, trusted, None)
+    }
+
+    /// As `start_ws_coupons`, paired with the relays of `pair` when given.
+    fn start_ws_paired(
+        tokens: std::path::PathBuf,
+        issuer: Option<erevos_core::coupon::Issuer>,
+        trusted: Vec<Vec<u8>>,
+        pair: Option<Vec<String>>,
+    ) -> SocketAddr {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let addr = listener.local_addr().unwrap();
         let store = Shared::new(Store::default(), FileStore::default(), None, None, Limits::default());
@@ -3027,8 +3064,43 @@ mod tests {
         let _ = store
             .coupons
             .set(Coupons::open(issuer, trusted, None, coupons::MAX_LINES).unwrap());
+        if let Some(pair) = pair {
+            let _ = store.pair.set(pair);
+        }
         thread::spawn(move || serve_ws(listener, store, None));
         addr
+    }
+
+    #[test]
+    fn a_relay_tells_its_own_phones_the_relay_it_is_paired_with() {
+        let dir = std::env::temp_dir();
+        let list = dir.join(format!("erevos-pair-{}", std::process::id()));
+        let (pixel, pixel_line) = crate::tokens::new_token("pixel");
+        std::fs::write(&list, format!("{pixel_line}\n")).unwrap();
+        let issuer = erevos_core::coupon::Issuer::generate().unwrap();
+        let copy = erevos_core::coupon::Issuer::from_pem(&issuer.to_pem().unwrap()).unwrap();
+        let pair = vec!["wss://pair.example".to_string(), "ws://other.example:7879/x".to_string()];
+        let paired = start_ws_paired(list.clone(), Some(issuer), vec![], Some(pair.clone()));
+
+        // A phone with a token of its own here is told each, after its length.
+        let mut ws = connect_with_token(paired, "", &pixel);
+        let r = ws_call(&mut ws, vec![PAIR]);
+        let mut want = vec![OK, 2];
+        for address in &pair {
+            want.extend_from_slice(&(address.len() as u16).to_be_bytes());
+            want.extend_from_slice(address.as_bytes());
+        }
+        assert_eq!(r, want);
+        // Nobody else: not on /join, with no token.
+        let (mut stranger, _) = tungstenite::connect(format!("ws://{paired}{JOIN_PATH}")).unwrap();
+        assert!(refused(&mut stranger, vec![PAIR]));
+
+        // A relay that names none, or that signs no coupons, says NOT_FOUND.
+        let alone = start_ws_paired(list.clone(), Some(copy), vec![], None);
+        assert_eq!(ws_call(&mut connect_with_token(alone, "", &pixel), vec![PAIR]), vec![NOT_FOUND]);
+        let unsigned = start_ws_paired(list.clone(), None, vec![], Some(pair));
+        assert_eq!(ws_call(&mut connect_with_token(unsigned, "", &pixel), vec![PAIR]), vec![NOT_FOUND]);
+        let _ = std::fs::remove_file(&list);
     }
 
     #[test]

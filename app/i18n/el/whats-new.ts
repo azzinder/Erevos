@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":
+    "**Σπιτικό relay μόνο του**: στο Android, όταν το relay σου έχει ζευγάρι ένα άλλο relay, ένας χώρος χωρίς σπιτικό relay το παίρνει μόνος του, μόνο μέσω Tor, με token από ένα κουπόνι: τίποτα να πληκτρολογήσεις. Το **Αυτόματα από το relay σου**, στις Ρυθμίσεις → Relay και δίκτυα → Σπιτικό relay, το κλείνει. Δες [Σπιτικό relay](#home-relay).",
   "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
     "**Ένα κουμπί για κάθε μέρος που είναι ανοιχτό**: πάνω από τις συνομιλίες, τα **SMS**, **Erevos**, **Matrix**, **XMPP** και **Nostr** έχουν το καθένα το κουμπί του όταν είναι ανοιχτά στις Ενότητες, και χωρίς καμία συνομιλία ακόμα. Πριν, σε έναν χώρο με μόνο SMS ως τώρα, το **Όλα**, αφού το εικονίδιο του Erevos είχε ανοίξει τις συνομιλίες του, έκρυβε τα κουμπιά, χωρίς τρόπο να γυρίσεις.",
   "**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**.":
