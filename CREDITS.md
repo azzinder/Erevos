@@ -1270,7 +1270,7 @@ The core of the app, the relay and the Tor connection are written in Rust. Every
 | [vcpkg](https://github.com/mcgoo/vcpkg-rs) | 0.2.15 | MIT OR Apache-2.0 |
 | [version_check](https://github.com/SergioBenitez/version_check) | 0.9.5 | MIT OR Apache-2.0 |
 | [visibility](https://github.com/danielhenrymantilla/visibility.rs) | 0.1.1 | Zlib OR MIT OR Apache-2.0 |
-| [vodozemac](https://github.com/matrix-org/vodozemac) | 0.11.1 | Apache-2.0 |
+| [vodozemac](https://github.com/matrix-org/vodozemac) | 0.11.2 | Apache-2.0 |
 | [void](https://github.com/reem/rust-void) | 1.0.2 | MIT |
 | [walkdir](https://github.com/BurntSushi/walkdir) | 2.5.0 | Unlicense OR MIT |
 | [wasi](https://github.com/bytecodealliance/wasi) | 0.11.1+wasi-snapshot-preview1 | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT |

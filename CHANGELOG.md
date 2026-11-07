@@ -159,6 +159,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Matrix's encryption wipes its keys again** (vodozemac 0.11.2): vodozemac 0.11.1, which does the Olm and Megolm
+  encryption of Matrix chats, left copies of keys in memory after use: each step of Olm's ratchet left the new root and
+  chain key behind (RUSTSEC-2026-0451), and the ciphers and hashes under it were built without their wiping
+  (RUSTSEC-2026-0445). Someone who could read the app's memory might then have read earlier Matrix messages of that
+  chain. 0.11.2 wipes them; nothing else changes.
+
 - **Twelve more fixes from the review before 7**: acknowledged receive at the relay (`RECEIVE` with `HOLD`, new `ACK`
   opcode; an older relay answers as before and the app takes the old path), so a message is deleted there only once the
   phone kept it; relay caps `EREVOS_RELAY_QUEUED_MB` (1024) in all and `EREVOS_RELAY_QUEUED_PER_PHONE_MB` (64) per
