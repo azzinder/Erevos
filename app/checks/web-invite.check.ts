@@ -20,7 +20,7 @@ import { START_RELAY } from '../lib/welcome';
 const PAGE = readFileSync(join(import.meta.dirname, '../../pwa/i/invite.js'), 'utf8');
 const WORKER = readFileSync(join(import.meta.dirname, '../../pwa/sw.js'), 'utf8');
 
-type Shown = { data: string; expires?: number; name?: string; newer?: boolean } | null;
+type Shown = { data: string; expires?: number; name?: string; newer?: boolean; card?: boolean } | null;
 
 // The page's reader, run as the browser runs it but with no page to show.
 const context: { erevosReadInvite?: (fragment: string) => Shown; erevosInvitePage?: string } = {};
@@ -91,7 +91,29 @@ test('an invite cut short, or not one, is none', () => {
 });
 
 test('an invite from a later Erevos is still handed on, for the app to read', () => {
-  for (const data of [invite({ version: 2 }), invite({ flags: 4 })]) assert.deepEqual(readInvite(data), { data, newer: true });
+  for (const data of [invite({ version: 2 }), invite({ flags: 8 })]) assert.deepEqual(readInvite(data), { data, newer: true });
+});
+
+test('reads the contact cards the app writes, with no end, and hands on what the app reads', () => {
+  for (const [relay, relayKey, name] of [
+    [START_RELAY, toBase64Url(randomBytes(32)), 'Νίκος'],
+    [START_RELAY, '', ''],
+    ['wss://relay.example.org/erevos', '', 'Ana'],
+    ['wss://relay.example.org/erevos', toBase64Url(randomBytes(32)), 'Μαρία Παπαδοπούλου'],
+  ]) {
+    const made = { sender: toHex(randomBytes(24)), key: randomBytes(32), code: '', relay, relayKey, name, expires: 0, card: true as const };
+    const link = textInviteLink(made);
+    const data = link.slice(link.indexOf('#') + 1);
+    assert.deepEqual(readInvite(`#${data}`), { data, card: true, name });
+    assert.deepEqual(textInviteOf(data), made);
+  }
+  // The shortest card, with no relay key, name or address, is under 100 characters, and still read.
+  const bare = textInviteLink({ sender: toHex(randomBytes(24)), key: randomBytes(32), code: '', relay: START_RELAY, relayKey: '', name: '', expires: 0, card: true });
+  const data = bare.slice(bare.indexOf('#') + 1);
+  assert.ok(data.length >= 84 && data.length < 100, `${data.length}`);
+  assert.deepEqual(readInvite(data), { data, card: true, name: '' });
+  // Cut short, it is none.
+  assert.equal(readInvite(data.slice(0, 83)), null);
 });
 
 test('a name shows as the app shows it: never turned around, and as text', () => {

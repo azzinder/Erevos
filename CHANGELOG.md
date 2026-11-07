@@ -77,6 +77,9 @@ On main, not released yet:
 
 - **An invite that opened Erevos for the first time** opens once the first start's setup is done, however long the
   setup took; before, after five minutes on the setup screens it was lost and had to be scanned again (lib/open-link.ts).
+- **The invite page reads contact cards**: opened from the short contact QR code, `/i` now shows "{name} on
+  Erevos" and says it adds a contact for someone who has Erevos already, with no end date, instead of offering it as
+  an invite from a newer Erevos; an invite that is over no longer says invites last two days (pwa/i/invite.js).
 - **The web app's site says which app may open its links**: every web release now has
   `/.well-known/assetlinks.json`, naming `app.erevos` signed with the release key, which Android needs before it
   opens a tapped invite or contact link in Erevos instead of the browser (pwa/build.mjs).

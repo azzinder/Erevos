@@ -13,16 +13,19 @@
 // shows it.
 (() => {
   // What an invite holds, as lib/text-invite.ts writes it: version 1; flags (1: a relay key follows,
-  // 2: a relay address follows); the time it runs out, in seconds (4 bytes); the sender's id (24);
-  // the answer key (32); the relay invite code (32); the relay key (32), if flagged; the sender's
-  // name, one byte of length and up to 120 bytes of UTF-8; the relay address, if flagged, the rest.
-  // In base64url, 100 to 600 characters, as the app takes it.
+  // 2: a relay address follows, 4: a contact card); the time it runs out, in seconds (4 bytes; 0 on a
+  // card, which never ends); the sender's id (24); the answer key (32); the relay invite code (32),
+  // which a card has not; the relay key (32), if flagged; the sender's name, one byte of length and
+  // up to 120 bytes of UTF-8; the relay address, if flagged, the rest. In base64url, 84 to 600
+  // characters, as the app takes it. A card (the short QR code of Your contact link) adds its owner
+  // as a contact for someone who has Erevos already; an invite brings someone new too.
   const VERSION = 1;
-  const FLAGS = 0b11;
+  const FLAGS = 0b111;
   const FIXED = 94;
+  const CARD_FIXED = 62;
   const RELAY_KEY = 32;
   const NAME_MAX = 120;
-  const SHORTEST = 100;
+  const SHORTEST = 84;
   const LONGEST = 600;
   // The link the app takes when pasted: TEXT_INVITE_PAGE in lib/text-invite.ts.
   const PAGE = 'https://erevos-web.lphl.nekten.eu/i';
@@ -56,8 +59,8 @@
 
   /**
    * What this page shows of an invite (the part of the link after #): { data, expires, name }, or
-   * { data, newer: true } for one from a later Erevos, which the app may still read, or null for
-   * none, or one cut short.
+   * { data, card: true, name } for a contact card, or { data, newer: true } for one from a later
+   * Erevos, which the app may still read, or null for none, or one cut short.
    */
   function readInvite(fragment) {
     const data = String(fragment ?? '')
@@ -67,15 +70,18 @@
     const bytes = bytesOf(data);
     if (!bytes || bytes[0] === 0) return null;
     if (bytes[0] !== VERSION || (bytes[1] & ~FLAGS) !== 0) return { data, newer: true };
-    let at = FIXED + (bytes[1] & 1 ? RELAY_KEY : 0);
+    const card = (bytes[1] & 4) !== 0;
+    let at = (card ? CARD_FIXED : FIXED) + (bytes[1] & 1 ? RELAY_KEY : 0);
     if (bytes.length < at + 1) return null;
     const length = bytes[at];
     at += 1;
     if (length > NAME_MAX || bytes.length < at + length) return null;
     if (!(bytes[1] & 2) && bytes.length !== at + length) return null;
     if (bytes[1] & 2 && bytes.length === at + length) return null;
+    const name = nameOf(bytes.subarray(at, at + length));
+    if (card) return { data, card: true, name };
     const expires = new DataView(bytes.buffer).getUint32(2);
-    return { data, expires, name: nameOf(bytes.subarray(at, at + length)) };
+    return { data, expires, name };
   }
 
   // For app/checks/web-invite.check.ts, which reads invites the app writes.
@@ -125,6 +131,18 @@
       pasteStep: 'Paste the link',
       pasteText: 'Tap New chat. If you are just starting, tap I have an invite, paste the link and tap Join. Otherwise, paste it where it says Paste their contact link or invite, and tap Add.',
       private: 'The invite is the part of the link after #, which the browser does not send to the server: this page reads it only here, on your device. Whoever has the link can use it, so do not pass it on.',
+      card: {
+        title: 'Erevos contact',
+        invites: (name) => [name, ' on Erevos'],
+        anInvite: 'A contact on Erevos',
+        until: 'Add this contact in Erevos: they appear in your chats once their phone answers.',
+        newcomer: 'This is for someone who uses Erevos already. New to Erevos? Ask them for an invite instead.',
+        openHere: 'Open it here',
+        open: 'Open in Erevos',
+        openText: 'Erevos asks you first, then adds the contact.',
+        pasteText: 'Tap New chat, paste the link where it says Paste their contact link or invite, and tap Add.',
+        private: 'The contact is the part of the link after #, which the browser does not send to the server: this page reads it only here, on your device.',
+      },
     },
     el: {
       switchTo: 'English',
@@ -167,6 +185,18 @@
       pasteStep: 'Επικόλλησε τον σύνδεσμο',
       pasteText: 'Πάτα «Νέα συνομιλία». Αν μόλις ξεκινάς, πάτα «Έχω πρόσκληση», επικόλλησε τον σύνδεσμο και πάτα «Συμμετοχή». Αλλιώς, επικόλλησέ τον εκεί που γράφει «Επικόλλησε σύνδεσμο ή πρόσκληση» και πάτα «Προσθήκη».',
       private: 'Η πρόσκληση είναι το κομμάτι του συνδέσμου μετά το #, που ο browser δεν το στέλνει στον server: αυτή η σελίδα το διαβάζει μόνο εδώ, στη συσκευή σου. Όποιος έχει τον σύνδεσμο μπορεί να τον χρησιμοποιήσει, γι’ αυτό μην τον προωθήσεις.',
+      card: {
+        title: 'Επαφή στο Erevos',
+        invites: (name) => [name, ' στο Erevos'],
+        anInvite: 'Επαφή στο Erevos',
+        until: 'Πρόσθεσε την επαφή στο Erevos: εμφανίζεται στις συνομιλίες σου μόλις απαντήσει το κινητό της.',
+        newcomer: 'Αυτό είναι για όσους έχουν ήδη το Erevos. Πρώτη φορά στο Erevos; Ζήτα καλύτερα μια πρόσκληση.',
+        openHere: 'Άνοιξέ την εδώ',
+        open: 'Άνοιγμα στο Erevos',
+        openText: 'Το Erevos σε ρωτά πρώτα και μετά προσθέτει την επαφή.',
+        pasteText: 'Πάτα «Νέα συνομιλία», επικόλλησε τον σύνδεσμο εκεί που γράφει «Επικόλλησε σύνδεσμο ή πρόσκληση» και πάτα «Προσθήκη».',
+        private: 'Η επαφή είναι το κομμάτι του συνδέσμου μετά το #, που ο browser δεν το στέλνει στον server: αυτή η σελίδα το διαβάζει μόνο εδώ, στη συσκευή σου.',
+      },
     },
   };
 
@@ -304,7 +334,8 @@
   }
 
   function render() {
-    const words = WORDS[lang];
+    // A card's own words where it has them, an invite's elsewhere.
+    const words = invite && invite.card ? { ...WORDS[lang], ...WORDS[lang].card } : WORDS[lang];
     document.documentElement.lang = lang;
     document.title = words.title;
     const page = document.getElementById('page');
@@ -322,7 +353,7 @@
       ),
     );
     const parts = [top];
-    const expired = invite && !invite.newer && invite.expires * 1000 <= Date.now();
+    const expired = invite && !invite.newer && !invite.card && invite.expires * 1000 <= Date.now();
     if (!invite) {
       parts.push(make('h1', null, words.none), make('p', 'lead', words.noneText));
     } else if (expired) {
@@ -330,7 +361,8 @@
     } else {
       const [name, rest] = invite.name ? words.invites(invite.name) : [null, words.anInvite];
       parts.push(make('h1', null, name ? make('bdi', null, name) : null, rest), make('p', 'lead', words.what));
-      parts.push(make('p', 'until', invite.newer ? words.newer : words.until(dateOf(invite.expires))));
+      if (invite.card) parts.push(make('p', 'until', words.until), make('p', 'note', words.newcomer));
+      else parts.push(make('p', 'until', invite.newer ? words.newer : words.until(dateOf(invite.expires))));
       if (here) parts.push(make('section', 'here', make('p', null, words.here), anchor(words.openHere, `/text-invite?d=${invite.data}`)));
       // Opened from the home screen, with its worker, this is the web app itself: nothing to install.
       if (!(standalone && here)) {
