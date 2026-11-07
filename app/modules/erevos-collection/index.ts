@@ -22,6 +22,8 @@ export type PlayItem = SealedRef & {
   video: boolean;
   /** Where it starts the first time it plays in the list, ms (0: from its start). */
   resume?: number;
+  /** A video's subtitles: an .srt or .vtt file of the Collection, with its type. */
+  subtitles?: SealedRef & { mime: string };
 };
 
 /** What plays again: nothing, the whole list, or the one file. */
@@ -54,6 +56,9 @@ export type PlayerState = {
   album?: string | null;
   /** Whether it has a cover inside (playerArtwork). */
   artwork?: boolean;
+  /** Whether the video has subtitles, and whether they show. */
+  subtitles?: boolean;
+  subtitlesOn?: boolean;
 };
 
 type Native = {
@@ -88,6 +93,8 @@ type Native = {
   setRepeat?(mode: Repeat): Promise<void>;
   /** 0.5 to 2. */
   setSpeed?(speed: number): Promise<void>;
+  /** A video's subtitles shown, or not. */
+  setSubtitles?(on: boolean): Promise<void>;
   /** Where the files of the list got to since last asked, by their place in it (ms; 0 once played to its end), with how long each is (-1 if not known). */
   takePositions?(): Promise<{ index: number; position: number; duration: number }[]>;
   /** The cover inside the file playing, base64, or null. */

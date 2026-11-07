@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { itemSource, type CollectionItem } from '../lock/collection-data';
+import { itemSource, openItem, type CollectionItem } from '../lock/collection-data';
 import type { PlayerState, Repeat } from '../modules/erevos-collection';
 import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, onCollectionMemoryDropped, openItemUri, releaseMemoryUri } from './collection-memory';
 import { jumpTo, newQueue, nextIndex, previousIndex, setRepeat, setShuffle, type Queue } from './collection-queue';
 import { playKind, playType } from './collection-view';
 import { readTags, type MediaTags } from './media-tags';
+import { srtToVtt, subtitlesText } from './subtitles';
 
 // The Collection's music and videos in the web build: the desktop app, a browser (an iPhone's
 // home-screen app too) and Sailfish OS (lib/collection-play.ts plays them through here there): one
@@ -44,6 +45,10 @@ let buffering = false;
 let speed = 1;
 let tags: MediaTags = {};
 let art: string | null = null;
+let subtitleFiles: (CollectionItem | null)[] = [];
+// The subtitles of the video playing, as a <track> of a WebVTT blob: address, and whether they show.
+let track: { element: HTMLTrackElement; uri: string } | null = null;
+let subtitlesOn = true;
 const resumed = new Set<number>();
 const positions = new Map<number, [number, number]>();
 // Each file opened counts one up, so a file that took long to decrypt does not play after another was asked for.
@@ -81,6 +86,8 @@ export function deskState(): PlayerState {
     artist: tags.artist ?? null,
     album: tags.album ?? null,
     artwork: !!art,
+    subtitles: !!track,
+    subtitlesOn,
   };
 }
 
@@ -148,7 +155,49 @@ function letGo(): void {
   shown = null;
   if (art) releaseMemoryUri(art);
   art = null;
+  dropTrack();
   tags = {};
+}
+
+function dropTrack(): void {
+  if (!track) return;
+  track.element.remove();
+  releaseMemoryUri(track.uri);
+  track = null;
+}
+
+/** The most of a subtitles file read: more is not subtitles. */
+const MOST_SUBTITLES = 4 * 1024 * 1024;
+
+// The subtitles of the video at `at`, as WebVTT in memory, a <track> of the element while it plays.
+async function addSubtitles(at: number, mine: number): Promise<void> {
+  const file = subtitleFiles[at];
+  if (!file || file.file.size > MOST_SUBTITLES) return;
+  try {
+    const bytes = await openItem(file);
+    if (!bytes || mine !== turn) return;
+    const uri = memoryUri(new TextEncoder().encode(srtToVtt(subtitlesText(bytes))), 'text/vtt');
+    const node = document.createElement('track');
+    node.kind = 'subtitles';
+    node.default = true;
+    node.src = uri;
+    node.addEventListener('load', () => {
+      node.track.mode = subtitlesOn ? 'showing' : 'hidden';
+    });
+    track = { element: node, uri };
+    element().appendChild(node);
+    node.track.mode = subtitlesOn ? 'showing' : 'hidden';
+    tell();
+  } catch {
+    // No subtitles, the video plays on.
+  }
+}
+
+/** The video's subtitles shown, or not. */
+export function deskSubtitles(on: boolean): void {
+  subtitlesOn = on;
+  if (track) track.element.track.mode = on ? 'showing' : 'hidden';
+  tell();
 }
 
 // What the file says of itself, from its first chunks, while it is the one playing.
@@ -179,6 +228,7 @@ async function open(at: number): Promise<void> {
   buffering = true;
   tell();
   void readTagsOf(item, mine);
+  void addSubtitles(at, mine);
   let uri: string | null = null;
   try {
     uri = await openItemUri(item, playType(item));
@@ -211,13 +261,14 @@ async function open(at: number): Promise<void> {
  * the order and repeat of the list before: only those small enough to hold in memory; throws
  * TooLargeToOpenError when the one asked for is not.
  */
-export async function deskPlay(items: CollectionItem[], start: number, resume: number[] = []): Promise<void> {
+export async function deskPlay(items: CollectionItem[], start: number, resume: number[] = [], subtitles: (CollectionItem | null)[] = []): Promise<void> {
   const asked = items[start];
   if (!asked) return;
   if (asked.file.size > MOST_IN_MEMORY) throw new TooLargeToOpenError();
-  const kept = items.map((item, i) => ({ item, from: resume[i] ?? 0 })).filter(({ item }) => item.file.size <= MOST_IN_MEMORY);
+  const kept = items.map((item, i) => ({ item, from: resume[i] ?? 0, subtitles: subtitles[i] ?? null })).filter(({ item }) => item.file.size <= MOST_IN_MEMORY);
   list = kept.map((k) => k.item);
   resumes = kept.map((k) => k.from);
+  subtitleFiles = kept.map((k) => k.subtitles);
   resumed.clear();
   positions.clear();
   const first = Math.max(0, list.findIndex((i) => i.id === asked.id));

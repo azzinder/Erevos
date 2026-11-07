@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
+import { itemsWhole, keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import type { FileRef } from '../lock/attachment-files';
 import { collectionNative, type PlayerState, type Repeat, type SealedRef } from '../modules/erevos-collection';
 import {
@@ -20,6 +20,7 @@ import {
   deskSeek,
   deskShuffle,
   deskSpeed,
+  deskSubtitles,
   deskState,
   deskStop,
   deskTakePositions,
@@ -29,6 +30,7 @@ import { dropCollectionMemory, memoryUri, releaseMemoryUri } from './collection-
 import { positionToKeep } from './collection-queue';
 import { playKind, playType } from './collection-view';
 import { t } from './i18n';
+import { subtitlesFor, subtitlesType } from './subtitles';
 
 // The Collection's music and videos, played on the phone by its Android part
 // (modules/erevos-collection, Playing.kt) straight from their encrypted chunks. One list plays at a
@@ -78,19 +80,27 @@ export async function playItems(place: CollectionPlace | null, list: CollectionI
   await keepWhereLeft();
   const collection = place ? await loadCollection(place).catch(() => null) : null;
   const resume = list.map((i) => (collection ? positionOf(collection, i.id) : 0));
+  // A video's subtitles: an .srt or .vtt beside it with its name (lib/subtitles.ts), when here.
+  const found = list.map((i) => (collection && playKind(i) === 'video' ? subtitlesFor(collection.items, i) : null));
+  const here = new Set((await itemsWhole(found.filter((s): s is CollectionItem => !!s)).catch(() => [])).map((s) => s.id));
+  const subtitles = found.map((s) => (s && here.has(s.id) ? s : null));
   if (DESK) {
-    await deskPlay(list, start, resume);
+    await deskPlay(list, start, resume, subtitles);
     rememberList(place, list);
     return;
   }
   if (!collectionNative) throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
-  const items = list.map((i, n) => ({
-    ...sealedRef(i.file),
-    name: showTitle ? i.file.name : '',
-    mime: playType(i),
-    video: playKind(i) === 'video',
-    resume: resume[n],
-  }));
+  const items = list.map((i, n) => {
+    const s = subtitles[n];
+    return {
+      ...sealedRef(i.file),
+      name: showTitle ? i.file.name : '',
+      mime: playType(i),
+      video: playKind(i) === 'video',
+      resume: resume[n],
+      ...(s ? { subtitles: { ...sealedRef(s.file), mime: subtitlesType(s) } } : {}),
+    };
+  });
   await collectionNative.playList(items, start, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
   rememberList(place, list);
 }
@@ -123,6 +133,7 @@ export const seekPlaying = (ms: number) => (DESK ? Promise.resolve(deskSeek(ms))
 export const jumpPlaying = (index: number) => (DESK ? Promise.resolve(deskJump(index)) : collectionNative?.seek(index, 0).catch(() => undefined));
 export const shufflePlaying = (on: boolean) => (DESK ? Promise.resolve(deskShuffle(on)) : collectionNative?.setShuffle?.(on).catch(() => undefined));
 export const repeatPlaying = (mode: Repeat) => (DESK ? Promise.resolve(deskRepeat(mode)) : collectionNative?.setRepeat?.(mode).catch(() => undefined));
+export const subtitlesPlaying = (on: boolean) => (DESK ? Promise.resolve(deskSubtitles(on)) : collectionNative?.setSubtitles?.(on).catch(() => undefined));
 export const speedPlaying = (speed: number) => (DESK ? Promise.resolve(deskSpeed(speed)) : collectionNative?.setSpeed?.(speed).catch(() => undefined));
 /** Whether this player shuffles, repeats and changes speed (an Android build before it does not). */
 export const CAN_SHUFFLE = DESK || !!collectionNative?.setShuffle;

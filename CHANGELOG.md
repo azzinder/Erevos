@@ -105,6 +105,12 @@ On main, not released yet:
   holds no place's key: the same place opened again takes it back. The notification and the lock screen show the
   title (the file's own, else its name), artist, album and cover only with **Show the title in the notification**
   on, otherwise only **Playing** (Playing.kt shown).
+- **Subtitles for the Collection's videos** (lib/subtitles.ts): an .srt or .vtt file in the same folder with the
+  video's name, or its name and a language (film.en.srt), plays as its subtitles when its chunks are here. On Android
+  Media3 takes it as a side-loaded subtitle (SubtitleConfiguration) read from its chunks through the player's sealed
+  data source by a token of its own, the player now made with DefaultMediaSourceFactory; on a computer, in a browser
+  and on Sailfish OS it is converted from SubRip to WebVTT in memory and given to the page's player as a <track> of a
+  blob: address, let go of with the rest. A button at the top of the video turns them off and on.
 
 ### Under the hood
 

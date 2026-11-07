@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":
+    "**Titlovi za video snimke iz Zbirke**: datoteka .srt ili .vtt u istom folderu s imenom videa (film.srt, ili film.en.srt) prikazuje se kao njegovi titlovi, a dodir na vrhu ih isključuje ili uključuje. Vidi [Zbirka](#collection).",
   "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":
     "**Ekran plejera za Zbirku**: dodirni traku muzike koja svira, ili **Sada svira**, za omot, naslov, izvođača i album, traku za premotavanje, prethodnu i sljedeću, **Nasumično**, **Ponavljaj** (sve ili jednu), brzinu od 0.5× do 2× i listu, da dodirneš drugu. Video, ili muzika od 10 minuta i duže, počinje gdje si stao. Obavještenje pokazuje naslov i omot samo kad je **Prikaži naslov u obavještenju** uključeno. Vidi [Zbirka](#collection).",
   "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":

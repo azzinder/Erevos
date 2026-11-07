@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":
+    "**Legendas para os vídeos da Coleção**: um arquivo .srt ou .vtt na mesma pasta com o nome do vídeo (film.srt, ou film.en.srt) aparece como suas legendas, e um toque no alto as desliga ou liga. Veja [Coleção](#collection).",
   "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":
     "**Uma tela de reprodução para a Coleção**: toque na barra da música que está tocando, ou em **Tocando agora**, para ver a capa, o título, o artista e o álbum, uma barra para se mover nela, anterior e próxima, **Aleatório**, **Repetir** (tudo ou uma), a velocidade de 0.5× a 2× e a lista, para tocar outra. Um vídeo, ou uma música de 10 minutos ou mais, começa onde você parou. A notificação mostra o título e a capa só com **Mostrar o título na notificação** ligado. Veja [Coleção](#collection).",
   "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":

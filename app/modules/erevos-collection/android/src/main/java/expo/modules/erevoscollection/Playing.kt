@@ -17,6 +17,7 @@ import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -25,7 +26,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -65,7 +66,12 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @OptIn(UnstableApi::class)
 internal object Playing {
-  class Item(val file: SealedFile, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L)
+  class Item(val file: SealedFile, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "")
+
+  private fun Item.close() {
+    file.close()
+    subtitles?.close()
+  }
 
   private const val SCHEME = "erevos-play"
   private val main = Handler(Looper.getMainLooper())
@@ -161,16 +167,32 @@ internal object Playing {
     // No title in the items themselves: what is shown is made by ShownPlayer, and what the player
     // reports of the file (getMediaMetadata) is then only what the file says.
     val mediaItems = list.mapIndexed { index, item ->
-      val token = ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it) }
+      val token = newToken()
       files[token] = item.file
-      MediaItem.Builder()
+      val builder = MediaItem.Builder()
         .setMediaId(index.toString())
         .setUri(Uri.Builder().scheme(SCHEME).authority(token).build())
-        .build()
+      // A video's subtitles, an .srt or .vtt file of the Collection, read from its chunks as the
+      // video is, by a token of their own; shown by the video view, which a tap can turn off.
+      val subtitles = item.subtitles
+      if (subtitles != null) {
+        val subtitlesToken = newToken()
+        files[subtitlesToken] = subtitles
+        val mime = if (item.subtitlesMime == MimeTypes.TEXT_VTT) MimeTypes.TEXT_VTT else MimeTypes.APPLICATION_SUBRIP
+        builder.setSubtitleConfigurations(
+          listOf(
+            MediaItem.SubtitleConfiguration.Builder(Uri.Builder().scheme(SCHEME).authority(subtitlesToken).build())
+              .setMimeType(mime)
+              .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+              .build(),
+          ),
+        )
+      }
+      builder.build()
     }
     val video = list.any { it.video }
     val made = ExoPlayer.Builder(appContext)
-      .setMediaSourceFactory(ProgressiveMediaSource.Factory(DataSource.Factory { SealedDataSource(folder) }, extractors()))
+      .setMediaSourceFactory(DefaultMediaSourceFactory(DataSource.Factory { SealedDataSource(folder) }, extractors()))
       .setAudioAttributes(
         AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(if (video) C.AUDIO_CONTENT_TYPE_MOVIE else C.AUDIO_CONTENT_TYPE_MUSIC).build(),
         true,
@@ -193,7 +215,7 @@ internal object Playing {
     // The list before goes only now, so the session never holds a player already let go of.
     if (before != null) release(before)
     for (token in beforeTokens) files.remove(token)?.close()
-    for (item in beforeItems) item.file.close()
+    for (item in beforeItems) item.close()
     made.prepare()
     made.play()
     tell()
@@ -254,6 +276,14 @@ internal object Playing {
     }
   }
 
+  private fun newToken(): String = ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it) }
+
+  /** A video's subtitles shown, or not. */
+  fun setSubtitles(on: Boolean) {
+    val p = player ?: return
+    p.trackSelectionParameters = p.trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_TEXT, !on).build()
+  }
+
   /** How fast it plays, from half to twice as fast; the pitch goes with it. */
   fun setSpeed(speed: Float) {
     player?.setPlaybackSpeed(speed.coerceIn(0.5f, 2f))
@@ -307,7 +337,7 @@ internal object Playing {
       release(p)
     }
     for (token in files.keys.toList()) files.remove(token)?.close()
-    for (item in items) item.file.close()
+    for (item in items) item.close()
     items = emptyList()
     val ctx = context?.applicationContext ?: app
     unbind()
@@ -392,6 +422,8 @@ internal object Playing {
       "artist" to tags.artist?.toString(),
       "album" to tags.albumTitle?.toString(),
       "artwork" to (tags.artworkData != null),
+      "subtitles" to (items.getOrNull(index)?.subtitles != null),
+      "subtitlesOn" to !p.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_TEXT),
     )
   }
 

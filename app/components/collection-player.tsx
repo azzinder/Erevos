@@ -7,7 +7,7 @@ import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { attachDeskVideo } from '../lib/collection-desk-player';
-import { nextPlaying, pausePlaying, playingFile, playTime, previousPlaying, resumePlaying, stopPlaying } from '../lib/collection-play';
+import { nextPlaying, pausePlaying, playingFile, playTime, previousPlaying, resumePlaying, stopPlaying, subtitlesPlaying, usePlayer } from '../lib/collection-play';
 import { t } from '../lib/i18n';
 import { collectionVideoView, type PlayerState } from '../modules/erevos-collection';
 import { space, withAlpha } from '../theme/colors';
@@ -78,6 +78,7 @@ export function NowPlaying({ state, onOpen }: { state: PlayerState | null; onOpe
 /** The video of the list playing, over the whole screen; Back stops it. */
 export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const state = usePlayer(visible);
   const Video = DESK ? null : collectionVideoView();
   // On a computer, the box (a <div> in the page) the player is put in while the screen shows.
   const box = useRef<View>(null);
@@ -106,6 +107,20 @@ export function VideoScreen({ visible, onClose }: { visible: boolean; onClose: (
         <Pressable onPress={close} accessibilityRole="button" accessibilityLabel={t('Back')} hitSlop={8} style={[styles.back, { top: Math.max(space.sm, insets.top) }]}>
           <BackIcon color="#FFFFFF" size={24} />
         </Pressable>
+        {state?.subtitles ? (
+          <Pressable
+            onPress={() => void subtitlesPlaying(!state.subtitlesOn)}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: state.subtitlesOn === true }}
+            accessibilityLabel={t('Subtitles')}
+            hitSlop={8}
+            style={[styles.subtitles, { top: Math.max(space.sm, insets.top) }, state.subtitlesOn && styles.subtitlesOn]}
+          >
+            <Text variant="label" color="#FFFFFF">
+              {state.subtitlesOn ? t('Subtitles on') : t('Subtitles off')}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </Modal>
   );
@@ -118,4 +133,6 @@ const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, paddingVertical: space.sm, borderTopWidth: StyleSheet.hairlineWidth },
   video: { flex: 1, backgroundColor: '#000000' },
   back: { position: 'absolute', left: space.md, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
+  subtitles: { position: 'absolute', right: space.md, height: 40, paddingHorizontal: space.md, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
+  subtitlesOn: { backgroundColor: 'rgba(255,255,255,0.28)' },
 });

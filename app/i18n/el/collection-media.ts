@@ -16,4 +16,7 @@ export const collectionMedia: Record<string, string> = {
   "Speed {speed}×": "Ταχύτητα {speed}×",
   "The list": "Η λίστα",
   "Position": "Θέση",
+  "Subtitles": "Υπότιτλοι",
+  "Subtitles on": "Υπότιτλοι: ναι",
+  "Subtitles off": "Υπότιτλοι: όχι",
 };

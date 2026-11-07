@@ -162,10 +162,23 @@ class ErevosCollectionModule : Module() {
           val name = entry["name"] as? String ?: ""
           val mime = entry["mime"] as? String ?: ""
           val resume = (entry["resume"] as? Number)?.toLong() ?: 0L
-          items += Playing.Item(sealed(entry), name, mime, entry["video"] == true, resume)
+          // A video's subtitles (an .srt or .vtt file of the Collection), as a file above with its type.
+          @Suppress("UNCHECKED_CAST")
+          val given = entry["subtitles"] as? Map<String, Any?>
+          val file = sealed(entry)
+          val subtitles = try {
+            given?.let { sealed(it) }
+          } catch (e: Exception) {
+            file.close()
+            throw e
+          }
+          items += Playing.Item(file, name, mime, entry["video"] == true, resume, subtitles, given?.get("mime") as? String ?: "")
         }
       } catch (e: Exception) {
-        for (item in items) item.file.close()
+        for (item in items) {
+          item.file.close()
+          item.subtitles?.close()
+        }
         throw e
       }
       Playing.stopOnLock = options["stopOnLock"] == true
@@ -194,6 +207,9 @@ class ErevosCollectionModule : Module() {
     AsyncFunction("setShuffle") { on: Boolean -> Playing.setShuffle(on) }.runOnQueue(Queues.MAIN)
     AsyncFunction("setRepeat") { mode: String -> Playing.setRepeat(mode) }.runOnQueue(Queues.MAIN)
     AsyncFunction("setSpeed") { speed: Double -> Playing.setSpeed(speed.toFloat()) }.runOnQueue(Queues.MAIN)
+
+    // A video's subtitles shown, or not.
+    AsyncFunction("setSubtitles") { on: Boolean -> Playing.setSubtitles(on) }.runOnQueue(Queues.MAIN)
 
     // Where the files of the list got to since last asked, by their place in it, to keep sealed in
     // the catalogue (lib/collection-play.ts): taken, they are forgotten here.

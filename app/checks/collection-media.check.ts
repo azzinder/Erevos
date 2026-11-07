@@ -15,7 +15,8 @@ import { bytesSource } from '../lib/attachments';
 import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionToKeep, previousIndex, setShuffle } from '../lib/collection-queue';
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
-import { addToCollection, deleteItems, keepPositions, loadCollection, positionOf, type CollectionPlace } from '../lock/collection-data';
+import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
+import { addToCollection, deleteItems, keepPositions, loadCollection, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
 
@@ -162,4 +163,34 @@ t("a song's tags are read from its first bytes: ID3, MP4 and FLAC", () => {
   assert.deepEqual(readTags(id3().slice(0, 12)), {});
   assert.deepEqual(readTags(randomBytes(100)), {});
   assert.deepEqual(readTags(new Uint8Array(0)), {});
+});
+
+const file = (id: string, name: string, folder = '', kind: 'file' | 'photo' = 'file'): CollectionItem => ({
+  id: id.padEnd(32, '0'),
+  file: { name, mime: 'application/octet-stream', kind, size: 10, id: id.padEnd(32, '0'), key: '', chunk: 1, count: 1 },
+  folder,
+  added: 1,
+  at: 1,
+});
+
+t("a video's subtitles are the .srt or .vtt beside it with its name, the one with no language first", () => {
+  const film = file('a', 'Ταινία.mkv', 'f');
+  const subs = file('b', 'ταινία.SRT', 'f');
+  const english = file('c', 'Ταινία.en.srt', 'f');
+  const elsewhere = file('d', 'Ταινία.srt', '');
+  const other = file('e', 'Άλλη.srt', 'f');
+  const notes = file('g', 'Ταινία.txt', 'f');
+  assert.equal(subtitlesFor([film, english, subs, elsewhere, other, notes], film)?.id, subs.id);
+  assert.equal(subtitlesFor([film, english, elsewhere, other], film)?.id, english.id);
+  assert.equal(subtitlesFor([film, elsewhere, other, notes, file('h', 'Ταινία.final cut.srt', 'f')], film), null);
+  assert.equal(subtitlesType(file('v', 'x.vtt')), 'text/vtt');
+  assert.equal(subtitlesType(subs), 'application/x-subrip');
+});
+
+t('SubRip becomes WebVTT for the page, in any line breaks, and its text is UTF-8 or Latin-1', () => {
+  const srt = '﻿1\r\n00:00:01,500 --> 00:00:04,000\r\nΓεια σου\r\nκόσμε\r\n\r\n2\r\n0:01:02,05 --> 0:01:03,100\r\n<i>Bye</i>\r\n\r\n3\r\n00:00:05,000 --> 00:00:06,000\r\n\r\n';
+  assert.equal(srtToVtt(srt), 'WEBVTT\n\n00:00:01.500 --> 00:00:04.000\nΓεια σου\nκόσμε\n\n00:01:02.050 --> 00:01:03.100\n<i>Bye</i>\n');
+  assert.equal(srtToVtt('WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n'), 'WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n');
+  assert.equal(subtitlesText(utf8Encode('Καλημέρα')), 'Καλημέρα');
+  assert.equal(subtitlesText(Uint8Array.from([0x63, 0x61, 0x66, 0xe9])), 'café');
 });
