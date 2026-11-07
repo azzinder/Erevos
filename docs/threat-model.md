@@ -58,18 +58,21 @@ Notes:
   encrypted messages, and the contact link's queue is for first messages only. So the relay sees how
   much and when each kept contact writes, each queue apart, never what or who. The relay sees no
   token on those reads, so the token, which names the phone, does not tie the queues together;
-  through Tor each group of eight is waited on and read on circuits of its own, so the relay can
-  tell that up to eight queues go together, not that two groups are one phone's. Without Tor it sees
-  them read from one address anyway. They are still made and deleted with the token, so a relay that
-  logs that can tie them together when they are made, and the times they are read can too. Deleting
-  or blocking a contact deletes their queue at once; the own queue moves only when they knew it
+  through Tor each group of eight is waited on and read on circuits of its own, so the relay can tell
+  that up to eight queues go together, not that two groups are one phone's. Without Tor it sees them
+  read from one address anyway. They are still made and deleted with the token, so a relay that logs
+  that can tie them together when they are made, and the times they are read can too. Deleting or
+  blocking a contact deletes their queue at once; the own queue moves only when they knew it
   (contacts from before, and those who came through the link before its first move). Hidden places
   and linked devices keep one queue for all, for now. The web app has no Tor, so the relay sees its
   contact queues waited on together from one address while it is open. With notifications while
-  closed, it also gives the relay the browser's one push address for its own queue and all its
-  contact queues, with the token, each time Erevos opens, and the relay keeps that address on each of
-  them for as long as notifications stay on, so it ties them with no logs (lib/push-queues.ts).
-  Not audited.
+  closed, it also gives the relay the space's push address for its own queue and all its contact
+  queues, with the token, each time Erevos opens, and the relay keeps that address on each of them
+  for as long as notifications stay on, so it ties them with no logs (lib/push-queues.ts). Each space
+  has an address of its own, from a registration of its own of the service worker
+  (lib/web-push.web.ts), so the address ties no two spaces together; the browser lists those
+  registrations, so whoever can see its settings can count the spaces with notifications on. Not
+  audited.
 - **The relay's own key** (crates/erevos-core/src/relay_channel.rs, lib/relay.ts). A connection to a
   relay whose key the phone knows opens with a channel to that key, as Noise's NK pattern: the phone's
   fresh X25519 key, the relay's answer with a fresh key of its own and a proof that takes the relay's

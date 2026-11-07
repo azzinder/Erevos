@@ -67,40 +67,44 @@ app from a store is installed once and changes only when updated.
   app opens. Notifications can say that some came (Settings → Notifications → Notifications while
   closed, off unless turned on): the relay pushes through the browser's push service, at most once
   in 15 seconds (`crates/erevos-relay/src/push.rs`, `lib/web-push.web.ts`), for the space's own
-  queue, its groups' and each contact's own queue (`lib/push-queues.ts`), all with the browser's one
-  push address; with no Tor here the relay sees the contacts' queues waited on together anyway, from
-  one address, while the app is open. Each push holds how many messages came, encrypted for the
-  browser, as the sending phones marked them: a message someone reads counts, word between phones
-  (that a message came or was read, new keys) pushes nothing, and a call that rings pushes and says
-  so without counting. The service worker then shows "3 new messages", in the app's language, or
-  "Call" when only a call rang. It shows "New message", or "New messages" once more came since
-  Erevos was last open, without a number, when the push is empty (a relay from before the counts) or
-  the relay could not count all of it (a sender's Erevos from before the marks, or a message other
-  phones carried to the relay, which cannot say what it holds), until Erevos is open again. The
-  worker keeps which queues pushed, to count each message once, only until Erevos opens or closes: a
-  short tag of each, unsealed, which shows how many contacts wrote, never who. After, it keeps the
-  rounds it counted, up to 128, with their counts and no tag: their numbers, which the relay draws
-  at random, name no queue, and a push of one that comes late counts nothing twice. Each push also
-  says when the relay sent it. The worker keeps when the app last took from its relay, as the app
-  says when Erevos shows or leaves and when it counts, and how late the last 32 pushes came, which
-  puts the relay's clock on the phone's: a push of a round it never had, sent more than 30 seconds
-  before the app last took from its relay, was held back by its push service (the phone was
-  offline), so it counts nothing, and what comes after it in its round counts. The push service sees
-  when a message comes, and that the device uses Erevos; never what or from whom (though pushes more
-  than 15 seconds apart can be counted, and the queues that got messages push in turn, so a run of
-  them can hint how many contacts wrote at once). The pushes also put a number on Erevos's icon (the
-  Badging API: on an iPhone or iPad from 16.4, for the web app on the home screen, once
-  notifications are allowed; a Mac's Safari web app; Chrome or Edge on Windows, macOS or ChromeOS):
-  what the open space had not read when the app last counted it (`lib/unread.ts`,
-  `lib/icon-number.ts`, told by `lib/push-notice.web.ts` as Erevos shows and leaves, and while it
-  shows), never a hidden chat's, and what the pushes said came since, each push or send that did not
-  say how many as one. Only for a space with notifications on; with no space open (at the password)
-  the number stays. A push that comes after Erevos left the screen for a message it had taken there,
-  sent less than 30 seconds before the app last took from its relay (or by a relay from before the
-  time in the pushes), counts that message once more, until Erevos shows. **Number on the icon**
-  (Settings → Notifications) turns it off on the device. The worker keeps that number unsealed
-  beside the count, also after Erevos opens, and for it its own tags of the queues that pushed,
-  until the app next counts with a space open, then their rounds as above.
+  queue, its groups' and each contact's own queue (`lib/push-queues.ts`), all with the space's own
+  push address: each space that turns them on registers the service worker again for a scope of its
+  own (`/__erevos/push/<random>/`), where it only shows notices, so no two spaces share an address,
+  and the browser lists one registration for each (the browser fetches `sw.js` for them from the
+  same address as for the app's, but only the app's is checked when it changes, by `boot.js`); with
+  no Tor here the relay sees the contacts' queues waited on together anyway, from one address, while
+  the app is open. Each push holds how many messages came, encrypted for the browser, as the sending
+  phones marked them: a message someone reads counts, word between phones (that a message came or
+  was read, new keys) pushes nothing, and a call that rings pushes and says so without counting. The
+  service worker then shows "3 new messages", in the app's language, or "Call" when only a call
+  rang. It shows "New message", or "New messages" once more came since Erevos was last open, without
+  a number, when the push is empty (a relay from before the counts) or the relay could not count all
+  of it (a sender's Erevos from before the marks, or a message other phones carried to the relay,
+  which cannot say what it holds), until Erevos is open again. The worker keeps which queues pushed,
+  to count each message once, only until Erevos opens or closes: a short tag of each, unsealed,
+  which shows how many contacts wrote, never who. After, it keeps the rounds it counted, up to 128,
+  with their counts and no tag: their numbers, which the relay draws at random, name no queue, and a
+  push of one that comes late counts nothing twice. Each push also says when the relay sent it. The
+  worker keeps when the app last took from its relay, as the app says when Erevos shows or leaves
+  and when it counts, and how late the last 32 pushes came, which puts the relay's clock on the
+  phone's: a push of a round it never had, sent more than 30 seconds before the app last took from
+  its relay, was held back by its push service (the phone was offline), so it counts nothing, and
+  what comes after it in its round counts. The push service sees when a message comes, and that the
+  device uses Erevos; never what or from whom (though pushes more than 15 seconds apart can be
+  counted, and the queues that got messages push in turn, so a run of them can hint how many
+  contacts wrote at once). The pushes also put a number on Erevos's icon (the Badging API: on an
+  iPhone or iPad from 16.4, for the web app on the home screen, once notifications are allowed; a
+  Mac's Safari web app; Chrome or Edge on Windows, macOS or ChromeOS): what the open space had not
+  read when the app last counted it (`lib/unread.ts`, `lib/icon-number.ts`, told by
+  `lib/push-notice.web.ts` as Erevos shows and leaves, and while it shows), never a hidden chat's,
+  and what the pushes said came since, each push or send that did not say how many as one. Only for
+  a space with notifications on; with no space open (at the password) the number stays. A push that
+  comes after Erevos left the screen for a message it had taken there, sent less than 30 seconds
+  before the app last took from its relay (or by a relay from before the time in the pushes), counts
+  that message once more, until Erevos shows. **Number on the icon** (Settings → Notifications)
+  turns it off on the device. The worker keeps that number unsealed beside the count, also after
+  Erevos opens, and for it its own tags of the queues that pushed, until the app next counts with a
+  space open, then their rounds as above.
 - **No Bluetooth, nearby link or SMS**, which Safari does not allow, and no automatic backups: a
   browser gives out a file only after a tap.
 

@@ -118,13 +118,18 @@ export async function wipeNow(backupsIn = ''): Promise<void> {
   globalThis.location?.replace?.('/');
 }
 
-// The browser's Web Push subscription, so no relay can wake this page any more.
+// The browser's Web Push subscriptions, the app's and each space's, so no relay can wake this page
+// any more; and the spaces' registrations for them (lib/web-push.web.ts), which would show how many
+// spaces had notifications on.
 async function stopWebPush(): Promise<void> {
   try {
-    const ready = navigator.serviceWorker?.ready;
-    if (!ready) return;
-    const registration = await Promise.race([ready, new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000))]);
-    await (await registration?.pushManager?.getSubscription())?.unsubscribe();
+    const all = navigator.serviceWorker?.getRegistrations?.();
+    if (!all) return;
+    const registrations = await Promise.race([all, new Promise<readonly ServiceWorkerRegistration[]>((resolve) => setTimeout(() => resolve([]), 2000))]);
+    for (const registration of registrations) {
+      await (await registration.pushManager?.getSubscription())?.unsubscribe().catch(() => false);
+      if (new URL(registration.scope).pathname.startsWith('/__erevos/push/')) await registration.unregister().catch(() => false);
+    }
   } catch {
     // Wiped all the same: what is kept goes below.
   }

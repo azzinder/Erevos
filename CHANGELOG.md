@@ -194,6 +194,22 @@ On main, not released yet:
   Matrix push reader refuses a chunk size that would overflow; the computer app's Wi-Fi link refuses a port past
   65535 and forgets settled file queues; Send to takes only `content://` streams and keeps its job when the phone
   turns; and the panic button's TRIGGER finishes without removing the task when it told other apps, so they start.
+- **Web app and Sailfish OS fixes from the review before 7**: each space has a push address of its own
+  (`lib/web-push.web.ts`): a space that turns notifications on registers the app's worker again for a scope of its own,
+  `/__erevos/push/<32 hex digits at random>/`, kept in its encrypted data (`SpaceData.pushScope`), and subscribes there,
+  so no relay is given the address another space gave its relay; turned off, that registration goes, and the panic
+  button removes them all. In such a scope `pwa/sw.js` only shows notices: it keeps no release, sends a page asked of it
+  to the app's, and answers only `close`; the count all the workers keep together is read again each time, under a Web
+  Lock where the browser has them. A space whose notifications were on before has the app's first address, which other
+  spaces may share: it makes its own as it opens, and that one is never given again. The browser lists each
+  registration, so its settings show how many spaces have notifications on (the maintainer's choice). The worker's state
+  changes one change at a time, from what is stored (`changeState`), so a check still waiting on the server no longer
+  writes back the release a promote just let go of (`checks/web-update.check.ts`, `checks/web-push.check.ts`,
+  `checks/web-notice.check.ts`). On Sailfish OS the shell's local server checks the host and the token, in constant
+  time, before it takes any body, takes a body only on the shell's paths, keeps at most 32 connections still arriving
+  and closes one silent for 30 seconds (`sailfish/src/shellserver.cpp`); `erevos-watch` takes calls only from Erevos's
+  own program, by the caller's process (`watch/src/watcher.cpp`), and Erevos tells the helper only once the name is held
+  by the `erevos-watch` beside it (`sailfish/src/watchlink.cpp`).
 - **Shares encrypted as they come** (`modules/erevos-collection`, `ShareActivity.kt`, `SharedIn.kt`): Send to's
   Android screen moves from `erevos-device` to the Collection's module, beside the Sealer, and encrypts a shared photo
   or file into the Collection's chunks while Android lets it be read, with a random key held in memory only; its

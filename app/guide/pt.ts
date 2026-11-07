@@ -3389,27 +3389,29 @@ isso, poderia enviar código alterado. O Erevos não aceita esse código de conf
   **Notificações** → **Notificações com o app fechado** → **Ativar** (iOS 16.4 ou posterior, pela tela de início).
   Quando chegam mensagens, ou toca uma chamada, o seu relay envia um push pela Apple, e o Erevos mostra quantas
   mensagens chegaram desde a última vez que você o abriu (**3 novas mensagens**), ou **Chamada** quando só tocou uma
-  chamada, no idioma do app, nada mais. A contagem é criptografada para o seu iPhone: a Apple vê quando chega algo
-  para o seu iPhone, e que ele usa o Erevos, nunca o quê nem de quem. Com um relay, ou o Erevos de um remetente, mais
-  antigo que a versão 2.0.0, ou com uma mensagem que outros celulares levaram até o relay, não há número: o Erevos
-  mostra **Nova mensagem**, ou **Novas mensagens** se chegaram mais, até você abri-lo. Elas são por espaço, nunca para
-  as conversas ocultas, e o seu relay precisa estar configurado para enviá-las. Elas chegam também para a fila própria
-  de cada contato: o seu relay então tem um endereço de push para todas as filas dos seus contatos, e a Apple recebe um
+  chamada, no idioma do app, nada mais. A contagem é criptografada para o seu iPhone: a Apple vê quando chega algo para
+  o seu iPhone, e que ele usa o Erevos, nunca o quê nem de quem. Com um relay, ou o Erevos de um remetente, mais antigo
+  que a versão 2.0.0, ou com uma mensagem que outros celulares levaram até o relay, não há número: o Erevos mostra
+  **Nova mensagem**, ou **Novas mensagens** se chegaram mais, até você abri-lo. Elas são por espaço, nunca para as
+  conversas ocultas, e o seu relay precisa estar configurado para enviá-las. Elas chegam também para a fila própria de
+  cada contato: o seu relay então tem um endereço de push para todas as filas dos seus contatos, e a Apple recebe um
   push para cada contato que escreveu, com 15 segundos de intervalo, então por uma sequência assim ela pode adivinhar
   quantos escreveram ao mesmo tempo, nunca quem. Com elas, o ícone do Erevos na tela de início também mostra um número:
   as mensagens não lidas do espaço que você tinha aberto, que ficam depois que o Erevos é fechado, e as que chegaram
-  depois (o que chegou sem número conta como uma), nunca as de uma conversa oculta. **Configurações** →
-  **Notificações** → **Número no ícone** o desliga. As notificações funcionam pelo serviço de push da Apple, pelo do
-  Google (Chrome, e Edge no Android, Brave e Opera), pelo da Mozilla (Firefox) e pelo da Microsoft (Edge no Windows): um
-  navegador que use outro não pode ativá-las, a não ser que quem cuida do seu relay permita o serviço de push desse
-  navegador. Espaços com relays diferentes compartilham as notificações do navegador: só o último aberto as recebe.
-  Uma solicitação de mensagem de alguém novo, pelo seu link de contato, pode aparecer só quando o Erevos abrir. O
-  número no ícone aparece também num Mac com “Adicionar ao Dock” do Safari, e no app web instalado pelo Chrome ou pelo
-  Edge no Windows, macOS ou ChromeOS. Nenhum banner **Nova mensagem** aparece sobre o Erevos enquanto ele está aberto
-  na tela. A tela **Notificações com o app fechado** diz quando o navegador ou o celular não as permite e, depois de
-  você desativá-las, quando o seu relay ainda não pôde ser avisado e pode ainda enviar uma: o Erevos avisa o relay
-  assim que conseguir alcançá-lo. Quando o navegador muda o endereço de push dele, ou o serviço de push o descarta, o
-  Erevos entrega ao seu relay o novo por conta própria quando volta à tela.
+  depois (o que chegou sem número conta como uma), nunca as de uma conversa oculta. **Configurações** → **Notificações**
+  → **Número no ícone** o desliga. As notificações funcionam pelo serviço de push da Apple, pelo do Google (Chrome, e
+  Edge no Android, Brave e Opera), pelo da Mozilla (Firefox) e pelo da Microsoft (Edge no Windows): um navegador que use
+  outro não pode ativá-las, a não ser que quem cuida do seu relay permita o serviço de push desse navegador. Cada espaço
+  que as ativa tem o seu próprio endereço de push, então nenhum relay recebe nunca o de outro espaço, e o endereço não
+  liga os seus espaços entre si. Para isso cada um desses espaços tem o seu próprio service worker no navegador: quem
+  puder ver as configurações do navegador pode contá-los, e assim quantos espaços têm as notificações ativadas. Uma
+  solicitação de mensagem de alguém novo, pelo seu link de contato, pode aparecer só quando o Erevos abrir. O número no
+  ícone aparece também num Mac com “Adicionar ao Dock” do Safari, e no app web instalado pelo Chrome ou pelo Edge no
+  Windows, macOS ou ChromeOS. Nenhum banner **Nova mensagem** aparece sobre o Erevos enquanto ele está aberto na tela. A
+  tela **Notificações com o app fechado** diz quando o navegador ou o celular não as permite e, depois de você
+  desativá-las, quando o seu relay ainda não pôde ser avisado e pode ainda enviar uma: o Erevos avisa o relay assim que
+  conseguir alcançá-lo. Quando o navegador muda o endereço de push dele, ou o serviço de push o descarta, o Erevos
+  entrega ao seu relay o novo por conta própria quando volta à tela.
 - **Permissões:** no Erevos, **Configurações** → **Geral** → **Permissões** mostra o que o navegador deixa o Erevos
   fazer: se ele roda pela tela de início, as notificações com o app fechado (necessárias assim que este espaço as
   ativou), o microfone para as chamadas, a câmera para as videochamadas, e se o navegador guarda os dados do Erevos de

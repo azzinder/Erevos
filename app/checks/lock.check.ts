@@ -358,7 +358,7 @@ t('a first start moves the chat settings kept before spaces into the first space
   store.set('erevos.relay', JSON.stringify(older));
   const key = await firstSpaceKey();
   assert.equal(store.has('erevos.relay'), false);
-  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, pushLeft: false, previews: false, lend: { relay: '', ticket: '' }, offered: { relay: '', code: '', until: 0, from: '' }, ringQueue: null, ownToken: { relay: '', hash: '' }, nostr: NOSTR_DEFAULT, relayKeys: {}, stopped: 0, sign: false, lastSeen: true, publicImages: 'always', publicCards: true });
+  assert.deepEqual(await loadSpaceData(0, key), { ...older, via: '', viaToken: '', look: null, tor: 'messages', bridges: { use: 'none', own: '' }, spare: { url: '', token: '', queue: null }, push: false, pushLeft: false, pushScope: '', previews: false, lend: { relay: '', ticket: '' }, offered: { relay: '', code: '', until: 0, from: '' }, ringQueue: null, ownToken: { relay: '', hash: '' }, nostr: NOSTR_DEFAULT, relayKeys: {}, stopped: 0, sign: false, lastSeen: true, publicImages: 'always', publicCards: true });
   assert.ok(!store.get('erevos.space.0')!.includes('t0ken'));
   // The next start finds the same key.
   assert.deepEqual(await firstSpaceKey(), key);

@@ -151,7 +151,7 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
             ) : null}
             <Text variant="caption" tone="muted" style={hint}>
               {t(
-                'When messages come, or a call rings, while Erevos is closed, your relay sends a push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows how many messages came since you last opened it, such as "3 new messages", or "Call" when only a call rang, nothing more. The push carries no message and no sender, and its count is encrypted for this browser, but the push service sees when something comes for this device, and that it uses Erevos. With a relay or a sender\'s Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos shows "New message", or "New messages" once more came, until you open it. Hidden chats never get notifications. Turned on in more than one space with the same relay, the relay can tell those spaces are on one device.',
+                'When messages come, or a call rings, while Erevos is closed, your relay sends a push through this browser\'s push service (Apple\'s on an iPhone), and Erevos shows how many messages came since you last opened it, such as "3 new messages", or "Call" when only a call rang, nothing more. The push carries no message and no sender, and its count is encrypted for this browser, but the push service sees when something comes for this device, and that it uses Erevos. With a relay or a sender\'s Erevos older than 2.0.0, or a message that other phones carried to the relay, there is no number: Erevos shows "New message", or "New messages" once more came, until you open it. Hidden chats never get notifications. Each space that turns them on has a push address of its own, so the address does not tie two spaces together at their relay.',
               )}
             </Text>
             {/* A call while closed: Web Push can only show it, it cannot ring. */}
@@ -163,7 +163,7 @@ export function IntegrityCard({ part }: { part?: 'web' | 'push' }) {
               {t("Where the browser can show it, Erevos's icon then also shows how many messages this space has not read, unless turned off under Number on the icon.")}
             </Text>
             <Text variant="caption" tone="muted" style={hint}>
-              {t("Spaces on different relays share this browser's notifications: only the one opened last gets them. A message request from someone new, through your contact link, may show only once Erevos opens.")}
+              {t("Each space with them on has a service worker of its own in this browser, which its settings list: whoever can see them can count the spaces with notifications on. A message request from someone new, through your contact link, may show only once Erevos opens.")}
             </Text>
             {pushNote ? (
               <Text variant="caption" color={colors.danger} style={hint}>

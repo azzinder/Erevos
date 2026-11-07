@@ -3425,21 +3425,23 @@ al que se le ordene, podría enviar código modificado. Erevos no se fía de ese
   cuanto llegan más, hasta que lo abras. Son por espacio, nunca para los chats ocultos, y tu relay debe estar
   configurado para enviarlas. También llegan para la cola propia de cada contacto: tu relay tiene entonces una dirección
   push para las colas de todos tus contactos, y Apple recibe un push por cada contacto que escribió, con 15 segundos de
-  diferencia, así que por una serie así puede suponer cuántos escribieron a la vez, nunca quiénes. El icono de Erevos
-  en la pantalla de inicio muestra entonces también un número: los mensajes no leídos del espacio que tenías abierto,
-  que se quedan una vez cerrado Erevos, y los que llegaron después (lo que llegó sin número cuenta como uno), nunca los
-  de un chat oculto. **Ajustes** → **Notificaciones** → **Número en el icono** lo desactiva. Las notificaciones
-  funcionan a través del servicio push de Apple, el de Google (Chrome, y Edge en Android, Brave y Opera), el de Mozilla
-  (Firefox) y el de Microsoft (Edge en Windows): un navegador que use otro no puede activarlas, salvo que quien gestione
-  tu relay permita el servicio push de ese navegador. Los espacios con relays distintos comparten las notificaciones del
-  navegador: solo las recibe el último que se abrió. Una solicitud de mensaje de alguien nuevo, a través de tu enlace
-  de contacto, puede que solo aparezca cuando se abra Erevos. El número del icono se muestra también en un Mac con
-  «Añadir al Dock» de Safari, y en la app web instalada desde Chrome o Edge en Windows, macOS o ChromeOS. No sale
-  ningún aviso **Mensaje nuevo** sobre Erevos mientras está abierto en la pantalla. La pantalla **Notificaciones con
-  la app cerrada** dice cuándo el navegador o el teléfono no las permiten y, después de que las desactives, cuándo tu
-  relay aún no pudo saberlo y puede que envíe alguna más: Erevos se lo dice en cuanto puede llegar a él. Cuando el
-  navegador cambia su dirección de push, o el servicio push la descarta, Erevos da a tu relay la nueva por sí solo
-  cuando vuelve a la pantalla.
+  diferencia, así que por una serie así puede suponer cuántos escribieron a la vez, nunca quiénes. El icono de Erevos en
+  la pantalla de inicio muestra entonces también un número: los mensajes no leídos del espacio que tenías abierto, que
+  se quedan una vez cerrado Erevos, y los que llegaron después (lo que llegó sin número cuenta como uno), nunca los de
+  un chat oculto. **Ajustes** → **Notificaciones** → **Número en el icono** lo desactiva. Las notificaciones funcionan a
+  través del servicio push de Apple, el de Google (Chrome, y Edge en Android, Brave y Opera), el de Mozilla (Firefox) y
+  el de Microsoft (Edge en Windows): un navegador que use otro no puede activarlas, salvo que quien gestione tu relay
+  permita el servicio push de ese navegador. Cada espacio que las activa tiene su propia dirección push, así que ningún
+  relay recibe nunca la de otro espacio, y la dirección no une tus espacios. Para ello cada uno de esos espacios tiene
+  su propio service worker en el navegador: quien pueda ver los ajustes del navegador puede contarlos, y así cuántos
+  espacios tienen las notificaciones activadas. Una solicitud de mensaje de alguien nuevo, a través de tu enlace de
+  contacto, puede que solo aparezca cuando se abra Erevos. El número del icono se muestra también en un Mac con «Añadir
+  al Dock» de Safari, y en la app web instalada desde Chrome o Edge en Windows, macOS o ChromeOS. No sale ningún aviso
+  **Mensaje nuevo** sobre Erevos mientras está abierto en la pantalla. La pantalla **Notificaciones con la app cerrada**
+  dice cuándo el navegador o el teléfono no las permiten y, después de que las desactives, cuándo tu relay aún no pudo
+  saberlo y puede que envíe alguna más: Erevos se lo dice en cuanto puede llegar a él. Cuando el navegador cambia su
+  dirección de push, o el servicio push la descarta, Erevos da a tu relay la nueva por sí solo cuando vuelve a la
+  pantalla.
 - **Permisos:** en Erevos, **Ajustes** → **General** → **Permisos** muestra lo que el navegador deja hacer a Erevos: si
   funciona desde la pantalla de inicio, las notificaciones con la app cerrada (necesarias en cuanto este espacio las
   activó), el micrófono para las llamadas, la cámara para las videollamadas, y si el navegador conserva los datos de

@@ -7,7 +7,8 @@
 // "New messages" once more pushes came, or "Call" when only a call rang, in the app's language, on an
 // iPhone as on other browsers. And the number on Erevos's icon: what the open space had not read, as
 // the app counted it (lib/icon-number.ts), and what came since. And that the open app hears when the
-// browser changes its push address.
+// browser changes its push address. And the worker a space registers for its own push address
+// (lib/web-push.web.ts), which only shows notices, with the count the app's worker keeps too.
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
@@ -27,7 +28,7 @@ type Listener = (event: unknown) => void;
 // A browser for the worker: its cache survives a restart of the worker, as a real one does. An
 // iPhone keeps every notice of a tag; other browsers replace the one of the same tag, silently
 // unless asked to sound again (renotify). Its badges may answer never ('hangs').
-function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), badges: 'yes' | 'refused' | 'none' | 'hangs' = 'yes') {
+function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), badges: 'yes' | 'refused' | 'none' | 'hangs' = 'yes', scope = 'https://erevos.example/') {
   let notices: Notice[] = [];
   // The notices that sounded.
   let sounded = 0;
@@ -62,6 +63,7 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
     },
   };
   const registration = {
+    scope,
     getNotifications: async ({ tag }: { tag: string }) => notices.filter((notice) => notice.tag === tag && !notice.closed),
     showNotification: async (title: string, options: { body: string; tag: string; renotify?: boolean; data?: unknown }) => {
       const replaces = kind === 'other' && notices.some((notice) => notice.tag === options.tag && !notice.closed);
@@ -76,6 +78,7 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
     registration,
     navigator,
     clients: { matchAll: async () => windows },
+    skipWaiting: async () => undefined,
     location: { origin: 'https://erevos.example' },
   };
   // Its timers end at once: what waits on one waits no longer than a check should.
@@ -99,6 +102,15 @@ function browser(kind: 'iphone' | 'other', store = new Map<string, string>(), ba
     tell: (question: Record<string, unknown>) => fire('message', question),
     // The browser changed its push address, or dropped it.
     addressChanged: () => fire('pushsubscriptionchange'),
+    install: () => fire('install'),
+    activate: () => fire('activate'),
+    // A page asked of the worker: its status, and where it sends it.
+    navigate: async (path: string) => {
+      let answer: Promise<Response> | undefined;
+      listeners.fetch({ request: { url: `https://erevos.example${path}`, method: 'GET', mode: 'navigate' }, respondWith: (response: Response | Promise<Response>) => (answer = Promise.resolve(response)), waitUntil: () => undefined });
+      const response = await answer!;
+      return `${response.status} ${response.headers.get('location') ?? ''}`;
+    },
     shown: () => notices.filter((notice) => !notice.closed).map((notice) => notice.body),
     sounded: () => sounded,
     badge: () => badge,
@@ -869,4 +881,33 @@ test('turned off, the icon shows no number, and the pushes count none until the 
   assert.equal(again.badge(), 4);
   await again.push(counted(2, 9, 2));
   assert.equal(again.badge(), 6);
+});
+
+test("a space's own worker for its notices keeps no release, serves no page, and counts with the app's worker", async () => {
+  const app = browser('other');
+  const scope = 'https://erevos.example/__erevos/push/0123456789abcdef0123456789abcdef/';
+  const space = browser('other', app.store, 'yes', scope);
+  // It fetches no release (offline, the app's worker would fail) and keeps no state of one.
+  await space.install();
+  await space.activate();
+  assert.equal(app.store.has('/__erevos/state'), false);
+  // A page asked for there goes to the app's, which the app's worker serves.
+  assert.equal(await space.navigate('/__erevos/push/0123456789abcdef0123456789abcdef/'), '302 https://erevos.example/');
+  // It answers nothing of the releases.
+  assert.equal(await space.tell({ erevos: 'status' }), undefined);
+  assert.equal(await space.tell({ erevos: 'check' }), undefined);
+  // One count for all the workers, read again each time: the app's worker counts on from what the space's counted.
+  await app.push(counted(2, 1, 1));
+  assert.deepEqual(app.shown(), ['New message']);
+  await space.push(counted(1, 1, 2));
+  assert.deepEqual(space.shown(), ['3 new messages']);
+  await app.push(counted(2, 1, 2));
+  assert.deepEqual(app.shown(), ['4 new messages']);
+  // Erevos open again: the app's worker starts the count again, and the space's closes its notices.
+  assert.equal(await app.tell({ erevos: 'seen' }), true);
+  assert.equal(app.count(), 0);
+  assert.equal(await space.tell({ erevos: 'close' }), true);
+  assert.deepEqual(space.shown(), []);
+  // The app's worker takes no 'close' of the spaces'.
+  assert.equal(await app.tell({ erevos: 'close' }), undefined);
 });
