@@ -49,4 +49,10 @@ export const collectionMedia: Record<string, string> = {
   "The station’s link": "Ο σύνδεσμος του σταθμού",
   "Name (optional)": "Όνομα (προαιρετικό)",
   "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, for the stream’s own link. The station, and that playlist’s server, see this device’s IP address.": "Μόνο σύνδεσμοι https: το Erevos δεν ανοίγει απλό http. Ένας σύνδεσμος λίστας (.m3u, .pls) διαβάζεται μία φορά, τώρα, για τον σύνδεσμο της ίδιας της ροής. Ο σταθμός, και ο διακομιστής της λίστας, βλέπουν τη διεύθυνση IP αυτής της συσκευής.",
+  "Radio Browser answered {status}.": "Το Radio Browser απάντησε {status}.",
+  "Search Radio Browser": "Αναζήτηση στο Radio Browser",
+  "A station’s name": "Το όνομα ενός σταθμού",
+  "Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.": "Στο Radio Browser (radio-browser.info), έναν ελεύθερο κατάλογο σταθμών, στέλνονται μόνο οι λέξεις που γράφεις, όταν πατάς Αναζήτηση, και βλέπει τη διεύθυνση IP αυτής της συσκευής. Φαίνονται μόνο σταθμοί με σύνδεσμο https.",
+  "Add {name}": "Προσθήκη: {name}",
+  "Or by its link": "Ή με τον σύνδεσμό του",
 };

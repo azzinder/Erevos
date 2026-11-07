@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
+    "**Βρες σταθμούς ραδιοφώνου με το όνομα**: η Προσθήκη σταθμού στην καρτέλα Ραδιόφωνο της Συλλογής ψάχνει στο Radio Browser, έναν ελεύθερο κατάλογο, που του στέλνονται μόνο οι λέξεις που γράφεις όταν πατάς Αναζήτηση. Δες [Συλλογή](#collection).",
   "**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection).":
     "**Διαδικτυακό ραδιόφωνο στη Συλλογή**: μια καρτέλα Ραδιόφωνο με σταθμούς που προσθέτεις με τον σύνδεσμό τους https, κρυπτογραφημένους μαζί με τη Συλλογή, που παίζουν όπως η μουσική, με την ειδοποίηση στο τηλέφωνο. Ο σταθμός βλέπει τη διεύθυνση IP της συσκευής σου. Δες [Συλλογή](#collection).",
   "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":

@@ -93,6 +93,50 @@ export async function stationLink(given: string, get: (url: string) => Promise<H
   throw new RadioLinkError(links.length > 0 ? t('This station gives only http links, which Erevos does not open. Ask it for an https link.') : t('The station’s playlist holds no link.'));
 }
 
+// Radio Browser (radio-browser.info), a free directory of stations anyone may edit: a search sends
+// it only the words typed, with the User-Agent "Erevos", and it sees the device's IP address. Only
+// stations it gives an https link for are offered.
+
+/** The most stations a search shows. */
+export const MOST_FOUND = 30;
+/** The most of Radio Browser's answer read. */
+export const MOST_FOUND_BYTES = 512 * 1024;
+
+/** The address a search for `words` asks Radio Browser at; null for nothing to look for. */
+export function radioSearchUrl(words: string): string | null {
+  const q = words.trim().slice(0, 100);
+  if (!q) return null;
+  return `https://de1.api.radio-browser.info/json/stations/search?name=${encodeURIComponent(q)}&limit=${MOST_FOUND}&hidebroken=true`;
+}
+
+/** A station Radio Browser found: its name, its https link and type, and a few words of it (country, codec, bitrate). */
+export type FoundStation = { name: string; url: string; mime: string; about: string };
+
+/** The stations in Radio Browser's answer that have an https link, at most MOST_FOUND. */
+export function foundStations(bytes: Uint8Array): FoundStation[] {
+  let list: unknown;
+  try {
+    list = JSON.parse(utf8Decode(bytes));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(list)) return [];
+  const out: FoundStation[] = [];
+  const seen = new Set<string>();
+  for (const entry of list) {
+    const v = entry as Record<string, unknown> | null;
+    if (!v || typeof v.name !== 'string') continue;
+    const link = [v.url_resolved, v.url].map((u) => (typeof u === 'string' ? httpsLink(u) : null)).find((u) => u);
+    const name = v.name.replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (!link || !name || seen.has(link)) continue;
+    seen.add(link);
+    const words = [v.country, v.codec, typeof v.bitrate === 'number' && v.bitrate > 0 ? `${v.bitrate} kbps` : null].filter((w): w is string => typeof w === 'string' && w.trim() !== '').map((w) => w.trim().slice(0, 40));
+    out.push({ name, url: link, mime: v.hls === 1 || isHlsLink(link) ? HLS : '', about: words.join(' · ') });
+    if (out.length >= MOST_FOUND) break;
+  }
+  return out;
+}
+
 /** A name for a station from its link, when the owner gives none: its server's name. */
 export function nameFromLink(link: string): string {
   try {

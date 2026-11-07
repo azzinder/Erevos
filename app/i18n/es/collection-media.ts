@@ -49,4 +49,10 @@ export const collectionMedia: Record<string, string> = {
   "The station’s link": "Enlace de la emisora",
   "Name (optional)": "Nombre (opcional)",
   "Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, for the stream’s own link. The station, and that playlist’s server, see this device’s IP address.": "Solo enlaces https: Erevos no abre http sin cifrar. Un enlace de lista (.m3u, .pls) se lee una vez, ahora, para obtener el enlace del propio flujo. La emisora, y el servidor de esa lista, ven la dirección IP de este dispositivo.",
+  "Radio Browser answered {status}.": "Radio Browser respondió {status}.",
+  "Search Radio Browser": "Buscar en Radio Browser",
+  "A station’s name": "El nombre de una emisora",
+  "Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.": "A Radio Browser (radio-browser.info), un directorio libre de emisoras, se le envían solo las palabras que escribes, cuando pulsas Buscar, y ve la dirección IP de este dispositivo. Solo se muestran emisoras con un enlace https.",
+  "Add {name}": "Añadir {name}",
+  "Or by its link": "O por su enlace",
 };

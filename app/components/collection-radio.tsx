@@ -8,7 +8,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { confirm } from '../lib/alert';
 import { cloudRequest } from '../lib/backup-http';
 import { playStation } from '../lib/collection-play';
-import { nameFromLink, RADIO_AGENT, stationLink, MOST_PLAYLIST } from '../lib/collection-radio';
+import { foundStations, MOST_FOUND_BYTES, MOST_PLAYLIST, nameFromLink, RADIO_AGENT, radioSearchUrl, stationLink, type FoundStation } from '../lib/collection-radio';
 import { t } from '../lib/i18n';
 import { addStation, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
@@ -19,7 +19,8 @@ import { Button, Input, Sheet, Text } from './ui';
 // The Collection's Radio tab (app/collection.tsx): internet radio stations, each by its https link,
 // kept sealed in the place's catalogue (lock/collection-data.ts stations). A tap plays one (lib/
 // collection-play.ts playStation), its menu renames or deletes it; + adds one by its link (lib/
-// collection-radio.ts), a playlist's (.m3u, .pls) fetched once for the stream's own. What the
+// collection-radio.ts), a playlist's (.m3u, .pls) fetched once for the stream's own, or found in
+// Radio Browser by the words typed, sent only when Search is pressed. What the
 // station learns is said where it is added and where it plays: this device's IP address.
 
 type Options = { showTitle: boolean; stopOnLock: boolean };
@@ -162,17 +163,22 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
+  const [words, setWords] = useState('');
+  const [found, setFound] = useState<FoundStation[] | null>(null);
   const colors = useColors();
 
-  async function add() {
+  // Adds a station by its link (the one typed, or one found), named as given or by its server.
+  async function add(given = link, called = name) {
     if (!place || busy) return;
     setBusy(true);
     setNote('');
     try {
-      const found = await stationLink(link, (url) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, MOST_PLAYLIST));
-      await addStation(place, name.trim() || nameFromLink(found.url) || t('Radio'), found);
+      const at = await stationLink(given, get(MOST_PLAYLIST));
+      await addStation(place, called.trim() || nameFromLink(at.url) || t('Radio'), at);
       setLink('');
       setName('');
+      setWords('');
+      setFound(null);
       onAdded();
       onClose();
     } catch (error) {
@@ -181,8 +187,51 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
     setBusy(false);
   }
 
+  // Radio Browser is asked only for the words typed, and only when Search is pressed.
+  async function search() {
+    const url = radioSearchUrl(words);
+    if (!url || busy) return;
+    setBusy(true);
+    setNote('');
+    try {
+      const answer = await get(MOST_FOUND_BYTES)(url);
+      if (answer.status < 200 || answer.status >= 300) throw new Error(t('Radio Browser answered {status}.', { status: answer.status }));
+      setFound(foundStations(answer.bytes));
+    } catch (error) {
+      setNote(error instanceof Error ? error.message : String(error));
+    }
+    setBusy(false);
+  }
+
   return (
     <Sheet visible={visible} onClose={onClose} title={t('Add a station')}>
+      <Text variant="label">{t('Search Radio Browser')}</Text>
+      <Input value={words} onChangeText={setWords} placeholder={t('A station’s name')} accessibilityLabel={t('Search Radio Browser')} autoCorrect={false} maxLength={100} onSubmitEditing={() => void search()} />
+      <Text variant="caption" tone="muted">
+        {t('Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.')}
+      </Text>
+      <Button title={t('Search')} kind="secondary" compact loading={busy && found === null && !!words.trim()} disabled={!words.trim() || busy} onPress={() => void search()} />
+      {found !== null && found.length === 0 ? (
+        <Text variant="caption" tone="muted">
+          {t('Nothing found.')}
+        </Text>
+      ) : null}
+      {(found ?? []).map((s) => (
+        <Pressable key={s.url} onPress={() => void add(s.url, s.name)} disabled={busy} accessibilityRole="button" accessibilityLabel={t('Add {name}', { name: s.name })} style={({ pressed }) => [styles.sheetRow, pressed && { opacity: 0.6 }]}>
+          <View style={[styles.icon, { backgroundColor: withAlpha(colors.primary, 0.14) }]}>
+            <SignalIcon color={colors.primary} size={22} />
+          </View>
+          <View style={styles.grow}>
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {s.name}
+            </Text>
+            <Text variant="caption" tone="muted" numberOfLines={1}>
+              {s.about || hostOf(s.url)}
+            </Text>
+          </View>
+        </Pressable>
+      ))}
+      <Text variant="label">{t('Or by its link')}</Text>
       <Input value={link} onChangeText={setLink} placeholder="https://…" accessibilityLabel={t('The station’s link')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2048} />
       <Input value={name} onChangeText={setName} placeholder={t('Name (optional)')} accessibilityLabel={t('Name (optional)')} maxLength={60} onSubmitEditing={() => void add()} />
       <Text variant="caption" tone="muted">
@@ -197,6 +246,10 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
     </Sheet>
   );
 }
+
+// A GET as backups make them (lib/backup-http.ts: on the phone through Tor as the space says, on a
+// computer through the shell), with only Erevos's name as the User-Agent, `most` bytes at most.
+const get = (most: number) => (url: string) => cloudRequest('GET', url, { 'User-Agent': RADIO_AGENT }, undefined, most);
 
 const hostOf = (url: string) => {
   try {

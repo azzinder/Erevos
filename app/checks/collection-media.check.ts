@@ -16,7 +16,7 @@ import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionTo
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
-import { HLS, httpsLink, playlistLinks, RadioLinkError, stationLink } from '../lib/collection-radio';
+import { foundStations, HLS, httpsLink, playlistLinks, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
 import { moved, playlistItems } from '../lib/collection-view';
 import {
   addPlaylist,
@@ -277,6 +277,24 @@ t('a station is an https link only, a playlist gives its first https link, and H
   await assert.rejects(stationLink('http://s.example/live', get('')), RadioLinkError);
   await assert.rejects(stationLink('https://s.example/x.pls', get('File1=http://only.example/\n')), RadioLinkError);
   await assert.rejects(stationLink('https://s.example/x.pls', get('', 404)), RadioLinkError);
+});
+
+t('Radio Browser is asked only the words typed, and only its stations with an https link are offered', () => {
+  assert.equal(radioSearchUrl('   '), null);
+  assert.equal(radioSearchUrl(' jazz & blues '), 'https://de1.api.radio-browser.info/json/stations/search?name=jazz%20%26%20blues&limit=30&hidebroken=true');
+  const answer = [
+    { name: ' Jazz  FM ', url: 'http://plain.example/', url_resolved: 'https://jazz.example/live', country: 'Greece', codec: 'MP3', bitrate: 128, hls: 0 },
+    { name: 'Plain', url: 'http://plain.example/', url_resolved: 'http://plain.example/' },
+    { name: 'Live', url: 'https://hls.example/x', url_resolved: '', hls: 1 },
+    { name: 'Again', url_resolved: 'https://jazz.example/live' },
+    { name: '', url_resolved: 'https://nameless.example/' },
+  ];
+  assert.deepEqual(foundStations(utf8Encode(JSON.stringify(answer))), [
+    { name: 'Jazz FM', url: 'https://jazz.example/live', mime: '', about: 'Greece · MP3 · 128 kbps' },
+    { name: 'Live', url: 'https://hls.example/x', mime: HLS, about: '' },
+  ]);
+  assert.deepEqual(foundStations(utf8Encode('not json')), []);
+  assert.deepEqual(foundStations(utf8Encode('{"a":1}')), []);
 });
 
 t('stations are kept sealed with the place, https only, and a deleted one leaves a mark', async () => {

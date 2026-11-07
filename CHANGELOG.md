@@ -131,6 +131,10 @@ On main, not released yet:
   no redirect to http, media3-exoplayer-hls, WAKE_MODE_NETWORK), with the same stops on lock and panic; its ICY
   title shows on the player's screen, and in the notice only with Show the title. In the web build the page's
   player plays the link; the desktop app's CSP needs media-src https: for it.
+- **Radio stations found by name** (lib/collection-radio.ts radioSearchUrl, foundStations): Add a station searches
+  Radio Browser (de1.api.radio-browser.info, /json/stations/search, 30 at most, broken ones hidden), sent only the
+  words typed, when Search is pressed, with the User-Agent "Erevos", as backups' requests go; only stations with an
+  https link are offered, and a tap adds one as a link typed would be.
 
 ### Under the hood
 
