@@ -52,6 +52,10 @@
  *                              running when it is closed, PUT ?keep=1 or 0 sets it, PUT ?show=1
  *                              brings it back (a call, a tapped notice), POST gives the words of
  *                              the tray's menu in the app's language
+ *   /__play                    the Collection's music and videos from their encrypted chunks
+ *                              (play.js): POST holds a file and gives a token, DELETE forgets one
+ *                              or all; GET /__play/<token> answers its bytes by range, without the
+ *                              page's token, which a media element cannot send
  *   /__wipe?backups=&folder=   the panic button (app/lib/panic.ts): POST deletes everything the
  *                              app keeps (secrets.json, files/, the page's own storage, the rest
  *                              of its data folder), with backups=1 the backups Erevos named in
@@ -91,6 +95,7 @@ const path = require('node:path');
 const { backupRequest, isBackupFile } = require('./backups');
 const { ChunkServer, ChunkTaker, addresses: chunkAddresses } = require('./chunks');
 const { Lan } = require('./lan');
+const { Plays } = require('./play');
 
 const ORIGIN = 'app://erevos';
 const CALL_ORIGIN = 'app://element-call';
@@ -715,6 +720,7 @@ async function wipe(request, url) {
   if (request.method !== 'POST') return new Response('', { status: 405 });
   lan?.stop();
   lan = null;
+  plays?.clear();
   picked.clear();
   dropSaving();
   const where = url.searchParams.get('folder');
@@ -775,12 +781,19 @@ async function wipe(request, url) {
   return left ? new Response("Some of Erevos's files could not be deleted.", { status: 500 }) : new Response(null, { status: 204 });
 }
 
+// The Collection's files playing (play.js), with their keys: in this process's memory only.
+let plays = null;
+const playsNow = () => (plays ??= new Plays(dataPath('files')));
+
 function handle(request) {
   const url = new URL(request.url);
   if (url.host === 'element-call') return serveCall(url.pathname);
   if (url.host !== 'erevos') return new Response('', { status: 404 });
   if (url.pathname.startsWith('/__')) {
+    // A media element asks with no header: the random token in the address is the file's alone (play.js).
+    if (url.pathname.startsWith('/__play/')) return playsNow().serve(request, url.pathname.slice('/__play/'.length));
     if (request.headers.get('x-erevos-token') !== TOKEN) return new Response('', { status: 403 });
+    if (url.pathname === '/__play') return playsNow().request(request, url);
     if (url.pathname === '/__secret') return secret(request, url.searchParams.get('key'));
     if (url.pathname === '/__file') return file(request, url.searchParams.get('name'));
     if (url.pathname === '/__files') return files(url.searchParams.get('prefix'));
@@ -859,6 +872,7 @@ function createWindow() {
   });
   window.on('closed', () => {
     window = null;
+    plays?.clear();
   });
   if (SMOKE) smoke(window);
 }
