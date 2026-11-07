@@ -319,6 +319,8 @@ reste activé, comme avant, jusqu’à ce que tu les changes.
   y ait d’activé.
 - **De nouveau activé :** un module activé démarre aussitôt, et **Autorisations** montre ce qu’Android doit autoriser
   pour lui, comme au premier démarrage.
+- **Nouveau avec une mise à jour :** un module qui arrive avec une mise à jour, comme la Collection avec la 7, est
+  activé, même là où tu as choisi les modules avant son arrivée, jusqu’à ce que tu le désactives.
 - **Le Téléphone ou les SMS désactivés** alors qu’Erevos est encore l’app Téléphone ou l’app SMS : Android continue de
   donner à Erevos les appels ou les SMS, conservés comme avant. **Ouvrir les applis par défaut** choisit une autre app.
 - **Le Téléphone seul :** sans aucun module qui apporte des messages, l’écran d’accueil le dit, avec **Téléphone** et

@@ -303,6 +303,8 @@ modulo resta attivo, come prima, finché non lo cambi.
   contatti, il blocco con password, gli spazi, i backup e le Impostazioni ci sono sempre, qualunque cosa sia attiva.
 - **Di nuovo attivo:** un modulo attivato parte subito, e **Autorizzazioni** mostra ciò che Android deve consentire per
   esso, come al primo avvio.
+- **Nuovo con un aggiornamento:** un modulo che arriva con un aggiornamento, come la Raccolta con la 7, è attivo, anche
+  dove hai scelto i moduli prima che arrivasse, finché non lo disattivi.
 - **Il Telefono o gli SMS disattivati** mentre Erevos è ancora l’app Telefono o l’app SMS: Android continua a dare a
   Erevos le chiamate o gli SMS, conservati come prima. **Apri App predefinite** sceglie un’altra app.
 - **Il Telefono da solo:** senza nessun modulo che porti messaggi, la schermata principale lo dice, con **Telefono** e

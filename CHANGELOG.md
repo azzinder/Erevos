@@ -14,6 +14,11 @@ On main, not released yet:
 
 ### For you
 
+- **New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or
+  computer updated from 6, the Collection stayed off after the update, as the choice was kept as a bare list of the
+  modules on (lib/modules.ts). The choice is now kept with the modules there were when it was made, and any module
+  newer than it is on, as every module is before one, until it is turned off in **Modules**. A choice kept before is
+  read as made before the Collection, so the Collection is on there once, also where 7.0.0-rc.1 had it turned off.
 - **Photos of the Collection one after the other**: in a photo, the arrows (on a phone too, while the bars show) or a
   swipe go to the next or the one before, and **Slideshow** shows them by themselves, one every 4 seconds, till a tap. On
   a computer, in a browser and on Sailfish OS a photo opens again instead of staying at **Opening the photo…**. See

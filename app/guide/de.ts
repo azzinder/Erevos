@@ -318,6 +318,8 @@ Modul an, wie bisher, bis du sie änderst.
   Kontakte, die Passwortsperre, die Bereiche, die Backups und die Einstellungen sind immer da, was auch an ist.
 - **Wieder an:** Ein eingeschaltetes Modul startet sofort, und **Berechtigungen** zeigt, was Android dafür erlauben
   soll, wie beim ersten Start.
+- **Neu mit einem Update:** Ein Modul, das mit einem Update kommt, wie die Sammlung mit 7, ist an, auch wo du die
+  Module gewählt hast, bevor es kam, bis du es ausschaltest.
 - **Das Telefon oder die SMS aus,** während Erevos noch die Telefon-App oder die SMS-App ist: Android gibt Erevos
   weiterhin die Anrufe oder die SMS, wie bisher gespeichert. **Standard-Apps öffnen** wählt eine andere App.
 - **Das Telefon allein:** Ohne ein Modul, das Nachrichten bringt, sagt der Startbildschirm es, mit **Telefon** und

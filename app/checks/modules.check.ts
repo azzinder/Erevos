@@ -17,6 +17,7 @@ import {
   moduleList,
   moduleOn,
   modulesChosen,
+  MODULES,
   modulesHere,
   modulesOn,
   onModulesChange,
@@ -58,14 +59,33 @@ test('nothing kept, or nothing usable, is every module on', () => {
   assert.equal(parseModules('["phone","sms"]', ELSEWHERE), null);
 });
 
+const KNOWN = JSON.stringify(MODULES);
+
 test('what is kept is read back, in the modules order, only those this device runs', () => {
-  assert.deepEqual([...(parseModules('["xmpp","phone"]', ANDROID) ?? [])], ['phone', 'xmpp']);
-  assert.deepEqual([...(parseModules('["phone","nostr"]', ELSEWHERE) ?? [])], ['nostr']);
-  assert.equal(keptModules(['xmpp', 'erevos'], ANDROID), '["erevos","xmpp"]');
+  assert.deepEqual([...(parseModules(`{"on":["xmpp","phone"],"known":${KNOWN}}`, ANDROID) ?? [])], ['phone', 'xmpp']);
+  assert.deepEqual([...(parseModules(`{"on":["phone","nostr"],"known":${KNOWN}}`, ELSEWHERE) ?? [])], ['nostr']);
+  assert.equal(keptModules(['xmpp', 'erevos'], ANDROID), `{"on":["erevos","xmpp"],"known":${KNOWN}}`);
   assert.equal(keptModules(['phone'], ELSEWHERE), null);
   assert.equal(keptModules([], ANDROID), null);
   assert.equal(keptModules(['collection'], ANDROID), null);
-  assert.equal(keptModules(['collection', 'sms'], ANDROID), '["sms","collection"]');
+  assert.equal(keptModules(['collection', 'sms'], ANDROID), `{"on":["sms","collection"],"known":${KNOWN}}`);
+  for (const chosen of [['erevos'], ['sms', 'collection'], ['nostr', 'matrix', 'xmpp']] as Module[][])
+    assert.deepEqual([...(parseModules(keptModules(chosen, ANDROID), ANDROID) ?? [])], chosen);
+});
+
+test('a module newer than the choice is on, until it is turned off', () => {
+  // Chosen before the Collection came (6.x kept a bare list): it is on after the update.
+  assert.deepEqual([...(parseModules('["xmpp","phone"]', ANDROID) ?? [])], ['phone', 'xmpp', 'collection']);
+  assert.deepEqual([...(parseModules('["erevos","sms"]', modulesHere('web', 'sailfish')) ?? [])], ['erevos', 'collection']);
+  assert.deepEqual([...(parseModules('["phone","nostr"]', ELSEWHERE) ?? [])], ['nostr']);
+  // Turned off since: it stays off.
+  assert.deepEqual([...(parseModules(`{"on":["erevos","sms"],"known":${KNOWN}}`, ANDROID) ?? [])], ['erevos', 'sms']);
+  // One that came after the choice.
+  assert.deepEqual([...(parseModules('{"on":["erevos"],"known":["erevos","phone","sms","nostr","xmpp","collection"]}', ANDROID) ?? [])], ['erevos', 'matrix']);
+  // What it was chosen among not said: none is newer.
+  assert.deepEqual([...(parseModules('{"on":["erevos"]}', ANDROID) ?? [])], ['erevos']);
+  // The Collection alone, even so, leaves no chat to open.
+  assert.equal(parseModules('[]', modulesHere('web', null)), null);
 });
 
 test('Erevos itself can be off; at least one stays on', async () => {

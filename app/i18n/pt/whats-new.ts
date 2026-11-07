@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or computer updated from 6, the Collection stayed off. Now it is on there, as is any module that comes later, until you turn it off in Settings → General → Modules. See [Modules](#modules).":
+    "**Módulos novos ativados após uma atualização**: onde os módulos foram escolhidos antes de a Coleção chegar, como num celular ou computador atualizado da 6, a Coleção ficava desativada. Agora ela fica ativada lá, como qualquer módulo que chegar depois, até você desativá-la em Configurações → Geral → Módulos. Veja [Módulos](#modules).",
   "**A home relay by itself**: on Android, when your relay names a relay paired with it, a space with no home relay takes that one, only through Tor, with its token from a coupon: nothing to type. **Automatically from your relay**, under Settings → Relay and networks → Home relay, turns it off. See [Home relay](#home-relay).":
     "**Um relay de casa sozinho**: no Android, quando o seu relay nomeia um relay pareado com ele, um espaço sem relay de casa pega esse, só por Tor, com o token dele de um cupom: nada para digitar. **Automaticamente pelo seu relay**, em Configurações → Relay e redes → Relay de casa, desliga isso. Veja [Relay de casa](#home-relay).",
   "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":

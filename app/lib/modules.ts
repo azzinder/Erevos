@@ -52,27 +52,38 @@ export function modulesHere(os: string = platform(), _shell: typeof SHELL = SHEL
 // The Collection is part of a space, not a way to chat: on its own it would leave nothing to open.
 const usable = (list: Iterable<Module>) => [...list].some((m) => m !== 'collection');
 
+// The modules there were before the Collection came (7.0.0). A choice is kept with the modules
+// there were when it was made (`known`); one kept as a bare list is from before, and so could not
+// name the Collection. A module newer than the choice is on, as every module is before one: a 6.x
+// choice of SMS and Erevos has the Collection on after the update, until it is turned off.
+const BEFORE_KNOWN: readonly Module[] = ['erevos', 'phone', 'sms', 'nostr', 'matrix', 'xmpp'];
+
 /**
- * The modules kept as `raw` (a JSON list), those this device can run; null when nothing usable is
- * kept, as before the owner chose (every module is then on), or when none of them would be on.
+ * The modules kept as `raw` (`{"on": [...], "known": [...]}`, or a bare list from before), those
+ * this device can run, with every one newer than the choice; null when nothing usable is kept, as
+ * before the owner chose (every module is then on), or when none of them would be on.
  */
 export function parseModules(raw: string | null, here: readonly Module[] = modulesHere()): Set<Module> | null {
   if (!raw) return null;
   try {
-    const list: unknown = JSON.parse(raw);
-    if (!Array.isArray(list)) return null;
-    const chosen = new Set(here.filter((m) => list.includes(m)));
+    const value: unknown = JSON.parse(raw);
+    const kept = value && typeof value === 'object' && !Array.isArray(value) ? (value as { on?: unknown; known?: unknown }) : null;
+    const list = Array.isArray(value) ? value : kept && Array.isArray(kept.on) ? kept.on : null;
+    if (!list) return null;
+    const known: readonly unknown[] = Array.isArray(value) ? BEFORE_KNOWN : kept && Array.isArray(kept.known) ? kept.known : MODULES;
+    const chosen = new Set(here.filter((m) => list.includes(m) || !known.includes(m)));
     return usable(chosen) ? chosen : null;
   } catch {
     return null;
   }
 }
 
-/** What is kept for `chosen`: the modules this device can run, at least one; null when none is. */
+/** What is kept for `chosen`: the modules this device can run, at least one, with every module
+ *  there is now; null when none is. */
 export function keptModules(chosen: Iterable<Module>, here: readonly Module[] = modulesHere()): string | null {
   const wanted = new Set(chosen);
   const list = here.filter((m) => wanted.has(m));
-  return usable(list) ? JSON.stringify(list) : null;
+  return usable(list) ? JSON.stringify({ on: list, known: MODULES }) : null;
 }
 
 // Every module is on until the owner chooses, as for everyone before modules came.

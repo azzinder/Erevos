@@ -288,6 +288,8 @@ you change them.
   password lock, the spaces, the backups and Settings are always there, whatever is on.
 - **On again:** a module turned on starts at once, and **Permissions** shows what Android should allow for it, as at
   the first start.
+- **New with an update:** a module that comes with an update, as the Collection did with 7, is on, also where you chose
+  the modules before it came, until you turn it off.
 - **The Phone or the SMS off** while Erevos is still the phone app or the SMS app: Android goes on giving Erevos the
   calls or the SMS, kept as before. **Open Default apps** chooses another app.
 - **The Phone alone:** with no module that brings messages on, the home screen says so, with **Phone** and

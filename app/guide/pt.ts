@@ -302,6 +302,8 @@ todos os módulos continuam ativados, como antes, até você mudá-los.
   esteja ativado.
 - **Ativado de novo:** um módulo ativado inicia na hora, e **Permissões** mostra o que o Android deve permitir para
   ele, como no primeiro início.
+- **Novo com uma atualização:** um módulo que chega com uma atualização, como a Coleção com a 7, fica ativado, também
+  onde você escolheu os módulos antes de ele chegar, até você desativá-lo.
 - **O Telefone ou os SMS desativados** enquanto o Erevos ainda é o app de telefone ou o app de SMS: o Android continua
   dando ao Erevos as chamadas ou os SMS, guardados como antes. **Abrir Apps padrão** escolhe outro app.
 - **O Telefone sozinho:** sem nenhum módulo que traga mensagens, a tela inicial avisa, com **Telefone** e **Módulos**.

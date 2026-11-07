@@ -299,6 +299,8 @@ prije, dok ih ne promijenite.
   zaključavanje lozinkom, prostori, rezervne kopije i Postavke uvijek su tu, šta god da je uključeno.
 - **Ponovo uključen:** uključeni modul se odmah pokreće, a **Dozvole** pokazuju šta Android treba dozvoliti za njega,
   kao pri prvom pokretanju.
+- **Novo s ažuriranjem:** modul koji dođe s ažuriranjem, kao Zbirka sa 7, uključen je, i tamo gdje ste module izabrali
+  prije nego je došao, dok ga ne isključite.
 - **Telefon ili SMS isključen** dok je Erevos još aplikacija za telefon ili aplikacija za SMS: Android i dalje daje
   Erevosu pozive ili SMS-ove, sačuvane kao prije. **Otvori zadane aplikacije** bira drugu aplikaciju.
 - **Samo Telefon:** bez ijednog modula koji donosi poruke, početni ekran to kaže, uz **Telefon** i **Moduli**.
