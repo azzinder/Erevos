@@ -163,6 +163,12 @@ export function takeLink(now = Date.now()): string | null {
   return link.href;
 }
 
+/** The first start's setup is done: a link held while it showed (an invite scanned before Erevos
+ *  was ever opened) waits afresh, however long the setup took, so it still opens after it. */
+export function setupKeepsLink(now = Date.now()): void {
+  if (held) held = { href: held.href, at: now };
+}
+
 /** Erevos locks: a link opened just before is held again, to open after the password. */
 export function lockingKeepsLink(now = Date.now()): void {
   if (opened && now - opened.at <= RELOCK_MS && !held) held = { href: opened.href, at: now };

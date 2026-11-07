@@ -12,7 +12,7 @@ import { test } from 'node:test';
 
 import { handOverCall, takeCall } from '../lib/call-handoff';
 import { splitLinks } from '../lib/links';
-import { dropLink, holdLink, hrefLink, ICON_LINK, keepLink, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
+import { dropLink, holdLink, setupKeepsLink, hrefLink, ICON_LINK, keepLink, KEEP_MS, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, peekLink, RELOCK_MS, screenLink, screenParams, smsOnlyLink, SMS_ONLY_SCREENS, ONLY_SCREENS, onlyPartOf, takeLink } from '../lib/open-link';
 
 import { templateFile } from './expo-template';
 
@@ -274,4 +274,13 @@ test('the link that brought Erevos back stays its intent, and Back puts it behin
   // Opened again from the recent apps, the link Erevos first came with is not opened again.
   const icons = readFileSync(join(import.meta.dirname, '../modules/erevos-icons/android/src/main/java/expo/modules/erevosicons/ErevosIconsPackage.kt'), 'utf8');
   assert.match(icons, /FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY\) != 0\) forgetLink\(intent\)/);
+});
+
+test('an invite held through the first start\'s setup still opens after it, however long it took', () => {
+  dropLink();
+  holdLink('erevos://welcome?id=a', 1000);
+  setupKeepsLink(1000 + 3 * KEEP_MS);
+  assert.equal(takeLink(1000 + 3 * KEEP_MS + 10), '/welcome?id=a');
+  setupKeepsLink(5000);
+  assert.equal(takeLink(5000), null, 'nothing held, nothing made up');
 });

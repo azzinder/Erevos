@@ -29,7 +29,7 @@ import { iconNumberOn, onIconNumberChange } from '../lib/icon-number';
 import { startIntegrityAlarm } from '../lib/integrity';
 import { startNearbyLinks } from '../lib/nearby-links';
 import { startSmsWay } from '../lib/sms-way';
-import { dropLink, hrefLink, keepLink, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, takeLink, type OnlyPart } from '../lib/open-link';
+import { dropLink, hrefLink, keepLink, linkHref, linkMove, linkParts, lockingKeepsLink, onLinkHeld, ONLY_SCREENS, onlyPartOf, peekLink, RELOCK_MS, screenLink, screenParams, setupKeepsLink, takeLink, type OnlyPart } from '../lib/open-link';
 import { phoneOpensLocked } from '../lib/phone-open';
 import { forgetHistory } from '../lib/phone-log';
 import { noticeLanguage, noticeSeen } from '../lib/push-notice';
@@ -243,6 +243,8 @@ export default function RootLayout() {
   const setupDone = useCallback(
     async (chosen: Module[]) => {
       await setModules(chosen);
+      // An invite that opened Erevos for the first time opens now, however long the setup took.
+      setupKeepsLink();
       await start();
     },
     [start],
