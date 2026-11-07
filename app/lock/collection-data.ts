@@ -4,7 +4,7 @@
 
 import { bytesSource, eachPiece, FileMissingError, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
 import { randomBytes, sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
-import { listFiles } from '../lib/files';
+import { filesThere } from '../lib/files';
 import { t } from '../lib/i18n';
 
 import { CHUNK_SIZES, PREFIX, chunksHere, cleanFileName, cleanMime, deleteChunks, freeName, isFileRef, readChunk, type FileKind, type FileRef } from './attachment-files';
@@ -643,18 +643,20 @@ export async function fillItemHere(item: CollectionItem, options?: FillOptions):
   return fillMissing(item, options);
 }
 
-/** Of `items`, those whose every chunk is here: from one list of the folder, none read. */
+const chunkNamesOf = (ref: FileRef) => Array.from({ length: ref.count }, (_, n) => `${PREFIX}${ref.id}-${n}`);
+
+/** Of `items`, those whose every chunk is here, none read (lib/files.ts filesThere). */
 export async function itemsWhole(items: CollectionItem[]): Promise<CollectionItem[]> {
-  const here = new Set(await listFiles(PREFIX));
-  return items.filter(({ file }) => Array.from({ length: file.count }, (_, n) => `${PREFIX}${file.id}-${n}`).every((name) => here.has(name)));
+  const names = items.flatMap(({ file }) => chunkNamesOf(file));
+  const here = await filesThere(names, PREFIX);
+  return items.filter(({ file }) => chunkNamesOf(file).every((name) => here.has(name)));
 }
 
 /** How many chunks of `ref` are not here. */
 export async function missingOf(ref: FileRef): Promise<number> {
-  const here = await chunksHere(ref.id);
-  let missing = 0;
-  for (let n = 0; n < ref.count; n++) if (!here.has(n)) missing++;
-  return missing;
+  const names = chunkNamesOf(ref);
+  const here = await filesThere(names, `${PREFIX}${ref.id}-`);
+  return names.length - here.size;
 }
 
 /** A file read a piece at a time, as it is decrypted, for a large one. */

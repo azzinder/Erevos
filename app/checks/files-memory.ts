@@ -30,3 +30,8 @@ export async function deleteFile(name: string): Promise<void> {
   files.delete(name);
   blobs.delete(name);
 }
+
+export async function filesThere(names: readonly string[], prefix: string): Promise<Set<string>> {
+  const all = new Set(await listFiles(prefix));
+  return new Set(names.filter((name) => all.has(name)));
+}

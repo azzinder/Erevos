@@ -112,6 +112,21 @@ export async function listFiles(prefix: string): Promise<string[]> {
   return [...new Set([...memory.keys(), ...blobs.keys()])].filter((name) => name.startsWith(prefix));
 }
 
+/**
+ * Which of `names` are here. On a phone each is looked for on its own, as listing a folder that
+ * holds every chat's and the Collection's chunks takes long; elsewhere from one list of those
+ * starting with `prefix`.
+ */
+export async function filesThere(names: readonly string[], prefix: string): Promise<Set<string>> {
+  const fs = fileSystem();
+  if (fs) {
+    const folder = fs.Paths.document;
+    return new Set(names.filter((name) => new fs.File(folder, name).exists));
+  }
+  const all = new Set(await listFiles(prefix));
+  return new Set(names.filter((name) => all.has(name)));
+}
+
 export async function deleteFile(name: string): Promise<void> {
   const fs = fileSystem();
   if (fs) {

@@ -181,7 +181,10 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   async function play(from: CollectionItem) {
     setPlayNote('');
     if (!DESK && !(await whenHere(from, () => void play(from)))) return;
-    const whole = DESK ? items : await itemsWhole(items).catch(() => [from]);
+    // Only those of its kind are looked at: they are the list.
+    const kind = playKind(from);
+    const same = items.filter((i) => playKind(i) === kind);
+    const whole = DESK ? items : await itemsWhole(same).catch(() => [from]);
     const { list, start: at } = playListOf(whole.some((i) => i.id === from.id) ? whole : [...whole, from], from);
     try {
       await playItems(list, at, playOptions);
