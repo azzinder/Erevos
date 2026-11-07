@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import type { Collection, CollectionFolder, CollectionItem } from '../lock/collection-data';
+import type { Collection, CollectionFolder, CollectionItem, CollectionPlaylist } from '../lock/collection-data';
 
 // How the Collection's screen (app/collection.tsx) lays out what lock/collection-data.ts keeps:
 // what lies in a folder, the photos by month, the files, and what a search finds. Kept apart from
@@ -193,4 +193,22 @@ export function playListOf(items: CollectionItem[], item: CollectionItem): { lis
   if (!kind) return { list: [], start: 0 };
   const list = items.filter((i) => playKind(i) === kind);
   return { list, start: Math.max(0, list.findIndex((i) => i.id === item.id)) };
+}
+
+/** A playlist's music here, in its order: a file deleted, or not come yet from another device, is left out. */
+export function playlistItems(collection: Collection, playlist: CollectionPlaylist): CollectionItem[] {
+  const byId = new Map(collection.items.map((i) => [i.id, i]));
+  return playlist.items.flatMap((id) => {
+    const item = byId.get(id);
+    return item && playKind(item) === 'audio' ? [item] : [];
+  });
+}
+
+/** `ids` with the one at `index` moved `by` places (-1 up, 1 down); as they were at an end. */
+export function moved(ids: string[], index: number, by: number): string[] {
+  const to = index + by;
+  if (index < 0 || index >= ids.length || to < 0 || to >= ids.length) return ids;
+  const next = [...ids];
+  [next[index], next[to]] = [next[to], next[index]];
+  return next;
 }

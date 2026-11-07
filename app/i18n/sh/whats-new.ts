@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":
+    "**Liste za reprodukciju u Muzici Zbirke**: pjesme redom koji izabereš, šifrirane sa Zbirkom, puštene redom ili nasumično. Napravi jednu na vrhu Muzike, i dodaj pjesme iz njihovog menija ili držeći ih. Vidi [Zbirka](#collection).",
   "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":
     "**Titlovi za video snimke iz Zbirke**: datoteka .srt ili .vtt u istom folderu s imenom videa (film.srt, ili film.en.srt) prikazuje se kao njegovi titlovi, a dodir na vrhu ih isključuje ili uključuje. Vidi [Zbirka](#collection).",
   "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":

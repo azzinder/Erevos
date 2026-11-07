@@ -85,10 +85,19 @@ export type Collection = {
   devices?: boolean;
   /** Where a long file (a video, or music of 10 minutes or more) was left, to start there again (lib/collection-play.ts): this device's own. */
   positions?: CollectionPosition[];
+  /** Lists of music and videos to play in an order the owner chose (app/collection.tsx). */
+  playlists?: CollectionPlaylist[];
 };
 
 /** Where file `id` was left, `ms` from its start, and when. */
 export type CollectionPosition = { id: string; ms: number; at: number };
+
+/**
+ * A playlist: its own id that never changes, its name, the ids of its files in the order they play
+ * (a file may be in it once), and when it last changed; deleted, it leaves a mark in `gone`, as a
+ * folder does, so the account's log can carry it.
+ */
+export type CollectionPlaylist = { id: string; name: string; items: string[]; at: number };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
 export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices';
@@ -106,6 +115,9 @@ export const MAX_GONE = 2000;
 export const MAX_FOLDER_NAME = 60;
 /** How many files' places are remembered, the newest. */
 export const MAX_POSITIONS = 500;
+/** How many files a playlist holds at most, and how many playlists a place has. */
+export const MAX_PLAYLIST_ITEMS = 2000;
+export const MAX_PLAYLISTS = 200;
 
 const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 
@@ -168,6 +180,15 @@ function checked(value: unknown): Collection {
   for (const option of OPTIONS) if (v?.[option] === true) on[option] = true;
   const server = serverOf(v?.server);
   const itemIds = new Set(items.map((i) => i.id));
+  const playlists: CollectionPlaylist[] = [];
+  for (const l of Array.isArray(v?.playlists) ? v.playlists : []) {
+    const x = l as Partial<CollectionPlaylist> | null;
+    if (typeof x?.id !== 'string' || !ID.test(x.id) || typeof x.name !== 'string' || !isTime(x.at) || playlists.some((p) => p.id === x.id)) continue;
+    const name = cleanFolderName(x.name);
+    // Its files by id, each once; one not here (yet) stays, as it may come from another device.
+    const ids = Array.isArray(x.items) ? [...new Set(x.items.filter((id): id is string => typeof id === 'string' && ID.test(id)))].slice(0, MAX_PLAYLIST_ITEMS) : [];
+    if (name && playlists.length < MAX_PLAYLISTS) playlists.push({ id: x.id, name, items: ids, at: x.at });
+  }
   const positions: CollectionPosition[] = [];
   for (const p of Array.isArray(v?.positions) ? v.positions : []) {
     const x = p as Partial<CollectionPosition> | null;
@@ -182,6 +203,7 @@ function checked(value: unknown): Collection {
     ...on,
     ...(server ? { server } : {}),
     ...(positions.length > 0 ? { positions: positions.slice(-MAX_POSITIONS) } : {}),
+    ...(playlists.length > 0 ? { playlists } : {}),
   };
 }
 
@@ -394,7 +416,8 @@ export async function deleteItems(place: CollectionPlace, ids: string[], now = D
     if (out.length === 0) return { next: null, result: out };
     const items = c.items.filter((i) => !going.has(i.id));
     const positions = c.positions?.filter((p) => !going.has(p.id));
-    return { next: { ...c, items, gone: marked(c.gone, out.map((i) => i.id), now), ...(positions ? { positions } : {}) }, result: out };
+    const playlists = c.playlists?.map((l) => (l.items.some((id) => going.has(id)) ? { ...l, items: l.items.filter((id) => !going.has(id)), at: now } : l));
+    return { next: { ...c, items, gone: marked(c.gone, out.map((i) => i.id), now), ...(positions ? { positions } : {}), ...(playlists ? { playlists } : {}) }, result: out };
   });
   for (const item of removed) {
     await deleteChunks(item.file.id, item.file.count).catch(() => undefined);
@@ -438,6 +461,73 @@ export function deleteFolder(place: CollectionPlace, id: string, now = Date.now(
       return { ...i, file: { ...i.file, name }, folder: '', at: now };
     });
     return { next: { ...c, items, folders: c.folders.filter((f) => f.id !== id), gone: marked(c.gone, [id], now) }, result: undefined };
+  });
+}
+
+export class NoSuchPlaylistError extends Error {
+  constructor() {
+    super(t('That playlist is not there any more.'));
+  }
+}
+
+const freePlaylistName = (name: string, playlists: CollectionPlaylist[], but = '') => freeName(name, new Set(playlists.filter((l) => l.id !== but).map((l) => l.name)));
+
+/** Makes a playlist, with files `ids` in it if given; a name there is already gets a number. */
+export function addPlaylist(place: CollectionPlace, name: string, ids: string[] = [], now = Date.now()): Promise<CollectionPlaylist> {
+  const clean = cleanFolderName(name);
+  if (!clean) return Promise.reject(new Error('a playlist needs a name'));
+  return change(place, async (c) => {
+    const there = new Set(c.items.map((i) => i.id));
+    const playlists = c.playlists ?? [];
+    if (playlists.length >= MAX_PLAYLISTS) throw new Error(t('There are too many playlists here.'));
+    const made: CollectionPlaylist = { id: newId(), name: freePlaylistName(clean, playlists), items: [...new Set(ids.filter((id) => there.has(id)))].slice(0, MAX_PLAYLIST_ITEMS), at: now };
+    return { next: { ...c, playlists: [...playlists, made] }, result: made };
+  });
+}
+
+export function renamePlaylist(place: CollectionPlace, id: string, name: string, now = Date.now()): Promise<void> {
+  const clean = cleanFolderName(name);
+  return change(place, async (c) => {
+    const playlists = c.playlists ?? [];
+    const list = playlists.find((l) => l.id === id);
+    if (!list || !clean || clean === list.name) return { next: null, result: undefined };
+    return { next: { ...c, playlists: playlists.map((l) => (l.id === id ? { ...l, name: freePlaylistName(clean, playlists, id), at: now } : l)) }, result: undefined };
+  });
+}
+
+/** Deletes a playlist; its files stay in the Collection. */
+export function deletePlaylist(place: CollectionPlace, id: string, now = Date.now()): Promise<void> {
+  return change(place, async (c) => {
+    const playlists = c.playlists ?? [];
+    if (!playlists.some((l) => l.id === id)) return { next: null, result: undefined };
+    const { playlists: _was, ...rest } = c;
+    const left = playlists.filter((l) => l.id !== id);
+    return { next: { ...rest, ...(left.length > 0 ? { playlists: left } : {}), gone: marked(c.gone, [id], now) }, result: undefined };
+  });
+}
+
+/** Adds files to the end of a playlist; one in it already stays where it is. */
+export function addToPlaylist(place: CollectionPlace, id: string, ids: string[], now = Date.now()): Promise<void> {
+  return change(place, async (c) => {
+    const playlists = c.playlists ?? [];
+    const list = playlists.find((l) => l.id === id);
+    if (!list) throw new NoSuchPlaylistError();
+    const there = new Set(c.items.map((i) => i.id));
+    const items = [...new Set([...list.items, ...ids.filter((i) => there.has(i))])].slice(0, MAX_PLAYLIST_ITEMS);
+    if (items.length === list.items.length) return { next: null, result: undefined };
+    return { next: { ...c, playlists: playlists.map((l) => (l.id === id ? { ...l, items, at: now } : l)) }, result: undefined };
+  });
+}
+
+/** A playlist's files, as `ids` says, in that order: to take some out, or move one. */
+export function setPlaylistItems(place: CollectionPlace, id: string, ids: string[], now = Date.now()): Promise<void> {
+  return change(place, async (c) => {
+    const playlists = c.playlists ?? [];
+    const list = playlists.find((l) => l.id === id);
+    if (!list) throw new NoSuchPlaylistError();
+    const items = [...new Set(ids.filter((i) => ID.test(i)))].slice(0, MAX_PLAYLIST_ITEMS);
+    if (items.join() === list.items.join()) return { next: null, result: undefined };
+    return { next: { ...c, playlists: playlists.map((l) => (l.id === id ? { ...l, items, at: now } : l)) }, result: undefined };
   });
 }
 

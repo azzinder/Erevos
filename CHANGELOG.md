@@ -114,6 +114,10 @@ On main, not released yet:
 - **A read of the Collection's music that fails once is tried again** (Playing.kt onPlayerError): where it stopped, once
   for each file, before the player goes to the next file; at the list's last file it used to stop there, with its
   notice still shown.
+- **Playlists in the Collection's Music** (components/collection-playlist.tsx): songs in an order of the owner's, kept
+  in the place's sealed catalogue (lock/collection-data.ts playlists: an id of their own, the files' ids, `at`; a
+  deleted one leaves a mark in `gone`, a deleted file goes from them). Made at the top of Music, filled from a song's
+  menu or the songs chosen, played in order or shuffled by the same player, a song moved up or down or taken out.
 
 ### Under the hood
 

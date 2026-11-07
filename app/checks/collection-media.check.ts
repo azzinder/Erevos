@@ -16,7 +16,22 @@ import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionTo
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
-import { addToCollection, deleteItems, keepPositions, loadCollection, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
+import { moved, playlistItems } from '../lib/collection-view';
+import {
+  addPlaylist,
+  addToCollection,
+  addToPlaylist,
+  deleteItems,
+  deletePlaylist,
+  keepPositions,
+  loadCollection,
+  NoSuchPlaylistError,
+  positionOf,
+  renamePlaylist,
+  setPlaylistItems,
+  type CollectionItem,
+  type CollectionPlace,
+} from '../lock/collection-data';
 import { setCurrentSpace } from '../lock/keys';
 import { blobs, files } from './files-memory';
 
@@ -193,4 +208,44 @@ t('SubRip becomes WebVTT for the page, in any line breaks, and its text is UTF-8
   assert.equal(srtToVtt('WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n'), 'WEBVTT\n\n00:00.000 --> 00:01.000\nHi\n');
   assert.equal(subtitlesText(utf8Encode('Καλημέρα')), 'Καλημέρα');
   assert.equal(subtitlesText(Uint8Array.from([0x63, 0x61, 0x66, 0xe9])), 'café');
+});
+
+t('playlists are kept sealed with the place, in their order, and a deleted one leaves a mark', async () => {
+  const p = place();
+  const a = await addToCollection(p, bytesSource(randomBytes(10)), song);
+  const b = await addToCollection(p, bytesSource(randomBytes(10)), { ...song, name: 'two.mp3' });
+  const c = await addToCollection(p, bytesSource(randomBytes(10)), { ...song, name: 'notes.pdf', mime: 'application/pdf' });
+  const night = await addPlaylist(p, '  Night  ', [b.id, a.id, b.id, 'f'.repeat(32)]);
+  assert.equal(night.name, 'Night');
+  // Each file once, and only files there are.
+  assert.deepEqual(night.items, [b.id, a.id]);
+  const again = await addPlaylist(p, 'Night');
+  assert.notEqual(again.name, 'Night');
+  await addToPlaylist(p, night.id, [a.id, c.id]);
+  await setPlaylistItems(p, night.id, moved([b.id, a.id, c.id], 2, -1));
+  await renamePlaylist(p, night.id, 'Late');
+  let col = await loadCollection(p);
+  const late = col.playlists!.find((l) => l.id === night.id)!;
+  assert.equal(late.name, 'Late');
+  assert.deepEqual(late.items, [b.id, c.id, a.id]);
+  // Only its music plays, in its order.
+  assert.deepEqual(playlistItems(col, late).map((i) => i.id), [b.id, a.id]);
+  // Not readable in what is kept, nor seen with another key.
+  for (const text of files.values()) assert.ok(!text.includes('Late'));
+  assert.equal((await loadCollection(place())).playlists, undefined);
+  // A file deleted goes from its playlists; a playlist deleted leaves a mark, its files stay.
+  await deleteItems(p, [b.id]);
+  await deletePlaylist(p, again.id);
+  col = await loadCollection(p);
+  assert.deepEqual(col.playlists!.map((l) => l.items), [[c.id, a.id]]);
+  assert.ok(col.gone.some((g) => g.id === again.id));
+  assert.equal(col.items.length, 2);
+  await assert.rejects(addToPlaylist(p, again.id, [a.id]), NoSuchPlaylistError);
+});
+
+t('a file moves up or down in its list, and stays at an end', () => {
+  assert.deepEqual(moved(['a', 'b', 'c'], 0, 1), ['b', 'a', 'c']);
+  assert.deepEqual(moved(['a', 'b', 'c'], 2, -1), ['a', 'c', 'b']);
+  assert.deepEqual(moved(['a', 'b', 'c'], 0, -1), ['a', 'b', 'c']);
+  assert.deepEqual(moved(['a', 'b', 'c'], 2, 1), ['a', 'b', 'c']);
 });

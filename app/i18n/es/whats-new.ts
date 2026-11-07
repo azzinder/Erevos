@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":
+    "**Listas de reproducción en la Música de la Colección**: canciones en el orden que eliges, cifradas con la Colección, en orden o en orden aleatorio. Crea una arriba en Música, y añade canciones desde su menú o manteniéndolas pulsadas. Consulta [Colección](#collection).",
   "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":
     "**Subtítulos para los vídeos de la Colección**: un archivo .srt o .vtt en la misma carpeta con el nombre del vídeo (film.srt, o film.en.srt) se muestra como sus subtítulos, y un toque arriba los quita o los pone. Consulta [Colección](#collection).",
   "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":

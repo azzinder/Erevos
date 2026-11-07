@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NowPlayingScreen } from '../components/collection-now-playing';
 import { NowPlaying } from '../components/collection-player';
+import { AddToPlaylistSheet, PlaylistScreen } from '../components/collection-playlist';
 import { CollectionViewer, addedText } from '../components/collection-viewer';
 import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, MusicIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon, VideoIcon } from '../components/icons';
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
@@ -27,6 +28,8 @@ import { keepPrivate } from '../lib/screen-privacy';
 import { SHELL } from '../lib/shell';
 import {
   addFolder,
+  addPlaylist,
+  addToPlaylist,
   deleteFolder,
   deleteItems,
   loadCollection,
@@ -44,7 +47,8 @@ import { useColors, useStyles } from '../theme/context';
 // The Collection: the open space's own photos, files and folders, or a hidden place's own (`hidden`),
 // kept encrypted apart from the chats (lock/collection-data.ts). Tabs across the top: Photos as a
 // grid by month, Videos, Music and the other Files as lists (lib/collection-view.ts tabOf), each with
-// the folders that hold any of its files above it (Files the empty ones too). A tap opens one (components/
+// the folders that hold any of its files above it (Files the empty ones too), and Music its playlists
+// (components/collection-playlist.tsx), which songs chosen or a song's menu are added to. A tap opens one (components/
 // collection-viewer.tsx); held down it starts choosing, to move, send or delete several; + brings
 // in a photo from the camera or a file from the phone (lib/collection-import.ts), and deletes a
 // photo or video picked from the gallery there when the owner chose so. While music of the
@@ -74,7 +78,8 @@ const BUSY_AT_ONCE = Platform.OS !== 'web';
 const MOST_SAVED_OUT = mostSavedOut();
 
 type Tab = FileTab;
-type Naming = { what: 'folder' | 'rename-folder' | 'rename-file'; id: string; text: string } | null;
+// A new playlist's `id` is 'add' when it takes the files being added to a playlist (listing).
+type Naming = { what: 'folder' | 'rename-folder' | 'rename-file' | 'playlist'; id: string; text: string } | null;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
 
@@ -139,6 +144,9 @@ export default function CollectionScreen() {
   const [fresh, setFresh] = useState(0);
   const player = usePlayer();
   const [nowPlaying, setNowPlaying] = useState(false);
+  // The playlist open, by id; and the files being added to a playlist, while its sheet shows.
+  const [openList, setOpenList] = useState<string | null>(null);
+  const [listing, setListing] = useState<string[] | null>(null);
   // The list playing may keep where it got to in this place again, once it is open.
   useEffect(() => placeShown(place), [place]);
   const musicBar = !!player?.active && !player.video;
@@ -217,7 +225,7 @@ export default function CollectionScreen() {
   }, [choosing, searching, folder]);
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (viewing !== null || adding || moving || naming || menu) return false;
+      if (viewing !== null || adding || moving || naming || menu || openList || listing) return false;
       if (choosing || searching || folder) {
         back();
         return true;
@@ -225,7 +233,7 @@ export default function CollectionScreen() {
       return false;
     });
     return () => subscription.remove();
-  }, [back, choosing, searching, folder, viewing, adding, moving, naming, menu]);
+  }, [back, choosing, searching, folder, viewing, adding, moving, naming, menu, openList, listing]);
 
   // Runs a change to the Collection, then reads it again; its failure is said.
   async function change(run: () => Promise<unknown>) {
@@ -318,7 +326,14 @@ export default function CollectionScreen() {
     const { what, id, text } = naming;
     setNaming(null);
     await change(async () => {
-      if (what === 'folder') await addFolder(place, text);
+      if (what === 'playlist') {
+        // Made from Add to a playlist: the files go into it; otherwise it opens, empty.
+        const ids = id === 'add' ? (listing ?? []) : [];
+        setListing(null);
+        setChosen(new Set());
+        const made = await addPlaylist(place, text, ids);
+        if (id !== 'add') setOpenList(made.id);
+      } else if (what === 'folder') await addFolder(place, text);
       else if (what === 'rename-folder') await renameFolder(place, id, text);
       else await renameItem(place, id, text);
     });
@@ -343,6 +358,14 @@ export default function CollectionScreen() {
       const made = await addFolder(place, text);
       await moveItems(place, ids, made.id);
     });
+  }
+
+  async function addToList(id: string) {
+    if (!place || !listing) return;
+    const ids = listing;
+    setListing(null);
+    setChosen(new Set());
+    await change(() => addToPlaylist(place, id, ids));
   }
 
   async function removeFolder(f: CollectionFolder) {
@@ -431,6 +454,38 @@ export default function CollectionScreen() {
               </Text>
               <Text variant="caption" tone="muted">
                 {f.count}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
+      {tab === 'music' && !folder && !searching ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles}>
+          <Pressable
+            onPress={() => (choosing ? undefined : setNaming({ what: 'playlist', id: '', text: '' }))}
+            accessibilityRole="button"
+            accessibilityLabel={t('New playlist')}
+            style={({ pressed }) => [styles.tile, pressed && { opacity: 0.7 }]}
+          >
+            <PlusIcon color={colors.primary} size={22} />
+            <Text variant="label" numberOfLines={1}>
+              {t('New playlist')}
+            </Text>
+          </Pressable>
+          {(there.playlists ?? []).map((l) => (
+            <Pressable
+              key={l.id}
+              onPress={() => (choosing ? undefined : setOpenList(l.id))}
+              accessibilityRole="button"
+              accessibilityLabel={`${l.name}, ${l.items.length}`}
+              style={({ pressed }) => [styles.tile, pressed && { opacity: 0.7 }]}
+            >
+              <MusicIcon color={colors.primary} size={22} />
+              <Text variant="label" numberOfLines={1}>
+                {l.name}
+              </Text>
+              <Text variant="caption" tone="muted">
+                {l.items.length}
               </Text>
             </Pressable>
           ))}
@@ -557,6 +612,11 @@ export default function CollectionScreen() {
           <ActionTile label={t('Move')} onPress={() => setMoving([...chosen])}>
             <MoveIcon color={colors.text} size={22} />
           </ActionTile>
+          {tab === 'music' ? (
+            <ActionTile label={t('Playlist')} onPress={() => setListing([...chosen])}>
+              <MusicIcon color={colors.text} size={22} />
+            </ActionTile>
+          ) : null}
           <ActionTile label={t('Send')} onPress={() => send([...chosen])}>
             <SendIcon color={colors.text} cut={colors.sheet} size={22} />
           </ActionTile>
@@ -602,13 +662,13 @@ export default function CollectionScreen() {
       <Sheet
         visible={naming !== null}
         onClose={() => setNaming(null)}
-        title={naming?.what === 'folder' ? t('New folder') : naming?.what === 'rename-folder' ? t('Rename the folder') : t('Rename')}
+        title={naming?.what === 'playlist' ? t('New playlist') : naming?.what === 'folder' ? t('New folder') : naming?.what === 'rename-folder' ? t('Rename the folder') : t('Rename')}
       >
         <Input
           value={naming?.text ?? ''}
           onChangeText={(text) => setNaming((n) => (n ? { ...n, text } : n))}
-          placeholder={naming?.what === 'rename-file' ? t('Name') : t('Folder name')}
-          accessibilityLabel={naming?.what === 'rename-file' ? t('Name') : t('Folder name')}
+          placeholder={naming?.what === 'playlist' ? t('Playlist name') : naming?.what === 'rename-file' ? t('Name') : t('Folder name')}
+          accessibilityLabel={naming?.what === 'playlist' ? t('Playlist name') : naming?.what === 'rename-file' ? t('Name') : t('Folder name')}
           autoFocus
           maxLength={60}
           onSubmitEditing={() => (naming?.id === 'move' && naming.what === 'folder' ? void newFolderForMove(naming.text) : void saveName())}
@@ -667,6 +727,18 @@ export default function CollectionScreen() {
               }}
               colors={colors}
             />
+            {playKind(menu.item) === 'audio' ? (
+              <AddRow
+                icon={<MusicIcon color={colors.primary} size={22} />}
+                title={t('Add to a playlist')}
+                onPress={() => {
+                  const i = menu.item!;
+                  setMenu(null);
+                  setListing([i.id]);
+                }}
+                colors={colors}
+              />
+            ) : null}
             <AddRow
               icon={<SendIcon color={colors.primary} cut={colors.popover} size={22} />}
               title={t('Send')}
@@ -712,8 +784,26 @@ export default function CollectionScreen() {
         onOpenWith={(item) => void openWith(item)}
         playOptions={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true, place }}
       />
-      <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)}
+      <AddToPlaylistSheet
+        visible={listing !== null && naming === null}
+        playlists={there.playlists ?? []}
+        onPick={(id) => void addToList(id)}
+        onNew={() => setNaming({ what: 'playlist', id: 'add', text: '' })}
+        onClose={() => setListing(null)}
       />
+      <PlaylistScreen
+        playlist={there.playlists?.find((l) => l.id === openList) ?? null}
+        collection={there}
+        place={place}
+        options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
+        onClose={() => setOpenList(null)}
+        onChanged={() => void reload()}
+        onPlaying={() => {
+          setOpenList(null);
+          setNowPlaying(true);
+        }}
+      />
+      <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)} />
     </View>
   );
 }
