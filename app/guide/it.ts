@@ -3288,15 +3288,22 @@ Per collegare un computer:
 
 1. Sul computer, in uno spazio senza chat sue (una nuova installazione, uno spazio aperto da una nuova password, o le
    chat di un computer collegato ripristinate dal suo backup), apri **Impostazioni** → **Dati e dispositivi** →
-   **Dispositivi collegati**. Lì **Collega al mio telefono** viene per primo. Se chiede un relay, quello di LPHL è già
-   inserito: tocca **Accedi con LPHL** per un token tutto del computer, o scrivi un altro relay e il suo token. Dai un
-   nome al dispositivo e tocca **Collega al mio telefono**: solo allora mostra un codice QR.
-2. Sul telefono, scansiona il codice con la fotocamera: Erevos si apre su **Dispositivi collegati** con quel codice.
-   Oppure copia il codice sul computer, incollalo sul telefono sotto **Codice dal computer**, e tocca **Avanti**.
-3. Il telefono mostra il nome del computer e un codice di quattro gruppi di cinque cifre. Scegli quanta cronologia passa
-   (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**), se **Anche foto e file**, poi tocca **Collega**.
-4. Anche il computer mostra un codice. Se è quello del telefono, tocca **Coincidono**. Se no, tocca **Sono diversi**:
-   qualcun altro potrebbe aver letto il suo codice QR, e non gli è arrivato nulla.
+   **Dispositivi collegati**. Lì **Collega al mio telefono** viene per primo e mostra subito un piccolo codice QR: non
+   c’è nulla da scrivere.
+2. Sul telefono, scansiona il codice con la fotocamera: Erevos chiede **Collegare … a questo telefono?** Scegli
+   quanta cronologia passa (**Tutti**, **L’ultimo mese**, **L’ultima settimana** o **Nessuno**), se **Anche foto e
+   file**, poi tocca **Collega**. Tutto qui: il telefono dà al computer ciò che gli serve tramite Nostr, cifrato
+   end-to-end, il computer mostra al telefono il suo codice e i codici di sicurezza si confrontano da soli, quindi non
+   scrivi né confronti nulla.
+3. Se Nostr non è raggiungibile, o il computer non può usare il relay, lo dice. Lì tocca **Collega in un altro modo**:
+   se chiede un relay, quello di LPHL è già inserito, quindi tocca **Accedi con LPHL** per un token tutto del computer,
+   o scrivi un altro relay e il suo token. Dai un nome al dispositivo e tocca **Collega al mio telefono**: mostra allora
+   un codice QR più grande. Scansionalo con il telefono, oppure copia il codice, incollalo sul telefono sotto **Codice
+   dal computer** e tocca **Avanti**. Il telefono mostra il nome del computer e un codice di quattro gruppi di cinque
+   cifre; scegli come sopra e tocca **Collega**.
+4. Solo così il computer mostra anche un codice: se è quello del telefono, tocca **Coincidono**. Se no, tocca **Sono
+   diversi**: qualcun altro potrebbe aver letto il suo codice QR, e non gli è arrivato nulla. Le chat nascoste si
+   collegano solo così, da dentro, con il codice completo.
 
 Le chat arrivano allora sul computer, e dopo di esse i messaggi scelti.
 

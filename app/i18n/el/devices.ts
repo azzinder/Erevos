@@ -161,4 +161,44 @@ export const devices: Record<string, string> = {
   "A device whose Erevos is older cannot hold them: update it there first.": "Μια συσκευή με παλαιότερο Erevos δεν μπορεί να τις κρατήσει: ενημέρωσέ το εκεί πρώτα.",
   "{name} has an older Erevos: update it there first.": "Το {name} έχει παλαιότερο Erevos: ενημέρωσέ το εκεί πρώτα.",
   "The other device could not take the groups: they stay here.": "Η άλλη συσκευή δεν μπόρεσε να πάρει τις ομάδες: μένουν εδώ.",
+
+  // Linking with the short code (components/quick-link.tsx, lib/link-nostr.ts).
+  'Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.':
+    'Μέσα στις κρυφές συνομιλίες, σύνδεσε με τον κωδικό που δείχνει το «Σύνδεση με το τηλέφωνό μου» μέσα στις ίδιες κρυφές συνομιλίες στον υπολογιστή.',
+  '{why} Link this way instead: sign in to the relay below, then tap Link to my phone.':
+    '{why} Σύνδεσε αλλιώς: συνδέσου στο relay παρακάτω και μετά πάτα «Σύνδεση με το τηλέφωνό μου».',
+  'Link another way':
+    'Σύνδεση με άλλον τρόπο',
+  'The phone that answered is not the one that read the code. Make a new code, and link again.':
+    'Το τηλέφωνο που απάντησε δεν είναι αυτό που διάβασε τον κωδικό. Φτιάξε νέο κωδικό και σύνδεσε ξανά.',
+  'The phone answered, but this computer could not use its relay: {error}':
+    'Το τηλέφωνο απάντησε, αλλά αυτός ο υπολογιστής δεν μπόρεσε να χρησιμοποιήσει το relay του: {error}',
+  'The phone answered. Setting up this computer…':
+    'Το τηλέφωνο απάντησε. Ρυθμίζεται αυτός ο υπολογιστής…',
+  'Linking with the phone…':
+    'Σύνδεση με το τηλέφωνο…',
+  'Keep both open for a moment. Nothing has to be typed or compared.':
+    'Κράτα και τα δύο ανοιχτά για λίγο. Δεν χρειάζεται να γράψεις ή να συγκρίνεις τίποτα.',
+  'Scan this with the phone that holds the account, then tap Link on the phone. Nothing else.':
+    'Σάρωσέ το με το τηλέφωνο που έχει τον λογαριασμό και μετά πάτα «Σύνδεση» στο τηλέφωνο. Τίποτα άλλο.',
+  'Making the code…':
+    'Φτιάχνεται ο κωδικός…',
+  'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
+    'Το τηλέφωνο στέλνει σε αυτόν τον υπολογιστή ό,τι χρειάζεται μέσω Nostr, κρυπτογραφημένα από άκρο σε άκρο. Ο κωδικός ισχύει μισή ώρα.',
+  'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
+    'Ο υπολογιστής δεν απάντησε. Σε αυτόν, πάτα «Σύνδεση με άλλον τρόπο», συνδέσου εκεί στο relay και σάρωσε ξανά τον κωδικό του.',
+  'Linked to {name}. The chats go to it now.':
+    'Η συσκευή «{name}» συνδέθηκε. Οι συνομιλίες πηγαίνουν τώρα και εκεί.',
+  'Link {name} to this phone?':
+    'Να συνδεθεί η συσκευή «{name}» με αυτό το τηλέφωνο;',
+  'Link only a computer of yours, whose code you scanned just now. It gets the chats of this space and the messages chosen below.':
+    'Σύνδεσε μόνο υπολογιστή δικό σου, του οποίου τον κωδικό σάρωσες μόλις τώρα. Παίρνει τις συνομιλίες αυτού του χώρου και τα μηνύματα που διαλέγεις παρακάτω.',
+  'Waiting for the computer…':
+    'Αναμονή για τον υπολογιστή…',
+  'No Nostr relay could be reached.':
+    'Δεν ήταν δυνατή η σύνδεση με κανένα relay Nostr.',
+  'The Nostr relay did not take it.':
+    'Το relay Nostr δεν το δέχτηκε.',
+  'No Nostr relay took it.':
+    'Κανένα relay Nostr δεν το δέχτηκε.',
 };

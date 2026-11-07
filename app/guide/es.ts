@@ -3274,15 +3274,22 @@ Para vincular un ordenador:
 
 1. En el ordenador, en un espacio sin chats propios (una instalación nueva, un espacio que abre una contraseña nueva, o
    los chats de un ordenador vinculado restaurados desde su copia), abre **Ajustes** → **Datos y dispositivos** →
-   **Dispositivos vinculados**. Ahí, **Vincular a mi teléfono** aparece primero. Si pide un relay, el de LPHL ya viene
-   rellenado: toca **Iniciar sesión con LPHL** para un token propio del ordenador, o escribe otro relay y su token.
-   Ponle nombre al dispositivo y toca **Vincular a mi teléfono**: solo entonces muestra un código QR.
-2. En el teléfono, escanea el código con la cámara: Erevos se abre en **Dispositivos vinculados** con él. O copia el
-   código en el ordenador, pégalo en el teléfono en **Código del ordenador**, y toca **Siguiente**.
-3. El teléfono muestra el nombre del ordenador y un código de cuatro grupos de cinco dígitos. Elige qué parte del
-   historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**), si **También fotos y archivos**, y luego toca **Vincular**.
-4. El ordenador también muestra un código. Si es el del teléfono, toca **Coinciden**. Si no, toca **No coinciden**:
-   puede que otra persona leyera su código QR, y no le llegó nada.
+   **Dispositivos vinculados**. Ahí, **Vincular a mi teléfono** aparece primero y muestra al instante un código QR
+   pequeño: no hay que escribir nada.
+2. En el teléfono, escanea el código con la cámara: Erevos pregunta **¿Vincular … a este teléfono?** Elige qué
+   parte del historial pasa (**Todos**, **El último mes**, **La última semana** o **Ninguno**), si **También fotos y
+   archivos**, y toca **Vincular**. Eso es todo: el teléfono da al ordenador lo que necesita a través de Nostr, cifrado
+   de extremo a extremo, el ordenador muestra al teléfono su propio código y los códigos de seguridad se comparan solos,
+   así que tú no escribes ni comparas nada.
+3. Si no se llega a Nostr, o el ordenador no puede usar el relay, lo dice. Toca ahí **Vincular de otra forma**: si pide
+   un relay, el de LPHL ya viene rellenado, así que toca **Iniciar sesión con LPHL** para un token propio del
+   ordenador, o escribe otro relay y su token. Ponle nombre al dispositivo y toca **Vincular a mi teléfono**: entonces
+   muestra un código QR más grande. Escanéalo con el teléfono, o copia el código, pégalo en el teléfono en **Código del
+   ordenador** y toca **Siguiente**. El teléfono muestra el nombre del ordenador y un código de cuatro grupos de cinco
+   dígitos; elige como arriba y toca **Vincular**.
+4. Solo así el ordenador muestra también un código: si es el del teléfono, toca **Coinciden**. Si no, toca **No
+   coinciden**: puede que otra persona leyera su código QR, y no le llegó nada. Los chats ocultos se vinculan solo así,
+   desde dentro, con el código completo.
 
 Los chats llegan entonces al ordenador, y tras ellos los mensajes elegidos.
 

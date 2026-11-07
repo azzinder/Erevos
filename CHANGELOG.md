@@ -136,6 +136,13 @@ On main, not released yet:
   words typed, when Search is pressed, with the User-Agent "Erevos" on Android and in the desktop app (a browser's
   page sends the browser's own), as backups' requests go; only stations with an
   https link are offered, and a tap adds one as a link typed would be.
+- **Link a computer with one tap**: on a computer, **Linked devices** → **Link to my phone** now shows a small QR code
+  at once, with nothing to type. The phone scans it with its camera and you tap **Link** once: the phone gives the
+  computer, end-to-end encrypted through Nostr, what it needs, and the computer shows its full code to the phone, which
+  links it; the safety code is compared by the computer on its own, so no **They match** is tapped. If Nostr cannot be
+  reached, or the computer cannot use the relay, the computer says so and **Link another way** keeps the old way (the
+  relay address, signing in with LPHL, comparing the code). Only the space, never hidden chats: they still link with
+  the full code inside them. See [Linked devices](#devices).
 
 ### Under the hood
 
@@ -163,6 +170,14 @@ On main, not released yet:
 - **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
   also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
   now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).
+- **Short link code**: the computer's QR code is erevos://link?n=<its Nostr key>&s=<secret>&name=<name>, small enough
+  for any camera (components/quick-link.tsx, lib/link-quick.ts). The messages between phone and computer are Nostr
+  gift wraps (NIP-59: a rumor sealed to the other's key, wrapped with a one-time key) sent to and read from three
+  relays (relay.damus.io, nos.lol, relay.primal.net; lib/link-nostr.ts), so the relays see neither who nor what. The
+  phone's grant carries its relay address and an invite, from which the computer makes a relay token of its own, or
+  the shared relay token typed into the phone, never the phone's own. The computer then answers with an offer of its
+  full code, the phone links it as with the full code read, and the computer compares the safety code itself. Without
+  Nostr, or where the computer cannot use the relay, the screen falls back to the old way (app/app/devices.tsx).
 
 ## 7.0.0-rc.1 (2026-11-07)
 

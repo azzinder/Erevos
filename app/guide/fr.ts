@@ -3460,18 +3460,22 @@ Pour associer un ordinateur :
 
 1. Sur l’ordinateur, dans un espace sans discussions à lui (une nouvelle installation, un espace qu’ouvre un nouveau mot
    de passe, ou les discussions d’un ordinateur associé restaurées depuis sa sauvegarde), ouvre **Réglages** → **Données
-   et appareils** → **Appareils associés**. Là, **Associer à mon téléphone** vient en premier. S’il demande un relais,
-   celui de LPHL est déjà rempli : appuie sur **Se connecter avec LPHL** pour un jeton propre à l’ordinateur, ou tape un
-   autre relais et son jeton. Nomme l’appareil et appuie sur **Associer à mon téléphone** : alors seulement il affiche
-   un code QR.
-2. Sur le téléphone, scanne le code avec l’appareil photo : Erevos s’ouvre sur **Appareils associés** avec ce code. Ou
-   bien copie le code sur l’ordinateur, colle-le sur le téléphone sous **Code de l’ordinateur**, et appuie sur
-   **Suivant**.
-3. Le téléphone affiche le nom de l’ordinateur et un code de quatre groupes de cinq chiffres. Choisis ce qui part de
-   l’historique (**Tout**, **Le dernier mois**, **La dernière semaine** ou **Aucun**), si **Les photos et fichiers
-   aussi**, puis appuie sur **Associer**.
-4. L’ordinateur affiche aussi un code. Si c’est celui du téléphone, appuie sur **Ils correspondent**. Sinon, appuie sur
-   **Ils sont différents** : quelqu’un d’autre a peut-être lu son code QR, et rien ne lui est parvenu.
+   et appareils** → **Appareils associés**. Là, **Associer à mon téléphone** vient en premier et affiche aussitôt un
+   petit code QR : rien à saisir.
+2. Sur le téléphone, scanne le code avec l’appareil photo : Erevos demande **Associer … à ce téléphone ?** Choisis
+   ce qui part de l’historique (**Tout**, **Le dernier mois**, **La dernière semaine** ou **Aucun**), si **Les photos et
+   fichiers aussi**, puis appuie sur **Associer**. C’est tout : le téléphone donne à l’ordinateur ce qu’il lui faut via
+   Nostr, chiffré de bout en bout, l’ordinateur montre au téléphone son propre code et les codes de sécurité se
+   comparent d’eux-mêmes, donc tu ne saisis ni ne compares rien.
+3. Si Nostr est injoignable, ou si l’ordinateur ne peut pas utiliser le relais, il le dit. Appuie là-bas sur **Associer
+   autrement** : s’il demande un relais, celui de LPHL est déjà rempli, appuie donc sur **Se connecter avec LPHL** pour
+   un jeton propre à l’ordinateur, ou tape un autre relais et son jeton. Nomme l’appareil et appuie sur **Associer à mon
+   téléphone** : il affiche alors un code QR plus grand. Scanne-le avec le téléphone, ou copie le code, colle-le sur le
+   téléphone sous **Code de l’ordinateur** et appuie sur **Suivant**. Le téléphone affiche le nom de l’ordinateur et un
+   code de quatre groupes de cinq chiffres ; choisis comme ci-dessus et appuie sur **Associer**.
+4. Seulement ainsi, l’ordinateur affiche aussi un code : si c’est celui du téléphone, appuie sur **Ils correspondent**.
+   Sinon, appuie sur **Ils sont différents** : quelqu’un d’autre a peut-être lu son code QR, et rien ne lui est
+   parvenu. Les discussions masquées ne s’associent que de cette façon, de l’intérieur, avec le code complet.
 
 Les discussions arrivent alors sur l’ordinateur, et après elles les messages choisis.
 

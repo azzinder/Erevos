@@ -3146,15 +3146,22 @@ Da povežete računar:
 
 1. Na računaru, u prostoru bez vlastitih razgovora (nova instalacija, prostor koji otvara nova lozinka ili razgovori
    povezanog računara vraćeni iz njegove rezervne kopije), otvorite **Postavke** → **Podaci i uređaji** → **Povezani
-   uređaji**. Ondje se **Poveži s mojim telefonom** nalazi na prvom mjestu. Ako traži relay, LPHL-ov je već upisan:
-   dodirnite **Prijava preko LPHL** za vlastiti token računara, ili upišite drugi relay i njegov token. Dajte ime
-   uređaju i dodirnite **Poveži s mojim telefonom**: tek tada prikazuje QR kod.
-2. Na telefonu skenirajte kod kamerom: Erevos se otvara na **Povezani uređaji** s njim. Ili kopirajte kod na
-   računaru, zalijepite ga na telefonu pod **Kod s računara** i dodirnite **Dalje**.
-3. Telefon prikazuje ime računara i kod od četiri grupe po pet cifara. Izaberite koji dio historije ide (**Sve**,
-   **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**), da li **I fotografije i datoteke**, a zatim dodirnite **Poveži**.
-4. I računar prikazuje kod. Ako je isti kao na telefonu, dodirnite **Podudaraju se**. Ako nije, dodirnite **Razlikuju
-   se**: neko drugi je možda pročitao njegov QR kod, a njemu ništa nije otišlo.
+   uređaji**. Ondje se **Poveži s mojim telefonom** nalazi na prvom mjestu i odmah prikazuje mali QR kod: ništa se ne
+   upisuje.
+2. Na telefonu skenirajte kod kamerom: Erevos pita **Poveži … s ovim telefonom?** Izaberite koji dio historije
+   ide (**Sve**, **Posljednji mjesec**, **Posljednja sedmica** ili **Ništa**), da li **I fotografije i datoteke**, pa
+   dodirnite **Poveži**. To je sve: telefon daje računaru ono što mu treba preko Nostra, šifrovano od kraja do kraja,
+   računar telefonu pokazuje vlastiti kod, a sigurnosni kodovi se upoređuju sami, pa vi ništa ne upisujete niti
+   upoređujete.
+3. Ako se Nostr ne može dosegnuti, ili računar ne može koristiti relay, javlja to. Ondje dodirnite **Poveži
+   drugačije**: ako traži relay, LPHL-ov je već upisan, pa dodirnite **Prijava preko LPHL** za vlastiti token računara,
+   ili upišite drugi relay i njegov token. Dajte ime uređaju i dodirnite **Poveži s mojim telefonom**: tada prikazuje
+   veći QR kod. Skenirajte ga telefonom, ili kopirajte kod, zalijepite ga na telefonu pod **Kod s računara** i
+   dodirnite **Dalje**. Telefon prikazuje ime računara i kod od četiri grupe po pet cifara; izaberite kao gore i
+   dodirnite **Poveži**.
+4. Samo tako i računar prikazuje kod: ako je isti kao na telefonu, dodirnite **Podudaraju se**. Ako nije, dodirnite
+   **Razlikuju se**: neko drugi je možda pročitao njegov QR kod, a njemu ništa nije otišlo. Skriveni razgovori povezuju
+   se samo tako, iznutra, s punim kodom.
 
 Razgovori tada stižu na računar, a nakon njih i izabrane poruke.
 

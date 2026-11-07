@@ -162,4 +162,44 @@ export const devices: Record<string, string> = {
   "A device whose Erevos is older cannot hold them: update it there first.": "Ein Gerät mit älterem Erevos kann sie nicht halten: Aktualisiere es dort zuerst.",
   "{name} has an older Erevos: update it there first.": "{name} hat ein älteres Erevos: Aktualisiere es dort zuerst.",
   "The other device could not take the groups: they stay here.": "Das andere Gerät konnte die Gruppen nicht übernehmen: Sie bleiben hier.",
+
+  // Linking with the short code (components/quick-link.tsx, lib/link-nostr.ts).
+  'Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.':
+    'In versteckten Chats verknüpfst du mit dem Code, den „Mit meinem Telefon verknüpfen“ in denselben versteckten Chats auf dem Computer zeigt.',
+  '{why} Link this way instead: sign in to the relay below, then tap Link to my phone.':
+    '{why} Verknüpfe stattdessen so: Melde dich unten am Relay an und tippe dann auf „Mit meinem Telefon verknüpfen“.',
+  'Link another way':
+    'Anders verknüpfen',
+  'The phone that answered is not the one that read the code. Make a new code, and link again.':
+    'Das Telefon, das geantwortet hat, ist nicht das, das den Code gelesen hat. Erzeuge einen neuen Code und verknüpfe erneut.',
+  'The phone answered, but this computer could not use its relay: {error}':
+    'Das Telefon hat geantwortet, aber dieser Computer konnte sein Relay nicht nutzen: {error}',
+  'The phone answered. Setting up this computer…':
+    'Das Telefon hat geantwortet. Dieser Computer wird eingerichtet…',
+  'Linking with the phone…':
+    'Verknüpfen mit dem Telefon…',
+  'Keep both open for a moment. Nothing has to be typed or compared.':
+    'Lass beide noch einen Moment geöffnet. Es muss nichts eingetippt oder verglichen werden.',
+  'Scan this with the phone that holds the account, then tap Link on the phone. Nothing else.':
+    'Scanne das mit dem Telefon, das das Konto hat, und tippe dann am Telefon auf „Verknüpfen“. Sonst nichts.',
+  'Making the code…':
+    'Code wird erzeugt…',
+  'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
+    'Das Telefon schickt diesem Computer über Nostr, Ende-zu-Ende-verschlüsselt, was er braucht. Der Code gilt eine halbe Stunde.',
+  'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
+    'Der Computer hat nicht geantwortet. Tippe dort auf „Anders verknüpfen“, melde dich dort am Relay an und scanne dann seinen Code erneut.',
+  'Linked to {name}. The chats go to it now.':
+    'Mit {name} verknüpft. Die Chats gehen jetzt dorthin.',
+  'Link {name} to this phone?':
+    '{name} mit diesem Telefon verknüpfen?',
+  'Link only a computer of yours, whose code you scanned just now. It gets the chats of this space and the messages chosen below.':
+    'Verknüpfe nur einen eigenen Computer, dessen Code du gerade eben gescannt hast. Er bekommt die Chats dieses Bereichs und die unten gewählten Nachrichten.',
+  'Waiting for the computer…':
+    'Warte auf den Computer…',
+  'No Nostr relay could be reached.':
+    'Es war kein Nostr-Relay erreichbar.',
+  'The Nostr relay did not take it.':
+    'Das Nostr-Relay hat es nicht angenommen.',
+  'No Nostr relay took it.':
+    'Kein Nostr-Relay hat es angenommen.',
 };

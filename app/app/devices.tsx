@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Pressable, Share, View } from 'react-native';
 
 import { QrCode } from '../components/QrCode';
+import { QuickFromComputer, QuickToPhone } from '../components/quick-link';
 import { RelaySignIn } from '../components/relay-signin';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Text, TextButton, Toggle } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -15,6 +16,8 @@ import { tap } from '../lib/haptics';
 import { enterHiddenScreen, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { mark, t } from '../lib/i18n';
 import { checkLinkCode, linkCodeLink } from '../lib/link-code';
+import { canQuickLink } from '../lib/link-nostr';
+import { checkQuick, type QuickCode } from '../lib/link-quick';
 import { matrixWaiting } from '../lib/linked-accounts';
 import { createQueue, toHex } from '../lib/relay';
 import { ownToken } from '../lib/relay-signin';
@@ -79,7 +82,7 @@ export default function Devices() {
 /** Linked devices of the open space, or of the open hidden chats (`hidden`). */
 export function LinkedDevices({ hidden }: { hidden: boolean }) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ key?: string; id?: string; relay?: string; rk?: string; s?: string; name?: string }>();
+  const params = useLocalSearchParams<{ key?: string; id?: string; relay?: string; rk?: string; s?: string; name?: string; n?: string }>();
   const hiddenOpen = useOpenHiddenPlace();
   const place = hidden ? hiddenOpen : null;
   const [links, setLinks] = useState<Links | null>(null);
@@ -97,6 +100,10 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   // On the phone: the code read or pasted, what it asks, and what of the history goes.
   const [pasted, setPasted] = useState('');
   const [asked, setAsked] = useState<{ name: string; code: string } | null>(null);
+  // On the phone: a computer's short code read (lib/link-quick.ts); on a computer: the way before
+  // it, with the relay typed, chosen or fallen back to.
+  const [quick, setQuick] = useState<QuickCode | null>(null);
+  const [another, setAnother] = useState(false);
   const [period, setPeriod] = useState<Period>('all');
   const [files, setFiles] = useState(true);
   const [again, setAgain] = useState<string | null>(null);
@@ -153,6 +160,15 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
     if (!links || !opened) return;
     void read(linkCodeLink(opened));
   }, [links, params.key]);
+
+  // A computer's short code: the space's only, as hidden chats link with the full code.
+  useEffect(() => {
+    if (!links || params.key !== undefined) return;
+    const short = checkQuick(params.n, params.s, params.name ?? '');
+    if (!short) return;
+    if (place) setNote(t('Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.'));
+    else setQuick(short);
+  }, [links, params.n]);
 
   async function run(work: () => Promise<void>) {
     setBusy(true);
@@ -218,6 +234,22 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
       setOffer(null);
       setNote(t('Linked. The chats come from the phone, and with them the messages it chose to bring over.'));
     });
+
+  // On a computer linking with the short code: the code to compare came from the phone itself.
+  const quickConfirm = async (code: string) => {
+    if (!links) return;
+    await links.confirm(code);
+    setOffer(null);
+    setNote(t('Linked. The chats come from the phone, and with them the messages it chose to bring over.'));
+    refresh(links);
+  };
+
+  // On a computer: back to the way before, with why, and the phone's relay when one came.
+  const quickFallback = (why: string, relay?: string) => {
+    setAnother(true);
+    if (relay) setRelayUrl(relay);
+    setNote(t('{why} Link this way instead: sign in to the relay below, then tap Link to my phone.', { why }));
+  };
 
   const differ = () =>
     run(async () => {
@@ -364,10 +396,16 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
   ) : null;
 
   // On a computer: a relay queue of its own if it has none, then the code for the phone.
+  const quickHere = ON_COMPUTER && !place && !another && links !== null && canQuickLink();
   const toPhone = role === null && !asked ? (
     <Card>
       <Text variant="heading">{t('Link to my phone')}</Text>
-      {answer ? (
+      {quickHere && links ? (
+        <>
+          <QuickToPhone links={links} name={name} answer={answer} confirm={quickConfirm} fallback={quickFallback} onNote={setNote} />
+          <TextButton title={t('Link another way')} onPress={() => setAnother(true)} />
+        </>
+      ) : answer ? (
         <>
           <Text tone="muted">{t('The phone read the code. Does it show this one too?')}</Text>
           <Text variant="mono" selectable style={{ fontSize: 20 }}>
@@ -563,6 +601,20 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
             )}
       </Text>
 
+      {quick && links && !asked ? (
+        <QuickFromComputer
+          links={links}
+          code={quick}
+          history={() => ({ since: sinceOf(period), files })}
+          choosing={choosing}
+          done={() => {
+            setQuick(null);
+            refresh(links);
+          }}
+          onNote={setNote}
+        />
+      ) : null}
+
       {asked ? (
         <Card>
           <Text variant="heading">{t('Link {name}', { name: asked.name || t('Computer') })}</Text>
@@ -612,8 +664,8 @@ export function LinkedDevices({ hidden }: { hidden: boolean }) {
 
       {sharing}
 
-      {ON_COMPUTER ? toPhone : fromComputer}
-      {ON_COMPUTER ? fromComputer : toPhone}
+      {quick ? null : ON_COMPUTER ? toPhone : fromComputer}
+      {quick ? null : ON_COMPUTER ? fromComputer : toPhone}
 
       {note ? <Text tone="muted">{note}</Text> : null}
     </Page>

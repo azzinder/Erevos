@@ -43,6 +43,7 @@ export const NEXT: Changes = {
     mark("**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection)."),
     mark("**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection)."),
     mark("**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection)."),
+    mark("**Link a computer with one tap**: on the computer, **Linked devices** now shows a small code at once. Scan it with the phone and tap **Link**: the phone gives the computer what it needs through Nostr, end-to-end encrypted, and nothing has to be typed or compared. If Nostr cannot be reached, **Link another way** keeps the old way. See [Linked devices](#devices)."),
   ],
   underTheHood: [
     mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),

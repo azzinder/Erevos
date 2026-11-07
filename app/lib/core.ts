@@ -261,6 +261,14 @@ export function nostrCore(): Required<
   };
 }
 
+/** The core's Nostr keys and wraps alone, without Tor: what linking with the short code needs
+ *  (lib/link-nostr.ts), on a computer too. Null in a build without them. */
+export function nostrKeys(): Required<Pick<Core, 'nostrSecret' | 'nostrPublic' | 'nostrWrap' | 'nostrUnwrap'>> | null {
+  const it = core;
+  if (!it?.nostrSecret || !it.nostrPublic || !it.nostrWrap || !it.nostrUnwrap) return null;
+  return { nostrSecret: it.nostrSecret.bind(it), nostrPublic: it.nostrPublic.bind(it), nostrWrap: it.nostrWrap.bind(it), nostrUnwrap: it.nostrUnwrap.bind(it) };
+}
+
 /** Whether this build can encrypt for Matrix accounts (lib/matrix.ts). */
 export function canMatrix(): boolean {
   return typeof core?.matrix === 'function';

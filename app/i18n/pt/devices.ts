@@ -166,4 +166,44 @@ export const devices: Record<string, string> = {
   "A device whose Erevos is older cannot hold them: update it there first.": "Um dispositivo com um Erevos mais antigo não pode guardá-los: atualize-o lá primeiro.",
   "{name} has an older Erevos: update it there first.": "{name} tem um Erevos mais antigo: atualize-o lá primeiro.",
   "The other device could not take the groups: they stay here.": "O outro dispositivo não conseguiu receber os grupos: eles ficam aqui.",
+
+  // Linking with the short code (components/quick-link.tsx, lib/link-nostr.ts).
+  'Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.':
+    'Dentro das conversas ocultas, conecte com o código que “Conectar ao meu celular” mostra dentro das mesmas conversas ocultas no computador.',
+  '{why} Link this way instead: sign in to the relay below, then tap Link to my phone.':
+    '{why} Conecte de outro jeito: entre no relay abaixo e depois toque em “Conectar ao meu celular”.',
+  'Link another way':
+    'Conectar de outro jeito',
+  'The phone that answered is not the one that read the code. Make a new code, and link again.':
+    'O celular que respondeu não é o que leu o código. Crie um código novo e conecte de novo.',
+  'The phone answered, but this computer could not use its relay: {error}':
+    'O celular respondeu, mas este computador não conseguiu usar o relay dele: {error}',
+  'The phone answered. Setting up this computer…':
+    'O celular respondeu. Configurando este computador…',
+  'Linking with the phone…':
+    'Conectando com o celular…',
+  'Keep both open for a moment. Nothing has to be typed or compared.':
+    'Deixe os dois abertos por um momento. Não é preciso digitar nem comparar nada.',
+  'Scan this with the phone that holds the account, then tap Link on the phone. Nothing else.':
+    'Escaneie isto com o celular que tem a conta e depois toque em “Conectar” no celular. Só isso.',
+  'Making the code…':
+    'Criando o código…',
+  'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
+    'O celular envia a este computador o que ele precisa pelo Nostr, criptografado de ponta a ponta. O código vale meia hora.',
+  'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
+    'O computador não respondeu. Nele, toque em “Conectar de outro jeito”, entre lá no relay e escaneie o código dele de novo.',
+  'Linked to {name}. The chats go to it now.':
+    'Conectado a {name}. As conversas vão para ele agora.',
+  'Link {name} to this phone?':
+    'Conectar {name} a este celular?',
+  'Link only a computer of yours, whose code you scanned just now. It gets the chats of this space and the messages chosen below.':
+    'Conecte só um computador seu, cujo código você acabou de escanear. Ele recebe as conversas deste espaço e as mensagens escolhidas abaixo.',
+  'Waiting for the computer…':
+    'Esperando o computador…',
+  'No Nostr relay could be reached.':
+    'Não foi possível alcançar nenhum relay Nostr.',
+  'The Nostr relay did not take it.':
+    'O relay Nostr não aceitou.',
+  'No Nostr relay took it.':
+    'Nenhum relay Nostr aceitou.',
 };

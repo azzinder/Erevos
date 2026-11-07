@@ -3486,15 +3486,22 @@ So verknüpfst du einen Computer:
 1. Öffne auf dem Computer, in einem Bereich ohne eigene Chats (eine neue Installation, ein Bereich, den ein neues
    Passwort öffnet, oder die aus seinem Backup wiederhergestellten Chats eines verknüpften Computers),
    **Einstellungen** → **Daten und Geräte** → **Verknüpfte Geräte**. Dort steht **Mit meinem Telefon verknüpfen** an
-   erster Stelle. Wenn nach einem Relay gefragt wird, ist das von LPHL schon eingetragen: Tippe auf **Mit LPHL
+   erster Stelle und zeigt sofort einen kleinen QR-Code: Es ist nichts einzutippen.
+2. Scanne den Code auf dem Telefon mit der Kamera: Erevos fragt **… mit diesem Telefon verknüpfen?** Wähle, was
+   vom Verlauf übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**), ob **Auch Fotos
+   und Dateien**, und tippe dann auf **Verknüpfen**. Das ist alles: Das Telefon gibt dem Computer über Nostr,
+   Ende-zu-Ende-verschlüsselt, was er braucht, der Computer zeigt dem Telefon seinen eigenen Code, und die
+   Sicherheitscodes werden von selbst verglichen. Du tippst und vergleichst also nichts.
+3. Ist Nostr nicht erreichbar oder kann der Computer das Relay nicht nutzen, sagt er es. Tippe dort auf **Anders
+   verknüpfen**: Wenn nach einem Relay gefragt wird, ist das von LPHL schon eingetragen. Tippe auf **Mit LPHL
    anmelden** für ein eigenes Token des Computers, oder trage ein anderes Relay und sein Token ein. Benenne das Gerät
-   und tippe auf **Mit meinem Telefon verknüpfen**: Erst dann zeigt es einen QR-Code.
-2. Scanne den Code auf dem Telefon mit der Kamera: Erevos öffnet sich damit bei **Verknüpfte Geräte**. Oder kopiere
-   den Code auf dem Computer, füge ihn auf dem Telefon unter **Code vom Computer** ein und tippe auf **Weiter**.
-3. Das Telefon zeigt den Namen des Computers und einen Code aus vier Gruppen von fünf Ziffern. Wähle, was vom Verlauf
-   übertragen wird (**Alle**, **Den letzten Monat**, **Die letzte Woche** oder **Keine**), ob **Auch Fotos und Dateien**, und tippe dann auf **Verknüpfen**.
-4. Der Computer zeigt auch einen Code. Wenn es der des Telefons ist, tippe auf **Stimmen überein**. Wenn nicht, tippe
-   auf **Stimmen nicht überein**: Jemand anderes hat vielleicht seinen QR-Code gelesen, und nichts ist an ihn gegangen.
+   und tippe auf **Mit meinem Telefon verknüpfen**: Dann zeigt es einen größeren QR-Code. Scanne ihn mit dem Telefon,
+   oder kopiere den Code, füge ihn auf dem Telefon unter **Code vom Computer** ein und tippe auf **Weiter**. Das
+   Telefon zeigt den Namen des Computers und einen Code aus vier Gruppen von fünf Ziffern; wähle wie oben und tippe auf
+   **Verknüpfen**.
+4. Nur so zeigt auch der Computer einen Code: Wenn es der des Telefons ist, tippe auf **Stimmen überein**. Wenn nicht,
+   tippe auf **Stimmen nicht überein**: Jemand anderes hat vielleicht seinen QR-Code gelesen, und nichts ist an ihn
+   gegangen. Versteckte Chats werden nur so verknüpft, von innen, mit dem vollständigen Code.
 
 Die Chats kommen dann auf den Computer, und nach ihnen die gewählten Nachrichten.
 

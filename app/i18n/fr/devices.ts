@@ -163,4 +163,44 @@ export const devices: Record<string, string> = {
   "A device whose Erevos is older cannot hold them: update it there first.": "Un appareil avec un Erevos plus ancien ne peut pas les garder : mets-le d’abord à jour.",
   "{name} has an older Erevos: update it there first.": "{name} a un Erevos plus ancien : mets-le d’abord à jour.",
   "The other device could not take the groups: they stay here.": "L’autre appareil n’a pas pu prendre les groupes : ils restent ici.",
+
+  // Linking with the short code (components/quick-link.tsx, lib/link-nostr.ts).
+  'Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.':
+    'Dans les discussions masquées, associe avec le code que « Associer à mon téléphone » affiche dans les mêmes discussions masquées sur l’ordinateur.',
+  '{why} Link this way instead: sign in to the relay below, then tap Link to my phone.':
+    '{why} Associe autrement : connecte-toi au relay ci-dessous, puis touche « Associer à mon téléphone ».',
+  'Link another way':
+    'Associer autrement',
+  'The phone that answered is not the one that read the code. Make a new code, and link again.':
+    'Le téléphone qui a répondu n’est pas celui qui a lu le code. Fais un nouveau code et associe à nouveau.',
+  'The phone answered, but this computer could not use its relay: {error}':
+    'Le téléphone a répondu, mais cet ordinateur n’a pas pu utiliser son relay : {error}',
+  'The phone answered. Setting up this computer…':
+    'Le téléphone a répondu. Configuration de cet ordinateur…',
+  'Linking with the phone…':
+    'Association avec le téléphone…',
+  'Keep both open for a moment. Nothing has to be typed or compared.':
+    'Garde les deux ouverts un instant. Il n’y a rien à saisir ni à comparer.',
+  'Scan this with the phone that holds the account, then tap Link on the phone. Nothing else.':
+    'Scanne ceci avec le téléphone qui a le compte, puis touche « Associer » sur le téléphone. Rien d’autre.',
+  'Making the code…':
+    'Création du code…',
+  'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
+    'Le téléphone envoie à cet ordinateur ce dont il a besoin via Nostr, chiffré de bout en bout. Le code fonctionne une demi-heure.',
+  'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
+    'L’ordinateur n’a pas répondu. Sur lui, touche « Associer autrement », connecte-toi au relay là-bas, puis scanne à nouveau son code.',
+  'Linked to {name}. The chats go to it now.':
+    'Associé à {name}. Les discussions vont maintenant vers lui.',
+  'Link {name} to this phone?':
+    'Associer {name} à ce téléphone ?',
+  'Link only a computer of yours, whose code you scanned just now. It gets the chats of this space and the messages chosen below.':
+    'N’associe qu’un ordinateur à toi, dont tu viens de scanner le code. Il reçoit les discussions de cet espace et les messages choisis ci-dessous.',
+  'Waiting for the computer…':
+    'En attente de l’ordinateur…',
+  'No Nostr relay could be reached.':
+    'Aucun relay Nostr n’a pu être joint.',
+  'The Nostr relay did not take it.':
+    'Le relay Nostr ne l’a pas accepté.',
+  'No Nostr relay took it.':
+    'Aucun relay Nostr ne l’a accepté.',
 };

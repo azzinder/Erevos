@@ -85,6 +85,31 @@ Linking, by QR code and a safety check:
 4. Once the codes match and **They match** is tapped on the computer, it answers, and only then does
    the phone send its contacts and the history chosen.
 
+With the short code, the same, with nothing typed or compared (`lib/link-quick.ts`,
+`lib/link-nostr.ts`, `components/quick-link.tsx`), for the space only; hidden chats link as above,
+from inside them:
+
+1. A computer, even one with no relay yet, shows at once a small QR code,
+   `erevos://link?n=<Nostr key>&s=<secret>&name=<name>`: the public key of a Nostr key made for this
+   link alone, a one-time secret and its name, about 140 characters where the full code is some
+   2000. It reads for that key on three public Nostr relays.
+2. The phone's camera opens it in Erevos, which asks **Link {name} to this phone?**. On **Link**
+   the phone sends the computer, in a Nostr wrap (NIP-59, as Erevos's texts on Nostr go), its relay
+   and an invite to it for a token of the computer's own (or, where the phone cannot invite, the
+   relay's token for all typed in it, never a token of the phone's own), and a key of its own made
+   for the answer.
+3. The computer takes the invite, makes its queue on that relay, and sends back its full code, the
+   one step 1 above shows. The phone links it as with that code read, then sends the safety code
+   it shows. The computer compares it with the one the phone's first message gave, and takes the
+   link when they match.
+
+Each wrap is signed by a key made for it alone, so the relays see only that someone wrote to a key
+that names no one, and each carries the secret, so only whoever read the code is answered. What the
+safety check guarded against, someone who photographed the code answering first, is guarded by
+time instead: they would have to read it and answer before the phone, and the phone would then say
+the link failed. Should no Nostr relay be reached, or the computer not be able to use the relay, it
+goes back to the way above, with the phone's relay filled in and LPHL's sign-in.
+
 ### The device list
 
 Once the codes match, the computer also makes a key of its own, its **endpoint** (a core account
@@ -460,6 +485,8 @@ have it sign a list of places only, or one dated a day later, once (docs/multi-d
 ## Where it is in the code
 
 - `lib/link-code.ts`: the QR code's link, and the safety code.
+- `lib/link-quick.ts`, `lib/link-nostr.ts`, `components/quick-link.tsx`: the short code, and the
+  two sides talking through Nostr until the link is made.
 - `lib/link-wire.ts`: what goes between the devices, and which messages are passed on.
 - `lib/device-list.ts`: the device list, signed by the account and checked against its bundle.
 - `lib/endpoints.ts`: the ways to the endpoints of a contact's account, and what goes to them.

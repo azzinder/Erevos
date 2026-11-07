@@ -166,4 +166,44 @@ export const devices: Record<string, string> = {
   "A device whose Erevos is older cannot hold them: update it there first.": "Uređaj sa starijim Erevosom ne može ih držati: prvo ga ondje ažuriraj.",
   "{name} has an older Erevos: update it there first.": "{name} ima stariji Erevos: prvo ga ondje ažuriraj.",
   "The other device could not take the groups: they stay here.": "Drugi uređaj nije mogao preuzeti grupe: ostaju ovdje.",
+
+  // Linking with the short code (components/quick-link.tsx, lib/link-nostr.ts).
+  'Inside hidden chats, link with the code Link to my phone shows inside the same hidden chats on the computer.':
+    'Unutar skrivenih razgovora poveži kodom koji „Poveži s mojim telefonom“ prikazuje unutar istih skrivenih razgovora na računaru.',
+  '{why} Link this way instead: sign in to the relay below, then tap Link to my phone.':
+    '{why} Poveži drugačije: prijavi se na relay ispod, pa dodirni „Poveži s mojim telefonom“.',
+  'Link another way':
+    'Poveži drugačije',
+  'The phone that answered is not the one that read the code. Make a new code, and link again.':
+    'Telefon koji je odgovorio nije onaj koji je pročitao kod. Napravi novi kod i poveži ponovo.',
+  'The phone answered, but this computer could not use its relay: {error}':
+    'Telefon je odgovorio, ali ovaj računar nije mogao koristiti njegov relay: {error}',
+  'The phone answered. Setting up this computer…':
+    'Telefon je odgovorio. Podešava se ovaj računar…',
+  'Linking with the phone…':
+    'Povezivanje s telefonom…',
+  'Keep both open for a moment. Nothing has to be typed or compared.':
+    'Ostavi oba otvorena još malo. Ništa se ne mora ukucavati ni upoređivati.',
+  'Scan this with the phone that holds the account, then tap Link on the phone. Nothing else.':
+    'Skeniraj ovo telefonom koji ima nalog, pa dodirni „Poveži“ na telefonu. Ništa više.',
+  'Making the code…':
+    'Pravi se kod…',
+  'The phone sends this computer what it needs through Nostr, end-to-end encrypted. The code works for half an hour.':
+    'Telefon šalje ovom računaru ono što mu treba preko Nostra, šifrovano od kraja do kraja. Kod važi pola sata.',
+  'The computer did not answer. On it, tap Link another way and sign in to the relay there, then scan its code again.':
+    'Računar nije odgovorio. Na njemu dodirni „Poveži drugačije“, tamo se prijavi na relay i ponovo skeniraj njegov kod.',
+  'Linked to {name}. The chats go to it now.':
+    'Povezano s uređajem {name}. Razgovori sada idu tamo.',
+  'Link {name} to this phone?':
+    'Poveži {name} s ovim telefonom?',
+  'Link only a computer of yours, whose code you scanned just now. It gets the chats of this space and the messages chosen below.':
+    'Povezuj samo svoj računar, čiji si kod upravo skenirao. Dobija razgovore ovog prostora i poruke izabrane ispod.',
+  'Waiting for the computer…':
+    'Čeka se računar…',
+  'No Nostr relay could be reached.':
+    'Nijedan Nostr relay nije bio dostupan.',
+  'The Nostr relay did not take it.':
+    'Nostr relay ga nije prihvatio.',
+  'No Nostr relay took it.':
+    'Nijedan Nostr relay ga nije prihvatio.',
 };

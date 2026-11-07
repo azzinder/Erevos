@@ -3251,15 +3251,22 @@ Para conectar um computador:
 
 1. No computador, num espaço sem conversas próprias (uma instalação nova, um espaço que uma senha nova abre, ou as
    conversas de um computador conectado restauradas do backup dele), abra **Configurações** → **Dados e
-   dispositivos** → **Dispositivos conectados**. Ali, **Conectar ao meu celular** vem primeiro. Se ele pedir um relay, o
-   do LPHL já vem preenchido: toque em **Entrar com LPHL** para um token próprio do computador, ou digite outro relay e
-   o token dele. Dê um nome ao dispositivo e toque em **Conectar ao meu celular**: só então ele mostra um código QR.
-2. No celular, escaneie o código com a câmera: o Erevos abre em **Dispositivos conectados** com ele. Ou copie o código
-   no computador, cole-o no celular em **Código do computador** e toque em **Avançar**.
-3. O celular mostra o nome do computador e um código de quatro grupos de cinco dígitos. Escolha o que do histórico vai
-   (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos também**, depois toque em **Conectar**.
-4. O computador também mostra um código. Se for o do celular, toque em **São iguais**. Se não, toque em **São
-   diferentes**: outra pessoa pode ter lido o código QR dele, e nada foi para ela.
+   dispositivos** → **Dispositivos conectados**. Ali, **Conectar ao meu celular** vem primeiro e mostra na hora um
+   pequeno código QR: não há nada para digitar.
+2. No celular, escaneie o código com a câmera: o Erevos pergunta **Conectar … a este celular?** Escolha o que do
+   histórico vai (**Todas**, **Do último mês**, **Da última semana** ou **Nenhuma**) e se vão **Fotos e arquivos
+   também**, depois toque em **Conectar**. É só isso: o celular dá ao computador o que ele precisa pelo Nostr,
+   criptografado de ponta a ponta, o computador mostra ao celular o próprio código e os códigos de segurança são
+   comparados sozinhos, então você não digita nem compara nada.
+3. Se o Nostr não puder ser alcançado, ou o computador não puder usar o relay, ele avisa. Ali toque em **Conectar de
+   outro jeito**: se ele pedir um relay, o do LPHL já vem preenchido, então toque em **Entrar com LPHL** para um token
+   próprio do computador, ou digite outro relay e o token dele. Dê um nome ao dispositivo e toque em **Conectar ao meu
+   celular**: ele mostra então um código QR maior. Escaneie-o com o celular, ou copie o código, cole-o no celular em
+   **Código do computador** e toque em **Avançar**. O celular mostra o nome do computador e um código de quatro grupos
+   de cinco dígitos; escolha como acima e toque em **Conectar**.
+4. Só assim o computador mostra também um código: se for o do celular, toque em **São iguais**. Se não, toque em **São
+   diferentes**: outra pessoa pode ter lido o código QR dele, e nada foi para ela. As conversas ocultas se conectam só
+   assim, por dentro delas, com o código completo.
 
 Então as conversas chegam ao computador, e depois delas as mensagens escolhidas.
 

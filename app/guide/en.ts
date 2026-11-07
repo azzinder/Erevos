@@ -3008,15 +3008,20 @@ To link a computer:
 
 1. On the computer, in a space with no chats of its own (a new install, a space a new password opens, or a linked
    computer's chats restored from its backup), open **Settings** → **Data and devices** → **Linked devices**. There
-   **Link to my phone** comes first. If it asks for a relay, LPHL's is filled in: tap **Sign in with LPHL** for a token
-   of the computer's own, or type another relay and its token. Name the device and tap **Link to my phone**: only then
-   does it show a QR code.
-2. On the phone, scan the code with the camera: Erevos opens on **Linked devices** with it. Or copy the code on the
-   computer, paste it on the phone under **Code from the computer**, and tap **Next**.
-3. The phone shows the computer's name and a code of four groups of five digits. Choose what of the history goes
-   (**All of it**, **The last month**, **The last week** or **None**), whether **Photos and files too**, then tap **Link**.
-4. The computer shows a code too. If it is the phone's, tap **They match**. If not, tap **They differ**: someone else
-   may have read its QR code, and nothing went to them.
+   **Link to my phone** comes first, and shows a small QR code at once: nothing to type.
+2. On the phone, scan the code with the camera: Erevos asks **Link … to this phone?** Choose what of the history
+   goes (**All of it**, **The last month**, **The last week** or **None**), whether **Photos and files too**, then tap
+   **Link**. That is all: the phone gives the computer what it needs through Nostr, end-to-end encrypted, and the
+   computer shows its own code to the phone and the safety codes are compared on their own, so nothing is typed or
+   compared by you.
+3. If Nostr cannot be reached, or the computer cannot use the relay, it says so. Tap **Link another way** there: if it
+   asks for a relay, LPHL's is filled in, so tap **Sign in with LPHL** for a token of the computer's own, or type
+   another relay and its token. Name the device and tap **Link to my phone**: it then shows a larger QR code. Scan it
+   with the phone, or copy the code, paste it on the phone under **Code from the computer** and tap **Next**. The phone
+   shows the computer's name and a code of four groups of five digits; choose as above and tap **Link**.
+4. Only in that way does the computer show a code too: if it is the phone's, tap **They match**. If not, tap **They
+   differ**: someone else may have read its QR code, and nothing went to them. Hidden chats link only this way, from
+   inside them, with the full code.
 
 The chats then come to the computer, and after them the messages chosen.
 
