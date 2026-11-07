@@ -633,11 +633,12 @@ token, bez ikakvog upisivanja u Erevosu.
 
 - **Da se prijavite:** upišite adresu relaya pod **Relay**. Kad relay to nudi, ispod polja **Token** prikazuje se
   **Prijava preko LPHL**. Dodirnite to: preglednik otvara stranicu za prijavu, gdje upisujete svoje ime i lozinku,
-  koje Erevos nikad ne vidi. Stranica relaya zatim prikazuje šest cifara. Natrag u Erevosu, koji vas odmah stavlja u
-  **Kôd sa stranice**, upišite ih tamo i dodirnite **Završi prijavu**: telefon čuva svoj token s adresom relaya samo u
-  ovom prostoru i pravi vaš red na relayu. Kôd upisujte samo u Erevos na vlastitom telefonu i nikome ga ne dajte, čak
-  ni ako vas pitaju: ko god ga upiše, koristi relay kao vi. Nakon 5 pogrešnih kodova prijava je gotova: prijavite se
-  ponovo. Erevos otvara samo stranicu za prijavu na vlastitoj adresi relaya, preko https-a.
+  koje Erevos nikad ne vidi. Stranica relaya zatim prikazuje šest cifara. Na Androidu tamo dodirnite **Otvorite
+  Erevos** i Erevos sam završava prijavu; inače ih upišite kako je opisano niže. Natrag u Erevosu, koji vas odmah
+  stavlja u **Kôd sa stranice**, upišite ih tamo i dodirnite **Završi prijavu**: telefon čuva svoj token s adresom
+  relaya samo u ovom prostoru i pravi vaš red na relayu. Kôd upisujte samo u Erevos na vlastitom telefonu i nikome ga
+  ne dajte, čak ni ako vas pitaju: ko god ga upiše, koristi relay kao vi. Nakon 5 pogrešnih kodova prijava je gotova:
+  prijavite se ponovo. Erevos otvara samo stranicu za prijavu na vlastitoj adresi relaya, preko https-a.
 - **Ponovna prijava** na istom telefonu zamjenjuje njegov red na relayu, ako je njegov token onaj koji je dobio od tog
   relaya. Svaki telefon dobija vlastiti red, najviše 10 za jedan nalog.
 - **Šta vide relay i LPHL:** relay red telefona imenuje po vašem korisničkom imenu (\`lphl:nekten\`), a svakog sata pita
@@ -651,7 +652,9 @@ token, bez ikakvog upisivanja u Erevosu.
 pošalje toj osobi ne donosi ništa: kôd vidi samo onaj ko se prijavio, a pet pogrešnih završava prijavu. Erevos otvara
 stranicu za prijavu samo na vlastitoj adresi relaya, preko https-a, pa ništa što odgovara umjesto relaya ne može vas
 poslati na stranicu negdje drugdje. A pružalac usluge koji se neko vrijeme ne može pitati ne isključuje odmah nijedan
-telefon: to čine tek 3 dana bez valjanog odgovora.
+telefon: to čine tek 3 dana bez valjanog odgovora. A dugme **Otvorite Erevos** je jednako sigurno: link sadrži samo
+šest cifara, koje bez tajne koju ima samo telefon koji je pokrenuo prijavu ne traže ništa, pa aplikacija koja bi
+uhvatila link ne dobija ništa.
 
 ### Vlastiti ključ relaya
 

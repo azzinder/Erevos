@@ -3,14 +3,14 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Linking, View } from 'react-native';
+import { AppState, Linking, Platform, View } from 'react-native';
 
 import { WayCard } from './connect-cards';
 import { PersonSign } from './shortcut-tile';
 import { Button, Field, Input, Row, Text, TextButton } from './ui';
 import { plural, t } from '../lib/i18n';
 import { claimSignIn, signInOffer } from '../lib/relay';
-import { endSignIn, oldToken, pendingSignIn, signInLink, startSignIn, type SignIn } from '../lib/relay-signin';
+import { endSignIn, oldToken, onSignInCode, pendingSignIn, signInLink, startSignIn, type SignIn } from '../lib/relay-signin';
 import { currentSpace } from '../lock/keys';
 import { loadCurrentSpaceData } from '../lock/space-data';
 
@@ -72,7 +72,7 @@ export function RelaySignIn({
     setCode('');
   }
 
-  async function finish() {
+  async function finish(given = code) {
     const signIn = pendingSignIn(space, url);
     if (!signIn) {
       stop();
@@ -85,7 +85,7 @@ export function RelaySignIn({
     try {
       // The token is named as this phone's before only when this phone got it from this relay.
       const old = oldToken(url, token, (await loadCurrentSpaceData()).ownToken);
-      const got = await claimSignIn(url, signIn.claim, code, old);
+      const got = await claimSignIn(url, signIn.claim, given, old);
       if (!got) {
         onNote(t('Nothing to finish yet: first sign in on the page the browser opened, then type the code it shows.'));
       } else if ('wrong' in got) {
@@ -108,6 +108,17 @@ export function RelaySignIn({
     }
   }
 
+  // The code the relay's page handed back with its button (app/signin.tsx): finished at once, nothing typed.
+  const finishNow = useRef(finish);
+  finishNow.current = finish;
+  useEffect(() => {
+    if (!waiting) return;
+    return onSignInCode((given) => {
+      setCode(given);
+      void finishNow.current(given);
+    });
+  }, [waiting]);
+
   // Back from the browser, the field for the code takes the focus.
   useEffect(() => {
     if (!waiting) return;
@@ -123,7 +134,8 @@ export function RelaySignIn({
     setWaiting(signIn);
     setCode('');
     try {
-      await Linking.openURL(signInLink(offer.start, signIn));
+      // On a phone, the relay's page then has a button that brings the code back here.
+      await Linking.openURL(signInLink(offer.start, signIn, Platform.OS === 'android'));
     } catch (error) {
       stop();
       onNote(errorText(error));
@@ -134,7 +146,11 @@ export function RelaySignIn({
 
   const finishing = waiting ? (
     <>
-      <Text>{t('Sign in on the page the browser opened. It then shows a code: type it here.')}</Text>
+      <Text>
+        {Platform.OS === 'android'
+          ? t('Sign in on the page the browser opened, then tap Open Erevos there. If nothing opens, type here the code it shows.')
+          : t('Sign in on the page the browser opened. It then shows a code: type it here.')}
+      </Text>
       <Field label={t('Code from the page')}>
         <Input
           key={back}

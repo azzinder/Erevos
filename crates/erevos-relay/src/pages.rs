@@ -63,6 +63,10 @@ pub struct Words {
     pub user: &'static str,
     pub type_code: &'static str,
     pub only: &'static str,
+    /// The button that takes the code back to Erevos on this phone, when it started the sign-in so.
+    pub open_app: &'static str,
+    /// Below it: what to do when the button opens nothing.
+    pub or_type: &'static str,
     pub refused: &'static str,
     pub gone: &'static str,
     pub failed: &'static str,
@@ -89,6 +93,8 @@ const EN: Words = Words {
     user: "You signed in to {name} as {user}.",
     type_code: "Type this code in Erevos, where you tapped Sign in with {name}:",
     only: "Type it only in Erevos on your own phone. Give it to no one, even if they ask: whoever types it uses this relay as you.",
+    open_app: "Open Erevos",
+    or_type: "If Erevos does not open, type this code in it, where you tapped Sign in with {name}:",
     refused: "{name} let you in, but this account may not use this relay. Ask whoever runs it.",
     gone: "This sign-in is no longer good. Start again in Erevos.",
     failed: "The sign-in did not work: {name} could not be reached, or did not let it through. Start again in Erevos.",
@@ -102,6 +108,8 @@ const EL: Words = Words {
     user: "Συνδέθηκες στο {name} ως {user}.",
     type_code: "Γράψε αυτόν τον αριθμό στο Erevos, εκεί που πάτησες «Σύνδεση με {name}»:",
     only: "Γράψ' τον μόνο στο Erevos του δικού σου τηλεφώνου. Μην τον δώσεις σε κανέναν, ακόμα κι αν σου τον ζητήσει: όποιος τον γράψει χρησιμοποιεί αυτό το relay ως εσύ.",
+    open_app: "Άνοιγμα του Erevos",
+    or_type: "Αν δεν ανοίξει το Erevos, γράψε σε αυτό αυτόν τον αριθμό, εκεί που πάτησες «Σύνδεση με {name}»:",
     refused: "Το {name} σε άφησε να μπεις, αλλά αυτός ο λογαριασμός δεν μπορεί να χρησιμοποιεί αυτό το relay. Ρώτα όποιον το τρέχει.",
     gone: "Αυτή η σύνδεση δεν ισχύει πια. Ξεκίνα ξανά από το Erevos.",
     failed: "Η σύνδεση δεν έγινε: το {name} δεν απάντησε ή δεν την επέτρεψε. Ξεκίνα ξανά από το Erevos.",
@@ -115,6 +123,8 @@ const DE: Words = Words {
     user: "Du hast dich bei {name} als {user} angemeldet.",
     type_code: "Gib diesen Code in Erevos ein, wo du auf „Mit {name} anmelden“ getippt hast:",
     only: "Gib ihn nur in Erevos auf deinem eigenen Telefon ein. Gib ihn niemandem, auch wenn jemand danach fragt: Wer ihn eingibt, nutzt dieses Relay als du.",
+    open_app: "Erevos öffnen",
+    or_type: "Wenn sich Erevos nicht öffnet, gib diesen Code dort ein, wo du auf „Mit {name} anmelden“ getippt hast:",
     refused: "{name} hat dich angemeldet, aber dieses Konto darf dieses Relay nicht nutzen. Frag, wer es betreibt.",
     gone: "Diese Anmeldung gilt nicht mehr. Fang in Erevos neu an.",
     failed: "Die Anmeldung hat nicht geklappt: {name} war nicht erreichbar oder hat sie nicht zugelassen. Fang in Erevos neu an.",
@@ -128,6 +138,8 @@ const ES: Words = Words {
     user: "Iniciaste sesión en {name} como {user}.",
     type_code: "Escribe este código en Erevos, donde tocaste «Iniciar sesión con {name}»:",
     only: "Escríbelo solo en Erevos en tu propio teléfono. No se lo des a nadie, aunque te lo pida: quien lo escriba usa este relay como tú.",
+    open_app: "Abrir Erevos",
+    or_type: "Si Erevos no se abre, escribe este código en él, donde tocaste «Iniciar sesión con {name}»:",
     refused: "{name} te dejó entrar, pero esta cuenta no puede usar este relay. Pregunta a quien lo gestiona.",
     gone: "Este inicio de sesión ya no vale. Empieza de nuevo en Erevos.",
     failed: "El inicio de sesión no funcionó: no se pudo contactar con {name}, o no lo permitió. Empieza de nuevo en Erevos.",
@@ -141,6 +153,8 @@ const FR: Words = Words {
     user: "Connexion à {name} réussie, en tant que {user}.",
     type_code: "Tape ce code dans Erevos, là où tu as touché « Se connecter avec {name} » :",
     only: "Tape-le seulement dans Erevos sur ton propre téléphone. Ne le donne à personne, même si on te le demande : qui le tape utilise ce relais en ton nom.",
+    open_app: "Ouvrir Erevos",
+    or_type: "Si Erevos ne s’ouvre pas, tape ce code dedans, là où tu as touché « Se connecter avec {name} » :",
     refused: "{name} a accepté la connexion, mais ce compte ne peut pas utiliser ce relais. Demande à la personne qui le gère.",
     gone: "Cette connexion n’est plus valable. Recommence dans Erevos.",
     failed: "La connexion n’a pas marché : {name} était injoignable ou ne l’a pas autorisée. Recommence dans Erevos.",
@@ -154,6 +168,8 @@ const IT: Words = Words {
     user: "Hai fatto l’accesso a {name} come {user}.",
     type_code: "Scrivi questo codice in Erevos, dove hai toccato «Accedi con {name}»:",
     only: "Scrivilo solo in Erevos sul tuo telefono. Non darlo a nessuno, anche se te lo chiede: chi lo scrive usa questo relay a nome tuo.",
+    open_app: "Apri Erevos",
+    or_type: "Se Erevos non si apre, scrivi questo codice lì dove hai toccato «Accedi con {name}»:",
     refused: "{name} ha accettato l’accesso, ma questo account non può usare questo relay. Chiedi a chi lo gestisce.",
     gone: "Questo accesso non vale più. Ricomincia da Erevos.",
     failed: "L’accesso non è riuscito: {name} non era raggiungibile o non l’ha permesso. Ricomincia da Erevos.",
@@ -167,6 +183,8 @@ const PT: Words = Words {
     user: "Você entrou no {name} como {user}.",
     type_code: "Digite este código no Erevos, onde você tocou em “Entrar com {name}”:",
     only: "Digite só no Erevos do seu próprio celular. Não passe para ninguém, mesmo que peçam: quem digitar usa este relay como você.",
+    open_app: "Abrir o Erevos",
+    or_type: "Se o Erevos não abrir, digite este código nele, onde você tocou em “Entrar com {name}”:",
     refused: "O {name} deixou você entrar, mas esta conta não pode usar este relay. Pergunte a quem cuida dele.",
     gone: "Este login não vale mais. Comece de novo no Erevos.",
     failed: "O login não deu certo: não foi possível falar com {name}, ou ele não permitiu. Comece de novo no Erevos.",
@@ -180,6 +198,8 @@ const SH: Words = Words {
     user: "Prijavili ste se na {name} kao {user}.",
     type_code: "Upišite ovaj kôd u Erevos, tamo gdje ste dodirnuli „Prijava preko {name}“:",
     only: "Upišite ga samo u Erevos na svom telefonu. Ne dajte ga nikome, čak ni ako ga traži: ko ga upiše, koristi ovaj relay kao vi.",
+    open_app: "Otvorite Erevos",
+    or_type: "Ako se Erevos ne otvori, upišite ovaj kôd u njega, tamo gdje ste dodirnuli „Prijava preko {name}“:",
     refused: "{name} vas je prijavio, ali ovaj račun ne smije koristiti ovaj relay. Pitajte onoga ko ga vodi.",
     gone: "Ova prijava više ne važi. Počnite ponovo u Erevosu.",
     failed: "Prijava nije uspjela: {name} nije bio dostupan ili je nije dopustio. Počnite ponovo u Erevosu.",
@@ -212,7 +232,7 @@ pub fn fill(text: &str, user: &str, name: &str) -> String {
 pub fn page(lang: Lang, inner: &str) -> String {
     let words = words(lang);
     format!(
-        "<!doctype html><html lang=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{}</title><style>body{{font:17px/1.5 system-ui,sans-serif;max-width:32rem;margin:2rem auto;padding:0 1rem;color:#1d1d1f;background:#fff}}@media(prefers-color-scheme:dark){{body{{color:#eee;background:#141414}}}}.code{{font:600 2.2rem ui-monospace,monospace;letter-spacing:.08em;margin:1rem 0}}button{{font:inherit;padding:.6rem 1.6rem;border-radius:.5rem}}</style></head><body><h1>{}</h1>{inner}</body></html>",
+        "<!doctype html><html lang=\"{}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{}</title><style>body{{font:17px/1.5 system-ui,sans-serif;max-width:32rem;margin:2rem auto;padding:0 1rem;color:#1d1d1f;background:#fff}}@media(prefers-color-scheme:dark){{body{{color:#eee;background:#141414}}}}.code{{font:600 2.2rem ui-monospace,monospace;letter-spacing:.08em;margin:1rem 0}}button{{font:inherit;padding:.6rem 1.6rem;border-radius:.5rem}}.open{{display:inline-block;font-weight:600;padding:.8rem 1.8rem;border-radius:.6rem;background:#c62828;color:#fff;text-decoration:none}}</style></head><body><h1>{}</h1>{inner}</body></html>",
         words.code,
         escape(words.title),
         escape(words.title)
@@ -226,6 +246,31 @@ pub fn message(lang: Lang, text: &str, name: &str) -> String {
 
 /// The page for a sign-in as `user`: the `code` to type in Erevos, and to
 /// give no one else.
+/// The code's page for a phone that started the sign-in in Erevos (`to=app`): a button that hands
+/// `digits` back to Erevos on this phone, erevos://signin?code=, with the code to type below it in
+/// case nothing opens. Only the six digits go in the link: they claim nothing without the claim
+/// secret, which only the phone that started holds, so an app that took the link gets nothing.
+pub fn code_to_app(lang: Lang, user: &str, name: &str, code: &str, digits: &str) -> String {
+    let words = words(lang);
+    let link = if digits.len() == 6 && digits.bytes().all(|b| b.is_ascii_digit()) {
+        format!("erevos://signin?code={digits}")
+    } else {
+        String::new()
+    };
+    page(
+        lang,
+        &format!(
+            "<p>{}</p><p><a class=\"open\" href=\"{}\">{}</a></p><p>{}</p><p class=\"code\">{}</p><p>{}</p>",
+            fill(words.user, user, name),
+            escape(&link),
+            escape(words.open_app),
+            fill(words.or_type, user, name),
+            escape(code),
+            fill(words.only, user, name)
+        ),
+    )
+}
+
 pub fn code(lang: Lang, user: &str, name: &str, code: &str) -> String {
     let words = words(lang);
     page(
@@ -253,6 +298,17 @@ mod tests {
         assert_eq!(lang("el;q=0, fr"), Lang::Fr);
         assert_eq!(lang(""), Lang::En);
         assert_eq!(lang("ja"), Lang::En);
+    }
+
+    #[test]
+    fn the_page_for_a_phone_hands_only_the_six_digits_back_to_erevos() {
+        let page = code_to_app(Lang::El, "me", "LPHL", "123 456", "123456");
+        assert!(page.contains("href=\"erevos://signin?code=123456\""));
+        assert!(page.contains("Άνοιγμα του Erevos"));
+        assert!(page.contains("<p class=\"code\">123 456</p>"));
+        assert!(!page.contains("<script"));
+        // Anything but six digits gives no link.
+        assert!(code_to_app(Lang::En, "me", "LPHL", "x", "12\"><b").contains("href=\"\""));
     }
 
     #[test]

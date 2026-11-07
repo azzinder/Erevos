@@ -72,6 +72,12 @@ On main, not released yet:
   HostApduService for D2760000850101, only unlocked; lib/nfc-share.ts). The other phone needs no app open: Android
   opens the https link, in Erevos through its App Links. Never in the background, never the long link, and over after
   ten minutes if Erevos never lets go. Adds the NFC permission.
+- **Sign in with LPHL without typing a code**: on Android the phone opens the relay's sign-in with `&to=app`, and the
+  page with the code then has an **Open Erevos** button, erevos://signin?code=<six digits> (crates/erevos-relay
+  signin.rs, pages.rs code_to_app); app/signin.tsx hands the code to the sign-in under way (lib/relay-signin.ts
+  offerSignInCode), which claims with it at once. The digits claim nothing without the claim secret, which never leaves
+  the phone that started, so an app that took the link gets nothing; the code to type stays on the page. Needs the
+  relay updated; an older relay ignores `to=app`.
 
 ### Under the hood
 

@@ -8,7 +8,8 @@
 // address the browser opens, so whatever sees that address cannot claim anything with it. Once
 // signed in, the relay's page shows a code of its own making, which is typed here: a sign-in
 // someone else did in their browser, with a link they sent, gives this phone nothing, as only they
-// see its code. Which token this phone got as its own from a relay is kept too (OwnToken), so a
+// see its code. On a phone the page also has a button that hands the code back here, so nothing is
+// typed (offerSignInCode). Which token this phone got as its own from a relay is kept too (OwnToken), so a
 // token typed in, or another relay's, is never named in a claim. Self-contained but for lib/crypto
 // and lib/relay-host, so it runs under plain Node for checks.
 
@@ -73,9 +74,39 @@ export function isSignInPage(url: string, start: string): boolean {
   return /^https:/i.test(start) || isLoopback(host);
 }
 
-/** The address the browser opens: the relay's page `start`, with the claim's SHA-256. */
-export function signInLink(start: string, signIn: SignIn): string {
-  return `${start}${start.includes('?') ? '&' : '?'}claim=${signIn.hash}`;
+/** The address the browser opens: the relay's page `start`, with the claim's SHA-256; `toApp` on a
+ *  phone, whose code page then has a button that brings the code back here (erevos://signin). */
+export function signInLink(start: string, signIn: SignIn, toApp = false): string {
+  return `${start}${start.includes('?') ? '&' : '?'}claim=${signIn.hash}${toApp ? '&to=app' : ''}`;
+}
+
+// The code the relay's page handed back to Erevos with its button (app/signin.tsx), for the sign-in
+// under way: it claims nothing without the claim secret, kept above. Given to whichever sign-in
+// shows (components/relay-signin.tsx), or held a moment for one that shows next.
+const CODE_HELD = 60 * 1000;
+let heldCode: { code: string; at: number } | null = null;
+const codeListeners = new Set<(code: string) => void>();
+
+/** A code from the relay's page, six digits; anything else is let go. */
+export function offerSignInCode(code: string, now = Date.now()): void {
+  if (!/^\d{6}$/.test(code)) return;
+  if (codeListeners.size > 0) {
+    heldCode = null;
+    for (const listener of [...codeListeners]) listener(code);
+  } else {
+    heldCode = { code, at: now };
+  }
+}
+
+/** Calls `listener` with each code from the relay's page, starting with one held a moment ago. Returns how to stop. */
+export function onSignInCode(listener: (code: string) => void, now = Date.now()): () => void {
+  codeListeners.add(listener);
+  const held = heldCode;
+  heldCode = null;
+  if (held && now - held.at < CODE_HELD) listener(held.code);
+  return () => {
+    codeListeners.delete(listener);
+  };
 }
 
 /** What to keep of `token`, which this phone got as its own from the relay at `url`. */

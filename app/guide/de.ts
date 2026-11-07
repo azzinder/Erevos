@@ -689,14 +689,15 @@ die Anfragen deines Telefons nie im Klartext durch das Internet schicken kann.
 Ein Relay kann Telefone sich mit einem Konto anmelden lassen, dem sein Betreiber vertraut, etwa LPHL, für ein eigenes
 Token, ohne dass in Erevos etwas einzutippen ist.
 
-- **Anmelden:** Gib die Adresse des Relays unter **Relay** ein. Wenn das Relay es anbietet, erscheint
-  **Mit LPHL anmelden** unter dem **Token**. Tippe darauf: Der Browser öffnet die Anmeldeseite, auf der du deinen Namen
-  und dein Passwort eingibst, die Erevos nie sieht. Die Seite des Relays zeigt dann sechs Ziffern. Zurück in Erevos,
-  das dich direkt in **Code von der Seite** setzt, gib sie dort ein und tippe auf **Anmeldung abschließen**: Das
-  Telefon bewahrt sein Token mit der Adresse des Relays nur in diesem Bereich auf und legt dort deine Warteschlange an.
-  Gib den Code nur in Erevos auf deinem eigenen Telefon ein und gib ihn niemandem, auch nicht auf Nachfrage: Wer ihn
-  eingibt, nutzt das Relay als du. Nach 5 falschen Codes ist die Anmeldung vorbei: Melde dich noch mal an. Erevos
-  öffnet nur eine Anmeldeseite auf der eigenen Adresse des Relays, über https.
+- **Anmelden:** Gib die Adresse des Relays unter **Relay** ein. Wenn das Relay es anbietet, erscheint **Mit LPHL
+  anmelden** unter dem **Token**. Tippe darauf: Der Browser öffnet die Anmeldeseite, auf der du deinen Namen und dein
+  Passwort eingibst, die Erevos nie sieht. Die Seite des Relays zeigt dann sechs Ziffern. Auf Android tippst du dort
+  auf **Erevos öffnen**, und Erevos schließt die Anmeldung selbst ab; sonst gib sie ein, wie unten beschrieben. Zurück
+  in Erevos, das dich direkt in **Code von der Seite** setzt, gib sie dort ein und tippe auf **Anmeldung
+  abschließen**: Das Telefon bewahrt sein Token mit der Adresse des Relays nur in diesem Bereich auf und legt dort
+  deine Warteschlange an. Gib den Code nur in Erevos auf deinem eigenen Telefon ein und gib ihn niemandem, auch nicht
+  auf Nachfrage: Wer ihn eingibt, nutzt das Relay als du. Nach 5 falschen Codes ist die Anmeldung vorbei: Melde dich
+  noch mal an. Erevos öffnet nur eine Anmeldeseite auf der eigenen Adresse des Relays, über https.
 - **Eine erneute Anmeldung** auf demselben Telefon ersetzt seine Zeile auf dem Relay, wenn sein Token das ist, das es
   von diesem Relay bekommen hat. Jedes Telefon bekommt eine eigene Zeile, höchstens 10 für ein Konto.
 - **Was das Relay und LPHL sehen:** Das Relay benennt die Zeile des Telefons nach deinem Benutzernamen
@@ -711,7 +712,10 @@ Token, ohne dass in Erevos etwas einzutippen ist.
 den dir jemand anderes schickt, diesem nichts: Nur wer sich angemeldet hat, sieht den Code, und fünf falsche beenden
 die Anmeldung. Erevos öffnet eine Anmeldeseite nur auf der eigenen Adresse des Relays, über https, also kann nichts,
 das an Stelle des Relays antwortet, dich auf eine Seite anderswo schicken. Und ein Anbieter, der eine Weile nicht
-gefragt werden kann, sperrt kein Telefon sofort aus: Das tun erst 3 Tage ohne gültige Antwort.
+gefragt werden kann, sperrt kein Telefon sofort aus: Das tun erst 3 Tage ohne gültige Antwort. Und die Schaltfläche
+**Erevos öffnen** ist genauso sicher: Der Link enthält nur die sechs Ziffern, die ohne das Geheimnis, das nur das
+Telefon hat, das die Anmeldung begonnen hat, nichts beanspruchen, also bekommt eine App, die den Link abgefangen hat,
+nichts.
 
 ### Der eigene Schlüssel des Relays
 

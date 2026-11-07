@@ -20,7 +20,7 @@ import { after, before, test } from 'node:test';
 
 import { ready, relayNote, startRelay } from './real-relay';
 import { claimSignIn, createQueue, RelaySession, signInOffer } from '../lib/relay';
-import { endSignIn, isSignInPage, NO_OWN_TOKEN, oldToken, ownToken, pendingSignIn, signInLink, startSignIn } from '../lib/relay-signin';
+import { NO_OWN_TOKEN, endSignIn, isSignInPage, offerSignInCode, oldToken, onSignInCode, ownToken, pendingSignIn, signInLink, startSignIn } from '../lib/relay-signin';
 
 relayNote('the relay sign-in checks');
 
@@ -272,4 +272,24 @@ test('a relay whose sign-in page is on another host offers none', { skip: !ready
     EREVOS_RELAY_PUBLIC_URL: 'https://login.example.com',
   });
   assert.equal(await signInOffer(relay), null);
+});
+
+test('on a phone the relay page brings the code back, six digits only, to the sign-in that shows or the next one', () => {
+  const start = 'https://relay.example.org/signin/start';
+  const signIn = startSignIn(9, 'wss://relay.example.org', 1000);
+  assert.ok(signInLink(start, signIn, true).endsWith(`claim=${signIn.hash}&to=app`));
+  assert.ok(!signInLink(start, signIn).includes('to=app'));
+  const got: string[] = [];
+  // Held a moment for a sign-in that shows next, never longer.
+  offerSignInCode('123456', 1000);
+  const stop = onSignInCode((code) => got.push(code), 2000);
+  assert.deepEqual(got, ['123456']);
+  offerSignInCode('12345');
+  offerSignInCode('12a456');
+  offerSignInCode('654321');
+  assert.deepEqual(got, ['123456', '654321']);
+  stop();
+  offerSignInCode('111111', 5000);
+  assert.deepEqual(onSignInCode(() => assert.fail('too late'), 5000 + 61_000) !== undefined, true);
+  endSignIn(9);
 });

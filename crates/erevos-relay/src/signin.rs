@@ -15,6 +15,10 @@
 //!    code of six random digits, to type in Erevos. A start link someone else
 //!    made for their own claim gets them nothing: the code is on the page of
 //!    whoever signed in, and `MAX_TRIES` wrong ones end the sign-in.
+//!    A phone that started with `&to=app` gets a button on that page too,
+//!    `erevos://signin?code=<the six digits>`, so a tap takes the code back to
+//!    Erevos instead of typing it: the digits alone claim nothing without the
+//!    claim secret, which never leaves the phone that started.
 //! 3. Back in Erevos, the person types the code, and the phone gives it with
 //!    the claim secret and the SHA-256 of a token it made, on the `/join` path
 //!    (`CLAIM`, see `server.rs`). The relay adds a line for it to the file of
@@ -141,6 +145,8 @@ struct Flow {
     verifier: String,
     nonce: String,
     made: u64,
+    /// Started in Erevos on a phone (`to=app`): the code's page has a button back to it.
+    app: bool,
 }
 
 /// A sign-in the provider let through, waiting for the phone to claim it with
@@ -412,6 +418,7 @@ impl SignIn {
                     verifier,
                     nonce: nonce.clone(),
                     made: now,
+                    app: query.get("to").is_some_and(|to| to == "app"),
                 },
             );
         }
@@ -499,15 +506,15 @@ impl SignIn {
             );
         }
         let shown = String::from_utf8_lossy(&code);
+        let spaced = format!("{} {}", &shown[..3], &shown[3..]);
         Page {
             status: 200,
             location: None,
-            body: pages::code(
-                lang,
-                &user,
-                self.name(),
-                &format!("{} {}", &shown[..3], &shown[3..]),
-            ),
+            body: if flow.app {
+                pages::code_to_app(lang, &user, self.name(), &spaced, &shown)
+            } else {
+                pages::code(lang, &user, self.name(), &spaced)
+            },
         }
     }
 
@@ -1814,6 +1821,34 @@ pub mod tests {
             unseal(&again.key, &line_of("t1"), &record.sealed).as_deref(),
             Some(refresh.as_str())
         );
+    }
+
+    #[test]
+    fn a_phone_that_started_in_erevos_gets_a_button_back_with_the_same_code() {
+        let (fake, signin, _tokens, _dir) = setup();
+        let secret = [7u8; 32];
+        let claim = to_hex(&Sha256::digest(secret));
+        let start = browse(
+            &signin,
+            "GET",
+            &format!("/signin/start?claim={claim}&to=app"),
+            "",
+            NOW,
+        );
+        assert_eq!(start.status, 302);
+        let back = fake.authorize(start.location.as_deref().unwrap());
+        let target = back.strip_prefix("https://erevos.example.org").unwrap();
+        let page = browse(&signin, "GET", target, "", NOW);
+        assert_eq!(page.status, 200, "{}", page.body);
+        let code = code_on(&page.body);
+        let link = format!(
+            "href=\"erevos://signin?code={}\"",
+            String::from_utf8_lossy(&code)
+        );
+        assert!(page.body.contains(&link), "{}", page.body);
+        // Started without it, as on a computer: only the code to type.
+        let other = sign_in(&signin, &fake, &[8u8; 32], NOW);
+        assert!(!other.contains("erevos://"));
     }
 
     #[test]

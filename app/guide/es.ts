@@ -643,14 +643,15 @@ tu teléfono por internet sin cifrar.
 Un relay puede dejar que los teléfonos inicien sesión con una cuenta en la que confía quien lo gestiona, como LPHL, para
 obtener un token propio, sin nada que escribir en Erevos.
 
-- **Para iniciar sesión:** escribe la dirección del relay en **Relay**. Cuando el relay lo ofrece, **Iniciar sesión con
-  LPHL** aparece debajo del **Token**. Tócalo: el navegador abre la página de inicio de sesión, donde escribes tu nombre
-  y tu contraseña, que Erevos nunca ve. Luego la página del relay muestra seis dígitos. De vuelta en Erevos, que te deja
-  directamente en **Código de la página**, escríbelos ahí y toca **Terminar de iniciar sesión**: el teléfono guarda su
-  token con la dirección del relay solo en este espacio, y crea tu cola ahí. Escribe el código solo en Erevos en tu
-  propio teléfono y no se lo des a nadie, aunque te lo pidan: quien lo escriba usa el relay como si fuera tú. Tras 5
-  códigos incorrectos, el inicio de sesión se acaba: vuelve a iniciar sesión. Erevos solo abre una página de inicio de
-  sesión en la dirección propia del relay, por https.
+- **Para iniciar sesión:** escribe la dirección del relay en **Relay**. Cuando el relay lo ofrece, **Iniciar sesión
+  con LPHL** aparece debajo del **Token**. Tócalo: el navegador abre la página de inicio de sesión, donde escribes tu
+  nombre y tu contraseña, que Erevos nunca ve. Luego la página del relay muestra seis dígitos. En Android, toca ahí
+  **Abrir Erevos** y Erevos termina de iniciar sesión por sí solo; si no, escríbelos como se describe a continuación.
+  De vuelta en Erevos, que te deja directamente en **Código de la página**, escríbelos ahí y toca **Terminar de
+  iniciar sesión**: el teléfono guarda su token con la dirección del relay solo en este espacio, y crea tu cola ahí.
+  Escribe el código solo en Erevos en tu propio teléfono y no se lo des a nadie, aunque te lo pidan: quien lo escriba
+  usa el relay como si fuera tú. Tras 5 códigos incorrectos, el inicio de sesión se acaba: vuelve a iniciar sesión.
+  Erevos solo abre una página de inicio de sesión en la dirección propia del relay, por https.
 - **Volver a iniciar sesión** en el mismo teléfono sustituye su línea en el relay, cuando su token es el que obtuvo de
   ese relay. Cada teléfono obtiene una línea propia, 10 como mucho para una cuenta.
 - **Lo que ven el relay y LPHL:** el relay nombra la línea del teléfono con tu nombre de usuario (\`lphl:nekten\`), y
@@ -660,11 +661,13 @@ obtener un token propio, sin nada que escribir en Erevos.
   contactos. Iniciar sesión desde otro espacio con la misma cuenta muestra al relay que los dos son tuyos.
 - **Los chats ocultos** no inician sesión.
 
-**Por qué:** la página muestra el código y tú lo escribes en Erevos, no al revés, así que un enlace de inicio de sesión
-que te envíe otra persona no le sirve de nada: solo quien inició sesión ve el código, y cinco incorrectos lo anulan.
-Erevos solo abre una página de inicio de sesión en la dirección propia del relay, por https, así que nada que responda en
-lugar del relay puede enviarte a una página en otro sitio. Y un proveedor al que no se puede preguntar durante un tiempo
-no corta ningún teléfono al instante: solo lo hacen 3 días sin una respuesta válida.
+**Por qué:** la página muestra el código y tú lo escribes en Erevos, no al revés, así que un enlace de inicio de
+sesión que te envíe otra persona no le sirve de nada: solo quien inició sesión ve el código, y cinco incorrectos lo
+anulan. Erevos solo abre una página de inicio de sesión en la dirección propia del relay, por https, así que nada que
+responda en lugar del relay puede enviarte a una página en otro sitio. Y un proveedor al que no se puede preguntar
+durante un tiempo no corta ningún teléfono al instante: solo lo hacen 3 días sin una respuesta válida. Y el botón
+**Abrir Erevos** es igual de seguro: el enlace contiene solo los seis dígitos, que no reclaman nada sin el secreto que
+solo tiene el teléfono que inició el inicio de sesión, así que una aplicación que captara el enlace no obtiene nada.
 
 ### La clave propia del relay
 

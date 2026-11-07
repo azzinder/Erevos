@@ -603,12 +603,13 @@ A relay can let phones sign in with an account its operator trusts, such as LPHL
 nothing to type in Erevos.
 
 - **To sign in:** type the relay's address under **Relay**. When the relay offers it, **Sign in with LPHL** shows
-  below the **Token**. Tap it: the browser opens the sign-in page, where you type your name and password, which
-  Erevos never sees. The relay's page then shows six digits. Back in Erevos, which puts you straight in **Code from the
-  page**, type them there and tap **Finish signing in**: the phone keeps its token with the relay's address in this
-  space only, and makes your queue there. Type the code only in Erevos on your own phone and give it to no one, even if
-  asked: whoever types it uses the relay as you. After 5 wrong codes the sign-in is over: sign in again. Erevos opens
-  only a sign-in page on the relay's own address, over https.
+  below the **Token**. Tap it: the browser opens the sign-in page, where you type your name and password, which Erevos
+  never sees. The relay's page then shows six digits. On Android, tap **Open Erevos** there and Erevos finishes
+  signing in by itself; otherwise type them as described next. Back in Erevos, which puts you straight in **Code from
+  the page**, type them there and tap **Finish signing in**: the phone keeps its token with the relay's address in
+  this space only, and makes your queue there. Type the code only in Erevos on your own phone and give it to no one,
+  even if asked: whoever types it uses the relay as you. After 5 wrong codes the sign-in is over: sign in again.
+  Erevos opens only a sign-in page on the relay's own address, over https.
 - **Signing in again** on the same phone takes the place of its line on the relay, when its token is the one it got
   from that relay. Each phone gets a line of its own, 10 at most for one account.
 - **What the relay and LPHL see:** the relay names the phone's line after your user name (\`lphl:nekten\`), and every
@@ -622,7 +623,8 @@ nothing to type in Erevos.
 sends you gets them nothing: only whoever signed in sees the code, and five wrong ones end it. Erevos opens a sign-in
 page only on the relay's own address, over https, so nothing answering in the relay's place can send you to a page
 somewhere else. And a provider that cannot be asked for a while cuts no phone off at once: only 3 days without a good
-answer do.
+answer do. And the **Open Erevos** button is just as safe: the link holds only the six digits, which claim nothing
+without the secret that only the phone that started the sign-in holds, so an app that caught the link gets nothing.
 
 ### The relay's own key
 

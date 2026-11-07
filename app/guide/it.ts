@@ -646,12 +646,13 @@ senza niente da scrivere in Erevos.
 
 - **Per accedere:** scrivi l’indirizzo del relay in **Relay**. Quando il relay lo offre, **Accedi con LPHL** appare
   sotto il **Token**. Toccalo: il browser apre la pagina di accesso, dove scrivi il tuo nome e la tua password, che
-  Erevos non vede mai. La pagina del relay mostra poi sei cifre. Tornato in Erevos, che ti porta direttamente in
-  **Codice della pagina**, scrivile lì e tocca **Completa l’accesso**: il telefono conserva il suo token con
-  l’indirizzo del relay solo in questo spazio, e crea lì la tua coda. Scrivi il codice solo in Erevos sul tuo telefono
-  e non darlo a nessuno, anche se te lo chiedono: chi lo scrive usa il relay come se fosse te. Dopo 5 codici sbagliati
-  l’accesso è finito: accedi di nuovo. Erevos apre solo una pagina di accesso sull’indirizzo del relay stesso, tramite
-  https.
+  Erevos non vede mai. La pagina del relay mostra poi sei cifre. Su Android, tocca lì **Apri Erevos** e Erevos
+  completa l’accesso da solo; altrimenti scrivile come descritto di seguito. Tornato in Erevos, che ti porta
+  direttamente in **Codice della pagina**, scrivile lì e tocca **Completa l’accesso**: il telefono conserva il suo
+  token con l’indirizzo del relay solo in questo spazio, e crea lì la tua coda. Scrivi il codice solo in Erevos sul
+  tuo telefono e non darlo a nessuno, anche se te lo chiedono: chi lo scrive usa il relay come se fosse te. Dopo 5
+  codici sbagliati l’accesso è finito: accedi di nuovo. Erevos apre solo una pagina di accesso sull’indirizzo del
+  relay stesso, tramite https.
 - **Accedere di nuovo** sullo stesso telefono prende il posto della sua riga sul relay, quando il suo token è quello
   che ha ricevuto da quel relay. Ogni telefono riceve una riga tutta sua, al massimo 10 per un account.
 - **Che cosa vedono il relay e LPHL:** il relay dà alla riga del telefono il tuo nome utente (\`lphl:nekten\`), e ogni
@@ -661,11 +662,13 @@ senza niente da scrivere in Erevos.
   altro spazio con lo stesso account mostra al relay che sono entrambi tuoi.
 - **Le chat nascoste** non accedono.
 
-**Perché:** la pagina mostra il codice e tu lo scrivi in Erevos, non il contrario, così un link di accesso che
-qualcun altro ti manda non gli fa ottenere nulla: solo chi ha fatto l’accesso vede il codice, e cinque codici
-sbagliati lo chiudono. Erevos apre una pagina di accesso solo sull’indirizzo del relay stesso, tramite https, così
-niente che risponda al posto del relay può mandarti su una pagina da un’altra parte. E un fornitore che non si può
-interpellare per un po’ non esclude subito nessun telefono: lo fanno solo 3 giorni senza una risposta valida.
+**Perché:** la pagina mostra il codice e tu lo scrivi in Erevos, non il contrario, così un link di accesso che qualcun
+altro ti manda non gli fa ottenere nulla: solo chi ha fatto l’accesso vede il codice, e cinque codici sbagliati lo
+chiudono. Erevos apre una pagina di accesso solo sull’indirizzo del relay stesso, tramite https, così niente che
+risponda al posto del relay può mandarti su una pagina da un’altra parte. E un fornitore che non si può interpellare
+per un po’ non esclude subito nessun telefono: lo fanno solo 3 giorni senza una risposta valida. E il pulsante **Apri
+Erevos** è altrettanto sicuro: il link contiene solo le sei cifre, che non rivendicano nulla senza il segreto che ha
+solo il telefono che ha avviato l’accesso, così un’app che avesse intercettato il link non ottiene nulla.
 
 ### La chiave del relay
 

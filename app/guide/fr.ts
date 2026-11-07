@@ -684,12 +684,13 @@ obtenir un jeton à eux, sans rien à taper dans Erevos.
 
 - **Pour te connecter :** tape l’adresse du relais sous **Relais**. Quand le relais le propose, **Se connecter avec
   LPHL** apparaît sous le **Jeton**. Appuie dessus : le navigateur ouvre la page de connexion, où tu tapes ton nom et
-  ton mot de passe, qu’Erevos ne voit jamais. La page du relais montre alors six chiffres. De retour dans Erevos, qui te
-  place directement dans **Code de la page**, tape-les là et appuie sur **Terminer la connexion** : le téléphone garde
-  son jeton avec l’adresse du relais dans cet espace seulement, et y crée ta file d’attente. Ne tape le code que dans
-  Erevos sur ton propre téléphone et ne le donne à personne, même si on te le demande : qui le tape utilise le relais en
-  ton nom. Après 5 codes erronés, la connexion est terminée : reconnecte-toi. Erevos n’ouvre qu’une page de connexion à
-  l’adresse propre du relais, en https.
+  ton mot de passe, qu’Erevos ne voit jamais. La page du relais montre alors six chiffres. Sur Android, appuie là sur
+  **Ouvrir Erevos** et Erevos termine la connexion tout seul ; sinon, tape-les comme décrit ensuite. De retour dans
+  Erevos, qui te place directement dans **Code de la page**, tape-les là et appuie sur **Terminer la connexion** : le
+  téléphone garde son jeton avec l’adresse du relais dans cet espace seulement, et y crée ta file d’attente. Ne tape
+  le code que dans Erevos sur ton propre téléphone et ne le donne à personne, même si on te le demande : qui le tape
+  utilise le relais en ton nom. Après 5 codes erronés, la connexion est terminée : reconnecte-toi. Erevos n’ouvre
+  qu’une page de connexion à l’adresse propre du relais, en https.
 - **Se reconnecter** sur le même téléphone prend la place de sa ligne sur le relais, quand son jeton est celui qu’il a
   obtenu de ce relais. Chaque téléphone obtient sa propre ligne, 10 au plus pour un compte.
 - **Ce que voient le relais et LPHL :** le relais nomme la ligne du téléphone d’après ton nom d’utilisateur
@@ -702,9 +703,12 @@ obtenir un jeton à eux, sans rien à taper dans Erevos.
 
 **Pourquoi :** la page montre le code et tu le tapes dans Erevos, pas l’inverse, si bien qu’un lien de connexion que
 quelqu’un d’autre t’envoie ne lui apporte rien : seul celui qui s’est connecté voit le code, et cinq codes erronés y
-mettent fin. Erevos n’ouvre une page de connexion qu’à l’adresse propre du relais, en https, si bien que rien qui répond
-à la place du relais ne peut t’envoyer vers une page ailleurs. Et un fournisseur qu’on ne peut pas interroger pendant un
-moment ne coupe aucun téléphone aussitôt : seuls 3 jours sans bonne réponse le font.
+mettent fin. Erevos n’ouvre une page de connexion qu’à l’adresse propre du relais, en https, si bien que rien qui
+répond à la place du relais ne peut t’envoyer vers une page ailleurs. Et un fournisseur qu’on ne peut pas interroger
+pendant un moment ne coupe aucun téléphone aussitôt : seuls 3 jours sans bonne réponse le font. Et le bouton **Ouvrir
+Erevos** est tout aussi sûr : le lien ne contient que les six chiffres, qui ne revendiquent rien sans le secret que
+seul détient le téléphone qui a commencé la connexion, si bien qu’une application qui aurait intercepté le lien
+n’obtient rien.
 
 ### La clé propre du relais
 

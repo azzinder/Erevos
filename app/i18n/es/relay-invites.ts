@@ -86,4 +86,5 @@ export const relayInvites: Record<string, string> = {
   'Your name': 'Tu nombre',
   'No invite now. {error}': 'Ninguna invitación ahora. {error}',
   "With your {name} account, in the browser: you type the password there only, and whoever runs the server sees your user name.": "Con tu cuenta de {name}, en el navegador: la contraseña solo la escribes allí, y quien gestiona el servidor ve tu nombre de usuario.",
+  "Sign in on the page the browser opened, then tap Open Erevos there. If nothing opens, type here the code it shows.": "Inicia sesión en la página que abrió el navegador y luego toca allí «Abrir Erevos». Si no se abre nada, escribe aquí el código que muestra.",
 };

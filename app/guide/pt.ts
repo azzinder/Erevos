@@ -642,12 +642,13 @@ Um relay pode deixar os celulares entrarem com uma conta em que o operador dele 
 token próprio, sem nada para digitar no Erevos.
 
 - **Para entrar:** digite o endereço do relay em **Relay**. Quando o relay oferece, **Entrar com LPHL** aparece abaixo
-  do **Token**. Toque nele: o navegador abre a página de login, onde você digita o seu nome e a sua senha, que o Erevos
-  nunca vê. A página do relay mostra então seis dígitos. De volta ao Erevos, que leva você direto para **Código da
-  página**, digite-os ali e toque em **Concluir o login**: o celular guarda o token dele com o endereço do relay só
-  neste espaço, e cria a sua fila ali. Digite o código só no Erevos do seu próprio celular e não o dê a ninguém, mesmo
-  que peçam: quem o digitar usa o relay como você. Depois de 5 códigos errados o login acaba: entre de novo. O Erevos
-  só abre uma página de login no próprio endereço do relay, por https.
+  do **Token**. Toque nele: o navegador abre a página de login, onde você digita o seu nome e a sua senha, que o
+  Erevos nunca vê. A página do relay mostra então seis dígitos. No Android, toque ali em **Abrir o Erevos** e o Erevos
+  conclui o login sozinho; caso contrário, digite-os como descrito a seguir. De volta ao Erevos, que leva você direto
+  para **Código da página**, digite-os ali e toque em **Concluir o login**: o celular guarda o token dele com o
+  endereço do relay só neste espaço, e cria a sua fila ali. Digite o código só no Erevos do seu próprio celular e não
+  o dê a ninguém, mesmo que peçam: quem o digitar usa o relay como você. Depois de 5 códigos errados o login acaba:
+  entre de novo. O Erevos só abre uma página de login no próprio endereço do relay, por https.
 - **Entrar de novo** no mesmo celular substitui a linha dele no relay, quando o token dele é o que ele recebeu desse
   relay. Cada celular recebe uma linha própria, 10 no máximo para uma conta.
 - **O que o relay e o LPHL veem:** o relay dá à linha do celular o nome do seu usuário (\`lphl:nekten\`), e a cada hora
@@ -659,9 +660,11 @@ token próprio, sem nada para digitar no Erevos.
 
 **Por quê:** a página mostra o código e você o digita no Erevos, não o contrário, então um link de login que outra
 pessoa envie a você não rende nada a ela: só quem entrou vê o código, e cinco errados acabam com o login. O Erevos só
-abre uma página de login no próprio endereço do relay, por https, então nada que responda no lugar do relay pode mandar
-você para uma página em outro lugar. E um provedor que não pode ser consultado por um tempo não corta nenhum celular na
-hora: só 3 dias sem uma resposta válida cortam.
+abre uma página de login no próprio endereço do relay, por https, então nada que responda no lugar do relay pode
+mandar você para uma página em outro lugar. E um provedor que não pode ser consultado por um tempo não corta nenhum
+celular na hora: só 3 dias sem uma resposta válida cortam. E o botão **Abrir o Erevos** é igualmente seguro: o link
+contém só os seis dígitos, que não reivindicam nada sem o segredo que só o celular que iniciou o login tem, então um
+app que pegasse o link não obtém nada.
 
 ### A própria chave do relay
 
