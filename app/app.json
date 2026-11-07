@@ -26,6 +26,38 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "erevos-web.lphl.nekten.eu",
+              "path": "/i"
+            },
+            {
+              "scheme": "https",
+              "host": "erevos-web.lphl.nekten.eu",
+              "path": "/i/"
+            },
+            {
+              "scheme": "https",
+              "host": "erevos-web.lphl.nekten.eu",
+              "path": "/c"
+            },
+            {
+              "scheme": "https",
+              "host": "erevos-web.lphl.nekten.eu",
+              "path": "/c/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
       ]
     },
     "web": {

@@ -180,7 +180,8 @@ import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openN
 import { nostrReady, readNostr } from '../lib/nostr';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
-import { answerInvites, answerTextInvite, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
+import { useNfcShare } from '../lib/nfc-share';
+import { answerInvites, answerTextInvite, cardShown, contactCard, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
 import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, spaceChats, type SpaceChats } from '../lib/space-chats';
 import { placeChats, setPlaceLastSeen } from '../lib/place-chats';
@@ -746,6 +747,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const among: Among = hiddenKey ? hiddenLent : 'space';
   const canConnect = useCanConnect(among);
   const [showQr, setShowQr] = useState(false);
+  // Your contact link in short, as a contact card (lib/sms-relay.ts contactCard): the QR code shown
+  // and the link shared, small enough for any camera; null while there is none. `bigQr`: the long
+  // link's QR code instead, which works with no internet, near.
+  const [card, setCard] = useState<string | null>(null);
+  const [bigQr, setBigQr] = useState(false);
   // The sheet that makes an invite for someone new (components/welcome-invite.tsx).
   const [welcoming, setWelcoming] = useState(false);
   // Link for a website (components/website-link.tsx), from the space's contact link.
@@ -1312,12 +1318,26 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
       setNote(notOpen());
       return;
     }
-    if (invite.expires < Date.now()) {
-      setNote(t('An invite by SMS lasts two days. Ask whoever sent it for a new one.'));
+    if (!invite.card && invite.expires < Date.now()) {
+      setNote(t('An invite lasts only a few days. Ask whoever sent it for a new one.'));
       return;
     }
     if (!canSealOpen()) {
       setNote(t('This Erevos cannot answer an invite by SMS yet: update it, then open the link again.'));
+      return;
+    }
+    // A contact card brings no relay: the answer goes from this phone's own, and theirs comes back there.
+    if (invite.card) {
+      if (!relayUrl.trim() || !ownQueue) {
+        setNote(t('To add them with their contact QR code, your phone needs a relay first: ask them for an invite instead, with Invite on their home screen.'));
+        return;
+      }
+      answerTextInvite(invite, name);
+      setNote(
+        name
+          ? t('{name} is in your chats as soon as their phone answers, in a moment if it is on.', { name })
+          : t('They are in your chats as soon as their phone answers, in a moment if it is on.'),
+      );
       return;
     }
     const mine = await joinInviting({ relayUrl: invite.relay, code: invite.code });
@@ -2044,9 +2064,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           if (active) setContacts(e2e.contacts());
           if (active) {
             // An invite shown as a QR code or shared as a link has no number: whoever took it joined.
-            const name = invited.number ? '' : (e2e.contacts().find((c) => c.identity === invited.identity)?.name ?? '');
+            const added = e2e.contacts().find((c) => c.identity === invited.identity);
+            const name = invited.number ? '' : (added?.name ?? '');
             setNote(
-              invited.number
+              invited.card
+                ? added?.request
+                  ? t('Someone added you with your contact QR code: their chat waits as a message request.')
+                  : t('Someone added you with your contact QR code, and is your contact now.')
+                : invited.number
                 ? t('{number} has Erevos. Messages to that number now go through Erevos, end-to-end encrypted.', { number: invited.number })
                 : name
                   ? t('{name} took your invite and is your contact now: what you write to each other is end-to-end encrypted.', { name })
@@ -3558,6 +3583,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
     return went;
   };
+
+  // Your contact link, shared: in short, as the contact card, where there is one, a link any app
+  // shows as one to tap (lib/sms-relay.ts contactCard); else the whole of it.
+  async function shareMine(link: string) {
+    const short = cardsHere ? await contactCard(e2e?.invitedAs() ?? '').catch(() => null) : null;
+    await shareLink(short ?? link);
+  }
 
   async function shareLink(link: string) {
     try {
@@ -5472,6 +5504,25 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
   // With a relay queue, this phone invites someone new (lib/welcome.ts).
   const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
+  // The contact card, for the space's own chats on the phone: made as My QR code opens, and whoever
+  // scans it while it shows is a contact at once (cardShown).
+  const cardsHere = canWelcome;
+  // The small QR code goes by touching phones too, while it shows (lib/nfc-share.ts).
+  const cardNfc = useNfcShare(showQr && shown && card && !bigQr ? card : null);
+  useEffect(() => {
+    if (!showQr || !shown || !cardsHere) return;
+    let on = true;
+    cardShown(true);
+    void contactCard(e2e?.invitedAs() ?? '')
+      .then((made) => {
+        if (on) setCard(made);
+      })
+      .catch(() => undefined);
+    return () => {
+      on = false;
+      cardShown(false);
+    };
+  }, [showQr, shown, cardsHere, ownQueue, relayUrl]);
   // The home screen's Invite: its QR code at once, once the chat knows this phone can invite.
   const invitedNow = useRef(false);
   useEffect(() => {
@@ -6505,10 +6556,29 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
           onNote={setNote}
         />
         <Sheet visible={showQr && shown && !!ownLink} onClose={() => setShowQr(false)} title={t('My QR code')}>
-          {ownLink ? <QrCode text={ownLink} size={240} /> : null}
+          {ownLink ? <QrCode text={card && !bigQr ? card : ownLink} size={240} /> : null}
           <Text variant="caption" tone="muted">
             {t("Scan it with the other phone's camera and open the link in Erevos. If the camera only shows the text, copy it and paste it under Add a contact, on New chat, on that phone.")}
           </Text>
+          {card && !bigQr && cardNfc === 'on' ? (
+            <Text variant="caption" tone="muted">
+              {t('Or hold the back of their phone to the back of yours: their phone opens your contact link.')}
+            </Text>
+          ) : card && !bigQr && cardNfc === 'off' ? (
+            <Text variant="caption" tone="muted">
+              {t('Turn on NFC in Android\'s settings to give it by touching phones too.')}
+            </Text>
+          ) : null}
+          {card ? (
+            <>
+              <DetailRow title={t('Large QR code, for no internet')} checked={bigQr} onPress={() => setBigQr(!bigQr)} />
+              <Text variant="caption" tone="muted">
+                {bigQr
+                  ? t('The whole contact link, with your keys: it works near, with no internet, but some cameras cannot read it.')
+                  : t('Small, so any camera reads it. Whoever scans it while it shows here is your contact at once; later, they write a message request first.')}
+              </Text>
+            </>
+          ) : null}
           <Row wrap>
             <Button title={t('Done')} compact onPress={() => setShowQr(false)} />
             {ownLink ? (
@@ -6516,7 +6586,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                 title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                 kind="secondary"
                 compact
-                onPress={() => void shareLink(ownLink)}
+                onPress={() => void shareLink(card ?? ownLink)}
               />
             ) : null}
           </Row>
@@ -6767,7 +6837,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                         kind="secondary"
                         compact
-                        onPress={() => void shareLink(ownLink)}
+                        onPress={() => void shareMine(ownLink)}
                       />
                     </Row>
                     {linkNostr ? (
@@ -6799,7 +6869,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                         title={Platform.OS === 'web' ? t('Copy my contact link') : t('Share my contact link')}
                         kind="secondary"
                         compact
-                        onPress={() => void shareLink(ownLink)}
+                        onPress={() => void shareMine(ownLink)}
                       />
                       {!hiddenKey ? <Button title={t('Link for a website')} kind="secondary" compact onPress={() => setWebLinking(true)} /> : null}
                       {ownQueue && !linkHere() ? <Button title={t('New contact link')} kind="secondary" compact onPress={newContactLink} /> : null}

@@ -41,6 +41,12 @@ type Device = {
   keyboardShown?(): Promise<boolean | null>;
   /** The clock the owner cannot set: ms since the phone started, sleep included, and which start that is (lock/tries.ts). Missing in a build before it. */
   clock?(): { up: number; boot: string };
+  /** Answers as an NFC tag with `uri` (an https address), until nfcStop or ten minutes (NfcShare.kt). False when it cannot. Missing in a build before it. */
+  nfcShare?(uri: string): boolean;
+  /** Stops answering as an NFC tag. Missing in a build before it. */
+  nfcStop?(): void;
+  /** Whether this phone can give a link by NFC: 'on', 'off' (NFC off in Android's settings) or 'none'. Missing in a build before it. */
+  nfcState?(): 'on' | 'off' | 'none';
   /** Puts the text on the phone's clipboard, marked sensitive. False when it could not. */
   copyText(text: string): boolean;
   /** Starts looking for where the phone is, once: '' when it did, else why not. Missing in a build before places. */

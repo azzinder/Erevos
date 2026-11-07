@@ -62,18 +62,25 @@ export async function refreshSmsLink(): Promise<void> {
  * the number and the contact, or null when `bytes` are something else, or the answer of someone
  * blocked here, which is dropped (lib/e2e.ts BlockedContactError).
  */
-export async function takeInviteAnswer(e2e: E2E, bytes: Uint8Array, ownSender: string, here: Where): Promise<{ number: string; identity: string } | null> {
+export async function takeInviteAnswer(e2e: E2E, bytes: Uint8Array, ownSender: string, here: Where): Promise<{ number: string; identity: string; card?: true } | null> {
   const link = await spaceSmsLink();
   if (!link.waiting) return null;
   const answer = await link.openAnswer(bytes);
   const code = answer ? parseContact(answer.link) : null;
   if (!answer || !code || code.senderHex === ownSender) return null;
   let identity: string;
+  let added: boolean;
   try {
-    ({ identity } = await e2e.addContact(code, ownSender, here));
+    ({ identity, added } = await e2e.addContact(code, ownSender, here));
   } catch (error) {
     if (error instanceof BlockedContactError) return null;
     throw error;
+  }
+  // The contact card: anyone who has it may answer, so whoever did writes a message request, unless
+  // the card's QR code shows here just now, to them, in front of this phone (cardShown).
+  if (answer.card) {
+    if (added && !cardShownNow()) await e2e.asRequest(identity);
+    return { number: '', identity, card: true };
   }
   await e2e.linkPhone(identity, plainNumber(answer.number));
   // An invite by plain SMS went to one of the phone's contacts: the new contact takes their name.
@@ -143,6 +150,47 @@ export function answerTextInvite(invite: TextInvite, name: string): void {
  */
 export async function makeTextInvite(number: string, name: string): Promise<string> {
   return textInviteLink((await shortInvite(number, name, TEXT_INVITE_DAYS)).invite);
+}
+
+// While the contact card's QR code shows on this phone, and a little after: whoever answers it
+// then is in front of it, and becomes a contact at once, not a message request.
+let cardShownUntil = 0;
+const CARD_SHOWN_AFTER_MS = 2 * 60_000;
+
+/** The contact card's QR code shows (`on`), or no longer does: answers in the next two minutes still count as in front of it. */
+export function cardShown(on: boolean, now = Date.now()): void {
+  cardShownUntil = on ? Infinity : Math.min(cardShownUntil, now + CARD_SHOWN_AFTER_MS);
+}
+
+function cardShownNow(now = Date.now()): boolean {
+  return now < cardShownUntil;
+}
+
+/**
+ * This chat's contact card: its contact link in short (lib/text-invite.ts, flag 4), a QR code any
+ * camera reads and a link that fits an SMS. It holds where to answer (the queue the contact link
+ * names), a key to seal the answer to, the relay and the name this phone gives itself, never the
+ * keys: whoever takes it answers with their own contact link, this phone adds them (a message
+ * request, unless the card shows here, cardShown) and writes first, so they get its keys from the
+ * conversation. Null with no relay queue yet, or a core that cannot seal: then the long link is the one.
+ */
+export async function contactCard(name: string): Promise<string | null> {
+  if (!canRelaySeal()) return null;
+  const data = await loadCurrentSpaceData();
+  if (!data.url || !data.ownQueue) return null;
+  const relay: Relay = { url: data.url, token: data.token || undefined };
+  const bytes = await relayKey(relay).catch(() => null);
+  const secret = await (await spaceSmsLink()).cardSecret();
+  return textInviteLink({
+    sender: await spaceLinkSender(data.ownQueue),
+    key: await sealPublic(secret),
+    code: '',
+    relay: data.url,
+    relayKey: bytes ? toBase64Url(bytes) : '',
+    name: name.trim(),
+    expires: 0,
+    card: true,
+  });
 }
 
 /** How long an invite shown as a QR code or shared as a link lasts (Invite someone). */

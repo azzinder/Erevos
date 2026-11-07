@@ -4,7 +4,7 @@
 
 // The Greek of invites by plain SMS: making one on a contact's card, and taking one (app/contact-card.tsx, app/text-invite.tsx, app/chat.tsx, lib/sms-relay.ts) (i18n/el/index.ts).
 export const textInvite: Record<string, string> = {
-  'An invite by SMS lasts two days. Ask whoever sent it for a new one.': 'Μια πρόσκληση με SMS ισχύει δύο μέρες. Ζήτα καινούργια από όποιον την έστειλε.',
+  'An invite lasts only a few days. Ask whoever sent it for a new one.': 'Μια πρόσκληση ισχύει μόνο λίγες μέρες. Ζήτα καινούργια από όποιον την έστειλε.',
   'This Erevos cannot answer an invite by SMS yet: update it, then open the link again.': 'Αυτό το Erevos δεν μπορεί ακόμα να απαντήσει σε πρόσκληση με SMS: ενημέρωσέ το και άνοιξε ξανά τον σύνδεσμο.',
   'Joined. {name} is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Μπήκες. Η επαφή {name} μπαίνει στις επαφές σου μόλις το κινητό της ακούσει το δικό σου, σε λίγο αν είναι ανοιχτό.',
   'Joined. Whoever invited you is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Μπήκες. Όποιος σε προσκάλεσε μπαίνει στις επαφές σου μόλις το κινητό του ακούσει το δικό σου, σε λίγο αν είναι ανοιχτό.',

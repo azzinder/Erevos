@@ -93,6 +93,22 @@ class ErevosDeviceModule : Module() {
     // long has really passed, whatever the date and time are moved to. The start is Android's count
     // of starts; a phone that does not keep one gives the time it started, in ten-minute steps, so
     // moving the clock looks like a new start there, and the wait starts again from its beginning.
+    // An invite or a contact link given by touching phones (NfcShare.kt): answered from now, until
+    // nfcStop. False when it cannot be (too long, or no context).
+    Function("nfcShare") { uri: String ->
+      NfcShare.share(uri)
+    }
+
+    Function("nfcStop") {
+      NfcShare.stop()
+    }
+
+    // Whether this phone can give a link by NFC: "on", "off" (NFC off in Android's settings) or "none".
+    Function("nfcState") {
+      val app = context ?: return@Function "none"
+      NfcShare.state(app)
+    }
+
     Function("clock") {
       val up = SystemClock.elapsedRealtime()
       val count = context?.applicationContext?.let {

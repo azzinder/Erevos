@@ -464,6 +464,10 @@ solo tu la leggi.
    all’altro telefono con la fotocamera, poi apri il link in Erevos. La schermata **Aggiungi un contatto** mostra cosa
    contiene: tocca **Aggiungi alla chat** solo se l’hai scansionato tu stesso. **Aggiungi e collega a uno dei miei
    contatti** aggiunge anche lui, collegato al contatto che scegli, di cui la chat prende il nome.
+   Il codice è corto, così qualsiasi fotocamera lo legge. Chi lo scansiona risponde con il proprio link di contatto, e poi questo telefono gli scrive per primo. Se lo scansiona mentre è mostrato qui, o fino a 2 minuti dopo, diventa subito un contatto; più tardi, scrive prima una richiesta di messaggio. **Codice QR grande, senza internet** mostra invece il codice intero, che funziona vicino senza internet. **Condividi il mio link di contatto** invia un link corto che qualsiasi app lascia toccare; su Android apre Erevos, che chiede prima di accettarlo. Per aggiungere qualcuno con il suo codice QR di contatto, il tuo telefono ha prima bisogno di un relay.
+   Lo stesso vale per contatto: finché è mostrato il codice di contatto piccolo e l’NFC è attivo su Android, l’altro
+   telefono lo prende se appoggi il suo retro al retro del tuo. Funziona solo con Erevos in primo piano, non in
+   background, e mai con il codice QR grande.
 5. Se la sua fotocamera mostra solo il testo, o se è lontano, tocca **Condividi il mio link di contatto** e mandaglielo.
    Lo incolla nel campo sotto **Aggiungi un contatto** e tocca **Aggiungi**.
 6. Oppure al contrario: in **Aggiungi un contatto**, tocca **Fotografa il codice QR** sul suo schermo, o **Scegli una
@@ -535,6 +539,10 @@ tutto suo, senza scrivere nulla, e siete subito l’uno contatto dell’altro, s
   entrambi. Riaperto poco dopo, mostra lo stesso invito finché nessuno l’ha preso; **Invita un’altra persona** ne crea
   uno nuovo. È per una persona, per 7 giorni, o meno se l’invito al relay finisce prima. Chi lo prende per primo lo
   ha, quindi dallo solo a quella persona.
+  Su un telefono Android con l’NFC attivo puoi anche darlo per contatto: appoggia il retro del suo telefono al retro del
+  tuo mentre il codice è mostrato, e il suo telefono apre il link da solo, in Erevos se è installato, altrimenti sulla
+  pagina web di Erevos, che offre Erevos. Se l’NFC è spento, la schermata ti dice di attivarlo nelle impostazioni di
+  Android.
 - **Per entrare:** su un telefono ancora senza relay, **Nuova chat** mostra un modo per entrare, **Ho un invito**:
   toccalo. Scansiona l’invito con la fotocamera e apri il link in Erevos, oppure tocca **Scatta una foto dell’invito**
   o **Scegli una foto dell’invito**, o incolla il link e tocca **Partecipa**. Il link apre **… ti invita su Erevos**:

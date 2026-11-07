@@ -1581,6 +1581,18 @@ export class E2E {
   }
 
   /** Accepts a message request: the chat with them is like any other from now on. */
+  /**
+   * Makes a contact just added from the answer to this chat's contact card (lib/sms-relay.ts) a
+   * message request, as a contact link's first message is: anyone who has the card can answer it.
+   * Called only for a contact the answer has just added.
+   */
+  asRequest(identity: string): Promise<void> {
+    return this.run(async () => {
+      const contact = this.find(identity);
+      if (contact && !contact.request) await this.save(this.withContact({ ...contact, request: true }));
+    });
+  }
+
   acceptRequest(identity: string): Promise<void> {
     return this.run(async () => {
       const contact = this.find(identity);

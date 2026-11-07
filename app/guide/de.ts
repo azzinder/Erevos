@@ -491,6 +491,10 @@ schreiben, und nur du liest sie.
    zeigt, was er enthält: Tippe nur auf **Zum Chat hinzufügen**, wenn du ihn selbst gescannt hast.
    **Hinzufügen und mit einem meiner Kontakte verknüpfen** fügt ihn ebenfalls hinzu, verknüpft mit dem Kontakt, den du
    wählst, dessen Namen der Chat übernimmt.
+   Der Code ist kurz, sodass jede Kamera ihn liest. Wer ihn scannt, antwortet mit dem eigenen Kontaktlink, und dann schreibt dieses Telefon ihm zuerst. Scannt die Person ihn, solange er hier zu sehen ist, oder bis zu 2 Minuten danach, ist sie sofort ein Kontakt; später schreibt sie zuerst eine Nachrichtenanfrage. **Großer QR-Code, ohne Internet** zeigt stattdessen den ganzen Code, der in der Nähe ohne Internet funktioniert. **Meinen Kontaktlink teilen** sendet einen kurzen Link, den jede App antippbar macht; auf Android öffnet er Erevos, das fragt, bevor es ihn übernimmt. Um jemanden mit seinem Kontakt-QR-Code hinzuzufügen, braucht dein Telefon zuerst ein Relay.
+   Dasselbe geht per Berührung: Solange der kleine Kontaktcode zu sehen ist und NFC auf Android eingeschaltet ist, nimmt
+   das andere Telefon ihn, wenn du seine Rückseite an die Rückseite deines hältst. Das geht nur, solange Erevos im
+   Vordergrund ist, nicht im Hintergrund, und nie mit dem großen QR-Code.
 5. Wenn die Kamera des anderen nur den Text zeigt oder ihr weit voneinander entfernt seid, tippe auf
    **Meinen Kontaktlink teilen** und schick ihn. Dein Kontakt fügt ihn in das Feld unter **Kontakt hinzufügen** ein
    und tippt auf **Hinzufügen**.
@@ -568,6 +572,10 @@ eigenem Zugang, ohne etwas einzutippen, und ihr seid sofort gegenseitig Kontakte
   solange niemand sie genommen hat; **Jemand anderen einladen** macht eine neue. Sie gilt für eine Person, 7 Tage
   lang, oder kürzer, wenn die Einladung des Relays früher endet. Wer sie zuerst nimmt, hat sie, also gib sie nur
   dieser Person.
+  Auf einem Android-Telefon mit eingeschaltetem NFC kannst du sie auch per Berührung weitergeben: Halte die Rückseite
+  seines Telefons an die Rückseite deines, solange der Code zu sehen ist, und sein Telefon öffnet den Link von selbst, in
+  Erevos, wenn es installiert ist, sonst auf der Webseite von Erevos, die Erevos anbietet. Ist NFC aus, sagt die
+  Seite, dass du es in den Android-Einstellungen einschalten sollst.
 - **Beitreten:** Auf einem Telefon ohne Relay zeigt **Neuer Chat** einen Weg hinein, **Ich habe eine Einladung**:
   Tippe darauf. Scanne die Einladung mit der Kamera und öffne den Link in Erevos, oder tippe auf **Foto der Einladung
   aufnehmen** oder **Foto der Einladung auswählen**, oder füge den Link ein und tippe auf **Beitreten**. Der Link

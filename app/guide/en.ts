@@ -435,6 +435,10 @@ email to reach you: whoever has your contact link can write to your queue, and o
 4. Under **Your contact link**, tap **Show my QR code**: it opens over the screen. Let the other phone scan it with its camera, then open the link in Erevos. The
    **Add a contact** screen shows what it holds: tap **Add to chat** only if you scanned it yourself. **Add and connect
    to one of my contacts** adds them too, linked to the contact you choose, whose name the chat takes.
+   The code is short, so any camera reads it. Whoever scans it answers with their own contact link, and then this phone writes to them first. If they scan it while it shows here, or up to 2 minutes after, they are a contact at once; later, they write a message request first. **Large QR code, for no internet** shows the whole code instead, which works nearby with no internet. **Share my contact link** sends a short link that any app lets you tap; on Android it opens Erevos, which asks before it takes it. To add someone with their contact QR code, your phone needs a relay first.
+   Touch works too: while the small contact QR code shows and NFC is on, on Android, the other phone takes it when you
+   hold the back of their phone to the back of yours. It works only while Erevos is open in front, not in the
+   background, and never with the large QR code.
 5. If their camera only shows the text, or they are far away, tap **Share my contact link** and send it to them.
    They paste it into the field under **Add a contact** and tap **Add**.
 6. Or the other way round: under **Add a contact**, tap **Take a photo of the QR code** on their screen, or **Choose a photo of the
@@ -500,6 +504,9 @@ nothing, and you are each other's contacts at once, with no message request.
   (their name in your chats) and **Your name, for them**, or leave both empty. Opened again soon after, it shows the
   same invite while no one took it; **Invite someone else** makes a new one. It is for one person, for 7 days, or less
   when the relay's invite ends sooner. Whoever takes it first has it, so give it to them only.
+  On an Android phone with NFC on, you can also hand it over by touch: hold the back of their phone to the back of yours
+  while the code shows, and their phone opens the link by itself, in Erevos if it is installed, otherwise on Erevos's
+  web page, which offers Erevos. If NFC is off, the sheet says to turn it on in Android's settings.
 - **To join:** on a phone with no relay yet, **New chat** shows one way in, **I have an invite**: tap it. Scan the
   invite with the camera and open the link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the
   invite**, or paste the link and tap **Join**. The link opens **… invites you to Erevos**: tap **Join** only if it

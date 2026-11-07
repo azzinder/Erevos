@@ -55,6 +55,23 @@ On main, not released yet:
   simpler cameras read it. Its answer adds whoever took it as a contact, named as typed then or later
   (SmsLink.nameTextInvite). A scanned or pasted short invite is taken in New chat too. Where the relay lets the phone
   make no invite, the long one (lib/welcome.ts) is still made.
+- **A small contact QR code**: **Show my QR code** under New chat → **Your contact link** now shows a contact card of
+  about 150 characters instead of about 2000 (lib/text-invite.ts flag 4: no relay invite, no end), so any camera reads
+  it; **Share my contact link** shares its short link (https://erevos-web.lphl.nekten.eu/i#…). Whoever scans it answers
+  with their own contact link, opened with SmsLink.cardSecret, and this phone writes first. While the card shows
+  (lib/sms-relay.ts contactCard/cardShown), or up to 2 minutes after, the answer adds a contact at once; later it is
+  taken as a message request (E2E.asRequest). **Large QR code, for no internet** shows the full code, for near with no
+  internet. Adding someone by their contact QR code needs a relay on this phone.
+- **Links open Erevos**: on Android, an invite or contact link (https://erevos-web.lphl.nekten.eu/i#… or /c#…) tapped
+  in any app opens Erevos, which asks before it takes it. app.json has intentFilters with autoVerify for /i and /c on
+  erevos-web.lphl.nekten.eu, and lib/open-link.ts webLinkHref reads the link. It works once the web server publishes
+  /.well-known/assetlinks.json and a new Erevos is installed; until then the page opens in the browser and offers
+  Erevos.
+- **Invites and contact links by touch**: on Android, while **Invite someone** or **My QR code** shows a short link,
+  the phone answers as an NFC Forum Type 4 tag with it, one NDEF URI record (modules/erevos-device NfcShare.kt, a
+  HostApduService for D2760000850101, only unlocked; lib/nfc-share.ts). The other phone needs no app open: Android
+  opens the https link, in Erevos through its App Links. Never in the background, never the long link, and over after
+  ten minutes if Erevos never lets go. Adds the NFC permission.
 
 ### Under the hood
 

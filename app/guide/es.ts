@@ -462,6 +462,10 @@ de teléfono ni tu email para contactarte: quien tenga tu enlace de contacto pue
    escanee con su cámara, y que luego abra el enlace en Erevos. La pantalla **Añadir un contacto** muestra lo que
    contiene: toca **Añadir al chat** solo si lo escaneaste tú. **Añadir y vincular a uno de mis contactos** también lo
    añade, vinculado al contacto que elijas, cuyo nombre toma el chat.
+   El código es corto, así que cualquier cámara lo lee. Quien lo escanea responde con su propio enlace de contacto, y luego este teléfono le escribe primero. Si lo escanea mientras se muestra aquí, o hasta 2 minutos después, es un contacto al instante; más tarde, escribe primero una solicitud de mensaje. **Código QR grande, sin internet** muestra en su lugar el código entero, que funciona cerca sin internet. **Compartir mi enlace de contacto** envía un enlace corto que cualquier app te deja tocar; en Android abre Erevos, que pregunta antes de aceptarlo. Para añadir a alguien con su código QR de contacto, tu teléfono necesita antes un relay.
+   Lo mismo vale por contacto: mientras se muestra el código pequeño y el NFC está activado en Android, el otro
+   teléfono lo toma si apoyas su parte trasera contra la del tuyo. Solo funciona con Erevos en primer plano, no en
+   segundo plano, y nunca con el código QR grande.
 5. Si su cámara solo muestra el texto, o está lejos, toca **Compartir mi enlace de contacto** y envíaselo.
    Lo pega en el campo bajo **Añadir un contacto** y toca **Añadir**.
 6. O al revés: en **Añadir un contacto**, toca **Hacer foto del código QR** en su pantalla, o **Elegir foto del código
@@ -533,6 +537,10 @@ nada, y sois contactos el uno del otro al instante, sin solicitud de mensaje.
   vacíos. Si la abres de nuevo poco después, muestra la misma invitación mientras nadie la haya tomado; **Invitar a
   otra persona** crea una nueva. Es para una persona, por 7 días, o menos si la invitación del relay termina antes.
   Quien la toma primero la tiene, así que dásela solo a esa persona.
+  En un teléfono Android con NFC activado también puedes dársela por contacto: apoya la parte trasera de su teléfono
+  contra la trasera del tuyo mientras se muestra el código, y su teléfono abre el enlace solo, en Erevos si está
+  instalado, y si no en la página web de Erevos, que ofrece Erevos. Si el NFC está apagado, la hoja te dice que lo
+  actives en los ajustes de Android.
 - **Para unirse:** en un teléfono que aún no tiene relay, **Chat nuevo** muestra una forma de entrar, **Tengo una
   invitación**: tócala. Escanea la invitación con la cámara y abre el enlace en Erevos, o toca **Hacer una foto de la
   invitación** o **Elegir una foto de la invitación**, o pega el enlace y toca **Unirse**. El enlace abre **… te

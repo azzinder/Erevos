@@ -462,6 +462,10 @@ a lê.
    com a câmera, e depois abrir o link no Erevos. A tela **Adicionar um contato** mostra o que ele contém: toque em
    **Adicionar à conversa** só se você mesmo o leu. **Adicionar e vincular a um dos meus contatos** também adiciona a
    pessoa, vinculada ao contato que você escolher, cujo nome a conversa recebe.
+   O código é curto, então qualquer câmera o lê. Quem o lê responde com o próprio link de contato, e depois este celular escreve para a pessoa primeiro. Se ela o ler enquanto ele aparece aqui, ou até 2 minutos depois, vira contato na hora; mais tarde, ela escreve primeiro um pedido de mensagem. **Código QR grande, sem internet** mostra o código inteiro no lugar, que funciona por perto sem internet. **Compartilhar meu link de contato** envia um link curto que qualquer app deixa tocar; no Android ele abre o Erevos, que pergunta antes de aceitá-lo. Para adicionar alguém com o código QR de contato dela, seu celular precisa antes de um relay.
+   O mesmo vale por toque: enquanto o código pequeno de contato aparece e o NFC está ligado no Android, o outro celular
+   o pega se você encostar a parte de trás dele na do seu. Só funciona com o Erevos em primeiro plano, não em segundo
+   plano, e nunca com o código QR grande.
 5. Se a câmera da outra pessoa mostrar só o texto, ou se ela estiver longe, toque em **Compartilhar meu link de
    contato** e envie para ela. Ela cola o link no campo abaixo de **Adicionar um contato** e toca em **Adicionar**.
 6. Ou ao contrário: em **Adicionar um contato**, toque em **Tirar foto do código QR** na tela da outra pessoa, ou em
@@ -532,6 +536,10 @@ nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
   deixar os dois vazios. Aberto de novo logo depois, mostra o mesmo convite enquanto ninguém o pegou; **Convidar outra
   pessoa** cria um novo. Ele vale para uma pessoa, por 7 dias, ou menos se o convite do relay acabar antes. Quem o
   pega primeiro fica com ele, então dê só a essa pessoa.
+  Num celular Android com o NFC ligado você também pode entregá-lo por toque: encoste a parte de trás do celular da
+  pessoa na parte de trás do seu enquanto o código aparece, e o celular dela abre o link sozinho, no Erevos se estiver
+  instalado, ou então na página web do Erevos, que oferece o Erevos. Se o NFC estiver desligado, a tela diz para ligá-lo
+  nas configurações do Android.
 - **Para entrar:** num celular ainda sem relay, **Nova conversa** mostra uma forma de entrar, **Tenho um convite**:
   toque nela. Leia o convite com a câmera e abra o link no Erevos, ou toque em **Tirar foto do convite** ou **Escolher
   foto do convite**, ou cole o link e toque em **Entrar**. O link abre **… convida você para o Erevos**: toque em

@@ -14,6 +14,9 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
        again when the phone starts. -->
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- An invite or a contact link given by touching phones (NfcShare.kt), on phones that can. -->
+  <uses-permission android:name="android.permission.NFC" />
+  <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
 
   <!-- The panic apps Erevos tells as it wipes (Panic.kt, tellAll), as Fasouli: the apps that take
        PanicKit's TRIGGER, which Android 11 and later show only to an app that says so. -->
@@ -44,6 +47,17 @@ Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
         <category android:name="android.intent.category.DEFAULT" />
       </intent-filter>
     </activity>
+    <!-- NfcShare.kt: only Android's NFC service may reach it, and it answers only while Erevos shows an
+         invite or a contact link. -->
+    <service
+      android:name="expo.modules.erevosdevice.NfcShare"
+      android:exported="true"
+      android:permission="android.permission.BIND_NFC_SERVICE">
+      <intent-filter>
+        <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+      </intent-filter>
+      <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/erevos_nfc_share" />
+    </service>
     <receiver android:name="expo.modules.erevosdevice.ReminderReceiver" android:exported="false">
       <intent-filter>
         <action android:name="android.intent.action.BOOT_COMPLETED" />

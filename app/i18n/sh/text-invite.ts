@@ -4,7 +4,7 @@
 
 // The Serbo-Croatian of invites by plain SMS: making one on a contact's card, and taking one (app/contact-card.tsx, app/text-invite.tsx, app/chat.tsx, lib/sms-relay.ts) (i18n/sh/index.ts).
 export const textInvite: Record<string, string> = {
-  'An invite by SMS lasts two days. Ask whoever sent it for a new one.': 'Pozivnica putem SMS-a traje dva dana. Zatražite novu od onoga ko ju je poslao.',
+  'An invite lasts only a few days. Ask whoever sent it for a new one.': 'Pozivnica traje samo nekoliko dana. Zatražite novu od onoga ko ju je poslao.',
   'This Erevos cannot answer an invite by SMS yet: update it, then open the link again.': 'Ovaj Erevos još ne može odgovoriti na pozivnicu putem SMS-a: ažurirajte ga, pa ponovo otvorite vezu.',
   'Joined. {name} is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Pridruženi ste. {name} je vaš kontakt čim njegov ili njen telefon čuje vaš, za trenutak ako je uključen.',
   'Joined. Whoever invited you is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Pridruženi ste. Onaj ko vas je pozvao je vaš kontakt čim njegov telefon čuje vaš, za trenutak ako je uključen.',

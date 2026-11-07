@@ -59,6 +59,10 @@ export type SmsData = {
   sent: SentInvite[];
   got: GotInvite[];
   waiting: WaitingPiece[];
+  /** The secret that opens the answers to this chat's contact card (lib/sms-relay.ts contactCard),
+   *  base64url, '' until one is made. The card names the queue the contact link names, so a new contact
+   *  link lets the cards given before go with that queue. */
+  card: string;
   /** Show the names the phone's contacts give SMS numbers. Off until the owner turns it on. */
   names: boolean;
   sims: NumberSim[];
@@ -98,6 +102,7 @@ export const EMPTY_SMS: SmsData = {
   invites: true,
   sent: [],
   got: [],
+  card: '',
   waiting: [],
   names: false,
   sims: [],
@@ -174,6 +179,7 @@ function checked(value: unknown): SmsData {
           }
         : null,
     ),
+    card: isText(v.card) && /^[A-Za-z0-9_-]{43}$/.test(v.card) ? v.card : '',
     got: list(v.got, (g) =>
       (g.number === '' || isNumber(g.number)) && isText(g.sender) && /^[0-9a-f]{48}$/.test(g.sender) && isTime(g.at)
         ? { number: g.number as string, sender: g.sender, at: g.at, ...(isName(g.name) ? { name: g.name } : {}) }

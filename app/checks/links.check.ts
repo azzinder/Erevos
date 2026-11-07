@@ -284,3 +284,15 @@ test('an invite held through the first start\'s setup still opens after it, howe
   setupKeepsLink(5000);
   assert.equal(takeLink(5000), null, 'nothing held, nothing made up');
 });
+
+test('Erevos\'s invite and contact pages open their screens in the app', () => {
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i#AQAbc-_9'), '/text-invite?d=AQAbc-_9');
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i/#AQAbc'), '/text-invite?d=AQAbc');
+  assert.equal(linkHref('/i#AQAbc'), '/text-invite?d=AQAbc');
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/c#id=ab&relay=wss%3A%2F%2Fr.example&key=Zz-_&n=Maria'), '/contact?id=ab&relay=wss%3A%2F%2Fr.example&key=Zz-_&n=Maria');
+  // Other pages of the server, other servers, and odd data are no link.
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/chat#x'), '');
+  assert.equal(linkHref('https://evil.example/i#AQAbc'), '');
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i#a<b'), '');
+  assert.equal(linkHref('https://erevos-web.lphl.nekten.eu/i'), '');
+});

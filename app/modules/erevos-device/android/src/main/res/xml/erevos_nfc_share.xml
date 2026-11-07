@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+SPDX-FileCopyrightText: 2026 azzinder
+SPDX-License-Identifier: AGPL-3.0-or-later
+Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
+-->
+<!-- NfcShare.kt: the NFC Forum Type 4 tag application, answered only with the phone unlocked. -->
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+  android:description="@string/erevos_nfc_share"
+  android:requireDeviceUnlock="true">
+  <aid-group android:description="@string/erevos_nfc_share" android:category="other">
+    <aid-filter android:name="D2760000850101" />
+  </aid-group>
+</host-apdu-service>

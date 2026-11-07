@@ -456,6 +456,10 @@ e-mail da bi vas dosegao: ko god ima vaš link za kontakt može pisati u vaš re
    kamerom, a zatim otvori link u Erevosu. Ekran **Dodaj kontakt** pokazuje šta sadrži: dodirnite **Dodaj u
    razgovore** samo ako ste ga sami skenirali. **Dodaj i poveži s jednim od mojih kontakata** također dodaje osobu,
    povezanu s kontaktom koji izaberete, čije ime razgovor preuzima.
+   Kod je kratak, pa ga čita svaka kamera. Ko ga skenira, odgovara svojim linkom za kontakt, a zatim mu ovaj telefon prvi piše. Ako ga skenira dok se ovdje prikazuje, ili do 2 minute poslije, odmah postaje kontakt; kasnije prvo piše zahtjev za poruku. **Veliki QR kod, bez interneta** umjesto toga prikazuje cijeli kod, koji radi u blizini bez interneta. **Podijeli moj link za kontakt** šalje kratak link koji svaka aplikacija dopušta dodirnuti; na Androidu otvara Erevos, koji pita prije nego ga preuzme. Da biste nekoga dodali njegovim QR kodom za kontakt, vašem telefonu prvo treba relay.
+   Isto vrijedi za dodir: dok se prikazuje mali kod za kontakt, a NFC je na Androidu uključen, drugi telefon ga uzima
+   ako njegovu poleđinu prislonite uz poleđinu svog. Radi samo dok je Erevos u prvom planu, ne u pozadini, i nikad s
+   velikim QR kodom.
 5. Ako kamera te osobe prikazuje samo tekst, ili je daleko, dodirnite **Podijeli moj link za kontakt** i pošaljite
    joj ga. Ona ga zalijepi u polje pod **Dodaj kontakt** i dodirne **Dodaj**.
 6. Ili obrnuto: pod **Dodaj kontakt** dodirnite **Snimi QR kod** na njenom ekranu, ili **Izaberi fotografiju QR
@@ -525,6 +529,9 @@ ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgov
   opet otvorite, prikazuje istu pozivnicu dok je niko nije uzeo; **Pozovite nekog drugog** pravi novu. Pozivnica je za
   jednu osobu, na 7 dana, ili kraće ako pozivnica za relay ističe ranije. Ko je prvi iskoristi, njegova je, pa je
   dajte samo toj osobi.
+  Na Android telefonu s uključenim NFC-om možete je dati i dodirom: prislonite poleđinu njenog telefona uz poleđinu
+  svog dok se kod prikazuje, a njen telefon sam otvori link, u Erevosu ako je instaliran, a inače na web stranici
+  Erevosa, koja nudi Erevos. Ako je NFC isključen, na ekranu piše da ga uključite u postavkama Androida.
 - **Da se pridružite:** na telefonu koji još nema relay, **Novi razgovor** prikazuje jedan način ulaska, **Imam
   pozivnicu**: dodirnite ga. Skenirajte pozivnicu kamerom i otvorite link u Erevosu, ili dodirnite **Fotografišite
   pozivnicu** ili **Izaberite fotografiju pozivnice**, ili zalijepite link i dodirnite **Pridruži se**. Link otvara

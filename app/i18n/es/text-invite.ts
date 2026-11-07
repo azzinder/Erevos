@@ -4,7 +4,7 @@
 
 // The Spanish of invites by plain SMS: making one on a contact's card, and taking one (app/contact-card.tsx, app/text-invite.tsx, app/chat.tsx, lib/sms-relay.ts) (i18n/es/index.ts).
 export const textInvite: Record<string, string> = {
-  'An invite by SMS lasts two days. Ask whoever sent it for a new one.': 'Una invitación por SMS dura dos días. Pide una nueva a quien la envió.',
+  'An invite lasts only a few days. Ask whoever sent it for a new one.': 'Una invitación dura solo unos días. Pide una nueva a quien la envió.',
   'This Erevos cannot answer an invite by SMS yet: update it, then open the link again.': 'Este Erevos aún no puede responder a una invitación por SMS: actualízalo y vuelve a abrir el enlace.',
   'Joined. {name} is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Te has unido. {name} será tu contacto en cuanto su teléfono sepa del tuyo, enseguida si está encendido.',
   'Joined. Whoever invited you is your contact as soon as their phone hears from yours, in a moment if it is on.': 'Te has unido. Quien te invitó será tu contacto en cuanto su teléfono sepa del tuyo, enseguida si está encendido.',

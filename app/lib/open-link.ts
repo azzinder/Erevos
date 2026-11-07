@@ -23,6 +23,8 @@ const listeners = new Set<() => void>();
 /** The screen a link names, as the app's routes (erevos://contacts?x=1 is /contacts?x=1, erevos://?show=sms
  *  is the home screen's /?show=sms); '' for the home screen with nothing more, or another kind of link. */
 export function linkHref(url: string): string {
+  const web = webLinkHref(url);
+  if (web) return web;
   const match = /^erevos:\/*([^?#]*)(\?[^#]*)?/i.exec(url.trim());
   if (!match) return '';
   const path = match[1].replace(/\/+$/, '');
@@ -30,6 +32,22 @@ export function linkHref(url: string): string {
   if (!path) return query ? `/${query}` : '';
   if (!/^[a-z0-9-]+(\/[a-z0-9-]+)*$/i.test(path)) return '';
   return `/${path}${query}`;
+}
+
+// Erevos's own pages on LPHL's web server that Android opens in Erevos (app.json intentFilters,
+// with the server's .well-known/assetlinks.json): an invite (/i#..., lib/text-invite.ts) and a
+// contact page (/c#..., lib/contact-code.ts), whose data follows #. The same screens as the links
+// those pages open in the app. Expo Router may hand over the whole address or only its path.
+const WEB_PAGE = /^(?:https:\/\/erevos-web\.lphl\.nekten\.eu)?\/([ic])\/?#(.+)$/i;
+
+/** The screen of a link to Erevos's invite or contact page, or '' for any other. */
+export function webLinkHref(url: string): string {
+  const match = WEB_PAGE.exec(url.trim());
+  if (!match) return '';
+  const data = match[2];
+  if (match[1].toLowerCase() === 'i') return /^[A-Za-z0-9_-]+$/.test(data) ? `/text-invite?d=${data}` : '';
+  // The contact page's fields, as the contact link has them after ?.
+  return /^[A-Za-z0-9_%.~+=&-]+$/.test(data) ? `/contact?${data}` : '';
 }
 
 /** A link's screen, and its details as the screen's params: /phone?number=%2B30 is /phone and { number: '+30' }. */

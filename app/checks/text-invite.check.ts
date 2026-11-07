@@ -185,3 +185,26 @@ test('an invite shown as a QR code has no number, lasts its own days, and takes 
   assert.equal((await SmsLink.open(0, key)).state.sent[0].name, undefined);
   assert.ok(!kept.textInviteWaits('x'));
 });
+
+test('a contact card has no invite to the relay and no end, and is shorter still', () => {
+  const card = made({ code: '', expires: 0, card: true });
+  const link = textInviteLink(card);
+  assert.deepEqual(parseTextInvite(link), card);
+  assert.ok(link.length <= 180, `${link.length}`);
+  // With no relay key and no name it is shorter, and still read.
+  const bare = made({ code: '', expires: 0, card: true, relayKey: '', name: '' });
+  assert.deepEqual(parseTextInvite(textInviteLink(bare)), bare);
+  const elsewhere = made({ code: '', expires: 0, card: true, relay: 'wss://relay.example.org' });
+  assert.deepEqual(parseTextInvite(textInviteLink(elsewhere)), elsewhere);
+  // A card's relay is held to an invite's rules: no plain ws:// to the internet.
+  assert.equal(parseTextInvite(textInviteLink(made({ code: '', expires: 0, card: true, relay: 'ws://relay.example.org' }))), null);
+});
+
+test('the contact card opens the answers sealed to it, and stays for the next', async () => {
+  files.clear();
+  const key = randomBytes(32);
+  const link = await SmsLink.open(0, key);
+  const secret = await link.cardSecret();
+  assert.deepEqual(await (await SmsLink.open(0, key)).cardSecret(), secret, 'made once');
+  assert.ok(link.waiting);
+});

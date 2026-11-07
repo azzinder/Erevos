@@ -369,14 +369,33 @@ export class SmsLink {
 
   /** Whether any invite sent from here still waits for its answer. */
   get waiting(): boolean {
-    return this.data.sent.length > 0;
+    return this.data.sent.length > 0 || !!this.data.card;
+  }
+
+  /** The secret of this chat's contact card, made the first time it is asked for. */
+  async cardSecret(): Promise<Uint8Array> {
+    if (!this.data.card) {
+      const made = toBase64Url(randomBytes(32));
+      await this.update((d) => (d.card ? d : { ...d, card: made }));
+    }
+    return fromBase64Url(this.data.card);
   }
 
   /** Opens an answer to an invite sent from here: the number invited, its contact link, and the
    *  name of the phone's contact it went to ('' but for an invite by plain SMS). Null when `bytes`
-   *  answers none of them. The invite is then done. */
-  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string; name: string } | null> {
+   *  answers none of them. The invite is then done; an answer to the contact card (`card`) leaves the
+   *  card as it is, as it is for anyone who has it. */
+  async openAnswer(bytes: Uint8Array): Promise<{ number: string; link: string; name: string; card?: true } | null> {
     if (!canSealOpen() || bytes[0] !== 1) return null;
+    if (this.data.card) {
+      let link: string | null = null;
+      try {
+        link = readInviteAnswer((await sealOpen(fromBase64Url(this.data.card), bytes)).message);
+      } catch {
+        // Not an answer to the card.
+      }
+      if (link) return { number: '', link, name: '', card: true };
+    }
     for (const sent of this.data.sent) {
       let link: string | null;
       try {

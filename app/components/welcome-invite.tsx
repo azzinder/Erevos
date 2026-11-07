@@ -12,6 +12,7 @@ import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { makeInvite, type Relay } from '../lib/relay';
 import { oldToken } from '../lib/relay-signin';
+import { useNfcShare } from '../lib/nfc-share';
 import { makeShortInvite, nameShortInvite, shortInviteWaits, type ShortInvite } from '../lib/sms-relay';
 import { textInviteLink } from '../lib/text-invite';
 import { welcomeLink } from '../lib/welcome';
@@ -59,6 +60,8 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
   const [failed, setFailed] = useState('');
   const [made, setMade] = useState<Made | null>(null);
   const making = useRef(false);
+  // The short invite goes by touching phones too, while it shows (lib/nfc-share.ts).
+  const nfc = useNfcShare(visible && made?.short ? made.link : null);
   const key = `${currentSpace().space}|${contactLink ?? ''}`;
 
   // Each time it opens: the invite at once, the one still waiting from a moment ago or a new one.
@@ -198,6 +201,15 @@ export function WelcomeInvite({ visible, onClose, e2e, relay, onOwnLine, contact
               when: laterLabel(made.until),
             })}
           </Text>
+          {nfc === 'on' ? (
+            <Text variant="caption" tone="muted">
+              {t('Or hold the back of their phone to the back of yours: their phone opens the invite.')}
+            </Text>
+          ) : nfc === 'off' ? (
+            <Text variant="caption" tone="muted">
+              {t('Turn on NFC in Android\'s settings to give it by touching phones too.')}
+            </Text>
+          ) : null}
           {made.access ? null : (
             <Text variant="caption" tone="muted">
               {t('Your relay lets this phone invite no one, so their phone uses it only as your contact link lets it: if it needs a token, they need one of their own.')}

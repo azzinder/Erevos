@@ -43,8 +43,12 @@ export type TextInvite = {
   relayKey: string;
   /** The name the inviting phone gives itself, or ''. */
   name: string;
-  /** When it is over, milliseconds. */
+  /** When it is over, milliseconds; 0 for a contact card, which lasts. */
   expires: number;
+  /** A contact card (Your contact link's short QR code, contactCard in lib/sms-relay.ts): no invite to
+   *  the relay (`code` is ''), never over, and whoever takes it writes a message request, as with a
+   *  contact link. Flag bit 2 (4), with no `code` and the time 0 in the body. */
+  card?: true;
 };
 
 const VERSION = 1;
@@ -57,15 +61,16 @@ function body(invite: TextInvite): Uint8Array {
   let letters = Array.from(invite.name.trim());
   while (utf8Encode(letters.join('')).length > MOST_NAME) letters = letters.slice(0, -1);
   const name = utf8Encode(letters.join(''));
-  const out = new Uint8Array(6 + 24 + 32 + 32 + relayKey.length + 1 + name.length + relay.length);
+  const code = invite.card ? new Uint8Array(0) : fromHex(invite.code);
+  const out = new Uint8Array(6 + 24 + 32 + code.length + relayKey.length + 1 + name.length + relay.length);
   const view = new DataView(out.buffer);
   out[0] = VERSION;
-  out[1] = (relayKey.length ? 1 : 0) | (relay.length ? 2 : 0);
-  view.setUint32(2, Math.floor(invite.expires / 1000));
+  out[1] = (relayKey.length ? 1 : 0) | (relay.length ? 2 : 0) | (invite.card ? 4 : 0);
+  view.setUint32(2, invite.card ? 0 : Math.floor(invite.expires / 1000));
   out.set(fromHex(invite.sender), 6);
   out.set(invite.key, 30);
-  out.set(fromHex(invite.code), 62);
-  let at = 94;
+  out.set(code, 62);
+  let at = 62 + code.length;
   out.set(relayKey, at);
   at += relayKey.length;
   out[at] = name.length;
@@ -81,17 +86,19 @@ export function textInviteLink(invite: TextInvite): string {
 
 /** The invite in a link's data (what follows # or d=): null when it is not one. Over or not, as it says. */
 export function textInviteOf(data: unknown): TextInvite | null {
-  if (typeof data !== 'string' || !/^[A-Za-z0-9_-]{100,600}$/.test(data)) return null;
+  if (typeof data !== 'string' || !/^[A-Za-z0-9_-]{84,600}$/.test(data)) return null;
   let bytes: Uint8Array;
   try {
     bytes = fromBase64Url(data);
   } catch {
     return null;
   }
-  if (bytes.length < 95 || bytes[0] !== VERSION || bytes[1] > 3) return null;
+  if (bytes.length < 63 || bytes[0] !== VERSION || bytes[1] > 7) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const hasKey = (bytes[1] & 1) === 1;
-  let at = 94;
+  const card = (bytes[1] & 4) === 4;
+  if (!card && bytes.length < 95) return null;
+  let at = card ? 62 : 94;
   const relayKey = hasKey ? bytes.subarray(at, at + 32) : null;
   if (hasKey) at += 32;
   if (at >= bytes.length) return null;
@@ -100,8 +107,9 @@ export function textInviteOf(data: unknown): TextInvite | null {
   const name = utf8Decode(bytes.subarray(at + 1, at + 1 + length));
   const relay = (bytes[1] & 2) === 2 ? utf8Decode(bytes.subarray(at + 1 + length)) : START_RELAY;
   if ((bytes[1] & 2) === 0 && at + 1 + length !== bytes.length) return null;
-  const code = toHex(bytes.subarray(62, 94));
-  const checked = checkInvite(relay, code);
+  const code = card ? '' : toHex(bytes.subarray(62, 94));
+  // A card has no invite to the relay: its address is checked as an invite's would be.
+  const checked = checkInvite(relay, card ? '0'.repeat(64) : code);
   if (!checked) return null;
   return {
     sender: toHex(bytes.subarray(6, 30)),
@@ -110,7 +118,8 @@ export function textInviteOf(data: unknown): TextInvite | null {
     relay: checked.relayUrl,
     relayKey: relayKey ? toBase64Url(relayKey) : '',
     name: name.replace(/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2028\u2029\u2066-\u2069]/g, ' ').replace(/\s+/g, ' ').trim(),
-    expires: view.getUint32(2) * 1000,
+    expires: card ? 0 : view.getUint32(2) * 1000,
+    ...(card ? { card: true as const } : {}),
   };
 }
 

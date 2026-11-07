@@ -489,6 +489,10 @@ personne n’a besoin de ton numéro de téléphone ou de ton e-mail pour te joi
    téléphone le scanner avec son appareil photo, puis ouvrir le lien dans Erevos. L’écran **Ajouter un contact** montre
    ce qu’il contient : appuie sur **Ajouter à la discussion** seulement si tu l’as scanné toi-même. **Ajouter et
    associer à un de mes contacts** l’ajoute aussi, relié au contact que tu choisis, dont la discussion prend le nom.
+   Le code est court, donc n’importe quel appareil photo le lit. Qui le scanne répond avec son propre lien de contact, puis ce téléphone lui écrit en premier. S’il le scanne pendant qu’il s’affiche ici, ou jusqu’à 2 minutes après, il devient un contact aussitôt ; plus tard, il écrit d’abord une demande de message. **Grand code QR, sans internet** montre à la place le code entier, qui marche à proximité sans internet. **Partager mon lien de contact** envoie un lien court que toute application laisse toucher ; sur Android, il ouvre Erevos, qui demande avant de le prendre. Pour ajouter quelqu’un avec son code QR de contact, ton téléphone a d’abord besoin d’un relais.
+   Il en va de même par contact : tant que le petit code de contact s’affiche et que le NFC est activé sur Android,
+   l’autre téléphone le prend si tu poses son dos contre le dos du tien. Cela ne marche que lorsqu’Erevos est au premier
+   plan, pas en arrière-plan, et jamais avec le grand code QR.
 5. Si son appareil photo ne montre que le texte, ou si la personne est loin, appuie sur **Partager mon lien de contact**
    et envoie-le-lui. Elle le colle dans le champ sous **Ajouter un contact** et appuie sur **Ajouter**.
 6. Ou dans l’autre sens : sous **Ajouter un contact**, appuie sur **Photographier le code QR** sur son écran, ou sur
@@ -563,6 +567,10 @@ lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans
   invitation tant que personne ne l’a prise ; **Inviter quelqu’un d’autre** en crée une nouvelle. Elle est pour une
   personne, pour 7 jours, ou moins si l’invitation du relais finit plus tôt. Celui qui la prend en premier l’a, donc
   donne-la à cette personne seulement.
+  Sur un téléphone Android dont le NFC est activé, tu peux aussi la lui donner par contact : pose le dos de son
+  téléphone contre le dos du tien pendant que le code s’affiche, et son téléphone ouvre le lien tout seul, dans Erevos
+  s’il est installé, sinon sur la page web d’Erevos, qui propose Erevos. Si le NFC est désactivé, la fenêtre te dit de
+  l’activer dans les réglages d’Android.
 - **Pour rejoindre :** sur un téléphone qui n’a pas encore de relais, **Nouvelle discussion** affiche une façon
   d’entrer, **J’ai une invitation** : appuie dessus. Scanne l’invitation avec l’appareil photo et ouvre le lien dans
   Erevos, ou appuie sur **Prendre une photo de l’invitation** ou **Choisir une photo de l’invitation**, ou colle le
