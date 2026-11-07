@@ -32,6 +32,12 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Matrix's encryption wipes its keys again** (vodozemac 0.11.2): vodozemac 0.11.1, which does the Olm and Megolm
+  encryption of Matrix chats, left copies of keys in memory after use: each step of Olm's ratchet left the new root and
+  chain key behind (RUSTSEC-2026-0451), and the ciphers and hashes under it were built without their wiping
+  (RUSTSEC-2026-0445). Someone who could read the app's memory might then have read earlier Matrix messages of that
+  chain. 0.11.2 wipes them; nothing else changes.
+
 - **A chat that opened at an old message**: as a chat opened, its thread went to its end animated, and on the way
   passed the top of what it showed, where scrolling draws earlier messages and keeps in place what was read there: so
   a chat of more than 100 messages, or with imported ones, could stay at one of its oldest drawn, often a photo. Now
