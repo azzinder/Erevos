@@ -1590,6 +1590,10 @@ between.
 - **Writing:** who is writing in the chat now, as the Matrix server says, shows under it with **typing…**. Erevos says
   it of you only if you turn on **Say when I am writing** on the Matrix screen; it is off at first, as it goes through
   the Matrix server not encrypted, so the server learns each time you write.
+- **Online:** in a chat with one person, under their name it says **Online**, **Away** or **Do not disturb**, with the
+  words they set, or when they were last online, as their Matrix server says, and their picture in the chat list has a
+  green dot while they are online. Some servers do not say it. Erevos says it of you only if you turn on **Say when I
+  am online** on the Matrix screen; it is off at first, as it goes through the Matrix server not encrypted.
 - **Marks:** your messages show **✓** once the Matrix server took them and **✓✓✓** once every other member of the chat
   read them, as each one's Matrix app tells their server (read receipts). Matrix has no mark for a message that
   reached a phone, so there is no **✓✓**. Hold a message of yours down and choose **Who read it** to see who read it
@@ -1720,6 +1724,10 @@ bridge sits in between.
   you only if you turn on **Say when I am writing** on the XMPP screen, and only to a contact who sees your presence,
   never in a group; it is off at first, as it goes through the XMPP server not encrypted, so the server learns each
   time you write.
+- **Online:** under a contact's name it says **Online**, **Away** or **Do not disturb**, with the words they set, or
+  when they were last online, as their apps say, and their picture in the chat list has a green dot while they are
+  online; only of a contact who lets you see their presence. As in every XMPP app, the contacts who see your presence
+  see when Erevos is connected; it goes through the XMPP servers not encrypted.
 - **Profile pictures:** a Matrix room, or the person in a chat with one person, shows their picture in the chat list,
   and so does an XMPP contact. **Choose a photo**, on the XMPP screen, sets yours for your contacts; **Remove** takes
   it away. Pictures are not encrypted in any Matrix or XMPP app: the server sees them, and your contacts see yours.

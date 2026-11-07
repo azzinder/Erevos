@@ -43,6 +43,7 @@ import {
   startChat,
   syncApply,
   syncFetch,
+  sendOwnPresence,
   takeBackReaction,
   type MatrixFile,
   type MatrixRoom,
@@ -205,6 +206,9 @@ function changeAccount<T>(it: Live, change: () => Promise<T>): Promise<T> {
   });
 }
 
+// The accounts told they are offline this run (loop).
+const toldOffline = new WeakSet<MatrixState>();
+
 async function loop(it: Live): Promise<void> {
   if (it.running) return;
   it.running = true;
@@ -227,6 +231,11 @@ async function loop(it: Live): Promise<void> {
         if (it.problem) {
           it.problem = '';
           told();
+        }
+        // Once a run: an account that showed online before (as every one did before 7.0.0) shows offline now.
+        if (it.state && !it.state.sayOnline && !toldOffline.has(it.state)) {
+          toldOffline.add(it.state);
+          void sendOwnPresence(it.state).catch(() => undefined);
         }
         if (!it.pushChecked && it.holder === 'space') {
           it.pushChecked = true;
@@ -632,6 +641,16 @@ export function matrixSetSayTyping(on: boolean): Promise<void> {
   return changeAccount(it, async () => {
     if (on) it.state.sayTyping = true;
     else delete it.state.sayTyping;
+  });
+}
+
+/** Whether the others see when we are online: the homeserver is told at once. */
+export function matrixSetSayOnline(on: boolean): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    if (on) it.state.sayOnline = true;
+    else delete it.state.sayOnline;
+    await sendOwnPresence(it.state).catch(() => undefined);
   });
 }
 

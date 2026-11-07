@@ -17,6 +17,13 @@ On main, not released yet:
 - **Reminders that come again**: `erevos://myself?…&every=1m` (or `Nd`, `Nw`, `Nm`, `Ny`) keeps a note whose reminder
   repeats, as Fasouli asks for a scheduled payment. Once seen it moves to its next time (lib/note-repeat.ts), on the
   same clock time, a month's last day kept for the 29th to 31st; it goes to linked devices with the note.
+- **Who is online on Matrix and XMPP**: under the name of a Matrix contact in a chat with one person, or of an XMPP
+  contact who lets you see their presence, the chat says **Online**, **Away** or **Do not disturb**, with the words
+  they set, or when they were last online, as their server says (m.presence; RFC 6121 presence with XEP-0319 idle
+  time), and their picture in the chat list has a green dot. It is kept in memory only, never in the account's file
+  or a backup, and an XMPP session forgets it as it begins (lib/net-presence.ts). On Matrix, Erevos now syncs with
+  `set_presence=offline` and tells the homeserver once a run that it is offline, unless **Say when I am online** is
+  turned on on the Matrix screen: before, every sync made the account show online.
 - **New modules on after an update**: where the modules were chosen before the Collection came, as on a phone or
   computer updated from 6, the Collection stayed off after the update, as the choice was kept as a bare list of the
   modules on (lib/modules.ts). The choice is now kept with the modules there were when it was made, and any module

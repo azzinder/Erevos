@@ -25,4 +25,15 @@ export const lastSeen: Record<string, string> = {
     'Désactivé : personne ne voit quand tu as eu Erevos ouvert pour la dernière fois, et tu ne vois celle de personne.',
   'It goes end-to-end encrypted, inside what goes to your contacts anyway, never to the relay. Only for the chats of this space: hidden chats have their own switch, in a chat’s details there. Whether you are online now has its own switch in each chat: Appear offline.':
     'Elle part chiffrée de bout en bout, à l’intérieur de ce qui part de toute façon vers tes contacts, jamais vers le relais. Seulement pour les discussions de cet espace : les discussions masquées ont leur propre interrupteur, dans les détails d’une discussion de là-bas. Savoir si tu es en ligne maintenant a son propre interrupteur dans chaque discussion : Apparaître hors ligne.',
+  // Matrix and XMPP contacts online, as their servers say (lib/net-presence.ts), and our own on Matrix (components/say-typing.tsx).
+  "Away":
+    "Absent",
+  "Do not disturb":
+    "Ne pas déranger",
+  "Say when I am online":
+    "Dire quand je suis en ligne",
+  "The others see when you are online, and when you last were. It goes through the {server} server not encrypted, so the server learns it too.":
+    "Les autres voient quand tu es en ligne, et quand tu l’étais pour la dernière fois. Cela passe par le serveur {server} sans chiffrement, donc le serveur l’apprend aussi.",
+  "The others do not see when you are online. You still see it of those whose server says it.":
+    "Les autres ne voient pas quand tu es en ligne. Tu le vois toujours pour ceux dont le serveur le dit.",
 };

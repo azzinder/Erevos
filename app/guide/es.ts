@@ -1725,6 +1725,11 @@ ningún puente se pone en medio.
   **escribiendo…**. Erevos lo dice de ti solo si activas **Avisar cuando escribo** en la pantalla de Matrix; al
   principio está desactivado, ya que pasa por el servidor de Matrix sin cifrar, así que el servidor sabe cada vez que
   escribes.
+- **En línea:** en un chat con una persona, bajo su nombre dice **En línea**, **Ausente** o **No molestar**, con las
+  palabras que puso, o cuándo estuvo en línea por última vez, según dice su servidor de Matrix, y su foto en la lista
+  de chats tiene un punto verde mientras está en línea. Algunos servidores no lo dicen. Erevos lo dice de ti solo si
+  activas **Avisar cuando estoy en línea** en la pantalla de Matrix; al principio está desactivado, ya que pasa por el
+  servidor de Matrix sin cifrar.
 - **Marcas:** tus mensajes muestran **✓** cuando el servidor de Matrix los recogió y **✓✓✓** cuando todos los demás
   miembros del chat los leyeron, según lo dice a su servidor la app de Matrix de cada uno (confirmaciones de lectura).
   Matrix no tiene marca para un mensaje que llegó a un teléfono, así que no hay **✓✓**. Mantén pulsado un mensaje tuyo
@@ -1867,6 +1872,10 @@ como esas apps: ningún puente se pone en medio.
   chat. Erevos lo dice de ti solo si activas **Avisar cuando escribo** en la pantalla de XMPP, y solo a un contacto
   que ve tu presencia, nunca en un grupo; al principio está desactivado, ya que pasa por el servidor XMPP sin cifrar,
   así que el servidor sabe cada vez que escribes.
+- **En línea:** bajo el nombre de un contacto dice **En línea**, **Ausente** o **No molestar**, con las palabras que
+  puso, o cuándo estuvo en línea por última vez, según dicen sus apps, y su foto en la lista de chats tiene un punto
+  verde mientras está en línea; solo de un contacto que te deja ver su presencia. Como en toda app de XMPP, los
+  contactos que ven tu presencia ven cuándo Erevos está conectado; pasa por los servidores XMPP sin cifrar.
 - **Fotos de perfil:** una sala de Matrix, o la persona en un chat con una persona, muestra su foto en la lista de
   chats, y lo mismo un contacto de XMPP. **Elegir una foto**, en la pantalla de XMPP, pone la tuya para tus contactos;
   **Quitar** la quita. Las fotos no están cifradas en ninguna app de Matrix ni XMPP: el servidor las ve, y tus

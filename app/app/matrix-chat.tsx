@@ -31,7 +31,8 @@ import { t } from '../lib/i18n';
 import { firstLink, fitPreview } from '../lib/link-preview';
 import { CAN_PREVIEW, makePreview } from '../lib/make-preview';
 import { mentionsIn, namesFor, typingMention, withMention, type Nameable } from '../lib/mentions';
-import { isMatrixId, MATRIX_TYPING_SHOWS, matrixTyping, onMatrixTyping, readByAll, readersOf, type MatrixMessage } from '../lib/matrix';
+import { directOther, isMatrixId, MATRIX_TYPING_SHOWS, matrixPresence, matrixTyping, onMatrixTyping, readByAll, readersOf, type MatrixMessage } from '../lib/matrix';
+import { presenceText } from '../lib/net-presence';
 import { startMatrixCall } from '../lib/matrix-calls';
 import { pollOver, pollShown } from '../lib/matrix-parts';
 import { canMatrixVoip, startMatrixVoip } from '../lib/matrix-voip';
@@ -251,6 +252,11 @@ export default function MatrixChatScreen() {
   const other = room.direct ? Object.keys(room.members).find((who) => who !== me) : undefined;
   const check = matrixVerifications(where).find((v) => v.roomId === roomId);
   const writing = matrixTyping(state, roomId);
+  // Whether the one person of the chat is online, as their homeserver says (when it says).
+  const presence = thread ? '' : (() => {
+    const one = directOther(state, room);
+    return one ? presenceText(matrixPresence(state, one)) : '';
+  })();
 
   const stopEditing = () => setEditId(null);
 
@@ -498,6 +504,11 @@ export default function MatrixChatScreen() {
           </>
         ) : null}
       </Row>
+      {presence ? (
+        <Text variant="caption" numberOfLines={2}>
+          {presence}
+        </Text>
+      ) : null}
       <Text variant="caption" tone="muted">
         {room.encrypted ? t('Matrix · encrypted, not anonymous') : t('Not encrypted: the Matrix server can read this chat.')}
       </Text>

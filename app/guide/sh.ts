@@ -1663,6 +1663,10 @@ između.
 - **Piše:** ko sada piše u razgovoru, kako kaže Matrix server, vidi se ispod s **piše…**. Erevos to kaže za vas samo
   ako uključite **Reci kad pišem** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano,
   pa server saznaje svaki put kad pišete.
+- **Na mreži:** u razgovoru s jednom osobom ispod njenog imena piše **Na mreži**, **Odsutan** ili **Ne ometaj**, s
+  riječima koje je postavila, ili kad je posljednji put bila na mreži, kako kaže njen Matrix server, a njena slika na
+  popisu razgovora ima zelenu tačku dok je na mreži. Neki serveri to ne kažu. Erevos to kaže za vas samo ako uključite
+  **Reci kad sam na mreži** na ekranu Matrix; isprva je isključeno, jer ide preko Matrix servera nešifrirano.
 - **Oznake:** vaše poruke prikazuju **✓** kad ih je preuzeo Matrix server, a **✓✓✓** kad su ih pročitali svi ostali
   članovi razgovora, kako to Matrix aplikacija svakog od njih javlja njegovom serveru (potvrde o čitanju). Matrix nema
   oznaku za poruku koja je stigla na telefon, pa nema ni **✓✓**. Zadržite prst na svojoj poruci i izaberite **Ko je
@@ -1792,6 +1796,10 @@ aplikacije: nikakav most nije između.
 - **Pisanje:** kad aplikacija druge osobe javi da piše, **piše…** se prikaže ispod razgovora. Erevos to javlja o vama
   samo ako uključite **Reci kad pišem** na ekranu XMPP, i samo kontaktu koji vidi vašu prisutnost, nikad u grupi;
   isprva je isključeno, jer ide preko XMPP servera nešifrirano, pa server saznaje svaki put kad pišete.
+- **Na mreži:** ispod imena kontakta piše **Na mreži**, **Odsutan** ili **Ne ometaj**, s riječima koje je postavio,
+  ili kad je posljednji put bio na mreži, kako kažu njegove aplikacije, a njegova slika na popisu razgovora ima zelenu
+  tačku dok je na mreži; samo za kontakt koji vam dopušta da vidite njegovu prisutnost. Kao u svakoj XMPP aplikaciji,
+  kontakti koji vide vašu prisutnost vide kad je Erevos povezan; ide preko XMPP servera nešifrirano.
 - **Profilne slike:** Matrix soba, ili osoba u razgovoru s jednom osobom, prikazuje svoju sliku na popisu razgovora, a
   tako i XMPP kontakt. **Odaberi fotografiju**, na ekranu XMPP, postavlja vašu za vaše kontakte; **Ukloni** je
   uklanja. Slike nisu šifrirane ni u jednoj Matrix ili XMPP aplikaciji: server ih vidi, a vaši kontakti vide vašu.

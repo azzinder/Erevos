@@ -34,6 +34,9 @@ import { loadNotice, onNotice, shownRelease, type Told } from '../lib/release-no
 import { buildInbox, filterInbox, groupRows, inboxParts, matrixInboxRows, mergeRows, nostrInboxRows, rowOn, showsIn, shownName, tabUnread, xmppInboxRows, type InboxGroup, type InboxRow, type InboxShow } from '../lib/inbox';
 import { moduleOn, onModulesChange, useModules } from '../lib/modules';
 import { matrixLearnJoins, matrixNow, onMatrixChange } from '../lib/matrix-store';
+import { directOther, matrixPresence } from '../lib/matrix';
+import { isOn } from '../lib/net-presence';
+import { xmppOnline } from '../lib/xmpp';
 import { onXmppChange, xmppNow } from '../lib/xmpp-store';
 import { nostrDmNow, onNostrDmChange } from '../lib/nostr-dm-store';
 import { isPublicItem, isPublicRoom, type PublicItem } from '../lib/public-feed';
@@ -447,6 +450,19 @@ function Home() {
     if (nostr) all = mergeRows(all, nostrInboxRows(nostr));
     return all;
   }, [rows, modules, matrix, matrixTick, xmpp, xmppTick, nostr, nostrTick]);
+  // Who shows online: Erevos contacts (lookOnline), and Matrix and XMPP ones as their servers say.
+  const xmppConnected = modules.has('xmpp') && xmppNow().online;
+  const allOnline = useMemo(() => {
+    const ids = new Set(online);
+    if (xmpp && xmppConnected) for (const jid of xmppOnline(xmpp)) ids.add(`xmpp:${jid}`);
+    if (matrix) {
+      for (const room of Object.values(matrix.rooms)) {
+        const one = directOther(matrix, room);
+        if (one && isOn(matrixPresence(matrix, one))) ids.add(`matrix:${room.id}`);
+      }
+    }
+    return ids;
+  }, [online, xmpp, xmppConnected, xmppTick, matrix, matrixTick]);
   const shown = useMemo(() => {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
@@ -668,10 +684,10 @@ function Home() {
             ) : item.sms ? (
               <ChatRow row={item} now={now} onLong={() => setTarget({ address: item.sms, name: shownName(item), at: item.at, folder: 'list' })} />
             ) : (
-              <ChatRow row={item} now={now} online={online.has(item.identity)} />
+              <ChatRow row={item} now={now} online={allOnline.has(item.identity)} />
             )
           }
-          extraData={feedShown ? feed.extra : online}
+          extraData={feedShown ? feed.extra : allOnline}
           refreshControl={feed.refreshControl}
           onEndReached={feed.more}
           onEndReachedThreshold={0.5}

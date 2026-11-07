@@ -39,6 +39,7 @@ import type { MatrixPush } from './matrix-push';
 import { randomBytes, toHex, utf8Decode, utf8Encode } from './crypto';
 import type { Place, Poll, Preview } from './chat-parts';
 import { t } from './i18n';
+import { cleanStatus, type NetPresence } from './net-presence';
 import {
   endContent,
   endPoll,
@@ -233,6 +234,8 @@ export type MatrixState = {
   restored?: string;
   /** Whether the others are told when we write (m.typing): off unless turned on, as the homeserver sees it. */
   sayTyping?: true;
+  /** Whether the others see when we are online (m.presence): off unless turned on, as the homeserver sees it. */
+  sayOnline?: true;
   /** Our profile picture, an mxc:// address, as last set or fetched. */
   avatar?: string;
 };
@@ -555,8 +558,9 @@ export type MatrixNews = Json;
  * Asks the homeserver for what came since the last sync, waiting up to `waitMs` for news. Changes
  * nothing: syncApply takes it in, so a send can go on while a sync waits.
  */
-export async function syncFetch(state: Pick<MatrixState, 'homeserver' | 'accessToken' | 'since'>, waitMs = 30_000): Promise<MatrixNews> {
-  const query = `?timeout=${waitMs}&filter=${enc(FILTER)}${state.since ? `&since=${enc(state.since)}` : ''}`;
+export async function syncFetch(state: Pick<MatrixState, 'homeserver' | 'accessToken' | 'since' | 'sayOnline'>, waitMs = 30_000): Promise<MatrixNews> {
+  // Online only when the account says so: otherwise the homeserver is told not to show it.
+  const query = `?timeout=${waitMs}&filter=${enc(FILTER)}&set_presence=${state.sayOnline ? 'online' : 'offline'}${state.since ? `&since=${enc(state.since)}` : ''}`;
   return call(state, 'GET', `/sync${query}`);
 }
 
@@ -673,6 +677,7 @@ export async function syncApply(state: MatrixState, news: MatrixNews): Promise<b
   const users = (list: unknown) => (Array.isArray(list) ? list.filter((u): u is string => typeof u === 'string') : []);
   for (const user of users(lists?.changed)) if (!state.outdated.includes(user)) state.outdated.push(user);
   for (const user of users(lists?.left)) delete state.devices[user];
+  takePresence(state, news);
   const direct = directRooms(news);
   const rooms = (news.rooms as Json | undefined) ?? {};
   for (const [id, room] of Object.entries((rooms.join as Record<string, Json> | undefined) ?? {})) {
@@ -697,6 +702,44 @@ export async function syncApply(state: MatrixState, news: MatrixNews): Promise<b
   // A sync answer without the next batch's token (never from a homeserver) leaves it where it was.
   if (typeof news.next_batch === 'string' && news.next_batch) state.since = news.next_batch;
   return seen;
+}
+
+// Others' presence (m.presence), by account, then user: in memory only, never kept in the
+// account's file or a backup.
+const presences = new WeakMap<MatrixState, Map<string, NetPresence>>();
+
+function takePresence(state: MatrixState, news: Json): void {
+  const events = ((news.presence as Json | undefined)?.events as Json[] | undefined) ?? [];
+  if (!events.length) return;
+  let all = presences.get(state);
+  if (!all) presences.set(state, (all = new Map()));
+  const now = Date.now();
+  for (const event of events) {
+    const who = event.sender;
+    const content = event.content as Json | undefined;
+    if (event.type !== 'm.presence' || typeof who !== 'string' || who === state.userId || !content) continue;
+    const said = content.presence;
+    const show: NetPresence['show'] = said === 'online' ? (content.currently_active === false ? 'away' : 'online') : said === 'unavailable' ? 'away' : said === 'org.matrix.msc3026.busy' || said === 'busy' ? 'busy' : 'offline';
+    const ago = Number(content.last_active_ago);
+    all.set(who, { show, status: cleanStatus(content.status_msg), ...(Number.isFinite(ago) && ago >= 0 ? { lastActive: now - ago } : {}) });
+  }
+}
+
+/** Whether a user is online, as their homeserver last said, or null when it said nothing (many homeservers do not). */
+export function matrixPresence(state: MatrixState, userId: string): NetPresence | null {
+  return presences.get(state)?.get(userId) ?? null;
+}
+
+/** The one other person of a chat with one person, or undefined. */
+export function directOther(state: MatrixState, room: MatrixRoom): string | undefined {
+  if (!room.direct) return undefined;
+  const others = Object.keys(room.members).filter((who) => who !== state.userId);
+  return others.length === 1 ? others[0] : undefined;
+}
+
+/** Tells the homeserver whether we are online now: offline when the account does not say it. */
+export async function sendOwnPresence(state: MatrixState): Promise<void> {
+  await call(state, 'PUT', `/presence/${enc(state.userId)}/status`, { presence: state.sayOnline ? 'online' : 'offline' });
 }
 
 /** One sync, fetched and taken in. */

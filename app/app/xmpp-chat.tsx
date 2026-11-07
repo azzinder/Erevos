@@ -40,7 +40,8 @@ import { useNetworkWhere } from '../lib/network-place';
 import { pickFile } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { rtc } from '../lib/webrtc';
-import { isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppDevices, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { isBlocked, isXmppId, nameOf, onXmppTyping, plainIn, TYPING_SHOWS, xmppDevices, xmppPresence, xmppTyping, type XmppMessage, type XmppState } from '../lib/xmpp';
+import { presenceText } from '../lib/net-presence';
 import { reactionsShown } from '../lib/xmpp-actions';
 import { startXmppCall } from '../lib/xmpp-calls';
 import { XMPP_FILE_MOST } from '../lib/xmpp-files';
@@ -414,6 +415,8 @@ export default function XmppChatScreen() {
   // A private group we are in has call tiles, and one going on in it can be joined.
   const groupCalls = !!(room?.private && room.joined);
   const going = groupCalls ? groupCallGoingOn(jid) : null;
+  // Whether they are online, as their devices say, while connected: only of a contact who let us see it.
+  const presence = room || !now.online ? '' : presenceText(xmppPresence(state, jid));
   const how = channel
     ? t('XMPP channel · not encrypted: everyone in it, and the servers, can read it')
     : plain
@@ -469,6 +472,11 @@ export default function XmppChatScreen() {
           )
         ) : null}
       </Row>
+      {presence ? (
+        <Text variant="caption" numberOfLines={2}>
+          {presence}
+        </Text>
+      ) : null}
       <Text variant="caption" tone="muted">
         {jid}
       </Text>

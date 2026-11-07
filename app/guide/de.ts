@@ -1839,6 +1839,11 @@ Element: Keine Brücke sitzt dazwischen.
 - **Schreiben:** Wer gerade im Chat schreibt, wie der Matrix-Server es sagt, steht darunter mit **schreibt…**. Erevos
   sagt es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem Matrix-Bildschirm einschaltest; anfangs ist es
   aus, da es unverschlüsselt über den Matrix-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
+- **Online:** In einem Chat mit einer Person steht unter ihrem Namen **Online**, **Abwesend** oder **Nicht stören**,
+  mit den Worten, die sie gesetzt hat, oder wann sie zuletzt online war, wie ihr Matrix-Server es sagt, und ihr Bild
+  in der Chatliste hat einen grünen Punkt, solange sie online ist. Manche Server sagen es nicht. Erevos sagt es von
+  dir nur, wenn du **Sagen, wenn ich online bin** auf dem Matrix-Bildschirm einschaltest; anfangs ist es aus, da es
+  unverschlüsselt über den Matrix-Server geht.
 - **Markierungen:** deine Nachrichten zeigen **✓**, sobald der Matrix-Server sie angenommen hat, und **✓✓✓**, sobald
   alle anderen Mitglieder des Chats sie gelesen haben, so wie die Matrix-App jedes Mitglieds es ihrem Server meldet
   (Lesebestätigungen). Matrix kennt keine Markierung für eine Nachricht, die auf einem Telefon angekommen ist, also
@@ -1990,6 +1995,11 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
   Erevos meldet es von dir nur, wenn du **Sagen, wenn ich schreibe** auf dem XMPP-Bildschirm einschaltest, und nur
   einem Kontakt, der deine Anwesenheit sieht, nie in einer Gruppe; anfangs ist es aus, da es unverschlüsselt über den
   XMPP-Server geht und der Server so jedes Mal erfährt, wenn du schreibst.
+- **Online:** Unter dem Namen eines Kontakts steht **Online**, **Abwesend** oder **Nicht stören**, mit den Worten, die
+  er gesetzt hat, oder wann er zuletzt online war, wie seine Apps es melden, und sein Bild in der Chatliste hat einen
+  grünen Punkt, solange er online ist; nur bei einem Kontakt, der dich seine Anwesenheit sehen lässt. Wie in jeder
+  XMPP-App sehen die Kontakte, die deine Anwesenheit sehen, wann Erevos verbunden ist; es geht unverschlüsselt über
+  die XMPP-Server.
 - **Profilbilder:** Ein Matrix-Raum, oder die Person in einem Chat mit einer Person, zeigt sein Bild in der Chatliste,
   ebenso ein XMPP-Kontakt. **Foto wählen** auf dem XMPP-Bildschirm setzt deins für deine Kontakte; **Entfernen** nimmt
   es weg. Bilder sind in keiner Matrix- oder XMPP-App verschlüsselt: der Server sieht sie, und deine Kontakte sehen

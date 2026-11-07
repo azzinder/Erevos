@@ -1815,6 +1815,11 @@ Element : aucun pont ne se met entre les deux.
 - **Écrit :** qui écrit en ce moment dans la discussion, comme le dit le serveur Matrix, s’affiche dessous avec
   **écrit…**. Erevos ne le dit de toi que si tu actives **Dire quand j’écris** sur l’écran Matrix ; c’est désactivé au
   départ, car cela passe par le serveur Matrix sans chiffrement, donc le serveur sait chaque fois que tu écris.
+- **En ligne :** dans une discussion avec une personne, sous son nom s’affiche **En ligne**, **Absent** ou **Ne pas
+  déranger**, avec les mots qu’elle a mis, ou quand elle était en ligne pour la dernière fois, comme le dit son
+  serveur Matrix, et sa photo dans la liste des discussions a un point vert tant qu’elle est en ligne. Certains
+  serveurs ne le disent pas. Erevos ne le dit de toi que si tu actives **Dire quand je suis en ligne** sur l’écran
+  Matrix ; c’est désactivé au départ, car cela passe par le serveur Matrix sans chiffrement.
 - **Marques :** tes messages montrent **✓** quand le serveur Matrix les a pris et **✓✓✓** quand tous les autres
   membres de la discussion les ont lus, comme l’appli Matrix de chacun le dit à son serveur (accusés de lecture).
   Matrix n’a pas de marque pour un message arrivé sur un téléphone, donc il n’y a pas de **✓✓**. Maintiens un de tes
@@ -1964,6 +1969,11 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
   le dit de toi que si tu actives **Dire quand j’écris** sur l’écran XMPP, et seulement à un contact qui voit ta
   présence, jamais dans un groupe ; c’est désactivé au départ, car cela passe par le serveur XMPP sans chiffrement,
   donc le serveur sait chaque fois que tu écris.
+- **En ligne :** sous le nom d’un contact s’affiche **En ligne**, **Absent** ou **Ne pas déranger**, avec les mots
+  qu’il a mis, ou quand il était en ligne pour la dernière fois, comme le disent ses apps, et sa photo dans la liste
+  des discussions a un point vert tant qu’il est en ligne ; seulement pour un contact qui te laisse voir sa présence.
+  Comme dans toute app XMPP, les contacts qui voient ta présence voient quand Erevos est connecté ; cela passe par les
+  serveurs XMPP sans chiffrement.
 - **Photos de profil :** un salon Matrix, ou la personne dans une discussion avec une personne, montre sa photo dans
   la liste des discussions, de même qu’un contact XMPP. **Choisir une photo**, sur l’écran XMPP, met la tienne pour
   tes contacts ; **Retirer** l’enlève. Les photos ne sont chiffrées dans aucune appli Matrix ou XMPP : le serveur les

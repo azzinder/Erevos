@@ -9,6 +9,7 @@ import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { deviceLine } from './call-lines';
 import type { Preview } from './chat-parts';
 import { t } from './i18n';
+import { cleanStatus, isOn, type NetPresence } from './net-presence';
 import { connectXmpp, type XmppLink, type XmppServer } from './xmpp-net';
 import {
   nameFor,
@@ -606,6 +607,7 @@ export function capsVer(): string {
 export async function startSession(state: XmppState, connection: XmppConnection): Promise<void> {
   const roster = await connection.iq('get', undefined, el('query', { xmlns: NS.roster }));
   takeRoster(state, child(roster, 'query', NS.roster), true);
+  forgetPresence(state);
   await connection.iq('set', undefined, el('enable', { xmlns: NS.carbons })).catch(() => undefined);
   // Whom the account blocks, as its other apps may have changed it; a server without blocking keeps none.
   const blocklist = await connection.iq('get', undefined, el('blocklist', { xmlns: NS.blocking })).catch(() => null);
@@ -1435,6 +1437,7 @@ function takeRoster(state: XmppState, query: XmlElement | undefined, whole: bool
 async function takePresence(state: XmppState, connection: XmppConnection, presence: XmlElement): Promise<void> {
   const from = bare(presence.attrs.from ?? '');
   if (!from.includes('@') || from === state.jid) return;
+  if (presence.attrs.type === undefined || presence.attrs.type === 'unavailable') return takeOnline(state, presence.attrs.from ?? '', presence);
   if (presence.attrs.type === 'subscribe') {
     if (isBlocked(state, from)) return;
     // Someone we added ourselves may see us at once; others ask first.
@@ -1444,6 +1447,58 @@ async function takePresence(state: XmppState, connection: XmppConnection, presen
     } else if (!state.requests.includes(from)) state.requests.push(from);
   }
   if (presence.attrs.type === 'unsubscribe') state.requests = state.requests.filter((r) => r !== from);
+}
+
+// ---- who is online ----
+
+// Contacts' presence, by account, then bare address, then resource: in memory only, never kept
+// in the account's file (saveXmpp) or a backup, and forgotten as a new session begins.
+const presences = new WeakMap<XmppState, Map<string, Map<string, NetPresence>>>();
+const NS_IDLE = 'urn:xmpp:idle:1';
+const SHOW_RANK: Record<NetPresence['show'], number> = { online: 3, busy: 2, away: 1, offline: 0 };
+
+/** Forgets every contact's presence: the server sends it again to a new session. */
+export function forgetPresence(state: XmppState): void {
+  presences.delete(state);
+}
+
+/** A contact's presence (RFC 6121): from a contact we may see (subscription to or both), never blocked. */
+function takeOnline(state: XmppState, full: string, presence: XmlElement): void {
+  const jid = bare(full);
+  const contact = state.roster[jid];
+  if (!contact || (contact.subscription !== 'to' && contact.subscription !== 'both') || isBlocked(state, jid)) return;
+  const slash = full.indexOf('/');
+  const resource = slash >= 0 ? full.slice(slash + 1) : '';
+  let all = presences.get(state);
+  if (!all) presences.set(state, (all = new Map()));
+  const theirs = all.get(jid) ?? new Map<string, NetPresence>();
+  all.set(jid, theirs);
+  if (presence.attrs.type === 'unavailable') {
+    theirs.delete(resource);
+    // Gone from their last device: they were last seen now.
+    if (![...theirs.values()].some((p) => p.show !== 'offline')) {
+      theirs.clear();
+      theirs.set('', { show: 'offline', status: cleanStatus(textOf(child(presence, 'status'))), lastActive: Date.now() });
+    }
+    return;
+  }
+  const said = textOf(child(presence, 'show')).trim();
+  const show: NetPresence['show'] = said === 'away' || said === 'xa' ? 'away' : said === 'dnd' ? 'busy' : 'online';
+  const since = Date.parse(child(presence, 'idle', NS_IDLE)?.attrs.since ?? '');
+  theirs.delete('');
+  theirs.set(resource, { show, status: cleanStatus(textOf(child(presence, 'status'))), ...(Number.isFinite(since) ? { lastActive: since } : {}) });
+}
+
+/** Whether a contact is online, as their devices say: the most present of them, or null when not heard of. */
+export function xmppPresence(state: XmppState, jid: string): NetPresence | null {
+  const theirs = presences.get(state)?.get(bare(jid));
+  if (!theirs?.size) return null;
+  return [...theirs.values()].sort((a, b) => SHOW_RANK[b.show] - SHOW_RANK[a.show])[0] ?? null;
+}
+
+/** The addresses of the contacts online now. */
+export function xmppOnline(state: XmppState): string[] {
+  return [...(presences.get(state)?.keys() ?? [])].filter((jid) => isOn(xmppPresence(state, jid)));
 }
 
 async function answerIq(state: XmppState, connection: XmppConnection, iq: XmlElement, taken: Taken): Promise<void> {

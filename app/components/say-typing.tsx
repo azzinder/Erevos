@@ -82,3 +82,27 @@ export function SayTypingSwitch({ on, server, onChange }: { on: boolean; server:
     </View>
   );
 }
+
+/** The switch of whether the others see when we are online, on a network that is not end-to-end (Matrix). */
+export function SayOnlineSwitch({ on, server, onChange }: { on: boolean; server: string; onChange: (on: boolean) => void }) {
+  return (
+    <View style={{ gap: space.xs }}>
+      <Pressable
+        onPress={() => {
+          tap();
+          onChange(!on);
+        }}
+        accessibilityRole="switch" accessibilityState={{ checked: on }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+        <Text variant="bodyStrong" style={{ flex: 1 }}>
+          {t('Say when I am online')}
+        </Text>
+        <Toggle on={on} />
+      </Pressable>
+      <Text variant="caption" tone="muted">
+        {on
+          ? t('The others see when you are online, and when you last were. It goes through the {server} server not encrypted, so the server learns it too.', { server })
+          : t('The others do not see when you are online. You still see it of those whose server says it.')}
+      </Text>
+    </View>
+  );
+}

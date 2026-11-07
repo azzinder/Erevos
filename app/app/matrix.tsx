@@ -13,7 +13,7 @@ import { lineOf } from '../components/matrix-message';
 import { MatrixRegister } from '../components/matrix-register';
 import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { OwnPicture } from '../components/network-picture';
-import { SayTypingSwitch } from '../components/say-typing';
+import { SayOnlineSwitch, SayTypingSwitch } from '../components/say-typing';
 import { pickAvatar } from '../lib/pick-avatar';
 import { Button, Card, Chip, Field, Input, Page, Row, SectionTitle, Sheet, Text } from '../components/ui';
 import { ask } from '../lib/alert';
@@ -37,6 +37,7 @@ import {
   matrixSsoStart,
   matrixUnlock,
   matrixSetAvatar,
+  matrixSetSayOnline,
   matrixSetSayTyping,
   matrixSignOut,
   matrixStartChat,
@@ -343,6 +344,10 @@ export default function MatrixScreen() {
 
       <Card>
         <SayTypingSwitch on={!!state.sayTyping} server="Matrix" onChange={(on) => void run(() => matrixSetSayTyping(on))} />
+      </Card>
+
+      <Card>
+        <SayOnlineSwitch on={!!state.sayOnline} server="Matrix" onChange={(on) => void run(() => matrixSetSayOnline(on))} />
       </Card>
 
       <SectionTitle title={t('Security Key')} />

@@ -25,4 +25,15 @@ export const lastSeen: Record<string, string> = {
     'Isključeno: niko ne vidi kad ste posljednji put imali otvoren Erevos, a ni vi ne vidite ničije.',
   'It goes end-to-end encrypted, inside what goes to your contacts anyway, never to the relay. Only for the chats of this space: hidden chats have their own switch, in a chat’s details there. Whether you are online now has its own switch in each chat: Appear offline.':
     'Ide šifrirano s kraja na kraj, unutar onoga što ionako ide vašim kontaktima, nikad relayu. Samo za razgovore ovog prostora: skriveni razgovori imaju vlastiti prekidač, u detaljima razgovora tamo. Jeste li sada na mreži ima vlastiti prekidač u svakom razgovoru: Prikazuj me kao da nisam na mreži.',
+  // Matrix and XMPP contacts online, as their servers say (lib/net-presence.ts), and our own on Matrix (components/say-typing.tsx).
+  "Away":
+    "Odsutan",
+  "Do not disturb":
+    "Ne ometaj",
+  "Say when I am online":
+    "Reci kad sam na mreži",
+  "The others see when you are online, and when you last were. It goes through the {server} server not encrypted, so the server learns it too.":
+    "Drugi vide kad ste na mreži i kad ste bili posljednji put. Ide preko {server} servera nešifrirano, pa to saznaje i server.",
+  "The others do not see when you are online. You still see it of those whose server says it.":
+    "Drugi ne vide kad ste na mreži. Vi to i dalje vidite kod onih čiji server to kaže.",
 };
