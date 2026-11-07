@@ -133,7 +133,8 @@ On main, not released yet:
   player plays the link; the desktop app's CSP needs media-src https: for it.
 - **Radio stations found by name** (lib/collection-radio.ts radioSearchUrl, foundStations): Add a station searches
   Radio Browser (de1.api.radio-browser.info, /json/stations/search, 30 at most, broken ones hidden), sent only the
-  words typed, when Search is pressed, with the User-Agent "Erevos", as backups' requests go; only stations with an
+  words typed, when Search is pressed, with the User-Agent "Erevos" on Android and in the desktop app (a browser's
+  page sends the browser's own), as backups' requests go; only stations with an
   https link are offered, and a tap adds one as a link typed would be.
 
 ### Under the hood

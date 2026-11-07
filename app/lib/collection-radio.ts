@@ -15,7 +15,8 @@ import type { HttpAnswer } from './net-http';
 //
 // The station, and whoever runs its server, sees the device's IP address and when it listens, as
 // any site does; the playlist's server too, once, as it is added. Nothing else is sent: no
-// cookies, and a User-Agent that says only "Erevos".
+// cookies, and on Android and in the desktop app a User-Agent that says only "Erevos" (a page in a
+// browser or on Sailfish OS cannot set one: there the browser's own goes, lib/backup-http.web.ts).
 
 /** The User-Agent a station is asked with: the app's name, nothing of the device. */
 export const RADIO_AGENT = 'Erevos';
@@ -94,7 +95,8 @@ export async function stationLink(given: string, get: (url: string) => Promise<H
 }
 
 // Radio Browser (radio-browser.info), a free directory of stations anyone may edit: a search sends
-// it only the words typed, with the User-Agent "Erevos", and it sees the device's IP address. Only
+// it only the words typed, with the User-Agent "Erevos" on Android and in the desktop app (the
+// browser's own in a browser and on Sailfish OS), and it sees the device's IP address. Only
 // stations it gives an https link for are offered.
 
 /** The most stations a search shows. */
