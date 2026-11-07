@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
+    "**Φωτογραφίες, Βίντεο, Μουσική και Αρχεία**: η Συλλογή έχει καρτέλα για το καθένα, με τους φακέλους που έχουν αρχεία της από πάνω. Δες [Συλλογή](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":
     "**Η μουσική της Συλλογής συνεχίζει με την οθόνη σβηστή**: στο Android, η μουσική μπορούσε να σταματήσει λίγο αφού έσβηνε η οθόνη. Τώρα η αναπαραγωγή μένει στο προσκήνιο όσο παίζει η λίστα. Δες [Συλλογή](#collection).",
   "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":

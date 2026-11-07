@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { NowPlaying } from '../components/collection-player';
 import { CollectionViewer, addedText } from '../components/collection-viewer';
-import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon } from '../components/icons';
+import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, MusicIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon, VideoIcon } from '../components/icons';
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
 import { fileSize } from '../lib/attachments';
 import { choose, confirm } from '../lib/alert';
@@ -19,7 +19,7 @@ import { dropOpened, openWithOtherApp } from '../lib/collection-out';
 import { usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
 import { enterHiddenScreen } from '../lib/hidden-contacts';
-import { fileLook, folderTiles, gridEntries, inFolder, isPhoto, search, type FileLook, type GridEntry } from '../lib/collection-view';
+import { fileLook, folderTiles, folderTilesFor, gridEntries, inFolder, isPhoto, playKind, search, tabOf, type FileLook, type FileTab, type GridEntry } from '../lib/collection-view';
 import { locale, t } from '../lib/i18n';
 import { saveFile } from '../lib/save-file';
 import { keepPrivate } from '../lib/screen-privacy';
@@ -41,8 +41,9 @@ import { space, radius, withAlpha, type Colors } from '../theme/colors';
 import { useColors, useStyles } from '../theme/context';
 
 // The Collection: the open space's own photos, files and folders, or a hidden place's own (`hidden`),
-// kept encrypted apart from the chats (lock/collection-data.ts). Folders across the top, then two
-// tabs: the photos as a grid by month, and the files as a list. A tap opens one (components/
+// kept encrypted apart from the chats (lock/collection-data.ts). Tabs across the top: Photos as a
+// grid by month, Videos, Music and the other Files as lists (lib/collection-view.ts tabOf), each with
+// the folders that hold any of its files above it (Files the empty ones too). A tap opens one (components/
 // collection-viewer.tsx); held down it starts choosing, to move, send or delete several; + brings
 // in a photo from the camera or a file from the phone (lib/collection-import.ts), and deletes a
 // photo or video picked from the gallery there when the owner chose so. While music of the
@@ -71,7 +72,7 @@ const BUSY_AT_ONCE = Platform.OS !== 'web';
 // The largest file saved out from here.
 const MOST_SAVED_OUT = mostSavedOut();
 
-type Tab = 'photos' | 'files';
+type Tab = FileTab;
 type Naming = { what: 'folder' | 'rename-folder' | 'rename-file'; id: string; text: string } | null;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error)).split('\n')[0];
@@ -192,9 +193,14 @@ export default function CollectionScreen() {
     return items;
   }, [data, folder, query]);
   const photos = useMemo(() => shownItems.filter(isPhoto), [shownItems]);
-  const files = useMemo(() => shownItems.filter((i) => !isPhoto(i)), [shownItems]);
+  const files = useMemo(() => shownItems.filter((i) => tabOf(i) === 'files'), [shownItems]);
+  const videos = useMemo(() => shownItems.filter((i) => tabOf(i) === 'videos'), [shownItems]);
+  const music = useMemo(() => shownItems.filter((i) => tabOf(i) === 'music'), [shownItems]);
+  // The files of the tab shown, which a tap opens among.
+  const listed = tab === 'photos' ? photos : tab === 'videos' ? videos : tab === 'music' ? music : files;
   const entries = useMemo(() => gridEntries(photos), [photos]);
-  const tiles = useMemo(() => folderTiles(there), [data]);
+  const tiles = useMemo(() => folderTilesFor(there, tab), [data, tab]);
+  const allFolders = useMemo(() => folderTiles(there), [data]);
   const side = Math.floor((Math.min(width, 760) - 2) / 3);
 
   // Back leaves the choosing, the search, the folder, then the screen.
@@ -234,7 +240,7 @@ export default function CollectionScreen() {
     if (BUSY_AT_ONCE) setBusy({ done: 0, count: 1 });
     try {
       const added = await get((done, count) => setBusy({ done, count }));
-      if (added) setTab(added.file.kind === 'photo' ? 'photos' : 'files');
+      if (added) setTab(tabOf(added));
     } catch (error) {
       setNote(t('Not added. {error}', { error: errorText(error) }));
     }
@@ -256,7 +262,7 @@ export default function CollectionScreen() {
       return;
     }
     // A photo opens among the photos shown; any other file on its own.
-    setViewing(isPhoto(item) ? photos.findIndex((p) => p.id === item.id) : files.findIndex((f) => f.id === item.id));
+    setViewing(listed.findIndex((i) => i.id === item.id));
   }
 
   async function removeItems(ids: string[]) {
@@ -365,7 +371,7 @@ export default function CollectionScreen() {
       <Text variant="heading" style={styles.grow}>
         {t('{n} selected', { n: chosen.size })}
       </Text>
-      <Pressable onPress={() => setChosen(new Set((tab === 'photos' ? photos : files).map((i) => i.id)))} accessibilityRole="button" hitSlop={8}>
+      <Pressable onPress={() => setChosen(new Set(listed.map((i) => i.id)))} accessibilityRole="button" hitSlop={8}>
         <Text variant="label" color={colors.primary}>
           {t('All')}
         </Text>
@@ -426,10 +432,12 @@ export default function CollectionScreen() {
           ))}
         </ScrollView>
       ) : null}
-      <View style={styles.chips}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
         <Chip label={t('Photos')} count={photos.length} selected={tab === 'photos'} onPress={() => setTab('photos')} />
+        <Chip label={t('Videos')} count={videos.length} selected={tab === 'videos'} onPress={() => setTab('videos')} />
+        <Chip label={t('Music')} count={music.length} selected={tab === 'music'} onPress={() => setTab('music')} />
         <Chip label={t('Files')} count={files.length} selected={tab === 'files'} onPress={() => setTab('files')} />
-      </View>
+      </ScrollView>
       {note ? (
         <Pressable onPress={() => setNote('')} accessibilityRole="button" accessibilityLabel={t('Close')}>
           <Text variant="caption" color={colors.warning} style={styles.note}>
@@ -495,10 +503,20 @@ export default function CollectionScreen() {
         />
       ) : (
         <FlatList
-          data={files}
+          data={listed}
           keyExtractor={(i) => i.id}
           ListHeaderComponent={top}
-          ListEmptyComponent={empty(DESK ? t('No files yet. Click + to add one.') : BROWSER ? t('No files yet. Add one with +.') : t('No files yet. Tap + to add one.'))}
+          ListEmptyComponent={empty(
+            tab === 'videos'
+              ? t('No videos yet. Add one with +.')
+              : tab === 'music'
+                ? t('No music yet. Add some with +.')
+                : DESK
+                  ? t('No files yet. Click + to add one.')
+                  : BROWSER
+                    ? t('No files yet. Add one with +.')
+                    : t('No files yet. Tap + to add one.'),
+          )}
           contentContainerStyle={{ paddingBottom: bottomRoom }}
           keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
@@ -571,7 +589,7 @@ export default function CollectionScreen() {
 
       <Sheet visible={moving !== null && naming === null} onClose={() => setMoving(null)} title={t('Move to…')}>
         <AddRow icon={<FolderIcon color={colors.textMuted} size={22} />} title={t('No folder')} text={t('At the top of the Collection')} onPress={() => void moveTo('')} colors={colors} />
-        {tiles.map((f) => (
+        {allFolders.map((f) => (
           <AddRow key={f.id} icon={<FolderIcon color={colors.primary} size={22} />} title={f.name} onPress={() => void moveTo(f.id)} colors={colors} />
         ))}
         <AddRow icon={<FolderIcon color={colors.primary} size={22} />} title={t('New folder')} onPress={() => setNaming({ what: 'folder', id: 'move', text: '' })} colors={colors} />
@@ -680,7 +698,7 @@ export default function CollectionScreen() {
       </Sheet>
 
       <CollectionViewer
-        items={tab === 'photos' ? photos : files}
+        items={listed}
         start={viewing}
         canSend
         onClose={() => setViewing(null)}
@@ -750,7 +768,7 @@ function FileRow({ item, on, choosing, onPress, onLongPress, onMenu, colors }: {
       style={({ pressed }) => [{ flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg, paddingVertical: space.md, backgroundColor: on ? withAlpha(colors.primary, 0.14) : 'transparent' }, pressed && { opacity: 0.7 }]}
     >
       <View style={{ width: 40, height: 40, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center', backgroundColor: withAlpha(tint, 0.16) }}>
-        {on ? <CheckIcon color={colors.primary} size={20} /> : <FileIcon color={tint} size={22} />}
+        {on ? <CheckIcon color={colors.primary} size={20} /> : playKind(item) === 'audio' ? <MusicIcon color={tint} size={22} /> : playKind(item) === 'video' ? <VideoIcon color={tint} size={22} /> : <FileIcon color={tint} size={22} />}
       </View>
       <View style={{ flex: 1 }}>
         <Text variant="bodyStrong" numberOfLines={1}>

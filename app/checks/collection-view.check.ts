@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import type { Collection, CollectionItem } from '../lock/collection-data';
-import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, playKind, playListOf, playType, search } from '../lib/collection-view';
+import { fileLook, folderTiles, gridEntries, inFolder, isText, monthGroups, playKind, playListOf, playType, search, tabOf, folderTilesFor } from '../lib/collection-view';
 
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12).getTime();
 const item = (id: string, name: string, kind: 'photo' | 'file', added: number, folder = '', mime = 'application/octet-stream'): CollectionItem => ({
@@ -117,4 +117,20 @@ test('every format the phone plays is known by its type, and by its ending when 
   assert.equal(playType(item('x', 'song.opus', 'file', 0)), 'audio/ogg');
   assert.equal(playType(item('x', 'song.mp3', 'file', 0, '', 'audio/x-custom')), 'audio/x-custom');
   assert.equal(playType(item('x', 'blob', 'file', 0)), 'application/octet-stream');
+});
+
+test('each file shows in one tab, and each tab shows the folders that hold its files', () => {
+  const song = item('s', 'song.flac', 'file', 1, 'f1');
+  const film = item('v', 'film.mkv', 'file', 2, 'f2');
+  const c: Collection = { ...collection, items: [...collection.items, song, film] };
+  assert.deepEqual(
+    c.items.map(tabOf),
+    ['photos', 'photos', 'photos', 'files', 'files', 'photos', 'photos', 'music', 'videos'],
+  );
+  assert.deepEqual(folderTilesFor(c, 'music').map((f) => [f.name, f.count]), [['Έγγραφα', 1]]);
+  assert.deepEqual(folderTilesFor(c, 'videos').map((f) => [f.name, f.count]), [['Ταξίδι', 1]]);
+  assert.deepEqual(folderTilesFor(c, 'photos'), []);
+  // Files: the folders with files of its own, and those with nothing at all.
+  assert.deepEqual(folderTilesFor(c, 'files').map((f) => [f.name, f.count]), [['Έγγραφα', 1]]);
+  assert.deepEqual(folderTilesFor({ ...c, folders: [...c.folders, { id: 'f3', name: 'Άδειος', at: 3 }] }, 'files').map((f) => f.name), ['Άδειος', 'Έγγραφα']);
 });

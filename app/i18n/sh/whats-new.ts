@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
+    "**Fotografije, Video snimci, Muzika i Fajlovi**: Zbirka ima karticu za svako, sa folderima iznad koji imaju nešto njeno. Vidi [Zbirka](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":
     "**Muzika iz Zbirke ide dalje i s ugašenim ekranom**: na Androidu je muzika mogla stati malo nakon što se ekran ugasi. Sada plejer ostaje u prvom planu dok god lista svira. Vidi [Zbirka](#collection).",
   "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":

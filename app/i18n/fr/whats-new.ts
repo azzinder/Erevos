@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Pour toi',
   'Under the hood': 'Sous le capot',
   // Not out yet.
+  "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
+    "**Photos, Vidéos, Musique et Fichiers** : la Collection a un onglet pour chacun, avec au-dessus les dossiers qui en contiennent. Voir [Collection](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":
     "**La musique de la Collection continue écran éteint** : sur Android, la musique pouvait s’arrêter un moment après l’extinction de l’écran. Désormais le lecteur reste au premier plan tant que la liste joue. Voir [Collection](#collection).",
   "**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection).":

@@ -89,6 +89,10 @@ On main, not released yet:
   notwithstanding. The player now keeps a Media3 controller of its own connected to the service's session for as long
   as the list plays (Playing.kt bind), Media3's own way: the service is bound, and Media3 starts it in the foreground
   as soon as the player plays.
+- **Photos, Videos, Music and Files**: the Collection's two tabs are four, a file in the one its kind says
+  (lib/collection-view.ts tabOf: a video or music by playKind, so by its ending too), each a list but Photos, and each
+  with the folders that hold any of its files above it; Files shows the empty folders too, so one just made is there
+  to open (folderTilesFor). Moving files still offers every folder.
 
 ### Under the hood
 

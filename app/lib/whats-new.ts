@@ -36,6 +36,7 @@ export const NEXT: Changes = {
     mark("**Links open Erevos**: on Android, an invite or contact link tapped in any app opens Erevos, which asks before it takes it, once the web server and a new Erevos are both out. See [Chat through a relay](#relay)."),
     mark("**More music and video formats in the Collection**: on Android MP3, AAC, M4A, FLAC, Ogg, Opus, WAV, AMR, MP4, MKV, WebM and 3GP play, also a file that came with no type, known by its name's ending, and seeking works in an MP3 with no table of its seconds. See [Collection](#collection)."),
     mark("**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection)."),
+    mark("**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection)."),
   ],
   underTheHood: [
     mark("**Home relay**: the screen no longer says that whoever runs a home relay sees this phone's address when it is set to **Only through Tor**."),

@@ -27,6 +27,27 @@ export function folderTiles(collection: Collection): FolderTile[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** The Collection's tabs that hold files: photos, videos, music, and every other file. */
+export type FileTab = 'photos' | 'videos' | 'music' | 'files';
+
+/** The tab a file shows in. */
+export function tabOf(item: CollectionItem): FileTab {
+  if (isPhoto(item)) return 'photos';
+  const kind = playKind(item);
+  return kind === 'video' ? 'videos' : kind === 'audio' ? 'music' : 'files';
+}
+
+/**
+ * The folders a tab shows at its top, by name, each with how many of the tab's files it holds:
+ * those that hold any; Files shows the empty ones too, so a folder just made is there to open.
+ */
+export function folderTilesFor(collection: Collection, tab: FileTab): FolderTile[] {
+  return collection.folders
+    .map((f) => ({ ...f, count: collection.items.filter((i) => i.folder === f.id && tabOf(i) === tab).length }))
+    .filter((f) => f.count > 0 || (tab === 'files' && !collection.items.some((i) => i.folder === f.id)))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** The month a time falls in, as `2026-11`, in the phone's own time. */
 export function monthOf(at: number): string {
   const d = new Date(at);
