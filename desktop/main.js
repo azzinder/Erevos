@@ -153,14 +153,15 @@ const TYPES = {
  * WebSocket (ws: and wss:, any host), and to the Matrix, XMPP and Nostr servers the owner adds, over
  * HTTPS and WebSocket, and to nothing else: 'wasm-unsafe-eval' starts the Erevos
  * core (WebAssembly), 'unsafe-inline' is for the styles the interface sets from script, blob: for
- * voice messages and the Collection's videos and music, which play from memory. Its frames are
+ * voice messages and the Collection's videos and music, which play from memory, and media-src
+ * https: for the Collection's internet radio, a station's own https link. Its frames are
  * Element Call's and a PDF of the Collection, shown by Chromium's PDF viewer from a blob: address
  * the page made of bytes it decrypted (frame-src blob:). A blob: document takes this same policy,
  * and the PDF viewer is a plugin there, so object-src allows blob: too, and nothing else: only the
  * page's own script, from 'self', can make a blob: address of its origin.
  */
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src blob:; base-uri 'self'; frame-ancestors 'self'; frame-src blob: app://element-call";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src blob:; base-uri 'self'; frame-ancestors 'self'; frame-src blob: app://element-call";
 /** Element Call's pages: as pwa/element-call.mjs says (CALL_CSP), shown only in the app's frame. */
 const CALL_CSP =
   "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: data:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors app://erevos";
