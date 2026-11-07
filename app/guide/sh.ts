@@ -125,9 +125,10 @@ dok ih njihov PIN drži otvorenima.
   njega, piše podsjetnik za vas.
 - **Zelena slušalica i ljubičasta osoba** na vrhu, na Androidu, odmah otvaraju ekrane **Telefon** i **Kontakti**, u
   bojama njihovih ikona na početnom ekranu telefona. Nema ih i u meniju pod tri tačke.
-- **Sve poruke**, **SMS** i **Erevos**, iznad razgovora kad postoje i SMS razgovori, prikazuju sve, samo SMS (s
-  razgovorima čija je posljednja poruka bila SMS) ili samo Erevos razgovore, od svakog kontakta ono što je posljednje
-  stiglo.
+- **Sve poruke**, **SMS** i **Erevos**, iznad razgovora kad su u Modulima uključena dva dijela s porukama, prikazuju
+  sve, samo SMS (s razgovorima čija je posljednja poruka bila SMS) ili samo Erevos razgovore, od svakog kontakta ono
+  što je posljednje stiglo. Svaki uključeni dio ima svoje dugme, i bez ijednog razgovora zasad: **SMS** pokazuje kad
+  Erevos još nije SMS aplikacija.
   Svako dugme, ova i ona za **Matrix**, **XMPP** i **Nostr**, iza svog imena prikazuje mali broj: nepročitane poruke u
   njemu (99+ iznad 99), a ništa kad ih nema. Razgovori i grupe na **Utišano** ne računaju se, kao ni u broju na ikoni
   Erevosa, a ono što se upiše u pretragu ništa ne mijenja.
@@ -222,8 +223,8 @@ kraj među njima kao vaši razgovori: relay ih prenosi samo šifrirane.
   radi ono što radi njegova strelica nazad: nazad na popis razgovora, ili izlaz iz skrivenih razgovora, koji se
   zatvaraju. U **Detalji** razgovora ih zatvara.
 - **Kartice:** prevucite ulijevo ili udesno da pređete na susjednu karticu, kao kad dodirnete njeno dugme: **Sve
-  poruke**, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** na početnom ekranu (one za koje imate razgovore ili
-  račun), **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti
+  poruke**, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** na početnom ekranu (one uključene u Modulima),
+  **Tastatura**, **Nedavni** i **Favoriti** u ekranu **Telefon**, filteri u ekranu **Kontakti** i kompleti
   naljepnica. Na početnom ekranu dugmad ostaju u jednom redu: kad ne stanu sva, prevucite red u stranu da vidite
   ostala; izabrano dugme uvijek ostaje na vidiku.
 - Na ekranu s karticama prevlačenje samo mijenja karticu, i na redovima njenog popisa, a iza prve ili posljednje

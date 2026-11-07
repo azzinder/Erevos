@@ -581,8 +581,8 @@ test('Matrix rooms are rows of the home list, with a part of their own', () => {
   const club = rows.find((r) => r.invited)!;
   assert.deepEqual([club.last, club.unread, club.at], ['Invited by Bo', 1, 9000]);
   assert.deepEqual([showsIn(anna, 'matrix'), showsIn(anna, 'erevos'), showsIn(anna, 'sms'), showsIn(anna, 'all')], [true, false, false, true]);
-  assert.deepEqual(inboxParts([], true), ['matrix']);
-  assert.deepEqual(inboxParts(rows, false), ['matrix']);
+  assert.deepEqual(inboxParts([], { matrix: true }), ['matrix']);
+  assert.deepEqual(inboxParts(rows), ['matrix']);
 });
 
 test('two people check each other by emoji in their chat, and see the same seven', { skip: !coreReady }, async () => {

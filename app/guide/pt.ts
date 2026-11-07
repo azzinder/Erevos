@@ -127,9 +127,10 @@ abertas.
   ao lado, escreve um lembrete para você.
 - **O fone verde e a pessoa violeta** no topo, no Android, abrem **Telefone** e **Contatos** direto, nas cores dos
   ícones deles na tela inicial do celular. Eles não estão também no menu dos três pontos.
-- **Todos**, **SMS** e **Erevos**, acima das conversas assim que também há conversas de SMS, mostram todas elas, só os
-  SMS (com as conversas cuja última mensagem foi um SMS) ou só as conversas do Erevos, o que veio por último de cada
-  contato.
+- **Todos**, **SMS** e **Erevos**, acima das conversas assim que duas partes com mensagens estão ligadas em Módulos,
+  mostram todas elas, só os SMS (com as conversas cuja última mensagem foi um SMS) ou só as conversas do Erevos, o que
+  veio por último de cada contato. Cada parte ligada tem seu chip, também sem nenhuma conversa ainda: **SMS** mostra
+  quando o Erevos ainda não é o app de SMS.
   Cada chip, esses e os de **Matrix**, **XMPP** e **Nostr**, mostra um número pequeno depois do nome: as mensagens não
   lidas nele (99+ acima de 99), e nada quando não há nenhuma. As conversas e os grupos **Em silêncio** não contam,
   como no número do ícone do Erevos, e o que se digita na busca não o muda.
@@ -226,8 +227,8 @@ criptografadas de ponta a ponta entre eles como as suas conversas: o relay só a
   fica. Numa conversa, faz o mesmo que a seta de voltar dela: volta para a lista de conversas, ou sai das conversas
   ocultas, fechando-as. Nos **Detalhes** de uma conversa, fecha-os.
 - **Abas:** deslize para a esquerda ou para a direita para ir à aba ao lado, como ao tocar no chip dela: **Todos**,
-  **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** na tela inicial (aqueles para os quais você tem conversas ou
-  uma conta), **Teclado**, **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de
+  **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** na tela inicial (os ligados em Módulos), **Teclado**,
+  **Recentes** e **Favoritos** no **Telefone**, os filtros em **Contatos**, e os conjuntos de
   figurinhas. Na tela inicial os chips ficam em uma linha só: quando não cabem todos, deslize a linha para o lado para
   ver os demais; o escolhido sempre aparece.
 - Numa tela com abas, deslizar só muda a aba, também sobre as linhas da lista dela, e antes da primeira ou depois da

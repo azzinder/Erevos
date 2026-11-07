@@ -135,9 +135,10 @@ que tant que leur code PIN les tient ouvertes.
 - **Le combiné vert et la personne violette** en haut, sur Android, ouvrent directement **Téléphone** et **Contacts**,
   aux couleurs de leurs icônes sur l’écran d’accueil du téléphone. Ils ne sont pas aussi dans le menu sous les trois
   points.
-- **Tous**, **SMS** et **Erevos**, au-dessus des discussions dès qu’il y a aussi des conversations SMS, montrent tout,
-  seulement les SMS (avec les discussions dont le dernier message était un SMS), ou seulement les discussions Erevos,
-  pour chaque contact ce qui est arrivé en dernier.
+- **Tous**, **SMS** et **Erevos**, au-dessus des discussions dès que deux parties avec des messages sont activées dans
+  Modules, montrent tout, seulement les SMS (avec les discussions dont le dernier message était un SMS), ou seulement
+  les discussions Erevos, pour chaque contact ce qui est arrivé en dernier. Chaque partie activée a sa puce, même sans
+  discussion encore : **SMS** indique quand Erevos n’est pas encore l’app SMS.
   Chaque puce, celles-ci et celles de **Matrix**, **XMPP** et **Nostr**, montre un petit nombre après son nom : les
   messages non lus qu’elle contient (99+ au-delà de 99), et rien quand il n’y en a pas. Les discussions et groupes
   **En sourdine** ne comptent pas, comme dans le nombre sur l’icône d’Erevos, et ce qui est tapé dans la recherche n’y
@@ -239,8 +240,8 @@ appareils, chiffrées de bout en bout entre eux comme tes discussions : le relai
   la liste des discussions, ou sortie des discussions masquées, en les fermant. Dans les **Détails** d’une discussion,
   il les ferme.
 - **Onglets :** balaie vers la gauche ou la droite pour aller à l’onglet d’à côté, comme en appuyant sur sa puce :
-  **Tous**, **SMS**, **Erevos**, **Matrix**, **XMPP** et **Nostr** sur l’écran d’accueil (ceux pour lesquels tu as des
-  discussions ou un compte), **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans
+  **Tous**, **SMS**, **Erevos**, **Matrix**, **XMPP** et **Nostr** sur l’écran d’accueil (ceux activés dans Modules),
+  **Clavier**, **Récents** et **Favoris** dans **Téléphone**, les filtres dans
   **Contacts**, et les séries de stickers. Sur l’écran d’accueil, les puces restent sur une seule ligne : quand elles
   ne tiennent pas toutes, fais glisser la ligne sur le côté pour voir les autres ; celle qui est choisie reste
   toujours visible.

@@ -198,17 +198,21 @@ export function tabUnread(rows: Pick<InboxRow, 'unread' | 'muted' | 'sms' | 'las
   return rows.reduce((sum, row) => (row.muted || !showsIn(row, show) ? sum : sum + row.unread), 0);
 }
 
-/** The parts a list of rows has (each one shows as a chip on home once there are two): Matrix's,
- *  XMPP's and Nostr's whenever the space is signed in to them, even with no chat yet, and the
- *  public feed's (`feed`) when the space has a Nostr key or a public Matrix room. */
-export function inboxParts(rows: InboxRow[], matrix: boolean, xmpp = false, nostr = false, feed = false): InboxShow[] {
+/** Which parts of the list are on (`on`): their modules (lib/modules.ts), and the public feed's
+ *  (`feed`) when the space has a Nostr key or a public Matrix room. */
+export type InboxPartsOn = { erevos?: boolean; sms?: boolean; matrix?: boolean; xmpp?: boolean; nostr?: boolean; feed?: boolean };
+
+/** The parts of the list (each one shows as a chip on home once there are two): each one whose
+ *  module is on, even with no chat yet, so a chip chosen and left, or one an icon opened, is there
+ *  to come back to; and any a row is of. */
+export function inboxParts(rows: InboxRow[], on: InboxPartsOn = {}): InboxShow[] {
   const parts: InboxShow[] = [];
-  if (rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
-  if (rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
-  if (matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
-  if (xmpp || rows.some((row) => row.network === 'xmpp')) parts.push('xmpp');
-  if (feed) parts.push('public');
-  if (nostr || rows.some((row) => row.network === 'nostr')) parts.push('nostr');
+  if (on.sms || rows.some((row) => showsIn(row, 'sms'))) parts.push('sms');
+  if (on.erevos || rows.some((row) => showsIn(row, 'erevos'))) parts.push('erevos');
+  if (on.matrix || rows.some((row) => row.network === 'matrix')) parts.push('matrix');
+  if (on.xmpp || rows.some((row) => row.network === 'xmpp')) parts.push('xmpp');
+  if (on.feed) parts.push('public');
+  if (on.nostr || rows.some((row) => row.network === 'nostr')) parts.push('nostr');
   return parts;
 }
 

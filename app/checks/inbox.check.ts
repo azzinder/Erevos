@@ -124,7 +124,15 @@ test("counts the messages not read in each part of the list for its chip, a mute
   // A contact whose last message is an SMS is among the SMS and the Erevos chats alike (showsIn).
   assert.deepEqual(counts, [2 + 3 + 3 + 4 + 7 + 1 + 2, 2 + 1 + 3, 2 + 1 + 2 + 4, 7, 1, 2, 0]);
   assert.equal(showsIn(row({ identity: 'matrix:!a', network: 'matrix' }), 'public'), false);
-  assert.deepEqual(inboxParts([], false, false, false, true), ['public']);
+  assert.deepEqual(inboxParts([], { feed: true }), ['public']);
+  // Each part whose module is on stays one with no chat yet, as an icon may open on it: a space with
+  // only SMS keeps the Erevos chip, and the others on, so leaving one for All can come back.
+  const smsOnly = [row({ identity: 'sms:+306900000001', sms: '+306900000001', lastSms: true })];
+  assert.deepEqual(inboxParts(smsOnly), ['sms']);
+  assert.deepEqual(inboxParts(smsOnly, { erevos: true }), ['sms', 'erevos']);
+  assert.deepEqual(inboxParts([], { erevos: true }), ['erevos']);
+  assert.deepEqual(inboxParts([], { erevos: true, sms: true, matrix: true, xmpp: true, nostr: true, feed: true }), ['sms', 'erevos', 'matrix', 'xmpp', 'public', 'nostr']);
+  assert.deepEqual(inboxParts(smsOnly, { erevos: true, nostr: true }), ['sms', 'erevos', 'nostr']);
   assert.equal(tabUnread([], 'all'), 0);
 });
 

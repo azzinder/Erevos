@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+- **A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each
+  have their chip whenever they are on in Modules, also with no chat yet (lib/inbox.ts inboxParts), and the **SMS**
+  chip says when Erevos is not the SMS app yet, with a button to make it that. Before, a chip showed only once its
+  part had chats or an account: in a space with only SMS so far, choosing **All messages** after Erevos's icon opened
+  its chats hid the chips, so there was no way back to them.
+
 ### Under the hood
 
 ## 7.0.0-rc.1 (2026-11-07)

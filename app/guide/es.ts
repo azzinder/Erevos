@@ -129,9 +129,10 @@ tiene abiertos.
   de al lado, te escribe un recordatorio.
 - **El auricular verde y la persona violeta** de arriba, en Android, abren **Teléfono** y **Contactos** directamente, en
   los colores de sus iconos en la pantalla de inicio del teléfono. No están además en el menú de los tres puntos.
-- **Todos**, **SMS** y **Erevos**, encima de los chats en cuanto hay también conversaciones SMS, muestran todo, solo los
-  SMS (con los chats cuyo último mensaje fue un SMS), o solo los chats de Erevos, de cada contacto lo último que
-  llegó.
+- **Todos**, **SMS** y **Erevos**, encima de los chats en cuanto hay dos partes con mensajes activadas en Módulos,
+  muestran todo, solo los SMS (con los chats cuyo último mensaje fue un SMS), o solo los chats de Erevos, de cada
+  contacto lo último que llegó. Cada parte activada tiene su chip, también sin ningún chat aún: **SMS** muestra si
+  Erevos aún no es la app de SMS.
   Cada chip, estos y los de **Matrix**, **XMPP** y **Nostr**, muestra un número pequeño tras su nombre: los mensajes
   sin leer que hay en él (99+ a partir de 99), y nada cuando no hay ninguno. Los chats y grupos en **Silenciado** no
   cuentan, como en el número del icono de Erevos, y lo que se escribe en la búsqueda no lo cambia.
@@ -226,8 +227,8 @@ extremo entre ellos como tus chats: el relay solo las lleva cifradas.
   sueltas antes, te quedas. En un chat hace lo que hace su flecha de volver: vuelve a la lista de chats, o sale de los
   chats ocultos, cerrándolos. En los **Detalles** de un chat, los cierra.
 - **Pestañas:** desliza hacia la izquierda o la derecha para ir a la pestaña de al lado, como al tocar su chip:
-  **Todos**, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** en la pantalla de inicio (aquellos para los que
-  tienes chats o una cuenta), **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en
+  **Todos**, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** en la pantalla de inicio (los activados en Módulos),
+  **Teclado**, **Recientes** y **Favoritos** en **Teléfono**, los filtros en
   **Contactos**, y los grupos de stickers. En la pantalla de inicio los chips se quedan en una sola línea: cuando no
   caben todos, desliza la línea hacia un lado para ver los demás; el elegido siempre se ve.
 - En una pantalla con pestañas, deslizar solo cambia de pestaña, también sobre las filas de su lista, y más allá de la

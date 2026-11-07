@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para ti',
   'Under the hood': 'Bajo el capó',
   // Not out yet.
+  "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
+    "**Un chip para cada parte activada**: encima de los chats, **SMS**, **Erevos**, **Matrix**, **XMPP** y **Nostr** tienen cada uno su chip siempre que estén activados en Módulos, también sin ningún chat aún. Antes, en un espacio con solo SMS por ahora, elegir **Todos** después de que el icono de Erevos abriera sus chats ocultaba los chips, sin forma de volver.",
   // 7.0.0-rc.1
   "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
     "**Dispositivos vinculados en la misma Wi-Fi**: el teléfono y un ordenador en la misma Wi-Fi o punto de acceso se dan lo que cambia directamente allí, también sin internet. Ver [Dispositivos vinculados](#devices).",

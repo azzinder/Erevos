@@ -132,9 +132,10 @@ sich nur lesen, solange ihre PIN sie geöffnet hat.
   Glocke daneben, schreibt eine Erinnerung für dich.
 - **Der grüne Hörer und die violette Person** oben, auf Android, öffnen direkt **Telefon** und **Kontakte**, in den
   Farben ihrer Symbole auf dem Startbildschirm des Telefons. Im Menü unter den drei Punkten sind sie nicht noch einmal.
-- **Alle**, **SMS** und **Erevos**, über den Chats, sobald es auch SMS-Unterhaltungen gibt, zeigen alle, nur die SMS
-  (mit den Chats, deren letzte Nachricht eine SMS war) oder nur die Erevos-Chats, bei jedem Kontakt das, was zuletzt
-  kam.
+- **Alle**, **SMS** und **Erevos**, über den Chats, sobald zwei Teile mit Nachrichten in den Modulen an sind, zeigen
+  alle, nur die SMS (mit den Chats, deren letzte Nachricht eine SMS war) oder nur die Erevos-Chats, bei jedem Kontakt
+  das, was zuletzt kam. Jeder Teil, der an ist, hat seinen Chip, auch noch ohne Chat: **SMS** zeigt, wenn Erevos noch
+  nicht die SMS-App ist.
   Jeder Chip, diese und die von **Matrix**, **XMPP** und **Nostr**, zeigt hinter seinem Namen eine kleine Zahl: die
   darin ungelesenen Nachrichten (99+ ab 99), und keine, wenn es keine gibt. Chats und Gruppen auf **Stumm** zählen
   nicht mit, wie bei der Zahl auf Erevos’ Symbol, und was in die Suche getippt wird, ändert daran nichts.
@@ -236,8 +237,8 @@ Das Relay trägt sie nur verschlüsselt.
   los, bleibst du. In einem Chat macht es, was sein Zurück-Pfeil macht: zurück zur Liste der Chats, oder aus den
   versteckten Chats heraus, wobei sie geschlossen werden. In den **Details** eines Chats schließt es sie.
 - **Tabs:** Wische nach links oder rechts, um zum benachbarten Tab zu gehen, wie ein Tippen auf seinen Chip: **Alle**,
-  **SMS**, **Erevos**, **Matrix**, **XMPP** und **Nostr** auf dem Startbildschirm (die, für die du Chats oder ein
-  Konto hast), **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die
+  **SMS**, **Erevos**, **Matrix**, **XMPP** und **Nostr** auf dem Startbildschirm (die, die in den Modulen an sind),
+  **Wähltasten**, **Anrufliste** und **Favoriten** in **Telefon**, die Filter in **Kontakte** und die
   Sticker-Sätze. Auf dem Startbildschirm bleiben die Chips in einer Zeile: Passen nicht alle hinein, schiebe die Zeile
   zur Seite, um die übrigen zu sehen; der gewählte bleibt immer sichtbar.
 - Auf einem Bildschirm mit Tabs wechselt ein Wischen nur den Tab, auch auf den Zeilen seiner Liste, und über den

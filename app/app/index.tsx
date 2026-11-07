@@ -96,8 +96,8 @@ const MENU: { title: string; detail: string; href: Href; links?: boolean; erevos
 const trashLooked = new Set<number>();
 
 // Which of the list shows: all of it, or one network's chats, the SMS, the Erevos chats, the
-// Matrix ones, the XMPP ones or the Nostr ones (lib/inbox.ts, showsIn), each with its chip once the
-// list has two of them; and the Public feed (components/public-feed.tsx), with its chip when the
+// Matrix ones, the XMPP ones or the Nostr ones (lib/inbox.ts, showsIn), each with its chip while its
+// module is on, once two are; and the Public feed (components/public-feed.tsx), with its chip when the
 // space has a Nostr key or a public Matrix room.
 // Erevos's widget and its icons in the launcher open on one of them (erevos://?show=sms), again
 // each time they are tapped (`opened`, app/_layout.tsx).
@@ -451,9 +451,18 @@ function Home() {
     const found = filterInbox(everyRow ?? [], query);
     return found.filter((row) => showsIn(row, show));
   }, [everyRow, query, show]);
-  // The choice shows once the list has two networks' chats, or while one of them is chosen.
+  // The choice shows once two parts are on, each with its chip even with no chat yet: otherwise,
+  // in a space with only SMS so far, leaving the Erevos chats (as Erevos's icon opens them) for All
+  // hid the chips, with no way back.
   const publicRooms = !!matrix && Object.values(matrix.rooms).some((room) => isPublicRoom(matrix, room));
-  const parts = inboxParts(everyRow ?? [], !!matrix, !!xmpp, !!nostr, !!nostr || publicRooms);
+  const parts = inboxParts(everyRow ?? [], {
+    erevos: erevosOn,
+    sms: modules.has('sms'),
+    matrix: modules.has('matrix'),
+    xmpp: modules.has('xmpp'),
+    nostr: modules.has('nostr'),
+    feed: !!nostr || publicRooms,
+  });
   const tabs: InboxShow[] = ['all', ...parts, ...(show !== 'all' && !parts.includes(show) ? [show] : [])];
   const mixed = tabs.length > 2;
   // Where New chat goes: on Matrix's part, a Matrix chat (app/matrix.tsx); on XMPP's, an XMPP one
@@ -667,6 +676,21 @@ function Home() {
               <Text tone="muted" style={styles.emptyText}>
                 {t('No Nostr chats yet.')}
               </Text>
+            ) : show === 'sms' ? (
+              // The SMS chip shows while the SMS are on, also before Erevos is the SMS app, which
+              // alone may read them: Settings → Phone and SMS → SMS makes it that.
+              smsStatus()?.isDefault ? (
+                <Text tone="muted" style={styles.emptyText}>
+                  {t('No SMS yet.')}
+                </Text>
+              ) : (
+                <View style={styles.empty}>
+                  <Text tone="muted" style={styles.emptyText}>
+                    {t('Erevos is not the SMS app')}
+                  </Text>
+                  <Button title={t('Make Erevos the SMS app')} compact onPress={() => router.push('/sms-settings')} />
+                </View>
+              )
             ) : !messagesOn ? (
               // The Phone alone (lib/modules.ts): no chats, nor SMS, to list.
               <View style={styles.empty}>

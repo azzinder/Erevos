@@ -121,9 +121,10 @@ same whether a space has any or not: their messages can be read only while their
   writes a reminder for you.
 - **The green handset and the violet person** at the top, on Android, open **Phone** and **Contacts** at once, in the
   colours of their icons on the phone's home screen. They are not in the menu under the three dots as well.
-- **All messages**, **SMS** and **Erevos**, above the chats once there are SMS conversations too, show all of them,
-  only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
-  came last.
+- **All messages**, **SMS** and **Erevos**, above the chats once two parts with messages are on in Modules, show all of
+  them, only the SMS (with the chats whose last message was an SMS), or only the Erevos chats, every contact's whatever
+  came last. Each part that is on has its chip, also with no chat yet: **SMS** says so when Erevos is not the SMS app
+  yet.
   Every chip, these and the **Matrix**, **XMPP** and **Nostr** ones, shows a small number after its name: the messages
   not read in it (99+ above 99), and none when there are none. Chats and groups on **Muted** are left out of it, as
   they are of the number on Erevos's icon, and what is typed in the search changes nothing in it.
@@ -213,7 +214,7 @@ carries them only sealed.
   its back arrow does: back to the list of chats, or out of hidden chats, closing them. In a chat's **Details** it
   closes them.
 - **Tabs:** swipe to the left or right to go to the tab beside, as tapping its chip does: **All messages**, **SMS**,
-  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those you have chats or an account for),
+  **Erevos**, **Matrix**, **XMPP** and **Nostr** on the home screen (those on in Modules),
   **Keypad**, **Recents** and **Favourites** in **Phone**, the filters in **Contacts**, and the sets of stickers. On
   the home screen the chips stay on one line: when they do not all fit, slide the line to the side for the rest; the
   chosen one always shows.

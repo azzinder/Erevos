@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
+    "**Ένα κουμπί για κάθε μέρος που είναι ανοιχτό**: πάνω από τις συνομιλίες, τα **SMS**, **Erevos**, **Matrix**, **XMPP** και **Nostr** έχουν το καθένα το κουμπί του όταν είναι ανοιχτά στις Ενότητες, και χωρίς καμία συνομιλία ακόμα. Πριν, σε έναν χώρο με μόνο SMS ως τώρα, το **Όλα**, αφού το εικονίδιο του Erevos είχε ανοίξει τις συνομιλίες του, έκρυβε τα κουμπιά, χωρίς τρόπο να γυρίσεις.",
   // 7.0.0-rc.1
   "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
     "**Συνδεδεμένες συσκευές στο ίδιο Wi-Fi**: το τηλέφωνο και ένας υπολογιστής στο ίδιο Wi-Fi ή hotspot δίνουν ο ένας στον άλλον ό,τι αλλάζει απευθείας εκεί, και χωρίς internet. Δες [Συνδεδεμένες συσκευές](#devices).",

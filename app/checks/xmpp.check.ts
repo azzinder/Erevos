@@ -526,7 +526,7 @@ test('the chats and the people who asked to add us are rows of the home list, on
   // The person who asked to add us is one row, at the top until answered, and is not a chat.
   assert.deepEqual([by[`xmpp:new@${DOMAIN}`].invited, by[`xmpp:new@${DOMAIN}`].at, by[`xmpp:new@${DOMAIN}`].unread], [true, 1000, 1]);
   for (const row of rows) assert.deepEqual([showsIn(row, 'xmpp'), showsIn(row, 'erevos'), showsIn(row, 'matrix'), showsIn(row, 'sms'), showsIn(row, 'all')], [true, false, false, false, true]);
-  assert.deepEqual(inboxParts([], false, true), ['xmpp']);
-  assert.deepEqual(inboxParts(rows, false), ['xmpp']);
-  assert.deepEqual(inboxParts([], true, true), ['matrix', 'xmpp']);
+  assert.deepEqual(inboxParts([], { xmpp: true }), ['xmpp']);
+  assert.deepEqual(inboxParts(rows), ['xmpp']);
+  assert.deepEqual(inboxParts([], { matrix: true, xmpp: true }), ['matrix', 'xmpp']);
 });

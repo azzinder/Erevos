@@ -915,6 +915,6 @@ test('Nostr chats are rows of the home list, a part of their own', () => {
   assert.equal(by[`nostr:${'d'.repeat(64)}`].name, shortNpub(npubOf('d'.repeat(64))));
   assert.equal(by[`nostr:${'d'.repeat(64)}`].at, 30);
   for (const row of rows) assert.deepEqual([showsIn(row, 'nostr'), showsIn(row, 'xmpp'), showsIn(row, 'erevos'), showsIn(row, 'all')], [true, false, false, true]);
-  assert.deepEqual(inboxParts([], false, false, true), ['nostr']);
-  assert.deepEqual(inboxParts(rows, true), ['matrix', 'nostr']);
+  assert.deepEqual(inboxParts([], { nostr: true }), ['nostr']);
+  assert.deepEqual(inboxParts(rows, { matrix: true }), ['matrix', 'nostr']);
 });

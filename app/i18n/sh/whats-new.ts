@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back.":
+    "**Dugme za svaki uključeni dio**: iznad razgovora, **SMS**, **Erevos**, **Matrix**, **XMPP** i **Nostr** imaju svaki svoje dugme kad su uključeni u Modulima, i bez ijednog razgovora zasad. Prije je u prostoru zasad samo sa SMS-ovima biranje **Sve poruke**, nakon što je ikona Erevosa otvorila njegove razgovore, sakrivalo dugmad, bez puta natrag.",
   // 7.0.0-rc.1
   "**Linked devices on the same Wi-Fi**: the phone and a computer on the same Wi-Fi or hotspot give each other what changes straight there, with no internet too. See [Linked devices](#devices).":
     "**Povezani uređaji na istom Wi-Fiju**: telefon i računar na istom Wi-Fiju ili hotspotu daju jedno drugom ono što se mijenja direktno tamo, i bez interneta. Vidi [Povezani uređaji](#devices).",

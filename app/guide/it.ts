@@ -129,9 +129,10 @@ mentre il loro PIN le tiene aperte.
   arancione accanto, scrive un promemoria per te.
 - **La cornetta verde e la persona viola** in alto, su Android, aprono subito **Telefono** e **Contatti**, nei colori
   delle loro icone sulla schermata Home del telefono. Non sono anche nel menu dei tre puntini.
-- **Tutti**, **SMS** ed **Erevos**, sopra le chat quando ci sono anche conversazioni SMS, mostrano tutte le chat, solo
-  gli SMS (con le chat il cui ultimo messaggio era un SMS), o solo le chat Erevos, di ogni contatto quello che è
-  arrivato per ultimo.
+- **Tutti**, **SMS** ed **Erevos**, sopra le chat quando in Moduli sono attive due parti con messaggi, mostrano tutte
+  le chat, solo gli SMS (con le chat il cui ultimo messaggio era un SMS), o solo le chat Erevos, di ogni contatto
+  quello che è arrivato per ultimo. Ogni parte attiva ha la sua etichetta, anche senza ancora una chat: **SMS** dice
+  quando Erevos non è ancora l’app per gli SMS.
   Ogni chip, questi e quelli di **Matrix**, **XMPP** e **Nostr**, mostra un piccolo numero dopo il suo nome: i
   messaggi non letti che contiene (99+ oltre 99), e niente quando non ce ne sono. Le chat e i gruppi **In silenzio**
   non contano, come nel numero sull’icona di Erevos, e ciò che si scrive nella ricerca non lo cambia.
@@ -226,8 +227,8 @@ dispositivi, crittografate end-to-end tra loro come le tue chat: il relay le tra
   indietro. Se lasci prima, resti dove sei. In una chat fa quello che fa la sua freccia indietro: torna all’elenco delle
   chat, o esce dalle chat nascoste, chiudendole. Nei **Dettagli** di una chat li chiude.
 - **Schede:** scorri verso sinistra o verso destra per andare alla scheda accanto, come quando tocchi la sua
-  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli per
-  cui hai chat o un account), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e
+  etichetta: **Tutti**, **SMS**, **Erevos**, **Matrix**, **XMPP** e **Nostr** nella schermata principale (quelli attivi
+  in Moduli), **Tastierino**, **Recenti** e **Preferiti** in **Telefono**, i filtri in **Contatti**, e
   le serie di sticker. Nella schermata principale i chip restano su una sola riga: quando non ci stanno tutti, fai
   scorrere la riga di lato per vedere gli altri; quello scelto è sempre in vista.
 - In una schermata con schede, uno scorrimento cambia solo la scheda, anche sulle righe del suo elenco, e oltre la
