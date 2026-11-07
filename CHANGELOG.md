@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.2 (2026-11-07)
+
+### For you
+
 - **Reminders that come again**: `erevos://myself?…&every=1m` (or `Nd`, `Nw`, `Nm`, `Ny`) keeps a note whose reminder
   repeats, as Fasouli asks for a scheduled payment. Once seen it moves to its next time (lib/note-repeat.ts), on the
   same clock time, a month's last day kept for the 29th to 31st; it goes to linked devices with the note.

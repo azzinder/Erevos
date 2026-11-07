@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Trova le stazioni per nome**: Aggiungi una stazione nella scheda Radio della Raccolta cerca in Radio Browser, un elenco libero, a cui vengono inviate solo le parole che scrivi quando premi Cerca. Vedi [Raccolta](#collection).",
   "**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection).":

@@ -1430,11 +1430,12 @@ The Android app's Tor bridges are lyrebird, built from these modules (`transport
 
 ### Android libraries
 
-Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 4 libraries.
+Libraries that Erevos's own Android code declares (`group:name`). React Native and Expo also bring Google's AndroidX libraries (Apache-2.0) when the Android app is built. React Native WebRTC brings the WebRTC library (BSD-3-Clause, built by Jitsi) and React Native Quick Crypto brings OpenSSL (Apache-2.0). 5 libraries.
 
 | Library | Version | Licence |
 | --- | --- | --- |
 | [androidx.media3:media3-exoplayer](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
+| [androidx.media3:media3-exoplayer-hls](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [androidx.media3:media3-session](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [androidx.media3:media3-ui](https://github.com/androidx/media) | 1.8.0 | Apache-2.0 |
 | [com.google.zxing:core](https://github.com/zxing/zxing) | 3.5.3 | Apache-2.0 |

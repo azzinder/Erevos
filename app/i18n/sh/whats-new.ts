@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  // 7.0.0-rc.2
   "**Find radio stations by name**: Add a station in the Collection's Radio tab searches Radio Browser, a free directory, sent only the words you type when you press Search. See [Collection](#collection).":
     "**Nađi stanice po imenu**: Dodaj stanicu u kartici Radio Zbirke traži u Radio Browseru, slobodnom imeniku, kojem se šalju samo riječi koje upišeš kad pritisneš Traži. Vidi [Zbirka](#collection).",
   "**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection).":
