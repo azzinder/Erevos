@@ -14,6 +14,7 @@
 #include <QDBusMessage>
 #include <QDBusReply>
 #include <QDateTime>
+#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -47,6 +48,39 @@ qint64 wallNow()
 {
     // The wall clock, not a timer's: a timer stands still while the phone sleeps.
     return QDateTime::currentMSecsSinceEpoch();
+}
+
+// Where the boosters of mapplauncherd are. Erevos started from the home screen, or by a tap on a
+// notice (data/app.erevos.service), runs in one: `invoker --type=silica-qt5` hands it to a
+// booster, which has Qt loaded already, loads /usr/bin/erevos as a library and calls its main. So
+// the process's own program (/proc/…/exe) is the booster, not Erevos.
+const char Boosters[] = "/usr/libexec/mapplauncherd/booster-";
+
+QString unDeleted(QString path)
+{
+    // A program replaced by an update while it runs.
+    return path.remove(QRegularExpression(QStringLiteral(" \\(deleted\\)$")));
+}
+
+// Whether the process `pid` runs `erevos`: as its own program, or loaded, executable, into a
+// booster. No other process has the program of Erevos mapped to run unless it loads it itself,
+// and one that may do that may as well run it.
+bool runsErevos(uint pid, const QString &erevos, const QString &boosters)
+{
+    const QString running = unDeleted(QFileInfo(QStringLiteral("/proc/%1/exe").arg(pid)).symLinkTarget());
+    if (running.isEmpty()) return false;
+    if (running == erevos) return true;
+    if (!running.startsWith(boosters)) return false;
+    QFile maps(QStringLiteral("/proc/%1/maps").arg(pid));
+    if (!maps.open(QIODevice::ReadOnly)) return false;
+    // Each line: address, permissions, offset, device, inode, then the file's path. Read whole, as
+    // /proc gives its files no size, so atEnd() would say there is nothing.
+    for (const QByteArray &line : maps.readAll().split('\n')) {
+        const QList<QByteArray> fields = line.simplified().split(' ');
+        if (fields.size() < 6 || fields[1].size() < 3 || fields[1][2] != 'x') continue;
+        if (unDeleted(QString::fromLocal8Bit(fields.mid(5).join(' '))) == erevos) return true;
+    }
+    return false;
 }
 
 void putU32(QByteArray &out, quint32 value)
@@ -287,14 +321,14 @@ bool Watcher::fromErevos()
     const QString caller = message().service();
     if (m_callers.contains(caller)) return true;
     QString erevos = QCoreApplication::applicationDirPath() + QStringLiteral("/erevos");
+    QString boosters = QString::fromLatin1(Boosters);
 #ifdef EREVOS_WATCH_TEST
-    // The check on a computer calls it from its own program.
+    // The check on a computer calls it from its own program, or from one it loads as a booster.
     if (qEnvironmentVariableIsSet("EREVOS_WATCH_TEST_CALLER")) erevos = QString::fromLocal8Bit(qgetenv("EREVOS_WATCH_TEST_CALLER"));
+    if (qEnvironmentVariableIsSet("EREVOS_WATCH_TEST_BOOSTERS")) boosters = QString::fromLocal8Bit(qgetenv("EREVOS_WATCH_TEST_BOOSTERS"));
 #endif
     const QDBusReply<uint> pid = connection().interface()->servicePid(caller);
-    QString running = pid.isValid() ? QFileInfo(QStringLiteral("/proc/%1/exe").arg(pid.value())).symLinkTarget() : QString();
-    running.remove(QRegularExpression(QStringLiteral(" \\(deleted\\)$")));
-    if (!running.isEmpty() && running == erevos) {
+    if (pid.isValid() && runsErevos(pid.value(), erevos, boosters)) {
         m_callers.insert(caller);
         return true;
     }

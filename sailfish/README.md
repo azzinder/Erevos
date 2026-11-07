@@ -68,14 +68,17 @@ Any app of the phone can use the session bus and reach 127.0.0.1, so neither tru
 connection by itself. The shell gives nothing to `app.erevos.watch` until D-Bus says which process
 holds it and that process runs `erevos-watch` beside `erevos` (`/proc/…/exe`); then it calls that
 process's own name on the bus. The helper answers `AccessDenied` to a call from a process that does
-not run `erevos`. ShellServer refuses a shell path without the token, and a body for any other
+not run `erevos`: as its own program, or loaded to run into a booster of mapplauncherd
+(`/usr/libexec/mapplauncherd/booster-…`, `/proc/…/maps`), as the home screen and a tap on a notice
+start it (`invoker --type=silica-qt5`). ShellServer refuses a shell path without the token, and a body for any other
 path, before it reads the body; at most 32 connections may still be sending their request's head,
 the oldest let go of for a new one, and each has 30 seconds for it.
 
 To check it on a computer, build it with `qmake CONFIG+=watch_test` (Qt 5 and OpenSSL, no
 Sailfish libraries): it then writes what it would show and ring, and `EREVOS_WATCH_TEST_CA` names
 a certificate authority to trust beside the computer's, for a relay behind TLS there, and
-`EREVOS_WATCH_TEST_CALLER` the program it takes calls from instead of `erevos` (`dbus-send`, say).
+`EREVOS_WATCH_TEST_CALLER` the program it takes calls from instead of `erevos` (`dbus-send`, say),
+and `EREVOS_WATCH_TEST_BOOSTERS` where its boosters are instead.
 
 ## Build
 

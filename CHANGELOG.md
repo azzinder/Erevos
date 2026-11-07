@@ -26,6 +26,10 @@ On main, not released yet:
 
 ### Under the hood
 
+- **Sailfish OS, notices while Erevos is closed**: since 7.0.0-rc.1 the helper erevos-watch takes the queues to wait
+  on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
+  on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and
+  told of nothing. Now it also takes a booster that has Erevos's program loaded to run (sailfish/watch/src/watcher.cpp).
 - **Home relay**: the screen said that whoever runs a home relay sees this phone's address when it takes messages,
   also for one set to **Only through Tor**, whose own caption says the opposite. Where Tor can be used, the sentence
   now adds "unless it is set to Only through Tor below" (app/home-relay.tsx).
