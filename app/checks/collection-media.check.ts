@@ -16,13 +16,17 @@ import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionTo
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
+import { HLS, httpsLink, playlistLinks, RadioLinkError, stationLink } from '../lib/collection-radio';
 import { moved, playlistItems } from '../lib/collection-view';
 import {
   addPlaylist,
+  addStation,
   addToCollection,
   addToPlaylist,
   deleteItems,
   deletePlaylist,
+  deleteStation,
+  renameStation,
   keepPositions,
   loadCollection,
   NoSuchPlaylistError,
@@ -248,4 +252,52 @@ t('a file moves up or down in its list, and stays at an end', () => {
   assert.deepEqual(moved(['a', 'b', 'c'], 2, -1), ['a', 'c', 'b']);
   assert.deepEqual(moved(['a', 'b', 'c'], 0, -1), ['a', 'b', 'c']);
   assert.deepEqual(moved(['a', 'b', 'c'], 2, 1), ['a', 'b', 'c']);
+});
+
+t('a station is an https link only, a playlist gives its first https link, and HLS stays as it is', async () => {
+  assert.equal(httpsLink(' https://radio.example/live '), 'https://radio.example/live');
+  assert.equal(httpsLink('http://radio.example/live'), null);
+  assert.equal(httpsLink('https://user:pw@radio.example/'), null);
+  assert.equal(httpsLink('ftp://radio.example/'), null);
+  assert.equal(httpsLink('radio'), null);
+  const pls = '[playlist]\r\nNumberOfEntries=2\r\nFile1=http://a.example/plain\r\nTitle1=A\r\nFile2=https://b.example/stream\r\n';
+  assert.deepEqual(playlistLinks(pls), { hls: false, links: ['http://a.example/plain', 'https://b.example/stream'] });
+  assert.deepEqual(playlistLinks('#EXTM3U\n#EXTINF:-1,One\nhttps://c.example/one.mp3\n'), { hls: false, links: ['https://c.example/one.mp3'] });
+  assert.equal(playlistLinks('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nlow.m3u8\n').hls, true);
+  const asked: string[] = [];
+  const get = (body: string, status = 200) => async (url: string) => {
+    asked.push(url);
+    return { status, bytes: utf8Encode(body) };
+  };
+  assert.deepEqual(await stationLink('https://s.example/live.mp3', get('')), { url: 'https://s.example/live.mp3', mime: '' });
+  assert.deepEqual(await stationLink('https://s.example/live.m3u8', get('')), { url: 'https://s.example/live.m3u8', mime: HLS });
+  assert.equal(asked.length, 0);
+  assert.deepEqual(await stationLink('https://s.example/x.pls', get(pls)), { url: 'https://b.example/stream', mime: '' });
+  assert.deepEqual(await stationLink('https://s.example/x.m3u', get('#EXTM3U\n#EXT-X-TARGETDURATION:6\n')), { url: 'https://s.example/x.m3u', mime: HLS });
+  await assert.rejects(stationLink('http://s.example/live', get('')), RadioLinkError);
+  await assert.rejects(stationLink('https://s.example/x.pls', get('File1=http://only.example/\n')), RadioLinkError);
+  await assert.rejects(stationLink('https://s.example/x.pls', get('', 404)), RadioLinkError);
+});
+
+t('stations are kept sealed with the place, https only, and a deleted one leaves a mark', async () => {
+  const p = place();
+  const one = await addStation(p, 'Jazz', { url: 'https://jazz.example/live', mime: '' });
+  const two = await addStation(p, 'Jazz', { url: 'https://jazz.example/hls.m3u8', mime: HLS });
+  assert.notEqual(two.name, 'Jazz');
+  await assert.rejects(addStation(p, 'Plain', { url: 'http://plain.example/', mime: '' }));
+  await renameStation(p, one.id, 'Night jazz');
+  let c = await loadCollection(p);
+  assert.deepEqual(
+    c.stations?.map((s) => [s.name, s.url, s.mime]),
+    [
+      ['Night jazz', 'https://jazz.example/live', ''],
+      [two.name, 'https://jazz.example/hls.m3u8', HLS],
+    ],
+  );
+  for (const text of files.values()) assert.ok(!text.includes('jazz.example'));
+  assert.equal((await loadCollection(place())).stations, undefined);
+  await deleteStation(p, two.id);
+  c = await loadCollection(p);
+  assert.equal(c.stations?.length, 1);
+  assert.ok(c.gone.some((g) => g.id === two.id));
 });

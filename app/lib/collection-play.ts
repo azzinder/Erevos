@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { itemsWhole, keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
+import { itemsWhole, keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import type { FileRef } from '../lock/attachment-files';
 import { collectionNative, type PlayerState, type Repeat, type SealedRef } from '../modules/erevos-collection';
 import {
@@ -14,6 +14,7 @@ import {
   deskNext,
   deskPause,
   deskPlay,
+  deskPlayStation,
   deskPrevious,
   deskRepeat,
   deskResume,
@@ -46,6 +47,11 @@ import { subtitlesFor, subtitlesType } from './subtitles';
 // where each file got to is asked of the player now and then while the Collection is open, and kept
 // in the place's catalogue, sealed with it (lock/collection-data.ts keepPositions), never in plain
 // storage; only while the place is open, so the player holds no place's key after it locks.
+//
+// An internet radio station (lib/collection-radio.ts) plays the same way, as a list of one, from
+// its https link: on Android through the same player, with the same notice, the same choices and
+// the same stops; its ICY title, when it sends one, shows as a song's title does. The station sees
+// the device's IP address.
 //
 // What the space's locking, closing and the panic button do to what the Collection opened here is
 // told from here too: links to open files with other apps, PDFs shown, and the list.
@@ -110,14 +116,33 @@ function rememberList(place: CollectionPlace | null, list: CollectionItem[]): vo
   ids = list.map((i) => i.id);
   videos = list.map((i) => playKind(i) === 'video');
   listPlace = place;
+  station = false;
+}
+
+// Whether what plays is a station: nothing of it is kept, and it has no length.
+let station = false;
+
+/** Whether what plays now is an internet radio station. */
+export const stationPlaying = (): boolean => station;
+
+/** Plays an internet radio station, with the place's own choices. The station sees this device's IP address. */
+export async function playStation(s: CollectionStation, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
+  await keepWhereLeft();
+  if (DESK) await deskPlayStation(s.url);
+  else if (collectionNative) await collectionNative.playList([{ url: s.url, name: showTitle ? s.name : '', mime: s.mime, video: false }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
+  else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  names = [s.name];
+  ids = [s.id];
+  videos = [false];
+  listPlace = null;
+  pendingPlace = null;
+  station = true;
 }
 
 /** The name of the file at `index` in the list playing, and its id in the Collection. */
 export const playingFile = (index: number): { name: string; id: string } | null => {
-  if (DESK) {
-    const item = deskItem(index);
-    return item ? { name: item.file.name, id: item.id } : null;
-  }
+  const item = DESK ? deskItem(index) : null;
+  if (item) return { name: item.file.name, id: item.id };
   return index >= 0 && index < names.length ? { name: names[index], id: ids[index] } : null;
 };
 
@@ -192,6 +217,7 @@ export async function stopPlaying(): Promise<void> {
   videos = [];
   listPlace = null;
   pendingPlace = null;
+  station = false;
 }
 
 /** The place's Stop playing when the space locks changed while its list plays. */
@@ -317,6 +343,7 @@ export function collectionPanic(): void {
   videos = [];
   listPlace = null;
   pendingPlace = null;
+  station = false;
   if (DESK) {
     deskLockCancel();
     dropCollectionMemory();

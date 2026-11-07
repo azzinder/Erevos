@@ -109,7 +109,7 @@ export function deskState(): PlayerState {
     active: index >= 0,
     playing: !!m && index >= 0 && !m.paused && !m.ended,
     index,
-    count: list.length,
+    count: Math.max(list.length, index >= 0 ? 1 : 0),
     position: m && index >= 0 ? Math.round(m.currentTime * 1000) : 0,
     duration: durationNow(m),
     video,
@@ -297,6 +297,32 @@ async function open(at: number): Promise<void> {
     await m.play();
   } catch {
     // Paused: the file is ready, a press on play starts it; an error is told by its event.
+  }
+  tell();
+}
+
+/** Plays an internet radio station from its https link, as a list of one with no length. */
+export async function deskPlayStation(url: string): Promise<void> {
+  turn++;
+  letGo();
+  list = [];
+  resumes = [];
+  subtitleFiles = [];
+  resumed.clear();
+  positions.clear();
+  queue = newQueue(1, 0);
+  index = 0;
+  video = false;
+  error = null;
+  ended = false;
+  buffering = true;
+  tell();
+  const m = element();
+  m.src = url;
+  try {
+    await m.play();
+  } catch {
+    // Paused, or an error, which its event tells.
   }
   tell();
 }

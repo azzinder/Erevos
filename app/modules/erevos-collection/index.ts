@@ -26,6 +26,9 @@ export type PlayItem = SealedRef & {
   subtitles?: SealedRef & { mime: string };
 };
 
+/** An internet radio station to play, by its https link (lib/collection-radio.ts); `mime` says an HLS stream. Not in builds before it. */
+export type PlayStation = { url: string; name: string; mime: string; video: false };
+
 /** What plays again: nothing, the whole list, or the one file. */
 export type Repeat = 'off' | 'all' | 'one';
 
@@ -78,7 +81,7 @@ type Native = {
   /** One page `width` pixels wide, base64 PNG (or JPEG), and its size in pixels. */
   pdfPage(handle: string, index: number, width: number, format: 'png' | 'jpeg'): Promise<{ data: string; width: number; height: number }>;
   pdfClose(handle: string): void;
-  playList(items: PlayItem[], start: number, options: { showTitle: boolean; neutral: string; stopOnLock: boolean; stopLabel: string }): Promise<PlayerState>;
+  playList(items: (PlayItem | PlayStation)[], start: number, options: { showTitle: boolean; neutral: string; stopOnLock: boolean; stopLabel: string }): Promise<PlayerState>;
   pause(): Promise<void>;
   resume(): Promise<void>;
   next(): Promise<void>;

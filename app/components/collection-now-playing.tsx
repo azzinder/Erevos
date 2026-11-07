@@ -20,6 +20,7 @@ import {
   seekPlaying,
   shufflePlaying,
   speedPlaying,
+  stationPlaying,
   stopPlaying,
   usePlayer,
   usePlayingArt,
@@ -49,7 +50,8 @@ export function NowPlayingScreen({ visible, onClose }: { visible: boolean; onClo
   useEffect(() => {
     if (visible && state && !state.active) onClose();
   }, [visible, state?.active]);
-  const list = state?.active ? playingList() : [];
+  // A station has no list to show.
+  const list = state?.active && !stationPlaying() ? playingList() : [];
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
       <View style={[styles.screen, { backgroundColor: colors.ground, paddingTop: insets.top }]}>
@@ -93,6 +95,7 @@ export function NowPlayingScreen({ visible, onClose }: { visible: boolean; onClo
 // The file playing: its cover, what it is, how far, and the controls.
 function Playing({ state, art, colors }: { state: PlayerState; art: string | null; colors: Colors }) {
   const file = playingFile(state.index);
+  const live = stationPlaying();
   const title = state.title || file?.name || t('Playing');
   const about = [state.artist, state.album].filter(Boolean).join(' · ');
   const repeat = state.repeat ?? 'off';
@@ -117,27 +120,34 @@ function Playing({ state, art, colors }: { state: PlayerState; art: string | nul
       ) : null}
       {state.error ? (
         <Text variant="caption" color={colors.danger} style={styles.centered}>
-          {t('This file could not be played.')}
+          {live ? t('The station could not be played. It may be off the air, or its stream is in a form this device does not play.') : t('This file could not be played.')}
         </Text>
       ) : null}
-      <SeekBar position={state.position} duration={state.duration} colors={colors} />
-      <View style={styles.times}>
-        <Text variant="caption" tone="muted">
-          {playTime(state.position)}
+      {live ? (
+        <Text variant="caption" tone="muted" style={styles.centered}>
+          {state.buffering ? t('Loading…') : t('The station sees this device’s IP address while it plays.')}
         </Text>
-        <Text variant="caption" tone="muted">
-          {state.buffering ? t('Loading…') : t('{n} of {count}', { n: state.index + 1, count: state.count })}
-        </Text>
-        <Text variant="caption" tone="muted">
-          {playTime(state.duration)}
-        </Text>
-      </View>
+      ) : null}
+      {live ? null : <SeekBar position={state.position} duration={state.duration} colors={colors} />}
+      {live ? null : (
+        <View style={styles.times}>
+          <Text variant="caption" tone="muted">
+            {playTime(state.position)}
+          </Text>
+          <Text variant="caption" tone="muted">
+            {state.buffering ? t('Loading…') : t('{n} of {count}', { n: state.index + 1, count: state.count })}
+          </Text>
+          <Text variant="caption" tone="muted">
+            {playTime(state.duration)}
+          </Text>
+        </View>
+      )}
       <View style={styles.controls}>
-        <Button title={t('Previous')} kind="ghost" compact onPress={() => void previousPlaying()} />
+        {live ? null : <Button title={t('Previous')} kind="ghost" compact onPress={() => void previousPlaying()} />}
         {state.playing ? <Button title={t('Pause')} kind="secondary" compact onPress={() => void pausePlaying()} /> : <Button title={t('Play')} kind="primary" compact onPress={() => void resumePlaying()} />}
-        <Button title={t('Next')} kind="ghost" compact onPress={() => void nextPlaying()} disabled={state.hasNext === undefined ? state.index >= state.count - 1 : !state.hasNext} />
+        {live ? null : <Button title={t('Next')} kind="ghost" compact onPress={() => void nextPlaying()} disabled={state.hasNext === undefined ? state.index >= state.count - 1 : !state.hasNext} />}
       </View>
-      {CAN_SHUFFLE ? (
+      {CAN_SHUFFLE && !live ? (
         <View style={styles.options}>
           <Chip label={t('Shuffle')} selected={state.shuffle === true} onPress={() => void shufflePlaying(!state.shuffle)} />
           <Chip label={repeat === 'all' ? t('Repeat all') : repeat === 'one' ? t('Repeat one') : t('Repeat')} selected={repeat !== 'off'} onPress={() => void repeatPlaying(nextRepeat(repeat))} />
@@ -145,9 +155,11 @@ function Playing({ state, art, colors }: { state: PlayerState; art: string | nul
         </View>
       ) : null}
       <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
-      <Text variant="overline" tone="muted" style={styles.listTitle}>
-        {t('The list')}
-      </Text>
+      {live ? null : (
+        <Text variant="overline" tone="muted" style={styles.listTitle}>
+          {t('The list')}
+        </Text>
+      )}
     </View>
   );
 }

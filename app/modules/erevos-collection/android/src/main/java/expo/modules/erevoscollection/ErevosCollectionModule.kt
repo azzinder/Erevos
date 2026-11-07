@@ -161,6 +161,14 @@ class ErevosCollectionModule : Module() {
         for (entry in list) {
           val name = entry["name"] as? String ?: ""
           val mime = entry["mime"] as? String ?: ""
+          // An internet radio station: only by an https link (lib/collection-radio.ts).
+          val url = entry["url"] as? String
+          if (url != null) {
+            val link = Uri.parse(url)
+            if (link.scheme != "https" || link.host.isNullOrEmpty() || link.userInfo != null || url.length > 2048) throw IllegalArgumentException("Only https links")
+            items += Playing.Item(null, name, mime, false, url = url)
+            continue
+          }
           val resume = (entry["resume"] as? Number)?.toLong() ?: 0L
           // A video's subtitles (an .srt or .vtt file of the Collection), as a file above with its type.
           @Suppress("UNCHECKED_CAST")
@@ -176,7 +184,7 @@ class ErevosCollectionModule : Module() {
         }
       } catch (e: Exception) {
         for (item in items) {
-          item.file.close()
+          item.file?.close()
           item.subtitles?.close()
         }
         throw e

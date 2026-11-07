@@ -123,6 +123,14 @@ On main, not released yet:
   /__play/<token>; the file's key is held in the shell's memory only, by a random token, and forgotten when the file
   is let go of, the list stops, the space locks, the panic button or the window closes. A shell from before it has
   the page decrypt into memory as before, up to 1 GB.
+- **Internet radio in the Collection** (lib/collection-radio.ts, components/collection-radio.tsx): a Radio tab of
+  stations kept in the place's sealed catalogue (lock/collection-data.ts stations: id, name, https link, type, `at`;
+  a deleted one leaves a mark in `gone`). Added by an https link only (Erevos allows no cleartext); a .m3u or .pls
+  is fetched once and its first https link kept, an HLS stream (.m3u8, or an .m3u that is one) kept as it is. On
+  Android Media3 plays it through the same player and notice (DefaultHttpDataSource with the User-Agent "Erevos",
+  no redirect to http, media3-exoplayer-hls, WAKE_MODE_NETWORK), with the same stops on lock and panic; its ICY
+  title shows on the player's screen, and in the notice only with Show the title. In the web build the page's
+  player plays the link; the desktop app's CSP needs media-src https: for it.
 
 ### Under the hood
 

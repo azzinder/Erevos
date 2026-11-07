@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection).":
+    "**Διαδικτυακό ραδιόφωνο στη Συλλογή**: μια καρτέλα Ραδιόφωνο με σταθμούς που προσθέτεις με τον σύνδεσμό τους https, κρυπτογραφημένους μαζί με τη Συλλογή, που παίζουν όπως η μουσική, με την ειδοποίηση στο τηλέφωνο. Ο σταθμός βλέπει τη διεύθυνση IP της συσκευής σου. Δες [Συλλογή](#collection).",
   "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":
     "**Μουσική και βίντεο οποιουδήποτε μεγέθους στη Συλλογή της εφαρμογής υπολογιστή**: παίζουν και μετακινούνται αμέσως, διαβασμένα κομμάτι κομμάτι από τα κρυπτογραφημένα κομμάτια τους, ποτέ ολόκληρα στη μνήμη. Δες [Συλλογή](#collection).",
   "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":

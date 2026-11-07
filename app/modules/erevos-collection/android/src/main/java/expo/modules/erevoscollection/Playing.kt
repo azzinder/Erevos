@@ -25,6 +25,8 @@ import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSourceException
 import androidx.media3.datasource.DataSpec
+import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.TransferListener
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
@@ -66,14 +68,18 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @OptIn(UnstableApi::class)
 internal object Playing {
-  class Item(val file: SealedFile, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "")
+  /** A file of the Collection (`file`), or an internet radio station by its https link (`url`). */
+  class Item(val file: SealedFile?, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "", val url: String? = null)
 
   private fun Item.close() {
-    file.close()
+    file?.close()
     subtitles?.close()
   }
 
-  private const val SCHEME = "erevos-play"
+  const val SCHEME = "erevos-play"
+
+  /** What a station is asked with: the app's name, nothing of the phone. */
+  private const val AGENT = "Erevos"
   private val main = Handler(Looper.getMainLooper())
   private val random = SecureRandom()
 
@@ -181,11 +187,18 @@ internal object Playing {
     // No title in the items themselves: what is shown is made by ShownPlayer, and what the player
     // reports of the file (getMediaMetadata) is then only what the file says.
     val mediaItems = list.mapIndexed { index, item ->
-      val token = newToken()
-      files[token] = item.file
-      val builder = MediaItem.Builder()
-        .setMediaId(index.toString())
-        .setUri(Uri.Builder().scheme(SCHEME).authority(token).build())
+      val builder = MediaItem.Builder().setMediaId(index.toString())
+      val stream = item.url
+      val file = item.file
+      if (stream != null) {
+        // A station: its https link as it is, an HLS stream said as such.
+        builder.setUri(Uri.parse(stream))
+        if (item.mime == MimeTypes.APPLICATION_M3U8) builder.setMimeType(MimeTypes.APPLICATION_M3U8)
+      } else if (file != null) {
+        val token = newToken()
+        files[token] = file
+        builder.setUri(Uri.Builder().scheme(SCHEME).authority(token).build())
+      }
       // A video's subtitles, an .srt or .vtt file of the Collection, read from its chunks as the
       // video is, by a token of their own; shown by the video view, which a tap can turn off.
       val subtitles = item.subtitles
@@ -205,14 +218,24 @@ internal object Playing {
       builder.build()
     }
     val video = list.any { it.video }
+    val radio = list.any { it.url != null }
+    // A station is asked for over https only, with no cookies, a User-Agent that says only "Erevos",
+    // and no redirect to plain http; ExoPlayer asks for its ICY titles (Icy-MetaData), which then
+    // come as what the stream says of itself (its title), shown as a file's is.
+    val http = DefaultHttpDataSource.Factory()
+      .setUserAgent(AGENT)
+      .setAllowCrossProtocolRedirects(false)
+      .setConnectTimeoutMs(15_000)
+      .setReadTimeoutMs(20_000)
     val made = ExoPlayer.Builder(appContext)
-      .setMediaSourceFactory(DefaultMediaSourceFactory(DataSource.Factory { SealedDataSource(folder) }, extractors()))
+      .setMediaSourceFactory(DefaultMediaSourceFactory(DataSource.Factory { BySchemeDataSource(SealedDataSource(folder), http.createDataSource()) }, extractors()))
       .setAudioAttributes(
         AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(if (video) C.AUDIO_CONTENT_TYPE_MOVIE else C.AUDIO_CONTENT_TYPE_MUSIC).build(),
         true,
       )
       .setHandleAudioBecomingNoisy(true)
-      .setWakeMode(C.WAKE_MODE_LOCAL)
+      // A station needs the Wi-Fi kept awake too.
+      .setWakeMode(if (radio) C.WAKE_MODE_NETWORK else C.WAKE_MODE_LOCAL)
       .build()
     made.addListener(listener)
     val first = start.coerceIn(0, mediaItems.size - 1)
@@ -508,6 +531,42 @@ internal class SealedDataSource(private val folder: File) : BaseDataSource(false
       opened = false
       transferEnded()
     }
+  }
+}
+
+/**
+ * Where ExoPlayer reads from, by the link: a file of the list (SealedDataSource) or a station over
+ * https (Media3's own HTTP source); any other link is refused.
+ */
+@OptIn(UnstableApi::class)
+internal class BySchemeDataSource(private val sealed: DataSource, private val http: DataSource) : DataSource {
+  private var current: DataSource? = null
+
+  override fun addTransferListener(transferListener: TransferListener) {
+    sealed.addTransferListener(transferListener)
+    http.addTransferListener(transferListener)
+  }
+
+  override fun open(dataSpec: DataSpec): Long {
+    val source = when (dataSpec.uri.scheme) {
+      Playing.SCHEME -> sealed
+      "https" -> http
+      else -> throw FileNotFoundException("Not a link this player opens")
+    }
+    current = source
+    return source.open(dataSpec)
+  }
+
+  override fun read(buffer: ByteArray, offset: Int, length: Int): Int = (current ?: throw FileNotFoundException("Closed")).read(buffer, offset, length)
+
+  override fun getUri(): Uri? = current?.uri
+
+  override fun getResponseHeaders(): Map<String, List<String>> = current?.responseHeaders ?: emptyMap()
+
+  override fun close() {
+    val was = current
+    current = null
+    was?.close()
   }
 }
 

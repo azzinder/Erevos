@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  "**Internet radio in the Collection**: a Radio tab with stations you add by their https link, kept encrypted with the Collection, played like the music, with the notice on the phone. The station sees your device's IP address. See [Collection](#collection).":
+    "**Internetradio in der Sammlung**: ein Tab Radio mit Sendern, die du über ihren https-Link hinzufügst, verschlüsselt mit der Sammlung, gespielt wie die Musik, mit der Mitteilung auf dem Telefon. Der Sender sieht die IP-Adresse deines Geräts. Siehe [Sammlung](#collection).",
   "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":
     "**Musik und Videos in jeder Größe in der Sammlung der Desktop-App**: Sie laufen und springen sofort, Stück für Stück aus ihren verschlüsselten Teilen gelesen, nie ganz im Speicher. Siehe [Sammlung](#collection).",
   "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":

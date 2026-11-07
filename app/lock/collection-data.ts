@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { bytesSource, eachPiece, FileMissingError, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
+import { HLS, httpsLink } from '../lib/collection-radio';
 import { randomBytes, sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { filesThere } from '../lib/files';
 import { t } from '../lib/i18n';
@@ -87,7 +88,15 @@ export type Collection = {
   positions?: CollectionPosition[];
   /** Lists of music and videos to play in an order the owner chose (app/collection.tsx). */
   playlists?: CollectionPlaylist[];
+  /** Internet radio stations, by their https link (lib/collection-radio.ts). */
+  stations?: CollectionStation[];
 };
+
+/**
+ * An internet radio station: its own id, its name, the https link it plays from, its type (an HLS
+ * stream, or '' for any other), and when it last changed; deleted, it leaves a mark in `gone`.
+ */
+export type CollectionStation = { id: string; name: string; url: string; mime: string; at: number };
 
 /** Where file `id` was left, `ms` from its start, and when. */
 export type CollectionPosition = { id: string; ms: number; at: number };
@@ -118,6 +127,8 @@ export const MAX_POSITIONS = 500;
 /** How many files a playlist holds at most, and how many playlists a place has. */
 export const MAX_PLAYLIST_ITEMS = 2000;
 export const MAX_PLAYLISTS = 200;
+/** How many stations a place has at most. */
+export const MAX_STATIONS = 200;
 
 const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 
@@ -189,6 +200,14 @@ function checked(value: unknown): Collection {
     const ids = Array.isArray(x.items) ? [...new Set(x.items.filter((id): id is string => typeof id === 'string' && ID.test(id)))].slice(0, MAX_PLAYLIST_ITEMS) : [];
     if (name && playlists.length < MAX_PLAYLISTS) playlists.push({ id: x.id, name, items: ids, at: x.at });
   }
+  const stations: CollectionStation[] = [];
+  for (const s of Array.isArray(v?.stations) ? v.stations : []) {
+    const x = s as Partial<CollectionStation> | null;
+    if (typeof x?.id !== 'string' || !ID.test(x.id) || typeof x.name !== 'string' || typeof x.url !== 'string' || !isTime(x.at) || stations.some((o) => o.id === x.id)) continue;
+    const name = cleanFolderName(x.name);
+    const url = httpsLink(x.url);
+    if (name && url && stations.length < MAX_STATIONS) stations.push({ id: x.id, name, url, mime: x.mime === HLS ? HLS : '', at: x.at });
+  }
   const positions: CollectionPosition[] = [];
   for (const p of Array.isArray(v?.positions) ? v.positions : []) {
     const x = p as Partial<CollectionPosition> | null;
@@ -204,6 +223,7 @@ function checked(value: unknown): Collection {
     ...(server ? { server } : {}),
     ...(positions.length > 0 ? { positions: positions.slice(-MAX_POSITIONS) } : {}),
     ...(playlists.length > 0 ? { playlists } : {}),
+    ...(stations.length > 0 ? { stations } : {}),
   };
 }
 
@@ -528,6 +548,41 @@ export function setPlaylistItems(place: CollectionPlace, id: string, ids: string
     const items = [...new Set(ids.filter((i) => ID.test(i)))].slice(0, MAX_PLAYLIST_ITEMS);
     if (items.join() === list.items.join()) return { next: null, result: undefined };
     return { next: { ...c, playlists: playlists.map((l) => (l.id === id ? { ...l, items, at: now } : l)) }, result: undefined };
+  });
+}
+
+/** Adds a station by its https link (lib/collection-radio.ts stationLink); a name there is already gets a number. */
+export function addStation(place: CollectionPlace, name: string, link: { url: string; mime: string }, now = Date.now()): Promise<CollectionStation> {
+  const clean = cleanFolderName(name);
+  const url = httpsLink(link.url);
+  if (!clean || !url) return Promise.reject(new Error('a station needs a name and an https link'));
+  return change(place, async (c) => {
+    const stations = c.stations ?? [];
+    if (stations.length >= MAX_STATIONS) throw new Error(t('There are too many stations here.'));
+    const made: CollectionStation = { id: newId(), name: freeName(clean, new Set(stations.map((s) => s.name))), url, mime: link.mime === HLS ? HLS : '', at: now };
+    return { next: { ...c, stations: [...stations, made] }, result: made };
+  });
+}
+
+export function renameStation(place: CollectionPlace, id: string, name: string, now = Date.now()): Promise<void> {
+  const clean = cleanFolderName(name);
+  return change(place, async (c) => {
+    const stations = c.stations ?? [];
+    const station = stations.find((s) => s.id === id);
+    if (!station || !clean || clean === station.name) return { next: null, result: undefined };
+    const free = freeName(clean, new Set(stations.filter((s) => s.id !== id).map((s) => s.name)));
+    return { next: { ...c, stations: stations.map((s) => (s.id === id ? { ...s, name: free, at: now } : s)) }, result: undefined };
+  });
+}
+
+/** Deletes a station: it leaves a mark in `gone`, as a deleted folder does. */
+export function deleteStation(place: CollectionPlace, id: string, now = Date.now()): Promise<void> {
+  return change(place, async (c) => {
+    const stations = c.stations ?? [];
+    if (!stations.some((s) => s.id === id)) return { next: null, result: undefined };
+    const { stations: _was, ...rest } = c;
+    const left = stations.filter((s) => s.id !== id);
+    return { next: { ...rest, ...(left.length > 0 ? { stations: left } : {}), gone: marked(c.gone, [id], now) }, result: undefined };
   });
 }
 
