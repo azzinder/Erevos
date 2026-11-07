@@ -10,6 +10,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -47,17 +48,24 @@ import java.util.concurrent.ConcurrentHashMap
  * pause, next and previous within the list work, from the notice and the lock screen
  * (PlayerService.kt, ShownPlayer), and Stop, which ends the list as stop() does.
  *
- * The notice and the lock screen show the file's name only when the owner turned that on
- * (showTitle); otherwise a plain word JavaScript gives (`neutral`). What a file says of itself
- * inside (a song's tags, its cover) is never shown there: ShownPlayer passes on only what is set
- * here.
+ * Inside Erevos the player's screen (components/collection-now-playing.tsx) also shuffles, repeats
+ * (the list, or the one file), changes the speed, and jumps to any file of the list. A file may
+ * start where it was left (`resume`, from the place's catalogue): only the first time it plays in
+ * the list. Where each file got to is kept here by its place in the list only (positions), for
+ * JavaScript to take and keep sealed in the catalogue (takePositions); never a name.
+ *
+ * The notice and the lock screen show a file's title only when the owner turned that on
+ * (showTitle): then what the file says of itself (its title, else its name, its artist, album and
+ * cover); otherwise a plain word JavaScript gives (`neutral`) and nothing else (ShownPlayer, shown).
+ * JavaScript is told what the file says of itself (title, artist, album), for the screen inside
+ * Erevos, and its cover when it asks (artwork).
  *
  * Everything here runs on the main thread, as ExoPlayer wants; only SealedDataSource runs on the
  * player's own loading thread.
  */
 @OptIn(UnstableApi::class)
 internal object Playing {
-  class Item(val file: SealedFile, val name: String, val mime: String, val video: Boolean)
+  class Item(val file: SealedFile, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L)
 
   private const val SCHEME = "erevos-play"
   private val main = Handler(Looper.getMainLooper())
@@ -77,6 +85,17 @@ internal object Playing {
   /** The word on the notice's Stop, in Erevos' language (told with playList). */
   @Volatile var stopLabel = ""
 
+  /** Whether the notice shows what a file is (the owner's setting), and the word it shows otherwise. */
+  @Volatile private var showTitle = false
+  @Volatile private var neutral = ""
+
+  // Where each file of the list got to, by its place in it, and how long it is: kept past stop(),
+  // for JavaScript to take (takePositions); forgotten by the next list and the panic button.
+  private val positions = HashMap<Int, LongArray>()
+  private val durations = HashMap<Int, Long>()
+  // The files of the list that started where they were left already: they do not twice.
+  private val resumed = HashSet<Int>()
+
   /** Told the state whenever it changes, on the main thread: the module's event. */
   var onState: ((Map<String, Any?>) -> Unit)? = null
 
@@ -85,7 +104,25 @@ internal object Playing {
 
   private val listener = object : Player.Listener {
     override fun onEvents(player: Player, events: Player.Events) {
+      val duration = player.duration
+      if (duration != C.TIME_UNSET && duration > 0) durations[player.currentMediaItemIndex] = duration
       tell()
+    }
+
+    override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+      val was = oldPosition.mediaItemIndex
+      if (was == newPosition.mediaItemIndex && reason != Player.DISCONTINUITY_REASON_AUTO_TRANSITION) return
+      // Played to its end: nothing to go back to. Left for another: where it was.
+      val at = if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) 0L else oldPosition.positionMs
+      positions[was] = longArrayOf(at, durations[was] ?: -1L)
+    }
+
+    override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+      val p = player ?: return
+      val index = p.currentMediaItemIndex
+      val item = items.getOrNull(index) ?: return
+      if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT || item.resume <= 0L || !resumed.add(index)) return
+      p.seekTo(index, item.resume)
     }
 
     override fun onPlayerError(error: PlaybackException) {
@@ -102,7 +139,7 @@ internal object Playing {
 
   /**
    * Plays `list` from `start`. A list playing before stops first, and its keys go. `neutral` is
-   * what the notice shows for a file when its name is not to be shown.
+   * what the notice shows for a file when what it is is not to be shown.
    */
   fun play(context: Context, list: List<Item>, start: Int, showTitle: Boolean, neutral: String) {
     if (list.isEmpty()) {
@@ -115,15 +152,20 @@ internal object Playing {
     val beforeTokens = files.keys.toList()
     app = appContext
     items = list
+    this.showTitle = showTitle
+    this.neutral = neutral
+    positions.clear()
+    durations.clear()
+    resumed.clear()
     val folder = appContext.filesDir
+    // No title in the items themselves: what is shown is made by ShownPlayer, and what the player
+    // reports of the file (getMediaMetadata) is then only what the file says.
     val mediaItems = list.mapIndexed { index, item ->
       val token = ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it) }
       files[token] = item.file
-      val title = if (showTitle) item.name else neutral
       MediaItem.Builder()
         .setMediaId(index.toString())
         .setUri(Uri.Builder().scheme(SCHEME).authority(token).build())
-        .setMediaMetadata(MediaMetadata.Builder().setTitle(title).setDisplayTitle(title).build())
         .build()
     }
     val video = list.any { it.video }
@@ -137,7 +179,10 @@ internal object Playing {
       .setWakeMode(C.WAKE_MODE_LOCAL)
       .build()
     made.addListener(listener)
-    made.setMediaItems(mediaItems, start.coerceIn(0, mediaItems.size - 1), 0L)
+    val first = start.coerceIn(0, mediaItems.size - 1)
+    val from = list[first].resume.coerceAtLeast(0L)
+    if (from > 0L) resumed.add(first)
+    made.setMediaItems(mediaItems, first, from)
     player = made
     // The service shows the notice and answers the lock screen: the one running takes the new
     // player; otherwise it starts, while Erevos shows.
@@ -187,15 +232,75 @@ internal object Playing {
   fun seek(index: Int, positionMs: Long) {
     val p = player ?: return
     val at = if (index < 0) p.currentMediaItemIndex else index.coerceIn(0, p.mediaItemCount - 1)
-    p.seekTo(at, maxOf(0L, positionMs))
+    // A file jumped to from the list starts where it was left, as it would have.
+    val item = items.getOrNull(at)
+    val to = if (index >= 0 && positionMs == 0L && item != null && item.resume > 0L && resumed.add(at)) item.resume else positionMs
+    if (at != p.currentMediaItemIndex) resumed.add(at)
+    p.seekTo(at, maxOf(0L, to))
+    if (p.playbackState == Player.STATE_IDLE) p.prepare()
+  }
+
+  /** The list in an order of its own, or in its order again. */
+  fun setShuffle(on: Boolean) {
+    player?.shuffleModeEnabled = on
+  }
+
+  /** "off", "all" (the list again from its start) or "one" (the same file again). */
+  fun setRepeat(mode: String) {
+    player?.repeatMode = when (mode) {
+      "all" -> Player.REPEAT_MODE_ALL
+      "one" -> Player.REPEAT_MODE_ONE
+      else -> Player.REPEAT_MODE_OFF
+    }
+  }
+
+  /** How fast it plays, from half to twice as fast; the pitch goes with it. */
+  fun setSpeed(speed: Float) {
+    player?.setPlaybackSpeed(speed.coerceIn(0.5f, 2f))
+  }
+
+  /**
+   * Where the files of the list got to since last asked, by their place in it, with how long each
+   * is (-1 if not known): the one playing as it is now. Taken, they are forgotten here.
+   */
+  fun takePositions(): List<Map<String, Double>> {
+    val p = player
+    if (p != null && p.mediaItemCount > 0) {
+      val index = p.currentMediaItemIndex
+      positions[index] = longArrayOf(if (p.playbackState == Player.STATE_ENDED) 0L else p.currentPosition, durations[index] ?: -1L)
+    }
+    val out = positions.map { (index, at) -> mapOf("index" to index.toDouble(), "position" to at[0].toDouble(), "duration" to at[1].toDouble()) }
+    positions.clear()
+    return out
+  }
+
+  /** The cover the file playing has inside, base64, or null. */
+  fun artwork(): String? {
+    val data = player?.mediaMetadata?.artworkData ?: return null
+    return Base64.encodeToString(data, Base64.NO_WRAP)
+  }
+
+  /** What the notice, the lock screen and other controllers are shown of the file at `index`, from what it says of itself (`file`). */
+  fun shown(file: MediaMetadata, index: Int): MediaMetadata {
+    val item = items.getOrNull(index)
+    if (!showTitle || item == null) return MediaMetadata.Builder().setTitle(neutral).setDisplayTitle(neutral).build()
+    val title = file.title ?: item.name.ifEmpty { neutral }
+    val builder = MediaMetadata.Builder().setTitle(title).setDisplayTitle(title).setArtist(file.artist).setAlbumTitle(file.albumTitle)
+    file.artworkData?.let { builder.setArtworkData(it, file.artworkDataType) }
+    return builder.build()
   }
 
   /**
    * Stops the list: the player goes, the keys of its files are zeroed and forgotten, and the
-   * service and its notice go. `fromService` when the service itself is going.
+   * service and its notice go. `fromService` when the service itself is going. Where the file
+   * playing got to stays, for JavaScript to take.
    */
   fun stop(context: Context?, fromService: Boolean = false) {
     val p = player
+    if (p != null && p.mediaItemCount > 0) {
+      val index = p.currentMediaItemIndex
+      positions[index] = longArrayOf(if (p.playbackState == Player.STATE_ENDED) 0L else p.currentPosition, durations[index] ?: -1L)
+    }
     player = null
     if (p != null) {
       onPlayer.toList().forEach { it(null) }
@@ -211,6 +316,14 @@ internal object Playing {
     if (!fromService && ctx != null) runCatching { ctx.stopService(Intent(ctx, PlayerService::class.java)) }
     app = null
     if (p != null) tell()
+  }
+
+  /** The panic button: the list stops, and nothing of where it was stays. */
+  fun panic(context: Context?) {
+    stop(context)
+    positions.clear()
+    durations.clear()
+    resumed.clear()
   }
 
   private fun release(p: ExoPlayer) {
@@ -249,11 +362,12 @@ internal object Playing {
     if (stopOnLock) stop(context)
   }
 
-  /** What JavaScript is told: never the names, which it has itself. */
+  /** What JavaScript is told: never the names, which it has itself; what the file says of itself, for the screen inside Erevos. */
   fun state(error: String? = null): Map<String, Any?> {
     val p = player ?: return mapOf("active" to false, "playing" to false, "index" to -1, "count" to 0, "position" to 0.0, "duration" to -1.0, "video" to false, "buffering" to false, "ended" to false, "error" to error)
     val index = p.currentMediaItemIndex
     val duration = p.duration
+    val tags = p.mediaMetadata
     return mapOf(
       "active" to true,
       "playing" to p.isPlaying,
@@ -265,6 +379,19 @@ internal object Playing {
       "buffering" to (p.playbackState == Player.STATE_BUFFERING),
       "ended" to (p.playbackState == Player.STATE_ENDED),
       "error" to error,
+      "shuffle" to p.shuffleModeEnabled,
+      "repeat" to when (p.repeatMode) {
+        Player.REPEAT_MODE_ALL -> "all"
+        Player.REPEAT_MODE_ONE -> "one"
+        else -> "off"
+      },
+      "speed" to p.playbackParameters.speed.toDouble(),
+      "hasNext" to p.hasNextMediaItem(),
+      "hasPrevious" to p.hasPreviousMediaItem(),
+      "title" to tags.title?.toString(),
+      "artist" to tags.artist?.toString(),
+      "album" to tags.albumTitle?.toString(),
+      "artwork" to (tags.artworkData != null),
     )
   }
 
@@ -340,8 +467,8 @@ internal class SealedDataSource(private val folder: File) : BaseDataSource(false
 
 /**
  * The player as the notice, the lock screen and any other controller see it (PlayerService.kt):
- * only play, pause, next and previous within the list, and only the title set in Playing, never
- * what the file says of itself (its tags and cover).
+ * only play, pause, next and previous within the list, and only what Playing.shown makes of the
+ * file: a plain word, unless the owner chose to show what it is.
  */
 @OptIn(UnstableApi::class)
 internal class ShownPlayer(player: Player) : ForwardingPlayer(player) {
@@ -356,7 +483,7 @@ internal class ShownPlayer(player: Player) : ForwardingPlayer(player) {
 
   override fun isCommandAvailable(command: Int): Boolean = command in ALLOWED && super.isCommandAvailable(command)
 
-  override fun getMediaMetadata(): MediaMetadata = currentMediaItem?.mediaMetadata ?: MediaMetadata.EMPTY
+  override fun getMediaMetadata(): MediaMetadata = Playing.shown(super.getMediaMetadata(), currentMediaItemIndex)
 
   override fun getPlaylistMetadata(): MediaMetadata = MediaMetadata.EMPTY
 
@@ -384,6 +511,9 @@ internal class ShownPlayer(player: Player) : ForwardingPlayer(player) {
     override fun onAvailableCommandsChanged(availableCommands: Player.Commands) {
       inner.onAvailableCommandsChanged(this@ShownPlayer.availableCommands)
     }
+
+    // The timed tags of a file (an ID3 frame on the way, a stream's title) go nowhere but here.
+    override fun onMetadata(metadata: androidx.media3.common.Metadata) {}
   }
 
   companion object {

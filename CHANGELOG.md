@@ -93,6 +93,18 @@ On main, not released yet:
   (lib/collection-view.ts tabOf: a video or music by playKind, so by its ending too), each a list but Photos, and each
   with the folders that hold any of its files above it; Files shows the empty folders too, so one just made is there
   to open (folderTilesFor). Moving files still offers every folder.
+- **A player's screen for the Collection** (components/collection-now-playing.tsx): a tap on the bar of the music
+  playing, or on **Now playing** under a file of music, opens it: the cover, title, artist and album the file says
+  of itself (Media3's MediaMetadata on Android; on a computer, in a browser and on Sailfish OS read from its first
+  chunks, ID3v2, MP4 and FLAC, lib/media-tags.ts), a bar to tap or drag, previous, play or pause and next, Shuffle,
+  Repeat (all or one), the speed from 0.5× to 2×, Stop, and the list with the one playing marked, a tap on another
+  to jump there (lib/collection-queue.ts on the page; Media3's own on Android). A video, or music of 10 minutes or
+  more, starts where it was left: where it got to is asked of the player every 15 seconds while the Collection is
+  open, when it stops and as the space locks, and kept in the place's catalogue, sealed with it, never in plain
+  storage (lock/collection-data.ts keepPositions, not sent to the linked devices). After the space locked, the list
+  holds no place's key: the same place opened again takes it back. The notification and the lock screen show the
+  title (the file's own, else its name), artist, album and cover only with **Show the title in the notification**
+  on, otherwise only **Playing** (Playing.kt shown).
 
 ### Under the hood
 

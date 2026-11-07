@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":
+    "**Ekran plejera za Zbirku**: dodirni traku muzike koja svira, ili **Sada svira**, za omot, naslov, izvođača i album, traku za premotavanje, prethodnu i sljedeću, **Nasumično**, **Ponavljaj** (sve ili jednu), brzinu od 0.5× do 2× i listu, da dodirneš drugu. Video, ili muzika od 10 minuta i duže, počinje gdje si stao. Obavještenje pokazuje naslov i omot samo kad je **Prikaži naslov u obavještenju** uključeno. Vidi [Zbirka](#collection).",
   "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
     "**Fotografije, Video snimci, Muzika i Fajlovi**: Zbirka ima karticu za svako, sa folderima iznad koji imaju nešto njeno. Vidi [Zbirka](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":

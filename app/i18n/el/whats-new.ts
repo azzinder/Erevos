@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":
+    "**Οθόνη αναπαραγωγής για τη Συλλογή**: πάτα τη γραμμή της μουσικής που παίζει, ή το **Τώρα παίζει**, για το εξώφυλλο, τον τίτλο, τον καλλιτέχνη και το άλμπουμ, μια μπάρα για να μετακινηθείς μέσα του, προηγούμενο και επόμενο, **Τυχαία σειρά**, **Επανάληψη** (όλων ή ενός), την ταχύτητα από 0.5× ως 2×, και τη λίστα, για να πατήσεις άλλο. Ένα βίντεο, ή μουσική 10 λεπτών και πάνω, ξεκινά από εκεί που το άφησες. Η ειδοποίηση δείχνει τίτλο και εξώφυλλο μόνο με το **Εμφάνιση τίτλου στην ειδοποίηση** ανοιχτό. Δες [Συλλογή](#collection).",
   "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
     "**Φωτογραφίες, Βίντεο, Μουσική και Αρχεία**: η Συλλογή έχει καρτέλα για το καθένα, με τους φακέλους που έχουν αρχεία της από πάνω. Δες [Συλλογή](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":

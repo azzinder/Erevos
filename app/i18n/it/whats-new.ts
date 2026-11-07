@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Per te',
   'Under the hood': 'Sotto il cofano',
   // Not out yet.
+  "**A player's screen for the Collection**: tap the bar of the music playing, or **Now playing**, for its cover, title, artist and album, a bar to move in it, previous and next, **Shuffle**, **Repeat** (all or one), the speed from 0.5× to 2×, and the list, to tap another. A video, or music of 10 minutes or more, starts where you left it. The notification shows the title and cover only with **Show the title in the notification** on. See [Collection](#collection).":
+    "**Una schermata del lettore per la Raccolta**: tocca la barra della musica in riproduzione, o **Ora in riproduzione**, per copertina, titolo, artista e album, una barra per spostarti, precedente e successivo, **Casuale**, **Ripeti** (tutto o uno), la velocità da 0.5× a 2× e l’elenco, per toccarne un altro. Un video, o musica di 10 minuti o più, riparte da dove l’hai lasciato. La notifica mostra titolo e copertina solo con **Mostra il titolo nella notifica** attivo. Vedi [Raccolta](#collection).",
   "**Photos, Videos, Music and Files**: the Collection has a tab for each, each with the folders that hold any of its files above it. See [Collection](#collection).":
     "**Foto, Video, Musica e File**: la Raccolta ha una scheda per ciascuno, con sopra le cartelle che ne contengono. Vedi [Raccolta](#collection).",
   "**Music of the Collection goes on with the screen off**: on Android, music could stop a while after the screen went off. Now the player is kept in the foreground for as long as the list plays. See [Collection](#collection).":

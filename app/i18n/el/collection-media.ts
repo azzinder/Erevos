@@ -7,4 +7,13 @@
 export const collectionMedia: Record<string, string> = {
   "No videos yet. Add one with +.": "Κανένα βίντεο ακόμα. Πρόσθεσε ένα με το +.",
   "No music yet. Add some with +.": "Καθόλου μουσική ακόμα. Πρόσθεσε με το +.",
+  "Now playing": "Τώρα παίζει",
+  "Loading…": "Φόρτωση…",
+  "Shuffle": "Τυχαία σειρά",
+  "Repeat": "Επανάληψη",
+  "Repeat all": "Επανάληψη όλων",
+  "Repeat one": "Επανάληψη ενός",
+  "Speed {speed}×": "Ταχύτητα {speed}×",
+  "The list": "Η λίστα",
+  "Position": "Θέση",
 };

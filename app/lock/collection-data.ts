@@ -83,7 +83,12 @@ export type Collection = {
   server?: CollectionServer;
   /** The Collection goes to the account's linked devices too, through the place's log (lib/collection-links.ts). */
   devices?: boolean;
+  /** Where a long file (a video, or music of 10 minutes or more) was left, to start there again (lib/collection-play.ts): this device's own. */
+  positions?: CollectionPosition[];
 };
+
+/** Where file `id` was left, `ms` from its start, and when. */
+export type CollectionPosition = { id: string; ms: number; at: number };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
 export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices';
@@ -99,6 +104,8 @@ export const MAX_COLLECTION_FILE = COLLECTION_CHUNKS * room(CHUNK_SIZES[CHUNK_SI
 /** How many deletions are remembered, the newest. */
 export const MAX_GONE = 2000;
 export const MAX_FOLDER_NAME = 60;
+/** How many files' places are remembered, the newest. */
+export const MAX_POSITIONS = 500;
 
 const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 
@@ -160,7 +167,22 @@ function checked(value: unknown): Collection {
   const on: Partial<Record<CollectionOption, true>> = {};
   for (const option of OPTIONS) if (v?.[option] === true) on[option] = true;
   const server = serverOf(v?.server);
-  return { items, folders, gone: gone.slice(-MAX_GONE), backup: v?.backup !== false, ...on, ...(server ? { server } : {}) };
+  const itemIds = new Set(items.map((i) => i.id));
+  const positions: CollectionPosition[] = [];
+  for (const p of Array.isArray(v?.positions) ? v.positions : []) {
+    const x = p as Partial<CollectionPosition> | null;
+    if (typeof x?.id !== 'string' || !itemIds.has(x.id) || !isTime(x.ms) || x.ms === 0 || !isTime(x.at) || positions.some((q) => q.id === x.id)) continue;
+    positions.push({ id: x.id, ms: x.ms, at: x.at });
+  }
+  return {
+    items,
+    folders,
+    gone: gone.slice(-MAX_GONE),
+    backup: v?.backup !== false,
+    ...on,
+    ...(server ? { server } : {}),
+    ...(positions.length > 0 ? { positions: positions.slice(-MAX_POSITIONS) } : {}),
+  };
 }
 
 const store = sealedFile({ name: FILE, empty: EMPTY, checked, block: BLOCK });
@@ -371,7 +393,8 @@ export async function deleteItems(place: CollectionPlace, ids: string[], now = D
     const out = c.items.filter((i) => going.has(i.id));
     if (out.length === 0) return { next: null, result: out };
     const items = c.items.filter((i) => !going.has(i.id));
-    return { next: { ...c, items, gone: marked(c.gone, out.map((i) => i.id), now) }, result: out };
+    const positions = c.positions?.filter((p) => !going.has(p.id));
+    return { next: { ...c, items, gone: marked(c.gone, out.map((i) => i.id), now), ...(positions ? { positions } : {}) }, result: out };
   });
   for (const item of removed) {
     await deleteChunks(item.file.id, item.file.count).catch(() => undefined);
@@ -457,6 +480,31 @@ export function setCollectionServer(place: CollectionPlace, server: CollectionSe
     return { next: server ? { ...rest, server } : rest, result: undefined };
   });
 }
+
+/**
+ * Keeps where files were left (`ms` from their start; 0 forgets it), to start there the next time:
+ * sealed with the place, never in plain storage, and no change to tell of (not a change the
+ * linked devices are sent, as where one device left a film is its own).
+ */
+export function keepPositions(place: CollectionPlace, left: { id: string; ms: number }[], now = Date.now()): Promise<void> {
+  if (left.length === 0) return Promise.resolve();
+  return change(
+    place,
+    async (c) => {
+      const there = new Set(c.items.map((i) => i.id));
+      const given = new Map(left.filter((l) => there.has(l.id) && Number.isFinite(l.ms) && l.ms >= 0).map((l) => [l.id, Math.round(l.ms)]));
+      if (given.size === 0) return { next: null, result: undefined };
+      const kept = (c.positions ?? []).filter((p) => !given.has(p.id));
+      for (const [id, ms] of given) if (ms > 0) kept.push({ id, ms, at: now });
+      const { positions: _was, ...rest } = c;
+      return { next: kept.length > 0 ? { ...rest, positions: kept.slice(-MAX_POSITIONS) } : rest, result: undefined };
+    },
+    true,
+  );
+}
+
+/** Where file `id` was left, ms, or 0. */
+export const positionOf = (collection: Pick<Collection, 'positions'>, id: string): number => collection.positions?.find((p) => p.id === id)?.ms ?? 0;
 
 /**
  * Keeps when the place's copies on its server were last whole, and the mark of the chunks they

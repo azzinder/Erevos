@@ -14,13 +14,14 @@ import { fileLook, isText, MOST_TEXT, playKind, playListOf } from '../lib/collec
 import { utf8Decode } from '../lib/crypto';
 import { locale, t } from '../lib/i18n';
 import { SHELL } from '../lib/shell';
-import { fillItemHere, itemsWhole, openItem, type CollectionItem } from '../lock/collection-data';
+import { fillItemHere, itemsWhole, openItem, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import { device } from '../modules/erevos-device';
 import { space, withAlpha } from '../theme/colors';
 import { useColors } from '../theme/context';
 import { ZoomPhoto } from './attachment';
 import { FetchNote, useFetching, type Fetching } from './collection-fetch';
 import { CollectionPdf } from './collection-pdf';
+import { NowPlayingScreen } from './collection-now-playing';
 import { PlayerControls, VideoScreen } from './collection-player';
 import { BackIcon, ChevronIcon, DownloadIcon, FileIcon, InfoIcon, SendIcon, TrashIcon } from './icons';
 import { Button, Sheet, Text } from './ui';
@@ -59,7 +60,7 @@ type Props = {
   onDelete: (item: CollectionItem) => void;
   onOpenWith: (item: CollectionItem) => void;
   /** The place's own choices for its list playing (lock/collection-data.ts). */
-  playOptions: { showTitle: boolean; stopOnLock: boolean };
+  playOptions: { showTitle: boolean; stopOnLock: boolean; place: CollectionPlace | null };
 };
 
 /** The day and time a file came, as the phone writes them. */
@@ -82,6 +83,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   const [bars, setBars] = useState(true);
   const [info, setInfo] = useState(false);
   const [video, setVideo] = useState(false);
+  const [nowPlaying, setNowPlaying] = useState(false);
   const [playNote, setPlayNote] = useState('');
   // The photos shown one after the other, by themselves, from the one in view.
   const [sliding, setSliding] = useState(false);
@@ -187,8 +189,9 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
     const whole = DESK ? items : await itemsWhole(same).catch(() => [from]);
     const { list, start: at } = playListOf(whole.some((i) => i.id === from.id) ? whole : [...whole, from], from);
     try {
-      await playItems(list, at, playOptions);
+      await playItems(playOptions.place, list, at, playOptions);
       if (playKind(from) === 'video') setVideo(true);
+      else setNowPlaying(true);
     } catch (error) {
       setPlayNote(error instanceof Error ? error.message : String(error));
     }
@@ -229,7 +232,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={tapped} onSwipe={(by) => goTo(at + by)} />}
             />
           ) : (
-            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => void openWith(item)} onPlay={() => void play(item)} note={playNote} fetching={fetching} />
+            <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => void openWith(item)} onPlay={() => void play(item)} onShowPlayer={() => setNowPlaying(true)} note={playNote} fetching={fetching} />
           )}
           {photo && bars ? (
             <>
@@ -282,6 +285,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
             </View>
           ) : null}
           <VideoScreen visible={video} onClose={() => setVideo(false)} />
+          <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)} />
           <Sheet visible={info} onClose={() => setInfo(false)} title={t('Information')}>
             <InfoRow label={t('Name')} value={item.file.name} />
             <InfoRow label={t('Type')} value={item.file.mime} />
@@ -369,6 +373,7 @@ function FilePage({
   muted,
   onOpenWith,
   onPlay,
+  onShowPlayer,
   note,
   fetching,
 }: {
@@ -377,6 +382,8 @@ function FilePage({
   muted: string;
   onOpenWith: () => void;
   onPlay: () => void;
+  /** Opens the player's screen. */
+  onShowPlayer: () => void;
   note: string;
   /** The fetch before it plays or opens with another app. */
   fetching: Fetching;
@@ -438,7 +445,7 @@ function FilePage({
         </Text>
       ) : (
         <>
-          {playingThis && player ? <PlayerControls state={player} ink={ink} muted={muted} /> : plays ? <Button title={t('Play')} compact onPress={onPlay} /> : null}
+          {playingThis && player ? <PlayerControls state={player} ink={ink} muted={muted} onOpen={onShowPlayer} /> : plays ? <Button title={t('Play')} compact onPress={onPlay} /> : null}
           {note ? (
             <Text color={colors.danger} style={styles.centered}>
               {note}

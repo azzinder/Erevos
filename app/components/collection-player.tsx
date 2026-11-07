@@ -17,7 +17,8 @@ import { Button, Text } from './ui';
 
 // The Collection's player (lib/collection-play.ts) as its screens show it: the controls of the list
 // playing under a file of music (components/collection-viewer.tsx), a bar on the Collection's screen
-// while music plays (app/collection.tsx), and a video over the whole screen with Media3's own
+// while music plays (app/collection.tsx), each opening the player's screen (components/
+// collection-now-playing.tsx), and a video over the whole screen with Media3's own
 // controls (modules/erevos-collection, VideoView.kt). Stop ends the list, and its keys go. In the
 // web build (the desktop app, a browser, Sailfish OS) the video is the page's own player (lib/
 // collection-desk-player.ts), with the browser's controls, shown in a box over the whole window.
@@ -25,12 +26,12 @@ import { Button, Text } from './ui';
 const DESK = Platform.OS === 'web';
 
 /** Previous, play or pause, next and stop, with which file of the list plays and how far it is. */
-export function PlayerControls({ state, ink, muted }: { state: PlayerState; ink: string; muted: string }) {
+export function PlayerControls({ state, ink, muted, onOpen }: { state: PlayerState; ink: string; muted: string; onOpen: () => void }) {
   const file = playingFile(state.index);
   return (
     <View style={styles.controls}>
       <Text variant="bodyStrong" color={ink} numberOfLines={1} style={styles.centered}>
-        {file?.name ?? t('Playing')}
+        {state.title || file?.name || t('Playing')}
       </Text>
       <Text variant="caption" color={muted} style={styles.centered}>
         {t('{n} of {count}', { n: state.index + 1, count: state.count })} · {playTime(state.position)} / {playTime(state.duration)}
@@ -43,28 +44,31 @@ export function PlayerControls({ state, ink, muted }: { state: PlayerState; ink:
       <View style={styles.row}>
         <Button title={t('Previous')} kind="ghost" compact onPress={() => void previousPlaying()} />
         {state.playing ? <Button title={t('Pause')} kind="secondary" compact onPress={() => void pausePlaying()} /> : <Button title={t('Play')} kind="primary" compact onPress={() => void resumePlaying()} />}
-        <Button title={t('Next')} kind="ghost" compact onPress={() => void nextPlaying()} disabled={state.index >= state.count - 1} />
+        <Button title={t('Next')} kind="ghost" compact onPress={() => void nextPlaying()} disabled={state.hasNext === undefined ? state.index >= state.count - 1 : !state.hasNext} />
       </View>
-      <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
+      <View style={styles.row}>
+        <Button title={t('Now playing')} kind="secondary" compact onPress={onOpen} />
+        <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
+      </View>
     </View>
   );
 }
 
-/** A bar with the file of music playing, to pause, play on or stop it, on the Collection's screen. */
-export function NowPlaying({ state }: { state: PlayerState | null }) {
+/** A bar with the file of music playing, to pause, play on or stop it, on the Collection's screen; a tap on it opens the player's screen. */
+export function NowPlaying({ state, onOpen }: { state: PlayerState | null; onOpen: () => void }) {
   const colors = useColors();
   if (!state?.active || state.video) return null;
   const file = playingFile(state.index);
   return (
     <View style={[styles.bar, { backgroundColor: colors.sheet, borderTopColor: withAlpha(colors.text, 0.12) }]}>
-      <View style={{ flex: 1 }}>
+      <Pressable onPress={onOpen} accessibilityRole="button" accessibilityLabel={t('Now playing')} style={{ flex: 1 }}>
         <Text variant="bodyStrong" numberOfLines={1}>
-          {file?.name ?? t('Playing')}
+          {state.title || file?.name || t('Playing')}
         </Text>
         <Text variant="caption" tone="muted">
           {t('{n} of {count}', { n: state.index + 1, count: state.count })} · {playTime(state.position)}
         </Text>
-      </View>
+      </Pressable>
       {state.playing ? <Button title={t('Pause')} kind="secondary" compact onPress={() => void pausePlaying()} /> : <Button title={t('Play')} kind="secondary" compact onPress={() => void resumePlaying()} />}
       <Button title={t('Stop')} kind="ghost" compact onPress={() => void stopPlaying()} />
     </View>

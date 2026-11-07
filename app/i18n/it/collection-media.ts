@@ -7,4 +7,13 @@
 export const collectionMedia: Record<string, string> = {
   "No videos yet. Add one with +.": "Ancora nessun video. Aggiungine uno con +.",
   "No music yet. Add some with +.": "Ancora nessuna musica. Aggiungine con +.",
+  "Now playing": "Ora in riproduzione",
+  "Loading…": "Caricamento…",
+  "Shuffle": "Casuale",
+  "Repeat": "Ripeti",
+  "Repeat all": "Ripeti tutto",
+  "Repeat one": "Ripeti uno",
+  "Speed {speed}×": "Velocità {speed}×",
+  "The list": "L’elenco",
+  "Position": "Posizione",
 };

@@ -4,21 +4,46 @@
 
 import { useEffect, useState } from 'react';
 
-import type { CollectionItem } from '../lock/collection-data';
+import { keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace } from '../lock/collection-data';
 import type { FileRef } from '../lock/attachment-files';
-import { collectionNative, type PlayerState, type SealedRef } from '../modules/erevos-collection';
-import { deskItem, deskNext, deskPause, deskPlay, deskPrevious, deskResume, deskSeek, deskState, deskStop, onDeskPlayer } from './collection-desk-player';
-import { dropCollectionMemory } from './collection-memory';
-import { playKind } from './collection-view';
+import { collectionNative, type PlayerState, type Repeat, type SealedRef } from '../modules/erevos-collection';
+import {
+  deskArtwork,
+  deskItem,
+  deskJump,
+  deskNext,
+  deskPause,
+  deskPlay,
+  deskPrevious,
+  deskRepeat,
+  deskResume,
+  deskSeek,
+  deskShuffle,
+  deskSpeed,
+  deskState,
+  deskStop,
+  deskTakePositions,
+  onDeskPlayer,
+} from './collection-desk-player';
+import { dropCollectionMemory, memoryUri, releaseMemoryUri } from './collection-memory';
+import { positionToKeep } from './collection-queue';
+import { playKind, playType } from './collection-view';
 import { t } from './i18n';
 
 // The Collection's music and videos, played on the phone by its Android part
 // (modules/erevos-collection, Playing.kt) straight from their encrypted chunks. One list plays at a
 // time; it goes on with the screen off and after the space locks, as the owner chose, unless the
 // place's Stop playing when the space locks is on (lock/collection-data.ts stopOnLock). Android's
-// notice and lock screen then let only play, pause, next and previous within the list, and show a
-// file's name only when Show the title in the notification is on (showTitle); otherwise "Playing".
-// The keys of the list's files are held in Android's memory only while it plays.
+// notice and lock screen then let only play, pause, next and previous within the list, and show
+// what a file is (its title, artist and cover) only when Show the title in the notification is on
+// (showTitle); otherwise "Playing". The keys of the list's files are held in Android's memory only
+// while it plays.
+//
+// The player's screen (components/collection-now-playing.tsx) shuffles, repeats, changes the speed
+// and jumps within the list. A video, or music of 10 minutes or more, starts where it was left:
+// where each file got to is asked of the player now and then while the Collection is open, and kept
+// in the place's catalogue, sealed with it (lock/collection-data.ts keepPositions), never in plain
+// storage; only while the place is open, so the player holds no place's key after it locks.
 //
 // What the space's locking, closing and the panic button do to what the Collection opened here is
 // told from here too: links to open files with other apps, PDFs shown, and the list.
@@ -41,22 +66,40 @@ export const PLAY_CHOICES = !!collectionNative;
 /** A file of the catalogue as the Android part reads it: where its chunks are, and its key. */
 export const sealedRef = (file: FileRef): SealedRef => ({ id: file.id, key: file.key, chunk: file.chunk, count: file.count, size: file.size });
 
-// The names of the list playing, by place in it: Android is never told them unless shown in the notice.
+// The list playing, by place in it: Android is never told the names unless shown in the notice.
 let names: string[] = [];
 let ids: string[] = [];
+let videos: boolean[] = [];
+// The place the list is of, to keep where its files got to: only while that place is open.
+let listPlace: CollectionPlace | null = null;
 
-/** Plays `list` from `start`, with the place's own choices. */
-export async function playItems(list: CollectionItem[], start: number, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
+/** Plays `list` from `start`, of `place`, with the place's own choices; each file where it was left. */
+export async function playItems(place: CollectionPlace | null, list: CollectionItem[], start: number, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
+  await keepWhereLeft();
+  const collection = place ? await loadCollection(place).catch(() => null) : null;
+  const resume = list.map((i) => (collection ? positionOf(collection, i.id) : 0));
   if (DESK) {
-    const isVideo = list[start] ? playKind(list[start]) === 'video' : false;
-    await deskPlay(list, start, isVideo);
+    await deskPlay(list, start, resume);
+    rememberList(place, list);
     return;
   }
   if (!collectionNative) throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  const items = list.map((i, n) => ({
+    ...sealedRef(i.file),
+    name: showTitle ? i.file.name : '',
+    mime: playType(i),
+    video: playKind(i) === 'video',
+    resume: resume[n],
+  }));
+  await collectionNative.playList(items, start, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
+  rememberList(place, list);
+}
+
+function rememberList(place: CollectionPlace | null, list: CollectionItem[]): void {
   names = list.map((i) => i.file.name);
   ids = list.map((i) => i.id);
-  const items = list.map((i) => ({ ...sealedRef(i.file), name: showTitle ? i.file.name : '', mime: i.file.mime, video: playKind(i) === 'video' }));
-  await collectionNative.playList(items, start, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
+  videos = list.map((i) => playKind(i) === 'video');
+  listPlace = place;
 }
 
 /** The name of the file at `index` in the list playing, and its id in the Collection. */
@@ -68,21 +111,76 @@ export const playingFile = (index: number): { name: string; id: string } | null 
   return index >= 0 && index < names.length ? { name: names[index], id: ids[index] } : null;
 };
 
+/** The names and ids of the list playing, in its order. */
+export const playingList = (): { name: string; id: string }[] => names.map((name, i) => ({ name, id: ids[i] }));
+
 export const pausePlaying = () => (DESK ? Promise.resolve(deskPause()) : collectionNative?.pause().catch(() => undefined));
 export const resumePlaying = () => (DESK ? Promise.resolve(deskResume()) : collectionNative?.resume().catch(() => undefined));
 export const nextPlaying = () => (DESK ? Promise.resolve(deskNext()) : collectionNative?.next().catch(() => undefined));
 export const previousPlaying = () => (DESK ? Promise.resolve(deskPrevious()) : collectionNative?.previous().catch(() => undefined));
 export const seekPlaying = (ms: number) => (DESK ? Promise.resolve(deskSeek(ms)) : collectionNative?.seek(-1, ms).catch(() => undefined));
+/** To the file at `index` of the list, where it was left. */
+export const jumpPlaying = (index: number) => (DESK ? Promise.resolve(deskJump(index)) : collectionNative?.seek(index, 0).catch(() => undefined));
+export const shufflePlaying = (on: boolean) => (DESK ? Promise.resolve(deskShuffle(on)) : collectionNative?.setShuffle?.(on).catch(() => undefined));
+export const repeatPlaying = (mode: Repeat) => (DESK ? Promise.resolve(deskRepeat(mode)) : collectionNative?.setRepeat?.(mode).catch(() => undefined));
+export const speedPlaying = (speed: number) => (DESK ? Promise.resolve(deskSpeed(speed)) : collectionNative?.setSpeed?.(speed).catch(() => undefined));
+/** Whether this player shuffles, repeats and changes speed (an Android build before it does not). */
+export const CAN_SHUFFLE = DESK || !!collectionNative?.setShuffle;
+
+/**
+ * Keeps, sealed in the catalogue of the list's place, where its long files got to, if that place
+ * is open; otherwise nothing is asked, and the player keeps them till it is.
+ */
+export function keepWhereLeft(): Promise<void> {
+  const place = listPlace;
+  if (!place || !placeIsOpen(place) || ids.length === 0) return Promise.resolve();
+  // Its own copy of the key, as the space's may be let go of while this is kept.
+  return keepTaken({ ...place, key: place.key.slice() }, takePositionsNow(), [...ids], [...videos]);
+}
+
+// Where the list's files got to, asked of the player now: the page's at once.
+type Taken = { index: number; position: number; duration: number }[];
+function takePositionsNow(): Promise<Taken> {
+  if (DESK) return Promise.resolve(deskTakePositions());
+  return collectionNative?.takePositions?.().catch(() => []) ?? Promise.resolve([]);
+}
+
+async function keepTaken(place: CollectionPlace, taking: Promise<Taken>, listIds: string[], listVideos: boolean[]): Promise<void> {
+  try {
+    const left = (await taking).flatMap(({ index, position, duration }) => {
+      const id = listIds[index];
+      const ms = id === undefined ? null : positionToKeep(listVideos[index] === true, position, duration);
+      return id !== undefined && ms !== null ? [{ id, ms }] : [];
+    });
+    await keepPositions(place, left).catch(() => undefined);
+  } finally {
+    place.key.fill(0);
+  }
+}
+
+/** The Collection of `place` shows again: the list playing, if it is that place's, may keep where it got to there. */
+export function placeShown(place: CollectionPlace | null): void {
+  if (!place || listPlace || ids.length === 0) return;
+  // The list's place went with the lock; the same place open again takes it back.
+  if (pendingPlace && pendingPlace.holder === place.holder && pendingPlace.space === place.space) {
+    listPlace = place;
+    pendingPlace = null;
+    void keepWhereLeft();
+  }
+}
+// The place of the list playing while its space is locked: without its key.
+let pendingPlace: Pick<CollectionPlace, 'holder' | 'space'> | null = null;
 
 /** Stops the list: its keys go. */
 export async function stopPlaying(): Promise<void> {
+  if (DESK) deskStop();
+  else await collectionNative?.stop().catch(() => undefined);
+  await keepWhereLeft();
   names = [];
   ids = [];
-  if (DESK) {
-    deskStop();
-    return;
-  }
-  await collectionNative?.stop().catch(() => undefined);
+  videos = [];
+  listPlace = null;
+  pendingPlace = null;
 }
 
 /** The place's Stop playing when the space locks changed while its list plays. */
@@ -92,13 +190,15 @@ export function stopOnLockChanged(on: boolean): void {
 
 /**
  * The player's state, followed while the screen that asks is shown (and `on`): as it changes, and
- * its position every half second. Null where nothing plays here.
+ * its position every half second. Null where nothing plays here. Where the list's files got to is
+ * kept every 15 seconds meanwhile.
  */
 export function usePlayer(on = true): PlayerState | null {
   const [state, setState] = useState<PlayerState | null>(null);
   useEffect(() => {
+    if (!on) return;
+    const keeping = setInterval(() => void keepWhereLeft(), 15_000);
     if (DESK) {
-      if (!on) return;
       setState(deskState());
       const stop = onDeskPlayer(setState);
       // The position moves without an event worth telling each time: asked every half second.
@@ -106,10 +206,11 @@ export function usePlayer(on = true): PlayerState | null {
       return () => {
         stop();
         clearInterval(timer);
+        clearInterval(keeping);
       };
     }
     const native = collectionNative;
-    if (!native || !on) return;
+    if (!native) return () => clearInterval(keeping);
     let active = true;
     const ask = () =>
       void native
@@ -123,16 +224,56 @@ export function usePlayer(on = true): PlayerState | null {
       active = false;
       subscription.remove();
       clearInterval(timer);
+      clearInterval(keeping);
     };
   }, [on]);
   return state;
 }
 
+/** The cover inside the file playing, as an address to show, while `state` says it has one; null otherwise. */
+export function usePlayingArt(state: PlayerState | null): string | null {
+  const [uri, setUri] = useState<string | null>(null);
+  const has = !!state?.active && state.artwork === true;
+  const index = state?.index ?? -1;
+  useEffect(() => {
+    if (!has) {
+      setUri(null);
+      return;
+    }
+    if (DESK) {
+      setUri(deskArtwork());
+      return;
+    }
+    let active = true;
+    let made: string | null = null;
+    void collectionNative
+      ?.playerArtwork?.()
+      .then((data) => {
+        if (!active || !data) return;
+        made = memoryUri(Uint8Array.from(atob(data), (c) => c.charCodeAt(0)), 'image/jpeg');
+        setUri(made);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      if (made) releaseMemoryUri(made);
+    };
+  }, [has, index]);
+  return uri;
+}
+
 /**
  * The space locked or closed: links and PDFs go, and the list stops if the owner chose so. In the
- * desktop app the list always stops, and everything held in memory to show goes.
+ * desktop app the list always stops, and everything held in memory to show goes. Where the list's
+ * files got to is kept first, while the place is still open.
  */
 export function collectionLocked(): void {
+  const place = listPlace;
+  // Asked of the player before it stops, and kept with a copy of the key taken now.
+  void keepWhereLeft();
+  // From now on the list holds no place's key: the same place opened again takes it back (placeShown).
+  if (place) pendingPlace = { holder: place.holder, space: place.space };
+  listPlace = null;
   if (DESK) {
     deskLockCancel();
     dropCollectionMemory();
@@ -158,10 +299,13 @@ export function collectionLockAfter(ms: number): void {
   collectionNative?.lockAfter(ms);
 }
 
-/** The panic button: everything the Collection opened stops, and every key goes. */
+/** The panic button: everything the Collection opened stops, and every key goes; nothing is kept. */
 export function collectionPanic(): void {
   names = [];
   ids = [];
+  videos = [];
+  listPlace = null;
+  pendingPlace = null;
   if (DESK) {
     deskLockCancel();
     dropCollectionMemory();

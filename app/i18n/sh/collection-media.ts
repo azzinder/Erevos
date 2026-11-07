@@ -7,4 +7,13 @@
 export const collectionMedia: Record<string, string> = {
   "No videos yet. Add one with +.": "Još nema video snimaka. Dodaj jedan sa +.",
   "No music yet. Add some with +.": "Još nema muzike. Dodaj sa +.",
+  "Now playing": "Sada svira",
+  "Loading…": "Učitava se…",
+  "Shuffle": "Nasumično",
+  "Repeat": "Ponavljaj",
+  "Repeat all": "Ponavljaj sve",
+  "Repeat one": "Ponavljaj jednu",
+  "Speed {speed}×": "Brzina {speed}×",
+  "The list": "Lista",
+  "Position": "Položaj",
 };

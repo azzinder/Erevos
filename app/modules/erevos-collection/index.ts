@@ -16,7 +16,16 @@ import { requireNativeViewManager, requireOptionalNativeModule, type EventSubscr
 export type SealedRef = { id: string; key: string; chunk: number; count: number; size: number };
 
 /** A file of a list to play: the file, its name and type, and whether it is a video. */
-export type PlayItem = SealedRef & { name: string; mime: string; video: boolean };
+export type PlayItem = SealedRef & {
+  name: string;
+  mime: string;
+  video: boolean;
+  /** Where it starts the first time it plays in the list, ms (0: from its start). */
+  resume?: number;
+};
+
+/** What plays again: nothing, the whole list, or the one file. */
+export type Repeat = 'off' | 'all' | 'one';
 
 /** The player's state (Playing.kt): never a file's name. `position` and `duration` in ms, duration -1 while not known. */
 export type PlayerState = {
@@ -31,6 +40,20 @@ export type PlayerState = {
   ended: boolean;
   /** Why the file could not play (Media3's error code name), when that is what changed. */
   error?: string | null;
+  /** The list plays in an order of its own. */
+  shuffle?: boolean;
+  repeat?: Repeat;
+  /** How fast it plays: 1 as it is. */
+  speed?: number;
+  /** Whether there is a file to go on to, or back to, as the order and repeat say. */
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+  /** What the file says of itself (its tags), for the screen inside Erevos only. */
+  title?: string | null;
+  artist?: string | null;
+  album?: string | null;
+  /** Whether it has a cover inside (playerArtwork). */
+  artwork?: boolean;
 };
 
 type Native = {
@@ -60,6 +83,15 @@ type Native = {
   stop(): Promise<void>;
   setStopOnLock(on: boolean): void;
   playerState(): Promise<PlayerState>;
+  /** The list in an order of its own, or in its order again. Not in builds before it. */
+  setShuffle?(on: boolean): Promise<void>;
+  setRepeat?(mode: Repeat): Promise<void>;
+  /** 0.5 to 2. */
+  setSpeed?(speed: number): Promise<void>;
+  /** Where the files of the list got to since last asked, by their place in it (ms; 0 once played to its end), with how long each is (-1 if not known). */
+  takePositions?(): Promise<{ index: number; position: number; duration: number }[]>;
+  /** The cover inside the file playing, base64, or null. */
+  playerArtwork?(): Promise<string | null>;
   canDeleteFromGallery(): boolean;
   /** Android's own dialog asks the owner to delete these from the gallery. */
   deleteFromGallery(uris: string[]): Promise<'deleted' | 'kept' | 'none' | 'unavailable'>;

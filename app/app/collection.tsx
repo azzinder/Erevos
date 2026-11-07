@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { BackHandler, FlatList, Image, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NowPlayingScreen } from '../components/collection-now-playing';
 import { NowPlaying } from '../components/collection-player';
 import { CollectionViewer, addedText } from '../components/collection-viewer';
 import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, MusicIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon, VideoIcon } from '../components/icons';
@@ -16,7 +17,7 @@ import { choose, confirm } from '../lib/alert';
 import { CAN_COLLECT, CAN_TAKE_PHOTO, importFromCamera, importFromFiles } from '../lib/collection-import';
 import { TooLargeToSaveError, memoryUri, mostSavedOut, onCollectionMemoryDropped, releaseMemoryUri } from '../lib/collection-memory';
 import { dropOpened, openWithOtherApp } from '../lib/collection-out';
-import { usePlayer } from '../lib/collection-play';
+import { placeShown, usePlayer } from '../lib/collection-play';
 import { useCollectionPlace } from '../lib/collection-place';
 import { enterHiddenScreen } from '../lib/hidden-contacts';
 import { fileLook, folderTiles, folderTilesFor, gridEntries, inFolder, isPhoto, playKind, search, tabOf, type FileLook, type FileTab, type GridEntry } from '../lib/collection-view';
@@ -137,6 +138,9 @@ export default function CollectionScreen() {
   // Counts each time what was held in memory went (the space locked), so the small pictures open again.
   const [fresh, setFresh] = useState(0);
   const player = usePlayer();
+  const [nowPlaying, setNowPlaying] = useState(false);
+  // The list playing may keep where it got to in this place again, once it is open.
+  useEffect(() => placeShown(place), [place]);
   const musicBar = !!player?.active && !player.video;
 
   // Always out of screenshots and the recent apps preview while it is shown.
@@ -544,7 +548,7 @@ export default function CollectionScreen() {
 
       {!choosing && musicBar ? (
         <View style={{ paddingBottom: insets.bottom }}>
-          <NowPlaying state={player} />
+          <NowPlaying state={player} onOpen={() => setNowPlaying(true)} />
         </View>
       ) : null}
 
@@ -706,7 +710,9 @@ export default function CollectionScreen() {
         onSave={(item) => void saveToPhone(item)}
         onDelete={(item) => void deleteOne(item)}
         onOpenWith={(item) => void openWith(item)}
-        playOptions={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
+        playOptions={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true, place }}
+      />
+      <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)}
       />
     </View>
   );

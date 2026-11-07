@@ -120,7 +120,7 @@ class ErevosCollectionModule : Module() {
       main.removeCallbacks(lockLater)
       OpenFiles.forgetAll()
       PdfPages.closeAll()
-      Playing.onMain { Playing.stop(context) }
+      Playing.onMain { Playing.panic(context) }
       // A file being brought in stops, and what it wrote goes; so does a file shared, waiting.
       for (cancel in sealing.values) cancel.set(true)
       context?.let { SharedIn.panic(it) }
@@ -161,7 +161,8 @@ class ErevosCollectionModule : Module() {
         for (entry in list) {
           val name = entry["name"] as? String ?: ""
           val mime = entry["mime"] as? String ?: ""
-          items += Playing.Item(sealed(entry), name, mime, entry["video"] == true)
+          val resume = (entry["resume"] as? Number)?.toLong() ?: 0L
+          items += Playing.Item(sealed(entry), name, mime, entry["video"] == true, resume)
         }
       } catch (e: Exception) {
         for (item in items) item.file.close()
@@ -187,6 +188,19 @@ class ErevosCollectionModule : Module() {
     Function("setStopOnLock") { on: Boolean -> Playing.stopOnLock = on }
 
     AsyncFunction("playerState") { Playing.state() }.runOnQueue(Queues.MAIN)
+
+    // The player's screen: the list in an order of its own, repeated ("off", "all", "one"), and
+    // how fast it plays (0.5 to 2).
+    AsyncFunction("setShuffle") { on: Boolean -> Playing.setShuffle(on) }.runOnQueue(Queues.MAIN)
+    AsyncFunction("setRepeat") { mode: String -> Playing.setRepeat(mode) }.runOnQueue(Queues.MAIN)
+    AsyncFunction("setSpeed") { speed: Double -> Playing.setSpeed(speed.toFloat()) }.runOnQueue(Queues.MAIN)
+
+    // Where the files of the list got to since last asked, by their place in it, to keep sealed in
+    // the catalogue (lib/collection-play.ts): taken, they are forgotten here.
+    AsyncFunction("takePositions") { Playing.takePositions() }.runOnQueue(Queues.MAIN)
+
+    // The cover inside the file playing, base64, or null, for the player's screen inside Erevos.
+    AsyncFunction("playerArtwork") { Playing.artwork() }.runOnQueue(Queues.MAIN)
 
     // Whether Android can delete a photo or video from the gallery for Erevos: Android 11 and later.
     Function("canDeleteFromGallery") { Build.VERSION.SDK_INT >= Build.VERSION_CODES.R }
