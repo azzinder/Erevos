@@ -53,6 +53,5 @@ export const collectionMedia: Record<string, string> = {
   "Search Radio Browser": "Buscar en Radio Browser",
   "A station’s name": "El nombre de una emisora",
   "Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.": "A Radio Browser (radio-browser.info), un directorio libre de emisoras, se le envían solo las palabras que escribes, cuando pulsas Buscar, y ve la dirección IP de este dispositivo. Solo se muestran emisoras con un enlace https.",
-  "Add {name}": "Añadir {name}",
   "Or by its link": "O por su enlace",
 };

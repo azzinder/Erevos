@@ -53,6 +53,5 @@ export const collectionMedia: Record<string, string> = {
   "Search Radio Browser": "Αναζήτηση στο Radio Browser",
   "A station’s name": "Το όνομα ενός σταθμού",
   "Radio Browser (radio-browser.info), a free directory of stations, is sent only the words you type, when you press Search, and sees this device’s IP address. Only stations with an https link are shown.": "Στο Radio Browser (radio-browser.info), έναν ελεύθερο κατάλογο σταθμών, στέλνονται μόνο οι λέξεις που γράφεις, όταν πατάς Αναζήτηση, και βλέπει τη διεύθυνση IP αυτής της συσκευής. Φαίνονται μόνο σταθμοί με σύνδεσμο https.",
-  "Add {name}": "Προσθήκη: {name}",
   "Or by its link": "Ή με τον σύνδεσμό του",
 };
