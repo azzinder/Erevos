@@ -22,6 +22,7 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [
+    mark("**Photos of the Collection one after the other**: in a photo, the arrows (on a phone too, while the bars show) or a swipe go to the next or the one before, and **Slideshow** shows them by themselves, one every 4 seconds, till a tap. On a computer, in a browser and on Sailfish OS a photo opens again instead of staying at **Opening the photo…**. See [Collection](#collection)."),
     mark("**A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each have their chip whenever they are on in Modules, also with no chat yet. Before, in a space with only SMS so far, choosing **All messages** after Erevos's icon opened its chats hid the chips, with no way back."),
   ],
   underTheHood: [

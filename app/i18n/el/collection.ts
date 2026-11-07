@@ -111,4 +111,5 @@ export const collectionText: Record<string, string> = {
   "Chats take files up to 100 MB: this one can go only to the Collection.": "Οι συνομιλίες δέχονται αρχεία ως 100 MB: αυτό μπορεί να πάει μόνο στη Συλλογή.",
   "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Οι συνομιλίες δέχονται αρχεία ως 100 MB: αυτό μπορεί να πάει μόνο στη Συλλογή. Ενεργοποίησε τη Συλλογή στις Ρυθμίσεις → Γενικά → Ενότητες.",
   "Encrypting it for Erevos…": "Κρυπτογραφείται για το Erevos…",
+  "Slideshow": "Προβολή διαφανειών",
 };

@@ -111,4 +111,5 @@ export const collectionText: Record<string, string> = {
   "Chats take files up to 100 MB: this one can go only to the Collection.": "Razgovori primaju datoteke do 100 MB: ova može ići samo u Zbirku.",
   "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Razgovori primaju datoteke do 100 MB: ova može ići samo u Zbirku. Uključi Zbirku u Postavke → Općenito → Moduli.",
   "Encrypting it for Erevos…": "Šifrira se za Erevos…",
+  "Slideshow": "Projekcija slajdova",
 };

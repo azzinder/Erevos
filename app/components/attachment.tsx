@@ -258,10 +258,15 @@ const ZOOM_ROOM = { resizeMultiplier: 2 } as object;
 
 type Touch = { pageX: number; pageY: number };
 
+// How far a finger goes sideways for a swipe to the next photo.
+const SWIPE = 60;
+
 // A photo filling where it is, zoomed and moved by touch (lib/photo-zoom.ts). It is decoded no
 // bigger than about twice the screen (resizeMethod "resize"), so a 50-megapixel photo opens as a
 // small one does, still sharp when zoomed in.
-export function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: number; onTap: () => void }) {
+// `onSwipe`: a quick sideways stroke of one finger on the whole photo, not zoomed in, goes to the
+// photo after it (1) or before it (-1), as where photos are swiped between (the Collection).
+export function ZoomPhoto({ uri, w, h, onTap, onSwipe }: { uri: string; w?: number; h?: number; onTap: () => void; onSwipe?: (by: 1 | -1) => void }) {
   const scale = useRef(new Animated.Value(1)).current;
   const x = useRef(new Animated.Value(0)).current;
   const y = useRef(new Animated.Value(0)).current;
@@ -273,6 +278,8 @@ export function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: n
   const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tapRef = useRef(onTap);
   tapRef.current = onTap;
+  const swipeRef = useRef(onSwipe);
+  swipeRef.current = onSwipe;
   useEffect(() => () => clearTimeout(tapTimer.current ?? undefined), []);
 
   const show = (next: Look, animated = false) => {
@@ -318,12 +325,20 @@ export function ZoomPhoto({ uri, w, h, onTap }: { uri: string; w?: number; h?: n
         const to = middleOf(touches);
         if (!began.moved && touches.length === 1 && Math.hypot(to.x - from.x, to.y - from.y) < TAP_SLOP) return;
         began.moved = true;
+        // Not zoomed in, one finger, with somewhere to swipe to: the photo stays, the stroke is a swipe.
+        if (swipeRef.current && touches.length === 1 && began.touches.length === 1 && began.look.scale <= 1) return;
         show(touches.length === 2 && apart(began.touches) > 0 ? pinched(began.look, from, to, apart(began.touches), apart(touches)) : moved(began.look, from, to));
       },
       onPanResponderRelease: (event) => {
         const began = start.current;
         start.current = null;
         if (look.current.scale < 1.05 && look.current.scale !== 1) show(WHOLE, true);
+        if (began?.moved && swipeRef.current && began.touches.length === 1 && began.look.scale <= 1) {
+          const dx = event.nativeEvent.pageX - began.touches[0].pageX;
+          const dy = event.nativeEvent.pageY - began.touches[0].pageY;
+          if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy) * 1.5) swipeRef.current(dx < 0 ? 1 : -1);
+          return;
+        }
         if (!began || began.moved) return;
         const now = Date.now();
         if (now - lastTap.current >= DOUBLE_TAP) {

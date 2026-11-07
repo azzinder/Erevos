@@ -68,8 +68,11 @@ export const addedText = (at: number) => new Date(at).toLocaleString(locale(), {
 const DESK = SHELL === 'electron';
 // A browser, an iPhone's or a computer's: saving goes to this device, whichever it is.
 const BROWSER = Platform.OS === 'web' && !SHELL;
-// A pointer has no swipe: the photos have arrows on a computer.
-const ARROWS = Platform.OS === 'web';
+// A pointer has no swipe: on a computer a photo shows alone, with arrows and the arrow keys; on a
+// phone the photos are swiped between, with arrows too while the bars show.
+const WEB = Platform.OS === 'web';
+// How long each photo shows in a slideshow.
+export const SLIDE_MS = 4000;
 
 export function CollectionViewer({ items, start, canSend, onClose, onSend, onSave, onDelete, onOpenWith, playOptions }: Props) {
   const colors = useColors();
@@ -80,6 +83,8 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   const [info, setInfo] = useState(false);
   const [video, setVideo] = useState(false);
   const [playNote, setPlayNote] = useState('');
+  // The photos shown one after the other, by themselves, from the one in view.
+  const [sliding, setSliding] = useState(false);
   // Fetching what is missing of the file before it plays or opens with another app.
   const fetching = useFetching();
   const shown = start !== null;
@@ -88,6 +93,7 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
       setIndex(start);
       setBars(true);
     }
+    setSliding(false);
   }, [start]);
   // One deleted from here: the next one shows, or the viewer closes when none is left.
   const at = Math.min(index, items.length - 1);
@@ -112,17 +118,41 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
   const goTo = (to: number) => {
     if (to < 0 || to >= items.length) return;
     setIndex(to);
-    pager.current?.scrollToIndex({ index: to, animated: true });
+    if (!WEB) pager.current?.scrollToIndex({ index: to, animated: true });
+  };
+  // The slideshow: the next photo every SLIDE_MS, the bars hidden; it stops at the last one, or
+  // with a tap, Back, or anything other than a photo.
+  useEffect(() => {
+    if (!sliding || !shown || !photo) return;
+    if (at >= items.length - 1) {
+      const end = setTimeout(() => setSliding(false), SLIDE_MS);
+      return () => clearTimeout(end);
+    }
+    const next = setTimeout(() => goTo(at + 1), SLIDE_MS);
+    return () => clearTimeout(next);
+  }, [sliding, shown, photo, at, items.length]);
+  useEffect(() => {
+    if (!photo) setSliding(false);
+  }, [photo]);
+  const slide = (on: boolean) => {
+    setSliding(on);
+    setBars(!on);
+  };
+  const tapped = () => {
+    if (sliding) slide(false);
+    else setBars((b) => !b);
   };
   useEffect(() => {
-    if (!ARROWS || !shown || !photo || typeof window === 'undefined') return;
+    if (!WEB || !shown || !photo || typeof window === 'undefined') return;
     const key = (event: KeyboardEvent) => {
       if (event.key === 'ArrowLeft') goTo(at - 1);
       else if (event.key === 'ArrowRight') goTo(at + 1);
+      else if (event.key === 'Escape' && sliding) slide(false);
+      else if (event.key === ' ') slide(!sliding);
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
-  }, [shown, photo, at, items.length]);
+  }, [shown, photo, at, items.length, sliding]);
 
   // Another file, or the viewer closed: a fetch for the one before stops, and what came stays.
   useEffect(() => fetching.reset, [item?.id, shown]);
@@ -176,7 +206,10 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
     <Modal visible={shown && !!item} animationType="fade" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent supportedOrientations={['portrait', 'landscape-left', 'landscape-right']}>
       {item ? (
         <View style={[styles.screen, { backgroundColor: photo ? '#000000' : colors.ground }]}>
-          {photo ? (
+          {photo && WEB ? (
+            // On a computer one photo at a time: a pager's scroll there would move the one in view.
+            <PhotoPage key={item.id} item={item} width={width} near onTap={tapped} />
+          ) : photo ? (
             <FlatList
               // Turned, the pages are laid out again at the photo in view.
               key={width}
@@ -189,14 +222,13 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
               getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
               keyExtractor={(i) => i.id}
               onMomentumScrollEnd={(event) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width))}
-              {...(ARROWS ? { onScroll: (event: { nativeEvent: { contentOffset: { x: number } } }) => setIndex(Math.round(event.nativeEvent.contentOffset.x / width)), scrollEventThrottle: 100 } : {})}
               windowSize={3}
-              renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={() => setBars((b) => !b)} />}
+              renderItem={({ item: page, index: i }) => <PhotoPage item={page} width={width} near={Math.abs(i - at) <= 1} onTap={tapped} onSwipe={(by) => goTo(at + by)} />}
             />
           ) : (
             <FilePage item={item} ink={ink} muted={faint} onOpenWith={() => void openWith(item)} onPlay={() => void play(item)} note={playNote} fetching={fetching} />
           )}
-          {photo && ARROWS && bars ? (
+          {photo && bars ? (
             <>
               {at > 0 ? (
                 <Pressable onPress={() => goTo(at - 1)} accessibilityRole="button" accessibilityLabel={t('Previous')} style={[styles.arrow, { left: space.md }]}>
@@ -223,6 +255,14 @@ export function CollectionViewer({ items, start, canSend, onClose, onSend, onSav
                   {addedText(item.added)} · {fileSize(item.file.size)}
                 </Text>
               </View>
+              {photo && items.length > 1 ? (
+                <Pressable onPress={() => slide(true)} accessibilityRole="button" accessibilityLabel={t('Slideshow')} hitSlop={8} style={styles.slideButton}>
+                  <View style={styles.playShape} />
+                  <Text variant="caption" color={ink}>
+                    {t('Slideshow')}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
           {bars || !photo ? (
@@ -265,7 +305,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 // One photo of the pager: read when it is the one in view or next to it, let go of otherwise.
-function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: number; near: boolean; onTap: () => void }) {
+function PhotoPage({ item, width, near, onTap, onSwipe }: { item: CollectionItem; width: number; near: boolean; onTap: () => void; onSwipe?: (by: 1 | -1) => void }) {
   const [uri, setUri] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
   // Fetched from the server when it is not here, with Cancel; Go on opens it again (`round`).
@@ -302,7 +342,7 @@ function PhotoPage({ item, width, near, onTap }: { item: CollectionItem; width: 
   return (
     <View style={{ width, flex: 1 }}>
       {uri ? (
-        <ZoomPhoto uri={uri} w={item.file.w} h={item.file.h} onTap={onTap} />
+        <ZoomPhoto uri={uri} w={item.file.w} h={item.file.h} onTap={onTap} onSwipe={onSwipe} />
       ) : (
         <View style={styles.center}>
           {fetching.progress || fetching.stopped ? (
@@ -426,5 +466,8 @@ const styles = StyleSheet.create({
   action: { flex: 1, alignItems: 'center', gap: 4, paddingHorizontal: 2 },
   actionText: { textAlign: 'center' },
   infoRow: { gap: 2, paddingVertical: 2 },
+  slideButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: space.sm, paddingVertical: 6, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.14)' },
+  // A play triangle, of borders.
+  playShape: { width: 0, height: 0, borderTopWidth: 6, borderBottomWidth: 6, borderLeftWidth: 10, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: '#FFFFFF' },
   arrow: { position: 'absolute', top: '50%', marginTop: -22, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.45)' },
 });

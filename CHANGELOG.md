@@ -14,6 +14,10 @@ On main, not released yet:
 
 ### For you
 
+- **Photos of the Collection one after the other**: in a photo, the arrows (on a phone too, while the bars show) or a
+  swipe go to the next or the one before, and **Slideshow** shows them by themselves, one every 4 seconds, till a tap. On
+  a computer, in a browser and on Sailfish OS a photo opens again instead of staying at **Opening the photo…**. See
+  [Collection](#collection).
 - **A chip for every part that is on**: above the chats, **SMS**, **Erevos**, **Matrix**, **XMPP** and **Nostr** each
   have their chip whenever they are on in Modules, also with no chat yet (lib/inbox.ts inboxParts), and the **SMS**
   chip says when Erevos is not the SMS app yet, with a button to make it that. Before, a chip showed only once its

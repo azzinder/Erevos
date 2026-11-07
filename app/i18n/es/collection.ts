@@ -111,4 +111,5 @@ export const collectionText: Record<string, string> = {
   "Chats take files up to 100 MB: this one can go only to the Collection.": "Los chats aceptan archivos de hasta 100 MB: este solo puede ir a la Colección.",
   "Chats take files up to 100 MB: this one can go only to the Collection. Turn the Collection on in Settings → General → Modules.": "Los chats aceptan archivos de hasta 100 MB: este solo puede ir a la Colección. Activa la Colección en Ajustes → General → Módulos.",
   "Encrypting it for Erevos…": "Cifrándolo para Erevos…",
+  "Slideshow": "Presentación",
 };
