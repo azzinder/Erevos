@@ -34,10 +34,11 @@ namespace {
 const qint64 MostBody = 256LL * 1024 * 1024;
 
 // As the desktop app's (desktop/main.js), for the page and everything it loads, without its Element
-// Call frame: HTTPS too, which Matrix, the files of XMPP and Nostr chats and link previews go by.
+// Call frame: HTTPS too, which Matrix, the files of XMPP and Nostr chats and link previews go by,
+// and the Collection's internet radio plays from (a station's own https link).
 const QByteArray Csp =
     "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
-    "media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; "
+    "media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; object-src 'none'; base-uri 'self'; "
     "frame-ancestors 'self'";
 
 // Any app on the phone can reach 127.0.0.1, so none may make Erevos hold sockets or bytes for

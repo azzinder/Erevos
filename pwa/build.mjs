@@ -74,7 +74,7 @@ const write = (name, data) => fs.writeFileSync(path.join(out, name), data);
 
 // The same policy the worker adds to the page, here too in case the page is ever served without it.
 const CSP =
-  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' blob: https: ws: wss:; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'";
 // The app's page may show one frame: Element Call's, from its origin.
 const APP_CSP = withoutCalls ? CSP : `${CSP}; frame-src ${callOrigin}`;
 

@@ -50,8 +50,6 @@ export const cloudBackup: Record<string, string> = {
     "Potraži tamo",
   "Backups on {server}, newest first. Choose one, then type its password.":
     "Rezervne kopije na {server}, najnovije prve. Izaberite jednu, pa upišite njenu lozinku.",
-  "Backups to a server do not work here yet.":
-    "Rezervne kopije na server ovdje još ne rade.",
   "In a browser the server has to let the web app in (CORS), and this one did not, or could not be reached.":
     "U pregledniku server mora pustiti web aplikaciju (CORS), a ovaj nije, ili nije bio dostupan.",
   "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.":

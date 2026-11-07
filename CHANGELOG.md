@@ -150,6 +150,11 @@ On main, not released yet:
   on only from Erevos, and it knew Erevos only by the program a process runs. Started from the home screen or by a tap
   on a notice, Erevos runs inside a booster of mapplauncherd, which loads it as a library, so the helper refused it and
   told of nothing. Now it also takes a booster that has Erevos's program loaded to run (sailfish/watch/src/watcher.cpp).
+- **Internet radio in the web app and on Sailfish OS**: their Content-Security-Policy now lets the page's player
+  play a station's https link (media-src https:; pwa/build.mjs, pwa/sw.js, deploy/web/install.sh,
+  sailfish/src/shellserver.cpp). On Sailfish OS the station search and playlists are asked by the page itself, as in a
+  browser, instead of refused: only a server that lets the page in (CORS) answers, as Radio Browser does. A page cannot
+  say its own User-Agent, so there the browser's goes instead of "Erevos" (lib/backup-http.web.ts).
 - **The relay names its pair**: `EREVOS_RELAY_PAIR`, the address of a relay that takes this one's coupons (up to 3,
   apart by spaces), is told to each phone that may have coupons signed here, with the new `PAIR` request (38), and
   `NOT_FOUND` to every other; an older relay closes the connection, which the app takes as none

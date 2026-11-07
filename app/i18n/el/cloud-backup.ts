@@ -52,8 +52,6 @@ export const cloudBackup: Record<string, string> = {
     "Αναζήτηση εκεί",
   "Backups on {server}, newest first. Choose one, then type its password.":
     "Αντίγραφα στο {server}, τα νεότερα πρώτα. Διάλεξε ένα και μετά γράψε τον κωδικό του.",
-  "Backups to a server do not work here yet.":
-    "Τα αντίγραφα σε server δεν λειτουργούν εδώ ακόμα.",
   "In a browser the server has to let the web app in (CORS), and this one did not, or could not be reached.":
     "Σε έναν browser ο server πρέπει να αφήνει το web app να μπει (CORS), και αυτός δεν το άφησε ή δεν βρέθηκε.",
   "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.":

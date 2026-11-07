@@ -11,7 +11,10 @@ import { SHELL, shellFetch } from './shell';
 // Nextcloud neither. So the desktop app asks its shell for each request (desktop/main.js /__webdav),
 // which sends it from outside the page: only https, only WebDAV's few methods and headers. The web
 // app in a plain browser has no such shell: it asks the server itself, which works only with a
-// server set to let the web app's address in. None of them has Tor for it (lib/backup-cloud.ts).
+// server set to let the web app's address in, and so does Sailfish OS's, whose shell has no such
+// path: there too only a server that lets the page in answers, as the Collection's radio search
+// (Radio Browser, which does) and its playlists ask through here. None of them has Tor for it
+// (lib/backup-cloud.ts).
 // The shell stops an answer larger than 100 MB as it comes and says so with 413; the page weighs
 // what the shell hands over against `most` as it reads it, as lib/net-http.ts does.
 
@@ -31,9 +34,11 @@ export async function cloudRequest(method: HttpMethod, url: string, headers: Rec
     if (!status) throw new Error(t('The desktop app answered {status}.', { status: response.status }));
     return { status, bytes: await readCapped(response, cap, () => stop.abort()) };
   }
-  if (SHELL) throw new Error(t('Backups to a server do not work here yet.'));
+  // A page cannot say its own User-Agent: Chromium and WebKit send theirs whatever it asks, and
+  // Gecko (Firefox, Sailfish OS) would first ask the server whether it may, which few let it.
+  const sent = Object.fromEntries(Object.entries(headers).filter(([name]) => name.toLowerCase() !== 'user-agent'));
   try {
-    return await netHttp(method, url, headers, body, cap);
+    return await netHttp(method, url, sent, body, cap);
   } catch (error) {
     if (error instanceof HttpTooLargeError) throw error;
     // A browser says no more of a server that did not let it in than of one it could not reach.

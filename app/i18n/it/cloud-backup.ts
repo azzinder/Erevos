@@ -50,8 +50,6 @@ export const cloudBackup: Record<string, string> = {
     "Cerca lì",
   "Backups on {server}, newest first. Choose one, then type its password.":
     "Backup su {server}, i più recenti per primi. Scegline uno, poi scrivi la sua password.",
-  "Backups to a server do not work here yet.":
-    "I backup su un server qui non funzionano ancora.",
   "In a browser the server has to let the web app in (CORS), and this one did not, or could not be reached.":
     "In un browser il server deve far entrare la web app (CORS), e questo non l'ha fatto o non è stato raggiunto.",
   "Erevos forgets the server and its password here. The backups already on it stay there until you delete them.":
