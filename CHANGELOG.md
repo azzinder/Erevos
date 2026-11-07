@@ -37,6 +37,11 @@ On main, not released yet:
   chip says when Erevos is not the SMS app yet, with a button to make it that. Before, a chip showed only once its
   part had chats or an account: in a space with only SMS so far, choosing **All messages** after Erevos's icon opened
   its chats hid the chips, so there was no way back to them.
+- **Invite at one tap**: on the home screen, **Invite** beside the relay's line opens Invite someone with its QR code
+  already made, with nothing to type; who it is for and the name the phone gives itself can be typed below the code,
+  or never (E2E.nameInvite). Opened again within 15 minutes, it shows the same invite while it waits, as a relay lets
+  a phone make only a few a day; **Invite someone else** makes another. The empty home screen has an **Invite
+  someone** button too (components/welcome-invite.tsx).
 
 ### Under the hood
 

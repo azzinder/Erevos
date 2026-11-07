@@ -555,12 +555,14 @@ qu’un jeton parti là où il ne devait pas ne peut pas remplir son fichier de 
 Un code QR ou un lien fait entrer quelqu’un de nouveau : son téléphone rejoint Erevos sur ton relais, avec un accès à
 lui, sans rien taper, et vous êtes aussitôt contacts l’un de l’autre, sans demande de message.
 
-- **Pour inviter :** dans les discussions, sans contact choisi, appuie sur **Inviter quelqu’un**. Tape pour qui c’est
-  (son nom dans tes discussions) et, si tu veux, **Ton nom, pour cette personne**, puis appuie sur **Créer
-  l’invitation**. Un code QR s’ouvre : une fois Erevos sur son téléphone, la personne le scanne avec l’appareil photo et
-  ouvre le lien dans Erevos ; ou bien appuie sur **Partager l’invitation** et envoie-lui le lien. L’invitation est pour
-  une personne, pour 7 jours, ou moins quand l’invitation du relais se termine plus tôt. Qui la prend en premier l’a,
-  alors ne la donne qu’à cette personne.
+- **Pour inviter :** sur l’écran d’accueil, appuie sur **Inviter** à côté de la ligne du relais ou, dans les
+  discussions sans contact choisi, appuie sur **Inviter quelqu’un**. Le code QR s’affiche tout de suite : quand Erevos
+  est sur son téléphone, la personne le scanne avec l’appareil photo et ouvre le lien dans Erevos, ou appuie sur
+  **Partager l’invitation** et envoie-lui le lien. En dessous, tu peux taper pour qui c’est (son nom dans tes
+  discussions) et **Ton nom, pour cette personne**, ou laisser les deux vides. Rouverte peu après, elle montre la même
+  invitation tant que personne ne l’a prise ; **Inviter quelqu’un d’autre** en crée une nouvelle. Elle est pour une
+  personne, pour 7 jours, ou moins si l’invitation du relais finit plus tôt. Celui qui la prend en premier l’a, donc
+  donne-la à cette personne seulement.
 - **Pour rejoindre :** sur un téléphone qui n’a pas encore de relais, **Nouvelle discussion** affiche une façon
   d’entrer, **J’ai une invitation** : appuie dessus. Scanne l’invitation avec l’appareil photo et ouvre le lien dans
   Erevos, ou appuie sur **Prendre une photo de l’invitation** ou **Choisir une photo de l’invitation**, ou colle le

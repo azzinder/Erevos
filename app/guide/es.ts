@@ -526,11 +526,13 @@ no puede llenar su archivo de tokens.
 Un código QR o un enlace trae a alguien nuevo: su teléfono se une a Erevos en tu relay, con acceso propio, sin escribir
 nada, y sois contactos el uno del otro al instante, sin solicitud de mensaje.
 
-- **Para invitar:** en los chats, sin ningún contacto elegido, toca **Invitar a alguien**. Escribe para quién es (su
-  nombre en tus chats) y, si quieres, **Tu nombre, para esa persona**, y luego toca **Crear la invitación**. Se abre un
-  código QR: en cuanto tenga Erevos en su teléfono, lo escanea con la cámara y abre el enlace en Erevos, o toca
-  **Compartir la invitación** y envíale el enlace. Es para una persona, durante 7 días, o menos si la invitación del
-  relay acaba antes. Quien la use primero se la queda, así que dásela solo a esa persona.
+- **Para invitar:** en la pantalla de inicio, toca **Invitar** junto a la línea del relay o, en los chats sin ningún
+  contacto elegido, toca **Invitar a alguien**. El código QR aparece al instante: cuando Erevos está en su teléfono,
+  lo escanea con la cámara y abre el enlace en Erevos, o toca **Compartir la invitación** y le mandas el enlace.
+  Debajo puedes escribir para quién es (su nombre en tus chats) y **Tu nombre, para esa persona**, o dejar ambos
+  vacíos. Si la abres de nuevo poco después, muestra la misma invitación mientras nadie la haya tomado; **Invitar a
+  otra persona** crea una nueva. Es para una persona, por 7 días, o menos si la invitación del relay termina antes.
+  Quien la toma primero la tiene, así que dásela solo a esa persona.
 - **Para unirse:** en un teléfono que aún no tiene relay, **Chat nuevo** muestra una forma de entrar, **Tengo una
   invitación**: tócala. Escanea la invitación con la cámara y abre el enlace en Erevos, o toca **Hacer una foto de la
   invitación** o **Elegir una foto de la invitación**, o pega el enlace y toca **Unirse**. El enlace abre **… te

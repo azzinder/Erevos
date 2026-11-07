@@ -525,11 +525,13 @@ parar onde não devia não possa encher o arquivo de tokens.
 Um código QR ou link traz alguém novo: o celular da pessoa entra no Erevos no seu relay, com acesso próprio, sem digitar
 nada, e vocês viram contatos um do outro na hora, sem pedido de mensagem.
 
-- **Para convidar:** nas conversas, sem nenhum contato escolhido, toque em **Convidar alguém**. Digite para quem é (o
-  nome da pessoa nas suas conversas) e, se quiser, **Seu nome, para essa pessoa**, depois toque em **Criar o
-  convite**. Abre-se um código QR: quando o Erevos estiver no celular da pessoa, ela o lê com a câmera e abre o link no
-  Erevos, ou toque em **Compartilhar o convite** e envie o link para ela. É para uma pessoa, por 7 dias, ou menos
-  quando o convite do relay acaba antes. Quem o pegar primeiro fica com ele, então dê só para ela.
+- **Para convidar:** na tela inicial, toque em **Convidar** ao lado da linha do relay ou, nas conversas sem nenhum
+  contato escolhido, toque em **Convidar alguém**. O código QR aparece na hora: quando o Erevos está no celular da
+  pessoa, ela o escaneia com a câmera e abre o link no Erevos, ou toque em **Compartilhar o convite** e mande o link a
+  ela. Abaixo você pode digitar para quem é (o nome dela nas suas conversas) e **Seu nome, para essa pessoa**, ou
+  deixar os dois vazios. Aberto de novo logo depois, mostra o mesmo convite enquanto ninguém o pegou; **Convidar outra
+  pessoa** cria um novo. Ele vale para uma pessoa, por 7 dias, ou menos se o convite do relay acabar antes. Quem o
+  pega primeiro fica com ele, então dê só a essa pessoa.
 - **Para entrar:** num celular ainda sem relay, **Nova conversa** mostra uma forma de entrar, **Tenho um convite**:
   toque nela. Leia o convite com a câmera e abra o link no Erevos, ou toque em **Tirar foto do convite** ou **Escolher
   foto do convite**, ou cole o link e toque em **Entrar**. O link abre **… convida você para o Erevos**: toque em

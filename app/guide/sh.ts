@@ -518,11 +518,13 @@ ne može napuniti njegovu datoteku tokena.
 Jedan QR kod ili link dovodi nekoga novog: njegov telefon ulazi u Erevos na vašem relayu, s vlastitim pristupom, bez
 ikakvog upisivanja, a vi ste odmah kontakti jedno drugom, bez zahtjeva za razgovor.
 
-- **Da pozovete:** u razgovorima, bez izabranog kontakta, dodirnite **Pozovite nekoga**. Upišite za koga je (ime te
-  osobe u vašim razgovorima) i, ako želite, **Vaše ime, za tu osobu**, pa dodirnite **Napravi pozivnicu**. Otvara se
-  QR kod: kad Erevos bude na njenom telefonu, ona ga skenira kamerom i otvori link u Erevosu, ili dodirnite **Podijeli
-  pozivnicu** i pošaljite joj link. Pozivnica je za jednu osobu, na 7 dana, ili kraće ako pozivnica za relay ističe
-  ranije. Ko je prvi iskoristi, njegova je, pa je dajte samo toj osobi.
+- **Da pozovete:** na početnom ekranu dodirnite **Pozovi** pored retka relaya ili, u razgovorima bez izabranog
+  kontakta, dodirnite **Pozovite nekoga**. QR kod se prikaže odmah: kad Erevos bude na njenom telefonu, ona ga skenira
+  kamerom i otvori link u Erevosu, ili dodirnite **Podijeli pozivnicu** i pošaljite joj link. Ispod možete upisati za
+  koga je (ime te osobe u vašim razgovorima) i **Vaše ime, za tu osobu**, ili oba polja ostaviti prazna. Ako je uskoro
+  opet otvorite, prikazuje istu pozivnicu dok je niko nije uzeo; **Pozovite nekog drugog** pravi novu. Pozivnica je za
+  jednu osobu, na 7 dana, ili kraće ako pozivnica za relay ističe ranije. Ko je prvi iskoristi, njegova je, pa je
+  dajte samo toj osobi.
 - **Da se pridružite:** na telefonu koji još nema relay, **Novi razgovor** prikazuje jedan način ulaska, **Imam
   pozivnicu**: dodirnite ga. Skenirajte pozivnicu kamerom i otvorite link u Erevosu, ili dodirnite **Fotografišite
   pozivnicu** ili **Izaberite fotografiju pozivnice**, ili zalijepite link i dodirnite **Pridruži se**. Link otvara

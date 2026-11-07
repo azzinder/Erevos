@@ -1171,6 +1171,33 @@ export class E2E {
     });
   }
 
+  /**
+   * Names, or names again, who an invite still waiting is for (welcome), and its invite to the
+   * relay (`line`, lineFor), here only: the invite is made at a tap, before any name is typed.
+   */
+  nameInvite(hi: string, name: string, line = ''): Promise<void> {
+    return this.run(async () => {
+      const named = cleanName(name);
+      const invited = (this.data.invited ?? []).map((i) => (i.hi === hi ? { ...i, name: named } : i));
+      const lines = (this.data.lines ?? []).map((l) => (line && l.l === line ? { ...l, n: named } : l));
+      await this.save({ ...this.data, invited, ...(this.data.lines ? { lines } : {}) });
+    });
+  }
+
+  /** Whether the invite whose secret is `hi` still waits for whoever it is for. */
+  inviteWaits(hi: string, now = Date.now()): boolean {
+    return this.waitingInvites(now).some((i) => i.hi === hi);
+  }
+
+  /** Keeps `as` as the name this phone gives itself in its invites (invitedAs). */
+  inviteAs(as: string): Promise<void> {
+    return this.run(async () => {
+      const named = cleanName(as);
+      const { invitedAs: _as, ...rest } = this.data;
+      await this.save({ ...rest, ...(named ? { invitedAs: named } : {}) });
+    });
+  }
+
   /** The name this phone gave itself in its last invite, or ''. */
   invitedAs(): string {
     return this.data.invitedAs ?? '';

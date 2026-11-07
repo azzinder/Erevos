@@ -560,12 +560,14 @@ dorthin gelangt ist, wo es nicht hingehört, seine Token-Datei nicht füllen kan
 Ein QR-Code oder Link holt jemand Neues herein: Das Telefon dieser Person tritt Erevos auf deinem Relay bei, mit
 eigenem Zugang, ohne etwas einzutippen, und ihr seid sofort gegenseitig Kontakte, ohne Nachrichtenanfrage.
 
-- **Einladen:** Tippe in den Chats, ohne gewählten Kontakt, auf **Jemanden einladen**. Gib ein, für wen sie ist (der
-  Name der Person in deinen Chats) und, wenn du willst, **Dein Name, für die Person**, und tippe dann auf
-  **Einladung machen**. Ein QR-Code öffnet sich: Sobald Erevos auf dem anderen Telefon ist, scannt die Person ihn mit
-  der Kamera und öffnet den Link in Erevos, oder du tippst auf **Einladung teilen** und schickst ihr den Link. Sie gilt
-  für eine Person, 7 Tage lang, oder kürzer, wenn die Einladung des Relays früher endet. Wer sie zuerst nimmt, hat sie,
-  also gib sie nur dieser Person.
+- **Einladen:** Tippe auf dem Startbildschirm auf **Einladen** neben der Zeile des Relays oder, in den Chats ohne
+  gewählten Kontakt, auf **Jemanden einladen**. Der QR-Code erscheint sofort: Sobald Erevos auf dem anderen Telefon
+  ist, scannt die Person ihn mit der Kamera und öffnet den Link in Erevos, oder du tippst auf **Einladung teilen** und
+  schickst ihr den Link. Darunter kannst du eingeben, für wen sie ist (der Name der Person in deinen Chats), und
+  **Dein Name, für die Person**, oder beides leer lassen. Bald danach erneut geöffnet, zeigt sie dieselbe Einladung,
+  solange niemand sie genommen hat; **Jemand anderen einladen** macht eine neue. Sie gilt für eine Person, 7 Tage
+  lang, oder kürzer, wenn die Einladung des Relays früher endet. Wer sie zuerst nimmt, hat sie, also gib sie nur
+  dieser Person.
 - **Beitreten:** Auf einem Telefon ohne Relay zeigt **Neuer Chat** einen Weg hinein, **Ich habe eine Einladung**:
   Tippe darauf. Scanne die Einladung mit der Kamera und öffne den Link in Erevos, oder tippe auf **Foto der Einladung
   aufnehmen** oder **Foto der Einladung auswählen**, oder füge den Link ein und tippe auf **Beitreten**. Der Link

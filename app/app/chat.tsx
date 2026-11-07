@@ -409,7 +409,8 @@ export default function ChatScreen() {
   // A contact to open with (from the home screen, or an imported chat that goes on with them),
   // hidden chats opened from the home screen's search (their key handed over in memory), or New
   // chat (`setup=1`, which shows the same as with no contact), with For advanced users, the relay's
-  // own settings, open (`setup=relay`). `at`:
+  // own settings, open (`setup=relay`), or with Invite someone's QR code (`setup=invite`, the home
+  // screen's Invite). `at`:
   // the tag of a message to go to, starred or found. A call to start with the contact comes only
   // from a tap in Erevos (lib/call-handoff.ts), never from the address, which any app or web page
   // can open.
@@ -502,6 +503,7 @@ export default function ChatScreen() {
               initialCall={initialCall}
               linkNumber={linkNumber}
               relaySettings={setup === 'relay'}
+              inviteNow={setup === 'invite'}
               shown={!hiddenKey}
               onLook={setChatLook}
             />
@@ -557,7 +559,7 @@ function BackButton({ onPress }: { onPress?: () => void }) {
 
 // One chat: the space's own (`hiddenKey` null), or hidden chats, sealed with that key, in the
 // space's `pocket` of them.
-function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, shown, onHidden, onChangePassword, onLook }: {
+function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = null, linkNumber = '', relaySettings = false, inviteNow = false, shown, onHidden, onChangePassword, onLook }: {
   hiddenKey: Uint8Array | null;
   pocket?: number;
   initial?: string | null;
@@ -569,6 +571,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   linkNumber?: string;
   /** Opens with For advanced users open, the relay's own settings (Settings → Relay). */
   relaySettings?: boolean;
+  /** Opens with Invite someone's QR code showing (the home screen's Invite), when this phone can invite. */
+  inviteNow?: boolean;
   shown: boolean;
   /** Closes the hidden chats. */
   onHidden?: () => void;
@@ -5458,6 +5462,13 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const newcomer = loaded && !hiddenKey && !accountLink() && !relayUrl.trim();
   // With a relay queue, this phone invites someone new (lib/welcome.ts).
   const canWelcome = !hiddenKey && !accountLink() && !!relayUrl.trim() && !!ownQueue && !!ownLink;
+  // The home screen's Invite: its QR code at once, once the chat knows this phone can invite.
+  const invitedNow = useRef(false);
+  useEffect(() => {
+    if (!inviteNow || invitedNow.current || !loaded || !canWelcome) return;
+    invitedNow.current = true;
+    setWelcoming(true);
+  }, [inviteNow, loaded, canWelcome]);
   // How this phone reaches its contacts now, said at the top of New chat.
   const reached = connectReach({
     linked: !!linkHere(),

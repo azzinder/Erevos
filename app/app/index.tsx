@@ -582,16 +582,32 @@ function Home() {
       ) : null}
       {/* The relay is Erevos's own (lib/modules.ts). */}
       {erevosOn ? (
-        <Pressable
-          onPress={() => router.push(relay === 'ready' ? '/chat' : '/chat?setup=1')}
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.status, pressed && styles.pressed]}
-        >
-          <View style={[styles.dot, { backgroundColor: relay === 'ready' ? colors.success : relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
-          <Text variant="caption" tone="muted" style={styles.statusText}>
-            {relayText}
-          </Text>
-        </Pressable>
+        <View style={styles.statusRow}>
+          <Pressable
+            onPress={() => router.push(relay === 'ready' ? '/chat' : '/chat?setup=1')}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.status, pressed && styles.pressed]}
+          >
+            <View style={[styles.dot, { backgroundColor: relay === 'ready' ? colors.success : relay === 'no-queue' ? colors.warning : colors.textFaint }]} />
+            <Text variant="caption" tone="muted" style={styles.statusText}>
+              {relayText}
+            </Text>
+          </Pressable>
+          {/* Invite someone at a tap: its QR code shows at once (components/welcome-invite.tsx). A linked device invites from the phone. */}
+          {relay === 'ready' && linkedRole() !== 'linked' ? (
+            <Pressable
+              onPress={() => router.push('/chat?setup=invite')}
+              accessibilityRole="button"
+              accessibilityLabel={t('Invite someone')}
+              style={({ pressed }) => [styles.status, { backgroundColor: colors.primary }, pressed && styles.pressed]}
+            >
+              <PlusIcon color={colors.onPrimary} size={14} />
+              <Text variant="caption" style={[styles.statusText, { color: colors.onPrimary }]}>
+                {t('Invite')}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
       {/* One line that scrolls to the side, so a chip that comes or goes moves none of the others to a
           line of their own; the chosen one is scrolled into sight. */}
@@ -716,6 +732,9 @@ function Home() {
                   <Text tone="muted" style={styles.emptyText}>
                     {t("No account and no phone number. Share your contact link or QR code, or add someone else's, to start a chat.")}
                   </Text>
+                ) : null}
+                {erevosOn && relay === 'ready' && linkedRole() !== 'linked' ? (
+                  <Button title={t('Invite someone')} onPress={() => router.push('/chat?setup=invite')} />
                 ) : null}
               </View>
             )
@@ -1022,6 +1041,12 @@ const makeStyles = (colors: Colors) =>
     },
     statusText: {
       fontSize: 12,
+    },
+    statusRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      gap: space.sm,
     },
     dot: {
       width: 8,

@@ -494,11 +494,12 @@ of tokens.
 One QR code or link brings someone new in: their phone joins Erevos on your relay, with access of its own, typing
 nothing, and you are each other's contacts at once, with no message request.
 
-- **To invite:** in the chats, with no contact picked, tap **Invite someone**. Type who it is for (their name in your
-  chats) and, if you like, **Your name, for them**, then tap **Make the invite**. A QR code opens: once Erevos is on
-  their phone, they scan it with the camera and open the link in Erevos, or tap **Share the invite** and send them the
-  link. It is for one person, for 7 days, or less when the relay's invite ends sooner. Whoever takes it first has it,
-  so give it to them only.
+- **To invite:** on the home screen, tap **Invite** beside the relay's line, or, in the chats with no contact picked,
+  tap **Invite someone**. The QR code shows at once: once Erevos is on their phone, they scan it with the camera and
+  open the link in Erevos, or tap **Share the invite** and send them the link. Below it you may type who it is for
+  (their name in your chats) and **Your name, for them**, or leave both empty. Opened again soon after, it shows the
+  same invite while no one took it; **Invite someone else** makes a new one. It is for one person, for 7 days, or less
+  when the relay's invite ends sooner. Whoever takes it first has it, so give it to them only.
 - **To join:** on a phone with no relay yet, **New chat** shows one way in, **I have an invite**: tap it. Scan the
   invite with the camera and open the link in Erevos, or tap **Take a photo of the invite** or **Choose a photo of the
   invite**, or paste the link and tap **Join**. The link opens **… invites you to Erevos**: tap **Join** only if it
