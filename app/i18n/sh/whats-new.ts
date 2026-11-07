@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":
+    "**Muzika i video bilo koje veličine u Zbirci aplikacije za računar**: puštaju se i premotavaju odmah, čitani dio po dio iz svojih šifriranih dijelova, nikad cijeli u memoriji. Vidi [Zbirka](#collection).",
   "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":
     "**Liste za reprodukciju u Muzici Zbirke**: pjesme redom koji izabereš, šifrirane sa Zbirkom, puštene redom ili nasumično. Napravi jednu na vrhu Muzike, i dodaj pjesme iz njihovog menija ili držeći ih. Vidi [Zbirka](#collection).",
   "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":

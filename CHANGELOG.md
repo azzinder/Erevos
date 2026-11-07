@@ -118,6 +118,11 @@ On main, not released yet:
   in the place's sealed catalogue (lock/collection-data.ts playlists: an id of their own, the files' ids, `at`; a
   deleted one leaves a mark in `gone`, a deleted file goes from them). Made at the top of Music, filled from a song's
   menu or the songs chosen, played in order or shuffled by the same player, a song moved up or down or taken out.
+- **The desktop app plays the Collection's music and videos of any size** (desktop/play.js, lib/collection-desk-player.ts):
+  the shell answers the page's player by range from the encrypted chunks, opening only those the range needs, at
+  /__play/<token>; the file's key is held in the shell's memory only, by a random token, and forgotten when the file
+  is let go of, the list stops, the space locks, the panic button or the window closes. A shell from before it has
+  the page decrypt into memory as before, up to 1 GB.
 
 ### Under the hood
 

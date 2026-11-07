@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":
+    "**Μουσική και βίντεο οποιουδήποτε μεγέθους στη Συλλογή της εφαρμογής υπολογιστή**: παίζουν και μετακινούνται αμέσως, διαβασμένα κομμάτι κομμάτι από τα κρυπτογραφημένα κομμάτια τους, ποτέ ολόκληρα στη μνήμη. Δες [Συλλογή](#collection).",
   "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":
     "**Λίστες αναπαραγωγής στη Μουσική της Συλλογής**: τραγούδια με τη σειρά που διαλέγεις, κρυπτογραφημένα μαζί με τη Συλλογή, που παίζουν με τη σειρά ή σε τυχαία σειρά. Φτιάξε μία στην κορυφή της Μουσικής, και πρόσθεσε τραγούδια από το μενού τους ή κρατώντας τα πατημένα. Δες [Συλλογή](#collection).",
   "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":

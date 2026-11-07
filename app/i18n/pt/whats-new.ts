@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Para você',
   'Under the hood': 'Nos bastidores',
   // Not out yet.
+  "**Music and videos of any size in the desktop app's Collection**: they play and seek at once, read a piece at a time from their encrypted pieces, never held whole in memory. See [Collection](#collection).":
+    "**Músicas e vídeos de qualquer tamanho na Coleção do app de computador**: tocam e avançam na hora, lidos um pedaço por vez dos seus pedaços criptografados, nunca inteiros na memória. Veja [Coleção](#collection).",
   "**Playlists in the Collection's Music**: songs in the order you choose, kept encrypted with the Collection, played in order or shuffled. Make one at the top of Music, and add songs from their menu or by holding them down. See [Collection](#collection).":
     "**Playlists na Música da Coleção**: músicas na ordem que você escolhe, criptografadas com a Coleção, tocadas em ordem ou em ordem aleatória. Crie uma no alto de Música, e adicione músicas pelo menu delas ou segurando-as. Veja [Coleção](#collection).",
   "**Subtitles for the Collection's videos**: an .srt or .vtt file in the same folder with the video's name (film.srt, or film.en.srt) shows as its subtitles, and a tap at the top turns them off or on. See [Collection](#collection).":

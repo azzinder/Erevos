@@ -8,6 +8,7 @@ import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, onCollectionMemoryDropp
 import { jumpTo, newQueue, nextIndex, previousIndex, setRepeat, setShuffle, type Queue } from './collection-queue';
 import { playKind, playType } from './collection-view';
 import { readTags, type MediaTags } from './media-tags';
+import { SHELL, shellFetch } from './shell';
 import { srtToVtt, subtitlesText } from './subtitles';
 
 // The Collection's music and videos in the web build: the desktop app, a browser (an iPhone's
@@ -26,6 +27,12 @@ import { srtToVtt, subtitlesText } from './subtitles';
 // each got to is kept here by its place in the list, for lib/collection-play.ts to take and keep
 // sealed (deskTakePositions). What a file says of itself (its title, artist, album and cover) is
 // read from its first chunks (lib/media-tags.ts), for the player's screen.
+//
+// In the desktop app the element is answered by the shell instead (desktop/play.js): it reads the
+// file by range from its encrypted chunks, opening only those it needs, so a file of any size plays
+// and seeks at once and nothing of it is held whole. The shell holds the file's key, in its memory
+// only, by a token in the element's address, until the file is let go of here, the list stops, the
+// space locks or the panic button; a shell from before it has the page decrypt into memory as above.
 
 type Listener = (state: PlayerState) => void;
 
@@ -54,6 +61,38 @@ const positions = new Map<number, [number, number]>();
 // Each file opened counts one up, so a file that took long to decrypt does not play after another was asked for.
 let turn = 0;
 const listeners = new Set<Listener>();
+
+// The desktop app's shell answers the element from the chunks (desktop/play.js): known once asked.
+let streams: boolean | null = SHELL === 'electron' ? null : false;
+// The token the shell gave for the file playing, to forget it as it is let go of.
+let streaming: string | null = null;
+
+async function canStream(): Promise<boolean> {
+  if (streams !== null) return streams;
+  try {
+    // A shell that plays refuses an empty file (400); one from before knows no such path (404).
+    streams = (await shellFetch('/__play', { method: 'POST', body: '{}' })).status === 400;
+  } catch {
+    streams = false;
+  }
+  return streams;
+}
+
+// The token the shell answers `item` by, at /__play/<token>, by range; null when it cannot.
+async function streamUri(item: CollectionItem): Promise<string | null> {
+  if (!(await canStream())) return null;
+  const { id, key, chunk, count, size } = item.file;
+  const response = await shellFetch('/__play', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, key, chunk, count, size, mime: playType(item) }) });
+  if (!response.ok) return null;
+  const { token } = (await response.json()) as { token?: string };
+  return typeof token === 'string' && /^[0-9a-f]{32}$/.test(token) ? token : null;
+}
+
+// The shell forgets one file's key, or all of them.
+function forgetStream(token: string | null): void {
+  if (!streams) return;
+  void shellFetch(token ? `/__play?token=${token}` : '/__play', { method: 'DELETE' }).catch(() => undefined);
+}
 
 /** The file at `at` in the list playing, or null. */
 export const deskItem = (at: number): CollectionItem | null => list[at] ?? null;
@@ -151,8 +190,10 @@ function letGo(): void {
     media.removeAttribute('src');
     media.load();
   }
-  if (shown) releaseMemoryUri(shown);
+  if (shown && !streaming) releaseMemoryUri(shown);
   shown = null;
+  if (streaming) forgetStream(streaming);
+  streaming = null;
   if (art) releaseMemoryUri(art);
   art = null;
   dropTrack();
@@ -230,15 +271,19 @@ async function open(at: number): Promise<void> {
   void readTagsOf(item, mine);
   void addSubtitles(at, mine);
   let uri: string | null = null;
+  let token: string | null = null;
   try {
-    uri = await openItemUri(item, playType(item));
+    token = await streamUri(item);
+    uri = token ? `/__play/${token}` : item.file.size <= MOST_IN_MEMORY ? await openItemUri(item, playType(item)) : null;
   } catch {
     uri = null;
   }
   if (mine !== turn) {
-    if (uri) releaseMemoryUri(uri);
+    if (token) forgetStream(token);
+    else if (uri) releaseMemoryUri(uri);
     return;
   }
+  streaming = token;
   buffering = false;
   if (!uri) {
     error = 'FILE_GONE';
@@ -258,14 +303,15 @@ async function open(at: number): Promise<void> {
 
 /**
  * Plays `items` from `start`, each from where it was left (`resume`, ms by place in `items`), with
- * the order and repeat of the list before: only those small enough to hold in memory; throws
- * TooLargeToOpenError when the one asked for is not.
+ * the order and repeat of the list before: only those small enough to hold in memory, unless the
+ * shell answers them from their chunks; throws TooLargeToOpenError when the one asked for is not.
  */
 export async function deskPlay(items: CollectionItem[], start: number, resume: number[] = [], subtitles: (CollectionItem | null)[] = []): Promise<void> {
   const asked = items[start];
   if (!asked) return;
-  if (asked.file.size > MOST_IN_MEMORY) throw new TooLargeToOpenError();
-  const kept = items.map((item, i) => ({ item, from: resume[i] ?? 0, subtitles: subtitles[i] ?? null })).filter(({ item }) => item.file.size <= MOST_IN_MEMORY);
+  const any = await canStream();
+  if (!any && asked.file.size > MOST_IN_MEMORY) throw new TooLargeToOpenError();
+  const kept = items.map((item, i) => ({ item, from: resume[i] ?? 0, subtitles: subtitles[i] ?? null })).filter(({ item }) => any || item.file.size <= MOST_IN_MEMORY);
   list = kept.map((k) => k.item);
   resumes = kept.map((k) => k.from);
   subtitleFiles = kept.map((k) => k.subtitles);
@@ -350,6 +396,8 @@ export function deskStop(): void {
   ended = false;
   buffering = false;
   media?.remove();
+  // Nothing of the list stays in the shell either.
+  forgetStream(null);
   tell();
 }
 

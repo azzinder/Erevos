@@ -39,7 +39,7 @@ import { Button, Sheet, Text } from './ui';
 // In the desktop app the same, each held decrypted in the page's memory only, as a blob: address
 // (lib/collection-memory.ts) let go of when it closes: a photo, with arrows and the arrow keys to
 // go to the next; a PDF in Chromium's own viewer; music and videos in the page's player (lib/
-// collection-desk-player.ts), up to MOST_IN_MEMORY. Saving goes to the computer, and nothing is
+// collection-desk-player.ts), answered by the shell from their chunks at any size (desktop/play.js). Saving goes to the computer, and nothing is
 // opened with another app. When the space locks the player stops and the viewer closes. In a
 // browser and on Sailfish OS the same, up to 256 MB, but a PDF is saved to be read elsewhere.
 //
