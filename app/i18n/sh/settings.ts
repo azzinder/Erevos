@@ -83,7 +83,7 @@ export const settings: Record<string, string> = {
   'Change folder': 'Promijeni folder',
   'Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.': 'Erevos može sam praviti rezervnu kopiju svaki dan ili svake sedmice, u folder koji izaberete, s lozinkom koju postavite jednom.',
   'Restore': 'Vrati',
-  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.': 'Stavlja rezervnu kopiju umjesto svega na {device}. Razgovorima koji su se nastavili nakon pravljenja rezervne kopije možda će ponovo trebati linkovi za kontakt. Koristite rezervnu kopiju na samo jednom uređaju istovremeno.',
+  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made start anew by themselves; one with a contact whose Erevos is older may need their contact link again. Use a backup on one device at a time.': 'Stavlja rezervnu kopiju umjesto svega na {device}. Razgovori koji su se nastavili nakon pravljenja rezervne kopije sami počinju iznova; razgovoru s kontaktom koji ima stariji Erevos možda će ponovo trebati njegov link za kontakt. Koristite rezervnu kopiju na samo jednom uređaju istovremeno.',
   'Restore a backup': 'Vrati rezervnu kopiju',
   'Open {name}': 'Otvori {name}',
   'Password for automatic backups': 'Lozinka za automatske rezervne kopije',

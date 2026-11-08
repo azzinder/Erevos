@@ -96,8 +96,11 @@ export type Contact = {
   seenAt?: number;
   /** Their prekeys as they last gave them inside their conversation (their bundle, base64), when
    *  newer than their link's: what the conversation started next with them starts with. Missing
-   *  until they give some. */
+   *  until they give some. `bundleAt`: when they came here (ms), so a backup put back long after
+   *  knows their phone may have thrown them away since (lib/e2e.ts putBack); missing for those kept
+   *  before this was. */
   bundle?: string;
+  bundleAt?: number;
   /** When the newest prekeys this chat gave them were made (`E2EData.prekeys`, ms), or 0. */
   bundleSent?: number;
   /** The first packet of a conversation started here with their newer prekeys, base64, until the
@@ -673,7 +676,7 @@ function checkedContact(value: unknown): Contact | null {
     ...(isHex(v.ringSender) && v.ringSender.length === 48 ? { ringSender: v.ringSender } : {}),
     ...(isTime(v.seenAt) && v.seenAt > 0 ? { seenAt: v.seenAt } : {}),
     ...(isTime(v.firstAt) && v.firstAt > 0 ? { firstAt: v.firstAt } : {}),
-    ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle } : {}),
+    ...(isBase64(v.bundle) && v.bundle ? { bundle: v.bundle, ...(isTime(v.bundleAt) && v.bundleAt > 0 ? { bundleAt: v.bundleAt } : {}) } : {}),
     ...(isTime(v.bundleSent) ? { bundleSent: v.bundleSent } : {}),
     ...(isBase64(v.renew) && v.renew ? { renew: v.renew } : {}),
     ...(isCount(v.dv) ? { dv: v.dv } : {}),

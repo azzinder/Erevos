@@ -780,7 +780,7 @@ export default function Backups() {
       <SectionTitle title={t('Restore')} />
       <Card>
         <Text variant="caption" tone="muted" style={hint}>
-          {t('Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.', { device: t(THIS_DEVICE) })}
+          {t('Puts a backup in place of everything on {device}. Chats that went on after the backup was made start anew by themselves; one with a contact whose Erevos is older may need their contact link again. Use a backup on one device at a time.', { device: t(THIS_DEVICE) })}
         </Text>
         <Text variant="caption" tone="muted" style={hint}>
           {t('What stays with each device and comes with no backup: the fingerprint, the folders Erevos may write in, what the phone lets it do and which apps make calls and send SMS. An XMPP account comes back as a new device of itself, and Matrix asks you to sign in again.')}

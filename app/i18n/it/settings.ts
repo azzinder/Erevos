@@ -83,7 +83,7 @@ export const settings: Record<string, string> = {
   'Change folder': 'Cambia cartella',
   'Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.': 'Erevos può fare un backup da solo ogni giorno o ogni settimana, in una cartella a tua scelta, con una password che imposti una volta.',
   'Restore': 'Ripristina',
-  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.': 'Mette un backup al posto di tutto quello che c’è su {device}. Le chat proseguite dopo il backup potrebbero aver bisogno di nuovo dei loro link di contatto. Usa un backup su un solo dispositivo alla volta.',
+  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made start anew by themselves; one with a contact whose Erevos is older may need their contact link again. Use a backup on one device at a time.': 'Mette un backup al posto di tutto quello che c’è su {device}. Le chat proseguite dopo il backup ripartono da sole; una con un contatto che ha un Erevos più vecchio potrebbe aver bisogno di nuovo del suo link di contatto. Usa un backup su un solo dispositivo alla volta.',
   'Restore a backup': 'Ripristina un backup',
   'Open {name}': 'Apri {name}',
   'Password for automatic backups': 'Password dei backup automatici',

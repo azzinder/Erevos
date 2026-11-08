@@ -21,7 +21,7 @@ import { toBase64Url } from '../lib/e2e';
 import { decodeGroup, encodeGroup, type GroupSignal } from '../lib/group-signal';
 import { ASK_AGAIN, ASK_KEPT, Groups, isGroupPacket, MAX_ASKS, noteText, RENEW_EVERY, WANT_KEPT, type GroupMember, type GroupTransport } from '../lib/groups';
 import type { Mark } from '../lib/relay';
-import { checkedGroup, EMPTY_GROUPS, MAX_CONTACT_KEY, type About } from '../lock/group-data';
+import { checkedGroup, EMPTY_GROUPS, MAX_CONTACT_KEY, type About, type GroupData } from '../lock/group-data';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
 let real: Core | null = null;
@@ -55,6 +55,9 @@ type Phone = {
   heard: number;
   /** What each packet it posted told the relay it carries (lib/relay.ts, Mark), in turn. */
   marks: (Mark | undefined)[];
+  /** Its groups as last kept, and how to put back what was kept once, as a backup does. */
+  kept: GroupData;
+  putBack: (data: GroupData) => void;
 };
 
 type Account = { identity: string; bundle: string };
@@ -75,7 +78,8 @@ function network() {
     const identity = made?.identity ?? toHex(randomBytes(32));
     const sender = toHex(randomBytes(24));
     const me = async () => ({ id: claims ?? identity, sender, relay: 'wss://relay.example.org', relayKey: '' });
-    const groups = new Groups(EMPTY_GROUPS, async () => undefined, me);
+    const store = async (data: GroupData) => void (it.kept = data);
+    const groups = new Groups(EMPTY_GROUPS, store, me);
     const transport: GroupTransport = {
       async post(to: About, packet: Uint8Array, mark?: Mark) {
         assert.ok(isGroupPacket(packet));
@@ -88,7 +92,11 @@ function network() {
         signals.push({ from: identity, to, signal: decodeGroup(JSON.parse(JSON.stringify(encodeGroup(signal))))! });
       },
     };
-    const it: Phone = { name, identity, says: claims ?? identity, sender, groups, queue: [], transport, bundle: made?.bundle ?? '', known: new Set(), requests: new Set(), added: [], blocked: new Set(), heard: 0, marks: [] };
+    const putBack = (data: GroupData) => {
+      it.groups = new Groups(data, store, me);
+      it.groups.onMessage(() => it.heard++);
+    };
+    const it: Phone = { name, identity, says: claims ?? identity, sender, groups, queue: [], transport, bundle: made?.bundle ?? '', known: new Set(), requests: new Set(), added: [], blocked: new Set(), heard: 0, marks: [], kept: EMPTY_GROUPS, putBack };
     if (made && !old) {
       // Each asked as who the phone says it is in its groups.
       const self = (me: string) => assert.equal(me, it.says);
@@ -236,6 +244,40 @@ test('each phone’s keys in a group are made new every week, and the others see
   // Not again until a week has gone by.
   for (const p of [alice, bob, carol]) await p.groups.renewKeys(p.transport);
   assert.deepEqual([alice, bob, carol].map((p) => p.queue.length), [0, 0, 0]);
+});
+
+test('a member put back from a backup after its group moved on is put in anew once it asks, and an admin asks nothing', { skip: !existsSync(built) }, async () => {
+  const net = network();
+  const alice = net.phone('alice');
+  const bob = net.phone('bob');
+  const carol = net.phone('carol');
+  const id = await alice.groups.create('g', [bob.identity, carol.identity], alice.transport);
+  await net.settle();
+  const backup = bob.kept;
+  // After the backup, Alice and Carol make their keys new: two commits, two epochs on.
+  const due = Date.now() + RENEW_EVERY + 1000;
+  await alice.groups.renewKeys(alice.transport, due);
+  await carol.groups.renewKeys(carol.transport, due);
+  await net.settle();
+  // Bob's phone is put back as it was: what Carol writes now does not open there.
+  bob.putBack(backup);
+  await carol.groups.send(id, 'not for the old keys', carol.transport);
+  await net.settle();
+  assert.deepEqual(texts(bob, id), []);
+  // Asked to after the restore, Bob asks Alice, from the epoch he has, and she puts him in anew.
+  await bob.groups.renewAgain('group', true);
+  await bob.groups.renewKeys(bob.transport);
+  await net.settle();
+  assert.equal(bob.groups.all()[0].renewing, undefined);
+  await carol.groups.send(id, 'readable again', carol.transport);
+  await bob.groups.send(id, 'back', bob.transport);
+  await net.settle();
+  assert.ok(texts(bob, id).includes('readable again'));
+  assert.ok(texts(carol, id).includes('back'));
+  // An admin makes no commit of its own for it, from an epoch that may be gone by.
+  await alice.groups.renewAgain('group', true);
+  await alice.groups.renewKeys(alice.transport);
+  assert.deepEqual([bob.queue.length, carol.queue.length], [0, 0]);
 });
 
 test('a member put in anew before its welcome comes keeps what is written meanwhile', { skip: !existsSync(built) }, async () => {

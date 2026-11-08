@@ -532,6 +532,89 @@ t('a chat put back from a backup never seals with a message key it used after th
   store.delete('erevos.restored');
 });
 
+// Alice and Bob, who gave her his newer prekeys and took the conversation she started with them.
+async function withPrekeys(aliceKey: Uint8Array) {
+  const alice = await chat('space', 0, aliceKey);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  await alice.e2e.receive((await bob.e2e.seal(aliceId, '', bob.from, { keys: true })).packet);
+  await bob.e2e.keysGiven(aliceId);
+  const [renew] = alice.e2e.pending();
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.receive(renew.first);
+  return { alice, bob, aliceId, bobId };
+}
+
+// Alice and Bob talk both ways after a backup, so their conversation moves on with keys the backup
+// does not hold: then neither opens what the other sends in the one put back.
+async function talkOn(alice: E2E, aliceFrom: string, bobId: string, bob: E2E, bobFrom: string, aliceId: string) {
+  for (const text of ['one', 'two']) {
+    assert.equal(message(await bob.receive((await alice.seal(bobId, `${text} from Alice`, aliceFrom)).packet)).text, `${text} from Alice`);
+    assert.equal(message(await alice.receive((await bob.seal(aliceId, `${text} from Bob`, bobFrom)).packet)).text, `${text} from Bob`);
+  }
+}
+
+t('a chat put back from a backup starts a new conversation with each contact, which both then talk in', async () => {
+  const key = randomBytes(32);
+  const { alice, bob, aliceId, bobId } = await withPrekeys(key);
+  const backup = await loadE2EData('space', 0, key);
+  assert.ok(backup.contacts[0].bundle && backup.contacts[0].bundleAt);
+  await talkOn(alice.e2e, alice.from, bobId, bob.e2e, bob.from, aliceId);
+  const lost = await bob.e2e.seal(aliceId, 'sent before the new one', bob.from);
+
+  await saveE2EData('space', 0, key, backup);
+  await markRestore();
+  const restored = await E2E.open('space', 0, key);
+  // What Bob sends in the conversation that moved on opens in none put back.
+  assert.equal((await restored.receive(lost.packet)).kind, 'refused');
+  // A first packet waits for the relay, of a conversation started with Bob's newer prekeys, and
+  // what Alice writes goes in it, after it.
+  const [pending] = restored.pending();
+  assert.equal(pending.identity, bobId);
+  const sent = await restored.seal(bobId, 'after the restore', alice.from);
+  assert.deepEqual(sent.first, pending.first);
+  // Bob's Erevos takes it quietly, as the one it sends in from then on.
+  const started = message(await bob.e2e.receive(sent.first!));
+  assert.deepEqual([started.identity, started.text, started.tag, started.added, started.request], [aliceId, '', '', false, false]);
+  await restored.firstSent(bobId);
+  assert.deepEqual(restored.pending(), []);
+  assert.equal(message(await bob.e2e.receive(sent.packet)).text, 'after the restore');
+  const reply = await bob.e2e.seal(aliceId, 'welcome back', bob.from);
+  assert.equal(message(await restored.receive(reply.packet)).text, 'welcome back');
+  assert.equal(message(await bob.e2e.receive((await restored.seal(bobId, 'thanks', alice.from)).packet)).text, 'thanks');
+  // Opened again, it starts nothing more.
+  const kept = await loadE2EData('space', 0, key);
+  await E2E.open('space', 0, key);
+  assert.deepEqual(await loadE2EData('space', 0, key), kept);
+  store.delete('erevos.restored');
+});
+
+t('a backup put back long after its contact gave prekeys starts the new conversation without waiting on it', async () => {
+  const key = randomBytes(32);
+  const { alice, bob, aliceId, bobId } = await withPrekeys(key);
+  const backup = await loadE2EData('space', 0, key);
+  // Bob's phone may have thrown away the prekeys Alice holds: they came more than two months ago.
+  const long = { ...backup, contacts: backup.contacts.map((c) => ({ ...c, bundleAt: Date.now() - 61 * 24 * 3600 * 1000 })) };
+  await talkOn(alice.e2e, alice.from, bobId, bob.e2e, bob.from, aliceId);
+
+  await saveE2EData('space', 0, key, long);
+  await markRestore();
+  const restored = await E2E.open('space', 0, key);
+  // Its first packet goes on its own, and Alice writes in the one put back meanwhile.
+  const [renew] = restored.pending();
+  assert.equal(renew.identity, bobId);
+  assert.equal((await restored.seal(bobId, 'in the old one', alice.from)).first, null);
+  await restored.firstSent(bobId);
+  // Bob, who still has them, takes it and writes in it; Alice moves to it once he does.
+  assert.equal(message(await bob.e2e.receive(renew.first)).identity, aliceId);
+  assert.equal(message(await restored.receive((await bob.e2e.seal(aliceId, 'in the new one', bob.from)).packet)).text, 'in the new one');
+  assert.equal(message(await bob.e2e.receive((await restored.seal(bobId, 'here too', alice.from)).packet)).text, 'here too');
+  store.delete('erevos.restored');
+});
+
 t('a contact keeps the name this chat gives it, sealed, through new messages and links', async () => {
   const key = randomBytes(32);
   const alice = await chat('space', 0, key);

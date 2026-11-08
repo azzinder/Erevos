@@ -124,8 +124,8 @@ export function placeGroupsAt(space: number, pocket: number, key: Uint8Array): P
       await place.renewKeys(transport);
     },
     moves: {
-      renewAgain: async (kind) => {
-        if (canGroup()) await (await groups()).renewAgain(kind);
+      renewAgain: async (kind, members) => {
+        if (canGroup()) await (await groups()).renewAgain(kind, members);
       },
       named: async () => (canGroup() ? (await groups()).ownSenders() : new Set<string>()),
       kinds: ['group'],

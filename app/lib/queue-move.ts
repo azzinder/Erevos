@@ -76,8 +76,8 @@ export function tookOf(received: Received): Took {
 
 /** The space's groups, as a move needs them. */
 export type MoveGroups = {
-  /** Has each private group (`group`), or each public one, say where this phone reads now, as it renews its keys there (lib/groups.ts). */
-  renewAgain(kind: 'group' | 'public'): Promise<void>;
+  /** Has each private group (`group`), or each public one, say where this phone reads now, as it renews its keys there (lib/groups.ts); `members`, only those it is not the admin of. */
+  renewAgain(kind: 'group' | 'public', members?: boolean): Promise<void>;
   /** The queues the groups say this phone reads on, in its own leaf, by sender id. */
   named(): Promise<Set<string>>;
   /** The kinds whose queues are made: both, unless said (a hidden place has no public groups). */
@@ -463,6 +463,7 @@ export class QueueMove {
       // Every contact knows the queue found now: nothing to tell of it, and its `qa` says nothing of
       // when. After a backup was put back, they may have been told a later one since: this one says
       // a later `qa` than any of those, and each kept contact is told it.
+      if (restored) await this.restoredGroups();
       q = await this.at.queues.update((d) => {
         if (d.now) return d;
         const moved = restored ? queueAge(d.moved, Date.now(), d.offset, QUEUE_JITTER) : Math.max(d.moved, FIRST_QA);
@@ -491,9 +492,20 @@ export class QueueMove {
     if (q.now.url !== here.url || q.now.token !== here.token) q = await this.at.queues.update((d) => ({ ...d, now: { queue: ownQueue, ...here } }));
     // A backup put back since: contacts may have learned a later queue meanwhile, so this one says a
     // later `qa` than any a move made since could have said.
-    if (q.restore !== restore) q = await this.at.queues.update((d) => ({ ...d, moved: queueAge(d.moved, Date.now(), d.offset, QUEUE_JITTER), restore }));
+    if (q.restore !== restore) {
+      if (restore) await this.restoredGroups();
+      q = await this.at.queues.update((d) => ({ ...d, moved: queueAge(d.moved, Date.now(), d.offset, QUEUE_JITTER), restore }));
+    }
     this.say(q);
     return { q, queue: null };
+  }
+
+  // A backup put back since this last looked: in each group this phone is a member of, it asks the
+  // admin to put it in anew (lib/groups.ts renewAgain), as the group may have moved on since with
+  // keys the backup does not hold. Not on a linked device, which is in no group itself.
+  private async restoredGroups() {
+    if (!this.at.groups || this.at.e2e.onLinkedDevice()) return;
+    for (const kind of this.at.groups.kinds ?? (['group', 'public'] as const)) await this.at.groups.renewAgain(kind, true).catch(() => undefined);
   }
 
   // The move's writes, each of which a stop after resumes from: `next` first, with why, and on the

@@ -75,6 +75,8 @@ import { checkVerifyCode, verifyCode, type VerifyResult } from './verify-code';
 // at once, quietly: a new PQXDH, with a new ML-KEM secret. Once older than the last MAX_PREKEYS,
 // prekeys are thrown away, and with them what a stolen phone would have given of the ML-KEM half of
 // the conversations they started. An Erevos before this ignores `ak` and stays in its conversation.
+// A chat a backup put back starts a new conversation with each contact the same way, with the
+// newest prekeys they gave it (E2E.startAnew), as those put back may have moved on there since.
 //
 // The space's chat also knows about the linked devices of its contacts' accounts, and of its own
 // (docs/multi-device.md). Hidden chats know about their contacts' as the space's chat does, but
@@ -103,6 +105,10 @@ import { checkVerifyCode, verifyCode, type VerifyResult } from './verify-code';
 const MAX_CONVERSATIONS = 3;
 /** How often the account makes newer prekeys for its contacts' next conversations. */
 export const PREKEYS_EVERY = 30 * 24 * 3600 * 1000;
+// How long a contact's phone surely still keeps the prekeys it gave this chat: it makes newer ones
+// every PREKEYS_EVERY at most, gives each to its contacts with its next look at the relay, and keeps
+// the last MAX_PREKEYS.
+const KEPT_FOR = (MAX_PREKEYS - 1) * PREKEYS_EVERY;
 // The longest bundle a message may give, in base64url characters (a bundle is about 1,350 bytes).
 const MAX_BUNDLE = 4096;
 // First packets remembered, so the relay cannot replay one to show its message again: 16 bytes
@@ -681,11 +687,6 @@ function laterThan(before = 0): number {
   return Math.max(Date.now(), before + 1);
 }
 
-// A contact's conversations as a restored backup put them back, each moved past the message keys
-// it may have sealed with since the backup was made, so none of them seals with a key twice. Their
-// phone opens what comes next as after lost messages. What their phone sent in a conversation that
-// moved on since the backup no longer opens here, nor what this one sends in it there: then adding
-// each other's link again starts a new one.
 // A Nostr key for a contact (lib/nostr.ts), hex.
 async function newNostrKey(): Promise<NostrKey> {
   const nostr = core.nostrCore();
@@ -693,10 +694,16 @@ async function newNostrKey(): Promise<NostrKey> {
   return { s: toHex(secret), p: toHex(await nostr.nostrPublic(secret)) };
 }
 
-async function restoredContact(contact: Contact): Promise<Contact> {
+// A contact's conversations as a restored backup put them back, each moved past the message keys
+// it may have sealed with since the backup was made, so none of them seals with a key twice. Their
+// phone opens what comes next as after lost messages. What their phone sent in a conversation that
+// moved on since the backup no longer opens here, nor what this one sends in it there: so a new one
+// is started with them (E2E.startAnew), and with each endpoint of their account with the next copy
+// for it (`again`, from `now`), as when their side may have lost what it spoke in them.
+async function restoredContact(contact: Contact, now: number): Promise<Contact> {
   const restored = (list: string[]) => Promise.all(list.map(async (c) => toBase64(await core.restored(fromBase64(c)))));
   const conversations = await restored(contact.conversations);
-  const endpoints = contact.endpoints && (await Promise.all(contact.endpoints.map(async (w) => ({ ...w, conversations: await restored(w.conversations) }))));
+  const endpoints = contact.endpoints && (await Promise.all(contact.endpoints.map(async (w) => ({ ...w, conversations: await restored(w.conversations), ...(w.conversations.length > 0 && !w.first ? { again: now } : {}) }))));
   const direct = contact.direct && { ...contact.direct, conversations: await restored(contact.direct.conversations) };
   // Texts kept to go through the relay as well were sealed in conversations moved past now.
   const { nostrBackup: _backup, ...rest } = contact;
@@ -940,22 +947,6 @@ export class E2E {
       await store(data);
     }
     const restore = await lastRestore();
-    if (restore && data.restore !== restore && core.canRestore()) {
-      // An account made only now was not in the backup: no contact holds a list of it. Each contact's
-      // own queue is still theirs; the ones kept ready may have been given out since, to contacts the
-      // backup does not hold, so none is given again: they go, after the same grace as a queue moved.
-      const until = Date.now() + GRACE;
-      const ready = (data.ready ?? []).map(({ r, u }) => ({ r, u, until }));
-      data = {
-        ...data,
-        contacts: await Promise.all(data.contacts.map(restoredContact)),
-        restore,
-        ...(made ? {} : { putBack: Date.now() }),
-        ready: undefined,
-        gone: withGone(data.gone, ready),
-      };
-      await store(data);
-    }
     const account = fromBase64(data.account);
     const prekeys = data.prekeys ?? [];
     if (core.canRenewPrekeys() && (prekeys.length === 0 || Date.now() - prekeys[0].at >= PREKEYS_EVERY)) {
@@ -970,7 +961,50 @@ export class E2E {
     e2e.bells = holder !== 'space';
     if (takesPart) e2e.fanout = await loadFanoutData(holder, space, key);
     if (takesPart && holder === 'space') await keepFanoutFile(space, key, e2e.fanout).catch(() => undefined);
+    if (restore && data.restore !== restore && core.canRestore()) await e2e.putBack(restore, made);
     return e2e;
+  }
+
+  // A backup put back (lock/restored.ts), the first time this chat opens since: each contact's
+  // conversations moved past the keys they may have used, and a new one started with them, all in
+  // one save. An account made only now was not in the backup: no contact holds a list of it. Each
+  // contact's own queue is still theirs; the ones kept ready may have been given out since, to
+  // contacts the backup does not hold, so none is given again: they go, after the same grace as a
+  // queue moved.
+  private async putBack(restore: string, made: boolean): Promise<void> {
+    const now = Date.now();
+    const ready = (this.data.ready ?? []).map(({ r, u }) => ({ r, u, until: now + GRACE }));
+    const contacts = await Promise.all(this.data.contacts.map(async (contact) => this.startAnew(await restoredContact(contact, now), now)));
+    await this.save({ ...this.data, contacts, restore, ...(made ? {} : { putBack: now }), ready: undefined, gone: withGone(this.data.gone, ready) });
+  }
+
+  // A new conversation with a contact a backup put back (putBack), started with the newest prekeys
+  // they gave this chat (Contact.bundle): those put back may have moved on there since the backup
+  // was made, with keys this phone never had, and then open in neither direction. Its first message
+  // says nothing, as one started with newer prekeys does (startedAgain), and when it was started
+  // (`fa`), later than any before: so their Erevos takes it in place of the one it sends in, and sends
+  // in it from then on, as an Erevos from before `fa` does with any new one. While their phone surely
+  // still keeps those prekeys (KEPT_FOR since they came), this chat sends in it at once, after its
+  // first packet (`first`). Later their phone may have thrown them away, and the first packet then
+  // opens nothing there: it goes on its own (`renew`), and this chat goes on in the one put back
+  // until they answer in the new one. Not on a linked device, nor with one who knows this chat by
+  // another identity, a request not accepted, one whose first packet still waits, or one who never
+  // gave newer prekeys (an Erevos before them): what moved on with those needs their link again.
+  private async startAnew(contact: Contact, now: number): Promise<Contact> {
+    const bundle = contact.bundle;
+    if (this.data.own || contact.ownIdentity || contact.request || contact.first || !bundle || contact.conversations.length === 0) return contact;
+    const first: Message = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact), ...this.saysDevices(contact), fa: firstAt() };
+    let started: core.Sealed;
+    try {
+      started = await core.startConversation(this.account, fromBase64(bundle), encodeMessage(first));
+    } catch {
+      return contact;
+    }
+    const { renew: _renew, ...rest } = contact;
+    const [sending, ...older] = contact.conversations;
+    const conversation = toBase64(started.conversation);
+    if (now - (contact.bundleAt ?? now) < KEPT_FOR) return { ...rest, conversations: [conversation, ...contact.conversations].slice(0, MAX_CONVERSATIONS), first: toBase64(started.packet) };
+    return { ...rest, conversations: [sending, conversation, ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };
   }
 
   /** Says this backup queue from now on in what tells contacts where this chat's queue is, or none. */
@@ -3635,7 +3669,7 @@ export class E2E {
   // first packet. Not on a linked device, whose conversations the primary starts; nor for one who
   // knows this chat by the space's identity, nor a request not accepted (who hears nothing back),
   // nor while their conversation's own first packet still waits.
-  private async startedAgain(contact: Contact, message: Message): Promise<Pick<Contact, 'bundle' | 'conversations' | 'renew'> | null> {
+  private async startedAgain(contact: Contact, message: Message): Promise<Pick<Contact, 'bundle' | 'bundleAt' | 'conversations' | 'renew'> | null> {
     if (!message.ak || this.link?.through || contact.ownIdentity || contact.request || contact.first) return null;
     let bundle: Uint8Array;
     try {
@@ -3648,7 +3682,7 @@ export class E2E {
     const first = { from: '', relay: '', relayKey: '', text: '', tag: '', erase: null, timer: null, timerAt: 0, lasts: 0, got: [], read: [], voice: null, file: null, ...SAYS_NOTHING, call: null, group: null, pk: this.ownPacketKey(contact), ...this.saysDevices(contact), fa: firstAt() };
     const started = await core.startConversation(this.account, bundle, encodeMessage(first));
     const [sending, ...older] = contact.conversations;
-    return { bundle: toBase64(bundle), conversations: [sending, toBase64(started.conversation), ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };
+    return { bundle: toBase64(bundle), bundleAt: Date.now(), conversations: [sending, toBase64(started.conversation), ...older].slice(0, MAX_CONVERSATIONS), renew: toBase64(started.packet) };
   }
 
   // Keeps until when a contact said their phone is open. Counted from when they said it, so a message

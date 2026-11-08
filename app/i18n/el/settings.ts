@@ -82,7 +82,7 @@ export const settings: Record<string, string> = {
   'Change folder': 'Αλλαγή φακέλου',
   'Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.': 'Το Erevos μπορεί να κάνει αντίγραφο ασφαλείας μόνο του κάθε μέρα ή εβδομάδα, σε έναν φάκελο που διαλέγεις, με έναν κωδικό που ορίζεις μία φορά.',
   'Restore': 'Επαναφορά',
-  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made may need their contact links again. Use a backup on one device at a time.': 'Βάζει ένα αντίγραφο ασφαλείας στη θέση όλων όσων υπάρχουν σε {device}. Συνομιλίες που συνεχίστηκαν μετά το αντίγραφο ίσως χρειαστούν ξανά τους συνδέσμους επαφής. Χρησιμοποίησε ένα αντίγραφο σε μία συσκευή κάθε φορά.',
+  'Puts a backup in place of everything on {device}. Chats that went on after the backup was made start anew by themselves; one with a contact whose Erevos is older may need their contact link again. Use a backup on one device at a time.': 'Βάζει ένα αντίγραφο ασφαλείας στη θέση όλων όσων υπάρχουν σε {device}. Συνομιλίες που συνεχίστηκαν μετά το αντίγραφο ξαναρχίζουν από μόνες τους· μια συνομιλία με επαφή που έχει παλαιότερο Erevos ίσως χρειαστεί ξανά τον σύνδεσμο επαφής της. Χρησιμοποίησε ένα αντίγραφο σε μία συσκευή κάθε φορά.',
   'Restore a backup': 'Επαναφορά αντιγράφου',
   'Open {name}': 'Άνοιγμα {name}',
   'Password for automatic backups': 'Κωδικός για τα αυτόματα αντίγραφα',

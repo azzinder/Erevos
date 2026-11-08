@@ -168,8 +168,8 @@ export function spaceGroups(): Promise<PublicGroups> {
 // A move of the groups' queue, or the public groups', has each group say the new one (lib/queue-move.ts).
 useForMoves({
   groups: {
-    renewAgain: async (kind) => {
-      if (canGroup()) await (await spaceGroups()).renewAgain(kind);
+    renewAgain: async (kind, members) => {
+      if (canGroup()) await (await spaceGroups()).renewAgain(kind, members);
     },
     named: async () => (canGroup() ? (await spaceGroups()).ownSenders() : new Set<string>()),
   },

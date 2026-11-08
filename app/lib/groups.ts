@@ -1212,12 +1212,16 @@ export class Groups {
    * Has this phone make its keys new, with the next renewKeys, in each private group it is in
    * (`group`), or each public one: each then says where this phone's group messages come to now
    * (lib/queue-move.ts), as a member asks the admin with what it says now, and an admin's own
-   * commit says it too, with a core that can (core.canSetGroupAbout).
+   * commit says it too, with a core that can (core.canSetGroupAbout). `members`: only in those it
+   * is a member of, not their admin, as after a backup was put back: a member whose group moved on
+   * since asks from the epoch it has, which the admin still opens a few epochs on (PAST_EPOCHS in
+   * crates/erevos-group), and is put in anew; an admin's own commit from an epoch gone by would
+   * only take it further from its members.
    */
-  renewAgain(kind: 'group' | 'public'): Promise<void> {
+  renewAgain(kind: 'group' | 'public', members = false): Promise<void> {
     return this.run(async () => {
       if (!this.data.state || this.through()) return;
-      const due = (g: Group) => g.status === 'in' && this.isPublic(g.id) === (kind === 'public');
+      const due = (g: Group) => g.status === 'in' && this.isPublic(g.id) === (kind === 'public') && !(members && g.admin);
       if (!this.data.groups.some(due)) return;
       const groups = this.data.groups.map((g) => {
         if (!due(g)) return g;
