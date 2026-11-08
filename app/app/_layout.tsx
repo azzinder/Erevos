@@ -15,7 +15,7 @@ import { KeyboardProvider } from '../components/keyboard';
 import { SwipeBack } from '../components/swipe-back';
 import { Button, Text } from '../components/ui';
 import { startBackground } from '../lib/background';
-import { runAutoBackup } from '../lib/backup-folder';
+import { CHECK_MS as BACKUP_CHECK_MS, checkAutoBackup, runAutoBackup } from '../lib/backup-folder';
 import { currentCall } from '../lib/call';
 import { endCall, onCallChange } from '../lib/calls';
 import { forgetOffered } from '../lib/contact-code';
@@ -95,6 +95,8 @@ callAudio?.noCookies?.();
 // Lock again after the app has been in the background this long.
 const RELOCK_AFTER_MS = 30_000;
 // An automatic backup, when one is due, waits this long after a space opens, so the chats show first.
+// Then, while it is open, Erevos looks every BACKUP_CHECK_MS whether one is due, and as it goes to
+// the background, before it locks (lib/backup-folder.ts); never with no space open.
 const BACKUP_AFTER_MS = 10_000;
 
 // Whether this start made sure every space has its hidden chats slot and entry (lock/hidden.ts).
@@ -384,6 +386,14 @@ export default function RootLayout() {
   // The web app's service worker refused code from the server: said at once, locked or open.
   useEffect(() => startIntegrityAlarm(), []);
 
+  // While a space is open, Erevos looks now and then whether an automatic backup is due.
+  const spaceOpen = phase.kind === 'open';
+  useEffect(() => {
+    if (!spaceOpen) return;
+    const timer = setInterval(() => void checkAutoBackup().catch(() => undefined), BACKUP_CHECK_MS);
+    return () => clearInterval(timer);
+  }, [spaceOpen]);
+
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
       const current = phaseRef.current;
@@ -391,6 +401,8 @@ export default function RootLayout() {
         backgroundAt.current = Date.now();
         // What was read here is no longer new on the widget.
         refreshWidget();
+        // An automatic backup that is due is made now, while the space is still open.
+        if (current.kind === 'open') void checkAutoBackup().catch(() => undefined);
         // The names of the space's contacts go when it would lock, even if the app does not run
         // then; so does what the Collection has open, in Android.
         if (current.kind === 'open' && current.passwordLock) {

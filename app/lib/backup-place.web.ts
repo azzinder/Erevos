@@ -119,6 +119,21 @@ export async function writeBackup(folder: string, make: (part: PartSink) => Prom
   return { name: backupFileName(stem), size: bytes.length, parts: written.length };
 }
 
+/** The backups' files in a folder, their own and their parts', each with its size (-1 where the
+ *  folder does not say it): for automatic backups, which name again parts there (lock/backup.ts),
+ *  then delete there those no backup kept names. Null where they cannot be listed, on Sailfish OS
+ *  and in a browser: there each backup is whole, and the shell keeps the newest by their names. */
+export async function listBackupFiles(folder: string): Promise<Map<string, number> | null> {
+  if (SHELL !== 'electron') return null;
+  return new Map((await namesIn(folder)).map((name) => [name, -1]));
+}
+
+/** Deletes those of a folder's backup files, in the desktop app; one that does not go is left for the next time. */
+export async function deleteBackupFiles(folder: string, names: string[]): Promise<void> {
+  if (SHELL !== 'electron') return;
+  for (const name of names) await shellFetch(query(folder, name), { method: 'DELETE' }).catch(() => undefined);
+}
+
 /** Where a backup's parts are, to restore it: which of their names are not there, and each one's bytes. */
 export type PartSource = { missing(names: string[]): string[]; read: PartReader };
 

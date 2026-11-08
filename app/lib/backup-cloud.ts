@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { BARE_PART, type PartReader, type PartSink } from '../lock/backup';
+import { BARE_PART, earlierParts, type PartMade, type PartReader, type PartSink } from '../lock/backup';
 
 import { canTorHttp } from './core';
 import { fromHex, randomBytes, sha256Bytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -29,6 +29,14 @@ import { secureDelete, secureGet, secureSet } from './secure';
 // number of full parts (BARE_PART, lock/backup.ts), which is how a restore tells them apart too.
 // What a backup that never ended left there, as when the phone stopped while sending its parts, or
 // the server had no room left, is deleted before the next one goes, so it makes room for it.
+//
+// An automatic backup names again the parts of the backups there that it can (lock/backup.ts),
+// those lib/backup-ledger.ts says they named and the folder still lists whole, and sends only new
+// ones, under its own seed: it is then `shared` in `parts`. A backup there that goes takes its own
+// parts with it only once no backup kept there names them: until then their seed and the numbers
+// of those left are `held`, and each goes as soon as none names it. While a shared backup kept
+// there is not known to this phone, as after a restore elsewhere, or once their password changed,
+// no held part goes, until that backup is no longer among the newest.
 //
 // On Android backups go as the open space's Tor way says (Settings → Relay and networks → Tor),
 // through lib/net-http.ts, as Matrix's and the other networks' files do: with Everything only
@@ -68,18 +76,23 @@ const SEED = /^[0-9a-f]{32}$/;
 const MOST_PARTS = 1_000_000;
 
 /** A backup's parts on the server: the seed their names come from, and how many there are (or,
- *  for one that never ended, may be). */
-export type CloudParts = { seed: string; count: number };
+ *  for one that never ended, may be). `shared` when the backup also names parts of others. */
+export type CloudParts = { seed: string; count: number; shared?: true };
+
+/** The parts of a backup no longer there that backups kept there may still name: their seed, and
+ *  the numbers of those still there, as 0-4,7,9-12. */
+export type CloudHeld = { seed: string; left: string };
 
 /** Where backups go on a server. `names` are the backups sent, oldest first, `parts` the parts of
- *  each, `unfinished` those of backups that never ended, to delete. `last` milliseconds, 0 if none
- *  went yet. */
+ *  each, `held` those of backups gone that others name, `unfinished` those of backups that never
+ *  ended, to delete. `last` milliseconds, 0 if none went yet. */
 export type CloudBackup = {
   url: string;
   user: string;
   password: string;
   names: string[];
   parts: Record<string, CloudParts>;
+  held: CloudHeld[];
   unfinished: CloudParts[];
   last: number;
   error: string;
@@ -96,7 +109,43 @@ export function partName(seed: string, n: number): string {
 function partsOf(value: unknown): CloudParts | null {
   const v = value as Partial<CloudParts> | null;
   if (!v || typeof v.seed !== 'string' || !SEED.test(v.seed) || typeof v.count !== 'number') return null;
-  return Number.isInteger(v.count) && v.count >= 0 && v.count <= MOST_PARTS ? { seed: v.seed, count: v.count } : null;
+  if (!Number.isInteger(v.count) || v.count < 0 || v.count > MOST_PARTS) return null;
+  return v.shared === true ? { seed: v.seed, count: v.count, shared: true } : { seed: v.seed, count: v.count };
+}
+
+/** Numbers, as a text of their runs: 0-4,7,9-12. */
+export function runsText(numbers: Iterable<number>): string {
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  const runs: string[] = [];
+  for (let i = 0; i < sorted.length; ) {
+    let j = i;
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++;
+    runs.push(i === j ? `${sorted[i]}` : `${sorted[i]}-${sorted[j]}`);
+    i = j + 1;
+  }
+  return runs.join(',');
+}
+
+/** The numbers a text of runs names, each below `most`; null when it is not such a text. */
+export function runsOf(text: string, most = MOST_PARTS): number[] | null {
+  if (text === '') return [];
+  const numbers: number[] = [];
+  for (const run of text.split(',')) {
+    const found = /^(\d{1,7})(?:-(\d{1,7}))?$/.exec(run);
+    if (!found) return null;
+    const from = Number(found[1]);
+    const to = found[2] === undefined ? from : Number(found[2]);
+    if (to < from || to >= most || numbers.length + to - from >= most) return null;
+    for (let n = from; n <= to; n++) numbers.push(n);
+  }
+  return numbers;
+}
+
+function heldOf(value: unknown): CloudHeld | null {
+  const v = value as Partial<CloudHeld> | null;
+  if (!v || typeof v.seed !== 'string' || !SEED.test(v.seed) || typeof v.left !== 'string') return null;
+  const left = runsOf(v.left);
+  return left && left.length ? { seed: v.seed, left: runsText(left) } : null;
 }
 
 const CLOUD = 'erevos.backup-cloud';
@@ -220,6 +269,7 @@ export async function loadCloudBackup(): Promise<CloudBackup | null> {
       password: value.password,
       names,
       parts,
+      held: Array.isArray(value.held) ? value.held.map(heldOf).filter((of): of is CloudHeld => of !== null) : [],
       unfinished: Array.isArray(value.unfinished) ? value.unfinished.map(partsOf).filter((of): of is CloudParts => of !== null) : [],
       last: typeof value.last === 'number' ? value.last : 0,
       error: typeof value.error === 'string' ? value.error : '',
@@ -253,6 +303,7 @@ export async function startCloudBackup(address: string, user: string, password: 
     password,
     names: same ? before.names : [],
     parts: same ? before.parts : {},
+    held: same ? before.held : [],
     unfinished: same ? before.unfinished : [],
     last: 0,
     error: '',
@@ -290,37 +341,69 @@ async function partsGone(cloud: CloudBackup, { seed, count }: CloudParts): Promi
 // How many parts' names are kept ahead of those sent, so the keystore is written once for so many.
 const AHEAD = 16;
 
-// Deletes there the backups sent but the `keep` newest, with their parts, and the parts of those
-// that never ended: the settings as they are after it. One the server would not delete stays, to
-// be tried again next time.
-async function tidy(cloud: CloudBackup, next: CloudBackup, keep: number): Promise<CloudBackup> {
+// Deletes there the backups sent but the `keep` newest, with the parts of theirs no backup kept
+// there names, and the parts of those that never ended: the settings as they are after it. One the
+// server would not delete stays, to be tried again next time. `book` (lib/backup-ledger.ts) says
+// which parts each automatic backup there names, and loses those that go.
+async function tidy(cloud: CloudBackup, next: CloudBackup, keep: number, book?: Map<string, PartMade[]>): Promise<CloudBackup> {
   const old = next.names.slice(0, Math.max(0, next.names.length - keep));
   const left: string[] = [];
   const parts = { ...next.parts };
-  const loose = [...next.unfinished];
+  const held = [...next.held];
   for (const older of old) {
     // Its parts go once it did.
     if (!(await gone(cloud, older))) {
       left.push(older);
       continue;
     }
-    if (parts[older]) loose.push(parts[older]);
+    if (parts[older]?.count) held.push({ seed: parts[older].seed, left: `0-${parts[older].count - 1}` });
     delete parts[older];
+    book?.delete(older);
+  }
+  const names = [...left, ...next.names.slice(old.length)];
+  // The parts of others the backups kept there name: one that names only its own needs none of
+  // them. Of a shared one this phone does not know, any of them, so none goes for now.
+  const needed = new Set<string>();
+  let known = true;
+  for (const kept of names) {
+    if (!parts[kept]?.shared) continue;
+    const named = book?.get(kept);
+    if (named) for (const part of named) needed.add(part.name);
+    else known = false;
+  }
+  const still: CloudHeld[] = [];
+  for (const of of held) {
+    const numbers = runsOf(of.left) ?? [];
+    const stay = known ? [] : numbers;
+    if (known) for (const n of numbers) if (needed.has(partName(of.seed, n)) || !(await gone(cloud, partName(of.seed, n)))) stay.push(n);
+    if (stay.length) still.push({ seed: of.seed, left: runsText(stay) });
   }
   const unfinished: CloudParts[] = [];
-  for (const of of loose) if (!(await partsGone(cloud, of))) unfinished.push(of);
-  return { ...next, names: [...left, ...next.names.slice(old.length)], parts, unfinished };
+  for (const of of next.unfinished) if (!(await partsGone(cloud, of))) unfinished.push(of);
+  return { ...next, names, parts, held: still, unfinished };
 }
+
+/** What an automatic backup sent to a server is given to name again earlier parts there, and told
+ *  what it named (MakeOptions.earlier and made, lock/backup.ts). */
+export type CloudReuse = { earlier: PartMade[]; made: (parts: PartMade[]) => void };
 
 /**
  * Sends a bare backup (lock/backup.ts) to the server: first deletes there what a backup that never
  * ended left, and those beyond the `keep` newest, so a server short of room has it again; then
  * `make` makes it, giving each part as it is made, which goes at once under its own name, then the
  * backup itself, which goes last under a random name. Then deletes there the older ones it sent but
- * the `keep` newest, with their parts. Returns the settings as they are after it; one that failed
- * says why in `error`.
+ * the `keep` newest, with the parts no backup kept there names. Returns the settings as they are
+ * after it; one that failed says why in `error`. With `book` (lib/backup-ledger.ts), as automatic
+ * backups give it, `make` is given the parts of the backups kept there that the folder lists whole,
+ * to name again, and the book is told what it named.
  */
-export async function sendToCloud(cloud: CloudBackup, make: (part: PartSink) => Promise<Uint8Array>, keep: number, now = Date.now()): Promise<CloudBackup> {
+export async function sendToCloud(
+  cloud: CloudBackup,
+  make: (part: PartSink, reuse?: CloudReuse) => Promise<Uint8Array>,
+  keep: number,
+  now = Date.now(),
+  book?: Map<string, PartMade[]>,
+): Promise<CloudBackup> {
   let next = cloud;
   const save = async (value: CloudBackup) => {
     next = value;
@@ -329,7 +412,22 @@ export async function sendToCloud(cloud: CloudBackup, make: (part: PartSink) => 
   const seed = toHex(randomBytes(SEED_BYTES));
   const without = (list: CloudParts[]) => list.filter((of) => of.seed !== seed);
   try {
-    if (next.unfinished.length || next.names.length > keep) await save(await tidy(cloud, next, keep));
+    if (next.unfinished.length || next.names.length > keep || next.held.length) await save(await tidy(cloud, next, keep, book));
+    let reuse: CloudReuse | undefined;
+    let made: PartMade[] = [];
+    if (book) {
+      // The book loses the backups no longer there, as those a backup sent by hand made go.
+      for (const sent of [...book.keys()]) if (!next.names.includes(sent)) book.delete(sent);
+      // Those of the newest first.
+      const backups = [...next.names].reverse().map((sent) => book.get(sent) ?? []);
+      let earlier: PartMade[] = [];
+      if (backups.some((parts) => parts.length > 0)) {
+        // Only those the server lists, of their size: one deleted there, or cut short, goes again.
+        const there = new Map(listed(await listing(cloud), (file) => PART_NAME.test(file)).map((file) => [file.name, file.size]));
+        earlier = earlierParts(backups, (part) => there.has(part.name) && (!there.get(part.name) || there.get(part.name) === part.size));
+      }
+      reuse = { earlier, made: (parts) => (made = parts) };
+    }
     let count = 0;
     const name = toHex(randomBytes(12));
     try {
@@ -341,23 +439,26 @@ export async function sendToCloud(cloud: CloudBackup, make: (part: PartSink) => 
         count++;
         await put(cloud, at, part);
         return at;
-      });
+      }, reuse);
       await put(cloud, name, bytes);
     } catch (error) {
       // What went of it goes again: now, if the server lets it, else next time.
       if (count && (await partsGone(cloud, { seed, count })) && (await gone(cloud, name))) next = { ...next, unfinished: without(next.unfinished) };
       throw error;
     }
-    // Kept at once, so its parts are never taken for those of one that never ended.
+    // Kept at once, so its parts are never taken for those of one that never ended. One that names
+    // parts of others says so, even with none of its own.
+    const shared = made.length > count;
+    book?.set(name, made);
     await save({
       ...next,
       names: [...next.names, name],
-      parts: count ? { ...next.parts, [name]: { seed, count } } : next.parts,
+      parts: count || shared ? { ...next.parts, [name]: shared ? { seed, count, shared: true as const } : { seed, count } } : next.parts,
       unfinished: without(next.unfinished),
       last: now,
       error: '',
     });
-    next = await tidy(cloud, next, keep);
+    next = await tidy(cloud, next, keep, book);
   } catch (error) {
     next = {
       ...next,

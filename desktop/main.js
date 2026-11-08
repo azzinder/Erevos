@@ -12,7 +12,9 @@
  *                              Mac the Keychain, on Windows the user's own key), in secrets.json
  * Reading what is not there answers 204, no content.
  *   /__file?name=…             the app's own files, already sealed by the app, in the folder files/
- *   /__files?prefix=…          their names
+ *   /__files?prefix=…          their names; with &stamps=1 each one's size and when it was last
+ *                              written, as one text, by its name, for automatic backups to tell
+ *                              which files are as they were (app/lib/files.ts fileStamps)
  *   /__folder                  asks for a folder for backups and remembers it (folders.json)
  *   /__backup?folder=&name=&keep=  a backup's files there, its own and its parts' (backups.js):
  *                              GET lists or reads them, PUT writes one, deleting older backups
@@ -328,14 +330,25 @@ function file(request, name) {
   });
 }
 
-function files(prefix) {
+function files(prefix, stamps) {
   let names = [];
   try {
     names = fs.readdirSync(dataPath('files'));
   } catch {
     // None yet.
   }
-  return Response.json(names.filter((name) => fileName(name) && name.startsWith(prefix ?? '')));
+  names = names.filter((name) => fileName(name) && name.startsWith(prefix ?? ''));
+  if (!stamps) return Response.json(names);
+  const told = {};
+  for (const name of names) {
+    try {
+      const stat = fs.statSync(dataPath('files', name));
+      told[name] = `${stat.size}:${Math.floor(stat.mtimeMs)}`;
+    } catch {
+      // Gone since it was listed.
+    }
+  }
+  return Response.json(told);
 }
 
 // The folders the owner chose for backups: the only ones the page may write in.
@@ -814,7 +827,7 @@ function handle(request) {
     if (url.pathname === '/__stream') return streamsNow().request(request, url);
     if (url.pathname === '/__secret') return secret(request, url.searchParams.get('key'));
     if (url.pathname === '/__file') return file(request, url.searchParams.get('name'));
-    if (url.pathname === '/__files') return files(url.searchParams.get('prefix'));
+    if (url.pathname === '/__files') return files(url.searchParams.get('prefix'), url.searchParams.get('stamps') === '1');
     if (url.pathname === '/__folder') return folder();
     if (url.pathname === '/__backup') return backup(request, url);
     if (url.pathname === '/__pick') return pick(url);

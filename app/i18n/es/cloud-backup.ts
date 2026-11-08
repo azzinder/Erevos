@@ -100,10 +100,10 @@ export const cloudBackup: Record<string, string> = {
     "Un archivo de esta copia no está: {name}.",
   "{n} files of this backup are not there, {name} among them.":
     "{n} archivos de esta copia no están, entre ellos {name}.",
-  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
-    "Las fotos, archivos y mensajes de voz de esta copia están en {n} archivo más junto a ella, con el mismo comienzo de nombre. Elígelo.",
-  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
-    "Las fotos, archivos y mensajes de voz de esta copia están en {n} archivos más junto a ella, con el mismo comienzo de nombre. Elígelos todos.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, whose name starts as its own or as an earlier backup's. Choose it.":
+    "Las fotos, archivos y mensajes de voz de esta copia están en {n} archivo más junto a ella, cuyo nombre empieza como el suyo o como el de una copia anterior. Elígelo.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, whose names start as its own or as an earlier backup's. Choose them all.":
+    "Las fotos, archivos y mensajes de voz de esta copia están en {n} archivos más junto a ella, cuyos nombres empiezan como el suyo o como el de una copia anterior. Elígelos todos.",
   "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
     "Las fotos, archivos y mensajes de voz de esta copia están en {n} archivo más junto a ella. Elige la carpeta en la que está la copia.",
   "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":

@@ -4,17 +4,19 @@
 
 // Backups of everything Erevos keeps on the phone (lock/backup.ts), with their parts, into a folder
 // (lib/backup-place.ts, desktop/backups.js) and to a server (lib/backup-cloud.ts), made by hand or
-// by themselves (lib/backup-folder.ts).
+// by themselves (lib/backup-folder.ts), which name again the parts of earlier ones (lib/backup-ledger.ts).
 // Run with: npm run check
 /// <reference types="node" />
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import * as nodeCrypto from 'node:crypto';
+import * as nodeFs from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { decryptBytes, encryptBytes, HARD, hardCost, randomBytes, setHardCost, setPbkdf2, toHex, utf8Decode, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
+import { decryptBytes, encryptBytes, HARD, hardCost, nodeStyleGcm, randomBytes, setGcm, setHardCost, setPbkdf2, sha256Bytes, toHex, utf8Decode, utf8Encode, webCryptoPbkdf2 } from '../lib/crypto';
 import { SmsLink } from '../lib/sms-link';
 import { sendDue, waitsForOwner } from '../lib/sms-later';
 import {
@@ -28,6 +30,7 @@ import {
   backupPhoneSms,
   backupStem,
   DamagedPartError,
+  earlierParts,
   freeStem,
   hardBackupKey,
   makeBackup,
@@ -42,9 +45,12 @@ import {
   restoreBackup,
   staleBackups,
   uniqueStem,
+  unneededFiles,
   WrongBackupPasswordError,
+  type Backup,
   type BackupKey,
   type MakeOptions,
+  type PartMade,
   type PartReader,
   type PartSink,
 } from '../lock/backup';
@@ -59,11 +65,14 @@ import {
   listCloud,
   loadCloudBackup,
   partName,
+  runsOf,
+  runsText,
   sendToCloud,
   setCloudHttp,
   setCloudTorWait,
   startCloudBackup,
   stopCloudBackup,
+  type CloudBackup,
 } from '../lib/backup-cloud';
 import { setCore, type Core } from '../lib/core';
 import { setThroughTor, setTorReady } from '../lib/relay';
@@ -90,12 +99,13 @@ import type { MatrixState } from '../lib/matrix';
 import { newNostrDm, type NostrDmState } from '../lib/nostr-dm';
 import type { XmppState } from '../lib/xmpp';
 import { cloudRequest as browserRequest } from '../lib/backup-http.web';
-import { changeAutoBackup, isAutoBackupPassword, KEEP, loadAutoBackup, runAutoBackup, startAutoBackup } from '../lib/backup-folder';
+import { changeAutoBackup, CHECK_MS, checkAutoBackup, isAutoBackupPassword, KEEP, loadAutoBackup, runAutoBackup, startAutoBackup } from '../lib/backup-folder';
 import { phoneCallsEntry } from '../lib/backup-calls';
+import { folderPlace, loadLedger, saveLedger, serverPlace, type Ledger } from '../lib/backup-ledger';
 import { phoneSettingsForBackup, putPhoneSettings } from '../lib/backup-native';
 import { partsIn, writeBackup } from '../lib/backup-place';
 import { rulesFrom, rulesJson } from '../lib/phone-rules';
-import { blobs, files } from './files-memory';
+import { blobs, files, stampsTold } from './files-memory';
 import { folders, writes } from './folder-memory';
 import { panic } from './panic-memory';
 import { clearPhone, phone as phoneModule } from './phone-memory';
@@ -108,6 +118,8 @@ const wasmCore = useWasmCore();
 setHardCost({ m: 64, t: 1 });
 
 setPbkdf2(webCryptoPbkdf2()!);
+// AES-GCM native, as the app has it on a phone (lib/crypto.ts setGcm): the many MB sealed here go quick.
+assert.ok(setGcm(nodeStyleGcm(nodeCrypto)));
 
 // Where a backup's parts go, and are read from, as a folder beside it would keep them: it stays
 // when the phone is wiped, as another phone would find it.
@@ -1533,8 +1545,13 @@ t('automatic backups go into their folder and to the server; restored on another
     await runAutoBackup(false, start + 3 * DAY + 1000);
     const folder = folders.get(uri)!;
     assert.equal([...folder.keys()].filter((name) => name.endsWith('-0312.erevos')).length, KEEP);
-    assert.equal(folder.size, KEEP * 3);
-    assert.equal(there.size, KEEP * 3);
+    // Nothing on the phone changed: each names again the two parts of the first, the only ones there.
+    assert.equal(folder.size, KEEP + 2);
+    assert.deepEqual(
+      [...folder.keys()].filter((name) => name.includes('.part')).sort(),
+      [1, 2].map((n) => partFileName('erevos-backup-2026-06-01-0312', n)),
+    );
+    assert.equal(there.size, KEEP + 2);
 
     // On another phone, the newest from the folder.
     const newest = [...folder.keys()].filter((name) => !name.includes('.part')).sort().at(-1)!;
@@ -1563,4 +1580,780 @@ t('automatic backups go into their folder and to the server; restored on another
     await stopCloudBackup();
     folders.clear();
   }
+});
+
+// The phone's photos', files' and voice messages' files, as a backup's parts hold them.
+const media = () => new Map([...blobs].filter(([name]) => name.startsWith('erevos-file-') || name.startsWith('erevos-voice-')));
+
+// A photo's file, of `size` bytes: of 1.5 MB, two go in a part.
+function addPhoto(size = 1536 * 1024): string {
+  const name = `erevos-file-${toHex(randomBytes(16))}-0`;
+  blobs.set(name, randomBytes(size));
+  return name;
+}
+
+// What a backup says binds a part it names.
+const recordOf = ({ size, sha, id, n, files: held, out }: PartMade) => ({ size, sha, id, n, files: held, out });
+
+// Restores a backup on another phone, which has `own` of its own, and gives what that phone then
+// has of photos, files and voice messages. This phone is as it was after.
+async function elsewhere(opened: Backup, read: PartReader, own: [string, Uint8Array][] = []): Promise<Map<string, Uint8Array>> {
+  const here = snapshot();
+  wipe();
+  for (const [name, bytes] of own) blobs.set(name, bytes);
+  try {
+    await restoreBackup(opened, read);
+    return media();
+  } finally {
+    wipe();
+    for (const [name, value] of here.store) store.set(name, value);
+    for (const [name, value] of here.files) files.set(name, value);
+    for (const [name, value] of here.blobs) blobs.set(name, value);
+  }
+}
+
+type Sealed = { kind: number; name: string; data: Uint8Array };
+
+// A backup made here, opened as any Erevos from Argon2id on reads it, before it knows the kinds of
+// its entries: its head, its key, and each entry with the kind it was written with.
+async function sealedOf(file: Uint8Array, password: string): Promise<{ head: Uint8Array; key: Uint8Array; entries: Sealed[] }> {
+  const head = Buffer.from(file.subarray(0, 60));
+  const { key } = await backupKey(password, head.subarray(16, 32), head.readUInt32BE(32), { salt: head.subarray(36, 52), m: head.readUInt32BE(52), t: head.readUInt32BE(56) });
+  const packed = Buffer.from(decryptBytes(key, file.subarray(60)));
+  const entries: Sealed[] = [];
+  for (let at = 0; at < packed.length; ) {
+    const kind = packed[at];
+    const length = packed.readUInt16BE(at + 1);
+    const name = packed.subarray(at + 3, at + 3 + length).toString('utf8');
+    at += 3 + length;
+    const size = packed.readUInt32BE(at);
+    entries.push({ kind, name, data: new Uint8Array(packed.subarray(at + 4, at + 4 + size)) });
+    at += 4 + size;
+  }
+  return { head: new Uint8Array(head), key, entries };
+}
+
+// The backup sealed again with its own key and head, its entries as `change` makes them.
+async function resealed(file: Uint8Array, password: string, change: (entries: Sealed[]) => Sealed[]): Promise<Uint8Array> {
+  const { head, key, entries } = await sealedOf(file, password);
+  const packed = Buffer.concat(
+    change(entries).map(({ kind, name, data }) => {
+      const n = utf8Encode(name);
+      const at = Buffer.alloc(3 + n.length + 4);
+      at[0] = kind;
+      at.writeUInt16BE(n.length, 1);
+      at.set(n, 3);
+      at.writeUInt32BE(data.length, 3 + n.length);
+      return Buffer.concat([at, data]);
+    }),
+  );
+  return new Uint8Array(Buffer.concat([head, encryptBytes(key, new Uint8Array(packed))]));
+}
+
+// A backup's table of its parts, as JSON (lock/backup.ts makeBackup).
+type Table = { id: string; names: string[]; phone: string; made?: Record<string, unknown>[] };
+
+// The backup with its table of parts as `change` makes it, and of kind `kind` if given.
+const withTable = (file: Uint8Array, password: string, change: (table: Table) => unknown, kind?: number) =>
+  resealed(file, password, (entries) =>
+    entries.map((entry) => (entry.name === 'parts' ? { kind: kind ?? entry.kind, name: 'parts', data: utf8Encode(JSON.stringify(change(JSON.parse(utf8Decode(entry.data)) as Table))) } : entry)),
+  );
+
+// Numbers that look random and are the same on every run, so a check that fails here fails again.
+function seeded(seed: number): () => number {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+t('an automatic backup names again the parts of the one before whose files are all as they were, makes new ones only for the rest, and each restores as the phone was then', async () => {
+  await phone();
+  for (let i = 0; i < 6; i++) addPhoto();
+  const key = await backupKey('auto-pass');
+  // One made by hand says nothing of its parts, as before.
+  assert.equal((await openBackup(await backUp(key), 'auto-pass')).parts!.made, null);
+  shelf.clear();
+
+  let first: PartMade[] = [];
+  const one = await backUp(key, { earlier: [], made: (parts) => (first = parts) });
+  const then = media();
+  // The first names none of before: three of its own, two photos in each, the voice message in the
+  // last, each bound to it.
+  const opened = await openBackup(one, 'auto-pass');
+  assert.deepEqual(first.map((part) => part.name), opened.parts!.names);
+  assert.deepEqual([...shelf.keys()], opened.parts!.names);
+  assert.equal(first.length, 3);
+  for (const [n, part] of first.entries()) {
+    const bytes = shelf.get(part.name)!;
+    assert.deepEqual([part.id, part.n, part.size, part.sha, part.out], [toHex(opened.parts!.id), n, bytes.length, toHex(sha256Bytes(bytes)), []]);
+    assert.equal(part.stamps.length, part.files.length);
+    assert.ok(part.stamps.every(Boolean));
+  }
+  assert.deepEqual(opened.parts!.made, first.map(recordOf));
+  assert.deepEqual(first.flatMap((part) => part.files).sort(), [...then.keys()].sort());
+
+  // Since: a photo of the second part deleted, one of the third written again, and a new one.
+  const deleted = first[1].files[0];
+  blobs.delete(deleted);
+  const rewritten = first[2].files[0];
+  blobs.set(rewritten, blobs.get(rewritten)!.slice());
+  const added = addPhoto();
+  let second: PartMade[] = [];
+  const two = await backUp(key, { earlier: earlierParts([first], () => true), made: (parts) => (second = parts) });
+  const now = media();
+  const id = toHex((await openBackup(two, 'auto-pass')).parts!.id);
+  // The first part named again as it is, and new ones of its own for all the rest.
+  assert.deepEqual(second[0], first[0]);
+  assert.ok(second.length > 1);
+  for (const [n, part] of second.slice(1).entries()) {
+    assert.deepEqual([part.id, part.n], [id, n + 1]);
+    assert.ok(!first.some((before) => before.name === part.name));
+  }
+  assert.equal(shelf.size, first.length + second.length - 1);
+  // Each file on the phone once, and not the one deleted.
+  assert.deepEqual(second.flatMap((part) => part.files).sort(), [...now.keys()].sort());
+  assert.ok(now.has(added) && !now.has(deleted));
+
+  // Each restored on another phone, with photos of its own, comes back as the phone was then.
+  const theirs: [string, Uint8Array] = [`erevos-file-${'f'.repeat(32)}-0`, new Uint8Array([7])];
+  assert.deepEqual(await elsewhere(await openBackup(two, 'auto-pass'), fromShelf, [theirs, [deleted, then.get(deleted)!]]), now);
+  assert.deepEqual(await elsewhere(opened, fromShelf, [theirs, [added, now.get(added)!]]), then);
+
+  // Of the earlier backups, the newest first: each part once, and only those still there.
+  assert.deepEqual(
+    earlierParts([second, first], () => true).map((part) => part.name),
+    [...second, ...first.slice(1)].map((part) => part.name),
+  );
+  const there = earlierParts([second, first], (part) => part.name !== first[0].name);
+  assert.deepEqual(
+    there.map((part) => part.name),
+    [...second.slice(1), ...first.slice(1)].map((part) => part.name),
+  );
+  let third: PartMade[] = [];
+  const three = await backUp(key, { earlier: there, made: (parts) => (third = parts) });
+  assert.ok(!third.some((part) => part.name === first[0].name));
+  assert.deepEqual(third.flatMap((part) => part.files.filter((_, i) => !part.out.includes(i))).sort(), [...now.keys()].sort());
+  assert.deepEqual(await elsewhere(await openBackup(three, 'auto-pass'), fromShelf), now);
+});
+
+t("a part holding a file kept out since is not named again, so the backup names no part that holds it, and the phone's own goes; one named again gives only what no part before it gives", async () => {
+  await phone();
+  const chunks = photos(3);
+  const out = [...chunks.keys()].sort()[1];
+  const key = await backupKey('auto-pass');
+  let first: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (first = parts) });
+  assert.equal(first.length, 1);
+
+  // A Collection's chunk kept out (MakeOptions.skip): the part that holds it is not named again,
+  // and the rest goes in a new one.
+  let second: PartMade[] = [];
+  const two = await backUp(key, { earlier: first, skip: new Set([out]), made: (made) => (second = made) });
+  assert.equal(second.length, 1);
+  assert.notEqual(second[0].name, first[0].name);
+  assert.deepEqual(second[0].files, first[0].files.filter((name) => name !== out));
+  const got = await elsewhere(await openBackup(two, 'auto-pass'), fromShelf, [[out, chunks.get(out)!]]);
+  assert.deepEqual([...got.keys()].sort(), [...media().keys()].filter((name) => name !== out).sort());
+
+  // Then with nothing kept out, as in a space that does not keep it out: the second's part, and the
+  // first's again for that chunk alone. No part is made.
+  let third: PartMade[] = [];
+  const parts = shelf.size;
+  const three = await backUp(key, { earlier: earlierParts([second, first], () => true), made: (made) => (third = made) });
+  assert.equal(shelf.size, parts);
+  const i = first[0].files.indexOf(out);
+  assert.deepEqual(third, [second[0], { ...first[0], out: first[0].files.flatMap((_, n) => (n === i ? [] : [n])) }]);
+  const opened = await openBackup(three, 'auto-pass');
+  assert.deepEqual(opened.parts!.made![1].out, third[1].out);
+  assert.deepEqual(await elsewhere(opened, fromShelf), media());
+
+  // All of its files kept out, or all given by a part before it: a part is not named at all.
+  let none: PartMade[] = [];
+  await backUp(key, { earlier: first, skip: new Set(first[0].files), made: (made) => (none = made) });
+  assert.deepEqual(none, []);
+  let once: PartMade[] = [];
+  await backUp(key, { earlier: [first[0], { ...first[0], name: 'part-again' }], made: (made) => (once = made) });
+  assert.deepEqual(once, [first[0]]);
+});
+
+t('of a part named again, the files a part before it gives are not written from it', async () => {
+  await phone();
+  const key = await backupKey('auto-pass');
+  const [f, h] = [addPhoto(256 * 1024), addPhoto(256 * 1024)];
+  let older: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (older = parts) });
+  const was = blobs.get(f)!;
+  blobs.set(f, randomBytes(256 * 1024));
+  const g = addPhoto(256 * 1024);
+  let newer: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (newer = parts) });
+  assert.deepEqual([older.length, newer.length], [1, 1]);
+  assert.ok(older[0].files.includes(h) && !older[0].files.includes(g) && newer[0].files.includes(g));
+  // As were the ledger wrong: the older part said to hold its files as they are now, first.
+  const now = new Map(newer[0].files.map((file, n) => [file, newer[0].stamps[n]]));
+  const said = { ...older[0], stamps: older[0].files.map((file) => now.get(file)!) };
+  let named: PartMade[] = [];
+  const file = await backUp(key, { earlier: [said, newer[0]], made: (parts) => (named = parts) });
+  assert.deepEqual(
+    named.map((part) => part.name),
+    [older[0].name, newer[0].name],
+  );
+  assert.deepEqual(
+    named[1].files.filter((_, n) => !named[1].out.includes(n)),
+    [g],
+  );
+  // The older's file comes back, and the newer's of the same name is not written over it.
+  const got = await elsewhere(await openBackup(file, 'auto-pass'), fromShelf);
+  assert.deepEqual(got.get(f), was);
+  assert.deepEqual(got.get(g), blobs.get(g));
+  assert.deepEqual(got.get(h), blobs.get(h));
+});
+
+t('where no stamps are told, as in a browser and on Sailfish OS, no part is named again: each automatic backup is whole', async () => {
+  await phone();
+  photos(4);
+  const key = await backupKey('auto-pass');
+  let first: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (first = parts) });
+  stampsTold.on = false;
+  try {
+    let second: PartMade[] = [];
+    const two = await backUp(key, { earlier: first, made: (parts) => (second = parts) });
+    assert.equal(second.length, first.length);
+    assert.ok(second.every((part) => !first.some((before) => before.name === part.name) && part.stamps.every((stamp) => stamp === '')));
+    assert.equal((await sealedOf(two, 'auto-pass')).entries.find((entry) => entry.name === 'parts')!.kind, 5);
+    // Nor the next time, from parts whose files' stamps none told.
+    let third: PartMade[] = [];
+    await backUp(key, { earlier: second, made: (parts) => (third = parts) });
+    assert.ok(third.every((part) => !second.some((before) => before.name === part.name)));
+  } finally {
+    stampsTold.on = true;
+  }
+  // Told again, the files are as they were when the first was made.
+  let fourth: PartMade[] = [];
+  await backUp(key, { earlier: first, made: (parts) => (fourth = parts) });
+  assert.deepEqual(fourth, first);
+});
+
+t("a part named again that is missing, changed, cut short, in another's place, of another backup or sealed with another key opens nothing, and the phone stays as it was", async () => {
+  await phone();
+  photos(6);
+  const key = await backupKey('auto-pass');
+  let a: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (a = parts) });
+  assert.equal(a.length, 2);
+  // The next names the first part again, and makes its own second, of the same number.
+  const rewritten = a[1].files[0];
+  blobs.set(rewritten, blobs.get(rewritten)!.slice());
+  let b: PartMade[] = [];
+  const file = await backUp(key, { earlier: a, made: (parts) => (b = parts) });
+  assert.deepEqual(b[0], a[0]);
+  assert.deepEqual([b.length, b[1].n], [2, 1]);
+  assert.notEqual(b[1].id, a[1].id);
+  // Another backup with the same key, all of its own; and one with another key.
+  let c: PartMade[] = [];
+  await backUp(key, { earlier: [], made: (parts) => (c = parts) });
+  let d: PartMade[] = [];
+  await backUp(await backupKey('other-pass'), { earlier: [], made: (parts) => (d = parts) });
+
+  // What the ledger gave to name again, were it wrong: parts sealed with another key; another
+  // backup's part, said to be the first's, or said to be of another number; another's bytes under
+  // a part's name; a part said to hold a file it does not. Each backup made names them, and opens
+  // nothing.
+  const forged: [string, PartMade[]][] = [
+    ['sealed with another key', d],
+    ["another backup's, said to be the first's", [{ ...c[0], id: a[0].id }]],
+    ['of another number', [{ ...c[1], n: 0 }]],
+    ["another's bytes under its name", [{ ...a[0], name: c[0].name }]],
+    ['said to hold a file it does not', [{ ...a[0], files: [...a[0].files, a[1].files[1]], stamps: [...a[0].stamps, a[1].stamps[1]] }]],
+  ];
+  const wrong: [string, Backup, string][] = [];
+  for (const [what, earlier] of forged) {
+    let named: PartMade[] = [];
+    const made = await backUp(key, { earlier, made: (parts) => (named = parts) });
+    assert.equal(named[0].name, earlier[0].name, what);
+    wrong.push([what, await openBackup(made, 'auto-pass'), earlier[0].name]);
+  }
+  const opened = await openBackup(file, 'auto-pass');
+  const names = opened.parts!.names;
+  assert.deepEqual(names, b.map((part) => part.name));
+
+  // Another phone, with what it has.
+  wipe();
+  await phone();
+  const before = snapshot();
+  const bytes = (name: string) => shelf.get(name)!;
+  const instead =
+    (name: string, other: Uint8Array | null): PartReader =>
+    async (asked) =>
+      asked === name ? other : fromShelf(asked);
+  const tries: [string, PartReader, typeof MissingPartError | typeof DamagedPartError, string][] = [
+    ['missing', instead(names[0], null), MissingPartError, names[0]],
+    ['its own missing', instead(names[1], null), MissingPartError, names[1]],
+    ['changed', instead(names[0], flipped(bytes(names[0]))), DamagedPartError, names[0]],
+    ['cut short', instead(names[0], bytes(names[0]).subarray(0, bytes(names[0]).length - 1)), DamagedPartError, names[0]],
+    ['longer', instead(names[1], new Uint8Array(Buffer.concat([bytes(names[1]), new Uint8Array(1)]))), DamagedPartError, names[1]],
+    ["in another's place", instead(names[0], bytes(names[1])), DamagedPartError, names[0]],
+    ["the earlier backup's own of that number", instead(names[1], bytes(a[1].name)), DamagedPartError, names[1]],
+    ['of another backup with the same key', instead(names[0], bytes(c[0].name)), DamagedPartError, names[0]],
+    ['sealed with another key', instead(names[0], bytes(d[0].name)), DamagedPartError, names[0]],
+  ];
+  for (const [what, read, kind, part] of tries) {
+    await assert.rejects(restoreBackup(opened, read), (error) => error instanceof kind && error.part === part, what);
+    assert.deepEqual(snapshot(), before, what);
+  }
+  for (const [what, backup, part] of wrong) {
+    await assert.rejects(restoreBackup(backup, fromShelf), (error) => error instanceof DamagedPartError && error.part === part, what);
+    assert.deepEqual(snapshot(), before, what);
+  }
+  // With every part as it was made, it comes back.
+  await restoreBackup(opened, fromShelf);
+});
+
+t('an Erevos from before refuses a backup that names earlier parts, with nothing changed, and restores one that names only its own; what binds the parts is only as Erevos makes it', async () => {
+  await phone();
+  photos(4);
+  const key = await backupKey('auto-pass');
+  let first: PartMade[] = [];
+  const one = await backUp(key, { earlier: [], made: (parts) => (first = parts) });
+  const held = media();
+  const two = await backUp(key, { earlier: first });
+  // The kinds an Erevos from before knew, up to the keystore's of 6.0.0 on: it refuses a backup of
+  // any other at once, before it writes anything (NewerBackupError), and asks to update Erevos.
+  const before = new Set([0, 1, 2, 3, 4, 5, 6, 7]);
+  const kinds = async (file: Uint8Array) => (await sealedOf(file, 'auto-pass')).entries.map((entry) => entry.kind);
+  assert.ok((await kinds(one)).every((kind) => before.has(kind)));
+  assert.ok((await kinds(two)).includes(9));
+  assert.ok(!(await kinds(two)).includes(5));
+  // The first's table says what an Erevos from before reads of its parts, as ever, and more that it does not heed.
+  const table = JSON.parse(utf8Decode((await sealedOf(one, 'auto-pass')).entries.find((entry) => entry.name === 'parts')!.data)) as Table;
+  assert.deepEqual(Object.keys(table).sort(), ['id', 'made', 'names', 'phone']);
+  assert.deepEqual(table.names, first.map((part) => part.name));
+  assert.deepEqual(await elsewhere(await openBackup(one, 'auto-pass'), fromShelf), held);
+  assert.deepEqual(await elsewhere(await openBackup(two, 'auto-pass'), fromShelf), held);
+
+  // What binds its parts not as Erevos makes it: no backup at all.
+  const records = (change: (record: Record<string, unknown>) => Record<string, unknown>) => (table: Table) => ({ ...table, made: table.made!.map(change) });
+  const forged: [string, (table: Table) => unknown][] = [
+    ['without what binds its parts', (table) => ({ ...table, made: undefined })],
+    ['with one part too few', (table) => ({ ...table, made: table.made!.slice(1) })],
+    ['with a SHA-256 that is none', records((record) => ({ ...record, sha: 'ab' }))],
+    ['with an id that is none', records((record) => ({ ...record, id: 'nope' }))],
+    ['with a number past the most', records((record) => ({ ...record, n: 2_000_000 }))],
+    ['with no files', records((record) => ({ ...record, files: [] }))],
+    ['with a file no part holds', records((record) => ({ ...record, files: ['erevos.lock'] }))],
+    ['with all its files not held', records((record) => ({ ...record, out: (record.files as string[]).map((_, i) => i) }))],
+    ['with a file not held that is not there', records((record) => ({ ...record, out: [(record.files as string[]).length] }))],
+  ];
+  for (const [what, change] of forged) await assert.rejects(openBackup(await withTable(two, 'auto-pass', change), 'auto-pass'), NotABackupError, what);
+
+  // Of the kind an Erevos from before restores, naming parts of another backup: what it says of
+  // them is not heeded, as that Erevos does not heed it, so each would have to be its own, and is
+  // not. The phone stays as it was.
+  const downgraded = await openBackup(await withTable(two, 'auto-pass', (table) => table, 5), 'auto-pass');
+  assert.equal(downgraded.parts!.made, null);
+  wipe();
+  await phone();
+  const was = snapshot();
+  await assert.rejects(restoreBackup(downgraded, fromShelf), DamagedPartError);
+  assert.deepEqual(snapshot(), was);
+});
+
+test('of a folder of automatic backups only the parts none of the newest names go, and none while one of them is not known', () => {
+  const at = (day: number) => `erevos-backup-2026-11-0${day}-0312`;
+  const main = (day: number) => backupFileName(at(day));
+  const part = (day: number, n: number) => partFileName(at(day), n);
+  const names = ['notes.txt', main(1), part(1, 1), part(1, 2), part(2, 1), main(3), part(3, 1), main(4), main(5), part(5, 1), part(6, 1)];
+  // The third names a part of the first again, the fourth only that one, the fifth one of the
+  // third's; the second never ended, and the sixth is being made.
+  const named = new Map([
+    [main(1), [part(1, 1), part(1, 2)]],
+    [main(3), [part(1, 1), part(3, 1)]],
+    [main(4), [part(1, 1)]],
+    [main(5), [part(3, 1), part(5, 1)]],
+  ]);
+  const of = (name: string) => named.get(name) ?? null;
+  const sorted = (list: string[]) => [...list].sort();
+  assert.deepEqual(sorted(unneededFiles(names, 3, of)), sorted([main(1), part(1, 2), part(2, 1)]));
+  assert.deepEqual(sorted(unneededFiles(names, 1, of)), sorted([main(1), main(3), main(4), part(1, 1), part(1, 2), part(2, 1)]));
+  assert.deepEqual(sorted(unneededFiles(names, 9, of)), [part(2, 1)]);
+  assert.deepEqual(unneededFiles(names, 0, of), []);
+  assert.deepEqual(unneededFiles([part(1, 1), 'notes.txt'], 3, of), []);
+  // One of the newest not known, as one made by hand or with another password: it may name any
+  // part there, so only the older backups' own files go.
+  assert.deepEqual(unneededFiles(names, 3, (name) => (name === main(4) ? null : of(name))), [main(1)]);
+  assert.deepEqual(unneededFiles(names, 1, (name) => (name === main(5) ? null : of(name))), [main(1), main(3), main(4)]);
+  // Of backups that each name only their own parts, the same as staleBackups.
+  const whole = [main(1), part(1, 1), part(2, 1), main(3), part(3, 1), part(3, 2), main(4), main(5), part(5, 1), part(6, 1), 'notes.txt'];
+  const own = (name: string) => whole.filter((other) => backupFileOf(other)?.part && backupFileOf(other)!.stem === backupFileOf(name)!.stem);
+  for (const keep of [0, 1, 2, 3, 9]) assert.deepEqual(sorted(unneededFiles(whole, keep, own)), sorted(staleBackups(whole, keep)), `keep ${keep}`);
+});
+
+t('made every 6 hours for days as photos come and go, with backups by hand, a new password and the ledger lost between: the folder and the server keep the newest backups and every part they name, and each restores as the phone was then', async () => {
+  const there = new Map<string, Uint8Array>();
+  setCloudHttp(async (method, url, headers, body) => davServer(there, () => 'app-pass')(method, url, headers, body));
+  const uri = 'content://com.android.externalstorage.documents/tree/primary%3AErevos';
+  folders.set(uri, new Map());
+  const folder = folders.get(uri)!;
+  const server = cloudServer('https://cloud.example/dav/Backups', 'me', 'app-pass');
+  try {
+    await phone();
+    const random = seeded(2026);
+    // Of half a MB to one and a half: two to seven in a part.
+    const photo = () => addPhoto(Math.floor((0.5 + random()) * 1024 * 1024));
+    for (let i = 0; i < 8; i++) photo();
+    // Each part's SHA-256, worked out once: the bytes there are never written again.
+    const shas = new WeakMap<Uint8Array, string>();
+    const shaOf = (bytes: Uint8Array) => {
+      if (!shas.has(bytes)) shas.set(bytes, toHex(sha256Bytes(bytes)));
+      return shas.get(bytes);
+    };
+    const HOURS = 6 * 3600 * 1000;
+    const start = new Date(2026, 5, 1, 3, 12).getTime();
+    let password = 'auto-pass';
+    await startAutoBackup(0.25, uri, await backupKey(password));
+    await startCloudBackup('https://cloud.example/dav/Backups', 'me', 'app-pass');
+    const hand = await backupKey('hand-pass');
+
+    // Each backup, in the folder by its file's name and on the server by its own: its password,
+    // what the phone held when it was made, and once opened, what it is.
+    const backups = new Map<string, { password: string; held: Map<string, Uint8Array>; opened?: Backup }>();
+    const opened = async (name: string, bytes: Uint8Array) => {
+      const backup = backups.get(name)!;
+      backup.opened ??= await openBackup(bytes, backup.password);
+      return backup.opened;
+    };
+    // Those automatic backups know now, by their ledger.
+    const known = new Set<string>();
+    let strict = 0;
+    let loose = 0;
+    let serverStrict = 0;
+
+    // The newest backups there, each with every part it names, of the bytes it was made with; and
+    // nothing else when automatic backups know them all.
+    const checkFolder = async (made: number) => {
+      const mains = [...folder.keys()].filter((name) => backupFileOf(name)?.part === false).sort();
+      assert.equal(mains.length, Math.min(KEEP, made));
+      const needed = new Set(mains);
+      for (const name of mains) {
+        const { parts } = await opened(name, folder.get(name)!);
+        for (const [n, part] of parts!.names.entries()) {
+          assert.ok(folder.has(part), `${name} names ${part}`);
+          const record = parts!.made?.[n];
+          if (record) assert.equal(shaOf(folder.get(part)!), record.sha, part);
+          needed.add(part);
+        }
+      }
+      if (mains.every((name) => known.has(name))) {
+        assert.deepEqual([...folder.keys()].sort(), [...needed].sort());
+        strict++;
+      } else {
+        assert.ok([...folder.keys()].every((name) => needed.has(name) || backupFileOf(name)?.part), 'besides, only parts');
+        loose++;
+      }
+      return mains;
+    };
+    // The same on the server: all of one size there but the backups, under random names; nothing
+    // else when automatic backups know every one kept that names parts of others.
+    const checkServer = async (cloud: CloudBackup, made: number) => {
+      assert.equal(cloud.names.length, Math.min(KEEP, made));
+      const needed = new Set(cloud.names);
+      for (const name of cloud.names) {
+        assert.ok(there.has(name), name);
+        assert.notEqual(there.get(name)!.length % BARE_PART, 0);
+        const { parts } = await opened(name, there.get(name)!);
+        for (const [n, part] of parts!.names.entries()) {
+          assert.ok(there.has(part), `${name} names ${part}`);
+          const record = parts!.made?.[n];
+          if (record) assert.equal(shaOf(there.get(part)!), record.sha, part);
+          needed.add(part);
+        }
+      }
+      for (const [name, bytes] of there) {
+        assert.match(name, /^[0-9a-f]{24}$/);
+        if (!cloud.names.includes(name)) assert.equal(bytes.length % BARE_PART, 0, name);
+      }
+      if (cloud.names.every((name) => !cloud.parts[name]?.shared || known.has(name))) {
+        assert.deepEqual([...there.keys()].sort(), [...needed].sort());
+        serverStrict++;
+      }
+    };
+    // Restored on another phone, with a photo of its own: as the phone was when it was made.
+    const restores = async (name: string, bytes: Uint8Array, read: PartReader) =>
+      assert.deepEqual(await elsewhere(await opened(name, bytes), read, [[`erevos-file-${'f'.repeat(32)}-0`, new Uint8Array([7])]]), backups.get(name)!.held, name);
+
+    let made = 0;
+    let wrote = 0;
+    let named = 0;
+    let cloud: CloudBackup | null = null;
+    for (let run = 0; run < 13; run++) {
+      const at = start + run * HOURS;
+      // What changed on the phone since; nothing before the second.
+      if (run !== 1) {
+        if (random() < 0.6) photo();
+        const photos = [...blobs.keys()].filter((name) => name.startsWith('erevos-file-'));
+        if (random() < 0.4 && photos.length > 3) blobs.delete(photos[Math.floor(random() * photos.length)]);
+        const again = photos[Math.floor(random() * photos.length)];
+        if (random() < 0.3 && blobs.has(again)) blobs.set(again, blobs.get(again)!.slice());
+      }
+      if (run === 5) await saveClip(randomBytes(3000), 2000);
+      // A new password: the ledger, sealed with a key the one before gave, opens as empty.
+      if (run === 6) {
+        password = 'auto-pass-2';
+        await startAutoBackup(0.25, uri, await backupKey(password));
+        known.clear();
+      }
+      // The ledger lost, as when Erevos's own files were cleared.
+      if (run === 9) {
+        blobs.delete('erevos-backup-ledger');
+        known.clear();
+      }
+      const inFolder = new Set(folder.keys());
+      const onServer = new Set(there.keys());
+      const ran = await runAutoBackup(false, at);
+      assert.equal(ran.auto?.error, '', `run ${run}`);
+      assert.equal(ran.cloud?.error, '', `run ${run}`);
+      cloud = ran.cloud!;
+      made++;
+      const main = [...folder.keys()].find((name) => !inFolder.has(name) && backupFileOf(name)?.part === false)!;
+      const sent = cloud.names.at(-1)!;
+      for (const name of [main, sent]) {
+        backups.set(name, { password, held: media() });
+        known.add(name);
+      }
+      const newParts = [...folder.keys()].filter((name) => !inFolder.has(name) && name !== main);
+      wrote += newParts.length;
+      named += (await opened(main, folder.get(main)!)).parts!.names.length;
+      // Nothing changed: no part is made, in the folder or on the server.
+      if (run === 1) {
+        assert.deepEqual(newParts, []);
+        assert.deepEqual([...there.keys()].filter((name) => !onServer.has(name)), [sent]);
+        assert.deepEqual(cloud.parts[sent], { seed: cloud.parts[sent].seed, count: 0, shared: true });
+      }
+      const mains = await checkFolder(made);
+      await checkServer(cloud, made);
+      // The oldest kept of each, which names the oldest parts there.
+      await restores(mains[0], folder.get(mains[0])!, (await partsIn(uri)).read);
+      await restores(cloud.names[0], there.get(cloud.names[0])!, (await cloudParts(server)).read);
+      // Not due again until 6 hours went by.
+      const left = [...folder.keys(), ...there.keys()];
+      const idle = await runAutoBackup(false, at + HOURS - 60_000);
+      assert.equal(idle.auto?.last, at);
+      assert.deepEqual([...folder.keys(), ...there.keys()], left);
+
+      // A backup by hand into the same folder and to the same server, with a password of its own,
+      // as the backup screen makes them.
+      if (run === 3) {
+        const written = await writeBackup(uri, (parts) => makeBackup(hand, { parts }), at + 3600_000);
+        backups.set(written.name, { password: 'hand-pass', held: media() });
+        cloud = await sendToCloud(cloud, (parts) => makeBackup(hand, { parts, bare: true }), KEEP, at + 3600_000);
+        assert.equal(cloud.error, '');
+        backups.set(cloud.names.at(-1)!, { password: 'hand-pass', held: media() });
+        made++;
+      }
+    }
+    // Both ways the folder was looked at came up; on the server, where one sent by hand names only
+    // its own parts, nothing else was there more often. At the end automatic backups know every one there.
+    assert.ok(strict > 0 && loose > 0 && serverStrict > strict, `${strict} ${loose} ${serverStrict}`);
+    const mains = await checkFolder(made);
+    assert.ok(mains.every((name) => known.has(name)));
+    for (const name of mains) await restores(name, folder.get(name)!, (await partsIn(uri)).read);
+    for (const name of cloud!.names) await restores(name, there.get(name)!, (await cloudParts(server)).read);
+    // And they wrote far fewer parts than they named.
+    assert.ok(wrote * 2 < named, `${wrote} of ${named}`);  } finally {
+    setCloudHttp(null);
+    await stopCloudBackup();
+    folders.clear();
+  }
+});
+
+t('a part deleted or cut short in the folder or on the server is not named again: its files go in a new one', async () => {
+  const there = new Map<string, Uint8Array>();
+  setCloudHttp(async (method, url, headers, body) => davServer(there, () => 'app-pass')(method, url, headers, body));
+  const uri = 'content://com.android.externalstorage.documents/tree/primary%3AErevos';
+  folders.set(uri, new Map());
+  const folder = folders.get(uri)!;
+  const server = cloudServer('https://cloud.example/dav/Backups', 'me', 'app-pass');
+  try {
+    await phone();
+    photos(5);
+    const held = media();
+    const DAY = 86_400_000;
+    const start = new Date(2026, 5, 1, 3, 12).getTime();
+    await startAutoBackup(1, uri, await backupKey('auto-pass'));
+    await startCloudBackup('https://cloud.example/dav/Backups', 'me', 'app-pass');
+    const first = (await runAutoBackup(false, start)).cloud!;
+    const [one, two] = [1, 2].map((n) => partFileName('erevos-backup-2026-06-01-0312', n));
+    const [sentOne, sentTwo] = [0, 1].map((n) => partName(first.parts[first.names[0]].seed, n));
+    assert.ok(folder.has(one) && folder.has(two) && there.has(sentOne) && there.has(sentTwo));
+    folder.set(one, folder.get(one)!.subarray(0, 100));
+    there.set(sentOne, there.get(sentOne)!.subarray(0, 100));
+    const newest = async (day: number, cloud: CloudBackup) => {
+      const name = `erevos-backup-2026-06-0${day}-0312.erevos`;
+      const names = (await openBackup(folder.get(name)!, 'auto-pass')).parts!.names;
+      const sent = (await openBackup(there.get(cloud.names.at(-1)!)!, 'auto-pass')).parts!.names;
+      assert.deepEqual(await elsewhere(await openBackup(folder.get(name)!, 'auto-pass'), (await partsIn(uri)).read), held);
+      assert.deepEqual(await elsewhere(await openBackup(there.get(cloud.names.at(-1)!)!, 'auto-pass'), (await cloudParts(server)).read), held);
+      return [names, sent];
+    };
+    let [names, sent] = await newest(2, (await runAutoBackup(false, start + DAY)).cloud!);
+    assert.ok(!names.includes(one) && names.includes(two));
+    assert.ok(!sent.includes(sentOne) && sent.includes(sentTwo));
+    folder.delete(two);
+    there.delete(sentTwo);
+    [names, sent] = await newest(3, (await runAutoBackup(false, start + 2 * DAY)).cloud!);
+    assert.ok(!names.includes(one) && !names.includes(two));
+    assert.ok(!sent.includes(sentOne) && !sent.includes(sentTwo));
+  } finally {
+    setCloudHttp(null);
+    await stopCloudBackup();
+    folders.clear();
+  }
+});
+
+t('every 6 hours: Erevos looks every 15 minutes while a space is open and as it goes to the background, and one that failed is tried again by those looks only after an hour', async () => {
+  const uri = 'content://com.android.externalstorage.documents/tree/primary%3AErevos';
+  folders.set(uri, new Map());
+  const folder = folders.get(uri)!;
+  try {
+    await phone();
+    photos(2);
+    const HOUR = 3600_000;
+    const start = new Date(2026, 5, 1, 3, 12).getTime();
+    await startAutoBackup(0.25, uri, await backupKey('auto-pass'));
+    const mains = () => [...folder.keys()].filter((name) => backupFileOf(name)?.part === false).length;
+    const looks = (at: number) => runAutoBackup(false, at, { checking: true });
+    assert.equal((await looks(start)).auto?.last, start);
+    assert.equal((await looks(start + 6 * HOUR - 1000)).auto?.last, start);
+    assert.equal(mains(), 1);
+    assert.equal((await looks(start + 6 * HOUR)).auto?.last, start + 6 * HOUR);
+    assert.equal(mains(), 2);
+
+    // The folder gone: it says so, and the looks between leave it for an hour.
+    folders.delete(uri);
+    const failedAt = start + 12 * HOUR;
+    assert.match((await looks(failedAt)).auto!.error, /not there/);
+    folders.set(uri, folder);
+    const waited = await looks(failedAt + HOUR - 1000);
+    assert.equal(waited.auto?.last, start + 6 * HOUR);
+    assert.match(waited.auto!.error, /not there/);
+    assert.equal(mains(), 2);
+    assert.equal((await looks(failedAt + HOUR)).auto?.last, failedAt + HOUR);
+    assert.equal(mains(), 3);
+    // When a space opens, it is tried again at once.
+    folders.delete(uri);
+    assert.match((await looks(failedAt + 7 * HOUR)).auto!.error, /not there/);
+    folders.set(uri, folder);
+    assert.equal((await runAutoBackup(false, failedAt + 7 * HOUR + 1000)).auto?.last, failedAt + 7 * HOUR + 1000);
+
+    // As the app looks, now.
+    await startAutoBackup(0.25, uri, await backupKey('auto-pass'));
+    const now = (await checkAutoBackup()).auto!.last;
+    assert.ok(Math.abs(now - Date.now()) < 60_000);
+    assert.equal((await checkAutoBackup()).auto?.last, now);
+    assert.equal(CHECK_MS, 15 * 60_000);
+  } finally {
+    folders.clear();
+  }
+  // The app looks while a space is open, every CHECK_MS, and as it goes to the background, while
+  // the space is still open; never in a task in the background.
+  const layout = readFileSync(join(import.meta.dirname, '../app/_layout.tsx'), 'utf8');
+  assert.match(layout, /if \(!spaceOpen\) return;\n\s+const timer = setInterval\(\(\) => void checkAutoBackup\(\)\.catch\(\(\) => undefined\), BACKUP_CHECK_MS\);/);
+  assert.match(layout, /backgroundAt\.current = Date\.now\(\);[\s\S]{0,300}if \(current\.kind === 'open'\) void checkAutoBackup\(\)/);
+  assert.doesNotMatch(readFileSync(join(import.meta.dirname, '../lib/background.ts'), 'utf8'), /backup/i);
+});
+
+t('the ledger of what automatic backups made is sealed, opens only with their key, stays with the phone, and a backup there with a part it does not know is not known', async () => {
+  await phone();
+  const key = randomBytes(32);
+  const part = (name: string, n: number): PartMade => ({ name, size: 1000 + n, sha: 'ab'.repeat(32), id: 'cd'.repeat(16), n, files: [`erevos-file-${'e'.repeat(32)}-${n}`], out: [], stamps: [`3:${n}`] });
+  const first = part('erevos-backup-2026-06-01-0312.part1.erevos', 0);
+  const ledger: Ledger = new Map([
+    [
+      folderPlace('content://here'),
+      new Map([
+        ['erevos-backup-2026-06-01-0312.erevos', [first]],
+        ['erevos-backup-2026-06-02-0312.erevos', [first, part('erevos-backup-2026-06-02-0312.part1.erevos', 1)]],
+      ]),
+    ],
+    [serverPlace('https://cloud.example/dav/Backups/'), new Map([['0123456789abcdef01234567', []]])],
+  ]);
+  await saveLedger(key, ledger);
+  assert.deepEqual(await loadLedger(key), ledger);
+  // Sealed: no name, place or stamp in it shows.
+  assert.doesNotMatch(Buffer.from(blobs.get('erevos-backup-ledger')!).toString('latin1'), /erevos|content|cloud|abab/);
+  // With another key, as once their password changed, or damaged, it is empty.
+  assert.deepEqual(await loadLedger(randomBytes(32)), new Map());
+  blobs.set('erevos-backup-ledger', flipped(blobs.get('erevos-backup-ledger')!));
+  assert.deepEqual(await loadLedger(key), new Map());
+  // A backup naming a part it does not know, or one not as Erevos keeps it, is not known.
+  const sealedWith = sha256Bytes(new Uint8Array([...utf8Encode('erevos backup ledger 1\n'), ...key]));
+  const one = { sha: 'ab', id: 'cd', n: 0, size: 5, files: ['f'], stamps: ['s'] };
+  const places = { 'folder x': { parts: { a: one, b: { ...one, stamps: [] } }, backups: { first: ['a'], second: ['a', 'b'], third: ['a', 'c'] } } };
+  blobs.set('erevos-backup-ledger', encryptBytes(sealedWith, utf8Encode(JSON.stringify({ places }))));
+  assert.deepEqual([...(await loadLedger(key)).get('folder x')!.keys()], ['first']);
+
+  // In no backup, and a restore leaves it as it is.
+  await saveLedger(key, ledger);
+  const kept = blobs.get('erevos-backup-ledger');
+  const opened = await openBackup(await backUp(await backupKey('backup-pass')), 'backup-pass');
+  assert.ok(!opened.entries.some((entry) => entry.name.includes('ledger')));
+  await restoreBackup(opened, fromShelf);
+  assert.equal(blobs.get('erevos-backup-ledger'), kept);
+});
+
+t('the parts a server keeps for the backups that name them are kept as runs of their numbers, and only as Erevos writes them', async () => {
+  assert.equal(runsText([0, 1, 2, 3, 4, 7, 9, 10, 11, 12]), '0-4,7,9-12');
+  assert.equal(runsText([5, 3, 4, 4]), '3-5');
+  assert.equal(runsText([]), '');
+  assert.deepEqual(runsOf('0-4,7,9-12'), [0, 1, 2, 3, 4, 7, 9, 10, 11, 12]);
+  assert.deepEqual(runsOf(''), []);
+  assert.deepEqual(runsOf('0-4', 5), [0, 1, 2, 3, 4]);
+  for (const bad of ['4-2', 'a', '1,,2', '-1', '1-', '0-1000000', ' 1', '1.5', '0-9,']) assert.equal(runsOf(bad), null, bad);
+  assert.equal(runsOf('0-9', 5), null);
+  const seed = 'ab'.repeat(16);
+  store.set(
+    'erevos.backup-cloud',
+    JSON.stringify({
+      url: 'https://cloud.example/dav/Backups/',
+      user: 'me',
+      password: 'pw',
+      names: ['0123456789abcdef'],
+      parts: { '0123456789abcdef': { seed, count: 0, shared: true } },
+      held: [{ seed: 'cd'.repeat(16), left: '0-2,5' }, { seed: 'ef'.repeat(16), left: '3-1' }, { seed: 'nope', left: '1' }, { seed: 'cd'.repeat(16), left: '' }],
+      unfinished: [],
+      last: 7,
+      error: '',
+    }),
+  );
+  const cloud = await loadCloudBackup();
+  assert.deepEqual(cloud?.held, [{ seed: 'cd'.repeat(16), left: '0-2,5' }]);
+  assert.deepEqual(cloud?.parts['0123456789abcdef'], { seed, count: 0, shared: true });
+});
+
+t("the desktop app's shell tells each of the app's files' size and when it was written, for automatic backups to name again the parts of those as they were", async () => {
+  const shell = readFileSync(join(import.meta.dirname, '../../desktop/main.js'), 'utf8');
+  const fileName = /^const fileName = .*;$/m.exec(shell)![0];
+  const filesOf = /^function files\(prefix, stamps\) \{\n[\s\S]*?\n\}$/m.exec(shell)![0];
+  const where = mkdtempSync(join(tmpdir(), 'erevos-files-'));
+  try {
+    const at = (name: string) => join(where, 'files', name);
+    nodeFs.mkdirSync(join(where, 'files'));
+    writeFileSync(at('erevos-file-aa-0'), new Uint8Array(3));
+    writeFileSync(at('erevos-voice-bb'), new Uint8Array(5));
+    writeFileSync(at('notes.txt'), 'mine');
+    utimesSync(at('erevos-file-aa-0'), 1_700_000_000, 1_700_000_000.25);
+    const listed = new Function('fs', 'dataPath', `${fileName}\n${filesOf}\nreturn files;`)(nodeFs, (...parts: string[]) => join(where, ...parts)) as (prefix: string | null, stamps: boolean) => Response;
+    assert.deepEqual(((await listed('erevos-', false).json()) as string[]).sort(), ['erevos-file-aa-0', 'erevos-voice-bb']);
+    assert.deepEqual(await listed('erevos-file-', true).json(), { 'erevos-file-aa-0': '3:1700000000250' });
+    // Written again, it is told otherwise.
+    writeFileSync(at('erevos-file-aa-0'), new Uint8Array(3));
+    assert.notDeepEqual(await listed('erevos-file-', true).json(), { 'erevos-file-aa-0': '3:1700000000250' });
+  } finally {
+    rmSync(where, { recursive: true, force: true });
+  }
+  assert.match(shell, /if \(url\.pathname === '\/__files'\) return files\(url\.searchParams\.get\('prefix'\), url\.searchParams\.get\('stamps'\) === '1'\);/);
 });

@@ -27,6 +27,10 @@ export class File {
     return folders.get(this.folder)?.has(this.name) ?? false;
   }
 
+  get size(): number {
+    return folders.get(this.folder)?.get(this.name)?.length ?? 0;
+  }
+
   write(bytes: Uint8Array): void {
     if (writes.failAt > 0 && --writes.failAt === 0) throw new Error('No room left.');
     inFolder(this.folder).set(this.name, bytes.slice());

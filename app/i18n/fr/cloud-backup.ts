@@ -100,10 +100,10 @@ export const cloudBackup: Record<string, string> = {
     "Un fichier de cette sauvegarde n’est pas là : {name}.",
   "{n} files of this backup are not there, {name} among them.":
     "{n} fichiers de cette sauvegarde ne sont pas là, dont {name}.",
-  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
-    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autre fichier à côté d’elle, avec le même début de nom. Choisis-le.",
-  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
-    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autres fichiers à côté d’elle, avec le même début de nom. Choisis-les tous.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, whose name starts as its own or as an earlier backup's. Choose it.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autre fichier à côté d’elle, dont le nom commence comme le sien ou comme celui d’une sauvegarde précédente. Choisis-le.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, whose names start as its own or as an earlier backup's. Choose them all.":
+    "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autres fichiers à côté d’elle, dont les noms commencent comme le sien ou comme celui d’une sauvegarde précédente. Choisis-les tous.",
   "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
     "Les photos, fichiers et messages vocaux de cette sauvegarde sont dans {n} autre fichier à côté d’elle. Choisis le dossier où se trouve la sauvegarde.",
   "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":

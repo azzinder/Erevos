@@ -67,7 +67,7 @@ import { importPhoneSms, smsStatus } from '../modules/erevos-sms';
 import { useTheme } from '../theme/context';
 
 // Backups of everything Erevos keeps on the phone or computer (lock/backup.ts): made by hand into a folder the
-// owner picks, made by themselves every day or week (lib/backup-folder.ts), and put back. Every
+// owner picks, made by themselves every 6 hours, day or week (lib/backup-folder.ts), and put back. Every
 // space shows the same screen and the same settings, and a backup holds every space, so nothing
 // here says how many there are. On Android a backup can hold the phone's SMS and MMS too
 // (lib/backup-sms.ts), put back into the phone's SMS when it is restored, and its call history and
@@ -102,6 +102,7 @@ const MAX_BYTES = 200 * 1024 * 1024;
 
 const CHOICES = [
   { label: mark('Off'), every: 0 },
+  { label: mark('Every 6 hours'), every: 0.25 },
   { label: mark('Every day'), every: 1 },
   { label: mark('Every week'), every: 7 },
 ];
@@ -438,7 +439,7 @@ export default function Backups() {
     const go = await chooseOne(
       t('Restore a backup'),
       PICKS_PART_FILES
-        ? plural(names.length, "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.", "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.")
+        ? plural(names.length, "This backup's photos, files and voice messages are in {n} more file beside it, whose name starts as its own or as an earlier backup's. Choose it.", "This backup's photos, files and voice messages are in {n} more files beside it, whose names start as its own or as an earlier backup's. Choose them all.")
         : plural(names.length, "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.", "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in."),
       t('Cancel'),
       PICKS_PART_FILES ? t('Choose the files') : t('Choose the folder'),
@@ -631,7 +632,7 @@ export default function Backups() {
     <Page>
       <Text variant="title">{t('Backups')}</Text>
       <Text variant="caption" tone="muted" style={hint}>
-        {t('A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it, with the same start: keep them together.', { device: t(THIS_DEVICE) })}
+        {t('A backup holds everything Erevos keeps on {device}: every space, with its contacts, messages, photos, files, voice messages, imported chats and hidden chats, each still sealed with its own password, and the settings that go with you to another device. The backup has a password of its own too. Its photos, files and voice messages go in files of their own beside it. An automatic backup also needs files of the ones before it: keep the whole folder.', { device: t(THIS_DEVICE) })}
       </Text>
 
       <SectionTitle title={t('Make a backup')} />
@@ -713,7 +714,7 @@ export default function Backups() {
               <Text variant="bodyStrong">{t('Into {folder}', { folder: folderLabel(auto.folder) })}</Text>
               <Text variant="caption" tone="muted" style={hint}>
                 {auto.last ? t('Last one {when}.', { when: whenText(auto.last) }) : t('None made yet.')}{' '}
-                {t('Made when Erevos opens and the last one is older than that. The folder keeps the {n} newest.', { n: KEEP })}
+                {t('Made while Erevos is open, and as it goes to the background, once the last one is older than that. The folder keeps the {n} newest, with the files they need.', { n: KEEP })}
               </Text>
               {auto.error ? (
                 <Text variant="caption" color={colors.danger} style={hint}>
@@ -728,7 +729,7 @@ export default function Backups() {
             </Card>
           ) : (
             <Text variant="caption" tone="muted" style={hint}>
-              {t('Erevos can make a backup by itself every day or week, into a folder you choose, with a password you set once.')}
+              {t('Erevos can make a backup by itself every 6 hours, day or week, into a folder you choose, with a password you set once.')}
             </Text>
           )}
         </>

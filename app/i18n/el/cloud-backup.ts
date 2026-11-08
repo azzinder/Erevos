@@ -101,10 +101,10 @@ export const cloudBackup: Record<string, string> = {
     "Ένα αρχείο αυτού του αντιγράφου δεν βρίσκεται εκεί: {name}.",
   "{n} files of this backup are not there, {name} among them.":
     "{n} αρχεία αυτού του αντιγράφου δεν βρίσκονται εκεί, ανάμεσά τους το {name}.",
-  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
-    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχείο δίπλα του, με την ίδια αρχή στο όνομα. Διάλεξέ το.",
-  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
-    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχεία δίπλα του, με την ίδια αρχή στο όνομα. Διάλεξέ τα όλα.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, whose name starts as its own or as an earlier backup's. Choose it.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχείο δίπλα του, με όνομα που αρχίζει όπως του αντιγράφου ή όπως ενός παλαιότερου. Διάλεξέ το.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, whose names start as its own or as an earlier backup's. Choose them all.":
+    "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχεία δίπλα του, με ονόματα που αρχίζουν όπως του αντιγράφου ή όπως ενός παλαιότερου. Διάλεξέ τα όλα.",
   "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
     "Οι φωτογραφίες, τα αρχεία και τα φωνητικά μηνύματα αυτού του αντιγράφου είναι σε {n} ακόμα αρχείο δίπλα του. Διάλεξε τον φάκελο όπου είναι το αντίγραφο.",
   "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":

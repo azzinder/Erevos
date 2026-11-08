@@ -99,10 +99,10 @@ export const cloudBackup: Record<string, string> = {
     "Jedna datoteka ove rezervne kopije nije tu: {name}.",
   "{n} files of this backup are not there, {name} among them.":
     "{n} datoteka ove rezervne kopije nije tu, među njima {name}. | {n} datoteke ove rezervne kopije nisu tu, među njima {name}. | {n} datoteka ove rezervne kopije nije tu, među njima {name}.",
-  "This backup's photos, files and voice messages are in {n} more file beside it, with the same start. Choose it.":
-    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, s istim početkom imena. Izaberite je.",
-  "This backup's photos, files and voice messages are in {n} more files beside it, with the same start. Choose them all.":
-    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, s istim početkom imena. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteke pored nje, s istim početkom imena. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteka pored nje, s istim početkom imena. Izaberite ih sve.",
+  "This backup's photos, files and voice messages are in {n} more file beside it, whose name starts as its own or as an earlier backup's. Choose it.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, čije ime počinje kao njeno ili kao ime neke ranije kopije. Izaberite je.",
+  "This backup's photos, files and voice messages are in {n} more files beside it, whose names start as its own or as an earlier backup's. Choose them all.":
+    "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje, čija imena počinju kao njeno ili kao ime neke ranije kopije. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteke pored nje, čija imena počinju kao njeno ili kao ime neke ranije kopije. Izaberite ih sve. | Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteka pored nje, čija imena počinju kao njeno ili kao ime neke ranije kopije. Izaberite ih sve.",
   "This backup's photos, files and voice messages are in {n} more file beside it. Choose the folder the backup is in.":
     "Fotografije, datoteke i glasovne poruke ove rezervne kopije su u još {n} datoteci pored nje. Izaberite folder u kojem je rezervna kopija.",
   "This backup's photos, files and voice messages are in {n} more files beside it. Choose the folder the backup is in.":

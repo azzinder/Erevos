@@ -4,7 +4,7 @@
 
 import { Directory, File } from 'expo-file-system';
 
-import { backupFileName, backupStem, freeStem, partFileName, staleBackups, type PartReader, type PartSink } from '../lock/backup';
+import { backupFileName, backupFileOf, backupStem, freeStem, partFileName, staleBackups, type PartReader, type PartSink } from '../lock/backup';
 import { whilePicking } from './picking';
 
 // Where backups go on the phone (lib/backup-folder.ts): a folder the owner picks with Android's
@@ -14,9 +14,10 @@ import { whilePicking } from './picking';
 //
 // A backup is a file, and its parts (photos, files and voice messages, lock/backup.ts) files beside
 // it with the same start: each part is written as it is made, then the backup itself, last. One
-// that fails leaves none of its files there. To restore one with parts, Erevos reads them from the
-// folder it is in, which the owner picks, as Android lets an app read only the file picked, and
-// what is in a folder picked.
+// that fails leaves none of its files there. An automatic backup may also name parts earlier ones
+// wrote there, under their names (lock/backup.ts). To restore one with parts, Erevos reads them by
+// their names, whatever their start, from the folder it is in, which the owner picks, as Android
+// lets an app read only the file picked, and what is in a folder picked.
 
 /** Whether backups can be made here: always on the phone. */
 export const CAN_BACK_UP = true;
@@ -93,6 +94,26 @@ export async function writeBackup(folder: string, make: (part: PartSink) => Prom
   }
   if (keep) prune(directory, keep);
   return { name: file.name || backupFileName(stem), size: bytes.length, parts: written.length - 1 };
+}
+
+/** The backups' files in a folder, their own and their parts', each with its size (-1 where the
+ *  folder does not say it): for automatic backups, which name again parts there (lock/backup.ts),
+ *  then delete there those no backup kept names. Null where they cannot be listed; on the phone they
+ *  always can. */
+export async function listBackupFiles(folder: string): Promise<Map<string, number> | null> {
+  return new Map(filesIn(new Directory(folder)).filter((file) => backupFileOf(file.name) !== null).map((file) => [file.name, file.size ?? -1]));
+}
+
+/** Deletes those of a folder's backup files; one that does not go is left for the next time. */
+export async function deleteBackupFiles(folder: string, names: string[]): Promise<void> {
+  const files = new Map(filesIn(new Directory(folder)).map((file) => [file.name, file]));
+  for (const name of names) {
+    try {
+      files.get(name)?.delete();
+    } catch {
+      // Left for the next automatic backup.
+    }
+  }
 }
 
 function prune(folder: Directory, keep: number) {

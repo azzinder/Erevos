@@ -4,7 +4,7 @@
 
 import { OWN_FILE as CARRIED } from '../lib/carried-store';
 import { decryptBytes, deriveKey, encryptBytes, fromHex, hardCost, hardKey, isHardCost, randomBytes, sameBytes, sha256Bytes, toHex, utf8Decode, utf8Encode, type HardCost } from '../lib/crypto';
-import { deleteFile, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
+import { deleteFile, fileStamps, listFiles, readBytes, readFile, writeBytes, writeFile } from '../lib/files';
 import { secureDelete, secureGet, secureSet } from '../lib/secure';
 import { t } from '../lib/i18n';
 
@@ -76,6 +76,25 @@ import { FILE as XMPP } from './xmpp-data';
 // the rest is put in place. Otherwise such a backup holds all the photos, files and voice messages
 // the phone had: those the phone has and it does not hold are deleted.
 //
+// Automatic backups are made often, and most of what one holds the one before held too. So an
+// automatic backup names again the parts of earlier ones in the same place, sealed with the same
+// key (automatic backups keep theirs, lib/backup-folder.ts), whose files are all still on the phone
+// as they were (their size and when each was written, lib/files.ts fileStamps), and makes new parts
+// only for the rest (MakeOptions.earlier; lib/backup-ledger.ts keeps what each one named). Its
+// entry is then of kind SHARED, not PARTS: as JSON, beside each part's name, what binds that part
+// (PartRecord): its size and SHA-256, the id of the backup it was made for and its number there,
+// the files it holds, and those of them this backup gives from another of its parts instead. So a
+// part changed, cut short, missing, put in another's place, taken from another backup or sealed
+// with another key still opens nothing. Restoring writes of each part only the files the backup
+// gives from it. Only a part whose files the backup holds all is named again, so a Collection kept
+// out (see below) leaves the place with the backups that held it, as what the owner deleted does.
+// An Erevos from before SHARED does not know its kind, and refuses such a backup with nothing
+// changed (NewerBackupError). An automatic backup that names no earlier part has PARTS, saying the
+// same of each of its parts, so an Erevos from before restores it as ever. The place keeps the
+// newest backups and every part one of them names, and deletes the parts none of them names
+// (unneededFiles; lib/backup-cloud.ts on a server). In a folder a part keeps the name it was
+// written under, so a backup's parts may start as the name of an earlier backup there.
+//
 // From PARTS on a backup also holds, so that a restore brings the phone back as it was:
 // - the panic password's entry (lock/config.ts), random when none is set, so it says nothing;
 // - the phone's own settings that go with its owner to another phone (SETTINGS), applied once
@@ -107,10 +126,11 @@ import { FILE as XMPP } from './xmpp-data';
 // What no backup holds stays with the phone, as it belongs to it: how many wrong passwords were
 // typed, the fingerprint's key in the phone's chip (lock/biometric.ts), the folders Android let
 // Erevos write in, what the permissions check saw (lib/permissions.ts), the packets carried for
-// strangers with their key (lib/carried-store.ts), and when and that a backup was restored here
-// (lock/restored.ts). Nor the inbox's list (lock/inbox-cache.ts), made again from the chats, nor,
-// for now, linked devices (lock/devices-data.ts) and the account's log (lock/sync-data.ts), which
-// a restore deletes (PHONE_FILES).
+// strangers with their key (lib/carried-store.ts), when and that a backup was restored here
+// (lock/restored.ts), and what automatic backups made where (lib/backup-ledger.ts). Nor the inbox's
+// list (lock/inbox-cache.ts), made again from the chats, nor, for now, linked devices
+// (lock/devices-data.ts) and the account's log (lock/sync-data.ts), which a restore deletes
+// (PHONE_FILES).
 //
 // When the owner wants it, a backup also holds the phone's SMS and MMS (lib/backup-sms.ts), as
 // one entry of its own kind, PHONE_SMS: they are the phone's, not a space's, the same in every
@@ -230,8 +250,10 @@ const KIND_SECRET = 7;
 // The phone's call history and blocked numbers (lib/backup-calls.ts).
 const KIND_PHONE_CALLS = 8;
 const PHONE_CALLS = 'phone-calls';
+// The backup's id and its parts, as PARTS, some of them made for earlier backups (see above).
+const KIND_SHARED = 9;
 // The kinds this Erevos knows: any other is a newer one's.
-const KINDS = new Set([KIND_KEY, KIND_TEXT, KIND_BYTES, KIND_PHONE_SMS, KIND_PAD, KIND_PARTS, KIND_NATIVE, KIND_SECRET, KIND_PHONE_CALLS]);
+const KINDS = new Set([KIND_KEY, KIND_TEXT, KIND_BYTES, KIND_PHONE_SMS, KIND_PAD, KIND_PARTS, KIND_NATIVE, KIND_SECRET, KIND_PHONE_CALLS, KIND_SHARED]);
 // An entry's kind, name length and data length, and PAD's name.
 const PAD_ENTRY = 1 + 2 + 4 + PAD.length;
 // What follows MAGIC: the salt, PBKDF2's rounds, Argon2id's salt, memory and passes.
@@ -254,9 +276,20 @@ export const BARE_PART = PART_HEAD + PART + PAD_ENTRY + SEALING;
 
 type Entry = { kind: number; name: string; data: Uint8Array };
 
+/** What binds a part to the backup that names it, beside its name: its size and SHA-256 (hex), the
+ *  id (hex) of the backup it was made for and its number there, the files it holds, and which of
+ *  them, by their place in `files`, the backup that names it gives from another part instead. */
+export type PartRecord = { size: number; sha: string; id: string; n: number; files: string[]; out: number[] };
+
+/** A part an automatic backup named, as the next one in the same place may name it again: its name
+ *  there, what binds it, and each of its files' stamp (lib/files.ts) when it was made, '' where none
+ *  was told. The stamps stay on the phone (lib/backup-ledger.ts): no backup holds them. */
+export type PartMade = PartRecord & { name: string; stamps: string[] };
+
 /** The parts of a backup, opened: their names in their order, with the backup's id and the key
- *  that opens them, and the id of the phone it was made on ('' when it does not say). */
-export type BackupParts = { names: string[]; id: Uint8Array; key: Uint8Array; phone: string };
+ *  that opens them, the id of the phone it was made on ('' when it does not say), and what binds
+ *  each part, in the same order (null for a backup that does not say, made by hand or before). */
+export type BackupParts = { names: string[]; id: Uint8Array; key: Uint8Array; phone: string; made: PartRecord[] | null };
 
 /** What a backup holds, opened: ready to restore. `unknown`: how many entries in it have a name
  *  this Erevos does not restore, left out. `parts`: its photos, files and voice messages,
@@ -386,7 +419,7 @@ function keptHere(name: string, value: string, here: string | null): string {
     return JSON.stringify({ ...restored, folder, last, error: '' });
   }
   if (!was || was.url !== restored.url) return JSON.stringify({ ...restored, error: '' });
-  return JSON.stringify({ ...restored, names: was.names, parts: was.parts, unfinished: was.unfinished, last: was.last, error: '' });
+  return JSON.stringify({ ...restored, names: was.names, parts: was.parts, held: was.held, unfinished: was.unfinished, last: was.last, error: '' });
 }
 
 // What the backup itself holds: everything but the photos, files and voice messages. The copies
@@ -438,7 +471,7 @@ function allowed(kind: number, name: string): boolean {
   if (kind === KIND_TEXT) return TEXT_FILES.includes(name) || LATER_FILES.includes(name);
   if (kind === KIND_PHONE_SMS) return name === PHONE_SMS;
   if (kind === KIND_PHONE_CALLS) return name === PHONE_CALLS;
-  if (kind === KIND_PARTS) return name === PARTS;
+  if (kind === KIND_PARTS || kind === KIND_SHARED) return name === PARTS;
   if (kind === KIND_NATIVE) return name === NATIVE;
   return kind === KIND_BYTES && (name.startsWith(VOICE) || name.startsWith(AVATAR) || name.startsWith(PAGE)) && fileName(name);
 }
@@ -504,8 +537,11 @@ function sealPart(key: Uint8Array, id: Uint8Array, n: number, entries: Entry[], 
   return encryptBytes(key, pack(entries, head));
 }
 
-// The entries of part `n` of the backup `id`, named `name`. Throws DamagedPartError when it is not that one.
-function openPart(key: Uint8Array, id: Uint8Array, n: number, name: string, bytes: Uint8Array): Entry[] {
+// The entries of part `n` of the backup `id`, named `name`. Throws DamagedPartError when it is not
+// that one. With what binds it (`record`), it is of that size and SHA-256 too, and only the files
+// the backup gives from it are given, each of them there.
+function openPart(key: Uint8Array, id: Uint8Array, n: number, name: string, bytes: Uint8Array, record: PartRecord | null = null): Entry[] {
+  if (record && (bytes.length !== record.size || toHex(sha256Bytes(bytes)) !== record.sha)) throw new DamagedPartError(name);
   let plain: Uint8Array;
   try {
     plain = decryptBytes(key, bytes);
@@ -513,41 +549,99 @@ function openPart(key: Uint8Array, id: Uint8Array, n: number, name: string, byte
     throw new DamagedPartError(name);
   }
   if (plain.length < PART_HEAD || !sameBytes(plain.subarray(0, ID), id) || new DataView(plain.buffer, plain.byteOffset + ID, 4).getUint32(0) !== n) throw new DamagedPartError(name);
+  let entries: Entry[];
   try {
     // What a newer Erevos may put in a part and this one does not know is left out, as in the backup.
-    return unpack(plain.subarray(PART_HEAD), inPart).entries;
+    entries = unpack(plain.subarray(PART_HEAD), inPart).entries;
   } catch {
     throw new DamagedPartError(name);
   }
+  if (!record) return entries;
+  const held = new Set(record.files.filter((_, i) => !record.out.includes(i)));
+  const given = entries.filter((entry) => held.has(entry.name));
+  if (new Set(given.map((entry) => entry.name)).size !== held.size) throw new DamagedPartError(name);
+  return given;
 }
 
-// Makes the parts, a few MB at a time, and gives their names in their order.
-async function makeParts(key: Uint8Array, id: Uint8Array, sink: PartSink, bare: boolean, progress?: (done: number, all: number) => void, skip?: ReadonlySet<string>): Promise<string[]> {
-  const all = [...(await listFiles(ATTACHMENT)), ...(await listFiles(VOICE))].filter((name) => fileName(name) && !skip?.has(name)).sort();
-  const names: string[] = [];
+const whole = (value: unknown, most: number): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= most;
+
+/** The parts earlier backups named (`backups`, each one's, the newest first) that are still there
+ *  whole (`there`), each once, in that order: those the next automatic backup there may name again. */
+export function earlierParts(backups: readonly (readonly PartMade[])[], there: (part: PartMade) => boolean): PartMade[] {
+  const seen = new Set<string>();
+  const parts: PartMade[] = [];
+  for (const backup of backups)
+    for (const part of backup) {
+      if (seen.has(part.name) || !there(part)) continue;
+      seen.add(part.name);
+      parts.push(part);
+    }
+  return parts;
+}
+
+// The stamps of the files, by their name (lib/files.ts).
+async function stampsOf(attachments: string[], voices: string[]): Promise<Map<string, string>> {
+  return new Map([...(await fileStamps(attachments, ATTACHMENT)), ...(await fileStamps(voices, VOICE))]);
+}
+
+// Makes the parts, a few MB at a time, and gives what each is, in their order. For an automatic
+// backup (`earlier` given) first the earlier parts it names again, each with all its files still on
+// the phone as they were, none of them left out (`skip`), and holding one at least that no part
+// before it holds: a part holding a file deleted, written again or left out since is not named
+// again, so what the owner deleted, or keeps out of backups, leaves the place with the backups that
+// held it. Of a part named again, the files a part before it holds are not this one's to restore
+// (`out`). Then new ones for the rest; a file left out goes in none.
+async function makeParts(
+  key: Uint8Array,
+  id: Uint8Array,
+  sink: PartSink,
+  { bare, progress, skip, earlier }: { bare: boolean; progress?: (done: number, all: number) => void; skip?: ReadonlySet<string>; earlier?: readonly PartMade[] },
+): Promise<PartMade[]> {
+  const attachments = (await listFiles(ATTACHMENT)).filter(fileName);
+  const voices = (await listFiles(VOICE)).filter(fileName);
+  // Each file's stamp, taken before it is read: one written again meanwhile is not named again next time.
+  const stamps = earlier ? await stampsOf(attachments, voices) : new Map<string, string>();
+  const wanted = [...attachments, ...voices].filter((name) => !skip?.has(name)).sort();
+  const made: PartMade[] = [];
+  const covered = new Set<string>();
+  for (const part of earlier ?? []) {
+    if (part.files.length === 0 || part.stamps.length !== part.files.length) continue;
+    if (!part.files.every((file, i) => !!part.stamps[i] && stamps.get(file) === part.stamps[i] && !skip?.has(file))) continue;
+    const out = part.files.flatMap((file, i) => (covered.has(file) ? [i] : []));
+    if (out.length === part.files.length) continue;
+    part.files.forEach((file, i) => !out.includes(i) && covered.add(file));
+    made.push({ ...part, out });
+  }
+  const rest = wanted.filter((name) => !covered.has(name));
+  const done = wanted.length - rest.length;
+  if (done) progress?.(done, wanted.length);
   let held: Entry[] = [];
   let size = 0;
   const flush = async () => {
     if (held.length === 0) return;
-    const sealed = sealPart(key, id, names.length, held, bare);
+    const n = made.length;
+    const sealed = sealPart(key, id, n, held, bare);
+    const files = held.map((entry) => entry.name);
     held = [];
     size = 0;
-    names.push(await sink(sealed));
+    // Its SHA-256 only where the backup says it: one made by hand is as before.
+    const record = { size: sealed.length, sha: earlier ? toHex(sha256Bytes(sealed)) : '', id: toHex(id), n, files, out: [], stamps: files.map((file) => stamps.get(file) ?? '') };
+    made.push({ ...record, name: await sink(sealed) });
   };
-  for (let i = 0; i < all.length; i++) {
+  for (let i = 0; i < rest.length; i++) {
     // One deleted since it was listed is left out, as its message is gone too.
-    const data = await readBytes(all[i]);
+    const data = await readBytes(rest[i]);
     if (data) {
-      const entry = { kind: KIND_BYTES, name: all[i], data };
+      const entry = { kind: KIND_BYTES, name: rest[i], data };
       const length = entrySize(entry, utf8Encode(entry.name));
       if (size > 0 && size + length > PART) await flush();
       held.push(entry);
       size += length;
     }
-    progress?.(i + 1, all.length);
+    progress?.(done + i + 1, wanted.length);
   }
   await flush();
-  return names;
+  return made;
 }
 
 /** How a backup is made: where its parts go, and what it holds besides what is on the phone. */
@@ -567,11 +661,21 @@ export type MakeOptions = {
   progress?: (done: number, all: number) => void;
   /** The chunk files left out: those of the open places' Collections that stay out of backups (lock/collection-data.ts). */
   skip?: ReadonlySet<string>;
+  /** For an automatic backup: the parts of earlier ones in the place its parts go to, sealed with
+   *  the same key, the newest first (earlierParts), to name again where it can. Given, even empty,
+   *  the backup says what binds each of its parts (PartRecord), and makes a new one take its SHA-256. */
+  earlier?: readonly PartMade[];
+  /** Told what each part the backup names is, in their order, once they are all made: what the next
+   *  automatic backup there may take as `earlier`. */
+  made?: (parts: PartMade[]) => void;
 };
+
+// What a backup says of a part, as JSON: its out only when it has some.
+const recordJson = ({ size, sha, id, n, files, out }: PartRecord) => (out.length ? { size, sha, id, n, files, out } : { size, sha, id, n, files });
 
 /** A backup of everything on the phone, sealed with `key`: its parts go to `parts` first, one at a
  *  time, then the bytes of the backup itself, which names them, are given back. */
-export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, phoneCalls = null, native = null, bare = false, progress, skip }: MakeOptions): Promise<Uint8Array> {
+export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, phoneSms = null, phoneCalls = null, native = null, bare = false, progress, skip, earlier, made }: MakeOptions): Promise<Uint8Array> {
   // Every backup made has Argon2id: a key without it is only for opening old ones.
   if (!hard) throw new Error('a backup is made with Argon2id');
   // The backup itself is read first, then the parts: a photo its messages show is on the phone then.
@@ -581,8 +685,12 @@ export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, 
   if (native) entries.push({ kind: KIND_NATIVE, name: NATIVE, data: native });
   const id = randomBytes(ID);
   const phone = await phoneId();
-  const names = await makeParts(partKey(key), id, parts, bare, progress, skip);
-  entries.push({ kind: KIND_PARTS, name: PARTS, data: utf8Encode(JSON.stringify({ id: toHex(id), names, phone })) });
+  const named = await makeParts(partKey(key), id, parts, { bare, progress, skip, earlier });
+  const names = named.map((part) => part.name);
+  // One that names a part of an earlier backup is of a kind an Erevos from before refuses.
+  const shared = named.some((part) => part.id !== toHex(id));
+  const table = earlier ? { id: toHex(id), names, phone, made: named.map(recordJson) } : { id: toHex(id), names, phone };
+  entries.push({ kind: shared ? KIND_SHARED : KIND_PARTS, name: PARTS, data: utf8Encode(JSON.stringify(table)) });
   if (bare) {
     const size = HEAD + SEALING + pack(entries).length + PAD_ENTRY;
     entries.push({ kind: KIND_PAD, name: PAD, data: new Uint8Array(padme(size) - size) });
@@ -599,20 +707,47 @@ export async function makeBackup({ key, salt, iter, hard }: BackupKey, { parts, 
   view.setUint32(at + SALT + 4 + SALT + 4, hard.t);
   if (bare) maskHead(out.subarray(0, HEAD));
   out.set(sealed, at + HEAD);
+  made?.(named);
   return out;
 }
 
-// The parts a backup's PARTS entry names. Throws NotABackupError when it is not one Erevos makes.
+const HEX_ID = /^[0-9a-f]{32}$/;
+const HEX_SHA = /^[0-9a-f]{64}$/;
+
+// What a backup says binds each of its `count` parts (PartRecord), checked: null when it is not as
+// Erevos says it. What a newer Erevos may add to each is left out.
+function recordsOf(value: unknown, count: number): PartRecord[] | null {
+  if (!Array.isArray(value) || value.length !== count) return null;
+  const records: PartRecord[] = [];
+  for (const one of value as unknown[]) {
+    const v = (one ?? {}) as Partial<Record<keyof PartRecord, unknown>>;
+    if (typeof v.id !== 'string' || !HEX_ID.test(v.id) || typeof v.sha !== 'string' || !HEX_SHA.test(v.sha)) return null;
+    if (!whole(v.n, MOST_PARTS) || !whole(v.size, Number.MAX_SAFE_INTEGER) || v.size <= SEALING + PART_HEAD) return null;
+    const files = v.files;
+    if (!Array.isArray(files) || files.length === 0 || !files.every((file): file is string => typeof file === 'string' && inPart(KIND_BYTES, file))) return null;
+    const out = v.out ?? [];
+    if (!Array.isArray(out) || !out.every((i) => whole(i, files.length - 1)) || new Set(out).size === files.length) return null;
+    records.push({ size: v.size, sha: v.sha, id: v.id, n: v.n, files, out: [...new Set(out as number[])] });
+  }
+  return records;
+}
+
+// The parts a backup's PARTS or SHARED entry names. Throws NotABackupError when it is not one Erevos makes.
 function partsOf(entry: Entry, key: Uint8Array): BackupParts {
   try {
-    const value = JSON.parse(utf8Decode(entry.data)) as { id?: unknown; names?: unknown; phone?: unknown };
+    const value = JSON.parse(utf8Decode(entry.data)) as { id?: unknown; names?: unknown; phone?: unknown; made?: unknown };
     const names = value.names;
-    if (typeof value.id !== 'string' || !/^[0-9a-f]{32}$/.test(value.id) || !Array.isArray(names) || names.length > MOST_PARTS) throw new NotABackupError();
+    if (typeof value.id !== 'string' || !HEX_ID.test(value.id) || !Array.isArray(names) || names.length > MOST_PARTS) throw new NotABackupError();
     // A name of a file or an upload, no path: each place reads only names of its own (lib/backup-place.ts, lib/backup-cloud.ts).
     // eslint-disable-next-line no-control-regex
     if (!names.every((name): name is string => typeof name === 'string' && /^[^/\\\u0000-\u001f]{1,255}$/.test(name))) throw new NotABackupError();
     const phone = typeof value.phone === 'string' && value.phone.length <= 64 ? value.phone : '';
-    return { names, id: fromHex(value.id), key: partKey(key), phone };
+    let made = value.made === undefined ? null : recordsOf(value.made, names.length);
+    // SHARED says what binds each part; PARTS only of its own parts, each where the backup put it,
+    // and what it says otherwise is not heeded, as an Erevos from before does not heed it either.
+    if (entry.kind === KIND_SHARED && !made) throw new NotABackupError();
+    if (entry.kind === KIND_PARTS && made?.some((record, n) => record.id !== value.id || record.n !== n || record.out.length > 0)) made = null;
+    return { names, id: fromHex(value.id), key: partKey(key), phone, made };
   } catch {
     throw new NotABackupError();
   }
@@ -646,10 +781,10 @@ export async function openBackup(bytes: Uint8Array, password: string): Promise<B
   }
   const { entries, unknown } = unpack(packed);
   if (!entries.some((entry) => entry.name === 'erevos.space-keys' || entry.name === 'erevos.lock')) throw new NotABackupError();
-  const listed = entries.filter((entry) => entry.kind === KIND_PARTS);
+  const listed = entries.filter((entry) => entry.kind === KIND_PARTS || entry.kind === KIND_SHARED);
   if (listed.length > 1) throw new NotABackupError();
   const parts = listed.length ? partsOf(listed[0], key) : null;
-  return { entries: entries.filter((entry) => entry.kind !== KIND_PARTS), size: bytes.length, unknown, parts };
+  return { entries: entries.filter((entry) => entry.kind !== KIND_PARTS && entry.kind !== KIND_SHARED), size: bytes.length, unknown, parts };
 }
 
 /** How a backup is restored. */
@@ -667,7 +802,7 @@ export type Restored = { left: string[] };
 // out. At one missing or damaged, `without` says whether to go on without it and those like it; if
 // not, what the parts wrote and the phone had not goes again, and nothing else changed.
 async function restoreParts(
-  { names, id, key }: BackupParts,
+  { names, id, key, made }: BackupParts,
   read: PartReader | null,
   progress: ((done: number, all: number) => void) | undefined,
   without: RestoreOptions['without'],
@@ -680,10 +815,12 @@ async function restoreParts(
   try {
     for (let n = 0; n < names.length; n++) {
       let entries: Entry[] = [];
+      // A part made for an earlier backup is bound to that one, and gives only what this one takes from it.
+      const record = made?.[n] ?? null;
       try {
         const bytes = read ? await read(names[n]) : null;
         if (!bytes) throw new MissingPartError(names[n]);
-        entries = openPart(key, id, n, names[n], bytes);
+        entries = record ? openPart(key, fromHex(record.id), record.n, names[n], bytes, record) : openPart(key, id, n, names[n], bytes);
       } catch (error) {
         if (!(error instanceof MissingPartError || error instanceof DamagedPartError)) throw error;
         // Asked once: the owner who wants the rest without one wants it without the others too.
@@ -844,4 +981,32 @@ export function staleBackups(names: string[], keep: number): string[] {
   const kept = new Set(whole.slice(-keep));
   const newest = whole[whole.length - 1];
   return files.filter((file) => !kept.has(file.of!.stem) && file.of!.stem < newest).map((file) => file.name);
+}
+
+/**
+ * The files of a folder that go once an automatic backup was made into it, whose parts may be
+ * earlier backups' (see above), keeping the `keep` newest whole backups and every part one of them
+ * names: the older backups' own files, and the parts none of the kept ones names. `named` gives the
+ * names of the parts a backup names, by its file's name, or null when they are not known here, as
+ * of one made by hand, or with another password: it may name any part there, so then no part goes
+ * until it is no longer among the newest. The parts of a backup newer than the newest whole one,
+ * still being made, stay. With `keep` 0 nothing goes.
+ */
+export function unneededFiles(names: string[], keep: number, named: (backup: string) => readonly string[] | null): string[] {
+  if (keep <= 0) return [];
+  const files = names.map((name) => ({ name, of: backupFileOf(name) })).filter((file) => file.of !== null);
+  const whole = [...new Set(files.filter((file) => !file.of!.part).map((file) => file.of!.stem))].sort();
+  if (whole.length === 0) return [];
+  const kept = new Set(whole.slice(-keep));
+  const newest = whole[whole.length - 1];
+  const needed = new Set<string>();
+  let known = true;
+  for (const stem of kept) {
+    const parts = named(backupFileName(stem));
+    if (parts) for (const part of parts) needed.add(part);
+    else known = false;
+  }
+  return files
+    .filter(({ name, of }) => of!.stem < newest && (of!.part ? known && !needed.has(name) : !kept.has(of!.stem)))
+    .map((file) => file.name);
 }

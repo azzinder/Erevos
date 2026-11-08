@@ -127,6 +127,32 @@ export async function filesThere(names: readonly string[], prefix: string): Prom
   return new Set(names.filter((name) => all.has(name)));
 }
 
+/**
+ * What tells whether each of `names`, which start with `prefix`, was written again since: its size
+ * and when it was last written, as one text, by its name; none for one not here. Automatic backups
+ * name again a part whose files all have the stamps they had (lock/backup.ts). In a browser and on
+ * Sailfish OS, where neither is told, none at all: there no file counts as unchanged.
+ */
+export async function fileStamps(names: readonly string[], prefix: string): Promise<Map<string, string>> {
+  const stamps = new Map<string, string>();
+  const fs = fileSystem();
+  if (fs) {
+    for (const name of names) {
+      const file = new fs.File(fs.Paths.document, name);
+      const at = file.exists ? file.lastModified : null;
+      if (typeof at === 'number') stamps.set(name, `${file.size}:${at}`);
+    }
+    return stamps;
+  }
+  if (SHELL !== 'electron') return stamps;
+  const response = await shellFetch(`/__files?prefix=${encodeURIComponent(prefix)}&stamps=1`);
+  const listed = response.ok ? ((await response.json()) as unknown) : null;
+  if (!listed || typeof listed !== 'object' || Array.isArray(listed)) return stamps;
+  const wanted = new Set(names);
+  for (const [name, stamp] of Object.entries(listed as Record<string, unknown>)) if (wanted.has(name) && typeof stamp === 'string') stamps.set(name, stamp);
+  return stamps;
+}
+
 export async function deleteFile(name: string): Promise<void> {
   const fs = fileSystem();
   if (fs) {

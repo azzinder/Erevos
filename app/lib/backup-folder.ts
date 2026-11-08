@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
-import { hardBackupKey, isBackupPassword, makeBackup, newBackupHard, type BackupKey } from '../lock/backup';
+import { earlierParts, hardBackupKey, isBackupPassword, makeBackup, newBackupHard, unneededFiles, type BackupKey, type MakeOptions, type PartMade } from '../lock/backup';
 
 import { loadCloudBackup, sendToCloud, stopCloudBackup, type CloudBackup } from './backup-cloud';
 import { phoneCallsForBackup } from './backup-calls';
+import { folderPlace, loadLedger, saveLedger, serverPlace, type Book, type Ledger } from './backup-ledger';
 import { phoneSettingsForBackup } from './backup-native';
-import { writeBackup } from './backup-place';
+import { deleteBackupFiles, listBackupFiles, writeBackup } from './backup-place';
 import { phoneSmsForBackup } from './backup-sms';
 import { panicFolderChanged } from './panic';
 import { fromBase64, isHardCost, toBase64, type HardCost } from './crypto';
@@ -19,22 +20,31 @@ export { CAN_AUTO_BACKUP, CAN_BACK_UP, CAN_CLOUD_BACKUP, CAN_CLOUD_RESTORE, CLOU
 // Backups (lock/backup.ts) written to a folder the owner picks (lib/backup-place.ts): on the
 // phone with Android's folder picker, on a computer in the desktop app.
 //
-// Automatic backups are made when a space opens and the last one is older than the days chosen,
-// into the folder chosen, which keeps the KEEP newest, each with its parts (lock/backup.ts). Their
+// Automatic backups are made while a space is open, once the last one is older than the time
+// chosen (every 6 hours, day or week): a while after the space opens, then whenever Erevos looks
+// again, every CHECK_MS (app/_layout.tsx), and as it goes to the background, before it locks. Never
+// by a task in the background with no space open: only an open space knows which Collections stay
+// out of backups (lock/collection-data.ts). They go into the folder chosen, which keeps the KEEP
+// newest, with every part one of them names (lock/backup.ts): each names again the parts of the
+// ones before that it can, those lib/backup-ledger.ts says they named and the folder still lists,
+// and writes new ones only for the rest, so one made often costs little. Their
 // settings are kept in the keystore entry AUTO, outside every space, with the key their password
 // gives, so they need no password each time. Whichever space opens, the setting is the same, and
 // the backups are of all of them. Settings from before Argon2id kept PBKDF2's key: the next
 // automatic backup gives it Argon2id (lock/backup.ts), without the password, and keeps that key
 // instead. When the owner gave a server (lib/backup-cloud.ts), each automatic backup goes there
-// too, bare, on the phone and in the desktop app, and one the server missed goes the next time a
-// space opens, even when the folder's is not due.
+// too, bare, on the phone and in the desktop app, naming again the parts there in the same way,
+// and one the server missed goes the next time, even when the folder's is not due. One that failed
+// is tried again when a space opens, and by the looks between only after RETRY_MS. Where the
+// folder's files cannot be listed (Sailfish OS), each backup there is whole, as before.
 //
 // Backups hold AUTO, with its key, but not its folder, which only this phone may write in: a
 // backup restored on another phone leaves automatic backups on with no folder ('') until the
 // owner chooses one there, and meanwhile only the server gets them, when there is one.
 
-/** How automatic backups are made. `every` is days, 0 when off; `last` milliseconds, 0 if never.
- *  `hard` is Argon2id's salt and cost, null in settings from before it. */
+/** How automatic backups are made. `every` is days, a quarter of one for every 6 hours, 0 when
+ *  off; `last` milliseconds, 0 if never. `hard` is Argon2id's salt and cost, null in settings from
+ *  before it. */
 export type AutoBackup = {
   every: number;
   folder: string;
@@ -54,6 +64,12 @@ const hardOf = (value: unknown): AutoBackup['hard'] =>
 const AUTO = 'erevos.backup-auto';
 const DAY = 24 * 3600 * 1000;
 export const KEEP = 3;
+
+/** How often Erevos looks, while a space is open, whether an automatic backup is due. */
+export const CHECK_MS = 15 * 60 * 1000;
+
+// How long those looks wait to try again after a run that failed.
+const RETRY_MS = 60 * 60 * 1000;
 
 const errorText = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
@@ -117,16 +133,55 @@ export type AutoRun = { auto: AutoBackup | null; cloud: CloudBackup | null };
 
 let running: Promise<AutoRun> | null = null;
 
+// When the last run that failed ended, 0 after one that did not: the looks between wait RETRY_MS after it.
+let failedAt = 0;
+
+// An automatic backup into its folder: it names again the parts of the backups there that it can,
+// whose names and sizes the folder still lists, and the folder then keeps the KEEP newest backups
+// and every part one of them names. `book` is what the ledger says of that folder, and is told of
+// what this one named and what went. Where the folder's files cannot be listed, it is whole, and
+// the folder keeps the newest by their names (lock/backup.ts staleBackups).
+async function intoFolder(folder: string, key: BackupKey, options: Omit<MakeOptions, 'parts'>, now: number, book: Book): Promise<void> {
+  const there = await listBackupFiles(folder);
+  if (!there) {
+    await writeBackup(folder, (parts) => makeBackup(key, { ...options, parts }), now, KEEP);
+    return;
+  }
+  // The backups there this phone made, the newest first: their names sort by when they were made.
+  const backups = [...there.keys()].filter((name) => book.has(name)).sort().reverse();
+  const earlier = earlierParts(
+    backups.map((name) => book.get(name)!),
+    (part) => there.has(part.name) && (there.get(part.name) === -1 || there.get(part.name) === part.size),
+  );
+  let made: PartMade[] = [];
+  const written = await writeBackup(folder, (parts) => makeBackup(key, { ...options, parts, earlier, made: (named) => (made = named) }), now, 0);
+  book.set(written.name, made);
+  const after = (await listBackupFiles(folder)) ?? there;
+  const gone = new Set(unneededFiles([...after.keys()], KEEP, (name) => book.get(name)?.map((part) => part.name) ?? null));
+  await deleteBackupFiles(folder, [...gone]);
+  // The book keeps the backups still there.
+  for (const name of [...book.keys()]) if (!after.has(name) || gone.has(name)) book.delete(name);
+}
+
+// A place's book in the ledger, made if it has none yet.
+function bookOf(ledger: Ledger, place: string): Book {
+  const book = ledger.get(place) ?? new Map();
+  ledger.set(place, book);
+  return book;
+}
+
 /**
  * Makes an automatic backup if one is due (or `now` anyway, with `force`), and sends one to the
  * server if it has not the newest. Returns the settings as they are after it; a backup that failed
- * says why in `error`, and is tried again next time.
+ * says why in `error`, and is tried again next time. With `checking`, as when Erevos looks now and
+ * then whether one is due, one that failed is tried again only after RETRY_MS.
  */
-export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun> {
+export function runAutoBackup(force = false, now = Date.now(), { checking = false }: { checking?: boolean } = {}): Promise<AutoRun> {
   running ??= (async () => {
     let auto = await loadAutoBackup();
     let cloud = await loadCloudBackup();
     if (!auto || !auto.every) return { auto, cloud };
+    if (checking && failedAt && now - failedAt < RETRY_MS) return { auto, cloud };
     const every = auto.every * DAY;
     const due = !!auto.folder && (force || now - auto.last >= every);
     // Without a folder, the server's go by themselves, as often.
@@ -148,25 +203,39 @@ export function runAutoBackup(force = false, now = Date.now()): Promise<AutoRun>
       // Without the open space's Collection when its owner keeps it out of backups.
       const skip = await openCollectionSkips();
       const key = { key: fromBase64(auto.key), salt: fromBase64(auto.salt), iter: auto.iter, hard: { ...hard, salt: fromBase64(hard.salt) } };
+      // What the backups made before named, in the places they go to now: only those are kept.
+      const ledger = await loadLedger(key.key);
+      const places = new Set([...(auto.folder ? [folderPlace(auto.folder)] : []), ...(cloud ? [serverPlace(cloud.url)] : [])]);
+      for (const place of [...ledger.keys()]) if (!places.has(place)) ledger.delete(place);
       if (due) {
         try {
-          await writeBackup(auto.folder, (parts) => makeBackup(key, { parts, phoneSms, phoneCalls, native, skip }), now, KEEP);
+          await intoFolder(auto.folder, key, { phoneSms, phoneCalls, native, skip }, now, bookOf(ledger, folderPlace(auto.folder)));
           auto = { ...auto, last: now, error: '' };
         } catch (error) {
           auto = { ...auto, error: errorText(error) };
         }
         await secureSet(AUTO, JSON.stringify(auto));
       }
-      if (cloud && cloudDue) cloud = await sendToCloud(cloud, (parts) => makeBackup(key, { parts, phoneSms, phoneCalls, native, bare: true, skip }), KEEP, now);
+      if (cloud && cloudDue) {
+        const book = bookOf(ledger, serverPlace(cloud.url));
+        cloud = await sendToCloud(cloud, (parts, reuse) => makeBackup(key, { parts, phoneSms, phoneCalls, native, bare: true, skip, ...reuse }), KEEP, now, book);
+      }
+      await saveLedger(key.key, ledger);
     } catch (error) {
       auto = { ...auto, error: errorText(error) };
       await secureSet(AUTO, JSON.stringify(auto));
     }
+    failedAt = auto.error || cloud?.error ? now : 0;
     return { auto, cloud };
   })().finally(() => {
     running = null;
   });
   return running;
+}
+
+/** Makes an automatic backup if one is due, as Erevos looks now and then while a space is open. */
+export function checkAutoBackup(): Promise<AutoRun> {
+  return runAutoBackup(false, Date.now(), { checking: true });
 }
 
 /**

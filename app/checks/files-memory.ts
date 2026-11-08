@@ -35,3 +35,23 @@ export async function filesThere(names: readonly string[], prefix: string): Prom
   const all = new Set(await listFiles(prefix));
   return new Set(names.filter((name) => all.has(name)));
 }
+
+// A file's stamp: its size, and a number of its bytes' own, as when it was written. Bytes put in
+// their place, by writeBytes or straight into `blobs`, get a new one, as a file written again does.
+const written = new WeakMap<Uint8Array, number>();
+let writes = 0;
+
+/** Turns stamps off, as in a browser, where none are told; or on again. */
+export const stampsTold = { on: true };
+
+export async function fileStamps(names: readonly string[], _prefix: string): Promise<Map<string, string>> {
+  const stamps = new Map<string, string>();
+  if (!stampsTold.on) return stamps;
+  for (const name of names) {
+    const bytes = blobs.get(name);
+    if (!bytes) continue;
+    if (!written.has(bytes)) written.set(bytes, ++writes);
+    stamps.set(name, `${bytes.length}:${written.get(bytes)}`);
+  }
+  return stamps;
+}
