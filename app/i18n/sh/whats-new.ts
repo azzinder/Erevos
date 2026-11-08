@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection).":
+    "**TV u Zbirci**: nova kartica **TV** u Zbirci pušta TV kanale s IPTV lista (.m3u), po njihovom linku ili iz datoteke, ili s javne liste besplatnih kanala iptv-org, po državi ili cijele, u njihovim grupama, s pretragom, na Androidu, na računaru i u pregledniku. TV vodiča nema, logotipi se prikazuju samo ako ih uključiš, a ime i link kanala, ili radio stanice, mogu se poslati u razgovor. Vidi [Zbirka](#collection).",
   "**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping.":
     "**Radio koji nastavlja svirati**: kad server stanice, ili proxy na putu, prekine tok, ili mreža na trenutak nestane, Erevos se sam ponovo poveže nakon nekoliko sekundi, umjesto da stane.",
   "**Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u, .pls) that names many stations and adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file from your device. Only stations with an https link are added, and Erevos says how many were left out.":

@@ -35,6 +35,7 @@ Makers and licences are as the projects' own packages and files state them.
 | [jsQR](https://github.com/cozmo/jsQR) | Cosmo Wolfe | Apache-2.0 | Reading a QR code from a picture in the web app |
 | [ZXing](https://github.com/zxing/zxing) | The ZXing authors | Apache-2.0 | Reading a QR code from a photo on Android |
 | [AndroidX Media3](https://github.com/androidx/media) (`media3-exoplayer`, `media3-session`, `media3-ui`) | The Android Open Source Project | Apache-2.0 | Playing the Collection's music and videos on Android, with the screen off and on the lock screen |
+| [hls.js](https://github.com/video-dev/hls.js) | The hls.js authors (video-dev) | Apache-2.0 | Playing HLS streams (TV channels, radio) in the desktop app and a browser, where the browser cannot by itself |
 | [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) | Kazuhiko Arase | MIT | Drawing the QR codes of the donation page |
 | [react-native-svg](https://github.com/react-native-community/react-native-svg) | Horcrux and the React Native community | MIT | Drawing the stickers |
 | [Electron](https://github.com/electron/electron) | The Electron contributors (a project of the OpenJS Foundation) | MIT; it carries Chromium (BSD-3-Clause, The Chromium Authors) and Node.js (MIT) | The computer app |
@@ -61,7 +62,7 @@ Every package the lockfiles hold, by part of Erevos, with its version, its licen
 
 ### The app's JavaScript packages
 
-Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 618 packages.
+Everything in `app/package-lock.json` that is not only for development: the packages the app is made of, and the tools Expo builds it with. 619 packages.
 
 | Package | Version | Licence |
 | --- | --- | --- |
@@ -413,6 +414,7 @@ Everything in `app/package-lock.json` that is not only for development: the pack
 | [hermes-parser](https://github.com/facebook/hermes) | 0.35.0 | MIT |
 | [hermes-parser](https://github.com/facebook/hermes) | 0.36.0 | MIT |
 | [hermes-parser](https://github.com/facebook/hermes) | 0.36.1 | MIT |
+| [hls.js](https://github.com/video-dev/hls.js) | 1.7.3 | Apache-2.0 |
 | [hosted-git-info](https://github.com/npm/hosted-git-info) | 7.0.2 | ISC |
 | [http-errors](https://github.com/jshttp/http-errors) | 2.0.1 | MIT |
 | [https-proxy-agent](https://github.com/TooTallNate/proxy-agents) | 7.0.6 | MIT |

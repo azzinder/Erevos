@@ -2997,11 +2997,14 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     }
   }, [e2e]);
 
-  // Files of these hidden chats' Collection handed over for a contact's chat (lib/hidden-send.ts), sent one after the other once the chat shows.
+  // Files of these hidden chats' Collection handed over for a contact's chat (lib/hidden-send.ts), sent one after the other once the chat shows;
+  // and a radio station's or TV channel's name and link (app/collection-send.tsx), sent as a message's text.
   useEffect(() => {
     if (!hiddenKey || !e2e || !selected?.startsWith(CONTACT_PREFIX)) return;
     const peer = selected;
     let sending = Promise.resolve();
+    const said = forwardedTo(peer)?.text;
+    if (said) sending = sending.then(() => send(undefined, false, { text: said }, peer));
     for (let shared = takeShared(peer); shared; shared = takeShared(peer)) {
       const one = shared;
       sending = sending.then(() => sendAttachment(isSharedPhoto(one) ? 'photo' : 'file', () => readShared(one), peer));

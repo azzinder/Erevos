@@ -17,8 +17,31 @@ import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
 import { foundStations, HLS, httpsLink, linkStations, playableStations, playlistLinks, playlistStations, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
+import {
+  channelGroups,
+  channelLink,
+  channelMatches,
+  extinf,
+  groupName,
+  homeCountry,
+  IPTV_ORG_ALL,
+  IPTV_ORG_COUNTRIES,
+  iptvOrgCountry,
+  listFromLink,
+  logoType,
+  MOST_LISTED_CHANNELS,
+  playableChannels,
+  tvChannels,
+} from '../lib/collection-tv';
 import { moved, playlistItems } from '../lib/collection-view';
 import {
+  addChannel,
+  addChannels,
+  deleteChannel,
+  deleteChannelGroup,
+  MAX_CHANNELS,
+  renameChannel,
+  setCollectionOption,
   addPlaylist,
   addStation,
   addStations,
@@ -370,4 +393,147 @@ t('stations are kept sealed with the place, https only, and a deleted one leaves
   c = await loadCollection(p);
   assert.equal(c.stations?.length, 1);
   assert.ok(c.gone.some((g) => g.id === two.id));
+});
+
+t('an IPTV list gives each channel with its group and logo, names with commas, and keeps same-name channels', () => {
+  const list = [
+    '﻿#EXTM3U x-tvg-url="https://epg.example/guide.xml"',
+    '#EXTINF:-1 tvg-id="a.gr" tvg-name="Alpha, HD" tvg-logo="https://logo.example/a.png" group-title="News;General",Alpha, the news (720p)',
+    '#EXTVLCOPT:http-user-agent=Something',
+    'https://a.example/live/index.m3u8',
+    '#EXTINF:-1 tvg-logo="http://logo.example/b.png",Beta',
+    '#EXTGRP:Sports',
+    'https://b.example/stream.ts',
+    '#EXTINF:-1 tvg-name="Gamma",',
+    'http://plain.example/g.m3u8',
+    '#EXTINF:-1 group-title="News",Alpha, the news (720p)',
+    'https://a2.example/live.m3u8?token=1',
+    '#EXTINF:-1 group-title="Music",',
+    'https://m.example/play?type=m3u8',
+    '',
+  ].join('\r\n');
+  assert.deepEqual(tvChannels(list), [
+    { name: 'Alpha, the news (720p)', url: 'https://a.example/live/index.m3u8', group: 'News', logo: 'https://logo.example/a.png' },
+    { name: 'Beta', url: 'https://b.example/stream.ts', group: 'Sports', logo: 'http://logo.example/b.png' },
+    { name: 'Gamma', url: 'http://plain.example/g.m3u8', group: '', logo: '' },
+    { name: 'Alpha, the news (720p)', url: 'https://a2.example/live.m3u8?token=1', group: 'News', logo: '' },
+    { name: '', url: 'https://m.example/play?type=m3u8', group: 'Music', logo: '' },
+  ]);
+  assert.deepEqual(extinf('#EXTINF:-1 tvg-name="a, b" group-title="x",Name, with comma'), { attributes: { 'tvg-name': 'a, b', 'group-title': 'x' }, name: 'Name, with comma' });
+  assert.deepEqual(tvChannels('#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nhttps://s.example/1.ts\n'), []);
+  const { channels, plain } = playableChannels(tvChannels(list));
+  assert.equal(plain, 1);
+  assert.deepEqual(
+    channels.map((c) => [c.name, c.mime, c.group, c.logo]),
+    [
+      ['Alpha, the news (720p)', HLS, 'News', 'https://logo.example/a.png'],
+      ['Beta', '', 'Sports', ''],
+      ['Alpha, the news (720p)', HLS, 'News', ''],
+      ['m.example', HLS, 'Music', ''],
+    ],
+  );
+  // Never more than a list may add.
+  const huge = Array.from({ length: MOST_LISTED_CHANNELS + 5 }, (_, i) => `#EXTINF:-1,C${i}\nhttps://c.example/${i}.m3u8`).join('\n');
+  assert.equal(tvChannels(huge).length, MOST_LISTED_CHANNELS);
+});
+
+t('a list by its link is fetched once; one channel by its link is not fetched; https only', async () => {
+  const asked: string[] = [];
+  const get = (body: string, status = 200) => async (url: string) => {
+    asked.push(url);
+    return { status, bytes: utf8Encode(body) };
+  };
+  const got = await listFromLink('https://iptv.example/list.m3u', get('#EXTM3U\n#EXTINF:-1 group-title="Kids",One\nhttps://one.example/a.m3u8\n#EXTINF:-1,Two\nhttp://two.example/\n'));
+  assert.ok('many' in got && got.many.length === 1 && got.plain === 1 && got.many[0].group === 'Kids');
+  assert.deepEqual(asked, ['https://iptv.example/list.m3u']);
+  assert.deepEqual(await listFromLink('https://iptv.example/x', get('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nlow.m3u8\n')), { one: { url: 'https://iptv.example/x', mime: HLS } });
+  await assert.rejects(listFromLink('https://iptv.example/x', get('', 404)), RadioLinkError);
+  await assert.rejects(listFromLink('https://iptv.example/x', get('hello')), RadioLinkError);
+  await assert.rejects(listFromLink('http://iptv.example/list.m3u', get('')), RadioLinkError);
+  assert.equal(asked.length, 4);
+  assert.deepEqual(channelLink(' https://tv.example/live.m3u8 '), { url: 'https://tv.example/live.m3u8', mime: HLS });
+  assert.deepEqual(channelLink('https://tv.example/live.ts'), { url: 'https://tv.example/live.ts', mime: '' });
+  assert.throws(() => channelLink('http://tv.example/live.m3u8'), RadioLinkError);
+  assert.equal(iptvOrgCountry('GR'), 'https://iptv-org.github.io/iptv/countries/gr.m3u');
+  assert.equal(iptvOrgCountry('greece'), null);
+  assert.equal(IPTV_ORG_ALL, 'https://iptv-org.github.io/iptv/index.m3u');
+  assert.equal(homeCountry('el-GR', 'el'), 'gr');
+  assert.equal(homeCountry('en-US', 'en'), 'us');
+  assert.equal(homeCountry(undefined, 'el'), 'gr');
+  assert.equal(homeCountry('de', 'de'), 'de');
+  assert.ok(IPTV_ORG_COUNTRIES.includes('gr') && IPTV_ORG_COUNTRIES.every((c) => /^[a-z]{2}$/.test(c)));
+});
+
+t('channels are grouped and searched, and only a picture is taken for a logo', () => {
+  const list = [
+    { name: 'Ωμέγα', group: 'News' },
+    { name: 'Alpha', group: '' },
+    { name: 'Beta', group: 'Kids' },
+    { name: 'Gamma', group: 'News' },
+  ];
+  assert.deepEqual(
+    channelGroups(list).map((g) => [g.group, g.channels.map((c) => c.name)]),
+    [
+      ['Kids', ['Beta']],
+      ['News', ['Ωμέγα', 'Gamma']],
+      ['', ['Alpha']],
+    ],
+  );
+  assert.ok(channelMatches(list[0], 'ωμεγα'));
+  assert.ok(channelMatches(list[3], 'news'));
+  assert.ok(!channelMatches(list[2], 'news'));
+  assert.equal(groupName(' Sports;News '), 'Sports');
+  assert.equal(groupName('x'.repeat(100)).length, 60);
+  assert.equal(logoType(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d])), 'image/png');
+  assert.equal(logoType(new Uint8Array([0xff, 0xd8, 0xff, 0xe0])), 'image/jpeg');
+  assert.equal(logoType(utf8Encode('RIFF\0\0\0\0WEBPVP8 ')), 'image/webp');
+  assert.equal(logoType(utf8Encode('<svg xmlns="http://www.w3.org/2000/svg"/>')), null);
+});
+
+t('channels are kept sealed with the place, https only, without duplicate links, and a group goes at once', async () => {
+  const p = place();
+  const result = await addChannels(p, [
+    { name: 'Alpha', url: 'https://a.example/live.m3u8', mime: HLS, group: 'News;General', logo: 'https://logo.example/a.png' },
+    { name: 'Alpha', url: 'https://a2.example/live.m3u8', mime: HLS, group: 'News' },
+    { name: 'Again', url: 'https://a.example/live.m3u8', mime: HLS },
+    { name: 'Plain', url: 'http://plain.example/', mime: '' },
+    { name: 'Beta', url: 'https://b.example/b.ts', mime: '', group: 'Kids', logo: 'http://logo.example/b.png' },
+  ]);
+  assert.deepEqual(result, { added: 3, skipped: 2 });
+  let c = await loadCollection(p);
+  assert.deepEqual(
+    c.channels?.map((s) => [s.name, s.mime, s.group, s.logo]),
+    [
+      ['Alpha', HLS, 'News', 'https://logo.example/a.png'],
+      ['Alpha', HLS, 'News', ''],
+      ['Beta', '', 'Kids', ''],
+    ],
+  );
+  for (const text of files.values()) assert.ok(!text.includes('a.example'));
+  assert.equal((await loadCollection(place())).channels, undefined);
+  const one = await addChannel(p, { name: 'Gamma', url: 'https://g.example/g.m3u8', mime: HLS });
+  assert.equal(one.group, '');
+  await assert.rejects(addChannel(p, { name: 'Gamma again', url: 'https://g.example/g.m3u8', mime: HLS }));
+  await renameChannel(p, one.id, 'Gamma TV');
+  c = await loadCollection(p);
+  assert.equal(c.channels?.find((s) => s.id === one.id)?.name, 'Gamma TV');
+  assert.equal(await deleteChannelGroup(p, 'News'), 2);
+  assert.equal(await deleteChannelGroup(p, 'News'), 0);
+  await deleteChannel(p, one.id);
+  c = await loadCollection(p);
+  assert.deepEqual(c.channels?.map((s) => s.name), ['Beta']);
+  assert.ok(c.gone.some((g) => g.id === one.id));
+  await deleteChannelGroup(p, 'Kids');
+  assert.equal((await loadCollection(p)).channels, undefined);
+  // The logos are off until turned on, a choice of the place's own.
+  assert.equal(c.showLogos, undefined);
+  await setCollectionOption(p, 'showLogos', true);
+  assert.equal((await loadCollection(p)).showLogos, true);
+});
+
+t('a place keeps at most MAX_CHANNELS channels', async () => {
+  const p = place();
+  const many = Array.from({ length: MAX_CHANNELS + 3 }, (_, i) => ({ name: `C${i}`, url: `https://c.example/${i}.m3u8`, mime: HLS }));
+  assert.deepEqual(await addChannels(p, many), { added: MAX_CHANNELS, skipped: 3 });
+  assert.equal((await loadCollection(p)).channels?.length, MAX_CHANNELS);
 });

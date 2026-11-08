@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { FoundRow } from '../components/found-row';
 import { Button, Input, Page, Text } from '../components/ui';
 import { copyToSend } from '../lib/collection-out';
+import { forwardTo } from '../lib/forward';
 import { hiddenCollection } from '../lib/collection-place';
 import { enterHiddenScreen, hiddenScreens, useOpenHiddenPlace } from '../lib/hidden-contacts';
 import { collectionIds, hiddenTargets, type HiddenTarget } from '../lib/hidden-send';
@@ -22,10 +23,17 @@ import { useColors } from '../theme/context';
 // the place lends while it is open (lib/hidden-contacts.ts). Nothing of the space's chats is read
 // here, and the space's Send to never reads a hidden place's Collection. A file other than a photo
 // is handed as a source read from its encrypted chunks (lib/collection-out.ts); the chat or group
-// picked opens in the hidden chats and sends it, as a photo or file picked there would.
+// picked opens in the hidden chats and sends it, as a photo or file picked there would. A radio
+// station's or TV channel's name and link (`text`, components/collection-radio.tsx sendLinkToChat)
+// go the same way, to the same chats only: a contact's chat sends it as a message once it opens,
+// a group's has it ready to send.
+
+/** The most of a text sent from here: a name and a link. */
+const MOST_TEXT = 2200;
 
 export default function CollectionSendScreen() {
-  const params = useLocalSearchParams<{ collection?: string }>();
+  const params = useLocalSearchParams<{ collection?: string; text?: string }>();
+  const text = String(params.text ?? '').trim().slice(0, MOST_TEXT);
   const colors = useColors();
   const open = useOpenHiddenPlace();
   const [sending, setSending] = useState<CollectionItem[] | null>(null);
@@ -64,7 +72,15 @@ export default function CollectionSendScreen() {
   const targets = useMemo(() => hiddenTargets(open?.erevos() ?? [], groups, query), [open, groups, query]);
 
   async function choose(target: HiddenTarget) {
-    if (!open || !sending || sending.length === 0 || busy) return;
+    if (!open || busy) return;
+    if (text) {
+      forwardTo(target.to, { text, photo: null });
+      if (target.kind === 'group') open.openGroup?.(target.to.slice('group:'.length));
+      else open.open(target.to.slice('contact:'.length));
+      router.dismiss(hiddenScreens());
+      return;
+    }
+    if (!sending || sending.length === 0) return;
     setBusy(true);
     try {
       const copies: SharedFile[] = [];
@@ -94,18 +110,24 @@ export default function CollectionSendScreen() {
     <Page>
       <Text variant="title">{t('Send to')}</Text>
       {note ? <Text color={colors.warning}>{note}</Text> : null}
-      {sending && sending.length > 0 ? (
+      {text ? (
+        <Text numberOfLines={4} tone="muted">
+          {text}
+        </Text>
+      ) : sending && sending.length > 0 ? (
         <Text numberOfLines={4} tone="muted">
           {sending.map((i) => i.file.name).join(', ')}
         </Text>
       ) : sending ? (
         <Text tone="muted">{t('Nothing came to send.')}</Text>
       ) : null}
-      {sending && sending.length > 0 ? (
+      {text || (sending && sending.length > 0) ? (
         <>
           <Input value={query} onChangeText={setQuery} placeholder={t('Search chats')} accessibilityLabel={t('Search chats')} />
           <Text variant="caption" tone="muted">
-            {t('The files go as soon as the chat or group you pick opens. Only the chats of this hidden place are listed.')}
+            {text
+              ? t('The name and link go to the chat or group you pick: a chat sends them as it opens, a group has them ready to send. Only the chats of this hidden place are listed.')
+              : t('The files go as soon as the chat or group you pick opens. Only the chats of this hidden place are listed.')}
           </Text>
           {targets.length === 0 ? <Text tone="muted">{t('No chat matches.')}</Text> : null}
           {targets.map((target) => (

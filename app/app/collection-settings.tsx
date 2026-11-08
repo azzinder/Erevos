@@ -55,7 +55,7 @@ export default function CollectionSettingsScreen() {
       .then((c) => {
         if (!active) return;
         setBackup(c.backup);
-        setOptions({ deleteOriginals: c.deleteOriginals === true, stopOnLock: c.stopOnLock === true, showTitle: c.showTitle === true, devices: c.devices === true });
+        setOptions({ deleteOriginals: c.deleteOriginals === true, stopOnLock: c.stopOnLock === true, showTitle: c.showTitle === true, devices: c.devices === true, showLogos: c.showLogos === true });
       })
       .catch(() => {
         if (!active) return;
@@ -155,6 +155,15 @@ export default function CollectionSettingsScreen() {
           />
         </Card>
       ) : null}
+      <Card>
+        <Switch
+          title={t('Show channel logos')}
+          text={t('In TV, each channel’s logo is fetched from its server, which then sees this device’s IP address. Otherwise a TV icon shows.')}
+          on={options?.showLogos === true}
+          disabled={!options}
+          onPress={() => void turn('showLogos')}
+        />
+      </Card>
     </Page>
   );
 }

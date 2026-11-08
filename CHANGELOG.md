@@ -14,6 +14,17 @@ On main, not released yet:
 
 ### For you
 
+- **TV in the Collection**: a new **TV** tab, beside Radio, keeps TV channels sealed in the Collection's catalogue,
+  each by its https link with its group and logo: from an IPTV list (.m3u) by its link, read once, or from a file on
+  the device, read there; from iptv-org's public list of free channels, by country (the device's region first) or
+  whole; or one at a time. Up to 15,000 in each Collection, a link once; same-name channels all stay; http ones are
+  left out and counted. Grouped by the list's groups (iptv-org's "News;Sports" by the first), with a row to show one
+  group and a search by name; a channel's menu renames it, deletes it or its whole group, or sends its name and link
+  to a chat, as a radio station's menu now does too. It plays as a video on Android (Media3, HLS included, with the
+  station's reconnecting), and in the desktop app and a browser, an HLS stream through hls.js 1.7.3 (without a
+  worker) where the engine cannot play it, which needs the stream's server to let the page read it; radio stations
+  with an HLS stream now play there too. Logos are fetched only with **Show channel logos** on (off unless turned
+  on), as their servers see the device's IP address. No programme guide.
 - **Radio that keeps playing**: a station whose server or proxy drops the stream (ends it quietly, errs, or
   stalls), or whose network goes for a moment, is asked again after 1, 2, 4… seconds (at most 30, 12 tries in a
   row) instead of stopping; on Android, on a computer and in a browser.

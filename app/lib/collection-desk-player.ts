@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import type Hls from 'hls.js';
+
 import { itemSource, openItem, type CollectionItem } from '../lock/collection-data';
 import type { PlayerState, Repeat } from '../modules/erevos-collection';
 import { MOST_IN_MEMORY, TooLargeToOpenError, memoryUri, onCollectionMemoryDropped, openItemUri, releaseMemoryUri } from './collection-memory';
 import { jumpTo, newQueue, nextIndex, previousIndex, setRepeat, setShuffle, type Queue } from './collection-queue';
+import { HLS } from './collection-radio';
 import { playKind, playType } from './collection-view';
 import { readTags, type MediaTags } from './media-tags';
 import { SHELL, shellFetch } from './shell';
@@ -33,6 +36,13 @@ import { srtToVtt, subtitlesText } from './subtitles';
 // and seeks at once and nothing of it is held whole. The shell holds the file's key, in its memory
 // only, by a token in the element's address, until the file is let go of here, the list stops, the
 // space locks or the panic button; a shell from before it has the page decrypt into memory as above.
+//
+// A TV channel (lib/collection-tv.ts) plays as a station does, with the same reconnecting, but as a
+// video (deskPlayChannel). An HLS stream, which only Safari's engine plays by itself, is played
+// through hls.js where the element cannot: loaded only then, without a worker (the pages' policy
+// lets none from a blob:), the stream's pieces fetched by the page over https, which the stream's
+// server has to let it (CORS). A fatal network error asks the stream again as a dropped station
+// is; a fatal media error is recovered from once, then said.
 
 type Listener = (state: PlayerState) => void;
 
@@ -66,7 +76,12 @@ let turn = 0;
 // still wants it playing; one that then plays a minute starts the count anew. After
 // MOST_RECONNECTS tries in a row it is left stopped, and the error said.
 let station: string | null = null;
+// The station's type: HLS (lib/collection-radio.ts) or ''.
+let stationMime = '';
 let stationWanted = false;
+// The hls.js player of an HLS stream the element cannot play by itself, and whether it recovered from a media error.
+let hls: Hls | null = null;
+let hlsRecovered = false;
 let reconnects = 0;
 let reconnectedAt = 0;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -99,10 +114,59 @@ function reconnectStation(): boolean {
     reconnectedAt = Date.now();
     error = null;
     ended = false;
-    media.src = station;
-    void media.play().catch(() => undefined);
+    void streamFrom(media, station, stationMime, mine);
   }, delay);
   return true;
+}
+
+function dropHls(): void {
+  if (!hls) return;
+  hls.destroy();
+  hls = null;
+}
+
+/**
+ * Plays the station's stream `url` in `m`: by the element itself, or for an HLS stream it cannot
+ * play, through hls.js, loaded now. Nothing happens if another file was asked for meanwhile (`mine`).
+ */
+async function streamFrom(m: HTMLVideoElement, url: string, mime: string, mine: number): Promise<void> {
+  dropHls();
+  hlsRecovered = false;
+  if (mime === HLS && !m.canPlayType('application/vnd.apple.mpegurl')) {
+    let Player: typeof Hls | null = null;
+    try {
+      Player = (await import('hls.js')).default;
+    } catch {
+      Player = null;
+    }
+    if (mine !== turn || station !== url) return;
+    if (Player?.isSupported()) {
+      const made = new Player({ enableWorker: false, lowLatencyMode: false });
+      hls = made;
+      made.on(Player.Events.ERROR, (_event, data) => {
+        if (!data.fatal || hls !== made) return;
+        if (data.type === Player.ErrorTypes.MEDIA_ERROR && !hlsRecovered) {
+          hlsRecovered = true;
+          made.recoverMediaError();
+          return;
+        }
+        if (data.type === Player.ErrorTypes.NETWORK_ERROR && reconnectStation()) return;
+        error = 'MEDIA_ERROR';
+        buffering = false;
+        tell();
+      });
+      made.attachMedia(m);
+      made.loadSource(url);
+      void m.play().catch(() => undefined);
+      return;
+    }
+  }
+  m.src = url;
+  try {
+    await m.play();
+  } catch {
+    // Paused, or an error, which its event tells.
+  }
 }
 const listeners = new Set<Listener>();
 
@@ -244,7 +308,8 @@ function element(): HTMLVideoElement {
     } else void open(next);
   });
   m.addEventListener('error', () => {
-    if (!m.getAttribute('src')) return;
+    // hls.js says its own errors (streamFrom).
+    if (!m.getAttribute('src') || hls) return;
     if (reconnectStation()) return;
     error = 'MEDIA_ERROR';
     tell();
@@ -255,7 +320,9 @@ function element(): HTMLVideoElement {
 
 function letGo(): void {
   clearStationTimers();
+  dropHls();
   station = null;
+  stationMime = '';
   stationWanted = false;
   if (media) {
     if (index >= 0 && media.getAttribute('src') && !media.ended) positions.set(index, [Math.round(media.currentTime * 1000), durationNow(media)]);
@@ -375,8 +442,17 @@ async function open(at: number): Promise<void> {
 }
 
 /** Plays an internet radio station from its https link, as a list of one with no length. */
-export async function deskPlayStation(url: string): Promise<void> {
-  turn++;
+export function deskPlayStation(url: string, mime = ''): Promise<void> {
+  return playLive(url, mime, false);
+}
+
+/** Plays a TV channel from its https link, as a station but shown as a video (attachDeskVideo); an HLS one through hls.js where it needs. */
+export function deskPlayChannel(url: string, mime: string): Promise<void> {
+  return playLive(url, mime, true);
+}
+
+async function playLive(url: string, mime: string, isVideo: boolean): Promise<void> {
+  const mine = ++turn;
   letGo();
   list = [];
   resumes = [];
@@ -385,22 +461,18 @@ export async function deskPlayStation(url: string): Promise<void> {
   positions.clear();
   queue = newQueue(1, 0);
   index = 0;
-  video = false;
+  video = isVideo;
   error = null;
   ended = false;
   buffering = true;
   tell();
   const m = element();
   station = url;
+  stationMime = mime === HLS ? HLS : '';
   stationWanted = true;
   reconnects = 0;
   reconnectedAt = 0;
-  m.src = url;
-  try {
-    await m.play();
-  } catch {
-    // Paused, or an error, which its event tells.
-  }
+  await streamFrom(m, url, stationMime, mine);
   tell();
 }
 
@@ -441,7 +513,8 @@ export function deskResume(): void {
       clearStationTimers();
       error = null;
       ended = false;
-      media.src = station;
+      void streamFrom(media, station, stationMime, turn);
+      return;
     }
     void media.play().catch(() => undefined);
     return;

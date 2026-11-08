@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
+import { router } from 'expo-router';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
@@ -15,7 +16,7 @@ import { pickFile, TooLargeError } from '../lib/pick-file';
 import { addStation, addStations, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
-import { MoreIcon, PencilIcon, SignalIcon, TrashIcon } from './icons';
+import { MoreIcon, PencilIcon, SendIcon, SignalIcon, TrashIcon } from './icons';
 import { Button, Input, Sheet, Text } from './ui';
 
 // The Collection's Radio tab (app/collection.tsx): internet radio stations, each by its https link,
@@ -24,14 +25,25 @@ import { Button, Input, Sheet, Text } from './ui';
 // collection-radio.ts), a playlist's (.m3u, .pls) fetched once for the stream's own, or found in
 // Radio Browser by the words typed, sent only when Search is pressed. A playlist that names several
 // stations (by its link, or a .m3u or .pls file from this device) adds each of them. What the
-// station learns is said where it is added and where it plays: this device's IP address.
+// station learns is said where it is added and where it plays: this device's IP address. Its menu
+// also sends its name and link to a chat (sendLinkToChat), as text.
 
 type Options = { showTitle: boolean; stopOnLock: boolean };
+
+/**
+ * Sends a station's or a channel's name and link to a chat, as a message's text: through Send to
+ * (app/share.tsx), or from a hidden place's Collection (`hidden`) through its own picker (app/
+ * collection-send.tsx), which lists only that hidden place's chats.
+ */
+export function sendLinkToChat(name: string, url: string, hidden: boolean): void {
+  router.push(`${hidden ? '/collection-send' : '/share'}?text=${encodeURIComponent(`${name}\n${url}`)}`);
+}
 
 export function StationsList({
   header,
   stations,
   place,
+  hidden,
   options,
   onAdd,
   onChanged,
@@ -41,6 +53,7 @@ export function StationsList({
   header: ReactElement;
   stations: CollectionStation[];
   place: CollectionPlace | null;
+  hidden: boolean;
   options: Options;
   onAdd: () => void;
   onChanged: () => void;
@@ -129,6 +142,16 @@ export function StationsList({
           onPress={() => {
             if (menu) setRenaming({ id: menu.id, text: menu.name });
             setMenu(null);
+          }}
+          colors={colors}
+        />
+        <SheetRow
+          icon={<SendIcon color={colors.primary} cut={colors.sheet} size={22} />}
+          title={t('Send to a chat')}
+          onPress={() => {
+            const s = menu;
+            setMenu(null);
+            if (s) sendLinkToChat(s.name, s.url, hidden);
           }}
           colors={colors}
         />

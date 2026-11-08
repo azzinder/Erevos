@@ -4,6 +4,7 @@
 
 import { bytesSource, eachPiece, FileMissingError, keepFile, readFile, refSource, room, type Source } from '../lib/attachments';
 import { HLS, httpsLink } from '../lib/collection-radio';
+import { groupName } from '../lib/collection-tv';
 import { randomBytes, sha256Bytes, toHex, utf8Encode } from '../lib/crypto';
 import { filesThere } from '../lib/files';
 import { t } from '../lib/i18n';
@@ -90,7 +91,17 @@ export type Collection = {
   playlists?: CollectionPlaylist[];
   /** Internet radio stations, by their https link (lib/collection-radio.ts). */
   stations?: CollectionStation[];
+  /** Channels' logos are fetched and shown (their servers see the device's IP address); otherwise an icon. */
+  showLogos?: boolean;
+  /** TV channels, by their https link, from IPTV lists or one at a time (lib/collection-tv.ts). */
+  channels?: CollectionChannel[];
 };
+
+/**
+ * A TV channel: its own id, its name, the https link it plays from, its type (an HLS stream, or ''),
+ * its group ('' for none), its logo's https link ('' for none), and when it last changed.
+ */
+export type CollectionChannel = { id: string; name: string; url: string; mime: string; group: string; logo: string; at: number };
 
 /**
  * An internet radio station: its own id, its name, the https link it plays from, its type (an HLS
@@ -109,8 +120,8 @@ export type CollectionPosition = { id: string; ms: number; at: number };
 export type CollectionPlaylist = { id: string; name: string; items: string[]; at: number };
 
 /** The place's own choices for its Collection, besides backups: each off until turned on. */
-export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices';
-const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices'];
+export type CollectionOption = 'deleteOriginals' | 'stopOnLock' | 'showTitle' | 'devices' | 'showLogos';
+const OPTIONS: CollectionOption[] = ['deleteOriginals', 'stopOnLock', 'showTitle', 'devices', 'showLogos'];
 
 export const FILE = 'erevos-collection';
 const BLOCK = 16 * 1024;
@@ -129,6 +140,8 @@ export const MAX_PLAYLIST_ITEMS = 2000;
 export const MAX_PLAYLISTS = 200;
 /** How many stations a place has at most. */
 export const MAX_STATIONS = 1000;
+/** How many TV channels a place has at most: iptv-org's whole list fits. */
+export const MAX_CHANNELS = 15000;
 
 const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 
@@ -208,6 +221,18 @@ function checked(value: unknown): Collection {
     const url = httpsLink(x.url);
     if (name && url && stations.length < MAX_STATIONS) stations.push({ id: x.id, name, url, mime: x.mime === HLS ? HLS : '', at: x.at });
   }
+  const channels: CollectionChannel[] = [];
+  const channelIds = new Set<string>();
+  for (const s of Array.isArray(v?.channels) ? v.channels : []) {
+    if (channels.length >= MAX_CHANNELS) break;
+    const x = s as Partial<CollectionChannel> | null;
+    if (typeof x?.id !== 'string' || !ID.test(x.id) || channelIds.has(x.id) || typeof x.name !== 'string' || typeof x.url !== 'string' || !isTime(x.at)) continue;
+    const name = cleanFolderName(x.name);
+    const url = httpsLink(x.url);
+    if (!name || !url) continue;
+    channelIds.add(x.id);
+    channels.push(channelOf(x.id, name, url, x.mime, x.group, x.logo, x.at));
+  }
   const positions: CollectionPosition[] = [];
   for (const p of Array.isArray(v?.positions) ? v.positions : []) {
     const x = p as Partial<CollectionPosition> | null;
@@ -224,6 +249,20 @@ function checked(value: unknown): Collection {
     ...(positions.length > 0 ? { positions: positions.slice(-MAX_POSITIONS) } : {}),
     ...(playlists.length > 0 ? { playlists } : {}),
     ...(stations.length > 0 ? { stations } : {}),
+    ...(channels.length > 0 ? { channels } : {}),
+  };
+}
+
+// A channel as kept: its group cleaned (the first of iptv-org's "News;Sports"), its logo only an https link.
+function channelOf(id: string, name: string, url: string, mime: unknown, group: unknown, logo: unknown, at: number): CollectionChannel {
+  return {
+    id,
+    name,
+    url,
+    mime: mime === HLS ? HLS : '',
+    group: typeof group === 'string' ? groupName(group) : '',
+    logo: typeof logo === 'string' && logo ? (httpsLink(logo) ?? '') : '',
+    at,
   };
 }
 
@@ -611,6 +650,79 @@ export function deleteStation(place: CollectionPlace, id: string, now = Date.now
     const { stations: _was, ...rest } = c;
     const left = stations.filter((s) => s.id !== id);
     return { next: { ...rest, ...(left.length > 0 ? { stations: left } : {}), gone: marked(c.gone, [id], now) }, result: undefined };
+  });
+}
+
+/** A channel to add: its link and type, its name, and its group and logo's link when it has them. */
+export type NewChannel = { name: string; url: string; mime: string; group?: string; logo?: string };
+
+/** Adds one channel by its https link (lib/collection-tv.ts channelLink). Channels may share a name. */
+export async function addChannel(place: CollectionPlace, one: NewChannel, now = Date.now()): Promise<CollectionChannel> {
+  const { added } = await addChannels(place, [one], now);
+  if (added === 0) throw new Error(t('This channel is here already.'));
+  const c = await loadCollection(place);
+  return c.channels![c.channels!.length - 1];
+}
+
+/**
+ * Adds many channels at once, as an IPTV list names them: those whose link is here already (or
+ * twice in the list) are left out, and none past MAX_CHANNELS. Unlike stations, channels of the same
+ * name all stay. How many were added, and how many left out.
+ */
+export function addChannels(place: CollectionPlace, list: NewChannel[], now = Date.now()): Promise<{ added: number; skipped: number }> {
+  return change(place, async (c) => {
+    const channels = [...(c.channels ?? [])];
+    const urls = new Set(channels.map((s) => s.url));
+    let added = 0;
+    let skipped = 0;
+    for (const one of list) {
+      const url = httpsLink(one.url);
+      const name = cleanFolderName(one.name);
+      if (!url || !name || urls.has(url) || channels.length >= MAX_CHANNELS) {
+        skipped++;
+        continue;
+      }
+      channels.push(channelOf(newId(), name, url, one.mime, one.group ?? '', one.logo ?? '', now));
+      urls.add(url);
+      added++;
+    }
+    return { next: added > 0 ? { ...c, channels } : null, result: { added, skipped } };
+  });
+}
+
+export function renameChannel(place: CollectionPlace, id: string, name: string, now = Date.now()): Promise<void> {
+  const clean = cleanFolderName(name);
+  return change(place, async (c) => {
+    const channels = c.channels ?? [];
+    const channel = channels.find((s) => s.id === id);
+    if (!channel || !clean || clean === channel.name) return { next: null, result: undefined };
+    return { next: { ...c, channels: channels.map((s) => (s.id === id ? { ...s, name: clean, at: now } : s)) }, result: undefined };
+  });
+}
+
+/** Deletes a channel: it leaves a mark in `gone`, as a deleted station does. */
+export function deleteChannel(place: CollectionPlace, id: string, now = Date.now()): Promise<void> {
+  return change(place, async (c) => {
+    const channels = c.channels ?? [];
+    if (!channels.some((s) => s.id === id)) return { next: null, result: undefined };
+    const { channels: _was, ...rest } = c;
+    const left = channels.filter((s) => s.id !== id);
+    return { next: { ...rest, ...(left.length > 0 ? { channels: left } : {}), gone: marked(c.gone, [id], now) }, result: undefined };
+  });
+}
+
+/**
+ * Deletes every channel of a group ('' the channels with no group); how many went. They leave no
+ * marks: a group may hold thousands, which would push out of `gone` (MAX_GONE) the marks of files
+ * and folders that the linked devices need, and channels do not go to them.
+ */
+export function deleteChannelGroup(place: CollectionPlace, group: string): Promise<number> {
+  return change(place, async (c) => {
+    const channels = c.channels ?? [];
+    const left = channels.filter((s) => s.group !== group);
+    if (left.length === channels.length) return { next: null, result: 0 };
+    const { channels: _was, ...rest } = c;
+    return { next: { ...rest, ...(left.length > 0 ? { channels: left } : {}) }, result: channels.length - left.length };
   });
 }
 

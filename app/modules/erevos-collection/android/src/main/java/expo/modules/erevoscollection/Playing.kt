@@ -68,7 +68,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 @OptIn(UnstableApi::class)
 internal object Playing {
-  /** A file of the Collection (`file`), or an internet radio station by its https link (`url`). */
+  /** A file of the Collection (`file`), or an internet radio station or TV channel (`video`) by its https link (`url`). */
   class Item(val file: SealedFile?, val name: String, val mime: String, val video: Boolean, val resume: Long = 0L, val subtitles: SealedFile? = null, val subtitlesMime: String = "", val url: String? = null)
 
   private fun Item.close() {
@@ -247,7 +247,7 @@ internal object Playing {
       val stream = item.url
       val file = item.file
       if (stream != null) {
-        // A station: its https link as it is, an HLS stream said as such.
+        // A station or a channel: its https link as it is, an HLS stream said as such.
         builder.setUri(Uri.parse(stream))
         if (item.mime == MimeTypes.APPLICATION_M3U8) builder.setMimeType(MimeTypes.APPLICATION_M3U8)
       } else if (file != null) {

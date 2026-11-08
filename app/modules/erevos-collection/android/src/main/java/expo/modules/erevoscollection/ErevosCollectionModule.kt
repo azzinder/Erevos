@@ -161,12 +161,13 @@ class ErevosCollectionModule : Module() {
         for (entry in list) {
           val name = entry["name"] as? String ?: ""
           val mime = entry["mime"] as? String ?: ""
-          // An internet radio station: only by an https link (lib/collection-radio.ts).
+          // An internet radio station, or a TV channel (`video`): only by an https link
+          // (lib/collection-radio.ts, lib/collection-tv.ts).
           val url = entry["url"] as? String
           if (url != null) {
             val link = Uri.parse(url)
             if (link.scheme != "https" || link.host.isNullOrEmpty() || link.userInfo != null || url.length > 2048) throw IllegalArgumentException("Only https links")
-            items += Playing.Item(null, name, mime, false, url = url)
+            items += Playing.Item(null, name, mime, entry["video"] == true, url = url)
             continue
           }
           val resume = (entry["resume"] as? Number)?.toLong() ?: 0L

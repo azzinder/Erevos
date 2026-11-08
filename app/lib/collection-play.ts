@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { itemsWhole, keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionItem, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
+import { itemsWhole, keepPositions, loadCollection, placeIsOpen, positionOf, type CollectionChannel, type CollectionItem, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import type { FileRef } from '../lock/attachment-files';
 import { collectionNative, type PlayerState, type Repeat, type SealedRef } from '../modules/erevos-collection';
 import {
@@ -14,6 +14,7 @@ import {
   deskNext,
   deskPause,
   deskPlay,
+  deskPlayChannel,
   deskPlayStation,
   deskPrevious,
   deskRepeat,
@@ -128,12 +129,30 @@ export const stationPlaying = (): boolean => station;
 /** Plays an internet radio station, with the place's own choices. The station sees this device's IP address. */
 export async function playStation(s: CollectionStation, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
   await keepWhereLeft();
-  if (DESK) await deskPlayStation(s.url);
+  if (DESK) await deskPlayStation(s.url, s.mime);
   else if (collectionNative) await collectionNative.playList([{ url: s.url, name: showTitle ? s.name : '', mime: s.mime, video: false }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
   else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
-  names = [s.name];
-  ids = [s.id];
-  videos = [false];
+  rememberLive(s, false);
+}
+
+/**
+ * Plays a TV channel (lib/collection-tv.ts) as a station is played, with the place's own choices,
+ * but as a video, shown by components/collection-player.tsx VideoScreen. The channel sees this
+ * device's IP address.
+ */
+export async function playChannel(c: CollectionChannel, { showTitle, stopOnLock }: { showTitle: boolean; stopOnLock: boolean }): Promise<void> {
+  await keepWhereLeft();
+  if (DESK) await deskPlayChannel(c.url, c.mime);
+  else if (collectionNative) await collectionNative.playList([{ url: c.url, name: showTitle ? c.name : '', mime: c.mime, video: true }], 0, { showTitle, neutral: t('Playing'), stopOnLock, stopLabel: t('Stop') });
+  else throw new Error(t('This build of Erevos cannot do this. Update Erevos for it.'));
+  rememberLive(c, true);
+}
+
+// What plays is a stream with no length (a station or a channel): nothing of it is kept.
+function rememberLive(live: { id: string; name: string }, video: boolean): void {
+  names = [live.name];
+  ids = [live.id];
+  videos = [video];
   listPlace = null;
   pendingPlace = null;
   station = true;

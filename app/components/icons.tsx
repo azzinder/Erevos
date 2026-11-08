@@ -598,6 +598,18 @@ export function SignalIcon({ color, size = 24 }: Props) {
   );
 }
 
+/** A television: a screen on a stand, for TV channels. */
+export function TvIcon({ color, size = 24 }: Props) {
+  const k = size / 24;
+  return (
+    <Grid size={size}>
+      <View style={[box(k, { x: 2, y: 4, w: 20, h: 13.5 }), { borderWidth: 2.1 * k, borderColor: color, borderRadius: 3 * k }]} />
+      <Bar k={k} color={color} x={10.9} y={17.5} w={2.2} h={2.5} r={0} />
+      <Bar k={k} color={color} x={7} y={19.6} w={10} h={2.1} />
+    </Grid>
+  );
+}
+
 /** Three layers stacked: the data kept, backups and devices. */
 export function StackIcon({ color, size = 24 }: Props) {
   const k = size / 24;

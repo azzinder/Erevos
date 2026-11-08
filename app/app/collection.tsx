@@ -11,6 +11,7 @@ import { NowPlayingScreen } from '../components/collection-now-playing';
 import { NowPlaying } from '../components/collection-player';
 import { AddToPlaylistSheet, PlaylistScreen } from '../components/collection-playlist';
 import { AddStationSheet, StationsList } from '../components/collection-radio';
+import { AddChannelsSheet, ChannelsList } from '../components/collection-tv';
 import { CollectionViewer, addedText } from '../components/collection-viewer';
 import { BackIcon, CameraIcon, CheckIcon, CloseIcon, FileIcon, FolderIcon, MoveIcon, MusicIcon, PhotoIcon, PlusIcon, SearchIcon, SendIcon, TrashIcon, MoreIcon, GearIcon, VideoIcon } from '../components/icons';
 import { Button, Chip, Input, Sheet, Text } from '../components/ui';
@@ -50,7 +51,8 @@ import { useColors, useStyles } from '../theme/context';
 // grid by month, Videos, Music and the other Files as lists (lib/collection-view.ts tabOf), each with
 // the folders that hold any of its files above it (Files the empty ones too), and Music its playlists
 // (components/collection-playlist.tsx), which songs chosen or a song's menu are added to; Radio has
-// the place's internet radio stations instead of files (components/collection-radio.tsx). A tap opens one (components/
+// the place's internet radio stations instead of files (components/collection-radio.tsx), and TV
+// its TV channels, from IPTV lists (components/collection-tv.tsx). A tap opens one (components/
 // collection-viewer.tsx); held down it starts choosing, to move, send or delete several; + brings
 // in a photo from the camera or a file from the phone (lib/collection-import.ts), and deletes a
 // photo or video picked from the gallery there when the owner chose so. While music of the
@@ -79,8 +81,8 @@ const BUSY_AT_ONCE = Platform.OS !== 'web';
 // The largest file saved out from here.
 const MOST_SAVED_OUT = mostSavedOut();
 
-// Radio: the place's internet radio stations (components/collection-radio.tsx), not files.
-type Tab = FileTab | 'radio';
+// Radio: the place's internet radio stations (components/collection-radio.tsx), not files; TV its channels (components/collection-tv.tsx).
+type Tab = FileTab | 'radio' | 'tv';
 // A new playlist's `id` is 'add' when it takes the files being added to a playlist (listing).
 type Naming = { what: 'folder' | 'rename-folder' | 'rename-file' | 'playlist'; id: string; text: string } | null;
 
@@ -151,6 +153,7 @@ export default function CollectionScreen() {
   const [openList, setOpenList] = useState<string | null>(null);
   const [listing, setListing] = useState<string[] | null>(null);
   const [addingStation, setAddingStation] = useState(false);
+  const [addingChannels, setAddingChannels] = useState(false);
   // The list playing may keep where it got to in this place again, once it is open.
   useEffect(() => placeShown(place), [place]);
   const musicBar = !!player?.active && !player.video;
@@ -215,7 +218,7 @@ export default function CollectionScreen() {
   // The files of the tab shown, which a tap opens among.
   const listed = tab === 'photos' ? photos : tab === 'videos' ? videos : tab === 'music' ? music : tab === 'files' ? files : [];
   const entries = useMemo(() => gridEntries(photos), [photos]);
-  const tiles = useMemo(() => (tab === 'radio' ? [] : folderTilesFor(there, tab)), [data, tab]);
+  const tiles = useMemo(() => (tab === 'radio' || tab === 'tv' ? [] : folderTilesFor(there, tab)), [data, tab]);
   const allFolders = useMemo(() => folderTiles(there), [data]);
   const side = Math.floor((Math.min(width, 760) - 2) / 3);
 
@@ -229,7 +232,7 @@ export default function CollectionScreen() {
   }, [choosing, searching, folder]);
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (viewing !== null || adding || moving || naming || menu || openList || listing || addingStation) return false;
+      if (viewing !== null || adding || moving || naming || menu || openList || listing || addingStation || addingChannels) return false;
       if (choosing || searching || folder) {
         back();
         return true;
@@ -237,7 +240,7 @@ export default function CollectionScreen() {
       return false;
     });
     return () => subscription.remove();
-  }, [back, choosing, searching, folder, viewing, adding, moving, naming, menu, openList, listing, addingStation]);
+  }, [back, choosing, searching, folder, viewing, adding, moving, naming, menu, openList, listing, addingStation, addingChannels]);
 
   // Runs a change to the Collection, then reads it again; its failure is said.
   async function change(run: () => Promise<unknown>) {
@@ -500,6 +503,7 @@ export default function CollectionScreen() {
         <Chip label={t('Videos')} count={videos.length} selected={tab === 'videos'} onPress={() => setTab('videos')} />
         <Chip label={t('Music')} count={music.length} selected={tab === 'music'} onPress={() => setTab('music')} />
         <Chip label={t('Radio')} count={(there.stations ?? []).length} selected={tab === 'radio'} onPress={() => setTab('radio')} />
+        <Chip label={t('TV')} count={(there.channels ?? []).length} selected={tab === 'tv'} onPress={() => setTab('tv')} />
         <Chip label={t('Files')} count={files.length} selected={tab === 'files'} onPress={() => setTab('files')} />
       </ScrollView>
       {note ? (
@@ -570,10 +574,23 @@ export default function CollectionScreen() {
           header={top}
           stations={searching ? [] : (there.stations ?? [])}
           place={place}
+          hidden={inHidden}
           options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
           onAdd={() => setAddingStation(true)}
           onChanged={() => void reload()}
           onPlaying={() => setNowPlaying(true)}
+          bottom={bottomRoom}
+        />
+      ) : tab === 'tv' ? (
+        <ChannelsList
+          header={top}
+          channels={searching ? [] : (there.channels ?? [])}
+          place={place}
+          hidden={inHidden}
+          options={{ showTitle: there.showTitle === true, stopOnLock: there.stopOnLock === true }}
+          showLogos={there.showLogos === true}
+          onAdd={() => setAddingChannels(true)}
+          onChanged={() => void reload()}
           bottom={bottomRoom}
         />
       ) : (
@@ -642,9 +659,9 @@ export default function CollectionScreen() {
         </View>
       ) : (
         <Pressable
-          onPress={() => (tab === 'radio' ? setAddingStation(true) : setAdding(true))}
+          onPress={() => (tab === 'radio' ? setAddingStation(true) : tab === 'tv' ? setAddingChannels(true) : setAdding(true))}
           accessibilityRole="button"
-          accessibilityLabel={tab === 'radio' ? t('Add a station') : t('Add to the Collection')}
+          accessibilityLabel={tab === 'radio' ? t('Add a station') : tab === 'tv' ? t('Add channels') : t('Add to the Collection')}
           style={({ pressed }) => [styles.fab, { bottom: Math.max(space.lg, insets.bottom + space.sm) + (musicBar ? 72 : 0) }, pressed && { opacity: 0.85 }]}
         >
           <PlusIcon color={colors.onPrimary} size={26} />
@@ -820,6 +837,7 @@ export default function CollectionScreen() {
         }}
       />
       <AddStationSheet visible={addingStation} place={place} onClose={() => setAddingStation(false)} onAdded={() => void reload()} />
+      <AddChannelsSheet visible={addingChannels} place={place} onClose={() => setAddingChannels(false)} onAdded={() => void reload()} />
       <NowPlayingScreen visible={nowPlaying} onClose={() => setNowPlaying(false)} />
     </View>
   );

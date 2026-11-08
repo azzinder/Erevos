@@ -26,8 +26,12 @@ export type PlayItem = SealedRef & {
   subtitles?: SealedRef & { mime: string };
 };
 
-/** An internet radio station to play, by its https link (lib/collection-radio.ts); `mime` says an HLS stream. Not in builds before it. */
-export type PlayStation = { url: string; name: string; mime: string; video: false };
+/**
+ * An internet radio station to play, by its https link (lib/collection-radio.ts), or a TV channel
+ * (lib/collection-tv.ts, `video`); `mime` says an HLS stream. Not in builds before it; a channel
+ * plays only its sound in builds before channels.
+ */
+export type PlayStation = { url: string; name: string; mime: string; video: boolean };
 
 /** What plays again: nothing, the whole list, or the one file. */
 export type Repeat = 'off' | 'all' | 'one';
