@@ -16,6 +16,10 @@ On main, not released yet:
 
 ### Under the hood
 
+## 7.0.0-rc.4 (2026-11-08)
+
+### Under the hood
+
 - **No more freezing after a space opens**: an automatic backup, which starts ten seconds
   after a space opens, could keep the screen from answering for minutes on Android, more so the first one after
   7.0.0-rc.3. Its files are now written, listed with their names and sizes in one look, and deleted in their folder away

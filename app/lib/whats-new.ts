@@ -22,12 +22,17 @@ export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
   forYou: [],
-  underTheHood: [
-    mark("**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster."),
-  ],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.0.0-rc.4',
+    forYou: [],
+    underTheHood: [
+      mark("**No more freezing after a space opens**: while an automatic backup was made, the screen could stop answering for minutes. Now the backup's files are written, listed and deleted in their folder away from the screen, and its parts are checked natively, many times faster."),
+    ],
+  },
   {
     version: '7.0.0-rc.3',
     forYou: [
