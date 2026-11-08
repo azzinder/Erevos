@@ -128,7 +128,7 @@ export const MAX_POSITIONS = 500;
 export const MAX_PLAYLIST_ITEMS = 2000;
 export const MAX_PLAYLISTS = 200;
 /** How many stations a place has at most. */
-export const MAX_STATIONS = 200;
+export const MAX_STATIONS = 1000;
 
 const EMPTY: Collection = { items: [], folders: [], gone: [], backup: true };
 
@@ -561,6 +561,34 @@ export function addStation(place: CollectionPlace, name: string, link: { url: st
     if (stations.length >= MAX_STATIONS) throw new Error(t('There are too many stations here.'));
     const made: CollectionStation = { id: newId(), name: freeName(clean, new Set(stations.map((s) => s.name))), url, mime: link.mime === HLS ? HLS : '', at: now };
     return { next: { ...c, stations: [...stations, made] }, result: made };
+  });
+}
+
+/**
+ * Adds many stations at once, as a playlist with several lists them: those whose link is here
+ * already are left out, and none past MAX_STATIONS. How many were added, and how many left out.
+ */
+export function addStations(place: CollectionPlace, list: { name: string; url: string; mime: string }[], now = Date.now()): Promise<{ added: number; skipped: number }> {
+  return change(place, async (c) => {
+    const stations = [...(c.stations ?? [])];
+    const urls = new Set(stations.map((s) => s.url));
+    const names = new Set(stations.map((s) => s.name));
+    let added = 0;
+    let skipped = 0;
+    for (const one of list) {
+      const url = httpsLink(one.url);
+      const clean = cleanFolderName(one.name);
+      if (!url || !clean || urls.has(url) || stations.length >= MAX_STATIONS) {
+        skipped++;
+        continue;
+      }
+      const name = freeName(clean, names);
+      stations.push({ id: newId(), name, url, mime: one.mime === HLS ? HLS : '', at: now });
+      urls.add(url);
+      names.add(name);
+      added++;
+    }
+    return { next: added > 0 ? { ...c, stations } : null, result: { added, skipped } };
   });
 }
 

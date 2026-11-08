@@ -8,9 +8,11 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { confirm } from '../lib/alert';
 import { cloudRequest } from '../lib/backup-http';
 import { playStation } from '../lib/collection-play';
-import { foundStations, MOST_FOUND_BYTES, MOST_PLAYLIST, nameFromLink, RADIO_AGENT, radioSearchUrl, stationLink, type FoundStation } from '../lib/collection-radio';
-import { t } from '../lib/i18n';
-import { addStation, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
+import { foundStations, linkStations, MOST_FOUND_BYTES, MOST_LIST_BYTES, nameFromLink, playableStations, playlistStations, RADIO_AGENT, radioSearchUrl, type FoundStation, type StationLink } from '../lib/collection-radio';
+import { utf8Decode } from '../lib/crypto';
+import { plural, t } from '../lib/i18n';
+import { pickFile, TooLargeError } from '../lib/pick-file';
+import { addStation, addStations, deleteStation, renameStation, type CollectionPlace, type CollectionStation } from '../lock/collection-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { useColors } from '../theme/context';
 import { MoreIcon, PencilIcon, SignalIcon, TrashIcon } from './icons';
@@ -20,7 +22,8 @@ import { Button, Input, Sheet, Text } from './ui';
 // kept sealed in the place's catalogue (lock/collection-data.ts stations). A tap plays one (lib/
 // collection-play.ts playStation), its menu renames or deletes it; + adds one by its link (lib/
 // collection-radio.ts), a playlist's (.m3u, .pls) fetched once for the stream's own, or found in
-// Radio Browser by the words typed, sent only when Search is pressed. What the
+// Radio Browser by the words typed, sent only when Search is pressed. A playlist that names several
+// stations (by its link, or a .m3u or .pls file from this device) adds each of them. What the
 // station learns is said where it is added and where it plays: this device's IP address.
 
 type Options = { showTitle: boolean; stopOnLock: boolean };
@@ -173,16 +176,55 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
     setBusy(true);
     setNote('');
     try {
-      const at = await stationLink(given, get(MOST_PLAYLIST));
-      await addStation(place, called.trim() || nameFromLink(at.url) || t('Radio'), at);
-      setLink('');
-      setName('');
-      setWords('');
-      setFound(null);
-      onAdded();
-      onClose();
+      const got = await linkStations(given, get(MOST_LIST_BYTES));
+      if ('many' in got) {
+        await addMany(got.many, got.plain);
+      } else {
+        await addStation(place, called.trim() || nameFromLink(got.one.url) || t('Radio'), got.one);
+        setLink('');
+        setName('');
+        setWords('');
+        setFound(null);
+        onAdded();
+        onClose();
+      }
     } catch (error) {
       setNote(error instanceof Error ? error.message : String(error));
+    }
+    setBusy(false);
+  }
+
+  // The stations of a playlist added at once; the sheet stays open and says how many were added,
+  // and how many were left out (an http link, one already here, or past the most a place keeps).
+  async function addMany(stations: (StationLink & { name: string })[], plain: number) {
+    if (!place) return;
+    const { added, skipped } = stations.length > 0 ? await addStations(place, stations) : { added: 0, skipped: 0 };
+    const said = [added > 0 ? plural(added, '{n} station added.', '{n} stations added.') : t('No station was added.')];
+    if (plain > 0) said.push(plural(plain, '{n} had only an http link.', '{n} had only http links.'));
+    if (skipped > 0) said.push(plural(skipped, '{n} was here already.', '{n} were here already.'));
+    setNote(said.join(' '));
+    if (added > 0) {
+      setLink('');
+      setName('');
+      onAdded();
+    }
+  }
+
+  // A playlist file from this device (.m3u, .m3u8, .pls): read here, nothing is sent anywhere.
+  async function importFile() {
+    if (!place || busy) return;
+    setBusy(true);
+    setNote('');
+    try {
+      const picked = await pickFile(MOST_LIST_BYTES);
+      if (picked) {
+        const listed = playlistStations(utf8Decode(picked.bytes));
+        if (listed.length === 0) throw new Error(t('This file names no station.'));
+        const { stations, plain } = playableStations(listed);
+        await addMany(stations, plain);
+      }
+    } catch (error) {
+      setNote(error instanceof TooLargeError ? t('This file is too large for a playlist.') : error instanceof Error ? error.message : String(error));
     }
     setBusy(false);
   }
@@ -235,7 +277,7 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
       <Input value={link} onChangeText={setLink} placeholder="https://…" accessibilityLabel={t('The station’s link')} autoCapitalize="none" autoCorrect={false} keyboardType="url" maxLength={2048} />
       <Input value={name} onChangeText={setName} placeholder={t('Name (optional)')} accessibilityLabel={t('Name (optional)')} maxLength={60} onSubmitEditing={() => void add()} />
       <Text variant="caption" tone="muted">
-        {t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now, for the stream’s own link. The station, and that playlist’s server, see this device’s IP address.')}
+        {t('Only https links: Erevos opens no plain http. A playlist link (.m3u, .pls) is read once, now: for the stream’s own link, or for each station it names. The station, and that playlist’s server, see this device’s IP address.')}
       </Text>
       {note ? (
         <Text variant="caption" color={colors.warning}>
@@ -243,6 +285,11 @@ export function AddStationSheet({ visible, place, onClose, onAdded }: { visible:
         </Text>
       ) : null}
       <Button title={t('Add')} loading={busy} disabled={!link.trim() || busy} onPress={() => void add()} />
+      <Text variant="label">{t('Or from a playlist file')}</Text>
+      <Text variant="caption" tone="muted">
+        {t('A .m3u or .pls file on this device, with one station or many: each station with an https link is added. The file is read here and sent nowhere.')}
+      </Text>
+      <Button title={t('Import a playlist file')} kind="secondary" compact disabled={busy} onPress={() => void importFile()} />
     </Sheet>
   );
 }

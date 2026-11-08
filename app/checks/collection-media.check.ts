@@ -16,11 +16,12 @@ import { current, jumpTo, newQueue, nextIndex, nextRepeat, nextSpeed, positionTo
 import { randomBytes, utf8Encode } from '../lib/crypto';
 import { readTags } from '../lib/media-tags';
 import { srtToVtt, subtitlesFor, subtitlesText, subtitlesType } from '../lib/subtitles';
-import { foundStations, HLS, httpsLink, playlistLinks, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
+import { foundStations, HLS, httpsLink, linkStations, playableStations, playlistLinks, playlistStations, radioSearchUrl, RadioLinkError, stationLink } from '../lib/collection-radio';
 import { moved, playlistItems } from '../lib/collection-view';
 import {
   addPlaylist,
   addStation,
+  addStations,
   addToCollection,
   addToPlaylist,
   deleteItems,
@@ -277,6 +278,57 @@ t('a station is an https link only, a playlist gives its first https link, and H
   await assert.rejects(stationLink('http://s.example/live', get('')), RadioLinkError);
   await assert.rejects(stationLink('https://s.example/x.pls', get('File1=http://only.example/\n')), RadioLinkError);
   await assert.rejects(stationLink('https://s.example/x.pls', get('', 404)), RadioLinkError);
+});
+
+t('a playlist of many stations gives each of them; one station with mirrors stays one', async () => {
+  const many = '\uFEFF#EXTM3U\r\n#EXTINF:-1 tvg-logo="x" group-title="Jazz, Blues",Jazz FM\r\nhttps://jazz.example/live\r\n#EXTINF:-1,Rock\r\nhttp://rock.example/plain\r\n#EXTINF:-1,News\r\nhttps://news.example/hls.m3u8\r\n#EXTINF:-1,Again\r\nhttps://jazz.example/live\r\n';
+  assert.deepEqual(playlistStations(many), [
+    { name: 'Jazz FM', url: 'https://jazz.example/live' },
+    { name: 'Rock', url: 'http://rock.example/plain' },
+    { name: 'News', url: 'https://news.example/hls.m3u8' },
+  ]);
+  assert.deepEqual(playlistStations('[playlist]\nFile1=https://a.example/1\nTitle1=One\nFile2=https://b.example/2\nTitle2=Two\nNumberOfEntries=2\n'), [
+    { name: 'One', url: 'https://a.example/1' },
+    { name: 'Two', url: 'https://b.example/2' },
+  ]);
+  assert.deepEqual(playlistStations('#EXTM3U\n#EXTINF:-1,Same\nhttps://m1.example/\n#EXTINF:-1,Same\nhttps://m2.example/\n'), [{ name: 'Same', url: 'https://m1.example/' }]);
+  assert.deepEqual(playlistStations('#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1\nhttps://x.example/low.m3u8\n'), []);
+  assert.deepEqual(playlistStations('hello\nnot a link\n'), []);
+  const { stations, plain } = playableStations(playlistStations(many));
+  assert.equal(plain, 1);
+  assert.deepEqual(stations, [
+    { name: 'Jazz FM', url: 'https://jazz.example/live', mime: '' },
+    { name: 'News', url: 'https://news.example/hls.m3u8', mime: HLS },
+  ]);
+  let asked = 0;
+  const get = (body: string) => async () => {
+    asked++;
+    return { status: 200, bytes: utf8Encode(body) };
+  };
+  const got = await linkStations('https://s.example/list.m3u', get(many));
+  assert.ok('many' in got && got.many.length === 2 && got.plain === 1);
+  assert.equal(asked, 1);
+  assert.deepEqual(await linkStations('https://s.example/one.pls', get('File1=https://b.example/stream\n')), { one: { url: 'https://b.example/stream', mime: '' } });
+  assert.equal(asked, 2);
+  assert.deepEqual(await linkStations('https://s.example/live.mp3', get('')), { one: { url: 'https://s.example/live.mp3', mime: '' } });
+  assert.equal(asked, 2);
+});
+
+t('stations of a playlist are added at once, skipping those already here and http links', async () => {
+  const p = place();
+  await addStation(p, 'Jazz', { url: 'https://jazz.example/live', mime: '' });
+  const result = await addStations(p, [
+    { name: 'Jazz again', url: 'https://jazz.example/live', mime: '' },
+    { name: 'Jazz', url: 'https://other.example/jazz', mime: '' },
+    { name: 'Plain', url: 'http://plain.example/', mime: '' },
+    { name: 'News', url: 'https://news.example/hls.m3u8', mime: HLS },
+  ]);
+  assert.deepEqual(result, { added: 2, skipped: 2 });
+  const c = await loadCollection(p);
+  assert.equal(c.stations?.length, 3);
+  assert.notEqual(c.stations?.[1].name, 'Jazz');
+  assert.equal(c.stations?.[2].mime, HLS);
+  assert.deepEqual(await addStations(p, []), { added: 0, skipped: 0 });
 });
 
 t('Radio Browser is asked only the words typed, and only its stations with an https link are offered', () => {

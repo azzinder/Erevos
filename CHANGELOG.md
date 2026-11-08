@@ -14,6 +14,9 @@ On main, not released yet:
 
 ### For you
 
+- **Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u,
+  .pls) that names many stations and adds each of them (500 at most), and **Import a playlist file** adds the
+  stations of a .m3u or .pls file from the device, read there and sent nowhere. Only https stations are added.
 - **Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings
   of the chat (and its picture in the recent apps) out on both phones, on Android. Either phone can turn it on or off,
   and the later change wins, told with the next message as the disappearing-messages timer is. Erevos on an iPhone,

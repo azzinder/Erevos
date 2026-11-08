@@ -12,6 +12,8 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Za vas',
   'Under the hood': 'Ispod haube',
   // Not out yet.
+  "**Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u, .pls) that names many stations and adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file from your device. Only stations with an https link are added, and Erevos says how many were left out.":
+    "**Radio liste s mnogo stanica**: u Radiju Kolekcije **Dodaj stanicu** prima link liste (.m3u, .pls) s mnogo stanica i dodaje svaku od njih, a **Uvezi datoteku liste** dodaje stanice iz .m3u ili .pls datoteke s vašeg uređaja. Dodaju se samo stanice s https linkom, a Erevos kaže koliko ih je izostavljeno.",
   "**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay).":
     "**Blokiranje snimaka ekrana u razgovoru**: u detaljima razgovora, **Blokiraj snimke ekrana** sprečava snimke i snimanja ekrana razgovora na oba telefona, na Androidu, i bilo ko od vas dvoje može to ponovo isključiti. Erevos na iPhoneu, na računaru, u pregledniku ili na Sailfishu ne može ih blokirati, i to kaže. Pogledajte [Razgovor preko relaya](#relay).",
   "**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone).":

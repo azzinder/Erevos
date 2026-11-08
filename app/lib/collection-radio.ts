@@ -9,7 +9,8 @@ import type { HttpAnswer } from './net-http';
 // Internet radio in the Collection (app/collection.tsx, the Radio tab): a station is a link the
 // owner gives, kept sealed in the place's catalogue (lock/collection-data.ts stations), and played
 // by the same player as the music (lib/collection-play.ts playStation). A link to a playlist (.m3u
-// or .pls) is fetched once, as it is added, and its first link kept; an HLS stream (.m3u8, or an
+// or .pls) is fetched once, as it is added, and its first link kept (or, when it names several
+// stations, each of them: playlistStations); an HLS stream (.m3u8, or an
 // .m3u that is one) is kept as it is and played as such (on Android). Only https: Erevos opens no
 // plain http anywhere, so a station that has only an http link is refused, and said so.
 //
@@ -71,6 +72,67 @@ export function playlistLinks(text: string): { hls: boolean; links: string[] } {
   return { hls: false, links };
 }
 
+/** A station a playlist names: its link, and the name the playlist gives it ('' when none). */
+export type ListedStation = { name: string; url: string };
+
+/** The most stations one playlist adds. */
+export const MOST_LISTED = 500;
+/** The most of a playlist of stations read, from its link or from a file. */
+export const MOST_LIST_BYTES = 1024 * 1024;
+
+/**
+ * The stations a playlist file names (.m3u with its #EXTINF names, or .pls with its TitleN), in
+ * order. A list whose links all have one name, or none, is one station with mirrors: only its first
+ * link comes back, so a station listed with three servers is not added three times.
+ */
+export function playlistStations(text: string): ListedStation[] {
+  const lines = text.replace(/^\uFEFF/, '').split(/\r\n|\r|\n/).map((l) => l.trim());
+  if (lines.some((l) => l.startsWith('#EXT-X-'))) return [];
+  const listed: ListedStation[] = [];
+  const plsLinks = new Map<string, string>();
+  const plsNames = new Map<string, string>();
+  let named = '';
+  for (const line of lines) {
+    const file = /^File(\d+)\s*=\s*(.+)$/i.exec(line);
+    const title = /^Title(\d+)\s*=\s*(.*)$/i.exec(line);
+    if (file) plsLinks.set(file[1], file[2].trim());
+    else if (title) plsNames.set(title[1], title[2].trim());
+    else if (/^#EXTINF:/i.test(line)) {
+      // #EXTINF:-1 tvg-name="a, b" group-title="…",Name: the name follows the first comma outside quotes.
+      const bare = line.replace(/\s[\w-]+="[^"]*"/g, '');
+      named = bare.slice(bare.indexOf(',') + 1).trim();
+    }
+    else if (line && !line.startsWith('#') && !line.startsWith('[') && /^[a-z][a-z0-9+.-]*:\/\//i.test(line)) {
+      listed.push({ name: named, url: line });
+      named = '';
+    }
+  }
+  for (const [n, url] of plsLinks) if (/^[a-z][a-z0-9+.-]*:\/\//i.test(url)) listed.push({ name: plsNames.get(n) ?? '', url });
+  const clean = listed.map((l) => ({ name: l.name.replace(/[\u0000-\u001f]/g, '').slice(0, 60), url: l.url }));
+  const names = new Set(clean.map((l) => l.name));
+  if (names.size <= 1) return clean.slice(0, 1);
+  const seen = new Set<string>();
+  return clean.filter((l) => (seen.has(l.url) ? false : (seen.add(l.url), true))).slice(0, MOST_LISTED);
+}
+
+/**
+ * Of the stations a playlist names, those Erevos can play (https links only), each as it plays,
+ * named as the list says or by its server; and how many were left out for an http link.
+ */
+export function playableStations(listed: ListedStation[]): { stations: (StationLink & { name: string })[]; plain: number } {
+  const stations: (StationLink & { name: string })[] = [];
+  let plain = 0;
+  for (const l of listed) {
+    const url = httpsLink(l.url);
+    if (!url) {
+      plain++;
+      continue;
+    }
+    stations.push({ url, mime: isHlsLink(url) ? HLS : '', name: l.name || nameFromLink(url) || t('Radio') });
+  }
+  return { stations, plain };
+}
+
 /** A station's link as it plays, and its type: an HLS stream, or anything else (''). */
 export type StationLink = { url: string; mime: string };
 
@@ -92,6 +154,24 @@ export async function stationLink(given: string, get: (url: string) => Promise<H
   const first = links.find((l) => httpsLink(l));
   if (first) return { url: httpsLink(first)!, mime: isHlsLink(first) ? HLS : '' };
   throw new RadioLinkError(links.length > 0 ? t('This station gives only http links, which Erevos does not open. Ask it for an https link.') : t('The station’s playlist holds no link.'));
+}
+
+/**
+ * What a link the owner gives adds: one station (lib stationLink), or, for a playlist that names
+ * several stations, each of them (playableStations). The playlist is fetched only once.
+ */
+export async function linkStations(given: string, get: (url: string) => Promise<HttpAnswer>): Promise<{ one: StationLink } | { many: (StationLink & { name: string })[]; plain: number }> {
+  const link = httpsLink(given);
+  if (!link || isHlsLink(link) || !isPlaylistLink(link)) return { one: await stationLink(given, get) };
+  const answer = await get(link);
+  if (answer.status >= 200 && answer.status < 300) {
+    const listed = playlistStations(utf8Decode(answer.bytes.subarray(0, MOST_LIST_BYTES)));
+    if (listed.length > 1) {
+      const { stations, plain } = playableStations(listed);
+      return { many: stations, plain };
+    }
+  }
+  return { one: await stationLink(given, async () => answer) };
 }
 
 // Radio Browser (radio-browser.info), a free directory of stations anyone may edit: a search sends
