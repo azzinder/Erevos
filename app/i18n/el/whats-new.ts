@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Για σένα',
   'Under the hood': 'Κάτω από το καπό',
   // Not out yet.
+  // 7.0.0-rc.3
   "**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection).":
     "**Τηλεόραση στη Συλλογή**: η νέα καρτέλα **Τηλεόραση** της Συλλογής παίζει τηλεοπτικά κανάλια από λίστες IPTV (.m3u), με τον σύνδεσμό τους ή από αρχείο, ή από τη δημόσια λίστα δωρεάν καναλιών του iptv-org, ανά χώρα ή ολόκληρη, στις ομάδες τους, με αναζήτηση, σε Android, σε υπολογιστή και σε browser. Δεν υπάρχει οδηγός προγράμματος, τα λογότυπα φαίνονται μόνο αν τα ανοίξεις, και το όνομα και ο σύνδεσμος ενός καναλιού, ή ενός ραδιοφωνικού σταθμού, στέλνονται σε συνομιλία. Δες [Συλλογή](#collection).",
   "**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping.":

@@ -14,6 +14,12 @@ On main, not released yet:
 
 ### For you
 
+### Under the hood
+
+## 7.0.0-rc.3 (2026-11-08)
+
+### For you
+
 - **TV in the Collection**: a new **TV** tab, beside Radio, keeps TV channels sealed in the Collection's catalogue,
   each by its https link with its group and logo: from an IPTV list (.m3u) by its link, read once, or from a file on
   the device, read there; from iptv-org's public list of free channels, by country (the device's region first) or

@@ -21,29 +21,34 @@ export type Changes = { forYou: string[]; underTheHood: string[] };
 export type WhatsNew = Changes & { version: string };
 
 export const NEXT: Changes = {
-  forYou: [
-    mark("**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection)."),
-    mark("**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping."),
-    mark("**Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u, .pls) that names many stations and adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file from your device. Only stations with an https link are added, and Erevos says how many were left out."),
-    mark("**Say when I open Erevos**: with **Last seen** on, opening Erevos now tells your contacts at once, without waiting for a message: only those you talked with in the last 30 days who show their own time too, each after a random wait of up to a minute, at most every 15 minutes. The relay can then tell when you open Erevos: turn it off under Settings → Privacy and security → Last seen, or in a chat's details. See [Chat through a relay](#relay)."),
-    mark("**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone)."),
-    mark("**A lost phone**: if the phone a backup came from was lost or stolen and may still be on, **The old phone was lost** under Settings → Data and devices → Backups moves every space and its hidden chats to new relay queues, so that phone reads nothing more of yours there, and tells your contacts quietly. The contact links and QR codes you gave before work for 14 more days. See [Backups](#backup)."),
-    mark("**Restored chats go on by themselves**: after a backup is restored, a chat that went on after the backup was made starts a new conversation with the contact by itself, so you no longer give each other your links again, but with a contact on an older Erevos. See [Backups](#backup)."),
-    mark("**Backups every 6 hours, and lighter**: automatic backups can now come every 6 hours too, made while Erevos is open and as it goes to the background. Each one writes and sends only the photos, files and voice messages that are new, and names again those of the backups before it: keep the whole backup folder together. See [Backups](#backup)."),
-    mark("**Linked devices after a restore**: the phone a backup was restored on can ask the computers and browsers the old phone had linked to link again: tap **Ask to link again** under Settings → Data and devices → Linked devices, then **Link again** on the device. It keeps its chats, with no code to scan. See [Backups](#backup)."),
-    mark("**The phone's calls in backups**: on Android, **Put the calls in backups** under Backups adds the call history and Android's blocked numbers to your backups, and restoring adds back those the phone lacks. Off until you turn it on. See [Backups](#backup)."),
-    mark("**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay)."),
-    mark("**Every chat in its own look**: groups, Chat with myself and chats on Matrix, XMPP and Nostr now have **Chat look** too, as a contact's chat had, for that chat only. See [Chat through a relay](#relay)."),
-    mark("**Letters and text size**: Settings → Appearance has **Letters** (the style's own, the phone's, serif or monospace) and the messages' **Text size**, for the whole app or, from **Chat look**, for one chat. See [Appearance](#appearance)."),
-    mark("**Muting hidden Matrix, XMPP and Nostr chats**: a hidden place's own Matrix, XMPP and Nostr chats can now be muted, as hidden chats are, and then say nothing at all. See [Hidden chats](#hidden)."),
-  ],
-  underTheHood: [
-    mark("**Groups after a restore**: a member restored from a backup asks the group's admin to put it in again, which works while the group moved on only a little."),
-    mark("**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came."),
-  ],
+  forYou: [],
+  underTheHood: [],
 };
 
 export const VERSIONS: WhatsNew[] = [
+  {
+    version: '7.0.0-rc.3',
+    forYou: [
+      mark("**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection)."),
+      mark("**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping."),
+      mark("**Radio playlists with many stations**: in the Collection's Radio, **Add a station** takes a playlist link (.m3u, .pls) that names many stations and adds each of them, and **Import a playlist file** adds the stations of a .m3u or .pls file from your device. Only stations with an https link are added, and Erevos says how many were left out."),
+      mark("**Say when I open Erevos**: with **Last seen** on, opening Erevos now tells your contacts at once, without waiting for a message: only those you talked with in the last 30 days who show their own time too, each after a random wait of up to a minute, at most every 15 minutes. The relay can then tell when you open Erevos: turn it off under Settings → Privacy and security → Last seen, or in a chat's details. See [Chat through a relay](#relay)."),
+      mark("**Moving to a new phone**: a new chapter of the guide takes you step by step from the old phone to the new one with one backup: what to get ready, what comes over, what to set again, and wiping the old one at the end. See [Moving to a new phone](#new-phone)."),
+      mark("**A lost phone**: if the phone a backup came from was lost or stolen and may still be on, **The old phone was lost** under Settings → Data and devices → Backups moves every space and its hidden chats to new relay queues, so that phone reads nothing more of yours there, and tells your contacts quietly. The contact links and QR codes you gave before work for 14 more days. See [Backups](#backup)."),
+      mark("**Restored chats go on by themselves**: after a backup is restored, a chat that went on after the backup was made starts a new conversation with the contact by itself, so you no longer give each other your links again, but with a contact on an older Erevos. See [Backups](#backup)."),
+      mark("**Backups every 6 hours, and lighter**: automatic backups can now come every 6 hours too, made while Erevos is open and as it goes to the background. Each one writes and sends only the photos, files and voice messages that are new, and names again those of the backups before it: keep the whole backup folder together. See [Backups](#backup)."),
+      mark("**Linked devices after a restore**: the phone a backup was restored on can ask the computers and browsers the old phone had linked to link again: tap **Ask to link again** under Settings → Data and devices → Linked devices, then **Link again** on the device. It keeps its chats, with no code to scan. See [Backups](#backup)."),
+      mark("**The phone's calls in backups**: on Android, **Put the calls in backups** under Backups adds the call history and Android's blocked numbers to your backups, and restoring adds back those the phone lacks. Off until you turn it on. See [Backups](#backup)."),
+      mark("**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay)."),
+      mark("**Every chat in its own look**: groups, Chat with myself and chats on Matrix, XMPP and Nostr now have **Chat look** too, as a contact's chat had, for that chat only. See [Chat through a relay](#relay)."),
+      mark("**Letters and text size**: Settings → Appearance has **Letters** (the style's own, the phone's, serif or monospace) and the messages' **Text size**, for the whole app or, from **Chat look**, for one chat. See [Appearance](#appearance)."),
+      mark("**Muting hidden Matrix, XMPP and Nostr chats**: a hidden place's own Matrix, XMPP and Nostr chats can now be muted, as hidden chats are, and then say nothing at all. See [Hidden chats](#hidden)."),
+    ],
+    underTheHood: [
+      mark("**Groups after a restore**: a member restored from a backup asks the group's admin to put it in again, which works while the group moved on only a little."),
+      mark("**The time of a message that waited**: a message that waited on the relay, as for a computer or for hidden chats that were closed, now shows when it was sent, not when it came. From an Erevos before this version it still shows when it came."),
+    ],
+  },
   {
     version: '7.0.0-rc.2',
     forYou: [

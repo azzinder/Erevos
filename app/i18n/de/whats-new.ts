@@ -12,6 +12,7 @@ export const whatsNew: Record<string, string> = {
   'For you': 'Für dich',
   'Under the hood': 'Unter der Haube',
   // Not out yet.
+  // 7.0.0-rc.3
   "**TV in the Collection**: the Collection's new **TV** tab plays TV channels from IPTV lists (.m3u), by their link or from a file, or from iptv-org's public list of free channels, by country or whole, in their groups, with a search, on Android, on a computer and in a browser. There is no programme guide, logos show only if you turn them on, and a channel's name and link, or a radio station's, can be sent to a chat. See [Collection](#collection).":
     "**TV in der Sammlung**: der neue Tab **TV** der Sammlung spielt TV-Sender aus IPTV-Listen (.m3u), über ihren Link oder aus einer Datei, oder aus der öffentlichen Liste freier Sender von iptv-org, nach Land oder ganz, in ihren Gruppen, mit einer Suche, unter Android, auf dem Computer und im Browser. Einen Programmführer gibt es nicht, Logos erscheinen nur, wenn du sie einschaltest, und Name und Link eines Senders, oder eines Radiosenders, lassen sich an einen Chat senden. Siehe [Sammlung](#collection).",
   "**Radio that keeps playing**: when a station's server, or a proxy on the way, drops the stream, or the network goes for a moment, Erevos asks the station again by itself, a few seconds later, instead of stopping.":
