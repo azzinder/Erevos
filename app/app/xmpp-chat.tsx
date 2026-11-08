@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,7 @@ import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { PlaceCard, PreviewCard, Quote } from '../components/message-parts';
 import { PlaceSheet } from '../components/place-sheet';
 
+import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -70,6 +71,7 @@ import {
   xmppReply,
   xmppSend,
   xmppSendFile,
+  xmppSetLook,
   xmppSetNotify,
   xmppSetPlain,
   xmppTyped,
@@ -77,7 +79,10 @@ import {
 } from '../lib/xmpp-store';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { radius, space } from '../theme/colors';
-import { useColors } from '../theme/context';
+import { softBubble, textSized } from '../theme/bubbles';
+import type { ChatLook } from '../theme/chat-theme';
+import { useColors, useTheme } from '../theme/context';
+import { checkedLook } from '../theme/look';
 
 // One XMPP chat (lib/xmpp-store.ts): its messages, oldest first, and a field to write in. It is
 // marked as not anonymous, and as not encrypted when the person's apps have no OMEMO and the chat
@@ -130,7 +135,17 @@ function lineOf(message: XmppMessage): string {
 const menuable = (message: XmppMessage) => !message.deleted && !message.call && message.state !== 'sending' && message.state !== 'failed';
 const copyable = (message: XmppMessage) => CAN_COPY && !!message.text && !message.file && !message.locked && !message.call && !message.deleted;
 
+/** An XMPP chat's screen, in the chat's own look or the space's (components/chat-look.tsx). */
 export default function XmppChatScreen() {
+  const [look, setLook] = useState<ChatLook | null>(null);
+  return (
+    <ChatScreen chat={look} header>
+      <XmppChat onLook={setLook} />
+    </ChatScreen>
+  );
+}
+
+function XmppChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -147,6 +162,8 @@ export default function XmppChatScreen() {
   const [replyId, setReplyId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // Whether the chat's own look shows its choices (components/chat-look.tsx).
+  const [styling, setStyling] = useState(false);
   // Counts who starts and stops writing, and the end of each while it shows, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // A voice message recorded with the microphone (components/matrix-voice.tsx) goes as a file, as Conversations sends one.
@@ -186,6 +203,10 @@ export default function XmppChatScreen() {
 
   const state = now.state;
   const chat = jid && state ? state.chats[jid] : undefined;
+  // The chat's own look, told to the screen that draws it.
+  const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
+  const lookChat = useMemo<ChatLook | null>(() => (jid && isXmppId(jid) ? { look: ownLook, save: (look) => xmppSetLook(jid, look) } : null), [ownLook, jid]);
+  useEffect(() => onLook(lookChat), [onLook, lookChat]);
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
@@ -587,7 +608,11 @@ export default function XmppChatScreen() {
           {t('A channel tells only of messages that name you.')}
         </Text>
       ) : null}
-      {where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} onChange={(next) => xmppSetNotify(jid, next)} /> : null}
+      <Row wrap>
+        <NetworkChatNotify notify={checkedChatNotify(chat?.notify)} hidden={where !== 'space'} onChange={(next) => xmppSetNotify(jid, next)} />
+        <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+      </Row>
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
       {room?.admin && room.joined ? <GroupAdmin state={state} jid={jid} room={room} fail={fail} /> : null}
       {room?.private ? <Members state={state} jid={jid} room={room} fail={fail} /> : null}
@@ -897,7 +922,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
   /** Where it sits in the thread, to scroll to it. */
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
-  const colors = useColors();
+  const { colors, look } = useTheme();
   const mine = message.mine;
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // A call's line: kept in English, shown in the app's language, with no marks.
@@ -926,13 +951,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
         // One with buttons in it (Save) stays apart from them for a screen reader.
         accessible={!message.file}
         accessibilityHint={onMenu ? t('Hold for more') : undefined}
-        style={{
-          alignSelf: mine ? 'flex-end' : 'flex-start',
-          padding: space.sm + 2,
-          borderRadius: radius.md,
-          backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt,
-          gap: 2,
-        }}
+        style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
       >
         {group && !mine && message.by ? (
           <Text variant="caption" tone="muted" numberOfLines={1}>
@@ -951,7 +970,7 @@ function Bubble({ message, group, me, answered, onReact, onMenu, onLayout }: {
         ) : (
           // Not selectable when it has a menu: holding the words opens it, which can copy them.
           <>
-            {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu}>{message.text}</Text>}
+            {placeIn(message) ? <PlaceCard place={placeIn(message)!} /> : <Text selectable={!onMenu} style={textSized(look.textSize, 16)}>{message.text}</Text>}
             {message.preview ? <PreviewCard preview={message.preview} /> : null}
           </>
         )}

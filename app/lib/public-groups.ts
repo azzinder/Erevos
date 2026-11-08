@@ -630,9 +630,10 @@ export class PublicGroups extends Groups {
       messages: this.trimmed([...(group?.messages ?? []), { at: Date.now(), from: '', text: mark('You joined the group.'), tag: '', note: true }]),
       readAt: 0,
       keysAt: Date.now(),
-      // What this phone kept for it, joined before, stays: its own PIN and its notifications.
+      // What this phone kept for it, joined before, stays: its own PIN, its notifications and its look.
       ...(group?.pin ? { pin: group.pin } : {}),
       ...(group?.notify ? { notify: group.notify } : {}),
+      ...(group?.look ? { look: group.look } : {}),
     };
     await this.save({ ...this.withGroup(now), state: toBase64(joined.state) });
     const old = this.record(answer.group);

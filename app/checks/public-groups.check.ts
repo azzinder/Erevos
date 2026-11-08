@@ -48,6 +48,7 @@ import { createQueue, receiveMessage, relayKey, sendMessage, type QueueIds, type
 import { contactTarget } from '../lib/space-chats';
 import { ALWAYS } from '../lock/chat-notify';
 import { EMPTY_GROUPS, type About, type GroupData } from '../lock/group-data';
+import { DEFAULT_LOOK } from '../theme/look';
 import { EMPTY_PUBLIC, loadPublicGroupData, savePublicGroupData, type PublicData } from '../lock/public-group-data';
 
 const built = new URL('./.core/erevos_ffi.js', import.meta.url);
@@ -350,12 +351,16 @@ test('admins mute, delete for everyone, take out and ban, and a ban turns the sa
   await net.settle();
   assert.equal(status(carol, id), 'out');
   assert.equal((await alice.groups.publicMembers(id)).length, 2);
-  // What her phone keeps for the group stays when she comes back: muted, it stays muted.
+  // What her phone keeps for the group stays when she comes back: muted, it stays muted, and its own look stays.
   await carol.groups.setNotify(id, { until: ALWAYS });
+  await carol.groups.setLook(id, { ...DEFAULT_LOOK, wallpaper: 'stars', font: 'serif' });
   await carol.groups.ask(linkOf(bob, id), 'Carol');
   await net.settle();
   assert.equal(status(carol, id), 'in');
   assert.deepEqual(carol.groups.notifyOf(id), { until: ALWAYS });
+  assert.equal(carol.groups.list().find((g) => g.id === id)?.look?.font, 'serif');
+  await carol.groups.setLook(id, null);
+  assert.equal(carol.groups.list().find((g) => g.id === id)?.look, undefined);
   assert.equal((await alice.groups.publicMembers(id)).length, 3);
 
   // Bob lifts the ban: Dave can ask again.

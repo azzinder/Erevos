@@ -5,7 +5,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AppState, Image, Linking, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { takeCall } from '../lib/call-handoff';
 import { CAN_KEEP_PRIVATE, keepPrivate } from '../lib/screen-privacy';
@@ -43,6 +42,7 @@ import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, 
 import { ConnectPicker, useCanConnect } from '../components/connect-picker';
 import { KeyboardAwareScrollView, KeyboardPaddedView } from '../components/keyboard';
 import { PasswordSheet } from '../components/PasswordSheet';
+import { ChatStatusBar } from '../components/chat-look';
 import { ChatPinGate } from '../components/chat-pin-gate';
 import { canNotifyChats, ChatNotifySheet, notifyValue } from '../components/chat-notify-sheet';
 import { QrCode } from '../components/QrCode';
@@ -192,7 +192,7 @@ import { forgetSpare, hiddenSpare, homeRelays, lookAtSpare, readySpare, setSpare
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useColors, useStyles, useTheme } from '../theme/context';
-import { ChatTheme } from '../theme/chat-theme';
+import { ChatTheme, type ChatLook } from '../theme/chat-theme';
 import { callAudio } from '../modules/erevos-call';
 import { sendSms, smsPacketsReady, type SmsMessage } from '../modules/erevos-sms';
 import type { Look } from '../theme/look';
@@ -527,18 +527,6 @@ export default function ChatScreen() {
       </ScreenBackdrop>
     </ChatTheme>
   );
-}
-
-/** A chat's look, and how to keep a new one (null: the space's again). */
-interface ChatLook {
-  look: Look | null;
-  save: (look: Look | null) => Promise<void>;
-}
-
-/** The status bar's icons, light or dark as the chat's look is. */
-function ChatStatusBar() {
-  const { scheme } = useTheme();
-  return <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />;
 }
 
 /** Back to the screen before, or home when the chat was opened first; or `onPress`. */
@@ -942,7 +930,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const { colors, look } = useTheme();
   const barBlur = useGlassBlur();
   // How messages are drawn: the look's bubbles (theme/bubbles.ts).
-  const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
+  const b = useMemo(() => bubbleStyles(look.bubbles, colors, look.textSize), [look.bubbles, colors, look.textSize]);
   // Where this chat's home relay is kept (lib/spare.ts): the space's, or this hidden place's own.
   const spareStore = useMemo(() => (hiddenKey ? hiddenSpare(currentSpace().space, pocket, hiddenKey) : spaceSpare()), [hiddenKey, pocket]);
   // This hidden place's groups (lib/place-groups.ts), the same its receiver has; the space's otherwise (lib/space-groups.ts).
@@ -5774,8 +5762,11 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   }, [shotsBlocked]);
   const selectedAvatar = contacts.find((c) => c.identity === selectedIdentity)?.avatar ?? null;
   const signAvatar = selectedAvatar?.kind === 'emoji' ? selectedAvatar : null;
+  // A group or Chat with myself shown here tells its own look itself, and once it closes the chat
+  // tells this one's again.
+  const ownChat = (myselfShown && !!notesAt) || (!!shownGroup && !!placeWhere);
   useEffect(() => {
-    if (!shown) return;
+    if (!shown || ownChat) return;
     if (!e2e || !selectedIdentity) {
       onLook(null);
       return;
@@ -5787,7 +5778,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setContacts(e2e.contacts());
       },
     });
-  }, [shown, e2e, selectedIdentity, selectedLook, onLook]);
+  }, [shown, ownChat, e2e, selectedIdentity, selectedLook, onLook]);
 
   // Undo shows just above the thread's end.
   const measured = (change: Partial<typeof edges.current>) => {
@@ -5807,7 +5798,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   if (myselfShown && notesAt) {
     return (
       <SwipeBack onBack={() => setMyselfShown(false)}>
-        <MyselfChat at={notesAt} onBack={() => setMyselfShown(false)} />
+        <MyselfChat at={notesAt} onBack={() => setMyselfShown(false)} onLook={onLook} />
       </SwipeBack>
     );
   }
@@ -5816,7 +5807,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     return (
       <SwipeBack onBack={() => setShownGroup(null)}>
         <GroupsWhereProvider value={placeWhere}>
-          <GroupChat id={shownGroup} onBack={() => setShownGroup(null)} />
+          <GroupChat id={shownGroup} onBack={() => setShownGroup(null)} onLook={onLook} />
         </GroupsWhereProvider>
       </SwipeBack>
     );

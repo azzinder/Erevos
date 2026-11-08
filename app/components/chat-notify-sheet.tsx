@@ -42,13 +42,15 @@ export function notifyValue(notify: ChatNotify | null | undefined, hidden: boole
   return '';
 }
 
-export function ChatNotifySheet({ visible, onClose, title, notify, hidden, onChange }: {
+export function ChatNotifySheet({ visible, onClose, title, notify, hidden, calls = true, onChange }: {
   visible: boolean;
   onClose: () => void;
   title: string;
   notify: ChatNotify | null;
   /** In hidden chats: muting only. */
   hidden: boolean;
+  /** Whether the chat can ring, for a ringtone of its own: not on Nostr. */
+  calls?: boolean;
   /** Keeps what was chosen; null for the app's own settings again. */
   onChange: (next: ChatNotify | null) => Promise<void>;
 }) {
@@ -148,15 +150,19 @@ export function ChatNotifySheet({ visible, onClose, title, notify, hidden, onCha
             <Chip label={t('Without sound')} selected={sound === ''} onPress={() => change({ sound: '' })} />
             <Chip label={sound ? names.sound || t('Chosen sound') : t('Choose…')} selected={!!sound} onPress={() => void pick('message')} />
           </Row>
-          <View style={{ height: 4 }} />
-          <Text variant="overline" tone="muted">
-            {t('Ringtone')}
-          </Text>
-          <Row wrap>
-            <Chip label={t("The phone's own")} selected={ring === undefined} onPress={() => change({ ring: undefined })} />
-            <Chip label={t('Without sound')} selected={ring === ''} onPress={() => change({ ring: '' })} />
-            <Chip label={ring ? names.ring || t('Chosen sound') : t('Choose…')} selected={!!ring} onPress={() => void pick('ring')} />
-          </Row>
+          {calls ? (
+            <>
+              <View style={{ height: 4 }} />
+              <Text variant="overline" tone="muted">
+                {t('Ringtone')}
+              </Text>
+              <Row wrap>
+                <Chip label={t("The phone's own")} selected={ring === undefined} onPress={() => change({ ring: undefined })} />
+                <Chip label={t('Without sound')} selected={ring === ''} onPress={() => change({ ring: '' })} />
+                <Chip label={ring ? names.ring || t('Chosen sound') : t('Choose…')} selected={!!ring} onPress={() => void pick('ring')} />
+              </Row>
+            </>
+          ) : null}
           <Text variant="caption" tone="muted">
             {t('Kept on this phone only. On silent the phone plays none of them.')}
           </Text>

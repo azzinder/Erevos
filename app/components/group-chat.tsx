@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { AppState, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatLookSheet } from './chat-look';
 import { canNotifyChats, ChatNotifySheet } from './chat-notify-sheet';
 import { ChatPinGate } from './chat-pin-gate';
 import { DraftComposer, IconButton, useDraft } from './composer';
@@ -50,6 +51,7 @@ import type { GroupMessage } from '../lock/group-data';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
+import type { ChatLook } from '../theme/chat-theme';
 import { ContactPicker, groupableContacts } from './contact-picker';
 import { ChatMedia } from './chat-media';
 import { groupMedia } from '../lib/chat-media';
@@ -91,14 +93,17 @@ const clock = (at: number) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
-/** Group `id`'s chat; `onBack` goes back from it. */
-export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack: () => void }) {
+/**
+ * Group `id`'s chat; `onBack` goes back from it. Its own look, and how to keep a new one, goes to
+ * `onLook`, for the screen that draws the chat in it (components/chat-look.tsx, app/chat.tsx).
+ */
+export function GroupChat({ id, at, onBack, onLook }: { id: string; at?: string; onBack: () => void; onLook: (chat: ChatLook | null) => void }) {
   const { at: groupsAt, linked: groupsLinked } = useGroupsWhere();
   const hidden = groupsAt.hidden;
   const styles = useStyles(makeStyles);
   const { colors, look } = useTheme();
   const barBlur = useGlassBlur();
-  const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
+  const b = useMemo(() => bubbleStyles(look.bubbles, colors, look.textSize), [look.bubbles, colors, look.textSize]);
   const insets = useSafeAreaInsets();
   // A narrow phone (360 wide): the top bar's picture is smaller, and what it is goes without its
   // shield, so the words fit beside the buttons, as in a contact's chat.
@@ -112,8 +117,9 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   const [sheet, setSheet] = useState(false);
   // A public group's ⋯: its video call, and its own screen.
   const [publicMenu, setPublicMenu] = useState(false);
-  // Whether the group's own notifications show (lock/chat-notify.ts).
+  // Whether the group's own notifications show (lock/chat-notify.ts), and its own look (theme/look.ts).
   const [notifying, setNotifying] = useState(false);
+  const [styling, setStyling] = useState(false);
   const [answering, setAnswering] = useState(false);
   // The group's photos, files, voice messages and links, apart (components/chat-media.tsx).
   const [mediaOpen, setMediaOpen] = useState(false);
@@ -216,6 +222,12 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
       .then(({ e2e }) => setContacts(e2e.contacts().map((c) => ({ identity: c.identity, name: c.name }))))
       .catch(() => undefined);
   }, [groupsAt]);
+
+  // The group's own look, told to the screen that draws it, until the chat closes.
+  const ownLook = info?.look ?? null;
+  const lookChat = useMemo<ChatLook>(() => ({ look: ownLook, save: async (look) => (await groupsAt.groups()).setLook(id, look) }), [ownLook, groupsAt, id]);
+  useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  useEffect(() => () => onLook(null), [onLook]);
 
   const load = useCallback(async () => {
     const groups = await groupsAt.groups();
@@ -632,6 +644,10 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
               }
             : undefined
         }
+        onStyle={() => {
+          setSheet(false);
+          setTimeout(() => setStyling(true), Platform.OS === 'web' ? 0 : 300);
+        }}
         onPin={
           hidden
             ? undefined
@@ -660,6 +676,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
         hidden={hidden}
         onChange={async (next) => (await groupsAt.groups()).setNotify(id, next)}
       />
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={info.name || t('Group')} chat={lookChat} />
       <Sheet visible={publicMenu} onClose={() => setPublicMenu(false)} title={info.name}>
         <Row wrap>
           <Button
@@ -691,6 +708,15 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
               }}
             />
           ) : null}
+          <Button
+            title={t('Chat look')}
+            kind="secondary"
+            compact
+            onPress={() => {
+              setPublicMenu(false);
+              setTimeout(() => setStyling(true), Platform.OS === 'web' ? 0 : 300);
+            }}
+          />
         </Row>
       </Sheet>
       {gated ? <ChatPinGate name={info.name} active={focused} open={openWithPin} forgot={lock.passwordLock ? forgotPin : undefined} onBack={onBack} /> : null}
@@ -698,7 +724,7 @@ export function GroupChat({ id, at, onBack }: { id: string; at?: string; onBack:
   );
 }
 
-function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onMedia, onExport, onVideo, onNotify, onPin, onGone }: {
+function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts, onContacts, onNote, onSearch, onMedia, onExport, onVideo, onNotify, onStyle, onPin, onGone }: {
   visible: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -719,6 +745,8 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
   onVideo: () => void;
   /** The group's own notifications (lock/chat-notify.ts): where chats can have them. */
   onNotify?: () => void;
+  /** The group's own look (components/chat-look.tsx). */
+  onStyle: () => void;
   /** Locks the group with a PIN of its own, or takes it off (lock/chat-pin.ts): none in hidden chats. */
   onPin?: () => void;
   /** Leaves its chat, once it is deleted here. */
@@ -995,6 +1023,7 @@ function MembersSheet({ visible, onClose, onOpen, info, name, faceName, contacts
                 }}
               />
               {onNotify ? <Button title={t('Notifications')} kind="secondary" compact onPress={onNotify} /> : null}
+              <Button title={t('Chat look')} kind="secondary" compact onPress={onStyle} />
               {onPin ? <Button title={info.locked ? t('Take the PIN off') : t('Lock with a PIN')} kind="secondary" compact onPress={onPin} /> : null}
             </Row>
             {out ? (

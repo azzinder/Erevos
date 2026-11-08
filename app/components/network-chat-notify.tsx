@@ -40,15 +40,24 @@ export function hiddenOnScreen(): string | undefined {
   return open ? screenOfHidden(open.pocket) : undefined;
 }
 
-/** The chat's Notifications button, with what it is set to, and its sheet: on Android only, as for the space's chats. */
-export function NetworkChatNotify({ notify, onChange }: { notify: ChatNotify | null; onChange: (next: ChatNotify | null) => Promise<void> }) {
+/**
+ * The chat's Notifications button, with what it is set to, and its sheet: on Android only, as for
+ * the space's chats. `hidden`: a chat of a hidden place's own account, which can only be muted, as
+ * hidden chats; `calls`: whether its network rings (Nostr does not), for a ringtone of its own.
+ */
+export function NetworkChatNotify({ notify, hidden = false, calls = true, onChange }: {
+  notify: ChatNotify | null;
+  hidden?: boolean;
+  calls?: boolean;
+  onChange: (next: ChatNotify | null) => Promise<void>;
+}) {
   const [open, setOpen] = useState(false);
   if (!canNotifyChats) return null;
-  const value = notifyValue(notify, false);
+  const value = notifyValue(notify, hidden);
   return (
     <>
       <Button title={value ? `${t('Notifications')} · ${value}` : t('Notifications')} kind="secondary" compact onPress={() => setOpen(true)} />
-      <ChatNotifySheet visible={open} onClose={() => setOpen(false)} title={t('Notifications')} notify={notify} hidden={false} onChange={onChange} />
+      <ChatNotifySheet visible={open} onClose={() => setOpen(false)} title={t('Notifications')} notify={notify} hidden={hidden} calls={calls} onChange={onChange} />
     </>
   );
 }

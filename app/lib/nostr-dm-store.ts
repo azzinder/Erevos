@@ -6,6 +6,7 @@ import { checkedChatNotify, type ChatNotify } from '../lock/chat-notify';
 import { currentSpace } from '../lock/keys';
 import { loadNostrDm, saveNostrDm } from '../lock/nostr-dm-data';
 import type { Holder } from '../lock/sealed-file';
+import { checkedLook, type Look } from '../theme/look';
 import { canNostrChat } from './core';
 import { sha256Bytes, toHex } from './crypto';
 import { fileCache } from './file-cache';
@@ -566,7 +567,8 @@ function start(holder: Holder, space: number, key: Uint8Array, pocket?: number):
     telling: false,
     tellAgain: false,
     listedAt: 0,
-    heard: hearing(pocket === undefined ? undefined : { space, pocket }),
+    // A hidden place's muted chats tell of nothing (lib/network-notices.ts).
+    heard: hearing(pocket === undefined ? undefined : { space, pocket }, (where) => checkedChatNotify(it.state?.chats[where.slice('nostr:'.length)]?.notify)),
     out: new Map(),
   };
   loadNostrDm(space, key, holder)
@@ -1442,6 +1444,16 @@ export function nostrDmSetNotify(key: string, notify: ChatNotify | null): Promis
     const chat = chatOf(it.state, key);
     if (notify) chat.notify = notify;
     else delete chat.notify;
+  });
+}
+
+/** A chat's own look (theme/look.ts), or the space's again with null. */
+export function nostrDmSetLook(key: string, look: Look | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const chat = chatOf(it.state, key);
+    if (look) chat.look = checkedLook(look);
+    else delete chat.look;
   });
 }
 

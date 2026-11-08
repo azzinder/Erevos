@@ -6,7 +6,8 @@ import { device } from '../modules/erevos-device';
 import { currentSpace } from '../lock/keys';
 import { plural } from './i18n';
 import { type Every } from './note-repeat';
-import { addNote, changeNote, isDue, isWaiting, loadNotes, markTold, newNoteId, onNotesCame, removeNote, type Note, type NotesPlace } from '../lock/myself-data';
+import { addNote, changeNote, isDue, isWaiting, loadNotes, loadNotesLook, markTold, newNoteId, onNotesCame, removeNote, saveNotesLook, type Note, type NotesPlace } from '../lock/myself-data';
+import type { Look } from '../theme/look';
 
 // Chat with myself and its reminders (app/myself.tsx, and Remind me on the home screen): the open
 // space's notes (lock/myself-data.ts). On Android the phone itself tells a reminder at its time,
@@ -103,6 +104,17 @@ export async function seenReminders(notes: Note[], now = Date.now(), at = spaceN
 export async function deleteNote(id: string, at = spaceNotes()): Promise<void> {
   device?.forgetReminder?.(id);
   await removeNote(at.place, id);
+  changed();
+}
+
+/** The chat's own look (theme/look.ts), or null while it takes the space's. */
+export function notesLook(at = spaceNotes()): Promise<Look | null> {
+  return loadNotesLook(at.place);
+}
+
+/** Gives the chat a look of its own, on this device; null gives it the space's again. */
+export async function setNotesLook(look: Look | null, at = spaceNotes()): Promise<void> {
+  await saveNotesLook(at.place, look);
   changed();
 }
 

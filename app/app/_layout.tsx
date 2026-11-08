@@ -606,8 +606,9 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
       <Stack
         key={`${phase.space}-${lang}`}
         // A chat draws its own backdrop, in its own look (theme/chat-theme.tsx), and goes back by a
-        // swipe in its own way, as its back arrow does. Every other screen goes back by a swipe to
-        // the right (components/swipe-back.tsx).
+        // swipe in its own way, as its back arrow does; so do a group, Chat with myself and a chat
+        // on Matrix, XMPP or Nostr (components/chat-look.tsx). Every other screen goes back by a
+        // swipe to the right (components/swipe-back.tsx).
         // With only the SMS or the Contacts open, any other screen asks for the password first, and shows nothing of itself.
         // A screen of a module that is off shows only that it is off (lib/modules.ts).
         screenLayout={({ children, route }) => {
@@ -620,7 +621,7 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
                 <ModuleOff module={part} bare={HEADERLESS.has(route.name)} />
               </SwipeBack>
             </ScreenBackdrop>
-          ) : route.name === 'chat' ? (
+          ) : OWN_LOOK.has(route.name) ? (
             children
           ) : (
             <ScreenBackdrop>
@@ -658,6 +659,9 @@ function Shell({ lang, phase, error, lockState, onUnlock, onRetry, onSetup }: {
 
 // The screens that draw their own bar, so have no header (below).
 const HEADERLESS = new Set(['index', 'chat', 'group', 'myself', 'collection']);
+
+// The chats' screens, which each draw their backdrop in the chat's own look (above).
+const OWN_LOOK = new Set(['chat', 'group', 'myself', 'matrix-chat', 'xmpp-chat', 'nostr-chat']);
 
 // How long before Erevos goes to the background a call made on the locked Phone may be, for it to
 // be what took Erevos there.

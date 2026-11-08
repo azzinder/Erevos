@@ -3,6 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { LPHL_PALETTE_ORDER, LPHL_PALETTES, type LphlModeColors, type LphlPaletteName } from './lphl-palettes';
+import type { FontChoice } from './look';
 
 // The app's colours and shapes, ported from LPHL FASOULI (src/theme/colors.ts there): three
 // styles, the twelve LPHL palettes or a colour of your own, and the text on coloured areas. What
@@ -766,7 +767,8 @@ const SHAPES: Record<StyleName, Shape> = {
  * anything renders, and every themed component re-renders when the look changes.
  */
 export const radius = { ...SHAPES.classic.radius };
-export const shape = { ...SHAPES.classic.shape };
+/** The open style's shape, and `face`: the letters chosen instead of the style's own (the look's font), or null for the style's. */
+export const shape: Shape['shape'] & { face: 'sans' | 'serif' | 'mono' | null } = { ...SHAPES.classic.shape, face: null };
 
 /**
  * Glass's corners (the panel's: fields 10, buttons 12, cards 20, sheets 24, chips round) win over
@@ -775,10 +777,11 @@ export const shape = { ...SHAPES.classic.shape };
 const GLASS_RADIUS: Shape['radius'] = { sm: 8, md: 10, lg: 20, xl: 24, pill: 999, button: 12, chip: 999 };
 
 /** Sets the shape tokens. `fonts` is the style's own, once loaded (theme/fonts.ts); null keeps the system font. */
-export function applyStyle(style: StyleName, fonts: Fonts | null = null, look: 'flat' | 'glass' = 'flat'): void {
+export function applyStyle(style: StyleName, fonts: Fonts | null = null, look: 'flat' | 'glass' = 'flat', font: FontChoice = 'style'): void {
   Object.assign(radius, SHAPES[style].radius);
   Object.assign(shape, SHAPES[style].shape);
   shape.fonts = style === 'classic' ? null : fonts;
+  shape.face = font === 'style' ? null : font;
   if (look === 'glass' && takesGlass(style)) {
     Object.assign(radius, GLASS_RADIUS);
     shape.cardBorder = 1;

@@ -14,7 +14,8 @@ import { pollOver, pollShown } from '../lib/matrix-parts';
 import { matrixFile } from '../lib/matrix-store';
 import { saveBytes } from '../lib/save-file';
 import { radius, space, withAlpha } from '../theme/colors';
-import { useColors } from '../theme/context';
+import { softBubble, textSized } from '../theme/bubbles';
+import { useColors, useTheme } from '../theme/context';
 
 import { OpenPhoto } from './attachment';
 import { VoiceClip } from './matrix-voice';
@@ -65,8 +66,10 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
   /** Of ours, how far it went: ✓ taken by the homeserver, ✓✓✓ read by every other member. */
   mark?: string;
 }) {
-  const colors = useColors();
+  const { colors, look } = useTheme();
   const mine = message.sender === me;
+  // The words in the chat's text size (theme/look.ts).
+  const words = textSized(look.textSize, 16);
   const when = new Date(message.ts).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const status = message.state === 'sending' ? t('Sending…') : message.state === 'failed' ? t('Not sent.') : [when, message.edited ? t('Edited') : '', message.unverified ? t('Not verified') : '', mark ?? ''].filter(Boolean).join('  ·  ');
   const side = mine ? 'flex-end' : 'flex-start';
@@ -80,7 +83,7 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
         // One with buttons in it (Play, Save) stays apart from them for a screen reader.
         accessible={!message.file}
         accessibilityHint={onMenu ? t('Hold for more') : undefined}
-        style={{ alignSelf: side, padding: space.sm + 2, borderRadius: radius.md, backgroundColor: lit ? withAlpha(colors.primary, 0.3) : mine ? colors.primarySoft : colors.surfaceAlt, gap: 2 }}
+        style={[{ alignSelf: side, padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine), lit && { backgroundColor: withAlpha(colors.primary, 0.3) }]}
       >
         {!mine ? (
           <Text variant="caption" tone="muted" numberOfLines={1}>
@@ -121,7 +124,7 @@ export function MatrixBubble({ message, me, sender, answered, names, onVote, onT
         ) : (
           // Not selectable: holding the words opens the menu, which can copy them.
           <>
-            <Text>{message.text}</Text>
+            <Text style={words}>{message.text}</Text>
             {message.preview ? <PreviewCard preview={message.preview} /> : null}
           </>
         )}

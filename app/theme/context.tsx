@@ -53,7 +53,7 @@ export function ThemeProvider({ look, onChange, children }: {
   const asked = useRef(0);
   const tones = usePhoneTones();
   setSystemTones(tones);
-  applyStyle(look.style, styleFonts(look.style), look.look);
+  applyStyle(look.style, styleFonts(look.style), look.look, look.font);
 
   const theme = useMemo<Theme>(() => {
     const scheme = resolveScheme(look.style, look.theme, system, look.customGround);

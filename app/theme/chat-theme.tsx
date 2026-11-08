@@ -9,6 +9,12 @@ import { useTheme, ThemeProvider } from './context';
 import { ensureStyleFonts, styleFonts } from './fonts';
 import type { Look } from './look';
 
+/** A chat's own look, as the chat showing tells it to the screen that draws it, and how to keep a new one (null: the space's again). */
+export interface ChatLook {
+  look: Look | null;
+  save: (look: Look | null) => Promise<void>;
+}
+
 // A chat's own look: inside it, every screen part takes the look given to that chat (Appearance,
 // from its details) instead of the space's. Without one, the chat takes the space's look. The
 // shape tokens are module-level (theme/colors.ts): a chat's style sets them while it shows, and
@@ -29,7 +35,7 @@ export function ChatTheme({ look, onChange, children }: {
       active = false;
     };
   }, [shown.style]);
-  useEffect(() => () => applyStyle(outer.style, styleFonts(outer.style), outer.look), [outer]);
+  useEffect(() => () => applyStyle(outer.style, styleFonts(outer.style), outer.look, outer.font), [outer]);
   return (
     <ThemeProvider look={shown} onChange={onChange}>
       {children}

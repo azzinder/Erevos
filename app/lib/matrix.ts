@@ -32,6 +32,7 @@
 // lib/matrix-backup.ts's. Not audited.
 
 import type { ChatNotify } from '../lock/chat-notify';
+import type { Look } from '../theme/look';
 import { deviceLine } from './call-lines';
 import { canTorHttp, matrixCore, torHttp } from './core';
 import type { MatrixBackup } from './matrix-backup';
@@ -150,6 +151,8 @@ export type MatrixRoom = {
   invitedBy?: string;
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
   notify?: ChatNotify;
+  /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
+  look?: Look;
   /** Reactions by their own event ID, so one taken back comes off its message. */
   reactionsBy?: Record<string, { target: string; key: string; sender: string }>;
   /** Where its older messages are to be fetched from (/messages), once the homeserver said. */

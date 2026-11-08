@@ -5,6 +5,7 @@
 import { sha1 } from '@noble/hashes/legacy.js';
 
 import type { ChatNotify } from '../lock/chat-notify';
+import type { Look } from '../theme/look';
 import { randomBytes, toBase64, toHex, utf8Encode } from './crypto';
 import { deviceLine } from './call-lines';
 import type { Preview } from './chat-parts';
@@ -181,6 +182,8 @@ export type XmppChat = {
   plain?: boolean;
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
   notify?: ChatNotify;
+  /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
+  look?: Look;
   /** A group (lib/xmpp-muc.ts), its address the chat's. */
   room?: XmppRoom;
 };

@@ -24,6 +24,7 @@ import {
   type GroupParts,
 } from '../lock/group-data';
 import { newTag } from '../lock/history';
+import { checkedLook, type Look } from '../theme/look';
 import { offerRef, readOffer, type FileFrom, type FileOffer } from './attachments';
 import * as core from './core';
 import { fromBase64, fromHex, randomBytes, toBase64, toHex, utf8Decode, utf8Encode } from './crypto';
@@ -191,6 +192,8 @@ export type GroupInfo = Pick<Group, 'id' | 'name' | 'admin' | 'status'> & {
   locked: boolean;
   /** Its own notifications here (lock/chat-notify.ts); missing while it has none. */
   notify?: ChatNotify;
+  /** Its own look here (theme/look.ts); missing while it takes the space's. */
+  look?: Look;
 };
 
 // What members say inside the group's messages. A `file` with `ms` is a voice message's sound. A
@@ -409,7 +412,7 @@ export class Groups {
         seal: this.data.seal,
         orphans: this.data.orphans,
         given: this.data.given,
-        groups: this.data.groups.map(({ messages: _messages, pin: _pin, notify: _notify, ...g }) => ({ ...g, messages: [] })),
+        groups: this.data.groups.map(({ messages: _messages, pin: _pin, notify: _notify, look: _look, ...g }) => ({ ...g, messages: [] })),
       };
       // Where its members write to it till the other device makes its keys new: kept on a while.
       const keep = now - LEFT_SENDERS_LAST;
@@ -472,7 +475,7 @@ export class Groups {
     const groups = held.groups.map((g) => {
       const kept = here.get(g.id);
       const { renewing: _renewing, ...rest } = g;
-      return { ...rest, keysAt: 0, messages: kept?.messages ?? [], ...(kept?.pin ? { pin: kept.pin } : {}), ...(kept?.notify ? { notify: kept.notify } : {}) };
+      return { ...rest, keysAt: 0, messages: kept?.messages ?? [], ...(kept?.pin ? { pin: kept.pin } : {}), ...(kept?.notify ? { notify: kept.notify } : {}), ...(kept?.look ? { look: kept.look } : {}) };
     });
     await this.save({ ...this.data, state: held.state, seal: held.seal, orphans: held.orphans, given: held.given, groups });
     this.changed();
@@ -551,7 +554,7 @@ export class Groups {
           .sort((a, b) => a.at - b.at);
         const unread = g.messages.filter((m) => m.from && !m.note && m.at > g.readAt).length + asks.filter((a) => a.at > g.readAt).length;
         const wants = freshWants(g, now).map(({ id, at }) => ({ id, at }));
-        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin, ...(g.notify ? { notify: g.notify } : {}) };
+        return { id: g.id, name: g.name, admin: g.admin, status: g.status, last, unread, asked: g.asked, wants, asks, locked: !!g.pin, ...(g.notify ? { notify: g.notify } : {}), ...(g.look ? { look: g.look } : {}) };
       })
       .sort((a, b) => (b.last?.at ?? 0) - (a.last?.at ?? 0));
   }
@@ -649,6 +652,17 @@ export class Groups {
   /** A group's own notifications here, or null when it has none. */
   notifyOf(id: string): ChatNotify | null {
     return this.find(id)?.notify ?? null;
+  }
+
+  /** Gives a group a look of its own here (theme/look.ts); null gives it the space's again. */
+  setLook(id: string, look: Look | null): Promise<void> {
+    return this.run(async () => {
+      const group = this.find(id);
+      if (!group) throw new Error(t('This group is not here.'));
+      const { look: _was, ...rest } = group;
+      await this.save(this.withGroup(look ? { ...rest, look: checkedLook(look) } : rest));
+      this.changed();
+    });
   }
 
   /** Marks a group read up to now, and tells the members whose messages came since that they were read here. */

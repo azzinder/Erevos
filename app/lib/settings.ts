@@ -106,9 +106,9 @@ export const SETTINGS: SettingsGroup[] = [
     title: mark('Appearance'),
     icon: 'contrast',
     items: [
-      { id: 'style', title: mark('Style and colours'), detail: mark('Look, glass, style, theme and colours'), href: '/appearance?part=style' },
+      { id: 'style', title: mark('Style and colours'), detail: mark('Look, glass, style, theme, colours and letters'), href: '/appearance?part=style' },
       { id: 'wallpaper', title: mark('Wallpaper'), detail: mark('What lies behind the chats and the screens'), href: '/appearance?part=wallpaper' },
-      { id: 'bubbles', title: mark('Messages'), detail: mark('The shape of the message bubbles'), href: '/appearance?part=messages' },
+      { id: 'bubbles', title: mark('Messages'), detail: mark('The shape of the message bubbles and the size of their text'), href: '/appearance?part=messages' },
       { id: 'icons', title: mark('Launcher icons'), detail: mark("The colours of Erevos's icons on the home screen"), href: '/appearance?part=icons', when: (place) => place.launcher },
       { id: 'widget', title: mark('Widget'), detail: mark("The widget's buttons and their order"), href: '/appearance?part=widget', when: (place) => place.widget },
       // A short buzz for keys, Send and Enter (lib/haptics.ts).

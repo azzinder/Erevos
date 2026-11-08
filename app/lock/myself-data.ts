@@ -9,6 +9,7 @@ import { isEvery, nextDue, type Every } from '../lib/note-repeat';
 import { deleteChunks, isFileRef, type FileRef } from './attachment-files';
 import { sealedFile, type Holder } from './sealed-file';
 import { deleteClip, isVoiceRef, type VoiceRef } from './voice-clips';
+import { checkedLook, type Look } from '../theme/look';
 
 // Chat with myself (app/myself.tsx, lib/myself.ts): notes, photos, files and voice messages that go
 // to no one, and reminders, each space's own. Kept in FILE, one sealed value for each space and each
@@ -50,7 +51,8 @@ export type NotesPlace = { holder: Holder; space: number; key: Uint8Array };
 type Gone = { v: number; o?: true };
 
 /** `last`: the latest stamp known here, kept so each change here is stamped after all of them. */
-type NotesData = { notes: Note[]; gone?: Record<string, Gone>; last?: number };
+// `look`: the chat's own look here (theme/look.ts), on this device only; missing while it takes the space's.
+type NotesData = { notes: Note[]; gone?: Record<string, Gone>; last?: number; look?: Look };
 
 export const FILE = 'erevos-myself';
 const BLOCK = 16 * 1024;
@@ -122,10 +124,11 @@ function latestGone(gone: Record<string, Gone>): Record<string, Gone> {
 }
 
 function checked(value: unknown): NotesData {
-  const v = value as { notes?: unknown; gone?: unknown; last?: unknown } | null;
+  const v = value as { notes?: unknown; gone?: unknown; last?: unknown; look?: unknown } | null;
   const notes = Array.isArray(v?.notes) ? v.notes.filter(isNote) : [];
   const gone = checkedGone(v?.gone);
-  return { notes: notes.slice(-MAX_NOTES).map(clean), ...(gone ? { gone } : {}), ...(time(v?.last) ? { last: v.last } : {}) };
+  const look = v?.look && typeof v.look === 'object' && !Array.isArray(v.look) ? checkedLook(v.look) : null;
+  return { notes: notes.slice(-MAX_NOTES).map(clean), ...(gone ? { gone } : {}), ...(time(v?.last) ? { last: v.last } : {}), ...(look ? { look } : {}) };
 }
 
 /** When a note was last changed: its stamp, or, one from before stamps, when it was written. */
@@ -161,6 +164,21 @@ function change<T>({ holder, space }: NotesPlace, run: () => Promise<T>): Promis
 /** A place's notes, the oldest first. */
 export async function loadNotes({ holder, space, key }: NotesPlace): Promise<Note[]> {
   return (await store.load(holder, space, key)).notes;
+}
+
+/** The chat's own look in a place, or null while it takes the space's. */
+export async function loadNotesLook({ holder, space, key }: NotesPlace): Promise<Look | null> {
+  return (await store.load(holder, space, key)).look ?? null;
+}
+
+/** Gives the chat a look of its own in a place; null gives it the space's again. */
+export function saveNotesLook(place: NotesPlace, look: Look | null): Promise<void> {
+  return change(place, async () => {
+    const { holder, space, key } = place;
+    const { look: _was, ...data } = await store.load(holder, space, key);
+    // Not a change for the account's other devices: each keeps its own.
+    await store.save(holder, space, key, look ? { ...data, look: checkedLook(look) } : data);
+  });
 }
 
 /** Keeps a new note, last. Throws TooManyNotesError when the place has its most. */
@@ -339,7 +357,7 @@ export function mergeNotes(place: NotesPlace, came: NoteCame[], deleted: { id: s
     }
     if (changed.length === 0 && removed.length === 0 && last === (data.last ?? 0) && JSON.stringify(gone) === JSON.stringify(data.gone ?? {})) return { changed, gone: [] };
     const kept = latestGone(gone);
-    await store.save(holder, space, key, { notes, ...(Object.keys(kept).length > 0 ? { gone: kept } : {}), last });
+    await store.save(holder, space, key, { notes, ...(Object.keys(kept).length > 0 ? { gone: kept } : {}), last, ...(data.look ? { look: data.look } : {}) });
     for (const note of removed) {
       if (note.file && !note.file.from) await deleteChunks(note.file.id, note.file.count).catch(() => undefined);
       if (note.voice) await deleteClip(note.voice.id).catch(() => undefined);

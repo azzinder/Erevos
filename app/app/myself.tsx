@@ -3,17 +3,20 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
+import { ChatScreen } from '../components/chat-look';
 import { MyselfChat } from '../components/myself-chat';
 import { ask } from '../lib/alert';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
 import { everyLabel, writeNote } from '../lib/myself';
 import { linkNote, linkNoteKey, type LinkNote } from '../lib/note-link';
+import type { ChatLook } from '../theme/chat-theme';
 
-// Chat with myself, the open space's (components/myself-chat.tsx): its row is always at the top of
-// the chats (app/index.tsx), and a reminder's notice opens it.
+// Chat with myself, the open space's (components/myself-chat.tsx), in its own look or the space's
+// (components/chat-look.tsx): its row is always at the top of the chats (app/index.tsx), and a
+// reminder's notice opens it.
 //
 // Another app on the phone, as Fasouli for a payment to come, can open it with a note to add
 // (lib/note-link.ts): Erevos asks first, as nothing tells which app sent the link.
@@ -23,6 +26,7 @@ export default function MyselfScreen() {
   const params = useLocalSearchParams<{ note?: string; due?: string; every?: string }>();
   const note = linkNote(params);
   const key = note ? linkNoteKey(note) : '';
+  const [look, setLook] = useState<ChatLook | null>(null);
   useEffect(() => {
     if (!note || key === asked) return;
     asked = key;
@@ -30,7 +34,11 @@ export default function MyselfScreen() {
     offer(note);
     // Asked once for each request: `note` comes from `key`.
   }, [key]);
-  return <MyselfChat />;
+  return (
+    <ChatScreen chat={look}>
+      <MyselfChat onLook={setLook} />
+    </ChatScreen>
+  );
 }
 
 function offer(note: LinkNote): void {

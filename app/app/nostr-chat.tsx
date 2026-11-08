@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,6 +12,7 @@ import { Missing, type Answered } from '../components/matrix-message';
 import { MicButton, RecordingLine, useVoiceCapture, VoiceClip } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Quote } from '../components/message-parts';
+import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { NetworkFile } from '../components/network-file';
 import { useNetworkThread } from '../components/network-thread';
@@ -35,6 +36,7 @@ import {
   nostrDmRetry,
   nostrDmSend,
   nostrDmSendFile,
+  nostrDmSetLook,
   nostrDmSetNotify,
   nostrDmSetSubject,
   NostrFileTooLargeError,
@@ -46,8 +48,11 @@ import { NOSTR_FILE_MOST, type NostrDmFile } from '../lib/nostr-files';
 import { pickFile, TooLargeError } from '../lib/pick-file';
 import { pickPhoto } from '../lib/pick-photo';
 import { checkedChatNotify } from '../lock/chat-notify';
-import { radius, space } from '../theme/colors';
-import { useColors } from '../theme/context';
+import { space } from '../theme/colors';
+import { softBubble, textSized } from '../theme/bubbles';
+import type { ChatLook } from '../theme/chat-theme';
+import { useColors, useTheme } from '../theme/context';
+import { checkedLook } from '../theme/look';
 
 // One chat with someone on another Nostr app, or a group of them (lib/nostr-dm-store.ts): its
 // messages, oldest first, and a field to write in. It is marked as not anonymous. Opening it, with
@@ -86,7 +91,17 @@ const copyable = (message: NostrDmMessage) => CAN_COPY && !!message.text && !mes
 // Whether it has a menu: one that did not go has nobody to answer or react to, only words to copy.
 const menuable = (message: NostrDmMessage) => message.state !== 'failed' || copyable(message);
 
+/** A Nostr chat's screen, in the chat's own look or the space's (components/chat-look.tsx). */
 export default function NostrChatScreen() {
+  const [look, setLook] = useState<ChatLook | null>(null);
+  return (
+    <ChatScreen chat={look} header>
+      <NostrChat onLook={setLook} />
+    </ChatScreen>
+  );
+}
+
+function NostrChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -101,6 +116,8 @@ export default function NostrChatScreen() {
   // The message the next one answers and the one whose menu is open, by their ids.
   const [replyId, setReplyId] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  // Whether the chat's own look shows its choices (components/chat-look.tsx).
+  const [styling, setStyling] = useState(false);
 
   useEffect(() => {
     runNostrDm();
@@ -110,6 +127,10 @@ export default function NostrChatScreen() {
 
   const state = now.state;
   const chat = key && state ? state.chats[key] : undefined;
+  // The chat's own look, told to the screen that draws it.
+  const ownLook = useMemo(() => (chat?.look ? checkedLook(chat.look) : null), [chat?.look]);
+  const lookChat = useMemo<ChatLook | null>(() => (key ? { look: ownLook, save: (look) => nostrDmSetLook(key, look) } : null), [ownLook, key]);
+  useEffect(() => onLook(lookChat), [onLook, lookChat]);
   const count = chat?.messages.length ?? 0;
   // The thread opens at its last message, with the arrows to its start, to where it was left and to its
   // end (components/network-thread.tsx).
@@ -285,7 +306,11 @@ export default function NostrChatScreen() {
         <MicButton voice={voice} disabled={sending} />
       </Row>
       {note ? <Text tone="muted">{note}</Text> : null}
-      {where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(chat.notify)} onChange={(next) => nostrDmSetNotify(key, next)} /> : null}
+      <Row wrap>
+        <NetworkChatNotify notify={checkedChatNotify(chat.notify)} hidden={where !== 'space'} calls={false} onChange={(next) => nostrDmSetNotify(key, next)} />
+        <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+      </Row>
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={name} chat={lookChat} />
 
       {self ? null : naming === null ? (
         <Button title={group ? t('Name this group') : t('Name them here')} kind="secondary" compact onPress={() => setNaming((group ? chat.subject : chat.name) ?? '')} />
@@ -365,7 +390,7 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
   onMenu?: () => void;
   onLayout?: (event: LayoutChangeEvent) => void;
 }) {
-  const colors = useColors();
+  const { colors, look } = useTheme();
   const mine = message.mine;
   const when = new Date(message.at).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   // NIP-17 says nothing back: one tick once a relay of theirs took it, no more.
@@ -381,14 +406,7 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
       // One with buttons in it (Play, Save) stays apart from them for a screen reader.
       accessible={!file}
       accessibilityHint={onMenu ? t('Hold for more') : undefined}
-      style={{
-        alignSelf: mine ? 'flex-end' : 'flex-start',
-        maxWidth: '85%',
-        padding: space.sm + 2,
-        borderRadius: radius.md,
-        backgroundColor: mine ? colors.primarySoft : colors.surfaceAlt,
-        gap: 2,
-      }}
+      style={[{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '85%', padding: space.sm + 2, gap: 2 }, softBubble(look.bubbles, colors, mine)]}
     >
       {group && !mine && message.from ? (
         <Text variant="caption" tone="muted" numberOfLines={1}>
@@ -405,8 +423,8 @@ function Bubble({ state, message, group, answered, onRetry, onMenu, onLayout }: 
       ) : message.file ? (
         <Text tone="muted">{t('A file: Erevos cannot open files sent this way yet.')}</Text>
       ) : (
-        // Not selectable: holding the words opens the menu, which can copy them.
-        <Text>{message.text}</Text>
+        // Not selectable: holding the words opens the menu, which can copy them. In the chat's text size (theme/look.ts).
+        <Text style={textSized(look.textSize, 16)}>{message.text}</Text>
       )}
       {Object.keys(reactions).length ? (
         <Text variant="caption">

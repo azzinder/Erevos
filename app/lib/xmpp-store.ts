@@ -7,6 +7,7 @@ import { currentSpace } from '../lock/keys';
 import type { Holder } from '../lock/sealed-file';
 import { lastRestore } from '../lock/restored';
 import { loadXmpp, saveXmpp } from '../lock/xmpp-data';
+import { checkedLook, type Look } from '../theme/look';
 import { followDoor, spaceRelayOf } from './closed-notices';
 import { canXmpp } from './core';
 import { fileCache, pictureCache } from './file-cache';
@@ -373,7 +374,8 @@ function end(it: Live): void {
 }
 
 function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
-  const heard = hearing(pocket === undefined ? undefined : { space, pocket });
+  // A hidden place's muted chats tell of nothing (lib/network-notices.ts).
+  const heard = hearing(pocket === undefined ? undefined : { space, pocket }, (where) => checkedChatNotify(it.state?.chats[where.slice('xmpp:'.length)]?.notify));
   const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, connection: null, queue: Promise.resolve(), saving: null, heard, fresh: false, pushChecked: false };
   loadXmpp(space, key, holder)
     .then(async (state) => {
@@ -706,6 +708,16 @@ export function xmppSetNotify(jid: string, notify: ChatNotify | null): Promise<v
     const chat = (it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
     if (notify) chat.notify = notify;
     else delete chat.notify;
+  });
+}
+
+/** A chat's own look (theme/look.ts), or the space's again with null. */
+export function xmppSetLook(jid: string, look: Look | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const chat = (it.state.chats[jid] ??= { jid, messages: [], unread: 0, lastAt: 0 });
+    if (look) chat.look = checkedLook(look);
+    else delete chat.look;
   });
 }
 

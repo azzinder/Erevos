@@ -13,7 +13,7 @@ import { playVoice, useVoiceRecorder } from '../lib/audio';
 import { CAN_COPY, copyText } from '../lib/clipboard';
 import { t } from '../lib/i18n';
 import { laterLabel } from '../lib/later';
-import { armReminders, deleteNote, everyLabel, isDue, isWaiting, myNotes, onNotesChanged, remindAt, seenReminders, writeNote, type Note, type NotesAt } from '../lib/myself';
+import { armReminders, deleteNote, everyLabel, isDue, isWaiting, myNotes, notesLook, onNotesChanged, remindAt, seenReminders, setNotesLook, writeNote, type Note, type NotesAt } from '../lib/myself';
 import { appShown, onAppShown } from '../lib/receiver';
 import { CAN_TAKE_PHOTOS, NoCameraError, pickPhoto, type PhotoQuality } from '../lib/pick-photo';
 import { pickSource, TooLargeError } from '../lib/pick-file';
@@ -26,11 +26,14 @@ import { loadClip, saveClip } from '../lock/voice-clips';
 import { radius, space, withAlpha, type Colors } from '../theme/colors';
 import { bubbleStyles } from '../theme/bubbles';
 import { useStyles, useTheme } from '../theme/context';
+import type { ChatLook } from '../theme/chat-theme';
+import type { Look } from '../theme/look';
 
+import { ChatLookSheet } from './chat-look';
 import { Attachment, FileViewer, shownOf, useShownPhotos } from './attachment';
 import { ComposerPanel, DraftComposer, IconButton, useDraft, type ComposerTile, type SendWay, type VoiceControl } from './composer';
 import { useGlassBlur } from './glass';
-import { BackIcon, BellIcon } from './icons';
+import { BackIcon, BellIcon, ContrastIcon } from './icons';
 import { KeyboardPaddedView } from './keyboard';
 import { LaterPicker } from './later-picker';
 import { LinkedText } from './linked-text';
@@ -78,18 +81,22 @@ type Picked = { name: string; mime: string; source: Source; w?: number; h?: numb
 
 /**
  * Chat with myself, the open space's (app/myself.tsx), or a hidden place's, `at`, within its chats
- * (app/chat.tsx), which goes back with `onBack` and is already clear of the keyboard.
+ * (app/chat.tsx), which goes back with `onBack` and is already clear of the keyboard. Its own look,
+ * and how to keep a new one, goes to `onLook`, for the screen that draws the chat in it.
  */
-export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }) {
+export function MyselfChat({ at, onBack, onLook }: { at?: NotesAt; onBack?: () => void; onLook: (chat: ChatLook | null) => void }) {
   const styles = useStyles(makeStyles);
   const where = useRef(at);
   where.current = at;
   const { colors, look } = useTheme();
-  const b = useMemo(() => bubbleStyles(look.bubbles, colors), [look.bubbles, colors]);
+  const b = useMemo(() => bubbleStyles(look.bubbles, colors, look.textSize), [look.bubbles, colors, look.textSize]);
   const barBlur = useGlassBlur();
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
   const [notes, setNotes] = useState<Note[] | null>(null);
+  // The chat's own look (theme/look.ts), and whether its choices show.
+  const [ownLook, setOwnLook] = useState<Look | null>(null);
+  const [styling, setStyling] = useState(false);
   const { draft } = useDraft(() => '');
   const [said, setSaid] = useState('');
   const [failed, setFailed] = useState(false);
@@ -128,13 +135,23 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
         },
         (error) => live && say(t('Cannot read your notes. {error}', { error: errorText(error) }), true),
       );
+    const loadLook = () => notesLook(where.current).then((look) => live && setOwnLook(look), () => undefined);
     void load();
-    const off = onNotesChanged(() => void load());
+    void loadLook();
+    const off = onNotesChanged(() => {
+      void load();
+      void loadLook();
+    });
     return () => {
       live = false;
       off();
     };
   }, []);
+
+  // The chat's own look, told to the screen that draws it, until the chat closes.
+  const lookChat = useMemo<ChatLook>(() => ({ look: ownLook, save: (look) => setNotesLook(look, where.current) }), [ownLook]);
+  useEffect(() => onLook(lookChat), [onLook, lookChat]);
+  useEffect(() => () => onLook(null), [onLook]);
 
   useEffect(() => {
     loadPhotoQuality().then(setQuality, () => undefined);
@@ -449,6 +466,9 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
               </Text>
             </View>
           </View>
+          <IconButton label={t('Chat look')} onPress={() => setStyling(true)}>
+            <ContrastIcon color={colors.text} size={22} />
+          </IconButton>
         </View>
       </View>
       <View style={{ flex: 1 }}>
@@ -551,6 +571,7 @@ export function MyselfChat({ at, onBack }: { at?: NotesAt; onBack?: () => void }
         }}
       />
       <MessageMenu visible={menuFor !== null} onClose={() => setMenuFor(null)} line={menuFor ? noteLine(menuFor) : ''} actions={menuFor ? actionsOf(menuFor) : []} />
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={t('Chat with myself')} chat={lookChat} />
       <FileViewer file={viewing} uri={viewing ? photos[viewing.id] : undefined} onSave={(choose) => void saveViewed(choose)} onClose={() => setViewing(null)} />
       <RemindSheet note={remindFor} onPick={(note, at) => void setReminder(note, at)} onClose={() => setRemindFor(null)} />
     </Screen>

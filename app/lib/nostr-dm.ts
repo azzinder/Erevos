@@ -9,6 +9,7 @@ import { isEvent, type NostrEvent } from './nostr-dm-net';
 import { fileOfRumor, type NostrDmFile } from './nostr-files';
 import { isNostrRelay } from '../lock/e2e-data';
 import type { ChatNotify } from '../lock/chat-notify';
+import type { Look } from '../theme/look';
 
 // Chats with people on other Nostr apps (docs/nostr-chats.md): 0xchat, Amethyst, Coracle, Primal
 // and any other that writes private messages as NIP-17 says. A space can have a Nostr key of its
@@ -93,6 +94,8 @@ export type NostrDmChat = {
   hints?: string[];
   /** Its own notifications (lock/chat-notify.ts), kept on this device only. */
   notify?: ChatNotify;
+  /** Its own look (theme/look.ts), kept on this device only; missing while it takes the space's. */
+  look?: Look;
 };
 
 export type NostrDmState = {

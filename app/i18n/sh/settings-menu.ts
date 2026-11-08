@@ -7,9 +7,9 @@
 export const settingsMenu: Record<string, string> = {
   'General': 'Općenito',
   'Style and colours': 'Stil i boje',
-  'Look, glass, style, theme and colours': 'Površina, staklo, stil, tema i boje',
+  'Look, glass, style, theme, colours and letters': 'Površina, staklo, stil, tema, boje i font',
   'What lies behind the chats and the screens': 'Ono što je iza razgovora i ekrana',
-  'The shape of the message bubbles': 'Oblik oblačića poruka',
+  'The shape of the message bubbles and the size of their text': 'Oblik oblačića poruka i veličina njihovog teksta',
   "The colours of Erevos's icons on the home screen": 'Boje Erevosovih ikona na početnom ekranu',
   "The widget's buttons and their order": 'Dugmad widgeta i njihov redoslijed',
   'Notifications': 'Obavijesti',

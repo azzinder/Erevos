@@ -3,7 +3,7 @@
 // Additional terms under AGPL-3.0 section 7 apply: see AUTHORS.md.
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { MatrixVerifyCard } from '../components/matrix-verify-card';
 import { MicButton, RecordingLine, useVoiceCapture } from '../components/matrix-voice';
 import { MessageMenu, type MenuAction } from '../components/message-menu';
 import { Pinned, Quote } from '../components/message-parts';
+import { ChatLookSheet, ChatScreen } from '../components/chat-look';
 import { hiddenOnScreen, NetworkChatNotify, useNetworkChatShown } from '../components/network-chat-notify';
 import { useNetworkThread } from '../components/network-thread';
 import { PlaceSheet } from '../components/place-sheet';
@@ -55,6 +56,7 @@ import {
   matrixSend,
   matrixSendFile,
   matrixSendInThread,
+  matrixSetLook,
   matrixSetNotify,
   matrixTyped,
   matrixVerifications,
@@ -72,7 +74,9 @@ import { rtc } from '../lib/webrtc';
 import { loadCurrentSpaceData } from '../lock/space-data';
 import { checkedChatNotify } from '../lock/chat-notify';
 import { space } from '../theme/colors';
+import type { ChatLook } from '../theme/chat-theme';
 import { useColors } from '../theme/context';
+import { checkedLook } from '../theme/look';
 
 // One Matrix chat (lib/matrix-store.ts): its messages, oldest first, and a field to write in.
 // It is marked as not anonymous, and as not encrypted when the room is not. Opening it, with Erevos
@@ -124,7 +128,17 @@ const copyable = (message: MatrixMessage) => CAN_COPY && !!message.text && !mess
 // has no ID on the homeserver yet, so nothing can be done with it but copy its words.
 const menuable = (message: MatrixMessage) => !message.deleted && !message.call && (!message.state || copyable(message));
 
+/** A Matrix chat's screen, in the room's own look or the space's (components/chat-look.tsx). */
 export default function MatrixChatScreen() {
+  const [look, setLook] = useState<ChatLook | null>(null);
+  return (
+    <ChatScreen chat={look} header>
+      <MatrixChat onLook={setLook} />
+    </ChatScreen>
+  );
+}
+
+function MatrixChat({ onLook }: { onLook: (chat: ChatLook | null) => void }) {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -149,6 +163,8 @@ export default function MatrixChatScreen() {
   const [previews, setPreviews] = useState(false);
   const [pinShown, setPinShown] = useState(0);
   const [lit, setLit] = useState<string | null>(null);
+  // Whether the room's own look shows its choices (components/chat-look.tsx).
+  const [styling, setStyling] = useState(false);
   // Counts the changes of who writes, and the end of what was last said, so the line under the thread follows.
   const [, setTyped] = useState(0);
   // How far the screen is scrolled and how tall it is, to keep what is in view where it is when
@@ -188,6 +204,10 @@ export default function MatrixChatScreen() {
 
   const state = now.state;
   const room = roomId && state ? state.rooms[roomId] : undefined;
+  // The room's own look, told to the screen that draws it.
+  const ownLook = useMemo(() => (room?.look ? checkedLook(room.look) : null), [room?.look]);
+  const lookChat = useMemo<ChatLook | null>(() => (roomId ? { look: ownLook, save: (look) => matrixSetLook(roomId, look) } : null), [ownLook, roomId]);
+  useEffect(() => onLook(lookChat), [onLook, lookChat]);
   // The room's thread holds what is not in a thread; a thread's own screen, its first message and what is in it.
   const shownMessages = room ? room.messages.filter((m) => (thread ? m.id === thread || m.thread === thread : !m.thread)) : [];
   const count = shownMessages.length;
@@ -593,7 +613,13 @@ export default function MatrixChatScreen() {
       </Row>
       {note || now.problem ? <Text tone="muted">{note || now.problem}</Text> : null}
       {!room.direct && !room.invitedBy ? <InviteCard roomId={roomId} say={setNote} /> : null}
-      {!room.invitedBy && where === 'space' ? <NetworkChatNotify notify={checkedChatNotify(room.notify)} onChange={(next) => matrixSetNotify(roomId, next)} /> : null}
+      {!room.invitedBy ? (
+        <Row wrap>
+          <NetworkChatNotify notify={checkedChatNotify(room.notify)} hidden={where !== 'space'} onChange={(next) => matrixSetNotify(roomId, next)} />
+          <Button title={t('Chat look')} kind="secondary" compact onPress={() => setStyling(true)} />
+        </Row>
+      ) : null}
+      <ChatLookSheet visible={styling} onClose={() => setStyling(false)} name={room.name} chat={lookChat} />
       <Button
         title={t('Leave')}
         kind="secondary"

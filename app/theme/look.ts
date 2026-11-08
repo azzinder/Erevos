@@ -34,6 +34,10 @@ export interface Look {
   wallpaper: Wallpaper;
   /** The photo of the 'photo' wallpaper, sealed in its own file (lock/avatar-photos.ts). */
   wallpaperPhoto: PhotoRef | null;
+  /** The letters of every text: the style's own, or the phone's, a serif or a monospace instead (theme/colors.ts applyStyle). */
+  font: FontChoice;
+  /** How large the text of the messages is in a chat (TEXT_SCALE). */
+  textSize: TextSize;
 }
 
 export type Wallpaper = 'auto' | 'plain' | 'dots' | 'grid' | 'stripes' | 'stars' | 'bokeh' | 'gradient' | 'photo';
@@ -41,6 +45,15 @@ export const WALLPAPERS: Wallpaper[] = ['auto', 'plain', 'dots', 'grid', 'stripe
 
 export type BubbleShape = 'round' | 'square' | 'line';
 export const BUBBLE_SHAPES: BubbleShape[] = ['round', 'square', 'line'];
+
+export type FontChoice = 'style' | 'sans' | 'serif' | 'mono';
+export const FONT_CHOICES: FontChoice[] = ['style', 'sans', 'serif', 'mono'];
+
+export type TextSize = 'small' | 'normal' | 'large' | 'larger';
+export const TEXT_SIZES: TextSize[] = ['small', 'normal', 'large', 'larger'];
+
+/** How much larger than the usual each text size draws the messages' text. */
+export const TEXT_SCALE: Record<TextSize, number> = { small: 0.87, normal: 1, large: 1.15, larger: 1.3 };
 
 export const DEFAULT_LOOK: Look = {
   style: 'classic',
@@ -56,6 +69,8 @@ export const DEFAULT_LOOK: Look = {
   customGround: DEFAULT_CUSTOM_GROUND,
   wallpaper: 'auto',
   wallpaperPhoto: null,
+  font: 'style',
+  textSize: 'normal',
 };
 
 const KEY = 'erevos.look';
@@ -82,6 +97,8 @@ export function checkedLook(value: unknown): Look {
     // A photo wallpaper without its photo (as on the password screen's copy) is the style's own.
     wallpaper: o.wallpaper === 'photo' && !isPhotoRef(o.wallpaperPhoto) ? 'auto' : pick(WALLPAPERS, o.wallpaper, DEFAULT_LOOK.wallpaper),
     wallpaperPhoto: isPhotoRef(o.wallpaperPhoto) ? { id: o.wallpaperPhoto.id, key: o.wallpaperPhoto.key } : null,
+    font: pick(FONT_CHOICES, o.font, DEFAULT_LOOK.font),
+    textSize: pick(TEXT_SIZES, o.textSize, DEFAULT_LOOK.textSize),
   };
 }
 

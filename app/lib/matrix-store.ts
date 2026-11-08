@@ -7,6 +7,7 @@ import { loadMatrix, saveMatrix } from '../lock/matrix-data';
 import { currentSpace } from '../lock/keys';
 import { lastRestore } from '../lock/restored';
 import type { Holder } from '../lock/sealed-file';
+import { checkedLook, type Look } from '../theme/look';
 import { canMatrix } from './core';
 import { randomBytes, sha256Bytes, toHex } from './crypto';
 import { pictureCache } from './file-cache';
@@ -360,7 +361,8 @@ function end(it: Live): void {
 }
 
 function start(holder: Holder, space: number, key: Uint8Array, pocket?: number): Live {
-  const heard = hearing(pocket === undefined ? undefined : { space, pocket });
+  // A hidden place's muted rooms tell of nothing (lib/network-notices.ts).
+  const heard = hearing(pocket === undefined ? undefined : { space, pocket }, (where) => checkedChatNotify(it.state?.rooms[where.slice('matrix:'.length)]?.notify));
   const it: Live = { holder, space, key, state: null, loaded: false, problem: '', stopped: false, running: false, queue: Promise.resolve(), saving: null, asked: new Set(), heard, pushChecked: false };
   loadMatrix(space, key, holder)
     .then(async (loaded) => {
@@ -904,6 +906,17 @@ export function matrixSetNotify(roomId: string, notify: ChatNotify | null): Prom
     if (!room) return;
     if (notify) room.notify = notify;
     else delete room.notify;
+  });
+}
+
+/** A room's own look (theme/look.ts), or the space's again with null. */
+export function matrixSetLook(roomId: string, look: Look | null): Promise<void> {
+  const it = need();
+  return changeAccount(it, async () => {
+    const room = it.state.rooms[roomId];
+    if (!room) return;
+    if (look) room.look = checkedLook(look);
+    else delete room.look;
   });
 }
 

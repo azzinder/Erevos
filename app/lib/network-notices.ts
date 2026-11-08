@@ -93,7 +93,8 @@ export function unreadChange(before: ReadonlyMap<string, number>, after: Readonl
 
 // A hidden place's own accounts (lib/place-networks.ts) tell only their place, and only to
 // lib/background.ts, which says "New message" of it with no name, as for the place's other chats;
-// a call to one closed rings with no name, as theirs do.
+// a call to one closed rings with no name, as theirs do. A muted chat of theirs tells of nothing,
+// as a muted hidden chat does; a sound of its own it has none, which would tell which chat it is.
 const placeListeners = new Set<(space: number, pocket: number, where: string, times: number) => void>();
 const ringListeners = new Set<(space: number, pocket: number) => void>();
 
@@ -122,9 +123,12 @@ export function placeNetworkRang(space: number, pocket: number): void {
  * What one store last said its chats had not read. `hear` tells of what changed since; a `quiet`
  * one only takes the count as it is, as when an account is signed in to and fetches what came
  * before. Until the first, nothing is told. A hidden place's (`place`) tells only of what came, and
- * only as that place's.
+ * only as that place's, and nothing of a chat that `notifyOf` says is muted.
  */
-export function hearing(place?: { space: number; pocket: number }): { hear(now: ReadonlyMap<string, number>, quiet?: boolean): void } {
+export function hearing(
+  place?: { space: number; pocket: number },
+  notifyOf?: (where: string) => ChatNotify | null,
+): { hear(now: ReadonlyMap<string, number>, quiet?: boolean): void } {
   let heard: ReadonlyMap<string, number> | null = null;
   return {
     hear(now, quiet = false) {
@@ -133,7 +137,11 @@ export function hearing(place?: { space: number; pocket: number }): { hear(now: 
       if (!before || quiet) return;
       const { came, read } = unreadChange(before, now);
       if (place) {
-        for (const [where, times] of came) placeListeners.forEach((listener) => listener(place.space, place.pocket, where, times));
+        const at = Date.now();
+        for (const [where, times] of came) {
+          if (mutedNow(notifyOf?.(where), at)) continue;
+          placeListeners.forEach((listener) => listener(place.space, place.pocket, where, times));
+        }
         return;
       }
       for (const [where, times] of came) cameListeners.forEach((listener) => listener(where, times));

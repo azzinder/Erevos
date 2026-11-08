@@ -7,9 +7,9 @@
 export const settingsMenu: Record<string, string> = {
   'General': 'Generali',
   'Style and colours': 'Stile e colori',
-  'Look, glass, style, theme and colours': 'Finitura, vetro, stile, tema e colori',
+  'Look, glass, style, theme, colours and letters': 'Finitura, vetro, stile, tema, colori e carattere',
   'What lies behind the chats and the screens': 'Cosa c’è dietro le chat e le schermate',
-  'The shape of the message bubbles': 'La forma delle nuvolette dei messaggi',
+  'The shape of the message bubbles and the size of their text': 'La forma delle nuvolette dei messaggi e la dimensione del loro testo',
   "The colours of Erevos's icons on the home screen": 'I colori delle icone di Erevos nella schermata Home',
   "The widget's buttons and their order": 'I pulsanti del widget e il loro ordine',
   'Notifications': 'Notifiche',

@@ -39,7 +39,7 @@ import { mark, t } from '../lib/i18n';
 import { pickWallpaper } from '../lib/pick-avatar';
 import { savePhoto } from '../lock/avatar-photos';
 import { phoneTones } from '../modules/erevos-look';
-import { BUBBLE_SHAPES, WALLPAPERS, type BubbleShape, type Wallpaper } from '../theme/look';
+import { BUBBLE_SHAPES, FONT_CHOICES, TEXT_SIZES, WALLPAPERS, type BubbleShape, type FontChoice, type TextSize, type Wallpaper } from '../theme/look';
 
 // Appearance, as in LPHL FASOULI's settings: flat or glass (as on lphl.nekten.eu), the style,
 // light or dark, the colours (the style's own, one of the twelve LPHL palettes, or a colour of
@@ -62,6 +62,8 @@ const STYLE_LABELS: Record<StyleName, string> = { classic: 'Classic', modernist:
   custom: mark('Custom'),
 };
 const BUBBLE_LABELS: Record<BubbleShape, string> = { round: mark('Round'), square: mark('Square'), line: mark('Line') };
+const FONT_LABELS: Record<FontChoice, string> = { style: mark("The style's own"), sans: mark("The phone's"), serif: mark('Serif'), mono: mark('Monospace') };
+const TEXT_SIZE_LABELS: Record<TextSize, string> = { small: mark('Small'), normal: mark('Normal'), large: mark('Large'), larger: mark('Larger') };
 const WALLPAPER_LABELS: Record<Wallpaper, string> = {
   auto: mark('Style default'),
   plain: mark('Plain'),
@@ -178,7 +180,7 @@ export function AppearanceEditor({ title, top, part = null }: { title?: string; 
   const material = look.style === 'material';
   const scene = !takesGlass(look.style);
   const styleName = t(STYLE_LABELS[look.style]);
-  const bubbles = bubbleStyles(look.bubbles, colors);
+  const bubbles = bubbleStyles(look.bubbles, colors, look.textSize);
   const paletteStyle = nocturne ? look.prevStyle : look.style;
   const paletteScheme = nocturne ? resolveScheme(look.prevStyle, look.theme, system) : scheme;
   // The coloured areas as the palette fills them, to preview each text colour on.
@@ -331,6 +333,16 @@ export function AppearanceEditor({ title, top, part = null }: { title?: string; 
           {t('{style} keeps its own colors here.', { style: styleName })}
         </Text>
       ) : null}
+
+      <SectionTitle title={t('Letters')} />
+      <Row wrap>
+        {FONT_CHOICES.map((f) => (
+          <Chip key={f} label={t(FONT_LABELS[f])} selected={look.font === f} onPress={() => setLook({ font: f })} />
+        ))}
+      </Row>
+      <Text variant="caption" tone="faint">
+        {t("Serif letters have small strokes at their ends, as in books; in monospace every letter is as wide, as on a typewriter.")}
+      </Text>
         </>
       ) : null}
 
@@ -371,6 +383,12 @@ export function AppearanceEditor({ title, top, part = null }: { title?: string; 
           <Row wrap>
             {BUBBLE_SHAPES.map((b) => (
               <Chip key={b} label={t(BUBBLE_LABELS[b])} selected={look.bubbles === b} onPress={() => setLook({ bubbles: b })} />
+            ))}
+          </Row>
+          <SectionTitle title={t('Text size')} />
+          <Row wrap>
+            {TEXT_SIZES.map((size) => (
+              <Chip key={size} label={t(TEXT_SIZE_LABELS[size])} selected={look.textSize === size} onPress={() => setLook({ textSize: size })} />
             ))}
           </Row>
         </>

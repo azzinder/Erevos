@@ -10,6 +10,7 @@ import { checkedChatPin, type ChatPin } from './chat-pin';
 import { isRelay, isRelayKey } from './e2e-data';
 import { isReactionEmoji, isTag } from './history';
 import { sealedFile, type Holder } from './sealed-file';
+import { checkedLook, type Look } from '../theme/look';
 
 // What each space keeps for its group chats (lib/groups.ts): its MLS state (the Rust core's, with
 // its signing key and every group it is in), the secret that opens group messages sealed to this
@@ -106,6 +107,9 @@ export type Group = {
   /** The group's own notifications here (lock/chat-notify.ts): muted, its own sounds. Missing while
    *  it has none. Kept on this phone only, as its PIN. */
   notify?: ChatNotify;
+  /** The group's own look here (theme/look.ts, theme/chat-theme.tsx), on this phone only too.
+   *  Missing while it takes the space's. */
+  look?: Look;
 };
 
 export type GroupData = {
@@ -277,6 +281,7 @@ export function checkedGroup(value: unknown): Group | null {
     ...(asks.length > 0 ? { asks } : {}),
     ...(checkedChatPin(v.pin) ? { pin: checkedChatPin(v.pin)! } : {}),
     ...(checkedChatNotify(v.notify) ? { notify: checkedChatNotify(v.notify)! } : {}),
+    ...(v.look && typeof v.look === 'object' && !Array.isArray(v.look) ? { look: checkedLook(v.look) } : {}),
   };
 }
 
