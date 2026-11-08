@@ -50,8 +50,9 @@ export function spaceChats(): Promise<SpaceChats> {
       const history = await History.open('space', current.space, current.key);
       const e2e = await E2E.open('space', current.space, current.key);
       // Whether its contacts are told when it was last open, and it is shown theirs (lib/last-seen.ts).
-      const lastSeen = (await loadSpaceData(current.space, current.key).catch(() => null))?.lastSeen ?? true;
-      e2e.setLastSeen({ on: lastSeen, at: () => shownAt(spaceSeenKey(current.space)) });
+      const data = await loadSpaceData(current.space, current.key).catch(() => null);
+      const lastSeen = data?.lastSeen ?? true;
+      e2e.setLastSeen({ on: lastSeen, at: () => shownAt(spaceSeenKey(current.space)), tells: data?.tellOpen ?? true });
       lastSeenNow = { of: current, on: lastSeen };
       const pieces: PiecePlace = { holder: 'space', space: current.space, key: current.key };
       // The space's value among the pieces' (lock/nostr-pieces-data.ts), so the file is there
@@ -84,7 +85,19 @@ export async function setLastSeen(on: boolean): Promise<void> {
   lastSeenNow = { of: current, on };
   // To the account's other devices too, as they share the settings (lib/sync/settings.ts).
   settingChanged('lastSeen', on);
-  if (opened?.of === current) (await opened.chats).e2e.setLastSeen({ on, at: () => shownAt(spaceSeenKey(current.space)) });
+  if (opened?.of === current) {
+    const tells = (await loadSpaceData(current.space, current.key).catch(() => null))?.tellOpen ?? true;
+    (await opened.chats).e2e.setLastSeen({ on, at: () => shownAt(spaceSeenKey(current.space)), tells });
+  }
+}
+
+/** Turns "Say when I open Erevos" on or off for the open space (SpaceData.tellOpen): kept, and its chats do so, or no longer. */
+export async function setTellOpen(tells: boolean): Promise<void> {
+  const current = currentSpace();
+  await updateSpaceData(current.space, current.key, { tellOpen: tells });
+  if (opened?.of !== current) return;
+  const on = (await loadSpaceData(current.space, current.key).catch(() => null))?.lastSeen ?? true;
+  (await opened.chats).e2e.setLastSeen({ on, at: () => shownAt(spaceSeenKey(current.space)), tells });
 }
 
 /** Whether the open space says when it was last open, once its chats opened; else null. */

@@ -36,4 +36,10 @@ export const lastSeen: Record<string, string> = {
     "Les autres voient quand tu es en ligne, et quand tu l’étais pour la dernière fois. Cela passe par le serveur {server} sans chiffrement, donc le serveur l’apprend aussi.",
   "The others do not see when you are online. You still see it of those whose server says it.":
     "Les autres ne voient pas quand tu es en ligne. Tu le vois toujours pour ceux dont le serveur le dit.",
+  "Say when I open Erevos":
+    "Dire quand j’ouvre Erevos",
+  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.":
+    "Dès qu’Erevos s’ouvre, les contacts avec qui tu as parlé ces 30 derniers jours, et qui montrent aussi leur propre heure, l’apprennent aussitôt, chacun après une attente aléatoire d’au plus une minute, au plus toutes les 15 minutes. Le relais voit que quelque chose leur part à ce moment, il peut donc savoir quand tu ouvres Erevos.",
+  "Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.":
+    "Ton heure ne part qu’avec ce qui part de toute façon vers tes contacts : un message, une marque que les leurs sont arrivés ou ont été lus, ou une réponse pendant qu’ils ont votre discussion ouverte. Le relais n’apprend rien de nouveau.",
 };

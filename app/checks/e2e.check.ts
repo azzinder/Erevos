@@ -15,7 +15,7 @@ import { contactLink, parseContact } from '../lib/contact-code';
 import { accountBundle, accountIdentity, accountSign, bundleVerify, canSign, newAccount, setCore, type Core } from '../lib/core';
 import { randomBytes, setHardCost, toHex, utf8Encode } from '../lib/crypto';
 import { qrRows } from '../lib/qr';
-import { BlockedContactError, E2E, NoKeyError, ONLINE, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
+import { BlockedContactError, E2E, NoKeyError, ONLINE, OPEN_EVERY, OPEN_RECENT, ONLINE_AFTER_WRITE, OwnCodeError, PREKEYS_EVERY, toBase64Url, type Received } from '../lib/e2e';
 import { giveLinkedName } from '../lib/linked-name';
 import { tookOf } from '../lib/queue-move';
 import { PART_SIZE, VoiceAssembler } from '../lib/voice';
@@ -957,6 +957,43 @@ t('last seen goes inside messages, both ways, and is forgotten once turned off',
   assert.equal(alice.e2e.seenNews(bobId), false);
   await alice.e2e.setHidden(bobId, false);
   assert.equal(alice.e2e.lastSeen(bobId), bobAt);
+});
+
+t('opening tells, unasked, only recent contacts who show their time, at most every 15 minutes, and not when turned off', async () => {
+  const alice = await chat('space', 0);
+  const bob = await chat('space', 1);
+  const { identity: bobId } = await alice.e2e.addContact(bob.code, alice.from);
+  const aliceId = message(await bob.e2e.receive(alice.e2e.pending()[0].first)).identity;
+  await alice.e2e.firstSent(bobId);
+  await bob.e2e.acceptRequest(aliceId);
+  const now = Date.now();
+  alice.e2e.setLastSeen({ on: true, at: () => now });
+  // Bob never said his time: he is not told.
+  assert.deepEqual(alice.e2e.openDue(now), []);
+  bob.e2e.setLastSeen({ on: true, at: () => now - 1000 });
+  message(await alice.e2e.receive((await bob.e2e.seal(aliceId, 'hi', bob.from)).packet));
+  // Not showing now: nothing.
+  alice.e2e.setLastSeen({ on: true, at: () => now - 5 * 60_000 });
+  assert.deepEqual(alice.e2e.openDue(now), []);
+  // Showing: Bob, once, then again only after 15 minutes.
+  alice.e2e.setLastSeen({ on: true, at: () => now });
+  assert.deepEqual(alice.e2e.openDue(now), [bobId]);
+  assert.deepEqual(alice.e2e.openDue(now + 60_000), []);
+  alice.e2e.setLastSeen({ on: true, at: () => now + OPEN_EVERY });
+  assert.deepEqual(alice.e2e.openDue(now + OPEN_EVERY), [bobId]);
+  // Turned off, or "last seen" off, or his time too old: nothing.
+  const later = now + 2 * OPEN_EVERY;
+  alice.e2e.setLastSeen({ on: true, at: () => later, tells: false });
+  assert.deepEqual(alice.e2e.openDue(later), []);
+  alice.e2e.setLastSeen({ on: false, at: () => later });
+  assert.deepEqual(alice.e2e.openDue(later), []);
+  const old = now + OPEN_RECENT + 1;
+  alice.e2e.setLastSeen({ on: true, at: () => old });
+  assert.deepEqual(alice.e2e.openDue(old), []);
+  // A chat that appears offline is never told.
+  alice.e2e.setLastSeen({ on: true, at: () => later });
+  await alice.e2e.setHidden(bobId, true);
+  assert.deepEqual(alice.e2e.openDue(later), []);
 });
 
 t('a phone says it is open when it writes or answers, and a chat that appears offline holds its marks', async () => {

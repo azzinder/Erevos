@@ -764,6 +764,12 @@ ways: turned off, no one sees yours, and you see no one's either; those who saw 
 set for the whole space and its linked devices, each space on its own. Each place of hidden chats has its own switch,
 in a chat's details there, and its own time: while they are open, only they count as open, not the space.
 
+With **Say when I open Erevos** on (under **Last seen**, on unless you turn it off), opening Erevos also tells your
+contacts at once, without waiting for a message: only those you talked with in the last 30 days who show their own time
+too, each after a random wait of up to a minute, at most every 15 minutes, never a chat that appears offline or a
+message request. The relay then sees something go to them as you open Erevos, so it can tell when you do: turn it off
+and your time goes only with what goes to them anyway.
+
 While you type to a contact who shows online, their chat shows **typing…** under your name for a few seconds, and
 yours under theirs when they type. It is said every few seconds at most, only while they show online, never to a
 message request, and not in groups.

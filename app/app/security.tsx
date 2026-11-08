@@ -18,7 +18,7 @@ import { iconNumberOn, setIconNumberOn } from '../lib/icon-number';
 import { mark, t } from '../lib/i18n';
 import { CAN_KEEP_PRIVATE, keepPrivate, loadScreenPrivacy, saveScreenPrivacy } from '../lib/screen-privacy';
 import { PUSH_AVAILABLE } from '../lib/web-push';
-import { setLastSeen } from '../lib/space-chats';
+import { setLastSeen, setTellOpen } from '../lib/space-chats';
 import {
   askBattery,
   askFullScreen,
@@ -82,17 +82,25 @@ export default function Security() {
   const [screenPrivate, setScreenPrivate] = useState<boolean | null>(null);
   // Whether the space's contacts see when it was last open, and it sees theirs (lib/last-seen.ts).
   const [lastSeen, setLastSeenShown] = useState<boolean | null>(null);
+  const [tellOpen, setTellOpenShown] = useState(true);
 
   const reload = async () => {
     setConfig(await loadLockConfig());
     setBiometric(biometricSealer.available() ? await biometricOn(biometricSealer) : null);
     setScreenPrivate(await loadScreenPrivacy());
-    setLastSeenShown((await loadCurrentSpaceData().catch(() => null))?.lastSeen ?? null);
+    const data = await loadCurrentSpaceData().catch(() => null);
+    setLastSeenShown(data?.lastSeen ?? null);
+    setTellOpenShown(data?.tellOpen ?? true);
   };
 
   async function changeLastSeen(on: boolean) {
     await setLastSeen(on);
     setLastSeenShown(on);
+  }
+
+  async function changeTellOpen(on: boolean) {
+    await setTellOpen(on);
+    setTellOpenShown(on);
   }
 
   async function setScreenPrivacy(on: boolean) {
@@ -291,6 +299,19 @@ export default function Security() {
               <Button title={lastSeen ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void changeLastSeen(!lastSeen).catch((error) => setNote(String(error?.message ?? error)))} />
             </Row>
           </Card>
+          {lastSeen ? (
+            <Card>
+              <Text variant="label">{t('Say when I open Erevos')}</Text>
+              <Text variant="caption" tone="muted" style={hint}>
+                {tellOpen
+                  ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.')
+                  : t('Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.')}
+              </Text>
+              <Row wrap>
+                <Button title={tellOpen ? t('Turn off') : t('Turn on')} kind="secondary" compact onPress={() => void changeTellOpen(!tellOpen).catch((error) => setNote(String(error?.message ?? error)))} />
+              </Row>
+            </Card>
+          ) : null}
         </>
       ) : null}
 

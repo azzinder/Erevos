@@ -875,6 +875,13 @@ message suivant. C’est réglé pour tout l’espace et ses appareils associés
 discussions masquées a son propre interrupteur, dans les détails d’une discussion de là-bas, et sa propre heure : tant
 qu’elles sont ouvertes, elles seules comptent comme ouvertes, pas l’espace.
 
+Avec **Dire quand j’ouvre Erevos** activé (sous **Vu pour la dernière fois**, activé sauf si tu l’éteins), ouvrir Erevos le dit
+aussitôt à tes contacts, sans attendre un message : seulement ceux avec qui tu as parlé ces 30 derniers jours et qui
+montrent aussi leur propre heure, chacun après une attente aléatoire d’au plus une minute, au plus toutes les 15
+minutes, jamais une discussion qui apparaît hors ligne ni une demande de message. Le relais voit alors quelque chose
+partir vers eux quand tu ouvres Erevos, il peut donc savoir quand tu le fais : éteins-le, et ton heure ne part qu’avec
+ce qui leur part de toute façon.
+
 Pendant que tu écris à un contact qui apparaît en ligne, sa discussion montre **écrit…** sous ton nom pendant quelques
 secondes, et la tienne sous le sien quand il écrit. C’est dit toutes les quelques secondes au plus, seulement tant qu’il
 apparaît en ligne, jamais à une demande de message, et pas dans les groupes.

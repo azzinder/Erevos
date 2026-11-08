@@ -263,6 +263,12 @@ function checkedShots(value: unknown): Shots | null {
 
 /** What a message says of a contact's screenshot setting: nothing until either phone set it. */
 const shotsSaid = (contact: Contact): { sh?: Shots } => (contact.shotsAt ? { sh: { on: contact.shots === true, at: contact.shotsAt } } : {});
+/** How often a contact is told, unasked, that the app opened, at most (E2E.openDue). */
+export const OPEN_EVERY = 15 * 60_000;
+/** Only contacts who said their own "last seen" within this long are told so. */
+export const OPEN_RECENT = 30 * 24 * 60 * 60_000;
+// What counts as showing now: the time the space or place last showed is at most this old.
+const OPEN_SHOWN = 60_000;
 
 /** What else a message can carry. */
 // `on`: seconds this phone says it stays open (0: says nothing). `ask`: asks them to say whether theirs is.
@@ -856,7 +862,9 @@ export class E2E {
   // Whether this chat says when its space was last open, and is shown its contacts' (lib/last-seen.ts):
   // null, as for hidden chats, says nothing and shows nothing. And the time last said to each
   // contact, only in memory, so one who asks while the app is away is answered only with a newer one.
-  private seenWay: { on: boolean; at: () => number } | null = null;
+  private seenWay: { on: boolean; at: () => number; tells?: boolean } | null = null;
+  // When each contact was last told, unasked, that the app opened (openDue).
+  private readonly openTold = new Map<string, number>();
   private readonly seenTold = new Map<string, number>();
   // This chat's backup queue (lib/spare.ts), said in every message that says where its queue is.
   private ownSpare: Spare | null = null;
@@ -1536,8 +1544,25 @@ export class E2E {
    * (`at`), and is shown theirs: the space's own chat only (lib/last-seen.ts). Null, as hidden chats
    * keep it, says nothing and shows nothing.
    */
-  setLastSeen(way: { on: boolean; at: () => number } | null): void {
+  setLastSeen(way: { on: boolean; at: () => number; tells?: boolean } | null): void {
     this.seenWay = way;
+  }
+
+  /**
+   * The contacts to tell, unasked, that the app opened (`tells`, Say when I open Erevos): with
+   * "last seen" on, while this space or hidden place shows, each at most once in OPEN_EVERY, and
+   * only those who said their own time within OPEN_RECENT (so their "last seen" is on, and they
+   * wrote or answered lately); never a chat that appears offline, nor a request. Each is taken as
+   * told now.
+   */
+  openDue(now = Date.now()): string[] {
+    const way = this.seenWay;
+    if (!way?.on || way.tells === false || way.at() < now - OPEN_SHOWN) return [];
+    const due = this.data.contacts
+      .filter((c) => !c.hide && !c.request && (c.seenAt ?? 0) >= now - OPEN_RECENT && now - (this.openTold.get(c.identity) ?? 0) >= OPEN_EVERY)
+      .map((c) => c.identity);
+    for (const identity of due) this.openTold.set(identity, now);
+    return due;
   }
 
   /** When a contact's Erevos was last open, as they said (ms), or 0: not said, not shown here, or a chat that appears offline. */

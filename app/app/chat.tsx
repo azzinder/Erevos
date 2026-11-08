@@ -176,15 +176,15 @@ import {
   type Mark as RelayMark,
   type Relay,
 } from '../lib/relay';
-import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, waitWhileAway, type Waited } from '../lib/receiver';
+import { answersAsk, appShown, awayPace, awayQueues, holdReceiver, isNews, openNearby, takeNearby, takeNostr, tellOpenLater, waitWhileAway, type Waited } from '../lib/receiver';
 import { nostrReady, readNostr } from '../lib/nostr';
 import { goesInPieces, NOSTR_FILE_LIMIT, NostrFileTooLargeError, offerOnNostr } from '../lib/nostr-send-files';
 import { onPiece } from '../lib/nostr-pieces';
 import { useNfcShare } from '../lib/nfc-share';
 import { answerInvites, answerTextInvite, cardShown, contactCard, expireTextInvites, linkInviter, refreshSmsLink, spaceSmsLink, takeInviteAnswer } from '../lib/sms-relay';
 import { onTextInviteOffered, parseTextInvite, type TextInvite } from '../lib/text-invite';
-import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, spaceChats, type SpaceChats } from '../lib/space-chats';
-import { placeChats, setPlaceLastSeen } from '../lib/place-chats';
+import { carriedFor, contactTarget, markOf, relayFor, ringOffer, sendSealed, sentMark, setLastSeen, setTellOpen, spaceChats, type SpaceChats } from '../lib/space-chats';
+import { placeChats, setPlaceLastSeen, setPlaceTellOpen } from '../lib/place-chats';
 import { answerPlaceGroupCalls, placeGroupsAt } from '../lib/place-groups';
 import { holdPlace, takePlaceCalls } from '../lib/place-receiver';
 import { nostrOnlyWay, nostrReaderOf, onNostrWent, orNostr, sendNostrAgain, sendNostrBackups, type ForNostr } from '../lib/nostr-chats';
@@ -591,6 +591,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   const [previews, setPreviews] = useState(false);
   // Whether the space's contacts see when it was last open, and it sees theirs (SpaceData.lastSeen).
   const [lastSeenOn, setLastSeenOn] = useState(true);
+  // With it on, whether they are told, unasked, that Erevos opened (SpaceData.tellOpen).
+  const [tellOpenOn, setTellOpenOn] = useState(true);
   // Whether these hidden chats say a message came while they are closed (lock/hidden-watch.ts).
   const [watched, setWatched] = useState(false);
   // Whether these hidden chats receive while closed, as the space's chats do (lock/hidden-keep.ts).
@@ -995,6 +997,8 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
   // shows, that this phone is open, as those who asked wait to hear. What the relay cannot take
   // now is told with the next look at it.
   async function sendReceipts(target: Relay | null) {
+    // Those due to hear that the app opened, each after a wait of its own (Say when I open Erevos).
+    if (e2e) tellOpenLater(e2e, answers.current);
     for (const peer of new Set([...Object.keys(receipts.current), ...answers.current])) {
       const { got, read } = receipts.current[peer] ?? { got: [], read: [] };
       delete receipts.current[peer];
@@ -1074,6 +1078,12 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
     (hiddenKey ? setPlaceLastSeen(currentSpace().space, pocket, hiddenKey, on) : setLastSeen(on))
       .then(() => setNow(Date.now()))
       .catch((error) => setNote(errorText(error)));
+  }
+
+  // Tells the contacts, unasked, that Erevos opened, or only with what goes to them anyway (lib/receiver.ts tellOpenLater).
+  function changeTellOpen(on: boolean) {
+    setTellOpenOn(on);
+    (hiddenKey ? setPlaceTellOpen(currentSpace().space, pocket, hiddenKey, on) : setTellOpen(on)).catch((error) => setNote(errorText(error)));
   }
 
   // Looks for Erevos on the same Wi-Fi or hotspot too, or no longer (lib/nearby-links.ts).
@@ -1616,6 +1626,7 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
         setViaToken(data.viaToken);
         setPreviews(data.previews);
         setLastSeenOn(data.lastSeen);
+        setTellOpenOn(data.tellOpen);
         if (hiddenKey) setPlaceSign(data.sign);
         setHomeUrl(data.spare.url);
         setHomeToken(data.spare.token);
@@ -6158,6 +6169,17 @@ function Chat({ hiddenKey, pocket = 0, initial = null, at = null, initialCall = 
                                 ? t('No one here sees when you last had these hidden chats open, and you see no one’s here either. Those who saw it lose it with your next message.')
                                 : t('No one sees when you last had Erevos open, and you see no one’s either. Those who saw it lose it with your next message.')}
                         </Text>
+                        {lastSeenOn ? (
+                          <>
+                            <View style={styles.rule} />
+                            <DetailRow title={t('Say when I open Erevos')} checked={tellOpenOn} onPress={() => changeTellOpen(!tellOpenOn)} />
+                            <Text variant="caption" tone="muted" style={styles.rowMore}>
+                              {tellOpenOn
+                                ? t('As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.')
+                                : t('Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.')}
+                            </Text>
+                          </>
+                        ) : null}
                         {!hiddenKey ? (
                           <>
                             <View style={styles.rule} />

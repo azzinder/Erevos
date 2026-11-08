@@ -51,8 +51,8 @@ export function placeChats(space: number, pocket: number, key: Uint8Array): Prom
     if (kept.now) e2e.setLinkOwn(!kept.link);
     // Whether its contacts are told when the place was last open, and it is shown theirs: its own
     // setting and its own time, never its space's (lib/last-seen.ts).
-    const lastSeen = (await loadHiddenData(space, pocket, key).catch(() => null))?.lastSeen ?? true;
-    e2e.setLastSeen({ on: lastSeen, at: () => shownAt(placeSeenKey(space, pocket)) });
+    const data = await loadHiddenData(space, pocket, key).catch(() => null);
+    e2e.setLastSeen({ on: data?.lastSeen ?? true, at: () => shownAt(placeSeenKey(space, pocket)), tells: data?.tellOpen ?? true });
     const pieces: PiecePlace = { holder: hiddenHolder(pocket), space, key: key.slice() };
     // What waited too long among the pieces of photos it keeps goes.
     void sweepPieces(pieces).catch(() => undefined);
@@ -83,8 +83,21 @@ export function placeChatsNow(space: number, pocket: number): SpaceChats | null 
 /** Turns "last seen" on or off for the hidden place in `pocket` of `space`, open with `key`: kept, and its chats tell and show it, or no longer. */
 export async function setPlaceLastSeen(space: number, pocket: number, key: Uint8Array, on: boolean): Promise<void> {
   await updateHiddenData(space, pocket, key, { lastSeen: on });
+  await placeSeenChanged(space, pocket, key);
+}
+
+/** Turns "Say when I open Erevos" on or off for the hidden place in `pocket` of `space`, open with `key`. */
+export async function setPlaceTellOpen(space: number, pocket: number, key: Uint8Array, tells: boolean): Promise<void> {
+  await updateHiddenData(space, pocket, key, { tellOpen: tells });
+  await placeSeenChanged(space, pocket, key);
+}
+
+// The place's chats, if open, tell and show "last seen" as it is kept now.
+async function placeSeenChanged(space: number, pocket: number, key: Uint8Array): Promise<void> {
   const was = opened.get(at(space, pocket));
-  if (was && sameKey(was.key, key)) (await was.chats).e2e.setLastSeen({ on, at: () => shownAt(placeSeenKey(space, pocket)) });
+  if (!was || !sameKey(was.key, key)) return;
+  const data = await loadHiddenData(space, pocket, key).catch(() => null);
+  (await was.chats).e2e.setLastSeen({ on: data?.lastSeen ?? true, at: () => shownAt(placeSeenKey(space, pocket)), tells: data?.tellOpen ?? true });
 }
 
 const forgets = new Set<(space?: number, pocket?: number) => void>();

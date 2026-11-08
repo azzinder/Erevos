@@ -24,6 +24,12 @@ On main, not released yet:
   of the chat (and its picture in the recent apps) out on both phones, on Android. Either phone can turn it on or off,
   and the later change wins, told with the next message as the disappearing-messages timer is. Erevos on an iPhone,
   on a computer, in a browser or on Sailfish cannot block them, and says so; nothing stops a photo of the screen.
+- **Say when I open Erevos**: with **Last seen** on, opening Erevos now tells your contacts at once, without waiting
+  for a message: only those you talked with in the last 30 days who show their own time too, each after a random wait
+  of up to a minute, at most every 15 minutes, never a chat that appears offline or a message request; hidden chats
+  only while they are open. The relay can then tell when you open Erevos. On unless turned off, under Settings →
+  Privacy and security → Last seen, or in a chat's details (`SpaceData.tellOpen`, lib/e2e.ts `openDue`, lib/receiver.ts
+  `tellOpenLater`). Requested by the maintainer.
 - **Moving to a new phone**: a new chapter of the guide (#new-phone), in every language, takes you step by step from
   the old phone to the new one with one backup: what to get ready, what comes over, what to set again on the new
   phone, and wiping the old one with the panic button at the end, never with Delete me from everywhere.

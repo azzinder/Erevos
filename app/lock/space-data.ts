@@ -106,6 +106,9 @@ export type SpaceData = {
   // shown when theirs was (lib/last-seen.ts): on unless turned off, and both ways, as one who tells
   // nothing sees nothing. Only the space's own chats: hidden chats and hidden places never say it.
   lastSeen: boolean;
+  // With "last seen" on, whether its contacts are told, unasked, that it opened (lib/receiver.ts
+  // tellOpenLater, Say when I open Erevos): on unless turned off.
+  tellOpen: boolean;
   // How the public feed (components/public-feed.tsx) fetches the photos of posts and the cards of
   // their links, from wherever a post says (lib/public-fetch.ts): 'always' unless changed.
   publicImages: PublicImages;
@@ -163,6 +166,7 @@ export const EMPTY_SPACE: SpaceData = {
   stopped: 0,
   sign: false,
   lastSeen: true,
+  tellOpen: true,
   publicImages: 'always',
   publicCards: true,
 };
@@ -256,6 +260,7 @@ function checked(value: unknown): SpaceData {
     stopped: typeof v.stopped === 'number' && Number.isFinite(v.stopped) && v.stopped > 0 ? v.stopped : 0,
     sign: v.sign === true,
     lastSeen: v.lastSeen !== false,
+    tellOpen: v.tellOpen !== false,
     publicImages: PUBLIC_IMAGES.includes(v.publicImages as PublicImages) ? (v.publicImages as PublicImages) : 'always',
     publicCards: v.publicCards !== false,
   };

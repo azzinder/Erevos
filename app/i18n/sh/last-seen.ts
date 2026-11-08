@@ -36,4 +36,10 @@ export const lastSeen: Record<string, string> = {
     "Drugi vide kad ste na mreži i kad ste bili posljednji put. Ide preko {server} servera nešifrirano, pa to saznaje i server.",
   "The others do not see when you are online. You still see it of those whose server says it.":
     "Drugi ne vide kad ste na mreži. Vi to i dalje vidite kod onih čiji server to kaže.",
+  "Say when I open Erevos":
+    "Javi kad otvorim Erevos",
+  "As Erevos opens, the contacts you talked with in the last 30 days, who show their own time too, are told so at once, each after a random wait of up to a minute, at most every 15 minutes. The relay sees that something goes to them then, so it can tell when you open Erevos.":
+    "Čim se Erevos otvori, kontakti s kojima si razgovarao u zadnjih 30 dana, a koji i sami pokazuju svoje vrijeme, saznaju to odmah, svaki nakon nasumičnog čekanja do jedne minute, najviše svakih 15 minuta. Relay vidi da im tada nešto ide, pa može znati kada otvaraš Erevos.",
+  "Your time goes only with what goes to your contacts anyway: a message, a mark that theirs came or was read, or an answer while they have your chat open. The relay learns nothing new.":
+    "Tvoje vrijeme ide samo s onim što ionako ide tvojim kontaktima: s porukom, s oznakom da su njihove stigle ili pročitane, ili s odgovorom dok imaju otvoren vaš razgovor. Relay ne saznaje ništa novo.",
 };

@@ -9,6 +9,7 @@ import { saveClip } from '../lock/voice-clips';
 import { offerRef } from './attachments';
 import { contentOf } from './chat-parts';
 import { canRelaySeal, hasCore } from './core';
+import { randomBytes } from './crypto';
 import { ONLINE, toBase64Url, type E2E, type Extra, type Received, type Where } from './e2e';
 import { sendCopies } from './fanout';
 import { nearby, SMS_LINK, type NearHeard } from './nearby';
@@ -778,10 +779,30 @@ export async function tell({ e2e }: SpaceChats, place: Place | null, identity: s
   await e2e.copiesAfter(sealed.copies, nearby.deliver(identity, sealed.first ? [sealed.first, sealed.packet] : [sealed.packet], relay, null, false, near), true);
 }
 
+/** How long, at most, telling a contact that the app opened waits: a random time for each, so they do not all go at once. */
+export const OPEN_SPREAD = 60_000;
+
+/**
+ * While the app shows, the contacts due to hear that it opened (E2E.openDue, Say when I open
+ * Erevos) join `answers` each after a random wait up to OPEN_SPREAD, so they are told with the
+ * next look, as one who asked would be, with "last seen" in it. Gone from the screen meanwhile, a
+ * contact is told nothing.
+ */
+export function tellOpenLater(e2e: E2E, answers: Set<string>): void {
+  if (!shows) return;
+  for (const identity of e2e.openDue()) {
+    const wait = new DataView(randomBytes(4).buffer).getUint32(0) % OPEN_SPREAD;
+    setTimeout(() => {
+      if (shows) answers.add(`${CONTACT_PREFIX}${identity}`);
+    }, wait);
+  }
+}
+
 // Tells contacts' phones which of their messages came, and, while the app shows, that this phone
 // is open, as the ones who asked wait to hear. What the relay cannot take now is told with the
 // next look.
 export async function sendReceipts(chats: SpaceChats, place: Place | null, { receipts, answers, near }: State) {
+  tellOpenLater(chats.e2e, answers);
   for (const peer of new Set([...Object.keys(receipts), ...answers])) {
     const got = receipts[peer] ?? [];
     delete receipts[peer];
