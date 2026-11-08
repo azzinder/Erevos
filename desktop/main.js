@@ -41,10 +41,12 @@
  *                              here: GitHub's downloads do not answer a page's own requests
  *   /__webdav?method=&url=     one request to the WebDAV server automatic backups go to, or are
  *                              restored from (app/lib/backup-cloud.ts), asked for here: such
- *                              servers do not answer a page's own requests (CORS). Only https,
- *                              only PROPFIND, PUT, GET, DELETE and MKCOL (the Collection's folder
- *                              there, app/lib/collection-webdav.ts), only the headers Authorization,
- *                              Depth and Content-Type, no cookies, no redirects; answers 200 with
+ *                              servers do not answer a page's own requests (CORS); so do the
+ *                              Collection's radio search and playlists, and its TV lists and logos.
+ *                              Only https, only PROPFIND, PUT, GET, DELETE and MKCOL (the
+ *                              Collection's folder there, app/lib/collection-webdav.ts), only the
+ *                              headers Authorization, Depth and Content-Type, with the User-Agent
+ *                              "Erevos", no cookies, no redirects; answers 200 with
  *                              the server's status in X-Erevos-Status and its body, 413 when that
  *                              body is larger than 100 MB (read as it comes and stopped there),
  *                              502 when it cannot be reached. Nothing of it is logged.
@@ -56,6 +58,12 @@
  *                              (play.js): POST holds a file and gives a token, DELETE forgets one
  *                              or all; GET /__play/<token> answers its bytes by range, without the
  *                              page's token, which a media element cannot send
+ *   /__stream                  the Collection's TV channels and radio stations that come as HLS,
+ *                              fetched here for the page's hls.js (stream.js): POST holds a stream
+ *                              by its https link and gives a token, DELETE forgets one or all;
+ *                              GET /__stream/<token>/<n> answers the stream's link or one its
+ *                              playlists name, with the playlist's links made such addresses too,
+ *                              without the page's token, which hls.js does not send
  *   /__wipe?backups=&folder=   the panic button (app/lib/panic.ts): POST deletes everything the
  *                              app keeps (secrets.json, files/, the page's own storage, the rest
  *                              of its data folder), with backups=1 the backups Erevos named in
@@ -96,6 +104,7 @@ const { backupRequest, isBackupFile } = require('./backups');
 const { ChunkServer, ChunkTaker, addresses: chunkAddresses } = require('./chunks');
 const { Lan } = require('./lan');
 const { Plays } = require('./play');
+const { AGENT, Streams } = require('./stream');
 
 const ORIGIN = 'app://erevos';
 const CALL_ORIGIN = 'app://element-call';
@@ -608,7 +617,8 @@ async function webdav(request, url) {
   if (!WEBDAV_METHODS.has(method) || target.protocol !== 'https:' || target.username || target.password) {
     return new Response('not a request for a backup server', { status: 400 });
   }
-  const headers = {};
+  // The app's name, nothing of the computer: what the Collection's radio and TV say of it too.
+  const headers = { 'User-Agent': AGENT };
   for (const name of WEBDAV_HEADERS) {
     const value = request.headers.get(name);
     if (value) headers[name] = value;
@@ -722,6 +732,7 @@ async function wipe(request, url) {
   lan?.stop();
   lan = null;
   plays?.clear();
+  streams?.clear();
   picked.clear();
   dropSaving();
   const where = url.searchParams.get('folder');
@@ -785,6 +796,9 @@ async function wipe(request, url) {
 // The Collection's files playing (play.js), with their keys: in this process's memory only.
 let plays = null;
 const playsNow = () => (plays ??= new Plays(dataPath('files')));
+// The HLS streams playing (stream.js): in this process's memory only.
+let streams = null;
+const streamsNow = () => (streams ??= new Streams(net.request, ORIGIN));
 
 function handle(request) {
   const url = new URL(request.url);
@@ -793,8 +807,11 @@ function handle(request) {
   if (url.pathname.startsWith('/__')) {
     // A media element asks with no header: the random token in the address is the file's alone (play.js).
     if (url.pathname.startsWith('/__play/')) return playsNow().serve(request, url.pathname.slice('/__play/'.length));
+    // hls.js asks with no header either: the random token in the address is the stream's alone (stream.js).
+    if (url.pathname.startsWith('/__stream/')) return streamsNow().serve(request, url.pathname.slice('/__stream/'.length));
     if (request.headers.get('x-erevos-token') !== TOKEN) return new Response('', { status: 403 });
     if (url.pathname === '/__play') return playsNow().request(request, url);
+    if (url.pathname === '/__stream') return streamsNow().request(request, url);
     if (url.pathname === '/__secret') return secret(request, url.searchParams.get('key'));
     if (url.pathname === '/__file') return file(request, url.searchParams.get('name'));
     if (url.pathname === '/__files') return files(url.searchParams.get('prefix'));
@@ -874,6 +891,7 @@ function createWindow() {
   window.on('closed', () => {
     window = null;
     plays?.clear();
+    streams?.clear();
   });
   if (SMOKE) smoke(window);
 }
@@ -941,6 +959,16 @@ if (!app.requestSingleInstanceLock()) {
         // The frame is gone: nothing of it to refuse.
       }
       callback({ cancel: refused });
+    });
+    // A radio station or TV channel the page's own player asks for (media-src https:) is told only
+    // the app's name, as the shell's own requests for the Collection tell (stream.js, /__webdav).
+    session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['https://*/*'] }, (details, callback) => {
+      const headers = details.requestHeaders;
+      if (details.resourceType === 'media') {
+        for (const name of Object.keys(headers)) if (name.toLowerCase() === 'user-agent') delete headers[name];
+        headers['User-Agent'] = AGENT;
+      }
+      callback({ requestHeaders: headers });
     });
     // Nothing is downloaded from a blob: address: the app saves through /__save, after its warning,
     // and the PDF viewer's own Save would leave a plain copy of a file of the Collection.

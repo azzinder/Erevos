@@ -51,6 +51,13 @@ On main, not released yet:
   (`st`), and a message that waited on the relay, as for a linked computer or for hidden chats that were closed,
   shows at that time instead of when it came, unless that time is ahead of this clock or more than 30 days back
   (lib/later.ts `cameAt`). The phone's own messages copied to a device do the same. Reported by the maintainer.
+- **TV and HLS radio in the computer app, whatever their servers allow**: the desktop app's shell now fetches an HLS
+  stream's playlists and pieces for the page's hls.js (desktop/stream.js, `/__stream`), so a channel whose server does
+  not let a web page read it (CORS), as most of iptv-org's, plays there too: only the stream's own link and the links
+  its playlists name, each by a number given to the page alone, over https only (never a redirect to plain http),
+  with no cookies and the User-Agent "Erevos". A station or channel the page's player asks for itself, and the radio
+  search, playlists, TV lists and logos the shell fetches (`/__webdav`), now say only "Erevos" too, as the
+  Collection says they do. Requested by the maintainer.
 
 ## 7.0.0-rc.2 (2026-11-07)
 
