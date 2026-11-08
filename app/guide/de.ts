@@ -931,8 +931,10 @@ Telefon), aufbewahrt wird, dann in einer eigenen Datei versiegelt. Auch es bleib
 Backups; **Bild aus dem Schlüssel** bringt das gezeichnete zurück.
 
 Jeder Chat kann auch sein eigenes Aussehen haben: Tippe auf seinen Namen und dann auf **Chat-Aussehen** für dieselbe
-Auswahl wie unter **Darstellung** (Stil, Thema, Farben, Hintergrund, Nachrichten), nur für diesen Chat. Wie der Name
-bleibt es auf diesem Telefon, versiegelt mit dem Chat. **Wie die App** gibt ihm wieder das Aussehen der App.
+Auswahl wie unter **Darstellung** (Stil, Thema, Farben, Schrift, Hintergrund, Nachrichten und ihre Textgröße), nur für
+diesen Chat. Eine Gruppe hat **Chat-Aussehen**, wo sich ihr Name öffnet (in einer öffentlichen Gruppe unter **⋯**), Chat
+mit mir selbst hat es oben, und ein Chat auf Matrix, XMPP oder Nostr ganz unten, neben **Benachrichtigungen**. Wie der
+Name bleibt es auf diesem Telefon, versiegelt mit dem Chat. **Wie die App** gibt ihm wieder das Aussehen der App.
 
 Um einen Chat außerhalb von Erevos aufzubewahren, tippe auf seinen Namen und dann auf **Chat exportieren**: Seine
 Nachrichten kommen in eine Textdatei, jeder Tag unter seinem Datum und jede Nachricht mit ihrer Zeit und wer sie
@@ -1125,6 +1127,8 @@ weil jedes Telefon seine eigenen Töne hat: Ein verknüpftes Gerät behält sein
 nichts davon.
 
 - **In versteckten Chats** gibt es nur **Stumm**: Ein eigener Ton würde jedem in der Nähe verraten, welcher Chat es ist.
+  So ist es bei den Chats der eigenen Matrix-, XMPP- und Nostr-Konten eines versteckten Platzes: stumm sagen sie nichts,
+  nicht einmal „Neue Nachricht“.
 - **Ein geschlossener Bereich, und versteckte Chats, solange sie geschlossen sind,** wissen nicht, in welchem Chat eine
   Nachricht kam, und melden sie so, wie es die Einstellungen der App sagen.
 - **Nur auf Android**, vorerst: Die Web-App meldet jeden Chat so, wie es ihre Einstellungen sagen.
@@ -1933,7 +1937,7 @@ Element: Keine Brücke sitzt dazwischen.
 - **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
-  Chat zählt nicht.
+  Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
 - **Solange dieser Bereich geschlossen ist:** Auf Android lässt **Neue Nachrichten melden** unter **Solange dieser
   Bereich geschlossen ist** auf dem Matrix-Bildschirm diesen Bereich „Neue Nachricht“ sagen, wenn auf Matrix etwas
   kommt, während ein anderer Bereich offen ist, wie seine eigenen Chats mit **Auch, wenn ein anderer Bereich offen
@@ -2104,7 +2108,7 @@ dem XMPP-Server, wie diese Apps: Keine Brücke sitzt dazwischen.
 - **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
-  Chat zählt nicht.
+  Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
 - **Solange dieser Bereich geschlossen ist:** Auf Android lässt **Neue Nachrichten melden** unter **Solange dieser
   Bereich geschlossen ist** auf dem XMPP-Bildschirm diesen Bereich „Neue Nachricht“ sagen, wenn auf XMPP etwas kommt,
   während ein anderer Bereich offen ist, wie seine eigenen Chats mit **Auch, wenn ein anderer Bereich offen ist** unter
@@ -2258,7 +2262,7 @@ die private Nachrichten nach NIP-17 sendet. Das ist nicht [Über Nostr](#nostr),
 - **Benachrichtigungen:** Eine Nachricht, die ankommt, zeigt eine Mitteilung und zählt zur Zahl auf dem Symbol von
   Erevos, wie in Erevos’ eigenen Chats, solange dieser Bereich offen ist; auf einem Computer, solange Erevos läuft. Auf
   Android schaltet **Benachrichtigungen** unten in einem Chat ihn stumm oder gibt ihm einen eigenen Ton; ein stummer
-  Chat zählt nicht.
+  Chat zählt nicht. **Chat-Aussehen** daneben gibt dem Chat ein eigenes Aussehen.
 - **Noch nicht:** Dateien, die eine andere App anders verschlüsselt (sie erscheinen als Datei, die Erevos nicht öffnen
   kann).
 
@@ -3483,8 +3487,10 @@ Flächen unten, mit der **Vorschau**), **Hintergrund**, **Nachrichten** und auf 
 | **Farben** | Die eigenen des Stils, eine der zwölf LPHL-Paletten oder **Meine Farbe**. Eine Palette unter einem Stil mit eigenen Farben zu wählen, kehrt zum vorher gewählten Stil zurück. |
 | **Eigener** | Mit gewähltem **Eigener**: seine **Grundfarbe** (acht helle, acht dunkle) und seine **Akzentfarbe**. Der Text und die Flächen werden aus der Grundfarbe gemacht, und jede Farbe wird geprüft, ob sie darauf lesbar ist. |
 | **Text auf farbigen Flächen** | **Weiß**, **Wie die Palette** oder **Meine Farbe**. |
+| **Schrift** | Die Schrift jedes Textes: **Die des Stils**, **Die des Telefons**, **Serifen** (kleine Striche an den Enden der Buchstaben, wie in Büchern) oder **Feste Breite** (jeder Buchstabe gleich breit, wie auf einer Schreibmaschine). |
 | **Hintergrund** | Was hinter jedem Bildschirm liegt: **Wie der Stil** (die eigene Szene oder das Leuchten des Stils), **Schlicht** oder ein Muster, blass in der Akzentfarbe gezeichnet: **Punkte**, **Raster**, **Streifen**, **Sterne**, **Lichter** (weiche Lichtkreise) oder **Verlauf**; oder **Foto**, ein eigenes Foto, verkleinert, neu gezeichnet und versiegelt, unter einem Schleier, damit der Text lesbar bleibt (**Foto ändern** wählt ein anderes). Der Passwortbildschirm zeigt stattdessen den des Stils. |
 | **Nachrichten** | Wie ein Chat Nachrichten zeichnet: **Rund** (runde Blasen), **Eckig** (eckige) oder **Linie**, keine Blase, sondern eine Linie neben dem Text, wie in einem Protokoll. |
+| **Textgröße** | Wie groß der Text der Nachrichten ist: **Klein**, **Normal**, **Groß** oder **Größer**. Der Rest des Bildschirms bleibt, wie er ist. |
 
 Neon, Matrix, Paper und Aurora zeichnen ihre eigene Szene hinter jeden Bildschirm, „Eigener“ behält die gewählte
 Grundfarbe und Material You die Farben des Telefons, also wartet **Glass**, solange sie gewählt sind. Der Regen steht

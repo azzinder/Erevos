@@ -849,8 +849,10 @@ zapečaćenu u vlastitoj datoteci. I ona ostaje na ovom telefonu i ulazi u rezer
 iscrtanu.
 
 Svaki razgovor može imati i vlastiti izgled: dodirnite njegovo ime, a zatim **Izgled razgovora** za iste izbore kao u
-**Izgled** (stil, tema, boje, pozadina, poruke), samo za taj razgovor. Kao i ime, ostaje na ovom telefonu, zapečaćen s
-razgovorom. **Kao u aplikaciji** mu ponovo daje izgled aplikacije.
+**Izgled** (stil, tema, boje, font, pozadina, poruke i veličina njihova teksta), samo za taj razgovor. Grupa ima
+**Izgled razgovora** tamo gdje se otvara njeno ime (u javnoj grupi, pod **⋯**), Razgovor sa sobom ga ima na vrhu, a
+razgovor na Matrixu, XMPP-u ili Nostru na samom dnu, pored **Obavijesti**. Kao i ime, ostaje na ovom telefonu, zapečaćen
+s razgovorom. **Kao u aplikaciji** mu ponovo daje izgled aplikacije.
 
 Da biste razgovor sačuvali izvan Erevosa, dodirnite njegovo ime, a zatim **Izvezi razgovor**: njegove poruke idu u
 tekstualnu datoteku, svaki dan pod svojim datumom i svaka poruka sa svojim vremenom i autorom, sačuvanu u folderu
@@ -1020,7 +1022,8 @@ više ne zove k njemu. Njegovi zvukovi se čuvaju samo na ovom telefonu, s razgo
 jer svaki telefon ima svoje zvukove: povezani uređaj čuva svoje, a drugi telefon ne saznaje ništa o njima.
 
 - **U skrivenim razgovorima** postoji samo **Utišano**: vlastiti zvuk bi svakome u blizini otkrio o kojem je razgovoru
-  riječ.
+  riječ. Tako je i s razgovorima vlastitih Matrix, XMPP i Nostr računa skrivenog mjesta: utišani, ne govore ništa, čak
+  ni „Nova poruka“.
 - **Zatvoren prostor, i skriveni razgovori dok su zatvoreni,** ne znaju u kojem je razgovoru stigla poruka, pa o njoj
   javljaju kako kažu postavke aplikacije.
 - **Samo na Androidu** zasad: web-aplikacija javlja o svakom razgovoru kako kažu njene postavke.
@@ -1743,7 +1746,8 @@ između.
   ključeva i razgovora.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
-  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
+  vlastiti izgled.
 - **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
   ekranu Matrixa pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na Matrixu dok je otvoren drugi prostor,
   kao što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
@@ -1891,7 +1895,8 @@ aplikacije: nikakav most nije između.
   aplikacija, računar), koristi WebSocket servera, direktno, a server bez njega tamo nije dostupan.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
-  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
+  vlastiti izgled.
 - **Dok je ovaj prostor zatvoren:** na Androidu, **Javi da je stigla poruka** pod **Dok je ovaj prostor zatvoren** na
   ekranu XMPP-a pušta ovaj prostor da kaže „Nova poruka“ kad nešto stigne na XMPP-u dok je otvoren drugi prostor, kao
   što to rade njegovi razgovori s **I dok je otvoren drugi prostor** pod **Postavke** → **Obavijesti** → **U
@@ -2025,7 +2030,8 @@ privatne poruke kako traži NIP-17. To nije [Preko Nostra](#nostr), koji prenosi
   samo preko Tora; s **Ništa** direktno. Ekran kaže kojim putem idu sada. U web aplikaciji i na računaru idu direktno.
 - **Obavijesti:** poruka koja stigne prikazuje obavijest i broji se u broju na ikoni Erevosa, kao u Erevosovim vlastitim
   razgovorima, dok je ovaj prostor otvoren; na računaru, dok Erevos radi. Na Androidu, **Obavijesti** na dnu razgovora
-  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji.
+  ga utišavaju ili mu daju vlastiti zvuk; utišani razgovor se ne broji. **Izgled razgovora** pored njih daje razgovoru
+  vlastiti izgled.
 - **Još ne:** datoteke koje druga aplikacija šifrira na drugi način (prikazuju se kao datoteka koju Erevos ne otvara).
 
 **Zašto:** mnogi ljudi su na Nostru i tamo će ostati. Tako im pišete iz Erevosa, odvojeno i označeno, jer je Nostr ključ
@@ -3149,8 +3155,10 @@ otvara zasebno: **Stil i boje** (površina, staklo, stil, tema, boje i tekst na 
 | **Boje** | Vlastite boje stila, jedna od dvanaest LPHL paleta, ili **Moja boja**. Izbor palete pod stilom s vlastitim bojama vraća stil izabran prije. |
 | **Prilagođeno** | Kad je izabrano **Prilagođeno**: njegova **pozadina** (osam svijetlih, osam tamnih) i njegov **naglasak**. Tekst i površine prave se iz pozadine, a svaka boja se provjerava da je čitljiva na njoj. |
 | **Tekst na obojenim površinama** | **Bijela**, **Kao u paleti** ili **Moja boja**. |
+| **Font** | Slova svakog teksta: **Kao u stilu**, **Kao na telefonu**, **Serifni** (sitne crtice na krajevima slova, kao u knjigama) ili **Jednake širine** (svako slovo jednako široko, kao na pisaćoj mašini). |
 | **Pozadina** | Ono što je iza svakog ekrana: **Zadano za stil** (vlastita scena ili sjaj stila), **Jednobojno**, ili uzorak blago iscrtan u boji naglaska: **Kružići**, **Mreža**, **Pruge**, **Zvijezde**, **Svjetla** (meki krugovi svjetla) ili **Gradijent**; ili **Fotografija**, vaša vlastita fotografija, smanjena, ponovo iscrtana i zapečaćena, ispod vela kako bi tekst bio čitljiv (**Promijeni fotografiju** bira drugu). Ekran za lozinku umjesto toga prikazuje vlastitu pozadinu stila. |
 | **Poruke** | Kako razgovor iscrtava poruke: oblačići **Zaobljeno** ili **Uglato**, ili **Linija**, bez oblačića, s linijom pored teksta, kao u zapisniku. |
+| **Veličina teksta** | Koliko je velik tekst poruka: **Mali**, **Normalni**, **Veliki** ili **Veći**. Ostatak ekrana ostaje kakav jest. |
 
 Neon, Matrix, Paper i Aurora iscrtavaju vlastitu scenu iza svakog ekrana, Prilagođeno zadržava pozadinu koju ste
 izabrali, a Material You boje telefona, pa **Glass** čeka dok su oni izabrani. Kiša stoji

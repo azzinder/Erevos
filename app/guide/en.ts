@@ -803,8 +803,9 @@ picture (a place, a phone) is kept, then sealed in a file of its own. It too sta
 **Picture from their key** brings the drawn one back.
 
 Each chat can also look its own way: tap its name and then **Chat look** for the same choices as **Appearance** (style, theme,
-colors, wallpaper, messages), for that chat only. Like the name, it stays on this phone, sealed with the chat. **Same as the app**
-gives it the app's look again.
+colors, letters, wallpaper, messages and their text size), for that chat only. A group has **Chat look** where its name opens
+(in a public group, under **⋯**), Chat with myself has it at the top, and a chat on Matrix, XMPP or Nostr at its foot, beside
+**Notifications**. Like the name, it stays on this phone, sealed with the chat. **Same as the app** gives it the app's look again.
 
 To keep a chat outside Erevos, tap its name and then **Export chat**: its messages go into a text file, each day under its
 date and each message with its time and who wrote it, saved in the folder you pick (on a computer, where you choose). The
@@ -969,7 +970,8 @@ time, or **Sounds of its own**.
 Its sounds are kept on this phone only, with the chat in the space's encrypted data, as each phone has sounds of its
 own: a linked device keeps its own, and the other phone learns nothing of them.
 
-- **In hidden chats** there is only **Muted**: a sound of its own would tell anyone near which chat it is.
+- **In hidden chats** there is only **Muted**: a sound of its own would tell anyone near which chat it is. So it is for the
+  chats of a hidden place's own Matrix, XMPP and Nostr accounts: muted, they say nothing, not even "New message".
 - **A closed space, and hidden chats while closed,** do not know which chat a message came in, so they tell of it as
   the app's settings say.
 - **Only on Android** for now: the web app tells of every chat as its settings say.
@@ -1669,7 +1671,8 @@ between.
   keys and chats.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
-  chat mutes it or gives it a sound of its own; a muted chat is not counted.
+  chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
+  of its own.
 - **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the Matrix
   screen lets this space say "New message" when something comes on Matrix while another space is open, as its own
   chats do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**,
@@ -1816,7 +1819,8 @@ bridge sits in between.
   without one cannot be reached.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
-  chat mutes it or gives it a sound of its own; a muted chat is not counted.
+  chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
+  of its own.
 - **While this space is closed:** on Android, **Say a message came** under **While this space is closed** on the XMPP
   screen lets this space say "New message" when something comes on XMPP while another space is open, as its own chats
   do with **Also while another space is open** under **Settings** → **Notifications** → **In the background**, which it
@@ -1947,7 +1951,8 @@ NIP-17 asks. It is not [Through Nostr](#nostr), which carries Erevos's own chats
   app and on a computer, they go straight.
 - **Notifications:** a message that comes shows a notice and counts in the number on Erevos's icon, as in Erevos's own
   chats, while this space is open; on a computer, while Erevos runs. On Android, **Notifications** at the bottom of a
-  chat mutes it or gives it a sound of its own; a muted chat is not counted.
+  chat mutes it or gives it a sound of its own; a muted chat is not counted. **Chat look** beside it gives the chat a look
+  of its own.
 - **Not yet:** files another app encrypts some other way (they show as a file Erevos cannot open).
 
 **Why:** many people are on Nostr and will stay there. This lets you write to them from Erevos, kept apart and marked,
@@ -3005,8 +3010,10 @@ open alone: **Style and colours** (the look, glass, style, theme, colours and te
 | **Colors** | The style's own, one of the twelve LPHL palettes, or **My color**. Choosing a palette under a style with its own colours goes back to the style chosen before. |
 | **Custom** | With **Custom** chosen: its **background** (eight light, eight dark) and its **accent**. The text and the surfaces are made from the background, and every color is checked to read on it. |
 | **Text on colored areas** | **White**, **As in the palette**, or **My color**. |
+| **Letters** | The letters of every text: **The style's own**, **The phone's**, **Serif** (small strokes at the letters' ends, as in books) or **Monospace** (every letter as wide, as on a typewriter). |
 | **Wallpaper** | What lies behind every screen: **Style default** (the style's own scene or glow), **Plain**, or a pattern drawn faintly in the accent: **Dots**, **Grid**, **Stripes**, **Stars**, **Lights** (soft circles of light) or **Gradient**; or **Photo**, a photo of your own, made smaller, drawn anew and sealed, under a veil so the text reads (**Change photo** picks another). The password screen shows the style's own instead. |
 | **Messages** | How a chat draws messages: **Round** bubbles, **Square** ones, or **Line**, no bubble but a line beside the text, as a log. |
+| **Text size** | How large the messages' text is: **Small**, **Normal**, **Large** or **Larger**. The rest of the screen stays as it is. |
 
 Neon, Matrix, Paper and Aurora draw their own scene behind every screen, Custom keeps the background you chose and
 Material You the phone's colors, so **Glass** waits while they are chosen. The rain stands

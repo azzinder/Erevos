@@ -868,8 +868,10 @@ file tutto suo. Anche questa resta su questo telefono, e va nei backup; **Immagi
 disegnata.
 
 Ogni chat può anche avere un aspetto tutto suo: tocca il suo nome e poi **Aspetto della chat** per le stesse scelte di
-**Aspetto** (stile, tema, colori, sfondo, messaggi), solo per quella chat. Come il nome, resta su questo telefono,
-sigillato con la chat. **Come l’app** le ridà l’aspetto dell’app.
+**Aspetto** (stile, tema, colori, carattere, sfondo, messaggi e la dimensione del loro testo), solo per quella chat. Un
+gruppo ha **Aspetto della chat** dove si apre il suo nome (in un gruppo pubblico, sotto **⋯**), Chat con me stesso ce
+l’ha in cima, e una chat su Matrix, XMPP o Nostr in fondo, accanto a **Notifiche**. Come il nome, resta su questo
+telefono, sigillato con la chat. **Come l’app** le ridà l’aspetto dell’app.
 
 Per tenere una chat fuori da Erevos, tocca il suo nome e poi **Esporta chat**: i suoi messaggi vanno in un file di
 testo, ogni giorno sotto la sua data e ogni messaggio con la sua ora e chi l’ha scritto, salvato nella cartella che
@@ -1051,7 +1053,8 @@ spazio, perché ogni telefono ha i suoi suoni: un dispositivo collegato tiene i 
 niente.
 
 - **Nelle chat nascoste** c’è solo **In silenzio**: un suono proprio direbbe a chiunque sia vicino di quale chat si
-  tratta.
+  tratta. Lo stesso vale per le chat degli account Matrix, XMPP e Nostr di un posto nascosto: in silenzio, non dicono
+  nulla, nemmeno «New message».
 - **Uno spazio chiuso, e le chat nascoste finché sono chiuse,** non sanno in quale chat è arrivato un messaggio, quindi
   lo segnalano come dicono le impostazioni dell’app.
 - **Solo su Android** per ora: la web app segnala ogni chat come dicono le sue impostazioni.
@@ -1824,7 +1827,8 @@ sta nel mezzo.
   avvicinarsi alle sue chiavi e alle sue chat.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
-  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
+  dà alla chat un aspetto suo.
 - **Mentre questo spazio è chiuso:** su Android, **Avvisa dei nuovi messaggi**, in **Mentre questo spazio è chiuso**
   nella schermata di Matrix, lascia che questo spazio dica «New message» quando arriva qualcosa su Matrix mentre è
   aperto un altro spazio, come fanno le sue chat con **Anche mentre è aperto un altro spazio** in **Impostazioni** →
@@ -1985,7 +1989,8 @@ app: nessun ponte sta nel mezzo.
   raggiungibile.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
-  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
+  dà alla chat un aspetto suo.
 - **Mentre questo spazio è chiuso:** su Android, **Avvisa dei nuovi messaggi**, in **Mentre questo spazio è chiuso**
   nella schermata di XMPP, lascia che questo spazio dica «New message» quando arriva qualcosa su XMPP mentre è aperto un
   altro spazio, come fanno le sue chat con **Anche mentre è aperto un altro spazio** in **Impostazioni** →
@@ -2124,7 +2129,8 @@ privati come chiede NIP-17. Non è [Tramite Nostr](#nostr), che porta le chat pr
   computer passano direttamente.
 - **Notifiche:** un messaggio che arriva mostra un avviso e conta nel numero sull’icona di Erevos, come nelle chat di
   Erevos stesso, finché questo spazio è aperto; su un computer, finché Erevos è in funzione. Su Android, **Notifiche**,
-  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta.
+  in fondo a una chat, la silenzia o le dà un suono suo; una chat silenziata non conta. **Aspetto della chat**, accanto,
+  dà alla chat un aspetto suo.
 - **Non ancora:** file che un’altra app cifra in un altro modo (appaiono come un file che Erevos non apre).
 
 **Perché:** tante persone sono su Nostr e ci resteranno. Così scrivi loro da Erevos, a parte e segnato, perché una
@@ -3292,8 +3298,10 @@ qui sotto, con l’**Anteprima**), **Sfondo**, **Messaggi**, e su Android **Icon
 | **Colori** | Quelli dello stile, una delle dodici tavolozze di LPHL, o **Il mio colore**. Scegliere una tavolozza con uno stile che ha i suoi colori torna allo stile scelto prima. |
 | **Personalizzato** | Con **Personalizzato** scelto: il suo **fondo** (otto chiari, otto scuri) e il suo **accento**. Il testo e le superfici derivano dal fondo, e ogni colore viene controllato perché si legga bene sopra. |
 | **Testo sulle aree colorate** | **Bianco**, **Come la tavolozza**, o **Il mio colore**. |
+| **Carattere** | Le lettere di ogni testo: **Quello dello stile**, **Quello del telefono**, **Con grazie** (piccoli tratti alle estremità delle lettere, come nei libri) o **A spaziatura fissa** (ogni lettera larga uguale, come in una macchina da scrivere). |
 | **Sfondo** | Quello che c’è dietro ogni schermata: **Come lo stile** (la scena o il bagliore propri dello stile), **Tinta unita**, o un motivo disegnato tenue nel colore d’accento: **Puntini**, **Griglia**, **Righe**, **Stelle**, **Luci** (morbidi cerchi di luce) o **Sfumatura**; oppure **Foto**, una tua foto, rimpicciolita, ridisegnata e sigillata, sotto un velo perché il testo si legga (**Cambia foto** ne sceglie un’altra). La schermata della password mostra invece quello dello stile. |
 | **Messaggi** | Come una chat disegna i messaggi: nuvolette **Arrotondato**, nuvolette **Squadrato**, o **Linea**, nessuna nuvoletta ma una linea accanto al testo, come un registro. |
+| **Dimensione del testo** | Quanto è grande il testo dei messaggi: **Piccolo**, **Normale**, **Grande** o **Più grande**. Il resto della schermata resta com’è. |
 
 Neon, Matrix, Paper e Aurora disegnano una loro scena dietro ogni schermata, Personalizzato tiene il fondo che hai
 scelto e Material You i colori del telefono, quindi il **Vetro** aspetta finché sono scelti. La pioggia resta

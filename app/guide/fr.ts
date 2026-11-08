@@ -921,9 +921,11 @@ puis scellée dans un fichier à elle. Elle aussi reste sur ce téléphone, et v
 clé** ramène celle qui est dessinée.
 
 Chaque discussion peut aussi avoir son propre aspect : appuie sur son nom puis sur **Apparence de la discussion** pour
-les mêmes choix que dans **Apparence** (style, thème, couleurs, fond d’écran, messages), pour cette discussion
-seulement. Comme le nom, cet aspect reste sur ce téléphone, scellé avec la discussion. **Comme l’app** lui redonne
-l’aspect de l’app.
+les mêmes choix que dans **Apparence** (style, thème, couleurs, police, fond d’écran, messages et la taille de leur
+texte), pour cette discussion seulement. Un groupe a **Apparence de la discussion** là où son nom s’ouvre (dans un
+groupe public, sous **⋯**), la Discussion avec moi-même l’a en haut, et une discussion sur Matrix, XMPP ou Nostr tout en
+bas, à côté de **Notifications**. Comme le nom, cet aspect reste sur ce téléphone, scellé avec la discussion. **Comme
+l’app** lui redonne l’aspect de l’app.
 
 Pour garder une discussion hors d’Erevos, appuie sur son nom puis sur **Exporter la discussion** : ses messages vont
 dans un fichier texte, chaque jour sous sa date et chaque message avec son heure et son auteur, enregistré dans le
@@ -1112,7 +1114,8 @@ données chiffrées de l’espace, car chaque téléphone a ses propres sons : u
 téléphone n’en sait rien.
 
 - **Dans les discussions masquées** il n’y a que **En sourdine** : un son à elle dirait à quiconque est près de quelle
-  discussion il s’agit.
+  discussion il s’agit. Il en va de même pour les discussions des comptes Matrix, XMPP et Nostr propres à un emplacement
+  masqué : en sourdine, elles ne disent rien, pas même « New message ».
 - **Un espace fermé, et les discussions masquées tant qu’elles sont fermées,** ne savent pas dans quelle discussion un
   message est arrivé, et le signalent donc comme le disent les réglages de l’app.
 - **Seulement sur Android** pour l’instant : l’app web signale chaque discussion comme le disent ses réglages.
@@ -1909,7 +1912,7 @@ Element : aucun pont ne se met entre les deux.
 - **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
-  discussion en sourdine ne compte pas.
+  discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
 - **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
   fermé** sur l’écran Matrix, laisse cet espace dire « New message » quand quelque chose arrive sur Matrix pendant
   qu’un autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert**
@@ -2078,7 +2081,7 @@ XMPP, comme ces apps : aucun pont ne se met entre les deux.
 - **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
-  discussion en sourdine ne compte pas.
+  discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
 - **Tant que cet espace est fermé :** sur Android, **Signaler les nouveaux messages**, sous **Tant que cet espace est
   fermé** sur l’écran XMPP, laisse cet espace dire « New message » quand quelque chose arrive sur XMPP pendant qu’un
   autre espace est ouvert, comme le font ses propres discussions avec **Aussi quand un autre espace est ouvert** dans
@@ -2228,7 +2231,7 @@ discussions propres à Erevos.
 - **Notifications :** un message qui arrive affiche une notification et compte dans le nombre sur l’icône d’Erevos,
   comme dans les discussions d’Erevos lui-même, tant que cet espace est ouvert ; sur un ordinateur, tant qu’Erevos
   tourne. Sur Android, **Notifications**, en bas d’une discussion, la met en sourdine ou lui donne un son à elle ; une
-  discussion en sourdine ne compte pas.
+  discussion en sourdine ne compte pas. **Apparence de la discussion**, à côté, donne à la discussion un aspect à elle.
 - **Pas encore :** les fichiers qu’une autre appli chiffre autrement (ils s’affichent comme un fichier qu’Erevos ne sait
   pas ouvrir).
 
@@ -3466,8 +3469,10 @@ et **Widget**.
 | **Couleurs** | Celles du style, l’une des douze palettes LPHL, ou **Ma couleur**. Choisir une palette sous un style qui a ses propres couleurs revient au style choisi avant. |
 | **Personnalisé** | Avec **Personnalisé** choisi : son **fond** (huit clairs, huit sombres) et son **accent**. Le texte et les surfaces sont tirés du fond, et chaque couleur est vérifiée pour rester lisible dessus. |
 | **Texte sur les zones colorées** | **Blanc**, **Comme la palette**, ou **Ma couleur**. |
+| **Police** | Les lettres de chaque texte : **Celle du style**, **Celle du téléphone**, **Avec empattements** (petits traits au bout des lettres, comme dans les livres) ou **Chasse fixe** (chaque lettre aussi large, comme à la machine à écrire). |
 | **Fond d’écran** | Ce qui se trouve derrière chaque écran : **Selon le style** (la scène ou la lueur propre au style), **Uni**, ou un motif tracé légèrement dans l’accent : **Points**, **Grille**, **Rayures**, **Étoiles**, **Lumières** (de doux cercles de lumière) ou **Dégradé** ; ou **Photo**, une photo à toi, réduite, redessinée et scellée, sous un voile pour que le texte se lise (**Changer de photo** en choisit une autre). L’écran du mot de passe montre celui du style à la place. |
 | **Messages** | Comment une discussion dessine les messages : en bulles rondes (**Arrondi**) ou carrées (**Carré**), ou en **Ligne**, sans bulle mais avec un trait à côté du texte, comme un journal. |
+| **Taille du texte** | La taille du texte des messages : **Petit**, **Normal**, **Grand** ou **Plus grand**. Le reste de l’écran ne change pas. |
 
 Neon, Matrix, Paper et Aurora dessinent leur propre scène derrière chaque écran, Personnalisé garde le fond que tu as
 choisi et Material You les couleurs du téléphone, alors **Glass** attend tant qu’ils sont choisis. La pluie reste

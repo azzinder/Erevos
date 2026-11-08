@@ -75,6 +75,17 @@ On main, not released yet:
   numbers to each backup, in a new entry kind (PHONE_CALLS, 8) an older Erevos refuses (CallsBackup.kt,
   lib/backup-calls.ts). Restoring adds those the phone lacks, deletes none, and needs Erevos to be the Phone app.
   Requested by the maintainer.
+- **Every chat's own look**: a group, Chat with myself and each chat on Matrix, XMPP and Nostr now have **Chat look**,
+  as a contact's chat had: the choices of Appearance for that chat only, kept on this device (lock/group-data.ts,
+  lock/myself-data.ts, the network accounts' records), drawn on its screen by components/chat-look.tsx with its
+  backdrop and header. Appearance has two new choices, for the app and each chat: **Letters** (the style's own, the
+  phone's, a serif or a monospace, over every text: `Look.font`, `shape.face`) and the messages' **Text size**
+  (`Look.textSize`, 0.87 to 1.3 times). Matrix, XMPP and Nostr bubbles follow the bubble shape. An older Erevos
+  ignores both and keeps its own letters and size. Requested by the maintainer.
+- **Muting the hidden places' Matrix, XMPP and Nostr chats**: the chats of a hidden place's own accounts now have
+  **Notifications** with **Muted** only, as hidden chats do; muted, they give no "New message" and no unread sign
+  (lib/network-notices.ts `hearing`). A Nostr chat's notifications no longer offer a ringtone, as Nostr does not
+  ring. Requested by the maintainer.
 
 ### Under the hood
 

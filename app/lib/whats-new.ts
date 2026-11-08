@@ -33,6 +33,9 @@ export const NEXT: Changes = {
     mark("**Linked devices after a restore**: the phone a backup was restored on can ask the computers and browsers the old phone had linked to link again: tap **Ask to link again** under Settings → Data and devices → Linked devices, then **Link again** on the device. It keeps its chats, with no code to scan. See [Backups](#backup)."),
     mark("**The phone's calls in backups**: on Android, **Put the calls in backups** under Backups adds the call history and Android's blocked numbers to your backups, and restoring adds back those the phone lacks. Off until you turn it on. See [Backups](#backup)."),
     mark("**Block screenshots in a chat**: in a chat's details, **Block screenshots** keeps screenshots and screen recordings of it out on both phones, on Android, and either of you can turn it off again. Erevos on an iPhone, on a computer, in a browser or on Sailfish cannot block them, and says so. See [Chat through a relay](#relay)."),
+    mark("**Every chat in its own look**: groups, Chat with myself and chats on Matrix, XMPP and Nostr now have **Chat look** too, as a contact's chat had, for that chat only. See [Chat through a relay](#relay)."),
+    mark("**Letters and text size**: Settings → Appearance has **Letters** (the style's own, the phone's, serif or monospace) and the messages' **Text size**, for the whole app or, from **Chat look**, for one chat. See [Appearance](#appearance)."),
+    mark("**Muting hidden Matrix, XMPP and Nostr chats**: a hidden place's own Matrix, XMPP and Nostr chats can now be muted, as hidden chats are, and then say nothing at all. See [Hidden chats](#hidden)."),
   ],
   underTheHood: [
     mark("**Groups after a restore**: a member restored from a backup asks the group's admin to put it in again, which works while the group moved on only a little."),

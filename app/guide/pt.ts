@@ -866,8 +866,10 @@ selada num arquivo próprio. Ela também fica neste celular, e vai para os backu
 volta a desenhada.
 
 Cada conversa também pode ter a sua própria aparência: toque no nome dela e depois em **Aparência da conversa** para as
-mesmas opções de **Aparência** (estilo, tema, cores, papel de parede, mensagens), só para essa conversa. Como o nome,
-ela fica neste celular, selada com a conversa. **Igual ao app** devolve a ela a aparência do app.
+mesmas opções de **Aparência** (estilo, tema, cores, tipo de letra, papel de parede, mensagens e o tamanho do texto
+delas), só para essa conversa. Um grupo tem **Aparência da conversa** onde o nome dele se abre (num grupo público, em
+**⋯**), a Conversa comigo tem no topo, e uma conversa no Matrix, XMPP ou Nostr bem no fim, ao lado de **Notificações**.
+Como o nome, ela fica neste celular, selada com a conversa. **Igual ao app** devolve a ela a aparência do app.
 
 Para guardar uma conversa fora do Erevos, toque no nome dela e depois em **Exportar conversa**: as mensagens dela vão
 para um arquivo de texto, cada dia sob a sua data e cada mensagem com o horário e quem a escreveu, salvo na pasta que
@@ -1046,7 +1048,9 @@ para de chamar você até ela. Os sons dela ficam só neste celular, com a conve
 porque cada celular tem os próprios sons: um dispositivo conectado guarda os dele, e o outro celular não sabe nada
 deles.
 
-- **Nas conversas ocultas** só existe **Em silêncio**: um som próprio diria a quem estiver perto qual conversa é.
+- **Nas conversas ocultas** só existe **Em silêncio**: um som próprio diria a quem estiver perto qual conversa é. O
+  mesmo vale para as conversas das contas próprias de Matrix, XMPP e Nostr de uma posição oculta: em silêncio, elas não
+  dizem nada, nem “Nova mensagem”.
 - **Um espaço fechado, e as conversas ocultas enquanto estão fechadas,** não sabem em que conversa chegou uma mensagem,
   então avisam dela como dizem as configurações do app.
 - **Só no Android** por enquanto: o app web avisa de cada conversa como dizem as configurações dele.
@@ -1801,6 +1805,7 @@ fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+  **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
 - **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
   fechado** na tela do Matrix, deixa este espaço dizer “Nova mensagem” quando chega algo no Matrix enquanto outro
   espaço está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em
@@ -1959,6 +1964,7 @@ esses apps: nenhuma ponte fica no meio.
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+  **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
 - **Enquanto este espaço está fechado:** no Android, **Avisar quando chega mensagem**, em **Enquanto este espaço está
   fechado** na tela do XMPP, deixa este espaço dizer “Nova mensagem” quando chega algo no XMPP enquanto outro espaço
   está aberto, como fazem as conversas dele com **Também enquanto outro espaço está aberto** em **Configurações** →
@@ -2097,6 +2103,7 @@ privadas como o NIP-17 pede. Não é o [Pelo Nostr](#nostr), que leva as convers
 - **Notificações:** uma mensagem que chega mostra um aviso e conta no número do ícone do Erevos, como nas conversas do
   próprio Erevos, enquanto este espaço está aberto; num computador, enquanto o Erevos roda. No Android,
   **Notificações**, no fim de uma conversa, silencia ela ou dá a ela um som próprio; uma conversa silenciada não conta.
+  **Aparência da conversa**, ao lado, dá à conversa uma aparência própria.
 - **Ainda não:** arquivos que outro app criptografa de outro jeito (aparecem como um arquivo que o Erevos não abre).
 
 **Por quê:** muita gente está no Nostr e vai continuar lá. Assim você escreve para elas pelo Erevos, à parte e marcado,
@@ -3253,8 +3260,10 @@ abaixo, com a **Prévia**), **Papel de parede**, **Mensagens**, e no Android **�
 | **Cores** | As do próprio estilo, uma das doze paletas do LPHL, ou **Minha cor**. Escolher uma paleta num estilo com cores próprias volta ao estilo escolhido antes. |
 | **Personalizado** | Com **Personalizado** escolhido: o **fundo** dele (oito claros, oito escuros) e o **destaque** dele. O texto e as superfícies são feitos a partir do fundo, e cada cor é verificada para ser legível sobre ele. |
 | **Texto em áreas coloridas** | **Branco**, **Como a paleta**, ou **Minha cor**. |
+| **Tipo de letra** | As letras de todo texto: **A do estilo**, **A do telefone**, **Com serifa** (pequenos traços nas pontas das letras, como nos livros) ou **Monoespaçada** (cada letra com a mesma largura, como numa máquina de escrever). |
 | **Papel de parede** | O que fica atrás de cada tela: **Como o estilo** (a cena ou o brilho próprio do estilo), **Liso**, ou um padrão desenhado de leve na cor de destaque: **Pontos**, **Grade**, **Listras**, **Estrelas**, **Luzes** (círculos suaves de luz) ou **Degradê**; ou **Foto**, uma foto sua, reduzida, redesenhada e selada, sob um véu para o texto ser legível (**Trocar foto** escolhe outra). A tela da senha mostra a do próprio estilo no lugar. |
 | **Mensagens** | Como uma conversa desenha as mensagens: balões em formato **Arredondado** ou **Quadrado**, ou **Linha**, sem balão mas com uma linha ao lado do texto, como um registro. |
+| **Tamanho do texto** | Qual o tamanho do texto das mensagens: **Pequeno**, **Normal**, **Grande** ou **Maior**. O resto da tela continua como está. |
 
 Neon, Matrix, Paper e Aurora desenham a própria cena atrás de cada tela, o Personalizado mantém o fundo que você
 escolheu e o Material You as cores do celular, por isso o **Glass** fica em espera enquanto eles estão escolhidos. A
