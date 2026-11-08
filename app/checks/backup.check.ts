@@ -342,8 +342,8 @@ t('leaves out what is not Erevos’s own, refuses what only a newer Erevos knows
   await assert.rejects(openBackup(forged([entry(0, 'erevos.lock-tries', 'x')]), 'backup-pass'), NotABackupError);
   // A kind only a newer Erevos knows: the whole backup is refused, and nothing changes.
   store.set('erevos.lock', 'as it was');
-  await assert.rejects(openBackup(forged([lock, entry(9, 'erevos-from-later', 'x')]), 'backup-pass'), NewerBackupError);
-  await assert.rejects(openBackup(forged([entry(9, 'erevos-from-later', 'x'), lock]), 'backup-pass'), NewerBackupError);
+  await assert.rejects(openBackup(forged([lock, entry(200, 'erevos-from-later', 'x')]), 'backup-pass'), NewerBackupError);
+  await assert.rejects(openBackup(forged([entry(200, 'erevos-from-later', 'x'), lock]), 'backup-pass'), NewerBackupError);
   assert.equal(store.get('erevos.lock'), 'as it was');
   await assert.rejects(openBackup(new Uint8Array(0), 'backup-pass'), NotABackupError);
 });
